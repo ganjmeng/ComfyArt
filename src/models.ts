@@ -7,6 +7,8 @@ export interface ModelDef {
   id: string
   label: string
   desc: string
+  /** WaveSpeed model description, for the agent (the picker shows desc). */
+  about?: string
   files: string[]
   video?: boolean
   cloud?: boolean
@@ -41,7 +43,7 @@ async function useCloudImageModels() {
   const defs = (names: string[], video: boolean): ModelDef[] => {
     const seen = new Set<string>()
     return names.flatMap((n) => all[n]?.models ?? []).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
-      id: m.id, label: m.label + (m.price != null ? ` · $${m.price}` : ''), desc: m.desc || m.local_equivalent || m.id, files: [], cloud: true, lora: null,
+      id: m.id, label: m.label + (m.price != null ? ` · $${m.price}` : ''), desc: m.subtitle || m.id.split('/').slice(1).join('/') || m.id, about: m.desc || undefined, files: [], cloud: true, lora: null,
       ...(video ? { video: true } : { refs: 'qwen' as const }),
     }))
   }
