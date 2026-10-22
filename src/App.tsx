@@ -9,9 +9,7 @@ import { errorText, resumeJobs } from './jobs'
 import './layers'
 import { defaultKitId, loadLibrary } from './library'
 import { loadMemory } from './memory'
-import { loadInstances } from './instances'
 import { loadModels } from './models'
-import { loadWorkflowConfig } from './customWorkflows'
 import { loadProject, NEW_PARAM } from './projects'
 import { startAutosave } from './autosave'
 import { takeHandoff } from './home/handoff'
@@ -72,7 +70,6 @@ import { SmudgePanel } from './ui/SmudgePanel'
 import { Lightbox } from './ui/Lightbox'
 import { Icons } from './ui/icons'
 import { MemoryDialog } from './ui/MemoryDialog'
-import { WorkflowsDialog } from './ui/WorkflowsDialog'
 import { ModePanel } from './ui/ModePanel'
 import { MultiToolbar } from './ui/MultiToolbar'
 import { ProjectHeader } from './ui/ProjectHeader'
@@ -145,7 +142,7 @@ export function App({ id }: { id: string }) {
   }, [editor, dark])
 
   useEffect(() => {
-    void Promise.all([loadMemory(), loadWorkflowConfig(), loadModels(), loadNotices(), loadInstances()]).catch((e) => setError(String(e)))
+    void Promise.all([loadMemory(), loadModels(), loadNotices()]).catch((e) => setError(String(e)))
   }, [])
 
   const onMount = useCallback((ed: Editor) => {
@@ -302,7 +299,6 @@ export function App({ id }: { id: string }) {
       <BotSettings onError={setError} />
       {editor && <VideoEditor editor={editor} onError={setError} />}
       <MemoryDialog onError={setError} />
-      <WorkflowsDialog onError={setError} />
       <SkillsDialog onError={setError} />
       {editor && <HistoryDialog editor={editor} projectId={id} onError={setError} />}
       {editor && <ExportDialog editor={editor} onError={setError} />}

@@ -1,6 +1,6 @@
 import { readLocal } from './localPrefs'
 import { t } from './i18n'
-import { CLIENT_ID, onComfyEvent } from './ws'
+import { onComfyEvent } from './ws'
 import { isWsGraph, WS_ID } from './wavespeed'
 
 const POLL_MS = 1500
@@ -13,19 +13,9 @@ function comfyUser(): string | null {
   return readLocal('Comfy.userId')
 }
 
-let cloud = false
-let lanIds: string[] = []
-let target = 'auto'
-export const setCloud = (on: boolean) => { cloud = on }
-export const setLan = (ids: string[]) => { lanIds = ids }
-export const setTarget = (next: string) => { target = next }
-export const cloudMode = () => cloud
-export const lanMode = () => lanIds.length > 0 && !cloud
-export const validTarget = (t: unknown): string | null => (t === 'auto' || t === 'local' || lanIds.includes(t as string) ? t as string : null)
-export const defaultTarget = () => validTarget(target) ?? 'auto'
-const CLOUD_ID = 'cloud:'
-export const LAN_ID = 'srv:'
-const lanPath = (promptId: string) => promptId.slice(LAN_ID.length).replace(':', '/')
+// WaveSpeed is the only generation provider; jobs always run there.
+export const validTarget = (t: unknown): string | null => (t === 'auto' ? 'auto' : null)
+export const defaultTarget = () => 'auto'
 
 export function api(path: string, init?: RequestInit) {
   const user = comfyUser()
@@ -131,13 +121,6 @@ export async function loadModelPaths(): Promise<Record<string, string>> {
   return modelPaths
 }
 
-function withModelPaths(prompt: PromptGraph): PromptGraph {
-  return Object.fromEntries(Object.entries(prompt).map(([id, node]) => [id, {
-    ...node,
-    inputs: Object.fromEntries(Object.entries(node.inputs).map(([k, v]) => [k, typeof v === 'string' && v in modelPaths ? modelPaths[v] : v])),
-  }]))
-}
-
 function promptError(body: any, status: number): string {
   const lines = Object.entries<any>(body?.node_errors ?? {}).flatMap(([id, ne]) =>
     (ne?.errors ?? []).map((er: any) => `${ne.class_type ?? ''} #${id}: ${er.message}${er.details ? ` — ${er.details}` : ''}`))
@@ -147,7 +130,7 @@ function promptError(body: any, status: number): string {
   return top.details ? `${top.message}: ${top.details}` : top.message
 }
 
-export async function queuePrompt(prompt: PromptGraph, runOn = defaultTarget()): Promise<string> {
+export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget()): Promise<string> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
   if (isWsGraph(prompt)) {
     const inputs = Object.values(prompt)[0].inputs
@@ -163,16 +146,8 @@ export async function queuePrompt(prompt: PromptGraph, runOn = defaultTarget()):
     if (!ws.ok) throw new Error(promptError(wsBody, ws.status))
     return String(wsBody.prompt_id)
   }
-  // Cloud mode: local ComfyUI models are never run; tools not yet ported fail clearly.
+  // Only WaveSpeed graphs can run; tools not yet ported fail clearly.
   throw new Error(t('jobs.notInCloud'))
-  const res = cloud
-    ? await api('/comfyart/cloud/prompt', { ...init, body: JSON.stringify({ prompt }) })
-    : !lanMode() || runOn === 'local'
-      ? await api('/prompt', { ...init, body: JSON.stringify({ prompt: withModelPaths(prompt), client_id: CLIENT_ID }) })
-      : await api('/comfyart/remote/prompt', { ...init, body: JSON.stringify({ prompt, client_id: CLIENT_ID, target: runOn }) })
-  const body = await res.json().catch(() => null)
-  if (!res.ok) throw new Error(promptError(body, res.status))
-  return String(body.prompt_id)
 }
 
 const queued = (list: unknown[] | undefined, promptId: string) => (list ?? []).some((e) => Array.isArray(e) && String(e[1]) === promptId)
@@ -185,14 +160,6 @@ async function inQueue(promptId: string): Promise<boolean> {
 export async function cancelPrompt(promptId: string) {
   if (promptId.startsWith(WS_ID)) {
     await api(`/comfyart/wavespeed/cancel/${promptId.slice(WS_ID.length)}`, { method: 'POST' })
-    return
-  }
-  if (promptId.startsWith(CLOUD_ID)) {
-    await api(`/comfyart/cloud/cancel/${promptId.slice(CLOUD_ID.length)}`, { method: 'POST' })
-    return
-  }
-  if (promptId.startsWith(LAN_ID)) {
-    await api(`/comfyart/remote/cancel/${lanPath(promptId)}`, { method: 'POST' })
     return
   }
   const q = await (await api('/queue')).json()
@@ -223,8 +190,7 @@ function nap(promptId: string) {
 
 export async function promptHistory(promptId: string): Promise<any> {
   const res = promptId.startsWith(WS_ID) ? await api(`/comfyart/wavespeed/history/${promptId.slice(WS_ID.length)}`)
-    : promptId.startsWith(CLOUD_ID) ? await api(`/comfyart/cloud/history/${promptId.slice(CLOUD_ID.length)}`)
-    : promptId.startsWith(LAN_ID) ? await api(`/comfyart/remote/history/${lanPath(promptId)}`)
+
       : await api(`/history/${promptId}`)
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(body.error?.message ?? `history failed: ${res.status}`)

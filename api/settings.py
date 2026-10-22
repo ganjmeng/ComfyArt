@@ -15,8 +15,6 @@ SETTINGS_SPEC: dict[str, object] = {
     "bot-enable-comfy-mcp": False,
     "bot-comfy-mcp-command": "",
     "ocr-engine": "local",
-    "generation-backend": "local",
-    "generation-target": "auto",
     "memory-enabled": True,
     "proactive-memory": False,
     "proactive-skills": False,
@@ -24,7 +22,7 @@ SETTINGS_SPEC: dict[str, object] = {
     "proactive-daily": 5,
 }
 
-CHOICES: dict[str, tuple[str, ...]] = {"ocr-engine": ("local", "agent"), "generation-backend": ("local", "cloud")}
+CHOICES: dict[str, tuple[str, ...]] = {"ocr-engine": ("local", "agent")}
 
 
 def _file() -> str:

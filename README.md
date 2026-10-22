@@ -6,7 +6,7 @@ English | [中文](README.zh.md)
 
 [Watch the full promo (38s)](docs/media/promo-en.mp4)
 
-A free, open-source AI design canvas that runs fully on your own ComfyUI: an infinite canvas (tldraw + React), a design agent that works on it with tools, and every image, video, audio and 3D model running locally. No account, no credits, no cloud.
+A free, open-source AI design canvas inside ComfyUI: an infinite canvas (tldraw + React) and a design agent that works on it with tools. Every image, video, audio and 3D job runs on WaveSpeed cloud models; no local GPU or model files are needed.
 
 Documentation with screenshots for every feature: **[comfyart.org](https://comfyart.org)**.
 
@@ -31,15 +31,39 @@ Put this folder in `ComfyUI/custom_nodes/`, install the Python requirements into
 
 Projects, their snapshot history and agent chats are saved in a SQLite database, `user/__comfyart/data.db`. Projects from older versions (JSON files under `comfyart/projects/`) are imported automatically the first time you open ComfyArt; the files are left in place. The interface starts in ComfyUI's language and can be switched from the settings menu.
 
-## Comfy Cloud
+## WaveSpeed cloud models
 
-ComfyArt can run its workflows on [Comfy Cloud](https://cloud.comfy.org) instead of the local GPU. Create an API key at [platform.comfy.org](https://platform.comfy.org/profile/api-keys) (Cloud API keys need a paid Comfy plan), set it as `COMFY_API_KEY` before starting ComfyUI, then choose Settings → Generate on → Comfy Cloud. The same workflows are sent to `https://cloud.comfy.org/api/v2/jobs`; no build or deployment is needed because Cloud has the models and nodes preinstalled. Input images and audio are uploaded as Cloud assets when a job is submitted, and results are downloaded into `output/comfyart/` with a `cloud-<job>` suffix, so the canvas, history and Agent see them like local results.
+WaveSpeed is the only generation provider. Create an API key at [wavespeed.ai](https://wavespeed.ai), set it as `WAVESPEED_API_KEY` in the environment before starting ComfyUI, and every canvas action and agent tool sends its job to WaveSpeed. The key is read on the server only and never stored by ComfyArt. Results are downloaded into `output/comfyart/`, so the canvas, history and agent see them like any other image. Jobs estimated at $0.50 or more ask for confirmation first.
 
-On Cloud, FLUX.2 Klein 9B runs the bf16 `flux-2-klein-9b.safetensors` and Qwen Image 2512 loads with the core `UNETLoader`. Angles imports the QMA LoRA from Hugging Face into your Cloud model library the first time it runs. Voiceover and voice cloning use Qwen3-TTS on Cloud (`speech-qwen3tts`, `voice-clone-qwen3tts`) instead of Kokoro and IndexTTS2, which Cloud does not have.
+Each feature has a default model and a curated list in `api/wavespeed_models.json`; pick another model in the generator, or let the agent pass `model`.
 
-## LAN instances
-
-Other ComfyUI machines on your network can run ComfyArt jobs too. Start them with `--listen`, and add them under Settings → LAN instances… (name, address, port; nothing else is stored). Settings → Generate on then sets where jobs go by default: Auto sends each job to the least busy machine, this computer included, that has every node and model file the workflow needs, skipping machines that are off or missing something; picking a machine queues jobs there. Each generator card can override it under Run on, next to the model. Tools such as upscale or remove background use the default, and the card shows where a running job went. Input files are uploaded to the machine's `input/comfyart/`, progress shows on the canvas as usual, and results are downloaded into `output/comfyart/` with a `<machine>-<job>` suffix. Model files are matched by file name, so they can sit in different subfolders on each machine. Qwen Image 2512 needs ComfyArt installed on that machine for its loader.
+| Feature | Default model |
+|---|---|
+| `text_to_image` | `alibaba/qwen-image-3.0/text-to-image` |
+| `image_edit` | `alibaba/qwen-image-3.0/edit` |
+| `change_angle` | `wavespeed-ai/qwen-image/edit-2509-multiple-angles` |
+| `expand_image` | `bria/expand` |
+| `split_layers` | `bytedance/seedream-v5.0-flash/layer-decomposition` |
+| `remove_background` | `wavespeed-ai/image-background-remover` |
+| `erase_region` | `wavespeed-ai/image-eraser` |
+| `upscale_image` | `wavespeed-ai/image-upscaler` |
+| `segment` | `wavespeed-ai/sam3-image` |
+| `text_to_video` | `wavespeed-ai/minimax-h3/text-to-video` |
+| `image_to_video` | `wavespeed-ai/minimax-h3/image-to-video` |
+| `reference_to_video` | `wavespeed-ai/minimax-h3/reference-to-video` |
+| `motion_control` | `wavespeed-ai/wan-2.2/animate` |
+| `lip_sync` | `wavespeed-ai/infinitetalk-fast` |
+| `extend_video` | `wavespeed-ai/minimax-h3/video-extend` |
+| `upscale_video` | `wavespeed-ai/video-upscaler` |
+| `remove_video_background` | `wavespeed-ai/video-background-remover` |
+| `music` | `wavespeed-ai/ace-step-1.5` |
+| `sound_effect` | `mirelo-ai/sfx-2.0/text-to-audio` |
+| `text_to_speech` | `wavespeed-ai/qwen3-tts/text-to-speech` |
+| `voice_clone` | `wavespeed-ai/qwen3-tts/voice-clone` |
+| `image_to_3d` | `wavespeed-ai/trellis-2/image-to-3d` |
+| `transcribe` | `wavespeed-ai/openai-whisper-turbo` |
+| `caption` | `wavespeed-ai/image-captioner` |
+| `ocr` | `wavespeed-ai/paddle-ocr` |
 
 ## Agent
 
@@ -66,42 +90,11 @@ codex mcp add comfyart --url "http://127.0.0.1:8188/comfyart/mcp?project=<projec
 
 Setup for Claude Code, Codex, Gemini CLI, Qwen Code, Cursor, VS Code, Claude Desktop and your own scripts, tool timeouts and the full tool list are in the [MCP guide](https://comfyart.org/guides/mcp).
 
-## Workflows and models
-
-Every canvas action runs one of the API workflows in `workflows/` through ComfyUI's `/prompt`. They use core nodes unless noted.
-
-| Action | Workflow | Models / custom nodes |
-|---|---|---|
-| Image generation, quick edit, edit text, expand, comment edits | `qwen-image-2.1-t2i`, `edit-qwen-image-2.1`, `outpaint-qwen-image-2.1` | `qwen_image_2.1_int8_convrot.safetensors`, `qwen3vl_8b_int8_convrot.safetensors`, `qwen_image_2.1_vae_bf16.safetensors` |
-| Image generation (other models) | `z-image-turbo-t2i`, `flux2-klein-9b-t2i`, `flux3-klein-t2i`, `moss-image-t2i`, `qwen-image-2512-t2i`, `ideogram4-t2i` | `z_image_turbo_bf16` + `qwen_3_4b` + `ae`; `flux-2-klein-9b-nvfp4` + `qwen_3_8b_fp8mixed` + `flux2-vae`; `flux3-image-klein-int8-convrot` + `qwen3vl_4b_int8_convrot` + `flux2-vae`; `moss_image_sft_int8_convrot` + `qwen3.5_9b_w4a8_gptq` + `flux2-vae_small`; `qwen_image_2512_fp8_e4m3fn` + `qwen_2.5_vl_7b_fp8_scaled` + `qwen_image_vae` (loaded with the ComfyArt Precise UNET Loader node, see below); `ideogram4_fp8_scaled` + `ideogram4_unconditional_fp8_scaled` + `qwen3vl_8b_fp8_scaled` + `flux2-vae`; the default Agent writes the structured caption Ideogram expects (`ideogram4-caption.json`) |
-| Reference modes (line art, depth, pose, …) | built in code | [comfyui_controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux) preprocessors (MLSD, HED, normal and segmentation download their annotator weights on first use); with Qwen Image 2512 also `Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors` (controlnet) |
-| Voice input | `transcribe-gemma4` | `gemma4_e4b_it_fp8_scaled.safetensors` (text_encoders) |
-| Upscale | `upscale-ultrasharp-4x` | `4x-UltraSharp.pth` (upscale_models) |
-| Remove background | `cutout-birefnet` | `birefnet.safetensors` (background_removal) |
-| Eraser | `erase-lama` | [comfyui-inpaint-nodes](https://github.com/Acly/comfyui-inpaint-nodes), `big-lama.pt` |
-| Angles | `multiangle-qwen-image-2.1` | the Qwen Image 2.1 files above, plus [`qwen-image-2.1-qma-camera-angles.safetensors`](https://huggingface.co/gribbliest/qwen-image-2.1-qma-camera-angles) (loras) |
-| Split layers | `layers-qwen-image-layered` | `qwen_image_layered_bf16.safetensors`, `qwen_image_layered_vae.safetensors`, `qwen_2.5_vl_7b_fp8_scaled.safetensors` |
-| Animate, video generation, video extend | `i2v-minimax-h3`, `t2v-minimax-h3` | `minimax_h3_fl2va_pruned_int8_convrot.safetensors`, `minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors`, `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors`, `minimax_h3_video_vae_fp16.safetensors`, `minimax_h3_audio_vae_fp32.safetensors` |
-| Reference to video (images, videos, audio) | `r2v-minimax-h3` | `minimax_h3_ref2va_pruned_int8_convrot.safetensors`, plus the text encoder and VAEs above |
-| Motion control | `r2v-minimax-h3` + pose graph built in code | `minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors` (model_patches), `sdpose_wholebody_fp16.safetensors` (checkpoints), `rt_detr_v4-x-hgnet_fp16.safetensors` (diffusion_models) |
-| Lip sync | `i2v-minimax-h3` + `MiniMaxH3AddGuide` | the image-to-video files above |
-| Video trim | built in code | core nodes only |
-| Edit Elements | built in code, `erase-lama` | `rapidocr` (Python package, `POST /comfyart/ocr`), SAM3 (`sam3.1_multiplex_fp16.safetensors`), LaMa |
-| Mockup | `mockup-surface` | [comfyui_controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux) Depth Anything V2 (`depth_anything_v2_vitl.pth`, downloaded on first use), `birefnet.safetensors` |
-| Music | `music-ace-step` | `ace_step_v1_3.5b.safetensors` (checkpoints) |
-| Sound effects | `sfx-stable-audio` | `stable-audio-open-1.0.safetensors` (checkpoints), `t5-base.safetensors` (text_encoders) |
-| Voiceover | `speech-kokoro` | [comfyui-kokoro](https://github.com/stavsap/comfyui-kokoro) |
-| Voice cloning | `voice-clone-indextts` | [ComfyUI-Easy-IndexTTS2](https://github.com/yolain/ComfyUI-Easy-IndexTTS2) |
-| Image to 3D | `image-to-3d-trellis2` | `trellis_2_int8_convrot.safetensors`, `trellis_2_shape_vae_bf16.safetensors`, `trellis_2_texture_vae_bf16.safetensors`, `dino_v3_L_naf_fp32.safetensors` (clip_vision), `birefnet.safetensors` |
-| Image to 3D (Pixal3D) | `image-to-3d-pixal3d` | `pixal3d_int8_convrot.safetensors`, `moge_2_vitl_normal_fp16.safetensors` (geometry_estimation), plus the TRELLIS.2 VAEs, `dino_v3_L_naf_fp32.safetensors` and `birefnet.safetensors` above |
-| Multi-view to 3D (Pixal3D) | `image-to-3d-pixal3d-multiview` | `pixal3d_multiview_int8_convrot.safetensors`, plus the TRELLIS.2 VAEs, `dino_v3_L_naf_fp32.safetensors` and `birefnet.safetensors` above |
-
 ## Nodes and routes
 
 - `ComfyArt Precise UNET Loader` loads a diffusion model with manual cast ops. ComfyUI's `--fast fp8_matrix_mult` turns unscaled fp8 checkpoints such as Qwen Image 2512 into noise; this loader skips that path for the model it loads.
+- `/comfyart/wavespeed/*` (run, history, cancel, models) submits jobs to WaveSpeed with `WAVESPEED_API_KEY`.
 - `/comfyart/bot/*` (chats, send, stop, branch, answers), `/comfyart/settings` and `/comfyart/mcp` serve the Agent.
-- `POST /comfyart/cloud/prompt`, `GET /comfyart/cloud/history/{job}` and `POST /comfyart/cloud/cancel/{job}` forward jobs to Comfy Cloud with `COMFY_API_KEY`.
-- `/comfyart/instances` lists, adds, edits and removes LAN instances; `/comfyart/instances/status` reports which are online with their queue and diffusion models. `POST /comfyart/remote/prompt` picks a machine (`target` is an instance id or `auto`) and queues the job there; `GET /comfyart/remote/history/{instance}/{job}` and `POST /comfyart/remote/cancel/{instance}/{job}` follow it.
 - `POST /comfyart/pdf` renders up to 30 pages of an uploaded PDF to PNG files in `input/comfyart/pdf/` and returns them with each page's text.
 - `POST /comfyart/ocr` reads the text lines of an image (RapidOCR, on device) and returns each line with its box.
 

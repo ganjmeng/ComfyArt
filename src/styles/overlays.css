@@ -299,9 +299,3 @@
 .ca-workflows__group { display: flex; flex-direction: column; gap: 6px; }
 .ca-workflows__row { display: grid; grid-template-columns: 1fr 1.3fr auto; align-items: center; gap: 4px 8px; font-size: 13px; }
 .ca-workflows__warn { grid-column: 1 / -1; font-size: 12px; color: var(--ca-error-text); }
-.ca-instances { width: min(520px, calc(100vw - 32px)); }
-.ca-instances__row { display: flex; align-items: center; gap: 12px; }
-.ca-instances__name { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
-.ca-instances__toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; }
-.ca-instances__add { display: grid; grid-template-columns: 1fr 1.4fr 90px; gap: 8px; }
-.ca-instances__error { padding: 8px 10px; border-radius: 8px; background: var(--ca-error-bg); color: var(--ca-error-text); font-size: 13px; }
