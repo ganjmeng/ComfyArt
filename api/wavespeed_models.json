@@ -4,7 +4,8 @@
   "wavespeed_concurrent": 300,
   "wavespeed_submits_per_minute": 500,
   "app_concurrent": 8,
-  "batch_max": 50
+  "batch_max": 50,
+  "confirm_usd": 0.5
  },
  "features": {
   "text_to_image": {
@@ -509,8 +510,6 @@
   "ocr": "ocr"
  },
  "pending_features": [
-  "split_layers",
-  "segment",
   "text_to_video",
   "image_to_video",
   "reference_to_video",

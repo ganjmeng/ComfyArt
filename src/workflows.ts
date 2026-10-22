@@ -1,5 +1,6 @@
 import { loadNamed, type PromptGraph } from './comfy'
 import { customGraph, padForOutpaint, pasteBack, resizeTo } from './customWorkflows'
+import { wsBuilt } from './wavespeed'
 
 export const randomSeed = () => Math.floor(Math.random() * 2 ** 31)
 
@@ -62,13 +63,7 @@ export async function cutoutGraph(image: string): Promise<Built> {
 }
 
 export async function eraseGraph(image: string, mask: string): Promise<Built> {
-  const custom = await customGraph('erase', { image, mask })
-  if (custom) return custom
-  const { graph: g, id } = await loadNamed('erase-lama.api.json', 'image', 'mask', 'inpaint', 'save')
-  g[id.image].inputs.image = image
-  g[id.mask].inputs.image = mask
-  g[id.inpaint].inputs.seed = randomSeed()
-  return { graph: g, result: id.save }
+  return wsBuilt({ feature: 'erase_region', image, mask })
 }
 
 export async function expandGraph(image: string, pads: { l: number; t: number; r: number; b: number }, prompt: string): Promise<Built> {
@@ -167,47 +162,22 @@ export async function anglesGraph(image: string, horizontal: number, vertical: n
 }
 
 export async function layersGraph(image: string, layers: number, prompt: string): Promise<Built> {
-  const custom = await customGraph('layers', { image, prompt: prompt || undefined, count: layers })
-  if (custom) return custom
-  const { graph: g, id } = await loadNamed('layers-qwen-image-layered.api.json', 'image', 'scale', 'prompt', 'latent', 'sampler', 'save')
-  g[id.image].inputs.image = image
-  g[id.scale].inputs.largest_size = 1024
-  g[id.prompt].inputs.value = prompt || 'An image with a foreground subject and a background.'
-  g[id.latent].inputs.layers = layers
-  g[id.sampler].inputs.seed = randomSeed()
-  return { graph: g, result: id.save }
+  // seedream layer decomposition decides the layer count itself
+  void layers
+  return wsBuilt({ feature: 'split_layers', image, prompt, png: true })
 }
 
-export function samGraph(image: string, target: { text: string } | { x: number; y: number } | { points: { x: number; y: number }[] }): Built {
-  const graph: PromptGraph = {
-    '1': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: 'sam3.1_multiplex_fp16.safetensors' } },
-    '2': { class_type: 'LoadImage', inputs: { image } },
-    '4': { class_type: 'SAM3_Detect', inputs: { model: ['1', 0], image: ['2', 0], threshold: 0.4, refine_iterations: 2, individual_masks: false } },
-    '5': { class_type: 'MaskToImage', inputs: { mask: ['4', 0] } },
-    '6': { class_type: 'PreviewImage', inputs: { images: ['5', 0] } },
-  }
-  if ('text' in target) {
-    graph['3'] = { class_type: 'CLIPTextEncode', inputs: { clip: ['1', 1], text: target.text } }
-    graph['4'].inputs.conditioning = ['3', 0]
-  } else {
-    const points = 'points' in target ? target.points : [target]
-    graph['4'].inputs.positive_coords = JSON.stringify(points.map((p) => ({ x: Math.round(p.x), y: Math.round(p.y) })))
-  }
-  return { graph, result: '6' }
+export type SamTarget = { text: string } | { x: number; y: number } | { points: { x: number; y: number }[] } | { box: Crop }
+
+/** SAM3 on WaveSpeed (wavespeed-ai/sam3-image): returns a white-on-black mask image, like the old local graph. */
+export function samGraph(image: string, target: SamTarget): Built {
+  const params: Record<string, unknown> = { apply_mask: false, output_format: 'png' }
+  if ('box' in target) params.box_prompts = [{ x_min: Math.round(target.box.x), y_min: Math.round(target.box.y), x_max: Math.round(target.box.x + target.box.w), y_max: Math.round(target.box.y + target.box.h) }]
+  else if (!('text' in target)) params.point_prompts = ('points' in target ? target.points : [target]).map((p) => ({ x: Math.round(p.x), y: Math.round(p.y), label: 1 }))
+  return wsBuilt({ feature: 'segment', image, prompt: 'text' in target ? target.text : undefined, params })
 }
 
-export function samBoxesGraph(image: string, boxes: Crop[]): Built {
-  const graph: PromptGraph = {
-    '1': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: 'sam3.1_multiplex_fp16.safetensors' } },
-    '2': { class_type: 'LoadImage', inputs: { image } },
-  }
-  let batch: [string, number] | null = null
-  boxes.forEach((b, i) => {
-    graph[`d${i}`] = { class_type: 'SAM3_Detect', inputs: { model: ['1', 0], image: ['2', 0], threshold: 0.4, refine_iterations: 2, individual_masks: false, bboxes: { x: b.x, y: b.y, width: b.w, height: b.h } } }
-    graph[`m${i}`] = { class_type: 'MaskToImage', inputs: { mask: [`d${i}`, 0] } }
-    if (batch) graph[`b${i}`] = { class_type: 'ImageBatch', inputs: { image1: batch, image2: [`m${i}`, 0] } }
-    batch = batch ? [`b${i}`, 0] : [`m${i}`, 0]
-  })
-  graph['9'] = { class_type: 'PreviewImage', inputs: { images: batch! } }
-  return { graph, result: '9' }
+/** One SAM job per box (WaveSpeed returns one mask per call). */
+export function samBoxesGraph(image: string, boxes: Crop[]): Built[] {
+  return boxes.map((box) => samGraph(image, { box }))
 }

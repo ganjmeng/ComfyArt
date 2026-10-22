@@ -1159,5 +1159,7 @@
   "voiceButton.voiceInput": "Voice input",
   "zoom.fitAll": "Fit All",
   "zoom.zoomTo": "Zoom to {0}%",
-  "jobs.notInCloud": "This feature is not yet available in cloud mode (WaveSpeed)"
+  "jobs.notInCloud": "This feature is not yet available in cloud mode (WaveSpeed)",
+  "jobs.confirmCost": "This cloud job costs about ${0}. Continue?",
+  "jobs.costDeclined": "Cancelled: cost not confirmed"
 }
