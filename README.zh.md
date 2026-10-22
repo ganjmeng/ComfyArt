@@ -6,7 +6,7 @@
 
 [观看完整宣传片（38 秒）](docs/media/promo-zh.mp4)
 
-免费开源的 AI 设计画布，完全跑在你自己的 ComfyUI 上：无限画布（tldraw + React）、能用工具直接在画布上干活的设计 Agent，所有图像、视频、音频和 3D 模型都在本地运行。不用账号，不花积分，不上云。
+免费开源的 AI 设计画布，运行在 ComfyUI 里：无限画布（tldraw + React），加上能用工具直接在画布上干活的设计 Agent。所有图像、视频、音频和 3D 任务都跑在 WaveSpeed 云端模型上，不需要本地显卡和模型文件。
 
 每个功能的图文说明见文档站 **[comfyart.org](https://comfyart.org/zh)**。
 
@@ -31,9 +31,39 @@
 
 项目、项目的快照历史和 Agent 对话都保存在 SQLite 数据库 `user/__comfyart/data.db` 里。旧版本的项目（`comfyart/projects/` 下的 JSON 文件）会在第一次打开 ComfyArt 时自动导入，原文件保留不动。界面语言默认跟随 ComfyUI，可以在设置菜单里随时切换。
 
-## 局域网实例
+## WaveSpeed 云端模型
 
-局域网里其他的 ComfyUI 也能跑 ComfyArt 的任务。对方启动时加 `--listen`，在 设置 → 局域网实例… 里登记（名称、地址、端口，别的都不存）。之后 设置 → 生成位置 决定任务的默认去处：「自动」把任务发给排队最少、并且装齐了工作流所需节点和模型文件的机器，本机也算一台，关机或缺东西的机器会被跳过；选了某一台就排到那台的队列。每张生成卡片还能在模型旁边的「运行在」里单独改。放大、去背景这类工具按默认去处走，运行中的卡片会显示任务去了哪台机器。输入文件会上传到对方的 `input/comfyart/`，进度照常显示在画布上，结果下载到本机 `output/comfyart/`，文件名带 `<机器>-<任务>` 后缀。模型按文件名匹配，各台机器放在不同子目录也没关系。Qwen Image 2512 的加载器要求那台机器也装了 ComfyArt。
+WaveSpeed 是唯一的生成服务。在 [wavespeed.ai](https://wavespeed.ai) 创建 API key，启动 ComfyUI 前把它设成环境变量 `WAVESPEED_API_KEY`，画布上的每个操作和 Agent 工具都会把任务发到 WaveSpeed。key 只在服务端读取，ComfyArt 不保存。结果下载到 `output/comfyart/`，画布、历史和 Agent 看到的和其他图片一样。预估 $0.50 及以上的任务会先弹确认。
+
+每个功能的默认模型和可选模型列表在 `api/wavespeed_models.json` 里；可以在生成卡片里换模型，Agent 也可以传 `model`。
+
+| 功能 | 默认模型 |
+|---|---|
+| `text_to_image` | `alibaba/qwen-image-3.0/text-to-image` |
+| `image_edit` | `alibaba/qwen-image-3.0/edit` |
+| `change_angle` | `wavespeed-ai/qwen-image/edit-2509-multiple-angles` |
+| `expand_image` | `bria/expand` |
+| `split_layers` | `bytedance/seedream-v5.0-flash/layer-decomposition` |
+| `remove_background` | `wavespeed-ai/image-background-remover` |
+| `erase_region` | `wavespeed-ai/image-eraser` |
+| `upscale_image` | `wavespeed-ai/image-upscaler` |
+| `segment` | `wavespeed-ai/sam3-image` |
+| `text_to_video` | `wavespeed-ai/minimax-h3/text-to-video` |
+| `image_to_video` | `wavespeed-ai/minimax-h3/image-to-video` |
+| `reference_to_video` | `wavespeed-ai/minimax-h3/reference-to-video` |
+| `motion_control` | `wavespeed-ai/wan-2.2/animate` |
+| `lip_sync` | `wavespeed-ai/infinitetalk-fast` |
+| `extend_video` | `wavespeed-ai/minimax-h3/video-extend` |
+| `upscale_video` | `wavespeed-ai/video-upscaler` |
+| `remove_video_background` | `wavespeed-ai/video-background-remover` |
+| `music` | `wavespeed-ai/ace-step-1.5` |
+| `sound_effect` | `mirelo-ai/sfx-2.0/text-to-audio` |
+| `text_to_speech` | `wavespeed-ai/qwen3-tts/text-to-speech` |
+| `voice_clone` | `wavespeed-ai/qwen3-tts/voice-clone` |
+| `image_to_3d` | `wavespeed-ai/trellis-2/image-to-3d` |
+| `transcribe` | `wavespeed-ai/openai-whisper-turbo` |
+| `caption` | `wavespeed-ai/image-captioner` |
+| `ocr` | `wavespeed-ai/paddle-ocr` |
 
 ## Agent
 
@@ -60,41 +90,11 @@ codex mcp add comfyart --url "http://127.0.0.1:8188/comfyart/mcp?project=<项目
 
 Claude Code、Codex、Gemini CLI、Qwen Code、Cursor、VS Code、Claude Desktop 和自写脚本的接入方法、工具超时设置以及完整工具列表见 [MCP 指南](https://comfyart.org/zh/guides/mcp)。
 
-## 工作流和模型
-
-画布上的每个操作都通过 ComfyUI 的 `/prompt` 运行 `workflows/` 里的某个 API 工作流。除特别注明外都只用核心节点。
-
-| 操作 | 工作流 | 模型 / 自定义节点 |
-|---|---|---|
-| 图像生成、快捷编辑、编辑文字、扩图、评论改稿 | `qwen-image-2.1-t2i`、`edit-qwen-image-2.1`、`outpaint-qwen-image-2.1` | `qwen_image_2.1_int8_convrot.safetensors`、`qwen3vl_8b_int8_convrot.safetensors`、`qwen_image_2.1_vae_bf16.safetensors` |
-| 图像生成（其他模型） | `z-image-turbo-t2i`、`flux2-klein-9b-t2i`、`flux3-klein-t2i`、`moss-image-t2i`、`qwen-image-2512-t2i`、`ideogram4-t2i` | `z_image_turbo_bf16` + `qwen_3_4b` + `ae`；`flux-2-klein-9b-nvfp4` + `qwen_3_8b_fp8mixed` + `flux2-vae`；`flux3-image-klein-int8-convrot` + `qwen3vl_4b_int8_convrot` + `flux2-vae`；`moss_image_sft_int8_convrot` + `qwen3.5_9b_w4a8_gptq` + `flux2-vae_small`；`qwen_image_2512_fp8_e4m3fn` + `qwen_2.5_vl_7b_fp8_scaled` + `qwen_image_vae`（用 ComfyArt Precise UNET Loader 节点加载，见下文）；`ideogram4_fp8_scaled` + `ideogram4_unconditional_fp8_scaled` + `qwen3vl_8b_fp8_scaled` + `flux2-vae`，Ideogram 需要的结构化描述由默认 Agent 撰写（`ideogram4-caption.json`） |
-| 参考模式（线稿、景深、姿势等） | 代码内构建 | [comfyui_controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux) 预处理器（MLSD、HED、法线和分割首次使用时会下载标注器权重）；配合 Qwen Image 2512 还需要 `Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors`（controlnet） |
-| 语音输入 | `transcribe-gemma4` | `gemma4_e4b_it_fp8_scaled.safetensors`（text_encoders） |
-| 放大 | `upscale-ultrasharp-4x` | `4x-UltraSharp.pth`（upscale_models） |
-| 去背景 | `cutout-birefnet` | `birefnet.safetensors`（background_removal） |
-| 橡皮工具 | `erase-lama` | [comfyui-inpaint-nodes](https://github.com/Acly/comfyui-inpaint-nodes)、`big-lama.pt` |
-| 多角度 | `multiangle-qwen-image-2.1` | 上面的 Qwen Image 2.1 三个文件，外加 [`qwen-image-2.1-qma-camera-angles.safetensors`](https://huggingface.co/gribbliest/qwen-image-2.1-qma-camera-angles)（loras） |
-| 图层拆分 | `layers-qwen-image-layered` | `qwen_image_layered_bf16.safetensors`、`qwen_image_layered_vae.safetensors`、`qwen_2.5_vl_7b_fp8_scaled.safetensors` |
-| 动态图片、视频生成、视频延长 | `i2v-minimax-h3`、`t2v-minimax-h3` | `minimax_h3_fl2va_pruned_int8_convrot.safetensors`、`minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors`、`qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors`、`minimax_h3_video_vae_fp16.safetensors`、`minimax_h3_audio_vae_fp32.safetensors` |
-| 参考生视频（图片、视频、音频） | `r2v-minimax-h3` | `minimax_h3_ref2va_pruned_int8_convrot.safetensors`，外加上面的文本编码器和 VAE |
-| 动作控制 | `r2v-minimax-h3` + 代码内构建的姿态图 | `minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors`（model_patches）、`sdpose_wholebody_fp16.safetensors`（checkpoints）、`rt_detr_v4-x-hgnet_fp16.safetensors`（diffusion_models） |
-| 对口型 | `i2v-minimax-h3` + `MiniMaxH3AddGuide` | 上面图生视频的那套文件 |
-| 视频裁剪 | 代码内构建 | 只用核心节点 |
-| 编辑元素 | 代码内构建、`erase-lama` | `rapidocr`（Python 包，`POST /comfyart/ocr`）、SAM3（`sam3.1_multiplex_fp16.safetensors`）、LaMa |
-| 样机 | `mockup-surface` | [comfyui_controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux) 的 Depth Anything V2（`depth_anything_v2_vitl.pth`，首次使用时下载）、`birefnet.safetensors` |
-| 配乐 | `music-ace-step` | `ace_step_v1_3.5b.safetensors`（checkpoints） |
-| 音效 | `sfx-stable-audio` | `stable-audio-open-1.0.safetensors`（checkpoints）、`t5-base.safetensors`（text_encoders） |
-| 配音 | `speech-kokoro` | [comfyui-kokoro](https://github.com/stavsap/comfyui-kokoro) |
-| 声音克隆 | `voice-clone-indextts` | [ComfyUI-Easy-IndexTTS2](https://github.com/yolain/ComfyUI-Easy-IndexTTS2) |
-| 图片转 3D | `image-to-3d-trellis2` | `trellis_2_int8_convrot.safetensors`、`trellis_2_shape_vae_bf16.safetensors`、`trellis_2_texture_vae_bf16.safetensors`、`dino_v3_L_naf_fp32.safetensors`（clip_vision）、`birefnet.safetensors` |
-| 图片转 3D（Pixal3D） | `image-to-3d-pixal3d` | `pixal3d_int8_convrot.safetensors`、`moge_2_vitl_normal_fp16.safetensors`（geometry_estimation），以及上面的 TRELLIS.2 两个 VAE、`dino_v3_L_naf_fp32.safetensors` 和 `birefnet.safetensors` |
-| 多视角转 3D（Pixal3D） | `image-to-3d-pixal3d-multiview` | `pixal3d_multiview_int8_convrot.safetensors`，以及上面的 TRELLIS.2 两个 VAE、`dino_v3_L_naf_fp32.safetensors` 和 `birefnet.safetensors` |
-
 ## 节点和路由
 
 - `ComfyArt Precise UNET Loader` 用 manual cast 算子加载扩散模型。ComfyUI 的 `--fast fp8_matrix_mult` 会把 Qwen Image 2512 这类未缩放的 fp8 权重跑成噪点；这个加载器让它加载的模型绕开那条路径。
+- `/comfyart/wavespeed/*`（run、history、cancel、models）用 `WAVESPEED_API_KEY` 把任务提交到 WaveSpeed。
 - `/comfyart/bot/*`（对话、发送、停止、分支、回答）、`/comfyart/settings` 和 `/comfyart/mcp` 服务于 Agent。
-- `/comfyart/instances` 列出、添加、修改、删除局域网实例；`/comfyart/instances/status` 返回哪些在线以及各自的队列和扩散模型。`POST /comfyart/remote/prompt` 选机器（`target` 是实例 id 或 `auto`）并把任务排上去；`GET /comfyart/remote/history/{instance}/{job}` 和 `POST /comfyart/remote/cancel/{instance}/{job}` 跟进这个任务。
 - `POST /comfyart/pdf` 把上传的 PDF 前 30 页渲染成 PNG，存到 `input/comfyart/pdf/`，并连同每页文字一起返回。
 - `POST /comfyart/ocr` 在本机用 RapidOCR 识别图片里的文字行，返回每行文字和位置框。
 

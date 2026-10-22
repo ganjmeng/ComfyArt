@@ -9,7 +9,6 @@ import {
   useValue,
 } from 'tldraw'
 
-import { instancesAtom, runsOn } from '../instances'
 import { isVideo } from '../models'
 import { progressAtom } from '../progress'
 import { Icons } from '../ui/icons'
@@ -88,12 +87,10 @@ function GeneratorCard({ shape }: { shape: GeneratorShape }) {
   const job = shape.meta.job as { id: string } | undefined
   const progress = useValue('generator progress', () => (job ? progressAtom.get()[job.id] : undefined), [job?.id])
   const p = progress && progress.max > 0 ? Math.min(1, progress.value / progress.max) : 0
-  const where = useValue('generator runs on', () => (job && instancesAtom.get().some((i) => i.enabled) ? runsOn(job.id) : null), [job?.id])
   return (
     <HTMLContainer className="ca-gen-card" data-running={job ? true : undefined}>
       <span className="ca-gen-card__icon">{isVideo(shape.props.workflow) ? Icons.video : Icons.image}</span>
       {job && <div className="ca-gen-ring" data-indeterminate={p > 0 ? undefined : true} style={{ '--ca-p': p } as React.CSSProperties} />}
-      {job && where && <span className="ca-gen-card__where">{where}</span>}
     </HTMLContainer>
   )
 }

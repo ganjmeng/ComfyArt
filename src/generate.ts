@@ -6,7 +6,6 @@ import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from '.
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import { agentModels, isCloudModel, isVideo, modelOf } from './models'
 import { modelIn, wsBuilt } from './wavespeed'
-import { CUSTOM_GENERATE, customGraph } from './customWorkflows'
 import { t } from './i18n'
 import { PALETTE_MODE, refHints, refLimit, refModesOf, usableRefs } from './refModes'
 import { paletteImage, palettePrompt } from './palette'
@@ -96,19 +95,8 @@ function applySeed(graph: PromptGraph, seed: number) {
   }
 }
 
-function applyLoras(graph: PromptGraph, unet: string, loras: LoraPick[]) {
-  const source = JSON.stringify([unet, 0])
-  const consumers = Object.values(graph).filter((n) => JSON.stringify(n.inputs.model) === source)
-  let model: [string, number] = [unet, 0]
-  loras.forEach(({ name, strength }, i) => {
-    graph[`lora${i}`] = { class_type: 'LoraLoaderModelOnly', inputs: { model, lora_name: name, strength_model: strength / 100 } }
-    model = [`lora${i}`, 0]
-  })
-  for (const n of consumers) n.inputs.model = model
-}
-
 async function generateGraph(shape: GeneratorShape): Promise<Built> {
-  const { ratio, count, workflow, duration, transparent, style } = shape.props
+  const { ratio, workflow, duration, transparent, style } = shape.props
   const suffix = (isVideo(workflow) ? SHOTS : STYLES).find(([k]) => k === style)?.[2]
   const refs = refsOf(shape)
   const model = isVideo(workflow) ? null : modelOf(workflow) ?? agentModels(false)[0]
@@ -158,17 +146,6 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     return images.length
       ? wsBuilt({ feature: 'image_edit', prompt, images, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
       : wsBuilt({ feature: 'text_to_image', model: model.id, prompt, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
-  }
-  if (model?.id === CUSTOM_GENERATE) {
-    const loras = lorasOf(shape)
-    const custom = await customGraph('generate', { prompt, width, height, count }, (graph, markers) => {
-      if (loras.length) {
-        if (!markers.unet) throw new Error(t('customWorkflows.needsUnet', model.label))
-        applyLoras(graph, markers.unet, loras)
-      }
-    })
-    if (!custom) throw new Error(t('customWorkflows.generateGone', model.label))
-    return custom
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')

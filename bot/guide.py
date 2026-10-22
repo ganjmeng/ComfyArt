@@ -34,9 +34,6 @@ AGENT_GUIDE = (
     "- skill lists installed instruction packs; when a task matches one, read "
     "it first and follow it. Use skill action='save' when the user wants to "
     "keep a workflow for later.\n"
-    "- custom_workflow connects the user's own ComfyUI workflow to a ComfyArt "
-    "feature (for example their own edit or upscale model); read "
-    "action='rules' first.\n"
     "- ask_user when a decision genuinely belongs to the user; give short "
     "options.\n"
     "- Copy ids exactly as tools return them. Never say something was "
@@ -87,7 +84,6 @@ CORE_MCP_TOOLS = [
     "focus",
     "memory",
     "skill",
-    "custom_workflow",
     "ask_user",
     "update_plan",
 ]

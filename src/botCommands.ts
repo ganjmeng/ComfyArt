@@ -8,7 +8,6 @@ import { api } from './comfy'
 import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate } from './generate'
-import { customWorkflowCommand } from './customWorkflows'
 import { DURATIONS, RATIOS, VIDEO_RATIOS } from './genOptions'
 import { MAX_VIDEO_REF_KINDS, VIDEO_TARGETS } from './videoGraphs'
 import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom } from './jobs'
@@ -212,7 +211,6 @@ const HANDLERS: Record<string, Handler> = {
   image_to_3d: (editor, args, onError) => started(editor, Array.isArray(args.views) && args.views.length
     ? viewsTo3d(editor, args.views.map((v: unknown) => imageOf(editor, v)), onError)
     : imageTo3d(editor, imageOf(editor, args.id), onError, args.model === 'pixal3d' ? 'pixal3d' : 'trellis2')),
-  custom_workflow: (_editor, args) => customWorkflowCommand(args),
   wait_generation: (editor, args) => waitResults(editor, (args.ids ?? []).map(String), Number(args.timeout_s) || 60),
 }
 

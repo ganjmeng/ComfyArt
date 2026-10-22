@@ -1,10 +1,6 @@
 import { useState } from 'react'
-import { useValue } from 'tldraw'
 
-import { settingsAtom } from '../bot'
-import { defaultTarget } from '../comfy'
 import { DURATIONS, QUALITIES, RATIOS, RESOLUTIONS, SHOTS, STYLES, VIDEO_RATIOS, VIDEO_RESOLUTIONS } from '../genOptions'
-import { instancesAtom, instanceStatusAtom, targetOptions } from '../instances'
 import { isInstalled, type ModelDef } from '../models'
 import type { GeneratorShape } from '../shapes/GeneratorShape'
 import { Chips } from './Chips'
@@ -65,31 +61,6 @@ export function ModelPill({ models, model, runOn, onPick }: { models: ModelDef[]
           <button key={m.id} type="button" className="ca-menu__item" onClick={() => { setOpen(false); onPick(m.id) }}>
             <span className="ca-menu__grow ca-model"><span>{m.label}{(m.refs || m.control) && <span className="ca-model__tag">{m.refs ? t('genPanel.tagReferences') : t('genPanel.tagStructure')}</span>}</span><span className="ca-model__desc">{m.desc}</span></span>
             {m.id === model.id && <span className="ca-icon">{Icons.check}</span>}
-          </button>
-        ))}
-      </div>
-    </Popover>
-  )
-}
-
-export function RunOnPill({ runOn, onPick }: { runOn: string | null; onPick: (runOn: string | null) => void }) {
-  const [open, setOpen] = useState(false)
-  const targets = targetOptions(useValue(instancesAtom), useValue(instanceStatusAtom))
-  useValue(settingsAtom)
-  const global = targets.find(([id]) => id === defaultTarget()) ?? targets[0]
-  const options: [string | null, string, string?][] = [[null, t('runOn.global', global[1])], ...targets]
-  const current = options.find(([id]) => id === runOn) ?? options[0]
-  return (
-    <Popover open={open} onOpenChange={setOpen} side="top" align="end" trigger={({ open: o, toggle }) => (
-      <button type="button" className="ca-gen__pill" data-open={o || undefined} title={t('runOn.title')} onClick={toggle}>
-        <span className="ca-gen__pilltext">{current[0] === null ? global[1] : current[1]}</span><span className="ca-gen__chev">{Icons.chevron}</span>
-      </button>
-    )}>
-      <div className="ca-menu">
-        <div className="ca-gen__label">{t('runOn.title')}</div>
-        {options.map(([id, label, hint]) => (
-          <button key={id ?? ''} type="button" className="ca-menu__item" onClick={() => { setOpen(false); onPick(id) }}>
-            <span className="ca-menu__grow">{label}</span>{hint && <span className="ca-menu__key">{hint}</span>}{id === current[0] && <span className="ca-icon">{Icons.check}</span>}
           </button>
         ))}
       </div>
