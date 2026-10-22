@@ -1,0 +1,93 @@
+{
+ "doc_preprocessor_res": {
+  "angle": 0,
+  "input_path": null,
+  "model_settings": {
+   "use_doc_orientation_classify": true,
+   "use_doc_unwarping": true
+  },
+  "page_index": null
+ },
+ "height": 1024,
+ "input_path": null,
+ "layout_det_res": {
+  "boxes": [
+   {
+    "cls_id": 17,
+    "coordinate": [
+     60,
+     456,
+     966,
+     571
+    ],
+    "label": "paragraph_title",
+    "order": 1,
+    "score": 0.5915922522544861
+   },
+   {
+    "cls_id": 22,
+    "coordinate": [
+     333,
+     625,
+     694,
+     674
+    ],
+    "label": "text",
+    "order": 2,
+    "score": 0.6771907806396484
+   }
+  ],
+  "input_path": null,
+  "page_index": null
+ },
+ "model_settings": {
+  "format_block_content": true,
+  "markdown_ignore_labels": [
+   "number",
+   "footnote",
+   "header",
+   "header_image",
+   "footer",
+   "footer_image",
+   "aside_text"
+  ],
+  "merge_layout_blocks": true,
+  "return_layout_polygon_points": true,
+  "use_chart_recognition": true,
+  "use_doc_preprocessor": true,
+  "use_layout_detection": true,
+  "use_ocr_for_image_block": false,
+  "use_seal_recognition": false
+ },
+ "page_count": null,
+ "page_index": null,
+ "parsing_res_list": [
+  {
+   "block_bbox": [
+    60,
+    456,
+    966,
+    571
+   ],
+   "block_content": "## COMFYART CLOUD",
+   "block_id": 0,
+   "block_label": "paragraph_title",
+   "block_order": 1,
+   "group_id": 0
+  },
+  {
+   "block_bbox": [
+    333,
+    625,
+    694,
+    674
+   ],
+   "block_content": "Smoke Test 2026",
+   "block_id": 1,
+   "block_label": "text",
+   "block_order": 2,
+   "group_id": 1
+  }
+ ],
+ "width": 1024
+}
