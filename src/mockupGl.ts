@@ -9,22 +9,34 @@ in vec2 pos;
 out vec2 uv;
 void main() { uv = vec2(pos.x * 0.5 + 0.5, 0.5 - pos.y * 0.5); gl_Position = vec4(pos, 0.0, 1.0); }`
 
+// follow-surface tuning (#70): sample ±SAMPLE_PX photo pixels on a blurred depth, scale the slope by STRENGTH, cap the shift at MAX_SHIFT (uv)
+export const SAMPLE_PX = 24
+export const STRENGTH = 3
+export const MAX_SHIFT = '0.08'
+const DEPTH_LOD = 3.5
+
 const FRAGMENT = `#version 300 es
 precision highp float;
 in vec2 uv;
 out vec4 color;
 uniform sampler2D photo, depth, mask, design;
 uniform vec2 center, size, texel;
-uniform float rotation, warp, median, hasDesign;
+uniform float rotation, warp, median, hasDesign, depthLo, depthHi;
+uniform vec2 meanSlope;
 float lum(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+// depth normalized to the product's own 0..1 range, read from a blurred mip so 8-bit noise does not tear the design
+float D(vec2 p) { return clamp((textureLod(depth, p, ${DEPTH_LOD.toFixed(1)}).r - depthLo) / max(depthHi - depthLo, 1e-3), 0.0, 1.0); }
 void main() {
   vec4 p = texture(photo, uv);
   color = p;
   if (hasDesign < 0.5) return;
-  vec2 step = texel * 8.0;
-  float dx = texture(depth, uv + vec2(step.x, 0.0)).r - texture(depth, uv - vec2(step.x, 0.0)).r;
-  float dy = texture(depth, uv + vec2(0.0, step.y)).r - texture(depth, uv - vec2(0.0, step.y)).r;
-  vec2 q = uv - warp * 0.5 * vec2(dx, dy) - center;
+  vec2 st = texel * ${SAMPLE_PX.toFixed(1)};
+  // slope minus the product's mean slope: curvature bends the design, a flat tilted plane (tabletop, floor) does not shift it
+  vec2 slope = 0.5 * vec2(D(uv + vec2(st.x, 0.0)) - D(uv - vec2(st.x, 0.0)), D(uv + vec2(0.0, st.y)) - D(uv - vec2(0.0, st.y))) - meanSlope;
+  vec2 off = warp * ${STRENGTH.toFixed(1)} * slope;
+  float n = length(off);
+  if (n > ${MAX_SHIFT}) off *= ${MAX_SHIFT} / n;
+  vec2 q = uv - off - center;
   float c = cos(-rotation), s = sin(-rotation);
   vec2 local = vec2(c * q.x - s * q.y, s * q.x + c * q.y) / size + 0.5;
   if (local.x < 0.0 || local.x > 1.0 || local.y < 0.0 || local.y > 1.0) return;
@@ -57,12 +69,42 @@ function medianLuma(photo: HTMLImageElement, mask: HTMLImageElement) {
   return values.length ? values[values.length >> 1] : 0.5
 }
 
+/** Depth range (1st..99th percentile) and mean ±SAMPLE_PX slope inside the mask, in normalized depth units. */
+export function depthStats(depth: Uint8ClampedArray, mask: Uint8ClampedArray, side: number, step: number) {
+  const values: number[] = []
+  for (let i = 0; i < depth.length; i += 4) if (mask[i] > 128) values.push(depth[i] / 255)
+  if (!values.length) for (let i = 0; i < depth.length; i += 4) values.push(depth[i] / 255)
+  values.sort((a, b) => a - b)
+  const lo = values[Math.floor(values.length * 0.01)], hi = values[Math.min(values.length - 1, Math.floor(values.length * 0.99))]
+  const range = Math.max(hi - lo, 1e-3)
+  const at = (x: number, y: number) => depth[(Math.min(side - 1, Math.max(0, y)) * side + Math.min(side - 1, Math.max(0, x))) * 4] / 255
+  let sx = 0, sy = 0, n = 0
+  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
+    if (mask[(y * side + x) * 4] <= 128) continue
+    sx += (at(x + step, y) - at(x - step, y)) / 2; sy += (at(x, y + step) - at(x, y - step)) / 2; n++
+  }
+  return { lo, hi, slope: n ? [sx / n / range, sy / n / range] as [number, number] : [0, 0] as [number, number] }
+}
+
+function sampleDepth(depth: HTMLImageElement, mask: HTMLImageElement, photoWidth: number) {
+  const side = 256
+  const c = document.createElement('canvas')
+  c.width = c.height = side
+  const ctx = c.getContext('2d', { willReadFrequently: true })!
+  ctx.drawImage(depth, 0, 0, side, side)
+  const d = ctx.getImageData(0, 0, side, side).data
+  ctx.drawImage(mask, 0, 0, side, side)
+  const m = ctx.getImageData(0, 0, side, side).data
+  return depthStats(d, m, side, Math.max(1, Math.round((SAMPLE_PX * side) / photoWidth)))
+}
+
 export class MockupRenderer {
   readonly gl: WebGL2RenderingContext
   private program: WebGLProgram
   private textures: Partial<Record<keyof MockupSources, WebGLTexture>> = {}
   private loaded: Partial<MockupSources> = {}
   private median = 0.5
+  private depth = { lo: 0, hi: 1, slope: [0, 0] as [number, number] }
   private photoSize: [number, number] = [1, 1]
   private designAspect = 1
 
@@ -93,7 +135,8 @@ export class MockupRenderer {
       const tex = this.textures[k] ?? gl.createTexture()!
       gl.bindTexture(gl.TEXTURE_2D, tex)
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+      if (k === 'depth') gl.generateMipmap(gl.TEXTURE_2D)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, k === 'depth' ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
       this.textures[k] = tex
@@ -101,6 +144,8 @@ export class MockupRenderer {
       if (k === 'design') this.designAspect = img.naturalHeight / img.naturalWidth
     }
     if (images.photo || images.mask) this.median = medianLuma(images.photo ?? await loadImage(sources.photo), images.mask ?? await loadImage(sources.mask))
+    if ((images.depth || images.mask || images.photo) && sources.depth && sources.mask)
+      this.depth = sampleDepth(images.depth ?? await loadImage(sources.depth), images.mask ?? await loadImage(sources.mask), this.photoSize[0])
     this.loaded = { ...sources }
   }
 
@@ -121,6 +166,9 @@ export class MockupRenderer {
     gl.uniform1f(gl.getUniformLocation(program, 'rotation'), p.rotation)
     gl.uniform1f(gl.getUniformLocation(program, 'warp'), p.warp)
     gl.uniform1f(gl.getUniformLocation(program, 'median'), this.median)
+    gl.uniform1f(gl.getUniformLocation(program, 'depthLo'), this.depth.lo)
+    gl.uniform1f(gl.getUniformLocation(program, 'depthHi'), this.depth.hi)
+    gl.uniform2f(gl.getUniformLocation(program, 'meanSlope'), this.depth.slope[0], this.depth.slope[1])
     gl.uniform1f(gl.getUniformLocation(program, 'hasDesign'), this.textures.design ? 1 : 0)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
   }
