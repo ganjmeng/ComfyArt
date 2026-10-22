@@ -167,8 +167,16 @@ function promptError(body: any, status: number): string {
 export async function queuePrompt(prompt: PromptGraph, runOn = defaultTarget()): Promise<string> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
   if (isWsGraph(prompt)) {
-    const ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: Object.values(prompt)[0].inputs }) })
-    const wsBody = await ws.json().catch(() => null)
+    const inputs = Object.values(prompt)[0].inputs
+    let ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
+    let wsBody = await ws.json().catch(() => null)
+    const price = wsBody?.error?.confirm_usd
+    if (ws.status === 409 && typeof price === 'number') {
+      // jobs of $0.50 or more need an explicit yes before they are submitted
+      if (!window.confirm(t('jobs.confirmCost', price.toFixed(2)))) throw new Error(t('jobs.costDeclined'))
+      ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
+      wsBody = await ws.json().catch(() => null)
+    }
     if (!ws.ok) throw new Error(promptError(wsBody, ws.status))
     return String(wsBody.prompt_id)
   }

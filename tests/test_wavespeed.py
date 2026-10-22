@@ -29,6 +29,9 @@ MODELS = [
     _meta(EDIT, {"prompt": {"type": "string"}, "images": {"type": "array", "maxItems": 3}}, ("prompt", "images")),
     _meta("wavespeed-ai/image-eraser", {"image": {"type": "string"}, "mask_image": {"type": "string"}}, ("image",)),
     _meta("wavespeed-ai/paddle-ocr", {"image": {"type": "string"}, "output_format": {"type": "string", "enum": ["json", "markdown"]}}, ("image",), price=0.01),
+    _meta("wavespeed-ai/sam3-image", {"image": {"type": "string"}, "prompt": {"type": "string"}, "point_prompts": {"type": "array"}, "box_prompts": {"type": "array"}, "apply_mask": {"type": "boolean"}, "output_format": {"type": "string", "enum": ["png"]}}, ("image",), price=0.005),
+    _meta("bytedance/seedream-v5.0-flash/layer-decomposition", {"image": {"type": "string"}, "prompt": {"type": "string"}, "output_format": {"type": "string", "enum": ["jpeg", "png"]}}, ("image",), price=0.459),
+    _meta("bytedance/seedream-v5.0-pro/layer-decomposition", {"image": {"type": "string"}, "prompt": {"type": "string"}}, ("image",), price=0.75),
     _meta("wavespeed-ai/image-upscaler", {"image": {"type": "string"}, "target_resolution": {"type": "string", "enum": ["2k", "4k", "8k"]}}, ("image",)),
 ]
 
@@ -188,13 +191,13 @@ async def test_missing_key(ws, monkeypatch):
 
 async def test_pending_features_not_available_yet(ws):
     with pytest.raises(wavespeed.WaveSpeedError) as e:
-        await wavespeed.submit({"feature": "generate_video", "prompt": "x"})
+        await wavespeed.submit({"feature": "generate_video", "prompt": "x"})  # still pending (PR-B)
     assert "not available in cloud mode" in str(e.value) and not ws["submits"]
 
 
 async def test_app_concurrency_limit(ws, monkeypatch):
     ws["status"] = "processing"
-    monkeypatch.setattr(wavespeed, "limits", lambda: {"app_concurrent": 1, "wavespeed_concurrent": 300, "wavespeed_submits_per_minute": 500, "batch_max": 50})
+    monkeypatch.setattr(wavespeed, "limits", lambda: {"app_concurrent": 1, "wavespeed_concurrent": 300, "wavespeed_submits_per_minute": 500, "batch_max": 50, "confirm_usd": 0.5})
     await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.submit({"feature": "text_to_image", "prompt": "y"})
@@ -209,6 +212,7 @@ async def test_list_models_curated_only(ws):
     assert "made/up-model" not in ids and len(ids) == len(wavespeed.load_config()["features"]["text_to_image"]["models"])
     assert next(m for m in t2i["models"] if m["id"] == T2I)["price"] == 0.03
     assert out["features"]["image_to_video"]["available"] is False
+    assert out["features"]["split_layers"]["available"] is True and out["features"]["segment"]["available"] is True
     assert "model" in canvas.TOOLS["edit_image"]["inputSchema"]["properties"]
 
 
@@ -298,3 +302,53 @@ async def test_ocr_runs_on_wavespeed(ws, bot_client, fresh_user_dir):
     assert [ln["text"] for ln in lines] == ["SUMMER SALE", "50%"] and all(len(ln["box"]) == 4 for ln in lines)
     model, payload = ws["submits"][0]
     assert model == "wavespeed-ai/paddle-ocr" and payload["output_format"] == "json" and payload["image"].startswith("https://cdn.test/")
+
+
+def _input_png(name="src.png"):
+    import folder_paths
+    from PIL import Image
+    os.makedirs(folder_paths.get_input_directory(), exist_ok=True)
+    Image.new("RGB", (8, 8)).save(os.path.join(folder_paths.get_input_directory(), name))
+    return f"{name} [input]"
+
+
+async def test_sam_segment_points_and_text(ws):
+    image = _input_png()
+    pts = [{"x": 3, "y": 4, "label": 1}]
+    task = await wavespeed.submit({"feature": "segment", "image": image, "params": {"apply_mask": False, "output_format": "png", "point_prompts": pts}})
+    model, payload = ws["submits"][0]
+    assert model == "wavespeed-ai/sam3-image"
+    assert payload == {"image": "https://cdn.test/up1.png", "apply_mask": False, "output_format": "png", "point_prompts": pts}
+    assert (await wavespeed.poll(task))[f"ws:{task}"]["outputs"]["ws"]["images"]
+    await wavespeed.submit({"feature": "edit_elements", "image": image, "prompt": "person", "params": {"apply_mask": False}})
+    assert ws["submits"][1][1]["prompt"] == "person"
+
+
+async def test_split_layers_default_runs_without_confirmation(ws):
+    await wavespeed.submit({"feature": "split_layers", "image": _input_png(), "png": True})
+    model, payload = ws["submits"][0]
+    assert model == "bytedance/seedream-v5.0-flash/layer-decomposition" and payload["output_format"] == "png"
+
+
+async def test_jobs_over_50_cents_need_confirmation(ws):
+    image = _input_png()
+    job = {"feature": "split_layers", "model": "bytedance/seedream-v5.0-pro/layer-decomposition", "image": image}
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit(job)
+    assert e.value.status == 409 and e.value.confirm == 0.75 and not ws["submits"]
+    await wavespeed.submit({**job, "confirmed": True})
+    assert ws["submits"][0][0] == "bytedance/seedream-v5.0-pro/layer-decomposition"
+
+
+async def test_confirmation_route_answers_409_with_price(ws):
+    import server
+    _input_png()
+    app = web.Application()
+    app.router.add_routes(server.PromptServer.instance.routes)
+    client = TestClient(TestServer(app))
+    await client.start_server()
+    try:
+        res = await client.post("/comfyart/wavespeed/run", json={"inputs": {"feature": "split_layers", "model": "bytedance/seedream-v5.0-pro/layer-decomposition", "image": "src.png [input]"}})
+        assert res.status == 409 and (await res.json())["error"]["confirm_usd"] == 0.75
+    finally:
+        await client.close()

@@ -237,8 +237,7 @@ export function regionSplit(editor: Editor, shape: TLImageShape, boxes: [number,
   void (async () => {
     try {
       const crops = boxes.map(([x, y, bw, bh]) => ({ x: Math.round(x * w), y: Math.round(y * h), w: Math.round(bw * w), h: Math.round(bh * h) }))
-      const { graph, result } = samBoxesGraph(annotated(src), crops)
-      const masks = await waitForImages(await queuePrompt(graph), result)
+      const masks = await Promise.all(samBoxesGraph(annotated(src), crops).map(async ({ graph, result }) => (await waitForImages(await queuePrompt(graph), result))[0]))
       const orig = pixels(await loadImage(src), w, h)
       const union = new Uint8ClampedArray(w * h * 4)
       const layers: RegionLayer[] = []

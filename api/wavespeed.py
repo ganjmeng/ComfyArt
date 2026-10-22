@@ -47,9 +47,10 @@ _uploaded: dict[tuple[str, int, int], str] = {}
 
 
 class WaveSpeedError(Exception):
-    def __init__(self, message: str, status: int = 502):
+    def __init__(self, message: str, status: int = 502, confirm: float | None = None):
         super().__init__(message)
         self.status = status
+        self.confirm = confirm
 
 
 def _key() -> str:
@@ -304,7 +305,7 @@ _submits: list[float] = []
 
 
 def limits() -> dict:
-    base = {"wavespeed_concurrent": 300, "wavespeed_submits_per_minute": 500, "app_concurrent": 8, "batch_max": 50}
+    base = {"wavespeed_concurrent": 300, "wavespeed_submits_per_minute": 500, "app_concurrent": 8, "batch_max": 50, "confirm_usd": 0.5}
     return {**base, **(load_config().get("limits") or {})}
 
 
@@ -328,6 +329,10 @@ async def submit(inputs: dict) -> str:
     model = resolve_model(feature, inputs.get("model"))
     _check_limits()
     meta = (await catalog()).get(model)
+    price = (meta or {}).get("base_price")
+    if isinstance(price, (int, float)) and price >= limits()["confirm_usd"] and not inputs.get("confirmed"):
+        # expensive job: the page asks the user and resubmits with confirmed=true
+        raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price))
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), inputs)
         _submits.append(time.time())
@@ -453,7 +458,10 @@ async def fetch_text(url: str) -> str:
 
 
 def _respond_error(e: WaveSpeedError) -> web.Response:
-    return web.json_response({"error": {"message": str(e)}}, status=e.status)
+    body: dict = {"message": str(e)}
+    if e.confirm is not None:
+        body["confirm_usd"] = e.confirm
+    return web.json_response({"error": body}, status=e.status)
 
 
 @routes.post("/comfyart/wavespeed/run")
