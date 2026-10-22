@@ -1,6 +1,7 @@
 import { readLocal } from './localPrefs'
 import { t } from './i18n'
 import { CLIENT_ID, onComfyEvent } from './ws'
+import { isWsGraph, WS_ID } from './wavespeed'
 
 const POLL_MS = 1500
 
@@ -165,6 +166,14 @@ function promptError(body: any, status: number): string {
 
 export async function queuePrompt(prompt: PromptGraph, runOn = defaultTarget()): Promise<string> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+  if (isWsGraph(prompt)) {
+    const ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: Object.values(prompt)[0].inputs }) })
+    const wsBody = await ws.json().catch(() => null)
+    if (!ws.ok) throw new Error(promptError(wsBody, ws.status))
+    return String(wsBody.prompt_id)
+  }
+  // Cloud mode: local ComfyUI models are never run; tools not yet ported fail clearly.
+  throw new Error(t('jobs.notInCloud'))
   const res = cloud
     ? await api('/comfyart/cloud/prompt', { ...init, body: JSON.stringify({ prompt }) })
     : !lanMode() || runOn === 'local'
@@ -183,6 +192,10 @@ async function inQueue(promptId: string): Promise<boolean> {
 }
 
 export async function cancelPrompt(promptId: string) {
+  if (promptId.startsWith(WS_ID)) {
+    await api(`/comfyart/wavespeed/cancel/${promptId.slice(WS_ID.length)}`, { method: 'POST' })
+    return
+  }
   if (promptId.startsWith(CLOUD_ID)) {
     await api(`/comfyart/cloud/cancel/${promptId.slice(CLOUD_ID.length)}`, { method: 'POST' })
     return
@@ -218,7 +231,8 @@ function nap(promptId: string) {
 }
 
 export async function promptHistory(promptId: string): Promise<any> {
-  const res = promptId.startsWith(CLOUD_ID) ? await api(`/comfyart/cloud/history/${promptId.slice(CLOUD_ID.length)}`)
+  const res = promptId.startsWith(WS_ID) ? await api(`/comfyart/wavespeed/history/${promptId.slice(WS_ID.length)}`)
+    : promptId.startsWith(CLOUD_ID) ? await api(`/comfyart/cloud/history/${promptId.slice(CLOUD_ID.length)}`)
     : promptId.startsWith(LAN_ID) ? await api(`/comfyart/remote/history/${lanPath(promptId)}`)
       : await api(`/history/${promptId}`)
   const body = await res.json().catch(() => ({}))
@@ -238,7 +252,7 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
       const value = hist.outputs?.[node] ? pick(hist.outputs[node]) : null
       if (value) return value
       if (hist.status?.completed || hist.status?.status_str === 'error') throw new Error(t('jobs.noOutput'))
-    } else if (await inQueue(promptId)) {
+    } else if (promptId.startsWith(WS_ID) || await inQueue(promptId)) {
       misses = 0
     } else if (++misses >= 2) {
       throw new Error(t('jobs.lost'))

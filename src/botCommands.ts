@@ -19,6 +19,7 @@ import { MOCKUP, type MockupShape } from './shapes/MockupShape'
 import { vectorize } from './vectorize'
 import type { Crop } from './workflows'
 import { CLIENT_ID, onComfyEvent, onReconnect } from './ws'
+import { setPendingModel } from './wavespeed'
 
 const AUDIO_MAX_SECONDS = 1000
 
@@ -228,7 +229,11 @@ export function registerCommandBus(editor: Editor, project: string, isStale: () 
       if (!handler) return void reply({ ok: false, error: `unknown command ${msg.action}` })
       editor.markHistoryStoppingPoint(`agent:${msg.action}`)
       Promise.resolve()
-        .then(() => handler(editor, msg.args ?? {}, onError, msg.chat ?? ''))
+        .then(() => {
+          // generate_image/video pick their model from list_models themselves; other tools pass it to the cloud job
+          setPendingModel(msg.action === 'generate_image' || msg.action === 'generate_video' ? undefined : msg.args?.model)
+          try { return handler(editor, msg.args ?? {}, onError, msg.chat ?? '') } finally { setPendingModel(undefined) }
+        })
         .then((result) => reply({ ok: true, result }), (e) => reply({ ok: false, error: errorText(e) }))
     }),
   ]

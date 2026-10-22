@@ -1,0 +1,532 @@
+{
+ "_comment": "Curated WaveSpeed models per feature, product list v1 (ganjmeng/ComfyArt#9 comment 6344309418). The first model of each feature is the default. Only listed models are shown to the agent and the user; price and schema come from GET /api/v3/models. 'local' names the old local ComfyUI model it replaces.",
+ "limits": {
+  "wavespeed_concurrent": 300,
+  "wavespeed_submits_per_minute": 500,
+  "app_concurrent": 8,
+  "batch_max": 50
+ },
+ "features": {
+  "text_to_image": {
+   "types": [
+    "text-to-image"
+   ],
+   "default": "alibaba/qwen-image-3.0/text-to-image",
+   "models": [
+    {
+     "id": "alibaba/qwen-image-3.0/text-to-image",
+     "local": "Qwen Image 2.1/2512"
+    },
+    {
+     "id": "wavespeed-ai/qwen-image-2.0/text-to-image",
+     "local": "Qwen Image"
+    },
+    {
+     "id": "wavespeed-ai/z-image/turbo",
+     "local": "Z-Image Turbo"
+    },
+    {
+     "id": "wavespeed-ai/flux-2-klein-9b/text-to-image",
+     "local": "Flux.2 Klein 9B"
+    },
+    {
+     "id": "black-forest-labs/flux-3/text-to-image",
+     "local": "FLUX.3 Klein"
+    },
+    {
+     "id": "ideogram-ai/ideogram-v4.5",
+     "local": "Ideogram 4"
+    },
+    {
+     "id": "google/nano-banana-2.1/text-to-image"
+    },
+    {
+     "id": "openai/gpt-image-2.5-flare/text-to-image"
+    },
+    {
+     "id": "bytedance/seedream-v5.0-pro"
+    },
+    {
+     "id": "recraft-ai/recraft-v4.1/text-to-image"
+    }
+   ]
+  },
+  "image_edit": {
+   "types": [
+    "image-to-image"
+   ],
+   "default": "alibaba/qwen-image-3.0/edit",
+   "models": [
+    {
+     "id": "alibaba/qwen-image-3.0/edit",
+     "local": "Qwen Image Edit 2.1"
+    },
+    {
+     "id": "wavespeed-ai/qwen-image-2.0/edit"
+    },
+    {
+     "id": "google/nano-banana-2.1/edit"
+    },
+    {
+     "id": "openai/gpt-image-2.5-flare/edit"
+    },
+    {
+     "id": "bytedance/seedream-v5.0-pro/edit"
+    },
+    {
+     "id": "black-forest-labs/flux-3/image-edit"
+    },
+    {
+     "id": "wavespeed-ai/flux-2-klein-9b/edit"
+    },
+    {
+     "id": "ideogram-ai/ideogram-v4.5/edit"
+    }
+   ]
+  },
+  "change_angle": {
+   "types": [
+    "image-to-image"
+   ],
+   "default": "wavespeed-ai/qwen-image/edit-2509-multiple-angles",
+   "models": [
+    {
+     "id": "wavespeed-ai/qwen-image/edit-2509-multiple-angles",
+     "local": "multiangle-qwen-image"
+    },
+    {
+     "id": "wavespeed-ai/qwen-image/edit-multiple-angles"
+    }
+   ]
+  },
+  "expand_image": {
+   "types": [
+    "image-tools"
+   ],
+   "default": "bria/expand",
+   "models": [
+    {
+     "id": "bria/expand"
+    }
+   ]
+  },
+  "split_layers": {
+   "types": [
+    "image-tools"
+   ],
+   "default": "bytedance/seedream-v5.0-flash/layer-decomposition",
+   "models": [
+    {
+     "id": "bytedance/seedream-v5.0-flash/layer-decomposition"
+    },
+    {
+     "id": "bytedance/seedream-v5.0-pro/layer-decomposition"
+    }
+   ]
+  },
+  "remove_background": {
+   "types": [
+    "image-background-removal"
+   ],
+   "default": "wavespeed-ai/image-background-remover",
+   "models": [
+    {
+     "id": "wavespeed-ai/image-background-remover",
+     "local": "BiRefNet"
+    },
+    {
+     "id": "bria/remove-background"
+    },
+    {
+     "id": "ideogram-ai/remove-background"
+    }
+   ]
+  },
+  "erase_region": {
+   "types": [
+    "image-object-removal"
+   ],
+   "default": "wavespeed-ai/image-eraser",
+   "models": [
+    {
+     "id": "wavespeed-ai/image-eraser",
+     "local": "LaMa"
+    },
+    {
+     "id": "bria/eraser"
+    },
+    {
+     "id": "wavespeed-ai/flux-v1-pro/erase"
+    }
+   ]
+  },
+  "upscale_image": {
+   "types": [
+    "upscale-image"
+   ],
+   "default": "wavespeed-ai/image-upscaler",
+   "models": [
+    {
+     "id": "wavespeed-ai/image-upscaler",
+     "local": "UltraSharp 4x"
+    },
+    {
+     "id": "wavespeed-ai/ultimate-image-upscaler"
+    },
+    {
+     "id": "clarity-ai/pro-upscaler"
+    },
+    {
+     "id": "recraft-ai/recraft-creative-upscale"
+    }
+   ]
+  },
+  "segment": {
+   "types": [
+    "image-tools"
+   ],
+   "default": "wavespeed-ai/sam3-image",
+   "models": [
+    {
+     "id": "wavespeed-ai/sam3-image",
+     "local": "SAM3"
+    }
+   ]
+  },
+  "text_to_video": {
+   "types": [
+    "text-to-video"
+   ],
+   "default": "wavespeed-ai/minimax-h3/text-to-video",
+   "models": [
+    {
+     "id": "wavespeed-ai/minimax-h3/text-to-video",
+     "local": "MiniMax H3"
+    },
+    {
+     "id": "alibaba/wan-3.0/text-to-video"
+    },
+    {
+     "id": "bytedance/seedance-2.5/text-to-video-turbo"
+    },
+    {
+     "id": "bytedance/seedance-2.5/text-to-video"
+    },
+    {
+     "id": "black-forest-labs/flux-3/text-to-video"
+    }
+   ]
+  },
+  "image_to_video": {
+   "types": [
+    "image-to-video"
+   ],
+   "default": "wavespeed-ai/minimax-h3/image-to-video",
+   "models": [
+    {
+     "id": "wavespeed-ai/minimax-h3/image-to-video",
+     "local": "MiniMax H3"
+    },
+    {
+     "id": "alibaba/wan-3.0/image-to-video"
+    },
+    {
+     "id": "bytedance/seedance-2.5/image-to-video-turbo"
+    },
+    {
+     "id": "bytedance/seedance-2.5/image-to-video"
+    },
+    {
+     "id": "black-forest-labs/flux-3/image-to-video"
+    }
+   ]
+  },
+  "reference_to_video": {
+   "types": [
+    "reference-to-video"
+   ],
+   "default": "wavespeed-ai/minimax-h3/reference-to-video",
+   "models": [
+    {
+     "id": "wavespeed-ai/minimax-h3/reference-to-video",
+     "local": "r2v-minimax-h3"
+    },
+    {
+     "id": "alibaba/wan-3.0/reference-to-video"
+    }
+   ]
+  },
+  "motion_control": {
+   "types": [
+    "motion-control"
+   ],
+   "default": "wavespeed-ai/wan-2.2/animate",
+   "models": [
+    {
+     "id": "wavespeed-ai/wan-2.2/animate"
+    },
+    {
+     "id": "kwaivgi/kling-v2.6-std/motion-control"
+    }
+   ]
+  },
+  "lip_sync": {
+   "types": [
+    "digital-human"
+   ],
+   "default": "wavespeed-ai/infinitetalk-fast",
+   "models": [
+    {
+     "id": "wavespeed-ai/infinitetalk-fast"
+    },
+    {
+     "id": "wavespeed-ai/infinitetalk"
+    }
+   ]
+  },
+  "extend_video": {
+   "types": [
+    "video-extend"
+   ],
+   "default": "wavespeed-ai/minimax-h3/video-extend",
+   "models": [
+    {
+     "id": "wavespeed-ai/minimax-h3/video-extend"
+    },
+    {
+     "id": "alibaba/wan-3.0/video-extend"
+    },
+    {
+     "id": "bytedance/seedance-2.0-fast/video-extend"
+    }
+   ]
+  },
+  "upscale_video": {
+   "types": [
+    "upscale-video"
+   ],
+   "default": "wavespeed-ai/video-upscaler",
+   "models": [
+    {
+     "id": "wavespeed-ai/video-upscaler"
+    },
+    {
+     "id": "wavespeed-ai/video-upscaler-pro"
+    },
+    {
+     "id": "wavespeed-ai/flashvsr"
+    }
+   ]
+  },
+  "remove_video_background": {
+   "types": [
+    "video-background-removal"
+   ],
+   "default": "wavespeed-ai/video-background-remover",
+   "models": [
+    {
+     "id": "wavespeed-ai/video-background-remover"
+    },
+    {
+     "id": "bria/fibo/video-background-remover"
+    }
+   ]
+  },
+  "music": {
+   "types": [
+    "ai-music"
+   ],
+   "default": "wavespeed-ai/ace-step-1.5",
+   "models": [
+    {
+     "id": "wavespeed-ai/ace-step-1.5",
+     "local": "ACE-Step"
+    },
+    {
+     "id": "minimax/music-2.6"
+    },
+    {
+     "id": "mureka-ai/mureka-v8/generate-bgm"
+    },
+    {
+     "id": "elevenlabs/music-v2"
+    }
+   ]
+  },
+  "sound_effect": {
+   "types": [
+    "sound-effects"
+   ],
+   "default": "mirelo-ai/sfx-2.0/text-to-audio",
+   "models": [
+    {
+     "id": "mirelo-ai/sfx-2.0/text-to-audio",
+     "local": "Stable Audio"
+    },
+    {
+     "id": "elevenlabs/sound-effects-v2"
+    },
+    {
+     "id": "kwaivgi/kling-text-to-audio"
+    }
+   ]
+  },
+  "text_to_speech": {
+   "types": [
+    "text-to-speech"
+   ],
+   "default": "wavespeed-ai/qwen3-tts/text-to-speech",
+   "models": [
+    {
+     "id": "wavespeed-ai/qwen3-tts/text-to-speech",
+     "local": "Qwen3-TTS / Kokoro"
+    },
+    {
+     "id": "minimax/speech-2.8-turbo"
+    },
+    {
+     "id": "elevenlabs/eleven-v4"
+    },
+    {
+     "id": "bytedance/seed-speech-tts-2.0"
+    }
+   ]
+  },
+  "voice_clone": {
+   "types": [
+    "text-to-speech",
+    "voice-cloning"
+   ],
+   "default": "wavespeed-ai/qwen3-tts/voice-clone",
+   "models": [
+    {
+     "id": "wavespeed-ai/qwen3-tts/voice-clone",
+     "local": "Qwen3-TTS / IndexTTS"
+    },
+    {
+     "id": "minimax/voice-clone"
+    }
+   ]
+  },
+  "image_to_3d": {
+   "types": [
+    "image-to-3d"
+   ],
+   "default": "wavespeed-ai/trellis-2/image-to-3d",
+   "models": [
+    {
+     "id": "wavespeed-ai/trellis-2/image-to-3d",
+     "local": "TRELLIS.2"
+    },
+    {
+     "id": "tripo3d/h3.1/image-to-3d"
+    },
+    {
+     "id": "tripo3d/h3.1/multiview-to-3d",
+     "local": "Pixal3D multiview"
+    },
+    {
+     "id": "wavespeed-ai/hunyuan-3d-v3.1/image-to-3d-rapid"
+    },
+    {
+     "id": "hyper3d/rodin-v2.5/image-to-3d"
+    }
+   ]
+  },
+  "transcribe": {
+   "types": [
+    "speech-to-text"
+   ],
+   "default": "wavespeed-ai/openai-whisper-turbo",
+   "models": [
+    {
+     "id": "wavespeed-ai/openai-whisper-turbo",
+     "local": "Gemma4 transcribe"
+    }
+   ]
+  },
+  "caption": {
+   "types": [
+    "image-to-text"
+   ],
+   "default": "wavespeed-ai/image-captioner",
+   "models": [
+    {
+     "id": "wavespeed-ai/image-captioner",
+     "local": "ideogram4-caption"
+    }
+   ]
+  },
+  "ocr": {
+   "types": [
+    "image-to-text"
+   ],
+   "default": "wavespeed-ai/paddle-ocr",
+   "models": [
+    {
+     "id": "wavespeed-ai/paddle-ocr",
+     "local": "RapidOCR"
+    }
+   ]
+  },
+  "depth": {
+   "types": [
+    "image-tools"
+   ],
+   "default": "wavespeed-ai/depth-anything-v3/image",
+   "models": [
+    {
+     "id": "wavespeed-ai/depth-anything-v3/image",
+     "local": "MoGe"
+    }
+   ]
+  }
+ },
+ "tool_features": {
+  "generate_image": "text_to_image",
+  "edit_image": "image_edit",
+  "replace_text": "image_edit",
+  "edit_region": "image_edit",
+  "move_object": "image_edit",
+  "style_transfer": "image_edit",
+  "edit_elements": "segment",
+  "create_mockup": "image_edit",
+  "upscale_image": "upscale_image",
+  "remove_background": "remove_background",
+  "expand_image": "expand_image",
+  "split_layers": "split_layers",
+  "change_angle": "change_angle",
+  "erase_region": "erase_region",
+  "generate_video": "image_to_video",
+  "animate_image": "image_to_video",
+  "extend_video": "extend_video",
+  "upscale_video": "upscale_video",
+  "remove_video_background": "remove_video_background",
+  "generate_music": "music",
+  "generate_sound_effect": "sound_effect",
+  "text_to_speech": "text_to_speech",
+  "image_to_3d": "image_to_3d",
+  "ocr": "ocr"
+ },
+ "pending_features": [
+  "split_layers",
+  "segment",
+  "text_to_video",
+  "image_to_video",
+  "reference_to_video",
+  "motion_control",
+  "lip_sync",
+  "extend_video",
+  "upscale_video",
+  "remove_video_background",
+  "music",
+  "sound_effect",
+  "text_to_speech",
+  "voice_clone",
+  "image_to_3d",
+  "transcribe",
+  "caption",
+  "depth"
+ ],
+ "_pending_comment": "Features listed in pending_features are not wired to WaveSpeed yet (PR-B: video/audio/3D and the $0.50 confirmation); their tools answer 'not yet available in cloud mode'."
+}

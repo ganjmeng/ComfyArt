@@ -1,0 +1,56 @@
+// WaveSpeed cloud generation: tools build a one-node pseudo graph that the backend
+// (/comfyart/wavespeed/*) runs on api.wavespeed.ai. No local ComfyUI model is loaded.
+import type { PromptGraph } from './comfy'
+import type { Built } from './workflows'
+
+export const WS_NODE = 'WaveSpeedRun'
+export const WS_ID = 'ws:'
+
+export interface WsInputs {
+  feature: string
+  model?: string
+  prompt?: string
+  image?: string
+  images?: string[]
+  mask?: string
+  width?: number
+  height?: number
+  ratio?: string
+  seed?: number
+  png?: boolean
+  params?: Record<string, unknown>
+}
+
+export interface CloudModel { id: string; label: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null }
+export interface CloudFeature { default: string; available: boolean; models: CloudModel[] }
+
+let pending: string | undefined
+
+/** Model the agent (or user) asked for on the tool call being handled right now; startJob takes it. */
+export function setPendingModel(model: unknown) {
+  pending = typeof model === 'string' && model ? model : undefined
+}
+
+export function takePendingModel(): string | undefined {
+  const m = pending
+  pending = undefined
+  return m
+}
+
+export function wsBuilt(inputs: WsInputs): Built {
+  const clean = Object.fromEntries(Object.entries(inputs).filter(([, v]) => v !== undefined && v !== null && v !== ''))
+  return { graph: { ws: { class_type: WS_NODE, inputs: clean } }, result: 'ws' }
+}
+
+export const isWsGraph = (graph: PromptGraph) => Object.values(graph).some((n) => n.class_type === WS_NODE)
+
+export function withModel(graph: PromptGraph, model: string | undefined) {
+  if (!model) return
+  for (const node of Object.values(graph)) if (node.class_type === WS_NODE && !node.inputs.model) node.inputs.model = model
+}
+
+export async function loadCloudModels(): Promise<Record<string, CloudFeature>> {
+  const res = await fetch('/comfyart/wavespeed/models')
+  if (!res.ok) return {}
+  return ((await res.json()).features ?? {}) as Record<string, CloudFeature>
+}

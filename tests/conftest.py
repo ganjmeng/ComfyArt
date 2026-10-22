@@ -84,6 +84,7 @@ def _install_stubs() -> None:
     _make_module("server", PromptServer=_PromptServer)
 
 
+os.environ.setdefault("COMFYART_SKIP_KEY_CHECK", "1")
 _install_stubs()
 
 from ComfyArt import api

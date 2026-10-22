@@ -4,6 +4,7 @@ import { cancelPrompt, mediaMeta, promptHistory, queuePrompt, refKind, viewUrl, 
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Built } from './workflows'
 import { t } from './i18n'
+import { takePendingModel, withModel } from './wavespeed'
 
 export type MediaKind = 'image' | 'video' | 'audio' | 'model'
 
@@ -182,8 +183,10 @@ export async function startJob(
   opts: { name: string; kind?: MediaKind; placer?: string; extra?: Record<string, unknown>; runOn?: string },
   onError: ErrorSink,
 ) {
+  const model = takePendingModel()
   try {
     const { graph, result, partial } = await build
+    withModel(graph, model)
     const job: Job = {
       id: await queuePrompt(graph, opts.runOn),
       node: result,
