@@ -1,4 +1,5 @@
 import json
+import re
 
 from aiohttp import web
 
@@ -23,20 +24,54 @@ def _box(value) -> list[list[int]] | None:
     return None
 
 
+MARKDOWN = re.compile(r"^\s*(?:#{1,6}\s+|[*+-]\s+|>\s*|\d+[.)]\s+)+")
+EMPHASIS = re.compile(r"(\*\*|__|\*|`)")
+
+
+def clean_text(text: str) -> str:
+    """Drop markdown markup PaddleOCR adds to block_content (headings, bullets, emphasis)."""
+    lines = [EMPHASIS.sub("", MARKDOWN.sub("", ln)).strip() for ln in text.splitlines()]
+    return "\n".join(ln for ln in lines if ln)
+
+
+def _layout_scores(data: dict) -> tuple[dict, dict]:
+    by_box: dict = {}
+    by_order: dict = {}
+    for b in ((data.get("layout_det_res") or {}).get("boxes") or []):
+        if not isinstance(b, dict) or not isinstance(b.get("score"), (int, float)):
+            continue
+        if isinstance(b.get("coordinate"), list):
+            by_box[tuple(round(float(v)) for v in b["coordinate"][:4])] = b["score"]
+        if b.get("order") is not None:
+            by_order[b["order"]] = b["score"]
+    return by_box, by_order
+
+
 def parse_lines(data) -> list[dict]:
-    """Collect {text, box} entries from PaddleOCR JSON, whatever nesting it uses."""
+    """Collect {text, box, score} entries from PaddleOCR JSON, whatever nesting it uses."""
     lines: list[dict] = []
+    scores: tuple[dict, dict] = ({}, {})
 
     def walk(node):
+        nonlocal scores
         if isinstance(node, dict):
+            if "layout_det_res" in node:
+                scores = _layout_scores(node)
             text = next((node[k] for k in ("text", "content", "rec_text", "block_content") if isinstance(node.get(k), str)), None)
-            box = next((b for k in ("box", "bbox", "poly", "points", "block_bbox", "coordinate") if (b := _box(node.get(k)))), None)
-            if text and text.strip() and box:
+            raw_box = next((node.get(k) for k in ("box", "bbox", "poly", "points", "block_bbox", "coordinate") if _box(node.get(k))), None)
+            box = _box(raw_box) if raw_box is not None else None
+            text = clean_text(text) if text else ""
+            if text and box:
                 score = node.get("score") or node.get("confidence") or node.get("rec_score")
-                lines.append({"box": box, "text": text.strip(), "score": round(float(score), 3) if isinstance(score, (int, float)) else 1.0})
+                if not isinstance(score, (int, float)) and isinstance(raw_box, list) and len(raw_box) == 4 and all(isinstance(v, (int, float)) for v in raw_box):
+                    score = scores[0].get(tuple(round(float(v)) for v in raw_box))
+                if not isinstance(score, (int, float)) and node.get("block_order") is not None:
+                    score = scores[1].get(node["block_order"])
+                lines.append({"box": box, "text": text, "score": round(float(score), 3) if isinstance(score, (int, float)) else 1.0})
                 return
-            for v in node.values():
-                walk(v)
+            for k, v in node.items():
+                if k != "layout_det_res":  # layout boxes carry no text, only scores
+                    walk(v)
         elif isinstance(node, list):
             for v in node:
                 walk(v)
