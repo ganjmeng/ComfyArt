@@ -70,12 +70,17 @@ async def test_view_canvas_png_becomes_an_image_block(bot_client):
     assert "png" not in content[0]["text"]
 
 
-async def test_list_models_keeps_its_image_field(bot_client):
+async def test_list_models_is_served_by_the_backend(bot_client, monkeypatch):
+    from ComfyArt.api import wavespeed
+
+    async def no_catalog(refresh=False):
+        raise wavespeed.WaveSpeedError("offline")
+
+    monkeypatch.setattr(wavespeed, "catalog", no_catalog)
     await _open(bot_client)
-    call = asyncio.create_task(bot_client.post("/comfyart/mcp", json=_rpc("tools/call", {"name": "list_models", "arguments": {}})))
-    await _answer_commands(bot_client, lambda c: {"ok": True, "result": {"image": [{"id": "m"}], "video": []}})
-    content = (await (await call).json())["result"]["content"]
-    assert len(content) == 1 and '"image": [{"id": "m"}]' in content[0]["text"]
+    res = await bot_client.post("/comfyart/mcp", json=_rpc("tools/call", {"name": "list_models", "arguments": {}}))
+    content = (await res.json())["result"]["content"]
+    assert len(content) == 1 and '"text_to_image"' in content[0]["text"]
 
 
 async def test_page_errors_come_back_as_tool_errors(bot_client):

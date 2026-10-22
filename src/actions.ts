@@ -5,10 +5,11 @@ import { queuePrompt, uploadImage, viewUrl, waitForImages } from './comfy'
 import type { CommentShape } from './shapes/CommentShape'
 import { resultsAtom, spawnHolder, startJob, type ErrorSink, type MediaKind } from './jobs'
 import { notify } from './notices'
-import { annotated, anglesGraph, creativeUpscaleGraph, cutoutGraph, editGraph, eraseGraph, expandGraph, layersGraph, moveGraph, samGraph, styleGraph, touchGraph, upscaleGraph, type Built, type Crop } from './workflows'
+import { annotated, layersGraph, samGraph, type Built, type Crop } from './workflows'
 import { animateGraph, cutoutVideoGraph, extendGraph, upscaleVideoGraph } from './videoGraphs'
 import { t } from './i18n'
 import { canvasBlob } from './canvasBlob'
+import { wsBuilt } from './wavespeed'
 
 export interface Pads { l: number; t: number; r: number; b: number }
 export interface Stroke { points: [number, number][]; r: number }
@@ -42,30 +43,33 @@ function run(
   return holder
 }
 
+const cloud = (b: Built) => Promise.resolve(b)
+const keep = 'Keep everything else in the image unchanged.'
+
 export const upscale = (e: Editor, s: TLImageShape, factor: number, err: ErrorSink) =>
-  run(e, s, t('common.upscale'), err, (src) => upscaleGraph(src.image, src.w, src.h, factor))
+  run(e, s, t('common.upscale'), err, (src) => cloud(wsBuilt({ feature: 'upscale_image', image: src.image, params: { target_resolution: factor === 4 ? '4k' : '2k', target_megapixels: Math.round(src.w * src.h * factor * factor / 1e6) || 4 } })))
 
 export const creativeUpscale = (e: Editor, s: TLImageShape, factor: number, style: string, strength: number, err: ErrorSink) =>
-  run(e, s, t('common.upscale'), err, (src) => creativeUpscaleGraph(src.image, factor, src.w, src.h, style, strength))
+  run(e, s, t('common.upscale'), err, (src) => cloud(wsBuilt({ feature: 'upscale_image', model: 'recraft-ai/recraft-creative-upscale', image: src.image, prompt: style, params: { creativity: strength, target_resolution: factor === 4 ? '4k' : '2k' } })))
 
 export const cutout = (e: Editor, s: TLImageShape, err: ErrorSink) =>
-  run(e, s, t('common.removeBackground'), err, (src) => cutoutGraph(src.image))
+  run(e, s, t('common.removeBackground'), err, (src) => cloud(wsBuilt({ feature: 'remove_background', image: src.image, png: true })))
 
 export const quickEdit = (e: Editor, s: TLImageShape, prompt: string, err: ErrorSink) =>
-  run(e, s, t('common.quickEdit'), err, (src) => editGraph(src.image, prompt))
+  run(e, s, t('common.quickEdit'), err, (src) => cloud(wsBuilt({ feature: 'image_edit', image: src.image, prompt, width: src.w, height: src.h })))
 
 export const editText = (e: Editor, s: TLImageShape, edits: [string, string][], err: ErrorSink) =>
-  run(e, s, t('common.editText'), err, (src) => editGraph(src.image,
-    `${edits.map(([from, to]) => (to ? `Change the text "${from}" to "${to}" in the same font, color, size and position` : `Remove the text "${from}" and fill its area with the surrounding background`)).join('. ')}. Keep everything else in the image unchanged.`))
+  run(e, s, t('common.editText'), err, (src) => cloud(wsBuilt({ feature: 'image_edit', image: src.image, width: src.w, height: src.h, prompt:
+    `${edits.map(([from, to]) => (to ? `Change the text "${from}" to "${to}" in the same font, color, size and position` : `Remove the text "${from}" and fill its area with the surrounding background`)).join('. ')}. Keep everything else in the image unchanged.` })))
 
 export const angles = (e: Editor, s: TLImageShape, h: number, v: number, z: number, err: ErrorSink) =>
-  run(e, s, t('common.multiAngle'), err, (src) => anglesGraph(src.image, h, v, z))
+  run(e, s, t('common.multiAngle'), err, (src) => cloud(wsBuilt({ feature: 'change_angle', image: src.image, params: { horizontal_angle: Math.round(h), vertical_angle: Math.round(v), distance: z > 1.25 ? 0 : z < 0.8 ? 2 : 1 } })))
 
 export const expand = (e: Editor, s: TLImageShape, pads: Pads, prompt: string, err: ErrorSink) => {
   const src = source(e, s)
   if (!src) return
   const k = s.props.w / src.w
-  return run(e, s, t('common.expand'), err, () => expandGraph(src.image, pads, prompt),
+  return run(e, s, t('common.expand'), err, () => cloud(wsBuilt({ feature: 'expand_image', image: src.image, prompt, width: src.w + pads.l + pads.r, height: src.h + pads.t + pads.b })),
     { size: [(src.w + pads.l + pads.r) * k, (src.h + pads.t + pads.b) * k] })
 }
 
@@ -82,7 +86,8 @@ export const extendVideo =(e: Editor, s: TLVideoShape, prompt: string, duration:
   run(e, s, t('common.extendVideo'), err, (src) => extendGraph(src.image, src.w, src.h, prompt, duration), { kind: 'video' })
 
 export const styleTransfer = (e: Editor, s: TLImageShape, style: string, ref: string | null, err: ErrorSink) =>
-  run(e, s, t('common.styleTransfer'), err, (src) => styleGraph(src.image, style, ref ? annotated(ref) : null))
+  run(e, s, t('common.styleTransfer'), err, (src) => cloud(wsBuilt({ feature: 'image_edit', image: src.image, images: ref ? [annotated(ref)] : undefined, width: src.w, height: src.h,
+    prompt: `Redraw this image in ${style || 'the style of the second image'}${ref && style ? ', matching the style of the second image' : ''}. Keep the composition and subject.` })))
 
 export const splitLayers = (e: Editor, s: TLImageShape, layers: number, prompt: string, err: ErrorSink) =>
   run(e, s, t('common.splitLayers'), err, (src) => layersGraph(src.image, layers, prompt),
@@ -114,7 +119,7 @@ export async function maskFile(w: number, h: number, paint: (ctx: CanvasRenderin
 }
 
 const eraseWith = (e: Editor, s: TLImageShape, err: ErrorSink, paint: (ctx: CanvasRenderingContext2D, src: Source) => void) =>
-  run(e, s, t('common.eraser'), err, async (src) => eraseGraph(src.image, await maskFile(src.w, src.h, (ctx) => paint(ctx, src))))
+  run(e, s, t('common.eraser'), err, async (src) => wsBuilt({ feature: 'erase_region', image: src.image, mask: await maskFile(src.w, src.h, (ctx) => paint(ctx, src)) }))
 
 export const erase = (e: Editor, s: TLImageShape, strokes: Stroke[], err: ErrorSink) =>
   eraseWith(e, s, err, (ctx, src) => drawStrokes(ctx, strokes, src.w, src.h))
@@ -140,30 +145,30 @@ export function inpaint(e: Editor, shape: TLImageShape, mask: HTMLCanvasElement,
   const bounds = maskBounds(mask)
   if (!bounds) return
   const k = src.w / mask.width
-  const crop = cropAround({ x: bounds.x * k, y: bounds.y * k, w: bounds.w * k, h: bounds.h * k }, src.w, src.h)
+  void feather // the cloud edit model blends the region itself
   const holder = spawnHolder(e, shape)
   void startJob(e, holder, (async () => {
-    const file = await maskFile(crop.w, crop.h, (ctx) => {
-      ctx.filter = `blur(${feather}px)`
-      ctx.drawImage(mask, crop.x / k, crop.y / k, crop.w / k, crop.h / k, 0, 0, crop.w, crop.h)
-    })
-    return touchGraph(src.image, crop, file, prompt)
+    return regionEdit(src, { x: bounds.x * k, y: bounds.y * k, w: bounds.w * k, h: bounds.h * k }, prompt)
   })(), { name: t('actions.inpaint', src.name) }, err)
   return holder
+}
+
+function regionEdit(src: Source, r: Crop, prompt: string): Promise<Built> {
+  const box = `x ${Math.round(r.x)}-${Math.round(r.x + r.w)}, y ${Math.round(r.y)}-${Math.round(r.y + r.h)} (image is ${src.w}x${src.h} px)`
+  return cloud(wsBuilt({ feature: 'image_edit', image: src.image, width: src.w, height: src.h, prompt: `Only inside the area ${box}: ${prompt}. ${keep}` }))
+}
+
+function moveEdit(src: Source, what: string, dx: number, dy: number): Promise<Built> {
+  const dir = `${Math.round(Math.abs(dx))} px ${dx < 0 ? 'left' : 'right'} and ${Math.round(Math.abs(dy))} px ${dy < 0 ? 'up' : 'down'}`
+  return cloud(wsBuilt({ feature: 'image_edit', image: src.image, width: src.w, height: src.h, prompt: `Move ${what} ${dir} (image is ${src.w}x${src.h} px), fill the old spot with matching background. ${keep}` }))
 }
 
 export function editRegion(e: Editor, shape: TLImageShape, region: Crop, prompt: string, err: ErrorSink) {
   const src = source(e, shape)
   if (!src) return
-  const crop = cropAround(region, src.w, src.h)
-  const feather = Math.max(4, Math.min(crop.w, crop.h) * 0.04)
   const holder = spawnHolder(e, shape)
   void startJob(e, holder, (async () => {
-    const mask = await maskFile(crop.w, crop.h, (ctx) => {
-      ctx.filter = `blur(${feather}px)`
-      ctx.fillRect(region.x - crop.x, region.y - crop.y, region.w, region.h)
-    })
-    return touchGraph(src.image, crop, mask, prompt)
+    return regionEdit(src, region, prompt)
   })(), { name: t('actions.localEdit', src.name) }, err)
   return holder
 }
@@ -177,8 +182,7 @@ export function moveObject(e: Editor, shape: TLImageShape, mask: HTMLCanvasEleme
   const to = { x: Math.round(from.x + dx * k), y: Math.round(from.y + dy * k) }
   const holder = spawnHolder(e, shape)
   void startJob(e, holder, (async () => {
-    const file = await maskFile(src.w, src.h, (ctx) => ctx.drawImage(mask, 0, 0, src.w, src.h))
-    return moveGraph(src.image, file, from, to)
+    return moveEdit(src, `the object at x ${from.x}-${from.x + from.w}, y ${from.y}-${from.y + from.h}`, to.x - from.x, to.y - from.y)
   })(), { name: t('actions.moveObject', src.name) }, err)
   return holder
 }
@@ -188,13 +192,7 @@ export function moveTarget(e: Editor, shape: TLImageShape, target: { text: strin
   if (!src) return
   const holder = spawnHolder(e, shape)
   void startJob(e, holder, (async () => {
-    const sam = samGraph(src.image, target)
-    const [ref] = await waitForImages(await queuePrompt(sam.graph), sam.result)
-    const mask = lumaToAlpha(await loadImage(viewUrl(ref)), src.w, src.h)
-    const from = maskBounds(mask)
-    if (!from) throw new Error(t('actions.noObjectFound'))
-    const file = await maskFile(src.w, src.h, (ctx) => ctx.drawImage(mask, 0, 0))
-    return moveGraph(src.image, file, from, { x: Math.round(from.x + dx), y: Math.round(from.y + dy) })
+    return moveEdit(src, 'text' in target ? `the ${target.text}` : `the object at pixel (${Math.round(target.x)}, ${Math.round(target.y)})`, dx, dy)
   })(), { name: t('actions.moveObject', src.name) }, err)
   return holder
 }
@@ -283,28 +281,10 @@ export function commentTarget(e: Editor, comment: CommentShape) {
 export function touchEdit(e: Editor, comment: CommentShape, err: ErrorSink) {
   const target = commentTarget(e, comment)
   if (!target) return
-  const { shape, src, marked, region } = target
-  const { kind, path } = comment.props
-  const crop = cropAround(region, src.w, src.h)
-  const [cw, ch] = [crop.w, crop.h]
-  const feather = Math.max(4, Math.min(cw, ch) * 0.04)
+  const { shape, src, region } = target
   const holder = spawnHolder(e, shape)
   void startJob(e, holder, (async () => {
-    const object = marked && lumaToAlpha(await loadImage(marked.src), src.w, src.h)
-    const mask = await maskFile(cw, ch, (ctx) => {
-      const [rx, ry, rw, rh] = [region.x - crop.x, region.y - crop.y, region.w, region.h]
-      ctx.filter = `blur(${feather}px)`
-      if (object) {
-        for (let i = 0; i < 3; i++) ctx.drawImage(object, -crop.x, -crop.y)
-        return
-      }
-      ctx.beginPath()
-      if (kind === 'lasso') path.split(' ').map((p) => p.split(',').map(Number)).forEach(([u, v], i) => (i ? ctx.lineTo(rx + u * rw, ry + v * rh) : ctx.moveTo(rx + u * rw, ry + v * rh)))
-      else if (kind === 'point') ctx.ellipse(rx + rw / 2, ry + rh / 2, rw / 2, rh / 2, 0, 0, Math.PI * 2)
-      else ctx.rect(rx, ry, rw, rh)
-      ctx.fill()
-    })
-    return touchGraph(src.image, crop, mask, comment.props.text)
+    return regionEdit(src, region, comment.props.text)
   })(), { name: t('actions.localEdit', src.name) }, err).then(() => {
     const r = resultsAtom.get()[holder]
     if (r) void notify({ kind: 'comment', title: r.error ? t('actions.commentEditFailed') : t('actions.commentEditDone'), body: comment.props.text.trim() || undefined, srcs: r.srcs })

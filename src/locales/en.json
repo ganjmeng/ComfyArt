@@ -1158,5 +1158,6 @@
   "voiceButton.noMicrophoneFound": "No microphone found",
   "voiceButton.voiceInput": "Voice input",
   "zoom.fitAll": "Fit All",
-  "zoom.zoomTo": "Zoom to {0}%"
+  "zoom.zoomTo": "Zoom to {0}%",
+  "jobs.notInCloud": "This feature is not yet available in cloud mode (WaveSpeed)"
 }

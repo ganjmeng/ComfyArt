@@ -1158,5 +1158,6 @@
   "voiceButton.noMicrophoneFound": "未找到麦克风",
   "voiceButton.voiceInput": "语音输入",
   "zoom.fitAll": "显示全部",
-  "zoom.zoomTo": "缩放至 {0}%"
+  "zoom.zoomTo": "缩放至 {0}%",
+  "jobs.notInCloud": "该功能在云端模式下暂不可用（WaveSpeed 接入中）"
 }

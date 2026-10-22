@@ -2,3 +2,8 @@ node_modules/
 __pycache__/
 *.pyc
 temp/
+
+# WaveSpeed key files (key comes from WAVESPEED_API_KEY only)
+.env
+*.env
+wavespeed.env

@@ -5,7 +5,8 @@ import type { LoraPick } from './loras'
 import { ask, stripThink } from './llm'
 import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from './jobs'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
-import { agentModels, isVideo, modelOf } from './models'
+import { agentModels, isCloudModel, isVideo, modelOf } from './models'
+import { wsBuilt } from './wavespeed'
 import { CUSTOM_GENERATE, customGraph, withAlpha } from './customWorkflows'
 import { t } from './i18n'
 import { applyRefs, PALETTE_MODE, refControlsOf, refHints, refLimit, refModesOf, refStrengthsOf, usableRefs } from './refModes'
@@ -152,6 +153,14 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
       : t2vGraph(prompt, ratioOf(ratio), duration, area)
   }
   const [width, height] = targetSize(shape.props)
+  if (model && isCloudModel(model.id)) {
+    const base = baseOf(shape)
+    const images = [...(base ? [base.src] : []), ...refs].map(annotated)
+    // reference images go to the image-edit feature; its default model is used unless the agent picked one
+    return images.length
+      ? wsBuilt({ feature: 'image_edit', prompt, images, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
+      : wsBuilt({ feature: 'text_to_image', model: model.id, prompt, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
+  }
   if (model?.id === CUSTOM_GENERATE) {
     const loras = lorasOf(shape)
     const custom = await customGraph('generate', { prompt, width, height, count }, (graph, markers, result) => {

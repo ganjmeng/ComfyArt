@@ -4,6 +4,7 @@ import { api, cloudMode, defaultTarget, lanMode, loadModelPaths, readUserJson, w
 import { CUSTOM_GENERATE, workflowConfigAtom } from './customWorkflows'
 import { t } from './i18n'
 import { lanHas } from './instances'
+import { loadCloudModels } from './wavespeed'
 
 export interface ModelDef {
   id: string
@@ -11,6 +12,7 @@ export interface ModelDef {
   desc: string
   files: string[]
   video?: boolean
+  cloud?: boolean
   refs?: 'qwen' | 'latent'
   prompt?: string
   steps?: [string, Record<string, number>]
@@ -73,8 +75,21 @@ const ALL = [...IMAGE_MODELS, ...VIDEO_MODELS].map((m) => m.id)
 export const modelPrefsAtom = atom<ModelPrefs>('model prefs', { auto: true, enabled: ALL })
 export const installedAtom = atom<string[] | null>('installed models', null)
 
+/** Swap the local image models for the curated WaveSpeed text-to-image list (api/wavespeed_models.json). */
+async function useCloudImageModels() {
+  const feature = (await loadCloudModels().catch(() => ({}) as Awaited<ReturnType<typeof loadCloudModels>>)).text_to_image
+  if (!feature?.models.length) return
+  const cloud: ModelDef[] = feature.models.map((m) => ({
+    id: m.id, label: m.label + (m.price != null ? ` · $${m.price}` : ''), desc: m.desc || m.local_equivalent || m.id, files: [], refs: 'qwen', cloud: true, lora: null,
+  }))
+  IMAGE_MODELS.splice(0, IMAGE_MODELS.length, ...cloud)
+  if (!modelPrefsAtom.get().auto) modelPrefsAtom.set({ ...modelPrefsAtom.get(), enabled: [...modelPrefsAtom.get().enabled, ...cloud.map((m) => m.id)] })
+}
+
+export const isCloudModel = (id: string) => IMAGE_MODELS.some((m) => m.id === id && m.cloud)
+
 export async function loadModels() {
-  const [prefs, files, paths] = await Promise.all([readUserJson<ModelPrefs | null>(FILE, null), api('/models/diffusion_models'), loadModelPaths()])
+  const [prefs, files, paths] = await Promise.all([readUserJson<ModelPrefs | null>(FILE, null), api('/models/diffusion_models'), loadModelPaths(), useCloudImageModels()])
   if (prefs) modelPrefsAtom.set(prefs)
   const names: string[] = files.ok ? await files.json() : []
   installedAtom.set([...IMAGE_MODELS, ...VIDEO_MODELS].filter((m) => m.files.every((f) => names.includes(f) || f in paths)).map((m) => m.id))

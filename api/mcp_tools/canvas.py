@@ -1,4 +1,5 @@
 from ..mcp_commands import submit_command
+from ..wavespeed import grouped_models, load_config
 from ._context import BOT_CHAT_ID, PROJECT
 from .bot_tools import maybe_ask_run_approval
 
@@ -55,8 +56,9 @@ SPECS: dict[str, dict] = {
         "see layout and results. max_px caps the long side (default 1024).",
         {"ids": _IDS, "max_px": {"type": "integer"}}, timeout=SLOW_S),
     "list_models": _tool(
-        "Installed image and video models with ids, what they are good at, whether they accept "
-        "reference images, and supported ratios.", {}),
+        "WaveSpeed cloud models grouped by feature (text_to_image, image_edit, upscale_image, ...): ids, "
+        "price in USD per run, description, accepted inputs and the default per feature. Pass an id as "
+        "model to the matching tool, or omit model to use the default.", {}),
     "brand_kits": _tool(
         "The user's brand kits and saved assets (characters, products): names, descriptions, colors "
         "with roles, fonts, logo and reference image URLs, and which kit this project is linked to.", {}),
@@ -270,11 +272,22 @@ SPECS: dict[str, dict] = {
         ["action"]),
 }
 
+_MODEL = {"type": "string", "description": "WaveSpeed model id from list_models for this tool's feature; omit for the default"}
+for _name in load_config()["tool_features"]:
+    if _name in SPECS:
+        SPECS[_name]["inputSchema"]["properties"].setdefault("model", _MODEL)
+
+
+async def _list_models(args: dict) -> dict:
+    return {"features": await grouped_models(), "tool_features": load_config()["tool_features"]}
+
+
 TOOLS: dict[str, dict] = {
     name: {"description": spec["description"], "inputSchema": spec["inputSchema"],
            "handler": _relay(name, **spec["relay"])}
     for name, spec in SPECS.items()
 }
+TOOLS["list_models"]["handler"] = _list_models
 TOOLS["wait_generation"] = {
     "description": (
         "Wait for generations started by generate_image, generate_video and the edit tools. ids are the "
