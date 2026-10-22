@@ -20,7 +20,17 @@ export interface Job {
 
 export interface Media { ref: ImageRef; src: string; w: number; h: number; kind: MediaKind }
 export type ErrorSink = (msg: string) => void
-export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))
+const rawText = (e: unknown) => (e instanceof Error ? e.message : String(e))
+// WaveSpeed backend errors arrive in English; show them in the UI language.
+export function localizeError(msg: string): string {
+  if (/\(401\)|rejected the API key/.test(msg)) return t('jobs.wsKeyInvalid')
+  const timeout = /WaveSpeed task timed out after (\d+)s/.exec(msg)
+  if (timeout) return t('jobs.wsTimeout', timeout[1])
+  const failed = /^WaveSpeed task (?:failed: (.*)|finished without output)$/s.exec(msg)
+  if (failed) return t('jobs.wsFailed', failed[1] ?? t('jobs.noOutput'))
+  return msg
+}
+export const errorText = (e: unknown) => localizeError(rawText(e))
 export type Placer = (editor: Editor, holder: TLShape, media: Media[], job: Job, onError: ErrorSink) => Promise<void>
 
 export const GAP = 40
@@ -204,7 +214,7 @@ export async function startJob(
   } catch (e) {
     const holder = editor.getShape(holderId)
     if (holder?.meta.temp) editor.deleteShape(holderId)
-    const msg = e instanceof Error ? e.message : String(e)
+    const msg = errorText(e)
     report(holderId, { srcs: [], error: msg })
     onError(msg)
   }

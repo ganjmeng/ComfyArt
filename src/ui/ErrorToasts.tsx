@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { atom, useToasts, useValue } from 'tldraw'
 
+import { t } from '../i18n'
+
 const errorAtom = atom<{ text: string; n: number } | null>('error', null)
 let count = 0
 
@@ -12,7 +14,7 @@ export function ErrorToasts() {
   useEffect(() => {
     if (!error) return
     const [title, ...rest] = error.text.split('\n')
-    toasts.addToast({ id: `error-${error.n}`, title, description: rest.join('\n') || undefined, severity: 'error' })
+    toasts.addToast({ id: `error-${error.n}`, title, description: rest.join('\n') || undefined, severity: 'error', keepOpen: title.startsWith(t('jobs.wsKeyInvalid')) })
   }, [error, toasts])
   return null
 }

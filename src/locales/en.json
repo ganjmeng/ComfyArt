@@ -1096,5 +1096,8 @@
   "zoom.zoomTo": "Zoom to {0}%",
   "jobs.notInCloud": "This feature is not yet available in cloud mode (WaveSpeed)",
   "jobs.confirmCost": "This cloud job costs about ${0}. Continue?",
-  "jobs.costDeclined": "Cancelled: cost not confirmed"
+  "jobs.costDeclined": "Cancelled: cost not confirmed",
+  "jobs.wsKeyInvalid": "Invalid WaveSpeed key: check WAVESPEED_API_KEY",
+  "jobs.wsTimeout": "Generation timed out ({0}s), please retry",
+  "jobs.wsFailed": "Generation failed: {0}"
 }
