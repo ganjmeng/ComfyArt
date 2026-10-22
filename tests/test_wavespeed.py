@@ -546,3 +546,25 @@ async def test_llm_complete_uses_openai_compatible_endpoint(bot_client, monkeypa
         assert seen["model"] == "my-model" and seen["messages"][0] == {"role": "system", "content": "be brief"} and seen["auth"] == "Bearer llm-test"
     finally:
         await server.close()
+
+
+def test_picker_short_label_and_subtitle():
+    ws = wavespeed
+    assert ws.short_label("openai/gpt-image-2.5-flare/text-to-image") == "gpt-image-2.5-flare"
+    assert ws.short_label("alibaba/qwen-image-3.0/text-to-image") == "qwen-image-3.0"
+    assert ws.short_label("wavespeed-ai/z-image/turbo") == "z-image turbo"
+    assert ws.short_label("ideogram-ai/ideogram-v4.5") == "ideogram-v4.5"
+    assert ws.subtitle("google/nano-banana-2.1/text-to-image", None) == "nano-banana-2.1/text-to-image"
+    assert ws.subtitle("x/y", "Flux.2 Klein 9B") == "Flux.2 Klein 9B"
+
+
+def test_grouped_models_never_uses_local_name(monkeypatch):
+    import asyncio
+    ws = wavespeed
+    async def no_catalog(refresh=False):
+        raise ws.WaveSpeedError("offline")
+    monkeypatch.setattr(ws, "catalog", no_catalog)
+    out = asyncio.run(ws.grouped_models())
+    m = out["text_to_image"]["models"][0]
+    assert m["label"] == "qwen-image-3.0" and m["subtitle"] == "qwen-image-3.0/text-to-image"
+    assert "2512" not in str({k: v for k, v in m.items() if k != "local_equivalent"})

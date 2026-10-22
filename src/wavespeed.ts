@@ -34,7 +34,7 @@ export interface WsInputs {
   params?: Record<string, unknown>
 }
 
-export interface CloudModel { id: string; label: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null }
+export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null }
 export interface CloudFeature { default: string; available: boolean; models: CloudModel[] }
 
 let pending: string | undefined

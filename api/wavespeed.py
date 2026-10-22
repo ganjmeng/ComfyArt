@@ -140,6 +140,22 @@ def _caps(schema: dict) -> dict:
     return out
 
 
+_GENERIC = {"text-to-image", "image-to-image", "edit", "image-edit", "text-to-video", "image-to-video"}
+
+
+def short_label(model_id: str) -> str:
+    """One-line picker name: vendor and generic task suffixes stripped (openai/gpt-image-2.5-flare/text-to-image -> gpt-image-2.5-flare)."""
+    parts = model_id.split("/")[1:] or [model_id]
+    while len(parts) > 1 and parts[-1] in _GENERIC:
+        parts.pop()
+    return " ".join(parts)
+
+
+def subtitle(model_id: str, display_name: str | None) -> str:
+    """Picker subtitle: WaveSpeed display name, else the model ID without its vendor prefix. Never the old local model name."""
+    return display_name or model_id.split("/", 1)[-1]
+
+
 async def grouped_models(refresh: bool = False) -> dict:
     """Curated models per feature, enriched with WaveSpeed price/description/capabilities."""
     cfg = load_config()
@@ -154,7 +170,8 @@ async def grouped_models(refresh: bool = False) -> dict:
             m = meta.get(entry["id"]) or {}
             models.append({
                 "id": entry["id"],
-                "label": m.get("name") or entry["id"].split("/", 1)[-1],
+                "label": short_label(entry["id"]),
+                "subtitle": subtitle(entry["id"], m.get("name")),
                 "price": m.get("base_price"),
                 "desc": (m.get("description") or "")[:240],
                 "local_equivalent": entry.get("local"),

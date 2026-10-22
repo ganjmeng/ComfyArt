@@ -147,8 +147,8 @@ function waitResults(editor: Editor, ids: string[], timeout: number) {
 const HANDLERS: Record<string, Handler> = {
   ...LAYOUT_HANDLERS,
   list_models: () => ({
-    image: agentModels(false).map((m) => ({ id: m.id, label: m.label, desc: m.desc, accepts_refs: !!m.refs, ratios: RATIOS })),
-    video: agentModels(true).map((m) => ({ id: m.id, label: m.label, desc: m.desc, accepts_first_frame: true, max_reference_images: MAX_VIDEO_REF_KINDS.image, max_reference_videos: MAX_VIDEO_REF_KINDS.video, max_reference_audios: MAX_VIDEO_REF_KINDS.audio, motion_control: true, lip_sync: true, ratios: VIDEO_RATIOS, durations: DURATIONS })),
+    image: agentModels(false).map((m) => ({ id: m.id, label: m.label, desc: m.about || m.desc, accepts_refs: !!m.refs, ratios: RATIOS })),
+    video: agentModels(true).map((m) => ({ id: m.id, label: m.label, desc: m.about || m.desc, accepts_first_frame: true, max_reference_images: MAX_VIDEO_REF_KINDS.image, max_reference_videos: MAX_VIDEO_REF_KINDS.video, max_reference_audios: MAX_VIDEO_REF_KINDS.audio, motion_control: true, lip_sync: true, ratios: VIDEO_RATIOS, durations: DURATIONS })),
   }),
   generate_image: (editor, args, onError, chat) => startGenerator(editor, false, args, onError, chat),
   generate_video: (editor, args, onError, chat) => startGenerator(editor, true, args, onError, chat),
