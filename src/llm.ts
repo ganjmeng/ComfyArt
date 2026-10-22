@@ -88,7 +88,7 @@ async function agentOcr(src: string): Promise<string> {
 }
 
 export function ocrLines(src: string): Promise<string[]> {
-  const engine = settingsAtom.get()['ocr-engine'] === 'agent' && botEnabledAtom.get() ? 'agent' : 'local'
+  const engine = settingsAtom.get()['ocr-engine'] === 'agent' && botEnabledAtom.get() ? 'agent' : 'cloud'
   const key = `${engine}|${src}`
   if (!ocrCache.has(key)) {
     const job = (engine === 'agent' ? agentOcr(src) : cloudOcr(src))

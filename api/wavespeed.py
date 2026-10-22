@@ -362,7 +362,8 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
             payload["num_layers"] = layers
         elif "prompt" in props:
             # models without a layer-count field (seedream) take the user's count in the prompt
-            prompt = f"{prompt}{'. ' if prompt else ''}Separate into {layers} layers."
+            base = prompt.rstrip(" .。")
+            prompt = f"{base}{'. ' if base else ''}Separate into {layers} layers."
     if prompt and "prompt" not in props and "tags" in props:
         payload["tags"] = prompt  # ACE-Step names its style prompt "tags"
     if prompt and "prompt" in props:

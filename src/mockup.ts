@@ -1,37 +1,25 @@
-import { createShapeId, type Editor, type TLImageShape } from 'tldraw'
+import { type Editor, type TLImageShape } from 'tldraw'
 
 import { uploadImage, viewUrl } from './comfy'
+import { wsBuilt } from './wavespeed'
 import { GAP, placeMedia, spawnHolder, startJob, toMedia, type ErrorSink } from './jobs'
 import { bakeMockup } from './mockupGl'
-import { MOCKUP, placementOf, sourcesOf, type MockupShape } from './shapes/MockupShape'
+import { placementOf, sourcesOf, type MockupShape } from './shapes/MockupShape'
 import { annotated, editGraph } from './workflows'
 import { t } from './i18n'
 
+const MOCKUP_MODEL = 'alibaba/qwen-image-3.0/edit'
+const MOCKUP_PROMPT = 'Turn this image into a realistic product mockup sticker: printed naturally on a product surface, following its curvature, material texture and lighting.'
 const BLEND_PROMPT = 'Make the printed design look naturally printed on the product: follow its folds, curvature, fabric or material texture and lighting. Keep the design content and position, the product and the background unchanged.'
 
-async function solidPng(color: string, name: string): Promise<string> {
-  const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = 4
-  const ctx = canvas.getContext('2d')!
-  ctx.fillStyle = color
-  ctx.fillRect(0, 0, 4, 4)
-  const blob = await new Promise<Blob>((ok, fail) => canvas.toBlob((b) => (b ? ok(b) : fail(new Error('canvas export failed'))), 'image/png'))
-  return viewUrl(await uploadImage(blob, name))
-}
-
-// The local depth/surface model is gone: the mockup starts on a flat surface (uniform depth, full mask).
 export function createMockup(editor: Editor, shape: TLImageShape, onError: ErrorSink) {
   const asset = shape.props.assetId ? editor.getAsset(shape.props.assetId) : null
   if (asset?.type !== 'image' || !asset.props.src) return
-  const { src, name } = asset.props
-  const b = editor.getShapePageBounds(shape)!
-  const id = createShapeId()
-  void (async () => {
-    const [depth, mask] = await Promise.all([solidPng('#808080', 'mockup-flat-depth.png'), solidPng('#ffffff', 'mockup-full-mask.png')])
-    editor.createShape<MockupShape>({ id, type: MOCKUP, x: b.maxX + GAP, y: b.y, props: { w: b.w, h: b.h, name: t('mockup.name', name), photo: src, depth, mask } })
-    editor.select(id)
-  })().catch((e: unknown) => onError(e instanceof Error ? e.message : String(e)))
-  return id
+  const { src, name, w, h } = asset.props
+  const holder = spawnHolder(editor, shape)
+  // cloud mode: the local birefnet surface workflow is replaced by WaveSpeed qwen-image-3.0 edit
+  void startJob(editor, holder, Promise.resolve(wsBuilt({ feature: 'image_edit', model: MOCKUP_MODEL, image: annotated(src), prompt: MOCKUP_PROMPT, width: w, height: h })), { name: t('mockup.name', name) }, onError)
+  return holder
 }
 
 async function bakedRef(shape: MockupShape) {

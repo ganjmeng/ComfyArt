@@ -10,7 +10,6 @@ const CONFIG = 'comfyart/workflow-config.json'
 export const CUSTOM_GENERATE = 'custom:generate'
 export const workflowConfigAtom = atom<Partial<Record<CustomAction, string>>>('workflow config', {})
 
-type Link = [string, number]
 
 export async function loadWorkflowConfig() {
   const config = await readUserJson<Partial<Record<CustomAction, string>>>(CONFIG, {})
@@ -54,56 +53,6 @@ export async function customGraph(action: CustomAction, values: CustomValues, ad
   const result = outputOf(graph, markers)!
   adapt?.(graph, markers, result)
   return { graph, result }
-}
-
-function rewire(graph: PromptGraph, from: Link, to: Link) {
-  for (const node of Object.values(graph)) {
-    for (const [k, v] of Object.entries(node.inputs)) {
-      if (Array.isArray(v) && v[0] === from[0] && v[1] === from[1]) node.inputs[k] = to
-    }
-  }
-}
-
-const maskSlot = (graph: PromptGraph, id: string) => (graph[id].class_type === 'LoadImageMask' ? 0 : 1)
-
-export function padForOutpaint(image: string, pads: { l: number; t: number; r: number; b: number }): Adapt {
-  return (graph, markers) => {
-    graph.cw_src = { class_type: 'LoadImage', inputs: { image } }
-    graph.cw_pad = { class_type: 'ImagePadForOutpaint', inputs: { image: ['cw_src', 0], left: pads.l, top: pads.t, right: pads.r, bottom: pads.b, feathering: 0 } }
-    rewire(graph, [markers.image!, 0], ['cw_pad', 0])
-    rewire(graph, [markers.mask!, maskSlot(graph, markers.mask!)], ['cw_pad', 1])
-  }
-}
-
-export function pasteBack(image: string, mask: string, crop: { x: number; y: number; w: number; h: number }): Adapt {
-  return (graph, markers, result) => {
-    graph.cw_full = { class_type: 'LoadImage', inputs: { image } }
-    graph.cw_crop = { class_type: 'ImageCrop', inputs: { image: ['cw_full', 0], width: crop.w, height: crop.h, x: crop.x, y: crop.y } }
-    rewire(graph, [markers.image!, 0], ['cw_crop', 0])
-    graph.cw_scale = { class_type: 'ImageScale', inputs: { image: graph[result].inputs.images, upscale_method: 'bicubic', width: crop.w, height: crop.h, crop: 'disabled' } }
-    graph.cw_mask = { class_type: 'LoadImageMask', inputs: { image: mask, channel: 'alpha' } }
-    graph.cw_comp = { class_type: 'ImageCompositeMasked', inputs: { destination: ['cw_full', 0], source: ['cw_scale', 0], x: crop.x, y: crop.y, resize_source: false, mask: ['cw_mask', 0] } }
-    graph[result].inputs.images = ['cw_comp', 0]
-  }
-}
-
-export function resizeTo(width: number, height: number): Adapt {
-  return (graph, _markers, result) => {
-    graph.cw_size = { class_type: 'ImageScale', inputs: { image: graph[result].inputs.images, upscale_method: 'lanczos', width, height, crop: 'disabled' } }
-    graph[result].inputs.images = ['cw_size', 0]
-  }
-}
-
-export const withAlpha: Adapt = (graph, _markers, result) => {
-  const images = graph[result].inputs.images
-  if (!Array.isArray(images)) throw new Error(t('customWorkflows.outputNeedsImages', result))
-  Object.assign(graph, {
-    cw_bg1: { class_type: 'LoadBackgroundRemovalModel', inputs: { bg_removal_name: 'birefnet.safetensors' } },
-    cw_bg2: { class_type: 'RemoveBackground', inputs: { bg_removal_model: ['cw_bg1', 0], image: images } },
-    cw_bg3: { class_type: 'InvertMask', inputs: { mask: ['cw_bg2', 0] } },
-    cw_bg4: { class_type: 'JoinImageWithAlpha', inputs: { image: images, alpha: ['cw_bg3', 0] } },
-  })
-  graph[result].inputs.images = ['cw_bg4', 0]
 }
 
 type Args = Record<string, unknown>

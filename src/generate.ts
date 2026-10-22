@@ -6,7 +6,7 @@ import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from '.
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import { agentModels, isCloudModel, isVideo, modelOf } from './models'
 import { modelIn, wsBuilt } from './wavespeed'
-import { CUSTOM_GENERATE, customGraph, withAlpha } from './customWorkflows'
+import { CUSTOM_GENERATE, customGraph } from './customWorkflows'
 import { t } from './i18n'
 import { PALETTE_MODE, refHints, refLimit, refModesOf, usableRefs } from './refModes'
 import { paletteImage, palettePrompt } from './palette'
@@ -161,12 +161,11 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   }
   if (model?.id === CUSTOM_GENERATE) {
     const loras = lorasOf(shape)
-    const custom = await customGraph('generate', { prompt, width, height, count }, (graph, markers, result) => {
+    const custom = await customGraph('generate', { prompt, width, height, count }, (graph, markers) => {
       if (loras.length) {
         if (!markers.unet) throw new Error(t('customWorkflows.needsUnet', model.label))
         applyLoras(graph, markers.unet, loras)
       }
-      if (transparent) withAlpha(graph, markers, result)
     })
     if (!custom) throw new Error(t('customWorkflows.generateGone', model.label))
     return custom
