@@ -353,10 +353,18 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
     for k, v in (inputs.get("params") or {}).items():
         if k in props and v is not None:
             payload[k] = v
-    if inputs.get("prompt") and "prompt" not in props and "tags" in props:
-        payload["tags"] = str(inputs["prompt"])  # ACE-Step names its style prompt "tags"
-    if inputs.get("prompt") and "prompt" in props:
-        payload["prompt"] = str(inputs["prompt"])
+    prompt = str(inputs.get("prompt") or "").strip()
+    layers = inputs.get("layers")
+    if isinstance(layers, int) and layers > 0:
+        if "num_layers" in props:
+            payload["num_layers"] = layers
+        elif "prompt" in props:
+            # models without a layer-count field (seedream) take the user's count in the prompt
+            prompt = f"{prompt}{'. ' if prompt else ''}Separate into {layers} layers."
+    if prompt and "prompt" not in props and "tags" in props:
+        payload["tags"] = prompt  # ACE-Step names its style prompt "tags"
+    if prompt and "prompt" in props:
+        payload["prompt"] = prompt
     if inputs.get("seed") is not None and "seed" in props:
         payload["seed"] = int(inputs["seed"]) % 2147483647
     if inputs.get("png") and "png" in (props.get("output_format", {}).get("enum") or []):

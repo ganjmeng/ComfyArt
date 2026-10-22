@@ -342,9 +342,12 @@ async def test_sam_segment_points_and_text(ws):
 
 
 async def test_split_layers_default_runs_without_confirmation(ws):
-    await wavespeed.submit({"feature": "split_layers", "image": _input_png(), "png": True})
+    await wavespeed.submit({"feature": "split_layers", "image": _input_png(), "png": True, "layers": 4})
     model, payload = ws["submits"][0]
     assert model == "bytedance/seedream-v5.0-flash/layer-decomposition" and payload["output_format"] == "png"
+    assert payload["prompt"] == "Separate into 4 layers."
+    await wavespeed.submit({"feature": "split_layers", "image": _input_png(), "prompt": "keep the logo", "layers": 3})
+    assert ws["submits"][1][1]["prompt"] == "keep the logo. Separate into 3 layers."
 
 
 async def test_jobs_over_50_cents_need_confirmation(ws):

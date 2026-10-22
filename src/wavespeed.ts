@@ -29,6 +29,7 @@ export interface WsInputs {
   text?: string
   lyrics?: string
   voice?: string
+  layers?: number
   params?: Record<string, unknown>
 }
 

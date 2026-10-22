@@ -162,9 +162,7 @@ export async function anglesGraph(image: string, horizontal: number, vertical: n
 }
 
 export async function layersGraph(image: string, layers: number, prompt: string): Promise<Built> {
-  // seedream layer decomposition decides the layer count itself
-  void layers
-  return wsBuilt({ feature: 'split_layers', image, prompt, png: true })
+  return wsBuilt({ feature: 'split_layers', image, prompt, layers, png: true })
 }
 
 export type SamTarget = { text: string } | { x: number; y: number } | { points: { x: number; y: number }[] } | { box: Crop }
