@@ -193,11 +193,11 @@ SPECS: dict[str, dict] = {
         ["id"], timeout=SLOW_S),
     "image_to_3d": _tool(
         "Turn an image shape (best: one object on a plain background) into a textured 3D model placed next "
-        "to it. Takes a few minutes. Returns ids for wait_generation. model: trellis2 (default) or pixal3d, "
-        "which also conditions on the photo's camera field of view (estimated with MoGe). views: 1-4 image "
-        "shape ids of the same object as front, left, back and right, in that order; when given, Pixal3D "
-        "multi-view builds one model from all of them and id and model are ignored.",
-        {"id": _ID, "model": {"type": "string", "enum": ["trellis2", "pixal3d"]}, "views": _IDS}, approval="转 3D"),
+        "to it. Takes a few minutes. Returns ids for wait_generation. Runs on WaveSpeed "
+        "(default wavespeed-ai/trellis-2/image-to-3d). views: 1-4 image shape ids of the same object as front, "
+        "left, back and right, in that order; when given, tripo3d/h3.1/multiview-to-3d builds one model from "
+        "all of them and id is ignored.",
+        {"id": _ID, "model": {"type": "string", "description": "WaveSpeed 3D model id from list_models (image_to_3d); omit for the default. Multiple views use tripo3d/h3.1/multiview-to-3d"}, "views": _IDS}, approval="转 3D"),
     "place_html": _tool(
         "Place a web page on the canvas: html is one complete self-contained HTML document you wrote "
         "(inline CSS/JS, images by absolute URL). width/height in canvas units.",

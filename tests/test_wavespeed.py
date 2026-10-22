@@ -32,6 +32,24 @@ MODELS = [
     _meta("wavespeed-ai/sam3-image", {"image": {"type": "string"}, "prompt": {"type": "string"}, "point_prompts": {"type": "array"}, "box_prompts": {"type": "array"}, "apply_mask": {"type": "boolean"}, "output_format": {"type": "string", "enum": ["png"]}}, ("image",), price=0.005),
     _meta("bytedance/seedream-v5.0-flash/layer-decomposition", {"image": {"type": "string"}, "prompt": {"type": "string"}, "output_format": {"type": "string", "enum": ["jpeg", "png"]}}, ("image",), price=0.459),
     _meta("bytedance/seedream-v5.0-pro/layer-decomposition", {"image": {"type": "string"}, "prompt": {"type": "string"}}, ("image",), price=0.75),
+    _meta("wavespeed-ai/minimax-h3/text-to-video", {"prompt": {"type": "string"}, "aspect_ratio": {"type": "string", "enum": ["16:9", "9:16", "1:1"]}, "duration": {"type": "integer", "enum": [3, 4, 5, 6, 7, 8]}, "resolution": {"type": "string", "enum": ["480p", "540p", "768p", "1080p"]}, "seed": {"type": "integer"}}, price=0.04),
+    _meta("alibaba/wan-3.0/text-to-video", {"prompt": {"type": "string"}, "duration": {"type": "integer"}}, price=0.1),
+    _meta("wavespeed-ai/minimax-h3/image-to-video", {"prompt": {"type": "string"}, "image": {"type": "string"}, "last_image": {"type": "string"}, "duration": {"type": "integer", "enum": [3, 4, 5, 6, 7, 8]}, "resolution": {"type": "string", "enum": ["480p", "768p", "1080p"]}}, ("prompt", "image"), price=0.04),
+    _meta("wavespeed-ai/minimax-h3/reference-to-video", {"prompt": {"type": "string"}, "reference_images": {"type": "array"}, "reference_videos": {"type": "array"}, "reference_audios": {"type": "array"}}, price=0.15),
+    _meta("wavespeed-ai/wan-2.2/animate", {"image": {"type": "string"}, "video": {"type": "string"}, "prompt": {"type": "string"}}, ("image", "video"), price=0.2),
+    _meta("wavespeed-ai/infinitetalk-fast", {"image": {"type": "string"}, "audio": {"type": "string"}, "prompt": {"type": "string"}}, ("audio", "image"), price=0.075),
+    _meta("wavespeed-ai/minimax-h3/video-extend", {"video": {"type": "string"}, "prompt": {"type": "string"}, "duration": {"type": "integer", "enum": [3, 4, 5, 6, 7, 8]}}, ("prompt", "video"), price=0.04),
+    _meta("wavespeed-ai/video-upscaler", {"video": {"type": "string"}, "target_resolution": {"type": "string", "enum": ["720p", "1080p", "2k", "4k"]}}, ("video",), price=0.005),
+    _meta("wavespeed-ai/video-background-remover", {"video": {"type": "string"}}, ("video",), price=0.01),
+    _meta("wavespeed-ai/ace-step-1.5", {"tags": {"type": "string"}, "lyrics": {"type": "string"}, "duration": {"type": "number"}, "seed": {"type": "integer"}}, ("tags", "lyrics"), price=0.0003),
+    _meta("elevenlabs/music-v2", {"prompt": {"type": "string"}, "music_length_ms": {"type": "integer"}}, ("prompt", "music_length_ms"), price=0.75),
+    _meta("mirelo-ai/sfx-2.0/text-to-audio", {"prompt": {"type": "string"}, "duration": {"type": "number"}}, price=0.016),
+    _meta("wavespeed-ai/qwen3-tts/text-to-speech", {"text": {"type": "string"}, "language": {"type": "string", "enum": ["auto", "Chinese", "English"]}, "voice": {"type": "string", "enum": ["Vivian", "Serena", "Uncle_Fu"]}}, ("text", "language", "voice"), price=0.005),
+    _meta("wavespeed-ai/qwen3-tts/voice-clone", {"audio": {"type": "string"}, "text": {"type": "string"}, "language": {"type": "string", "enum": ["auto"]}}, ("audio", "text"), price=0.005),
+    _meta("wavespeed-ai/trellis-2/image-to-3d", {"image": {"type": "string"}, "seed": {"type": "integer"}}, ("image",), price=0.2),
+    _meta("tripo3d/h3.1/multiview-to-3d", {"images": {"type": "array"}}, ("images",), price=0.24),
+    _meta("wavespeed-ai/openai-whisper-turbo", {"audio": {"type": "string"}, "language": {"type": "string", "enum": ["auto"]}}, ("audio",), price=0.0007),
+    _meta("wavespeed-ai/image-captioner", {"image": {"type": "string"}}, ("image",), price=0.001),
     _meta("wavespeed-ai/image-upscaler", {"image": {"type": "string"}, "target_resolution": {"type": "string", "enum": ["2k", "4k", "8k"]}}, ("image",)),
 ]
 
@@ -191,7 +209,7 @@ async def test_missing_key(ws, monkeypatch):
 
 async def test_pending_features_not_available_yet(ws):
     with pytest.raises(wavespeed.WaveSpeedError) as e:
-        await wavespeed.submit({"feature": "generate_video", "prompt": "x"})  # still pending (PR-B)
+        await wavespeed.submit({"feature": "depth", "image": "x.png [input]"})  # configured but unused
     assert "not available in cloud mode" in str(e.value) and not ws["submits"]
 
 
@@ -211,7 +229,7 @@ async def test_list_models_curated_only(ws):
     assert t2i["default"] == T2I and ids[0] == T2I
     assert "made/up-model" not in ids and len(ids) == len(wavespeed.load_config()["features"]["text_to_image"]["models"])
     assert next(m for m in t2i["models"] if m["id"] == T2I)["price"] == 0.03
-    assert out["features"]["image_to_video"]["available"] is False
+    assert out["features"]["image_to_video"]["available"] is True and out["features"]["depth"]["available"] is False
     assert out["features"]["split_layers"]["available"] is True and out["features"]["segment"]["available"] is True
     assert "model" in canvas.TOOLS["edit_image"]["inputSchema"]["properties"]
 
@@ -357,3 +375,180 @@ async def test_confirmation_route_answers_409_with_price(ws):
         assert res.status == 409 and (await res.json())["error"]["confirm_usd"] == 0.75
     finally:
         await client.close()
+
+
+def _input_file(name, data=b"x"):
+    import folder_paths
+    os.makedirs(folder_paths.get_input_directory(), exist_ok=True)
+    wavespeed._write(os.path.join(folder_paths.get_input_directory(), name), data)
+    return f"{name} [input]"
+
+
+async def test_text_to_video_default_and_mapping(ws):
+    task = await wavespeed.submit({"feature": "text_to_video", "prompt": "waves", "ratio": "16:9", "duration": 5, "resolution": "768p", "seed": 3})
+    model, payload = ws["submits"][0]
+    assert model == "wavespeed-ai/minimax-h3/text-to-video"
+    assert payload == {"prompt": "waves", "aspect_ratio": "16:9", "duration": 5, "resolution": "768p", "seed": 3}
+    assert (await wavespeed.poll(task))[f"ws:{task}"]["outputs"]["ws"]["images"]
+
+
+async def test_video_duration_snaps_to_enum_and_model_validated(ws):
+    await wavespeed.submit({"feature": "text_to_video", "prompt": "x", "duration": 10})
+    assert ws["submits"][0][1]["duration"] == 8
+    await wavespeed.submit({"feature": "text_to_video", "model": "alibaba/wan-3.0/text-to-video", "prompt": "x", "duration": 10})
+    assert ws["submits"][1] == ("alibaba/wan-3.0/text-to-video", {"prompt": "x", "duration": 10})
+    with pytest.raises(wavespeed.WaveSpeedError):
+        await wavespeed.submit({"feature": "text_to_video", "model": "wavespeed-ai/minimax-h3/image-to-video", "prompt": "x"})
+    assert len(ws["submits"]) == 2
+
+
+async def test_image_to_video_with_last_frame(ws):
+    img = _input_png()
+    await wavespeed.submit({"feature": "animate_image", "image": img, "last_image": img, "prompt": "move", "duration": 3})
+    model, payload = ws["submits"][0]
+    assert model == "wavespeed-ai/minimax-h3/image-to-video" and payload["image"].startswith("https://cdn.test/") and payload["last_image"] == payload["image"] and payload["duration"] == 3
+
+
+async def test_reference_motion_lipsync(ws):
+    img, vid, aud = _input_png(), _input_file("m.mp4"), _input_file("s.wav")
+    await wavespeed.submit({"feature": "reference_to_video", "prompt": "p", "reference_images": [img], "reference_videos": [vid], "reference_audios": [aud]})
+    await wavespeed.submit({"feature": "motion_control", "image": img, "video": vid})
+    await wavespeed.submit({"feature": "lip_sync", "image": img, "audio": aud})
+    (m1, p1), (m2, p2), (m3, p3) = ws["submits"]
+    assert m1 == "wavespeed-ai/minimax-h3/reference-to-video" and len(p1["reference_images"]) == len(p1["reference_videos"]) == len(p1["reference_audios"]) == 1
+    assert m2 == "wavespeed-ai/wan-2.2/animate" and set(p2) == {"image", "video"}
+    assert m3 == "wavespeed-ai/infinitetalk-fast" and set(p3) == {"image", "audio"}
+
+
+async def test_video_tools(ws):
+    vid = _input_file("v.mp4")
+    await wavespeed.submit({"feature": "extend_video", "video": vid, "prompt": "go on", "duration": 5})
+    await wavespeed.submit({"feature": "upscale_video", "video": vid, "params": {"target_resolution": "4k"}})
+    await wavespeed.submit({"feature": "remove_video_background", "video": vid})
+    assert [m for m, _ in ws["submits"]] == ["wavespeed-ai/minimax-h3/video-extend", "wavespeed-ai/video-upscaler", "wavespeed-ai/video-background-remover"]
+    assert ws["submits"][1][1]["target_resolution"] == "4k"
+
+
+async def test_audio_tools(ws):
+    await wavespeed.submit({"feature": "generate_music", "prompt": "lofi", "lyrics": "", "duration": 30})
+    await wavespeed.submit({"feature": "generate_sound_effect", "prompt": "door slam", "duration": 3})
+    await wavespeed.submit({"feature": "text_to_speech", "text": "你好", "voice": "Uncle_fu"})
+    await wavespeed.submit({"feature": "voice_clone", "text": "hi", "audio": _input_file("ref.wav")})
+    (m1, p1), (m2, p2), (m3, p3), (m4, p4) = ws["submits"]
+    assert m1 == "wavespeed-ai/ace-step-1.5" and p1 == {"tags": "lofi", "lyrics": "[instrumental]", "duration": 30}
+    assert m2 == "mirelo-ai/sfx-2.0/text-to-audio" and p2 == {"prompt": "door slam", "duration": 3}
+    assert m3 == "wavespeed-ai/qwen3-tts/text-to-speech" and p3 == {"text": "你好", "voice": "Uncle_Fu", "language": "auto"}
+    assert m4 == "wavespeed-ai/qwen3-tts/voice-clone" and p4["text"] == "hi" and p4["audio"].startswith("https://cdn.test/")
+
+
+async def test_expensive_music_reuses_confirmation(ws):
+    job = {"feature": "music", "model": "elevenlabs/music-v2", "prompt": "epic", "duration": 30}
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit(job)
+    assert e.value.status == 409 and e.value.confirm == 0.75 and not ws["submits"]
+    await wavespeed.submit({**job, "confirmed": True})
+    assert ws["submits"][0][1] == {"prompt": "epic", "music_length_ms": 30000}
+
+
+async def test_3d_single_and_multiview(ws):
+    img = _input_png()
+    task = await wavespeed.submit({"feature": "image_to_3d", "image": img})
+    await wavespeed.submit({"feature": "image_to_3d", "model": "tripo3d/h3.1/multiview-to-3d", "images": [img, _input_png("b.png")]})
+    (m1, p1), (m2, p2) = ws["submits"]
+    assert m1 == "wavespeed-ai/trellis-2/image-to-3d" and set(p1) == {"image"}
+    assert m2 == "tripo3d/h3.1/multiview-to-3d" and len(p2["images"]) == 2
+    assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["completed"] is True
+
+
+async def test_transcribe_route(ws, bot_client, fresh_user_dir):
+    path = fresh_user_dir / "input" / "voice.webm"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"audio")
+    ws["outputs"] = ["你好世界"]
+    res = await bot_client.post("/comfyart/wavespeed/transcribe", json={"src": "/api/view?filename=voice.webm&subfolder=&type=input"})
+    assert res.status == 200, await res.text()
+    assert (await res.json())["text"] == "你好世界"
+    assert ws["submits"][0][0] == "wavespeed-ai/openai-whisper-turbo"
+
+
+async def test_storyboard_chains_last_frame_and_concats(ws, monkeypatch):
+    frames, joined = [], []
+    monkeypatch.setattr(wavespeed, "_last_frame", lambda src, out: (frames.append(src), wavespeed._write(out, b"png")))
+    monkeypatch.setattr(wavespeed, "_concat", lambda paths, out: (joined.extend(paths), wavespeed._write(out, b"mp4")))
+    scenes = [{"prompt": "a", "duration": 3}, {"prompt": "b", "duration": 4}, {"prompt": "c", "duration": 3}]
+    group = await wavespeed.submit({"feature": "text_to_video", "prompt": "x", "scenes": scenes})
+    for _ in range(10):
+        hist = (await wavespeed.poll(group))[f"ws:{group}"]
+        if hist["status"]["completed"]:
+            break
+    assert hist["status"]["status_str"] == "completed"
+    models = [m for m, _ in ws["submits"]]
+    assert models == ["wavespeed-ai/minimax-h3/text-to-video"] + ["wavespeed-ai/minimax-h3/image-to-video"] * 2
+    assert [p["prompt"] for _, p in ws["submits"]] == ["a", "b", "c"]
+    assert all(p["image"].startswith("https://cdn.test/") for _, p in ws["submits"][1:])
+    assert len(frames) == 2 and len(joined) == 3
+    assert hist["outputs"]["ws"]["images"][0]["filename"].endswith("_storyboard.mp4")
+
+
+async def test_storyboard_confirms_total_price(ws):
+    scenes = [{"prompt": str(i), "duration": 3} for i in range(13)]  # 13 x $0.04 = $0.52
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit({"feature": "text_to_video", "prompt": "x", "scenes": scenes})
+    assert e.value.status == 409 and e.value.confirm == 0.52 and not ws["submits"]
+
+
+def test_last_frame_and_concat_with_ffmpeg(tmp_path):
+    import shutil
+    import subprocess
+    if not shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg not installed")
+    clips = []
+    for i, color in enumerate(["red", "blue"]):
+        out = tmp_path / f"c{i}.mp4"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", f"color={color}:s=64x64:d=0.5:r=10", "-pix_fmt", "yuv420p", str(out)], check=True)
+        clips.append(str(out))
+    wavespeed._last_frame(clips[0], str(tmp_path / "last.png"))
+    assert (tmp_path / "last.png").stat().st_size > 0
+    wavespeed._concat(clips, str(tmp_path / "all.mp4"))
+    import av
+    with av.open(str(tmp_path / "all.mp4")) as box:
+        assert sum(1 for _ in box.decode(video=0)) == 9  # 5 + 5 - dropped first frame of clip 2
+
+
+async def test_caption_route(ws, bot_client, fresh_user_dir):
+    path = fresh_user_dir / "input" / "pic.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"png")
+    ws["outputs"] = ["a red bicycle"]
+    res = await bot_client.post("/comfyart/wavespeed/caption", json={"src": "/api/view?filename=pic.png&subfolder=&type=input"})
+    assert res.status == 200, await res.text()
+    assert (await res.json())["text"] == "a red bicycle"
+    assert ws["submits"][0][0] == "wavespeed-ai/image-captioner"
+
+
+async def test_llm_complete_uses_openai_compatible_endpoint(bot_client, monkeypatch):
+    from conftest import write_settings
+    seen = {}
+    app = web.Application()
+
+    async def models(request):
+        return web.json_response({"data": [{"id": "my-model"}]})
+
+    async def chat(request):
+        seen.update(await request.json())
+        seen["auth"] = request.headers.get("Authorization")
+        return web.json_response({"choices": [{"message": {"content": "hello there"}}]})
+
+    app.router.add_get("/v1/models", models)
+    app.router.add_post("/v1/chat/completions", chat)
+    server = TestServer(app)
+    await server.start_server()
+    try:
+        write_settings(**{"enable-mcp": True, "enable-bot": True, "bot-local-llm-url": str(server.make_url("/v1"))})
+        monkeypatch.setenv("COMFYART_LOCAL_LLM_API_KEY", "llm-test")
+        res = await bot_client.post("/comfyart/llm/complete", json={"text": "hi", "system": "be brief", "images": []})
+        assert res.status == 200, await res.text()
+        assert (await res.json())["text"] == "hello there"
+        assert seen["model"] == "my-model" and seen["messages"][0] == {"role": "system", "content": "be brief"} and seen["auth"] == "Bearer llm-test"
+    finally:
+        await server.close()

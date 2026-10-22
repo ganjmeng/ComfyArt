@@ -1,9 +1,8 @@
 import { atom } from 'tldraw'
 
-import { api, loadNamed, queuePrompt, uploadImage, viewUrl, waitForText } from './comfy'
+import { api, uploadImage, viewUrl } from './comfy'
 import { t } from './i18n'
 import { botEnabledAtom, settingsAtom } from './bot'
-import { annotated } from './workflows'
 
 function firstObject(text: string): string {
   const start = text.indexOf('{')
@@ -35,7 +34,7 @@ export function parseJson(raw: string): Record<string, unknown> | null {
 }
 
 export async function ask(prompt: string, system: string, images: string[]): Promise<string> {
-  const res = await api('/comfyart/bot/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: prompt, system, images }) })
+  const res = await api('/comfyart/llm/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: prompt, system, images }) })
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(body.error ?? t('llm.agentCallFailed', res.status))
   return body.text as string
@@ -47,14 +46,11 @@ export async function transcribe(audio: Blob): Promise<string> {
 }
 
 export async function transcribeFile(src: string): Promise<string> {
-  const { graph: g, id } = await loadNamed('transcribe-gemma4.api.json', 'prompt', 'save')
-  g.a = { class_type: 'LoadAudio', inputs: { audio: annotated(src) } }
-  Object.assign(g[id.prompt].inputs, {
-    audio: ['a', 0],
-    prompt: 'Transcribe the speech exactly. Output only the transcript. Write Chinese in simplified characters.',
-    system_prompt: 'You are a speech recognition engine.',
-  })
-  return stripThink(await waitForText(await queuePrompt(g), id.save))
+  // speech-to-text runs on WaveSpeed (wavespeed-ai/openai-whisper-turbo)
+  const res = await api('/comfyart/wavespeed/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(body.error?.message ?? body.error ?? `transcribe failed: ${res.status}`)
+  return String(body.text ?? '')
 }
 
 const OCR_PROMPT = 'List every piece of text visible in this image exactly as written, one text block per line, from top to bottom. Output only the text lines, nothing else.'
@@ -70,12 +66,20 @@ function setStatus(src: string, status: OcrStatus | null) {
 }
 
 async function cloudOcr(src: string): Promise<string> {
-  // cloud paddle-ocr via api/ocr.py; the local gemma OCR workflow is no longer used
+  // OCR runs on WaveSpeed paddle-ocr (backend /comfyart/ocr)
   setStatus(src, { stage: 'reading', tokens: 0 })
   const res = await api('/comfyart/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(body.error ?? `OCR failed: ${res.status}`)
-  return ((body.lines ?? []) as { text: string }[]).map((l) => l.text).join('\n')
+  if (!res.ok) throw new Error(body.error?.message ?? body.error ?? `ocr failed: ${res.status}`)
+  return ((body.lines ?? []) as { text?: string }[]).map((l) => l.text ?? '').join('\n')
+}
+
+export async function captionImage(src: string): Promise<string> {
+  // image captioning runs on WaveSpeed (wavespeed-ai/image-captioner)
+  const res = await api('/comfyart/wavespeed/caption', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(body.error?.message ?? body.error ?? `caption failed: ${res.status}`)
+  return String(body.text ?? '')
 }
 
 async function agentOcr(src: string): Promise<string> {

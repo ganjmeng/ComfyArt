@@ -6,7 +6,8 @@ import type { CommentShape } from './shapes/CommentShape'
 import { resultsAtom, spawnHolder, startJob, type ErrorSink, type MediaKind } from './jobs'
 import { notify } from './notices'
 import { annotated, layersGraph, samGraph, type Built, type Crop } from './workflows'
-import { animateGraph, cutoutVideoGraph, extendGraph, upscaleVideoGraph } from './videoGraphs'
+import { nearestRatio } from './generate'
+import { VIDEO_RATIOS } from './genOptions'
 import { t } from './i18n'
 import { canvasBlob } from './canvasBlob'
 import { wsBuilt } from './wavespeed'
@@ -74,16 +75,16 @@ export const expand = (e: Editor, s: TLImageShape, pads: Pads, prompt: string, e
 }
 
 export const animate = (e: Editor, s: TLImageShape, prompt: string, err: ErrorSink, loop = true) =>
-  run(e, s, t('common.animateImage'), err, (src) => animateGraph(src.image, src.w, src.h, prompt, loop))
+  run(e, s, t('common.animateImage'), err, (src) => cloud(wsBuilt({ feature: 'image_to_video', image: src.image, last_image: loop ? src.image : undefined, prompt: prompt || 'Subtle seamless motion. Keep the composition, text and layout unchanged.', duration: 3, ratio: nearestRatio(src.w / src.h, VIDEO_RATIOS) })))
 
 export const upscaleVideo = (e: Editor, s: TLVideoShape, long: number, err: ErrorSink) =>
-  run(e, s, t('actions.upscaleVideo'), err, (src) => upscaleVideoGraph(src.image, src.w, src.h, long), { kind: 'video' })
+  run(e, s, t('actions.upscaleVideo'), err, (src) => cloud(wsBuilt({ feature: 'upscale_video', video: src.image, params: { target_resolution: long >= 3840 ? '4k' : long >= 2560 ? '2k' : '1080p' } })), { kind: 'video' })
 
 export const cutoutVideo = (e: Editor, s: TLVideoShape, err: ErrorSink) =>
-  run(e, s, t('common.removeBackground'), err, async (src) => cutoutVideoGraph(src.image), { kind: 'video' })
+  run(e, s, t('common.removeBackground'), err, async (src) => wsBuilt({ feature: 'remove_video_background', video: src.image }), { kind: 'video' })
 
 export const extendVideo =(e: Editor, s: TLVideoShape, prompt: string, duration: number, err: ErrorSink) =>
-  run(e, s, t('common.extendVideo'), err, (src) => extendGraph(src.image, src.w, src.h, prompt, duration), { kind: 'video' })
+  run(e, s, t('common.extendVideo'), err, (src) => cloud(wsBuilt({ feature: 'extend_video', video: src.image, prompt: prompt || 'Continue the shot naturally.', duration })), { kind: 'video' })
 
 export const styleTransfer = (e: Editor, s: TLImageShape, style: string, ref: string | null, err: ErrorSink) =>
   run(e, s, t('common.styleTransfer'), err, (src) => cloud(wsBuilt({ feature: 'image_edit', image: src.image, images: ref ? [annotated(ref)] : undefined, width: src.w, height: src.h,
