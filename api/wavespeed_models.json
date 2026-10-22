@@ -507,25 +507,12 @@
   "generate_sound_effect": "sound_effect",
   "text_to_speech": "text_to_speech",
   "image_to_3d": "image_to_3d",
-  "ocr": "ocr"
+  "ocr": "ocr",
+  "transcribe": "transcribe"
  },
  "pending_features": [
-  "text_to_video",
-  "image_to_video",
-  "reference_to_video",
-  "motion_control",
-  "lip_sync",
-  "extend_video",
-  "upscale_video",
-  "remove_video_background",
-  "music",
-  "sound_effect",
-  "text_to_speech",
-  "voice_clone",
-  "image_to_3d",
-  "transcribe",
-  "caption",
-  "depth"
+  "depth",
+  "caption"
  ],
- "_pending_comment": "Features listed in pending_features are not wired to WaveSpeed yet (PR-B: video/audio/3D and the $0.50 confirmation); their tools answer 'not yet available in cloud mode'."
+ "_pending_comment": "Features in pending_features are configured but not used by any tool yet (MoGe-style depth and the Ideogram caption step were dropped)."
 }

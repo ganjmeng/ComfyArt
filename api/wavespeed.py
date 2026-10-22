@@ -258,6 +258,68 @@ def _resolution(options: list[str], long_side: int) -> str:
     return min(fits, key=px) if fits else max(options, key=px)
 
 
+MEDIA_FIELDS = ("video", "audio", "last_image")
+MEDIA_LISTS = ("reference_images", "reference_videos", "reference_audios")
+
+
+async def _media_fields(session: aiohttp.ClientSession, props: dict, inputs: dict, payload: dict) -> None:
+    for k in MEDIA_FIELDS:
+        if inputs.get(k) and k in props:
+            payload[k] = await _media(session, str(inputs[k]))
+    for k in MEDIA_LISTS:
+        if inputs.get(k) and k in props:
+            urls = [await _media(session, str(v)) for v in inputs[k]]
+            limit = props[k].get("maxItems")
+            payload[k] = urls[:limit] if limit else urls
+
+
+def _pick(options: list, value):
+    """Exact enum match (case-insensitive), else the numerically nearest option, else the first."""
+    for o in options:
+        if str(o).lower() == str(value).lower():
+            return o
+    digits = re.sub(r"[^0-9.]", "", str(value))
+    if not digits:
+        return options[0]
+    try:
+        num = float(digits)
+        nums = [(abs(float(re.sub(r"[^0-9.]", "", str(o)) or "inf") - num), o) for o in options]
+        best = min(nums, key=lambda t: t[0])
+        if best[0] != float("inf"):
+            return best[1]
+    except ValueError:
+        pass
+    return options[0]
+
+
+def _av_fields(props: dict, required: set, inputs: dict, payload: dict) -> None:
+    """Video/audio knobs: duration, resolution, text, voice, language, lyrics."""
+    seconds = inputs.get("duration")
+    if seconds:
+        if "duration" in props:
+            enum = props["duration"].get("enum")
+            payload["duration"] = _pick(enum, seconds) if enum else seconds
+        elif "music_length_ms" in props:
+            payload["music_length_ms"] = int(float(seconds) * 1000)
+    if inputs.get("resolution") and props.get("resolution", {}).get("enum"):
+        payload["resolution"] = _pick(props["resolution"]["enum"], inputs["resolution"])
+    if inputs.get("text") and "text" in props:
+        payload["text"] = str(inputs["text"])
+    if "lyrics" in props and (inputs.get("lyrics") or "lyrics" in required):
+        payload["lyrics"] = str(inputs.get("lyrics") or "[instrumental]")
+    voice = inputs.get("voice")
+    for k in ("voice", "voice_id"):
+        if k in props:
+            enum = props[k].get("enum")
+            if enum:
+                payload[k] = _pick(enum, voice) if voice else enum[0]
+            elif voice:
+                payload[k] = str(voice)
+    lang = props.get("language", {}).get("enum")
+    if lang and "text" in payload:
+        payload["language"] = "auto" if "auto" in lang else lang[0]
+
+
 async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: dict) -> dict:
     """Map ComfyArt's logical inputs onto whatever fields this model's schema accepts."""
     props = schema.get("properties") or {}
@@ -286,9 +348,13 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
     elif inputs.get("ratio") and props.get("aspect_ratio", {}).get("enum"):
         a, b = str(inputs["ratio"]).split(":")
         payload["aspect_ratio"] = _nearest(props["aspect_ratio"]["enum"], float(a) / float(b))
+    await _media_fields(session, props, inputs, payload)
+    _av_fields(props, set(schema.get("required") or []), inputs, payload)
     for k, v in (inputs.get("params") or {}).items():
         if k in props and v is not None:
             payload[k] = v
+    if inputs.get("prompt") and "prompt" not in props and "tags" in props:
+        payload["tags"] = str(inputs["prompt"])  # ACE-Step names its style prompt "tags"
     if inputs.get("prompt") and "prompt" in props:
         payload["prompt"] = str(inputs["prompt"])
     if inputs.get("seed") is not None and "seed" in props:
@@ -495,6 +561,26 @@ async def wavespeed_cancel(request: web.Request) -> web.Response:
     if job:
         job["done"] = True
     return web.json_response({})
+
+
+@routes.post("/comfyart/wavespeed/transcribe")
+async def wavespeed_transcribe(request: web.Request) -> web.Response:
+    src = (await json_body(request)).get("src")
+    if not isinstance(src, str) or not src:
+        return error("src must be a /api/view URL", 400)
+    try:
+        outputs = await run_raw({"feature": "transcribe", "audio": src})
+        parts = []
+        for out in outputs:
+            text = await fetch_text(out) if isinstance(out, str) and out.startswith(("http://", "https://")) else out
+            if isinstance(text, dict):
+                text = text.get("text") or ""
+            parts.append(str(text))
+    except WaveSpeedError as e:
+        return _respond_error(e)
+    except ValueError as e:
+        return error(str(e), 404)
+    return web.json_response({"text": "\n".join(p.strip() for p in parts if p and p.strip())})
 
 
 @routes.get("/comfyart/wavespeed/models")

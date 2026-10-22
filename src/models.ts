@@ -77,16 +77,23 @@ export const installedAtom = atom<string[] | null>('installed models', null)
 
 /** Swap the local image models for the curated WaveSpeed text-to-image list (api/wavespeed_models.json). */
 async function useCloudImageModels() {
-  const feature = (await loadCloudModels().catch(() => ({}) as Awaited<ReturnType<typeof loadCloudModels>>)).text_to_image
-  if (!feature?.models.length) return
-  const cloud: ModelDef[] = feature.models.map((m) => ({
-    id: m.id, label: m.label + (m.price != null ? ` · $${m.price}` : ''), desc: m.desc || m.local_equivalent || m.id, files: [], refs: 'qwen', cloud: true, lora: null,
-  }))
-  IMAGE_MODELS.splice(0, IMAGE_MODELS.length, ...cloud)
-  if (!modelPrefsAtom.get().auto) modelPrefsAtom.set({ ...modelPrefsAtom.get(), enabled: [...modelPrefsAtom.get().enabled, ...cloud.map((m) => m.id)] })
+  const all = await loadCloudModels().catch(() => ({}) as Awaited<ReturnType<typeof loadCloudModels>>)
+  const defs = (names: string[], video: boolean): ModelDef[] => {
+    const seen = new Set<string>()
+    return names.flatMap((n) => all[n]?.models ?? []).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
+      id: m.id, label: m.label + (m.price != null ? ` · $${m.price}` : ''), desc: m.desc || m.local_equivalent || m.id, files: [], cloud: true, lora: null,
+      ...(video ? { video: true } : { refs: 'qwen' as const }),
+    }))
+  }
+  const image = defs(['text_to_image'], false)
+  const video = defs(['text_to_video', 'image_to_video'], true)
+  if (image.length) IMAGE_MODELS.splice(0, IMAGE_MODELS.length, ...image)
+  if (video.length) VIDEO_MODELS.splice(0, VIDEO_MODELS.length, ...video)
+  const added = [...image, ...video].map((m) => m.id)
+  if (!modelPrefsAtom.get().auto) modelPrefsAtom.set({ ...modelPrefsAtom.get(), enabled: [...modelPrefsAtom.get().enabled, ...added] })
 }
 
-export const isCloudModel = (id: string) => IMAGE_MODELS.some((m) => m.id === id && m.cloud)
+export const isCloudModel = (id: string) => [...IMAGE_MODELS, ...VIDEO_MODELS].some((m) => m.id === id && m.cloud)
 
 export async function loadModels() {
   const [prefs, files, paths] = await Promise.all([readUserJson<ModelPrefs | null>(FILE, null), api('/models/diffusion_models'), loadModelPaths(), useCloudImageModels()])

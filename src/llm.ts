@@ -48,14 +48,11 @@ export async function transcribe(audio: Blob): Promise<string> {
 }
 
 export async function transcribeFile(src: string): Promise<string> {
-  const { graph: g, id } = await loadNamed('transcribe-gemma4.api.json', 'prompt', 'save')
-  g.a = { class_type: 'LoadAudio', inputs: { audio: annotated(src) } }
-  Object.assign(g[id.prompt].inputs, {
-    audio: ['a', 0],
-    prompt: 'Transcribe the speech exactly. Output only the transcript. Write Chinese in simplified characters.',
-    system_prompt: 'You are a speech recognition engine.',
-  })
-  return stripThink(await waitForText(await queuePrompt(g), id.save))
+  // speech-to-text runs on WaveSpeed (wavespeed-ai/openai-whisper-turbo)
+  const res = await api('/comfyart/wavespeed/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(body.error?.message ?? body.error ?? `transcribe failed: ${res.status}`)
+  return String(body.text ?? '')
 }
 
 const OCR_PROMPT = 'List every piece of text visible in this image exactly as written, one text block per line, from top to bottom. Output only the text lines, nothing else.'

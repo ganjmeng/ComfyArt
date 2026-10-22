@@ -18,6 +18,17 @@ export interface WsInputs {
   ratio?: string
   seed?: number
   png?: boolean
+  video?: string
+  audio?: string
+  last_image?: string
+  reference_images?: string[]
+  reference_videos?: string[]
+  reference_audios?: string[]
+  duration?: number
+  resolution?: string
+  text?: string
+  lyrics?: string
+  voice?: string
   params?: Record<string, unknown>
 }
 
@@ -28,8 +39,14 @@ let pending: string | undefined
 
 /** Model the agent (or user) asked for on the tool call being handled right now; startJob takes it. */
 export function setPendingModel(model: unknown) {
-  pending = typeof model === 'string' && model ? model : undefined
+  // WaveSpeed ids look like owner/model; legacy local names (trellis2, pixal3d) fall back to the default
+  pending = typeof model === 'string' && model.includes('/') ? model : undefined
 }
+
+let features: Record<string, CloudFeature> = {}
+
+/** model if it belongs to the feature's curated list, else undefined (backend default). */
+export const modelIn = (feature: string, model: string | undefined) => (model && features[feature]?.models.some((m) => m.id === model) ? model : undefined)
 
 export function takePendingModel(): string | undefined {
   const m = pending
@@ -52,5 +69,6 @@ export function withModel(graph: PromptGraph, model: string | undefined) {
 export async function loadCloudModels(): Promise<Record<string, CloudFeature>> {
   const res = await fetch('/comfyart/wavespeed/models')
   if (!res.ok) return {}
-  return ((await res.json()).features ?? {}) as Record<string, CloudFeature>
+  features = ((await res.json()).features ?? {}) as Record<string, CloudFeature>
+  return features
 }

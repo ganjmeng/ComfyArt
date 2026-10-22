@@ -6,7 +6,7 @@ import { ask, stripThink } from './llm'
 import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from './jobs'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import { agentModels, isCloudModel, isVideo, modelOf } from './models'
-import { wsBuilt } from './wavespeed'
+import { modelIn, wsBuilt } from './wavespeed'
 import { CUSTOM_GENERATE, customGraph, withAlpha } from './customWorkflows'
 import { t } from './i18n'
 import { applyRefs, PALETTE_MODE, refControlsOf, refHints, refLimit, refModesOf, refStrengthsOf, usableRefs } from './refModes'
@@ -132,6 +132,24 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     ...hints,
     colors.length > 0 && palettePrompt(colors),
   ].filter(Boolean).join(' ')
+  if (isVideo(workflow) && isCloudModel(workflow)) {
+    if (scenesOf(shape).some((sc) => sc.prompt.trim())) throw new Error(t('jobs.notInCloud'))
+    const base = { prompt, ratio, duration, resolution: shape.props.resolution || '768p', seed: seedOf(shape) ?? undefined }
+    const mode = videoModeOf(shape)
+    const motion = motionOf(shape)
+    const speech = speechOf(shape)
+    if (mode === 'refs' && refs.length) {
+      const by = (k: RefKind) => refs.filter((r) => refKind(r) === k).map(annotated)
+      return wsBuilt({ ...base, feature: 'reference_to_video', reference_images: by('image'), reference_videos: by('video'), reference_audios: by('audio') })
+    }
+    if (mode === 'motion' && refs[0] && motion) return wsBuilt({ ...base, feature: 'motion_control', image: annotated(refs[0]), video: annotated(motion) })
+    if (mode === 'lipsync' && refs[0] && speech) return wsBuilt({ ...base, feature: 'lip_sync', image: annotated(refs[0]), audio: annotated(speech) })
+    const last = lastFrameOf(shape)
+    if (refs.length || last) {
+      return wsBuilt({ ...base, feature: 'image_to_video', model: modelIn('image_to_video', workflow), image: annotated(refs[0] ?? last!), last_image: refs[0] && last ? annotated(last) : undefined })
+    }
+    return wsBuilt({ ...base, feature: 'text_to_video', model: modelIn('text_to_video', workflow) })
+  }
   if (isVideo(workflow)) {
     const area = VIDEO_AREAS[shape.props.resolution] ?? VIDEO_AREAS['768p']
     const scenes = scenesOf(shape).filter((sc) => sc.prompt.trim())
