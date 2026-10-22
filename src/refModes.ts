@@ -1,4 +1,4 @@
-import { queuePrompt, viewUrl, waitForImages, type PromptGraph } from './comfy'
+import type { PromptGraph } from './comfy'
 import type { ModelDef } from './models'
 import type { GeneratorShape } from './shapes/GeneratorShape'
 import { annotated } from './workflows'
@@ -69,16 +69,6 @@ export const refLimit = (model: ModelDef) => (model.refs === 'qwen' ? QWEN_EDIT_
 
 export function modesFor(model: ModelDef): RefMode[] {
   return model.refs ? REF_MODES : model.control ? REF_MODES.filter((m) => m.control) : []
-}
-
-export async function previewControl(src: string, mode: RefMode, res: number): Promise<string> {
-  const graph: PromptGraph = {
-    r: { class_type: 'LoadImage', inputs: { image: annotated(src) } },
-    x: preprocessNode(mode, ['r', 0], res),
-    o: { class_type: 'PreviewImage', inputs: { images: ['x', 0] } },
-  }
-  const [ref] = await waitForImages(await queuePrompt(graph), 'o')
-  return viewUrl(ref)
 }
 
 export interface UsedRef { src: string; mode: RefMode }

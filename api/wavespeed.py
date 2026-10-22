@@ -296,7 +296,8 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
             payload["num_layers"] = layers
         elif "prompt" in props:
             # models without a layer-count field (seedream) take the user's count in the prompt
-            prompt = f"{prompt}{'. ' if prompt else ''}Separate into {layers} layers."
+            base = prompt.rstrip(" .。")
+            prompt = f"{base}{'. ' if base else ''}Separate into {layers} layers."
     if prompt and "prompt" in props:
         payload["prompt"] = prompt
     if inputs.get("seed") is not None and "seed" in props:
