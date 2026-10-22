@@ -1,26 +1,37 @@
-import { type Editor, type TLImageShape } from 'tldraw'
+import { createShapeId, type Editor, type TLImageShape } from 'tldraw'
 
-import { uploadImage, viewUrl } from './comfy'
+import { promptHistory, uploadImage, viewUrl, type ImageRef } from './comfy'
 import { wsBuilt } from './wavespeed'
-import { GAP, placeMedia, spawnHolder, startJob, toMedia, type ErrorSink } from './jobs'
+import { GAP, placeMedia, registerPlacer, selectResults, spawnHolder, startJob, toMedia, type ErrorSink } from './jobs'
 import { bakeMockup } from './mockupGl'
-import { placementOf, sourcesOf, type MockupShape } from './shapes/MockupShape'
+import { MOCKUP, placementOf, sourcesOf, type MockupShape } from './shapes/MockupShape'
 import { annotated, editGraph } from './workflows'
 import { t } from './i18n'
 
-const MOCKUP_MODEL = 'alibaba/qwen-image-3.0/edit'
-const MOCKUP_PROMPT = 'Turn this image into a realistic product mockup sticker: printed naturally on a product surface, following its curvature, material texture and lighting.'
 const BLEND_PROMPT = 'Make the printed design look naturally printed on the product: follow its folds, curvature, fabric or material texture and lighting. Keep the design content and position, the product and the background unchanged.'
 
 export function createMockup(editor: Editor, shape: TLImageShape, onError: ErrorSink) {
   const asset = shape.props.assetId ? editor.getAsset(shape.props.assetId) : null
   if (asset?.type !== 'image' || !asset.props.src) return
-  const { src, name, w, h } = asset.props
+  const { src, name } = asset.props
   const holder = spawnHolder(editor, shape)
-  // cloud mode: the local birefnet surface workflow is replaced by WaveSpeed qwen-image-3.0 edit
-  void startJob(editor, holder, Promise.resolve(wsBuilt({ feature: 'image_edit', model: MOCKUP_MODEL, image: annotated(src), prompt: MOCKUP_PROMPT, width: w, height: h })), { name: t('mockup.name', name) }, onError)
+  // cloud mode: upstream mockup-surface workflow (BiRefNet mask + DepthAnythingV2 depth) runs on WaveSpeed
+  void startJob(editor, holder, Promise.resolve(wsBuilt({ feature: 'mockup_surface', image: annotated(src) })), { name: t('mockup.name', name), placer: 'mockup', extra: { photo: src } }, onError)
   return holder
 }
+
+registerPlacer('mockup', async (editor, holder, [depth], job) => {
+  const hist = await promptHistory(job.id)
+  const mask = hist?.outputs?.mask?.images?.[0] as ImageRef | undefined
+  if (!mask) throw new Error('mockup surface has no mask')
+  const { w, h } = holder.props as { w: number; h: number }
+  const id = createShapeId()
+  editor.run(() => {
+    editor.deleteShape(holder.id)
+    editor.createShape<MockupShape>({ id, type: MOCKUP, x: holder.x, y: holder.y, parentId: holder.parentId, props: { w, h, name: job.name, photo: String(job.extra?.photo), depth: depth.src, mask: viewUrl(mask) } })
+  }, { history: 'ignore' })
+  selectResults(editor, holder, [id])
+})
 
 async function bakedRef(shape: MockupShape) {
   return uploadImage(await bakeMockup(sourcesOf(shape.props), placementOf(shape.props)), `${shape.props.name || 'mockup'}.png`)
