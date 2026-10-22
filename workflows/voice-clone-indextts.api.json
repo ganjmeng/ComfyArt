@@ -1,6 +1,0 @@
-{
-  "1": { "class_type": "LoadAudio", "inputs": { "audio": "" }, "_meta": { "title": "@voice" } },
-  "2": { "class_type": "easy downloadIndexTTSAndLoadModel", "inputs": { "model": "IndexTTS-2", "download_from": "huggingface" } },
-  "3": { "class_type": "easy indexTTSGenerateSimple", "inputs": { "indextts_model": ["2", 0], "text": "", "unload_model": false, "seed": 0, "reference_audio": ["1", 0] }, "_meta": { "title": "@prompt" } },
-  "4": { "class_type": "SaveAudio", "inputs": { "audio": ["3", 0], "filename_prefix": "comfyart/audio" }, "_meta": { "title": "@save" } }
-}

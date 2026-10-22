@@ -8,7 +8,6 @@ from .nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 
 ROOT = Path(__file__).parent
 DIST = ROOT / "dist"
-WORKFLOWS = ROOT / "workflows"
 
 routes = PromptServer.instance.routes
 
@@ -24,15 +23,6 @@ async def comfyart_index(request: web.Request) -> web.StreamResponse:
     if not index.is_file():
         return web.Response(status=503, text="ComfyArt is not built yet: run `npm install && npm run build` in " + str(ROOT))
     return web.FileResponse(index, headers={"Cache-Control": "no-cache"})
-
-
-@routes.get("/comfyart/workflows/{name}")
-async def comfyart_workflow(request: web.Request) -> web.StreamResponse:
-    name = request.match_info["name"]
-    path = (WORKFLOWS / name).resolve()
-    if path.parent != WORKFLOWS.resolve() or path.suffix != ".json" or not path.is_file():
-        raise web.HTTPNotFound()
-    return web.FileResponse(path)
 
 
 if (DIST / "assets").is_dir():

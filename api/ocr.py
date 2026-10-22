@@ -24,12 +24,12 @@ def _box(value) -> list[list[int]] | None:
     return None
 
 
-MARKDOWN = re.compile(r"^\s*(?:#{1,6}\s+|[*+-]\s+|>\s*|\d+[.)]\s+)+")
+MARKDOWN = re.compile(r"^\s*#{1,6}\s+")  # heading markers only; list numbering like "1." is real text
 EMPHASIS = re.compile(r"(\*\*|__|\*|`)")
 
 
 def clean_text(text: str) -> str:
-    """Drop markdown markup PaddleOCR adds to block_content (headings, bullets, emphasis)."""
+    """Drop markdown markup PaddleOCR adds to block_content (heading markers, emphasis)."""
     lines = [EMPHASIS.sub("", MARKDOWN.sub("", ln)).strip() for ln in text.splitlines()]
     return "\n".join(ln for ln in lines if ln)
 

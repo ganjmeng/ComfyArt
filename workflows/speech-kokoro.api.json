@@ -1,5 +1,0 @@
-{
-  "1": { "class_type": "KokoroSpeaker", "inputs": { "speaker_name": "zf_xiaoxiao" }, "_meta": { "title": "@voice" } },
-  "2": { "class_type": "KokoroGenerator", "inputs": { "text": "", "speaker": ["1", 0], "speed": 1, "lang": "Mandarin Chinese" }, "_meta": { "title": "@prompt" } },
-  "3": { "class_type": "SaveAudio", "inputs": { "audio": ["2", 0], "filename_prefix": "comfyart/audio" }, "_meta": { "title": "@save" } }
-}

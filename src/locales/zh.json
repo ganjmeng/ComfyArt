@@ -150,7 +150,7 @@
   "botSettings.localLlmUrlHint": "OpenAI 兼容端点，例如 http://127.0.0.1:8081/v1",
   "botSettings.ocrAgent": "默认 Agent（Agent 未开启时用本地模型）",
   "botSettings.ocrEngine": "文字识别（编辑文字、提取文字）",
-  "botSettings.ocrLocal": "ComfyUI 本地模型（Gemma 4）",
+  "botSettings.ocrLocal": "WaveSpeed 云端 OCR（paddle-ocr）",
   "botSettings.unavailable": "不可用",
   "canvasChat.chat": "对话",
   "canvasChat.chatSelection": "对选中内容对话",
