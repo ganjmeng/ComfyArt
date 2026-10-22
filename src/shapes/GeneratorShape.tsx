@@ -11,6 +11,7 @@ import {
 
 import { isVideo } from '../models'
 import { progressAtom } from '../progress'
+import { resultsAtom } from '../jobs'
 import { Icons } from '../ui/icons'
 
 export const GENERATOR = 'generator'
@@ -86,10 +87,12 @@ export class GeneratorShapeUtil extends BaseBoxShapeUtil<GeneratorShape> {
 function GeneratorCard({ shape }: { shape: GeneratorShape }) {
   const job = shape.meta.job as { id: string } | undefined
   const progress = useValue('generator progress', () => (job ? progressAtom.get()[job.id] : undefined), [job?.id])
+  const error = useValue('generator error', () => (job ? undefined : resultsAtom.get()[shape.id]?.error), [job?.id, shape.id])
   const p = progress && progress.max > 0 ? Math.min(1, progress.value / progress.max) : 0
   return (
     <HTMLContainer className="ca-gen-card" data-running={job ? true : undefined}>
       <span className="ca-gen-card__icon">{isVideo(shape.props.workflow) ? Icons.video : Icons.image}</span>
+      {error && <div className="ca-gen-card__error" role="alert">{error}</div>}
       {job && <div className="ca-gen-ring" data-indeterminate={p > 0 ? undefined : true} style={{ '--ca-p': p } as React.CSSProperties} />}
     </HTMLContainer>
   )
