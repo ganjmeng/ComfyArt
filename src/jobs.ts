@@ -58,6 +58,7 @@ export function jobOf(shape: TLShape): Job | null {
 
 export async function toMedia(ref: ImageRef, kind: MediaKind): Promise<Media> {
   const src = viewUrl(ref)
+  if (kind === 'image' && refKind(src) === 'video') kind = 'video' // cloud animations are MP4, not animated WebP
   if (kind === 'audio' || kind === 'model') return { ref, src, w: 0, h: 0, kind }
   const { w, h } = ref.metadata?.width && ref.metadata?.height && kind === 'image'
     ? { w: ref.metadata.width, h: ref.metadata.height }

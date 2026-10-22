@@ -49,6 +49,7 @@ MODELS = [
     _meta("wavespeed-ai/trellis-2/image-to-3d", {"image": {"type": "string"}, "seed": {"type": "integer"}}, ("image",), price=0.2),
     _meta("tripo3d/h3.1/multiview-to-3d", {"images": {"type": "array"}}, ("images",), price=0.24),
     _meta("wavespeed-ai/openai-whisper-turbo", {"audio": {"type": "string"}, "language": {"type": "string", "enum": ["auto"]}}, ("audio",), price=0.0007),
+    _meta("wavespeed-ai/image-captioner", {"image": {"type": "string"}}, ("image",), price=0.001),
     _meta("wavespeed-ai/image-upscaler", {"image": {"type": "string"}, "target_resolution": {"type": "string", "enum": ["2k", "4k", "8k"]}}, ("image",)),
 ]
 
@@ -466,3 +467,86 @@ async def test_transcribe_route(ws, bot_client, fresh_user_dir):
     assert res.status == 200, await res.text()
     assert (await res.json())["text"] == "你好世界"
     assert ws["submits"][0][0] == "wavespeed-ai/openai-whisper-turbo"
+
+
+async def test_storyboard_chains_last_frame_and_concats(ws, monkeypatch):
+    frames, joined = [], []
+    monkeypatch.setattr(wavespeed, "_last_frame", lambda src, out: (frames.append(src), wavespeed._write(out, b"png")))
+    monkeypatch.setattr(wavespeed, "_concat", lambda paths, out: (joined.extend(paths), wavespeed._write(out, b"mp4")))
+    scenes = [{"prompt": "a", "duration": 3}, {"prompt": "b", "duration": 4}, {"prompt": "c", "duration": 3}]
+    group = await wavespeed.submit({"feature": "text_to_video", "prompt": "x", "scenes": scenes})
+    for _ in range(10):
+        hist = (await wavespeed.poll(group))[f"ws:{group}"]
+        if hist["status"]["completed"]:
+            break
+    assert hist["status"]["status_str"] == "completed"
+    models = [m for m, _ in ws["submits"]]
+    assert models == ["wavespeed-ai/minimax-h3/text-to-video"] + ["wavespeed-ai/minimax-h3/image-to-video"] * 2
+    assert [p["prompt"] for _, p in ws["submits"]] == ["a", "b", "c"]
+    assert all(p["image"].startswith("https://cdn.test/") for _, p in ws["submits"][1:])
+    assert len(frames) == 2 and len(joined) == 3
+    assert hist["outputs"]["ws"]["images"][0]["filename"].endswith("_storyboard.mp4")
+
+
+async def test_storyboard_confirms_total_price(ws):
+    scenes = [{"prompt": str(i), "duration": 3} for i in range(13)]  # 13 x $0.04 = $0.52
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit({"feature": "text_to_video", "prompt": "x", "scenes": scenes})
+    assert e.value.status == 409 and e.value.confirm == 0.52 and not ws["submits"]
+
+
+def test_last_frame_and_concat_with_ffmpeg(tmp_path):
+    import shutil
+    import subprocess
+    if not shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg not installed")
+    clips = []
+    for i, color in enumerate(["red", "blue"]):
+        out = tmp_path / f"c{i}.mp4"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", f"color={color}:s=64x64:d=0.5:r=10", "-pix_fmt", "yuv420p", str(out)], check=True)
+        clips.append(str(out))
+    wavespeed._last_frame(clips[0], str(tmp_path / "last.png"))
+    assert (tmp_path / "last.png").stat().st_size > 0
+    wavespeed._concat(clips, str(tmp_path / "all.mp4"))
+    import av
+    with av.open(str(tmp_path / "all.mp4")) as box:
+        assert sum(1 for _ in box.decode(video=0)) == 9  # 5 + 5 - dropped first frame of clip 2
+
+
+async def test_caption_route(ws, bot_client, fresh_user_dir):
+    path = fresh_user_dir / "input" / "pic.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"png")
+    ws["outputs"] = ["a red bicycle"]
+    res = await bot_client.post("/comfyart/wavespeed/caption", json={"src": "/api/view?filename=pic.png&subfolder=&type=input"})
+    assert res.status == 200, await res.text()
+    assert (await res.json())["text"] == "a red bicycle"
+    assert ws["submits"][0][0] == "wavespeed-ai/image-captioner"
+
+
+async def test_llm_complete_uses_openai_compatible_endpoint(bot_client, monkeypatch):
+    from conftest import write_settings
+    seen = {}
+    app = web.Application()
+
+    async def models(request):
+        return web.json_response({"data": [{"id": "my-model"}]})
+
+    async def chat(request):
+        seen.update(await request.json())
+        seen["auth"] = request.headers.get("Authorization")
+        return web.json_response({"choices": [{"message": {"content": "hello there"}}]})
+
+    app.router.add_get("/v1/models", models)
+    app.router.add_post("/v1/chat/completions", chat)
+    server = TestServer(app)
+    await server.start_server()
+    try:
+        write_settings(**{"enable-mcp": True, "enable-bot": True, "bot-local-llm-url": str(server.make_url("/v1"))})
+        monkeypatch.setenv("COMFYART_LOCAL_LLM_API_KEY", "llm-test")
+        res = await bot_client.post("/comfyart/llm/complete", json={"text": "hi", "system": "be brief", "images": []})
+        assert res.status == 200, await res.text()
+        assert (await res.json())["text"] == "hello there"
+        assert seen["model"] == "my-model" and seen["messages"][0] == {"role": "system", "content": "be brief"} and seen["auth"] == "Bearer llm-test"
+    finally:
+        await server.close()

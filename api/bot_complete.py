@@ -53,3 +53,46 @@ async def bot_complete(request: web.Request) -> web.Response:
     if result.error:
         return error(f"{provider.label}: {result.error}", 502)
     return web.json_response({"text": "".join(parts), "provider": provider.id})
+
+
+@routes.post("/comfyart/llm/complete")
+async def llm_complete(request: web.Request) -> web.Response:
+    """One-shot completion on the user's OpenAI-compatible LLM endpoint (the Local LLM setting)."""
+    import os
+
+    import aiohttp
+
+    from ..bot.local_llm import _API_KEY_ENV, _user_content
+
+    body = await json_body(request)
+    text = str(body.get("text") or "").strip()
+    system = str(body.get("system") or "").strip()
+    images = body.get("images") or []
+    if not text or not isinstance(images, list):
+        return error("text and an images list are required", 400)
+    base = str(get_setting("bot-local-llm-url") or "").strip().rstrip("/")
+    if not base:
+        return error("no LLM endpoint configured; set the OpenAI-compatible endpoint URL in Agent settings", 400)
+    try:
+        attachments = [await asyncio.to_thread(render_attachment, str(u)) for u in images[:ATTACH_MAX_COUNT]]
+    except MEDIA_ERRORS as e:
+        return error(str(e), 400)
+    headers = {"Content-Type": "application/json"}
+    if os.environ.get(_API_KEY_ENV):
+        headers["Authorization"] = f"Bearer {os.environ[_API_KEY_ENV]}"
+    messages = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": _user_content(text, attachments)}]
+    try:
+        async with aiohttp.ClientSession(headers=headers, timeout=aiohttp.ClientTimeout(total=300)) as session:
+            model = provider_model("local-llm")
+            if not model:
+                async with session.get(f"{base}/models") as res:
+                    data = await res.json(content_type=None) if res.status < 400 else {}
+                model = next((str(m.get("id")) for m in (data or {}).get("data") or [] if m.get("id")), "")
+            async with session.post(f"{base}/chat/completions", json={"model": model, "messages": messages, "stream": False}) as res:
+                reply = await res.json(content_type=None)
+                if res.status >= 400:
+                    return error(f"LLM endpoint: HTTP {res.status}", 502)
+    except (TimeoutError, aiohttp.ClientError, ValueError) as e:
+        return error(f"LLM endpoint unreachable: {e}", 502)
+    content = (((reply or {}).get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+    return web.json_response({"text": content if isinstance(content, str) else str(content), "model": model})

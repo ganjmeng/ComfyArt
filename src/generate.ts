@@ -1,18 +1,17 @@
 import { createShapeId, type Editor, type TLShape, type TLShapeId } from 'tldraw'
 
-import { defaultTarget, loadNamed, loadWorkflow, mediaMeta, refKind, uploadImage, validTarget, viewUrl, type PromptGraph, type RefKind } from './comfy'
+import { defaultTarget, refKind, uploadImage, validTarget, viewUrl, type PromptGraph, type RefKind } from './comfy'
 import type { LoraPick } from './loras'
-import { ask, stripThink } from './llm'
 import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from './jobs'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import { agentModels, isCloudModel, isVideo, modelOf } from './models'
 import { modelIn, wsBuilt } from './wavespeed'
 import { CUSTOM_GENERATE, customGraph, withAlpha } from './customWorkflows'
 import { t } from './i18n'
-import { applyRefs, PALETTE_MODE, refControlsOf, refHints, refLimit, refModesOf, refStrengthsOf, usableRefs } from './refModes'
+import { PALETTE_MODE, refHints, refLimit, refModesOf, usableRefs } from './refModes'
 import { paletteImage, palettePrompt } from './palette'
 import { annotated, randomSeed, type Built } from './workflows'
-import { imageToVideoGraph, lipSyncGraph, MAX_VIDEO_REF_KINDS, motionGraph, r2vGraph, storyboardGraph, t2vGraph, VIDEO_AREAS, videoSize, type Scene } from './videoGraphs'
+import { MAX_VIDEO_REF_KINDS, VIDEO_AREAS, videoSize, type Scene } from './videoGraphs'
 import { SHOTS, STYLES, VIDEO_RATIOS } from './genOptions'
 
 export function scenesOf(shape: GeneratorShape): Scene[] {
@@ -23,8 +22,6 @@ export function capRefs(srcs: string[]): string[] {
   const count: Record<RefKind, number> = { image: 0, video: 0, audio: 0 }
   return srcs.filter((src) => count[refKind(src)]++ < MAX_VIDEO_REF_KINDS[refKind(src)])
 }
-
-const H3_MAX_SECONDS = 3600 / 24
 
 export type VideoMode = 'frames' | 'refs' | 'motion' | 'lipsync'
 const VIDEO_MODES: VideoMode[] = ['refs', 'motion', 'lipsync']
@@ -110,13 +107,8 @@ function applyLoras(graph: PromptGraph, unet: string, loras: LoraPick[]) {
   for (const n of consumers) n.inputs.model = model
 }
 
-async function caption(spec: string, prompt: string, width: number, height: number): Promise<string> {
-  const { system, template } = await loadWorkflow(spec) as unknown as { system: string; template: string }
-  return stripThink(await ask(template.replace('{w}', String(width)).replace('{h}', String(height)).replace('{prompt}', prompt), system, []))
-}
-
 async function generateGraph(shape: GeneratorShape): Promise<Built> {
-  const { ratio, count, workflow, duration, transparent, quality, style } = shape.props
+  const { ratio, count, workflow, duration, transparent, style } = shape.props
   const suffix = (isVideo(workflow) ? SHOTS : STYLES).find(([k]) => k === style)?.[2]
   const refs = refsOf(shape)
   const model = isVideo(workflow) ? null : modelOf(workflow) ?? agentModels(false)[0]
@@ -133,8 +125,15 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     colors.length > 0 && palettePrompt(colors),
   ].filter(Boolean).join(' ')
   if (isVideo(workflow) && isCloudModel(workflow)) {
-    if (scenesOf(shape).some((sc) => sc.prompt.trim())) throw new Error(t('jobs.notInCloud'))
     const base = { prompt, ratio, duration, resolution: shape.props.resolution || '768p', seed: seedOf(shape) ?? undefined }
+    const scenes = scenesOf(shape).filter((sc) => sc.prompt.trim())
+    if (scenes.length) {
+      // storyboard: the backend runs one cloud task per scene with the current model
+      const scened = scenes.map((sc) => ({ prompt: [sc.prompt, suffix].filter(Boolean).join(', '), duration: sc.duration }))
+      return refs[0]
+        ? wsBuilt({ ...base, feature: 'image_to_video', model: modelIn('image_to_video', workflow), image: annotated(refs[0]), scenes: scened })
+        : wsBuilt({ ...base, feature: 'text_to_video', model: modelIn('text_to_video', workflow), scenes: scened })
+    }
     const mode = videoModeOf(shape)
     const motion = motionOf(shape)
     const speech = speechOf(shape)
@@ -150,26 +149,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     }
     return wsBuilt({ ...base, feature: 'text_to_video', model: modelIn('text_to_video', workflow) })
   }
-  if (isVideo(workflow)) {
-    const area = VIDEO_AREAS[shape.props.resolution] ?? VIDEO_AREAS['768p']
-    const scenes = scenesOf(shape).filter((sc) => sc.prompt.trim())
-    if (scenes.length) {
-      return storyboardGraph(scenes.map((sc) => ({ ...sc, prompt: [sc.prompt, suffix].filter(Boolean).join(', ') })), ratioOf(ratio), refs[0] ? annotated(refs[0]) : null, area)
-    }
-    const mode = videoModeOf(shape)
-    if (mode === 'refs' && refs.length) return r2vGraph(refs.map((src) => ({ file: annotated(src), kind: refKind(src) })), prompt, ratioOf(ratio), duration, area)
-    const motion = motionOf(shape)
-    if (mode === 'motion' && refs[0] && motion) return motionGraph(annotated(refs[0]), annotated(motion), prompt, ratioOf(ratio), duration, area)
-    const speech = speechOf(shape)
-    if (mode === 'lipsync' && refs[0] && speech) {
-      const { seconds } = await mediaMeta(speech, 'audio')
-      return lipSyncGraph(annotated(refs[0]), annotated(speech), prompt, ratioOf(ratio), Math.min(seconds, H3_MAX_SECONDS), area)
-    }
-    const last = lastFrameOf(shape)
-    return refs.length || last
-      ? imageToVideoGraph(refs[0] ? annotated(refs[0]) : null, prompt, ratioOf(ratio), duration, last ? annotated(last) : null, area)
-      : t2vGraph(prompt, ratioOf(ratio), duration, area)
-  }
+  if (isVideo(workflow)) throw new Error(t('jobs.notInCloud'))
   const [width, height] = targetSize(shape.props)
   if (model && isCloudModel(model.id)) {
     const base = baseOf(shape)
@@ -191,39 +171,8 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     if (!custom) throw new Error(t('customWorkflows.generateGone', model.label))
     return custom
   }
-  if (!model) throw new Error('unknown image model')
-  const extra = [...model.sizes!, model.steps?.[0], model.negative?.[0], model.refs === 'latent' && 'guider'].filter((n) => typeof n === 'string')
-  const { graph, id } = await loadNamed(model.id, 'unet', 'vae', 'prompt', 'size', 'sampler', 'decode', 'save', ...extra)
-  graph[id.prompt].inputs[model.prompt!] = model.caption ? await caption(model.caption, prompt, width, height) : prompt
-  if (model.negative) graph[id[model.negative[0]]].inputs[model.negative[1]] = negativeOf(shape)
-  if (model.lora) applyLoras(graph, id.unet, lorasOf(shape))
-  applyRefs(graph, id, model, used, refStrengthsOf(shape), refControlsOf(shape), width, height)
-  for (const name of model.sizes!) Object.assign(graph[id[name]].inputs, { width, height })
-  graph[id.size].inputs.batch_size = count
-  const base = baseOf(shape)
-  if (base) {
-    graph.b0 = { class_type: 'LoadImage', inputs: { image: annotated(base.src) } }
-    graph.b1 = { class_type: 'ImageScale', inputs: { image: ['b0', 0], upscale_method: 'lanczos', width, height, crop: 'center' } }
-    graph.b2 = { class_type: 'VAEEncode', inputs: { pixels: ['b1', 0], vae: [id.vae, 0] } }
-    graph.b3 = { class_type: 'RepeatLatentBatch', inputs: { samples: ['b2', 0], amount: count } }
-    graph[id.sampler].inputs.latent_image = ['b3', 0]
-    if (graph[id.sampler].class_type === 'KSampler') graph[id.sampler].inputs.denoise = base.strength / 100
-    else {
-      graph.b4 = { class_type: 'SplitSigmasDenoise', inputs: { sigmas: graph[id.sampler].inputs.sigmas, denoise: base.strength / 100 } }
-      graph[id.sampler].inputs.sigmas = ['b4', 1]
-    }
-  }
-  if (model.steps) graph[id[model.steps[0]]].inputs.steps = model.steps[1][quality] ?? model.steps[1].standard
-  if (transparent) {
-    Object.assign(graph, {
-      bg1: { class_type: 'LoadBackgroundRemovalModel', inputs: { bg_removal_name: 'birefnet.safetensors' } },
-      bg2: { class_type: 'RemoveBackground', inputs: { bg_removal_model: ['bg1', 0], image: [id.decode, 0] } },
-      bg3: { class_type: 'InvertMask', inputs: { mask: ['bg2', 0] } },
-      bg4: { class_type: 'JoinImageWithAlpha', inputs: { image: [id.decode, 0], alpha: ['bg3', 0] } },
-    })
-    graph[id.save].inputs.images = ['bg4', 0]
-  }
-  return { graph, result: id.save }
+  // local diffusion models are gone: cloud image models are handled above
+  throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')
 }
 
 export function generate(editor: Editor, shape: GeneratorShape, onError: ErrorSink) {

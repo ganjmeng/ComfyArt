@@ -1,10 +1,8 @@
 import { atom } from 'tldraw'
 
-import { api, loadNamed, queuePrompt, uploadImage, viewUrl, waitForText } from './comfy'
+import { api, uploadImage, viewUrl } from './comfy'
 import { t } from './i18n'
 import { botEnabledAtom, settingsAtom } from './bot'
-import { annotated } from './workflows'
-import { onComfyEvent } from './ws'
 
 function firstObject(text: string): string {
   const start = text.indexOf('{')
@@ -36,7 +34,7 @@ export function parseJson(raw: string): Record<string, unknown> | null {
 }
 
 export async function ask(prompt: string, system: string, images: string[]): Promise<string> {
-  const res = await api('/comfyart/bot/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: prompt, system, images }) })
+  const res = await api('/comfyart/llm/complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: prompt, system, images }) })
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(body.error ?? t('llm.agentCallFailed', res.status))
   return body.text as string
@@ -67,27 +65,21 @@ function setStatus(src: string, status: OcrStatus | null) {
   ocrStatusAtom.set(status ? { ...rest, [src]: status } : rest)
 }
 
-async function localOcr(src: string): Promise<string> {
-  const { graph: g, id: node } = await loadNamed('transcribe-gemma4.api.json', 'prompt', 'save')
-  g.i = { class_type: 'LoadImage', inputs: { image: annotated(src) } }
-  Object.assign(g[node.prompt].inputs, { image: ['i', 0], prompt: OCR_PROMPT, system_prompt: OCR_SYSTEM })
-  const id = await queuePrompt(g)
-  setStatus(src, { stage: 'queued', tokens: 0 })
-  const stops = [
-    onComfyEvent('executing', (d: { prompt_id?: string; node?: string | null }) => {
-      if (d?.prompt_id === id && d.node && ocrStatusAtom.get()[src]?.stage === 'queued') setStatus(src, { stage: 'loading', tokens: 0 })
-    }),
-    onComfyEvent('progress', (d: { prompt_id?: string; value?: number }) => {
-      if (d?.prompt_id === id) setStatus(src, { stage: 'reading', tokens: Number(d.value) || 0 })
-    }),
-  ]
-  try {
-    const queue = await (await api('/queue')).json()
-    if (queue.queue_running?.some((job: unknown[]) => job[1] === id) && ocrStatusAtom.get()[src]?.stage === 'queued') setStatus(src, { stage: 'loading', tokens: 0 })
-    return await waitForText(id, node.save)
-  } finally {
-    stops.forEach((stop) => stop())
-  }
+async function cloudOcr(src: string): Promise<string> {
+  // OCR runs on WaveSpeed paddle-ocr (backend /comfyart/ocr)
+  setStatus(src, { stage: 'reading', tokens: 0 })
+  const res = await api('/comfyart/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(body.error?.message ?? body.error ?? `ocr failed: ${res.status}`)
+  return ((body.lines ?? []) as { text?: string }[]).map((l) => l.text ?? '').join('\n')
+}
+
+export async function captionImage(src: string): Promise<string> {
+  // image captioning runs on WaveSpeed (wavespeed-ai/image-captioner)
+  const res = await api('/comfyart/wavespeed/caption', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(body.error?.message ?? body.error ?? `caption failed: ${res.status}`)
+  return String(body.text ?? '')
 }
 
 async function agentOcr(src: string): Promise<string> {
@@ -99,7 +91,7 @@ export function ocrLines(src: string): Promise<string[]> {
   const engine = settingsAtom.get()['ocr-engine'] === 'agent' && botEnabledAtom.get() ? 'agent' : 'local'
   const key = `${engine}|${src}`
   if (!ocrCache.has(key)) {
-    const job = (engine === 'agent' ? agentOcr(src) : localOcr(src))
+    const job = (engine === 'agent' ? agentOcr(src) : cloudOcr(src))
       .then((text) => [...new Set(stripThink(text).split('\n').map((l) => l.trim()).filter(Boolean))])
       .finally(() => setStatus(src, null))
     job.catch(() => ocrCache.delete(key))

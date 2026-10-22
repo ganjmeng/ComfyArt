@@ -14,6 +14,8 @@ import math
 import mimetypes
 import os
 import re
+import shutil
+import subprocess
 import threading
 import time
 import urllib.request
@@ -399,6 +401,8 @@ def _active() -> int:
 
 
 async def submit(inputs: dict) -> str:
+    if isinstance(inputs.get("scenes"), list):
+        return await _submit_scenes(inputs)
     feature = feature_of(str(inputs.get("feature") or ""))
     model = resolve_model(feature, inputs.get("model"))
     _check_limits()
@@ -421,6 +425,102 @@ async def submit(inputs: dict) -> str:
     _jobs[task] = {"model": model, "feature": feature, "started": time.time(), "next_poll": time.time() + POLL_MIN}
     log.info("WaveSpeed task %s submitted (%s)", task, model)
     return task
+
+
+async def _submit_scenes(inputs: dict) -> str:
+    """Storyboard: scenes run one after another on image-to-video, each starting from the
+    previous clip's last frame; the clips are then concatenated locally (no model)."""
+    scenes = [sc for sc in inputs["scenes"] if isinstance(sc, dict) and str(sc.get("prompt") or "").strip()]
+    if not scenes:
+        raise WaveSpeedError("storyboard has no scenes", 400)
+    base = {k: v for k, v in inputs.items() if k != "scenes"}
+    feature = "image_to_video" if base.get("image") else "text_to_video"
+    first_model = resolve_model(feature, base.get("model") if feature == base.get("feature") else None)
+    chain_model = resolve_model("image_to_video", base.get("model") if base.get("feature") == "image_to_video" else None)
+    cat = await catalog()
+    prices = [((cat.get(m) or {}).get("base_price")) for m in [first_model] + [chain_model] * (len(scenes) - 1)]
+    total = sum(p for p in prices if isinstance(p, (int, float)))
+    if total >= limits()["confirm_usd"] and not base.get("confirmed"):
+        raise WaveSpeedError(f"{len(scenes)} scenes cost about ${total:.2f}; confirm to continue", 409, confirm=round(total, 2))
+    jobs = [{**base, "feature": feature if i == 0 else "image_to_video", "model": first_model if i == 0 else chain_model,
+             "confirmed": True, "prompt": str(sc["prompt"]), **({"duration": sc["duration"]} if sc.get("duration") else {})}
+            for i, sc in enumerate(scenes)]
+    first = await submit(jobs[0])
+    group = f"sb-{first}"
+    _jobs[group] = {"group": [first], "pending": jobs[1:], "clips": [], "started": time.time(), "next_poll": 0.0, "done": False}
+    return group
+
+
+def _last_frame(video_path: str, out_path: str) -> None:
+    import av  # ships with ComfyUI
+    last = None
+    with av.open(video_path) as box:
+        for frame in box.decode(video=0):
+            last = frame
+    if last is None:
+        raise WaveSpeedError("storyboard clip has no frames")
+    last.to_image().save(out_path)
+
+
+def _ffmpeg() -> str:
+    exe = shutil.which("ffmpeg")
+    if not exe:
+        try:
+            import imageio_ffmpeg
+            exe = imageio_ffmpeg.get_ffmpeg_exe()
+        except ImportError as e:
+            raise WaveSpeedError("ffmpeg is needed to join storyboard clips") from e
+    return exe
+
+
+def _concat(paths: list[str], out_path: str) -> None:
+    # same as the local graph: keep clip 1, drop the first frame (= previous last frame) of later clips
+    args = [_ffmpeg(), "-y", "-loglevel", "error"]
+    for p in paths:
+        args += ["-i", p]
+    parts, n = [], len(paths)
+    for i in range(n):
+        drop = "" if i == 0 else "select=gte(n\\,1),"
+        parts.append(f"[{i}:v]{drop}setpts=N/FRAME_RATE/TB[v{i}]")
+    parts.append("".join(f"[v{i}]" for i in range(n)) + f"concat=n={n}:v=1:a=0[v]")
+    subprocess.run(args + ["-filter_complex", ";".join(parts), "-map", "[v]", "-pix_fmt", "yuv420p", out_path], check=True)
+
+
+def _ref_path(ref: dict) -> str:
+    return os.path.join(os.path.abspath(folder_paths.get_output_directory()), ref["subfolder"], ref["filename"])
+
+
+async def _poll_group(group: str, job: dict) -> dict:
+    task = job["group"][-1]
+    entry = (await poll(task)).get(f"ws:{task}") or {}
+    status = entry.get("status") or {}
+    if status.get("status_str") == "error":
+        job["done"] = True
+        job["result"] = _history(group, "failed", status.get("messages") or [], {})
+        return job["result"]
+    if not status.get("completed"):
+        return _history(group, "processing", [], {})
+    clip = (((entry.get("outputs") or {}).get("ws") or {}).get("images") or [None])[0]
+    if clip is None:
+        return _fail(group, "storyboard scene finished without a clip")
+    job["clips"].append(clip)
+    try:
+        if job["pending"]:
+            nxt = job["pending"].pop(0)
+            name = f"ws_{group[:15]}_last{len(job['clips'])}.png"
+            os.makedirs(folder_paths.get_input_directory(), exist_ok=True)
+            await asyncio.to_thread(_last_frame, _ref_path(clip), os.path.join(folder_paths.get_input_directory(), name))
+            job["group"].append(await submit({**nxt, "image": f"{name} [input]"}))
+            return _history(group, "processing", [], {})
+        out = {"filename": f"ws_{group[:15]}_storyboard.mp4", "subfolder": SUBFOLDER, "type": "output"}
+        await asyncio.to_thread(_concat, [_ref_path(c) for c in job["clips"]], _ref_path(out))
+    except (OSError, subprocess.CalledProcessError) as e:
+        return _fail(group, f"storyboard failed: {e}")
+    except WaveSpeedError as e:
+        return _fail(group, str(e))
+    job["done"] = True
+    job["result"] = _history(group, "completed", [], {"ws": {"images": [out]}})
+    return job["result"]
 
 
 def _ext(url: str, default: str) -> str:
@@ -462,6 +562,8 @@ async def poll(task: str) -> dict:
         job = _jobs[task] = {"started": time.time(), "next_poll": 0.0}
     if job.get("result"):
         return job["result"]
+    if job.get("group"):
+        return await _poll_group(task, job)
     now = time.time()
     if now - job["started"] > JOB_TIMEOUT:
         return _fail(task, f"WaveSpeed task timed out after {int(JOB_TIMEOUT)}s")
@@ -589,6 +691,21 @@ async def wavespeed_transcribe(request: web.Request) -> web.Response:
     except ValueError as e:
         return error(str(e), 404)
     return web.json_response({"text": "\n".join(p.strip() for p in parts if p and p.strip())})
+
+
+@routes.post("/comfyart/wavespeed/caption")
+async def wavespeed_caption(request: web.Request) -> web.Response:
+    src = (await json_body(request)).get("src")
+    if not isinstance(src, str) or not src:
+        return error("src must be a /api/view URL", 400)
+    try:
+        outputs = await run_raw({"feature": "caption", "image": src})
+        parts = [await fetch_text(o) if isinstance(o, str) and o.startswith(("http://", "https://")) else str(o) for o in outputs]
+    except WaveSpeedError as e:
+        return _respond_error(e)
+    except ValueError as e:
+        return error(str(e), 404)
+    return web.json_response({"text": "\n".join(p.strip() for p in parts if p.strip())})
 
 
 @routes.get("/comfyart/wavespeed/models")

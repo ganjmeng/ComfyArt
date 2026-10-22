@@ -30,6 +30,7 @@ export interface WsInputs {
   lyrics?: string
   voice?: string
   layers?: number
+  scenes?: { prompt: string; duration: number }[]
   params?: Record<string, unknown>
 }
 

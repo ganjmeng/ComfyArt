@@ -511,8 +511,7 @@
   "transcribe": "transcribe"
  },
  "pending_features": [
-  "depth",
-  "caption"
+  "depth"
  ],
  "_pending_comment": "Features in pending_features are configured but not used by any tool yet (MoGe-style depth and the Ideogram caption step were dropped)."
 }
