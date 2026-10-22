@@ -18,6 +18,7 @@ export interface WsInputs {
   ratio?: string
   seed?: number
   png?: boolean
+  layers?: number
   params?: Record<string, unknown>
 }
 
