@@ -41,10 +41,6 @@ export const IMAGE_MODELS: ModelDef[] = [
     refs: 'latent', prompt: 'text', sizes: ['size'], lora: 'flux3-klein',
   },
   {
-    id: 'moss-image-t2i.api.json', label: 'MOSS-Image', desc: t('models.mossImageFullCaption'), files: ['moss_image_sft_int8_convrot.safetensors'],
-    prompt: 'text', sizes: ['size'], lora: 'moss-image',
-  },
-  {
     id: 'qwen-image-2512-t2i.api.json', label: 'Qwen Image 2512', desc: t('models.solidDetailAndCompositionSupports'), files: ['qwen_image_2512_fp8_e4m3fn.safetensors'],
     prompt: 'text', steps: ['sampler', { fast: 20, standard: 30, high: 50 }], sizes: ['size'], control: 'Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors', negative: ['negative', 'text'], lora: 'qwen-image',
   },

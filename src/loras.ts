@@ -8,8 +8,8 @@ export interface LoraPick { name: string; strength: number }
 export const DEFAULT_LORA_STRENGTH = 100
 
 const FAVORITES = 'comfyart/lora-favorites.json'
-const ARCHITECTURES: [RegExp, string][] = [[/flux[-_.]?3/i, 'flux3-klein'], [/flux[-_.]?2[-_.]?klein/i, 'flux2-klein'], [/moss[-_.]?image/i, 'moss-image'], [/z[-_.]?image/i, 'z-image'], [/qwen[-_.]?image[-_.]?2(?![0-9])/i, 'qwen-image-2.1'], [/qwen[-_.]?image/i, 'qwen-image']]
-const NAMES: [RegExp, string][] = [[/edit/i, 'other'], [/qwen[-_ ]?image[-_ ]?2\.1/i, 'qwen-image-2.1'], [/z[-_ ]?image/i, 'z-image'], [/flux[-_ ]?3/i, 'flux3-klein'], [/flux[-_ ]?2[-_ ]?klein|klein/i, 'flux2-klein'], [/moss[-_ ]?image/i, 'moss-image'], [/qwen/i, 'qwen-image']]
+const ARCHITECTURES: [RegExp, string][] = [[/flux[-_.]?3/i, 'flux3-klein'], [/flux[-_.]?2[-_.]?klein/i, 'flux2-klein'], [/z[-_.]?image/i, 'z-image'], [/qwen[-_.]?image[-_.]?2(?![0-9])/i, 'qwen-image-2.1'], [/qwen[-_.]?image/i, 'qwen-image']]
+const NAMES: [RegExp, string][] = [[/edit/i, 'other'], [/qwen[-_ ]?image[-_ ]?2\.1/i, 'qwen-image-2.1'], [/z[-_ ]?image/i, 'z-image'], [/flux[-_ ]?3/i, 'flux3-klein'], [/flux[-_ ]?2[-_ ]?klein|klein/i, 'flux2-klein'], [/qwen/i, 'qwen-image']]
 
 export const lorasAtom = atom<LoraEntry[] | null>('loras', null)
 export const loraFavoritesAtom = atom<string[]>('lora favorites', [])
