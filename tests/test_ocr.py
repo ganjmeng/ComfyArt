@@ -22,4 +22,15 @@ def test_parse_lines_real_paddle_ocr_output():
     data["layout_det_res"]["boxes"][0]["coordinate"] = [0, 0, 1, 1]
     data["layout_det_res"]["boxes"].pop()
     assert [l["score"] for l in parse_lines(data)] == [0.592, 1.0]
-    assert clean_text("## **Title**\n- item\n1. step") == "Title\nitem\nstep"
+    assert clean_text("## **Title**\n- item\n1. step") == "Title\n- item\n1. step"
+
+
+def test_parse_lines_keeps_list_numbering():
+    from ComfyArt.api.ocr import parse_lines
+
+    data = {"parsing_res_list": [
+        {"block_content": "# Agenda", "block_bbox": [0, 0, 10, 10]},
+        {"block_content": "1. Intro", "block_bbox": [0, 20, 10, 30]},
+        {"block_content": "2) Plan #2", "block_bbox": [0, 40, 10, 50]},
+    ]}
+    assert [l["text"] for l in parse_lines(data)] == ["Agenda", "1. Intro", "2) Plan #2"]

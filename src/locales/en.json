@@ -150,7 +150,7 @@
   "botSettings.localLlmUrlHint": "OpenAI-compatible endpoint, e.g. http://127.0.0.1:8081/v1",
   "botSettings.ocrAgent": "Default Agent (falls back to local when the Agent is off)",
   "botSettings.ocrEngine": "Text recognition (Edit Text, Extract Text)",
-  "botSettings.ocrLocal": "ComfyUI local model (Gemma 4)",
+  "botSettings.ocrLocal": "WaveSpeed cloud OCR (paddle-ocr)",
   "botSettings.unavailable": "Unavailable",
   "canvasChat.chat": "Chat",
   "canvasChat.chatSelection": "Chat about the selection",

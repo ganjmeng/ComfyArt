@@ -9,7 +9,6 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': COMFY,
-      '/comfyart/workflows': COMFY,
     },
   },
   build: { outDir: 'dist', emptyOutDir: true },

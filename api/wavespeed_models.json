@@ -469,18 +469,6 @@
      "local": "RapidOCR"
     }
    ]
-  },
-  "depth": {
-   "types": [
-    "image-tools"
-   ],
-   "default": "wavespeed-ai/depth-anything-v3/image",
-   "models": [
-    {
-     "id": "wavespeed-ai/depth-anything-v3/image",
-     "local": "MoGe"
-    }
-   ]
   }
  },
  "tool_features": {
@@ -510,8 +498,6 @@
   "ocr": "ocr",
   "transcribe": "transcribe"
  },
- "pending_features": [
-  "depth"
- ],
- "_pending_comment": "Features in pending_features are configured but not used by any tool yet (MoGe-style depth and the Ideogram caption step were dropped)."
+ "pending_features": [],
+ "_pending_comment": "Features in pending_features are configured but not used by any tool yet."
 }

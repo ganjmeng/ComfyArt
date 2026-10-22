@@ -1,9 +1,0 @@
-{
-  "1": { "class_type": "LoadImage", "inputs": { "image": "" }, "_meta": { "title": "@image" } },
-  "2": { "class_type": "DepthAnythingV2Preprocessor", "inputs": { "image": ["1", 0], "ckpt_name": "depth_anything_v2_vitl.pth", "resolution": 768 } },
-  "3": { "class_type": "SaveImage", "inputs": { "images": ["2", 0], "filename_prefix": "comfyart/mockup-depth" }, "_meta": { "title": "@save" } },
-  "4": { "class_type": "LoadBackgroundRemovalModel", "inputs": { "bg_removal_name": "birefnet.safetensors" } },
-  "5": { "class_type": "RemoveBackground", "inputs": { "bg_removal_model": ["4", 0], "image": ["1", 0] } },
-  "6": { "class_type": "MaskToImage", "inputs": { "mask": ["5", 0] } },
-  "7": { "class_type": "SaveImage", "inputs": { "images": ["6", 0], "filename_prefix": "comfyart/mockup-mask" }, "_meta": { "title": "@saveMask" } }
-}
