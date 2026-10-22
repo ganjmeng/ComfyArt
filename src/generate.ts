@@ -59,7 +59,10 @@ export function createGenerator(editor: Editor, video = false, props: Partial<Ge
   if (focus) {
     editor.setCurrentTool('select')
     editor.select(id)
-    editor.zoomToSelectionIfOffscreen(64, { animation: { duration: 200 } })
+    // A card bigger than the viewport (e.g. a 16:9 video card at ~85% zoom) would only be panned and stay clipped; fit it instead
+    const vp = editor.getViewportPageBounds(), pad = 64 / editor.getZoomLevel()
+    if (w + pad * 2 > vp.w || h + pad * 2 > vp.h) editor.zoomToBounds({ x, y, w, h }, { inset: 64, animation: { duration: 200 } })
+    else editor.zoomToSelectionIfOffscreen(64, { animation: { duration: 200 } })
   }
   return id
 }
