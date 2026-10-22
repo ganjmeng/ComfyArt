@@ -50,6 +50,8 @@ MODELS = [
     _meta("tripo3d/h3.1/multiview-to-3d", {"images": {"type": "array"}}, ("images",), price=0.24),
     _meta("wavespeed-ai/openai-whisper-turbo", {"audio": {"type": "string"}, "language": {"type": "string", "enum": ["auto"]}}, ("audio",), price=0.0007),
     _meta("wavespeed-ai/image-captioner", {"image": {"type": "string"}}, ("image",), price=0.001),
+    _meta("wavespeed-ai/depth-anything-v3/image", {"image": {"type": "string"}, "colormap": {"type": "string", "enum": ["grayscale", "inferno", "turbo"]}, "output_format": {"type": "string", "enum": ["jpeg", "png", "webp"]}}, ("image",), price=0.005),
+    _meta("wavespeed-ai/image-background-remover", {"image": {"type": "string"}, "output_format": {"type": "string", "enum": ["png", "jpeg"]}}, ("image",), price=0.001),
     _meta("wavespeed-ai/image-upscaler", {"image": {"type": "string"}, "target_resolution": {"type": "string", "enum": ["2k", "4k", "8k"]}}, ("image",)),
 ]
 
@@ -489,6 +491,36 @@ async def test_storyboard_confirms_total_price(ws):
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.submit({"feature": "text_to_video", "prompt": "x", "scenes": scenes})
     assert e.value.status == 409 and e.value.confirm == 0.52 and not ws["submits"]
+
+
+async def test_mockup_surface_depth_and_mask(ws, monkeypatch):
+    from PIL import Image
+
+    buf = io.BytesIO()
+    cut = Image.new("RGBA", (4, 2), (10, 20, 30, 0))
+    cut.putpixel((1, 0), (10, 20, 30, 255))
+    cut.save(buf, format="PNG")
+    group = await wavespeed.submit({"feature": "mockup_surface", "image": "https://cdn.test/photo.png"})
+    assert group.startswith("ms-")
+    (m1, p1), (m2, p2) = ws["submits"]
+    assert m1 == "wavespeed-ai/depth-anything-v3/image" and p1 == {"image": "https://cdn.test/photo.png", "colormap": "grayscale", "output_format": "png"}
+    assert m2 == "wavespeed-ai/image-background-remover" and p2 == {"image": "https://cdn.test/photo.png", "output_format": "png"}
+    real_read = wavespeed._read
+    monkeypatch.setattr(wavespeed, "_read", lambda path: buf.getvalue() if path.endswith("_0.png") and "task2" in path else real_read(path))
+    hist = (await wavespeed.poll(group))[f"ws:{group}"]
+    assert hist["status"]["status_str"] == "completed"
+    assert hist["outputs"]["ws"]["images"][0]["filename"].startswith("ws_task1")
+    mask_ref = hist["outputs"]["mask"]["images"][0]
+    import folder_paths
+    mask = Image.open(io.BytesIO(real_read(os.path.join(folder_paths.get_output_directory(), "wavespeed", mask_ref["filename"]))))
+    assert mask.getpixel((1, 0))[0] == 255 and mask.getpixel((0, 0))[0] == 0
+
+
+async def test_mockup_surface_failure_propagates(ws):
+    ws["status"] = "failed"
+    group = await wavespeed.submit({"feature": "mockup_surface", "image": "https://cdn.test/photo.png"})
+    hist = (await wavespeed.poll(group))[f"ws:{group}"]
+    assert hist["status"]["status_str"] == "error"
 
 
 def test_last_frame_and_concat_with_ffmpeg(tmp_path):

@@ -143,6 +143,18 @@
     }
    ]
   },
+  "depth_estimation": {
+   "types": [
+    "image-depth-estimation"
+   ],
+   "default": "wavespeed-ai/depth-anything-v3/image",
+   "models": [
+    {
+     "id": "wavespeed-ai/depth-anything-v3/image",
+     "local": "DepthAnythingV2"
+    }
+   ]
+  },
   "erase_region": {
    "types": [
     "image-object-removal"

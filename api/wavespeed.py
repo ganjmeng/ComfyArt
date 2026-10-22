@@ -421,6 +421,8 @@ def _active() -> int:
 async def submit(inputs: dict) -> str:
     if isinstance(inputs.get("scenes"), list):
         return await _submit_scenes(inputs)
+    if inputs.get("feature") == "mockup_surface":
+        return await _submit_surface(inputs)
     feature = feature_of(str(inputs.get("feature") or ""))
     model = resolve_model(feature, inputs.get("model"))
     _check_limits()
@@ -467,6 +469,56 @@ async def _submit_scenes(inputs: dict) -> str:
     group = f"sb-{first}"
     _jobs[group] = {"group": [first], "pending": jobs[1:], "clips": [], "started": time.time(), "next_poll": 0.0, "done": False}
     return group
+
+
+async def _submit_surface(inputs: dict) -> str:
+    """Mockup surface (upstream mockup-surface.api.json): depth map + subject mask of one photo.
+    Depth Anything replaces DepthAnythingV2Preprocessor, the background remover replaces BiRefNet."""
+    if not inputs.get("image"):
+        raise WaveSpeedError("mockup needs an image", 400)
+    image = inputs["image"]
+    depth = await submit({"feature": "depth_estimation", "image": image, "params": {"colormap": "grayscale", "output_format": "png"}})
+    cut = await submit({"feature": "remove_background", "image": image, "png": True})
+    group = f"ms-{depth}"
+    _jobs[group] = {"surface": [depth, cut], "started": time.time(), "next_poll": 0.0, "done": False}
+    return group
+
+
+def cutout_to_mask(data: bytes) -> bytes:
+    """Background-remover cutout (subject on transparent) -> white subject on black, like MaskToImage."""
+    from PIL import Image
+
+    img = Image.open(io.BytesIO(data))
+    alpha = img.convert("RGBA").getchannel("A")
+    buf = io.BytesIO()
+    alpha.convert("RGB").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+async def _poll_surface(group: str, job: dict) -> dict:
+    refs = []
+    for task in job["surface"]:
+        entry = (await poll(task)).get(f"ws:{task}") or {}
+        status = entry.get("status") or {}
+        if status.get("status_str") == "error":
+            job["done"] = True
+            job["result"] = _history(group, "failed", status.get("messages") or [], {})
+            return job["result"]
+        if not status.get("completed"):
+            return _history(group, "processing", [], {})
+        img = (((entry.get("outputs") or {}).get("ws") or {}).get("images") or [None])[0]
+        if img is None:
+            return _fail(group, "mockup surface finished without output")
+        refs.append(img)
+    depth, cut = refs
+    mask = {"filename": f"ws_{group[:15]}_mask.png", "subfolder": SUBFOLDER, "type": "output"}
+    try:
+        _write(_ref_path(mask), cutout_to_mask(_read(_ref_path(cut))))
+    except (OSError, ValueError) as e:
+        return _fail(group, f"mockup mask failed: {e}")
+    job["done"] = True
+    job["result"] = _history(group, "completed", [], {"ws": {"images": [depth]}, "mask": {"images": [mask]}})
+    return job["result"]
 
 
 def _last_frame(video_path: str, out_path: str) -> None:
@@ -582,6 +634,8 @@ async def poll(task: str) -> dict:
         return job["result"]
     if job.get("group"):
         return await _poll_group(task, job)
+    if job.get("surface"):
+        return await _poll_surface(task, job)
     now = time.time()
     if now - job["started"] > JOB_TIMEOUT:
         return _fail(task, f"WaveSpeed task timed out after {int(JOB_TIMEOUT)}s")
