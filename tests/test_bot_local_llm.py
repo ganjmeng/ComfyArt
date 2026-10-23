@@ -257,7 +257,7 @@ def _tc(i, name, args):
 
 
 class TestLoopGuard:
-    async def _run(self, monkeypatch, steps):
+    async def _run(self, monkeypatch, steps, user_text="做一张海报"):
         provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
         responses = [{"choices": [{"message": {"content": "", "tool_calls": [
             _tc(i, n, a)]}}]} for i, (n, a) in enumerate(steps)]
@@ -282,7 +282,7 @@ class TestLoopGuard:
         monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
         events: list[BotEvent] = []
         result = await provider.send(
-            TurnRequest(chat_id="c", user_text="go",
+            TurnRequest(chat_id="c", user_text=user_text,
                         mcp_endpoint="http://x/mcp", model="m1"),
             _collect(events), TurnHandle())
         return result, events, llm_calls, mcp_calls
@@ -298,7 +298,26 @@ class TestLoopGuard:
         stop = events[-1]
         assert stop.t == "delta"
         assert stop.text.startswith("任务卡在重复步骤，已停止，未继续扣费")
-        assert "- skill ×1" in stop.text and "- generate_image ×2" in stop.text
+        assert stop.text.splitlines()[1:] == ["已完成：", "- 技能", "- 生成图像 ×2"]
+        assert "skill" not in stop.text and "generate_image" not in stop.text
+
+    async def test_stop_message_english_for_english_user(self, monkeypatch):
+        gen = ("generate_image", {"prompt": "cat"})
+        read = ("skill", {"action": "read", "name": "poster-design"})
+        result, events, llm, mcp = await self._run(
+            monkeypatch, [read, gen, gen, gen], user_text="make a poster")
+        assert events[-1].text.splitlines() == [
+            "The task got stuck repeating a step and was stopped; no further "
+            "charges.",
+            "Done so far:", "- Read skill: poster-design",
+            "- Generate image ×2"]
+
+    async def test_stop_message_skill_read_label_zh(self, monkeypatch):
+        gen = ("generate_image", {"prompt": "cat"})
+        read = ("skill", {"action": "read", "name": "海报设计"})
+        result, events, llm, mcp = await self._run(
+            monkeypatch, [read, gen, gen, gen])
+        assert "- 读取技能：海报设计" in events[-1].text
 
     async def test_different_args_do_not_stop(self, monkeypatch):
         result, events, llm, mcp = await self._run(monkeypatch, [
@@ -318,3 +337,33 @@ class TestLoopGuard:
         results = [e.text for e in events if e.t == "tool_result"]
         assert results[2] == "ok skill"  # cached result reused
         assert events[-1].text == "done"
+
+
+class TestStepLabels:
+    def test_every_core_tool_has_readable_label(self):
+        from bot.guide import CORE_MCP_TOOLS
+        from bot.local_llm import _STEP_LABELS
+        assert set(CORE_MCP_TOOLS) <= set(_STEP_LABELS)
+
+    def test_labels_and_fallback(self):
+        from bot.local_llm import _step_label
+        assert _step_label("generate_image", {}, "zh") == "生成图像"
+        assert _step_label("mcp__comfyart__generate_video", {}, "en") == \
+            "Generate video"
+        assert _step_label("skill", {"action": "list"}, "zh") == "技能"
+        assert _step_label("nodes", {}, "zh") == "其他步骤"
+        assert _step_label("nodes", {}, "en") == "Other step"
+
+    def test_reply_lang(self):
+        from bot.local_llm import _reply_lang
+        assert _reply_lang("做一张海报") == "zh"
+        assert _reply_lang("make a poster") == "en"
+        hint = ("Use the ComfyArt skill '海报' for this task: first call the "
+                "comfyart MCP tool skill with action='read' and name='海报', "
+                "then follow those instructions.\n\nmake a poster")
+        assert _reply_lang(hint) == "en"
+
+    def test_empty_summary(self):
+        from bot.local_llm import _stop_summary
+        assert _stop_summary([], "zh").endswith("已完成：无")
+        assert _stop_summary([], "en").endswith("Done so far: nothing")
