@@ -7,6 +7,14 @@ import { keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus } fro
 
 const POLL_MS = 1500
 
+/** User declined the WaveSpeed cost confirm; not a failure — nothing charged. */
+export class CostDeclined extends Error {
+  constructor(message = t('jobs.costDeclined')) {
+    super(message)
+    this.name = 'CostDeclined'
+  }
+}
+
 export type PromptGraph = Record<string, { class_type: string; inputs: Record<string, unknown>; _meta?: { title?: string } }>
 
 export interface ImageRef { filename: string; subfolder: string; type: string; metadata?: { width?: number; height?: number } }
@@ -165,7 +173,7 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget())
     const price = wsBody?.error?.confirm_usd
     if (ws.status === 409 && typeof price === 'number') {
       // jobs of $0.50 or more need an explicit yes before they are submitted
-      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped))) throw new Error(t('jobs.costDeclined'))
+      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped))) throw new CostDeclined()
       ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
       wsBody = await ws.json().catch(() => null)
     }

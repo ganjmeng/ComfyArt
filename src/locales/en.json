@@ -647,7 +647,7 @@
   "jobs.confirmSegLeft": "About ${0} ({1} segmentation calls left; finished ones are not charged again). Continue?",
   "jobs.confirmOk": "Generate",
   "jobs.confirmTitle": "Confirm cost",
-  "jobs.costDeclined": "Cancelled: cost not confirmed",
+  "jobs.costDeclined": "Cancelled this generation; nothing was charged",
   "jobs.interrupted": "Generation was cancelled",
   "jobs.lost": "The generation disappeared from the ComfyUI queue (the server may have restarted)",
   "jobs.noOutput": "The workflow produced no output",

@@ -10,7 +10,7 @@ import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate } from './generate'
 import { DURATIONS, RATIOS, VIDEO_RATIOS } from './genOptions'
 import { VIDEO_TARGETS } from './videoGraphs'
-import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom } from './jobs'
+import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom, whenSubmitted } from './jobs'
 import { agentModels } from './models'
 import { modesFor } from './refModes'
 import { AUDIO } from './shapes/EmbedShapes'
@@ -24,6 +24,22 @@ import { setPendingModel } from './wavespeed'
 import { customWorkflowCommand } from './customWorkflows'
 
 const AUDIO_MAX_SECONDS = 1000
+
+/** Tool result when the user declines the cost confirm. Agent must reply as normal chat text (#127). */
+const COST_DECLINED = {
+  cancelled: true,
+  status: 'declined',
+  note:
+    '已取消该生成，未扣费 / Cancelled this generation; nothing was charged. '
+    + 'Reply to the user with that message in a normal chat message (not as an error or notice), '
+    + 'then ask how they want to adjust. Do not retry, resubmit, or change model/params for this plan item in this turn.',
+} as const
+
+async function awaitSubmit(holderId: string) {
+  const gate = whenSubmitted(holderId)
+  if (!gate) return 'ok' as const
+  return gate
+}
 
 function imageOf(editor: Editor, id: unknown): TLImageShape {
   const shape = shapeOf(editor, id)
@@ -58,9 +74,9 @@ function place(editor: Editor, id: TLShapeId, args: Args, chat: string) {
   }
 }
 
-function toChat(editor: Editor, chat: string, holder: TLShapeId | undefined) {
-  const result = started(editor, holder)
-  if (chat) placeInChatFrame(editor, holder!, chat)
+async function toChat(editor: Editor, chat: string, holder: TLShapeId | undefined) {
+  const result = await started(editor, holder)
+  if (chat && result && 'ids' in result) placeInChatFrame(editor, holder!, chat)
   return result
 }
 
@@ -103,7 +119,7 @@ function editOf(editor: Editor, args: Args): Edit {
   return { clips, transitions, subtitles, music }
 }
 
-function startGenerator(editor: Editor, video: boolean, args: Args, onError: ErrorSink, chat: string) {
+async function startGenerator(editor: Editor, video: boolean, args: Args, onError: ErrorSink, chat: string) {
   const models = agentModels(video)
   const wantsRefs = !video && Array.isArray(args.refs) && args.refs.length > 0
   const model = args.model ? models.find((m) => m.id === args.model) : (wantsRefs && models.find((m) => m.refs)) || models[0]
@@ -139,13 +155,25 @@ function startGenerator(editor: Editor, video: boolean, args: Args, onError: Err
   editor.updateShape<GeneratorShape>({ id, type: GENERATOR, meta })
   place(editor, id, args, chat)
   void generate(editor, editor.getShape<GeneratorShape>(id)!, onError)
+  const outcome = await awaitSubmit(id)
+  if (outcome === 'declined') return { ...COST_DECLINED }
+  if (outcome === 'error') {
+    const err = resultsAtom.get()[id]?.error
+    throw new Error(err || 'generation submit failed')
+  }
   return { ids: [id], model: model.id, note: 'call wait_generation with these ids' }
 }
 
-function started(editor: Editor, holder: TLShapeId | undefined) {
+async function started(editor: Editor, holder: TLShapeId | undefined) {
   if (!holder) throw new Error('that shape has no source media to work on')
   const shape = editor.getShape(holder)!
   editor.updateShape({ id: holder, type: shape.type, meta: { ...shape.meta, quiet: true } })
+  const outcome = await awaitSubmit(holder)
+  if (outcome === 'declined') return { ...COST_DECLINED }
+  if (outcome === 'error') {
+    const err = resultsAtom.get()[holder]?.error
+    throw new Error(err || 'generation submit failed')
+  }
   return { ids: [holder], note: 'call wait_generation with these ids' }
 }
 
@@ -161,7 +189,12 @@ function waitResults(editor: Editor, ids: string[], timeout: number) {
     return ids.map((id) => {
       const r = results[id]
       if (!r) return { id, status: unknown.has(id) ? 'unknown id' : 'running' }
-      return r.error ? { id, status: 'error', error: r.error } : { id, status: 'done', urls: r.srcs, shapes: shapesWithSrc(editor, r.srcs) }
+      if (!r.error) return { id, status: 'done', urls: r.srcs, shapes: shapesWithSrc(editor, r.srcs) }
+      // Intentional cost-confirm cancel is not a failure (#127).
+      if (/已取消该生成，未扣费|Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed/.test(r.error)) {
+        return { id, status: 'declined', cancelled: true, error: r.error }
+      }
+      return { id, status: 'error', error: r.error }
     })
   }
   return new Promise<object>((resolve) => {

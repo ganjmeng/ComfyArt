@@ -2,7 +2,7 @@ import type { ModelDef } from './models'
 import type { GeneratorShape } from './shapes/GeneratorShape'
 import { t } from './i18n'
 import { annotated } from './workflows'
-import { api, askCost } from './comfy'
+import { api, askCost, CostDeclined } from './comfy'
 import { previewKey, wantsFresh } from './refFresh'
 
 export interface RefMode {
@@ -95,7 +95,7 @@ export async function previewControl(src: string, mode: RefMode, res: number): P
   let res1 = await send({ inputs })
   if (res1.r.status === 409) {
     const price = res1.conf?.error?.confirm_usd
-    if (typeof price !== 'number' || !(await askCost(price, res1.conf?.error?.seg_splits, res1.conf?.error?.seg_capped))) throw new Error(t('jobs.costDeclined'))
+    if (typeof price !== 'number' || !(await askCost(price, res1.conf?.error?.seg_splits, res1.conf?.error?.seg_capped))) throw new CostDeclined()
     res1 = await send({ inputs: { ...inputs, confirmed: true } })
   }
   if (!res1.blob) throw new Error(res1.err?.error?.message ?? `preview failed: ${res1.r.status}`)

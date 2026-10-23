@@ -647,7 +647,7 @@
   "jobs.confirmSegLeft": "这次约需 ${0}（还剩 {1} 次分割，已完成的不再收费），确定继续吗？",
   "jobs.confirmOk": "继续生成",
   "jobs.confirmTitle": "确认费用",
-  "jobs.costDeclined": "已取消：未确认费用",
+  "jobs.costDeclined": "已取消该生成，未扣费",
   "jobs.interrupted": "生成已取消",
   "jobs.lost": "生成任务已不在 ComfyUI 队列中（服务器可能已重启）",
   "jobs.noOutput": "工作流没有产生输出",

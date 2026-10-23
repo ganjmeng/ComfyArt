@@ -9,6 +9,9 @@ before a paid tool runs, so the rules hold for all of them:
   when the user named a count; declined, cancelled and failed runs don't count.
   Past the cap nothing is submitted, the turn is stopped and ends with the
   localized stop notice (same red notice and language plumbing as #137);
+* after the user declines a cost confirm on a plan item, further paid calls for
+  that same item are refused without opening another dialog (#127); the tool
+  result tells the agent to reply as normal chat text (not the #137 red stop);
 * in a product task where the user supplied an image, generate_image /
   generate_video calls that don't pass it are refused before submitting.
 """
@@ -31,6 +34,14 @@ CAP_TEXT = {
     "zh": "已生成 {n} 张仍未完成，已停止，未继续扣费，请告诉我怎么调整",
     "en": "Generated {n} images and still not done, so I stopped; no further "
           "charges. Tell me how to adjust.",
+}
+# #127: user cancelled the cost confirm — normal reply, not the #137 red stop.
+DECLINED_TEXT = {
+    "zh": "已取消该生成，未扣费。请用正常回复告诉用户，并询问如何调整；"
+          "本轮不要再提交这一项。",
+    "en": "Cancelled this generation; nothing was charged. Tell the user in a "
+          "normal reply and ask how to adjust; do not resubmit this plan item "
+          "in this turn.",
 }
 REF_BLOCK_TEXT = (
     "blocked before submitting (nothing was charged): the user supplied the "
@@ -121,6 +132,18 @@ def charged(payload: Any) -> bool:
         or payload.get("status") in ("declined", "cancelled", "failed")))
 
 
+def user_declined(payload: Any) -> bool:
+    """True when the user cancelled the cost confirm (not a failed run)."""
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except ValueError:
+            return False
+    return isinstance(payload, dict) and (
+        bool(payload.get("cancelled"))
+        or payload.get("status") in ("declined", "cancelled"))
+
+
 @dataclass
 class TurnGuard:
     lang: str
@@ -131,6 +154,7 @@ class TurnGuard:
     used: dict[str, int] = field(default_factory=dict)
     done: list[str] = field(default_factory=list)
     stopped: str = ""
+    declined_items: set[str] = field(default_factory=set)
 
     def summary(self) -> str:
         counts: dict[str, int] = {}
@@ -173,6 +197,8 @@ def before_call(chat_id: str, name: str, args: dict) -> Optional[str]:
         return None
     if guard.stopped:
         return guard.stopped
+    if guard.plan_item in guard.declined_items:
+        return DECLINED_TEXT.get(guard.lang, DECLINED_TEXT["en"])
     if not passes_ref(name, args, guard.refs):
         return REF_BLOCK_TEXT.format(ids=", ".join(guard.refs), tool=name,
                                      field=REF_FIELDS[name][0])
@@ -201,9 +227,13 @@ def after_call(chat_id: str, name: str, args: dict, payload: Any,
         item = active_plan_item(args)
         if item is not None:
             guard.plan_item = item
-    elif name in PAID_TOOLS and charged(payload):
-        guard.used[guard.plan_item] = (guard.used.get(guard.plan_item, 0)
-                                       + gen_units(name, args))
+    elif name in PAID_TOOLS:
+        if charged(payload):
+            guard.used[guard.plan_item] = (guard.used.get(guard.plan_item, 0)
+                                           + gen_units(name, args))
+        elif user_declined(payload):
+            # At most one cost-confirm dialog per plan item this turn (#127).
+            guard.declined_items.add(guard.plan_item)
 
 
 def stop_later(provider: Any, handle: Any) -> Callable[[], None]:
