@@ -1,0 +1,4 @@
+export function atom<T>(_n: string, v: T) { let x = v; return { get: () => x, set: (n: T) => { x = n } } }
+export const useValue = (a: { get: () => unknown }) => a.get()
+export const getColorValue = () => '#FFFFFF'
+export const renderPlaintextFromRichText = () => ''
