@@ -83,3 +83,21 @@ async def test_chain_schema_with_duration_unchanged(priced):
     assert [p.get("duration") for p in payloads] == [5, 8, 4]
     assert quoted == [{"duration": 5}, {"duration": 8}, {"duration": 4}]
     assert est["price"] == charge == pytest.approx(0.5 + 0.8 + 0.4)
+
+
+async def test_chain_model_missing_from_catalog_and_price_api_fails_is_unpriced(priced, monkeypatch):
+    # product rule (#164/#159): no catalog entry and no live price -> 「价格待确认」, always confirm, never a guessed number
+    import json
+    monkeypatch.setattr("test_wavespeed.MODELS", [m for m in MODELS if m["model_id"] != I2V])
+    monkeypatch.setitem(wavespeed._catalog, "models", {})
+    priced["prices"].pop(I2V)  # the mock price API answers 400 (code 4005) for it
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 100.0)  # far below the threshold it still asks
+    est = await wavespeed.estimate(copy.deepcopy(BOARD))
+    assert est["price"] is None and est["source"] == "unpriced" and est["confirm"] is True
+    assert await wavespeed.quote(I2V, scene_jobs()[1]) == (None, "unpriced")
+    for job in (copy.deepcopy(BOARD), {k: v for k, v in scene_jobs()[1].items() if k != "confirmed"}):
+        with pytest.raises(wavespeed.WaveSpeedError) as e:
+            await wavespeed.submit(job)
+        body = json.loads(wavespeed._respond_error(e.value).body)["error"]
+        assert e.value.status == 409 and body["unpriced"] is True and body["confirm_usd"] is None and "estimate" not in body
+    assert priced["submits"] == []
