@@ -1,0 +1,35 @@
+{
+ "_comment": "#133 product table v1 (issue comment 6357431318): Auto picks a model by task type when the user names none. Categories are checked in order; the first whose keywords appear in the prompt wins, else 'default' (the feature default from curated_models.json). A model missing from the catalog falls back to the feature default (logged). Edit this table to recalibrate; no code change needed.",
+ "features": {
+  "text_to_image": {
+   "tool": "generate_image",
+   "default": {"zh": "通用任务，用默认模型", "en": "general task, so the default model"},
+   "categories": [
+    {"id": "logo", "model": "recraft-ai/recraft-v3",
+     "zh": "这是 Logo / 图标 / 矢量风格任务", "en": "this is a logo, icon or vector-style task",
+     "keywords": ["logo", "icon", "vector", "emblem", "monogram", "标志", "图标", "矢量", "徽标"]},
+    {"id": "poster_text", "model": "openai/gpt-image-2.5-flare/text-to-image",
+     "zh": "这是海报 / 信息图 / 带文字的任务", "en": "this is a poster, infographic or text-heavy task",
+     "keywords": ["poster", "infographic", "flyer", "banner", "headline", "title", "typography", "menu", "海报", "信息图", "标题", "文字", "传单", "横幅"]},
+    {"id": "anime_art", "model": "midjourney/text-to-image",
+     "zh": "这是动漫 / 插画 / 艺术风格任务", "en": "this is an anime, illustration or art-style task",
+     "keywords": ["anime", "manga", "illustration", "cartoon", "watercolor", "oil painting", "painterly", "动漫", "二次元", "插画", "卡通", "水彩", "油画"]},
+    {"id": "photoreal", "model": "bytedance/seedream-v5.0-pro",
+     "zh": "这是写实人像 / 产品摄影 / 电商主图任务", "en": "this is a photoreal portrait, product photo or e-commerce shot",
+     "keywords": ["photoreal", "photorealistic", "portrait", "headshot", "product photo", "product shot", "e-commerce", "ecommerce", "studio photo", "写实", "人像", "肖像", "产品摄影", "产品图", "电商", "主图"]}
+   ]
+  },
+  "image_edit": {
+   "tool": "edit_image",
+   "default": {"zh": "通用编辑，用默认模型", "en": "general edit, so the default model"},
+   "categories": [
+    {"id": "keep_identity", "model": "google/nano-banana-2.1/edit",
+     "zh": "这是要保持人物或产品一致的局部修改", "en": "this is a local edit that must keep the person or product consistent",
+     "keywords": ["keep the same", "keep the face", "keep the person", "keep the product", "consistent", "same person", "same product", "保持", "一致", "不变"]},
+    {"id": "photo_retouch", "model": "bytedance/seedream-v5.0-pro/edit",
+     "zh": "这是写实照片精修", "en": "this is a photoreal photo retouch",
+     "keywords": ["retouch", "skin", "photo enhance", "relight", "精修", "修图", "磨皮", "美颜"]}
+   ]
+  }
+ }
+}
