@@ -74,6 +74,7 @@ async def ws(monkeypatch, fresh_user_dir):
     wavespeed._quotes.clear()
     wavespeed._map_cache.clear()
     wavespeed._seg_cats.clear()
+    wavespeed._seg_masks.clear()
     app = web.Application()
 
     async def price(request):

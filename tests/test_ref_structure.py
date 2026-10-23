@@ -203,8 +203,8 @@ def test_composite_keeps_every_map():
 @pytest.mark.parametrize("modes,total", [
     (["canny"], 0.03),
     (["depth"], 0.035),
-    (["seg"], 0.036),  # #135: + $0.001 captioner (one sam3 assumed until recognised)
-    (["normal", "seg", "canny"], 0.041),
+    (["seg"], 0.091),  # #138: caption $0.001 + up to 12 sam3 (upper bound, nothing recognised before confirm)
+    (["normal", "seg", "canny"], 0.096),
     (["pose"], 0.012),
     (["pose", "depth"], 0.035),
 ])

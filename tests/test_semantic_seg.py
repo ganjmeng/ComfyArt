@@ -64,20 +64,73 @@ async def test_zero_classes_errors_without_any_sam3_charge(maps):
     assert [m for m, _ in maps["submits"]] == [CAP]  # no sam3, no flux
 
 
-async def test_confirm_quotes_caption_plus_n_splits(maps, monkeypatch):
+_JOB = {"feature": "structure_control", "prompt": "p", "width": 512, "height": 512}
+
+
+async def test_confirm_quotes_upper_bound_and_nothing_is_submitted_before_confirm(maps, monkeypatch):
+    """#138 product: no charge before the confirm dialog. The quote is caption + 12 sam3 (upper bound)."""
     maps["by_model"] = {CAP: ["a dog next to a car"]}
     monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.001)
     with pytest.raises(wavespeed.WaveSpeedError) as e:
-        await wavespeed.submit({"feature": "structure_control", "prompt": "p", "width": 512, "height": 512,
-                                "controls": [_ctl("seg", _photo())]})
-    assert e.value.status == 409 and e.value.seg_splits == 2
-    assert e.value.confirm == round(0.03 + 0.001 + 2 * 0.005, 6)
-    assert [m for m, _ in maps["submits"]] == [CAP]
+        await wavespeed.submit({**_JOB, "controls": [_ctl("seg", _photo())]})
+    assert e.value.status == 409 and e.value.seg_splits == 12 and e.value.seg_capped is True
+    assert e.value.confirm == round(0.03 + 0.001 + 12 * 0.005, 6)
+    assert maps["submits"] == []  # WaveSpeed received 0 submits before confirm (no captioner either)
+    resp = json.loads(wavespeed._respond_error(e.value).body)
+    assert resp["error"]["seg_splits"] == 12 and resp["error"]["seg_capped"] is True
+
+
+async def test_confirmed_job_charges_per_class_found(maps):
+    maps["by_model"] = {CAP: ["a dog next to a car"]}
+    await wavespeed.submit({**_JOB, "confirmed": True, "controls": [_ctl("seg", _photo())]})
+    assert [m for m, _ in maps["submits"]] == [CAP, SAM, SAM, FLUX]  # caption, 2 classes, then the job
+
+
+async def test_all_black_classes_stop_before_sam3(maps):
+    """#138 product: only 'person' (black in upstream palette, same as unlabeled) -> stop, recognition only."""
+    maps["by_model"] = {CAP: ["a man and a woman standing"]}
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit({**_JOB, "confirmed": True, "controls": [_ctl("seg", _photo())]})
+    assert str(e.value) == wavespeed.SEG_ALL_BLACK and e.value.status == 422
+    assert [m for m, _ in maps["submits"]] == [CAP]  # 0 sam3 calls
+    assert refprep.SEG_COLORS["person"] == (0, 0, 0)  # palette unchanged
+
+
+async def test_retry_reruns_only_failed_classes(maps, monkeypatch):
+    """#138 product: masks cached per (image, class); a retry never resubmits a class that succeeded,
+    and the confirm on retry quotes only the classes still missing."""
+    maps["by_model"] = {CAP: ["a dog next to a car and a bus"]}
+    ref = _photo()
+    real = wavespeed._cloud_map
+    asked = []
+    fail = {"car"}
+
+    async def flaky(feature, params, image, prompt=None):
+        asked.append(prompt)
+        if prompt in fail:
+            raise wavespeed.WaveSpeedError("sam3 failed", 502)
+        return await real(feature, params, image, prompt)
+    monkeypatch.setattr(wavespeed, "_cloud_map", flaky)
+    with pytest.raises(wavespeed.WaveSpeedError):
+        await wavespeed.submit({**_JOB, "confirmed": True, "controls": [_ctl("seg", ref)]})
+    assert asked == ["dog", "car"]
+    fail.clear()
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.001)
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit({**_JOB, "controls": [_ctl("seg", ref)]})
+    assert e.value.seg_splits == 2 and e.value.seg_capped is False  # car + bus, no second caption
+    assert e.value.confirm == round(0.03 + 2 * 0.005, 6)
+    await wavespeed.submit({**_JOB, "confirmed": True, "controls": [_ctl("seg", ref)]})
+    assert asked == ["dog", "car", "car", "bus"]  # dog never resubmitted
+    assert [m for m, _ in maps["submits"]].count(CAP) == 1
 
 
 def test_zh_en_strings():
     loc = os.path.join(os.path.dirname(refprep.__file__), "..", "src", "locales")
     zh = json.load(open(os.path.join(loc, "zh.json"), encoding="utf-8"))
     en = json.load(open(os.path.join(loc, "en.json"), encoding="utf-8"))
-    assert zh["jobs.segNone"] == "未识别到可分割的对象" and "识别加 {0} 次分割" in zh["jobs.confirmSegSplits"]
-    assert en["jobs.segNone"] == wavespeed.SEG_NONE and "{0}" in en["jobs.confirmSegSplits"]
+    assert zh["jobs.confirmSegMax"].startswith("最多 ${0}（识别加最多 {1} 次分割）")
+    assert "{0}" in en["jobs.confirmSegMax"] and "{1}" in en["jobs.confirmSegMax"]
+    assert "仅收识别费用" in zh["jobs.segNone"] and en["jobs.segNone"] == wavespeed.SEG_NONE
+    assert zh["jobs.segAllBlack"] == "只识别到与背景同色的类别，分割图会是全黑，已停止，仅收识别费用"
+    assert en["jobs.segAllBlack"] == wavespeed.SEG_ALL_BLACK
