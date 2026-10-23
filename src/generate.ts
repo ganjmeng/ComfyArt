@@ -8,7 +8,7 @@ import { agentModels, isCloudModel, isVideo, modelOf } from './models'
 import { CUSTOM_GENERATE } from './customWorkflows'
 import { modelIn, wsBuilt } from './wavespeed'
 import { t } from './i18n'
-import { PALETTE_MODE, refHints, refLimit, refModesOf, usableRefs } from './refModes'
+import { PALETTE_MODE, applyRefs, refControlsOf, refHints, refLimit, refModesOf, refStrengthsOf, usableRefs } from './refModes'
 import { paletteImage, palettePrompt } from './palette'
 import { annotated, randomSeed, type Built } from './workflows'
 import { MAX_VIDEO_REF_KINDS, VIDEO_AREAS, videoSize, type Scene } from './videoGraphs'
@@ -150,9 +150,17 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   if (model && isCloudModel(model.id)) {
     const base = baseOf(shape)
     const images = [...(base ? [base.src] : []), ...refs].map(annotated)
+    const { controls, prep } = applyRefs(picked, refStrengthsOf(shape), refControlsOf(shape))
+    const seed = seedOf(shape) ?? undefined
+    if (controls.length && !base) {
+      // structure refs (canny/depth/pose/...): a WaveSpeed control model follows their maps, like upstream ControlNet
+      return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })) })
+    }
+    const prepOf = new Map(picked.map((r, i) => [r.src, prep[i]]))
+    const refPrep = [...(base ? [null] : []), ...refs.map((r) => prepOf.get(r) ?? null)]
     // reference images go to the image-edit feature; its default model is used unless the agent picked one
     return images.length
-      ? wsBuilt({ feature: 'image_edit', prompt, images, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
+      ? wsBuilt({ feature: 'image_edit', prompt, images, width, height, seed, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined })
       : wsBuilt({ feature: 'text_to_image', model: model.id, prompt, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
   }
   // local diffusion models are gone: cloud image models are handled above
