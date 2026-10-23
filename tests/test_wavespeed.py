@@ -53,6 +53,8 @@ MODELS = [
     _meta("wavespeed-ai/depth-anything-v3/image", {"image": {"type": "string"}, "colormap": {"type": "string", "enum": ["grayscale", "inferno", "turbo"]}, "output_format": {"type": "string", "enum": ["jpeg", "png", "webp"]}}, ("image",), price=0.005),
     _meta("wavespeed-ai/image-background-remover", {"image": {"type": "string"}, "output_format": {"type": "string", "enum": ["png", "jpeg"]}}, ("image",), price=0.001),
     _meta("wavespeed-ai/image-upscaler", {"image": {"type": "string"}, "target_resolution": {"type": "string", "enum": ["2k", "4k", "8k"]}}, ("image",)),
+    # not in the curated list: only reachable through a custom workflow (#75)
+    _meta("acme/my-edit", {"input_image": {"type": "string"}, "instruction": {"type": "string"}, "strength": {"type": "number"}, "dims": {"type": "string"}}, ("input_image", "instruction", "strength")),
 ]
 
 
@@ -609,3 +611,54 @@ def test_grouped_models_never_uses_local_name(monkeypatch):
     m = out["text_to_image"]["models"][0]
     assert m["label"] == "qwen-image-3.0" and m["subtitle"] == "qwen-image-3.0/text-to-image"
     assert "2512" not in str({k: v for k, v in m.items() if k != "local_equivalent"})
+
+
+CUSTOM = {"model": "acme/my-edit", "fields": {"@image": "input_image", "@prompt": "instruction", "@size": "dims"}, "params": {"strength": 0.4}}
+
+
+async def test_custom_workflow_check(ws):
+    meta = await wavespeed.catalog()
+    ok = wavespeed.check_custom(CUSTOM, ["image", "prompt"], ["size"], meta)
+    assert ok["ok"] and ok["errors"] == [] and ok["fields"]["image"] == "input_image"
+    # unmapped image + missing required param + bad field + unknown model
+    bad = wavespeed.check_custom({"model": "acme/my-edit", "fields": {"@prompt": "nope"}}, ["image", "prompt"], [], meta)
+    assert not bad["ok"] and any("@image" in e for e in bad["errors"]) and any("strength" in e for e in bad["errors"]) and any("'nope'" in e for e in bad["errors"])
+    assert not wavespeed.check_custom({"model": "made/up"}, ["image"], [], meta)["ok"]
+    assert not wavespeed.check_custom({"model": "noslash"}, ["image"], [], meta)["ok"]
+    # unknown or unused markers only warn; a curated model maps automatically
+    warn = wavespeed.check_custom({"model": T2I, "fields": {"@foo": "prompt", "@mask": "prompt"}}, ["prompt", "size"], [], meta)
+    assert warn["ok"] and len(warn["warnings"]) == 2
+    assert ws["submits"] == []  # checking never submits a paid task
+
+
+async def test_custom_workflow_submit_maps_fields(ws):
+    import folder_paths
+    os.makedirs(folder_paths.get_input_directory(), exist_ok=True)
+    wavespeed._write(os.path.join(folder_paths.get_input_directory(), "c.png"), b"img")
+    await wavespeed.submit({"feature": "image_edit", "custom": True, "image": "c.png [input]", "prompt": "make it blue", "width": 640, "height": 480, **CUSTOM})
+    model, payload = ws["submits"][0]
+    assert model == "acme/my-edit"
+    assert payload == {"input_image": "https://cdn.test/up1.png", "instruction": "make it blue", "dims": "640*480", "strength": 0.4}
+    # without the custom flag the non-curated model is still rejected
+    with pytest.raises(wavespeed.WaveSpeedError):
+        await wavespeed.submit({"feature": "image_edit", "model": "acme/my-edit", "image": "c.png [input]", "prompt": "x"})
+    with pytest.raises(wavespeed.WaveSpeedError):
+        await wavespeed.submit({"feature": "image_edit", "custom": True, "model": "made/up", "prompt": "x"})
+    assert len(ws["submits"]) == 1
+
+
+async def test_custom_workflow_check_route_and_tool(ws):
+    import server
+    app = web.Application()
+    app.router.add_routes(server.PromptServer.instance.routes)
+    client = TestClient(TestServer(app))
+    await client.start_server()
+    try:
+        res = await client.post("/comfyart/wavespeed/custom/check", json={"spec": CUSTOM, "required": ["image", "prompt"], "optional": ["size"]})
+        body = await res.json()
+        assert res.status == 200 and body["ok"] is True and KEY not in json.dumps(body)
+        res = await client.post("/comfyart/wavespeed/custom/check", json={"spec": {"model": "acme/my-edit"}, "required": ["image"]})
+        assert (await res.json())["ok"] is False
+    finally:
+        await client.close()
+    assert set(canvas.SPECS["custom_workflow"]["inputSchema"]["properties"]["action"]["enum"]) == {"rules", "list", "check", "install", "assign"}

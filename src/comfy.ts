@@ -130,10 +130,18 @@ function promptError(body: any, status: number): string {
   return top.details ? `${top.message}: ${top.details}` : top.message
 }
 
+type WsHook = (inputs: Record<string, unknown>) => Promise<Record<string, unknown>>
+let wsHook: WsHook = async ({ custom: _custom, ...rest }) => rest
+
+/** custom_workflow swaps in the user's WaveSpeed model for jobs tagged with a custom action. */
+export function setWsHook(hook: WsHook) {
+  wsHook = hook
+}
+
 export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget()): Promise<string> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
   if (isWsGraph(prompt)) {
-    const inputs = Object.values(prompt)[0].inputs
+    const inputs = await wsHook(Object.values(prompt)[0].inputs as Record<string, unknown>)
     let ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
     let wsBody = await ws.json().catch(() => null)
     const price = wsBody?.error?.confirm_usd

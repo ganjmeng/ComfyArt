@@ -85,6 +85,7 @@ export const TOOL_LABELS: Record<string, string> = {
   focus: t('bot.locateElements'),
   memory: t('common.memory'),
   skill: t('bot.skill'),
+  custom_workflow: t('customWorkflows.title'),
   ask_user: t('bot.askYou'),
   update_plan: t('bot.plan'),
 }

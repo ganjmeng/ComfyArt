@@ -32,6 +32,8 @@ export interface WsInputs {
   layers?: number
   scenes?: { prompt: string; duration: number }[]
   params?: Record<string, unknown>
+  /** custom_workflow action (customMarkers.ts) this job belongs to; the user's model replaces the built-in one. */
+  custom?: string
 }
 
 export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null }

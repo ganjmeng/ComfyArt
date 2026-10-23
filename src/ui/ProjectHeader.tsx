@@ -9,6 +9,7 @@ import { importFiles } from './DropHandlers'
 import { historyAtom } from './HistoryDialog'
 import { Icons } from './icons'
 import { memoryOpenAtom } from './MemoryDialog'
+import { workflowsOpenAtom } from './WorkflowsDialog'
 import { Popover } from './Popover'
 import { t } from '../i18n'
 import { isEnter } from './keys'
@@ -63,6 +64,7 @@ export function ProjectHeader({ editor, projectId, children }: { editor: Editor;
           <Item close={close} icon={Icons.minus} label={t('common.zoomOut')} kbd="Ctrl -" run={() => editor.zoomOut(undefined, { animation: { duration: 200 } })} />
           <div className="ca-menu__sep" />
           <Item close={close} icon={Icons.memory} label={t('common.memory')} run={() => memoryOpenAtom.set(true)} />
+          <Item close={close} icon={Icons.grid} label={t('customWorkflows.title')} run={() => workflowsOpenAtom.set(true)} />
           {kits.length > 0 && (
             <>
               <div className="ca-menu__sep" />
