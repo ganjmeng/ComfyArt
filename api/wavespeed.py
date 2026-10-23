@@ -53,10 +53,11 @@ _uploaded: dict[tuple[str, int, int], str] = {}
 
 
 class WaveSpeedError(Exception):
-    def __init__(self, message: str, status: int = 502, confirm: float | None = None):
+    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None):
         super().__init__(message)
         self.status = status
         self.confirm = confirm
+        self.seg_splits = seg_splits  # #135: 「识别加 N 次分割」 in the confirm dialog
 
 
 KEY_FILE = "wavespeed_key.json"
@@ -1007,10 +1008,50 @@ def _structure_pick(inputs: dict) -> str:
 
 
 def _map_steps(inputs: dict) -> list[str]:
-    """Features of the extra cloud map calls (depth-anything / sam3) a structure job runs before control."""
-    cs = _controls(inputs)
-    return [refprep.CLOUD_MAP[str(c.get("mode") or "")][0] for c in cs
-            if str(c.get("mode") or "") in refprep.CLOUD_MAP and _map_key(c) not in _map_cache]
+    """Features of the extra cloud map calls (depth-anything / sam3) a structure job runs before control.
+    #135: a seg map is one caption call plus one sam3 call per recognised class (1 until recognised)."""
+    steps: list[str] = []
+    for c in _controls(inputs):
+        mode = str(c.get("mode") or "")
+        if mode not in refprep.CLOUD_MAP or _map_key(c) in _map_cache:
+            continue
+        if mode == "seg":
+            steps += ["caption"] + ["segment"] * max(1, len(_seg_cats.get(str(c.get("image") or "")) or []))
+        else:
+            steps.append(refprep.CLOUD_MAP[mode][0])
+    return steps
+
+
+SEG_NONE = "No segmentable objects found"  # zh: 未识别到可分割的对象
+_seg_cats: dict[str, list[str]] = {}
+
+
+async def _seg_categories(image: str) -> list[str]:
+    """#135: COCO classes in the image, from one captioner call (cached per image so the confirm
+    step and the job share it). None found -> SEG_NONE before any sam3 call is made."""
+    if image not in _seg_cats:
+        text = await run_text({"feature": "caption", "image": image, "confirmed": True})
+        _seg_cats[image] = refprep.seg_categories(text)
+    if not _seg_cats[image]:
+        raise WaveSpeedError(SEG_NONE, 422)
+    return _seg_cats[image]
+
+
+async def _recognise_seg(inputs: dict) -> int | None:
+    """Run recognition for uncached seg refs before the quote; returns the total sam3 call count."""
+    n = None
+    for c in _controls(inputs):
+        if str(c.get("mode") or "") == "seg" and c.get("image") and _map_key(c) not in _map_cache:
+            n = (n or 0) + len(await _seg_categories(str(c["image"])))
+    return n
+
+
+async def _semantic_map(image: str) -> bytes:
+    """Upstream OneFormer COCO seg map rebuilt in the cloud: caption -> sam3 per class -> upstream palette."""
+    masks = []
+    for label in await _seg_categories(image):
+        masks.append((label, await _cloud_map("segment", {"apply_mask": False, "output_format": "png"}, image, refprep.seg_name(label))))
+    return refprep.to_png(refprep.semantic_map(masks))
 
 
 # #81: cloud maps (depth / normal / seg) already extracted for a preview, keyed on (src, mode, res), so the
@@ -1069,7 +1110,7 @@ async def _control_map(c: dict, size, res_default: int = 1024, fresh: bool = Fal
         data = None if fresh else _map_cache.get(key)  # fresh: 「重新提取」 forces a new paid extraction
         if data is None:
             feature, params = refprep.CLOUD_MAP[mode]
-            data = await _cloud_map(feature, params, str(c["image"]), str(c.get("prompt") or "").strip() if feature == "segment" else "")
+            data = await _semantic_map(str(c["image"])) if mode == "seg" else await _cloud_map(feature, params, str(c["image"]), str(c.get("prompt") or "").strip() if feature == "segment" else "")
             _map_cache.pop(key, None)  # the new map replaces the old entry
             if len(_map_cache) >= _MAP_CACHE_MAX:
                 _map_cache.pop(next(iter(_map_cache)))
@@ -1085,6 +1126,8 @@ def preview_estimate(inputs: dict) -> list[str]:
     image, mode, res = str(inputs.get("image") or ""), str(inputs.get("mode") or ""), int(inputs.get("res") or 1024)
     if mode not in refprep.CLOUD_MAP or (not inputs.get("fresh") and (image, mode, res) in _map_cache):
         return []
+    if mode == "seg":
+        return ["caption"] + ["segment"] * max(1, len(_seg_cats.get(image) or []))
     return [refprep.CLOUD_MAP[mode][0]]
 
 
@@ -1102,10 +1145,20 @@ async def control_preview(inputs: dict) -> bytes:
     # #109: one rule — preview_estimate says which map calls this request pays for (none when cached, unless fresh)
     prompt = str(inputs.get("prompt") or "").strip()
     paid = [] if inputs.get("confirmed") else preview_estimate({"image": image, "mode": mode, "res": res, "fresh": fresh})
+    splits = None
+    if paid and mode == "seg":
+        if fresh:
+            _seg_cats.pop(image, None)
+        splits = len(await _seg_categories(image))
+        paid = preview_estimate({"image": image, "mode": mode, "res": res, "fresh": fresh})
     if paid:
-        price, _ = await quote(resolve_model(paid[0], None), {})
+        price = 0.0
+        for f in paid:
+            p, _ = await quote(resolve_model(f, None), {})
+            price = None if p is None or price is None else price + float(p)
+        price = None if price is None else round(price, 6)
         if price is not None and needs_confirm(price):
-            raise WaveSpeedError(f"control map preview costs about ${price}; confirm to continue", 409, confirm=float(price))
+            raise WaveSpeedError(f"control map preview costs about ${price}; confirm to continue", 409, confirm=float(price), seg_splits=splits)
     if mode in refprep.COLOR:
         return refprep.process_bytes(await _source_bytes(image), mode, res)
     return refprep.to_png(await _control_map({"image": image, "mode": mode, "res": res, "prompt": prompt}, None, fresh=fresh))
@@ -1168,13 +1221,14 @@ async def submit(inputs: dict) -> str:
     if feature == "segment" or model == SAM3_MODEL:
         inputs = await seg_prompts(inputs)
     if not inputs.get("confirmed"):
+        splits = await _recognise_seg(inputs) if feature == "structure_control" else None
         price, _ = await quote(model, inputs)
         if feature == "structure_control" and price is not None:
             extra = await _steps_price(inputs)
             price = None if extra is None else round(float(price) + extra, 6)
         if price is not None and needs_confirm(price):
             # expensive job: the page asks the user and resubmits with confirmed=true
-            raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price))
+            raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits)
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())
@@ -1548,6 +1602,8 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
     body: dict = {"message": str(e)}
     if e.confirm is not None:
         body["confirm_usd"] = e.confirm
+        if e.seg_splits is not None:
+            body["seg_splits"] = e.seg_splits
     return web.json_response({"error": body}, status=e.status)
 
 

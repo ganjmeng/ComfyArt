@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from ComfyArt.api import wavespeed
-from tests.test_ref_structure import FLUX, SAM, _ctl, _photo, maps  # noqa: F401  (fixtures)
+from tests.test_ref_structure import CAP, FLUX, SAM, _ctl, _photo, maps  # noqa: F401  (fixtures)
 from tests.test_wavespeed import _input_png, ws  # noqa: F401
 
 
@@ -44,20 +44,10 @@ async def test_unreadable_image_without_text_is_blocked_before_submit(ws):
     assert ws["submits"] == []
 
 
-async def test_structure_seg_passes_generation_prompt_as_text(maps):
-    wavespeed._map_cache.clear()
+async def test_structure_seg_prompts_sam3_with_each_class_name(maps):
+    # #135: the generation prompt no longer drives seg; the recognised class name is the sam3 text prompt
     await wavespeed.submit({"feature": "structure_control", "prompt": "a cozy living room", "width": 512, "height": 512,
                             "controls": [_ctl("seg", _photo())]})
-    (m1, pre), (m2, _) = maps["submits"]
-    assert (m1, m2) == (SAM, FLUX)
-    assert pre["prompt"] == "a cozy living room" and "box_prompts" not in pre
-
-
-async def test_structure_seg_without_prompt_uses_full_image_box(maps):
-    # flux itself needs a prompt, so this checks the seg map step on its own
-    wavespeed._map_cache.clear()
-    await wavespeed._control_map({**_ctl("seg", _photo()), "prompt": ""}, None)
-    model, pre = maps["submits"][0]
-    assert model == SAM and "prompt" not in pre
-    box = pre["box_prompts"][0]
-    assert box["x_min"] == 0 and box["y_min"] == 0 and box["x_max"] > 0 and box["y_max"] > 0
+    (m0, _), (m1, pre), (m2, _) = maps["submits"]
+    assert (m0, m1, m2) == (CAP, SAM, FLUX)
+    assert pre["prompt"] == "cat" and "box_prompts" not in pre

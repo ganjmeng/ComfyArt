@@ -95,7 +95,7 @@ export async function previewControl(src: string, mode: RefMode, res: number): P
   let res1 = await send({ inputs })
   if (res1.r.status === 409) {
     const price = res1.conf?.error?.confirm_usd
-    if (typeof price !== 'number' || !(await askCost(price))) throw new Error(t('jobs.costDeclined'))
+    if (typeof price !== 'number' || !(await askCost(price, res1.conf?.error?.seg_splits))) throw new Error(t('jobs.costDeclined'))
     res1 = await send({ inputs: { ...inputs, confirmed: true } })
   }
   if (!res1.blob) throw new Error(res1.err?.error?.message ?? `preview failed: ${res1.r.status}`)

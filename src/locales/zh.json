@@ -654,6 +654,8 @@
   "jobs.wsFailed": "生成失败：{0}",
   "jobs.wsKeyInvalid": "WaveSpeed 密钥无效，请在设置 > WaveSpeed 密钥里检查",
   "jobs.needVoiceSample": "请先上传样音",
+  "jobs.confirmSegSplits": "（含识别加 {0} 次分割）",
+  "jobs.segNone": "未识别到可分割的对象",
   "jobs.needSegTarget": "请先框选或描述要分割的对象",
   "jobs.wsTimeout": "生成超时（{0} 秒），请重试",
   "jobs.wsTimeoutCharged": "生成超时，可能已按报价扣费约 ${0}",

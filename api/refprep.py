@@ -7,6 +7,9 @@ the WaveSpeed control model itself (wavespeed-ai/z-image-turbo/controlnet)."""
 from __future__ import annotations
 
 import io
+import json
+import os
+import re
 import random
 
 from PIL import Image, ImageChops, ImageFilter, ImageOps
@@ -154,3 +157,52 @@ def to_png(img: Image.Image) -> bytes:
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
+
+
+# #135: upstream's seg ref ran OneFormer-COCO-SemSegPreprocessor. No such model on WaveSpeed, so the map is
+# rebuilt from the cloud: a captioner names the objects, sam3 masks each one, and every mask is filled with
+# upstream's own class color (seg_palette.json, index = COCO panoptic class id; unlabeled stays black).
+SEG_MAX_CLASSES = 12
+_PALETTE = json.load(open(os.path.join(os.path.dirname(__file__), "seg_palette.json"), encoding="utf-8"))
+SEG_LABELS: list[str] = _PALETTE["labels"]
+SEG_COLORS: dict[str, tuple[int, int, int]] = {k: tuple(c) for k, c in zip(_PALETTE["labels"], _PALETTE["colors"])}
+
+
+def seg_name(label: str) -> str:
+    """COCO label as a plain prompt word: 'wall-other-merged' -> 'wall', 'floor-wood' -> 'floor wood'."""
+    for s in ("-merged", "-other", "-stuff"):
+        label = label.replace(s, "")
+    return label.replace("-", " ")
+
+
+# caption words that mean a COCO class under another name (person is the only common one)
+SEG_ALIASES = {"person": ("person", "people", "man", "men", "woman", "women", "girl", "boy", "child", "children", "kid")}
+
+
+def seg_categories(text: str, limit: int = SEG_MAX_CLASSES) -> list[str]:
+    """COCO classes named in a caption, in order of first mention, longest names first, at most `limit`."""
+    low = (text or "").lower()
+    hits: list[tuple[int, str]] = []
+    taken: list[tuple[int, int]] = []
+    for label in sorted(SEG_LABELS, key=lambda l: -len(seg_name(l))):
+        name = seg_name(label)
+        if any(seg_name(h) == name for _, h in hits):
+            continue
+        words = "|".join(re.escape(w) for w in SEG_ALIASES.get(label, (name,)))
+        m = re.search(rf"\b(?:{words})(?:e?s)?\b", low)
+        if m and not any(a < m.end() and m.start() < b for a, b in taken):
+            hits.append((m.start(), label))
+            taken.append(m.span())
+    return [label for _, label in sorted(hits)][:limit]
+
+
+def semantic_map(masks: list[tuple[str, bytes]], size: tuple[int, int] | None = None) -> Image.Image:
+    """Composite per-class sam3 masks into one upstream-style color map. Background classes (higher
+    COCO id) are painted first so objects stay on top."""
+    imgs = [(label, Image.open(io.BytesIO(data)).convert("L")) for label, data in masks]
+    size = size or (imgs[0][1].size if imgs else (1024, 1024))
+    out = Image.new("RGB", size, (0, 0, 0))
+    for label, m in sorted(imgs, key=lambda x: -SEG_LABELS.index(x[0])):
+        m = m.resize(size, Image.NEAREST).point(lambda v: 255 if v > 127 else 0)
+        out.paste(SEG_COLORS[label], (0, 0, *size), m)
+    return out
