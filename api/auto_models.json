@@ -3,7 +3,7 @@
  "features": {
   "text_to_image": {
    "tool": "generate_image",
-   "default": {"zh": "通用任务，用默认模型", "en": "general task, so the default model"},
+   "default": {"zh": "这是通用生图的默认模型", "en": "the default model for general image generation"},
    "categories": [
     {"id": "logo", "model": "recraft-ai/recraft-v3",
      "zh": "这是 Logo / 图标 / 矢量风格任务", "en": "this is a logo, icon or vector-style task",
@@ -21,7 +21,9 @@
   },
   "image_edit": {
    "tool": "edit_image",
-   "default": {"zh": "通用编辑，用默认模型", "en": "general edit, so the default model"},
+   "multi_reference": {"model": "google/nano-banana-2.1/edit",
+     "zh": "给了 {n} 张参考图，需要多图参考和角色或产品一致", "en": "{n} reference images were given, which needs multi-reference and character or product consistency"},
+   "default": {"zh": "这是通用图片编辑的默认模型", "en": "the default model for general image editing"},
    "categories": [
     {"id": "keep_identity", "model": "google/nano-banana-2.1/edit",
      "zh": "这是要保持人物或产品一致的局部修改", "en": "this is a local edit that must keep the person or product consistent",

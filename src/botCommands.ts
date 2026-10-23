@@ -123,7 +123,8 @@ function editOf(editor: Editor, args: Args): Edit {
 async function startGenerator(editor: Editor, video: boolean, args: Args, onError: ErrorSink, chat: string) {
   const models = agentModels(video)
   const wantsRefs = !video && Array.isArray(args.refs) && args.refs.length > 0
-  const model = args.model ? models.find((m) => m.id === args.model) : (wantsRefs && models.find((m) => m.refs)) || models[0]
+  // #133: an Auto pick the user disabled in model prefs falls back to the default (result.model says which ran)
+  const model = args.model ? models.find((m) => m.id === args.model) ?? (args.auto_model ? models[0] : undefined) : (wantsRefs && models.find((m) => m.refs)) || models[0]
   if (!models.length) throw new Error(`no ${video ? 'video' : 'image'} models loaded yet (WaveSpeed model list unavailable); try again shortly`)
   if (!model) throw new Error(`unknown model ${JSON.stringify(args.model)}; valid ${video ? 'video' : 'image'} ids: ${models.map((m) => m.id).join(', ')} (default ${models[0].id})`)
   const modes = Array.isArray(args.ref_modes) ? args.ref_modes.map(String) : []
@@ -153,6 +154,8 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     ...(speech ? { speech } : {}),
     ...(refs.length ? { refs } : {}),
     ...(!video && modes.length ? { refModes: Object.fromEntries(refs.flatMap((src, i) => (modes[i] ? [[src, modes[i]]] : []))) } : {}),
+    // #133 Auto: 2+ refs run on the multi-reference edit model the backend picked (edit_model)
+    ...(!video && typeof args.edit_model === 'string' ? { featureModels: { image_edit: args.edit_model } } : {}),
     ...(!video && args.base ? { base: refUrls(editor, [args.base])[0], strength: Number(args.base_strength) || 60 } : {}),
     ...(video && !mode && args.last_frame ? { lastFrame: refUrls(editor, [args.last_frame])[0] } : {}),
     ...(notes?.en ? { durationAsked: Number(args.duration) } : {}),
