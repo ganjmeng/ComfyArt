@@ -1,15 +1,12 @@
 {
   "name": "comfyart-docs",
   "private": true,
-  "description": "ComfyArt documentation site (VitePress), published to GitHub Pages.",
-  "type": "module",
+  "description": "ComfyArt documentation site (Mintlify).",
   "scripts": {
-    "dev": "vitepress dev",
-    "build": "vitepress build",
-    "preview": "vitepress preview",
-    "models": "python3 scripts/gen-models.py"
+    "dev": "npx mint dev",
+    "check": "npx mint broken-links"
   },
-  "devDependencies": {
-    "vitepress": "^1.6.4"
+  "dependencies": {
+    "mint": "^4.2.700"
   }
 }

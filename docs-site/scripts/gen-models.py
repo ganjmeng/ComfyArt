@@ -1,4 +1,4 @@
-"""Regenerate the model tables in guides/models.md (en + zh) from api/curated_models.json and api/wavespeed_models.json.
+"""Regenerate the model tables in guides/models.mdx (en + zh) from api/curated_models.json and api/wavespeed_models.json.
 
 Run from the repo root: python docs-site/scripts/gen-models.py
 """
@@ -44,8 +44,8 @@ def table(i):
             rows2.append(f'| {n[i]} | `{m}` |')
     return '\n'.join(head + rows + head2 + rows2)
 
-for path, i in [('docs-site/guides/models.md', 0), ('docs-site/zh/guides/models.md', 1)]:
+for path, i in [('docs-site/guides/models.mdx', 0), ('docs-site/zh/guides/models.mdx', 1)]:
     p = ROOT / path
     s = p.read_text()
-    s = re.sub(r'(<!-- models:start -->\n)(?:.*?\n)?(<!-- models:end -->)', lambda m: m.group(1) + table(i) + '\n' + m.group(2), s, flags=re.S)
+    s = re.sub(r'({/\* models:start \*/}\n)(?:.*?\n)?({/\* models:end \*/})', lambda m: m.group(1) + table(i) + '\n' + m.group(2), s, flags=re.S)
     p.write_text(s)

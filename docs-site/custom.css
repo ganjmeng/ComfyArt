@@ -1,0 +1,18 @@
+:root {
+  --ca-accent: #3b82f6;
+  --ca-ink: #14131a;
+}
+
+html.dark #navbar,
+html.dark #sidebar,
+html.dark #sidebar-content {
+  background-color: var(--ca-ink) !important;
+}
+
+.prose pre {
+  border-radius: 10px;
+}
+
+.prose img {
+  border-radius: 10px;
+}

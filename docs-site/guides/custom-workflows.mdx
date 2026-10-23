@@ -1,0 +1,85 @@
+---
+title: "Custom workflows"
+description: "Run your own WaveSpeed model for ComfyArt's features."
+---
+
+Every canvas action runs a model on WaveSpeed. Most features can run a model of your choice instead of the built-in one, for example a different image model or edit model.
+
+<Tip>
+**WaveSpeed Key and cost**
+
+Custom workflows: these run on WaveSpeed cloud models, so they need a [WaveSpeed Key](/guides/wavespeed-key). The estimated cost is shown next to **Send** (or on the button) before anything runs, and jobs of $0.50 or more ask you to confirm. See [Models and costs](/guides/models).
+</Tip>
+A custom workflow is a small JSON file: the WaveSpeed model id, and optionally which request field of that model receives the image, prompt or size. You can write it yourself or let an agent do it.
+
+## Let an agent do it
+
+Ask the [ComfyArt agent](/guides/agent), or any agent connected over [MCP](/guides/mcp), something like "connect this model to quick edit" and give it the model id. It reads the rules with the `custom_workflow` tool, writes the file, checks it and installs it. The rules are also a built-in skill, **Connect a custom workflow**.
+
+The `custom_workflow` tool has five actions: `rules` (the file format), `list` (installed workflows), `check` (validate a file), `install` (save it) and `assign` (bind it to a feature). Custom workflows always run through these actions on WaveSpeed; you do not submit anything to ComfyUI yourself.
+
+
+For an agent that is not connected to ComfyArt, open **Custom workflows** in the project menu and copy the rules with the button next to the agent hint.
+
+## Do it by hand
+
+### 1. Write the file
+
+```json
+{
+  "model": "owner/model-name",
+  "fields": { "@prompt": "prompt", "@image": "image" },
+  "params": { "num_inference_steps": 30 }
+}
+```
+
+- `model`: a WaveSpeed model id from [wavespeed.ai/models](https://wavespeed.ai/models), in `owner/model-name` form.
+- `fields` (optional): maps a ComfyArt marker to the model's request field. Common field names (`prompt`, `image`, `images`, `mask_image`, `size`, `aspect_ratio`, `resolution`, `duration`, `last_image`, `num_layers`) are filled automatically, so `fields` is only needed when the model uses other names.
+- `params` (optional): fixed values sent on every run. Use it for required fields that no marker fills.
+
+| Marker | ComfyArt fills |
+|---|---|
+| `@image` | the selected image (uploaded to WaveSpeed, sent as a URL) |
+| `@image2` | a second image, e.g. the style reference (URL) |
+| `@mask` | the area to change as an image URL, white = change |
+| `@last` | the last frame of a video (URL) |
+| `@prompt` | the prompt or instruction |
+| `@size` | the output size as `width*height` |
+| `@width`, `@height` | width and height in pixels, when the model takes them separately |
+| `@count` | how many results / layers |
+| `@seconds` | video length in **seconds** |
+
+Markers are case-insensitive. A marker the feature does not use is ignored with a warning. Do not map a marker to a field the model does not have: the check rejects it.
+
+### 2. Upload and assign
+
+Open the project menu (top-left icon) → **Custom workflows**. Features are grouped into image generation, image editing, image tools and video. Click the upload button next to a feature: ComfyArt checks the file against the model's request schema on WaveSpeed (a free lookup) and says what is wrong: an unknown model, a field the model does not accept, a required field left empty. Once it passes, that feature uses it. Each feature keeps its files in its own folder, `comfyart/workflows/<feature>/` in your user folder (`edit`, `upscale`, `video`...), and its menu lists only those. Pick **Built in** to switch back. ComfyArt never deletes your files; to remove one, delete it in that folder; a feature whose file is gone goes back to built in.
+
+Runs are billed by WaveSpeed at the chosen model's price. Jobs at or above the confirmation limit ($0.50 by default) ask you first.
+
+## Markers per feature
+
+| Feature | Required | Optional | Notes |
+|---|---|---|---|
+| Text to image | `@prompt`, `@size` (or `@width` + `@height`) | `@count` | Appears as an extra model in the generator. Reference and base images are not passed. |
+| Quick edit / edit text | `@image`, `@prompt` | | Also used by compose and mockup blending. `@prompt` receives the edit instruction. |
+| Style transfer | `@image`, `@prompt` | `@image2` | Without a reference, `@image2` gets the same image. |
+| Inpaint / edit region | `@image`, `@prompt` | | The model gets the whole image; `@prompt` names the area to change and what to do there. |
+| Expand | `@image`, `@prompt` | `@size` | `@size` receives the new canvas size. |
+| Multi-angle | `@image` | `@prompt` | The prompt is a camera description such as `<qma> front-right quarter view eye-level shot medium shot`. |
+| Upscale | `@image` | | The chosen factor goes to `target_resolution` when the model has it. |
+| Remove background | `@image` | | The result should keep an alpha channel. |
+| Eraser | `@image`, `@mask` | | `@mask` is the area to remove. |
+| Split layers | `@image` | `@prompt`, `@count` | `@count` is the number of layers. The result is several RGBA images. |
+| Video generation | `@prompt` | `@image`, `@last`, `@size`, `@seconds` | Used by the first/last frame mode. Reference, motion control, lip sync and storyboard keep the built-in model. |
+| Animate image | `@image`, `@prompt` | `@size`, `@seconds`, `@last` | With loop on, `@last` gets the source image again. |
+
+If a feature needs an input image and none is given, the run fails with a message instead of running without it.
+
+Storyboard, video extend, creative upscale, move object and video upscale always use the built-in models.
+
+## Example: use another edit model
+
+1. Find the edit model on WaveSpeed and note its id and the names of its image and prompt fields.
+2. Write `{"model": "owner/edit-model"}`; add `"fields"` only if the fields are not called `image` / `images` and `prompt`.
+3. Upload it and pick it for **Quick edit / edit text**.

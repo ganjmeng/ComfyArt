@@ -1,0 +1,66 @@
+---
+title: "Edit Elements and mockups"
+description: "Turn a flat image back into editable layers, and print a design onto a product photo."
+---
+
+Both tools are in the image toolbar under **⋯**.
+
+<Tip>
+**WaveSpeed Key and cost**
+
+Edit Elements, Re-render, Render and AI blend: these run on WaveSpeed cloud models, so they need a [WaveSpeed Key](/guides/wavespeed-key). The estimated cost is shown next to **Send** (or on the button) before anything runs, and jobs of $0.50 or more ask you to confirm. See [Models and costs](/guides/models).
+</Tip>
+## Edit Elements
+
+**Edit Elements** takes a finished image (a poster, an ad, a screenshot of a design) and rebuilds it as an editable artboard:
+
+1. Every line of text is read with WaveSpeed's `paddle-ocr` model and becomes a real text layer at the same position, size, color and alignment. With the [Agent](/guides/agent) enabled, it also matches each line's typeface style and weight; otherwise the text uses Arial.
+2. The main product and logo are cut out as separate image layers with WaveSpeed's SAM3 segmentation model.
+3. Text and objects are erased from the picture with WaveSpeed's eraser model, leaving a clean background layer.
+
+The new artboard appears next to the original. Change the wording, font or color, move the product, then click **Re-render** in the artboard toolbar to blend the edited layers back into one natural-looking image.
+
+<Frame>
+  <img src="/images/ours/en/edit-elements.webp" alt="Original perfume ad next to its rebuilt artboard with the brand name changed" />
+</Frame>
+
+In the example above the brand name was changed from LUMIERE to AURORE by typing in the text layer; the bottle and background were left untouched.
+
+You can also start from the home page: **Break down an image** uploads a design, opens a new project and runs Edit Elements on it.
+<Note>
+Edit Elements needs no local package or model: OCR, cut-outs and erasing all run on WaveSpeed. See [Models and costs](/guides/models).
+</Note>
+## Compose boards
+
+A compose board is an artboard you lay out by hand and then render into one finished image. Choose **Insert → Compose board**, then place anything on it: text, shapes, images, doodles, and two board-only elements:
+
+- **AI block**: a dashed area with a description ("a steaming latte on a marble table"). Double-click it to write the description. Rendering fills the area with new content that matches the rest of the design.
+- **QR code**: double-click to type the link; it stays sharp in the render.
+
+Click **Render** in the artboard toolbar. ComfyArt exports the board, marks each AI block as a gray area, and asks the image model to turn the layout into a polished design while keeping your text, logos and photos where they are. The result is placed next to the board.
+
+The list button next to **Render** shows:
+
+- **Changes since the last render**: elements added, changed or removed.
+- **What Render sends**: the exact prompt, including each AI block's position and description, before you spend a render on it.
+- **Export layout**: saves the board as a `.layout.json` file. **Insert → Import layout** brings it back, in this or another project, so a layout can be reused as a template.
+
+Artboards made by Edit Elements are compose boards too; there the button reads **Re-render**.
+
+## Mockups
+
+**Mockup** turns a product photo (a t-shirt, mug, bag, box, phone) into a surface you can print a design on. ComfyArt measures the photo's depth and cuts out the product once; after that, placing the design is instant and runs in your browser.
+
+<Frame>
+  <img src="/images/ours/en/mockup-panel.webp" alt="Mockup panel placing a badge logo on a t-shirt" />
+</Frame>
+
+In the Mockup panel:
+
+- **Design**: pick any image from the canvas. Logos with a transparent background work best; run **Remove Background** first if needed.
+- **Left–right**, **Up–down**, **Size** and **Angle** place the design.
+- **Follow surface** bends the design with the folds and curves of the product. The product's own shading is laid over the design, and anything outside the product is masked away.
+- **Bake as image** flattens the mockup into a normal image.
+- **AI blend** re-renders the result with the image model for more realistic fabric, print texture and lighting.
+
+The mockup stays editable: select it again to swap the design or move it.

@@ -1,0 +1,54 @@
+---
+title: "快速开始"
+description: "安装 ComfyArt，填好 WaveSpeed Key，打开画布生成第一张图。"
+---
+
+ComfyArt 是一个 ComfyUI 插件。ComfyUI 仍是宿主，但不需要显卡：所有模型都用你自己的 API Key 跑在 [WaveSpeed](https://wavespeed.ai) 云端。
+
+## 安装
+
+### 方式一：一条命令
+
+在本仓库的克隆目录里运行 `scripts/start.sh`，它会安装 ComfyUI（仅 CPU）、把 ComfyArt 链接到 `custom_nodes/` 并启动：
+
+```bash
+git clone https://github.com/ganjmeng/ComfyArt
+cd ComfyArt
+./scripts/start.sh
+```
+
+不填 WaveSpeed Key 也能启动，只会提示云端生成不可用。
+
+### 方式二：装进已有的 ComfyUI
+
+1. 克隆到 `ComfyUI/custom_nodes/`：
+   ```bash
+   cd ComfyUI/custom_nodes
+   git clone https://github.com/ganjmeng/ComfyArt
+   ```
+2. 在运行 ComfyUI 的 Python 环境里安装依赖。只会多装一个 PDF 上传用的 `pypdfium2`；文字识别走 WaveSpeed，不需要本地 OCR 包。
+   ```bash
+   pip install -r ComfyArt/requirements.txt
+   ```
+   视频剪辑器导出需要 PATH 里有 `ffmpeg`。
+3. 重启 ComfyUI，打开 [http://127.0.0.1:8188/comfyart/](http://127.0.0.1:8188/comfyart/)。
+
+## 填写 WaveSpeed Key
+
+打开 **设置 → WaveSpeed API key** 粘贴 Key，或在启动 ComfyUI 前设置环境变量 `WAVESPEED_API_KEY`。详见 [WaveSpeed Key](/zh/guides/wavespeed-key)。顶栏的余额标签会显示 WaveSpeed 账户余额。
+
+## 启用 MCP 和 Agent（可选）
+
+Agent 默认是关闭的；图像、视频、音频生成不受影响。要使用 Agent，在左侧 Agent 面板点 **打开 Agent 设置**（或从 Agent 选择菜单里选 **Agent 设置**），先勾选 **启用 MCP**，再勾选 **启用 Agent**（启用 Agent 需要先启用 MCP）。支持哪些 agent 见 [Agent](/zh/guides/agent)。
+
+## 生成第一张图
+
+1. 在[首页](/zh/guides/home)点 **新建项目**，打开空白画布。
+2. 在左侧工具栏选图片生成器，输入提示词，看一下 **发送** 旁边的预估费用。
+3. 点 **发送**。预估 $0.50 及以上的任务会先请你确认。结果会放到画布上。
+
+## 接下来
+
+- **[生成](/zh/guides/generate)**：参考图、配色、底图和视频。
+- **[Agent](/zh/guides/agent)**：打开 Agent，让它帮你规划并完成设计。
+- **[模型与费用](/zh/guides/models)**：每个功能用哪个 WaveSpeed 模型。

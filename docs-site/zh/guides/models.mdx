@@ -1,0 +1,54 @@
+---
+title: "模型与费用"
+description: "每个 ComfyArt 功能用哪个 WaveSpeed 模型，费用怎么显示。"
+---
+
+ComfyArt 没有本地模型。所有用到模型的功能都把任务发到 [WaveSpeed](https://wavespeed.ai)，所以需要配置 [WaveSpeed Key](/zh/guides/wavespeed-key)，运行前 **发送** 旁边会显示预估费用。预估 $0.50 及以上的任务会先请你确认。
+
+## 选择模型
+
+- 每个功能都有一份精选模型列表，第一个是默认模型。
+- 模型选择器默认开启 **Auto**，使用默认模型；关掉 Auto 后可以按功能标签或平铺列表选择。
+- 价格跟随 WaveSpeed 实时定价。预估费用是 WaveSpeed 按你的实际输入（尺寸、时长、参考图张数）给出的报价。
+
+## 默认模型
+
+下表由 `docs-site/scripts/gen-models.py` 从 `api/curated_models.json` 和 `api/wavespeed_models.json` 生成。
+
+{/* models:start */}
+| 功能 | 默认模型 | 模型数（推荐 + 更多） |
+|---|---|---|
+| 文生图 | `openai/gpt-image-2.5-flare/text-to-image` | 6 + 19 |
+| 图片编辑 | `openai/gpt-image-2.5-flare/edit` | 6 + 14 |
+| 文生视频 | `bytedance/seedance-2.0/text-to-video` | 4 + 25 |
+| 图生视频 | `bytedance/seedance-2.0/image-to-video` | 4 + 27 |
+| 参考生视频 | `kwaivgi/kling-video-o3-std/reference-to-video` | 4 |
+| 动作控制 | `kwaivgi/kling-v3.0-std/motion-control` | 4 |
+| 对口型 | `wavespeed-ai/infinitetalk-fast` | 4 |
+| 延长视频 | `wavespeed-ai/minimax-h3/video-extend` | 4 |
+| 视频放大 | `wavespeed-ai/video-upscaler` | 3 |
+| 视频去背景 | `wavespeed-ai/video-background-remover` | 2 |
+| 配乐 | `minimax/music-3.0` | 5 |
+| 音效 | `mirelo-ai/sfx-2.0/text-to-audio` | 4 |
+| 配音 | `wavespeed-ai/qwen3-tts/text-to-speech` | 4 |
+| 声音克隆 | `wavespeed-ai/qwen3-tts/voice-clone` | 4 |
+| 图转 3D | `tripo3d/h3.1/image-to-3d` | 5 |
+
+| 辅助功能 | 模型 |
+|---|---|
+| 扩图 | `bria/expand` |
+| 拆图层 | `bytedance/seedream-v5.0-flash/layer-decomposition` |
+| 抠图 | `wavespeed-ai/image-background-remover` |
+| 擦除 / 移动物体 | `wavespeed-ai/image-eraser` |
+| 放大 | `wavespeed-ai/image-upscaler` |
+| 智能选择 / 元素编辑抠图 | `wavespeed-ai/sam3-image` |
+| 多角度 | `wavespeed-ai/qwen-image/edit-2509-multiple-angles` |
+| 结构类模式 | `wavespeed-ai/flux-controlnet-union-pro-2.0` |
+| 文字识别（OCR） | `wavespeed-ai/paddle-ocr` |
+| 图片描述 | `wavespeed-ai/image-captioner` |
+| 语音转文字 | `wavespeed-ai/openai-whisper-turbo` |
+{/* models:end */}
+
+## 哪些是免费的
+
+画布编辑、导出（PNG、JPG、PDF、PPTX、PSD、ZIP）、视频剪辑器导出和 WaveSpeed 余额查询都不调用付费模型。

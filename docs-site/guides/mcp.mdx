@@ -1,0 +1,155 @@
+---
+title: "MCP server"
+description: "Let the built-in agent, or any MCP client such as Claude Code, Codex, Gemini CLI or Cursor, see and edit the canvas."
+---
+
+ComfyArt serves an [MCP](https://modelcontextprotocol.io) server over HTTP. The built-in [Agent](/guides/agent) uses it, and any other agent that speaks MCP can use the same tools: look at the canvas, generate and edit images, videos, audio and 3D models, and place text, shapes, frames and slides.
+
+<Tip>
+**WaveSpeed Key and cost**
+
+Generation and edit tools called over MCP: these run on WaveSpeed cloud models, so they need a [WaveSpeed Key](/guides/wavespeed-key). The estimated cost is shown next to **Send** (or on the button) before anything runs, and jobs of $0.50 or more ask you to confirm. See [Models and costs](/guides/models).
+</Tip>
+## Enable it
+
+Turn on **Enable MCP** in Agent Settings. The endpoint is:
+
+```
+http://127.0.0.1:8188/comfyart/mcp?project=<project-id>
+```
+
+The project id is the `project` value in the ComfyArt URL. Canvas tools are executed by the open ComfyArt tab of that project, so keep it open while the agent works. Without `?project`, commands go to the only open project; with several projects open the call fails and asks for one.
+
+The server uses the streamable HTTP transport with plain JSON responses (no SSE stream). Replace `127.0.0.1:8188` if ComfyUI listens elsewhere.
+
+## Connect an agent
+
+`wait_generation` can block for about three minutes while a job runs, so give the client a tool timeout of several minutes. The examples below use 10 minutes.
+
+### Claude Code
+
+```bash
+claude mcp add --transport http comfyart "http://127.0.0.1:8188/comfyart/mcp?project=<project-id>"
+```
+
+Start Claude Code with `MCP_TOOL_TIMEOUT=600000` set in the environment to allow long waits. Run `/mcp` inside Claude Code to check that `comfyart` is connected.
+
+### Codex
+
+```bash
+codex mcp add comfyart --url "http://127.0.0.1:8188/comfyart/mcp?project=<project-id>"
+```
+
+Then raise the tool timeout in `~/.codex/config.toml`, since the default is shorter than a generation:
+
+```toml
+[mcp_servers.comfyart]
+url = "http://127.0.0.1:8188/comfyart/mcp?project=<project-id>"
+tool_timeout_sec = 600
+```
+
+### Gemini CLI and Qwen Code
+
+Add the server to `~/.gemini/settings.json` (Gemini CLI) or `~/.qwen/settings.json` (Qwen Code):
+
+```json
+{
+  "mcpServers": {
+    "comfyart": {
+      "httpUrl": "http://127.0.0.1:8188/comfyart/mcp?project=<project-id>",
+      "timeout": 600000
+    }
+  }
+}
+```
+
+`gemini mcp add --transport http comfyart <url>` and `qwen mcp add --transport http comfyart <url>` write the same entry. Run `/mcp` inside either CLI to list the tools.
+
+### Cursor
+
+In `~/.cursor/mcp.json`, or `.cursor/mcp.json` in a project:
+
+```json
+{
+  "mcpServers": {
+    "comfyart": {
+      "url": "http://127.0.0.1:8188/comfyart/mcp?project=<project-id>"
+    }
+  }
+}
+```
+
+### VS Code (GitHub Copilot agent mode)
+
+In `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "comfyart": {
+      "type": "http",
+      "url": "http://127.0.0.1:8188/comfyart/mcp?project=<project-id>"
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+Claude Desktop's config file starts local commands, so bridge the HTTP server with [mcp-remote](https://www.npmjs.com/package/mcp-remote) (needs Node.js). In `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "comfyart": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://127.0.0.1:8188/comfyart/mcp?project=<project-id>"]
+    }
+  }
+}
+```
+
+### Your own agent
+
+Any program can call the tools with JSON-RPC 2.0 over `POST`. Each request gets one JSON response:
+
+```bash
+curl -X POST "http://127.0.0.1:8188/comfyart/mcp?project=<project-id>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+
+curl -X POST "http://127.0.0.1:8188/comfyart/mcp?project=<project-id>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"add_text","arguments":{"text":"Hello","x":100,"y":100}}}'
+```
+
+The result's `content` holds a text block with the tool's JSON output, plus image blocks for tools like `view_canvas`. `isError: true` means the tool failed. MCP SDKs connect with their streamable HTTP client.
+
+## A typical session
+
+1. `get_canvas` to see what is on the page.
+2. `list_models` to pick a model, then `generate_image` or `generate_video`. Both return ids at once.
+3. `wait_generation` with those ids. When its `status` is `running`, call it again with the same ids; when `done`, check each item, since one can still be `error`.
+4. `view_canvas` to look at the result, then edit it with the image tools or lay it out with `add_text`, `create_frame` and `update_shapes`.
+
+## Tools
+
+| Group | Tools |
+|---|---|
+| Look | `server_info`, `get_canvas`, `view_canvas`, `focus`, `list_models`, `brand_kits` |
+| Generate | `generate_image`, `generate_video` (first / last frame or up to 9 `reference_images`), `wait_generation` |
+| Edit images | `edit_image`, `replace_text`, `edit_region`, `erase_region`, `move_object`, `style_transfer`, `upscale_image`, `remove_background`, `expand_image`, `split_layers`, `change_angle`, `animate_image`, `vectorize_image` |
+| Rebuild and mock up | `edit_elements`, `create_mockup`, `place_design` |
+| Video | `extend_video`, `upscale_video`, `remove_video_background` |
+| Audio and 3D | `generate_music`, `generate_sound_effect`, `text_to_speech`, `image_to_3d` |
+| Layout | `add_text`, `add_shape`, `create_frame`, `update_shapes`, `delete_shapes`, `place_html`, `create_slides` |
+| Memory and skills | `memory`, `skill` |
+
+`tools/list` returns every tool's input schema. Inside built-in Agent chats the agent also gets a tool to ask you multiple-choice questions.
+
+
+The `custom_workflow` tool has five actions: `rules` (the file format), `list` (installed workflows), `check` (validate a file), `install` (save it) and `assign` (bind it to a feature). Custom workflows always run through these actions on WaveSpeed; you do not submit anything to ComfyUI yourself.
+
+## Security
+
+The MCP tools that generate or edit spend from the WaveSpeed Key configured in ComfyArt, and each paid call reports its cost. Anyone who can reach your ComfyUI port can use the server, so keep ComfyUI on localhost or a trusted network when MCP is on.

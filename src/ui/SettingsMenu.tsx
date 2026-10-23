@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useValue, type Editor } from 'tldraw'
 
+import { DOCS_SITE } from '../docsConfig'
 import { lang, setLang, t, type Lang } from '../i18n'
 import { pushEnabled, setPush } from '../notices'
 import { saveTheme, setTheme, themeAtom, THEMES } from '../theme'
@@ -10,10 +11,9 @@ import { Popover } from './Popover'
 import { shortcutsAtom } from './Shortcuts'
 import { keySettingsOpenAtom } from '../wavespeedKey'
 
-/** #35: the docs site on GitHub Pages; English at the root, Chinese under /zh/. */
-export const DOCS_SITE = 'https://ganjmeng.github.io/ComfyArt/'
+/** #35: the docs site (Mintlify, URL in docsConfig.ts); English at the root, Chinese under /zh. */
 export function docsUrl(l: Lang = lang): string {
-  return l === 'zh' ? `${DOCS_SITE}zh/` : DOCS_SITE
+  return l === 'zh' ? `${DOCS_SITE}/zh` : DOCS_SITE
 }
 
 const LANGS: [Lang, string][] = [['zh', t('settings.langZh')], ['en', t('settings.langEn')]]
