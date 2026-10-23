@@ -980,3 +980,71 @@ def test_error_kind_1407_is_insufficient_credit():
     assert wavespeed.error_kind(None, 1407) == "insufficientCredit"
     assert wavespeed.error_kind(None, "1200") == "moderation"
     assert wavespeed.error_kind(500, None, "boom") == "failed"
+
+
+# --- #170: one mock error case per modality (image / video / audio / 3D) -------------------------------------------
+# WaveSpeed fails -> the job carries a #161 kind, the UI shows that kind's zh/en copy, never the raw WaveSpeed text,
+# and nothing is resubmitted (no second charge). The kind -> copy mapping itself is covered in test_ws_errors.py.
+RAW = "Internal Error xyz-7781"
+
+
+def _copy(kind):
+    from pathlib import Path
+    root = Path(wavespeed.__file__).resolve().parent.parent / "src" / "locales"
+    return [json.loads((root / f"{lang}.json").read_text())[f"wsErr.{kind}"] for lang in ("zh", "en")]
+
+
+def _shown(kind):
+    # mirrors src/comfy.ts: wsErrorText(ws_kind) ?? exception_message
+    texts = _copy(kind)
+    assert all(t and RAW not in t and "xyz" not in t for t in texts)
+    return texts
+
+
+async def test_170_image_task_failed_is_readable(ws):
+    ws["status"], ws["task_error"] = "failed", RAW
+    task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+    hist = (await wavespeed.poll(task))[f"ws:{task}"]
+    info = hist["status"]["messages"][0][1]
+    assert hist["status"]["completed"] is True and hist["status"]["status_str"] == "error"
+    assert info["ws_kind"] == "failed" and _shown("failed")[0] == "WaveSpeed 没能完成这次任务，请检查输入后再试。"
+    assert (await wavespeed.poll(task)) == {f"ws:{task}": hist} and len(ws["submits"]) == 1  # cached, not resubmitted
+
+
+async def test_170_video_insufficient_balance_on_submit(ws):
+    ws["submit_status"], ws["submit_code"], ws["submit_message"] = 402, 1407, RAW
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit({"feature": "text_to_video", "prompt": "waves", "duration": 5})
+    assert e.value.kind == "insufficientCredit" and e.value.status == 402 and RAW not in str(e.value)
+    body = json.loads(wavespeed._respond_error(e.value).body)["error"]
+    assert body["kind"] == "insufficientCredit" and ws["submits"] == [] and not wavespeed._jobs
+    zh, en = _shown("insufficientCredit")
+    assert "本次未扣费" in zh and "Nothing was charged" in en
+
+
+async def test_170_audio_task_moderation_is_readable(ws):
+    ws["status"], ws["task_error"], ws["task_code"] = "failed", RAW, 1200
+    task = await wavespeed.submit({"feature": "generate_sound_effect", "prompt": "door slam", "duration": 3})
+    info = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"][0][1]
+    assert info["ws_kind"] == "moderation" and len(ws["submits"]) == 1
+    zh, en = _shown("moderation")
+    assert "没有生成" in zh and "Nothing was generated" in en
+
+
+async def test_170_3d_submit_server_error_is_readable(ws):
+    ws["submit_status"], ws["submit_message"] = 500, RAW
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit({"feature": "image_to_3d", "image": _input_png()})
+    body = json.loads(wavespeed._respond_error(e.value).body)["error"]
+    assert body["kind"] == "failed" and e.value.status == 502 and ws["submits"] == []
+    _shown("failed")
+
+
+@pytest.mark.xfail(strict=True, reason="#170 finding: timeouts carry no ws_kind, so the UI shows the raw English exception text")
+async def test_170_task_timeout_has_readable_kind(ws, monkeypatch):
+    ws["status"] = "processing"
+    task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+    monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
+    info = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"][0][1]
+    assert "timed out" in info["exception_message"]
+    assert info.get("ws_kind")
