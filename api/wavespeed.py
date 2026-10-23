@@ -261,11 +261,13 @@ def check_custom(spec: dict, required: list[str], optional: list[str], meta: dic
     """Validate a cloud custom workflow {model, fields: {"@marker": field}, params} for one feature."""
     errors: list[str] = []
     warnings: list[str] = []
+    codes: list[dict] = []  # structured errors so the UI can localize them
     model = spec.get("model") if isinstance(spec, dict) else None
     try:
         custom_model(model, meta)
     except WaveSpeedError as e:
-        return {"ok": False, "errors": [str(e)], "warnings": [], "fields": {}}
+        code = "badModelId" if not (isinstance(model, str) and "/" in model) else "unknownModel"
+        return {"ok": False, "errors": [str(e)], "warnings": [], "fields": {}, "codes": [{"code": code, "model": str(model or "")}]}
     schema = _schema(meta[model])
     props = schema.get("properties") or {}
     fields = {str(k).lstrip("@").lower(): v for k, v in (spec.get("fields") or {}).items()}
@@ -278,9 +280,11 @@ def check_custom(spec: dict, required: list[str], optional: list[str], meta: dic
             warnings.append(f"@{marker} is not used by this feature and is ignored.")
         elif field not in props:
             errors.append(f"@{marker} is mapped to {field!r}, which {model} does not accept.")
+            codes.append({"code": "badField", "model": model, "marker": "@" + marker, "field": str(field)})
     for k in params:
         if k not in props:
             errors.append(f"param {k!r} is not accepted by {model}.")
+            codes.append({"code": "badParam", "model": model, "param": str(k)})
     auto = {"image": "image" in props or "images" in props, "image2": "images" in props, "mask": "mask_image" in props,
             "last": "last_image" in props, "prompt": "prompt" in props or "tags" in props,
             "size": bool({"size", "aspect_ratio", "resolution"} & set(props)), "count": "num_layers" in props or "prompt" in props,
@@ -288,11 +292,13 @@ def check_custom(spec: dict, required: list[str], optional: list[str], meta: dic
     missing = [m for m in required if m not in fields and not auto.get(m) and not (m == "size" and "width" in fields and "height" in fields)]
     if missing:
         errors.append(f"{model} has no field for {', '.join('@' + m for m in missing)}; map it under fields.")
+        codes.append({"code": "missingFields", "model": model, "markers": ["@" + m for m in missing]})
     covered = AUTO_FIELDS | set(fields.values()) | set(params)
     unfilled = [k for k in schema.get("required") or [] if k not in covered]
     if unfilled:
         errors.append(f"{model} requires {', '.join(unfilled)}; set it under params or map a marker to it.")
-    return {"ok": not errors, "errors": errors, "warnings": warnings, "fields": fields, "price": meta[model].get("base_price")}
+        codes.append({"code": "requiredParams", "model": model, "params": unfilled})
+    return {"ok": not errors, "errors": errors, "warnings": warnings, "fields": fields, "codes": codes, "price": meta[model].get("base_price")}
 
 
 async def _custom_fields(session: aiohttp.ClientSession, inputs: dict, payload: dict) -> None:

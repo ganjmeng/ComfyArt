@@ -1154,5 +1154,13 @@
   "jobs.confirmOk": "继续生成",
   "wsKey.confirmUsd": "超过此金额时二次确认（$，0 = 每次都确认）",
   "wsKey.confirmBad": "请输入 0–1000 之间的数字",
-  "wsKey.estimate": "预计 {0}"
+  "wsKey.estimate": "预计 {0}",
+  "customWorkflows.installFailed": "{0} 安装失败：{1}",
+  "customWorkflows.err.unknownModel": "WaveSpeed 上没有模型 {0}",
+  "customWorkflows.err.badModelId": "模型 id「{0}」格式不对，应为 owner/model-name",
+  "customWorkflows.err.missingFields": "模型 {0} 缺少 {1} 的对应字段",
+  "customWorkflows.err.requiredParams": "模型 {0} 还需要填写 {1}",
+  "customWorkflows.err.requiredParamsAlso": "还需要填写 {1}",
+  "customWorkflows.err.badField": "{0} 对应的字段 {1} 模型 {2} 不支持",
+  "customWorkflows.err.badParam": "模型 {1} 不支持参数 {0}"
 }

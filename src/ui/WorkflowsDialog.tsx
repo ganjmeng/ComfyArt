@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { atom, useValue } from 'tldraw'
 
-import { checkWorkflow, CUSTOM_ACTIONS, parseApiWorkflow, rulesText, type CustomAction, type CustomGroup } from '../customMarkers'
+import { checkProblem, checkWorkflow, CUSTOM_ACTIONS, parseApiWorkflow, rulesText, type CustomAction, type CustomGroup } from '../customMarkers'
 import { listCustomWorkflows, readCustomWorkflow, saveCustomWorkflow, setCustomWorkflow, workflowConfigAtom } from '../customWorkflows'
 import { errorText } from '../jobs'
 import { CopyButton } from './CopyButton'
@@ -16,7 +16,9 @@ const GROUPS: CustomGroup[] = ['image', 'edit', 'tools', 'video']
 
 async function problemsOf(action: CustomAction, file: string): Promise<string[]> {
   const spec = await readCustomWorkflow(action, file)
-  return spec ? (await checkWorkflow(spec, action)).errors : []
+  if (!spec) return []
+  const check = await checkWorkflow(spec, action)
+  return check.errors.length ? [checkProblem(file, check)] : []
 }
 
 export function WorkflowsDialog({ onError }: { onError: (msg: string) => void }) {
@@ -45,7 +47,7 @@ export function WorkflowsDialog({ onError }: { onError: (msg: string) => void })
   const pick = async (action: CustomAction, file: string) => {
     if (file) {
       const errors = await problemsOf(action, file)
-      if (errors.length) throw new Error(`${file}: ${errors.join(' ')}`)
+      if (errors.length) throw new Error(errors[0])
     }
     await setCustomWorkflow(action, file || null)
   }
@@ -53,8 +55,8 @@ export function WorkflowsDialog({ onError }: { onError: (msg: string) => void })
   const add = async (action: CustomAction, file: File | undefined) => {
     if (!file) return
     const spec = parseApiWorkflow(await file.text())
-    const { errors } = await checkWorkflow(spec, action)
-    if (errors.length) throw new Error(`${file.name}: ${errors.join(' ')}`)
+    const check = await checkWorkflow(spec, action)
+    if (check.errors.length) throw new Error(checkProblem(file.name, check))
     await setCustomWorkflow(action, await saveCustomWorkflow(action, file.name, spec))
   }
 

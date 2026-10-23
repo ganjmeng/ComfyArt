@@ -1,5 +1,5 @@
 import { api } from './comfy'
-import { t } from './i18n'
+import { lang, t } from './i18n'
 
 export type CustomAction = 'generate' | 'edit' | 'style' | 'inpaint' | 'expand' | 'upscale' | 'cutout' | 'erase' | 'angles' | 'layers' | 'video' | 'animate'
 export type Marker = 'image' | 'image2' | 'mask' | 'last' | 'prompt' | 'size' | 'width' | 'height' | 'count' | 'seconds'
@@ -61,7 +61,30 @@ export function asApiWorkflow(data: unknown): CustomSpec {
   return { model: model.trim(), ...(fields ? { fields } : {}), ...(params ? { params } : {}) }
 }
 
-export interface Check { fields: Partial<Record<string, string>>; errors: string[]; warnings: string[]; price?: number | null }
+export interface CheckCode { code: string; model?: string; marker?: string; field?: string; param?: string; markers?: string[]; params?: string[] }
+export interface Check { fields: Partial<Record<string, string>>; errors: string[]; warnings: string[]; codes?: CheckCode[]; price?: number | null }
+
+const joinList = (items: string[] = []) => items.join(lang === 'zh' ? '、' : ', ')
+
+/** One localized line for a failed check, e.g. 「broken.json 安装失败：模型 acme/my-edit 缺少 @image 的对应字段」. */
+export function checkProblem(file: string, check: Pick<Check, 'errors' | 'codes'>): string {
+  const codes = check.codes ?? []
+  if (!codes.length) return t('customWorkflows.installFailed', file, check.errors.join(' '))
+  const hasMissing = codes.some((c) => c.code === 'missingFields')
+  const parts = codes.map((c) => {
+    const model = c.model ?? ''
+    switch (c.code) {
+      case 'unknownModel': return t('customWorkflows.err.unknownModel', model)
+      case 'badModelId': return t('customWorkflows.err.badModelId', model)
+      case 'missingFields': return t('customWorkflows.err.missingFields', model, joinList(c.markers))
+      case 'requiredParams': return t(hasMissing ? 'customWorkflows.err.requiredParamsAlso' : 'customWorkflows.err.requiredParams', model, joinList(c.params))
+      case 'badField': return t('customWorkflows.err.badField', c.marker ?? '', c.field ?? '', model)
+      case 'badParam': return t('customWorkflows.err.badParam', c.param ?? '', model)
+      default: return c.code
+    }
+  })
+  return t('customWorkflows.installFailed', file, parts.join(lang === 'zh' ? '，' : '; '))
+}
 
 /** Checks the model exists on WaveSpeed and the mapping fits its request schema (free model-list lookup). */
 export async function checkWorkflow(spec: CustomSpec, action: CustomAction): Promise<Check> {
@@ -69,7 +92,7 @@ export async function checkWorkflow(spec: CustomSpec, action: CustomAction): Pro
   const res = await api('/comfyart/wavespeed/custom/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spec, required, optional }) })
   const body = await res.json().catch(() => null)
   if (!res.ok) throw new Error(String(body?.error?.message ?? body?.error ?? `check failed: ${res.status}`))
-  return { fields: body.fields ?? {}, errors: body.errors ?? [], warnings: body.warnings ?? [], price: body.price }
+  return { fields: body.fields ?? {}, errors: body.errors ?? [], warnings: body.warnings ?? [], codes: body.codes ?? [], price: body.price }
 }
 
 export function rulesText(): string {

@@ -1154,5 +1154,13 @@
   "jobs.confirmOk": "Generate",
   "wsKey.confirmUsd": "Confirm jobs costing at least ($, 0 = always)",
   "wsKey.confirmBad": "Enter a number from 0 to 1000",
-  "wsKey.estimate": "Est. {0}"
+  "wsKey.estimate": "Est. {0}",
+  "customWorkflows.installFailed": "{0} failed to install: {1}",
+  "customWorkflows.err.unknownModel": "WaveSpeed has no model {0}",
+  "customWorkflows.err.badModelId": "model id \"{0}\" is not in owner/model-name form",
+  "customWorkflows.err.missingFields": "model {0} has no field for {1}",
+  "customWorkflows.err.requiredParams": "model {0} also needs {1}",
+  "customWorkflows.err.requiredParamsAlso": "it also needs {1}",
+  "customWorkflows.err.badField": "{0} is mapped to {1}, which model {2} does not accept",
+  "customWorkflows.err.badParam": "model {1} does not accept param {0}"
 }
