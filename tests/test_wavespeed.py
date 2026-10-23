@@ -1,10 +1,12 @@
 """WaveSpeed provider tests against a local mock server (WAVESPEED_BASE_URL); no real API calls."""
 from __future__ import annotations
 
+import asyncio
 import io
 import json
 import os
 
+import aiohttp
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
@@ -609,3 +611,144 @@ def test_grouped_models_never_uses_local_name(monkeypatch):
     m = out["text_to_image"]["models"][0]
     assert m["label"] == "qwen-image-3.0" and m["subtitle"] == "qwen-image-3.0/text-to-image"
     assert "2512" not in str({k: v for k, v in m.items() if k != "local_equivalent"})
+
+
+# --- #72 change_angle: a transient poll error must not fail an already-charged task ---
+
+async def test_poll_timeout_then_success_single_submit(ws, monkeypatch):
+    task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+    real_get = aiohttp.ClientSession.get
+    calls = {"n": 0}
+
+    def flaky_get(self, url, *a, **k):
+        if "/predictions/" in str(url) and calls["n"] == 0:
+            calls["n"] += 1
+            raise asyncio.TimeoutError()
+        return real_get(self, url, *a, **k)
+
+    monkeypatch.setattr(aiohttp.ClientSession, "get", flaky_get)
+    first = (await wavespeed.poll(task))[f"ws:{task}"]["status"]
+    assert first["completed"] is False and first["status_str"] == "processing" and not first["messages"]
+    assert wavespeed._jobs[task]["errors"] == 1
+    wavespeed._jobs[task]["next_poll"] = 0
+    hist = (await wavespeed.poll(task))[f"ws:{task}"]
+    assert hist["status"]["completed"] is True and hist["status"]["status_str"] == "completed"
+    assert hist["outputs"]["ws"]["images"]
+    assert len(ws["submits"]) == 1
+
+
+async def test_poll_5xx_backs_off_then_success(ws):
+    task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+    ws["result_status"] = 503
+    for _ in range(3):
+        wavespeed._jobs[task]["next_poll"] = 0
+        assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["status_str"] == "processing"
+    assert wavespeed._jobs[task]["errors"] == 3
+    ws["result_status"] = 200
+    wavespeed._jobs[task]["next_poll"] = 0
+    assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["status_str"] == "completed"
+    assert len(ws["submits"]) == 1
+
+
+def test_backoff_is_capped(monkeypatch):
+    monkeypatch.setattr(wavespeed, "POLL_MIN", 2.0)
+    job = {"errors": 0}
+    waits = []
+    for _ in range(6):
+        wavespeed._backoff("t", job, 100.0, "x")
+        waits.append(job["next_poll"] - 100.0)
+    assert waits == [2.0, 4.0, 8.0, 15.0, 15.0, 15.0]
+
+
+async def test_poll_401_still_fails(ws):
+    task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+    ws["result_status"] = 401
+    st = (await wavespeed.poll(task))[f"ws:{task}"]["status"]
+    assert st["status_str"] == "error" and st["completed"] is True
+    assert len(ws["submits"]) == 1
+
+
+async def test_transient_errors_still_hit_job_timeout(ws, monkeypatch):
+    task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+    ws["result_status"] = 502
+    assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["status_str"] == "processing"
+    monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
+    msgs = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"]
+    assert "timed out" in msgs[0][1]["exception_message"]
+    assert len(ws["submits"]) == 1
+
+
+async def test_download_5xx_retries_without_resubmit(ws, monkeypatch):
+    task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+    real_get = aiohttp.ClientSession.get
+    calls = {"n": 0}
+
+    class Bad:
+        status = 502
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *a):
+            return False
+
+    def flaky_get(self, url, *a, **k):
+        if "/cdn/" in str(url) and calls["n"] == 0:
+            calls["n"] += 1
+            return Bad()
+        return real_get(self, url, *a, **k)
+
+    monkeypatch.setattr(aiohttp.ClientSession, "get", flaky_get)
+    assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["status_str"] == "processing"
+    wavespeed._jobs[task]["next_poll"] = 0
+    assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["status_str"] == "completed"
+    assert len(ws["submits"]) == 1
+
+
+async def test_run_raw_survives_timeout(ws, monkeypatch):
+    real_get = aiohttp.ClientSession.get
+    calls = {"n": 0}
+
+    def flaky_get(self, url, *a, **k):
+        if "/predictions/" in str(url) and calls["n"] == 0:
+            calls["n"] += 1
+            raise aiohttp.ClientConnectionError("blip")
+        return real_get(self, url, *a, **k)
+
+    monkeypatch.setattr(aiohttp.ClientSession, "get", flaky_get)
+    out = await wavespeed.run_raw({"feature": "text_to_image", "prompt": "x"}, timeout=5)
+    assert out and len(ws["submits"]) == 1
+
+
+async def test_history_route_survives_download_5xx(ws, monkeypatch):
+    import server
+    app = web.Application()
+    app.router.add_routes(server.PromptServer.instance.routes)
+    client = TestClient(TestServer(app))
+    await client.start_server()
+    real_get = aiohttp.ClientSession.get
+    calls = {"n": 0}
+
+    class Bad:
+        status = 502
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *a):
+            return False
+
+    def flaky_get(self, url, *a, **k):
+        if "/cdn/" in str(url) and calls["n"] == 0:
+            calls["n"] += 1
+            return Bad()
+        return real_get(self, url, *a, **k)
+
+    try:
+        task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+        monkeypatch.setattr(aiohttp.ClientSession, "get", flaky_get)
+        res = await client.get(f"/comfyart/wavespeed/history/{task}")
+        assert res.status == 200  # a non-2xx here makes src/comfy.ts mark the job failed
+        assert (await res.json())[f"ws:{task}"]["status"]["status_str"] == "processing"
+        wavespeed._jobs[task]["next_poll"] = 0
+        res = await client.get(f"/comfyart/wavespeed/history/{task}")
+        assert (await res.json())[f"ws:{task}"]["status"]["status_str"] == "completed"
+        assert len(ws["submits"]) == 1
+    finally:
+        await client.close()
