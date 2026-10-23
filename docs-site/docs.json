@@ -76,7 +76,8 @@
                 "pages": [
                   "guides/assets",
                   "guides/agent",
-                  "guides/mcp"
+                  "guides/mcp",
+                  "guides/custom-workflows"
                 ]
               }
             ]
@@ -116,7 +117,8 @@
                 "pages": [
                   "zh/guides/assets",
                   "zh/guides/agent",
-                  "zh/guides/mcp"
+                  "zh/guides/mcp",
+                  "zh/guides/custom-workflows"
                 ]
               }
             ]
