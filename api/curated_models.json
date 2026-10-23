@@ -6,13 +6,15 @@
       "google/nano-banana-2.1/text-to-image",
       "bytedance/seedream-v5.0-pro",
       "openai/gpt-image-2.5-sunburst/text-to-image",
-      "openai/gpt-image-2.5-flare/text-to-image"]},
+      "openai/gpt-image-2.5-flare/text-to-image",
+      "alibaba/qwen-image-3.0/text-to-image"]},
     "image_edit": {"needs": ["prompt"], "models": [
       "openai/gpt-image-2/edit",
       "google/nano-banana-2.1/edit",
       "bytedance/seedream-v5.0-pro/edit",
       "openai/gpt-image-2.5-sunburst/edit",
-      "bytedance/seedream-v5.0-lite/edit"]},
+      "bytedance/seedream-v5.0-lite/edit",
+      "alibaba/qwen-image-3.0/edit"]},
     "text_to_video": {"needs": ["prompt"], "models": [
       "bytedance/seedance-2.0/text-to-video",
       "bytedance/seedance-2.5/text-to-video-turbo",

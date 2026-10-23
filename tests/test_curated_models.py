@@ -41,7 +41,8 @@ def test_curated_features_exist_and_sizes():
     for f, c in CURATED.items():
         assert f in RAW["features"], f
         ids = c["models"]
-        assert len(ids) == len(set(ids)) and 1 <= len(ids) <= 5, f
+        cap = 6 if f in ("text_to_image", "image_edit") else 5  # #95: qwen-image-3.0 re-added as 6th
+        assert len(ids) == len(set(ids)) and 1 <= len(ids) <= cap, f
 
 
 def test_defaults_are_first_curated_and_config_matches():
