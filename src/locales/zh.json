@@ -844,6 +844,7 @@
   "refModes.lineArt": "线稿",
   "refModes.lineart": "Lineart 线稿",
   "refModes.mlsdLines": "MLSD 直线",
+  "refModes.depth": "景深",
   "refModes.normalMap": "法线贴图",
   "refModes.pose": "姿势",
   "refModes.recolor": "重新上色",

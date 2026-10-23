@@ -31,6 +31,10 @@ export interface WsInputs {
   voice?: string
   layers?: number
   scenes?: { prompt: string; duration: number }[]
+  /** #80 structure control: the backend maps it onto the WaveSpeed control model. */
+  control?: { mode: string; strength: number; start: number; end: number; res: number; resize: 'crop' | 'stretch' }
+  /** #80 color modes, parallel to images: the backend preprocesses those refs. */
+  prep?: (string | null)[]
   params?: Record<string, unknown>
 }
 

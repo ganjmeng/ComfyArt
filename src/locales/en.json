@@ -844,6 +844,7 @@
   "refModes.lineArt": "Line Art",
   "refModes.lineart": "Lineart",
   "refModes.mlsdLines": "MLSD Lines",
+  "refModes.depth": "Depth",
   "refModes.normalMap": "Normal Map",
   "refModes.pose": "Pose",
   "refModes.recolor": "Recolor",

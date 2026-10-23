@@ -25,6 +25,7 @@ import aiohttp
 import folder_paths
 from aiohttp import web
 
+from . import refprep
 from ._common import error, json_body, routes
 
 log = logging.getLogger("comfyart.wavespeed")
@@ -432,13 +433,70 @@ def _active() -> int:
     return sum(1 for j in _jobs.values() if not j.get("done"))
 
 
+STRUCTURE_EXTRACT_MODEL = "wavespeed-ai/z-image-turbo/controlnet"
+STRUCTURE_FILTER_MODEL = "wavespeed-ai/flux-controlnet-union-pro-2.0"
+
+
+def structure_model(mode: str) -> str:
+    """Depth/pose need a model to extract the map, so the control model does it; edge-type maps are filtered here."""
+    return STRUCTURE_EXTRACT_MODEL if mode in refprep.EXTRACTED else STRUCTURE_FILTER_MODEL
+
+
+async def _source_bytes(value: str) -> bytes:
+    if value.startswith(("http://", "https://")):
+        # separate session: never send the WaveSpeed key to another host
+        async with aiohttp.ClientSession() as plain, plain.get(value) as res:
+            if res.status >= 400:
+                raise WaveSpeedError(f"could not read reference image ({res.status})", 400)
+            return await res.read()
+    path = _local_path(value)
+    if not path or not os.path.isfile(path):
+        raise WaveSpeedError(f"input file not found: {value}", 400)
+    return _read(path)
+
+
+async def _prepped(session: aiohttp.ClientSession, value: str, mode: str, res: int = 1024, size=None, resize: str = "crop") -> str:
+    data = refprep.process_bytes(await _source_bytes(value), mode, res, size, resize)
+    return await _upload(session, "", data, f"ref-{mode}-{uuid.uuid4().hex[:8]}.png")
+
+
+async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> dict:
+    """Structure control (#80): turn the picked ref mode into the control model's fields; color modes
+    replace their reference with the processed image (upstream preprocessor nodes)."""
+    inputs = dict(inputs)
+    control = inputs.pop("control", None)
+    w, h = inputs.get("width"), inputs.get("height")
+    size = (int(w), int(h)) if w and h else None
+    if control and inputs.get("image"):
+        mode = str(control.get("mode") or "")
+        strength = float(control.get("strength", 80)) / 100
+        params = dict(inputs.get("params") or {})
+        if model == STRUCTURE_EXTRACT_MODEL:
+            params.update({"mode": mode if mode in ("depth", "canny", "pose") else "canny", "strength": min(1.0, strength)})
+        else:
+            params.update({
+                "control_image": await _prepped(session, inputs.pop("image"), mode, int(control.get("res") or 1024), size, str(control.get("resize") or "crop")),
+                "controlnet_conditioning_scale": min(2.0, strength),
+                "control_guidance_start": float(control.get("start", 0)) / 100,
+                "control_guidance_end": float(control.get("end", 100)) / 100,
+            })
+        inputs["params"] = params
+    prep = inputs.pop("prep", None)
+    if prep and inputs.get("images"):
+        inputs["images"] = [await _prepped(session, v, m) if m in refprep.COLOR else v for v, m in zip(inputs["images"], list(prep) + [None] * len(inputs["images"]))]
+    return inputs
+
+
 async def submit(inputs: dict) -> str:
     if isinstance(inputs.get("scenes"), list):
         return await _submit_scenes(inputs)
     if inputs.get("feature") == "mockup_surface":
         return await _submit_surface(inputs)
     feature = feature_of(str(inputs.get("feature") or ""))
-    model = resolve_model(feature, inputs.get("model"))
+    picked = inputs.get("model")
+    if feature == "structure_control" and not picked:
+        picked = structure_model(str((inputs.get("control") or {}).get("mode") or ""))
+    model = resolve_model(feature, picked)
     _check_limits()
     meta = (await catalog()).get(model)
     price = (meta or {}).get("base_price")
@@ -446,7 +504,7 @@ async def submit(inputs: dict) -> str:
         # expensive job: the page asks the user and resubmits with confirmed=true
         raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price))
     async with aiohttp.ClientSession(headers=_headers()) as session:
-        payload = await build_payload(session, _schema(meta), inputs)
+        payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs))
         _submits.append(time.time())
         # never auto-retry a submit: a retry could be charged twice
         async with session.post(f"{_base()}/api/v3/{model}", json=payload) as res:

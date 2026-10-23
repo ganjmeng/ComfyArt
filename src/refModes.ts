@@ -23,6 +23,7 @@ export const REF_MODES: RefMode[] = [
   { id: 'mlsd', label: t('refModes.mlsdLines'), group: t('refModes.structure'), hint: 'Follow the straight architectural lines of image {n}.', node: ['M-LSDPreprocessor', { score_threshold: 0.1, dist_threshold: 0.1, resolution: RES }], control: true, download: true },
   { id: 'scribble', label: t('refModes.scribble'), group: t('refModes.structure'), hint: 'Use the rough scribble in image {n} as the layout.', node: ['ScribblePreprocessor', { resolution: RES }], control: true },
   { id: 'softedge', label: t('refModes.softEdge'), group: t('refModes.structure'), hint: 'Follow the soft outlines of image {n}.', node: ['HEDPreprocessor', { safe: 'enable', resolution: RES }], control: true, download: true },
+  { id: 'depth', label: t('refModes.depth'), group: t('refModes.structure'), hint: 'Match the depth and spatial layout of image {n}.', node: ['DepthAnythingV2Preprocessor', { ckpt_name: 'depth_anything_v2_vitl.pth', resolution: RES }], control: true },
   { id: 'normal', label: t('refModes.normalMap'), group: t('refModes.structure'), hint: 'Match the surface shapes of the normal map in image {n}.', node: ['BAE-NormalMapPreprocessor', { resolution: RES }], control: true, download: true },
   { id: 'pose', label: t('refModes.pose'), group: t('refModes.structure'), hint: 'Match the body pose of the skeleton in image {n}.', node: ['DWPreprocessor', { detect_hand: 'enable', detect_body: 'enable', detect_face: 'enable', resolution: RES, bbox_detector: 'yolox_l.onnx', pose_estimator: 'dw-ll_ucoco_384_bs5.torchscript.pt', scale_stick_for_xinsr_cn: 'disable' }], control: true },
   { id: 'seg', label: t('refModes.segmentation'), group: t('refModes.structure'), hint: 'Follow the region layout of the segmentation map in image {n}.', node: ['OneFormer-COCO-SemSegPreprocessor', { resolution: RES }], control: true, download: true },
@@ -81,3 +82,22 @@ export function refHints(used: UsedRef[]): string[] {
   return used.map(({ mode }, i) => mode.hint.replace('{n}', String(i + 1))).filter(Boolean)
 }
 
+
+/** Modes with no WaveSpeed model that accepts their map: they stay pickable and fall back to the prompt hint (#80). */
+export const NO_CLOUD_CONTROL = new Set(['normal', 'seg'])
+
+export interface CloudControl { src: string; mode: string; strength: number; start: number; end: number; res: number; resize: 'crop' | 'stretch' }
+
+/**
+ * Cloud counterpart of upstream applyRefs: the first structure ref drives a WaveSpeed control model
+ * (strength / start / end / resolution / crop like ControlNetApplyAdvanced); color refs are preprocessed
+ * by the backend before image_edit. Returns null control when no structure ref is usable in the cloud.
+ */
+export function applyRefs(used: UsedRef[], strengths: Record<string, number>, controls: Record<string, RefControl>): { control: CloudControl | null; prep: (string | null)[] } {
+  const hint = used.find(({ mode }) => mode.control && !NO_CLOUD_CONTROL.has(mode.id))
+  const c = hint ? controls[hint.src] ?? DEFAULT_CONTROL : null
+  return {
+    control: hint && c ? { src: hint.src, mode: hint.mode.id, strength: strengths[hint.src] ?? DEFAULT_STRENGTH, start: c.start, end: c.end, res: c.res, resize: c.resize } : null,
+    prep: used.map(({ mode }) => (mode.node && !mode.control ? mode.id : null)),
+  }
+}
