@@ -4,7 +4,7 @@ import { api } from './comfy'
 import { resultsAtom } from './jobs'
 import { notify } from './notices'
 import { onComfyEvent, onReconnect } from './ws'
-import { t } from './i18n'
+import { lang, t } from './i18n'
 
 export interface AskOption { id: string; label: string; description?: string }
 export interface BotBlock {
@@ -176,7 +176,7 @@ export interface SendInput { text: string; refs: { id: string; src: string; name
 
 export async function sendMessage(input: SendInput) {
   const chat = await ensureChat()
-  await json(`/comfyart/bot/chats/${chat.id}/send`, send(input))
+  await json(`/comfyart/bot/chats/${chat.id}/send`, send({ ...input, lang }))  // #132: server-side replies (loop-guard stop) follow the UI language
 }
 
 export async function logDirect(text: string, blocks: BotBlock[]) {

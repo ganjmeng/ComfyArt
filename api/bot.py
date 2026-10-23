@@ -167,9 +167,11 @@ async def bot_send(request: web.Request) -> web.Response:
     context = str(body.get("context") or "").strip()
     provider_text = send_core.compose_provider_text(
         text, skill_name=skill_name, memory=str(body.get("memory") or ""), lines=[*lines, *([context] if context else [])])
+    lang = str(body.get("lang") or "")
     user_msg, assistant_msg = send_core.queue_or_begin(
         chat, text=text, provider_text=provider_text,
-        attachments=attachments, display_blocks=display_blocks)
+        attachments=attachments, display_blocks=display_blocks,
+        lang=lang if lang in ("zh", "en") else "")
     if assistant_msg is None:
         return web.json_response({"queued": True, "user_message": user_msg})
     return web.json_response({"user_message": user_msg, "assistant_message": assistant_msg})

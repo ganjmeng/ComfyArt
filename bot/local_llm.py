@@ -34,6 +34,113 @@ _MAX_ITERATIONS = 80
 _MAX_WAIT_SLICES = 12
 _LLM_TIMEOUT_S = 300
 _HISTORY_CHAR_CAP = 16_000
+_REPEAT_STOP = 3
+_CACHED_SKILL_STOP = 3  # cumulative cached skill re-reads per turn (A/B/A/B...)
+_REPEAT_STOP_TEXT = {
+    "zh": "任务卡在重复步骤，已停止，未继续扣费。",
+    "en": "The task got stuck repeating a step and was stopped; no further "
+          "charges.",
+}
+# Same wording as the chat panel's TOOL_LABELS (src/bot.ts + locales).
+_STEP_LABELS: dict[str, tuple[str, str]] = {
+    'ToolSearch': ('查找工具', 'Find tools'),
+    'tool_search': ('查找工具', 'Find tools'),
+    'server_info': ('查看状态', 'Check status'),
+    'get_canvas': ('查看画布', 'View canvas'),
+    'view_canvas': ('观察画面', 'Look at canvas'),
+    'view_video': ('查看视频', 'Watch video'),
+    'list_models': ('查看模型', 'View models'),
+    'brand_kits': ('查看品牌套件', 'View brand kit'),
+    'generate_image': ('生成图像', 'Generate image'),
+    'generate_video': ('生成视频', 'Generate video'),
+    'edit_video': ('编辑视频', 'Edit video'),
+    'edit_image': ('编辑图片', 'Edit image'),
+    'animate_image': ('动态图片', 'Animate Image'),
+    'upscale_image': ('放大', 'Upscale'),
+    'remove_background': ('去背景', 'Remove Background'),
+    'expand_image': ('扩图', 'Expand image'),
+    'split_layers': ('图层拆分', 'Split Layers'),
+    'change_angle': ('多角度', 'Multi-Angle'),
+    'replace_text': ('编辑文字', 'Edit Text'),
+    'edit_region': ('局部重绘', 'Inpaint'),
+    'erase_region': ('橡皮工具', 'Eraser'),
+    'move_object': ('移动对象', 'Move Object'),
+    'style_transfer': ('风格迁移', 'Style Transfer'),
+    'vectorize_image': ('矢量化', 'Vectorize'),
+    'extend_video': ('视频延长', 'Extend Video'),
+    'upscale_video': ('视频放大', 'Upscale Video'),
+    'remove_video_background': ('去背景', 'Remove Background'),
+    'generate_music': ('配乐', 'Music'),
+    'generate_sound_effect': ('音效', 'Sound effect'),
+    'text_to_speech': ('配音', 'Voiceover'),
+    'edit_elements': ('编辑元素', 'Edit Elements'),
+    'create_mockup': ('样机', 'Mockup'),
+    'place_design': ('设计稿', 'Design'),
+    'image_to_3d': ('转 3D', 'Image to 3D'),
+    'wait_generation': ('等待生成结果', 'Wait for results'),
+    'place_html': ('放置网页', 'Place web page'),
+    'create_slides': ('制作 PPT', 'Create PPT'),
+    'add_text': ('添加文字', 'Add text'),
+    'add_shape': ('添加形状', 'Add shape'),
+    'create_frame': ('创建画板', 'Create artboard'),
+    'update_shapes': ('调整元素', 'Adjust elements'),
+    'delete_shapes': ('删除元素', 'Delete elements'),
+    'focus': ('定位元素', 'Locate elements'),
+    'memory': ('记忆', 'Memory'),
+    'skill': ('技能', 'Skill'),
+    'custom_workflow': ('自定义工作流', 'Custom workflows'),
+    'ask_user': ('向你提问', 'Ask you'),
+    'update_plan': ('计划', 'Plan'),
+}
+_CJK_RE = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
+_SKILL_HINT_RE = re.compile(
+    r"Use the ComfyArt skill [\s\S]*?then follow those instructions\.")
+
+
+def _reply_lang(user_text: str) -> str:
+    """Reply in the user's language (same rule as AGENT_GUIDE)."""
+    text = _SKILL_HINT_RE.sub("", user_text or "")
+    return "zh" if _CJK_RE.search(text) else "en"
+
+
+def _call_key(name: str, args: dict) -> str:
+    return name + "\x00" + json.dumps(args, sort_keys=True, ensure_ascii=False)
+
+
+def _skill_read_key(name: str, args: dict) -> str:
+    if name != "skill" or str(args.get("action") or "").lower() != "read":
+        return ""
+    ref = args.get("name") or args.get("id") or ""
+    return str(ref).strip().lower()
+
+
+def _step_label(name: str, args: dict, lang: str) -> str:
+    zh = lang == "zh"
+    base = re.sub(r"^mcp__\w+__", "", name or "")
+    if base == "skill":
+        ref = str(args.get("name") or args.get("id") or "").strip()
+        if str(args.get("action") or "").lower() == "read" and ref:
+            return f"读取技能：{ref}" if zh else f"Read skill: {ref}"
+    pair = _STEP_LABELS.get(base)
+    if pair:
+        return pair[0] if zh else pair[1]
+    return "其他步骤" if zh else "Other step"
+
+
+def _stop_summary(done: list[str], lang: str = "zh") -> str:
+    """One line: shown in the chat panel's error notice (no line breaks)."""
+    zh = lang == "zh"
+    counts: dict[str, int] = {}
+    for label in done:
+        counts[label] = counts.get(label, 0) + 1
+    items = [n + (f" ×{c}" if c > 1 else "") for n, c in counts.items()]
+    if zh:
+        return (_REPEAT_STOP_TEXT["zh"] + "已完成："
+                + ("、".join(items) if items else "无"))
+    return (_REPEAT_STOP_TEXT["en"] + " Done so far: "
+            + (", ".join(items) if items else "nothing") + ".")
+
+
 _THINK_RE = re.compile(r"(?:<think>|^)([\s\S]*?)</think>|<think>([\s\S]*)$")
 
 _SYSTEM_PROMPT = AGENT_GUIDE
@@ -265,6 +372,13 @@ class LocalLlmProvider(AgentProvider):
                 ]
 
                 usage: Optional[dict] = None
+                last_key = ""
+                repeat = 0
+                done: list[str] = []
+                lang = (turn.lang if turn.lang in ("zh", "en")
+                        else _reply_lang(turn.user_text))
+                cache_hits = 0
+                skill_cache: dict[str, str] = {}
                 for _ in range(_MAX_ITERATIONS):
                     if handle.stop_requested:
                         return TurnResult(aborted=True, usage=usage)
@@ -313,12 +427,28 @@ class LocalLlmProvider(AgentProvider):
                             args = {}
                         if not isinstance(args, dict):
                             args = {}
+                        key = _call_key(name, args)
+                        repeat = repeat + 1 if key == last_key else 1
+                        last_key = key
+                        skill_key = _skill_read_key(name, args)
+                        cached = bool(skill_key) and skill_key in skill_cache
+                        if cached:
+                            cache_hits += 1
+                        if repeat >= _REPEAT_STOP or (
+                                cache_hits >= _CACHED_SKILL_STOP):
+                            _log.warning("[ComfyArt/local-llm] loop guard: %s "
+                                         "repeat=%d cached_skill_reads=%d, "
+                                         "stopping", name, repeat, cache_hits)
+                            return TurnResult(usage=usage,
+                                              error=_stop_summary(done, lang))
                         await emit(BotEvent(t="tool_use", name=name, input=args,
                                             id=tc_id))
                         tool_failed = False
                         images: list[str] = []
                         try:
-                            if name == "wait_generation":
+                            if cached:
+                                result_text = skill_cache[skill_key]
+                            elif name == "wait_generation":
                                 result_text = await self._wait_stage_done(
                                     session, turn.mcp_endpoint, args, model,
                                     handle)
@@ -328,6 +458,10 @@ class LocalLlmProvider(AgentProvider):
                         except _NET_ERRORS as e:
                             result_text = f"[error] {type(e).__name__}: {e}"
                             tool_failed = True
+                        if skill_key and not tool_failed:
+                            skill_cache.setdefault(skill_key, result_text)
+                        if not cached:  # only steps that actually ran
+                            done.append(_step_label(name, args, lang))
                         if len(result_text) > TOOL_RESULT_CAP:
                             result_text = (
                                 result_text[:TOOL_RESULT_CAP]

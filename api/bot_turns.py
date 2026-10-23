@@ -159,7 +159,8 @@ def _apply_event(state: _TurnState, ev: BotEvent) -> Optional[dict]:
 
 async def _run_turn(chat: dict, text: str, state: _TurnState, *,
                     provider_text: str | None = None,
-                    attachments: list[dict] | None = None) -> None:
+                    attachments: list[dict] | None = None,
+                    lang: str = "") -> None:
     chat_id = chat["id"]
     provider = get_provider(chat["provider"])
     await asyncio.sleep(0.1)
@@ -198,6 +199,7 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
                 attachments=attachments or [],
                 model=provider_model(chat["provider"]),
                 comfy_mcp_argv=comfy_mcp_argv,
+                lang=lang,
             ),
             emit,
             state.handle,
@@ -240,7 +242,7 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
 
 
 def begin_turn(chat: dict, *, text: str, provider_text: str,
-               attachments: list[dict], user_msg: dict) -> dict:
+               attachments: list[dict], user_msg: dict, lang: str = "") -> dict:
     assistant_msg = chat_store.create_message(
         chat_id=chat["id"], role="assistant", blocks=[], status="streaming",
         parent_id=user_msg["id"],
@@ -254,7 +256,7 @@ def begin_turn(chat: dict, *, text: str, provider_text: str,
     })
     asyncio.create_task(
         _run_turn(chat, text, state, provider_text=provider_text,
-                  attachments=attachments),
+                  attachments=attachments, lang=lang),
         name=f"comfyart-bot-{chat['id'][:8]}",
     )
     return assistant_msg
@@ -275,4 +277,5 @@ def _drain_queue(chat_id: str) -> None:
     begin_turn(chat, text=item["text"],
                provider_text=item["provider_text"],
                attachments=item["attachments"],
+               lang=item.get("lang", ""),
                user_msg=user_msg or item["user_msg"])
