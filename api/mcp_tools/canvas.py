@@ -162,13 +162,9 @@ SPECS: dict[str, dict] = {
         "instrumental). duration in seconds (default 30). Returns ids for wait_generation.",
         {"prompt": {"type": "string"}, "lyrics": {"type": "string"}, "duration": {"type": "integer"}},
         ["prompt"], approval="生成配乐"),
-    "generate_sound_effect": _tool(
-        "Generate a short sound effect (an audio element) from an English description. duration in "
-        "seconds (default 8; Stable Audio is trained on clips up to 47 s). Returns ids for wait_generation.",
-        {"prompt": {"type": "string"}, "duration": {"type": "integer"}}, ["prompt"], approval="生成音效"),
     "text_to_speech": _tool(
         "Read text aloud as an audio element. voice is a built-in voice id (zf_/zm_ Chinese female/male, "
-        "af_/am_ American, bf_/bm_ British, jf_/jm_ Japanese; default zf_xiaoxiao; on Comfy Cloud the Qwen3-TTS speakers "
+        "af_/am_ American, bf_/bm_ British, jf_/jm_ Japanese; default zf_xiaoxiao; or the Qwen3-TTS speakers "
         "Serena, Vivian, Uncle_fu, Dylan, Eric, Ryan, Aiden, Ono_anna, Sohee; default Serena), or pass reference "
         "(an audio shape id) to clone that recording's voice. Returns ids for wait_generation.",
         {"text": {"type": "string"}, "voice": {"type": "string"}, "reference": _ID}, ["text"], approval="生成配音"),

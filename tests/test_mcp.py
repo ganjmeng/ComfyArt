@@ -39,6 +39,18 @@ async def test_mcp_is_off_by_default(bot_client):
     assert resp.status == 403
 
 
+async def test_hidden_and_removed_tools_are_not_exposed(bot_client):
+    # #74: sound effects are hidden this version; ComfyUI workflow tools lost their features
+    from ComfyArt.bot.guide import AGENT_GUIDE, COMFY_MCP_ALLOWED_TOOLS
+    tools = (await (await bot_client.post("/comfyart/mcp", json=_rpc("tools/list"))).json())["result"]["tools"]
+    by_name = {t["name"]: t for t in tools}
+    assert "generate_sound_effect" not in by_name and "generate_sound_effect" not in CORE_MCP_TOOLS
+    assert "generate_sound_effect" not in AGENT_GUIDE
+    assert "Comfy Cloud" not in by_name["text_to_speech"]["description"]
+    gone = {"validate_workflow", "search_templates", "get_template", "list_workflow_slots", "list_workflow_notes", "workflow_deps", "node_dependencies"}
+    assert not gone & set(COMFY_MCP_ALLOWED_TOOLS)
+
+
 async def test_tools_list_matches_the_core_list(bot_client):
     tools = (await (await bot_client.post("/comfyart/mcp", json=_rpc("tools/list"))).json())["result"]["tools"]
     names = {t["name"] for t in tools}
