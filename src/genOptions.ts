@@ -35,4 +35,13 @@ export function durationNote(asked: unknown, actual: number, allowed?: number[],
   const key = n < Math.min(...opts) ? 'genOptions.durationMin' : n > Math.max(...opts) ? 'genOptions.durationMax' : 'genOptions.durationUp'
   return say(key, n, actual)
 }
-export const VIDEO_RESOLUTIONS = Object.keys(VIDEO_AREAS)
+// #159: 480p first, so a video card with no resolution picked shows, quotes and submits 480p (the card keeps the 768p size)
+export const VIDEO_RESOLUTIONS = ['480p', ...Object.keys(VIDEO_AREAS)]
+
+/** #159: the video tier a card shows, quotes and submits: the current value when the model takes it, else the model's
+ * schema default, else its first option. An image tier like '1K' is never sent for a video. */
+export function videoResolution(cur: string | undefined, opts?: string[], def?: unknown): string {
+  const list = opts?.length ? opts.map(String) : VIDEO_RESOLUTIONS
+  if (cur && list.includes(cur)) return cur
+  return def != null && list.includes(String(def)) ? String(def) : list[0]
+}

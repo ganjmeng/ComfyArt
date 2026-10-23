@@ -53,8 +53,10 @@ _uploaded: dict[tuple[str, int, int], str] = {}
 
 
 class WaveSpeedError(Exception):
-    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False):
+    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = ""):
         super().__init__(message)
+        self.estimate = estimate  # #159: the price API failed; the dialog says 「估算价」/'Estimated'
+        self.tier = tier  # #159: the tier that will be submitted, e.g. '480p · 5s'
         self.status = status
         self.confirm = confirm
         self.seg_splits = seg_splits  # #135: 「识别加最多 N 次分割」 in the confirm dialog
@@ -665,20 +667,28 @@ async def _media_fields(session: aiohttp.ClientSession, props: dict, inputs: dic
             payload[k] = urls[:limit] if limit else urls
 
 
+def _unit(v) -> str:
+    """Trailing unit of an enum-style value: '480p' -> 'p', '4k' -> 'k', '1K' -> 'k', 5 -> ''."""
+    return re.sub(r"[0-9.\s]", "", str(v)).lower()
+
+
 def _pick(options: list, value):
-    """Exact enum match (case-insensitive), else the numerically nearest option, else the first."""
+    """Exact enum match (case-insensitive), else the numerically nearest option *with the same unit*, else the first.
+    #159: an image tier like '1K' is never matched by number against video tiers (it used to land on '4k')."""
     for o in options:
         if str(o).lower() == str(value).lower():
             return o
     digits = re.sub(r"[^0-9.]", "", str(value))
     if not digits:
         return options[0]
+    unit = _unit(value)
     try:
         num = float(digits)
-        nums = [(abs(float(re.sub(r"[^0-9.]", "", str(o)) or "inf") - num), o) for o in options]
-        best = min(nums, key=lambda t: t[0])
-        if best[0] != float("inf"):
-            return best[1]
+        nums = [(abs(float(re.sub(r"[^0-9.]", "", str(o)) or "inf") - num), o) for o in options if _unit(o) == unit]
+        if nums:
+            best = min(nums, key=lambda t: t[0])
+            if best[0] != float("inf"):
+                return best[1]
     except ValueError:
         pass
     return options[0]
@@ -938,18 +948,58 @@ def _price_inputs(inputs: dict, model: str = "") -> dict:
     return out
 
 
-async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
-    """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes.
-    Falls back to the catalog base_price when the quote fails."""
-    priced = _price_inputs(inputs, model)
-    if "duration" in priced:
-        # #128: quote the duration that will actually be submitted (build_payload rounds it up to the schema enum)
+def _submitted_tier(props: dict, inputs: dict, priced: dict) -> dict:
+    """#159: map the priced scalar fields through the schema exactly like build_payload/_av_fields do, so the
+    quoted tier is the submitted tier (duration rounded up, resolution/aspect_ratio snapped to the enum)."""
+    out = dict(priced)
+    if "duration" in out and (enum := (props.get("duration") or {}).get("enum")):
+        out["duration"] = fit_duration(enum, out["duration"])  # #128
+    w, h = inputs.get("width"), inputs.get("height")
+    res_enum = (props.get("resolution") or {}).get("enum")
+    ar_enum = (props.get("aspect_ratio") or {}).get("enum")
+    if res_enum:
+        if out.get("resolution"):
+            out["resolution"] = _pick(res_enum, out["resolution"])
+        elif w and h:
+            out["resolution"] = _resolution(res_enum, max(int(w), int(h)))
+    if ar_enum:
         try:
-            enum = ((_schema((await catalog()).get(model)).get("properties") or {}).get("duration") or {}).get("enum")
-        except (WaveSpeedError, aiohttp.ClientError, asyncio.TimeoutError, AttributeError):
-            enum = None
-        if enum:
-            priced["duration"] = fit_duration(enum, priced["duration"])
+            if w and h:
+                out["aspect_ratio"] = _nearest(ar_enum, int(w) / int(h))
+            elif out.get("aspect_ratio") and ":" in str(out["aspect_ratio"]):
+                a, b = str(out["aspect_ratio"]).split(":")
+                out["aspect_ratio"] = _nearest(ar_enum, float(a) / float(b))
+        except (ValueError, ZeroDivisionError):
+            pass
+    if props:
+        # a field the schema doesn't take is never submitted, so it never prices either
+        out = {k: v for k, v in out.items() if k in props}
+    return out
+
+
+def tier_label(priced: dict) -> str:
+    """Short tier for the confirm dialog, e.g. '480p · 5s'."""
+    parts = [str(priced["resolution"])] if priced.get("resolution") else []
+    if priced.get("duration"):
+        parts.append(f"{priced['duration']}s")
+    return " · ".join(parts)
+
+
+async def priced_inputs(model: str, inputs: dict) -> dict:
+    """The price-relevant fields as they will be submitted (#128 duration, #159 resolution/aspect_ratio)."""
+    priced = _price_inputs(inputs, model)
+    try:
+        props = _schema((await catalog()).get(model)).get("properties") or {}
+    except (WaveSpeedError, aiohttp.ClientError, asyncio.TimeoutError, AttributeError):
+        props = {}
+    return _submitted_tier(props, inputs, priced)
+
+
+async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
+    """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes, for the tier that will be
+    submitted. #159: when the price API fails the catalog base_price is returned as source 'estimate' (never
+    silently as the real price); the confirm dialog and estimate line then say 「估算价」/'Estimated'."""
+    priced = await priced_inputs(model, inputs)
     body = {"model_id": model, "inputs": priced}
     ck = json.dumps(body, sort_keys=True)
     hit = _quotes.get(ck)
@@ -959,6 +1009,8 @@ async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
         async with aiohttp.ClientSession(headers=_headers()) as session:
             async with session.post(f"{_base()}/api/v3/model/price", json=body, timeout=aiohttp.ClientTimeout(total=10)) as res:
                 data = ((await _json(res)) or {}).get("data") or {} if res.status < 400 else {}
+                if res.status >= 400:
+                    log.warning("WaveSpeed price API %s for %s %s; showing an estimate", res.status, model, priced)
         price = data.get("discounted_price", data.get("price")) if isinstance(data, dict) else None
         if isinstance(price, (int, float)) and not isinstance(price, bool):
             _quotes[ck] = (float(price), time.time())
@@ -966,7 +1018,7 @@ async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
     except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
         pass
     base = ((await catalog()).get(model) or {}).get("base_price")
-    return (float(base) if isinstance(base, (int, float)) else None), "catalog"
+    return (float(base) if isinstance(base, (int, float)) else None), "estimate"
 
 
 async def estimate(inputs: dict) -> dict:
@@ -982,7 +1034,8 @@ async def estimate(inputs: dict) -> dict:
             p, src = await quote(first if i == 0 else chain, {**base, **({"duration": sc["duration"]} if sc.get("duration") else {})})
             total += p or 0.0
             sources.add(src)
-        price, source = round(total, 4), ("quote" if sources == {"quote"} else "catalog")
+        price, source = round(total, 4), ("quote" if sources == {"quote"} else "estimate")
+        tier = ""
     else:
         if inputs.get("feature") == "mockup_surface":
             return {"price": None, "currency": "USD", "source": "none", "confirm_usd": confirm_usd(), "confirm": confirm_usd() == 0}
@@ -992,11 +1045,15 @@ async def estimate(inputs: dict) -> dict:
             picked = _structure_pick(inputs)
         model = resolve_model(feature, picked)
         price, source = await quote(model, inputs)
+        tier = tier_label(await priced_inputs(model, inputs))
         if feature == "structure_control" and price is not None:
             extra = await _steps_price(inputs)  # depth / sam3 map calls are paid too (#80)
             price = None if extra is None else round(float(price) + extra, 6)
-    return {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
-            "confirm": needs_confirm(price) if price is not None else confirm_usd() == 0}
+    out = {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
+           "confirm": (needs_confirm(price) or source == "estimate") if price is not None else confirm_usd() == 0}
+    if not isinstance(inputs.get("scenes"), list) and tier:
+        out["tier"] = tier
+    return out
 
 
 STRUCTURE_EXTRACT_MODEL = "wavespeed-ai/z-image-turbo/controlnet"
@@ -1267,13 +1324,14 @@ async def submit(inputs: dict) -> str:
     if not inputs.get("confirmed"):
         splits = _seg_max_splits(inputs) if feature == "structure_control" else None
         capped = feature == "structure_control" and "caption" in _map_steps(inputs)
-        price, _ = await quote(model, inputs)
+        price, source = await quote(model, inputs)
         if feature == "structure_control" and price is not None:
             extra = await _steps_price(inputs)
             price = None if extra is None else round(float(price) + extra, 6)
-        if price is not None and needs_confirm(price):
-            # expensive job: the page asks the user and resubmits with confirmed=true
-            raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped)
+        if price is not None and (needs_confirm(price) or source == "estimate"):
+            # expensive job, or #159 an estimate (price API failed): the page asks and resubmits with confirmed=true
+            raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped,
+                                 estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)))
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())
@@ -1301,9 +1359,10 @@ async def _submit_scenes(inputs: dict) -> str:
     feature = "image_to_video" if base.get("image") else "text_to_video"
     first_model = resolve_model(feature, base.get("model") if feature == base.get("feature") else None)
     chain_model = resolve_model("image_to_video", base.get("model") if base.get("feature") == "image_to_video" else None)
-    total = (await estimate({**base, "scenes": scenes}))["price"] or 0.0
-    if needs_confirm(total) and not base.get("confirmed"):
-        raise WaveSpeedError(f"{len(scenes)} scenes cost about ${total:.2f}; confirm to continue", 409, confirm=round(total, 2))
+    est = await estimate({**base, "scenes": scenes})
+    total = est["price"] or 0.0
+    if (needs_confirm(total) or est["source"] == "estimate") and not base.get("confirmed"):
+        raise WaveSpeedError(f"{len(scenes)} scenes cost about ${total:.2f}; confirm to continue", 409, confirm=round(total, 2), estimate=est["source"] == "estimate")
     jobs = [{**base, "feature": feature if i == 0 else "image_to_video", "model": first_model if i == 0 else chain_model,
              "confirmed": True, "prompt": str(sc["prompt"]), **({"duration": sc["duration"]} if sc.get("duration") else {})}
             for i, sc in enumerate(scenes)]
@@ -1650,6 +1709,10 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
         if e.seg_splits is not None:
             body["seg_splits"] = e.seg_splits
             body["seg_capped"] = e.seg_capped
+        if e.estimate:
+            body["estimate"] = True
+        if e.tier:
+            body["tier"] = e.tier
     return web.json_response({"error": body}, status=e.status)
 
 

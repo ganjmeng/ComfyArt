@@ -854,9 +854,9 @@ async def test_estimate_uses_documented_price_endpoint_and_caches(ws):
     assert len(ws["quotes"]) == 2
 
 
-async def test_estimate_falls_back_to_catalog_price(ws):
+async def test_estimate_falls_back_to_catalog_price_marked_as_estimate(ws):
     est = await wavespeed.estimate({"feature": "music", "model": "elevenlabs/music-v2", "prompt": "x"})
-    assert est == {"price": 0.75, "currency": "USD", "source": "catalog", "confirm_usd": 0.5, "confirm": True}
+    assert est == {"price": 0.75, "currency": "USD", "source": "estimate", "confirm_usd": 0.5, "confirm": True}  # #159
 
 
 async def test_storyboard_estimate_is_the_total(ws):

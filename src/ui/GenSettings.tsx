@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-import { DURATIONS, QUALITIES, RATIOS, RESOLUTIONS, SHOTS, STYLES, VIDEO_RATIOS, VIDEO_RESOLUTIONS } from '../genOptions'
+import { DURATIONS, QUALITIES, RATIOS, RESOLUTIONS, SHOTS, STYLES, VIDEO_RATIOS, VIDEO_RESOLUTIONS, videoResolution } from '../genOptions'
 import { FEATURE_MODELS, IMAGE_FEATURES, type ModelDef, VIDEO_FEATURES } from '../models'
 import type { GeneratorShape } from '../shapes/GeneratorShape'
 import { Chips } from './Chips'
@@ -29,8 +29,11 @@ function RatioShape({ ratio }: { ratio: string }) {
   return <span className="ca-gen__shape" style={{ width: a * k, height: b * k }} />
 }
 
-export function settingsSummary(p: GeneratorShape['props'], video: boolean) {
-  if (video) return `${p.ratio} · ${p.duration}s · ${VIDEO_RESOLUTIONS.includes(p.resolution) ? p.resolution : VIDEO_RESOLUTIONS[0]}${p.style ? ` · ${SHOTS.find(([k]) => k === p.style)?.[1]}` : ''}`
+/** #159: the video tier shown is the one written to the shape, quoted and submitted. */
+export const shownVideoRes = (p: GeneratorShape['props'], caps?: ModelDef) => videoResolution(p.resolution, caps?.resolutions, caps?.defaults?.resolution)
+
+export function settingsSummary(p: GeneratorShape['props'], video: boolean, caps?: ModelDef) {
+  if (video) return `${p.ratio} · ${p.duration}s · ${shownVideoRes(p, caps)}${p.style ? ` · ${SHOTS.find(([k]) => k === p.style)?.[1]}` : ''}`
   const size = p.resolution === 'custom' ? `${p.cw}×${p.ch}` : `${p.resolution} · ${p.ratio}`
   return t('genSettings.summary', size, p.count, p.transparent ? t('genSettings.transparent') : '')
 }
@@ -39,9 +42,12 @@ type Update = (patch: Partial<GeneratorShape['props']>) => void
 
 export function SettingsPill({ p, video, quality, tiers, caps, update }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update }) {
   const [open, setOpen] = useState(false)
+  // #159: write the displayed video tier back, so the quote and the submit use what the card shows
+  const vres = video ? shownVideoRes(p, caps) : null
+  useEffect(() => { if (vres && vres !== p.resolution) update({ resolution: vres }) }, [vres, p.resolution]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <Popover open={open} onOpenChange={setOpen} side="top" trigger={({ open: o, toggle }) => (
-      <button type="button" className="ca-gen__pill" data-open={o || undefined} onClick={toggle}><span className="ca-gen__pilltext">{settingsSummary(p, video)}</span><span className="ca-gen__chev">{Icons.chevron}</span></button>
+      <button type="button" className="ca-gen__pill" data-open={o || undefined} onClick={toggle}><span className="ca-gen__pilltext">{settingsSummary(p, video, caps)}</span><span className="ca-gen__chev">{Icons.chevron}</span></button>
     )}>
       <GenSettings p={p} video={video} quality={quality} tiers={tiers} caps={caps} update={update} />
     </Popover>
@@ -107,7 +113,6 @@ export function GenSettings({ p, video, quality, tiers, caps, update }: { p: Gen
   const ratios = only(video ? VIDEO_RATIOS : RATIOS, caps?.ratios)
   const shownRatios = ratios.length ? ratios : (video ? VIDEO_RATIOS : RATIOS)
   const durations = only(DURATIONS, caps?.durations)
-  const vres = only(VIDEO_RESOLUTIONS, caps?.resolutions)
   return (
     <div className="ca-menu ca-gen__settings">
       <div className="ca-gen__title">{video ? t('genSettings.videoSettings') : t('genSettings.imageSettings')}</div>
@@ -139,7 +144,7 @@ export function GenSettings({ p, video, quality, tiers, caps, update }: { p: Gen
       {video && (
         <>
           <div className="ca-gen__label">{t('genSettings.resolution')}</div>
-          <Chips value={(vres.length ? vres : VIDEO_RESOLUTIONS).includes(p.resolution) ? p.resolution : (vres.length ? vres : VIDEO_RESOLUTIONS)[0]} options={(vres.length ? vres : VIDEO_RESOLUTIONS).map((r) => [r, r] as [string, string])} onPick={(r) => update({ resolution: r })} gen />
+          <Chips value={shownVideoRes(p, caps)} options={(caps?.resolutions?.length ? caps.resolutions.map(String) : VIDEO_RESOLUTIONS).map((r) => [r, r] as [string, string])} onPick={(r) => update({ resolution: r })} gen />
         </>
       )}
       <div className="ca-gen__label">{video ? t('common.duration') : t('genSettings.count')}</div>
