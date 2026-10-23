@@ -77,6 +77,19 @@ async def test_changed_res_extracts_again(maps):
     assert [m for m, _ in maps["submits"]] == [DEPTH, DEPTH, FLUX]
 
 
+async def test_changed_mode_extracts_again(maps):
+    ref = _photo()
+    await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 512, "confirmed": True})
+    await wavespeed.submit(_job(ref, "normal"))  # same src / res, other mode (same DEPTH model, different map)
+    assert [m for m, _ in maps["submits"]] == [DEPTH, DEPTH, FLUX]
+
+
+async def test_changed_source_extracts_again(maps):
+    await wavespeed.control_preview({"image": _photo("a.png"), "mode": "depth", "res": 512, "confirmed": True})
+    await wavespeed.submit(_job(_photo("b.png"), "depth"))
+    assert [m for m, _ in maps["submits"]] == [DEPTH, DEPTH, FLUX]
+
+
 async def test_missing_fields_400(ws):
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.control_preview({"mode": "canny"})
