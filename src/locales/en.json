@@ -1184,6 +1184,8 @@
   "wsKey.estimate": "Est. {0}",
   "wsKey.estimated": "Estimated {0} (live price unavailable)",
   "wsKey.estimatedTag": "Estimated",
+  "wsKey.durationEstimated": "Couldn't read audio length; estimated as 60s, charged by actual length",
+  "wsKey.durationEstimatedShort": "Est. 60s",
   "wsKey.unpricedTag": "Price unavailable",
   "wsKey.unpriced": "Exact price unavailable; you'll confirm before generating",
   "wsKey.fromEnv": "From environment variable",

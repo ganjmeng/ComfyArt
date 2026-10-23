@@ -76,6 +76,9 @@
 .ca-gen__foot > .ca-pop-anchor:not(.ca-gen__spacer ~ .ca-pop-anchor) { flex-shrink: 0; }
 .ca-gen__spacer { flex: 1; }
 .ca-gen__est { flex: none; margin: 0 -2px; color: var(--ca-muted); font-size: 11px; letter-spacing: -.2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* voice fallback note: the note shrinks with an ellipsis (full text in title), the price stays visible; it shrinks before any other composer control */
+.ca-voice__est { flex: 0 10000 auto; min-width: 0; display: inline-flex; overflow: hidden; }
+.ca-voice__est-note { min-width: 0; margin-right: 4px; overflow: hidden; text-overflow: ellipsis; }
 .ca-gen__pill {
   display: inline-flex;
   align-items: center;
