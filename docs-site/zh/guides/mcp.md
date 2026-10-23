@@ -1,0 +1,153 @@
+---
+title: "MCP 服务器"
+description: "让内置 Agent，或 Claude Code、Codex、Gemini CLI、Cursor 等任何 MCP 客户端查看并编辑画布。"
+---
+
+# MCP 服务器
+
+ComfyArt 通过 HTTP 提供一个 [MCP](https://modelcontextprotocol.io) 服务器。内置 [Agent](/zh/guides/agent) 用的就是它，其他支持 MCP 的 agent 也能用同一套工具：查看画布，生成和编辑图片、视频、音频和 3D 模型，放置文字、形状、画板和幻灯片。
+
+::: tip WaveSpeed Key 与费用
+通过 MCP 调用的生成工具都走 WaveSpeed 云端模型，需要配置 [WaveSpeed Key](/zh/guides/wavespeed-key)，运行前会在 **发送** 旁（或按钮上）显示预估费用；预估 $0.50 及以上会先请你确认。见[模型与费用](/zh/guides/models)。
+:::
+
+## 启用
+
+在 Agent 设置里勾选 **启用 MCP**。接口地址是：
+
+```
+http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>
+```
+
+项目 id 就是 ComfyArt 网址里的 `project` 参数。画布工具由该项目打开着的 ComfyArt 标签页执行，agent 工作时请保持它开着。不带 `?project` 时，命令发给唯一打开的项目；同时开着多个项目会直接报错，要求指定项目。
+
+服务器使用 streamable HTTP 传输，响应是普通 JSON（不提供 SSE 流）。ComfyUI 不在 `127.0.0.1:8188` 时换成实际地址。
+
+## 接入 agent
+
+任务运行时 `wait_generation` 最长会等三分钟左右，所以客户端的工具超时要设成几分钟。下面的例子都用 10 分钟。
+
+### Claude Code
+
+```bash
+claude mcp add --transport http comfyart "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>"
+```
+
+启动 Claude Code 前在环境变量里设 `MCP_TOOL_TIMEOUT=600000`，允许长时间等待。在 Claude Code 里运行 `/mcp` 确认 `comfyart` 已连接。
+
+### Codex
+
+```bash
+codex mcp add comfyart --url "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>"
+```
+
+默认的工具超时比一次生成短，在 `~/.codex/config.toml` 里调大：
+
+```toml
+[mcp_servers.comfyart]
+url = "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>"
+tool_timeout_sec = 600
+```
+
+### Gemini CLI 和 Qwen Code
+
+在 `~/.gemini/settings.json`（Gemini CLI）或 `~/.qwen/settings.json`（Qwen Code）里加上：
+
+```json
+{
+  "mcpServers": {
+    "comfyart": {
+      "httpUrl": "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>",
+      "timeout": 600000
+    }
+  }
+}
+```
+
+`gemini mcp add --transport http comfyart <地址>` 和 `qwen mcp add --transport http comfyart <地址>` 会写入同样的条目。在两个 CLI 里运行 `/mcp` 都能列出工具。
+
+### Cursor
+
+写在 `~/.cursor/mcp.json`，或项目里的 `.cursor/mcp.json`：
+
+```json
+{
+  "mcpServers": {
+    "comfyart": {
+      "url": "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>"
+    }
+  }
+}
+```
+
+### VS Code（GitHub Copilot agent 模式）
+
+写在 `.vscode/mcp.json`：
+
+```json
+{
+  "servers": {
+    "comfyart": {
+      "type": "http",
+      "url": "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>"
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+Claude Desktop 的配置文件只能启动本地命令，所以用 [mcp-remote](https://www.npmjs.com/package/mcp-remote) 桥接 HTTP 服务器（需要 Node.js）。在 `claude_desktop_config.json` 里：
+
+```json
+{
+  "mcpServers": {
+    "comfyart": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>"]
+    }
+  }
+}
+```
+
+### 自己写的 agent
+
+任何程序都可以用 `POST` 发 JSON-RPC 2.0 调用工具，每个请求返回一个 JSON 响应：
+
+```bash
+curl -X POST "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+
+curl -X POST "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"add_text","arguments":{"text":"Hello","x":100,"y":100}}}'
+```
+
+结果里的 `content` 有一个文本块装着工具的 JSON 输出，`view_canvas` 这类工具还会带图片块。`isError: true` 表示工具执行失败。MCP SDK 用它们的 streamable HTTP 客户端连接即可。
+
+## 一次典型的操作
+
+1. `get_canvas` 看页面上有什么。
+2. `list_models` 选模型，再调 `generate_image` 或 `generate_video`，两者都立即返回 id。
+3. 用这些 id 调 `wait_generation`。`status` 是 `running` 就用同样的 id 再调一次；是 `done` 时逐项检查，单项仍可能是 `error`。
+4. `view_canvas` 查看结果，再用图片工具修改，或用 `add_text`、`create_frame`、`update_shapes` 排版。
+
+## 工具
+
+| 分类 | 工具 |
+|---|---|
+| 查看 | `server_info`、`get_canvas`、`view_canvas`、`focus`、`list_models`、`brand_kits` |
+| 生成 | `generate_image`、`generate_video`（首帧 / 尾帧，或最多 9 张 `reference_images`）、`wait_generation` |
+| 编辑图片 | `edit_image`、`replace_text`、`edit_region`、`erase_region`、`move_object`、`style_transfer`、`upscale_image`、`remove_background`、`expand_image`、`split_layers`、`change_angle`、`animate_image`、`vectorize_image` |
+| 重建与样机 | `edit_elements`、`create_mockup`、`place_design` |
+| 视频 | `extend_video`、`upscale_video`、`remove_video_background` |
+| 音频与 3D | `generate_music`、`generate_sound_effect`、`text_to_speech`、`image_to_3d` |
+| 排版 | `add_text`、`add_shape`、`create_frame`、`update_shapes`、`delete_shapes`、`place_html`、`create_slides` |
+| 记忆与技能 | `memory`、`skill` |
+
+`tools/list` 会返回每个工具的输入 schema。在内置 Agent 的对话里，agent 还多一个向你提选择题的工具。
+
+## 安全
+
+生成和编辑类的 MCP 工具会花 ComfyArt 里配置的 WaveSpeed Key 的余额，每次付费调用都会返回费用。能访问你 ComfyUI 端口的人都能用这个服务，开启 MCP 时请把 ComfyUI 限制在本机或可信网络。

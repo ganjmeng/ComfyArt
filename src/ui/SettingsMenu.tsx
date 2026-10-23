@@ -10,6 +10,12 @@ import { Popover } from './Popover'
 import { shortcutsAtom } from './Shortcuts'
 import { keySettingsOpenAtom } from '../wavespeedKey'
 
+/** #35: the docs site on GitHub Pages; English at the root, Chinese under /zh/. */
+export const DOCS_SITE = 'https://ganjmeng.github.io/ComfyArt/'
+export function docsUrl(l: Lang = lang): string {
+  return l === 'zh' ? `${DOCS_SITE}zh/` : DOCS_SITE
+}
+
 const LANGS: [Lang, string][] = [['zh', t('settings.langZh')], ['en', t('settings.langEn')]]
 const SIDES: ['left' | 'right', string][] = [['left', t('settings.chatLeft')], ['right', t('settings.chatRight')]]
 
@@ -55,6 +61,10 @@ export function SettingsMenu({ editor, trigger }: { editor?: Editor; trigger: (p
               </label>
             </>
           )}
+          <div className="ca-menu__sep" />
+          <button type="button" className="ca-menu__item" data-testid="settings-guide" onClick={() => { setOpen(false); window.open(docsUrl(), '_blank', 'noopener,noreferrer') }}>
+            <span className="ca-icon">{Icons.link}</span><span className="ca-menu__grow">{t('settings.userGuide')}</span>
+          </button>
         </div>
       </Popover>
     </>

@@ -1,0 +1,56 @@
+---
+title: "Models and costs"
+description: "Which WaveSpeed model each ComfyArt feature uses, and how costs are shown."
+---
+
+# Models and costs
+
+ComfyArt has no local models. Every feature that uses a model sends the job to [WaveSpeed](https://wavespeed.ai), so it needs a [WaveSpeed Key](/guides/wavespeed-key), and its estimated cost is shown next to **Send** before it runs. Jobs estimated at $0.50 or more ask you to confirm first.
+
+## Choosing a model
+
+- Each function has a curated model list; the first entry is the default.
+- The model picker has **Auto** on by default, which uses the default model. Turn Auto off to choose from function tabs or a flat list.
+- Prices follow WaveSpeed's live pricing. The estimate is WaveSpeed's own quote for your exact inputs (size, duration, number of reference images).
+
+## Default models
+
+These tables are generated from `api/curated_models.json` and `api/wavespeed_models.json` by `docs-site/scripts/gen-models.py`.
+
+<!-- models:start -->
+| Function | Default model | Models (recommended + more) |
+|---|---|---|
+| Text to image | `openai/gpt-image-2.5-flare/text-to-image` | 6 + 17 |
+| Image edit | `openai/gpt-image-2.5-flare/edit` | 6 + 13 |
+| Text to video | `bytedance/seedance-2.0/text-to-video` | 4 + 24 |
+| Image to video | `bytedance/seedance-2.0/image-to-video` | 4 + 26 |
+| Reference to video | `kwaivgi/kling-video-o3-std/reference-to-video` | 4 |
+| Motion control | `kwaivgi/kling-v3.0-std/motion-control` | 4 |
+| Lip sync | `wavespeed-ai/infinitetalk-fast` | 4 |
+| Extend video | `wavespeed-ai/minimax-h3/video-extend` | 4 |
+| Upscale video | `wavespeed-ai/video-upscaler` | 3 |
+| Remove video background | `wavespeed-ai/video-background-remover` | 2 |
+| Music | `minimax/music-3.0` | 5 |
+| Sound effect | `mirelo-ai/sfx-2.0/text-to-audio` | 4 |
+| Text to speech | `wavespeed-ai/qwen3-tts/text-to-speech` | 4 |
+| Voice clone | `wavespeed-ai/qwen3-tts/voice-clone` | 4 |
+| Image to 3D | `tripo3d/h3.1/image-to-3d` | 5 |
+
+| Helper | Model |
+|---|---|
+| Expand | `bria/expand` |
+| Split layers | `bytedance/seedream-v5.0-flash/layer-decomposition` |
+| Remove background | `wavespeed-ai/image-background-remover` |
+| Eraser / move object | `wavespeed-ai/image-eraser` |
+| Upscale | `wavespeed-ai/image-upscaler` |
+| Smart select / Edit Elements cut-outs | `wavespeed-ai/sam3-image` |
+| Multi-angle | `wavespeed-ai/qwen-image/edit-2509-multiple-angles` |
+| Structure modes | `wavespeed-ai/flux-controlnet-union-pro-2.0` |
+| Text recognition (OCR) | `wavespeed-ai/paddle-ocr` |
+| Image caption | `wavespeed-ai/image-captioner` |
+| Speech to text | `wavespeed-ai/openai-whisper-turbo` |
+<!-- models:end -->
+
+## What is free
+
+Canvas editing, exports (PNG, JPG, PDF, PPTX, PSD, ZIP), the video editor export and the WaveSpeed balance check call no paid model.
