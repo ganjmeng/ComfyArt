@@ -1528,6 +1528,21 @@ def grow_mask(m, expand: int = 12):
     return out
 
 
+def feather_mask(m, radius: int = 6):
+    """Soft outer edge for a paste-back mask (like the brush's soft edge on region edits): grow by `radius`,
+    box-blur by `radius`, never below the hard mask, so the hole stays fully covered and blends outward."""
+    import numpy as np
+    if radius <= 0:
+        return m
+    g = np.pad(grow_mask(m, radius), radius, mode="edge").astype(np.float32)
+    k = 2 * radius + 1
+    for axis in (0, 1):
+        c = np.cumsum(np.pad(g, [(1, 0) if a == axis else (0, 0) for a in (0, 1)]), axis=axis)
+        g = (np.take(c, range(k, c.shape[axis]), axis=axis) - np.take(c, range(0, c.shape[axis] - k), axis=axis)) / k
+        g = np.pad(g, [(radius, radius) if a == axis else (0, 0) for a in (0, 1)], mode="edge")
+    return np.maximum(m, g[radius:-radius, radius:-radius])
+
+
 def bbox(m) -> dict | None:
     import numpy as np
     ys, xs = np.nonzero(m > 0)
@@ -1684,7 +1699,8 @@ def move_result(orig: bytes, m, grown, box: dict, src_box: dict, to: dict, erase
     import numpy as np
     rgb = _rgb(orig)
     sl = np.s_[box["y"]:box["y"] + box["h"], box["x"]:box["x"] + box["w"]]
-    out = composite(rgb, _rgb(erased, (box["w"], box["h"])), box["x"], box["y"], grown[sl])
+    hole = feather_mask(grown)  # soft hole edge; the moved object below keeps its own hard mask (product ruling)
+    out = composite(rgb, _rgb(erased, (box["w"], box["h"])), box["x"], box["y"], hole[sl])
     fs = np.s_[src_box["y"]:src_box["y"] + src_box["h"], src_box["x"]:src_box["x"] + src_box["w"]]
     out = composite(out, rgb[fs], max(0, to["x"]), max(0, to["y"]), m[fs])
     return _png(out)

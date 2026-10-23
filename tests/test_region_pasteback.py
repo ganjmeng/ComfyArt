@@ -129,7 +129,7 @@ async def test_move_object_erases_a_crop_and_composites_locally(curated, monkeyp
     assert box["w"] < W and box["h"] < H  # erase ran on a crop around the old spot
     moved = np.zeros((H, W), bool)
     moved[obj[1] + dy:obj[1] + dy + obj[3], obj[0] + dx:obj[0] + dx + obj[2]] = True
-    touched = (grown > 0) | moved
+    touched = (wavespeed.feather_mask(grown) > 0) | moved
     assert np.array_equal(out[~touched], orig[~touched])  # byte-identical everywhere else
     assert np.array_equal(out[moved], orig[obj[1]:obj[1] + obj[3], obj[0]:obj[0] + obj[2]].reshape(-1, 3))  # object, no feathering
     hole = (grown > 0) & ~moved
@@ -243,3 +243,42 @@ async def test_box_fully_outside_is_400_before_any_wavespeed_call(curated):
             await call(dict(inputs))
         assert e.value.status == 400
     assert not curated["submits"] and (curated["uploads"], len(curated["quotes"])) == before
+
+
+async def test_move_hole_edge_is_feathered_but_object_is_not(curated, monkeypatch):
+    H, W = 300, 300
+    orig = np.full((H, W, 3), 200, np.uint8)
+    obj = (100, 100, 40, 40)
+    inputs = {"feature": "move_object", "image": put("o.png", png(orig)), "mask": put("m.png", comfy_mask(H, W, obj)), "dx": 100, "dy": 100}
+    fake_result(monkeypatch, np.full((384, 384, 3), 0, np.uint8))
+    out = output(await finish(await wavespeed.submit(inputs)))[..., 0].astype(int)
+    m = np.zeros((H, W), np.float32)
+    m[100:140, 100:140] = 1
+    grown = wavespeed.grow_mask(m, 12)
+    ring = (wavespeed.feather_mask(grown) > 0) & (grown == 0)
+    vals = out[ring]
+    assert ring.any() and ((vals > 0) & (vals < 200)).mean() > 0.9  # hole edge blends erase result into the original
+    row = out[120, 60:100]
+    assert (np.diff(row) <= 0).all() and len(set(row.tolist())) > 3  # soft ramp, not a hard step
+    assert (out[grown == 1] == 0).all()  # hole itself fully filled
+    assert (out[200:240, 200:240] == 200).all()  # moved object: original pixels, no feathering
+
+
+@pytest.mark.parametrize("paste,size", [({"x": 200, "y": 200, "w": 100, "h": 100}, (56, 56)),
+                                        ({"x": -22, "y": -12, "w": 100, "h": 100}, (78, 88))])
+async def test_clamp_sizes_for_quote_and_submitted_crop(curated, monkeypatch, paste, size):
+    seen, saved = [], []
+    curated["prices"][SUNBURST] = lambda inp: seen.append(dict(inp)) or 0.039
+    real_save = wavespeed._save_input
+    monkeypatch.setattr(wavespeed, "_save_input", lambda data, tag: saved.append((tag, data)) or real_save(data, tag))
+    real_ri = wavespeed.region_inputs
+    sizes = []
+    monkeypatch.setattr(wavespeed, "region_inputs", lambda i, c=None: (lambda r: (c and sizes.append((r["width"], r["height"]))) or r)(real_ri(i, c)))
+    inputs = {"feature": "image_edit", "image": put("o.png", png(noise(256, 256))), "mask": put("m.png", comfy_mask(100, 100, (0, 0, 100, 100))),
+              "paste": paste, "prompt": "x"}
+    est = await wavespeed.estimate(dict(inputs))
+    await wavespeed.submit(dict(inputs))
+    crop = Image.open(io.BytesIO(next(d for t, d in saved if t == "crop")))
+    assert crop.size == size
+    assert sizes == [size, size]  # estimate + submit both priced/sent at the clipped size
+    assert est["source"] == "quote" and est["price"] == pytest.approx(0.039) and curated["submits"]
