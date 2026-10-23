@@ -145,12 +145,11 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   if (model && isCloudModel(model.id)) {
     const base = baseOf(shape)
     const images = [...(base ? [base.src] : []), ...refs].map(annotated)
-    const { control, prep } = applyRefs(picked, refStrengthsOf(shape), refControlsOf(shape))
+    const { controls, prep } = applyRefs(picked, refStrengthsOf(shape), refControlsOf(shape))
     const seed = seedOf(shape) ?? undefined
-    if (control && !base) {
-      // structure ref (canny/depth/pose/...): a WaveSpeed control model follows its map, like upstream ControlNet
-      const { src, ...knobs } = control
-      return wsBuilt({ feature: 'structure_control', prompt, image: annotated(src), width, height, seed, png: transparent, control: knobs })
+    if (controls.length && !base) {
+      // structure refs (canny/depth/pose/...): a WaveSpeed control model follows their maps, like upstream ControlNet
+      return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })) })
     }
     const prepOf = new Map(picked.map((r, i) => [r.src, prep[i]]))
     const refPrep = [...(base ? [null] : []), ...refs.map((r) => prepOf.get(r) ?? null)]

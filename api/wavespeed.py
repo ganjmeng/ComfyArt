@@ -559,9 +559,12 @@ async def estimate(inputs: dict) -> dict:
         feature = feature_of(str(inputs.get("feature") or ""))
         picked = inputs.get("model")
         if feature == "structure_control" and not picked:
-            picked = structure_model(str((inputs.get("control") or {}).get("mode") or ""))
+            picked = _structure_pick(inputs)
         model = resolve_model(feature, picked)
         price, source = await quote(model, inputs)
+        if feature == "structure_control" and price is not None:
+            extra = await _steps_price(inputs)  # depth / sam3 map calls are paid too (#80)
+            price = None if extra is None else round(float(price) + extra, 6)
     return {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
             "confirm": needs_confirm(price) if price is not None else confirm_usd() == 0}
 
@@ -570,9 +573,42 @@ STRUCTURE_EXTRACT_MODEL = "wavespeed-ai/z-image-turbo/controlnet"
 STRUCTURE_FILTER_MODEL = "wavespeed-ai/flux-controlnet-union-pro-2.0"
 
 
-def structure_model(mode: str) -> str:
-    """Depth/pose need a model to extract the map, so the control model does it; edge-type maps are filtered here."""
-    return STRUCTURE_EXTRACT_MODEL if mode in refprep.EXTRACTED else STRUCTURE_FILTER_MODEL
+def _controls(inputs: dict) -> list[dict]:
+    """All structure refs of a job (#80): `controls` list (each with its own `image`), or the legacy single `control`."""
+    cs = inputs.get("controls")
+    if isinstance(cs, list):
+        return [c for c in cs if isinstance(c, dict)]
+    c = inputs.get("control")
+    return [{**c, "image": c.get("image") or inputs.get("image")}] if isinstance(c, dict) else []
+
+
+def structure_model(mode: str, count: int = 1) -> str:
+    """Only pose (alone) needs z-image-turbo/controlnet, which extracts the skeleton itself (no cloud pose
+    estimator exists). Everything else becomes a control image for flux-controlnet-union-pro-2.0."""
+    return STRUCTURE_EXTRACT_MODEL if mode in refprep.EXTRACTED and count == 1 else STRUCTURE_FILTER_MODEL
+
+
+def _structure_pick(inputs: dict) -> str:
+    cs = _controls(inputs)
+    return structure_model(str((cs[0] if cs else {}).get("mode") or ""), len(cs))
+
+
+def _map_steps(inputs: dict) -> list[str]:
+    """Features of the extra cloud map calls (depth-anything / sam3) a structure job runs before control."""
+    cs = _controls(inputs)
+    if len(cs) == 1 and str(cs[0].get("mode")) in refprep.EXTRACTED:
+        return []
+    return [refprep.CLOUD_MAP[m][0] for m in (str(c.get("mode") or "") for c in cs) if m in refprep.CLOUD_MAP]
+
+
+async def _steps_price(inputs: dict) -> float | None:
+    total = 0.0
+    for feature in _map_steps(inputs):
+        price, _ = await quote(resolve_model(feature, None), {})
+        if price is None:
+            return None
+        total += float(price)
+    return total
 
 
 async def _source_bytes(value: str) -> bytes:
@@ -593,25 +629,55 @@ async def _prepped(session: aiohttp.ClientSession, value: str, mode: str, res: i
     return await _upload(session, "", data, f"ref-{mode}-{uuid.uuid4().hex[:8]}.png")
 
 
+async def _cloud_map(feature: str, params: dict, image: str) -> bytes:
+    """One paid map call (depth-anything-v3 / sam3-image); already covered by the confirmed estimate."""
+    outs = await run_raw({"feature": feature, "image": image, "params": dict(params), "confirmed": True})
+    if not outs:
+        raise WaveSpeedError(f"{feature} returned no map", 502)
+    return await _source_bytes(str(outs[0]))
+
+
+async def _control_map(c: dict, size, res_default: int = 1024):
+    mode = str(c.get("mode") or "")
+    res, resize = int(c.get("res") or res_default), str(c.get("resize") or "crop")
+    if mode in refprep.CLOUD_MAP:
+        feature, params = refprep.CLOUD_MAP[mode]
+        data = await _cloud_map(feature, params, str(c["image"]))
+    else:
+        data = await _source_bytes(str(c["image"]))
+    return refprep.process_image(data, mode, res, size, resize)
+
+
 async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> dict:
-    """Structure control (#80): turn the picked ref mode into the control model's fields; color modes
-    replace their reference with the processed image (upstream preprocessor nodes)."""
+    """Structure control (#80): every structure ref becomes the control model's fields with its knobs;
+    color modes replace their reference with the processed image (upstream preprocessor nodes)."""
+    controls = _controls(inputs)
     inputs = dict(inputs)
-    control = inputs.pop("control", None)
+    inputs.pop("control", None)
+    inputs.pop("controls", None)
     w, h = inputs.get("width"), inputs.get("height")
     size = (int(w), int(h)) if w and h else None
-    if control and inputs.get("image"):
-        mode = str(control.get("mode") or "")
-        strength = float(control.get("strength", 80)) / 100
+    controls = [c for c in controls if c.get("image")]
+    if controls:
         params = dict(inputs.get("params") or {})
+        strengths = [float(c.get("strength", 80)) / 100 for c in controls]
         if model == STRUCTURE_EXTRACT_MODEL:
-            params.update({"mode": mode if mode in ("depth", "canny", "pose") else "canny", "strength": min(1.0, strength)})
+            c = controls[0]
+            inputs["image"] = c["image"]
+            params.update({"mode": "pose" if c.get("mode") == "pose" else "canny", "strength": min(1.0, strengths[0])})
         else:
+            inputs.pop("image", None)
+            # no cloud pose estimator: with other structure refs a pose ref can't become a map (gap, see PR)
+            keep = [i for i, c in enumerate(controls) if c.get("mode") not in refprep.EXTRACTED] or [0]
+            controls, strengths = [controls[i] for i in keep], [strengths[i] for i in keep]
+            maps = [await _control_map(c, size) for c in controls]
+            img = maps[0] if len(maps) == 1 else refprep.composite(list(zip(maps, strengths)), size or maps[0].size)
             params.update({
-                "control_image": await _prepped(session, inputs.pop("image"), mode, int(control.get("res") or 1024), size, str(control.get("resize") or "crop")),
-                "controlnet_conditioning_scale": min(2.0, strength),
-                "control_guidance_start": float(control.get("start", 0)) / 100,
-                "control_guidance_end": float(control.get("end", 100)) / 100,
+                "control_image": await _upload(session, "", refprep.to_png(img), f"ref-control-{uuid.uuid4().hex[:8]}.png"),
+                "controlnet_conditioning_scale": min(2.0, max(strengths)),
+                # one control_image: the guidance window spans every ref's start..end
+                "control_guidance_start": min(float(c.get("start", 0)) for c in controls) / 100,
+                "control_guidance_end": max(float(c.get("end", 100)) for c in controls) / 100,
             })
         inputs["params"] = params
     prep = inputs.pop("prep", None)
@@ -628,12 +694,15 @@ async def submit(inputs: dict) -> str:
     feature = feature_of(str(inputs.get("feature") or ""))
     picked = inputs.get("model")
     if feature == "structure_control" and not picked:
-        picked = structure_model(str((inputs.get("control") or {}).get("mode") or ""))
+        picked = _structure_pick(inputs)
     model = resolve_model(feature, picked)
     _check_limits()
     meta = (await catalog()).get(model)
     if not inputs.get("confirmed"):
         price, _ = await quote(model, inputs)
+        if feature == "structure_control" and price is not None:
+            extra = await _steps_price(inputs)
+            price = None if extra is None else round(float(price) + extra, 6)
         if price is not None and needs_confirm(price):
             # expensive job: the page asks the user and resubmits with confirmed=true
             raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price))

@@ -83,25 +83,23 @@ export function refHints(used: UsedRef[]): string[] {
 }
 
 
-/** Cloud modes that are still approximations of upstream: labelled 「近似效果」 in the menu (#80). */
-export const APPROX_MODES = new Set(['mlsd', 'tile', 'normal', 'seg'])
+/** Cloud modes that are still approximations of upstream (Pillow maps, depth-derived normals, SAM masks, pose without start/end): labelled 「近似效果」 in the menu (#80). */
+export const APPROX_MODES = new Set(['mlsd', 'tile', 'normal', 'seg', 'pose'])
 for (const m of REF_MODES) if (APPROX_MODES.has(m.id)) m.label = `${m.label}（${t('refModes.approx')}）`
-
-/** Modes with no WaveSpeed model that accepts their map: they stay pickable and fall back to the prompt hint (#80). */
-export const NO_CLOUD_CONTROL = new Set(['normal', 'seg'])
 
 export interface CloudControl { src: string; mode: string; strength: number; start: number; end: number; res: number; resize: 'crop' | 'stretch' }
 
 /**
- * Cloud counterpart of upstream applyRefs: the first structure ref drives a WaveSpeed control model
- * (strength / start / end / resolution / crop like ControlNetApplyAdvanced); color refs are preprocessed
- * by the backend before image_edit. Returns null control when no structure ref is usable in the cloud.
+ * Cloud counterpart of upstream applyRefs: every structure ref drives the WaveSpeed control job with its own
+ * strength / start / end / resolution / crop (upstream chained one ControlNetApplyAdvanced per ref; the backend
+ * composites their maps into the one control_image the cloud model takes). Color refs are preprocessed before image_edit.
  */
-export function applyRefs(used: UsedRef[], strengths: Record<string, number>, controls: Record<string, RefControl>): { control: CloudControl | null; prep: (string | null)[] } {
-  const hint = used.find(({ mode }) => mode.control && !NO_CLOUD_CONTROL.has(mode.id))
-  const c = hint ? controls[hint.src] ?? DEFAULT_CONTROL : null
+export function applyRefs(used: UsedRef[], strengths: Record<string, number>, controls: Record<string, RefControl>): { controls: CloudControl[]; prep: (string | null)[] } {
   return {
-    control: hint && c ? { src: hint.src, mode: hint.mode.id, strength: strengths[hint.src] ?? DEFAULT_STRENGTH, start: c.start, end: c.end, res: c.res, resize: c.resize } : null,
+    controls: used.filter(({ mode }) => mode.control).map(({ src, mode }) => {
+      const c = controls[src] ?? DEFAULT_CONTROL
+      return { src, mode: mode.id, strength: strengths[src] ?? DEFAULT_STRENGTH, start: c.start, end: c.end, res: c.res, resize: c.resize }
+    }),
     prep: used.map(({ mode }) => (mode.node && !mode.control ? mode.id : null)),
   }
 }

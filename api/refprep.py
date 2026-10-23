@@ -11,14 +11,20 @@ import random
 
 from PIL import Image, ImageChops, ImageFilter, ImageOps
 
-# structure modes WaveSpeed extracts itself (z-image-turbo/controlnet `mode`)
-EXTRACTED = {"depth": "depth", "pose": "pose"}
+# structure modes WaveSpeed extracts itself (z-image-turbo/controlnet `mode`): no cloud pose estimator exists
+EXTRACTED = {"pose": "pose"}
 # structure modes turned into a control image here and sent to flux-controlnet-union-pro-2.0
 FILTERED = {"canny", "lineart", "mlsd", "scribble", "softedge", "tile"}
+# structure modes whose map comes from a cloud estimator first (feature, params), then flux-controlnet-union-pro-2.0
+CLOUD_MAP = {
+    "depth": ("depth_estimation", {"colormap": "grayscale", "output_format": "png"}),
+    "normal": ("depth_estimation", {"colormap": "grayscale", "output_format": "png"}),  # + normal_from_depth
+    "seg": ("segment", {"apply_mask": False, "output_format": "png"}),
+}
 # color modes: the processed image replaces the reference for image_edit (as upstream fed qwen edit)
 COLOR = {"recolor", "color", "shuffle", "brightness"}
-# structure modes with no WaveSpeed model that accepts their map (capability gap, see #80)
-NO_MODEL = {"normal", "seg"}
+# still approximate vs upstream (labelled 「近似效果」 in the UI)
+APPROX = {"mlsd", "tile", "normal", "seg", "pose"}
 
 
 def _edges(img: Image.Image, blur: float = 1.0) -> Image.Image:
@@ -74,6 +80,39 @@ def process(img: Image.Image, mode: str, res: int = 1024, seed: int = 0) -> Imag
     return out.convert("RGB")
 
 
+def normal_from_depth(depth: Image.Image, strength: float = 4.0) -> Image.Image:
+    """Tangent-space normal map from a grayscale depth map (near = white), math only, no model.
+    Same RGB convention as upstream BAE-NormalMapPreprocessor output (x right, y up, z towards viewer)."""
+    g = ImageOps.grayscale(depth).filter(ImageFilter.GaussianBlur(1))
+    w, h = g.size
+    px = g.load()
+    out = Image.new("RGB", (w, h))
+    o = out.load()
+    for y in range(h):
+        for x in range(w):
+            dx = (px[min(x + 1, w - 1), y] - px[max(x - 1, 0), y]) / 255 * strength
+            dy = (px[x, min(y + 1, h - 1)] - px[x, max(y - 1, 0)]) / 255 * strength
+            nx, ny, nz = -dx, dy, 1.0
+            n = (nx * nx + ny * ny + nz * nz) ** 0.5
+            o[x, y] = (round((nx / n + 1) * 127.5), round((ny / n + 1) * 127.5), round((nz / n + 1) * 127.5))
+    return out
+
+
+def composite(maps: list[tuple[Image.Image, float]], size: tuple[int, int]) -> Image.Image:
+    """Several structure refs into one control image (upstream chained one ControlNetApplyAdvanced per
+    ref; the cloud control model takes one control_image). Each map is weighted by its strength
+    relative to the strongest and merged with a per-pixel max, so every ref shapes the result."""
+    top = max(s for _, s in maps) or 1.0
+    out = Image.new("RGB", size)
+    for img, s in maps:
+        m = img.convert("RGB").resize(size, Image.LANCZOS)
+        k = s / top
+        if k < 1:
+            m = m.point(lambda v, k=k: round(v * k))
+        out = ImageChops.lighter(out, m)
+    return out
+
+
 def fit(img: Image.Image, width: int, height: int, resize: str = "crop") -> Image.Image:
     """Match the generation size like upstream ImageScale (crop=center / stretch)."""
     if resize == "stretch":
@@ -82,9 +121,26 @@ def fit(img: Image.Image, width: int, height: int, resize: str = "crop") -> Imag
 
 
 def process_bytes(data: bytes, mode: str, res: int = 1024, size: tuple[int, int] | None = None, resize: str = "crop") -> bytes:
-    out = process(Image.open(io.BytesIO(data)), mode, res)
+    out = to_png(process_image(data, mode, res, size, resize))
+    return out
+
+
+def process_image(data: bytes, mode: str, res: int = 1024, size: tuple[int, int] | None = None, resize: str = "crop") -> Image.Image:
+    """`data` is the raw ref for filtered modes, or the cloud map (depth / sam3 mask) for CLOUD_MAP modes."""
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    if mode in CLOUD_MAP:
+        scale = min(1.0, res / max(img.size))
+        if scale < 1:
+            img = img.resize((max(1, round(img.width * scale)), max(1, round(img.height * scale))), Image.LANCZOS)
+        out = normal_from_depth(img) if mode == "normal" else img
+    else:
+        out = process(img, mode, res)
     if size:
         out = fit(out, *size, resize)
+    return out
+
+
+def to_png(img: Image.Image) -> bytes:
     buf = io.BytesIO()
-    out.save(buf, format="PNG")
+    img.save(buf, format="PNG")
     return buf.getvalue()
