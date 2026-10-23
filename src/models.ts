@@ -1,9 +1,9 @@
 import { atom } from 'tldraw'
 
 import { api, loadModelPaths, readUserJson, writeUserJson } from './comfy'
-import { loadCloudModels } from './wavespeed'
+import { loadCloudModels, type CloudFeature } from './wavespeed'
 import { CUSTOM_GENERATE, workflowConfigAtom } from './customWorkflows'
-import { t } from './i18n'
+import { lang, t } from './i18n'
 
 export interface ModelDef {
   id: string
@@ -22,19 +22,42 @@ export interface ModelDef {
   control?: string
   negative?: [string, string]
   lora?: string | null
+  /** Picker group header (model family), starting price and quality tiers from the WaveSpeed schema (#95). */
+  vendor?: string
+  price?: number | null
+  recommended?: boolean
+  qualities?: string[]
+  /** Schema enums and defaults (#95): the settings panel offers only these; switching models keeps what still fits. */
+  ratios?: string[]
+  durations?: number[]
+  resolutions?: string[]
+  maxImages?: number | null
+  defaults?: Record<string, string | number>
+  /** The 'Auto' entry: the agent / backend default picks the model. */
+  auto?: boolean
 }
+
+/** Per-feature tabs of the generator's model menu (#95); the first tab's pick is the shape's workflow. */
+export const IMAGE_FEATURES = ['text_to_image', 'image_edit']
+export const VIDEO_FEATURES = ['text_to_video', 'image_to_video']
+export const FEATURE_MODELS: Record<string, ModelDef[]> = {}
+
+export const AUTO_IMAGE = 'auto'
+export const AUTO_VIDEO = 'auto:video'
+const autoDef = (video: boolean): ModelDef => ({ id: video ? AUTO_VIDEO : AUTO_IMAGE, label: t('common.auto'), desc: t('genPanel.autoDesc'), files: [], cloud: true, lora: null, auto: true, ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }) })
+export const isAuto = (workflow: string) => workflow === AUTO_IMAGE || workflow === AUTO_VIDEO
 
 export const IMAGE_MODELS: ModelDef[] = []
 
 export const VIDEO_MODELS: ModelDef[] = []
 
-export const isVideo = (workflow: string) => VIDEO_MODELS.some((m) => m.id === workflow)
+export const isVideo = (workflow: string) => workflow === AUTO_VIDEO || VIDEO_MODELS.some((m) => m.id === workflow)
 function customModels(): ModelDef[] {
   const file = workflowConfigAtom.get().generate
   return file ? [{ id: CUSTOM_GENERATE, label: file.replace(/\.json$/, ''), desc: t('customWorkflows.customModelDesc'), files: [], cloud: true, lora: null }] : []
 }
 
-export const modelOf = (workflow: string) => [...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].find((m) => m.id === workflow)
+export const modelOf = (workflow: string) => [autoDef(false), autoDef(true), ...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].find((m) => m.id === workflow)
 
 export interface ModelPrefs { auto: boolean; enabled: string[] }
 
@@ -44,17 +67,31 @@ const ALL = [...IMAGE_MODELS, ...VIDEO_MODELS].map((m) => m.id)
 export const modelPrefsAtom = atom<ModelPrefs>('model prefs', { auto: true, enabled: ALL })
 export const installedAtom = atom<string[] | null>('installed models', null)
 
+/** Per-feature manual picks stored on a generator; Auto on ignores them (#95: never reuse an earlier manual pick). */
+export function featurePicks(workflow: string, picks: unknown): Record<string, string> {
+  return isAuto(workflow) ? {} : (picks as Record<string, string> | undefined) ?? {}
+}
+
+/** Dropdown order from the backend (#95): feature default first, then Lovart's in-app order. */
+export function byPickerOrder(f: CloudFeature | undefined) {
+  if (!f) return []
+  const rank = new Map((f.picker_order ?? []).map((id, i) => [id, i]))
+  return [...f.models].sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9))
+}
+
 /** Swap the local image models for the curated WaveSpeed text-to-image list (api/wavespeed_models.json). */
 async function useCloudImageModels() {
   const all = await loadCloudModels().catch(() => ({}) as Awaited<ReturnType<typeof loadCloudModels>>)
   const defs = (names: string[], video: boolean): ModelDef[] => {
     const seen = new Set<string>()
-    return names.flatMap((n) => all[n]?.models ?? []).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
-      id: m.id, label: m.label + (m.price != null ? ` · $${m.price}` : ''), desc: m.subtitle || m.id.split('/').slice(1).join('/') || m.id, about: m.desc || undefined, files: [], cloud: true, lora: null,
+    return names.flatMap((n) => byPickerOrder(all[n])).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
+      // Lovart-style row (#95 design): display name + one-line description; the raw id only in the tooltip
+      id: m.id, label: m.name || m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, ratios: m.aspect_ratios, durations: m.durations, resolutions: m.resolutions, maxImages: m.max_images, defaults: m.defaults, desc: m.blurb?.[lang] ?? '', about: m.desc || undefined, files: [], cloud: true, lora: null,
       // control: structure refs run on WaveSpeed control models (#80), so the ControlNet knobs show like upstream
       ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }),
     }))
   }
+  for (const f of [...IMAGE_FEATURES, ...VIDEO_FEATURES]) FEATURE_MODELS[f] = defs([f], VIDEO_FEATURES.includes(f))
   const image = defs(['text_to_image'], false)
   const video = defs(['text_to_video', 'image_to_video'], true)
   if (image.length) IMAGE_MODELS.splice(0, IMAGE_MODELS.length, ...image)
@@ -63,7 +100,7 @@ async function useCloudImageModels() {
   if (!modelPrefsAtom.get().auto) modelPrefsAtom.set({ ...modelPrefsAtom.get(), enabled: [...modelPrefsAtom.get().enabled, ...added] })
 }
 
-export const isCloudModel = (id: string) => [...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].some((m) => m.id === id && m.cloud)
+export const isCloudModel = (id: string) => isAuto(id) || [...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].some((m) => m.id === id && m.cloud)
 
 export async function loadModels() {
   const [prefs, files, paths] = await Promise.all([readUserJson<ModelPrefs | null>(FILE, null), api('/models/diffusion_models'), loadModelPaths(), useCloudImageModels()])
@@ -93,3 +130,27 @@ export function isInstalled(_id: string, _runOn?: string): boolean {
   // cloud models need no local files
   return true
 }
+
+type GenProps = { ratio: string; duration: number; resolution: string; quality: string }
+/** Settings to change when switching to `model` (#95): values the new model also supports are kept,
+ * the rest reset to its schema default (else its first option). Empty when nothing needs to change. */
+export function adjustForModel(p: GenProps, model: ModelDef | undefined, video: boolean): Partial<GenProps> {
+  if (!model || model.auto) return {}
+  const out: Partial<GenProps> = {}
+  const d = model.defaults ?? {}
+  const fit = <T,>(cur: T, opts: T[] | undefined, def: unknown): T | undefined => (opts?.length && !opts.includes(cur) ? (opts.includes(def as T) ? (def as T) : opts[0]) : undefined)
+  const ratio = fit(p.ratio, model.ratios?.filter((r) => /^\d+:\d+$/.test(r)), d.aspect_ratio)
+  if (ratio !== undefined) out.ratio = ratio
+  if (video) {
+    const dur = fit(Number(p.duration), model.durations?.map(Number), Number(d.duration))
+    if (dur !== undefined) out.duration = dur
+    const res = fit(p.resolution, model.resolutions, d.resolution)
+    if (res !== undefined) out.resolution = res
+  }
+  const q = fit(p.quality, model.qualities, d.quality)
+  if (q !== undefined) out.quality = q
+  return out
+}
+
+/** How many reference images this model takes; extra ones are dropped (with a notice) rather than failing the paid job. */
+export const refCap = (model: ModelDef | undefined, n: number) => (model?.maxImages && n > model.maxImages ? model.maxImages : null)

@@ -42,8 +42,8 @@ export interface WsInputs {
   custom?: string
 }
 
-export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null }
-export interface CloudFeature { default: string; available: boolean; models: CloudModel[] }
+export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null; vendor?: string; recommended?: boolean; qualities?: string[]; aspect_ratios?: string[]; durations?: number[]; resolutions?: string[]; defaults?: Record<string, string | number>; name?: string; blurb?: { zh: string; en: string } }
+export interface CloudFeature { default: string; available: boolean; models: CloudModel[]; picker_order?: string[] }
 
 let pending: string | undefined
 

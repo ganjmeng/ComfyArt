@@ -4,7 +4,7 @@ import { defaultTarget, refKind, uploadImage, validTarget, viewUrl, type PromptG
 import type { LoraPick } from './loras'
 import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from './jobs'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
-import { agentModels, isCloudModel, isVideo, modelOf } from './models'
+import { agentModels, AUTO_IMAGE, AUTO_VIDEO, FEATURE_MODELS, featurePicks, isCloudModel, isVideo, modelOf, refCap } from './models'
 import { CUSTOM_GENERATE } from './customWorkflows'
 import { modelIn, wsBuilt } from './wavespeed'
 import { t } from './i18n'
@@ -53,7 +53,7 @@ export function targetSize({ ratio, resolution, workflow, cw, ch }: GeneratorSha
 export function createGenerator(editor: Editor, video = false, props: Partial<GeneratorShape['props']> = {}, focus = true, from?: [number, number]): TLShapeId {
   const id = createShapeId()
   const ratio = props.ratio ?? (video ? VIDEO_RATIOS[0] : '1:1')
-  const workflow = props.workflow || agentModels(video)[0].id
+  const workflow = props.workflow || (video ? AUTO_VIDEO : AUTO_IMAGE)
   const [w, h] = targetSize({ ...editor.getShapeUtil<GeneratorShape>(GENERATOR).getDefaultProps(), ...props, ratio, workflow })
   const [x, y] = freeSpot(editor, w, h, from)
   editor.createShape({ id, type: GENERATOR, x, y, props: { ...props, w, h, ratio, workflow } })
@@ -87,6 +87,16 @@ export function colorsOf(shape: GeneratorShape): string[] {
   return (shape.meta.colors as string[] | undefined) ?? []
 }
 
+/** User picks for the secondary tabs of the model menu (image_edit, image_to_video); empty while Auto is on. */
+// Auto on: never reuse an earlier manual pick (#95 product ruling) -- the agent's pick or the feature default
+export const featureModelsOf = (shape: GeneratorShape) => featurePicks(shape.props.workflow, shape.meta.featureModels)
+/** The image-edit model reference images go to: the user's pick on that tab, else the feature default (first curated entry). */
+export const editModelOf = (shape: GeneratorShape) => {
+  const list = FEATURE_MODELS.image_edit ?? []
+  return list.find((m) => m.id === featureModelsOf(shape).image_edit) ?? list[0]
+}
+/** Input images beyond what the edit model accepts (#95): null when all fit, else how many are sent. */
+export const refOverflow = (shape: GeneratorShape) => refCap(editModelOf(shape), (baseOf(shape) ? 1 : 0) + refsOf(shape).length)
 export const negativeOf = (shape: GeneratorShape) => (shape.meta.negative as string | undefined) ?? ''
 export const seedOf = (shape: GeneratorShape) => (shape.meta.seed as number | null | undefined) ?? null
 export const runOnOf = (shape: GeneratorShape) => validTarget(shape.meta.runOn) ?? defaultTarget()
@@ -123,7 +133,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
       // storyboard: the backend runs one cloud task per scene with the current model
       const scened = scenes.map((sc) => ({ prompt: [sc.prompt, suffix].filter(Boolean).join(', '), duration: sc.duration }))
       return refs[0]
-        ? wsBuilt({ ...base, feature: 'image_to_video', model: modelIn('image_to_video', workflow), image: annotated(refs[0]), scenes: scened })
+        ? wsBuilt({ ...base, feature: 'image_to_video', model: modelIn('image_to_video', featureModelsOf(shape).image_to_video ?? workflow), image: annotated(refs[0]), scenes: scened })
         : wsBuilt({ ...base, feature: 'text_to_video', model: modelIn('text_to_video', workflow), scenes: scened })
     }
     const mode = videoModeOf(shape)
@@ -137,7 +147,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     if (mode === 'lipsync' && refs[0] && speech) return wsBuilt({ ...base, feature: 'lip_sync', image: annotated(refs[0]), audio: annotated(speech) })
     const last = lastFrameOf(shape)
     if (refs.length || last) {
-      return wsBuilt({ ...base, feature: 'image_to_video', custom: 'video', model: modelIn('image_to_video', workflow), image: annotated(refs[0] ?? last!), last_image: refs[0] && last ? annotated(last) : undefined })
+      return wsBuilt({ ...base, feature: 'image_to_video', custom: 'video', model: modelIn('image_to_video', featureModelsOf(shape).image_to_video ?? workflow), image: annotated(refs[0] ?? last!), last_image: refs[0] && last ? annotated(last) : undefined })
     }
     return wsBuilt({ ...base, feature: 'text_to_video', custom: 'video', model: modelIn('text_to_video', workflow) })
   }
@@ -157,11 +167,13 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
       return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })) })
     }
     const prepOf = new Map(picked.map((r, i) => [r.src, prep[i]]))
-    const refPrep = [...(base ? [null] : []), ...refs.map((r) => prepOf.get(r) ?? null)]
+    const cap = refOverflow(shape) ?? images.length
+    const refPrep = [...(base ? [null] : []), ...refs.map((r) => prepOf.get(r) ?? null)].slice(0, cap)
+    images.splice(cap)
     // reference images go to the image-edit feature; its default model is used unless the agent picked one
     return images.length
-      ? wsBuilt({ feature: 'image_edit', prompt, images, width, height, seed, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined })
-      : wsBuilt({ feature: 'text_to_image', model: model.id, prompt, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
+      ? wsBuilt({ feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), prompt, images, width, height, seed, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined })
+      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')
@@ -183,13 +195,13 @@ export function estimateInputsOf(shape: GeneratorShape): Record<string, unknown>
     if (mode === 'refs' && refs.length) return { ...base, feature: 'reference_to_video' }
     if (mode === 'motion' && refs[0] && motionOf(shape)) return { ...base, feature: 'motion_control' }
     if (mode === 'lipsync' && refs[0] && speechOf(shape)) return { ...base, feature: 'lip_sync' }
-    if (refs.length || lastFrameOf(shape)) return { ...base, feature: 'image_to_video', model: modelIn('image_to_video', workflow) }
+    if (refs.length || lastFrameOf(shape)) return { ...base, feature: 'image_to_video', model: modelIn('image_to_video', featureModelsOf(shape).image_to_video ?? workflow) }
     return { ...base, feature: 'text_to_video', model: modelIn('text_to_video', workflow) }
   }
   const model = modelOf(workflow) ?? agentModels(false)[0]
   if (!model || !isCloudModel(model.id)) return null
   const [width, height] = targetSize(shape.props)
-  return refs.length || baseOf(shape) ? { feature: 'image_edit', width, height } : { feature: 'text_to_image', model: model.id, width, height }
+  return refs.length || baseOf(shape) ? { feature: 'image_edit', width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined }
 }
 
 export function generate(editor: Editor, shape: GeneratorShape, onError: ErrorSink) {
