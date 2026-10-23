@@ -10,6 +10,8 @@ import { SettingsMenu } from './SettingsMenu'
 import { sideAtom } from './SidePanel'
 import { t } from '../i18n'
 import { isEnter } from './keys'
+import { keySettingsOpenAtom, keyStatusAtom } from '../wavespeedKey'
+import { keyStateText } from './KeySettings'
 
 function exportTargets(editor: Editor): TLShapeId[] {
   const selected = editor.getSelectedShapeIds()
@@ -23,6 +25,7 @@ export function TopBar({ editor, left }: { editor: Editor; left?: React.ReactNod
   const [renaming, setRenaming] = useState<TLPageId | null>(null)
   const side = useValue(sideAtom)
   const exportable = useValue('exportable', () => exportTargets(editor).length > 0, [editor])
+  const keyStatus = useValue(keyStatusAtom)
   const openComments =useValue('open comments', () => allComments(editor).filter((c) => !c.props.done).length, [editor])
 
   const add = () => {
@@ -73,6 +76,11 @@ export function TopBar({ editor, left }: { editor: Editor; left?: React.ReactNod
         </button>
       </div>
       <div className="ca-gen__spacer" />
+      {keyStatus && (
+        <button type="button" className="ca-bar__btn" data-testid="ws-balance" title={`${t('wsKey.balanceTitle')}: ${keyStateText()}`} onClick={() => keySettingsOpenAtom.set(true)}>
+          <span>{!keyStatus.configured ? t('wsKey.noKeyChip') : keyStatus.balance !== null ? `$${keyStatus.balance.toFixed(2)}` : '$—'}</span>
+        </button>
+      )}
       <button type="button" className="ca-bar__btn" disabled={!exportable} onClick={() => exportAtom.set(exportTargets(editor))}>
         <span className="ca-icon">{Icons.export}</span><span>{t('common.export')}</span>
       </button>

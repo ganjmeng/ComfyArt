@@ -63,6 +63,8 @@ import { ScheduleDialog } from './ui/ScheduleDialog'
 import { startBot } from './bot'
 import { registerCommandBus } from './botCommands'
 import { BotSettings } from './ui/BotSettings'
+import { KeySettings } from './ui/KeySettings'
+import { keySettingsOpenAtom, refreshKeyStatus } from './wavespeedKey'
 import { TaskDetails } from './ui/TaskDetails'
 import { InpaintPanel } from './ui/InpaintPanel'
 import { SkillsDialog } from './ui/SkillsDialog'
@@ -138,6 +140,11 @@ export function App({ id }: { id: string }) {
   const staleRef = useRef(false)
   const dock = useValue(dockAtom)
   const dark = useValue('dark mode', () => editor?.user.getIsDarkMode() ?? false, [editor])
+
+  useEffect(() => {
+    // first run without a key: open the key guide once
+    void refreshKeyStatus().then((s) => { if (s && !s.configured) keySettingsOpenAtom.set(true) })
+  }, [])
 
   useEffect(() => {
     if (editor) markDark(dark)
@@ -299,6 +306,7 @@ export function App({ id }: { id: string }) {
       {editor && <TaskDetails editor={editor} />}
       {editor && <ScheduleDialog editor={editor} onError={setError} />}
       <BotSettings onError={setError} />
+      <KeySettings />
       {editor && <VideoEditor editor={editor} onError={setError} />}
       <MemoryDialog onError={setError} />
       <WorkflowsDialog onError={setError} />

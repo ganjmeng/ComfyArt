@@ -3,7 +3,7 @@ import { useEditor, useValue } from 'tldraw'
 
 import { refKind, thumbUrl, uploadImage, viewUrl, type RefKind } from '../comfy'
 import { planStoryboard } from '../agent'
-import { baseOf, colorsOf, generate, lastFrameOf, motionOf, refsOf, runOnOf, scenesOf, speechOf, targetSize, videoModeOf } from '../generate'
+import { baseOf, colorsOf, estimateInputsOf, generate, lastFrameOf, motionOf, refsOf, runOnOf, scenesOf, speechOf, targetSize, videoModeOf } from '../generate'
 import { canvasPickAtom, fillTarget, isMediaRefs, maxRefsOf, type Target } from '../genInputs'
 import { itemImages, libraryAtom } from '../library'
 import { DEFAULT_STRENGTH, modeOf, modesFor, refControlsOf, refModeFor, refModesOf, refStrengthsOf, usableRefs } from '../refModes'
@@ -22,6 +22,7 @@ import { Popover } from './Popover'
 import { useElementSize, useSelectedGenerator, useSelectionRect } from './selection'
 import { t } from '../i18n'
 import { isEnter } from './keys'
+import { estimateCost, keyStatusAtom, outOfCredit } from '../wavespeedKey'
 
 const GAP = 12
 const EDGE = 8
@@ -54,6 +55,21 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
 
   useEffect(() => { prompt.current?.focus() }, [shape?.id])
 
+  const noCredit = outOfCredit(useValue(keyStatusAtom))
+  const estKey = useValue('gen estimate inputs', () => {
+    const s = shape && editor.getShape<GeneratorShape>(shape.id)
+    const inputs = s ? estimateInputsOf(s) : null
+    return inputs ? JSON.stringify(inputs) : ''
+  }, [editor, shape?.id])
+  const [estimate, setEstimate] = useState<number | null>(null)
+  useEffect(() => {
+    setEstimate(null)
+    if (!estKey) return
+    let live = true
+    // debounced; the backend caches each WaveSpeed quote for 5 minutes
+    const timer = setTimeout(() => { estimateCost(JSON.parse(estKey)).then((e) => { if (live) setEstimate(e?.price ?? null) }).catch(() => {}) }, 300)
+    return () => { live = false; clearTimeout(timer) }
+  }, [estKey])
   if (!shape || !rect || running || canvasPick) return null
   const p = shape.props
   const update = (patch: Partial<GeneratorShape['props']>) => {
@@ -279,7 +295,8 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
         <AdvancedPill shape={shape} model={model} setMeta={setMeta} />
         <div className="ca-gen__spacer" />
         <ModelPill models={models} model={model} runOn={runOnOf(shape)} onPick={(id) => update({ workflow: id })} />
-        <button type="button" className="ca-gen__send" disabled={!ready} title={t('common.generate')} onClick={submit}>
+        {estimate != null && <span className="ca-menu__key" data-testid="ws-estimate" title={t('wsKey.estimate', `$${estimate}`)}>{`≈$${estimate < 0.01 ? estimate.toFixed(4).replace(/0+$/, '') : estimate.toFixed(2)}`}</span>}
+        <button type="button" className="ca-gen__send" disabled={!ready || noCredit} title={noCredit ? t('wsKey.needCredit') : estimate != null ? `${t('common.generate')} · ${t('wsKey.estimate', `$${estimate}`)}` : t('common.generate')} onClick={submit}>
           <span className="ca-icon">{Icons.send}</span>
         </button>
       </div>

@@ -2,8 +2,9 @@
 
 The frontend queues a pseudo graph {"ws": {"class_type": "WaveSpeedRun", "inputs": {...}}}; this module
 submits it to WaveSpeed, polls the result, downloads outputs into ComfyUI's output folder and answers in
-ComfyUI /history shape so the existing job flow is unchanged. The API key only comes from the
-WAVESPEED_API_KEY environment variable and is never logged or sent to the browser.
+ComfyUI /history shape so the existing job flow is unchanged. The API key comes from the
+WAVESPEED_API_KEY environment variable (wins) or the key saved in Settings (a 0600 file in the ComfyUI user
+directory). It is never logged, and the browser only ever sees whether it is set and its last 4 characters.
 """
 
 import asyncio
@@ -25,7 +26,7 @@ import aiohttp
 import folder_paths
 from aiohttp import web
 
-from ._common import error, json_body, routes
+from ._common import app_path, error, json_body, routes
 
 log = logging.getLogger("comfyart.wavespeed")
 
@@ -55,10 +56,56 @@ class WaveSpeedError(Exception):
         self.confirm = confirm
 
 
+KEY_FILE = "wavespeed_key.json"
+
+
+def _key_path() -> str:
+    return app_path(KEY_FILE)
+
+
+def _saved_key() -> str:
+    try:
+        with open(_key_path(), encoding="utf-8") as f:
+            return str(json.load(f).get("key") or "").strip()
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+def _save_key(key: str) -> None:
+    path = _key_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump({"key": key}, f)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+
+
+def _delete_key() -> None:
+    try:
+        os.remove(_key_path())
+    except FileNotFoundError:
+        pass
+
+
+def key_source() -> tuple[str, str]:
+    """(key, source): the environment variable wins over the key saved in Settings."""
+    env = os.environ.get("WAVESPEED_API_KEY", "").strip()
+    if env:
+        return env, "env"
+    saved = _saved_key()
+    return (saved, "settings") if saved else ("", "none")
+
+
+def has_key() -> bool:
+    return bool(key_source()[0])
+
+
 def _key() -> str:
-    key = os.environ.get("WAVESPEED_API_KEY", "").strip()
+    key = key_source()[0]
     if not key:
-        raise WaveSpeedError("WaveSpeed needs an API key: set WAVESPEED_API_KEY and restart ComfyUI", 400)
+        raise WaveSpeedError("WaveSpeed needs an API key: add one in Settings > WaveSpeed API key or set WAVESPEED_API_KEY", 400)
     return key
 
 
@@ -83,7 +130,7 @@ def _status_error(status: int, body) -> WaveSpeedError:
     if isinstance(body, dict):
         msg = str(body.get("message") or (body.get("data") or {}).get("error") or "")
     if status == 401:
-        return WaveSpeedError("WaveSpeed rejected the API key (401): check WAVESPEED_API_KEY", 401)
+        return WaveSpeedError("WaveSpeed rejected the API key (401): check it in Settings > WaveSpeed API key", 401)
     if status == 402 or "balance" in msg.lower():
         return WaveSpeedError(f"WaveSpeed account balance is too low ({status}) {msg}".strip(), 402)
     if status == 429:
@@ -511,6 +558,87 @@ def _active() -> int:
     return sum(1 for j in _jobs.values() if not j.get("done"))
 
 
+PREFS_FILE = "wavespeed_prefs.json"
+QUOTE_TTL = 300.0
+_quotes: dict[str, tuple[float, float]] = {}
+# scalar fields that change a model's price; media and prompts never do
+_PRICE_FIELDS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "num_images", "quality")
+
+
+def confirm_usd() -> float:
+    """Cost at or above which a job needs a second confirmation; 0 means always confirm."""
+    try:
+        v = json.loads(open(app_path(PREFS_FILE)).read()).get("confirm_usd")
+        if valid_confirm_usd(v):
+            return float(v)
+    except (OSError, ValueError, AttributeError):
+        pass
+    return float(limits()["confirm_usd"])
+
+
+def valid_confirm_usd(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and 0 <= v <= 1000
+
+
+def needs_confirm(price: float) -> bool:
+    limit = confirm_usd()
+    return limit == 0 or price >= limit
+
+
+def _price_inputs(inputs: dict) -> dict:
+    out = {k: inputs[k] for k in _PRICE_FIELDS if isinstance(inputs.get(k), (int, float, str)) and k in inputs}
+    if "ratio" in out:
+        out["aspect_ratio"] = out.pop("ratio")
+    if isinstance(inputs.get("width"), int) and isinstance(inputs.get("height"), int):
+        out["size"] = f"{inputs['width']}*{inputs['height']}"
+    return out
+
+
+async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
+    """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes.
+    Falls back to the catalog base_price when the quote fails."""
+    body = {"model_id": model, "inputs": _price_inputs(inputs)}
+    ck = json.dumps(body, sort_keys=True)
+    hit = _quotes.get(ck)
+    if hit and time.time() - hit[1] < QUOTE_TTL:
+        return hit[0], "quote"
+    try:
+        async with aiohttp.ClientSession(headers=_headers()) as session:
+            async with session.post(f"{_base()}/api/v3/model/price", json=body, timeout=aiohttp.ClientTimeout(total=10)) as res:
+                data = ((await _json(res)) or {}).get("data") or {} if res.status < 400 else {}
+        price = data.get("discounted_price", data.get("price")) if isinstance(data, dict) else None
+        if isinstance(price, (int, float)) and not isinstance(price, bool):
+            _quotes[ck] = (float(price), time.time())
+            return float(price), "quote"
+    except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
+        pass
+    base = ((await catalog()).get(model) or {}).get("base_price")
+    return (float(base) if isinstance(base, (int, float)) else None), "catalog"
+
+
+async def estimate(inputs: dict) -> dict:
+    """Estimated total for a job; a storyboard is priced as the sum of its scenes."""
+    if isinstance(inputs.get("scenes"), list):
+        scenes = [sc for sc in inputs["scenes"] if isinstance(sc, dict)]
+        base = {k: v for k, v in inputs.items() if k != "scenes"}
+        feature = "image_to_video" if base.get("image") else "text_to_video"
+        first = resolve_model(feature, base.get("model") if feature == base.get("feature") else None)
+        chain = resolve_model("image_to_video", base.get("model") if base.get("feature") == "image_to_video" else None)
+        total, sources = 0.0, set()
+        for i, sc in enumerate(scenes):
+            p, src = await quote(first if i == 0 else chain, {**base, **({"duration": sc["duration"]} if sc.get("duration") else {})})
+            total += p or 0.0
+            sources.add(src)
+        price, source = round(total, 4), ("quote" if sources == {"quote"} else "catalog")
+    else:
+        if inputs.get("feature") == "mockup_surface":
+            return {"price": None, "currency": "USD", "source": "none", "confirm_usd": confirm_usd(), "confirm": confirm_usd() == 0}
+        model = resolve_model(feature_of(str(inputs.get("feature") or "")), inputs.get("model"))
+        price, source = await quote(model, inputs)
+    return {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
+            "confirm": needs_confirm(price) if price is not None else confirm_usd() == 0}
+
+
 async def submit(inputs: dict) -> str:
     if isinstance(inputs.get("scenes"), list):
         return await _submit_scenes(inputs)
@@ -523,10 +651,11 @@ async def submit(inputs: dict) -> str:
         model = resolve_model(feature, inputs.get("model"))
     _check_limits()
     meta = (await catalog()).get(model)
-    price = (meta or {}).get("base_price")
-    if isinstance(price, (int, float)) and price >= limits()["confirm_usd"] and not inputs.get("confirmed"):
-        # expensive job: the page asks the user and resubmits with confirmed=true
-        raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price))
+    if not inputs.get("confirmed"):
+        price, _ = await quote(model, inputs)
+        if price is not None and needs_confirm(price):
+            # expensive job: the page asks the user and resubmits with confirmed=true
+            raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price))
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), inputs)
         _submits.append(time.time())
@@ -553,10 +682,8 @@ async def _submit_scenes(inputs: dict) -> str:
     feature = "image_to_video" if base.get("image") else "text_to_video"
     first_model = resolve_model(feature, base.get("model") if feature == base.get("feature") else None)
     chain_model = resolve_model("image_to_video", base.get("model") if base.get("feature") == "image_to_video" else None)
-    cat = await catalog()
-    prices = [((cat.get(m) or {}).get("base_price")) for m in [first_model] + [chain_model] * (len(scenes) - 1)]
-    total = sum(p for p in prices if isinstance(p, (int, float)))
-    if total >= limits()["confirm_usd"] and not base.get("confirmed"):
+    total = (await estimate({**base, "scenes": scenes}))["price"] or 0.0
+    if needs_confirm(total) and not base.get("confirmed"):
         raise WaveSpeedError(f"{len(scenes)} scenes cost about ${total:.2f}; confirm to continue", 409, confirm=round(total, 2))
     jobs = [{**base, "feature": feature if i == 0 else "image_to_video", "model": first_model if i == 0 else chain_model,
              "confirmed": True, "prompt": str(sc["prompt"]), **({"duration": sc["duration"]} if sc.get("duration") else {})}
@@ -822,6 +949,34 @@ async def wavespeed_run(request: web.Request) -> web.Response:
     return web.json_response({"prompt_id": f"ws:{task}"})
 
 
+@routes.post("/comfyart/wavespeed/estimate")
+async def wavespeed_estimate(request: web.Request) -> web.Response:
+    inputs = (await json_body(request)).get("inputs")
+    if not isinstance(inputs, dict):
+        return error("inputs must be an object", 400)
+    try:
+        return web.json_response(await estimate(inputs))
+    except WaveSpeedError as e:
+        return _respond_error(e)
+
+
+@routes.get("/comfyart/wavespeed/confirm")
+async def wavespeed_confirm_get(_request: web.Request) -> web.Response:
+    return web.json_response({"confirm_usd": confirm_usd()})
+
+
+@routes.put("/comfyart/wavespeed/confirm")
+async def wavespeed_confirm_put(request: web.Request) -> web.Response:
+    v = (await json_body(request)).get("confirm_usd")
+    if not valid_confirm_usd(v):
+        return error("confirm_usd must be a number from 0 to 1000 (0 = always confirm)", 400)
+    path = app_path(PREFS_FILE)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump({"confirm_usd": float(v)}, f)
+    return web.json_response({"confirm_usd": float(v)})
+
+
 @routes.get("/comfyart/wavespeed/history/{task}")
 async def wavespeed_history(request: web.Request) -> web.Response:
     try:
@@ -888,14 +1043,79 @@ async def wavespeed_custom_check(request: web.Request) -> web.Response:
 
 @routes.get("/comfyart/wavespeed/models")
 async def wavespeed_models(request: web.Request) -> web.Response:
-    return web.json_response({"enabled": bool(os.environ.get("WAVESPEED_API_KEY")), "stale": bool(_catalog.get("stale")), "features": await grouped_models(request.query.get("refresh") == "1")})
+    return web.json_response({"enabled": has_key(), "stale": bool(_catalog.get("stale")), "features": await grouped_models(request.query.get("refresh") == "1")})
+
+
+async def fetch_balance(key: str) -> float:
+    """Free GET /api/v3/balance. Raises WaveSpeedError: 401 invalid key, 503 network, other codes as-is."""
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20)) as session:
+            async with session.get(f"{_base()}/api/v3/balance", headers={"Authorization": f"Bearer {key}"}) as res:
+                body = await _json(res)
+                if res.status in (401, 403):
+                    raise WaveSpeedError("WaveSpeed rejected the API key", 401)
+                if res.status != 200 or not isinstance(body, dict) or body.get("code") not in (None, 200):
+                    raise _status_error(res.status if res.status != 200 else 502, body)
+                balance = (body.get("data") or {}).get("balance")
+    except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+        raise WaveSpeedError(f"could not reach WaveSpeed ({type(e).__name__})", 503) from e
+    if not isinstance(balance, (int, float)):
+        raise WaveSpeedError("WaveSpeed returned no balance", 502)
+    return float(balance)
+
+
+def _key_status(balance: float | None = None, err: str | None = None) -> dict:
+    key, source = key_source()
+    out: dict = {"configured": bool(key), "source": source, "last4": key[-4:] if len(key) >= 8 else "", "balance": balance}
+    if err:
+        out["error"] = err
+    return out
+
+
+def _reason(e: WaveSpeedError) -> str:
+    return {401: "invalid", 503: "network"}.get(e.status, "error")
+
+
+@routes.get("/comfyart/wavespeed/key")
+async def wavespeed_key_status(request: web.Request) -> web.Response:
+    """Key status for Settings and the top bar: never the key itself, only source + last 4 + balance."""
+    key = key_source()[0]
+    if not key or request.query.get("balance") == "0":
+        return web.json_response(_key_status())
+    try:
+        return web.json_response(_key_status(await fetch_balance(key)))
+    except WaveSpeedError as e:
+        return web.json_response(_key_status(err=_reason(e)))
+
+
+@routes.put("/comfyart/wavespeed/key")
+async def wavespeed_key_save(request: web.Request) -> web.Response:
+    if key_source()[1] == "env":
+        return error("the key comes from WAVESPEED_API_KEY and can't be changed here", 409)
+    key = str((await json_body(request)).get("key") or "").strip()
+    if not key or len(key) > 512 or any(c.isspace() for c in key):
+        return error("enter a WaveSpeed API key", 400)
+    try:
+        balance = await fetch_balance(key)
+    except WaveSpeedError as e:
+        # invalid or unreachable keys are not saved; the reason drives the message in Settings
+        return web.json_response({"error": {"message": str(e), "reason": _reason(e)}}, status=e.status)
+    _save_key(key)
+    log.info("[ComfyArt] WaveSpeed key saved in settings")
+    return web.json_response(_key_status(balance))
+
+
+@routes.delete("/comfyart/wavespeed/key")
+async def wavespeed_key_delete(_request: web.Request) -> web.Response:
+    _delete_key()
+    return web.json_response(_key_status())
 
 
 def check_key_at_startup() -> None:
     """Validate the key once with the free /balance endpoint and log pass/fail (never the key itself)."""
-    key = os.environ.get("WAVESPEED_API_KEY", "").strip()
+    key = key_source()[0]
     if not key:
-        log.warning("[ComfyArt] WAVESPEED_API_KEY is not set: cloud generation is disabled")
+        log.warning("[ComfyArt] no WaveSpeed key (Settings or WAVESPEED_API_KEY): cloud generation is disabled")
         return
 
     def run() -> None:

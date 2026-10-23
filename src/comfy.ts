@@ -1,7 +1,9 @@
+import { confirmAtom } from './ui/Confirm'
 import { readLocal } from './localPrefs'
 import { t } from './i18n'
 import { onComfyEvent } from './ws'
 import { isWsGraph, WS_ID } from './wavespeed'
+import { keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus } from './wavespeedKey'
 
 const POLL_MS = 1500
 
@@ -138,16 +140,27 @@ export function setWsHook(hook: WsHook) {
   wsHook = hook
 }
 
+/** Second confirmation for costly cloud jobs, in the app's own Confirm dialog. */
+export function askCost(price: number): Promise<boolean> {
+  return new Promise((resolve) => confirmAtom.set({
+    title: t('jobs.confirmTitle'), desc: t('jobs.confirmCost', price.toFixed(2)), ok: t('jobs.confirmOk'),
+    run: () => resolve(true), cancel: () => resolve(false),
+  }))
+}
+
 export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget()): Promise<string> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
   if (isWsGraph(prompt)) {
+    const key = keyStatusAtom.get()
+    if (key && !key.configured) { keySettingsOpenAtom.set(true); throw new Error(t('wsKey.needKey')) }
+    if (outOfCredit(key)) throw new Error(t('wsKey.needCredit'))
     const inputs = await wsHook(Object.values(prompt)[0].inputs as Record<string, unknown>)
     let ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
     let wsBody = await ws.json().catch(() => null)
     const price = wsBody?.error?.confirm_usd
     if (ws.status === 409 && typeof price === 'number') {
       // jobs of $0.50 or more need an explicit yes before they are submitted
-      if (!window.confirm(t('jobs.confirmCost', price.toFixed(2)))) throw new Error(t('jobs.costDeclined'))
+      if (!(await askCost(price))) throw new Error(t('jobs.costDeclined'))
       ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
       wsBody = await ws.json().catch(() => null)
     }
@@ -215,7 +228,10 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
       if (err) throw new Error(String(err[1]?.exception_message ?? 'execution failed'))
       if (messages.some((m) => m[0] === 'execution_interrupted')) throw new Error(t('jobs.interrupted'))
       const value = hist.outputs?.[node] ? pick(hist.outputs[node]) : null
-      if (value) return value
+      if (value) {
+        if (promptId.startsWith(WS_ID)) void refreshKeyStatus()
+        return value
+      }
       if (hist.status?.completed || hist.status?.status_str === 'error') throw new Error(t('jobs.noOutput'))
     } else if (promptId.startsWith(WS_ID) || await inQueue(promptId)) {
       misses = 0

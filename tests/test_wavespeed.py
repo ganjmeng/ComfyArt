@@ -60,8 +60,19 @@ MODELS = [
 
 @pytest.fixture
 async def ws(monkeypatch, fresh_user_dir):
-    state = {"status": "completed", "submits": [], "polls": 0, "uploads": 0, "auth": set(), "submit_status": 200, "result_status": 200}
+    state = {"status": "completed", "submits": [], "polls": 0, "uploads": 0, "auth": set(), "submit_status": 200, "result_status": 200, "prices": {}, "quotes": []}
+    wavespeed._quotes.clear()
     app = web.Application()
+
+    async def price(request):
+        # documented POST /api/v3/model/price; unknown models answer 400 (code 4005) so the catalog price is used
+        body = await request.json()
+        state["quotes"].append(body)
+        p = state["prices"].get(body.get("model_id"))
+        if p is None:
+            return web.json_response({"code": 4005, "message": "model not found"}, status=400)
+        p = p(body.get("inputs") or {}) if callable(p) else p
+        return web.json_response({"code": 200, "message": "success", "data": {"model_id": body["model_id"], "unit_price": p, "price": p, "discounted_price": p, "discount_rate": 1, "currency": "USD"}})
 
     async def models(request):
         state["auth"].add(request.headers.get("Authorization"))
@@ -99,6 +110,7 @@ async def ws(monkeypatch, fresh_user_dir):
     app.router.add_get("/api/v3/models", models)
     app.router.add_post("/api/v3/media/upload/binary", upload)
     app.router.add_get("/api/v3/predictions/{id}/result", result)
+    app.router.add_post("/api/v3/model/price", price)
     app.router.add_post("/api/v3/{model:.+}", submit)
     app.router.add_get("/cdn/out.png", cdn)
     server = TestServer(app)
@@ -208,7 +220,7 @@ async def test_missing_key(ws, monkeypatch):
     monkeypatch.delenv("WAVESPEED_API_KEY")
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
-    assert "WAVESPEED_API_KEY" in str(e.value)
+    assert "WAVESPEED_API_KEY" in str(e.value) and "Settings" in str(e.value)
 
 
 async def test_app_concurrency_limit(ws, monkeypatch):
@@ -662,3 +674,55 @@ async def test_custom_workflow_check_route_and_tool(ws):
     finally:
         await client.close()
     assert set(canvas.SPECS["custom_workflow"]["inputSchema"]["properties"]["action"]["enum"]) == {"rules", "list", "check", "install", "assign"}
+
+
+async def test_estimate_uses_documented_price_endpoint_and_caches(ws):
+    model = "wavespeed-ai/minimax-h3/text-to-video"
+    ws["prices"][model] = lambda inputs: 0.1 * inputs.get("duration", 1)
+    job = {"feature": "text_to_video", "prompt": "waves", "duration": 5, "resolution": "768p", "ratio": "16:9", "width": 9, "image": "x"}
+    est = await wavespeed.estimate(job)
+    assert est["price"] == pytest.approx(0.5) and est["source"] == "quote" and est["confirm"] is True and est["confirm_usd"] == 0.5
+    assert ws["quotes"][0] == {"model_id": model, "inputs": {"duration": 5, "resolution": "768p", "aspect_ratio": "16:9"}}
+    await wavespeed.estimate(job)
+    assert len(ws["quotes"]) == 1  # cached for 5 minutes
+    wavespeed._quotes.update({k: (v[0], v[1] - 301) for k, v in wavespeed._quotes.items()})
+    await wavespeed.estimate(job)
+    assert len(ws["quotes"]) == 2
+
+
+async def test_estimate_falls_back_to_catalog_price(ws):
+    est = await wavespeed.estimate({"feature": "music", "model": "elevenlabs/music-v2", "prompt": "x"})
+    assert est == {"price": 0.75, "currency": "USD", "source": "catalog", "confirm_usd": 0.5, "confirm": True}
+
+
+async def test_storyboard_estimate_is_the_total(ws):
+    ws["prices"]["wavespeed-ai/minimax-h3/text-to-video"] = 0.2
+    ws["prices"]["wavespeed-ai/minimax-h3/image-to-video"] = 0.15
+    est = await wavespeed.estimate({"feature": "text_to_video", "scenes": [{"prompt": "a"}, {"prompt": "b"}, {"prompt": "c"}]})
+    assert est["price"] == pytest.approx(0.5) and est["confirm"] is True
+
+
+async def test_confirm_threshold_setting(ws):
+    import server
+    app = web.Application()
+    app.router.add_routes(server.PromptServer.instance.routes)
+    client = TestClient(TestServer(app))
+    await client.start_server()
+    try:
+        assert (await (await client.get("/comfyart/wavespeed/confirm")).json()) == {"confirm_usd": 0.5}
+        for bad in (-1, "1", True, None, 1e9):
+            assert (await client.put("/comfyart/wavespeed/confirm", json={"confirm_usd": bad})).status == 400
+        assert (await client.put("/comfyart/wavespeed/confirm", json={"confirm_usd": 1})).status == 200
+        assert wavespeed.confirm_usd() == 1.0
+        job = {"feature": "music", "model": "elevenlabs/music-v2", "prompt": "epic", "duration": 30}
+        await wavespeed.submit(job)  # $0.75 is under the new $1 threshold
+        assert len(ws["submits"]) == 1
+        await client.put("/comfyart/wavespeed/confirm", json={"confirm_usd": 0})
+        res = await client.post("/comfyart/wavespeed/estimate", json={"inputs": {"feature": "text_to_speech", "text": "hi"}})
+        assert (await res.json())["confirm"] is True  # 0 = always confirm
+        with pytest.raises(wavespeed.WaveSpeedError) as e:
+            await wavespeed.submit({"feature": "text_to_speech", "text": "hi"})
+        assert e.value.status == 409
+        assert (await client.post("/comfyart/wavespeed/estimate", json={"inputs": 3})).status == 400
+    finally:
+        await client.close()

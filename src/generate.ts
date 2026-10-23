@@ -159,6 +159,31 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')
 }
 
+/** The price-relevant part of a generator's cloud job, without uploading any media (for the cost estimate). */
+export function estimateInputsOf(shape: GeneratorShape): Record<string, unknown> | null {
+  const { ratio, workflow, duration } = shape.props
+  const refs = refsOf(shape)
+  if (isVideo(workflow)) {
+    if (!isCloudModel(workflow)) return null
+    const base = { ratio, duration, resolution: shape.props.resolution || '768p' }
+    const scenes = scenesOf(shape).filter((sc) => sc.prompt.trim())
+    if (scenes.length) {
+      const feature = refs[0] ? 'image_to_video' : 'text_to_video'
+      return { ...base, feature, model: modelIn(feature, workflow), image: refs[0] ? 'ref' : undefined, scenes: scenes.map((sc) => ({ prompt: sc.prompt, duration: sc.duration })) }
+    }
+    const mode = videoModeOf(shape)
+    if (mode === 'refs' && refs.length) return { ...base, feature: 'reference_to_video' }
+    if (mode === 'motion' && refs[0] && motionOf(shape)) return { ...base, feature: 'motion_control' }
+    if (mode === 'lipsync' && refs[0] && speechOf(shape)) return { ...base, feature: 'lip_sync' }
+    if (refs.length || lastFrameOf(shape)) return { ...base, feature: 'image_to_video', model: modelIn('image_to_video', workflow) }
+    return { ...base, feature: 'text_to_video', model: modelIn('text_to_video', workflow) }
+  }
+  const model = modelOf(workflow) ?? agentModels(false)[0]
+  if (!model || !isCloudModel(model.id)) return null
+  const [width, height] = targetSize(shape.props)
+  return refs.length || baseOf(shape) ? { feature: 'image_edit', width, height } : { feature: 'text_to_image', model: model.id, width, height }
+}
+
 export function generate(editor: Editor, shape: GeneratorShape, onError: ErrorSink) {
   const kind = isVideo(shape.props.workflow) ? 'video' : 'image'
   const name = shape.props.prompt || scenesOf(shape)[0]?.prompt || ''
