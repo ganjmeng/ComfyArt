@@ -1,40 +1,58 @@
+// #202 LoRA on WaveSpeed: the user pastes a HuggingFace or Civitai URL plus a weight; picks go in the model's `loras`
+// field ([{path, scale}], scale = weight / 100) and are priced with it. Saved URLs are reused across cards and projects.
 import { atom } from 'tldraw'
 
-import { api, readUserJson, writeUserJson } from './comfy'
+import { readUserJson, writeUserJson } from './comfy'
+import type { ModelDef } from './models'
 
-export interface LoraEntry { name: string; family: string | null }
+/** A LoRA on a generator card: `name` is the URL, `strength` the weight in percent (100 = scale 1). */
 export interface LoraPick { name: string; strength: number }
 
 export const DEFAULT_LORA_STRENGTH = 100
+export const MAX_LORA_STRENGTH = 200
 
-const FAVORITES = 'comfyart/lora-favorites.json'
-const ARCHITECTURES: [RegExp, string][] = [[/flux[-_.]?3/i, 'flux3-klein'], [/flux[-_.]?2[-_.]?klein/i, 'flux2-klein'], [/z[-_.]?image/i, 'z-image'], [/qwen[-_.]?image[-_.]?2(?![0-9])/i, 'qwen-image-2.1'], [/qwen[-_.]?image/i, 'qwen-image']]
-const NAMES: [RegExp, string][] = [[/edit/i, 'other'], [/qwen[-_ ]?image[-_ ]?2\.1/i, 'qwen-image-2.1'], [/z[-_ ]?image/i, 'z-image'], [/flux[-_ ]?3/i, 'flux3-klein'], [/flux[-_ ]?2[-_ ]?klein|klein/i, 'flux2-klein'], [/qwen/i, 'qwen-image']]
+const SAVED = 'comfyart/lora-saved.json'
 
-export const lorasAtom = atom<LoraEntry[] | null>('loras', null)
-export const loraFavoritesAtom = atom<string[]>('lora favorites', [])
+/** Saved LoRAs (URL + last weight), newest first; null until loaded. */
+export const savedLorasAtom = atom<LoraPick[] | null>('saved loras', null)
 
-async function familyOf(name: string): Promise<string | null> {
-  const res = await api(`/view_metadata/loras?filename=${encodeURIComponent(name)}`)
-  const meta: Record<string, string> = res.ok ? await res.json() : {}
-  const arch = `${meta['modelspec.architecture'] ?? ''} ${meta.ss_base_model_version ?? ''}`.trim()
-  if (arch) return ARCHITECTURES.find(([re]) => re.test(arch))?.[1] ?? 'other'
-  return NAMES.find(([re]) => re.test(name))?.[1] ?? null
+const HF = /^https:\/\/(?:huggingface\.co|hf\.co)\/[\w.-]+\/[\w.-]+\/(?:resolve|blob)\/[^\s?#]+\.safetensors(?:\?[^\s#]*)?$/
+const CIVITAI = /^https:\/\/civitai\.com\/(?:api\/download\/models\/\d+(?:\?[^\s#]*)?|models\/\d+(?:\/[\w.-]*)?\?(?:[^\s#]*&)?modelVersionId=(\d+)[^\s#]*)$/
+
+/** The downloadable URL for a HuggingFace LoRA file or Civitai link, or null (same rule as api/wavespeed.py lora_url). */
+export function loraUrl(url: string): string | null {
+  const u = url.trim()
+  if (HF.test(u)) return u.replace('/blob/', '/resolve/')
+  const m = CIVITAI.exec(u)
+  if (m) return m[1] ? `https://civitai.com/api/download/models/${m[1]}` : u
+  return null
 }
 
-export async function loadLoras() {
-  if (lorasAtom.get()) return
-  const res = await api('/models/loras')
-  const names: string[] = res.ok ? await res.json() : []
-  loraFavoritesAtom.set(await readUserJson<string[]>(FAVORITES, []))
-  lorasAtom.set(await Promise.all(names.map(async (name) => ({ name, family: await familyOf(name) }))))
+/** True when the model's WaveSpeed schema has a `loras` field. */
+export const supportsLora = (model: ModelDef | null | undefined) => !!model?.inputs?.includes('loras')
+
+export async function loadSavedLoras() {
+  if (savedLorasAtom.get()) return
+  const list = await readUserJson<LoraPick[]>(SAVED, [])
+  savedLorasAtom.set(Array.isArray(list) ? list.filter((l) => l && typeof l.name === 'string' && loraUrl(l.name)) : [])
 }
 
-export async function toggleFavorite(name: string) {
-  const list = loraFavoritesAtom.get()
-  const next = list.includes(name) ? list.filter((n) => n !== name) : [...list, name]
-  loraFavoritesAtom.set(next)
-  await writeUserJson(FAVORITES, next)
+/** Remember a LoRA (or its new weight) for reuse. */
+export async function saveLora(pick: LoraPick) {
+  const next = [pick, ...(savedLorasAtom.get() ?? []).filter((l) => l.name !== pick.name)]
+  savedLorasAtom.set(next)
+  await writeUserJson(SAVED, next)
 }
 
-export const loraLabel = (name: string) => name.split(/[\\/]/).pop()!.replace(/\.safetensors$/, '')
+export async function forgetLora(name: string) {
+  const next = (savedLorasAtom.get() ?? []).filter((l) => l.name !== name)
+  savedLorasAtom.set(next)
+  await writeUserJson(SAVED, next)
+}
+
+/** Short label: the file name without its extension, or 'Civitai #id'. */
+export function loraLabel(name: string) {
+  const civitai = /civitai\.com\/api\/download\/models\/(\d+)/.exec(name)
+  if (civitai) return `Civitai #${civitai[1]}`
+  return decodeURIComponent(name.split('?')[0].split(/[\\/]/).pop()!).replace(/\.safetensors$/, '')
+}

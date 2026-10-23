@@ -1,38 +1,42 @@
 import { useEffect, useState } from 'react'
 import { useValue } from 'tldraw'
 
-import { lorasOf, negativeOf, seedOf } from '../generate'
+import { loraSupported, lorasOf, negativeOf, seedOf } from '../generate'
 import { randomSeed } from '../workflows'
 import { DEFAULT_LORA_STRENGTH, loadLoras, loraFavoritesAtom, loraLabel, lorasAtom, toggleFavorite } from '../loras'
 import { hasNegative, type ModelDef } from '../models'
+import { DEFAULT_LORA_STRENGTH, forgetLora, loadSavedLoras, loraLabel, loraUrl, MAX_LORA_STRENGTH, saveLora, savedLorasAtom, type LoraPick } from '../loras'
+import type { ModelDef } from '../models'
 import type { GeneratorShape } from '../shapes/GeneratorShape'
 import { t } from '../i18n'
 import { Icons } from './icons'
 import { Popover } from './Popover'
 
-type Tab = 'model' | 'favorites' | 'all'
-
 export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape; model: ModelDef; setMeta: (patch: Record<string, unknown>) => void }) {
   const [open, setOpen] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const [tab, setTab] = useState<Tab>('model')
-  const [query, setQuery] = useState('')
-  const all = useValue(lorasAtom)
-  const favorites = useValue(loraFavoritesAtom)
-  const hasLora = model.lora !== undefined
-  const current = tab === 'model' && !model.lora ? 'all' : tab
-  useEffect(() => { if (open && hasLora) void loadLoras() }, [open, hasLora])
+  const [url, setUrl] = useState('')
+  const [urlError, setUrlError] = useState('')
+  const saved = useValue(savedLorasAtom)
+  // #202: LoRA goes in the WaveSpeed model's `loras` field; a model without it greys the panel out (never hidden)
+  const hasLora = loraSupported(shape)
+  useEffect(() => { if (open) void loadSavedLoras() }, [open])
 
   const seed = seedOf(shape)
   const showNegative = hasNegative(model)
   const negative = showNegative ? negativeOf(shape) : ''
   const loras = lorasOf(shape)
   const count = (seed != null ? 1 : 0) + (negative ? 1 : 0) + (hasLora ? loras.length : 0)
-  const needle = query.trim().toLowerCase()
-  const listed = (all ?? [])
-    .filter((l) => (current === 'model' ? l.family === model.lora : tab === 'favorites' ? favorites.includes(l.name) : true))
-    .filter((l) => !needle || l.name.toLowerCase().includes(needle))
-    .filter((l) => !loras.some((p) => p.name === l.name))
+  const addLora = (pick: LoraPick) => {
+    if (!loras.some((p) => p.name === pick.name)) setMeta({ loras: [...loras, pick] })
+    void saveLora(pick)
+  }
+  const addUrl = () => {
+    const ok = loraUrl(url)
+    if (!ok) return setUrlError(t('wsErr.loraUrl'))
+    setUrlError('')
+    setUrl('')
+    addLora({ name: ok, strength: DEFAULT_LORA_STRENGTH })
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen} side="top" trigger={({ open: o, toggle }) => (
@@ -57,45 +61,38 @@ export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape;
             <textarea className="ca-adv__negative" value={negative} placeholder={t('genAdvanced.negativeHint')} onChange={(e) => setMeta({ negative: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />
           </>
         )}
-        {hasLora && (
-          <>
-            <div className="ca-gen__label">LoRA</div>
-            {loras.map((l) => (
-              <div key={l.name} className="ca-adv__lora">
-                <span className="ca-adv__name" title={l.name}>{loraLabel(l.name)}</span>
-                <input type="range" min={0} max={200} value={l.strength} onChange={(e) => setMeta({ loras: loras.map((x) => (x.name === l.name ? { ...x, strength: Number(e.target.value) } : x)) })} />
+        <div className="ca-gen__label">LoRA</div>
+        {!hasLora && <div className="ca-chat__hint" data-testid="lora-unsupported">{t('genAdvanced.loraUnsupported')}</div>}
+        {loras.map((l) => (
+          <div key={l.name} className="ca-adv__lora">
+            <span className="ca-adv__name" title={l.name}>{loraLabel(l.name)}</span>
+            <input type="range" min={0} max={MAX_LORA_STRENGTH} value={l.strength} disabled={!hasLora} title={t('genAdvanced.loraWeight')}
+              onChange={(e) => setMeta({ loras: loras.map((x) => (x.name === l.name ? { ...x, strength: Number(e.target.value) } : x)) })}
+              onPointerUp={() => void saveLora(l)} />
+            <span className="ca-panel__val">{l.strength}</span>
+            <button type="button" className="ca-panel__icon" title={t('common.remove')} onClick={() => setMeta({ loras: loras.filter((x) => x.name !== l.name) })}>{Icons.close}</button>
+          </div>
+        ))}
+        <div className="ca-style__row ca-adv__lora">
+          <input className="ca-assets__search" value={url} disabled={!hasLora} placeholder={t('genAdvanced.loraUrlHint')} data-testid="lora-url"
+            onChange={(e) => { setUrl(e.target.value); setUrlError('') }}
+            onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') addUrl() }} />
+          <button type="button" className="ca-panel__icon" title={t('genAdvanced.addLora')} disabled={!hasLora || !url.trim()} onClick={addUrl}>{Icons.plus}</button>
+        </div>
+        {urlError && <div className="ca-landing__error" role="alert" onClick={() => setUrlError('')}>{urlError}</div>}
+        <div className="ca-gen__label">{t('genAdvanced.savedLoras')}</div>
+        <div className="ca-adv__list">
+          {saved !== null && !saved.length && <div className="ca-compose__empty">{t('genAdvanced.noSavedLoras')}</div>}
+          {(saved ?? []).map((l) => (
+            <div key={l.name} className="ca-adv__row">
+              <button type="button" className="ca-menu__item ca-adv__pick" title={l.name} disabled={!hasLora || loras.some((p) => p.name === l.name)} onClick={() => addLora(l)}>
+                <span className="ca-menu__grow">{loraLabel(l.name)}</span>
                 <span className="ca-panel__val">{l.strength}</span>
-                <button type="button" className="ca-panel__icon" title={t('common.remove')} onClick={() => setMeta({ loras: loras.filter((x) => x.name !== l.name) })}>{Icons.close}</button>
-              </div>
-            ))}
-            {!adding && (
-              <button type="button" className="ca-menu__item" onClick={() => setAdding(true)}><span className="ca-icon">{Icons.plus}</span><span className="ca-menu__grow">{t('genAdvanced.addLora')}</span></button>
-            )}
-            {adding && (
-              <div className="ca-adv__picker">
-                <div className="ca-gen__chips">
-                  {([['model', t('genAdvanced.forThisModel')], ['favorites', t('genAdvanced.favorites')], ['all', t('common.all')]] as [Tab, string][]).filter(([k]) => k !== 'model' || model.lora).map(([k, label]) => (
-                    <button key={k} type="button" className="ca-gen__chip" data-on={current === k || undefined} onClick={() => setTab(k)}>{label}</button>
-                  ))}
-                </div>
-                <input className="ca-assets__search" value={query} placeholder={t('assetPicker.search')} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
-                <div className="ca-adv__list">
-                  {all === null && <div className="ca-compose__empty">{t('assetPicker.loading')}</div>}
-                  {all !== null && !listed.length && <div className="ca-compose__empty">{current === 'model' ? t('genAdvanced.noLorasForModel') : t('genAdvanced.noLoras')}</div>}
-                  {listed.map((l) => (
-                    <div key={l.name} className="ca-adv__row">
-                      <button type="button" className="ca-adv__star" data-on={favorites.includes(l.name) || undefined} title={t('genAdvanced.favorite')} onClick={() => void toggleFavorite(l.name)}>★</button>
-                      <button type="button" className="ca-menu__item ca-adv__pick" title={l.name} onClick={() => { setMeta({ loras: [...loras, { name: l.name, strength: DEFAULT_LORA_STRENGTH }] }); setAdding(false) }}>
-                        <span className="ca-menu__grow">{loraLabel(l.name)}</span>
-                        {model.lora && l.family !== model.lora && <span className="ca-model__tag">{l.family ? t('genAdvanced.otherModel') : t('genAdvanced.unknownModel')}</span>}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+              </button>
+              <button type="button" className="ca-panel__icon" title={t('genAdvanced.forget')} onClick={() => void forgetLora(l.name)}>{Icons.close}</button>
+            </div>
+          ))}
+        </div>
       </div>
     </Popover>
   )

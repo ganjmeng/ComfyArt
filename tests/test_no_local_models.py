@@ -23,6 +23,13 @@ PATTERNS = [
 ALLOWLIST = {
     # LoRA picker strips the extension from cloud LoRA names for display only.
     ("src/loras.ts", "replace(/\\.safetensors$/, '')"): "display label, no local load",
+    # #202: cloud LoRA links (HuggingFace file URL / Civitai) sent to WaveSpeed `loras`; nothing loads locally.
+    ("api/wavespeed.py", "_LORA_HF = re.compile("): "cloud LoRA URL check",
+    ("src/loras.ts", "const HF = /"): "cloud LoRA URL check",
+    ("src/locales/zh.json", '"genAdvanced.loraUrlHint"'): "UI text",
+    ("src/locales/en.json", '"genAdvanced.loraUrlHint"'): "UI text",
+    ("src/locales/zh.json", '"wsErr.loraUrl"'): "UI text",
+    ("src/locales/en.json", '"wsErr.loraUrl"'): "UI text",
     # Toolbar label kept from upstream; routes to cloud tripo3d multiview model.
     ("src/ui/ImageToolbar.tsx", 'label="Pixal3D"'): "UI label, cloud model",
     # Mapping metadata naming the upstream local model this cloud id replaces.

@@ -2,7 +2,7 @@
 import { t } from './i18n'
 
 export const TOP_UP_URL = 'https://wavespeed.ai/top-up'
-const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout'] as const
+const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany'] as const
 export type WsErrorKind = typeof KINDS[number]
 
 /** The readable message for a backend error kind, or null when the error is not a tagged WaveSpeed failure. */
