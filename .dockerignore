@@ -1,0 +1,9 @@
+.git
+node_modules
+src
+tests
+docs
+docs-site
+timeline/node_modules
+**/__pycache__
+*.pyc
