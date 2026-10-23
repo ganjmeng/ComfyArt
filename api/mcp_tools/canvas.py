@@ -1,5 +1,5 @@
 from ..mcp_commands import submit_command
-from ..wavespeed import grouped_models, load_config
+from ..wavespeed import compact_models, grouped_models, load_config
 from ._context import BOT_CHAT_ID, PROJECT
 from .bot_tools import maybe_ask_run_approval
 
@@ -58,7 +58,9 @@ SPECS: dict[str, dict] = {
     "list_models": _tool(
         "WaveSpeed cloud models grouped by feature (text_to_image, image_edit, upscale_image, ...): ids, "
         "price in USD per run, description, accepted inputs and the default per feature. Pass an id as "
-        "model to the matching tool, or omit model to use the default.", {}),
+        "model to the matching tool, or omit model to use the default. type: image, image_tools, video, audio, 3d or a "
+        "feature name for that group's models with prices and inputs; without type only an index of ids.",
+        {"type": {"type": "string"}}),
     "brand_kits": _tool(
         "The user's brand kits and saved assets (characters, products): names, descriptions, colors "
         "with roles, fonts, logo and reference image URLs, and which kit this project is linked to.", {}),
@@ -279,7 +281,12 @@ for _name in load_config()["tool_features"]:
 
 
 async def _list_models(args: dict) -> dict:
-    return {"features": await grouped_models(), "tool_features": load_config()["tool_features"]}
+    kind = str(args.get("type") or "").strip().lower() or None
+    tool_features = load_config()["tool_features"]
+    out = {"features": compact_models(await grouped_models(), kind, tool_features)}
+    if not kind:
+        out["tool_features"] = tool_features
+    return out
 
 
 TOOLS: dict[str, dict] = {

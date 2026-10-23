@@ -76,7 +76,8 @@ function startGenerator(editor: Editor, video: boolean, args: Args, onError: Err
   const models = agentModels(video)
   const wantsRefs = !video && Array.isArray(args.refs) && args.refs.length > 0
   const model = args.model ? models.find((m) => m.id === args.model) : (wantsRefs && models.find((m) => m.refs)) || models[0]
-  if (!model) throw new Error(`unknown model ${JSON.stringify(args.model)} — see list_models`)
+  if (!models.length) throw new Error(`no ${video ? 'video' : 'image'} models loaded yet (WaveSpeed model list unavailable); try again shortly`)
+  if (!model) throw new Error(`unknown model ${JSON.stringify(args.model)}; valid ${video ? 'video' : 'image'} ids: ${models.map((m) => m.id).join(', ')} (default ${models[0].id})`)
   if (wantsRefs && !model.refs) throw new Error(`${model.label} does not accept refs; use a model with accepts_refs from list_models, or drop refs`)
   const ratios = video ? VIDEO_RATIOS : RATIOS
   if (args.ratio && !ratios.includes(args.ratio)) throw new Error(`ratio must be one of ${ratios.join(', ')}`)

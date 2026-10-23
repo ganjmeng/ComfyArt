@@ -1,0 +1,3052 @@
+{
+"alibaba/qwen-image-3.0/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_prompt_expansion": {},
+"images": {
+"maxItems": 3
+},
+"prompt": {},
+"resolution": {
+"enum": [
+"1k",
+"2k"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.03,
+"description": "Qwen Image 3.0 edit model with high-quality image editing and advanced instruction understanding. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "alibaba/qwen-image-3.0/edit",
+"name": "alibaba/qwen-image-3.0/edit"
+},
+"alibaba/qwen-image-3.0/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_prompt_expansion": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"1k",
+"2k"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.03,
+"description": "Qwen Image 3.0 text-to-image model with high-quality image generation and advanced prompt understanding. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "alibaba/qwen-image-3.0/text-to-image",
+"name": "alibaba/qwen-image-3.0/text-to-image"
+},
+"alibaba/wan-3.0/image-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"1:1",
+"4:3",
+"3:4"
+]
+},
+"duration": {},
+"enable_prompt_expansion": {},
+"generate_audio": {},
+"image": {},
+"last_image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.1,
+"description": "Alibaba WAN 3.0 Image-to-Video converts a first-frame image into a video with optional last-frame guidance, flexible 2-30 second duration, resolution, aspect ratio, audio, and deep-thinking controls. Ready-to-use REST inference API, best pe",
+"model_id": "alibaba/wan-3.0/image-to-video",
+"name": "alibaba/wan-3.0/image-to-video"
+},
+"alibaba/wan-3.0/reference-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"1:1",
+"4:3",
+"3:4"
+]
+},
+"duration": {},
+"enable_prompt_expansion": {},
+"generate_audio": {},
+"prompt": {},
+"reference_audios": {
+"maxItems": 5
+},
+"reference_images": {
+"maxItems": 10
+},
+"reference_videos": {
+"maxItems": 5
+},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.3,
+"description": "Alibaba WAN 3.0 Reference-to-Video combines reference images, videos, and audio with prompts to create coherent videos with flexible 2-30 second duration, resolution, aspect ratio, audio, and deep-thinking controls. Ready-to-use REST infere",
+"model_id": "alibaba/wan-3.0/reference-to-video",
+"name": "alibaba/wan-3.0/reference-to-video"
+},
+"alibaba/wan-3.0/text-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"1:1",
+"4:3",
+"3:4"
+]
+},
+"duration": {},
+"enable_prompt_expansion": {},
+"generate_audio": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.1,
+"description": "Alibaba WAN 3.0 Text-to-Video generates videos from text prompts with flexible 2-30 second duration, resolution, aspect ratio, audio, and deep-thinking controls. Ready-to-use REST inference API, best performance, no cold starts, affordable ",
+"model_id": "alibaba/wan-3.0/text-to-video",
+"name": "alibaba/wan-3.0/text-to-video"
+},
+"alibaba/wan-3.0/video-extend": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {},
+"enable_prompt_expansion": {},
+"generate_audio": {},
+"last_image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p"
+]
+},
+"seed": {},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.1,
+"description": "Wan 3.0 Video Extend continues a video from its final frame and appends a newly generated 2-30 second segment. Inputs longer than 120 seconds retain their last 120 seconds. Supports 480p, 720p, and 1080p output.",
+"model_id": "alibaba/wan-3.0/video-extend",
+"name": "alibaba/wan-3.0/video-extend"
+},
+"black-forest-labs/flux-3/image-edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"21:9",
+"2:1",
+"16:9",
+"3:2",
+"7:5",
+"4:3",
+"5:4",
+"1:1",
+"4:5",
+"3:4",
+"5:7",
+"2:3",
+"9:16",
+"1:2"
+]
+},
+"enable_prompt_expansion": {},
+"images": {
+"maxItems": 10
+},
+"output_format": {
+"enum": [
+"jpeg",
+"png"
+]
+},
+"prompt": {},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.05,
+"description": "Edit images with natural-language instructions and combine up to ten input images. Choose 1K, 2K, or 4K output.",
+"model_id": "black-forest-labs/flux-3/image-edit",
+"name": "black-forest-labs/flux-3/image-edit"
+},
+"black-forest-labs/flux-3/image-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"21:9",
+"2:1",
+"16:9",
+"4:3",
+"1:1",
+"3:4",
+"9:16"
+]
+},
+"duration": {},
+"generate_audio": {},
+"image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"720p",
+"1080p"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.17,
+"description": "Text-to-image generation with FLUX.3 is Black Forest Labs' frontier video model. This endpoint generates video directly from a text prompt, translating a written description into motion, composition, and scene.\n.",
+"model_id": "black-forest-labs/flux-3/image-to-video",
+"name": "black-forest-labs/flux-3/image-to-video"
+},
+"black-forest-labs/flux-3/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"21:9",
+"2:1",
+"16:9",
+"3:2",
+"7:5",
+"4:3",
+"5:4",
+"1:1",
+"4:5",
+"3:4",
+"5:7",
+"2:3",
+"9:16",
+"1:2"
+]
+},
+"enable_prompt_expansion": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png"
+]
+},
+"prompt": {},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.05,
+"description": "Generate images from text with detailed composition, typography, and 1K, 2K, or 4K output.",
+"model_id": "black-forest-labs/flux-3/text-to-image",
+"name": "black-forest-labs/flux-3/text-to-image"
+},
+"black-forest-labs/flux-3/text-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"21:9",
+"2:1",
+"16:9",
+"4:3",
+"1:1",
+"3:4",
+"9:16"
+]
+},
+"duration": {},
+"generate_audio": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"720p",
+"1080p"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.17,
+"description": "Text-to-image generation with FLUX.3 is Black Forest Labs' frontier video model. This endpoint generates video directly from a text prompt, translating a written description into motion, composition, and scene.\n.",
+"model_id": "black-forest-labs/flux-3/text-to-video",
+"name": "black-forest-labs/flux-3/text-to-video"
+},
+"bria/eraser": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"image": {},
+"mask_image": {}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "Bria Eraser delivers SOTA object removal that preserves image quality. Trained on licensed data for safe commercial use; Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "bria/eraser",
+"name": "bria/eraser"
+},
+"bria/expand": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"image": {},
+"negative_prompt": {},
+"preserve_alpha": {},
+"prompt": {},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "Bria Expand grows images beyond borders by generating new pixels to fit any aspect ratio; trained on licensed data for commercial use. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "bria/expand",
+"name": "bria/expand"
+},
+"bria/fibo/video-background-remover": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"background_color": {
+"enum": [
+"Transparent",
+"Black",
+"White",
+"Gray",
+"Red",
+"Green",
+"Blue",
+"Yellow",
+"Cyan",
+"Magenta",
+"Orange"
+]
+},
+"output_container_and_codec": {
+"enum": [
+"webm_vp9",
+"mp4_h264",
+"mp4_h265",
+"mov_h265",
+"mov_proresks",
+"mkv_h264",
+"mkv_h265",
+"mkv_vp9",
+"gif"
+]
+},
+"preserve_audio": {},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.05,
+"description": "Bria Video Background Remover removes the background from videos with support for transparency and custom background colors. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "bria/fibo/video-background-remover",
+"name": "bria/fibo/video-background-remover"
+},
+"bria/remove-background": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"image": {}
+}
+}
+}
+]
+},
+"base_price": 0.018,
+"description": "Bria remove-background is a powerful AI image background removal API that produces clean, precise cutouts for photos and graphics. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "bria/remove-background",
+"name": "bria/remove-background"
+},
+"bytedance/seed-speech-tts-2.0": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"language": {
+"enum": [
+"zh",
+"en",
+"ja",
+"es-mx",
+"id",
+"pt-br",
+"ko",
+"it",
+"de",
+"fr"
+]
+},
+"output_format": {
+"enum": [
+"mp3",
+"opus"
+]
+},
+"pitch": {},
+"sample_rate": {
+"enum": [
+8000,
+16000,
+22050,
+24000,
+32000,
+44100,
+48000
+]
+},
+"speed": {},
+"text": {},
+"voice": {
+"enum": [
+"vivi_mixed_en_zh_ja_es_id",
+"mindy_en_es_id_pt_zh",
+"stokie_en",
+"dacey_en",
+"tim_en",
+"kian_en_zh",
+"cedric_en_zh",
+"sophie_en_zh",
+"jean_en_zh",
+"magnus_en_zh",
+"mabel_en_zh",
+"nadia_en_zh",
+"opal_en_zh",
+"pearl_en_zh",
+"quentin_en_zh",
+"vienna_mixed_en_zh",
+"alina_mixed_en_zh",
+"corinne_mixed_en_zh",
+"esther_mixed_en_zh",
+"freya_mixed_en_zh",
+"gigi_mixed_en_zh",
+"holly_mixed_en_zh",
+"lyla_mixed_en_zh",
+"daisy_mixed_en_zh",
+"tracy_es_zh",
+"jess_ja_es_id_pt_en_zh",
+"pinky_es_ko_mixed_en_zh",
+"sweety_ja_es",
+"sandy_es_mixed_en_zh",
+"sven_de",
+"minimi_ja",
+"usseau_fr",
+"felipe_es",
+"han_id",
+"martins_pt",
+"enzo_it",
+"shane_ko",
+"bonnie_zh",
+"felix_zh",
+"celeste_zh",
+"monkey_king_zh"
+]
+},
+"voice_instruction": {},
+"volume": {}
+}
+}
+}
+]
+},
+"base_price": 0.06,
+"description": "ByteDance Seed Speech TTS 2.0 converts text into natural speech with multilingual voices, delivery controls, and MP3 or Opus output.",
+"model_id": "bytedance/seed-speech-tts-2.0",
+"name": "bytedance/seed-speech-tts-2.0"
+},
+"bytedance/seedance-2.0-fast/video-extend": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {},
+"enable_web_search": {},
+"generate_audio": {},
+"last_image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p",
+"4k"
+]
+},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.2,
+"description": "Seedance 2.0 Fast (Video-Extend) extends an input video with a new cinematic continuation generated from its last frame and a natural-language prompt — at the faster, cheaper Seedance 2.0 Fast tier.",
+"model_id": "bytedance/seedance-2.0-fast/video-extend",
+"name": "bytedance/seedance-2.0-fast/video-extend"
+},
+"bytedance/seedance-2.5/image-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {},
+"generate_audio": {},
+"image": {},
+"last_image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.36,
+"description": "Seedance 2.5 (Image-to-Video) generates Hollywood-grade cinematic videos from reference images and text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on",
+"model_id": "bytedance/seedance-2.5/image-to-video",
+"name": "bytedance/seedance-2.5/image-to-video"
+},
+"bytedance/seedance-2.5/image-to-video-turbo": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {},
+"generate_audio": {},
+"image": {},
+"last_image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"720p",
+"1080p"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.2,
+"description": "Seedance 2.5 (Image-to-Video Turbo) generates cinematic 720p/1080p videos from reference images and text prompts —a faster, more affordable high-resolution tier with native audio-visual synchronization, director-level control, and exception",
+"model_id": "bytedance/seedance-2.5/image-to-video-turbo",
+"name": "bytedance/seedance-2.5/image-to-video-turbo"
+},
+"bytedance/seedance-2.5/text-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"4:3",
+"3:4",
+"1:1",
+"21:9"
+]
+},
+"duration": {},
+"generate_audio": {},
+"prompt": {},
+"reference_audios": {
+"maxItems": 10
+},
+"reference_images": {
+"maxItems": 30
+},
+"reference_videos": {
+"maxItems": 10
+},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.36,
+"description": "Seedance 2.5 (Text-to-Video) generates Hollywood-grade cinematic videos from text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on ByteDance Seed's unif",
+"model_id": "bytedance/seedance-2.5/text-to-video",
+"name": "bytedance/seedance-2.5/text-to-video"
+},
+"bytedance/seedance-2.5/text-to-video-turbo": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"4:3",
+"3:4",
+"1:1",
+"21:9"
+]
+},
+"duration": {},
+"generate_audio": {},
+"prompt": {},
+"reference_audios": {
+"maxItems": 10
+},
+"reference_images": {
+"maxItems": 30
+},
+"reference_videos": {
+"maxItems": 10
+},
+"resolution": {
+"enum": [
+"720p",
+"1080p"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.2,
+"description": "Seedance 2.5 (Text-to-Video Turbo) generates cinematic videos from text prompts at 720p and 1080p with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability — optimized for turbo o",
+"model_id": "bytedance/seedance-2.5/text-to-video-turbo",
+"name": "bytedance/seedance-2.5/text-to-video-turbo"
+},
+"bytedance/seedream-v5.0-flash/layer-decomposition": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"image": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png"
+]
+},
+"prompt": {},
+"resolution": {
+"enum": [
+"1k",
+"1.5k",
+"2k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.459,
+"description": "Seedream V5.0 Flash Layer Decomposition separates a single image into a base image and transparent image layers, faster and at lower cost than Pro.",
+"model_id": "bytedance/seedream-v5.0-flash/layer-decomposition",
+"name": "bytedance/seedream-v5.0-flash/layer-decomposition"
+},
+"bytedance/seedream-v5.0-pro": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png"
+]
+},
+"prompt": {},
+"prompt_optimization_mode": {
+"enum": [
+"standard",
+"fast"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"1.5k",
+"2k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.045,
+"description": "Seedream 5.0 Pro API Preview is ByteDance's advanced image generation model for text-to-image and reference-image generation.",
+"model_id": "bytedance/seedream-v5.0-pro",
+"name": "bytedance/seedream-v5.0-pro"
+},
+"bytedance/seedream-v5.0-pro/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"images": {
+"maxItems": 10
+},
+"output_format": {
+"enum": [
+"jpeg",
+"png"
+]
+},
+"prompt": {},
+"prompt_optimization_mode": {
+"enum": [
+"standard",
+"fast"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"1.5k",
+"2k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.045,
+"description": "Seedream 5.0 Pro API Preview Edit is ByteDance's advanced image editing model for single-image and multi-reference image generation.",
+"model_id": "bytedance/seedream-v5.0-pro/edit",
+"name": "bytedance/seedream-v5.0-pro/edit"
+},
+"bytedance/seedream-v5.0-pro/layer-decomposition": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"image": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png"
+]
+},
+"prompt": {},
+"prompt_optimization_mode": {
+"enum": [
+"standard",
+"fast"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"1.5k",
+"2k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.75,
+"description": "Seedream V5.0 Pro Layer Decomposition separates a single image into a base image and transparent image layers.",
+"model_id": "bytedance/seedream-v5.0-pro/layer-decomposition",
+"name": "bytedance/seedream-v5.0-pro/layer-decomposition"
+},
+"clarity-ai/pro-upscaler": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"creativity": {},
+"image": {},
+"target_megapixels": {}
+}
+}
+}
+]
+},
+"base_price": 0.03,
+"description": "Clarity Pro Upscaler is a photorealistic image upscaler from Clarity AI with identity preservation, creative detail control, and up to 16x scaling. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "clarity-ai/pro-upscaler",
+"name": "clarity-ai/pro-upscaler"
+},
+"elevenlabs/eleven-v4": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"similarity": {},
+"stability": {},
+"text": {},
+"voice_id": {}
+}
+}
+}
+]
+},
+"base_price": 0.08,
+"description": "Eleven V4 converts text into expressive multilingual speech with voice selection, stability, and similarity controls.",
+"model_id": "elevenlabs/eleven-v4",
+"name": "elevenlabs/eleven-v4"
+},
+"elevenlabs/music-v2": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"force_instrumental": {},
+"music_length_ms": {},
+"output_format": {
+"enum": [
+"mp3_22050_32",
+"mp3_24000_48",
+"mp3_44100_32",
+"mp3_44100_64",
+"mp3_44100_96",
+"mp3_44100_128",
+"mp3_44100_192",
+"mp3_48000_128",
+"mp3_48000_192",
+"mp3_48000_240",
+"mp3_48000_320"
+]
+},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.75,
+"description": "ElevenLabs Music v2 generates songs with vocals or instrumental music from text prompts, with a specified duration and MP3 output.",
+"model_id": "elevenlabs/music-v2",
+"name": "elevenlabs/music-v2"
+},
+"elevenlabs/sound-effects-v2": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {},
+"loop": {},
+"prompt": {},
+"prompt_influence": {}
+}
+}
+}
+]
+},
+"base_price": 0.0022,
+"description": "Generate sound effects and seamlessly looping ambience from text descriptions.",
+"model_id": "elevenlabs/sound-effects-v2",
+"name": "elevenlabs/sound-effects-v2"
+},
+"google/nano-banana-2.1/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"3:2",
+"2:3",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"21:9",
+"1:4",
+"4:1",
+"1:8",
+"8:1"
+]
+},
+"enable_base64_output": {},
+"enable_image_search": {},
+"enable_sync_mode": {},
+"enable_web_search": {},
+"images": {
+"maxItems": 14
+},
+"output_format": {
+"enum": [
+"png",
+"jpeg"
+]
+},
+"prompt": {},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "Google Nano Banana 2.1 Edit is the latest Nano Banana image editing model, with gains in visual design, subject consistency and prompt adherence, up to 14 reference images and 1K to 4K output. Ready-to-use REST inference API, best performan",
+"model_id": "google/nano-banana-2.1/edit",
+"name": "google/nano-banana-2.1/edit"
+},
+"google/nano-banana-2.1/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"3:2",
+"2:3",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"21:9",
+"1:4",
+"4:1",
+"1:8",
+"8:1"
+]
+},
+"enable_base64_output": {},
+"enable_image_search": {},
+"enable_sync_mode": {},
+"enable_web_search": {},
+"output_format": {
+"enum": [
+"png",
+"jpeg"
+]
+},
+"prompt": {},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "Google's Nano Banana 2.1 is the latest Nano Banana text-to-image model, with gains in visual design, subject consistency and prompt adherence, 1K to 4K output and optional web search grounding. Ready-to-use REST inference API, best performa",
+"model_id": "google/nano-banana-2.1/text-to-image",
+"name": "google/nano-banana-2.1/text-to-image"
+},
+"hyper3d/rodin-v2.5/image-to-3d": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"addons": {
+"enum": [
+"HighPack"
+]
+},
+"geometry_file_format": {
+"enum": [
+"glb",
+"usdz",
+"fbx",
+"obj",
+"stl"
+]
+},
+"geometry_instruct_mode": {
+"enum": [
+"faithful",
+"creative"
+]
+},
+"hd_texture": {},
+"images": {
+"maxItems": 5
+},
+"is_micro": {},
+"material": {
+"enum": [
+"PBR",
+"Shaded",
+"All",
+"None"
+]
+},
+"preview_render": {},
+"prompt": {},
+"quality_and_mesh": {
+"enum": [
+"4K Quad",
+"8K Quad",
+"18K Quad",
+"50K Quad",
+"2K Triangle",
+"20K Triangle",
+"150K Triangle",
+"500K Triangle"
+]
+},
+"ta_pose": {},
+"texture_delight": {},
+"texture_mode": {
+"enum": [
+"legacy",
+"extreme-low",
+"low",
+"medium",
+"high"
+]
+},
+"tier": {
+"enum": [
+"Gen-2.5-Extreme-Low",
+"Gen-2.5-Low",
+"Gen-2.5-Medium",
+"Gen-2.5-High",
+"Gen-2.5-Extreme-High"
+]
+},
+"use_original_alpha": {}
+}
+}
+}
+]
+},
+"base_price": 0.48,
+"description": "Hyper3D Rodin v2.5 turns reference images into production-ready 3D assets with clean meshes, UVs, and textures.",
+"model_id": "hyper3d/rodin-v2.5/image-to-3d",
+"name": "hyper3d/rodin-v2.5/image-to-3d"
+},
+"ideogram-ai/ideogram-v4.5": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"4:3",
+"3:4",
+"3:2",
+"2:3",
+"16:9",
+"9:16"
+]
+},
+"enable_prompt_expansion": {},
+"prompt": {},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"2k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.06,
+"description": "Generate images from text with flexible quality, typography, and composition controls.",
+"model_id": "ideogram-ai/ideogram-v4.5",
+"name": "ideogram-ai/ideogram-v4.5"
+},
+"ideogram-ai/ideogram-v4.5/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"edit_precision": {
+"enum": [
+"regular",
+"high"
+]
+},
+"image": {},
+"mask_url": {},
+"prompt": {},
+"quality": {
+"enum": [
+"very_low",
+"low",
+"medium",
+"high"
+]
+},
+"reference_images": {
+"maxItems": 4
+},
+"size": {}
+}
+}
+}
+]
+},
+"base_price": 0.06,
+"description": "Edit images with written instructions, reference images, masks, and precision controls.",
+"model_id": "ideogram-ai/ideogram-v4.5/edit",
+"name": "ideogram-ai/ideogram-v4.5/edit"
+},
+"ideogram-ai/remove-background": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"image": {}
+}
+}
+}
+]
+},
+"base_price": 0.01,
+"description": "Ideogram Remove Background removes the background from an input image and returns a transparent foreground image.",
+"model_id": "ideogram-ai/remove-background",
+"name": "ideogram-ai/remove-background"
+},
+"kwaivgi/kling-text-to-audio": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.035,
+"description": "Kling Text-to-Audio turns text prompts into custom sound effects for videos, games, and multimedia using KlingAI's audio model. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "kwaivgi/kling-text-to-audio",
+"name": "kwaivgi/kling-text-to-audio"
+},
+"kwaivgi/kling-v2.6-std/motion-control": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"character_orientation": {
+"enum": [
+"image",
+"video"
+]
+},
+"image": {},
+"keep_original_sound": {},
+"negative_prompt": {},
+"prompt": {},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.07,
+"description": "Kling 2.6 Standard delivers top-tier video-to-video generation with smooth motion, cinematic visuals, accurate prompt adherence, and native audio for ready-to-share clips. Ready-to-use REST inference API, best performance, no cold starts, a",
+"model_id": "kwaivgi/kling-v2.6-std/motion-control",
+"name": "kwaivgi/kling-v2.6-std/motion-control"
+},
+"minimax/music-2.6": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"bitrate": {
+"enum": [
+60000,
+32000,
+64000,
+128000,
+256000
+]
+},
+"is_instrumental": {},
+"lyrics": {},
+"prompt": {},
+"sample_rate": {
+"enum": [
+16000,
+24000,
+32000,
+44100
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.15,
+"description": "MiniMax Music 2.6 generates complete songs with vocals and instrumentals from text prompts and lyrics.",
+"model_id": "minimax/music-2.6",
+"name": "minimax/music-2.6"
+},
+"minimax/speech-2.8-turbo": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"bitrate": {
+"enum": [
+32000,
+64000,
+128000,
+256000
+]
+},
+"channel": {
+"enum": [
+"1",
+"2"
+]
+},
+"emotion": {
+"enum": [
+"happy",
+"sad",
+"angry",
+"fearful",
+"disgusted",
+"surprised",
+"neutral"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"english_normalization": {},
+"format": {
+"enum": [
+"mp3",
+"wav",
+"pcm",
+"flac"
+]
+},
+"language_boost": {
+"enum": [
+"Chinese",
+"Chinese,Yue",
+"English",
+"Arabic",
+"Russian",
+"Spanish",
+"French",
+"Portuguese",
+"German",
+"Turkish",
+"Dutch",
+"Ukrainian",
+"Vietnamese",
+"Indonesian",
+"Japanese",
+"Italian",
+"Korean",
+"Thai",
+"Polish",
+"Romanian",
+"Greek",
+"Czech",
+"Finnish",
+"Hindi",
+"Bulgarian",
+"Danish",
+"Hebrew",
+"Malay",
+"Persian",
+"Slovak",
+"Swedish",
+"Croatian",
+"Filipino",
+"Hungarian",
+"Norwegian",
+"Slovenian",
+"Catalan",
+"Nynorsk",
+"Tamil",
+"Afrikaans",
+"auto"
+]
+},
+"pitch": {},
+"pronunciation_dict": {
+"maxItems": 100
+},
+"sample_rate": {
+"enum": [
+8000,
+16000,
+22050,
+24000,
+32000,
+44100
+]
+},
+"speed": {},
+"text": {},
+"voice_id": {},
+"volume": {}
+}
+}
+}
+]
+},
+"base_price": 0.06,
+"description": "MiniMax's high-definition text-to-speech model with natural pronunciation and clear articulation.",
+"model_id": "minimax/speech-2.8-turbo",
+"name": "minimax/speech-2.8-turbo"
+},
+"minimax/voice-clone": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"accuracy": {},
+"audio": {},
+"custom_voice_id": {},
+"language_boost": {
+"enum": [
+"Chinese",
+"Chinese,Yue",
+"English",
+"Arabic",
+"Russian",
+"Spanish",
+"French",
+"Portuguese",
+"German",
+"Turkish",
+"Dutch",
+"Ukrainian",
+"Vietnamese",
+"Indonesian",
+"Japanese",
+"Italian",
+"Korean",
+"Thai",
+"Polish",
+"Romanian",
+"Greek",
+"Czech",
+"Finnish",
+"Hindi",
+"auto"
+]
+},
+"model": {
+"enum": [
+"speech-02-hd",
+"speech-02-turbo",
+"speech-2.5-hd-preview",
+"speech-2.5-turbo-preview",
+"speech-2.6-hd",
+"speech-2.6-turbo",
+"speech-2.8-hd",
+"speech-2.8-turbo"
+]
+},
+"need_noise_reduction": {},
+"need_volume_normalization": {},
+"text": {}
+}
+}
+}
+]
+},
+"base_price": 1.6,
+"description": "Minimax Voice Clone creates high-quality voice clones from short reference clips, closely matching tone, accent, and speaking style. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "minimax/voice-clone",
+"name": "minimax/voice-clone"
+},
+"mirelo-ai/sfx-2.0/text-to-audio": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio_bitrate_kbps": {},
+"duration": {},
+"negative_prompt": {},
+"output_format": {
+"enum": [
+"wav",
+"mp3",
+"aac",
+"flac"
+]
+},
+"prompt": {},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.016,
+"description": "Generate sound effects and ambience from text with duration control, negative prompts, and a single audio output.",
+"model_id": "mirelo-ai/sfx-2.0/text-to-audio",
+"name": "mirelo-ai/sfx-2.0/text-to-audio"
+},
+"mureka-ai/mureka-v8/generate-bgm": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"instrumental_id": {},
+"number_of_songs": {},
+"output_format": {
+"enum": [
+"mp3",
+"wav",
+"flac"
+]
+},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.07,
+"description": "mureka ai / mureka v8 / generate bgm via Mureka official API.",
+"model_id": "mureka-ai/mureka-v8/generate-bgm",
+"name": "mureka-ai/mureka-v8/generate-bgm"
+},
+"openai/gpt-image-2.5-flare/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"images": {
+"maxItems": 16
+},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+]
+},
+"prompt": {},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high",
+"xhigh",
+"max"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.039,
+"description": "OpenAI's GPT Image 2.5 Flare Edit edits one or more reference images from natural-language instructions, with five quality tiers up to 4K. Flare is the fast, balanced GPT Image 2.5 tier for everyday generation at low latency. Ready-to-use R",
+"model_id": "openai/gpt-image-2.5-flare/edit",
+"name": "openai/gpt-image-2.5-flare/edit"
+},
+"openai/gpt-image-2.5-flare/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+]
+},
+"prompt": {},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high",
+"xhigh",
+"max"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.024,
+"description": "OpenAI's GPT Image 2.5 Flare Text-to-Image generates high-quality images from natural-language prompts, with five quality tiers up to 4K. Flare is the fast, balanced GPT Image 2.5 tier for everyday generation at low latency. Ready-to-use RE",
+"model_id": "openai/gpt-image-2.5-flare/text-to-image",
+"name": "openai/gpt-image-2.5-flare/text-to-image"
+},
+"recraft-ai/recraft-creative-upscale": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"image": {}
+}
+}
+}
+]
+},
+"base_price": 0.25,
+"description": "Recraft Creative Upscale refines textures and fine details, adding depth and polish to complex elements—not increasing resolution. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "recraft-ai/recraft-creative-upscale",
+"name": "recraft-ai/recraft-creative-upscale"
+},
+"recraft-ai/recraft-v4.1/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"image_size": {
+"enum": [
+"1:1",
+"16:9",
+"9:16",
+"4:3",
+"3:4"
+]
+},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "Recraft V4.1 Text to Image generates high-quality raster images from text prompts.",
+"model_id": "recraft-ai/recraft-v4.1/text-to-image",
+"name": "recraft-ai/recraft-v4.1/text-to-image"
+},
+"tripo3d/h3.1/image-to-3d": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"auto_size": {},
+"face_limit": {},
+"geometry_quality": {
+"enum": [
+"standard",
+"detailed"
+]
+},
+"image": {},
+"model_seed": {},
+"orientation": {
+"enum": [
+"default",
+"align_image"
+]
+},
+"pbr": {},
+"quad": {},
+"texture": {},
+"texture_alignment": {
+"enum": [
+"original_image",
+"geometry"
+]
+},
+"texture_quality": {
+"enum": [
+"standard",
+"detailed"
+]
+},
+"texture_seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.24,
+"description": "Tripo3D H3.1 Image-to-3D converts a single image into high-quality 3D models with textures and PBR materials.",
+"model_id": "tripo3d/h3.1/image-to-3d",
+"name": "tripo3d/h3.1/image-to-3d"
+},
+"tripo3d/h3.1/multiview-to-3d": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"auto_size": {},
+"face_limit": {},
+"geometry_quality": {
+"enum": [
+"standard",
+"detailed"
+]
+},
+"images": {
+"maxItems": 4
+},
+"model_seed": {},
+"orientation": {
+"enum": [
+"default",
+"align_image"
+]
+},
+"pbr": {},
+"quad": {},
+"texture": {},
+"texture_alignment": {
+"enum": [
+"original_image",
+"geometry"
+]
+},
+"texture_quality": {
+"enum": [
+"standard",
+"detailed"
+]
+},
+"texture_seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.24,
+"description": "Tripo3D H3.1 Multiview-to-3D generates high-quality 3D models from 2-4 multi-angle images with textures and PBR materials.",
+"model_id": "tripo3d/h3.1/multiview-to-3d",
+"name": "tripo3d/h3.1/multiview-to-3d"
+},
+"wavespeed-ai/ace-step-1.5": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {},
+"lyrics": {},
+"seed": {},
+"tags": {}
+}
+}
+}
+]
+},
+"base_price": 0.0003,
+"description": "ACE-Step 1.5 generates up to 4-minute music with lyrics from text. Supports 50+ languages, high acoustic fidelity, and runs efficiently on consumer hardware.",
+"model_id": "wavespeed-ai/ace-step-1.5",
+"name": "wavespeed-ai/ace-step-1.5"
+},
+"wavespeed-ai/depth-anything-v3/image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"colormap": {
+"enum": [
+"grayscale",
+"inferno",
+"turbo"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"image": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.005,
+"description": "Depth Anything V3 Image estimates a sharp, detailed depth map from a single image, with clean sky handling. Output matches the input resolution, ready for depth-conditioned image generation, relighting, 3D and compositing workflows. Ready-t",
+"model_id": "wavespeed-ai/depth-anything-v3/image",
+"name": "wavespeed-ai/depth-anything-v3/image"
+},
+"wavespeed-ai/flashvsr": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"target_resolution": {
+"enum": [
+"720p",
+"1080p",
+"2k",
+"4k"
+]
+},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.018,
+"description": "FlashVSR is a fast, high-quality video upscaler that boosts resolution and restores clarity for low-resolution or blurry footage. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/flashvsr",
+"name": "wavespeed-ai/flashvsr"
+},
+"wavespeed-ai/flux-2-klein-9b/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"images": {
+"maxItems": 3
+},
+"prompt": {},
+"seed": {},
+"size": {}
+}
+}
+}
+]
+},
+"base_price": 0.016,
+"description": "FLUX.2 [klein] 9B Edit is a high-quality image editing model with 9B parameters, offering precise modifications using natural language instructions. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "wavespeed-ai/flux-2-klein-9b/edit",
+"name": "wavespeed-ai/flux-2-klein-9b/edit"
+},
+"wavespeed-ai/flux-2-klein-9b/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"prompt": {},
+"seed": {},
+"size": {}
+}
+}
+}
+]
+},
+"base_price": 0.01,
+"description": "FLUX.2 [klein] 9B is a high-quality text-to-image model with 9B parameters, offering enhanced realism and crisper text generation. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "wavespeed-ai/flux-2-klein-9b/text-to-image",
+"name": "wavespeed-ai/flux-2-klein-9b/text-to-image"
+},
+"wavespeed-ai/flux-v1-pro/erase": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"dilate_pixels": {},
+"image": {},
+"mask_image": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.08,
+"description": "FLUX.1 Pro Erase removes unwanted regions from images using a black and white mask, then reconstructs the erased area with natural detail.",
+"model_id": "wavespeed-ai/flux-v1-pro/erase",
+"name": "wavespeed-ai/flux-v1-pro/erase"
+},
+"wavespeed-ai/hunyuan-3d-v3.1/image-to-3d-rapid": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"image": {}
+}
+}
+}
+]
+},
+"base_price": 0.27,
+"description": "Hunyuan 3D V3.1 Rapid image-to-3D generation model. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "wavespeed-ai/hunyuan-3d-v3.1/image-to-3d-rapid",
+"name": "wavespeed-ai/hunyuan-3d-v3.1/image-to-3d-rapid"
+},
+"wavespeed-ai/image-background-remover": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"image": {}
+}
+}
+}
+]
+},
+"base_price": 0.004,
+"description": "Powerful AI background remover that outputs high-quality transparent PNGs for e-commerce, graphics, and design. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/image-background-remover",
+"name": "wavespeed-ai/image-background-remover"
+},
+"wavespeed-ai/image-captioner": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"detail_level": {
+"enum": [
+"low",
+"medium",
+"high"
+]
+},
+"enable_sync_mode": {},
+"focus": {},
+"image": {}
+}
+}
+}
+]
+},
+"base_price": 0.001,
+"description": "High-accuracy Image Captioner for generating detailed, human-like descriptions from images. Ideal for content understanding, accessibility, dataset labeling, SEO, and multimodal AI workflows. Ready-to-use REST inference API, best performanc",
+"model_id": "wavespeed-ai/image-captioner",
+"name": "wavespeed-ai/image-captioner"
+},
+"wavespeed-ai/image-eraser": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"image": {},
+"mask_image": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.025,
+"description": "Powerful AI Image Eraser removes objects, people, or text and reconstructs backgrounds with natural detail and consistent lighting. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/image-eraser",
+"name": "wavespeed-ai/image-eraser"
+},
+"wavespeed-ai/image-upscaler": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"image": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+},
+"target_resolution": {
+"enum": [
+"2k",
+"4k",
+"8k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.01,
+"description": "AI Image Upscaler that enhances image resolution to 4K or 8K while improving detail and clarity for photos and graphics. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/image-upscaler",
+"name": "wavespeed-ai/image-upscaler"
+},
+"wavespeed-ai/infinitetalk": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio": {},
+"image": {},
+"mask_image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"720p"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.03,
+"description": "InfiniteTalk converts one photo + audio into audio-driven talking or singing avatar videos (Image-to-Video), up to 10 minutes, 720p tier $0.30/5s. Ready-to-use REST API, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/infinitetalk",
+"name": "wavespeed-ai/infinitetalk"
+},
+"wavespeed-ai/infinitetalk-fast": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio": {},
+"image": {},
+"mask_image": {},
+"prompt": {},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.015,
+"description": "InfiniteTalk fast converts one photo + audio into audio-driven talking or singing avatar videos (Image-to-Video), up to 10 minutes. Ready-to-use REST API, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/infinitetalk-fast",
+"name": "wavespeed-ai/infinitetalk-fast"
+},
+"wavespeed-ai/minimax-h3/image-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {
+"enum": [
+3,
+4,
+5,
+6,
+7,
+8,
+9,
+10,
+11,
+12,
+13,
+14,
+15
+]
+},
+"image": {},
+"last_image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"540p",
+"768p",
+"1080p"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "Open-weights MiniMax H3 image-to-video on WaveSpeed infrastructure: animate a first-frame image (optionally with a last frame) into a coherent 480p/540p/768p/1080p video with native stereo audio, 5-15 second durations, and affordable per-se",
+"model_id": "wavespeed-ai/minimax-h3/image-to-video",
+"name": "wavespeed-ai/minimax-h3/image-to-video"
+},
+"wavespeed-ai/minimax-h3/reference-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"1:1",
+"4:3",
+"3:4",
+"21:9",
+"9:21"
+]
+},
+"duration": {
+"enum": [
+3,
+4,
+5,
+6,
+7,
+8,
+9,
+10,
+11,
+12,
+13,
+14,
+15
+]
+},
+"prompt": {},
+"reference_audios": {
+"maxItems": 3
+},
+"reference_images": {
+"maxItems": 9
+},
+"reference_videos": {
+"maxItems": 3
+},
+"resolution": {
+"enum": [
+"480p",
+"540p",
+"768p",
+"1080p"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.15,
+"description": "Open-weights MiniMax H3 reference-to-video on WaveSpeed infrastructure: generate coherent 480p/540p/768p/1080p videos with native stereo audio guided by up to 9 reference images, 3 reference videos, and 3 reference audios.",
+"model_id": "wavespeed-ai/minimax-h3/reference-to-video",
+"name": "wavespeed-ai/minimax-h3/reference-to-video"
+},
+"wavespeed-ai/minimax-h3/text-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"1:1",
+"4:3",
+"3:4",
+"21:9",
+"9:21"
+]
+},
+"duration": {
+"enum": [
+3,
+4,
+5,
+6,
+7,
+8,
+9,
+10,
+11,
+12,
+13,
+14,
+15
+]
+},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"540p",
+"768p",
+"1080p"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "Open-weights MiniMax H3 text-to-video on WaveSpeed infrastructure: coherent 480p/540p/768p/1080p videos with native stereo audio from a single prompt, 5-15 second durations, flexible aspect ratios, and affordable per-second pricing.",
+"model_id": "wavespeed-ai/minimax-h3/text-to-video",
+"name": "wavespeed-ai/minimax-h3/text-to-video"
+},
+"wavespeed-ai/minimax-h3/video-extend": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {
+"enum": [
+3,
+4,
+5,
+6,
+7,
+8,
+9,
+10,
+11,
+12,
+13,
+14,
+15
+]
+},
+"last_image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"540p",
+"768p",
+"1080p"
+]
+},
+"seed": {},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "MiniMax H3 Open Weights Video-Extend appends a new cinematic continuation to an existing video. A fresh segment with native stereo audio is generated from the input video's last frame and a natural-language prompt, then concatenated onto th",
+"model_id": "wavespeed-ai/minimax-h3/video-extend",
+"name": "wavespeed-ai/minimax-h3/video-extend"
+},
+"wavespeed-ai/openai-whisper-turbo": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio": {},
+"enable_sync_mode": {},
+"enable_timestamps": {},
+"language": {
+"enum": [
+"auto",
+"af",
+"am",
+"ar",
+"as",
+"az",
+"ba",
+"be",
+"bg",
+"bn",
+"bo",
+"br",
+"bs",
+"ca",
+"cs",
+"cy",
+"da",
+"de",
+"el",
+"en",
+"es",
+"et",
+"eu",
+"fa",
+"fi",
+"fo",
+"fr",
+"gl",
+"gu",
+"ha",
+"haw",
+"he",
+"hi",
+"hr",
+"ht",
+"hu",
+"hy",
+"id",
+"is",
+"it",
+"ja",
+"jw",
+"ka",
+"kk",
+"km",
+"kn",
+"ko",
+"la",
+"lb",
+"ln",
+"lo",
+"lt",
+"lv",
+"mg",
+"mi",
+"mk",
+"ml",
+"mn",
+"mr",
+"ms",
+"mt",
+"my",
+"ne",
+"nl",
+"nn",
+"no",
+"oc",
+"pa",
+"pl",
+"ps",
+"pt",
+"ro",
+"ru",
+"sa",
+"sd",
+"si",
+"sk",
+"sl",
+"sn",
+"so",
+"sq",
+"sr",
+"su",
+"sv",
+"sw",
+"ta",
+"te",
+"tg",
+"th",
+"tk",
+"tl",
+"tr",
+"tt",
+"uk",
+"ur",
+"uz",
+"vi",
+"yi",
+"yo",
+"zh",
+"yue"
+]
+},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.0007,
+"description": "Accurate speech-to-text with OpenAI Whisper Large v3 Turbo: multilingual transcripts with auto language detection and punctuation. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/openai-whisper-turbo",
+"name": "wavespeed-ai/openai-whisper-turbo"
+},
+"wavespeed-ai/paddle-ocr": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_sync_mode": {},
+"image": {},
+"output_format": {
+"enum": [
+"json",
+"markdown"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.01,
+"description": "PaddleOCR-VL: Ultra-compact 0.9B parameter vision-language model for document parsing. Supports 109 languages with text, table, formula, and chart recognition. Output in JSON or Markdown format.",
+"model_id": "wavespeed-ai/paddle-ocr",
+"name": "wavespeed-ai/paddle-ocr"
+},
+"wavespeed-ai/qwen-image-2.0/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"images": {
+"maxItems": 3
+},
+"prompt": {},
+"seed": {},
+"size": {}
+}
+}
+}
+]
+},
+"base_price": 0.03,
+"description": "Qwen Image 2.0 edit model with enhanced editing quality and improved instruction understanding. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "wavespeed-ai/qwen-image-2.0/edit",
+"name": "wavespeed-ai/qwen-image-2.0/edit"
+},
+"wavespeed-ai/qwen-image-2.0/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"prompt": {},
+"seed": {},
+"size": {}
+}
+}
+}
+]
+},
+"base_price": 0.03,
+"description": "Qwen Image 2.0 text-to-image model with enhanced image quality and improved prompt understanding. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "wavespeed-ai/qwen-image-2.0/text-to-image",
+"name": "wavespeed-ai/qwen-image-2.0/text-to-image"
+},
+"wavespeed-ai/qwen-image/edit-2509-multiple-angles": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"distance": {},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"horizontal_angle": {},
+"images": {
+"maxItems": 3
+},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+},
+"prompt": {},
+"seed": {},
+"size": {},
+"vertical_angle": {}
+}
+}
+}
+]
+},
+"base_price": 0.025,
+"description": "Qwen-Image-Edit-2509 Multiple Angles generates specific camera angles from a single image using natural language camera control. Control horizontal rotation (-90 to 90 degrees), vertical tilt, and zoom level. Ready-to-use REST inference API",
+"model_id": "wavespeed-ai/qwen-image/edit-2509-multiple-angles",
+"name": "wavespeed-ai/qwen-image/edit-2509-multiple-angles"
+},
+"wavespeed-ai/qwen-image/edit-multiple-angles": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"distance": {},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"horizontal_angle": {},
+"images": {
+"maxItems": 3
+},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+},
+"prompt": {},
+"seed": {},
+"size": {},
+"vertical_angle": {}
+}
+}
+}
+]
+},
+"base_price": 0.025,
+"description": "Qwen-Image-Edit Multiple Angles generates specific camera angles from a single image using a 96-pose camera system. Control horizontal rotation (azimuth), vertical tilt (elevation), and zoom level to create front, side, back views and more.",
+"model_id": "wavespeed-ai/qwen-image/edit-multiple-angles",
+"name": "wavespeed-ai/qwen-image/edit-multiple-angles"
+},
+"wavespeed-ai/qwen3-tts/text-to-speech": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"language": {
+"enum": [
+"auto",
+"Chinese",
+"English",
+"German",
+"Italian",
+"Portuguese",
+"Spanish",
+"Japanese",
+"Korean",
+"French",
+"Russian"
+]
+},
+"style_instruction": {},
+"text": {},
+"voice": {
+"enum": [
+"Vivian",
+"Serena",
+"Ono_Anna",
+"Sohee",
+"Uncle_Fu",
+"Dylan",
+"Eric",
+"Ryan",
+"Aiden"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.005,
+"description": "Qwen3 TTS: Multi-language, multi-voice text-to-speech synthesis with style control. Supports 11 languages and 9 voice characters. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "wavespeed-ai/qwen3-tts/text-to-speech",
+"name": "wavespeed-ai/qwen3-tts/text-to-speech"
+},
+"wavespeed-ai/qwen3-tts/voice-clone": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio": {},
+"language": {
+"enum": [
+"auto",
+"Chinese",
+"English",
+"German",
+"Italian",
+"Portuguese",
+"Spanish",
+"Japanese",
+"Korean",
+"French",
+"Russian"
+]
+},
+"reference_text": {},
+"text": {}
+}
+}
+}
+]
+},
+"base_price": 0.005,
+"description": "Qwen3 TTS Voice Clone: Clone any voice from a reference audio and generate speech in that voice. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "wavespeed-ai/qwen3-tts/voice-clone",
+"name": "wavespeed-ai/qwen3-tts/voice-clone"
+},
+"wavespeed-ai/sam3-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"apply_mask": {},
+"box_prompts": {
+"maxItems": 1000
+},
+"image": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+},
+"point_prompts": {
+"maxItems": 1000
+},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.005,
+"description": "SAM 3 unified foundation model for promptable image segmentation using text, points, or boxes to detect and segment objects.",
+"model_id": "wavespeed-ai/sam3-image",
+"name": "wavespeed-ai/sam3-image"
+},
+"wavespeed-ai/trellis-2/image-to-3d": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"image": {},
+"remove_background": {},
+"resolution": {
+"enum": [
+"512",
+"1024",
+"1536"
+]
+},
+"seed": {},
+"target_face_count": {},
+"texture_size": {
+"enum": [
+1024,
+2048,
+4096
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.2,
+"description": "TRELLIS.2 turns a single image into a textured 3D GLB with PBR materials.",
+"model_id": "wavespeed-ai/trellis-2/image-to-3d",
+"name": "wavespeed-ai/trellis-2/image-to-3d"
+},
+"wavespeed-ai/ultimate-image-upscaler": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"image": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+},
+"target_resolution": {
+"enum": [
+"2k",
+"4k",
+"8k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.06,
+"description": "Ultimate Image Upscaler is the most advanced AI enhancer that reimagines fine detail while upscaling images to 4K or 8K. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/ultimate-image-upscaler",
+"name": "wavespeed-ai/ultimate-image-upscaler"
+},
+"wavespeed-ai/video-background-remover": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"background_image": {},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.01,
+"description": "Remove or replace video backgrounds with custom images",
+"model_id": "wavespeed-ai/video-background-remover",
+"name": "wavespeed-ai/video-background-remover"
+},
+"wavespeed-ai/video-upscaler": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"target_resolution": {
+"enum": [
+"720p",
+"1080p",
+"2k",
+"4k"
+]
+},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.005,
+"description": "AI Video Upscaler enhances resolution and clarity to fix blurry Sora 2 output and improve low-resolution footage with ML upscaling. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/video-upscaler",
+"name": "wavespeed-ai/video-upscaler"
+},
+"wavespeed-ai/video-upscaler-pro": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"target_resolution": {
+"enum": [
+"720p",
+"1080p",
+"2k",
+"4k"
+]
+},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "AI Video Upscaler Pro converts low-resolution videos into crisp 4K footage with seamless motion dynamics and frame consistency. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/video-upscaler-pro",
+"name": "wavespeed-ai/video-upscaler-pro"
+},
+"wavespeed-ai/wan-2.2/animate": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"image": {},
+"mode": {
+"enum": [
+"animate",
+"replace"
+]
+},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"720p"
+]
+},
+"seed": {},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "Wan2.2-Animate unified character animation & replacement model replicating movement and expression; generates 720p videos up to 120s. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/wan-2.2/animate",
+"name": "wavespeed-ai/wan-2.2/animate"
+},
+"wavespeed-ai/z-image/turbo": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"image": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+},
+"prompt": {},
+"seed": {},
+"size": {},
+"strength": {}
+}
+}
+}
+]
+},
+"base_price": 0.005,
+"description": "Z-Image-Turbo is a 6 billion parameter text-to-image model that generates photorealistic images in sub-second time. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/z-image/turbo",
+"name": "wavespeed-ai/z-image/turbo"
+}
+}
