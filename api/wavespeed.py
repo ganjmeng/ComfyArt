@@ -372,9 +372,14 @@ def compact_models(grouped: dict, kind: str | None = None, tool_features: dict |
                 "kinds": {k: [n for n in live if feature_kind(n) == k] for k in MODEL_KINDS},
                 "hint": "call list_models with type image, image_tools, video, video_tools, audio, 3d or a feature name "
                         "for its recommended models; model_id=<id> for one model's params and quality tiers"}
+    if tool_features and kind not in live and kind in tool_features:
+        kind = tool_features[kind]  # a tool name (animate_image) means its feature (image_to_video)
     names = [kind] if kind in live else [n for n in live if feature_kind(n) == kind]
     if not names:
-        raise WaveSpeedError(f"unknown type {kind!r}; use one of {', '.join(MODEL_KINDS)} or a feature name", 400)
+        raise WaveSpeedError(
+            f"unknown type {kind!r}; use a kind ({', '.join(MODEL_KINDS)}), a feature name "
+            f"({', '.join(live)}) or a tool name ({', '.join(t for t, f in (tool_features or {}).items() if f in live)})",
+            400)
     tools: dict[str, list[str]] = {}
     for tool, feature in (tool_features or {}).items():
         tools.setdefault(feature, []).append(tool)

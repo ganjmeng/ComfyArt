@@ -14,7 +14,7 @@ from ._cli_common import (
     merge_usage,
 )
 from . import lms
-from .guide import AGENT_GUIDE, CORE_MCP_TOOLS
+from .guide import AGENT_GUIDE, CORE_MCP_TOOLS, PAID_TOOLS
 from .providers import (
     AgentProvider,
     BotEvent,
@@ -40,6 +40,29 @@ _REPEAT_STOP_TEXT = {
     "zh": "任务卡在重复步骤，已停止，未继续扣费。",
     "en": "The task got stuck repeating a step and was stopped; no further "
           "charges.",
+}
+_PAID_GEN_CAP = 4  # paid generations per plan item per turn (#142)
+_PAID_CAP_TEXT = {
+    "zh": "已生成 {n} 张仍未完成，已停止，未继续扣费，请告诉我怎么调整",
+    "en": "Generated {n} images and still not done, so I stopped; no further "
+          "charges. Tell me how to adjust.",
+}
+_REF_BLOCK_TEXT = (
+    "[tool error] blocked before submitting (nothing was charged): the user "
+    "supplied the product image {ids}. Every {tool} call must pass it — put "
+    "the shape id in {field}. Describing it in the prompt does not send the "
+    "image.")
+_ZH_NUM = {"一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6,
+           "七": 7, "八": 8, "九": 9, "十": 10}
+_COUNT_RE = re.compile(
+    r"(\d+|[一两二三四五六七八九十])\s*(?:张|幅|款|个版本|images?\b|pictures?\b"
+    r"|photos?\b|versions?\b|variations?\b)", re.I)
+_SHAPE_ID_RE = re.compile(r"shape:[A-Za-z0-9_\-]+")
+_PRODUCT_RE = re.compile(r"产品|商品|电商|\bproducts?\b", re.I)
+# where each generation tool takes an input image
+_REF_FIELDS = {
+    "generate_image": ("refs", "base"),
+    "generate_video": ("first_frame", "last_frame", "reference_images"),
 }
 # Same wording as the chat panel's TOOL_LABELS (src/bot.ts + locales).
 _STEP_LABELS: dict[str, tuple[str, str]] = {
@@ -103,6 +126,79 @@ def _reply_lang(user_text: str) -> str:
     return "zh" if _CJK_RE.search(text) else "en"
 
 
+def _requested_count(user_text: str) -> int:
+    """Images the user explicitly asked for ("做 6 张", "3 images"), else 0."""
+    text = _SKILL_HINT_RE.sub("", user_text or "")
+    best = 0
+    for m in _COUNT_RE.finditer(text):
+        raw = m.group(1)
+        n = int(raw) if raw.isdigit() else _ZH_NUM.get(raw, 0)
+        best = max(best, n)
+    return best
+
+
+def _product_refs(user_text: str) -> list[str]:
+    """Image shape ids the user supplied for a product task (#142).
+
+    Attached images arrive as "[Attached image 1: shape id shape:x ...]";
+    users can also name an id in the text. Audio/video attachments are not
+    product references."""
+    text = user_text or ""
+    skill = re.search(r"Use the ComfyArt skill '([^']+)'", text)
+    body = _SKILL_HINT_RE.sub("", text)
+    if not ((skill and skill.group(1) == "product") or _PRODUCT_RE.search(body)):
+        return []
+    ids: list[str] = []
+    for line in body.splitlines():
+        if re.match(r"\s*\[Attached (audio|video)", line):
+            continue
+        for sid in _SHAPE_ID_RE.findall(line):
+            if sid not in ids:
+                ids.append(sid)
+    return ids
+
+
+def _passes_ref(name: str, args: dict, refs: list[str]) -> bool:
+    fields = _REF_FIELDS.get(name)
+    if not fields or not refs:
+        return True
+    given: list[str] = []
+    for f in fields:
+        v = args.get(f)
+        given += [str(x) for x in v] if isinstance(v, list) else [str(v or "")]
+    return any(r in given for r in refs)
+
+
+def _gen_units(name: str, args: dict) -> int:
+    if name == "generate_image":
+        try:
+            return max(1, int(args.get("count") or 1))
+        except (TypeError, ValueError):
+            return 1
+    return 1
+
+
+def _active_plan_item(args: dict) -> Optional[str]:
+    steps = args.get("steps")
+    if not isinstance(steps, list):
+        return None
+    for st in steps:
+        if isinstance(st, dict) and st.get("status") == "active":
+            return str(st.get("text") or "")
+    return ""
+
+
+def _paid_ok(result_text: str) -> bool:
+    """A paid call that was declined, cancelled or failed charged nothing."""
+    if result_text.startswith("[tool error]") or result_text.startswith("[error]"):
+        return False
+    try:
+        data = json.loads(result_text)
+    except ValueError:
+        return True
+    return not (isinstance(data, dict) and (data.get("cancelled") or data.get("error")))
+
+
 def _call_key(name: str, args: dict) -> str:
     return name + "\x00" + json.dumps(args, sort_keys=True, ensure_ascii=False)
 
@@ -138,6 +234,20 @@ def _stop_summary(done: list[str], lang: str = "zh") -> str:
         return (_REPEAT_STOP_TEXT["zh"] + "已完成："
                 + ("、".join(items) if items else "无"))
     return (_REPEAT_STOP_TEXT["en"] + " Done so far: "
+            + (", ".join(items) if items else "nothing") + ".")
+
+
+def _paid_cap_summary(n: int, done: list[str], lang: str = "zh") -> str:
+    """#142 stop line, same red error notice and step list as #137."""
+    zh = lang == "zh"
+    counts: dict[str, int] = {}
+    for label in done:
+        counts[label] = counts.get(label, 0) + 1
+    items = [k + (f" ×{c}" if c > 1 else "") for k, c in counts.items()]
+    if zh:
+        return (_PAID_CAP_TEXT["zh"].format(n=n) + "。已完成："
+                + ("、".join(items) if items else "无"))
+    return (_PAID_CAP_TEXT["en"].format(n=n) + " Done so far: "
             + (", ".join(items) if items else "nothing") + ".")
 
 
@@ -379,6 +489,10 @@ class LocalLlmProvider(AgentProvider):
                         else _reply_lang(turn.user_text))
                 cache_hits = 0
                 skill_cache: dict[str, str] = {}
+                paid_cap = _requested_count(turn.user_text) or _PAID_GEN_CAP
+                paid_used: dict[str, int] = {}
+                plan_item = ""
+                product_refs = _product_refs(turn.user_text)
                 for _ in range(_MAX_ITERATIONS):
                     if handle.stop_requested:
                         return TurnResult(aborted=True, usage=usage)
@@ -441,12 +555,28 @@ class LocalLlmProvider(AgentProvider):
                                          "stopping", name, repeat, cache_hits)
                             return TurnResult(usage=usage,
                                               error=_stop_summary(done, lang))
+                        paid = name in PAID_TOOLS
+                        units = _gen_units(name, args) if paid else 0
+                        if paid and paid_used.get(plan_item, 0) + units > paid_cap:
+                            _log.warning("[ComfyArt/local-llm] paid-gen guard: "
+                                         "%s plan item %r used %d of %d, "
+                                         "stopping", name, plan_item,
+                                         paid_used.get(plan_item, 0), paid_cap)
+                            return TurnResult(usage=usage, error=_paid_cap_summary(
+                                paid_cap, done, lang))
                         await emit(BotEvent(t="tool_use", name=name, input=args,
                                             id=tc_id))
                         tool_failed = False
                         images: list[str] = []
+                        ref_blocked = not _passes_ref(name, args, product_refs)
                         try:
-                            if cached:
+                            if ref_blocked:
+                                field = _REF_FIELDS[name][0]
+                                result_text = _REF_BLOCK_TEXT.format(
+                                    ids=", ".join(product_refs), tool=name,
+                                    field=field)
+                                tool_failed = True
+                            elif cached:
                                 result_text = skill_cache[skill_key]
                             elif name == "wait_generation":
                                 result_text = await self._wait_stage_done(
@@ -460,7 +590,13 @@ class LocalLlmProvider(AgentProvider):
                             tool_failed = True
                         if skill_key and not tool_failed:
                             skill_cache.setdefault(skill_key, result_text)
-                        if not cached:  # only steps that actually ran
+                        if name == "update_plan" and not tool_failed:
+                            item = _active_plan_item(args)
+                            if item is not None:
+                                plan_item = item
+                        if paid and not tool_failed and _paid_ok(result_text):
+                            paid_used[plan_item] = paid_used.get(plan_item, 0) + units
+                        if not cached and not ref_blocked:  # only steps that actually ran
                             done.append(_step_label(name, args, lang))
                         if len(result_text) > TOOL_RESULT_CAP:
                             result_text = (

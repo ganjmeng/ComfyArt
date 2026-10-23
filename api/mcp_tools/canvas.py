@@ -58,8 +58,8 @@ SPECS: dict[str, dict] = {
     "list_models": _tool(
         "WaveSpeed cloud models grouped by feature (text_to_image, image_edit, upscale_image, ...): id, "
         "starting price in USD per run and a one-line description. Pass an id as model to the matching tool, "
-        "or omit model to use the default. type: image, image_tools, video, video_tools, audio, 3d or a "
-        "feature name for that group's recommended models (without type only an index). all=true with "
+        "or omit model to use the default. type: image, image_tools, video, video_tools, audio, 3d, a "
+        "feature name or a tool name (e.g. animate_image) for that group's recommended models (without type only an index). all=true with "
         "page (1..pages) lists every model. model_id: one model's params (accepted ratios, durations, "
         "resolutions, max reference images) and quality tiers; call it before using a non-default model so "
         "its params are valid. Extra reference images beyond its max are dropped, not charged.",
@@ -72,7 +72,7 @@ SPECS: dict[str, dict] = {
         "Start generating images on the canvas. Returns ids at once; call wait_generation with them. "
         "prompt: detailed English description (put exact text to render in quotes). ratio like 1:1, "
         "3:4, 16:9. count 1-4. refs: image shape ids or image URLs the result must follow (subject, "
-        "product, style). ref_modes: one mode per ref, same order, saying how to use it: content, style, "
+        "product, style); naming a reference in the prompt does not send it, only refs do. ref_modes: one mode per ref, same order, saying how to use it: content, style, "
         "composition, or a structure guide canny, lineart, depth, normal, pose, mlsd, scribble, softedge, seg, "
         "tile (structure guides also work on models with control instead of refs, e.g. Qwen Image 2512). "
         "base: an image shape id to transform (image-to-image) with base_strength 0-100 (higher changes more).",
