@@ -1,3 +1,4 @@
+import { usd } from '../usd'
 import { useEffect, useRef, useState } from 'react'
 import { useEditor, useValue } from 'tldraw'
 
@@ -317,7 +318,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
             update({ workflow: id, ...patch })
           }} />
         {unpriced && estimate == null && <span className="ca-gen__est" data-testid="ws-estimate" title={t('wsKey.unpriced')}>{t('wsKey.unpricedTag')}</span>}
-        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={estimated ? t('wsKey.estimated', `$${estimate}`) : t('wsKey.estimate', `$${estimate}`)}>{`${estimated ? `${t('wsKey.estimatedTag')} ` : ''}≈$${estimate < 0.01 ? estimate.toFixed(4).replace(/0+$/, '') : estimate.toFixed(2)}`}</span>}
+        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={estimated ? t('wsKey.estimated', `$${estimate}`) : t('wsKey.estimate', `$${estimate}`)}>{`${estimated ? `${t('wsKey.estimatedTag')} ` : ''}≈$${usd(estimate)}`}</span>}
         <button type="button" className="ca-gen__send" disabled={!ready || noCredit} title={noCredit ? t('wsKey.needCredit') : estimate != null ? `${t('common.generate')} · ${t('wsKey.estimate', `$${estimate}`)}` : t('common.generate')} onClick={submit}>
           <span className="ca-icon">{Icons.send}</span>
         </button>

@@ -1,6 +1,7 @@
 import { confirmAtom } from './ui/Confirm'
 import { readLocal } from './localPrefs'
 import { t } from './i18n'
+import { usd } from './usd'
 import { onComfyEvent } from './ws'
 import { isWsGraph, WS_ID } from './wavespeed'
 import { wsBodyError, wsErrorText } from './wsErrors'
@@ -155,7 +156,7 @@ export function setWsHook(hook: WsHook) {
 export function askCost(price: number | null, segSplits?: number, segCapped?: boolean, note = '', estimate?: { tier?: string; unpriced?: boolean }): Promise<boolean> {
   // #138: seg maps quote an upper bound before anything is recognised (nothing is charged before this dialog);
   // on a retry only the classes still missing a mask are quoted
-  const p = (price ?? 0).toFixed(2)
+  const p = usd(price ?? 0)  // #192: same amount as the estimate next to Send
   // #159: the price API failed, so this is the catalog estimate for the tier that will be submitted, and it says so
   // #159: no price for the submitted tier: no amount at all, only the tier it will be charged at
   const cost = estimate?.unpriced || price == null ? t('jobs.confirmUnpriced', estimate?.tier || t('jobs.thisTier'))

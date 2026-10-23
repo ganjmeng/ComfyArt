@@ -1,6 +1,7 @@
 // #145 browser stand-in for ./comfy: control_preview answers 409 (needs confirm) until confirmed, then a PNG.
 import { confirmAtom } from '../../../src/ui/Confirm'
 import { t } from '../i18n_stub'
+import { usd } from '../../../src/usd'
 const g = globalThis as any
 g.__calls = []
 export const api = async (url: string, init?: { body: string }) => {
@@ -11,7 +12,7 @@ export const api = async (url: string, init?: { body: string }) => {
 }
 // same dialog as src/comfy.ts askCost (that module pulls in the whole app)
 export function askCost(price: number): Promise<boolean> {
-  const p = price.toFixed(2)
+  const p = usd(price)
   return new Promise((resolve) => confirmAtom.set({
     title: t('jobs.confirmTitle'),
     desc: t('jobs.confirmCost', p),
