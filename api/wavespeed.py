@@ -1143,7 +1143,7 @@ async def estimate(inputs: dict) -> dict:
         if inputs.get("feature") == "move_object":
             inputs = move_erase_inputs(inputs)
         elif inputs.get("paste") is not None:
-            inputs = region_inputs(inputs)
+            inputs = region_inputs(inputs, (await clipped_paste(inputs))[1])
         if inputs.get("feature") == "mockup_surface":
             return {"price": None, "currency": "USD", "source": "none", "confirm_usd": confirm_usd(), "confirm": confirm_usd() == 0}
         feature = feature_of(str(inputs.get("feature") or ""))
@@ -1585,14 +1585,38 @@ def paste_box(inputs: dict) -> dict | None:
     return None
 
 
-def region_inputs(inputs: dict) -> dict:
+def clip_box(box: dict, W: int, H: int) -> dict | None:
+    """Paste box clipped to the image bounds; None when nothing is left."""
+    x0, y0 = max(0, box["x"]), max(0, box["y"])
+    x1, y1 = min(W, box["x"] + box["w"]), min(H, box["y"] + box["h"])
+    if x1 <= x0 or y1 <= y0:
+        return None
+    return {"x": x0, "y": y0, "w": x1 - x0, "h": y1 - y0}
+
+
+async def clipped_paste(inputs: dict) -> tuple[dict, dict, bytes]:
+    """(requested box, box clipped to the original image, original bytes). 400 before anything is sent or charged."""
+    region_inputs(inputs)
+    box = paste_box(inputs)
+    orig = await _source_bytes(str(inputs.get("image") or ""))
+    from PIL import Image
+    with Image.open(io.BytesIO(orig)) as img:
+        W, H = img.size
+    clipped = clip_box(box, W, H)
+    if not clipped:
+        raise WaveSpeedError("region edit: the selection box is outside the image", 400)
+    return box, clipped, orig
+
+
+def region_inputs(inputs: dict, clipped: dict | None = None) -> dict:
     """The edit job that actually runs for a pasted region edit: only the crop, at crop size, mask not sent.
     estimate() and submit() both use this, so the quote is for the submitted size/tier (#183 approach)."""
     box = paste_box(inputs)
     if not box or not inputs.get("image") or not inputs.get("mask"):
         raise WaveSpeedError("region edit: the selection box is empty", 400)
     sub = {k: v for k, v in inputs.items() if k not in ("paste", "mask")}
-    sub["width"], sub["height"] = box["w"], box["h"]
+    size = clipped or box
+    sub["width"], sub["height"] = size["w"], size["h"]
     if not sub.get("model") and not sub.get("custom"):
         picked = masked_edit_model()
         if picked:
@@ -1606,18 +1630,20 @@ def move_erase_inputs(inputs: dict) -> dict:
 
 
 async def _submit_paste(inputs: dict) -> str:
-    region_inputs(inputs)  # 400 on an empty box, before anything is sent or charged
-    box = paste_box(inputs)
-    orig = await _source_bytes(str(inputs.get("image") or ""))
-    mask = await _source_bytes(str(inputs.get("mask") or ""))
-    if bbox(mask_array(mask, (box["w"], box["h"]))) is None:
+    req, box, orig = await clipped_paste(inputs)  # 400 on an empty/out-of-bounds box, before anything is sent
+    import numpy as np
+    full = mask_array(await _source_bytes(str(inputs.get("mask") or "")), (req["w"], req["h"]))
+    ox, oy = box["x"] - req["x"], box["y"] - req["y"]
+    m = full[oy:oy + box["h"], ox:ox + box["w"]]
+    if bbox(m) is None:
         raise WaveSpeedError("region edit: the selection is empty", 400)
+    mask = mask_png(m)
     from PIL import Image
     with Image.open(io.BytesIO(orig)) as img:
         crop = img.convert("RGB").crop((box["x"], box["y"], box["x"] + box["w"], box["y"] + box["h"]))
         buf = io.BytesIO()
         crop.save(buf, format="PNG")
-    sub = {**region_inputs(inputs), "image": _save_input(buf.getvalue(), "crop")}
+    sub = {**region_inputs(inputs, box), "image": _save_input(buf.getvalue(), "crop")}
     task = await submit(sub)
     group = f"pb-{task}"
     _jobs[group] = {"paste": task, "orig": orig, "mask": mask, "box": box, "started": time.time(), "next_poll": 0.0, "done": False}

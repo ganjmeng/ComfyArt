@@ -203,3 +203,43 @@ async def test_empty_selection_is_400_before_any_wavespeed_call(curated, case):
         await wavespeed.submit(inputs)
     assert e.value.status == 400
     assert not curated["submits"] and (curated["uploads"], len(curated["quotes"])) == before  # no WaveSpeed call at all
+
+
+async def test_box_partly_outside_is_clipped_quote_equals_charge(curated, monkeypatch):
+    H, W = 600, 800
+    orig = noise(H, W)
+    seen = []
+
+    def price(inp):
+        seen.append(dict(inp))
+        return {"1k": 0.039, "2k": 0.078}.get(inp.get("resolution"), 0.039)
+    curated["prices"][SUNBURST] = price
+    req = {"x": 600, "y": -100, "w": 400, "h": 400}  # clipped to x 600..800, y 0..300 -> 200x300
+    inputs = {"feature": "image_edit", "image": put("o.png", png(orig)), "mask": put("m.png", comfy_mask(400, 400, (0, 0, 400, 400))),
+              "paste": req, "prompt": "x"}
+    est = await wavespeed.estimate(dict(inputs))
+    quote_inputs = dict(seen[-1]) if seen else None
+    fake_result(monkeypatch, np.full((512, 512, 3), 7, np.uint8))
+    group = await wavespeed.submit(dict(inputs))
+    [(model, payload)] = curated["submits"]
+    assert model == SUNBURST and "quality" not in payload
+    assert est["price"] == pytest.approx(price(payload)) and est["source"] == "quote"
+    assert quote_inputs is None or quote_inputs.get("resolution") == payload.get("resolution")
+    assert wavespeed._jobs[group]["box"] == {"x": 600, "y": 0, "w": 200, "h": 300}
+    out = output(await finish(group))
+    assert out.shape == orig.shape
+    inside = np.zeros((H, W), bool)
+    inside[0:300, 600:800] = True
+    assert np.array_equal(out[~inside], orig[~inside])
+    assert (out[inside] == 7).all()
+
+
+async def test_box_fully_outside_is_400_before_any_wavespeed_call(curated):
+    inputs = {"feature": "image_edit", "image": put("o.png", png(noise(256, 256))), "mask": put("m.png", comfy_mask(64, 64, (0, 0, 64, 64))),
+              "paste": {"x": 300, "y": 10, "w": 64, "h": 64}, "prompt": "x"}
+    before = (curated["uploads"], len(curated["quotes"]))
+    for call in (wavespeed.estimate, wavespeed.submit):
+        with pytest.raises(wavespeed.WaveSpeedError) as e:
+            await call(dict(inputs))
+        assert e.value.status == 400
+    assert not curated["submits"] and (curated["uploads"], len(curated["quotes"])) == before
