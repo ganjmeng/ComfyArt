@@ -15,6 +15,9 @@ for (const lang of ['zh', 'en'] as const) {
     unknown: wsErrorText('nope'),
     agent: agentError(wsErrorText('insufficientCredit')!),
     agentThrown: agentErrorText(wsErrorText('insufficientCredit')!),
+    timeout: wsErrorText('timeout', 0.32),
+    timeoutNoAmount: wsErrorText('timeout'),
+    timeoutBody: wsBodyError({ error: { message: 'WaveSpeed task timed out, may have been charged about (quoted price) $1.5', kind: 'timeout', charged_usd: 1.5 } }, 'x'),
   }
 }
 console.log(JSON.stringify(out))

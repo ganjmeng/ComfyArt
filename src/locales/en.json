@@ -1212,5 +1212,7 @@
   "wsErr.rateLimit": "WaveSpeed is getting too many requests right now. Wait a moment and try again.",
   "wsErr.invalidKey": "WaveSpeed rejected the API key. Check it in Settings > WaveSpeed API key.",
   "wsErr.network": "Could not reach WaveSpeed. Check your network and try again.",
-  "wsErr.failed": "WaveSpeed could not finish this job. Check the inputs and try again."
+  "wsErr.failed": "WaveSpeed could not finish this job. Check the inputs and try again.",
+  "wsErr.timeout": "The WaveSpeed task timed out and may have been charged about ${0}. Please check the result in your WaveSpeed dashboard before retrying.",
+  "wsErr.timeoutNoAmount": "The WaveSpeed task timed out and may have been charged. Please check the result in your WaveSpeed dashboard before retrying."
 }

@@ -53,8 +53,9 @@ _uploaded: dict[tuple[str, int, int], str] = {}
 
 
 class WaveSpeedError(Exception):
-    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False):
+    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False, charged: float | None = None):
         super().__init__(message)
+        self.charged = charged  # #174: kind 'timeout' — the quoted price that may have been charged (None: unknown)
         self.unpriced = unpriced  # #159: no price for the submitted tier; the dialog shows no amount
         self.estimate = estimate  # #159: the price API failed; the dialog says 「估算价」/'Estimated'
         self.tier = tier  # #159: the tier that will be submitted, e.g. '480p · 5s'
@@ -1596,6 +1597,8 @@ def _fail(task: str, message: "str | WaveSpeedError") -> dict:
     info: dict = {"exception_message": str(message)}
     if isinstance(message, WaveSpeedError) and message.kind:
         info["ws_kind"] = message.kind  # #155: the UI shows a readable zh/en message for this kind
+        if message.charged is not None:
+            info["ws_charged"] = message.charged  # #174: 「可能已扣费约 $…」
     job = _jobs.get(task)
     if job:
         job["done"] = True
@@ -1617,8 +1620,8 @@ async def poll(task: str) -> dict:
     now = time.time()
     if now - job["started"] > JOB_TIMEOUT:
         if job.get("model"):
-            return _fail(task, str(await _timeout_error(task)))
-        return _fail(task, f"WaveSpeed task timed out after {int(JOB_TIMEOUT)}s")
+            return _fail(task, await _timeout_error(task))
+        return _fail(task, WaveSpeedError(f"WaveSpeed task timed out after {int(JOB_TIMEOUT)}s", 504, kind="timeout"))
     if now < job["next_poll"]:
         return _history(task, "processing", [], {})
     job["next_poll"] = now + POLL_MIN
@@ -1662,7 +1665,7 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
         data = (body or {}).get("data") or {}
         status = data.get("status")
         if status == "timeout":
-            return _fail(task, str(await _timeout_error(task)))
+            return _fail(task, await _timeout_error(task))
         if status in FAILED_STATUSES:
             return _fail(task, _task_error(status, data))
         if status != "completed":
@@ -1695,8 +1698,9 @@ async def _timeout_error(task: str) -> "WaveSpeedError":
         except Exception:  # noqa: BLE001 - the message is still useful without a price
             price = None
     if price is None:
-        return WaveSpeedError("WaveSpeed task timed out", 504)
-    return WaveSpeedError(f"WaveSpeed task timed out, may have been charged about (quoted price) ${round(float(price), 6):g}", 504)
+        return WaveSpeedError("WaveSpeed task timed out", 504, kind="timeout")
+    amount = round(float(price), 6)
+    return WaveSpeedError(f"WaveSpeed task timed out, may have been charged about (quoted price) ${amount:g}", 504, kind="timeout", charged=amount)
 
 
 def text_of(value) -> str:
@@ -1781,6 +1785,8 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
     body: dict = {"message": str(e)}
     if e.kind:
         body["kind"] = e.kind
+    if e.charged is not None:
+        body["charged_usd"] = e.charged  # #174
     if e.confirm is not None:
         body["confirm_usd"] = e.confirm
         if e.seg_splits is not None:

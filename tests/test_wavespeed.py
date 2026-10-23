@@ -1055,14 +1055,13 @@ async def test_170_3d_submit_server_error_is_readable(ws):
     _shown("failed")
 
 
-@pytest.mark.xfail(strict=True, reason="#170 finding: timeouts carry no ws_kind, so the UI shows the raw English exception text")
 async def test_170_task_timeout_has_readable_kind(ws, monkeypatch):
     ws["status"] = "processing"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
     info = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"][0][1]
     assert "timed out" in info["exception_message"]
-    assert info.get("ws_kind")
+    assert info.get("ws_kind") == "timeout"  # #174
 
 
 def test_insufficient_permissions_is_not_balance():

@@ -1212,5 +1212,7 @@
   "wsErr.rateLimit": "WaveSpeed 当前请求太多，请稍等片刻再试。",
   "wsErr.invalidKey": "WaveSpeed 拒绝了这个 API key，请在 设置 > WaveSpeed API key 里检查。",
   "wsErr.network": "连不上 WaveSpeed，请检查网络后再试。",
-  "wsErr.failed": "WaveSpeed 没能完成这次任务，请检查输入后再试。"
+  "wsErr.failed": "WaveSpeed 没能完成这次任务，请检查输入后再试。",
+  "wsErr.timeout": "WaveSpeed 任务超时，可能已扣费约 ${0}。请先到 WaveSpeed 后台确认结果，再决定要不要重试。",
+  "wsErr.timeoutNoAmount": "WaveSpeed 任务超时，可能已扣费。请先到 WaveSpeed 后台确认结果，再决定要不要重试。"
 }
