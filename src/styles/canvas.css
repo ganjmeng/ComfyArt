@@ -39,7 +39,8 @@
 
 .ca-gen {
   position: absolute;
-  z-index: 300;
+  /* above .ca-tools (zoom/minimap, z 300) so the bar's right end and send button stay clickable */
+  z-index: 301;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -70,7 +71,10 @@
 .ca-gen__prompt::placeholder { color: var(--ca-muted); }
 .ca-gen__foot { display: flex; align-items: center; gap: 6px; margin-left: -8px; }
 .ca-gen__foot > .ca-pop-anchor { min-width: 0; }
+/* settings + advanced keep their full label; only the model pill (after the spacer) ellipsizes when space is short */
+.ca-gen__foot > .ca-pop-anchor:not(.ca-gen__spacer ~ .ca-pop-anchor) { flex-shrink: 0; }
 .ca-gen__spacer { flex: 1; }
+.ca-gen__est { flex: none; margin: 0 -2px; color: var(--ca-muted); font-size: 11px; letter-spacing: -.2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ca-gen__pill {
   display: inline-flex;
   align-items: center;

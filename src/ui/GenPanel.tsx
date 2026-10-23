@@ -295,7 +295,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
         <AdvancedPill shape={shape} model={model} setMeta={setMeta} />
         <div className="ca-gen__spacer" />
         <ModelPill models={models} model={model} runOn={runOnOf(shape)} onPick={(id) => update({ workflow: id })} />
-        {estimate != null && <span className="ca-menu__key" data-testid="ws-estimate" title={t('wsKey.estimate', `$${estimate}`)}>{`≈$${estimate < 0.01 ? estimate.toFixed(4).replace(/0+$/, '') : estimate.toFixed(2)}`}</span>}
+        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={t('wsKey.estimate', `$${estimate}`)}>{`≈$${estimate < 0.01 ? estimate.toFixed(4).replace(/0+$/, '') : estimate.toFixed(2)}`}</span>}
         <button type="button" className="ca-gen__send" disabled={!ready || noCredit} title={noCredit ? t('wsKey.needCredit') : estimate != null ? `${t('common.generate')} · ${t('wsKey.estimate', `$${estimate}`)}` : t('common.generate')} onClick={submit}>
           <span className="ca-icon">{Icons.send}</span>
         </button>
