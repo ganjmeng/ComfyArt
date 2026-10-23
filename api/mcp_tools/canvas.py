@@ -58,7 +58,7 @@ SPECS: dict[str, dict] = {
     "list_models": _tool(
         "WaveSpeed cloud models grouped by feature (text_to_image, image_edit, upscale_image, ...): ids, "
         "price in USD per run, description, accepted inputs and the default per feature. Pass an id as "
-        "model to the matching tool, or omit model to use the default. type: image, image_tools, video, audio, 3d or a "
+        "model to the matching tool, or omit model to use the default. type: image, image_tools, video, video_tools, audio, 3d or a "
         "feature name for that group's models with prices and inputs; without type only an index of ids.",
         {"type": {"type": "string"}}),
     "brand_kits": _tool(
@@ -196,7 +196,7 @@ SPECS: dict[str, dict] = {
     "image_to_3d": _tool(
         "Turn an image shape (best: one object on a plain background) into a textured 3D model placed next "
         "to it. Takes a few minutes. Returns ids for wait_generation. Runs on WaveSpeed "
-        "(default wavespeed-ai/trellis-2/image-to-3d). views: 1-4 image shape ids of the same object as front, "
+        "(default: first image_to_3d id from list_models). views: 1-4 image shape ids of the same object as front, "
         "left, back and right, in that order; when given, tripo3d/h3.1/multiview-to-3d builds one model from "
         "all of them and id is ignored.",
         {"id": _ID, "model": {"type": "string", "description": "WaveSpeed 3D model id from list_models (image_to_3d); omit for the default. Multiple views use tripo3d/h3.1/multiview-to-3d"}, "views": _IDS}, approval="转 3D"),

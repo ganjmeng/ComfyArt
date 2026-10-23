@@ -16,7 +16,7 @@ export async function eraseGraph(image: string, mask: string): Promise<Built> {
 }
 
 export async function editGraph(image: string, prompt: string): Promise<Built> {
-  // cloud edit (image_edit default: alibaba/qwen-image-3.0/edit)
+  // cloud edit (image_edit default: first id in api/curated_models.json)
   return wsBuilt({ feature: 'edit_image', custom: 'edit', image, prompt })
 }
 

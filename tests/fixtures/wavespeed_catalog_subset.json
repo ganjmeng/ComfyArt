@@ -537,6 +537,25 @@
 "model_id": "bria/remove-background",
 "name": "bria/remove-background"
 },
+"bytedance/omni-human-2.0": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio": {},
+"image": {},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.1,
+"description": "OmniHuman 2.0 converts an image and audio recording into a lifelike talking-avatar video. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "bytedance/omni-human-2.0",
+"name": "bytedance/omni-human-2.0"
+},
 "bytedance/seed-speech-tts-2.0": {
 "api_schema": {
 "api_schemas": [
@@ -664,6 +683,93 @@
 "model_id": "bytedance/seedance-2.0-fast/video-extend",
 "name": "bytedance/seedance-2.0-fast/video-extend"
 },
+"bytedance/seedance-2.0/image-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"4:3",
+"3:4",
+"1:1",
+"21:9"
+]
+},
+"duration": {},
+"enable_web_search": {},
+"generate_audio": {},
+"image": {},
+"last_image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.24,
+"description": "Seedance 2.0 (Image-to-Video) generates Hollywood-grade cinematic videos from reference images and text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on ByteDance Seed's unified multimodal architecture, it preserves the input image's subject and composition while adding expressive, physically accurate motion.",
+"model_id": "bytedance/seedance-2.0/image-to-video",
+"name": "bytedance/seedance-2.0/image-to-video"
+},
+"bytedance/seedance-2.0/text-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"4:3",
+"3:4",
+"1:1",
+"21:9"
+]
+},
+"duration": {},
+"enable_web_search": {},
+"generate_audio": {},
+"prompt": {},
+"reference_audios": {
+"maxItems": 3
+},
+"reference_images": {
+"maxItems": 9
+},
+"reference_videos": {
+"maxItems": 3
+},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.24,
+"description": "Seedance 2.0 (Text-to-Video) generates Hollywood-grade cinematic videos from text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on ByteDance Seed's unified multimodal architecture, it leads on instruction adherence, motion quality, and visual aesthetics. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "bytedance/seedance-2.0/text-to-video",
+"name": "bytedance/seedance-2.0/text-to-video"
+},
 "bytedance/seedance-2.5/image-to-video": {
 "api_schema": {
 "api_schemas": [
@@ -719,6 +825,35 @@
 "description": "Seedance 2.5 (Image-to-Video Turbo) generates cinematic 720p/1080p videos from reference images and text prompts —a faster, more affordable high-resolution tier with native audio-visual synchronization, director-level control, and exception",
 "model_id": "bytedance/seedance-2.5/image-to-video-turbo",
 "name": "bytedance/seedance-2.5/image-to-video-turbo"
+},
+"bytedance/seedance-2.5/motion-control": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"generate_audio": {},
+"prompt": {},
+"reference_images": {
+"maxItems": 30
+},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p"
+]
+},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 1.1,
+"description": "Transfer the motion of a reference video onto a character with Seedance 2.5. Your character, from a picture or a short description, performs the same movements, gestures and camera motion as the video, in 480p, 720p or 1080p for up to 30 seconds. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "bytedance/seedance-2.5/motion-control",
+"name": "bytedance/seedance-2.5/motion-control"
 },
 "bytedance/seedance-2.5/text-to-video": {
 "api_schema": {
@@ -840,6 +975,35 @@
 "description": "Seedream V5.0 Flash Layer Decomposition separates a single image into a base image and transparent image layers, faster and at lower cost than Pro.",
 "model_id": "bytedance/seedream-v5.0-flash/layer-decomposition",
 "name": "bytedance/seedream-v5.0-flash/layer-decomposition"
+},
+"bytedance/seedream-v5.0-lite/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"images": {
+"maxItems": 10
+},
+"output_format": {
+"enum": [
+"jpeg",
+"png"
+]
+},
+"prompt": {},
+"size": {}
+}
+}
+}
+]
+},
+"base_price": 0.035,
+"description": "Seedream 5.0-lite is a state-of-art image model by Bytedance. Seedream 4.0: Surpassing nano bananain every aspect.",
+"model_id": "bytedance/seedream-v5.0-lite/edit",
+"name": "bytedance/seedream-v5.0-lite/edit"
 },
 "bytedance/seedream-v5.0-pro": {
 "api_schema": {
@@ -1068,6 +1232,40 @@
 "model_id": "elevenlabs/music-v2",
 "name": "elevenlabs/music-v2"
 },
+"elevenlabs/music-v2.5": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"force_instrumental": {},
+"music_length_ms": {},
+"output_format": {
+"enum": [
+"mp3_22050_32",
+"mp3_24000_48",
+"mp3_44100_32",
+"mp3_44100_64",
+"mp3_44100_96",
+"mp3_44100_128",
+"mp3_44100_192",
+"mp3_48000_128",
+"mp3_48000_192",
+"mp3_48000_240",
+"mp3_48000_320"
+]
+},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.75,
+"description": "ElevenLabs Music v2.5 generates songs with vocals or instrumental music from text prompts, with a specified duration and MP3 output.",
+"model_id": "elevenlabs/music-v2.5",
+"name": "elevenlabs/music-v2.5"
+},
 "elevenlabs/sound-effects-v2": {
 "api_schema": {
 "api_schemas": [
@@ -1087,6 +1285,24 @@
 "description": "Generate sound effects and seamlessly looping ambience from text descriptions.",
 "model_id": "elevenlabs/sound-effects-v2",
 "name": "elevenlabs/sound-effects-v2"
+},
+"google/lyria-3.5/music": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"image": {},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.1,
+"description": "Google Lyria 3.5 generates full-length songs with vocals, timed lyrics, and complete arrangements from text prompts and optional image input.",
+"model_id": "google/lyria-3.5/music",
+"name": "google/lyria-3.5/music"
 },
 "google/nano-banana-2.1/edit": {
 "api_schema": {
@@ -1194,6 +1410,149 @@
 "description": "Google's Nano Banana 2.1 is the latest Nano Banana text-to-image model, with gains in visual design, subject consistency and prompt adherence, 1K to 4K output and optional web search grounding. Ready-to-use REST inference API, best performa",
 "model_id": "google/nano-banana-2.1/text-to-image",
 "name": "google/nano-banana-2.1/text-to-image"
+},
+"google/veo3.1-fast/image-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16"
+]
+},
+"duration": {
+"enum": [
+8,
+4,
+6
+]
+},
+"generate_audio": {},
+"image": {},
+"last_image": {},
+"negative_prompt": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"720p",
+"1080p",
+"4k"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.15,
+"description": "Google Veo 3.1 Fast is an Image-to-Video model with native 1080p output for high-detail videos from images and fast performance. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "google/veo3.1-fast/image-to-video",
+"name": "google/veo3.1-fast/image-to-video"
+},
+"google/veo3.1-fast/reference-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16"
+]
+},
+"generate_audio": {},
+"images": {
+"maxItems": 3
+},
+"negative_prompt": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"720p",
+"1080p"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.64,
+"description": "Google Veo 3.1 Fast Reference-to-Video generates 8-second videos from up to three reference images using the official Veo predictLongRunning endpoint with referenceImages assets.",
+"model_id": "google/veo3.1-fast/reference-to-video",
+"name": "google/veo3.1-fast/reference-to-video"
+},
+"google/veo3.1-fast/text-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16"
+]
+},
+"duration": {
+"enum": [
+8,
+4,
+6
+]
+},
+"generate_audio": {},
+"negative_prompt": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"720p",
+"1080p",
+"4k"
+]
+},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.15,
+"description": "Google Veo 3.1 Fast creates text-to-video with native 1080p and synchronized audio, delivering high-quality videos for creators. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "google/veo3.1-fast/text-to-video",
+"name": "google/veo3.1-fast/text-to-video"
+},
+"google/veo3.1-fast/video-extend": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"negative_prompt": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"720p",
+"1080p"
+]
+},
+"seed": {},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 1.2,
+"description": "Extend Veo 3.1 videos in 7-second steps with the Fast endpoint—quick, coherent continuation that preserves style and motion, output as a single merged clip. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "google/veo3.1-fast/video-extend",
+"name": "google/veo3.1-fast/video-extend"
 },
 "hyper3d/rodin-v2.5/image-to-3d": {
 "api_schema": {
@@ -1375,6 +1734,24 @@
 "model_id": "ideogram-ai/remove-background",
 "name": "ideogram-ai/remove-background"
 },
+"kwaivgi/kling-lipsync/audio-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio": {},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.03,
+"description": "Kling LipSync converts audio into talking head video by generating lifelike lip movements perfectly synced to the input audio. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "kwaivgi/kling-lipsync/audio-to-video",
+"name": "kwaivgi/kling-lipsync/audio-to-video"
+},
 "kwaivgi/kling-text-to-audio": {
 "api_schema": {
 "api_schemas": [
@@ -1420,6 +1797,213 @@
 "model_id": "kwaivgi/kling-v2.6-std/motion-control",
 "name": "kwaivgi/kling-v2.6-std/motion-control"
 },
+"kwaivgi/kling-v2.6/create-voice": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio": {}
+}
+}
+}
+]
+},
+"base_price": 0.035,
+"description": "Create Voices to be used with Kling 2.6 Voice Control",
+"model_id": "kwaivgi/kling-v2.6/create-voice",
+"name": "kwaivgi/kling-v2.6/create-voice"
+},
+"kwaivgi/kling-v3.0-std/image-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"cfg_scale": {},
+"duration": {
+"enum": [
+3,
+4,
+5,
+6,
+7,
+8,
+9,
+10,
+11,
+12,
+13,
+14,
+15
+]
+},
+"element_list": {
+"maxItems": 3
+},
+"image": {},
+"last_image": {},
+"multi_prompt": {
+"maxItems": 6
+},
+"negative_prompt": {},
+"prompt": {},
+"shot_type": {
+"enum": [
+"customize",
+"intelligence"
+]
+},
+"sound": {}
+}
+}
+}
+]
+},
+"base_price": 0.084,
+"description": "Kling 3.0 Standard delivers high-quality image-to-video generation with smooth motion, cinematic visuals, accurate prompt adherence, and native audio for ready-to-share clips.",
+"model_id": "kwaivgi/kling-v3.0-std/image-to-video",
+"name": "kwaivgi/kling-v3.0-std/image-to-video"
+},
+"kwaivgi/kling-v3.0-std/motion-control": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"character_orientation": {
+"enum": [
+"image",
+"video"
+]
+},
+"element_list": {
+"maxItems": 3
+},
+"image": {},
+"keep_original_sound": {},
+"negative_prompt": {},
+"prompt": {},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.126,
+"description": "Kling 3.0 Standard delivers top-tier video-to-video generation with smooth motion, cinematic visuals, accurate prompt adherence, and native audio for ready-to-share clips. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "kwaivgi/kling-v3.0-std/motion-control",
+"name": "kwaivgi/kling-v3.0-std/motion-control"
+},
+"kwaivgi/kling-v3.0-std/text-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"1:1"
+]
+},
+"cfg_scale": {},
+"duration": {
+"enum": [
+3,
+4,
+5,
+6,
+7,
+8,
+9,
+10,
+11,
+12,
+13,
+14,
+15
+]
+},
+"multi_prompt": {
+"maxItems": 6
+},
+"negative_prompt": {},
+"prompt": {},
+"shot_type": {
+"enum": [
+"customize",
+"intelligence"
+]
+},
+"sound": {}
+}
+}
+}
+]
+},
+"base_price": 0.084,
+"description": "Kling 3.0 Standard delivers high-quality text-to-video generation with smooth motion, cinematic visuals, accurate prompt adherence, and native audio for ready-to-share clips.",
+"model_id": "kwaivgi/kling-v3.0-std/text-to-video",
+"name": "kwaivgi/kling-v3.0-std/text-to-video"
+},
+"kwaivgi/kling-video-o3-std/reference-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"1:1"
+]
+},
+"duration": {
+"enum": [
+3,
+4,
+5,
+6,
+7,
+8,
+9,
+10,
+11,
+12,
+13,
+14,
+15
+]
+},
+"images": {
+"maxItems": 7
+},
+"keep_original_sound": {},
+"multi_prompt": {
+"maxItems": 6
+},
+"prompt": {},
+"shot_type": {
+"enum": [
+"customize",
+"intelligence"
+]
+},
+"sound": {},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.084,
+"description": "Kling Omni Video O3 (Standard) Reference-to-Video generates creative videos using character, prop, or scene references from multiple viewpoints. Extracts subject features and creates new video content while maintaining identity consistency across frames. Supports audio generation. Ready-to-use REST API, best performance, no cold starts, affordable pricing.",
+"model_id": "kwaivgi/kling-video-o3-std/reference-to-video",
+"name": "kwaivgi/kling-video-o3-std/reference-to-video"
+},
 "minimax/music-2.6": {
 "api_schema": {
 "api_schemas": [
@@ -1455,6 +2039,43 @@
 "description": "MiniMax Music 2.6 generates complete songs with vocals and instrumentals from text prompts and lyrics.",
 "model_id": "minimax/music-2.6",
 "name": "minimax/music-2.6"
+},
+"minimax/music-3.0": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"bitrate": {
+"enum": [
+60000,
+32000,
+64000,
+128000,
+256000
+]
+},
+"is_instrumental": {},
+"lyrics": {},
+"lyrics_optimizer": {},
+"prompt": {},
+"sample_rate": {
+"enum": [
+16000,
+24000,
+32000,
+44100
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.15,
+"description": "MiniMax Music 3.0 generates complete songs with vocals and instrumentals from text prompts and lyrics.",
+"model_id": "minimax/music-3.0",
+"name": "minimax/music-3.0"
 },
 "minimax/speech-2.8-turbo": {
 "api_schema": {
@@ -1689,6 +2310,32 @@
 "model_id": "mureka-ai/mureka-v8/generate-bgm",
 "name": "mureka-ai/mureka-v8/generate-bgm"
 },
+"mureka-ai/mureka-v9/generate-bgm": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"instrumental_id": {},
+"number_of_songs": {},
+"output_format": {
+"enum": [
+"mp3",
+"wav",
+"flac"
+]
+},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.07,
+"description": "mureka ai / mureka v9 / generate bgm via Mureka official API.",
+"model_id": "mureka-ai/mureka-v9/generate-bgm",
+"name": "mureka-ai/mureka-v9/generate-bgm"
+},
 "openai/gpt-image-2.5-flare/edit": {
 "api_schema": {
 "api_schemas": [
@@ -1814,6 +2461,336 @@
 "model_id": "openai/gpt-image-2.5-flare/text-to-image",
 "name": "openai/gpt-image-2.5-flare/text-to-image"
 },
+"openai/gpt-image-2.5-sunburst/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"images": {
+"maxItems": 16
+},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+]
+},
+"prompt": {},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high",
+"xhigh",
+"max"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.039,
+"description": "OpenAI's GPT Image 2.5 Sunburst Edit edits one or more reference images from natural-language instructions, with five quality tiers up to 4K. Sunburst is the precision-focused GPT Image 2.5 tier that spends more time per image for extra fidelity on intricate detail. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "openai/gpt-image-2.5-sunburst/edit",
+"name": "openai/gpt-image-2.5-sunburst/edit"
+},
+"openai/gpt-image-2.5-sunburst/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+]
+},
+"prompt": {},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high",
+"xhigh",
+"max"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.024,
+"description": "OpenAI's GPT Image 2.5 Sunburst Text-to-Image generates high-quality images from natural-language prompts, with five quality tiers up to 4K. Sunburst is the precision-focused GPT Image 2.5 tier that spends more time per image for extra fidelity on intricate detail. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+"name": "openai/gpt-image-2.5-sunburst/text-to-image"
+},
+"openai/gpt-image-2/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"images": {
+"maxItems": 16
+},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+]
+},
+"prompt": {},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.07,
+"description": "OpenAI's GPT Image 2 Edit enables image editing from natural-language instructions with one or more reference images. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "openai/gpt-image-2/edit",
+"name": "openai/gpt-image-2/edit"
+},
+"openai/gpt-image-2/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+]
+},
+"prompt": {},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.06,
+"description": "OpenAI's GPT Image 2 Text-to-Image generates high-quality images from natural-language prompts. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "openai/gpt-image-2/text-to-image",
+"name": "openai/gpt-image-2/text-to-image"
+},
+"openai/sora-2/image-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {
+"enum": [
+4,
+8,
+12,
+16,
+20
+]
+},
+"image": {},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.1,
+"description": "OpenAI Sora 2 generates realistic image-to-video content with synchronized audio, improved physics, sharper realism and steerability. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "openai/sora-2/image-to-video",
+"name": "openai/sora-2/image-to-video"
+},
+"openai/sora-2/text-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {
+"enum": [
+4,
+8,
+12,
+16,
+20
+]
+},
+"prompt": {},
+"size": {
+"enum": [
+"720*1280",
+"1280*720"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.1,
+"description": "OpenAI Sora 2 is a state-of-the-art text-to-video model with realistic visuals, accurate physics, synchronized audio, and strong steerability. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "openai/sora-2/text-to-video",
+"name": "openai/sora-2/text-to-video"
+},
+"pixverse/motion-control/mimic": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"image": {},
+"quality": {
+"enum": [
+"360p",
+"540p",
+"720p"
+]
+},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.09,
+"description": "PixVerse Motion Control (Mimic) transfers the motion from a reference video onto a target image, creating a new video that follows the reference performance while preserving the target subject.",
+"model_id": "pixverse/motion-control/mimic",
+"name": "pixverse/motion-control/mimic"
+},
 "recraft-ai/recraft-creative-upscale": {
 "api_schema": {
 "api_schemas": [
@@ -1857,6 +2834,59 @@
 "description": "Recraft V4.1 Text to Image generates high-quality raster images from text prompts.",
 "model_id": "recraft-ai/recraft-v4.1/text-to-image",
 "name": "recraft-ai/recraft-v4.1/text-to-image"
+},
+"sonilo/v1/text-to-sfx": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio_format": {
+"enum": [
+"wav",
+"mp3",
+"aac",
+"flac"
+]
+},
+"duration": {},
+"prompt": {}
+}
+}
+}
+]
+},
+"base_price": 0.002,
+"description": "Sonilo Text-to-SFX generates sound effects from a text prompt with controllable duration and audio format.",
+"model_id": "sonilo/v1/text-to-sfx",
+"name": "sonilo/v1/text-to-sfx"
+},
+"sync/lipsync-3": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio": {},
+"sync_mode": {
+"enum": [
+"bounce",
+"loop",
+"cut_off",
+"silence",
+"remap"
+]
+},
+"video": {}
+}
+}
+}
+]
+},
+"base_price": 0.135,
+"description": "Sync Lipsync 3 synchronizes lip movements in any video to supplied audio using zero-shot lip-sync technology.",
+"model_id": "sync/lipsync-3",
+"name": "sync/lipsync-3"
 },
 "tripo3d/h3.1/image-to-3d": {
 "api_schema": {
@@ -2481,6 +3511,26 @@
 "description": "MiniMax H3 Open Weights Video-Extend appends a new cinematic continuation to an existing video. A fresh segment with native stereo audio is generated from the input video's last frame and a natural-language prompt, then concatenated onto th",
 "model_id": "wavespeed-ai/minimax-h3/video-extend",
 "name": "wavespeed-ai/minimax-h3/video-extend"
+},
+"wavespeed-ai/omnivoice/voice-clone": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"audio": {},
+"reference_text": {},
+"speed": {},
+"text": {}
+}
+}
+}
+]
+},
+"base_price": 0.005,
+"description": "OmniVoice Voice Clone: Clone any voice from a short 3-10 second audio sample. Supports 600+ languages with zero-shot voice cloning. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "wavespeed-ai/omnivoice/voice-clone",
+"name": "wavespeed-ai/omnivoice/voice-clone"
 },
 "wavespeed-ai/openai-whisper-turbo": {
 "api_schema": {
