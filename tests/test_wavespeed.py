@@ -964,6 +964,8 @@ async def test_failed_task_kind(ws, code, error, kind):
     (402, 402, "nope", "insufficientCredit"),
     (400, 1407, "insufficient_credits", "insufficientCredit"),
     (403, 403, "Insufficient balance", "insufficientCredit"),
+    (400, 1401, "balance must be a number", "failed"),
+    (400, 1401, "credit field is invalid", "failed"),
     (400, 1200, "The content contains sensitive information.", "moderation"),
     (429, 429, "Too Many Requests", "rateLimit"),
     (401, 401, "Unauthorized", "invalidKey"),
@@ -984,6 +986,10 @@ def test_error_kind_1407_is_insufficient_credit():
     assert wavespeed.error_kind(None, 1407) == "insufficientCredit"
     assert wavespeed.error_kind(None, "1200") == "moderation"
     assert wavespeed.error_kind(500, None, "boom") == "failed"
+    # narrowed: bare "balance"/"credit" is not enough
+    assert wavespeed.error_kind(400, 1401, "balance must be a number") == "failed"
+    assert wavespeed.error_kind(400, None, "credit field is invalid") == "failed"
+    assert wavespeed.error_kind(400, None, "Insufficient credits") == "insufficientCredit"
 
 
 # --- #170: one mock error case per modality (image / video / audio / 3D) -------------------------------------------
