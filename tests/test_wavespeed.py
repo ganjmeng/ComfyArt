@@ -41,7 +41,7 @@ MODELS = [
     _meta("wavespeed-ai/minimax-h3/video-extend", {"video": {"type": "string"}, "prompt": {"type": "string"}, "duration": {"type": "integer", "enum": [3, 4, 5, 6, 7, 8]}}, ("prompt", "video"), price=0.04),
     _meta("wavespeed-ai/video-upscaler", {"video": {"type": "string"}, "target_resolution": {"type": "string", "enum": ["720p", "1080p", "2k", "4k"]}}, ("video",), price=0.005),
     _meta("wavespeed-ai/video-background-remover", {"video": {"type": "string"}}, ("video",), price=0.01),
-    _meta("wavespeed-ai/ace-step-1.5", {"tags": {"type": "string"}, "lyrics": {"type": "string"}, "duration": {"type": "number"}, "seed": {"type": "integer"}}, ("tags", "lyrics"), price=0.0003),
+    _meta("wavespeed-ai/ace-step-1.5", {"tags": {"type": "string"}, "lyrics": {"type": "string"}, "duration": {"type": "number", "minimum": 5, "maximum": 240}, "seed": {"type": "integer"}}, ("tags", "lyrics"), price=0.0003),
     _meta("elevenlabs/music-v2", {"prompt": {"type": "string"}, "music_length_ms": {"type": "integer"}}, ("prompt", "music_length_ms"), price=0.75),
     _meta("mirelo-ai/sfx-2.0/text-to-audio", {"prompt": {"type": "string"}, "duration": {"type": "number"}}, price=0.016),
     _meta("wavespeed-ai/qwen3-tts/text-to-speech", {"text": {"type": "string"}, "language": {"type": "string", "enum": ["auto", "Chinese", "English"]}, "voice": {"type": "string", "enum": ["Vivian", "Serena", "Uncle_Fu"]}}, ("text", "language", "voice"), price=0.005),
@@ -435,6 +435,15 @@ async def test_audio_tools(ws):
     assert m2 == "mirelo-ai/sfx-2.0/text-to-audio" and p2 == {"prompt": "door slam", "duration": 3}
     assert m3 == "wavespeed-ai/qwen3-tts/text-to-speech" and p3 == {"text": "你好", "voice": "Uncle_Fu", "language": "auto"}
     assert m4 == "wavespeed-ai/qwen3-tts/voice-clone" and p4["text"] == "hi" and p4["audio"].startswith("https://cdn.test/")
+
+
+async def test_music_duration_clamped_to_model_range(ws):
+    # bot generate_music accepts up to 1000 s; ace-step-1.5 only takes 5..240 s
+    await wavespeed.submit({"feature": "generate_music", "prompt": "lofi", "lyrics": "[verse] hi", "duration": 600})
+    await wavespeed.submit({"feature": "generate_music", "prompt": "lofi", "duration": 1})
+    (m1, p1), (_, p2) = ws["submits"]
+    assert m1 == "wavespeed-ai/ace-step-1.5" and p1 == {"tags": "lofi", "lyrics": "[verse] hi", "duration": 240}
+    assert p2["duration"] == 5 and p2["lyrics"] == "[instrumental]"
 
 
 async def test_expensive_music_reuses_confirmation(ws):

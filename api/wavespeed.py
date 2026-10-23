@@ -311,13 +311,27 @@ def _pick(options: list, value):
     return options[0]
 
 
+def _clamp(spec: dict, value):
+    """Keep a free numeric value inside the schema's minimum/maximum (e.g. ace-step-1.5 takes 5..240 s)."""
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return value
+    if spec.get("minimum") is not None:
+        num = max(num, float(spec["minimum"]))
+    if spec.get("maximum") is not None:
+        num = min(num, float(spec["maximum"]))
+    return int(num) if spec.get("type") == "integer" or num.is_integer() else num
+
+
 def _av_fields(props: dict, required: set, inputs: dict, payload: dict) -> None:
     """Video/audio knobs: duration, resolution, text, voice, language, lyrics."""
     seconds = inputs.get("duration")
     if seconds:
         if "duration" in props:
-            enum = props["duration"].get("enum")
-            payload["duration"] = _pick(enum, seconds) if enum else seconds
+            spec = props["duration"]
+            enum = spec.get("enum")
+            payload["duration"] = _pick(enum, seconds) if enum else _clamp(spec, seconds)
         elif "music_length_ms" in props:
             payload["music_length_ms"] = int(float(seconds) * 1000)
     if inputs.get("resolution") and props.get("resolution", {}).get("enum"):
