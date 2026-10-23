@@ -24,6 +24,12 @@ def mock_catalog(monkeypatch):
     monkeypatch.setattr(canvas, "grouped_models", wavespeed.grouped_models)
 
 
+def _rec(c):
+    """#134: curated 'models', plus the explicit default when it sits in 'more' (flare edit)."""
+    d = c.get("default")
+    return c["models"] + ([d] if d and d not in c["models"] else [])
+
+
 def _props(mid):
     return FIXTURE[mid]["api_schema"]["api_schemas"][0]["request_schema"]["properties"]
 
@@ -54,9 +60,10 @@ def test_curated_features_exist_and_sizes():
 def test_defaults_are_first_curated_and_config_matches():
     cfg = wavespeed.load_config()["features"]
     for f, c in CURATED.items():
-        assert cfg[f]["default"] == c["models"][0]
+        # #134: an explicit "default" wins, else the first curated id
+        assert cfg[f]["default"] == c.get("default", c["models"][0])
         assert [m["id"] for m in cfg[f]["models"]] == c["models"] + c.get("more", [])
-        assert cfg[f]["recommended"] == c["models"]
+        assert cfg[f]["recommended"] == _rec(c)
 
 
 def test_every_original_feature_keeps_a_model_and_valid_default():
@@ -69,7 +76,7 @@ def test_every_original_feature_keeps_a_model_and_valid_default():
 
 def test_product_defaults():
     cfg = wavespeed.load_config()["features"]
-    assert cfg["text_to_image"]["default"] == "openai/gpt-image-2/text-to-image"
+    assert cfg["text_to_image"]["default"] == "openai/gpt-image-2.5-flare/text-to-image"
     assert cfg["text_to_video"]["default"] == "bytedance/seedance-2.0/text-to-video"
     assert cfg["image_to_3d"]["default"] == "tripo3d/h3.1/image-to-3d"
 
@@ -78,15 +85,15 @@ async def test_picker_endpoint_data_is_curated():
     g = await wavespeed.grouped_models()
     for f, c in CURATED.items():
         assert [m["id"] for m in g[f]["models"]] == c["models"] + c.get("more", [])
-        assert [m["id"] for m in g[f]["models"] if m["recommended"]] == c["models"]
+        assert [m["id"] for m in g[f]["models"] if m["recommended"]] == [i for i in c["models"] + c.get("more", []) if i in _rec(c)]
         assert all(m["vendor"] for m in g[f]["models"])
-        assert [m["id"] for m in g[f]["models"] if m["default"]] == [c["models"][0]]
+        assert [m["id"] for m in g[f]["models"] if m["default"]] == [c.get("default", c["models"][0])]
 
 
 def test_resolve_model_rejects_uncurated():
     with pytest.raises(wavespeed.WaveSpeedError):
         wavespeed.resolve_model("text_to_image", "acme/not-curated")
-    assert wavespeed.resolve_model("text_to_image", None) == CURATED["text_to_image"]["models"][0]
+    assert wavespeed.resolve_model("text_to_image", None) == CURATED["text_to_image"]["default"]
 
 
 @pytest.mark.parametrize("kind", [None, *wavespeed.MODEL_KINDS, *CURATED])

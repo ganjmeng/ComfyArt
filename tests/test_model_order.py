@@ -42,7 +42,8 @@ def test_video_lovart_order_matches_comment_6355690165():
 async def test_dropdown_default_first_then_lovart_order(feature):
     f = (await wavespeed.grouped_models())[feature]
     order = f["picker_order"]
-    assert order[0] == f["default"]
+    # #134 design rule: the first curated id leads; an explicit default does not move in the dropdown
+    assert order[0] == CURATED[feature]["models"][0]
     assert sorted(order) == sorted(m["id"] for m in f["models"])
     rank = {n: i for i, n in enumerate(DISPLAY["lovart_order"]["video" if "video" in feature else "image"])}
     by_id = {m["id"]: m for m in f["models"]}
@@ -83,7 +84,9 @@ async def test_list_models_text_to_image_recommended_first():
     out = await canvas._list_models({"type": "text_to_image", "all": True})
     pages = [out] + [await canvas._list_models({"type": "text_to_image", "all": True, "page": p}) for p in range(2, out.get("pages", 1) + 1)]
     text = "\n".join(json.dumps(p, ensure_ascii=False, default=str) for p in pages)
-    rec = [i for i in CURATED["text_to_image"]["models"] if i in FIXTURE]
+    d = CURATED["text_to_image"].get("default")
+    rec = [i for i in ([d] if d else []) + CURATED["text_to_image"]["models"] if i in FIXTURE and (i == d or i != d and i not in ([d] if d else []))]
+    rec = list(dict.fromkeys(rec))  # #134: the agent list shows the default first
     more = [i for i in CURATED["text_to_image"].get("more", []) if i in FIXTURE]
     pos = [text.index(i) for i in rec + more if i in text]
     assert pos == sorted(pos)
