@@ -21,6 +21,7 @@ import { Popover } from './Popover'
 import { useElementSize, useSelectedGenerator, useSelectionRect } from './selection'
 import { t } from '../i18n'
 import { isEnter } from './keys'
+import { keyStatusAtom, outOfCredit } from '../wavespeedKey'
 
 const GAP = 12
 const EDGE = 8
@@ -53,6 +54,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
 
   useEffect(() => { prompt.current?.focus() }, [shape?.id])
 
+  const noCredit = outOfCredit(useValue(keyStatusAtom))
   if (!shape || !rect || running || canvasPick) return null
   const p = shape.props
   const update = (patch: Partial<GeneratorShape['props']>) => {
@@ -278,7 +280,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
         <AdvancedPill shape={shape} model={model} setMeta={setMeta} />
         <div className="ca-gen__spacer" />
         <ModelPill models={models} model={model} runOn={runOnOf(shape)} onPick={(id) => update({ workflow: id })} />
-        <button type="button" className="ca-gen__send" disabled={!ready} title={t('common.generate')} onClick={submit}>
+        <button type="button" className="ca-gen__send" disabled={!ready || noCredit} title={noCredit ? t('wsKey.needCredit') : t('common.generate')} onClick={submit}>
           <span className="ca-icon">{Icons.send}</span>
         </button>
       </div>

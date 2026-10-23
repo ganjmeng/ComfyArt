@@ -2,8 +2,9 @@
 
 The frontend queues a pseudo graph {"ws": {"class_type": "WaveSpeedRun", "inputs": {...}}}; this module
 submits it to WaveSpeed, polls the result, downloads outputs into ComfyUI's output folder and answers in
-ComfyUI /history shape so the existing job flow is unchanged. The API key only comes from the
-WAVESPEED_API_KEY environment variable and is never logged or sent to the browser.
+ComfyUI /history shape so the existing job flow is unchanged. The API key comes from the
+WAVESPEED_API_KEY environment variable (wins) or the key saved in Settings (a 0600 file in the ComfyUI user
+directory). It is never logged, and the browser only ever sees whether it is set and its last 4 characters.
 """
 
 import asyncio
@@ -25,7 +26,7 @@ import aiohttp
 import folder_paths
 from aiohttp import web
 
-from ._common import error, json_body, routes
+from ._common import app_path, error, json_body, routes
 
 log = logging.getLogger("comfyart.wavespeed")
 
@@ -55,10 +56,56 @@ class WaveSpeedError(Exception):
         self.confirm = confirm
 
 
+KEY_FILE = "wavespeed_key.json"
+
+
+def _key_path() -> str:
+    return app_path(KEY_FILE)
+
+
+def _saved_key() -> str:
+    try:
+        with open(_key_path(), encoding="utf-8") as f:
+            return str(json.load(f).get("key") or "").strip()
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+def _save_key(key: str) -> None:
+    path = _key_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump({"key": key}, f)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+
+
+def _delete_key() -> None:
+    try:
+        os.remove(_key_path())
+    except FileNotFoundError:
+        pass
+
+
+def key_source() -> tuple[str, str]:
+    """(key, source): the environment variable wins over the key saved in Settings."""
+    env = os.environ.get("WAVESPEED_API_KEY", "").strip()
+    if env:
+        return env, "env"
+    saved = _saved_key()
+    return (saved, "settings") if saved else ("", "none")
+
+
+def has_key() -> bool:
+    return bool(key_source()[0])
+
+
 def _key() -> str:
-    key = os.environ.get("WAVESPEED_API_KEY", "").strip()
+    key = key_source()[0]
     if not key:
-        raise WaveSpeedError("WaveSpeed needs an API key: set WAVESPEED_API_KEY and restart ComfyUI", 400)
+        raise WaveSpeedError("WaveSpeed needs an API key: add one in Settings > WaveSpeed API key or set WAVESPEED_API_KEY", 400)
     return key
 
 
@@ -83,7 +130,7 @@ def _status_error(status: int, body) -> WaveSpeedError:
     if isinstance(body, dict):
         msg = str(body.get("message") or (body.get("data") or {}).get("error") or "")
     if status == 401:
-        return WaveSpeedError("WaveSpeed rejected the API key (401): check WAVESPEED_API_KEY", 401)
+        return WaveSpeedError("WaveSpeed rejected the API key (401): check it in Settings > WaveSpeed API key", 401)
     if status == 402 or "balance" in msg.lower():
         return WaveSpeedError(f"WaveSpeed account balance is too low ({status}) {msg}".strip(), 402)
     if status == 429:
@@ -796,14 +843,79 @@ async def wavespeed_caption(request: web.Request) -> web.Response:
 
 @routes.get("/comfyart/wavespeed/models")
 async def wavespeed_models(request: web.Request) -> web.Response:
-    return web.json_response({"enabled": bool(os.environ.get("WAVESPEED_API_KEY")), "stale": bool(_catalog.get("stale")), "features": await grouped_models(request.query.get("refresh") == "1")})
+    return web.json_response({"enabled": has_key(), "stale": bool(_catalog.get("stale")), "features": await grouped_models(request.query.get("refresh") == "1")})
+
+
+async def fetch_balance(key: str) -> float:
+    """Free GET /api/v3/balance. Raises WaveSpeedError: 401 invalid key, 503 network, other codes as-is."""
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20)) as session:
+            async with session.get(f"{_base()}/api/v3/balance", headers={"Authorization": f"Bearer {key}"}) as res:
+                body = await _json(res)
+                if res.status in (401, 403):
+                    raise WaveSpeedError("WaveSpeed rejected the API key", 401)
+                if res.status != 200 or not isinstance(body, dict) or body.get("code") not in (None, 200):
+                    raise _status_error(res.status if res.status != 200 else 502, body)
+                balance = (body.get("data") or {}).get("balance")
+    except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
+        raise WaveSpeedError(f"could not reach WaveSpeed ({type(e).__name__})", 503) from e
+    if not isinstance(balance, (int, float)):
+        raise WaveSpeedError("WaveSpeed returned no balance", 502)
+    return float(balance)
+
+
+def _key_status(balance: float | None = None, err: str | None = None) -> dict:
+    key, source = key_source()
+    out: dict = {"configured": bool(key), "source": source, "last4": key[-4:] if len(key) >= 8 else "", "balance": balance}
+    if err:
+        out["error"] = err
+    return out
+
+
+def _reason(e: WaveSpeedError) -> str:
+    return {401: "invalid", 503: "network"}.get(e.status, "error")
+
+
+@routes.get("/comfyart/wavespeed/key")
+async def wavespeed_key_status(request: web.Request) -> web.Response:
+    """Key status for Settings and the top bar: never the key itself, only source + last 4 + balance."""
+    key = key_source()[0]
+    if not key or request.query.get("balance") == "0":
+        return web.json_response(_key_status())
+    try:
+        return web.json_response(_key_status(await fetch_balance(key)))
+    except WaveSpeedError as e:
+        return web.json_response(_key_status(err=_reason(e)))
+
+
+@routes.put("/comfyart/wavespeed/key")
+async def wavespeed_key_save(request: web.Request) -> web.Response:
+    if key_source()[1] == "env":
+        return error("the key comes from WAVESPEED_API_KEY and can't be changed here", 409)
+    key = str((await json_body(request)).get("key") or "").strip()
+    if not key or len(key) > 512 or any(c.isspace() for c in key):
+        return error("enter a WaveSpeed API key", 400)
+    try:
+        balance = await fetch_balance(key)
+    except WaveSpeedError as e:
+        # invalid or unreachable keys are not saved; the reason drives the message in Settings
+        return web.json_response({"error": {"message": str(e), "reason": _reason(e)}}, status=e.status)
+    _save_key(key)
+    log.info("[ComfyArt] WaveSpeed key saved in settings")
+    return web.json_response(_key_status(balance))
+
+
+@routes.delete("/comfyart/wavespeed/key")
+async def wavespeed_key_delete(_request: web.Request) -> web.Response:
+    _delete_key()
+    return web.json_response(_key_status())
 
 
 def check_key_at_startup() -> None:
     """Validate the key once with the free /balance endpoint and log pass/fail (never the key itself)."""
-    key = os.environ.get("WAVESPEED_API_KEY", "").strip()
+    key = key_source()[0]
     if not key:
-        log.warning("[ComfyArt] WAVESPEED_API_KEY is not set: cloud generation is disabled")
+        log.warning("[ComfyArt] no WaveSpeed key (Settings or WAVESPEED_API_KEY): cloud generation is disabled")
         return
 
     def run() -> None:

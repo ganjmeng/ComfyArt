@@ -8,6 +8,7 @@ import { dockAtom, setDock } from './chatDock'
 import { Icons } from './icons'
 import { Popover } from './Popover'
 import { shortcutsAtom } from './Shortcuts'
+import { keySettingsOpenAtom } from '../wavespeedKey'
 
 const LANGS: [Lang, string][] = [['zh', t('settings.langZh')], ['en', t('settings.langEn')]]
 const SIDES: ['left' | 'right', string][] = [['left', t('settings.chatLeft')], ['right', t('settings.chatRight')]]
@@ -35,6 +36,10 @@ export function SettingsMenu({ editor, trigger }: { editor?: Editor; trigger: (p
           <div className="ca-menu__sep" />
           <div className="ca-gen__label">{t('projectHeader.theme')}</div>
           {THEMES.map(([value, label]) => <Choice key={value} label={label} on={theme === value} onPick={() => (editor ? setTheme(editor, value) : saveTheme(value))} />)}
+          <div className="ca-menu__sep" />
+          <button type="button" className="ca-menu__item" onClick={() => { setOpen(false); keySettingsOpenAtom.set(true) }}>
+            <span className="ca-icon">{Icons.settings}</span><span className="ca-menu__grow">{t('wsKey.menu')}</span>
+          </button>
           {editor && (
             <>
               <div className="ca-menu__sep" />

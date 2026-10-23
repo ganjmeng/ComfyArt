@@ -206,7 +206,7 @@ async def test_missing_key(ws, monkeypatch):
     monkeypatch.delenv("WAVESPEED_API_KEY")
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
-    assert "WAVESPEED_API_KEY" in str(e.value)
+    assert "WAVESPEED_API_KEY" in str(e.value) and "Settings" in str(e.value)
 
 
 async def test_app_concurrency_limit(ws, monkeypatch):
