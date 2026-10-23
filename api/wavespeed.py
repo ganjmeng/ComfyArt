@@ -38,6 +38,7 @@ def _base() -> str:
 
 
 CONFIG = os.path.join(os.path.dirname(__file__), "wavespeed_models.json")
+CURATED = os.path.join(os.path.dirname(__file__), "curated_models.json")
 CATALOG_TTL = 24 * 3600
 POLL_MIN = 2.0
 POLL_MAX_BACKOFF = 15.0
@@ -114,9 +115,27 @@ def _headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {_key()}"}
 
 
+def load_curated() -> dict:
+    """feature -> {"needs": [...], "models": [ids]} from api/curated_models.json (#95); first id = default."""
+    with open(CURATED, encoding="utf-8") as f:
+        return json.load(f)["features"]
+
+
+def apply_curation(cfg: dict, curated: dict) -> dict:
+    """Narrow each curated feature to exactly the curated ids (in order, first = default)."""
+    for name, cur in curated.items():
+        feature = cfg["features"].get(name)
+        if feature is None or not cur.get("models"):
+            continue
+        old = {m["id"]: m for m in feature["models"]}
+        feature["models"] = [old.get(i, {"id": i}) for i in cur["models"]]
+        feature["default"] = cur["models"][0]
+    return cfg
+
+
 def load_config() -> dict:
     with open(CONFIG, encoding="utf-8") as f:
-        return json.load(f)
+        return apply_curation(json.load(f), load_curated())
 
 
 def feature_of(tool_or_feature: str) -> str:
@@ -231,17 +250,28 @@ async def grouped_models(refresh: bool = False) -> dict:
 
 
 AUDIO_FEATURES = {"music", "sound_effect", "text_to_speech", "voice_clone", "transcribe"}
-MODEL_KINDS = ("image", "image_tools", "video", "audio", "3d")
+MODEL_KINDS = ("image", "image_tools", "video", "video_tools", "audio", "3d")
+VIDEO_TOOLS = {"upscale_video", "remove_video_background"}
 
 
 def feature_kind(name: str) -> str:
     if "3d" in name:
         return "3d"
+    if name in VIDEO_TOOLS:  # own kind so "video" fits the 4000-char cap with 5 curated models (#95)
+        return "video_tools"
     if "video" in name or name in ("motion_control", "lip_sync"):
         return "video"
     if name in AUDIO_FEATURES:
         return "audio"
     return "image" if name in ("text_to_image", "image_edit") else "image_tools"
+
+
+def _compact_choices(v):
+    """[3, 4, ..., 15] -> "3-15" so the video kind stays under the 4000-char cap (#95)."""
+    if (isinstance(v, list) and len(v) >= 4 and all(isinstance(x, int) and not isinstance(x, bool) for x in v)
+            and v == list(range(v[0], v[0] + len(v)))):
+        return f"{v[0]}-{v[-1]}"
+    return v
 
 
 def compact_models(grouped: dict, kind: str | None = None, tool_features: dict | None = None) -> dict:
@@ -253,7 +283,7 @@ def compact_models(grouped: dict, kind: str | None = None, tool_features: dict |
     if not kind:
         return {"defaults": {n: f["default"] for n, f in live.items()},
                 "kinds": {k: [n for n in live if feature_kind(n) == k] for k in MODEL_KINDS},
-                "hint": "call list_models with type image, image_tools, video, audio, 3d or a feature name to get all ids and prices"}
+                "hint": "call list_models with type image, image_tools, video, video_tools, audio, 3d or a feature name to get all ids and prices"}
     names = [kind] if kind in live else [n for n in live if feature_kind(n) == kind]
     if not names:
         raise WaveSpeedError(f"unknown type {kind!r}; use one of {', '.join(MODEL_KINDS)} or a feature name", 400)
@@ -265,7 +295,7 @@ def compact_models(grouped: dict, kind: str | None = None, tool_features: dict |
     if "generate_video" in tools.get("image_to_video", []):
         tools.setdefault("text_to_video", []).insert(0, "generate_video")
     return {n: {"tools": tools.get(n, []), "default": live[n]["default"],
-                "models": [{"id": m["id"], "usd": m.get("price"), **{k: m[k] for k in keep if m.get(k)}}
+                "models": [{"id": m["id"], "usd": m.get("price"), **{k: _compact_choices(m[k]) for k in keep if m.get(k)}}
                            for m in live[n]["models"]]}
             for n in names}
 

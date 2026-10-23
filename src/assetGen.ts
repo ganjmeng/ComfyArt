@@ -42,7 +42,7 @@ export function generateAudio(editor: Editor, spec: AudioSpec, onError: ErrorSin
 export type Model3d = 'trellis2' | 'pixal3d'
 
 async function modelGraph(image: string, model: Model3d): Promise<Built> {
-  void model // legacy local names; the WaveSpeed default (trellis-2) or the agent's model is used
+  void model // legacy local names; the curated WaveSpeed default or the agent's model is used
   return wsBuilt({ feature: 'image_to_3d', image })
 }
 
