@@ -67,9 +67,8 @@ async def test_price_api_400_is_an_estimate_for_the_submitted_tier(seed, monkeyp
     seed["prices"].pop(SEED, None)  # unknown to the price API -> 400
     job = {**JOB, "resolution": "1K"}
     est = await wavespeed.estimate(job)
-    assert est["source"] == "estimate" and est["price"] == 0.24 and est["confirm"] is True
-    assert est["tier"] == "480p · 5s"
-    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 100.0)  # even far below the confirm line, an estimate asks
+    assert est["source"] == "estimate" and est["price"] == 0.24 and est["tier"] == "480p · 5s"
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.0)  # 0 = always confirm, so the dialog shows
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.submit(job)
     assert e.value.status == 409 and e.value.estimate and e.value.tier == "480p · 5s" and not seed["submits"]
@@ -85,8 +84,8 @@ async def test_price_api_400_is_an_estimate_for_the_submitted_tier(seed, monkeyp
         assert word in loc["wsKey.estimatedTag"]
 
 
-async def test_no_silent_catalog_source_anywhere(seed):
-    assert (await wavespeed.estimate({"feature": "music", "model": "elevenlabs/music-v2", "prompt": "x"}))["source"] == "estimate"
+def test_no_silent_catalog_source_anywhere():
+    # the catalog fallback is labelled 'estimate' (test_wavespeed::test_estimate_falls_back_to_catalog_price_marked_as_estimate)
     assert '"catalog"' not in (ROOT / "api/wavespeed.py").read_text().split("async def quote(")[1].split("async def estimate(")[0]
 
 

@@ -673,7 +673,7 @@ def _unit(v) -> str:
 
 
 def _pick(options: list, value):
-    """Exact enum match (case-insensitive), else the numerically nearest option *with the same unit*, else the first.
+    """Exact enum match (case-insensitive), else the numerically nearest option when the value has the enum's unit, else the first.
     #159: an image tier like '1K' is never matched by number against video tiers (it used to land on '4k')."""
     for o in options:
         if str(o).lower() == str(value).lower():
@@ -682,6 +682,8 @@ def _pick(options: list, value):
     if not digits:
         return options[0]
     unit = _unit(value)
+    if unit != _unit(options[0]):
+        return options[0]  # #159: '1K' against 480p/720p/1080p/4k is not a number to round, so the first tier
     try:
         num = float(digits)
         nums = [(abs(float(re.sub(r"[^0-9.]", "", str(o)) or "inf") - num), o) for o in options if _unit(o) == unit]
@@ -1050,7 +1052,7 @@ async def estimate(inputs: dict) -> dict:
             extra = await _steps_price(inputs)  # depth / sam3 map calls are paid too (#80)
             price = None if extra is None else round(float(price) + extra, 6)
     out = {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
-           "confirm": (needs_confirm(price) or source == "estimate") if price is not None else confirm_usd() == 0}
+           "confirm": needs_confirm(price) if price is not None else confirm_usd() == 0}
     if not isinstance(inputs.get("scenes"), list) and tier:
         out["tier"] = tier
     return out
@@ -1328,8 +1330,8 @@ async def submit(inputs: dict) -> str:
         if feature == "structure_control" and price is not None:
             extra = await _steps_price(inputs)
             price = None if extra is None else round(float(price) + extra, 6)
-        if price is not None and (needs_confirm(price) or source == "estimate"):
-            # expensive job, or #159 an estimate (price API failed): the page asks and resubmits with confirmed=true
+        if price is not None and needs_confirm(price):
+            # expensive job: the page asks and resubmits with confirmed=true; #159 an estimate is labelled as one
             raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped,
                                  estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)))
     async with aiohttp.ClientSession(headers=_headers()) as session:
@@ -1361,7 +1363,7 @@ async def _submit_scenes(inputs: dict) -> str:
     chain_model = resolve_model("image_to_video", base.get("model") if base.get("feature") == "image_to_video" else None)
     est = await estimate({**base, "scenes": scenes})
     total = est["price"] or 0.0
-    if (needs_confirm(total) or est["source"] == "estimate") and not base.get("confirmed"):
+    if needs_confirm(total) and not base.get("confirmed"):
         raise WaveSpeedError(f"{len(scenes)} scenes cost about ${total:.2f}; confirm to continue", 409, confirm=round(total, 2), estimate=est["source"] == "estimate")
     jobs = [{**base, "feature": feature if i == 0 else "image_to_video", "model": first_model if i == 0 else chain_model,
              "confirmed": True, "prompt": str(sc["prompt"]), **({"duration": sc["duration"]} if sc.get("duration") else {})}
