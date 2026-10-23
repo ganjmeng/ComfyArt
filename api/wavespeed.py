@@ -40,6 +40,7 @@ def _base() -> str:
 CONFIG = os.path.join(os.path.dirname(__file__), "wavespeed_models.json")
 CATALOG_TTL = 24 * 3600
 POLL_MIN = 2.0
+POLL_MAX_BACKOFF = 15.0
 JOB_TIMEOUT = float(os.environ.get("WAVESPEED_JOB_TIMEOUT") or 30 * 60)
 ANNOTATED = re.compile(r"^(.+) \[(input|output|temp)\]$")
 SUBFOLDER = "wavespeed"
@@ -746,6 +747,8 @@ async def _download(session: aiohttp.ClientSession, task: str, index: int, url: 
     if not os.path.isfile(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         async with session.get(url) as res:
+            if res.status >= 500 or res.status == 429:
+                raise _Transient(f"download HTTP {res.status}")
             if res.status >= 400:
                 raise WaveSpeedError(f"downloading WaveSpeed output failed ({res.status})")
             data = await res.read()
@@ -783,6 +786,28 @@ async def poll(task: str) -> dict:
     if now < job["next_poll"]:
         return _history(task, "processing", [], {})
     job["next_poll"] = now + POLL_MIN
+    try:
+        return await _poll_once(task, job, now)
+    except (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError, OSError) as e:
+        # result GET is free: a network blip only delays the next check, never resubmits
+        return _backoff(task, job, now, type(e).__name__)
+    except _Transient as e:
+        return _backoff(task, job, now, str(e))
+
+
+class _Transient(Exception):
+    """Retryable result/download failure (5xx)."""
+
+
+def _backoff(task: str, job: dict, now: float, reason: str) -> dict:
+    n = job.get("errors", 0)
+    job["errors"] = n + 1
+    job["next_poll"] = now + min(max(POLL_MIN, 0.01) * 2 ** n, POLL_MAX_BACKOFF)
+    log.warning("WaveSpeed poll for %s hit a transient error (%s), retry #%d", task, reason, n + 1)
+    return _history(task, "processing", [], {})
+
+
+async def _poll_once(task: str, job: dict, now: float) -> dict:
     async with aiohttp.ClientSession(headers=_headers()) as session:
         async with session.get(f"{_base()}/api/v3/predictions/{task}/result") as res:
             body = await _json(res)
@@ -796,7 +821,8 @@ async def poll(task: str) -> dict:
                 err = _status_error(res.status, body)
                 if res.status in (401, 402, 403):
                     return _fail(task, str(err))
-                return _history(task, "processing", [], {})
+                raise _Transient(f"HTTP {res.status}")
+        job["errors"] = 0
         data = (body or {}).get("data") or {}
         status = data.get("status")
         if status == "failed":
@@ -822,12 +848,15 @@ async def run_raw(inputs: dict, timeout: float = 120.0) -> list:
         async with aiohttp.ClientSession(headers=_headers()) as session:
             while time.time() < deadline:
                 await asyncio.sleep(max(POLL_MIN, 0.01))
-                async with session.get(f"{_base()}/api/v3/predictions/{task}/result") as res:
-                    body = await _json(res)
-                    if res.status == 429:
-                        continue
-                    if res.status >= 400:
-                        raise _status_error(res.status, body)
+                try:
+                    async with session.get(f"{_base()}/api/v3/predictions/{task}/result") as res:
+                        body = await _json(res)
+                        if res.status == 429 or res.status >= 500:
+                            continue
+                        if res.status >= 400:
+                            raise _status_error(res.status, body)
+                except (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError):
+                    continue  # free result GET: retry until the deadline, never resubmit
                 data = (body or {}).get("data") or {}
                 if data.get("status") == "failed":
                     raise WaveSpeedError(f"WaveSpeed task failed: {data.get('error') or 'unknown error'}")
