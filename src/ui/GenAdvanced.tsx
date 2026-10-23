@@ -4,7 +4,7 @@ import { useValue } from 'tldraw'
 import { lorasOf, negativeOf, seedOf } from '../generate'
 import { randomSeed } from '../workflows'
 import { DEFAULT_LORA_STRENGTH, loadLoras, loraFavoritesAtom, loraLabel, lorasAtom, toggleFavorite } from '../loras'
-import type { ModelDef } from '../models'
+import { hasNegative, type ModelDef } from '../models'
 import type { GeneratorShape } from '../shapes/GeneratorShape'
 import { t } from '../i18n'
 import { Icons } from './icons'
@@ -24,7 +24,8 @@ export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape;
   useEffect(() => { if (open && hasLora) void loadLoras() }, [open, hasLora])
 
   const seed = seedOf(shape)
-  const negative = negativeOf(shape)
+  const showNegative = hasNegative(model)
+  const negative = showNegative ? negativeOf(shape) : ''
   const loras = lorasOf(shape)
   const count = (seed != null ? 1 : 0) + (negative ? 1 : 0) + (hasLora ? loras.length : 0)
   const needle = query.trim().toLowerCase()
@@ -50,7 +51,7 @@ export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape;
             </>
           )}
         </div>
-        {model.negative && (
+        {showNegative && (
           <>
             <div className="ca-gen__label">{t('genAdvanced.negativePrompt')}</div>
             <textarea className="ca-adv__negative" value={negative} placeholder={t('genAdvanced.negativeHint')} onChange={(e) => setMeta({ negative: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />

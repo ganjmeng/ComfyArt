@@ -17,6 +17,8 @@ export interface WsInputs {
   height?: number
   ratio?: string
   seed?: number
+  /** #201: sent only for models whose schema has negative_prompt. */
+  negative_prompt?: string
   png?: boolean
   video?: string
   audio?: string
