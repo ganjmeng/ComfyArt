@@ -986,21 +986,19 @@ def _structure_pick(inputs: dict) -> str:
 
 def _map_steps(inputs: dict) -> list[str]:
     """Features of the extra cloud map calls (depth-anything / sam3) a structure job runs before control."""
-    cs = [{**c, "prompt": inputs.get("prompt")} for c in _controls(inputs)]
+    cs = _controls(inputs)
     return [refprep.CLOUD_MAP[str(c.get("mode") or "")][0] for c in cs
             if str(c.get("mode") or "") in refprep.CLOUD_MAP and _map_key(c) not in _map_cache]
 
 
 # #81: cloud maps (depth / normal / seg) already extracted for a preview, keyed on (src, mode, res), so the
 # job that follows reuses the map with no second extraction or charge while those three are unchanged.
-_map_cache: dict[tuple, bytes] = {}
+_map_cache: dict[tuple[str, str, int], bytes] = {}
 _MAP_CACHE_MAX = 32
 
 
-def _map_key(c: dict, res_default: int = 1024) -> tuple:
-    key = (str(c.get("image") or ""), str(c.get("mode") or ""), int(c.get("res") or res_default))
-    # #120: a seg map depends on the text prompt sam3 got, so it is part of the key
-    return (*key, str(c.get("prompt") or "").strip()) if key[1] == "seg" else key
+def _map_key(c: dict, res_default: int = 1024) -> tuple[str, str, int]:
+    return (str(c.get("image") or ""), str(c.get("mode") or ""), int(c.get("res") or res_default))
 
 
 async def _steps_price(inputs: dict) -> float | None:
@@ -1063,7 +1061,7 @@ async def _control_map(c: dict, size, res_default: int = 1024, fresh: bool = Fal
 def preview_estimate(inputs: dict) -> list[str]:
     """Map-call features a preview request would pay for: none when cached, unless `fresh` (re-extract)."""
     image, mode, res = str(inputs.get("image") or ""), str(inputs.get("mode") or ""), int(inputs.get("res") or 1024)
-    if mode not in refprep.CLOUD_MAP or (not inputs.get("fresh") and _map_key({"image": image, "mode": mode, "res": res, "prompt": inputs.get("prompt")}) in _map_cache):
+    if mode not in refprep.CLOUD_MAP or (not inputs.get("fresh") and (image, mode, res) in _map_cache):
         return []
     return [refprep.CLOUD_MAP[mode][0]]
 
@@ -1081,7 +1079,7 @@ async def control_preview(inputs: dict) -> bytes:
     fresh = bool(inputs.get("fresh"))
     # #109: one rule — preview_estimate says which map calls this request pays for (none when cached, unless fresh)
     prompt = str(inputs.get("prompt") or "").strip()
-    paid = [] if inputs.get("confirmed") else preview_estimate({"image": image, "mode": mode, "res": res, "fresh": fresh, "prompt": prompt})
+    paid = [] if inputs.get("confirmed") else preview_estimate({"image": image, "mode": mode, "res": res, "fresh": fresh})
     if paid:
         price, _ = await quote(resolve_model(paid[0], None), {})
         if price is not None and needs_confirm(price):

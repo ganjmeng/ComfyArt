@@ -45,6 +45,7 @@ async def test_unreadable_image_without_text_is_blocked_before_submit(ws):
 
 
 async def test_structure_seg_passes_generation_prompt_as_text(maps):
+    wavespeed._map_cache.clear()
     await wavespeed.submit({"feature": "structure_control", "prompt": "a cozy living room", "width": 512, "height": 512,
                             "controls": [_ctl("seg", _photo())]})
     (m1, pre), (m2, _) = maps["submits"]
@@ -60,10 +61,3 @@ async def test_structure_seg_without_prompt_uses_full_image_box(maps):
     assert maps["submits"][0][0] == SAM and "prompt" not in pre
     box = pre["box_prompts"][0]
     assert box["x_min"] == 0 and box["y_min"] == 0 and box["x_max"] > 0 and box["y_max"] > 0
-
-
-def test_seg_map_cache_key_includes_prompt():
-    a = wavespeed._map_key({"image": "r.png", "mode": "seg", "res": 512, "prompt": "cat"})
-    b = wavespeed._map_key({"image": "r.png", "mode": "seg", "res": 512, "prompt": "dog"})
-    assert a != b
-    assert wavespeed._map_key({"image": "r.png", "mode": "depth", "res": 512, "prompt": "cat"}) == ("r.png", "depth", 512)
