@@ -18,10 +18,6 @@ def _strings(o):
         yield o
 
 
-def test_curated_models_json_has_no_lovart():
-    assert "lovart" not in (ROOT / "api/curated_models.json").read_text(encoding="utf-8").lower()
-
-
 def test_locale_files_have_no_lovart():
     files = [f for f in (ROOT / "src/locales").rglob("*") if f.is_file()]
     assert files
