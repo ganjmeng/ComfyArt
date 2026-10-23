@@ -58,11 +58,10 @@ async def bot_complete(request: web.Request) -> web.Response:
 @routes.post("/comfyart/llm/complete")
 async def llm_complete(request: web.Request) -> web.Response:
     """One-shot completion on the user's OpenAI-compatible LLM endpoint (the Local LLM setting)."""
-    import os
-
     import aiohttp
 
-    from ..bot.local_llm import _API_KEY_ENV, _user_content
+    from ..bot.local_llm import _user_content
+    from .llm_key import llm_api_key
 
     body = await json_body(request)
     text = str(body.get("text") or "").strip()
@@ -78,8 +77,8 @@ async def llm_complete(request: web.Request) -> web.Response:
     except MEDIA_ERRORS as e:
         return error(str(e), 400)
     headers = {"Content-Type": "application/json"}
-    if os.environ.get(_API_KEY_ENV):
-        headers["Authorization"] = f"Bearer {os.environ[_API_KEY_ENV]}"
+    if key := llm_api_key(base):
+        headers["Authorization"] = f"Bearer {key}"
     messages = ([{"role": "system", "content": system}] if system else []) + [{"role": "user", "content": _user_content(text, attachments)}]
     try:
         async with aiohttp.ClientSession(headers=headers, timeout=aiohttp.ClientTimeout(total=300)) as session:

@@ -561,6 +561,39 @@ async def _upload(session: aiohttp.ClientSession, path: str, data: bytes | None 
     return url
 
 
+async def _image_size(value: str) -> tuple[int, int] | None:
+    """Pixel size of a source image, or None when it can't be read."""
+    from PIL import Image
+
+    try:
+        if value.startswith("data:"):
+            import base64
+            data = base64.b64decode(value.split(",", 1)[1])
+        else:
+            data = await _source_bytes(value)
+        with Image.open(io.BytesIO(data)) as img:
+            return img.size
+    except Exception:  # noqa: BLE001 - unreadable source: the caller falls back to the pre-submit error
+        return None
+
+
+async def seg_prompts(inputs: dict) -> dict:
+    """#120: sam3-image needs at least one of prompt / box_prompts / point_prompts. Use the user's boxes or
+    points when given; else the object description (or this generation's prompt) as text; else one
+    full-image box. With none of those the job fails here, before submit, so nothing is charged."""
+    params = dict(inputs.get("params") or {})
+    if params.get("box_prompts") or params.get("point_prompts"):
+        return inputs
+    text = str(inputs.get("prompt") or inputs.get("object") or "").strip()
+    if text:
+        return {**inputs, "prompt": text}
+    size = await _image_size(str(inputs.get("image") or "")) if inputs.get("image") else None
+    if not size:
+        raise WaveSpeedError(SEG_TARGET_MISSING, 400)
+    params["box_prompts"] = [{"x_min": 0, "y_min": 0, "x_max": int(size[0]), "y_max": int(size[1])}]
+    return {**inputs, "params": params}
+
+
 async def _media(session: aiohttp.ClientSession, value: str) -> str:
     if value.startswith(("http://", "https://", "data:")):
         return value
@@ -644,6 +677,9 @@ def _clamp(spec: dict, value):
 
 
 VOICE_SAMPLE_MISSING = "Please upload a voice sample first"
+# #120: wavespeed-ai/sam3-image rejects a job with no prompt, box or point; caught before submit (no charge)
+SEG_TARGET_MISSING = "Select or describe the object to segment first"
+SAM3_MODEL = "wavespeed-ai/sam3-image"
 
 
 def default_voice(spec: dict) -> str | None:
@@ -950,19 +986,21 @@ def _structure_pick(inputs: dict) -> str:
 
 def _map_steps(inputs: dict) -> list[str]:
     """Features of the extra cloud map calls (depth-anything / sam3) a structure job runs before control."""
-    cs = _controls(inputs)
+    cs = [{**c, "prompt": inputs.get("prompt")} for c in _controls(inputs)]
     return [refprep.CLOUD_MAP[str(c.get("mode") or "")][0] for c in cs
             if str(c.get("mode") or "") in refprep.CLOUD_MAP and _map_key(c) not in _map_cache]
 
 
 # #81: cloud maps (depth / normal / seg) already extracted for a preview, keyed on (src, mode, res), so the
 # job that follows reuses the map with no second extraction or charge while those three are unchanged.
-_map_cache: dict[tuple[str, str, int], bytes] = {}
+_map_cache: dict[tuple, bytes] = {}
 _MAP_CACHE_MAX = 32
 
 
-def _map_key(c: dict, res_default: int = 1024) -> tuple[str, str, int]:
-    return (str(c.get("image") or ""), str(c.get("mode") or ""), int(c.get("res") or res_default))
+def _map_key(c: dict, res_default: int = 1024) -> tuple:
+    key = (str(c.get("image") or ""), str(c.get("mode") or ""), int(c.get("res") or res_default))
+    # #120: a seg map depends on the text prompt sam3 got, so it is part of the key
+    return (*key, str(c.get("prompt") or "").strip()) if key[1] == "seg" else key
 
 
 async def _steps_price(inputs: dict) -> float | None:
@@ -993,9 +1031,11 @@ async def _prepped(session: aiohttp.ClientSession, value: str, mode: str, res: i
     return await _upload(session, "", data, f"ref-{mode}-{uuid.uuid4().hex[:8]}.png")
 
 
-async def _cloud_map(feature: str, params: dict, image: str) -> bytes:
-    """One paid map call (depth-anything-v3 / sam3-image); already covered by the confirmed estimate."""
-    outs = await run_raw({"feature": feature, "image": image, "params": dict(params), "confirmed": True})
+async def _cloud_map(feature: str, params: dict, image: str, prompt: str = "") -> bytes:
+    """One paid map call (depth-anything-v3 / sam3-image); already covered by the confirmed estimate.
+    #120: the seg map passes this generation's prompt to sam3-image as its text prompt."""
+    outs = await run_raw({"feature": feature, "image": image, "params": dict(params), "confirmed": True,
+                          **({"prompt": prompt} if prompt else {})})
     if not outs:
         raise WaveSpeedError(f"{feature} returned no map", 502)
     return await _source_bytes(str(outs[0]))
@@ -1009,7 +1049,7 @@ async def _control_map(c: dict, size, res_default: int = 1024, fresh: bool = Fal
         data = None if fresh else _map_cache.get(key)  # fresh: 「重新提取」 forces a new paid extraction
         if data is None:
             feature, params = refprep.CLOUD_MAP[mode]
-            data = await _cloud_map(feature, params, str(c["image"]))
+            data = await _cloud_map(feature, params, str(c["image"]), str(c.get("prompt") or "").strip() if feature == "segment" else "")
             _map_cache.pop(key, None)  # the new map replaces the old entry
             if len(_map_cache) >= _MAP_CACHE_MAX:
                 _map_cache.pop(next(iter(_map_cache)))
@@ -1023,7 +1063,7 @@ async def _control_map(c: dict, size, res_default: int = 1024, fresh: bool = Fal
 def preview_estimate(inputs: dict) -> list[str]:
     """Map-call features a preview request would pay for: none when cached, unless `fresh` (re-extract)."""
     image, mode, res = str(inputs.get("image") or ""), str(inputs.get("mode") or ""), int(inputs.get("res") or 1024)
-    if mode not in refprep.CLOUD_MAP or (not inputs.get("fresh") and (image, mode, res) in _map_cache):
+    if mode not in refprep.CLOUD_MAP or (not inputs.get("fresh") and _map_key({"image": image, "mode": mode, "res": res, "prompt": inputs.get("prompt")}) in _map_cache):
         return []
     return [refprep.CLOUD_MAP[mode][0]]
 
@@ -1040,14 +1080,15 @@ async def control_preview(inputs: dict) -> bytes:
     # #81: `fresh` is 「重新提取」 — skip the cache, re-run (and re-confirm) the paid extraction
     fresh = bool(inputs.get("fresh"))
     # #109: one rule — preview_estimate says which map calls this request pays for (none when cached, unless fresh)
-    paid = [] if inputs.get("confirmed") else preview_estimate({"image": image, "mode": mode, "res": res, "fresh": fresh})
+    prompt = str(inputs.get("prompt") or "").strip()
+    paid = [] if inputs.get("confirmed") else preview_estimate({"image": image, "mode": mode, "res": res, "fresh": fresh, "prompt": prompt})
     if paid:
         price, _ = await quote(resolve_model(paid[0], None), {})
         if price is not None and needs_confirm(price):
             raise WaveSpeedError(f"control map preview costs about ${price}; confirm to continue", 409, confirm=float(price))
     if mode in refprep.COLOR:
         return refprep.process_bytes(await _source_bytes(image), mode, res)
-    return refprep.to_png(await _control_map({"image": image, "mode": mode, "res": res}, None, fresh=fresh))
+    return refprep.to_png(await _control_map({"image": image, "mode": mode, "res": res, "prompt": prompt}, None, fresh=fresh))
 
 
 async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> dict:
@@ -1071,7 +1112,7 @@ async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> 
             params.update({"mode": "pose" if c.get("mode") == "pose" else "canny", "strength": min(1.0, strengths[0])})
         else:
             inputs.pop("image", None)
-            maps = [await _control_map(c, size) for c in controls]
+            maps = [await _control_map({**c, "prompt": inputs.get("prompt")}, size) for c in controls]
             img = maps[0] if len(maps) == 1 else refprep.composite(list(zip(maps, strengths)), size or maps[0].size)
             params.update({
                 "control_image": await _upload(session, "", refprep.to_png(img), f"ref-control-{uuid.uuid4().hex[:8]}.png"),
@@ -1104,6 +1145,8 @@ async def submit(inputs: dict) -> str:
     meta = (await catalog()).get(model)
     if meta and needs_voice_sample(model, feature, _schema(meta), inputs):
         raise WaveSpeedError(VOICE_SAMPLE_MISSING, 400)
+    if feature == "segment" or model == SAM3_MODEL:
+        inputs = await seg_prompts(inputs)
     if not inputs.get("confirmed"):
         price, _ = await quote(model, inputs)
         if feature == "structure_control" and price is not None:
