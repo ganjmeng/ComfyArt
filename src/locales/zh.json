@@ -646,7 +646,7 @@
   "jobs.confirmEstimate": "估算价：约 ${0}（暂时查不到实时价格，以实际扣费为准），确定继续吗？",
   "jobs.confirmEstimateTier": "估算价：{1} 约 ${0}（暂时查不到实时价格，以实际扣费为准），确定继续吗？",
   "jobs.thisTier": "所选档位",
-  "jobs.confirmUnpriced": "暂时查不到准确价格，继续会按 {0} 实际扣费",
+  "jobs.confirmUnpriced": "暂时查不到准确价格，继续会按 {0} 实际扣费，确定继续吗？",
   "jobs.confirmSegMax": "最多 ${0}（识别加最多 {1} 次分割），确定继续吗？",
   "jobs.confirmSegLeft": "这次约需 ${0}（还剩 {1} 次分割，已完成的不再收费），确定继续吗？",
   "jobs.confirmOk": "继续生成",

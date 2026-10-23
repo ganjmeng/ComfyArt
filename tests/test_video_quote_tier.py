@@ -103,9 +103,10 @@ async def test_price_api_400_other_tier_shows_no_amount_and_always_asks(seed, mo
     await wavespeed.submit({**job, "confirmed": True})
     sent = seed["submits"][-1][1]
     assert f"{sent['resolution']} · {sent['duration']}s" == tier  # dialog tier == submitted tier
-    for lang, text in (("zh", "暂时查不到准确价格，继续会按 {0} 实际扣费"), ("en", "Couldn't get the exact price; continuing will be charged at the actual rate for {0}")):
+    for lang, text in (("zh", "暂时查不到准确价格，继续会按 {0} 实际扣费，确定继续吗？"), ("en", "Couldn't get the exact price; continuing will be charged at the actual rate for {0}. Continue?")):
         loc = _loc(lang)
         assert loc["jobs.confirmUnpriced"] == text and "$" not in text and "$" not in loc["wsKey.unpricedTag"]
+    assert _loc("en")["wsKey.unpriced"] == "Exact price unavailable; you'll confirm before generating"
 
 
 async def test_storyboard_with_an_unpriced_scene_asks_without_a_total(seed, monkeypatch):
