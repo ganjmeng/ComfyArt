@@ -95,3 +95,31 @@ async def test_dropdown_is_lovart_list_only(feature):
     f = (await wavespeed.grouped_models())[feature]
     allowed = set(DISPLAY["lovart_order"]["video" if "video" in feature else "image"])
     assert {m.get("name") for m in f["models"]} <= allowed
+
+
+@pytest.mark.parametrize("feature", ["text_to_image", "image_edit", "text_to_video", "image_to_video", "image", "video"])
+async def test_footer_on_every_all_page_including_single(feature):
+    """EL: 「共 N 个」 footer also when all=true fits on one page; every page under the cap."""
+    first = await canvas._list_models({"type": feature, "all": True})
+    pages = [first] + [await canvas._list_models({"type": feature, "all": True, "page": p})
+                       for p in range(2, first["pages"] + 1)]
+    n = sum(len(f["models"]) for p in pages for f in p["features"].values())
+    for p in pages:
+        assert len(json.dumps(p, ensure_ascii=False, default=str)) < TOOL_RESULT_CAP
+        assert list(p)[-1] == "footer"
+        assert p["footer"].startswith(f"共 {n} 个，第 {p['page']}/{p['pages']} 页")
+    if first["pages"] == 1:
+        assert first["footer"] == f"共 {n} 个，第 1/1 页"
+
+
+@pytest.mark.parametrize("feature", ["text_to_image", "image_edit", "text_to_video", "image_to_video"])
+async def test_default_view_chinese_footer_no_english_hint(feature):
+    """EL: the default (recommended) view ends with a Chinese footer, no English 'models in total' hint."""
+    out = await canvas._list_models({"type": feature})
+    text = json.dumps(out, ensure_ascii=False, default=str)
+    assert "in total" not in text and "hint" not in out and len(text) < TOOL_RESULT_CAP
+    assert list(out)[-1] == "footer"
+    rec = sum(len(f["models"]) for f in out["features"].values())
+    total = sum(f["total"] for f in out["features"].values())
+    assert out["footer"] == (f"共 {total} 个，当前为推荐 {rec} 个，查看全部传 all=true、page=1" if rec < total
+                             else f"共 {total} 个，第 1/1 页")

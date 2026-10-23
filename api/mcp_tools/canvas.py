@@ -296,8 +296,8 @@ async def _list_models(args: dict) -> dict:
     except (TypeError, ValueError):
         page = 1
     res = compact_models(grouped, kind, tool_features, bool(args.get("all")) and bool(kind), page)
-    # a single default page keeps the plain {feature: ...} shape; paged results carry page/pages
-    out = res if "pages" in res else {"features": res}
+    # kind results already carry features + footer (paged ones also page/pages); no-kind stays wrapped
+    out = res if "features" in res else {"features": res}
     if not kind:
         out["tool_features"] = tool_features
     return out

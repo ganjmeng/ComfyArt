@@ -74,7 +74,7 @@ async def test_video_type_has_every_generate_video_id():
 
 async def test_feature_name_as_type_and_bad_type():
     out = await canvas._list_models({"type": "text_to_video"})
-    assert [k for k in out["features"] if k != "hint"] == ["text_to_video"]
+    assert list(out["features"]) == ["text_to_video"]
     with pytest.raises(wavespeed.WaveSpeedError, match="unknown type"):
         await canvas._list_models({"type": "hologram"})
 

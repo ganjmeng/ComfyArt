@@ -372,7 +372,8 @@ def compact_models(grouped: dict, kind: str | None = None, tool_features: dict |
 
     every = [(n, m) for n in names for m in live[n]["models"]]
     chosen = every if all_models else [(n, m) for n, m in every if m.get("recommended", True)]
-    hint = (f"{len(every)} models in total; pass all=true and page=1.. to see them all"
+    # default view: Chinese footer in the same style as the paged one (#95 EL ruling)
+    hint = (f"共 {len(every)} 个，当前为推荐 {len(chosen)} 个，查看全部传 all=true、page=1"
             if len(chosen) < len(every) else None)
 
     def render(chunk: list, p: int, of: int) -> dict:
@@ -380,11 +381,9 @@ def compact_models(grouped: dict, kind: str | None = None, tool_features: dict |
         for n, e in chunk:
             feats.setdefault(n, {**head(n), "models": []})["models"].append(e)
         out = {"page": p, "pages": of, "features": feats}
-        if hint:
-            out["hint"] = hint
-        if of > 1:
-            # last key so it renders at the bottom of the page (#95 product ruling)
-            out["footer"] = f"共 {len(chosen)} 个，第 {p}/{of} 页" + (f"，翻页传 page={p + 1}" if p < of else "")
+        # footer is always the last key so it renders at the bottom, single page included (#95 rulings)
+        out["footer"] = f"共 {len(chosen)} 个，第 {p}/{of} 页" + (f"，翻页传 page={p + 1}" if p < of else "") \
+            + (f"；{hint}" if hint else "")
         return out
 
     # greedy page packing over (feature, model) rows in feature order, every page under the cap
@@ -395,10 +394,9 @@ def compact_models(grouped: dict, kind: str | None = None, tool_features: dict |
             pages.append([])
         pages[-1].append(row)
     if not all_models and len(pages) == 1:
-        out = render(pages[0], 1, 1)["features"]
-        if hint:
-            out["hint"] = hint
-        return out
+        # single default page: features then a Chinese footer as the last key (#95 EL ruling)
+        return {"features": render(pages[0], 1, 1)["features"],
+                "footer": hint or f"共 {len(chosen)} 个，第 1/1 页"}
     if not 1 <= page <= len(pages):
         raise WaveSpeedError(f"page {page} out of range; {kind} has {len(pages)} page(s)", 400)
     return render(pages[page - 1], page, len(pages))

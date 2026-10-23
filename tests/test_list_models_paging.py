@@ -59,12 +59,15 @@ async def test_all_pages_cover_every_model_once_in_order(kind):
 
 
 async def test_default_view_is_recommended_first_with_hint():
-    out = (await canvas._list_models({"type": "image"}))["features"]
+    res = await canvas._list_models({"type": "image"})
+    out = res["features"]
     cfg = _cfg()
     assert [m["id"] for m in out["text_to_image"]["models"]] == cfg["text_to_image"]["recommended"]
     assert out["text_to_image"]["models"][0]["id"] == cfg["text_to_image"]["default"]
-    total = sum(len(cfg[n]["models"]) for n in out if n != "hint")
-    assert out["hint"] == f"{total} models in total; pass all=true and page=1.. to see them all"
+    total = sum(len(cfg[n]["models"]) for n in out)
+    rec = sum(len(f["models"]) for f in out.values())
+    assert "hint" not in res and list(res)[-1] == "footer"
+    assert res["footer"] == f"共 {total} 个，当前为推荐 {rec} 个，查看全部传 all=true、page=1"
     row = out["text_to_image"]["models"][0]
     assert set(row) == {"id", "usd", "desc"} and "\n" not in row["desc"] and len(row["desc"]) <= 90
 
