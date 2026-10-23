@@ -3,6 +3,7 @@ import type { TLEditorSnapshot, TLRecord } from 'tldraw'
 import { api } from './comfy'
 import { t } from './i18n'
 import { uuid } from './id'
+import { wsBodyError } from './wsErrors'
 
 export const UNTITLED = t('projectHeader.untitled')
 const COVERS = 2
@@ -16,7 +17,7 @@ export async function call<T>(path: string, init?: RequestInit): Promise<T | nul
   const res = await api(path, init)
   if (res.status === 404) return null
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(body.error ?? `${path} failed: ${res.status}`)
+  if (!res.ok) throw new Error(wsBodyError(body, t('err.requestFailed', res.status)))
   return body as T
 }
 

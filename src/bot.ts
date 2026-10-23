@@ -5,6 +5,7 @@ import { resultsAtom } from './jobs'
 import { notify } from './notices'
 import { onComfyEvent, onReconnect } from './ws'
 import { lang, t } from './i18n'
+import { wsBodyError } from './wsErrors'
 
 export interface AskOption { id: string; label: string; description?: string }
 export interface BotBlock {
@@ -107,7 +108,7 @@ let me = ''
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await api(path, init)
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(body.error ?? `${path} failed: ${res.status}`)
+  if (!res.ok) throw new Error(wsBodyError(body, t('err.requestFailed', res.status)))
   return body as T
 }
 

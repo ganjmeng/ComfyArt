@@ -9,6 +9,7 @@ import { ask, parseJson } from './llm'
 import { TEXT, type TextShape } from './shapes/TextShape'
 import { annotated, eraseGraph, samGraph } from './workflows'
 import { t } from './i18n'
+import { wsBodyError } from './wsErrors'
 
 interface Line { box: [number, number][]; text: string; score: number }
 interface TextLayer { text: string; cx: number; cy: number; w: number; h: number; angle: number; color: string; weight: number; font: string; align: string }
@@ -29,10 +30,10 @@ const OBJECT_PROMPTS = ['product', 'logo']
 const MIN_OBJECT = 0.002
 const OBJECT_GROW = 6
 
-async function readLines(src: string): Promise<Line[]> {
+export async function readLines(src: string): Promise<Line[]> {
   const res = await api('/comfyart/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(body.error ?? `OCR failed: ${res.status}`)
+  if (!res.ok) throw new Error(wsBodyError(body, t('wsErr.failed')))
   return (body.lines as Line[]).filter((l) => l.score >= MIN_SCORE && l.text.trim())
 }
 
