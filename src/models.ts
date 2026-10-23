@@ -44,7 +44,8 @@ async function useCloudImageModels() {
     const seen = new Set<string>()
     return names.flatMap((n) => all[n]?.models ?? []).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
       id: m.id, label: m.label + (m.price != null ? ` · $${m.price}` : ''), desc: m.subtitle || m.id.split('/').slice(1).join('/') || m.id, about: m.desc || undefined, files: [], cloud: true, lora: null,
-      ...(video ? { video: true } : { refs: 'qwen' as const }),
+      // control: structure refs run on WaveSpeed control models (#80), so the ControlNet knobs show like upstream
+      ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }),
     }))
   }
   const image = defs(['text_to_image'], false)
