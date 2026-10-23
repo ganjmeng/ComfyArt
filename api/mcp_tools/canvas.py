@@ -1,8 +1,12 @@
+import logging
+
+from ..auto_models import choose, load_table, note, tool_feature
 from ..mcp_commands import submit_command
 from ..wavespeed import compact_models, grouped_models, load_config, model_details
 from ._context import BOT_CHAT_ID, PROJECT
 from .bot_tools import maybe_ask_run_approval
 
+log = logging.getLogger("comfyart")
 WAIT_MAX_S = 170
 SLOW_S = 90.0
 
@@ -16,6 +20,10 @@ _PLACE = {
 }
 
 
+_MODEL_AUTO = {"type": "string", "description": "Only when the user named a model; otherwise omit it and Auto picks "
+               "by task type (the result's model_choice says which and why)."}
+
+
 def _schema(properties: dict, required: list[str] = ()) -> dict:
     return {"type": "object", "properties": properties, "required": list(required), "additionalProperties": False}
 
@@ -27,7 +35,18 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
             blocked = await maybe_ask_run_approval(f"{approval}{'：' + label if label else ''}")
             if blocked is not None:
                 return blocked
+        choice = _auto_choice(action, args)
+        if choice and choice["auto"] and choice["category"] != "references" and "model" not in args and choice["model"] != load_config()["features"][tool_feature(action)]["default"]:
+            args = {**args, "model": choice["model"], "auto_model": True} if "edit_model" not in choice else {**args, "edit_model": choice["edit_model"]}
         result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
+        if choice and isinstance(result, dict) and not result.get("cancelled"):
+            ran = result.get("model")
+            if choice["auto"] and "edit_model" not in choice and choice["category"] != "references" and ran and ran != choice["model"]:
+                log.warning("auto model %s is disabled on the page; %s ran instead", choice["model"], ran)
+                choice = {**choice, "model": ran, "fallback": choice["model"],
+                          "reason": {"zh": f"{choice['reason']['zh']}，但 {choice['model']} 已在模型设置里关闭，改用默认模型",
+                                     "en": f"{choice['reason']['en']}, but {choice['model']} is turned off in model settings, so the default model was used"}}
+            result["model_choice"] = {**choice, "note": note(choice)}
         image = result.pop("png", None)
         if image:
             result["_images"] = [{"data": image, "mime": "image/png"}]
@@ -38,6 +57,34 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
 async def _wait_generation(args: dict) -> dict:
     timeout = max(1, min(int(args.get("timeout_s") or WAIT_MAX_S), WAIT_MAX_S))
     return await submit_command("wait_generation", {**args, "timeout_s": timeout}, PROJECT.get(), timeout + 15)
+
+
+def _auto_choice(action: str, args: dict) -> dict | None:
+    """#133: which model runs and why (user-named wins, else the Auto table)."""
+    feature = tool_feature(action)
+    if not feature:
+        return None
+    cfg = load_config()
+    if action == "generate_image" and (args.get("refs") or args.get("base")):
+        # refs/base run on image_edit (src/generate.ts). Auto (#133 ruling): 2+ refs -> the multi-reference row,
+        # else the edit default. A user-named (text-to-image) model keeps the page's edit default as before.
+        refs = len(args.get("refs") or [])
+        if not args.get("model") and refs >= 2:
+            pick = choose("image_edit", "", None, cfg)  # default, used as the fallback below
+            multi = load_table()["image_edit"]["multi_reference"]
+            ids = {m["id"] for m in cfg["features"]["image_edit"]["models"]}
+            if multi["model"] in ids:
+                return {"model": multi["model"], "auto": True, "category": "multi_reference", "edit_model": multi["model"],
+                        "reason": {"zh": multi["zh"].format(n=refs), "en": multi["en"].format(n=refs)}}
+            log.warning("auto model %s for multi_reference not in catalog; falling back to %s", multi["model"], pick["model"])
+        if args.get("model"):
+            reason = {"zh": f"你指定了 {args['model']}，但带参考图时走图片编辑，用的是它的默认模型",
+                      "en": f"you named {args['model']}, but references run on image editing, which uses its default model"}
+        else:
+            reason = {"zh": "只有 1 张参考图（或底图），用图片编辑的默认模型就够了",
+                      "en": "there is one reference (or base) image, which the image-edit default model handles"}
+        return {"model": cfg["features"]["image_edit"]["default"], "auto": not args.get("model"), "category": "references", "reason": reason}
+    return choose(feature, str(args.get("prompt") or ""), str(args.get("model") or "") or None, cfg)
 
 
 def _tool(description: str, properties: dict, required: list[str] = (), **relay) -> dict:
@@ -76,7 +123,7 @@ SPECS: dict[str, dict] = {
         "composition, or a structure guide canny, lineart, depth, normal, pose, mlsd, scribble, softedge, seg, "
         "tile (structure guides also work on models with control instead of refs, e.g. Qwen Image 2512). "
         "base: an image shape id to transform (image-to-image) with base_strength 0-100 (higher changes more).",
-        {"prompt": {"type": "string"}, "model": {"type": "string"}, "ratio": {"type": "string"},
+        {"prompt": {"type": "string"}, "model": _MODEL_AUTO, "ratio": {"type": "string"},
          "count": {"type": "integer"}, "refs": _IDS, "ref_modes": {"type": "array", "items": {"type": "string"}}, "base": {"type": "string"},
          "base_strength": {"type": "integer"}, **_PLACE},
         ["prompt"], approval="生成图像"),
@@ -295,7 +342,8 @@ SPECS: dict[str, dict] = {
         ["action"]),
 }
 
-_MODEL = {"type": "string", "description": "WaveSpeed model id from list_models for this tool's feature; omit for the default. "
+_MODEL = {"type": "string", "description": "WaveSpeed model id from list_models for this tool's feature; only when the user named a model, "
+          "otherwise omit it (Auto). "
           "Before using a non-default model, call list_models(model_id=...) for its accepted params"}
 for _name in load_config()["tool_features"]:
     if _name in SPECS:

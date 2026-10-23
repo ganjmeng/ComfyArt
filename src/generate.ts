@@ -203,7 +203,7 @@ export function estimateInputsOf(shape: GeneratorShape): Record<string, unknown>
   const model = modelOf(workflow) ?? agentModels(false)[0]
   if (!model || !isCloudModel(model.id)) return null
   const [width, height] = targetSize(shape.props)
-  return refs.length || baseOf(shape) ? { feature: 'image_edit', width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined }
+  return refs.length || baseOf(shape) ? { feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined }
 }
 
 export function generate(editor: Editor, shape: GeneratorShape, onError: ErrorSink) {
