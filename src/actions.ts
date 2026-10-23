@@ -10,6 +10,8 @@ import { workflowConfigAtom } from './customWorkflows'
 import { nearestRatio } from './generate'
 import { VIDEO_RATIOS } from './genOptions'
 import { t } from './i18n'
+import type { Edit } from './videoEdit'
+import { timelineGraph } from './videoRender'
 import { canvasBlob } from './canvasBlob'
 import { wsBuilt } from './wavespeed'
 
@@ -31,7 +33,7 @@ function run(
   label: string,
   onError: ErrorSink,
   build: (src: Source) => Promise<Built>,
-  opts: { size?: [number, number]; kind?: MediaKind; placer?: string; extra?: (src: Source) => Record<string, unknown> } = {},
+  opts: { size?: [number, number]; kind?: MediaKind; placer?: string; runOn?: string; extra?: (src: Source) => Record<string, unknown> } = {},
 ) {
   const src = source(editor, shape)
   if (!src) return
@@ -40,6 +42,7 @@ function run(
     name: `${src.name} · ${label}`,
     kind: opts.kind,
     placer: opts.placer,
+    runOn: opts.runOn,
     extra: opts.extra?.(src),
   }, onError)
   return holder
@@ -74,6 +77,9 @@ export const expand = (e: Editor, s: TLImageShape, pads: Pads, prompt: string, e
   return run(e, s, t('common.expand'), err, () => cloud(wsBuilt({ feature: 'expand_image', custom: 'expand', image: src.image, prompt, width: src.w + pads.l + pads.r, height: src.h + pads.t + pads.b })),
     { size: [(src.w + pads.l + pads.r) * k, (src.h + pads.t + pads.b) * k] })
 }
+
+export const editVideo = (e: Editor, s: TLVideoShape, edit: Edit, err: ErrorSink) =>
+  run(e, s, t('common.edit'), err, (src) => timelineGraph(edit, src.w, src.h), { kind: 'video', runOn: 'local' })
 
 export const animate = (e: Editor, s: TLImageShape, prompt: string, err: ErrorSink, loop = true) =>
   run(e, s, t('common.animateImage'), err, (src) => cloud(wsBuilt({ feature: 'image_to_video', custom: 'animate', image: src.image, last_image: loop ? src.image : undefined, prompt: prompt || 'Subtle seamless motion. Keep the composition, text and layout unchanged.', duration: 3, ratio: nearestRatio(src.w / src.h, VIDEO_RATIOS) })))

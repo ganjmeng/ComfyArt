@@ -723,6 +723,28 @@ def _size_value(spec: dict, w: int, h: int) -> str:
     return min(good, key=lambda vd: (abs(math.log((vd[1][0] / vd[1][1]) / ratio)), abs(vd[1][0] * vd[1][1] - w * h) if ":" not in vd[0] else 0))[0]
 
 
+# ACE-Step's tempo / lyrics language / key (agent generate_music, upstream v1.0.1). The frontend only
+# sends them for ACE-Step; a schema without dedicated fields gets them appended to the style tags.
+MUSIC_FIELDS = {"bpm": ("bpm",), "language": ("language", "vocal_language"), "key": ("keyscale", "key_scale", "key")}
+
+
+def _ace_music_fields(props: dict, music, payload: dict) -> None:
+    if not isinstance(music, dict):
+        return
+    extra = []
+    for name, fields in MUSIC_FIELDS.items():
+        value = music.get(name)
+        if value in (None, ""):
+            continue
+        field = next((f for f in fields if f in props), None)
+        if field:
+            payload[field] = int(value) if name == "bpm" else str(value)
+        else:
+            extra.append(f"{int(value)} bpm" if name == "bpm" else f"{'key' if name == 'key' else 'language'} {value}")
+    if extra:
+        payload["tags"] = ", ".join([payload["tags"], *extra])
+
+
 async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: dict) -> dict:
     """Map ComfyArt's logical inputs onto whatever fields this model's schema accepts."""
     props = schema.get("properties") or {}
@@ -769,6 +791,7 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
             prompt = f"{base}{'. ' if base else ''}Separate into {layers} layers."
     if prompt and "prompt" not in props and "tags" in props:
         payload["tags"] = prompt  # ACE-Step names its style prompt "tags"
+        _ace_music_fields(props, inputs.get("music"), payload)
     if prompt and "prompt" in props:
         payload["prompt"] = prompt
     if inputs.get("seed") is not None and "seed" in props:

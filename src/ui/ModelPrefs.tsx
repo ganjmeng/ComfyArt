@@ -41,7 +41,7 @@ export function ModelPrefs({ onError }: { onError: (msg: string) => void }) {
           const on = prefs.auto || prefs.enabled.includes(m.id)
           return (
             <label key={m.id} className="ca-menu__item ca-modelprefs__row" data-missing={missing || undefined}>
-              <span className="ca-menu__grow ca-model"><span>{m.label}{missing && <span className="ca-model__tag">{t('modelPrefs.notInstalled')}</span>}</span><span className="ca-model__desc">{m.desc}</span></span>
+              <span className="ca-menu__grow ca-model"><span>{m.label}</span><span className="ca-model__desc">{m.desc}</span></span>
               <input type="checkbox" checked={on && !missing} disabled={prefs.auto || missing} onChange={() => toggle(m.id)} />
             </label>
           )

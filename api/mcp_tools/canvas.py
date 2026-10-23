@@ -72,10 +72,12 @@ SPECS: dict[str, dict] = {
         "Start generating images on the canvas. Returns ids at once; call wait_generation with them. "
         "prompt: detailed English description (put exact text to render in quotes). ratio like 1:1, "
         "3:4, 16:9. count 1-4. refs: image shape ids or image URLs the result must follow (subject, "
-        "product, style). base: an image shape id to transform (image-to-image) with base_strength "
-        "0-100 (higher changes more).",
+        "product, style). ref_modes: one mode per ref, same order, saying how to use it: content, style, "
+        "composition, or a structure guide canny, lineart, depth, normal, pose, mlsd, scribble, softedge, seg, "
+        "tile (structure guides also work on models with control instead of refs, e.g. Qwen Image 2512). "
+        "base: an image shape id to transform (image-to-image) with base_strength 0-100 (higher changes more).",
         {"prompt": {"type": "string"}, "model": {"type": "string"}, "ratio": {"type": "string"},
-         "count": {"type": "integer"}, "refs": _IDS, "base": {"type": "string"},
+         "count": {"type": "integer"}, "refs": _IDS, "ref_modes": {"type": "array", "items": {"type": "string"}}, "base": {"type": "string"},
          "base_strength": {"type": "integer"}, **_PLACE},
         ["prompt"], approval="生成图像"),
     "generate_video": _tool(
@@ -162,11 +164,24 @@ SPECS: dict[str, dict] = {
         "Continue a video shape by duration seconds following prompt.",
         {"id": _ID, "prompt": {"type": "string"}, "duration": {"type": "integer"}}, ["id", "prompt"],
         approval="视频延长"),
+    "edit_video": _tool(
+        "Cut several video shapes into one new video, like a video editor: clips play in order, each "
+        "{id, start, end} in seconds of its own source video (speed and volume optional). transitions[i] "
+        "is the cut between clip i and i+1: {type: none|fade|black|white, duration}; default a hard cut. "
+        "music: {id of an audio element, start (seconds into the song), volume} plays from the first frame "
+        "under the clips. captions: [{text, start, end}] in seconds of the result. The output keeps the first "
+        "clip's size, 24 fps. Returns ids for wait_generation.",
+        {"clips": {"type": "array", "items": {"type": "object"}}, "transitions": {"type": "array", "items": {"type": "object"}},
+         "music": {"type": "object"}, "captions": {"type": "array", "items": {"type": "object"}}},
+        ["clips"], approval="剪辑视频"),
     "generate_music": _tool(
-        "Generate a piece of music as an audio element on the canvas. prompt: English style tags (genre, "
-        "mood, instruments, tempo, vocal type). lyrics optional (use [verse]/[chorus] lines; omit for an "
-        "instrumental). duration in seconds (default 30). Returns ids for wait_generation.",
-        {"prompt": {"type": "string"}, "lyrics": {"type": "string"}, "duration": {"type": "integer"}},
+        "Generate a piece of music as an audio element on the canvas. model: a music model id from list_models "
+        "(default the first). prompt: English description of genre, mood, instruments, tempo and vocal type. "
+        "lyrics optional (use [intro]/[verse]/[chorus]/[outro] lines; omit for an instrumental). duration in "
+        "seconds (default 30). bpm, language (e.g. en, ko, zh, ja) and key (e.g. F minor) are used by ACE-Step; "
+        "MiniMax Music 3 reads them from the prompt. Returns ids for wait_generation.",
+        {"prompt": {"type": "string"}, "lyrics": {"type": "string"}, "duration": {"type": "integer"}, "model": {"type": "string"},
+         "bpm": {"type": "integer"}, "language": {"type": "string"}, "key": {"type": "string"}},
         ["prompt"], approval="生成配乐"),
     "generate_sound_effect": _tool(
         "Generate a short sound effect (an audio element) from an English description. duration in "

@@ -28,6 +28,19 @@ def _make_module(name: str, **attrs) -> types.ModuleType:
 def _install_stubs() -> None:
     state = {"base": BASE}
 
+    def _annotated_filepath(name: str) -> str:
+        kind = "input"
+        for t in ("input", "output", "temp"):
+            if name.endswith(f" [{t}]"):
+                name, kind = name[: -len(t) - 3], t
+        return str(state["base"] / kind / name)
+
+    def _save_image_path(prefix: str, root: str):
+        subfolder, _, name = prefix.rpartition("/")
+        folder = os.path.join(root, subfolder)
+        os.makedirs(folder, exist_ok=True)
+        return folder, name, 1, subfolder, prefix
+
     def user_dir() -> str:
         return str(state["base"] / "user")
 
@@ -40,6 +53,9 @@ def _install_stubs() -> None:
         get_public_user_directory=lambda user: None if user.startswith("__") else os.path.join(user_dir(), user),
         get_input_directory=lambda: str(state["base"] / "input"),
         get_output_directory=lambda: str(state["base"] / "output"),
+        get_temp_directory=lambda: str(state["base"] / "temp"),
+        get_annotated_filepath=_annotated_filepath,
+        get_save_image_path=_save_image_path,
         get_directory_by_type=lambda t: str(state["base"] / t) if t in ("input", "output", "temp") else None,
         get_filename_list=lambda kind: [],
         get_full_path_or_raise=lambda kind, name: name,
@@ -47,6 +63,8 @@ def _install_stubs() -> None:
     comfy = _make_module("comfy")
     comfy.ops = _make_module("comfy.ops", manual_cast=object)
     comfy.sd = _make_module("comfy.sd", load_diffusion_model=lambda *a, **k: None)
+    comfy.utils = _make_module("comfy.utils", ProgressBar=lambda total: types.SimpleNamespace(update=lambda n: None))
+    comfy.model_management = _make_module("comfy.model_management", throw_exception_if_processing_interrupted=lambda: None)
     comfy.cli_args = _make_module("comfy.cli_args", args=types.SimpleNamespace(tls_keyfile=None, tls_certfile=None))
 
     from aiohttp import web

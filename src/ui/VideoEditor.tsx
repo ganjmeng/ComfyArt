@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { atom, AssetRecordType, useValue, type Editor, type TLShapeId, type TLVideoShape } from 'tldraw'
 
-import { uploadImage, viewUrl } from '../comfy'
-import { errorText, placeMedia, toMedia } from '../jobs'
-import { clipLength, filmstrip, freshEdit, layout, MIN_CLIP, Player, removeClip, splitAt, type Edit, type Subtitle, type TransitionType } from '../videoEdit'
+import { viewUrl } from '../comfy'
+import { detectBeats, snap, type Beats } from '../beats'
+import { errorText, GAP, placeMedia, rowSpots, toMedia } from '../jobs'
+import { appendClip, clipLength, filmstrip, freshEdit, layout, MIN_CLIP, moveClip, removeClip, splitAt, type Edit, type Source, type Subtitle, type TransitionType } from '../videoEdit'
+import { Player } from '../videoPlayer'
+import { renderEdit } from '../videoRender'
 import { ColorPicker } from './ColorPicker'
 import { Icons } from './icons'
 import { Chips } from './Chips'
 import { useEscape } from './escape'
+import { MediaMenu, MusicPanel, pageAudios, pageVideos } from './VideoEditorParts'
 import { t } from '../i18n'
 import { uuid } from '../id'
 
@@ -18,10 +22,11 @@ const TRANSITIONS: [TransitionType, string][] = [['none', t('common.none')], ['f
 const THUMBS = 24
 const UNDO = 50
 const MAX_SIDE = 1920
+const SNAP_PX = 8
 
-type Selection = { kind: 'clip' | 'transition'; index: number } | { kind: 'subtitle'; id: string } | null
+type Selection = { kind: 'clip' | 'transition'; index: number } | { kind: 'subtitle'; id: string } | { kind: 'music' } | null
 
-const fmt = (t: number) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${(t % 60).toFixed(1).padStart(4, '0')}`
+const fmt = (t: number) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${(t % 60).toFixed(2).padStart(5, '0')}`
 
 export function VideoEditor({ editor, onError }: { editor: Editor; onError: (msg: string) => void }) {
   const id = useValue(videoEditorAtom)
@@ -36,15 +41,17 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
   const canvas = useRef<HTMLCanvasElement>(null)
   const track = useRef<HTMLDivElement>(null)
   const player = useRef<Player | null>(null)
-  const [info, setInfo] = useState<{ duration: number; width: number; height: number; thumbs: string[] } | null>(null)
+  const [sources, setSources] = useState<Record<string, Source>>({})
   const [edit, setEditState] = useState<Edit | null>(null)
   const editRef = useRef<Edit | null>(null)
   const history = useRef<{ past: Edit[]; future: Edit[] }>({ past: [], future: [] })
   const [time, setTime] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [sel, setSel] = useState<Selection>(null)
-  const [exporting, setExporting] = useState(false)
-  const [menu, setMenu] = useState(false)
+  const [progress, setProgress] = useState<number | null>(null)
+  const [menu, setMenu] = useState<'export' | 'clip' | 'music' | null>(null)
+  const [beats, setBeats] = useState<Beats | null>(null)
+  const [snapOn, setSnapOn] = useState(true)
   const close = () => videoEditorAtom.set(null)
   useEscape(true, close)
   const toggle = () => {
@@ -59,31 +66,46 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
     setEditState(next)
   }
 
+  const loadSource = async (url: string, label: string) => {
+    const known = sources[url]
+    if (known) return known
+    const s = { name: label, ...await filmstrip(url, THUMBS, 64) }
+    setSources((all) => ({ ...all, [url]: s }))
+    return s
+  }
+
   useEffect(() => {
     let alive = true
-    filmstrip(src, THUMBS, 64).then((i) => {
-      if (!alive) return
-      setInfo(i)
-      commit(freshEdit(i.duration), false)
-    }).catch((e) => onError(String(e)))
+    loadSource(src, name).then((s) => { if (alive) commit(freshEdit(src, s.duration), false) }).catch((e) => onError(errorText(e)))
     return () => { alive = false }
   }, [src])
 
+  const first = sources[src]
+  const ready = !!first && !!edit
   useEffect(() => {
-    if (!info || !canvas.current) return
-    const k = Math.min(1, MAX_SIDE / Math.max(info.width, info.height))
-    canvas.current.width = Math.round(info.width * k)
-    canvas.current.height = Math.round(info.height * k)
-    const p = new Player(src, canvas.current, () => editRef.current!)
+    if (!ready || !canvas.current) return
+    const k = Math.min(1, MAX_SIDE / Math.max(first.width, first.height))
+    canvas.current.width = Math.round(first.width * k / 2) * 2
+    canvas.current.height = Math.round(first.height * k / 2) * 2
+    const p = new Player(canvas.current, () => editRef.current!)
     p.onTime = setTime
     player.current = p
     void p.seek(0)
     return () => p.dispose()
-  }, [info, src])
+  }, [ready])
 
   useEffect(() => {
     if (edit && player.current && !player.current.playing) void player.current.seek(player.current.current)
   }, [edit])
+
+  const musicSrc = edit?.music?.src
+  useEffect(() => {
+    setBeats(null)
+    if (!musicSrc) return
+    let alive = true
+    detectBeats(musicSrc).then((b) => { if (alive) setBeats(b) }).catch((e) => onError(errorText(e)))
+    return () => { alive = false }
+  }, [musicSrc])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -97,16 +119,19 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
     return () => document.removeEventListener('keydown', onKey, true)
   })
 
-  if (!edit || !info) {
+  if (!edit || !first) {
     return <div className="ca-modal"><div className="ca-ve ca-ve--loading">{t('videoEditor.loadingVideo')}</div></div>
   }
   const { offsets, total } = layout(edit)
   const pxPerSec = (track.current?.clientWidth ?? 800) / Math.max(total, 0.1)
+  const beatTimes = beats && edit.music ? beats.times.map((b) => b - edit.music!.start).filter((b) => b >= 0 && b <= total) : []
   const seekTo = (clientX: number) => {
     const b = track.current!.getBoundingClientRect()
+    let at = ((clientX - b.left) / b.width) * total
+    if (snapOn) at = snap(at, [...beatTimes, ...offsets], SNAP_PX / pxPerSec)
     player.current?.pause()
     setPlaying(false)
-    void player.current?.seek(((clientX - b.left) / b.width) * total)
+    void player.current?.seek(at)
   }
   const undo = () => {
     const prev = history.current.past.pop()
@@ -130,12 +155,13 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
     e.currentTarget.setPointerCapture(e.pointerId)
     const startX = e.clientX
     const base = edit.clips[i]
+    const length = sources[base.src]?.duration ?? base.end
     const el = e.currentTarget
     const move = (ev: PointerEvent) => {
       const delta = ((ev.clientX - startX) / pxPerSec) * base.speed
       const value = side === 'start'
         ? Math.min(Math.max(0, base.start + delta), base.end - MIN_CLIP)
-        : Math.max(Math.min(info.duration, base.end + delta), base.start + MIN_CLIP)
+        : Math.max(Math.min(length, base.end + delta), base.start + MIN_CLIP)
       const next = { ...edit, clips: edit.clips.map((c, j) => (j === i ? { ...c, [side]: value } : c)) }
       editRef.current = next
       setEditState(next)
@@ -153,26 +179,38 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
     setSel({ kind: 'subtitle', id: sub.id })
   }
 
-  const exportVideo = async (replace: boolean) => {
-    setMenu(false)
-    setExporting(true)
+  const addClip = async (url: string, label: string) => {
+    setMenu(null)
     try {
-      const blob = await player.current!.record()
-      const ref = await uploadImage(blob, `${name.replace(/\.\w+$/, '')}-edit.webm`)
+      const s = await loadSource(url, label)
+      commit(appendClip(editRef.current!, url, s.duration))
+    } catch (e) {
+      onError(errorText(e))
+    }
+  }
+
+  const exportVideo = async (replace: boolean) => {
+    setMenu(null)
+    player.current?.pause()
+    setPlaying(false)
+    setProgress(0)
+    try {
+      const ref = await renderEdit(edit, canvas.current!.width, canvas.current!.height, setProgress)
       const media = await toMedia(ref, 'video')
       if (replace) {
         const assetId = AssetRecordType.createId()
-        editor.createAssets([{ id: assetId, typeName: 'asset', type: 'video', props: { name, src: viewUrl(ref), w: media.w, h: media.h, mimeType: 'video/webm', isAnimated: true }, meta: {} }])
+        editor.createAssets([{ id: assetId, typeName: 'asset', type: 'video', props: { name, src: viewUrl(ref), w: media.w, h: media.h, mimeType: 'video/mp4', isAnimated: true }, meta: {} }])
         editor.updateShape<TLVideoShape>({ id: shape.id, type: 'video', props: { assetId } })
       } else {
         const b = editor.getShapePageBounds(shape)!
-        editor.select(placeMedia(editor, media, t('videoEditor.edit', name), b.maxX + 40, b.y, b.w))
+        const [p] = rowSpots(editor, shape, [[b.w, b.w * media.h / media.w]], [b.maxX + GAP, b.y])
+        editor.select(placeMedia(editor, media, t('videoEditor.edit', name), p.x, p.y, b.w, shape.parentId))
       }
       close()
     } catch (e) {
       onError(errorText(e))
     } finally {
-      setExporting(false)
+      setProgress(null)
     }
   }
 
@@ -187,10 +225,10 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
           <span className="ca-ve__title">{t('videoEditor.trimTitle', name || t('videoEditor.untitledVideo'))}</span>
           <button type="button" className="ca-bar__btn" disabled={!history.current.past.length} onClick={undo}>{t('common.undo')}</button>
           <button type="button" className="ca-bar__btn" disabled={!history.current.future.length} onClick={redo}>{t('shortcuts.redo')}</button>
-          <button type="button" className="ca-bar__btn" onClick={() => { commit(freshEdit(info.duration)); setSel(null) }}>{t('adjustPanel.reset')}</button>
+          <button type="button" className="ca-bar__btn" onClick={() => { commit(freshEdit(src, first.duration)); setSel(null) }}>{t('adjustPanel.reset')}</button>
           <div className="ca-ve__export">
-            <button type="button" className="ca-panel__primary" disabled={exporting} onClick={() => setMenu(!menu)}>{exporting ? t('exportDialog.exporting') : t('common.export')}</button>
-            {menu && (
+            <button type="button" className="ca-panel__primary" disabled={progress !== null} onClick={() => setMenu(menu === 'export' ? null : 'export')}>{progress !== null ? t('videoEditor.rendering', Math.round(progress * 100)) : t('common.export')}</button>
+            {menu === 'export' && (
               <div className="ca-menu ca-ve__menu">
                 <button type="button" className="ca-menu__item" onClick={() => void exportVideo(false)}>{t('videoEditor.exportAsNewVideo')}</button>
                 <button type="button" className="ca-menu__item" onClick={() => void exportVideo(true)}>{t('videoEditor.replaceOriginalVideo')}</button>
@@ -205,11 +243,14 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
             {clipSel !== null && (
               <>
                 <div className="ca-gen__title">{t('videoEditor.clip', clipSel + 1)}</div>
+                <div className="ca-chat__hint">{sources[edit.clips[clipSel].src]?.name}</div>
                 <div className="ca-gen__label">{t('videoEditor.speed')}</div>
                 <Chips value={edit.clips[clipSel].speed} options={SPEEDS.map((v) => [v, `${v}x`] as const)} onPick={(v) => setClip(clipSel, { speed: v })} />
                 <label className="ca-panel__row"><span>{t('videoEditor.volume')}</span><input type="range" min={0} max={200} value={Math.round(edit.clips[clipSel].volume * 100)} onChange={(e) => setClip(clipSel, { volume: Number(e.target.value) / 100 })} /><span className="ca-panel__val">{Math.round(edit.clips[clipSel].volume * 100)}</span></label>
                 <div className="ca-panel__chips">
                   <button type="button" className="ca-panel__chip" onClick={() => setClip(clipSel, { volume: edit.clips[clipSel].volume ? 0 : 1 })}>{edit.clips[clipSel].volume ? t('videoEditor.mute') : t('videoEditor.unmute')}</button>
+                  <button type="button" className="ca-panel__chip" disabled={clipSel === 0} onClick={() => { commit(moveClip(edit, clipSel, clipSel - 1)); setSel({ kind: 'clip', index: clipSel - 1 }) }}>{t('videoEditor.moveLeft')}</button>
+                  <button type="button" className="ca-panel__chip" disabled={clipSel === edit.clips.length - 1} onClick={() => { commit(moveClip(edit, clipSel, clipSel + 1)); setSel({ kind: 'clip', index: clipSel + 1 }) }}>{t('videoEditor.moveRight')}</button>
                   <button type="button" className="ca-panel__chip" disabled={edit.clips.length < 2} onClick={() => { commit(removeClip(edit, clipSel)); setSel(null) }}>{t('videoEditor.deleteClip')}</button>
                 </div>
               </>
@@ -237,6 +278,9 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
                 <button type="button" className="ca-panel__chip" onClick={() => { commit({ ...edit, subtitles: edit.subtitles.filter((s) => s.id !== subSel.id) }); setSel(null) }}>{t('videoEditor.deleteCaption')}</button>
               </>
             )}
+            {sel?.kind === 'music' && edit.music && (
+              <MusicPanel music={edit.music} beats={beats} onChange={(music) => commit({ ...edit, music })} onRemove={() => { commit({ ...edit, music: null }); setSel(null) }} />
+            )}
             {!sel && <div className="ca-chat__hint">{t('videoEditor.selectAClipToAdjust')}</div>}
           </div>
         </div>
@@ -244,6 +288,9 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
           <button type="button" className="ca-bar__btn ca-bar__btn--icon" title={playing ? t('videoEditor.pause') : t('videoEditor.play')} onClick={toggle}><span className="ca-icon">{playing ? Icons.pause : Icons.play}</span></button>
           <span className="ca-ve__time">{fmt(time)} / {fmt(total)}</span>
           <div className="ca-gen__spacer" />
+          <MediaMenu open={menu === 'clip'} onOpenChange={(o) => setMenu(o ? 'clip' : null)} label={t('videoEditor.addClip')} icon={Icons.video} items={pageVideos(editor)} thumbs empty={t('videoEditor.noVideos')} onPick={(it) => void addClip(it.src, it.name)} />
+          <MediaMenu open={menu === 'music'} onOpenChange={(o) => setMenu(o ? 'music' : null)} label={edit.music ? t('videoEditor.music') : t('videoEditor.addMusic')} icon={Icons.music} items={pageAudios(editor)} thumbs={false} empty={t('videoEditor.noAudio')} onPick={(it) => { setMenu(null); commit({ ...edit, music: { src: it.src, name: it.name, start: 0, volume: 1 } }); setSel({ kind: 'music' }) }} />
+          <button type="button" className="ca-bar__btn" data-on={snapOn || undefined} onClick={() => setSnapOn(!snapOn)}>{t('videoEditor.snapToBeats')}</button>
           <button type="button" className="ca-bar__btn" onClick={() => { const next = splitAt(edit, time); if (next) commit(next) }}><span className="ca-icon">{Icons.trim}</span><span>{t('videoEditor.split')}</span></button>
           <button type="button" className="ca-bar__btn" onClick={addSubtitle}><span className="ca-icon">{Icons.textTool}</span><span>{t('videoEditor.addCaption')}</span></button>
         </div>
@@ -251,8 +298,10 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
           <div ref={track} className="ca-ve__lanes">
           <div className="ca-ve__track">
             {edit.clips.map((c, i) => {
-              const from = Math.floor((c.start / info.duration) * THUMBS)
-              const to = Math.max(from + 1, Math.ceil((c.end / info.duration) * THUMBS))
+              const s = sources[c.src]
+              const thumbs = s?.thumbs ?? []
+              const from = s ? Math.floor((c.start / s.duration) * THUMBS) : 0
+              const to = s ? Math.max(from + 1, Math.ceil((c.end / s.duration) * THUMBS)) : 0
               return (
                 <div
                   key={i}
@@ -261,7 +310,7 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
                   style={{ left: offsets[i] * pxPerSec, width: clipLength(c) * pxPerSec }}
                   onPointerDown={(e) => { e.stopPropagation(); setSel({ kind: 'clip', index: i }) }}
                 >
-                  <div className="ca-ve__thumbs">{info.thumbs.slice(from, to).map((t, k) => <img key={k} src={t} alt="" draggable={false} />)}</div>
+                  <div className="ca-ve__thumbs">{thumbs.slice(from, to).map((t, k) => <img key={k} src={t} alt="" draggable={false} />)}</div>
                   {c.speed !== 1 && <span className="ca-ve__badge">{c.speed}x</span>}
                   {c.volume === 0 && <span className="ca-ve__badge ca-ve__badge--mute">{t('videoEditor.mute')}</span>}
                   <div className="ca-ve__handle" onPointerDown={trim(i, 'start')} />
@@ -295,6 +344,12 @@ function EditorBody({ editor, shape, src, name, onError }: { editor: Editor; sha
               </div>
             ))}
           </div>
+          {edit.music && (
+            <div className="ca-ve__music" data-on={sel?.kind === 'music' || undefined} onPointerDown={(e) => { e.stopPropagation(); setSel({ kind: 'music' }) }}>
+              <span className="ca-ve__music-name">{edit.music.name}</span>
+              {beatTimes.map((b) => <span key={b} className="ca-ve__beat" style={{ left: b * pxPerSec }} />)}
+            </div>
+          )}
           <div className="ca-ve__playhead" style={{ left: time * pxPerSec }} />
           </div>
         </div>
