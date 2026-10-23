@@ -20,13 +20,13 @@ export const REF_MODES: RefMode[] = [
   { id: 'composition', label: t('refModes.composition'), group: t('common.reference'), hint: 'Keep the layout and composition of image {n}.' },
   { id: 'canny', label: t('refModes.lineArt'), group: t('refModes.structure'), hint: 'Follow the edges of image {n} exactly for shapes and composition.', node: ['Canny', { low_threshold: 0.4, high_threshold: 0.8 }], control: true },
   { id: 'lineart', label: t('refModes.lineart'), group: t('refModes.structure'), hint: 'Follow the line art of image {n} for shapes and composition.', node: ['LineArtPreprocessor', { coarse: 'disable', resolution: RES }], control: true },
-  { id: 'mlsd', label: t('refModes.mlsdLines'), group: t('refModes.structure'), hint: 'Follow the straight architectural lines of image {n}.', node: ['M-LSDPreprocessor', { score_threshold: 0.1, dist_threshold: 0.1, resolution: RES }], control: true, download: true },
+  { id: 'mlsd', label: t('refModes.mlsdLines'), group: t('refModes.structure'), hint: 'Follow the straight architectural lines of image {n}.', node: ['M-LSDPreprocessor', { score_threshold: 0.1, dist_threshold: 0.1, resolution: RES }], control: true },
   { id: 'scribble', label: t('refModes.scribble'), group: t('refModes.structure'), hint: 'Use the rough scribble in image {n} as the layout.', node: ['ScribblePreprocessor', { resolution: RES }], control: true },
-  { id: 'softedge', label: t('refModes.softEdge'), group: t('refModes.structure'), hint: 'Follow the soft outlines of image {n}.', node: ['HEDPreprocessor', { safe: 'enable', resolution: RES }], control: true, download: true },
+  { id: 'softedge', label: t('refModes.softEdge'), group: t('refModes.structure'), hint: 'Follow the soft outlines of image {n}.', node: ['HEDPreprocessor', { safe: 'enable', resolution: RES }], control: true },
   { id: 'depth', label: t('refModes.depth'), group: t('refModes.structure'), hint: 'Match the depth and spatial layout of image {n}.', node: ['DepthAnythingV2Preprocessor', { ckpt_name: 'depth_anything_v2_vitl.pth', resolution: RES }], control: true },
-  { id: 'normal', label: t('refModes.normalMap'), group: t('refModes.structure'), hint: 'Match the surface shapes of the normal map in image {n}.', node: ['BAE-NormalMapPreprocessor', { resolution: RES }], control: true, download: true },
+  { id: 'normal', label: t('refModes.normalMap'), group: t('refModes.structure'), hint: 'Match the surface shapes of the normal map in image {n}.', node: ['BAE-NormalMapPreprocessor', { resolution: RES }], control: true },
   { id: 'pose', label: t('refModes.pose'), group: t('refModes.structure'), hint: 'Match the body pose of the skeleton in image {n}.', node: ['DWPreprocessor', { detect_hand: 'enable', detect_body: 'enable', detect_face: 'enable', resolution: RES, bbox_detector: 'yolox_l.onnx', pose_estimator: 'dw-ll_ucoco_384_bs5.torchscript.pt', scale_stick_for_xinsr_cn: 'disable' }], control: true },
-  { id: 'seg', label: t('refModes.segmentation'), group: t('refModes.structure'), hint: 'Follow the region layout of the segmentation map in image {n}.', node: ['OneFormer-COCO-SemSegPreprocessor', { resolution: RES }], control: true, download: true },
+  { id: 'seg', label: t('refModes.segmentation'), group: t('refModes.structure'), hint: 'Follow the region layout of the segmentation map in image {n}.', node: ['OneFormer-COCO-SemSegPreprocessor', { resolution: RES }], control: true },
   { id: 'tile', label: t('refModes.tile'), group: t('refModes.structure'), hint: 'Keep the details and layout of image {n}, add fine detail.', node: ['TilePreprocessor', { pyrUp_iters: 3, resolution: RES }], control: true },
   { id: 'recolor', label: t('refModes.recolor'), group: t('refModes.color'), hint: 'Image {n} is a grayscale guide: keep its shapes and lighting and add new colors.', node: ['ImageIntensityDetector', { gamma_correction: 1, resolution: RES }] },
   { id: 'color', label: t('refModes.colorPickerReference'), group: t('refModes.color'), hint: 'Use the color palette of image {n}.', node: ['ColorPreprocessor', { resolution: RES }] },
@@ -85,7 +85,7 @@ export function refHints(used: UsedRef[]): string[] {
 
 /** Pose: WaveSpeed has no pose estimator, so a custom window / multi-ref pose uses a soft-edge map: labelled 「近似效果」 (#80). */
 export const APPROX_MODES = new Set(['pose'])
-for (const m of REF_MODES) if (APPROX_MODES.has(m.id)) m.label = `${m.label}（${t('refModes.approx')}）`
+for (const m of REF_MODES) if (APPROX_MODES.has(m.id)) m.label = `${m.label}${t('refModes.approx')}`
 
 export interface CloudControl { src: string; mode: string; strength: number; start: number; end: number; res: number; resize: 'crop' | 'stretch' }
 

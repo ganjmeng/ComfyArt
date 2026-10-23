@@ -756,7 +756,9 @@ async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> 
         strengths = [float(c.get("strength", 80)) / 100 for c in controls]
         if model == STRUCTURE_EXTRACT_MODEL:
             c = controls[0]
-            inputs["image"] = c["image"]
+            # z-image takes the raw ref (WaveSpeed extracts the skeleton); apply the resolution / fit knobs before upload
+            data = refprep.scale_fit(await _source_bytes(str(c["image"])), int(c.get("res") or 1024), size, str(c.get("resize") or "crop"))
+            inputs["image"] = await _upload(session, "", refprep.to_png(data), f"ref-pose-{uuid.uuid4().hex[:8]}.png")
             params.update({"mode": "pose" if c.get("mode") == "pose" else "canny", "strength": min(1.0, strengths[0])})
         else:
             inputs.pop("image", None)

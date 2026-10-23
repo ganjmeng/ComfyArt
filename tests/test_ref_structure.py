@@ -225,3 +225,29 @@ async def test_color_modes_preprocess_refs_for_edit(ws):
     await wavespeed.submit({"feature": "image_edit", "prompt": "p", "images": [a, b], "prep": [None, "recolor"]})
     model, payload = ws["submits"][0]
     assert model == EDIT and ws["uploads"] == 2 and len(payload["images"]) == 2
+
+
+async def test_pose_default_path_applies_resolution_and_fit(ws, monkeypatch):
+    """#90 review: single Pose on z-image still honours res / fit (pre-scaled before upload, same model and price)."""
+    import io as _io
+    sent = []
+    real = wavespeed._upload
+
+    async def spy(session, kind, data, name):
+        sent.append(Image.open(_io.BytesIO(data)).size)
+        return await real(session, kind, data, name)
+    monkeypatch.setattr(wavespeed, "_upload", spy)
+    ref = Image.new("RGB", (1024, 512), (200, 180, 160))
+    ImageDraw.Draw(ref).ellipse((0, 0, 1023, 511), fill=(20, 40, 200))
+    import folder_paths
+    os.makedirs(folder_paths.get_input_directory(), exist_ok=True)
+    ref.save(os.path.join(folder_paths.get_input_directory(), "big.png"))
+    base = {"feature": "structure_control", "prompt": "p", "image": "big.png [input]", "width": 300, "height": 200}
+    await wavespeed.submit({**base, "control": {"mode": "pose", "strength": 80, "start": 0, "end": 100, "res": 1024, "resize": "crop"}})
+    await wavespeed.submit({**base, "control": {"mode": "pose", "strength": 80, "start": 0, "end": 100, "res": 256, "resize": "stretch"}})
+    await wavespeed.submit({**base, "width": None, "height": None, "control": {"mode": "pose", "strength": 80, "start": 0, "end": 100, "res": 256, "resize": "stretch"}})
+    assert [m for m, _ in ws["submits"]] == [ZIMG] * 3
+    assert sent == [(300, 200), (300, 200), (256, 128)]
+    w = refprep.scale_fit(refprep.to_png(ref), 256, (300, 200), "stretch")
+    c = refprep.scale_fit(refprep.to_png(ref), 256, (300, 200), "crop")
+    assert w.tobytes() != c.tobytes()  # stretch vs crop changes the uploaded image

@@ -141,6 +141,15 @@ def process_image(data: bytes, mode: str, res: int = 1024, size: tuple[int, int]
     return out
 
 
+def scale_fit(data: bytes, res: int = 1024, size: tuple[int, int] | None = None, resize: str = "crop") -> Image.Image:
+    """Raw ref downscaled to `res` on its long side, then fit to the generation size (no map extraction)."""
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    scale = min(1.0, res / max(img.size))
+    if scale < 1:
+        img = img.resize((max(1, round(img.width * scale)), max(1, round(img.height * scale))), Image.LANCZOS)
+    return fit(img, *size, resize) if size else img
+
+
 def to_png(img: Image.Image) -> bytes:
     buf = io.BytesIO()
     img.save(buf, format="PNG")
