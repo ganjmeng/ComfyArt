@@ -918,3 +918,22 @@ def test_ace_music_fields_use_schema_fields_when_present():
     payload = {"tags": "lofi"}
     wavespeed._ace_music_fields({"tags": {}, "bpm": {}, "language": {}, "keyscale": {}}, {"bpm": "120", "language": "en", "key": "C major"}, payload)
     assert payload == {"tags": "lofi", "bpm": 120, "language": "en", "keyscale": "C major"}
+
+
+async def test_quote_uses_rounded_duration_on_every_path(ws, monkeypatch):
+    # #128: 7s is submitted as 10s on a 5/10/15 model, so every price path must quote 10s (per-second mock price)
+    t2v = "wavespeed-ai/minimax-h3/text-to-video"
+    meta = next(m for m in MODELS if m["model_id"] == t2v)
+    monkeypatch.setitem(meta["api_schema"]["api_schemas"][0]["request_schema"]["properties"], "duration", {"type": "integer", "enum": [5, 10, 15]})
+    ws["prices"][t2v] = lambda inputs: 0.06 * inputs.get("duration", 0)
+    job = {"feature": "text_to_video", "model": t2v, "prompt": "waves", "duration": 7}
+    p7, _ = await wavespeed.quote(t2v, job)
+    p5, _ = await wavespeed.quote(t2v, {**job, "duration": 5})
+    assert p7 == pytest.approx(0.6) and p7 > p5 == pytest.approx(0.3)
+    assert (await wavespeed.estimate(job))["price"] == pytest.approx(0.6)
+    board = await wavespeed.estimate({**job, "scenes": [{"prompt": "a", "duration": 7}, {"prompt": "b", "duration": 3}]})
+    assert board["price"] == pytest.approx(0.6 + 0.3) or board["source"] == "catalog"
+    assert all(q["inputs"]["duration"] in (5, 10) for q in ws["quotes"] if q["model_id"] == t2v)
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit(job)
+    assert e.value.status == 409 and e.value.confirm == pytest.approx(0.6) and not ws["submits"]

@@ -18,4 +18,21 @@ export const STYLES: [string, string, string][] = [
 export const RATIOS = ['1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16', '4:5', '5:4', '21:9']
 export const VIDEO_RATIOS = ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9']
 export const DURATIONS = [5, 10, 15]
+
+/** #128: the shortest allowed duration not below the requested seconds, capped at the longest one. */
+export function fitDuration(want: unknown, allowed?: number[]): number {
+  const opts = (allowed?.length ? allowed : DURATIONS).map(Number).filter((d) => d > 0).sort((a, b) => a - b)
+  const n = Number(want)
+  if (!Number.isFinite(n) || n <= 0) return opts[0]
+  return opts.find((d) => d >= n) ?? opts[opts.length - 1]
+}
+
+/** #128: what the confirm dialog / tool result says when the requested duration is not one the model takes. */
+export function durationNote(asked: unknown, actual: number, allowed?: number[], say: (key: string, ...a: (string | number)[]) => string = t): string {
+  const n = Number(asked)
+  if (!Number.isFinite(n) || n <= 0 || n === actual) return ''
+  const opts = (allowed?.length ? allowed : DURATIONS).map(Number)
+  const key = n < Math.min(...opts) ? 'genOptions.durationMin' : n > Math.max(...opts) ? 'genOptions.durationMax' : 'genOptions.durationUp'
+  return say(key, n, actual)
+}
 export const VIDEO_RESOLUTIONS = Object.keys(VIDEO_AREAS)

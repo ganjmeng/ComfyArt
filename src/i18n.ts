@@ -36,6 +36,12 @@ export function t(key: string, ...args: (string | number)[]): string {
   return args.length ? text.replace(/\{(\d+)\}/g, (m, i) => (i < args.length ? String(args[i]) : m)) : text
 }
 
+/** t() in a fixed language (#128: tool results carry both zh and en for the agent's reply). */
+export function tl(to: Lang, key: string, ...args: (string | number)[]): string {
+  const text = MESSAGES[to][key] ?? MESSAGES.en[key] ?? key
+  return args.length ? text.replace(/\{(\d+)\}/g, (m, i) => (i < args.length ? String(args[i]) : m)) : text
+}
+
 export function timeAgo(time: number): string {
   const m = Math.floor((Date.now() - time) / 60000)
   if (m < 1) return t('common.justNow')

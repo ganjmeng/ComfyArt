@@ -12,7 +12,7 @@ import { PALETTE_MODE, applyRefs, refControlsOf, refHints, refLimit, refModesOf,
 import { paletteImage, palettePrompt } from './palette'
 import { annotated, randomSeed, type Built } from './workflows'
 import { MAX_VIDEO_REF_KINDS, VIDEO_AREAS, videoSize, type Scene } from './videoGraphs'
-import { SHOTS, STYLES, VIDEO_RATIOS } from './genOptions'
+import { durationNote, SHOTS, STYLES, VIDEO_RATIOS } from './genOptions'
 
 export function scenesOf(shape: GeneratorShape): Scene[] {
   return (shape.meta.scenes as Scene[] | undefined) ?? []
@@ -127,7 +127,9 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     colors.length > 0 && palettePrompt(colors),
   ].filter(Boolean).join(' ')
   if (isVideo(workflow) && isCloudModel(workflow)) {
-    const base = { prompt, ratio, duration, resolution: shape.props.resolution || '768p', seed: seedOf(shape) ?? undefined }
+    // #128: the confirm dialog states the actual duration when the agent asked for one the model doesn't take
+    const note = durationNote(shape.meta?.durationAsked, duration, modelOf(workflow)?.durations?.map(Number))
+    const base = { prompt, ratio, duration, ...(note ? { duration_note: note } : {}), resolution: shape.props.resolution || '768p', seed: seedOf(shape) ?? undefined }
     const scenes = scenesOf(shape).filter((sc) => sc.prompt.trim())
     if (scenes.length) {
       // storyboard: the backend runs one cloud task per scene with the current model

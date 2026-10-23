@@ -1195,5 +1195,8 @@
   "wsKey.topUp": "WaveSpeed 余额为 $0，充值前无法生成。",
   "wsKey.zero": "余额 $0.00，请充值后再生成",
   "zoom.fitAll": "显示全部",
-  "zoom.zoomTo": "缩放至 {0}%"
+  "zoom.zoomTo": "缩放至 {0}%",
+  "genOptions.durationMin": "该模型最短 {1} 秒，将按 {1} 秒生成（你要的是 {0} 秒）。",
+  "genOptions.durationMax": "该模型最长 {1} 秒，将按 {1} 秒生成（你要的是 {0} 秒）。",
+  "genOptions.durationUp": "该模型不支持 {0} 秒，将按 {1} 秒生成。"
 }

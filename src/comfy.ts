@@ -149,14 +149,14 @@ export function setWsHook(hook: WsHook) {
 }
 
 /** Second confirmation for costly cloud jobs, in the app's own Confirm dialog. */
-export function askCost(price: number, segSplits?: number, segCapped?: boolean): Promise<boolean> {
+export function askCost(price: number, segSplits?: number, segCapped?: boolean, note = ''): Promise<boolean> {
   // #138: seg maps quote an upper bound before anything is recognised (nothing is charged before this dialog);
   // on a retry only the classes still missing a mask are quoted
   const p = price.toFixed(2)
-  const desc = typeof segSplits !== 'number' ? t('jobs.confirmCost', p)
+  const cost = typeof segSplits !== 'number' ? t('jobs.confirmCost', p)
     : segCapped ? t('jobs.confirmSegMax', p, segSplits) : t('jobs.confirmSegLeft', p, segSplits)
   return new Promise((resolve) => confirmAtom.set({
-    title: t('jobs.confirmTitle'), desc, ok: t('jobs.confirmOk'),
+    title: t('jobs.confirmTitle'), ...(note ? { note } : {}), desc: cost, ok: t('jobs.confirmOk'),
     run: () => resolve(true), cancel: () => resolve(false),
   }))
 }
@@ -173,7 +173,8 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget())
     const price = wsBody?.error?.confirm_usd
     if (ws.status === 409 && typeof price === 'number') {
       // jobs of $0.50 or more need an explicit yes before they are submitted
-      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped))) throw new CostDeclined()
+      // #128: the actual duration when it differs from the one asked
+      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, typeof inputs.duration_note === 'string' ? inputs.duration_note : ''))) throw new CostDeclined()
       ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
       wsBody = await ws.json().catch(() => null)
     }
