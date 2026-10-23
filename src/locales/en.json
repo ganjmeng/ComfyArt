@@ -1120,5 +1120,10 @@
   "wsKey.balanceTitle": "WaveSpeed balance",
   "wsKey.noKeyChip": "Add API key",
   "wsKey.needKey": "Add a WaveSpeed API key in Settings to generate",
-  "wsKey.needCredit": "WaveSpeed balance is $0: top up to generate"
+  "wsKey.needCredit": "WaveSpeed balance is $0: top up to generate",
+  "jobs.confirmTitle": "Confirm cost",
+  "jobs.confirmOk": "Generate",
+  "wsKey.confirmUsd": "Confirm jobs costing at least ($, 0 = always)",
+  "wsKey.confirmBad": "Enter a number from 0 to 1000",
+  "wsKey.estimate": "Est. {0}"
 }
