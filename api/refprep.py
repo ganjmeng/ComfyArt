@@ -13,6 +13,7 @@ from PIL import Image, ImageChops, ImageFilter, ImageOps
 
 # structure modes WaveSpeed extracts itself (z-image-turbo/controlnet `mode`): no cloud pose estimator exists
 EXTRACTED = {"pose": "pose"}
+POSE_FALLBACK = "softedge"  # pose ref on flux (custom window / multi-ref): soft-edge map of the reference
 # structure modes turned into a control image here and sent to flux-controlnet-union-pro-2.0
 FILTERED = {"canny", "lineart", "mlsd", "scribble", "softedge", "tile"}
 # structure modes whose map comes from a cloud estimator first (feature, params), then flux-controlnet-union-pro-2.0

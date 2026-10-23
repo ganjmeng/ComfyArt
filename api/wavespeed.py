@@ -667,22 +667,29 @@ def _controls(inputs: dict) -> list[dict]:
     return [{**c, "image": c.get("image") or inputs.get("image")}] if isinstance(c, dict) else []
 
 
-def structure_model(mode: str, count: int = 1) -> str:
-    """Only pose (alone) needs z-image-turbo/controlnet, which extracts the skeleton itself (no cloud pose
-    estimator exists). Everything else becomes a control image for flux-controlnet-union-pro-2.0."""
-    return STRUCTURE_EXTRACT_MODEL if mode in refprep.EXTRACTED and count == 1 else STRUCTURE_FILTER_MODEL
+def _full_window(c: dict) -> bool:
+    return float(c.get("start", 0)) <= 0 and float(c.get("end", 100)) >= 100
+
+
+def structure_model(mode: str, count: int = 1, full_window: bool = True) -> str:
+    """Pose alone with the default 0-100 window uses z-image-turbo/controlnet, which extracts the skeleton
+    itself (WaveSpeed has no pose estimator and z-image returns no pose map). z-image has no start/end, so a
+    pose ref with a custom window, or mixed with other refs, goes to flux-controlnet-union-pro-2.0 with a
+    soft-edge map of the pose reference instead of being dropped (#80)."""
+    if mode in refprep.EXTRACTED and count == 1 and full_window:
+        return STRUCTURE_EXTRACT_MODEL
+    return STRUCTURE_FILTER_MODEL
 
 
 def _structure_pick(inputs: dict) -> str:
     cs = _controls(inputs)
-    return structure_model(str((cs[0] if cs else {}).get("mode") or ""), len(cs))
+    c = cs[0] if cs else {}
+    return structure_model(str(c.get("mode") or ""), len(cs), _full_window(c))
 
 
 def _map_steps(inputs: dict) -> list[str]:
     """Features of the extra cloud map calls (depth-anything / sam3) a structure job runs before control."""
     cs = _controls(inputs)
-    if len(cs) == 1 and str(cs[0].get("mode")) in refprep.EXTRACTED:
-        return []
     return [refprep.CLOUD_MAP[m][0] for m in (str(c.get("mode") or "") for c in cs) if m in refprep.CLOUD_MAP]
 
 
@@ -730,7 +737,8 @@ async def _control_map(c: dict, size, res_default: int = 1024):
         data = await _cloud_map(feature, params, str(c["image"]))
     else:
         data = await _source_bytes(str(c["image"]))
-    return refprep.process_image(data, mode, res, size, resize)
+    # no pose estimator on WaveSpeed: on flux a pose ref guides through its soft-edge map
+    return refprep.process_image(data, refprep.POSE_FALLBACK if mode in refprep.EXTRACTED else mode, res, size, resize)
 
 
 async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> dict:
@@ -752,9 +760,6 @@ async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> 
             params.update({"mode": "pose" if c.get("mode") == "pose" else "canny", "strength": min(1.0, strengths[0])})
         else:
             inputs.pop("image", None)
-            # no cloud pose estimator: with other structure refs a pose ref can't become a map (gap, see PR)
-            keep = [i for i, c in enumerate(controls) if c.get("mode") not in refprep.EXTRACTED] or [0]
-            controls, strengths = [controls[i] for i in keep], [strengths[i] for i in keep]
             maps = [await _control_map(c, size) for c in controls]
             img = maps[0] if len(maps) == 1 else refprep.composite(list(zip(maps, strengths)), size or maps[0].size)
             params.update({

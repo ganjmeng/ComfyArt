@@ -104,6 +104,43 @@ async def test_pose_alone_uses_model_extraction(ws):
     assert payload["image"] == "https://cdn.test/up1.png"  # raw ref; WaveSpeed extracts the skeleton
 
 
+async def test_pose_with_window_keeps_knobs_on_flux(ws):
+    ref = _photo()
+    seen = []
+    real = refprep.process_image
+
+    def spy(data, mode, *a):
+        seen.append(mode)
+        return real(data, mode, *a)
+    import unittest.mock as um
+    with um.patch.object(refprep, "process_image", spy):
+        await wavespeed.submit({"feature": "structure_control", "prompt": "p", "width": 512, "height": 512,
+                                "controls": [_ctl("pose", ref, 90, 15, 75)]})
+    model, payload = ws["submits"][0]
+    assert model == FLUX and seen == [refprep.POSE_FALLBACK]  # not silently dropped: soft-edge map of the pose ref
+    assert payload["controlnet_conditioning_scale"] == 0.9
+    assert payload["control_guidance_start"] == 0.15 and payload["control_guidance_end"] == 0.75
+    est = await wavespeed.estimate({"feature": "structure_control", "prompt": "p", "width": 512, "height": 512,
+                                    "controls": [_ctl("pose", ref, 90, 15, 75)]})
+    assert est["price"] == 0.03
+
+
+async def test_pose_mixed_with_other_refs_is_kept(maps):
+    a, b = _photo("a.png"), _photo("b.png")
+    seen = []
+    real = refprep.composite
+
+    def spy(items, size):
+        seen.append([s for _, s in items])
+        return real(items, size)
+    import unittest.mock as um
+    with um.patch.object(refprep, "composite", spy):
+        await wavespeed.submit({"feature": "structure_control", "prompt": "p", "width": 512, "height": 512,
+                                "controls": [_ctl("pose", a, 100), _ctl("depth", b, 50)]})
+    assert [m for m, _ in maps["submits"]] == [DEPTH, FLUX]
+    assert seen == [[1.0, 0.5]]
+
+
 @pytest.mark.parametrize("mode,step", [("depth", DEPTH), ("normal", DEPTH), ("seg", SAM)])
 async def test_cloud_map_then_flux_with_knobs(maps, mode, step):
     ref = _photo()
@@ -165,6 +202,8 @@ def test_composite_keeps_every_map():
     (["depth"], 0.035),
     (["seg"], 0.035),
     (["normal", "seg", "canny"], 0.04),
+    (["pose"], 0.012),
+    (["pose", "depth"], 0.035),
 ])
 async def test_estimate_includes_map_calls(ws, modes, total):
     ref = _photo()

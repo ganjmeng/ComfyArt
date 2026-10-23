@@ -83,8 +83,8 @@ export function refHints(used: UsedRef[]): string[] {
 }
 
 
-/** Cloud modes that are still approximations of upstream (Pillow maps, depth-derived normals, SAM masks, pose without start/end): labelled 「近似效果」 in the menu (#80). */
-export const APPROX_MODES = new Set(['mlsd', 'tile', 'normal', 'seg', 'pose'])
+/** Pose: WaveSpeed has no pose estimator, so a custom window / multi-ref pose uses a soft-edge map: labelled 「近似效果」 (#80). */
+export const APPROX_MODES = new Set(['pose'])
 for (const m of REF_MODES) if (APPROX_MODES.has(m.id)) m.label = `${m.label}（${t('refModes.approx')}）`
 
 export interface CloudControl { src: string; mode: string; strength: number; start: number; end: number; res: number; resize: 'crop' | 'stretch' }
