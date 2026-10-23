@@ -34,7 +34,7 @@ export function Popover({ trigger, children, side = 'bottom', align = 'start', o
     if (!open) return
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node
-      if (panel.current?.contains(t) || anchor.current?.contains(t) || (t as Element).closest?.('.ca-pop')) return
+      if (panel.current?.contains(t) || anchor.current?.contains(t) || (t as Element).closest?.('.ca-pop, .ca-modal')) return  // #145: answering a dialog opened from the popover keeps it open
       onOpenChange(false)
     }
     document.addEventListener('pointerdown', onDown, true)

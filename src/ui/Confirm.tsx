@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { atom, useValue } from 'tldraw'
 
 import { Modal } from './Modal'
@@ -12,7 +13,9 @@ export function Confirm() {
   if (!ask) return null
   const close = () => confirmAtom.set(null)
   const dismiss = () => { close(); ask.cancel?.() }
-  return (
+  // #145: portal to <body> like Popover, so the existing .ca-modal z-index (2000) is compared with .ca-pop (1000)
+  // instead of being trapped in .ca-root's stacking context, where any open popover covered it
+  return createPortal(
     <Modal title={ask.title} onClose={dismiss}>
       <div className="ca-rename__body">
         <div>{ask.desc}</div>
@@ -21,6 +24,7 @@ export function Confirm() {
           <button type="button" className={ask.danger ? 'ca-panel__primary ca-panel__danger' : 'ca-panel__primary'} onClick={() => { close(); ask.run() }}>{ask.ok}</button>
         </div>
       </div>
-    </Modal>
+    </Modal>,
+    document.body,
   )
 }
