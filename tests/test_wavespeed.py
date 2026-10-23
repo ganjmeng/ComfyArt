@@ -931,8 +931,8 @@ async def test_quote_uses_rounded_duration_on_every_path(ws, monkeypatch):
     p5, _ = await wavespeed.quote(t2v, {**job, "duration": 5})
     assert p7 == pytest.approx(0.6) and p7 > p5 == pytest.approx(0.3)
     assert (await wavespeed.estimate(job))["price"] == pytest.approx(0.6)
-    board = await wavespeed.estimate({**job, "scenes": [{"prompt": "a", "duration": 7}, {"prompt": "b", "duration": 3}]})
-    assert board["price"] == pytest.approx(0.6 + 0.3) or board["source"] == "catalog"
+    board = await wavespeed.estimate({**job, "scenes": [{"prompt": "a", "duration": 7}]})
+    assert board["price"] == pytest.approx(0.6) and board["source"] == "quote"
     assert all(q["inputs"]["duration"] in (5, 10) for q in ws["quotes"] if q["model_id"] == t2v)
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.submit(job)
