@@ -57,7 +57,7 @@ def check(curated: dict, catalog: dict) -> list[str]:
     """Return failure lines; prints one line per curated id."""
     fails = []
     for feature, cur in curated.items():
-        for i, mid in enumerate(cur["models"]):
+        for i, mid in enumerate(cur["models"] + cur.get("more", [])):
             tag = "★" if i == 0 else " "
             meta = catalog.get(mid)
             if not meta:
@@ -86,7 +86,7 @@ def main() -> int:
     if a.update_fixture:
         fx = json.load(open(FIXTURE, encoding="utf-8"))
         for cur in curated.values():
-            for mid in cur["models"]:
+            for mid in cur["models"] + cur.get("more", []):
                 if mid in catalog and mid not in fx:
                     fx[mid] = trim(catalog[mid])
         with open(FIXTURE, "w", encoding="utf-8") as f:

@@ -28,13 +28,19 @@ def _props(mid):
     return FIXTURE[mid]["api_schema"]["api_schemas"][0]["request_schema"]["properties"]
 
 
-CURATED_IDS = [(f, m) for f, c in CURATED.items() for m in c["models"]]
+CURATED_IDS = [(f, m) for f, c in CURATED.items() for m in c["models"] + c.get("more", [])]
 
 
 @pytest.mark.parametrize("feature,mid", CURATED_IDS)
 def test_curated_id_in_catalog_with_declared_params(feature, mid):
     assert mid in FIXTURE, f"{mid} missing from catalog fixture (run scripts/check_curated_models.py --update-fixture)"
     assert set(CURATED[feature].get("needs", [])) <= set(_props(mid))
+
+
+def test_more_is_disjoint_and_unique():
+    for f, c in CURATED.items():
+        more = c.get("more", [])
+        assert len(more) == len(set(more)) and not set(more) & set(c["models"]), f
 
 
 def test_curated_features_exist_and_sizes():
@@ -49,7 +55,8 @@ def test_defaults_are_first_curated_and_config_matches():
     cfg = wavespeed.load_config()["features"]
     for f, c in CURATED.items():
         assert cfg[f]["default"] == c["models"][0]
-        assert [m["id"] for m in cfg[f]["models"]] == c["models"]
+        assert [m["id"] for m in cfg[f]["models"]] == c["models"] + c.get("more", [])
+        assert cfg[f]["recommended"] == c["models"]
 
 
 def test_every_original_feature_keeps_a_model_and_valid_default():
@@ -70,13 +77,15 @@ def test_product_defaults():
 async def test_picker_endpoint_data_is_curated():
     g = await wavespeed.grouped_models()
     for f, c in CURATED.items():
-        assert [m["id"] for m in g[f]["models"]] == c["models"]
+        assert [m["id"] for m in g[f]["models"]] == c["models"] + c.get("more", [])
+        assert [m["id"] for m in g[f]["models"] if m["recommended"]] == c["models"]
+        assert all(m["vendor"] for m in g[f]["models"])
         assert [m["id"] for m in g[f]["models"] if m["default"]] == [c["models"][0]]
 
 
 def test_resolve_model_rejects_uncurated():
     with pytest.raises(wavespeed.WaveSpeedError):
-        wavespeed.resolve_model("text_to_image", "ideogram-ai/ideogram-v4.5")
+        wavespeed.resolve_model("text_to_image", "acme/not-curated")
     assert wavespeed.resolve_model("text_to_image", None) == CURATED["text_to_image"]["models"][0]
 
 

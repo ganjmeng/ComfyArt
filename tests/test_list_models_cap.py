@@ -31,6 +31,11 @@ def _text(payload) -> str:  # what api/mcp.py sends back to the agent
 
 
 def _ids(feature: str) -> list[str]:
+    """The feature's recommended ids (list_models default view, #95)."""
+    return wavespeed.load_config()["features"][feature]["recommended"]
+
+
+def _all_ids(feature: str) -> list[str]:
     return [m["id"] for m in wavespeed.load_config()["features"][feature]["models"]]
 
 
@@ -69,7 +74,7 @@ async def test_video_type_has_every_generate_video_id():
 
 async def test_feature_name_as_type_and_bad_type():
     out = await canvas._list_models({"type": "text_to_video"})
-    assert list(out["features"]) == ["text_to_video"]
+    assert [k for k in out["features"] if k != "hint"] == ["text_to_video"]
     with pytest.raises(wavespeed.WaveSpeedError, match="unknown type"):
         await canvas._list_models({"type": "hologram"})
 
@@ -78,7 +83,7 @@ def test_unknown_model_error_lists_valid_ids():
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         wavespeed.resolve_model("image_to_video", "kling-guess")
     msg = str(e.value)
-    assert "kling-guess" in msg and all(i in msg for i in _ids("image_to_video"))
+    assert "kling-guess" in msg and all(i in msg for i in _all_ids("image_to_video"))
     assert "default bytedance/seedance-2.0/image-to-video" in msg
 
 

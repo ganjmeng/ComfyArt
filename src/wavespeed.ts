@@ -42,7 +42,7 @@ export interface WsInputs {
   custom?: string
 }
 
-export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null }
+export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null; vendor?: string; recommended?: boolean; qualities?: string[] }
 export interface CloudFeature { default: string; available: boolean; models: CloudModel[] }
 
 let pending: string | undefined

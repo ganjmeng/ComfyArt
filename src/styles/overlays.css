@@ -176,6 +176,8 @@
 .ca-skills__file { display: flex; flex-direction: column; gap: 6px; }
 .ca-skills__file .ca-menu__grow { cursor: pointer; }
 .ca-models { width: 300px; }
+.ca-models__list { max-height: min(360px, 50vh); overflow-y: auto; }
+.ca-models__list .ca-menu__item:disabled { opacity: .45; }
 .ca-model { display: flex; flex-direction: column; min-width: 0; line-height: 18px; }
 .ca-model__desc { font-size: 12px; color: var(--ca-muted); white-space: normal; }
 .ca-model__tag { margin-left: 6px; padding: 0 6px; border-radius: 6px; background: var(--ca-field); color: var(--ca-muted); font-size: 11px; }

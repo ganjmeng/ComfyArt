@@ -22,19 +22,36 @@ export interface ModelDef {
   control?: string
   negative?: [string, string]
   lora?: string | null
+  /** Picker group header (model family), starting price and quality tiers from the WaveSpeed schema (#95). */
+  vendor?: string
+  price?: number | null
+  recommended?: boolean
+  qualities?: string[]
+  /** The 'Auto' entry: the agent / backend default picks the model. */
+  auto?: boolean
 }
+
+/** Per-feature tabs of the generator's model menu (#95); the first tab's pick is the shape's workflow. */
+export const IMAGE_FEATURES = ['text_to_image', 'image_edit']
+export const VIDEO_FEATURES = ['text_to_video', 'image_to_video']
+export const FEATURE_MODELS: Record<string, ModelDef[]> = {}
+
+export const AUTO_IMAGE = 'auto'
+export const AUTO_VIDEO = 'auto:video'
+const autoDef = (video: boolean): ModelDef => ({ id: video ? AUTO_VIDEO : AUTO_IMAGE, label: t('common.auto'), desc: t('genPanel.autoDesc'), files: [], cloud: true, lora: null, auto: true, ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }) })
+export const isAuto = (workflow: string) => workflow === AUTO_IMAGE || workflow === AUTO_VIDEO
 
 export const IMAGE_MODELS: ModelDef[] = []
 
 export const VIDEO_MODELS: ModelDef[] = []
 
-export const isVideo = (workflow: string) => VIDEO_MODELS.some((m) => m.id === workflow)
+export const isVideo = (workflow: string) => workflow === AUTO_VIDEO || VIDEO_MODELS.some((m) => m.id === workflow)
 function customModels(): ModelDef[] {
   const file = workflowConfigAtom.get().generate
   return file ? [{ id: CUSTOM_GENERATE, label: file.replace(/\.json$/, ''), desc: t('customWorkflows.customModelDesc'), files: [], cloud: true, lora: null }] : []
 }
 
-export const modelOf = (workflow: string) => [...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].find((m) => m.id === workflow)
+export const modelOf = (workflow: string) => [autoDef(false), autoDef(true), ...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].find((m) => m.id === workflow)
 
 export interface ModelPrefs { auto: boolean; enabled: string[] }
 
@@ -50,11 +67,12 @@ async function useCloudImageModels() {
   const defs = (names: string[], video: boolean): ModelDef[] => {
     const seen = new Set<string>()
     return names.flatMap((n) => all[n]?.models ?? []).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
-      id: m.id, label: m.label + (m.price != null ? ` · $${m.price}` : ''), desc: m.subtitle || m.id.split('/').slice(1).join('/') || m.id, about: m.desc || undefined, files: [], cloud: true, lora: null,
+      id: m.id, label: m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, desc: m.subtitle || m.id.split('/').slice(1).join('/') || m.id, about: m.desc || undefined, files: [], cloud: true, lora: null,
       // control: structure refs run on WaveSpeed control models (#80), so the ControlNet knobs show like upstream
       ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }),
     }))
   }
+  for (const f of [...IMAGE_FEATURES, ...VIDEO_FEATURES]) FEATURE_MODELS[f] = defs([f], VIDEO_FEATURES.includes(f))
   const image = defs(['text_to_image'], false)
   const video = defs(['text_to_video', 'image_to_video'], true)
   if (image.length) IMAGE_MODELS.splice(0, IMAGE_MODELS.length, ...image)
@@ -63,7 +81,7 @@ async function useCloudImageModels() {
   if (!modelPrefsAtom.get().auto) modelPrefsAtom.set({ ...modelPrefsAtom.get(), enabled: [...modelPrefsAtom.get().enabled, ...added] })
 }
 
-export const isCloudModel = (id: string) => [...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].some((m) => m.id === id && m.cloud)
+export const isCloudModel = (id: string) => isAuto(id) || [...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].some((m) => m.id === id && m.cloud)
 
 export async function loadModels() {
   const [prefs, files, paths] = await Promise.all([readUserJson<ModelPrefs | null>(FILE, null), api('/models/diffusion_models'), loadModelPaths(), useCloudImageModels()])

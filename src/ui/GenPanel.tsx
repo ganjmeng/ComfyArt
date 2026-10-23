@@ -3,14 +3,14 @@ import { useEditor, useValue } from 'tldraw'
 
 import { refKind, thumbUrl, uploadImage, viewUrl, type RefKind } from '../comfy'
 import { planStoryboard } from '../agent'
-import { baseOf, colorsOf, estimateInputsOf, generate, lastFrameOf, motionOf, refsOf, runOnOf, scenesOf, speechOf, targetSize, videoModeOf } from '../generate'
+import { baseOf, colorsOf, estimateInputsOf, featureModelsOf, generate, lastFrameOf, motionOf, refsOf, scenesOf, speechOf, targetSize, videoModeOf } from '../generate'
 import { canvasPickAtom, fillTarget, isMediaRefs, maxRefsOf, type Target } from '../genInputs'
 import { itemImages, libraryAtom } from '../library'
 import { DEFAULT_STRENGTH, modeOf, modesFor, refControlsOf, refModeFor, refModesOf, refStrengthsOf, usableRefs } from '../refModes'
 import { RefControls } from './RefControls'
 import { errorText, jobOf } from '../jobs'
 import type { GeneratorShape } from '../shapes/GeneratorShape'
-import { installedModels, isVideo, modelOf } from '../models'
+import { agentModels, AUTO_IMAGE, AUTO_VIDEO, isVideo, modelOf } from '../models'
 import { AssetGrid } from './AssetPicker'
 import { ColorPicker } from './ColorPicker'
 import { AdvancedPill } from './GenAdvanced'
@@ -48,7 +48,6 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
   const [smart, setSmart] = useState(false)
   const file = useRef<HTMLInputElement>(null)
   const uploadTo = useRef<Target>('ref')
-  const models = useValue('gen models', () => installedModels(!!shape && isVideo(shape.props.workflow)), [shape?.props.workflow])
   const running = useValue('gen running', () => !!(shape && jobOf(editor.getShape(shape.id) ?? shape)), [editor, shape])
   const canvasPick = useValue(canvasPickAtom)
   const library = useValue('library images', () => libraryAtom.get().filter((x) => itemImages(x).length), [])
@@ -190,7 +189,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
   const left = Math.min(Math.max((rect.l + rect.r) / 2 - size.w / 2, EDGE), host.width - size.w - EDGE)
   const floor = host.height - 72 - size.h
   const top = Math.max(EDGE, Math.min(rect.b + GAP, floor))
-  const model = modelOf(p.workflow) ?? models[0]
+  const model = modelOf(p.workflow) ?? modelOf(video ? AUTO_VIDEO : AUTO_IMAGE)!
   const available = modesFor(model)
   const modeFor = (src: string) => refModeFor(model, modes[src])?.id
   const used = usableRefs(model, refs, modes).map((r) => r.src)
@@ -291,10 +290,12 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
         }}
       />}
       <div className="ca-gen__foot">
-        <SettingsPill p={p} video={video} quality={!!model.steps} update={update} />
+        <SettingsPill p={p} video={video} quality={!!model.steps} tiers={model.qualities} update={update} />
         <AdvancedPill shape={shape} model={model} setMeta={setMeta} />
         <div className="ca-gen__spacer" />
-        <ModelPill models={models} model={model} runOn={runOnOf(shape)} onPick={(id) => update({ workflow: id })} />
+        <ModelPill video={video} model={model} picks={featureModelsOf(shape)}
+          onPick={(f, id) => (f === 'text_to_image' || f === 'text_to_video' ? update({ workflow: id }) : setMeta({ featureModels: { ...featureModelsOf(shape), [f]: id } }))}
+          onAuto={(on) => { if (on) setMeta({ featureModels: {} }); update({ workflow: on ? (video ? AUTO_VIDEO : AUTO_IMAGE) : agentModels(video)[0].id }) }} />
         {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={t('wsKey.estimate', `$${estimate}`)}>{`≈$${estimate < 0.01 ? estimate.toFixed(4).replace(/0+$/, '') : estimate.toFixed(2)}`}</span>}
         <button type="button" className="ca-gen__send" disabled={!ready || noCredit} title={noCredit ? t('wsKey.needCredit') : estimate != null ? `${t('common.generate')} · ${t('wsKey.estimate', `$${estimate}`)}` : t('common.generate')} onClick={submit}>
           <span className="ca-icon">{Icons.send}</span>

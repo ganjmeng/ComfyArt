@@ -9,7 +9,7 @@ import { botEnabledAtom, messagesAtom } from '../bot'
 import { VIDEO_RATIOS } from '../genOptions'
 import { errorText } from '../jobs'
 import { KIND_LABELS, libraryAtom } from '../library'
-import { agentModels, installedModels, modelOf } from '../models'
+import { agentModels, AUTO_IMAGE, AUTO_VIDEO, modelOf } from '../models'
 import { GENERATOR, type GeneratorShape, type GeneratorShapeUtil } from '../shapes/GeneratorShape'
 import type { AudioShape } from '../shapes/EmbedShapes'
 import { loadSkills, saveSkill, skillAtom, type Skill } from '../skills'
@@ -48,8 +48,7 @@ function RefThumb({ editor, s }: { editor: Editor; s: RefShape }) {
 function DirectPills({ editor, video }: { editor: Editor; video: boolean }) {
   const key = video ? 'video' : 'image'
   const settings = useValue('direct settings', () => directSettingsAtom.get()[key], [key])
-  const models = useValue('direct models', () => installedModels(video), [video])
-  const workflow = settings.workflow || agentModels(video)[0].id
+  const workflow = settings.workflow || (video ? AUTO_VIDEO : AUTO_IMAGE)
   const p: GeneratorShape['props'] = { ...editor.getShapeUtil<GeneratorShapeUtil>(GENERATOR).getDefaultProps(), ratio: video ? VIDEO_RATIOS[0] : '1:1', ...settings, workflow }
   const model = modelOf(workflow)!
   const update = (patch: DirectSettings) => {
@@ -58,8 +57,8 @@ function DirectPills({ editor, video }: { editor: Editor; video: boolean }) {
   }
   return (
     <>
-      <SettingsPill p={p} video={video} quality={!!model.steps} update={update} />
-      <ModelPill models={models} model={model} onPick={(id) => update({ workflow: id })} />
+      <SettingsPill p={p} video={video} quality={!!model.steps} tiers={model.qualities} update={update} />
+      <ModelPill video={video} model={model} onPick={(_f, id) => update({ workflow: id })} onAuto={(on) => update({ workflow: on ? (video ? AUTO_VIDEO : AUTO_IMAGE) : agentModels(video)[0].id })} />
     </>
   )
 }

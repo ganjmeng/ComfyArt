@@ -1,5 +1,5 @@
 from ..mcp_commands import submit_command
-from ..wavespeed import compact_models, grouped_models, load_config
+from ..wavespeed import compact_models, grouped_models, load_config, model_details
 from ._context import BOT_CHAT_ID, PROJECT
 from .bot_tools import maybe_ask_run_approval
 
@@ -56,11 +56,13 @@ SPECS: dict[str, dict] = {
         "see layout and results. max_px caps the long side (default 1024).",
         {"ids": _IDS, "max_px": {"type": "integer"}}, timeout=SLOW_S),
     "list_models": _tool(
-        "WaveSpeed cloud models grouped by feature (text_to_image, image_edit, upscale_image, ...): ids, "
-        "price in USD per run, description, accepted inputs and the default per feature. Pass an id as "
-        "model to the matching tool, or omit model to use the default. type: image, image_tools, video, video_tools, audio, 3d or a "
-        "feature name for that group's models with prices and inputs; without type only an index of ids.",
-        {"type": {"type": "string"}}),
+        "WaveSpeed cloud models grouped by feature (text_to_image, image_edit, upscale_image, ...): id, "
+        "starting price in USD per run and a one-line description. Pass an id as model to the matching tool, "
+        "or omit model to use the default. type: image, image_tools, video, video_tools, audio, 3d or a "
+        "feature name for that group's recommended models (without type only an index). all=true with "
+        "page (1..pages) lists every model. model_id: one model's params and quality tiers.",
+        {"type": {"type": "string"}, "all": {"type": "boolean"}, "page": {"type": "integer"},
+         "model_id": {"type": "string"}}),
     "brand_kits": _tool(
         "The user's brand kits and saved assets (characters, products): names, descriptions, colors "
         "with roles, fonts, logo and reference image URLs, and which kit this project is linked to.", {}),
@@ -281,9 +283,18 @@ for _name in load_config()["tool_features"]:
 
 
 async def _list_models(args: dict) -> dict:
+    grouped = await grouped_models()
+    if args.get("model_id"):
+        return {"model": model_details(grouped, str(args["model_id"]).strip())}
     kind = str(args.get("type") or "").strip().lower() or None
     tool_features = load_config()["tool_features"]
-    out = {"features": compact_models(await grouped_models(), kind, tool_features)}
+    try:
+        page = int(args.get("page") or 1)
+    except (TypeError, ValueError):
+        page = 1
+    res = compact_models(grouped, kind, tool_features, bool(args.get("all")) and bool(kind), page)
+    # a single default page keeps the plain {feature: ...} shape; paged results carry page/pages
+    out = res if "pages" in res else {"features": res}
     if not kind:
         out["tool_features"] = tool_features
     return out

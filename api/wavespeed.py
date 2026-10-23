@@ -129,7 +129,8 @@ def apply_curation(cfg: dict, curated: dict) -> dict:
         if feature is None or not cur.get("models"):
             continue
         old = {m["id"]: m for m in feature["models"]}
-        feature["models"] = [old.get(i, {"id": i}) for i in cur["models"]]
+        feature["models"] = [old.get(i, {"id": i}) for i in cur["models"] + cur.get("more", [])]
+        feature["recommended"] = list(cur["models"])
         feature["default"] = cur["models"][0]
     return cfg
 
@@ -203,6 +204,8 @@ def _caps(schema: dict) -> dict:
     for k in ("aspect_ratio", "resolution", "duration"):
         if props.get(k, {}).get("enum"):
             out[k + "s"] = props[k]["enum"]
+    if props.get("quality", {}).get("enum"):
+        out["qualities"] = props["quality"]["enum"]
     if "images" in props:
         out["max_images"] = props["images"].get("maxItems")
     return out
@@ -222,6 +225,18 @@ def short_label(model_id: str) -> str:
 def subtitle(model_id: str, display_name: str | None) -> str:
     """Picker subtitle: WaveSpeed display name, else the model ID without its vendor prefix. Never the old local model name."""
     return display_name or model_id.split("/", 1)[-1]
+
+
+_VENDORS = (("nano-banana", "Nano Banana"), ("gpt-image", "GPT Image"), ("seedream", "Seedream"), ("seedance", "Seedance"),
+            ("uni-v1", "Luma"), ("flux", "Flux"), ("qwen-image", "Qwen-Image"), ("midjourney", "Midjourney"),
+            ("ideogram", "Ideogram"), ("recraft", "Recraft"), ("kling", "Kling"), ("veo", "Veo"), ("gemini-omni", "Gemini Omni"),
+            ("wan-", "Wan"), ("vidu", "Vidu"), ("hailuo", "Hailuo"), ("minimax", "MiniMax"), ("ltx", "LTX"))
+
+
+def vendor_of(model_id: str) -> str:
+    """Picker group like Lovart's dropdown (#95): model family, else the WaveSpeed vendor prefix."""
+    low = model_id.lower()
+    return next((name for key, name in _VENDORS if key in low), model_id.split("/", 1)[0])
 
 
 async def grouped_models(refresh: bool = False) -> dict:
@@ -244,6 +259,8 @@ async def grouped_models(refresh: bool = False) -> dict:
                 "desc": (m.get("description") or "")[:240],
                 "local_equivalent": entry.get("local"),
                 "default": entry["id"] == feature["default"],
+                "recommended": entry["id"] in feature.get("recommended", [entry["id"]]),
+                "vendor": vendor_of(entry["id"]),
                 **_caps(_schema(m)),
             })
         out[name] = {"default": feature["default"], "types": feature["types"], "available": name not in cfg.get("pending_features", []), "models": models}
@@ -275,30 +292,94 @@ def _compact_choices(v):
     return v
 
 
-def compact_models(grouped: dict, kind: str | None = None, tool_features: dict | None = None) -> dict:
-    """list_models output small enough for the agent's 4000-char tool-result cap (bot/_cli_common.py).
+PAGE_BUDGET = 3800  # under the agent's 4000-char TOOL_RESULT_CAP (bot/_cli_common.py) with room for the wrapper
 
-    No kind: each available feature's default plus the kinds to ask for. kind (image/video/audio/3d
-    or a feature name): those features' ids with price and the duration/ratio/resolution choices."""
+
+def _one_line(text: str, limit: int = 90) -> str:
+    line = " ".join(str(text or "").split())
+    line = line.split(". ")[0]
+    return line if len(line) <= limit else line[: limit - 1].rstrip() + "…"
+
+
+def _entry(m: dict) -> dict:
+    """One list_models row: id, starting price (USD per run) and a one-line description."""
+    return {"id": m["id"], "usd": m.get("price"), "desc": _one_line(m.get("desc") or m.get("subtitle") or "")}
+
+
+def _size(obj) -> int:
+    return len(json.dumps(obj, ensure_ascii=False))
+
+
+def compact_models(grouped: dict, kind: str | None = None, tool_features: dict | None = None,
+                   all_models: bool = False, page: int = 1) -> dict:
+    """list_models output that fits the agent's 4000-char tool-result cap (#95, modelled on Lovart).
+
+    No kind: each available feature's default plus the kinds to ask for. kind (image/video/audio/3d or a
+    feature name): by default only each feature's recommended models (the curated set, default first) with
+    a hint to page through the rest; all_models=True pages through every model, each page under the cap."""
     live = {n: f for n, f in grouped.items() if f.get("available", True)}
     if not kind:
         return {"defaults": {n: f["default"] for n, f in live.items()},
                 "kinds": {k: [n for n in live if feature_kind(n) == k] for k in MODEL_KINDS},
-                "hint": "call list_models with type image, image_tools, video, video_tools, audio, 3d or a feature name to get all ids and prices"}
+                "hint": "call list_models with type image, image_tools, video, video_tools, audio, 3d or a feature name "
+                        "for its recommended models; model_id=<id> for one model's params and quality tiers"}
     names = [kind] if kind in live else [n for n in live if feature_kind(n) == kind]
     if not names:
         raise WaveSpeedError(f"unknown type {kind!r}; use one of {', '.join(MODEL_KINDS)} or a feature name", 400)
-    keep = ("durations", "aspect_ratios", "resolutions", "max_images")
     tools: dict[str, list[str]] = {}
     for tool, feature in (tool_features or {}).items():
         tools.setdefault(feature, []).append(tool)
     # generate_video runs both text-to-video and image-to-video ids (src/models.ts VIDEO_MODELS)
     if "generate_video" in tools.get("image_to_video", []):
         tools.setdefault("text_to_video", []).insert(0, "generate_video")
-    return {n: {"tools": tools.get(n, []), "default": live[n]["default"],
-                "models": [{"id": m["id"], "usd": m.get("price"), **{k: _compact_choices(m[k]) for k in keep if m.get(k)}}
-                           for m in live[n]["models"]]}
-            for n in names}
+
+    def head(n: str) -> dict:
+        return {"tools": tools.get(n, []), "default": live[n]["default"], "total": len(live[n]["models"])}
+
+    every = [(n, m) for n in names for m in live[n]["models"]]
+    chosen = every if all_models else [(n, m) for n, m in every if m.get("recommended", True)]
+    hint = (f"{len(every)} models in total; pass all=true and page=1.. to see them all"
+            if len(chosen) < len(every) else None)
+
+    def render(chunk: list, p: int, of: int) -> dict:
+        feats: dict = {}
+        for n, e in chunk:
+            feats.setdefault(n, {**head(n), "models": []})["models"].append(e)
+        out = {"page": p, "pages": of, "features": feats}
+        if hint:
+            out["hint"] = hint
+        return out
+
+    # greedy page packing over (feature, model) rows in feature order, every page under the cap
+    pages: list[list] = [[]]
+    for n, m in chosen:
+        row = (n, _entry(m))
+        if pages[-1] and _size(render(pages[-1] + [row], 999, 999)) > PAGE_BUDGET:
+            pages.append([])
+        pages[-1].append(row)
+    if not all_models and len(pages) == 1:
+        out = render(pages[0], 1, 1)["features"]
+        if hint:
+            out["hint"] = hint
+        return out
+    if not 1 <= page <= len(pages):
+        raise WaveSpeedError(f"page {page} out of range; {kind} has {len(pages)} page(s)", 400)
+    return render(pages[page - 1], page, len(pages))
+
+
+def model_details(grouped: dict, model_id: str) -> dict:
+    """list_models(model_id=...): one model's features, price, params and quality tiers."""
+    hits = [(n, m) for n, f in grouped.items() for m in f["models"] if m["id"] == model_id]
+    if not hits:
+        raise WaveSpeedError(f"unknown model {model_id!r}; call list_models with a type to see ids", 400)
+    m = hits[0][1]
+    out = {"id": m["id"], "features": [n for n, _ in hits], "usd": m.get("price"), "desc": str(m.get("desc") or "")[:1500]}
+    for k in ("inputs", "durations", "aspect_ratios", "resolutions", "max_images"):
+        if m.get(k):
+            out[k] = _compact_choices(m[k])
+    if m.get("qualities"):
+        out["tiers"] = m["qualities"]
+    return out
 
 
 def resolve_model(feature: str, model: str | None) -> str:
