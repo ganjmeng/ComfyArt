@@ -2,6 +2,8 @@ import { atom } from 'tldraw'
 
 import { api, loadModelPaths, readUserJson, writeUserJson } from './comfy'
 import { loadCloudModels } from './wavespeed'
+import { CUSTOM_GENERATE, workflowConfigAtom } from './customWorkflows'
+import { t } from './i18n'
 
 export interface ModelDef {
   id: string
@@ -27,7 +29,12 @@ export const IMAGE_MODELS: ModelDef[] = []
 export const VIDEO_MODELS: ModelDef[] = []
 
 export const isVideo = (workflow: string) => VIDEO_MODELS.some((m) => m.id === workflow)
-export const modelOf = (workflow: string) => [...IMAGE_MODELS, ...VIDEO_MODELS].find((m) => m.id === workflow)
+function customModels(): ModelDef[] {
+  const file = workflowConfigAtom.get().generate
+  return file ? [{ id: CUSTOM_GENERATE, label: file.replace(/\.json$/, ''), desc: t('customWorkflows.customModelDesc'), files: [], cloud: true, lora: null }] : []
+}
+
+export const modelOf = (workflow: string) => [...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].find((m) => m.id === workflow)
 
 export interface ModelPrefs { auto: boolean; enabled: string[] }
 
@@ -55,7 +62,7 @@ async function useCloudImageModels() {
   if (!modelPrefsAtom.get().auto) modelPrefsAtom.set({ ...modelPrefsAtom.get(), enabled: [...modelPrefsAtom.get().enabled, ...added] })
 }
 
-export const isCloudModel = (id: string) => [...IMAGE_MODELS, ...VIDEO_MODELS].some((m) => m.id === id && m.cloud)
+export const isCloudModel = (id: string) => [...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].some((m) => m.id === id && m.cloud)
 
 export async function loadModels() {
   const [prefs, files, paths] = await Promise.all([readUserJson<ModelPrefs | null>(FILE, null), api('/models/diffusion_models'), loadModelPaths(), useCloudImageModels()])
@@ -71,7 +78,7 @@ export async function saveModelPrefs(prefs: ModelPrefs) {
 
 export function installedModels(video: boolean): ModelDef[] {
   const builtin = (video ? VIDEO_MODELS : IMAGE_MODELS).filter((m) => isInstalled(m.id))
-  return video ? builtin : [...builtin]
+  return video ? builtin : [...builtin, ...customModels()]
 }
 
 export function agentModels(video: boolean): ModelDef[] {
