@@ -1,6 +1,6 @@
 """#134: image default is gpt-image-2.5 flare via the single 'default' field in api/curated_models.json;
-Auto resolves to it, it starts at the lowest quality tier, the confirm price is quoted for that tier, and the
-picker order does not move. Mock only: no WaveSpeed calls."""
+Auto resolves to it and the picker order does not move. #189: no GPT Image request pins a quality tier; quality is
+left out so WaveSpeed runs its schema default (medium), and the confirm price is quoted for that same tier. Mock only: no WaveSpeed calls."""
 import asyncio
 import json
 
@@ -29,19 +29,31 @@ def test_single_default_field_and_order_unchanged():
     assert wavespeed.picker_order("text_to_image", models)[0] == "openai/gpt-image-2/text-to-image"
 
 
-def test_lowest_tier_default_in_payload():
-    p = asyncio.run(wavespeed.build_payload(None, SCHEMA, {"prompt": "x"}, T2I))
-    assert p["quality"] == "low"
-    p = asyncio.run(wavespeed.build_payload(None, SCHEMA, {"prompt": "x"}, EDIT))
-    assert p["quality"] == "low"
-    p = asyncio.run(wavespeed.build_payload(None, SCHEMA, {"prompt": "x", "params": {"quality": "max"}}, T2I))
-    assert p["quality"] == "max"
-    p = asyncio.run(wavespeed.build_payload(None, SCHEMA, {"prompt": "x"}, "openai/gpt-image-2/text-to-image"))
+GPT_IMAGE = [T2I, EDIT, "openai/gpt-image-2.5-sunburst/text-to-image", "openai/gpt-image-2.5-sunburst/edit",
+             "openai/gpt-image-2/text-to-image", "openai/gpt-image-2/edit"]
+MEDIUM_1K = 0.039  # product table: sunburst/flare edit, medium, 1k
+
+
+def test_no_quality_pin_in_curated_or_auto_models():
+    cur = json.loads(open(wavespeed.CURATED, encoding="utf-8").read())["features"]
+    for name, f in cur.items():
+        assert "quality" not in (f.get("default_params") or {}), name
+    for m in GPT_IMAGE:
+        assert "quality" not in wavespeed.model_defaults(m), m
+    auto = open(wavespeed.CURATED.replace("curated_models.json", "auto_models.json"), encoding="utf-8").read()
+    assert '"quality"' not in auto
+
+
+@pytest.mark.parametrize("model", GPT_IMAGE)
+def test_payload_omits_quality_unless_user_picks(model):
+    p = asyncio.run(wavespeed.build_payload(None, SCHEMA, {"prompt": "x"}, model))
     assert "quality" not in p
+    p = asyncio.run(wavespeed.build_payload(None, SCHEMA, {"prompt": "x", "params": {"quality": "max"}}, model))
+    assert p["quality"] == "max"  # an explicit user pick still goes through unchanged
 
 
-@pytest.mark.parametrize("inputs,tier", [({"feature": "text_to_image"}, "low"),
-                                         ({"feature": "image_edit"}, "low"),
+@pytest.mark.parametrize("inputs,tier", [({"feature": "text_to_image"}, None),
+                                         ({"feature": "image_edit"}, None),
                                          ({"feature": "text_to_image", "model": T2I, "params": {"quality": "high"}}, "high")])
 def test_confirm_price_is_for_chosen_tier(monkeypatch, inputs, tier):
     seen = []
@@ -50,8 +62,8 @@ def test_confirm_price_is_for_chosen_tier(monkeypatch, inputs, tier):
     async def fake_quote(model, inp):
         q = wavespeed._price_inputs(inp, model)
         seen.append((model, q.get("quality")))
-        return prices[q["quality"]], "quote"
+        return prices[q.get("quality") or "medium"], "quote"  # unset = WaveSpeed default tier (medium)
     monkeypatch.setattr(wavespeed, "quote", fake_quote)
     est = asyncio.run(wavespeed.estimate(inputs))
-    assert seen[0][1] == tier and est["price"] == prices[tier]
+    assert seen[0][1] == tier and est["price"] == prices[tier or "medium"]
     assert seen[0][0] in (T2I, EDIT)

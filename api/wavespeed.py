@@ -133,7 +133,7 @@ def load_curated() -> dict:
 
 def model_defaults(model: str) -> dict:
     """Request fields filled in when a job leaves them unset (#134): a feature's 'default_params' for its 'default' model
-    (the default starts at its lowest quality tier). Keyed by the single 'default' value, so a switch is one edit."""
+    (#189: none for the GPT Image defaults, so quality is left to the model default). Keyed by the single 'default' value, so a switch is one edit."""
     out: dict = {}
     for cur in load_curated().values():
         if model and cur.get("default") == model:
