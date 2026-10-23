@@ -4,7 +4,7 @@ import uuid
 
 from aiohttp import web
 
-from . import chat_store
+from . import chat_store, paid_guard
 from ._common import routes
 from .mcp_tools import TOOLS, bot_tools
 from .mcp_tools._context import BOT_CHAT_ID, PROJECT
@@ -68,8 +68,15 @@ async def _tools_call(params: dict) -> dict | None:
     arguments = params.get("arguments") or {}
     if not isinstance(arguments, dict):
         arguments = {}
+    chat_id = BOT_CHAT_ID.get()
+    # #142: paid cap + product-reference check, for every provider, before the run is submitted
+    refused = paid_guard.before_call(chat_id, name, arguments) if chat_id else None
+    if refused:
+        return {"content": [{"type": "text", "text": refused}], "isError": True}
     try:
         payload = await spec["handler"](arguments)
+        if chat_id:
+            paid_guard.after_call(chat_id, name, arguments, payload, True)
         return {"content": _payload_to_content(payload), "isError": False}
     except (ValueError, TypeError, KeyError) as e:
         return {"content": [{"type": "text", "text": f"{type(e).__name__}: {e}"}], "isError": True}

@@ -9,7 +9,7 @@ from server import PromptServer
 from ..bot import BotEvent, TurnHandle, TurnRequest, get_provider
 from ..bot._cli_common import resolve_comfy_mcp_argv
 from ..bot.guide import COMFY_MCP_ALLOWED_TOOLS
-from . import bot_asks, chat_store
+from . import bot_asks, chat_store, paid_guard
 from .settings import SETTINGS_SPEC, get_setting
 
 _log = logging.getLogger(__name__)
@@ -187,6 +187,9 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
     history = None if provider.capabilities().stateful else _replay_history(chat_id, state.message_id)
 
     comfy_mcp_argv = _comfy_mcp_argv()
+    paid_guard.begin_turn(chat_id, text=text,
+                          provider_text=provider_text if provider_text is not None else text,
+                          lang=lang, on_stop=paid_guard.stop_later(provider, state.handle))
     try:
         result = await provider.send(
             TurnRequest(
@@ -212,6 +215,9 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
     else:
         error = result.error
         status = "aborted" if result.aborted else ("error" if error else "done")
+    paid_stop = paid_guard.end_turn(chat_id)
+    if paid_stop:  # #142: the paid cap stopped this turn -> its notice, whatever the provider returned
+        error, status = paid_stop, "error"
 
     ACTIVE_TURNS.pop(chat_id, None)
     bot_asks.cancel_chat_asks(chat_id)
