@@ -65,5 +65,5 @@ def test_confirm_on_top_of_popover_and_clickable(page, mode):
     page.wait_for_selector(".ca-modal")
     ok = page.evaluate(HIT)[1]
     page.mouse.click(ok["x"], ok["y"])
-    page.wait_for_selector(".ca-pop img.ca-refctl__preview")
+    page.wait_for_function("() => document.querySelector('.ca-pop img.ca-refctl__preview')")
     assert page.evaluate("window.__calls.filter(c => c.confirmed).length") == 1

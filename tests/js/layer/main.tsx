@@ -22,7 +22,7 @@ function Panel() {
     <div className="ca-root">
       <div className="ca-gen" style={{ left: 200, top: 300 }}>
         <Popover open={open} onOpenChange={setOpen} side="top" trigger={({ toggle }) => <span className="ca-gen__refmode" onClick={toggle}>{m.label}</span>}>
-          <div className="ca-menu ca-refmodes" style={{ width: 360, height: 520 }}>
+          <div className="ca-menu ca-refmodes" style={{ width: 360 }}>
             <RefControls key={mode} src="ref.png" mode={m} value={undefined} onChange={() => {}} onError={(e) => g.__errors.push(e)} />
           </div>
         </Popover>
