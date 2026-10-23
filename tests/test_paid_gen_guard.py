@@ -227,3 +227,9 @@ async def test_list_models_unknown_type_lists_valid_names(mock_catalog):
     msg = str(e.value)
     for name in ("video", "image_to_video", "text_to_image", "animate_image", "generate_image"):
         assert name in msg
+
+
+async def test_smaller_n_keeps_four(monkeypatch):
+    steps = [("generate_image", {"prompt": f"cat {i}"}) for i in range(6)]
+    result, _, _, submits = await _run(monkeypatch, steps, user_text="做一张猫的海报")
+    assert len(_paid(submits)) == 4 and result.error.startswith(ZH_STOP)

@@ -489,7 +489,9 @@ class LocalLlmProvider(AgentProvider):
                         else _reply_lang(turn.user_text))
                 cache_hits = 0
                 skill_cache: dict[str, str] = {}
-                paid_cap = _requested_count(turn.user_text) or _PAID_GEN_CAP
+                # an explicit "N 张" above 4 raises the cap (still quote-confirmed); a
+                # smaller N keeps 4 so one retry of "做一张海报" is not blocked
+                paid_cap = max(_requested_count(turn.user_text), _PAID_GEN_CAP)
                 paid_used: dict[str, int] = {}
                 plan_item = ""
                 product_refs = _product_refs(turn.user_text)
