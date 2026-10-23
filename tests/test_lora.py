@@ -97,7 +97,7 @@ def test_ui_wiring():
     adv = (ROOT / "src/ui/GenAdvanced.tsx").read_text()
     # greyed with the hint, never hidden; reuses existing classes only (no popup / new component)
     assert "loraSupported(shape)" in adv and "genAdvanced.loraUnsupported" in adv and "{hasLora && (" not in adv
-    assert "disabled={!hasLora" in adv and "ca-landing__error" in adv and "wsErr.loraUrl" in adv
+    assert "disabled={!hasLora" in adv and "ca-workflows__warn" in adv and "wsErr.loraUrl" in adv
     assert "ca-adv__lora" in adv and 'type="range"' in adv and "ca-adv__pick" in adv and "ca-chat__hint" in adv
     assert "Popover" in adv and adv.count("<Popover") == 1 and "Dialog" not in adv
     gen = (ROOT / "src/generate.ts").read_text()
