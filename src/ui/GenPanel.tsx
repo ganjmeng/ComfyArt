@@ -307,7 +307,13 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
             setAdjusted(Object.keys(patch).length > 0)
             update({ workflow: id, ...patch })
           }}
-          onAuto={(on) => { setAdjusted(false); if (on) setMeta({ featureModels: {} }); update({ workflow: on ? (video ? AUTO_VIDEO : AUTO_IMAGE) : agentModels(video)[0].id }) }} />
+          onAuto={(on) => {
+            if (on) setMeta({ featureModels: {} })
+            const id = on ? (video ? AUTO_VIDEO : AUTO_IMAGE) : agentModels(video)[0].id
+            const patch = adjustForModel(p, modelOf(id), video)
+            setAdjusted(Object.keys(patch).length > 0)
+            update({ workflow: id, ...patch })
+          }} />
         {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={t('wsKey.estimate', `$${estimate}`)}>{`≈$${estimate < 0.01 ? estimate.toFixed(4).replace(/0+$/, '') : estimate.toFixed(2)}`}</span>}
         <button type="button" className="ca-gen__send" disabled={!ready || noCredit} title={noCredit ? t('wsKey.needCredit') : estimate != null ? `${t('common.generate')} · ${t('wsKey.estimate', `$${estimate}`)}` : t('common.generate')} onClick={submit}>
           <span className="ca-icon">{Icons.send}</span>
