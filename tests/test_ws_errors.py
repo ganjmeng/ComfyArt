@@ -47,3 +47,25 @@ def test_old_comfyui_copy_cleaned():
     for f, old in (("en.json", "before starting ComfyUI"), ("zh.json", "在启动 ComfyUI 前")):
         text = json.loads((ROOT / "src/locales" / f).read_text())["botSettings.claudeCodeCodexQwenCode"]
         assert old not in text and "Local LLM" in text and "COMFYART_LOCAL_LLM_API_KEY" in text
+
+
+def test_agent_relays_our_copy_verbatim(js):
+    # follow-up: the agent's tool result carries our zh/en copy as user_message plus a do-not-paraphrase note
+    for lang in ("zh", "en"):
+        copy = js[lang]["kinds"]["insufficientCredit"]
+        a = js[lang]["agent"]
+        assert a["user_message"] == a["error"] == copy and "paraphrase" in a["note"] and "word for word" in a["note"]
+        assert js[lang]["agentThrown"].startswith(copy) and "do not paraphrase" in js[lang]["agentThrown"]
+
+
+def test_bot_commands_use_agent_error():
+    src = (ROOT / "src/botCommands.ts").read_text()
+    assert "...agentError(r.error)" in src and src.count("agentErrorText(err)") == 2
+
+
+def test_top_up_link_clickable_in_card():
+    # #163 design nit: same copy, the top-up URL becomes a link styled like the card text (underlined, inherits colour)
+    src = (ROOT / "src/shapes/GeneratorShape.tsx").read_text()
+    assert "{withTopUpLink(error)}" in src and "href={TOP_UP_URL}" in src and 'target="_blank"' in src
+    css = (ROOT / "src/styles/canvas.css").read_text()
+    assert ".ca-gen-card__error a { color: inherit; text-decoration: underline;" in css

@@ -1,6 +1,6 @@
 // #155: WaveSpeed error kinds -> readable zh/en messages (never the raw WaveSpeed text).
 import { setLang } from './i18n_stub'
-import { wsBodyError, wsErrorText } from '../../src/wsErrors'
+import { agentError, agentErrorText, wsBodyError, wsErrorText } from '../../src/wsErrors'
 
 const kinds = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed']
 const raw = { error: { message: 'WaveSpeed request failed (500) Internal Error xyz', kind: 'failed' } }
@@ -13,6 +13,8 @@ for (const lang of ['zh', 'en'] as const) {
     untagged: wsBodyError({ error: { message: 'mask file not found' } }, 'x'),
     plain: wsBodyError({ error: 'src must be a /api/view URL' }, 'x'),
     unknown: wsErrorText('nope'),
+    agent: agentError(wsErrorText('insufficientCredit')!),
+    agentThrown: agentErrorText(wsErrorText('insufficientCredit')!),
   }
 }
 console.log(JSON.stringify(out))

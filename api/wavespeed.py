@@ -179,7 +179,7 @@ def error_kind(status: int | None, code=None, msg: str = "") -> str:
         code = int(code) if code is not None else None
     except (TypeError, ValueError):
         code = None
-    if status == 402 or code == CODE_INSUFFICIENT or "insufficient" in low or "balance" in low or "credit" in low:
+    if status == 402 or code == CODE_INSUFFICIENT or ("insufficient" in low and ("balance" in low or "credit" in low)):
         return "insufficientCredit"
     if code == CODE_MODERATION or "sensitive" in low or "moderation" in low:
         return "moderation"

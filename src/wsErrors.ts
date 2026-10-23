@@ -16,3 +16,15 @@ export function wsBodyError(body: any, fallback: string): string {
   const err = body?.error
   return wsErrorText(err?.kind) ?? (typeof err === 'string' ? err : err?.message ?? fallback)
 }
+
+export const RELAY_NOTE = 'user_message is already in the user\'s language; reply with it word for word (keep any link), do not paraphrase or quote a raw error'
+
+/** Agent tool result for a failed generation: the agent must relay our zh/en copy verbatim (#155 follow-up). */
+export function agentError(message: string) {
+  return { error: message, user_message: message, note: RELAY_NOTE }
+}
+
+/** Thrown tool errors carry the same relay instruction. */
+export function agentErrorText(message: string): string {
+  return `${message}\n[${RELAY_NOTE.replace('user_message', 'this message')}]`
+}

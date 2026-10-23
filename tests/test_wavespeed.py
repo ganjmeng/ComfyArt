@@ -964,6 +964,9 @@ async def test_failed_task_kind(ws, code, error, kind):
     (402, 402, "nope", "insufficientCredit"),
     (400, 1407, "insufficient_credits", "insufficientCredit"),
     (403, 403, "Insufficient balance", "insufficientCredit"),
+    (403, 403, "insufficient permissions", "failed"),
+    (400, 1401, "balance must be a number", "failed"),
+    (400, 1401, "credit field is invalid", "failed"),
     (400, 1200, "The content contains sensitive information.", "moderation"),
     (429, 429, "Too Many Requests", "rateLimit"),
     (401, 401, "Unauthorized", "invalidKey"),
@@ -984,6 +987,10 @@ def test_error_kind_1407_is_insufficient_credit():
     assert wavespeed.error_kind(None, 1407) == "insufficientCredit"
     assert wavespeed.error_kind(None, "1200") == "moderation"
     assert wavespeed.error_kind(500, None, "boom") == "failed"
+    # narrowed: bare "balance"/"credit" is not enough
+    assert wavespeed.error_kind(400, 1401, "balance must be a number") == "failed"
+    assert wavespeed.error_kind(400, None, "credit field is invalid") == "failed"
+    assert wavespeed.error_kind(400, None, "Insufficient credits") == "insufficientCredit"
 
 
 # --- #170: one mock error case per modality (image / video / audio / 3D) -------------------------------------------
@@ -1056,3 +1063,12 @@ async def test_170_task_timeout_has_readable_kind(ws, monkeypatch):
     info = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"][0][1]
     assert "timed out" in info["exception_message"]
     assert info.get("ws_kind")
+
+
+def test_insufficient_permissions_is_not_balance():
+    # #163 review: "insufficient" alone is not enough; it must name balance or credit (402 / 1407 unchanged)
+    assert wavespeed.error_kind(403, None, "insufficient permissions") != "insufficientCredit"
+    assert wavespeed.error_kind(400, None, "Insufficient credits") == "insufficientCredit"
+    assert wavespeed.error_kind(400, None, "insufficient balance") == "insufficientCredit"
+    assert wavespeed.error_kind(402, None, "whatever") == "insufficientCredit"
+    assert wavespeed.error_kind(400, 1407, "whatever") == "insufficientCredit"
