@@ -1,7 +1,9 @@
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
 import PptxGenJS from 'pptxgenjs'
 import { getColorValue, renderPlaintextFromRichText, type Box, type Editor, type TLImageShape, type TLNoteShape, type TLShape, type TLShapeId } from 'tldraw'
 
 import { alphaOf } from './palette'
+import { download } from './psd'
 import type { RichDoc } from './richText'
 import { TEXT, type TextShape } from './shapes/TextShape'
 import { VECTOR, type VectorShape } from './shapes/VectorShape'
@@ -72,6 +74,25 @@ function textRuns(doc: RichDoc, k: number): PptxGenJS.TextProps[] {
   })
 }
 
+// #176: pptxgenjs 4.0.1 emits an <a:pPr> before every run of a multi-run paragraph (it fills each run with the text
+// box's align/indent/bullet), which is invalid OOXML (pPr must be the single first child of <a:p>) and makes PowerPoint
+// offer a repair. Align is set once on the text box (never per run); after writing, keep only each paragraph's first pPr.
+const PPR = /<a:pPr\b[^>]*?(?:\/>|>[\s\S]*?<\/a:pPr>)/g
+export function onePprPerParagraph(xml: string) {
+  return xml.replace(/<a:p>[\s\S]*?<\/a:p>/g, (p) => {
+    let seen = false
+    return p.replace(PPR, (m) => (seen ? '' : ((seen = true), m)))
+  })
+}
+
+function fixParagraphs(data: Uint8Array) {
+  const files = unzipSync(data)
+  for (const name of Object.keys(files)) {
+    if (/^ppt\/(slides|slideLayouts|slideMasters|notesSlides)\/[^/]+\.xml$/.test(name)) files[name] = strToU8(onePprPerParagraph(strFromU8(files[name])))
+  }
+  return zipSync(files)
+}
+
 async function render(editor: Editor, ids: TLShapeId[], scale: number) {
   return dataUrl((await editor.toImage(ids, { format: 'png', scale, background: false })).blob)
 }
@@ -136,5 +157,6 @@ export async function exportPptx(editor: Editor, ids: TLShapeId[], editable: boo
     if (frame?.type === 'frame') slide.background = { color: 'FFFFFF' }
     for (const s of leaves(editor, group)) await addObject(editor, pptx, slide, s, place(editor.getShapePageBounds(s)!), k, scale)
   }
-  await pptx.writeFile({ fileName: `${name}.pptx` })
+  const data = (await pptx.write({ outputType: 'uint8array' })) as Uint8Array
+  download(new Blob([fixParagraphs(data) as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }), `${name}.pptx`)
 }

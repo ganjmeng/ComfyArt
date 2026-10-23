@@ -136,7 +136,7 @@ def test_pptx_editable_text_keeps_text_runs(exported):
         assert [n for n in names if n.startswith("ppt/media/") and not n.endswith("/")] == []  # nothing rasterized
         slide = ET.fromstring(z.read("ppt/slides/slide1.xml"))
     runs = slide.findall(f".//{a}r")
-    assert [r.find(f"{a}t").text for r in runs] == ["Hello ", "可编辑文字"]
+    assert [r.find(f"{a}t").text for r in runs] == ["Hello ", "可编辑文字", " mixed", "第二段"]
     rpr = runs[0].find(f"{a}rPr")
     assert rpr.get("b") == "1" and rpr.find(f"{a}latin").get("typeface") == "Inter"
     assert rpr.find(f"{a}solidFill/{a}srgbClr").get("val") == "112233"
@@ -145,6 +145,43 @@ def test_pptx_editable_text_keeps_text_runs(exported):
     assert [g.get("prst") for g in slide.findall(f".//{a}prstGeom")] == ["rect", "rect"]
     assert slide.find(".//{http://schemas.openxmlformats.org/presentationml/2006/main}pic") is None
     assert not any(c["ids"] in (["shape:t1"], ["shape:r1"], ["shape:f3"]) for c in data["toImageCalls"])
+
+
+@needs_node
+def test_pptx_one_ppr_per_paragraph_first_child(exported):
+    """#176: pptxgenjs 4.0.1 wrote an <a:pPr> before every run; OOXML allows one, as the first child of <a:p>."""
+    _, out = exported
+    a = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+    for fmt in ("pptx", "pptx-text"):
+        with zipfile.ZipFile(out / f"{fmt}-Export_ test_1.pptx") as z:
+            assert z.testzip() is None
+            xmls = [n for n in z.namelist() if re.fullmatch(r"ppt/(slides|slideLayouts|slideMasters)/[^/]+\.xml", n)]
+            for n in xmls:
+                for p in ET.fromstring(z.read(n)).iter(f"{a}p"):
+                    kids = [c.tag for c in p]
+                    assert kids.count(f"{a}pPr") <= 1, (fmt, n, kids)
+                    if f"{a}pPr" in kids:
+                        assert kids[0] == f"{a}pPr", (fmt, n, kids)
+            if fmt == "pptx-text":
+                slide = ET.fromstring(z.read("ppt/slides/slide1.xml"))
+    paras = [p for p in slide.iter(f"{a}p") if p.find(f"{a}r") is not None]
+    # two paragraphs survive, each with its single pPr carrying the text box's align
+    assert [[r.find(f"{a}t").text for r in p.findall(f"{a}r")] for p in paras] == [["Hello ", "可编辑文字", " mixed"], ["第二段"]]
+    assert [p.find(f"{a}pPr").get("algn") for p in paras] == ["l", "l"]
+    # mixed-style runs keep their own styles
+    r0, r1, r2 = paras[0].findall(f"{a}r")
+    r3 = paras[1].find(f"{a}r")
+    for r in (r0, r1):
+        rpr = r.find(f"{a}rPr")
+        assert rpr.get("b") == "1" and rpr.get("i") is None and rpr.get("u") is None
+        assert rpr.find(f"{a}solidFill/{a}srgbClr").get("val") == "112233"
+        assert rpr.find(f"{a}latin").get("typeface") == "Inter"
+    rpr = r2.find(f"{a}rPr")
+    assert rpr.get("i") == "1" and rpr.get("u") == "sng"
+    assert rpr.find(f"{a}solidFill/{a}srgbClr").get("val") == "AA0000"
+    assert rpr.find(f"{a}latin").get("typeface") == "Georgia"
+    assert int(rpr.get("sz")) == round(12 * 13.333 / 800 * 72 * 100)
+    assert r3.find(f"{a}rPr/{a}solidFill/{a}srgbClr").get("val") == "00AA00"
 
 
 @needs_node
