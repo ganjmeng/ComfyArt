@@ -122,6 +122,11 @@ export function loraSupported(shape: GeneratorShape) {
   const inputs = estimateBase(shape)
   return !!inputs && supportsLora(runModelOf(inputs))
 }
+/** #202: names of the curated models (same kind as the card) that take `loras`, for the greyed hint. */
+export function loraModelNames(shape: GeneratorShape) {
+  const feats = isVideo(shape.props.workflow) ? ['text_to_video', 'image_to_video'] : ['text_to_image', 'image_edit']
+  return [...new Set(feats.flatMap((f) => (FEATURE_MODELS[f] ?? []).filter(supportsLora).map((m) => m.label)))]
+}
 /** #202: the card's LoRAs go with the job (never dropped: a model without `loras` makes the backend say so). */
 function applyLoras(graph: PromptGraph, shape: GeneratorShape) {
   const loras = lorasOf(shape)

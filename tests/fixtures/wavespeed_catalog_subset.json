@@ -5823,6 +5823,43 @@
 "model_id": "wavespeed-ai/flux-2-pro/text-to-image",
 "name": "wavespeed-ai/flux-2-pro/text-to-image"
 },
+"wavespeed-ai/flux-dev-lora": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"guidance_scale": {},
+"image": {},
+"loras": {
+"maxItems": 3
+},
+"mask_image": {},
+"num_images": {},
+"num_inference_steps": {},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+},
+"prompt": {},
+"seed": {},
+"size": {},
+"strength": {}
+}
+}
+}
+]
+},
+"base_price": 0.015,
+"description": "FLUX.1 [dev] endpoint with LoRA support for fast, high-quality image generation and simple personalization via pre-trained LoRA adapters. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/flux-dev-lora",
+"name": "wavespeed-ai/flux-dev-lora"
+},
 "wavespeed-ai/flux-v1-pro/erase": {
 "api_schema": {
 "api_schemas": [
@@ -6470,6 +6507,38 @@
 "model_id": "wavespeed-ai/qwen-image/edit-2509-multiple-angles",
 "name": "wavespeed-ai/qwen-image/edit-2509-multiple-angles"
 },
+"wavespeed-ai/qwen-image/edit-lora": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"image": {},
+"loras": {
+"maxItems": 3
+},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+},
+"prompt": {},
+"seed": {},
+"size": {}
+}
+}
+}
+]
+},
+"base_price": 0.025,
+"description": "Qwen-Image-Edit LoRA (20B) enables bilingual Chinese/English image-to-image editing with style preservation and semantic and appearance edits. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/qwen-image/edit-lora",
+"name": "wavespeed-ai/qwen-image/edit-lora"
+},
 "wavespeed-ai/qwen-image/edit-multiple-angles": {
 "api_schema": {
 "api_schemas": [
@@ -6503,6 +6572,37 @@
 "description": "Qwen-Image-Edit Multiple Angles generates specific camera angles from a single image using a 96-pose camera system. Control horizontal rotation (azimuth), vertical tilt (elevation), and zoom level to create front, side, back views and more.",
 "model_id": "wavespeed-ai/qwen-image/edit-multiple-angles",
 "name": "wavespeed-ai/qwen-image/edit-multiple-angles"
+},
+"wavespeed-ai/qwen-image/text-to-image-lora": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"loras": {
+"maxItems": 3
+},
+"output_format": {
+"enum": [
+"jpeg",
+"png",
+"webp"
+]
+},
+"prompt": {},
+"seed": {},
+"size": {}
+}
+}
+}
+]
+},
+"base_price": 0.025,
+"description": "Qwen-Image LoRA is a 20B MMDiT next-gen text-to-image model with LoRA support for fast customization and refined image generation. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/qwen-image/text-to-image-lora",
+"name": "wavespeed-ai/qwen-image/text-to-image-lora"
 },
 "wavespeed-ai/qwen3-tts/text-to-speech": {
 "api_schema": {
@@ -6782,6 +6882,82 @@
 "description": "Wan2.2-Animate unified character animation & replacement model replicating movement and expression; generates 720p videos up to 120s. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
 "model_id": "wavespeed-ai/wan-2.2/animate",
 "name": "wavespeed-ai/wan-2.2/animate"
+},
+"wavespeed-ai/wan-2.2/i2v-480p-lora": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {
+"enum": [
+5,
+8
+]
+},
+"high_noise_loras": {
+"maxItems": 3
+},
+"image": {},
+"last_image": {},
+"loras": {
+"maxItems": 3
+},
+"low_noise_loras": {
+"maxItems": 3
+},
+"negative_prompt": {},
+"prompt": {},
+"seed": {}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "WAN 2.2 A14B Image-to-Video model generates unlimited 480p videos from images and supports custom LoRAs for personalized styles and fine-tuning. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/wan-2.2/i2v-480p-lora",
+"name": "wavespeed-ai/wan-2.2/i2v-480p-lora"
+},
+"wavespeed-ai/wan-2.2/t2v-480p-lora": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"duration": {
+"enum": [
+5,
+8
+]
+},
+"high_noise_loras": {
+"maxItems": 3
+},
+"loras": {
+"maxItems": 3
+},
+"low_noise_loras": {
+"maxItems": 3
+},
+"negative_prompt": {},
+"prompt": {},
+"seed": {},
+"size": {
+"enum": [
+"832*480",
+"480*832"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.04,
+"description": "WAN 2.2 T2V 480p with LoRA generates text-to-video at 480p and supports custom LoRAs for personalized styles. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "wavespeed-ai/wan-2.2/t2v-480p-lora",
+"name": "wavespeed-ai/wan-2.2/t2v-480p-lora"
 },
 "wavespeed-ai/z-image/turbo": {
 "api_schema": {

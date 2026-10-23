@@ -107,7 +107,7 @@ def test_ui_wiring():
         d = json.loads((ROOT / f"src/locales/{lang}.json").read_text())
         for k in ("genAdvanced.loraUnsupported", "genAdvanced.loraUrlHint", "genAdvanced.savedLoras", "wsErr.loraUrl", "wsErr.loraUnsupported", "wsErr.loraTooMany"):
             assert d[k]
-    assert json.loads((ROOT / "src/locales/zh.json").read_text())["genAdvanced.loraUnsupported"] == "当前模型不支持 LoRA"
+    assert json.loads((ROOT / "src/locales/zh.json").read_text())["genAdvanced.loraUnsupported"] == "当前模型不支持 LoRA，可切换到支持 LoRA 的模型"
 
 
 @pytest.mark.skipif(not (ROOT / "node_modules" / ".bin" / "rolldown").exists() or not shutil.which("node"), reason="needs node + npm install")
@@ -125,3 +125,28 @@ def test_frontend_validation_gating_persistence(tmp_path):
     assert r["labels"] == ["ink_style", "Civitai #123456"]
     assert r["zh"]["loraUrl"].startswith("LoRA 链接无效") and r["en"]["loraUrl"].startswith("Invalid LoRA link")
     assert r["zh"]["loraUnsupported"].startswith("当前模型不支持 LoRA") and r["en"]["loraUnsupported"].startswith("This model doesn't support LoRA")
+
+
+LORA_CURATED = {"text_to_image": ["wavespeed-ai/flux-dev-lora", "wavespeed-ai/qwen-image/text-to-image-lora"],
+                "image_edit": ["wavespeed-ai/qwen-image/edit-lora"],
+                "text_to_video": ["wavespeed-ai/wan-2.2/t2v-480p-lora"],
+                "image_to_video": ["wavespeed-ai/wan-2.2/i2v-480p-lora"]}
+
+
+def test_curated_has_lora_models_image_and_video():
+    cur = json.loads((ROOT / "api/curated_models.json").read_text())["features"]
+    fx = json.loads((ROOT / "tests/fixtures/wavespeed_catalog_subset.json").read_text())
+    for f, ids in LORA_CURATED.items():
+        for mid in ids:
+            assert mid in cur[f]["models"] + cur[f].get("more", []), (f, mid)
+            props = fx[mid]["api_schema"]["api_schemas"][0]["request_schema"]["properties"]
+            assert props["loras"].get("maxItems") == 3, mid
+
+
+def test_greyed_hint_lists_lora_models():
+    gen = (ROOT / "src/generate.ts").read_text()
+    adv = (ROOT / "src/ui/GenAdvanced.tsx").read_text()
+    assert "export function loraModelNames" in gen and "filter(supportsLora)" in gen
+    assert "loraModelNames(shape)" in adv and "genAdvanced.loraModelsSep" in adv
+    en = json.loads((ROOT / "src/locales/en.json").read_text())
+    assert en["genAdvanced.loraUnsupported"].startswith("This model doesn't support LoRA") and "Switch" in en["genAdvanced.loraUnsupported"]

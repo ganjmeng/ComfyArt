@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useValue } from 'tldraw'
 
-import { loraSupported, lorasOf, negativeOf, seedOf } from '../generate'
+import { loraModelNames, loraSupported, lorasOf, negativeOf, seedOf } from '../generate'
 import { randomSeed } from '../workflows'
 import { DEFAULT_LORA_STRENGTH, loadLoras, loraFavoritesAtom, loraLabel, lorasAtom, toggleFavorite } from '../loras'
 import { hasNegative, type ModelDef } from '../models'
@@ -62,7 +62,7 @@ export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape;
           </>
         )}
         <div className="ca-gen__label">LoRA</div>
-        {!hasLora && <div className="ca-chat__hint" data-testid="lora-unsupported">{t('genAdvanced.loraUnsupported')}</div>}
+        {!hasLora && <div className="ca-chat__hint" data-testid="lora-unsupported">{t('genAdvanced.loraUnsupported')}{loraModelNames(shape).length ? `${t('genAdvanced.loraModelsSep')}${loraModelNames(shape).join(t('genAdvanced.loraModelsJoin'))}` : ''}</div>}
         {loras.map((l) => (
           <div key={l.name} className="ca-adv__lora">
             <span className="ca-adv__name" title={l.name}>{loraLabel(l.name)}</span>

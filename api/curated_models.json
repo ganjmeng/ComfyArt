@@ -24,7 +24,9 @@
       "ideogram-ai/ideogram-v4",
       "ideogram-ai/ideogram-v4.5",
       "pruna-ai/p-image/ideogram",
-      "recraft-ai/recraft-v3"]},
+      "recraft-ai/recraft-v3",
+      "wavespeed-ai/flux-dev-lora",
+      "wavespeed-ai/qwen-image/text-to-image-lora"]},
     "image_edit": {"needs": ["prompt"], "default": "openai/gpt-image-2.5-flare/edit", "models": [
       "openai/gpt-image-2/edit",
       "google/nano-banana-2.1/edit",
@@ -44,7 +46,8 @@
       "wavespeed-ai/flux-2-pro/edit",
       "wavespeed-ai/flux-2-max/edit",
       "alibaba/qwen-image-3.0-pro/edit",
-      "ideogram-ai/ideogram-v4.5/edit"]},
+      "ideogram-ai/ideogram-v4.5/edit",
+      "wavespeed-ai/qwen-image/edit-lora"]},
     "text_to_video": {"needs": ["prompt"], "models": [
       "bytedance/seedance-2.0/text-to-video",
       "kwaivgi/kling-v3.0-std/text-to-video",
@@ -73,7 +76,8 @@
       "vidu/text-to-video-q1",
       "minimax/hailuo-02/t2v-standard",
       "minimax/hailuo-2.3/t2v-standard",
-      "lightricks/ltx-2-pro/text-to-video"]},
+      "lightricks/ltx-2-pro/text-to-video",
+      "wavespeed-ai/wan-2.2/t2v-480p-lora"]},
     "image_to_video": {"needs": ["prompt"], "models": [
       "bytedance/seedance-2.0/image-to-video",
       "kwaivgi/kling-v3.0-std/image-to-video",
@@ -104,7 +108,8 @@
       "minimax/hailuo-02/i2v-standard",
       "minimax/hailuo-2.3/i2v-standard",
       "minimax/hailuo-2.3/fast",
-      "lightricks/ltx-2-pro/image-to-video"]},
+      "lightricks/ltx-2-pro/image-to-video",
+      "wavespeed-ai/wan-2.2/i2v-480p-lora"]},
     "reference_to_video": {"needs": ["prompt"], "models": [
       "kwaivgi/kling-video-o3-std/reference-to-video",
       "wavespeed-ai/minimax-h3/reference-to-video",

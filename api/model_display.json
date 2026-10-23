@@ -330,6 +330,36 @@
    "LTXV 2.0",
    "Lightricks 开源视频，速度快",
    "Lightricks open video model, fast"
+  ],
+  [
+   "flux-dev-lora",
+   "FLUX.1 Dev LoRA",
+   "支持自定义 LoRA 的 FLUX 文生图",
+   "FLUX text-to-image with your own LoRAs"
+  ],
+  [
+   "qwen-image/text-to-image-lora",
+   "Qwen-Image LoRA",
+   "支持自定义 LoRA 的千问文生图",
+   "Qwen-Image with your own LoRAs"
+  ],
+  [
+   "qwen-image/edit-lora",
+   "Qwen-Image Edit LoRA",
+   "支持自定义 LoRA 的千问改图",
+   "Qwen-Image editing with your own LoRAs"
+  ],
+  [
+   "wan-2.2/t2v-480p-lora",
+   "Wan 2.2 LoRA",
+   "支持自定义 LoRA 的万相文生视频",
+   "Wan text-to-video with your own LoRAs"
+  ],
+  [
+   "wan-2.2/i2v-480p-lora",
+   "Wan 2.2 LoRA",
+   "支持自定义 LoRA 的万相图生视频",
+   "Wan image-to-video with your own LoRAs"
   ]
  ],
  "lovart_order": {
@@ -356,7 +386,10 @@
    "Ideogram 4",
    "Ideogram",
    "Ideogram P-Image",
-   "Recraft V3"
+   "Recraft V3",
+   "FLUX.1 Dev LoRA",
+   "Qwen-Image LoRA",
+   "Qwen-Image Edit LoRA"
   ],
   "video": [
    "Seedance 2.5",
@@ -388,7 +421,8 @@
    "Hailuo 2.3",
    "Hailuo 2.3 Fast",
    "MiniMax-H3",
-   "LTXV 2.0"
+   "LTXV 2.0",
+   "Wan 2.2 LoRA"
   ]
  }
 }
