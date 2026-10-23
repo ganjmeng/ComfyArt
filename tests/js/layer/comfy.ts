@@ -20,3 +20,7 @@ export function askCost(price: number): Promise<boolean> {
     cancel: () => resolve(false),
   }))
 }
+// same as src/comfy.ts CostDeclined (#127)
+export class CostDeclined extends Error {
+  constructor() { super('cost declined'); this.name = 'CostDeclined' }
+}
