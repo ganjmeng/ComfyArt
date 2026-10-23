@@ -40,8 +40,8 @@
   [
    "gpt-image-2",
    "GPT Image 2",
-   "默认，构图和文字都很稳",
-   "Default, solid layout and text"
+   "构图和文字都很稳",
+   "Solid layout and text"
   ],
   [
    "gpt-image-1.5",
@@ -172,8 +172,8 @@
   [
    "seedance-2.0",
    "Seedance 2.0",
-   "默认，画面稳定、镜头感好",
-   "Default, stable with good camera work"
+   "画面稳定、镜头感好",
+   "Stable with good camera work"
   ],
   [
    "seedance-v1-pro",
