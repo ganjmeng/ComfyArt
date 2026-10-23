@@ -761,7 +761,18 @@ def _structure_pick(inputs: dict) -> str:
 def _map_steps(inputs: dict) -> list[str]:
     """Features of the extra cloud map calls (depth-anything / sam3) a structure job runs before control."""
     cs = _controls(inputs)
-    return [refprep.CLOUD_MAP[m][0] for m in (str(c.get("mode") or "") for c in cs) if m in refprep.CLOUD_MAP]
+    return [refprep.CLOUD_MAP[str(c.get("mode") or "")][0] for c in cs
+            if str(c.get("mode") or "") in refprep.CLOUD_MAP and _map_key(c) not in _map_cache]
+
+
+# #81: cloud maps (depth / normal / seg) already extracted for a preview, keyed on (src, mode, res), so the
+# job that follows reuses the map with no second extraction or charge while those three are unchanged.
+_map_cache: dict[tuple[str, str, int], bytes] = {}
+_MAP_CACHE_MAX = 32
+
+
+def _map_key(c: dict, res_default: int = 1024) -> tuple[str, str, int]:
+    return (str(c.get("image") or ""), str(c.get("mode") or ""), int(c.get("res") or res_default))
 
 
 async def _steps_price(inputs: dict) -> float | None:
@@ -800,16 +811,51 @@ async def _cloud_map(feature: str, params: dict, image: str) -> bytes:
     return await _source_bytes(str(outs[0]))
 
 
-async def _control_map(c: dict, size, res_default: int = 1024):
+async def _control_map(c: dict, size, res_default: int = 1024, fresh: bool = False):
     mode = str(c.get("mode") or "")
     res, resize = int(c.get("res") or res_default), str(c.get("resize") or "crop")
     if mode in refprep.CLOUD_MAP:
-        feature, params = refprep.CLOUD_MAP[mode]
-        data = await _cloud_map(feature, params, str(c["image"]))
+        key = _map_key(c, res_default)
+        data = None if fresh else _map_cache.get(key)  # fresh: 「重新提取」 forces a new paid extraction
+        if data is None:
+            feature, params = refprep.CLOUD_MAP[mode]
+            data = await _cloud_map(feature, params, str(c["image"]))
+            _map_cache.pop(key, None)  # the new map replaces the old entry
+            if len(_map_cache) >= _MAP_CACHE_MAX:
+                _map_cache.pop(next(iter(_map_cache)))
+            _map_cache[key] = data
     else:
         data = await _source_bytes(str(c["image"]))
     # no pose estimator on WaveSpeed: on flux a pose ref guides through its soft-edge map
     return refprep.process_image(data, refprep.POSE_FALLBACK if mode in refprep.EXTRACTED else mode, res, size, resize)
+
+
+def preview_estimate(inputs: dict) -> list[str]:
+    """Map-call features a preview request would pay for: none when cached, unless `fresh` (re-extract)."""
+    image, mode, res = str(inputs.get("image") or ""), str(inputs.get("mode") or ""), int(inputs.get("res") or 1024)
+    if mode not in refprep.CLOUD_MAP or (not inputs.get("fresh") and (image, mode, res) in _map_cache):
+        return []
+    return [refprep.CLOUD_MAP[mode][0]]
+
+
+async def control_preview(inputs: dict) -> bytes:
+    """Upstream previewControl (#81): the control map one structure / color ref produces, as PNG.
+    Filtered modes are local Pillow filters (free); depth / normal / seg run their paid cloud map call
+    first, so they go through the same cost confirmation as a job. Pose has no cloud estimator: the
+    preview is the soft-edge map the flux path uses (the z-image default path extracts its skeleton itself)."""
+    image, mode = str(inputs.get("image") or ""), str(inputs.get("mode") or "")
+    if not image or not mode:
+        raise WaveSpeedError("image and mode are required", 400)
+    res = int(inputs.get("res") or 1024)
+    # #81: `fresh` is 「重新提取」 — skip the cache, re-run (and re-confirm) the paid extraction
+    fresh = bool(inputs.get("fresh"))
+    if mode in refprep.CLOUD_MAP and not inputs.get("confirmed") and (fresh or (image, mode, res) not in _map_cache):
+        price, _ = await quote(resolve_model(refprep.CLOUD_MAP[mode][0], None), {})
+        if price is not None and needs_confirm(price):
+            raise WaveSpeedError(f"control map preview costs about ${price}; confirm to continue", 409, confirm=float(price))
+    if mode in refprep.COLOR:
+        return refprep.process_bytes(await _source_bytes(image), mode, res)
+    return refprep.to_png(await _control_map({"image": image, "mode": mode, "res": res}, None, fresh=fresh))
 
 
 async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> dict:
@@ -1191,6 +1237,19 @@ async def wavespeed_run(request: web.Request) -> web.Response:
     except aiohttp.ClientError as e:
         return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}"))
     return web.json_response({"prompt_id": f"ws:{task}"})
+
+
+@routes.post("/comfyart/wavespeed/control_preview")
+async def wavespeed_control_preview(request: web.Request) -> web.Response:
+    inputs = (await json_body(request)).get("inputs")
+    if not isinstance(inputs, dict):
+        return error("inputs must be an object", 400)
+    try:
+        return web.Response(body=await control_preview(inputs), content_type="image/png")
+    except WaveSpeedError as e:
+        return _respond_error(e)
+    except aiohttp.ClientError as e:
+        return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}"))
 
 
 @routes.post("/comfyart/wavespeed/estimate")

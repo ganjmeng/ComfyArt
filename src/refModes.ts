@@ -1,6 +1,8 @@
 import type { ModelDef } from './models'
 import type { GeneratorShape } from './shapes/GeneratorShape'
 import { t } from './i18n'
+import { annotated } from './workflows'
+import { api, askCost } from './comfy'
 
 export interface RefMode {
   id: string
@@ -62,6 +64,41 @@ export const refLimit = (model: ModelDef) => (model.refs === 'qwen' ? QWEN_EDIT_
 
 export function modesFor(model: ModelDef): RefMode[] {
   return model.refs ? REF_MODES : model.control ? REF_MODES.filter((m) => m.control) : []
+}
+
+export const PREVIEW_TIMEOUT_MS = 60_000
+
+// #81: (src, mode, res) already previewed; asking again is 「重新提取」, which must bypass the backend map cache
+const previewed = new Set<string>()
+
+/** Upstream previewControl, now a cloud extraction (#81): the backend builds the same control map the job uses. */
+export async function previewControl(src: string, mode: RefMode, res: number): Promise<string> {
+  const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+  const seen = `${src}\n${mode.id}\n${res}`
+  const inputs = { image: annotated(src), mode: mode.id, res, ...(previewed.has(seen) ? { fresh: true } : {}) }
+  // #81: each request gives up after PREVIEW_TIMEOUT_MS so the button comes back with an error instead of spinning
+  const send = async (body: object) => {
+    const ctl = new AbortController()
+    const timer = setTimeout(() => ctl.abort(), PREVIEW_TIMEOUT_MS)
+    try {
+      const r = await api('/comfyart/wavespeed/control_preview', { ...init, body: JSON.stringify(body), signal: ctl.signal })
+      return { r, blob: r.ok ? await r.blob() : null, err: r.ok || r.status === 409 ? null : await r.json().catch(() => null), conf: r.status === 409 ? await r.json().catch(() => null) : null }
+    } catch (e) {
+      if (ctl.signal.aborted) throw new Error(t('refControls.timeout'))
+      throw e
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+  let res1 = await send({ inputs })
+  if (res1.r.status === 409) {
+    const price = res1.conf?.error?.confirm_usd
+    if (typeof price !== 'number' || !(await askCost(price))) throw new Error(t('jobs.costDeclined'))
+    res1 = await send({ inputs: { ...inputs, confirmed: true } })
+  }
+  if (!res1.blob) throw new Error(res1.err?.error?.message ?? `preview failed: ${res1.r.status}`)
+  previewed.add(seen)
+  return URL.createObjectURL(res1.blob)
 }
 
 export interface UsedRef { src: string; mode: RefMode }
