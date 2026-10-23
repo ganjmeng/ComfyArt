@@ -216,3 +216,20 @@ async def wait_bot_done(client, chat_id, timeout=5.0):
             return data
         await asyncio.sleep(0.02)
     raise AssertionError("turn did not finish")
+
+
+# #131: the frontend tests bundle src/ with rolldown and run it in node. Without `npm ci` they used to skip quietly
+# (~9 tests), so a green run proved nothing about the frontend. Fail the session up front instead; set
+# COMFYART_SKIP_NODE_TESTS=1 to knowingly run the Python-only subset (the node tests then skip, as before).
+NODE_HINT = ("frontend tests need node + node_modules: run `npm ci` in the repo root (or scripts/test.sh, which does it), "
+             "or set COMFYART_SKIP_NODE_TESTS=1 to skip them on purpose")
+
+
+def node_ready() -> bool:
+    import shutil
+    return (_REPO / "node_modules" / ".bin" / "rolldown").exists() and shutil.which("node") is not None
+
+
+def pytest_sessionstart(session):
+    if not node_ready() and os.environ.get("COMFYART_SKIP_NODE_TESTS") != "1":
+        raise pytest.UsageError(NODE_HINT)
