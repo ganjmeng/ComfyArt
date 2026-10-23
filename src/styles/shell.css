@@ -279,6 +279,7 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-compose__prompt { margin: 0 12px 8px; padding: 8px; max-height: 200px; overflow: auto; border-radius: 8px; background: var(--ca-field); color: var(--ca-text); font: 400 12px/1.5 var(--ca-mono, monospace); white-space: pre-wrap; }
 .ca-compose__refs { display: flex; gap: 8px; padding: 0 12px 8px; }.ca-adv { width: 360px; max-height: min(560px, calc(100vh - 240px)); overflow-y: auto; }
 .ca-adv__block[data-off] { opacity: .4; }  /* #202: unsupported model greys the whole LoRA block (same .4 as .ca-menu__item:disabled) */
+.ca-adv__help { color: var(--ca-muted); font-size: 12px; }  /* #202: grey helper text, same values as .ca-kit__muted / .ca-notice__body */
 .ca-adv__seed { width: 120px; height: 28px; padding: 0 8px; border: none; border-radius: 8px; background: var(--ca-field); color: var(--ca-text); font: 400 13px var(--ca-font); }
 .ca-adv__negative { min-height: 56px; margin: 0 12px 4px; padding: 8px; resize: vertical; border: none; border-radius: 8px; background: var(--ca-field); color: var(--ca-text); font: 400 13px/1.4 var(--ca-font); outline: none; }
 .ca-adv__lora { display: flex; align-items: center; gap: 6px; padding: 2px 12px; }

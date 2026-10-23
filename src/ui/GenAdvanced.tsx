@@ -63,7 +63,7 @@ export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape;
           </>
         )}
         <div className="ca-gen__label">LoRA</div>
-        {!hasLora && <div className="ca-landing__hint ca-adv__lora" data-testid="lora-unsupported">{t('genAdvanced.loraUnsupported')}{loraModelNames(shape).length ? `${t('genAdvanced.loraModelsSep')}${loraModelNames(shape).join(t('genAdvanced.loraModelsJoin'))}` : ''}</div>}
+        {!hasLora && <div className="ca-adv__help ca-adv__lora" data-testid="lora-unsupported">{t('genAdvanced.loraUnsupported')}{loraModelNames(shape).length ? `${t('genAdvanced.loraModelsSep')}${loraModelNames(shape).join(t('genAdvanced.loraModelsJoin'))}` : ''}</div>}
         <div data-off={!hasLora || undefined} className="ca-adv__block">
         {loras.map((l) => (
           <div key={l.name} className="ca-adv__lora">
@@ -82,7 +82,7 @@ export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape;
           <button type="button" className="ca-panel__icon" title={t('genAdvanced.addLora')} disabled={!hasLora || full || !url.trim()} onClick={addUrl}>{Icons.plus}</button>
         </div>
         {urlError ? <div className="ca-workflows__warn ca-adv__lora" role="alert" data-testid="lora-error">{urlError}</div>
-          : <div className="ca-landing__hint ca-adv__lora">{t('genAdvanced.loraUrlHelp')}</div>}
+          : <div className="ca-adv__help ca-adv__lora">{t('genAdvanced.loraUrlHelp')}</div>}
         <div className="ca-gen__label">{t('genAdvanced.savedLoras')}</div>
         <div className="ca-adv__list">
           {saved !== null && !saved.length && <div className="ca-compose__empty">{t('genAdvanced.noSavedLoras')}</div>}
