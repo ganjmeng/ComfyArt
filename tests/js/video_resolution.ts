@@ -8,4 +8,5 @@ console.log(JSON.stringify({
   seedance: ['', '1K', '768p', '720p', '4k'].map((r) => videoResolution(r, seed)),
   seedanceDefault: videoResolution('1K', seed, '720p'),
   badDefault: videoResolution('1K', seed, '1K'),
+  seedanceDefaultUnset: ['', '1K', '768p', '720p', '4k'].map((r) => videoResolution(r, seed, '720p')),
 }))

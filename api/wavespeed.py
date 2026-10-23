@@ -53,8 +53,9 @@ _uploaded: dict[tuple[str, int, int], str] = {}
 
 
 class WaveSpeedError(Exception):
-    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None):
+    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False):
         super().__init__(message)
+        self.unpriced = unpriced  # #159: no price for the submitted tier; the dialog shows no amount
         self.estimate = estimate  # #159: the price API failed; the dialog says 「估算价」/'Estimated'
         self.tier = tier  # #159: the tier that will be submitted, e.g. '480p · 5s'
         self.status = status
@@ -710,18 +711,20 @@ def _unit(v) -> str:
     return re.sub(r"[0-9.\s]", "", str(v)).lower()
 
 
-def _pick(options: list, value):
-    """Exact enum match (case-insensitive), else the numerically nearest option when the value has the enum's unit, else the first.
+def _pick(options: list, value, default=None):
+    """Exact enum match (case-insensitive), else the numerically nearest option when the value has the enum's unit, else
+    the schema default (when it is one of the options), else the first.
     #159: an image tier like '1K' is never matched by number against video tiers (it used to land on '4k')."""
+    first = default if default in options else options[0]
     for o in options:
         if str(o).lower() == str(value).lower():
             return o
     digits = re.sub(r"[^0-9.]", "", str(value))
     if not digits:
-        return options[0]
+        return first
     unit = _unit(value)
     if unit != _unit(options[0]):
-        return options[0]  # #159: '1K' against 480p/720p/1080p/4k is not a number to round, so the first tier
+        return first  # #159: '1K' against 480p/720p/1080p/4k is not a number to round: the model's default tier
     try:
         num = float(digits)
         nums = [(abs(float(re.sub(r"[^0-9.]", "", str(o)) or "inf") - num), o) for o in options if _unit(o) == unit]
@@ -731,7 +734,7 @@ def _pick(options: list, value):
                 return best[1]
     except ValueError:
         pass
-    return options[0]
+    return first
 
 
 def fit_duration(options: list, seconds):
@@ -792,7 +795,7 @@ def _av_fields(props: dict, required: set, inputs: dict, payload: dict) -> None:
         elif "music_length_ms" in props:
             payload["music_length_ms"] = int(float(seconds) * 1000)
     if inputs.get("resolution") and props.get("resolution", {}).get("enum"):
-        payload["resolution"] = _pick(props["resolution"]["enum"], inputs["resolution"])
+        payload["resolution"] = _pick(props["resolution"]["enum"], inputs["resolution"], props["resolution"].get("default"))
     if inputs.get("text") and "text" in props:
         payload["text"] = str(inputs["text"])
     if "lyrics" in props and (inputs.get("lyrics") or "lyrics" in required):
@@ -998,10 +1001,13 @@ def _submitted_tier(props: dict, inputs: dict, priced: dict) -> dict:
     res_enum = (props.get("resolution") or {}).get("enum")
     ar_enum = (props.get("aspect_ratio") or {}).get("enum")
     if res_enum:
+        res_default = (props.get("resolution") or {}).get("default")
         if out.get("resolution"):
-            out["resolution"] = _pick(res_enum, out["resolution"])
+            out["resolution"] = _pick(res_enum, out["resolution"], res_default)
         elif w and h:
             out["resolution"] = _resolution(res_enum, max(int(w), int(h)))
+        elif res_default in res_enum:
+            out["resolution"] = res_default  # not sent: WaveSpeed runs its schema default, so that is the tier
     if ar_enum:
         try:
             if w and h:
@@ -1015,6 +1021,20 @@ def _submitted_tier(props: dict, inputs: dict, priced: dict) -> dict:
         # a field the schema doesn't take is never submitted, so it never prices either
         out = {k: v for k, v in out.items() if k in props}
     return out
+
+
+def _is_default_tier(props: dict, priced: dict) -> bool:
+    """#159: the catalog base_price is the price of the schema's default tier, so it only estimates a job submitted at
+    that tier (resolution, duration, quality, aspect ratio at their schema default, or the first enum value without one).
+    Any other tier has no known price: the dialog then shows no amount (never the catalog price of another tier)."""
+    for k in ("resolution", "duration", "quality", "aspect_ratio"):
+        spec = props.get(k) or {}
+        if k not in priced or not (spec.get("enum") or "default" in spec):
+            continue
+        tier = spec["default"] if "default" in spec else spec["enum"][0]
+        if str(priced[k]).lower() != str(tier).lower():
+            return False
+    return True
 
 
 def tier_label(priced: dict) -> str:
@@ -1037,8 +1057,9 @@ async def priced_inputs(model: str, inputs: dict) -> dict:
 
 async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
     """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes, for the tier that will be
-    submitted. #159: when the price API fails the catalog base_price is returned as source 'estimate' (never
-    silently as the real price); the confirm dialog and estimate line then say 「估算价」/'Estimated'."""
+    submitted. #159: when the price API fails the catalog base_price is returned as source 'estimate' only if the
+    submitted tier is the schema's default tier (the tier base_price is for), labelled 「估算价」/'Estimated'; otherwise
+    (None, 'unpriced'): no amount is shown and the job always asks before it is submitted."""
     priced = await priced_inputs(model, inputs)
     body = {"model_id": model, "inputs": priced}
     ck = json.dumps(body, sort_keys=True)
@@ -1057,8 +1078,11 @@ async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
             return float(price), "quote"
     except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
         pass
-    base = ((await catalog()).get(model) or {}).get("base_price")
-    return (float(base) if isinstance(base, (int, float)) else None), "estimate"
+    meta = (await catalog()).get(model) or {}
+    base = meta.get("base_price")
+    if isinstance(base, (int, float)) and not isinstance(base, bool) and _is_default_tier(_schema(meta).get("properties") or {}, priced):
+        return float(base), "estimate"
+    return None, "unpriced"
 
 
 async def estimate(inputs: dict) -> dict:
@@ -1075,6 +1099,8 @@ async def estimate(inputs: dict) -> dict:
             total += p or 0.0
             sources.add(src)
         price, source = round(total, 4), ("quote" if sources == {"quote"} else "estimate")
+        if "unpriced" in sources:
+            price, source = None, "unpriced"  # #159: one scene without a price: no total, ask before submitting
         tier = ""
     else:
         if inputs.get("feature") == "mockup_surface":
@@ -1090,7 +1116,7 @@ async def estimate(inputs: dict) -> dict:
             extra = await _steps_price(inputs)  # depth / sam3 map calls are paid too (#80)
             price = None if extra is None else round(float(price) + extra, 6)
     out = {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
-           "confirm": needs_confirm(price) if price is not None else confirm_usd() == 0}
+           "confirm": needs_confirm(price) if price is not None else (source == "unpriced" or confirm_usd() == 0)}
     if not isinstance(inputs.get("scenes"), list) and tier:
         out["tier"] = tier
     return out
@@ -1372,6 +1398,10 @@ async def submit(inputs: dict) -> str:
             # expensive job: the page asks and resubmits with confirmed=true; #159 an estimate is labelled as one
             raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped,
                                  estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)))
+        if source == "unpriced":
+            # #159: no price for the submitted tier: never guess one, always ask (no amount, the tier is named)
+            raise WaveSpeedError(f"{model}: no price for this tier; confirm to continue", 409, unpriced=True,
+                                 tier=tier_label(await priced_inputs(model, inputs)))
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())
@@ -1401,6 +1431,8 @@ async def _submit_scenes(inputs: dict) -> str:
     chain_model = resolve_model("image_to_video", base.get("model") if base.get("feature") == "image_to_video" else None)
     est = await estimate({**base, "scenes": scenes})
     total = est["price"] or 0.0
+    if est["source"] == "unpriced" and not base.get("confirmed"):
+        raise WaveSpeedError(f"{len(scenes)} scenes: no price for this tier; confirm to continue", 409, unpriced=True)
     if needs_confirm(total) and not base.get("confirmed"):
         raise WaveSpeedError(f"{len(scenes)} scenes cost about ${total:.2f}; confirm to continue", 409, confirm=round(total, 2), estimate=est["source"] == "estimate")
     jobs = [{**base, "feature": feature if i == 0 else "image_to_video", "model": first_model if i == 0 else chain_model,
@@ -1756,6 +1788,11 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
             body["seg_capped"] = e.seg_capped
         if e.estimate:
             body["estimate"] = True
+        if e.tier:
+            body["tier"] = e.tier
+    elif e.unpriced:
+        body["confirm_usd"] = None
+        body["unpriced"] = True
         if e.tier:
             body["tier"] = e.tier
     return web.json_response({"error": body}, status=e.status)
