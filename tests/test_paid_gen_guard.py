@@ -40,7 +40,10 @@ def submits(monkeypatch):
             if name in PAID_TOOLS:
                 if decline["n"]:
                     decline["n"] -= 1
-                    return {"cancelled": True, "status": "declined"}
+                    # Mirrors frontend COST_DECLINED note (#127)
+                    return {"cancelled": True, "status": "declined",
+                            "note": "已取消该生成，未扣费 / Cancelled this generation; "
+                                    "nothing was charged. Reply as normal chat text."}
                 log.append((name, dict(args)))
                 return {"ids": [f"gen:{len(log)}"]}
             return {"ok": True}
@@ -193,11 +196,33 @@ async def test_smaller_n_is_exact(monkeypatch, submits):
     assert error.startswith("已生成 1 张仍未完成，已停止，未继续扣费，请告诉我怎么调整")
 
 
-async def test_retry_after_decline_still_fits_exact_n(monkeypatch, submits):
-    submits.decline["n"] = 2  # two declined quotes charge nothing
+async def test_decline_locks_plan_item_no_second_submit(monkeypatch, submits):
+    """#127: after the user declines a cost confirm, same plan item gets no
+    further paid submits (at most one confirm dialog per item per turn)."""
+    submits.decline["n"] = 1
     steps = [("generate_image", {"prompt": f"cat {i}"}) for i in range(3)]
-    error, *_ = await _local(monkeypatch, steps, user_text="做一张猫的海报")
-    assert len(_paid(submits)) == 1 and not error
+    error, events, _llm = await _local(monkeypatch, steps, user_text="做一张猫的海报")
+    assert len(_paid(submits)) == 0
+    texts = [e.text for e in events if e.t == "tool_result"]
+    assert any("已取消该生成，未扣费" in x for x in texts)
+    # later retries are refused before submit (paid_guard DECLINED_TEXT)
+    assert sum(1 for x in texts if "已取消该生成，未扣费" in x) >= 2
+    assert not error  # not the #137 red cap-stop notice
+
+
+async def test_decline_on_one_plan_item_does_not_block_another(monkeypatch, submits):
+    """#127: a decline only locks that plan item; the next item can still run."""
+    def plan(active):
+        return ("update_plan", {"steps": [
+            {"text": t, "status": "active" if t == active else "pending"}
+            for t in ("hero", "lifestyle")]})
+    submits.decline["n"] = 1  # first paid call (on hero) declines
+    steps = [plan("hero"), ("generate_image", {"prompt": "h0"}),
+             ("generate_image", {"prompt": "h1"}),  # locked — no submit
+             plan("lifestyle"), ("generate_image", {"prompt": "l0"})]
+    error, *_ = await _local(monkeypatch, steps, user_text="poster set")
+    assert [s[1]["prompt"] for s in _paid(submits)] == ["l0"]
+    assert not error
 
 
 async def test_each_plan_item_gets_its_own_four(monkeypatch, submits):
@@ -212,10 +237,17 @@ async def test_each_plan_item_gets_its_own_four(monkeypatch, submits):
 
 
 async def test_declined_runs_do_not_count(monkeypatch, submits):
-    submits.decline["n"] = 2
-    error, *_ = await _local(monkeypatch, [("generate_image", {"prompt": f"x{i}"}) for i in range(6)],
-                             user_text="poster")
+    """Declined runs never increment the cap; a fresh plan item still gets its quota."""
+    def plan(active):
+        return ("update_plan", {"steps": [
+            {"text": t, "status": "active" if t == active else "pending"}
+            for t in ("a", "b")]})
+    submits.decline["n"] = 1
+    steps = [plan("a"), ("generate_image", {"prompt": "declined"}),
+             plan("b"), *[("generate_image", {"prompt": f"b{i}"}) for i in range(4)]]
+    error, *_ = await _local(monkeypatch, steps, user_text="poster")
     assert len(_paid(submits)) == 4 and not error
+    assert all(s[1]["prompt"].startswith("b") for s in _paid(submits))
 
 
 async def test_no_guard_outside_a_bot_turn(submits):
@@ -230,6 +262,22 @@ def test_charged_reads_cancel_and_errors():
     assert paid_guard.charged({"ids": ["gen:1"]})
     assert not paid_guard.charged({"cancelled": True, "status": "declined"})
     assert not paid_guard.charged('{"error": "boom"}')
+    assert paid_guard.user_declined({"cancelled": True, "status": "declined"})
+    assert not paid_guard.user_declined({"error": "boom"})
+    assert not paid_guard.user_declined({"ids": ["gen:1"]})
+
+
+def test_declined_copy_is_user_facing_not_internal():
+    """#127: tool/agent copy is 「已取消该生成，未扣费」, not 「用户已拒绝」."""
+    assert "已取消该生成，未扣费" in paid_guard.DECLINED_TEXT["zh"]
+    assert "用户已拒绝" not in paid_guard.DECLINED_TEXT["zh"]
+    assert "Cancelled this generation" in paid_guard.DECLINED_TEXT["en"]
+    assert "nothing was charged" in paid_guard.DECLINED_TEXT["en"]
+    root = Path(__file__).resolve().parent.parent
+    zh = (root / "src/locales/zh.json").read_text()
+    en = (root / "src/locales/en.json").read_text()
+    assert '"jobs.costDeclined": "已取消该生成，未扣费"' in zh
+    assert '"jobs.costDeclined": "Cancelled this generation; nothing was charged"' in en
 
 
 def test_requested_count():

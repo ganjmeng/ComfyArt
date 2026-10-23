@@ -1,6 +1,6 @@
 import { AssetRecordType, atom, createShapeId, isShapeId, type Editor, type TLParentId, type JsonValue, type TLAssetId, type TLImageAsset, type TLShape, type TLShapeId, type TLVideoAsset } from 'tldraw'
 
-import { cancelPrompt, mediaMeta, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
+import { cancelPrompt, CostDeclined, mediaMeta, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Built } from './workflows'
 import { t } from './i18n'
@@ -47,6 +47,29 @@ const placers: Record<string, Placer> = {}
 
 export interface JobResult { srcs: string[]; error?: string }
 export const resultsAtom = atom<Record<string, JobResult>>('job results', {})
+
+/** Resolves when queuePrompt has passed (or the user declined) the cost confirm. #127 */
+type SubmitOutcome = 'ok' | 'declined' | 'error'
+const submitGates = new Map<string, { promise: Promise<SubmitOutcome>; resolve: (v: SubmitOutcome) => void }>()
+
+function openSubmitGate(holderId: string): Promise<SubmitOutcome> {
+  let resolve!: (v: SubmitOutcome) => void
+  const promise = new Promise<SubmitOutcome>((r) => { resolve = r })
+  submitGates.set(holderId, { promise, resolve })
+  return promise
+}
+
+function settleSubmitGate(holderId: string, outcome: SubmitOutcome) {
+  const gate = submitGates.get(holderId)
+  if (!gate) return
+  gate.resolve(outcome)
+  submitGates.delete(holderId)
+}
+
+/** Await cost-confirm for a holder started by startJob. Null if no gate (already settled / unknown). */
+export function whenSubmitted(holderId: string): Promise<SubmitOutcome> | null {
+  return submitGates.get(holderId)?.promise ?? null
+}
 
 function report(holderId: TLShapeId, result: JobResult) {
   resultsAtom.update((r) => ({ ...r, [holderId]: result }))
@@ -203,6 +226,8 @@ export async function startJob(
   onError: ErrorSink,
 ) {
   const model = takePendingModel()
+  // Register before any await so agent tools can await whenSubmitted immediately (#127).
+  openSubmitGate(holderId)
   try {
     const { graph, result, partial } = await build
     withModel(graph, model)
@@ -215,12 +240,22 @@ export async function startJob(
       ...(opts.placer ? { placer: opts.placer } : {}),
       ...(opts.extra ? { extra: opts.extra } : {}),
     }
+    settleSubmitGate(holderId, 'ok')
     const holder = editor.getShape(holderId)
     if (!holder) return
     editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: job as any } })
     await finish(editor, holderId, job, onError)
   } catch (e) {
+    const declined = e instanceof CostDeclined
+    settleSubmitGate(holderId, declined ? 'declined' : 'error')
     const holder = editor.getShape(holderId)
+    if (declined) {
+      // Nothing charged. Drop temp/agent holders; leave GenPanel cards in place (#127).
+      if (holder?.meta.temp || holder?.meta.quiet) editor.deleteShape(holderId)
+      else if (holder) editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: null } })
+      report(holderId, { srcs: [], error: errorText(e) })
+      return
+    }
     if (holder?.meta.temp) editor.deleteShape(holderId)
     const msg = errorText(e)
     report(holderId, { srcs: [], error: msg })
