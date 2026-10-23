@@ -35,3 +35,22 @@ export async function deleteKey(): Promise<void> {
   const res = await api('/comfyart/wavespeed/key', { method: 'DELETE' })
   if (res.ok) keyStatusAtom.set((await res.json()) as KeyStatus)
 }
+
+export interface Estimate { price: number | null; confirm_usd: number; confirm: boolean }
+
+/** Estimated cost of a cloud job (backend caches WaveSpeed's /model/price quote for 5 minutes). */
+export async function estimateCost(inputs: Record<string, unknown>): Promise<Estimate | null> {
+  const res = await fetch('/comfyart/wavespeed/estimate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ inputs }) })
+  return res.ok ? res.json() : null
+}
+
+export async function getConfirmUsd(): Promise<number> {
+  const res = await fetch('/comfyart/wavespeed/confirm')
+  return res.ok ? (await res.json()).confirm_usd : 0.5
+}
+
+export async function setConfirmUsd(usd: number): Promise<number> {
+  const res = await fetch('/comfyart/wavespeed/confirm', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm_usd: usd }) })
+  if (!res.ok) throw new Error((await res.json().catch(() => null))?.error?.message || String(res.status))
+  return (await res.json()).confirm_usd
+}

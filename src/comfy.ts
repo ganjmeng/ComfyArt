@@ -1,3 +1,4 @@
+import { confirmAtom } from './ui/Confirm'
 import { readLocal } from './localPrefs'
 import { t } from './i18n'
 import { onComfyEvent } from './ws'
@@ -131,6 +132,14 @@ function promptError(body: any, status: number): string {
   return top.details ? `${top.message}: ${top.details}` : top.message
 }
 
+/** Second confirmation for costly cloud jobs, in the app's own Confirm dialog. */
+export function askCost(price: number): Promise<boolean> {
+  return new Promise((resolve) => confirmAtom.set({
+    title: t('jobs.confirmTitle'), desc: t('jobs.confirmCost', price.toFixed(2)), ok: t('jobs.confirmOk'),
+    run: () => resolve(true), cancel: () => resolve(false),
+  }))
+}
+
 export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget()): Promise<string> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
   if (isWsGraph(prompt)) {
@@ -143,7 +152,7 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget())
     const price = wsBody?.error?.confirm_usd
     if (ws.status === 409 && typeof price === 'number') {
       // jobs of $0.50 or more need an explicit yes before they are submitted
-      if (!window.confirm(t('jobs.confirmCost', price.toFixed(2)))) throw new Error(t('jobs.costDeclined'))
+      if (!(await askCost(price))) throw new Error(t('jobs.costDeclined'))
       ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
       wsBody = await ws.json().catch(() => null)
     }

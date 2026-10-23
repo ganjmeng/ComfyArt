@@ -1120,5 +1120,10 @@
   "wsKey.balanceTitle": "WaveSpeed 余额",
   "wsKey.noKeyChip": "填写密钥",
   "wsKey.needKey": "请先在设置里填写 WaveSpeed 密钥",
-  "wsKey.needCredit": "WaveSpeed 余额为 $0，请充值后再生成"
+  "wsKey.needCredit": "WaveSpeed 余额为 $0，请充值后再生成",
+  "jobs.confirmTitle": "确认费用",
+  "jobs.confirmOk": "继续生成",
+  "wsKey.confirmUsd": "超过此金额时二次确认（$，0 = 每次都确认）",
+  "wsKey.confirmBad": "请输入 0–1000 之间的数字",
+  "wsKey.estimate": "预计 {0}"
 }
