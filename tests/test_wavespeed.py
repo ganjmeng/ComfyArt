@@ -1016,9 +1016,13 @@ async def test_170_image_task_failed_is_readable(ws):
 
 
 async def test_170_video_insufficient_balance_on_submit(ws):
+    # #164: an unpriced tier now stops at the confirm step before submit, so mock a cheap live price for the
+    # model and keep the same non-default tier (duration 5); the job then reaches submit and the 402/1407 path is what this test exercises
+    ws["prices"][wavespeed.resolve_model("text_to_video", None)] = 0.05
     ws["submit_status"], ws["submit_code"], ws["submit_message"] = 402, 1407, RAW
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.submit({"feature": "text_to_video", "prompt": "waves", "duration": 5})
+    assert not e.value.unpriced and e.value.confirm is None
     assert e.value.kind == "insufficientCredit" and e.value.status == 402 and RAW not in str(e.value)
     body = json.loads(wavespeed._respond_error(e.value).body)["error"]
     assert body["kind"] == "insufficientCredit" and ws["submits"] == [] and not wavespeed._jobs
