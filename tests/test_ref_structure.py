@@ -220,11 +220,25 @@ async def test_confirm_amount_includes_map_calls(ws, monkeypatch):
     assert e.value.status == 409 and e.value.confirm == 0.035 and ws["submits"] == []
 
 
-async def test_color_modes_preprocess_refs_for_edit(ws):
+async def test_color_modes_preprocess_refs_for_edit(ws, monkeypatch):
+    import tests.test_wavespeed as tw
+    default = wavespeed.load_curated()["image_edit"]["models"][0]
+    monkeypatch.setattr(tw, "MODELS", tw.MODELS + [_meta(default, {"prompt": {"type": "string"}, "images": {"type": "array", "maxItems": 3}}, ("prompt", "images"))])
     a, b = _photo("a.png"), _photo("b.png")
     await wavespeed.submit({"feature": "image_edit", "prompt": "p", "images": [a, b], "prep": [None, "recolor"]})
     model, payload = ws["submits"][0]
-    assert model == EDIT and ws["uploads"] == 2 and len(payload["images"]) == 2
+    # #105: no pick -> the curated default (first id), never the last item in the list.
+    assert default == "openai/gpt-image-2/edit"
+    assert model == default and ws["uploads"] == 2 and len(payload["images"]) == 2
+
+
+async def test_color_modes_use_picked_edit_model(ws):
+    """#105: when the user picks an edit model, color-mode refs go to that model."""
+    a, b = _photo("a.png"), _photo("b.png")
+    await wavespeed.submit({"feature": "image_edit", "model": EDIT, "prompt": "p", "images": [a, b], "prep": [None, "recolor"]})
+    model, payload = ws["submits"][0]
+    assert model == EDIT != wavespeed.load_curated()["image_edit"]["models"][0]
+    assert ws["uploads"] == 2 and len(payload["images"]) == 2
 
 
 async def test_pose_default_path_applies_resolution_and_fit(ws, monkeypatch):
