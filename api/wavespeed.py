@@ -1142,7 +1142,7 @@ async def estimate(inputs: dict) -> dict:
     else:
         if inputs.get("feature") == "move_object":
             inputs = move_erase_inputs(inputs)
-        elif paste_box(inputs) and inputs.get("mask"):
+        elif inputs.get("paste") is not None:
             inputs = region_inputs(inputs)
         if inputs.get("feature") == "mockup_surface":
             return {"price": None, "currency": "USD", "source": "none", "confirm_usd": confirm_usd(), "confirm": confirm_usd() == 0}
@@ -1414,7 +1414,7 @@ async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> 
 async def submit(inputs: dict) -> str:
     if inputs.get("feature") == "move_object":
         return await _submit_move(inputs)
-    if paste_box(inputs) and inputs.get("image") and inputs.get("mask"):
+    if inputs.get("paste") is not None:
         return await _submit_paste(inputs)
     if isinstance(inputs.get("scenes"), list):
         return await _submit_scenes(inputs)
@@ -1479,7 +1479,10 @@ def masked_edit_model() -> str | None:
     from .auto_models import load_table
     model = (load_table().get("image_edit", {}).get("masked") or {}).get("model")
     ids = {m["id"] for m in load_config()["features"].get("image_edit", {}).get("models", [])}
-    return model if model in ids else None
+    if model and model not in ids:
+        log.warning("masked edit model %s is not in the image_edit catalog; falling back to the image_edit default", model)
+        return None
+    return model
 
 
 def crop_around(region: dict, w: int, h: int) -> dict:
@@ -1586,6 +1589,8 @@ def region_inputs(inputs: dict) -> dict:
     """The edit job that actually runs for a pasted region edit: only the crop, at crop size, mask not sent.
     estimate() and submit() both use this, so the quote is for the submitted size/tier (#183 approach)."""
     box = paste_box(inputs)
+    if not box or not inputs.get("image") or not inputs.get("mask"):
+        raise WaveSpeedError("region edit: the selection box is empty", 400)
     sub = {k: v for k, v in inputs.items() if k not in ("paste", "mask")}
     sub["width"], sub["height"] = box["w"], box["h"]
     if not sub.get("model") and not sub.get("custom"):
@@ -1601,9 +1606,12 @@ def move_erase_inputs(inputs: dict) -> dict:
 
 
 async def _submit_paste(inputs: dict) -> str:
+    region_inputs(inputs)  # 400 on an empty box, before anything is sent or charged
     box = paste_box(inputs)
     orig = await _source_bytes(str(inputs.get("image") or ""))
     mask = await _source_bytes(str(inputs.get("mask") or ""))
+    if bbox(mask_array(mask, (box["w"], box["h"]))) is None:
+        raise WaveSpeedError("region edit: the selection is empty", 400)
     from PIL import Image
     with Image.open(io.BytesIO(orig)) as img:
         crop = img.convert("RGB").crop((box["x"], box["y"], box["x"] + box["w"], box["y"] + box["h"]))

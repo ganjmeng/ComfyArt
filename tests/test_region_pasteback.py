@@ -162,3 +162,44 @@ def test_auto_rule_maps_masked_edits_to_sunburst():
     assert auto_models.choose("image_edit", "redo the sky", None, cfg, masked=True)["model"] == SUNBURST
     assert auto_models.choose("image_edit", "redo the sky", FLARE, cfg, masked=True)["model"] == FLARE  # user-named wins
     assert auto_models.choose("image_edit", "redo the sky", None, cfg)["category"] != "masked"  # mask-free: normal rules
+
+
+async def test_quote_uses_crop_tier_not_full_image_tier(curated):
+    """Full image 3072x3072 would be a 4k job, the 512 crop is 1k: the quote must price the crop (= the charge).
+    No quality passed (model default)."""
+    tiers = {"1k": 0.039, "2k": 0.078, "4k": 0.156}
+    curated["prices"][SUNBURST] = lambda inp: tiers.get(inp.get("resolution"), 0.5)
+    inputs = {"feature": "image_edit", "image": put("big.png", png(noise(3072, 3072))), "mask": put("m.png", comfy_mask(512, 512, (100, 100, 80, 80))),
+              "paste": {"x": 1200, "y": 1200, "w": 512, "h": 512}, "prompt": "x"}
+    est = await wavespeed.estimate(dict(inputs))
+    await wavespeed.submit(dict(inputs))
+    model, payload = curated["submits"][0]
+    assert model == SUNBURST and payload.get("resolution") == "1k" and "quality" not in payload
+    full = await wavespeed.priced_inputs(SUNBURST, {**wavespeed.region_inputs(inputs), "width": 3072, "height": 3072})
+    assert full.get("resolution") != "1k"  # quoting by the full image would land in another tier
+    assert est["price"] == pytest.approx(tiers[payload["resolution"]]) != pytest.approx(tiers.get(full.get("resolution"), 0.5))
+
+
+async def test_masked_edit_falls_back_to_flare_with_a_warning_when_sunburst_missing(curated, monkeypatch, caplog):
+    monkeypatch.setattr("test_wavespeed.MODELS", [m for m in __import__("test_wavespeed").MODELS if m["model_id"] != SUNBURST])
+    cfg = wavespeed.load_config()
+    monkeypatch.setitem(cfg["features"]["image_edit"], "models", [m for m in cfg["features"]["image_edit"]["models"] if m["id"] != SUNBURST])
+    monkeypatch.setattr(wavespeed, "load_config", lambda: cfg)
+    assert wavespeed.masked_edit_model() is None
+    assert "falling back" in caplog.text
+
+
+@pytest.mark.parametrize("case", ["zero_box", "empty_mask", "empty_move"])
+async def test_empty_selection_is_400_before_any_wavespeed_call(curated, case):
+    img = put("o.png", png(noise(256, 256)))
+    if case == "zero_box":
+        inputs = {"feature": "image_edit", "image": img, "mask": put("m.png", comfy_mask(64, 64, (0, 0, 8, 8))), "paste": {"x": 0, "y": 0, "w": 0, "h": 0}, "prompt": "x"}
+    elif case == "empty_mask":
+        inputs = {"feature": "image_edit", "image": img, "mask": put("m.png", comfy_mask(64, 64, (0, 0, 0, 0))), "paste": {"x": 0, "y": 0, "w": 64, "h": 64}, "prompt": "x"}
+    else:
+        inputs = {"feature": "move_object", "image": img, "mask": put("m.png", comfy_mask(256, 256, (0, 0, 0, 0))), "dx": 5, "dy": 5}
+    before = (curated["uploads"], len(curated["quotes"]))
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit(inputs)
+    assert e.value.status == 400
+    assert not curated["submits"] and (curated["uploads"], len(curated["quotes"])) == before  # no WaveSpeed call at all
