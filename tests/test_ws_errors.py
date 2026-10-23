@@ -69,3 +69,14 @@ def test_top_up_link_clickable_in_card():
     assert "{withTopUpLink(error)}" in src and "href={TOP_UP_URL}" in src and 'target="_blank"' in src
     css = (ROOT / "src/styles/canvas.css").read_text()
     assert ".ca-gen-card__error a { color: inherit; text-decoration: underline;" in css
+
+
+def test_174_timeout_copy_zh_en(js):
+    zh, en = js["zh"], js["en"]
+    assert zh["timeout"] == "WaveSpeed 任务超时，可能已扣费约 $0.32。请先到 WaveSpeed 后台确认结果，再决定要不要重试。"
+    assert en["timeout"] == "The WaveSpeed task timed out and may have been charged about $0.32. Please check the result in your WaveSpeed dashboard before retrying."
+    # amount unknown: the 「约 $…」 / 'about $…' half is dropped cleanly
+    assert zh["timeoutNoAmount"] == "WaveSpeed 任务超时，可能已扣费。请先到 WaveSpeed 后台确认结果，再决定要不要重试。"
+    assert en["timeoutNoAmount"] == "The WaveSpeed task timed out and may have been charged. Please check the result in your WaveSpeed dashboard before retrying."
+    assert "约 $1.5。" in zh["timeoutBody"] and "about $1.5." in en["timeoutBody"]
+    assert "quoted price" not in zh["timeoutBody"] + en["timeoutBody"]

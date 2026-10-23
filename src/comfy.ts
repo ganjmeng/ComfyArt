@@ -137,7 +137,7 @@ function promptError(body: any, status: number): string {
     (ne?.errors ?? []).map((er: any) => `${ne.class_type ?? ''} #${id}: ${er.message}${er.details ? ` — ${er.details}` : ''}`))
   if (lines.length) return lines.join('\n')
   const top = body?.error
-  const readable = wsErrorText(top?.kind)
+  const readable = wsErrorText(top?.kind, top?.charged_usd)
   if (readable) return readable
   if (!top?.message) return `queue failed: ${status}`
   return top.details ? `${top.message}: ${top.details}` : top.message
@@ -246,7 +246,7 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
     if (hist) {
       const messages: [string, any][] = hist.status?.messages ?? []
       const err = messages.find((m) => m[0] === 'execution_error')
-      if (err) throw new Error(wsErrorText(err[1]?.ws_kind) ?? String(err[1]?.exception_message ?? 'execution failed'))
+      if (err) throw new Error(wsErrorText(err[1]?.ws_kind, err[1]?.ws_charged) ?? String(err[1]?.exception_message ?? 'execution failed'))
       if (messages.some((m) => m[0] === 'execution_interrupted')) throw new Error(t('jobs.interrupted'))
       const value = hist.outputs?.[node] ? pick(hist.outputs[node]) : null
       if (value) {
