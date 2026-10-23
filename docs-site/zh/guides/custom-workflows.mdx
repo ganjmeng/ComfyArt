@@ -5,11 +5,18 @@ description: "让 ComfyArt 的功能跑你自己选的 WaveSpeed 模型。"
 
 画布上的每个操作背后都是 WaveSpeed 上的一个模型。大部分功能的内置模型都可以换成你自己选的，比如换一个生图模型或编辑模型。
 
+<Tip>
+**WaveSpeed Key 与费用**
+
+自定义工作流走 WaveSpeed 云端模型，需要配置 [WaveSpeed Key](/zh/guides/wavespeed-key)，运行前会在 **发送** 旁（或按钮上）显示预估费用；预估 $0.50 及以上会先请你确认。见[模型与费用](/zh/guides/models)。
+</Tip>
 自定义工作流是一个小 JSON 文件：写明 WaveSpeed 模型 id，可选地写明图片、提示词、尺寸填到这个模型的哪个请求字段。可以自己写，也可以交给 agent。
 
 ## 交给 agent
 
 对 [ComfyArt 的 agent](/zh/guides/agent)（或任何通过 [MCP](/zh/guides/mcp) 接入的 agent）说「把这个模型接到快捷编辑」，并告诉它模型 id。它会用 `custom_workflow` 工具读规则、写文件、检查并安装。这套规则也是一个内置 skill：**接入自定义工作流**。
+
+`custom_workflow` 工具有五个动作：`rules`（文件格式）、`list`（已安装的工作流）、`check`（校验文件）、`install`（保存）和 `assign`（绑定到某个功能）。自定义工作流都通过这些动作在 WaveSpeed 上运行，不需要你自己向 ComfyUI 提交任何东西。
 
 没接入 ComfyArt 的 agent：打开项目菜单里的 **自定义工作流**，点 agent 提示旁边的按钮复制规则给它。
 

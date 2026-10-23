@@ -5,28 +5,31 @@ description: "把一张平面图片还原成可编辑的图层，把设计印到
 
 这两个工具都在图片工具栏的 **⋯** 里。
 
+<Tip>
+**WaveSpeed Key 与费用**
+
+编辑元素、渲染和 AI 融合走 WaveSpeed 云端模型，需要配置 [WaveSpeed Key](/zh/guides/wavespeed-key)，运行前会在 **发送** 旁（或按钮上）显示预估费用；预估 $0.50 及以上会先请你确认。见[模型与费用](/zh/guides/models)。
+</Tip>
 ## 编辑元素
 
 **编辑元素** 把一张成品图（海报、广告、设计截图）重建成可编辑的画板：
 
-1. 用本地 OCR（[RapidOCR](https://github.com/RapidAI/RapidOCR)）识别每一行文字，生成位置、大小、颜色和对齐方式都一致的真实文字图层。打开 [Agent](/zh/guides/agent) 时，还会识别每行字的字体风格（衬线、无衬线、展示体、等宽或手写）和字重，换成对应的字体；没开 Agent 时一律用 Arial。
-2. 用 SAM3 把主体产品和 Logo 抠成单独的图片图层。
-3. 用 LaMa 把文字和物体从画面里擦掉，留下干净的背景图层。
+1. 用 WaveSpeed 的 `paddle-ocr` 模型识别每一行文字，生成位置、大小、颜色和对齐方式都一致的真实文字图层。打开 [Agent](/zh/guides/agent) 时，还会匹配每行字的字体风格和字重；没开 Agent 时一律用 Arial。
+2. 用 WaveSpeed 的 SAM3 分割模型把主体产品和 Logo 抠成单独的图片图层。
+3. 用 WaveSpeed 的擦除模型把文字和物体从画面里擦掉，留下干净的背景图层。
 
 新画板会出现在原图旁边。改文案、字体或颜色，挪动产品，然后点画板工具栏里的 **重新渲染**，把编辑过的图层融合回一张自然的图片。
 
 <Frame>
-  <img src="/images/edit-elements.webp" alt="原版香水广告和重建后改了品牌名的画板" />
+  <img src="/images/ours/zh/edit-elements.webp" alt="原版香水广告和重建后改了品牌名的画板" />
 </Frame>
 
 上面的例子里，只是在文字图层里打字，就把品牌名从 LUMIERE 改成了 AURORE；瓶子和背景都没动。
 
 也可以从首页开始：**拆解图片** 会上传一张设计图、新建项目并直接对它运行编辑元素。
-
 <Note>
-编辑元素需要 `rapidocr`（由 `requirements.txt` 安装），以及其他图像工具也在用的 SAM3 和 LaMa 模型。见[模型](/zh/guides/models)。
+编辑元素不需要本地依赖或模型：文字识别、抠图和擦除都走 WaveSpeed。见[模型与费用](/zh/guides/models)。
 </Note>
-
 ## 排版画板
 
 排版画板是一种画板：你先手动排好版，再把它渲染成一张完成的图。选 **插入 → 排版画板**，然后往上面放任何东西：文字、形状、图片、涂鸦，以及两种画板专用元素：
@@ -49,7 +52,7 @@ description: "把一张平面图片还原成可编辑的图层，把设计印到
 **样机** 把一张产品照片（T 恤、马克杯、包、盒子、手机）变成可以印设计的表面。ComfyArt 只需测一次照片的深度、抠一次产品；之后摆放设计是即时的，在浏览器里完成。
 
 <Frame>
-  <img src="/images/mockup-panel.webp" alt="样机面板把徽章 Logo 放到 T 恤上" />
+  <img src="/images/ours/zh/mockup-panel.webp" alt="样机面板把徽章 Logo 放到 T 恤上" />
 </Frame>
 
 样机面板里：

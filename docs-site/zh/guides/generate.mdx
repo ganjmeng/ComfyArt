@@ -5,22 +5,27 @@ description: "图像和视频生成器，支持参考图、配色、底图和分
 
 生成有三种方式：
 
+<Tip>
+**WaveSpeed Key 与费用**
+
+生成走 WaveSpeed 云端模型，需要配置 [WaveSpeed Key](/zh/guides/wavespeed-key)，运行前会在 **发送** 旁（或按钮上）显示预估费用；预估 $0.50 及以上会先请你确认。见[模型与费用](/zh/guides/models)。
+</Tip>
 - **在画布上**：点底部栏的 **图像生成**（旁边的箭头可以切换到视频或[音频](/zh/guides/audio-3d)）。画布上会出现一个生成卡片，下面带提示词框，卡片的大小就是要生成的图片尺寸。
 - **在对话里**：把对话框下面的模式切到 **图像** 或 **视频**，输入提示词发送即可，不经过 Agent。
 - **对选中内容**：在画布上选中图片，按 **Shift+Enter**（或点选区工具栏的 **对话**）。见[画布对话](#画布对话)。
 
 <Frame>
-  <img src="/images/generator.webp" alt="带提示词的图像生成卡片" style={{ maxWidth: '560px' }} />
+  <img src="/images/ours/zh/generator.webp" alt="带提示词的图像生成卡片" />
 </Frame>
 
-结果会放在卡片旁边；ComfyUI 生成时，卡片外圈会显示进度环。登记了[局域网实例](/zh/guides/lan-instances)后，模型旁边的 **运行在** 可以选这张卡片在哪台机器上跑。
+结果会放在卡片旁边；WaveSpeed 生成时，卡片外圈会显示进度环。
 
 ## 图像设置
 
 点设置按钮（例如 `1K · 1:1 · 1 张`）打开 **图像设置**：
 
 <Frame>
-  <img src="/images/image-settings.webp" alt="图像设置" style={{ maxWidth: '520px' }} />
+  <img src="/images/ours/zh/image-settings.webp" alt="图像设置" />
 </Frame>
 
 | 选项 | 可选值 |
@@ -32,49 +37,53 @@ description: "图像和视频生成器，支持参考图、配色、底图和分
 | 风格 | 无、摄影、电影感、插画、3D、动漫、极简、复古 |
 | 透明背景 | 开或关 |
 
-图里要出现的文字用引号括起来。Qwen Image 2.1 的中英文文字都画得很准。
+图里要出现的文字用引号括起来。默认的图像模型中英文文字都画得比较准。
 
 ## 高级
 
 设置按钮旁边的 **高级** 里有：
 
-- **种子**：默认随机。取消勾选 **随机** 就能输入种子或重新摇一个；种子、提示词和设置都相同时，生成的图也相同。每张结果的 **信息** 里都记着它用的种子。
-- **负面提示词**（只有 Qwen Image 2512）：不希望画面出现的东西。其他模型是蒸馏模型，不读负面提示词，所以不显示这一栏。
-- **LoRA**：从 `models/loras` 里选任意多个，每个可调 0–200% 的强度。**适用当前模型** 列出元数据和当前模型对得上的 LoRA；**全部** 里能看到其余的，标着「其他模型」或「未知模型」。点星标可以收进 **收藏**。Ideogram 不支持 LoRA。
-
-## 模型
+- **种子**：所选 WaveSpeed 模型支持时才显示。默认随机，取消勾选 **随机** 就能输入种子；每张结果的 **信息** 里都记着它用的种子。
+- **负面提示词**：在 **种子** 下方，只有所选模型的参数里有 `negative_prompt` 时才显示（例如 Kling 3.0 std、Veo 3 / 3.1、Wan 2.5 / 2.6 视频），其他模型不显示。
+- **LoRA**：粘贴 LoRA 链接（HuggingFace 或 Civitai），权重 0–200%，最多 3 个。添加过的 LoRA 会保存下来，之后可以直接复用。支持 LoRA 的模型：**FLUX.1 Dev LoRA**、**Qwen-Image LoRA**、**Qwen-Image Edit LoRA**、**Wan 2.2 LoRA**；其他模型的 LoRA 区域置灰并给出提示。添加 LoRA 不改变价格。
 
 <Frame>
-  <img src="/images/models.webp" alt="模型选择" />
+  <img src="/images/ours/zh/lora-enabled.webp" alt="选择 FLUX.1 Dev LoRA 后添加的 LoRA" />
 </Frame>
 
-模型选择里列出已安装的图像模型，并标出哪些支持参考图。需要的文件见[模型](/zh/guides/models)。
+<Frame>
+  <img src="/images/ours/zh/lora-greyed.webp" alt="不支持 LoRA 的模型：LoRA 区域置灰" />
+</Frame>
 
-| 模型 | 擅长 | 参考图 |
-|---|---|---|
-| Qwen Image 2.1 | 整体质量高，中英文文字准确 | 支持，可多张 |
-| Z-Image Turbo | 8 步快速出图，写实人像和照片感 | 不支持 |
-| Flux.2 Klein 9B | 4 步快速出图 | 支持 |
-| Qwen Image 2512 | 细节和构图扎实 | 只支持结构类模式（线稿、深度、姿态等） |
-| FLUX.3 Klein | 16 步快速生成 | 支持 |
-| MOSS-Image | 长段、细致的场景描述 | 不支持 |
-| Ideogram 4 | 版式、Logo 和文字海报 | 不支持 |
+## 模型
+模型选择里列出精选的 WaveSpeed 图像模型，并标出哪些支持参考图。默认开启 **Auto**，使用默认模型。完整列表见[模型与费用](/zh/guides/models)。
+
+推荐的图像模型（第一个是默认）：
+
+- `openai/gpt-image-2.5-flare/text-to-image`
+- `openai/gpt-image-2/text-to-image`
+- `google/nano-banana-2.1/text-to-image`
+- `bytedance/seedream-v5.0-pro`
+- `openai/gpt-image-2.5-sunburst/text-to-image`
+- `alibaba/qwen-image-3.0/text-to-image`
+
+第一个模型适合作为通用默认；各模型的价格见[模型与费用](/zh/guides/models)。
 
 ## 参考图
 
-点 **参考图** 添加参考图：Qwen Image 2.1 最多 16 张，Flux.2 Klein、FLUX.3 Klein 和 Qwen Image 2512 的结构类模式不限张数。菜单里有：
+点 **参考图** 添加参考图，张数上限取决于所选模型。多加参考图可能会改变价格，**发送** 旁的预估已经按张数计算。菜单里有：
 
 - **上传图片**：从电脑上传。
-- **从素材选择**：ComfyUI 里已有的文件（上传过的和生成的结果）。
+- **从素材选择**：之前上传或生成的文件。
 - **从我的素材选择**：[素材库](/zh/guides/assets)条目里保存的图片和 Logo。
 - **从画布选择**：提示词框会收起，顶部出现提示条，在画布上点一张图就行。点画布空白处、按 Esc 或点 **取消** 退出。
 
 每张参考图有一个模式：
 
 - **内容、风格、构图**：结果要跟着参考图的哪一方面走。
-- **结构类模式**：线稿、MLSD、涂鸦、软边缘、深度、法线、姿态、分割、Tile、重新上色等。ComfyArt 会先跑对应的预处理器；在 Qwen Image 2512 上会走真正的 ControlNet，可以调：
+- **结构类模式**：线稿、深度、姿态、软边缘等，走 WaveSpeed 的 ControlNet 模型，可以调：
   - **参考程度**。
-  - **开始** 和 **结束**：ControlNet 作用在采样的哪一段，比如 0–60% 只定构图，细节交给模型自由发挥。
+
   - **精度**：预处理器分辨率（512、1024 或 2048），只有带分辨率的模式才有。
   - **适配**：控制图按输出比例裁切，或者直接拉伸。
   - **预览控制图**：只跑预处理器并显示结果，生成前先确认线稿或姿态对不对。改了设置后预览会变暗，点 **重新提取** 即可。
@@ -106,7 +115,7 @@ description: "图像和视频生成器，支持参考图、配色、底图和分
 把生成器或对话模式切到 **视频**。视频设置里有：
 
 <Frame>
-  <img src="/images/composer-video.webp" alt="从对话框打开的视频设置" style={{ maxWidth: '450px' }} />
+  <img src="/images/ours/zh/composer-video.webp" alt="从对话框打开的视频设置" />
 </Frame>
 
 - **宽高比** 16:9、9:16、1:1、4:3、3:4 或 21:9；**分辨率** 768p 或 1080p；**时长** 5、10 或 15 秒。

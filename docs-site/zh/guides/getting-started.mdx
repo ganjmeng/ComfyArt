@@ -1,59 +1,54 @@
 ---
 title: "快速开始"
-description: "安装 ComfyArt，打开画布，生成第一张图。"
+description: "安装 ComfyArt，填好 WaveSpeed Key，打开画布生成第一张图。"
 ---
 
-## 准备
-
-- 一套能正常运行的 [ComfyUI](https://github.com/comfyanonymous/ComfyUI)，显卡要能跑你选的图像模型。
-- 你要用的功能对应的模型文件，见[模型](/zh/guides/models)。只装 Qwen Image 2.1 就能用生成、快捷编辑、编辑文字和扩展。
+ComfyArt 是一个 ComfyUI 插件。ComfyUI 仍是宿主，但不需要显卡：所有模型都用你自己的 API Key 跑在 [WaveSpeed](https://wavespeed.ai) 云端。
 
 ## 安装
 
-<Steps>
-  <Step title="克隆到 custom_nodes">
-    ```bash
-    cd ComfyUI/custom_nodes
-    git clone https://github.com/jtydhr88/ComfyArt
-    ```
-  </Step>
-  <Step title="安装 Python 依赖">
-    用运行 ComfyUI 的同一个 Python 环境。会装上 `pypdfium2`（上传 PDF）和 `rapidocr`（[编辑元素](/zh/guides/elements-mockups)的文字识别）。
+### 方式一：一条命令
 
-    ```bash
-    pip install -r ComfyArt/requirements.txt
-    ```
-  </Step>
-  <Step title="重启 ComfyUI，打开 ComfyArt">
-    在浏览器里打开 [http://127.0.0.1:8188/comfyart/](http://127.0.0.1:8188/comfyart/)，会先进入[首页](/zh/guides/home)；点 **新建项目** 得到一块空白画布。
-  </Step>
-</Steps>
+在本仓库的克隆目录里运行 `scripts/start.sh`，它会安装 ComfyUI（仅 CPU）、把 ComfyArt 链接到 `custom_nodes/` 并启动：
 
-构建好的页面已经放在 `dist/` 里，使用 ComfyArt 不需要装 Node.js。只有修改了 `src/` 里的前端源码时，才需要用 `npm install && npm run build` 重新构建。
+```bash
+git clone https://github.com/ganjmeng/ComfyArt
+cd ComfyArt
+./scripts/start.sh
+```
+
+不填 WaveSpeed Key 也能启动，只会提示云端生成不可用。
+
+### 方式二：装进已有的 ComfyUI
+
+1. 克隆到 `ComfyUI/custom_nodes/`：
+   ```bash
+   cd ComfyUI/custom_nodes
+   git clone https://github.com/ganjmeng/ComfyArt
+   ```
+2. 在运行 ComfyUI 的 Python 环境里安装依赖。只会多装一个 PDF 上传用的 `pypdfium2`；文字识别走 WaveSpeed，不需要本地 OCR 包。
+   ```bash
+   pip install -r ComfyArt/requirements.txt
+   ```
+   视频剪辑器导出需要 PATH 里有 `ffmpeg`。
+3. 重启 ComfyUI，打开 [http://127.0.0.1:8188/comfyart/](http://127.0.0.1:8188/comfyart/)。
+
+## 填写 WaveSpeed Key
+
+打开 **设置 → WaveSpeed API key** 粘贴 Key，或在启动 ComfyUI 前设置环境变量 `WAVESPEED_API_KEY`。详见 [WaveSpeed Key](/zh/guides/wavespeed-key)。顶栏的余额标签会显示 WaveSpeed 账户余额。
+
+## 启用 MCP 和 Agent（可选）
+
+Agent 默认是关闭的；图像、视频、音频生成不受影响。要使用 Agent，在左侧 Agent 面板点 **打开 Agent 设置**（或从 Agent 选择菜单里选 **Agent 设置**），先勾选 **启用 MCP**，再勾选 **启用 Agent**（启用 Agent 需要先启用 MCP）。支持哪些 agent 见 [Agent](/zh/guides/agent)。
 
 ## 生成第一张图
 
-<Frame>
-  <img src="/images/canvas.webp" alt="ComfyArt 画布，选中一张图时出现工具栏" />
-</Frame>
+1. 在[首页](/zh/guides/home)点 **新建项目**，打开空白画布。
+2. 在左侧工具栏选图片生成器，输入提示词，看一下 **发送** 旁边的预估费用。
+3. 点 **发送**。预估 $0.50 及以上的任务会先请你确认。结果会放到画布上。
 
-1. 点底部栏的 **图像生成**，画布上会出现一个生成卡片，下面是提示词框。
-2. 描述你想要的图。图里要出现的文字用引号括起来，例如 `标题 "夏日饮品"`。
-3. 选好尺寸、比例和张数，点箭头按钮。ComfyUI 生成时，卡片外圈会有进度环。
-4. 选中生成结果，就会出现图片工具栏：快捷编辑、放大、去背景、橡皮工具，**⋯** 里还有更多工具。
+## 接下来
 
-## 项目和语言
-
-- 每个项目对应一个网址：`/comfyart/?project=<id>`，保存在 ComfyArt 的 SQLite 数据库（`user/__comfyart/data.db`）里，并有快照历史可以恢复。见[首页与项目](/zh/guides/home)。
-- 界面语言默认跟随 ComfyUI 的语言（中文或英文），随时可以在设置菜单里切换。
-
-## 下一步
-
-<CardGroup cols={2}>
-  <Card title="生成" icon="wand-magic-sparkles" href="/zh/guides/generate">
-    参考图、配色、底图和视频。
-  </Card>
-  <Card title="Agent" icon="robot" href="/zh/guides/agent">
-    打开 Agent，让它帮你规划并完成设计。
-  </Card>
-</CardGroup>
+- **[生成](/zh/guides/generate)**：参考图、配色、底图和视频。
+- **[Agent](/zh/guides/agent)**：打开 Agent，让它帮你规划并完成设计。
+- **[模型与费用](/zh/guides/models)**：每个功能用哪个 WaveSpeed 模型。

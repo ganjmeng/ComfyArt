@@ -16,7 +16,7 @@ If Node 22 is missing: `nvm install 22`.
 
 ## Deploy
 
-1. In the Mintlify dashboard, connect the GitHub app to `jtydhr88/ComfyArt` and set the content directory to `docs-site`.
+1. In the Mintlify dashboard, connect the GitHub app to `ganjmeng/ComfyArt` and set the content directory to `docs-site`.
 2. Add the custom domain `comfyart.org`, then in Cloudflare add a CNAME `@` → `cname.mintlify.builders` (proxied) plus the TXT records Mintlify shows, and set SSL/TLS to Full.
 
 Every push to `main` then redeploys the site.

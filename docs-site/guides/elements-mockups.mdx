@@ -5,28 +5,31 @@ description: "Turn a flat image back into editable layers, and print a design on
 
 Both tools are in the image toolbar under **⋯**.
 
+<Tip>
+**WaveSpeed Key and cost**
+
+Edit Elements, Re-render, Render and AI blend: these run on WaveSpeed cloud models, so they need a [WaveSpeed Key](/guides/wavespeed-key). The estimated cost is shown next to **Send** (or on the button) before anything runs, and jobs of $0.50 or more ask you to confirm. See [Models and costs](/guides/models).
+</Tip>
 ## Edit Elements
 
 **Edit Elements** takes a finished image (a poster, an ad, a screenshot of a design) and rebuilds it as an editable artboard:
 
-1. Every line of text is read with on-device OCR ([RapidOCR](https://github.com/RapidAI/RapidOCR)) and becomes a real text layer at the same position, size, color and alignment. With the [Agent](/guides/agent) enabled, it also recognizes each line's typeface style (serif, sans, display, mono or script) and weight and picks a matching font; otherwise the text uses Arial.
-2. The main product and logo are cut out as separate image layers with SAM3.
-3. The text and objects are erased from the picture with LaMa, leaving a clean background layer.
+1. Every line of text is read with WaveSpeed's `paddle-ocr` model and becomes a real text layer at the same position, size, color and alignment. With the [Agent](/guides/agent) enabled, it also matches each line's typeface style and weight; otherwise the text uses Arial.
+2. The main product and logo are cut out as separate image layers with WaveSpeed's SAM3 segmentation model.
+3. Text and objects are erased from the picture with WaveSpeed's eraser model, leaving a clean background layer.
 
 The new artboard appears next to the original. Change the wording, font or color, move the product, then click **Re-render** in the artboard toolbar to blend the edited layers back into one natural-looking image.
 
 <Frame>
-  <img src="/images/edit-elements.webp" alt="Original perfume ad next to its rebuilt artboard with the brand name changed" />
+  <img src="/images/ours/en/edit-elements.webp" alt="Original perfume ad next to its rebuilt artboard with the brand name changed" />
 </Frame>
 
 In the example above the brand name was changed from LUMIERE to AURORE by typing in the text layer; the bottle and background were left untouched.
 
 You can also start from the home page: **Break down an image** uploads a design, opens a new project and runs Edit Elements on it.
-
 <Note>
-Edit Elements needs `rapidocr` (installed by `requirements.txt`), plus the SAM3 and LaMa models used by the other image tools. See [Models](/guides/models#image-tools).
+Edit Elements needs no local package or model: OCR, cut-outs and erasing all run on WaveSpeed. See [Models and costs](/guides/models).
 </Note>
-
 ## Compose boards
 
 A compose board is an artboard you lay out by hand and then render into one finished image. Choose **Insert → Compose board**, then place anything on it: text, shapes, images, doodles, and two board-only elements:
@@ -49,7 +52,7 @@ Artboards made by Edit Elements are compose boards too; there the button reads *
 **Mockup** turns a product photo (a t-shirt, mug, bag, box, phone) into a surface you can print a design on. ComfyArt measures the photo's depth and cuts out the product once; after that, placing the design is instant and runs in your browser.
 
 <Frame>
-  <img src="/images/mockup-panel.webp" alt="Mockup panel placing a badge logo on a t-shirt" />
+  <img src="/images/ours/en/mockup-panel.webp" alt="Mockup panel placing a badge logo on a t-shirt" />
 </Frame>
 
 In the Mockup panel:

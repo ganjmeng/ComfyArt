@@ -1,81 +1,54 @@
 ---
-title: "Models"
-description: "Which model files each ComfyArt feature needs and where they go."
+title: "Models and costs"
+description: "Which WaveSpeed model each ComfyArt feature uses, and how costs are shown."
 ---
 
-Every canvas action runs one of the API workflows in `workflows/` (or a small graph built in code) through ComfyUI's `/prompt`. You only need the models for the features you use. The model picker in the generator shows which image and video models are installed.
+ComfyArt has no local models. Every feature that uses a model sends the job to [WaveSpeed](https://wavespeed.ai), so it needs a [WaveSpeed Key](/guides/wavespeed-key), and its estimated cost is shown next to **Send** before it runs. Jobs estimated at $0.50 or more ask you to confirm first.
 
-Folders below are relative to `ComfyUI/models/`.
+## Choosing a model
 
-## Image generation and editing
+- Each function has a curated model list; the first entry is the default.
+- The model picker has **Auto** on by default, which uses the default model. Turn Auto off to choose from function tabs or a flat list.
+- Prices follow WaveSpeed's live pricing. The estimate is WaveSpeed's own quote for your exact inputs (size, duration, number of reference images).
 
-The default image model. It powers generation, quick edit, edit text, expand, inpaint, style transfer, comment edits and creative upscale.
+## Default models
 
-| File | Folder |
-|---|---|
-| `qwen_image_2.1_int8_convrot.safetensors` | `diffusion_models` |
-| `qwen3vl_8b_int8_convrot.safetensors` | `text_encoders` |
-| `qwen_image_2.1_vae_bf16.safetensors` | `vae` |
+These tables are generated from `api/curated_models.json` and `api/wavespeed_models.json` by `docs-site/scripts/gen-models.py`.
 
-### Other image models (optional)
-
-| Model | Files |
-|---|---|
-| Z-Image Turbo | `z_image_turbo_bf16` (`diffusion_models`), `qwen_3_4b` (`text_encoders`), `ae` (`vae`) |
-| Flux.2 Klein 9B | `flux-2-klein-9b-nvfp4` (`diffusion_models`), `qwen_3_8b_fp8mixed` (`text_encoders`), `flux2-vae` (`vae`) |
-| Qwen Image 2512 | `qwen_image_2512_fp8_e4m3fn` (`diffusion_models`), `qwen_2.5_vl_7b_fp8_scaled` (`text_encoders`), `qwen_image_vae` (`vae`) |
-| FLUX.3 Klein | `flux3-image-klein-int8-convrot` (`diffusion_models`), `qwen3vl_4b_int8_convrot` (`text_encoders`), `flux2-vae` (`vae`) |
-| MOSS-Image | `moss_image_sft_int8_convrot` (`diffusion_models`), `qwen3.5_9b_w4a8_gptq` (`text_encoders`), `flux2-vae_small` (`vae`) |
-| Ideogram 4 | `ideogram4_fp8_scaled` and `ideogram4_unconditional_fp8_scaled` (`diffusion_models`), `qwen3vl_8b_fp8_scaled` (`text_encoders`), `flux2-vae` (`vae`) |
-
-<Note>
-Qwen Image 2512 is loaded with the **ComfyArt Precise UNET Loader** node. ComfyUI's `--fast fp8_matrix_mult` turns unscaled fp8 checkpoints like this one into noise; the loader skips that path for the model it loads. Ideogram 4 expects a structured caption, which the default [Agent](/guides/agent) writes for you.
-</Note>
-
-## Image tools
-
-| Feature | Files | Folder |
+{/* models:start */}
+| Function | Default model | Models (recommended + more) |
 |---|---|---|
-| Upscale, video upscale | `4x-UltraSharp.pth` | `upscale_models` |
-| Remove background | `birefnet.safetensors` | `background_removal` |
-| Eraser, move object, split layers background fill | `big-lama.pt`, needs [comfyui-inpaint-nodes](https://github.com/Acly/comfyui-inpaint-nodes) | `inpaint` |
-| Smart select (inpaint, move object, custom split) | `sam3.1_multiplex_fp16.safetensors` | `checkpoints` |
-| Multi-angle | [`qwen-image-2.1-qma-camera-angles`](https://huggingface.co/gribbliest/qwen-image-2.1-qma-camera-angles), on top of the Qwen Image 2.1 files | `loras` |
-| Split layers | `qwen_image_layered_bf16` (`diffusion_models`), `qwen_image_layered_vae` (`vae`), `qwen_2.5_vl_7b_fp8_scaled` (`text_encoders`) | |
-| Edit Elements | the `rapidocr` Python package (from `requirements.txt`, ships its own small OCR models), plus SAM3 and LaMa above | |
-| Mockup | `depth_anything_v2_vitl.pth` through [comfyui_controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux) (downloaded on first use), plus `birefnet.safetensors` above | |
+| Text to image | `openai/gpt-image-2.5-flare/text-to-image` | 6 + 19 |
+| Image edit | `openai/gpt-image-2.5-flare/edit` | 6 + 14 |
+| Text to video | `bytedance/seedance-2.0/text-to-video` | 4 + 25 |
+| Image to video | `bytedance/seedance-2.0/image-to-video` | 4 + 27 |
+| Reference to video | `kwaivgi/kling-video-o3-std/reference-to-video` | 4 |
+| Motion control | `kwaivgi/kling-v3.0-std/motion-control` | 4 |
+| Lip sync | `wavespeed-ai/infinitetalk-fast` | 4 |
+| Extend video | `wavespeed-ai/minimax-h3/video-extend` | 4 |
+| Upscale video | `wavespeed-ai/video-upscaler` | 3 |
+| Remove video background | `wavespeed-ai/video-background-remover` | 2 |
+| Music | `minimax/music-3.0` | 5 |
+| Sound effect | `mirelo-ai/sfx-2.0/text-to-audio` | 4 |
+| Text to speech | `wavespeed-ai/qwen3-tts/text-to-speech` | 4 |
+| Voice clone | `wavespeed-ai/qwen3-tts/voice-clone` | 4 |
+| Image to 3D | `tripo3d/h3.1/image-to-3d` | 5 |
 
-## Video
-
-Animate image, video generation and video extend use MiniMax H3:
-
-| File | Folder |
+| Helper | Model |
 |---|---|
-| `minimax_h3_fl2va_pruned_int8_convrot.safetensors` | `diffusion_models` |
-| `minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors` | `loras` |
-| `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | `text_encoders` |
-| `minimax_h3_video_vae_fp16.safetensors`, `minimax_h3_audio_vae_fp32.safetensors` | `vae` |
+| Expand | `bria/expand` |
+| Split layers | `bytedance/seedream-v5.0-flash/layer-decomposition` |
+| Remove background | `wavespeed-ai/image-background-remover` |
+| Eraser / move object | `wavespeed-ai/image-eraser` |
+| Upscale | `wavespeed-ai/image-upscaler` |
+| Smart select / Edit Elements cut-outs | `wavespeed-ai/sam3-image` |
+| Multi-angle | `wavespeed-ai/qwen-image/edit-2509-multiple-angles` |
+| Structure modes | `wavespeed-ai/flux-controlnet-union-pro-2.0` |
+| Text recognition (OCR) | `wavespeed-ai/paddle-ocr` |
+| Image caption | `wavespeed-ai/image-captioner` |
+| Speech to text | `wavespeed-ai/openai-whisper-turbo` |
+{/* models:end */}
 
-**Reference to video** uses `minimax_h3_ref2va_pruned_int8_convrot.safetensors` (`diffusion_models`) with the same text encoder and VAEs. **Motion control** adds `minimax_h3_fun_controlnet_union_pruned_int8_convrot.safetensors` (`model_patches`), `sdpose_wholebody_fp16.safetensors` (`checkpoints`) and `rt_detr_v4-x-hgnet_fp16.safetensors` (`diffusion_models`) for pose extraction. **Lip sync** uses the image-to-video files above.
+## What is free
 
-Video trim and the video editor use core nodes only.
-
-## Audio and 3D
-
-| Feature | Files | Folder |
-|---|---|---|
-| Music | `ace_step_v1_3.5b.safetensors` | `checkpoints` |
-| Sound effects | `stable-audio-open-1.0.safetensors` (`checkpoints`), `t5-base.safetensors` (`text_encoders`) | |
-| Voiceover | [comfyui-kokoro](https://github.com/stavsap/comfyui-kokoro), which downloads its model on first use | |
-| Voice cloning | [ComfyUI-Easy-IndexTTS2](https://github.com/yolain/ComfyUI-Easy-IndexTTS2), which downloads IndexTTS-2 on first use | |
-| Image to 3D | `trellis_2_int8_convrot.safetensors` (`diffusion_models`), `trellis_2_shape_vae_bf16.safetensors` and `trellis_2_texture_vae_bf16.safetensors` (`vae`), `dino_v3_L_naf_fp32.safetensors` (`clip_vision`), plus `birefnet.safetensors` | |
-| Image to 3D (Pixal3D) | `pixal3d_int8_convrot.safetensors` (`diffusion_models`), `moge_2_vitl_normal_fp16.safetensors` (`geometry_estimation`), plus the TRELLIS.2 VAEs, `dino_v3_L_naf_fp32` and `birefnet` above | |
-| Multi-view to 3D | `pixal3d_multiview_int8_convrot.safetensors` (`diffusion_models`), plus the TRELLIS.2 VAEs, `dino_v3_L_naf_fp32` and `birefnet` above | |
-
-## Speech and text recognition
-
-`gemma4_e4b_it_fp8_scaled.safetensors` in `text_encoders` powers voice input and, by default, text recognition for Edit Text and Extract Text. Edit Elements always uses RapidOCR, which also returns where each line sits. Text recognition can use the Agent instead; see [Agent settings](/guides/agent#settings).
-
-## Reference modes
-
-Line art, depth, pose and the other structure modes use the [comfyui_controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux) preprocessors. MLSD, HED, normal and segmentation download their annotator weights on first use. With Qwen Image 2512, structure modes also use `Qwen-Image-2512-Fun-Controlnet-Union-2602.safetensors` in `controlnet`.
+Canvas editing, exports (PNG, JPG, PDF, PPTX, PSD, ZIP), the video editor export and the WaveSpeed balance check call no paid model.

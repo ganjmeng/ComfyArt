@@ -3,14 +3,21 @@ title: "Agent"
 description: "A design agent that looks at your canvas and works on it with real tools."
 ---
 
+<Note>**Turn it on in Settings first.** The Agent is off by default. Click **Open Agent Settings** in the Agent panel, then turn on **Enable MCP** and then **Enable Agent** (it needs MCP). See [Settings](#settings) below.</Note>
+
 The Agent panel on the left runs a tool-using agent on the ComfyUI backend. It can look at the canvas, plan a design, generate and edit images, videos, audio and 3D models, rebuild images with Edit Elements, make mockups, place text, shapes, artboards, web pages and slides, ask you clarifying questions, and remember your preferences.
 
 <Frame>
-  <img src="/images/agent-result.webp" alt="The Agent built an Instagram post from a request and a reference photo" />
+  <img src="/images/ours/en/agent-result.webp" alt="The Agent built an Instagram post from a request and a reference photo" />
 </Frame>
 
 In the example above the request was one sentence plus the latte photo selected on the canvas. The Agent read the Spring menu artboard for colors and type, built a new 1080×1080 artboard from editable text and shapes, and explained what it could and could not match.
 
+<Tip>
+**WaveSpeed Key and cost**
+
+Every generation or edit the Agent starts: these run on WaveSpeed cloud models, so they need a [WaveSpeed Key](/guides/wavespeed-key). The estimated cost is shown next to **Send** (or on the button) before anything runs, and jobs of $0.50 or more ask you to confirm. See [Models and costs](/guides/models).
+</Tip>
 ## Modes
 
 The mode switch under the chat box picks what a message does:
@@ -23,17 +30,17 @@ An empty chat offers three quick starts: **Upload a reference**, **Start from a 
 **Upload file** (the + menu), drag and drop, and paste accept:
 
 - **Images and videos**: placed on the canvas and attached. A video is shown to the agent as four frames spread across it; the agent can call `view_video` to look at more frames or one stretch closely.
-- **Audio**: placed on the canvas as an audio element. Speech in it is transcribed with the local speech model before sending, and the agent can use the clip as a voice, lip-sync or reference audio.
+- **Audio**: placed on the canvas as an audio element. Speech in it is transcribed with WaveSpeed's speech-to-text model before sending, and the agent can use the clip as a voice, lip-sync or reference audio.
 - **Documents** (PDF, DOCX, Markdown, TXT): shown as file chips; their text goes to the agent, and for a PDF the first pages are attached as images too. PDFs imported onto the canvas keep each page's text, so the agent can read it with `get_canvas`.
 
-While it works, the Agent can post a plan as a checklist and ticks items off. Its tool calls fold into one line ("Ran 17 steps") that you can expand to see each step and how long it took. When the agent returns readable reasoning (for example a local model that sends `reasoning_content` or `<think>` text), it appears as a folded **Thought** line you can expand. Claude Code only returns encrypted thinking, so nothing is shown for it.
+While it works, the Agent can post a plan as a checklist and ticks items off. Its tool calls fold into one line ("Ran 17 steps") that you can expand. When the agent returns readable reasoning (`reasoning_content` or `<think>` text), it appears as a folded **Thought** line. Claude Code only returns encrypted thinking, so nothing is shown for it.
 
 ## Settings
 
 The Agent is off by default. Open **Agent Settings** from the agent picker and turn on **Enable MCP** and **Enable Agent**.
 
 <Frame>
-  <img src="/images/agent-settings.webp" alt="Agent settings" style={{ maxWidth: '420px' }} />
+  <img src="/images/ours/en/agent-settings.webp" alt="Agent settings" />
 </Frame>
 
 ComfyArt uses command-line agents that are already signed in on your machine. It never stores credentials.
@@ -44,12 +51,11 @@ ComfyArt uses command-line agents that are already signed in on your machine. It
 | Codex | `codex` on PATH, logged in |
 | Qwen Code | `qwen` on PATH with a model configured in `~/.qwen/settings.json` |
 | DeepSeek Harness | `dsh` on PATH, signed in through the DeepSeek Harness app |
-| Local LLM | any OpenAI-compatible endpoint with tool calling; set its URL in Agent Settings. If it needs a key, set `COMFYART_LOCAL_LLM_API_KEY` before starting ComfyUI. |
+| OpenAI-compatible LLM | any OpenAI-compatible endpoint with tool calling; set its URL and model in Agent Settings. If it needs a key, set `COMFYART_LOCAL_LLM_API_KEY` before starting ComfyUI. |
 
 Other settings:
 
-- **comfy-mcp**: optionally mount the official comfy-mcp server too, so the agent can look up nodes, models and templates.
-- **Text recognition**: Edit Text and Extract Text read text with the local Gemma 4 model in ComfyUI by default, with a progress status while it loads and reads. Switch to **Agent** to use the default agent instead.
+- **Text recognition**: Edit Text and Extract Text read text with WaveSpeed's `paddle-ocr` model by default. Switch to **Agent** to use the default agent instead.
 - **Model Preferences** (button under the chat box): let the agent choose models automatically or fix one per task, with separate Image and Video tabs.
 
 Short single-shot tasks (storyboard split, OCR with the Agent engine, brand and memory extraction, reference notes and the Ideogram caption) go to the default agent without tools.
@@ -60,7 +66,7 @@ Short single-shot tasks (storyboard split, OCR with the Agent engine, brand and 
 - Stop a run, edit and resend a message, branch a chat, see context usage, and open each result's details (process, outputs, original prompt).
 - The agent can review the canvas frame by frame, summarize comments into a fix plan, and point you to results on the canvas.
 - The notification center collects suggestions, comment fixes and finished tasks, and a browser notification fires when a task is done.
-- **Voice input** transcribes with a local speech model.
+- **Voice input** transcribes with WaveSpeed's speech-to-text model.
 
 ## Chat frames
 

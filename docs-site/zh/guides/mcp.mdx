@@ -5,6 +5,11 @@ description: "让内置 Agent，或 Claude Code、Codex、Gemini CLI、Cursor �
 
 ComfyArt 通过 HTTP 提供一个 [MCP](https://modelcontextprotocol.io) 服务器。内置 [Agent](/zh/guides/agent) 用的就是它，其他支持 MCP 的 agent 也能用同一套工具：查看画布，生成和编辑图片、视频、音频和 3D 模型，放置文字、形状、画板和幻灯片。
 
+<Tip>
+**WaveSpeed Key 与费用**
+
+通过 MCP 调用的生成工具都走 WaveSpeed 云端模型，需要配置 [WaveSpeed Key](/zh/guides/wavespeed-key)，运行前会在 **发送** 旁（或按钮上）显示预估费用；预估 $0.50 及以上会先请你确认。见[模型与费用](/zh/guides/models)。
+</Tip>
 ## 启用
 
 在 Agent 设置里勾选 **启用 MCP**。接口地址是：
@@ -142,10 +147,9 @@ curl -X POST "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>" \
 
 `tools/list` 会返回每个工具的输入 schema。在内置 Agent 的对话里，agent 还多一个向你提选择题的工具。
 
-## 不经过画布运行工作流
 
-ComfyArt 的每个操作都是 `workflows/` 目录里的一个 API 格式工作流。不想经过画布时，改好提示词、模型和种子后直接提交给 ComfyUI 自己的 `POST /prompt`；或者让 agent 通过官方的 [comfy-mcp](https://github.com/Comfy-Org/comfy-mcp) 服务器来跑，它负责运行工作流、等待完成并取回输出。这样跑出的结果留在 ComfyUI 的 `output/` 目录，不会放到画布上。
+`custom_workflow` 工具有五个动作：`rules`（文件格式）、`list`（已安装的工作流）、`check`（校验文件）、`install`（保存）和 `assign`（绑定到某个功能）。自定义工作流都通过这些动作在 WaveSpeed 上运行，不需要你自己向 ComfyUI 提交任何东西。
 
-<Note>
-MCP 服务器是你本地 ComfyUI 的一部分，没有自己的登录。能访问你 ComfyUI 端口的人都能使用它，所以开启 MCP 时请让 ComfyUI 只监听本机或可信网络。
-</Note>
+## 安全
+
+生成和编辑类的 MCP 工具会花 ComfyArt 里配置的 WaveSpeed Key 的余额，每次付费调用都会返回费用。能访问你 ComfyUI 端口的人都能用这个服务，开启 MCP 时请把 ComfyUI 限制在本机或可信网络。

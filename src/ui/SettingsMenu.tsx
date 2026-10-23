@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useValue, type Editor } from 'tldraw'
 
+import { DOCS_SITE } from '../docsConfig'
 import { lang, setLang, t, type Lang } from '../i18n'
 import { pushEnabled, setPush } from '../notices'
 import { saveTheme, setTheme, themeAtom, THEMES } from '../theme'
@@ -9,6 +10,11 @@ import { Icons } from './icons'
 import { Popover } from './Popover'
 import { shortcutsAtom } from './Shortcuts'
 import { keySettingsOpenAtom } from '../wavespeedKey'
+
+/** #35: the docs site (Mintlify, URL in docsConfig.ts); English at the root, Chinese under /zh. */
+export function docsUrl(l: Lang = lang): string {
+  return l === 'zh' ? `${DOCS_SITE}/zh` : DOCS_SITE
+}
 
 const LANGS: [Lang, string][] = [['zh', t('settings.langZh')], ['en', t('settings.langEn')]]
 const SIDES: ['left' | 'right', string][] = [['left', t('settings.chatLeft')], ['right', t('settings.chatRight')]]
@@ -55,6 +61,10 @@ export function SettingsMenu({ editor, trigger }: { editor?: Editor; trigger: (p
               </label>
             </>
           )}
+          <div className="ca-menu__sep" />
+          <button type="button" className="ca-menu__item" data-testid="settings-guide" onClick={() => { setOpen(false); window.open(docsUrl(), '_blank', 'noopener,noreferrer') }}>
+            <span className="ca-icon">{Icons.link}</span><span className="ca-menu__grow">{t('settings.userGuide')}</span>
+          </button>
         </div>
       </Popover>
     </>

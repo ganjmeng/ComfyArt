@@ -5,6 +5,11 @@ description: "Let the built-in agent, or any MCP client such as Claude Code, Cod
 
 ComfyArt serves an [MCP](https://modelcontextprotocol.io) server over HTTP. The built-in [Agent](/guides/agent) uses it, and any other agent that speaks MCP can use the same tools: look at the canvas, generate and edit images, videos, audio and 3D models, and place text, shapes, frames and slides.
 
+<Tip>
+**WaveSpeed Key and cost**
+
+Generation and edit tools called over MCP: these run on WaveSpeed cloud models, so they need a [WaveSpeed Key](/guides/wavespeed-key). The estimated cost is shown next to **Send** (or on the button) before anything runs, and jobs of $0.50 or more ask you to confirm. See [Models and costs](/guides/models).
+</Tip>
 ## Enable it
 
 Turn on **Enable MCP** in Agent Settings. The endpoint is:
@@ -142,10 +147,9 @@ The result's `content` holds a text block with the tool's JSON output, plus imag
 
 `tools/list` returns every tool's input schema. Inside built-in Agent chats the agent also gets a tool to ask you multiple-choice questions.
 
-## Run workflows without the canvas
 
-Every ComfyArt action is an API-format workflow in the `workflows/` folder. To run one without a canvas, submit it to ComfyUI's own `POST /prompt` after setting its prompt, models and seed, or let an agent do it through the official [comfy-mcp](https://github.com/Comfy-Org/comfy-mcp) server, which runs workflows, waits for them and fetches the outputs. Results of these runs stay in ComfyUI's `output/` folder and are not added to a canvas.
+The `custom_workflow` tool has five actions: `rules` (the file format), `list` (installed workflows), `check` (validate a file), `install` (save it) and `assign` (bind it to a feature). Custom workflows always run through these actions on WaveSpeed; you do not submit anything to ComfyUI yourself.
 
-<Note>
-The MCP server is part of your local ComfyUI and has no login of its own. Anyone who can reach your ComfyUI port can use it, so keep ComfyUI on localhost or a trusted network when MCP is on.
-</Note>
+## Security
+
+The MCP tools that generate or edit spend from the WaveSpeed Key configured in ComfyArt, and each paid call reports its cost. Anyone who can reach your ComfyUI port can use the server, so keep ComfyUI on localhost or a trusted network when MCP is on.

@@ -8,31 +8,36 @@ description: "Generate music, voiceovers and sound effects, and turn an image in
 Open the generate menu in the bottom bar (the arrow next to **Image Generation**) and choose **Audio generation**.
 
 <Frame>
-  <img src="/images/audio-dialog.webp" alt="Audio generation dialog on the Voiceover tab" style={{ maxWidth: '480px' }} />
+  <img src="/images/ours/en/audio-dialog.webp" alt="Audio generation dialog on the Voiceover tab" />
 </Frame>
 
 | Tab | What you give it | Model |
 |---|---|---|
-| **Music** | style tags (genre, mood, instruments, tempo), optional lyrics with `[verse]` / `[chorus]` lines, and a length of 15, 30, 60 or 120 seconds | ACE-Step |
+| **Music** | style tags (genre, mood, instruments, tempo), optional lyrics with `[verse]` / `[chorus]` lines, and a length | MiniMax Music 3 by default, ACE-Step 1.5 optional |
 | **Voiceover** | the text to read and a voice: Chinese, American, British or Japanese, female or male. With an audio clip selected on the canvas, the voice list also offers **Clone the selected audio's voice** | Kokoro, IndexTTS-2 for cloning |
 | **Sound effect** | a short description, up to 47 seconds | Stable Audio Open |
 
+<Tip>
+**WaveSpeed Key and cost**
+
+Music, voiceovers, sound effects and image to 3D: these run on WaveSpeed cloud models, so they need a [WaveSpeed Key](/guides/wavespeed-key). The estimated cost is shown next to **Send** (or on the button) before anything runs, and jobs of $0.50 or more ask you to confirm. See [Models and costs](/guides/models).
+</Tip>
 Each result is an audio card on the canvas with a play button, a seek bar and its length. Audio files you drop on the canvas become the same cards, and the Agent can make music, voiceovers and sound effects too.
 
 <Frame>
-  <img src="/images/audio-cards.webp" alt="Music and voiceover cards on the canvas" />
+  <img src="/images/ours/en/audio-cards.webp" alt="Music and voiceover cards on the canvas" />
 </Frame>
 
 ## Image to 3D
 
-Select an image of a single object, ideally on a plain background, choose **Image to 3D** under **⋯**, then **TRELLIS.2** or **Pixal3D**. ComfyUI cuts out the object, builds a textured mesh, cleans and simplifies it, and saves a GLB file. Pixal3D also estimates the photo's camera field of view with MoGe and generates with it.
+Select an image of a single object, ideally on a plain background, and choose **Image to 3D** under **⋯**. The job runs on a WaveSpeed image-to-3D model (see [Models and costs](/guides/models)) and returns a textured GLB file.
 
-If you have several views of the same object, select two to four of them, put them in a row and choose **Multi-view to 3D** on the selection toolbar. Left to right they are the front, left, back and right views; Pixal3D builds one model from all of them. The model is placed next to the image.
+For several views of the same object, select two to four images and choose **Multi-view to 3D** on the multi-select toolbar. Left to right, they are used as the front, left, back and right views; it also runs on WaveSpeed.
 
 <Frame>
-  <img src="/images/image-to-3d.webp" alt="A mug photo and the 3D model made from it" />
+  <img src="/images/ours/en/image-to-3d.webp" alt="A mug photo and the 3D model made from it" />
 </Frame>
 
 The 3D card turns slowly by itself. Its toolbar can stop the rotation, set a background color, **Export Current View** as an image you can keep designing with, switch to **Interact** to orbit and zoom with the mouse, and download the GLB. 3D files you upload (GLB, GLTF, OBJ, FBX, STL, PLY) get the same card.
 
-Generating a model takes a few minutes. See [Models](/guides/models#audio-and-3d) for the files.
+A model takes a few minutes to generate. See [Models and costs](/guides/models).

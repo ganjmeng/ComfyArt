@@ -3,7 +3,13 @@ title: "Video"
 description: "Animate images, generate clips from frames or references, then edit, extend and upscale them."
 ---
 
-All video generation uses MiniMax H3 (see [Models](/guides/models#video)). Upscaling runs on core ComfyUI nodes, and the video editor on the bundled ComfyArt Timeline Render node. Every clip comes with sound generated together with the picture.
+Video generation runs on WaveSpeed video models; each mode has a curated list and a default (see [Models and costs](/guides/models)).
+
+<Tip>
+**WaveSpeed Key and cost**
+
+Video generation, extend, upscale and background removal: these run on WaveSpeed cloud models, so they need a [WaveSpeed Key](/guides/wavespeed-key). The estimated cost is shown next to **Send** (or on the button) before anything runs, and jobs of $0.50 or more ask you to confirm. See [Models and costs](/guides/models).
+</Tip>
 
 ## Animate an image
 
@@ -30,12 +36,14 @@ Each clip can be 16:9, 9:16, 1:1, 4:3, 3:4 or 21:9, at 768p or 1080p, 5, 10 or 1
 Reference-to-video follows the prompt closely. Name each reference explicitly ("Use `<Picture 1>` as the product, `<Picture 2>` as the presenter") rather than only mentioning it in passing. A reference video also carries the look of the people in it; to put a different character into someone else's movement, use **Motion control**, which only takes the pose.
 </Tip>
 
+**Advanced** holds the seed and, for models that accept it (Kling 3.0 std, Veo 3 / 3.1, Wan 2.5 / 2.6), a **Negative prompt** below it. Wan 2.2 LoRA accepts LoRAs, as described in [Generate](/guides/generate#advanced).
+
 ## Edit a video
 
 Select a video for its toolbar:
 
 <Frame>
-  <img src="/images/video-toolbar.webp" alt="Video toolbar above a generated clip" />
+  <img src="/images/ours/en/video-toolbar.webp" alt="Video toolbar above a generated clip" />
 </Frame>
 
 - **Crop Video** opens the video editor (see below).
@@ -51,7 +59,7 @@ Videos can also be dropped into the chat as references for the Agent. The previe
 **Crop Video** opens the editor with the selected video as the first clip. It can cut several videos and a music track into one new video.
 
 <Frame>
-  <img src="/images/video-editor.webp" alt="Video editor with three clips, a music track and beat marks on the timeline" />
+  <img src="/images/ours/en/video-editor.webp" alt="Video editor with three clips, a music track and beat marks on the timeline" />
 </Frame>
 
 - **Clips**: **Add Clip** appends any video on the current page. Drag a clip's edges to trim it, and use **Split** to cut it at the playhead. Select a clip to set its speed (0.5x to 2x) and volume, mute it, **Move Left** or **Move Right**, or delete it.
@@ -60,6 +68,6 @@ Videos can also be dropped into the chat as references for the Agent. The previe
 - **Snap to Beats**: on by default. Beats show as marks on the timeline, and clicking the timeline moves the playhead to the nearest beat or clip edge, so **Split** cuts land on the beat.
 - **Captions**: **Add Caption** places text at the playhead. Set its start, end, font size and color.
 
-Undo, Redo and Reset are in the header. **Export** renders the edit in ComfyUI at the first clip's size and 24 fps, with the clips' audio mixed under the music, then **Export as New Video** places it next to the original or **Replace Original Video** swaps it in. Export uses the **ComfyArt Timeline Render** node that ships with ComfyArt, so it needs no extra model.
+Undo, Redo and Reset are in the header. **Export** exports the edit to MP4 at the first clip's size and 24 fps, with the clips' audio mixed under the music. **Export as New Video** places it next to the original; **Replace Original Video** swaps it in.
 
 Agents can make the same edit with the `edit_video` [MCP tool](/guides/mcp).

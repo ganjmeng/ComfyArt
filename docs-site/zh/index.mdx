@@ -1,21 +1,21 @@
 ---
 title: "ComfyArt"
-description: "免费开源的 AI 设计画布，完全跑在你自己的 ComfyUI 上。无需账号，没有积分，不上云。"
+description: "ComfyUI 里的 AI 设计画布，模型跑在 WaveSpeed 云端。不需要显卡，也不需要本地模型文件。"
 mode: "wide"
 ---
 
-ComfyArt 是一块完全跑在你自己 ComfyUI 上的 **AI 设计画布**：用来做海报、社交媒体图、PPT、样机、短视频和音频的无限画布，一个能直接在画布上动手的设计 Agent，所有图像、视频、音频和 3D 模型都在你自己的显卡上运行。
+ComfyArt 是 ComfyUI 里的一块 **AI 设计画布**：用来做海报、社交媒体图、PPT、样机、短视频和音频的无限画布，外加一个能直接在画布上动手的设计 Agent。所有图像、视频、音频和 3D 模型都用你自己的 WaveSpeed Key 跑在 WaveSpeed 上，运行前先显示费用。
 
 <Frame>
-  <img src="/images/preview-zh.gif" alt="ComfyArt 演示" />
+  <img src="/images/ours/zh/agent-result.webp" alt="ComfyArt 画布" />
 </Frame>
 
 <CardGroup cols={2}>
   <Card title="快速开始" icon="rocket" href="/zh/guides/getting-started">
-    把 ComfyArt 装进 ComfyUI，打开画布，生成第一张图。
+    启动 ComfyArt，填好 WaveSpeed Key，生成第一张图。
   </Card>
-  <Card title="模型" icon="microchip" href="/zh/guides/models">
-    每个功能需要哪些模型文件，放在哪里。
+  <Card title="模型与费用" icon="microchip" href="/zh/guides/models">
+    每个功能用哪个 WaveSpeed 模型，费用怎么显示。
   </Card>
 </CardGroup>
 
@@ -50,18 +50,18 @@ ComfyArt 是一块完全跑在你自己 ComfyUI 上的 **AI 设计画布**：用
     我的素材、品牌套件编辑器、角色、产品和参考板。
   </Card>
   <Card title="Agent" icon="robot" href="/zh/guides/agent">
-    和设计 Agent 对话（Claude Code、Codex、Qwen Code、DeepSeek Harness 或本地大模型），它直接在你的画布上干活。
+    和设计 Agent 对话，它能看懂画布，用真实工具直接在你的画布上干活。
   </Card>
 </CardGroup>
 
 ## 为什么选 ComfyArt
 
 <CardGroup cols={3}>
-  <Card title="完全本地" icon="house-laptop">
-    所有模型都在你的 ComfyUI 里运行。不上传任何东西，ComfyArt 也从不保存任何凭据。
+  <Card title="不需要显卡" icon="cloud" href="/zh/guides/wavespeed-key">
+    模型用你自己的 Key 跑在 WaveSpeed 上。画布编辑和导出在本地完成，免费；ComfyArt 不另收费。
   </Card>
-  <Card title="工作流公开" icon="diagram-project">
-    每个画布操作都是 `workflows/` 里一份普通的 ComfyUI API 工作流，能用核心节点的地方都用核心节点。
+  <Card title="自定义工作流" icon="diagram-project" href="/zh/guides/custom-workflows">
+    把你自己的 ComfyUI 工作流接到画布上，当作自定义工具使用。
   </Card>
   <Card title="为 Agent 准备" icon="plug" href="/zh/guides/mcp">
     内置 MCP 服务器，内置 Agent 或任何本地 MCP 客户端都能查看并编辑画布。

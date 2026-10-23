@@ -19,7 +19,7 @@
     "links": [
       {
         "label": "GitHub",
-        "href": "https://github.com/jtydhr88/ComfyArt"
+        "href": "https://github.com/ganjmeng/ComfyArt"
       }
     ],
     "primary": {
@@ -30,7 +30,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/jtydhr88/ComfyArt"
+      "github": "https://github.com/ganjmeng/ComfyArt"
     }
   },
   "contextual": {
@@ -56,7 +56,7 @@
                   "guides/getting-started",
                   "guides/home",
                   "guides/models",
-                  "guides/lan-instances"
+                  "guides/wavespeed-key"
                 ]
               },
               {
@@ -97,7 +97,7 @@
                   "zh/guides/getting-started",
                   "zh/guides/home",
                   "zh/guides/models",
-                  "zh/guides/lan-instances"
+                  "zh/guides/wavespeed-key"
                 ]
               },
               {

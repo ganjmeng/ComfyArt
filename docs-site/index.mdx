@@ -1,21 +1,21 @@
 ---
 title: "ComfyArt"
-description: "A free, open-source AI design canvas that runs fully on your own ComfyUI. No account, no credits, no cloud."
+description: "An AI design canvas inside ComfyUI that runs on WaveSpeed cloud models. No GPU and no local model files."
 mode: "wide"
 ---
 
-ComfyArt is an **AI design canvas** that runs entirely on your own ComfyUI: an infinite canvas for posters, social images, slides, mockups, short videos and audio, a design agent that works on that canvas with real tools, and every image, video, audio and 3D model running on your own GPU.
+ComfyArt is an **AI design canvas** inside ComfyUI: an infinite canvas for posters, social images, slides, mockups, short videos and audio, plus a design agent that works on that canvas with real tools. Every image, video, audio and 3D model runs on WaveSpeed with your own WaveSpeed Key, and the cost is shown before it runs.
 
 <Frame>
-  <img src="/images/preview-en.gif" alt="ComfyArt in action" />
+  <img src="/images/ours/en/agent-result.webp" alt="ComfyArt canvas" />
 </Frame>
 
 <CardGroup cols={2}>
   <Card title="Getting started" icon="rocket" href="/guides/getting-started">
-    Install ComfyArt into ComfyUI, open the canvas and make your first image.
+    Start ComfyArt, add your WaveSpeed Key and make your first image.
   </Card>
-  <Card title="Models" icon="microchip" href="/guides/models">
-    Which model files each feature needs, and where to put them.
+  <Card title="Models and costs" icon="microchip" href="/guides/models">
+    Which WaveSpeed model each feature uses, and how costs are shown.
   </Card>
 </CardGroup>
 
@@ -50,18 +50,18 @@ ComfyArt is an **AI design canvas** that runs entirely on your own ComfyUI: an i
     My Assets, the brand kit editor, characters, products and the reference board.
   </Card>
   <Card title="Agent" icon="robot" href="/guides/agent">
-    Chat with a design agent (Claude Code, Codex, Qwen Code, DeepSeek Harness or a local LLM) that works on your canvas.
+    Chat with a design agent that looks at your canvas and works on it with real tools.
   </Card>
 </CardGroup>
 
 ## Why ComfyArt
 
 <CardGroup cols={3}>
-  <Card title="Fully local" icon="house-laptop">
-    Every model runs in your ComfyUI. Nothing is uploaded, and ComfyArt never stores credentials.
+  <Card title="No GPU needed" icon="cloud" href="/guides/wavespeed-key">
+    Models run on WaveSpeed with your own key. Canvas editing and exports stay local and free; ComfyArt adds no fee.
   </Card>
-  <Card title="Open workflows" icon="diagram-project">
-    Each canvas action is a plain ComfyUI API workflow in `workflows/`, built from core nodes wherever possible.
+  <Card title="Custom workflows" icon="diagram-project" href="/guides/custom-workflows">
+    Connect your own ComfyUI workflows to the canvas as custom tools.
   </Card>
   <Card title="Agent-ready" icon="plug" href="/guides/mcp">
     An MCP server lets the built-in agent, or any local MCP client, look at the canvas and edit it.

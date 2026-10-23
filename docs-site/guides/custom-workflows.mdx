@@ -5,11 +5,19 @@ description: "Run your own WaveSpeed model for ComfyArt's features."
 
 Every canvas action runs a model on WaveSpeed. Most features can run a model of your choice instead of the built-in one, for example a different image model or edit model.
 
+<Tip>
+**WaveSpeed Key and cost**
+
+Custom workflows: these run on WaveSpeed cloud models, so they need a [WaveSpeed Key](/guides/wavespeed-key). The estimated cost is shown next to **Send** (or on the button) before anything runs, and jobs of $0.50 or more ask you to confirm. See [Models and costs](/guides/models).
+</Tip>
 A custom workflow is a small JSON file: the WaveSpeed model id, and optionally which request field of that model receives the image, prompt or size. You can write it yourself or let an agent do it.
 
 ## Let an agent do it
 
 Ask the [ComfyArt agent](/guides/agent), or any agent connected over [MCP](/guides/mcp), something like "connect this model to quick edit" and give it the model id. It reads the rules with the `custom_workflow` tool, writes the file, checks it and installs it. The rules are also a built-in skill, **Connect a custom workflow**.
+
+The `custom_workflow` tool has five actions: `rules` (the file format), `list` (installed workflows), `check` (validate a file), `install` (save it) and `assign` (bind it to a feature). Custom workflows always run through these actions on WaveSpeed; you do not submit anything to ComfyUI yourself.
+
 
 For an agent that is not connected to ComfyArt, open **Custom workflows** in the project menu and copy the rules with the button next to the agent hint.
 

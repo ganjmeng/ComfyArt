@@ -29,7 +29,7 @@ Documentation with screenshots for every feature: **[comfyart.org](https://comfy
 
 **Quick start (no GPU, no existing ComfyUI):** `./scripts/start.sh` installs a CPU-only ComfyUI host next to this folder (in `~/.comfyart-runtime`) and opens on `http://127.0.0.1:8188/comfyart/`; re-running it just starts. Or with Docker: `docker build -t comfyart . && docker run -p 8188:8188 -e WAVESPEED_API_KEY=... -v comfyart-user:/opt/ComfyUI/user comfyart`.
 
-Into an existing ComfyUI: Put this folder in `ComfyUI/custom_nodes/`, install the Python requirements into ComfyUI's environment (`pip install -r requirements.txt`: `pypdfium2` for PDF uploads and `rapidocr` for Edit Elements), restart ComfyUI and open `http://127.0.0.1:8188/comfyart/`. The built page is in `dist/`; after changing `src/`, rebuild with `npm install && npm run build`.
+Into an existing ComfyUI: put this folder in `ComfyUI/custom_nodes/`, install the Python requirements into ComfyUI's environment (`pip install -r requirements.txt`: `pypdfium2` for PDF uploads; Edit Elements reads text with WaveSpeed's `paddle-ocr` model, so it needs no local OCR package), restart ComfyUI and open `http://127.0.0.1:8188/comfyart/`. The built page is in `dist/`; after changing `src/`, rebuild with `npm install && npm run build`.
 
 Projects, their snapshot history and agent chats are saved in a SQLite database, `user/__comfyart/data.db`. Projects from older versions (JSON files under `comfyart/projects/`) are imported automatically the first time you open ComfyArt; the files are left in place. The interface starts in ComfyUI's language and can be switched from the settings menu.
 
@@ -98,7 +98,7 @@ Setup for Claude Code, Codex, Gemini CLI, Qwen Code, Cursor, VS Code, Claude Des
 - `/comfyart/wavespeed/*` (run, history, cancel, models) submits jobs to WaveSpeed with `WAVESPEED_API_KEY`.
 - `/comfyart/bot/*` (chats, send, stop, branch, answers), `/comfyart/settings` and `/comfyart/mcp` serve the Agent.
 - `POST /comfyart/pdf` renders up to 30 pages of an uploaded PDF to PNG files in `input/comfyart/pdf/` and returns them with each page's text.
-- `POST /comfyart/ocr` reads the text lines of an image (RapidOCR, on device) and returns each line with its box.
+- `POST /comfyart/ocr` reads the text lines of an image with WaveSpeed's `paddle-ocr` model (needs the WaveSpeed Key) and returns each line with its box.
 
 ## Development
 
