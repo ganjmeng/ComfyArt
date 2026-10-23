@@ -1,11 +1,14 @@
 // #156: run the real export button once per format against a mock editor; write the produced files to OUT_DIR.
 import { writeFileSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import { DOMParser, XMLSerializer } from '@xmldom/xmldom'
 import { ExportDialog, exportAtom } from '../../../src/ui/ExportDialog'
 import { resetHooks } from './react'
 import { downloads } from './psd'
 
 const out = process.env.OUT_DIR!
+// #176: pptx.ts uses the browser's DOMParser/XMLSerializer; node has none, so supply xmldom's.
+Object.assign(globalThis, { DOMParser, XMLSerializer })
 const fix = process.env.FIXTURES!
 const g = globalThis as Record<string, unknown>
 const net: string[] = []

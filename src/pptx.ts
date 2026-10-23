@@ -74,21 +74,34 @@ function textRuns(doc: RichDoc, k: number): PptxGenJS.TextProps[] {
   })
 }
 
-// #176: pptxgenjs 4.0.1 emits an <a:pPr> before every run of a multi-run paragraph (it fills each run with the text
-// box's align/indent/bullet), which is invalid OOXML (pPr must be the single first child of <a:p>) and makes PowerPoint
-// offer a repair. Align is set once on the text box (never per run); after writing, keep only each paragraph's first pPr.
-const PPR = /<a:pPr\b[^>]*?(?:\/>|>[\s\S]*?<\/a:pPr>)/g
-export function onePprPerParagraph(xml: string) {
-  return xml.replace(/<a:p>[\s\S]*?<\/a:p>/g, (p) => {
-    let seen = false
-    return p.replace(PPR, (m) => (seen ? '' : ((seen = true), m)))
-  })
+// #176: pptxgenjs 4.0.1 writes an <a:pPr> before *every run* of a multi-run paragraph (genXmlTextBody fills each run
+// with the text box's align/indent/bullet and emits paragraph props per run). OOXML allows one pPr, as the first child of
+// <a:p>, so PowerPoint offers a repair. Align is set once on the text box, never per run; after writing we parse each
+// slide/layout/master part as XML and drop only the *extra* pPr children of each <a:p> (the first one stays; runs, rPr
+// and everything else are untouched). Parts with no duplicates are left byte-for-byte as written.
+// Recheck on any pptxgenjs upgrade: if it stops emitting per-run pPr this becomes a no-op and can be removed.
+const A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+const PART = /^ppt\/(slides|slideLayouts|slideMasters|notesSlides)\/[^/]+\.xml$/
+
+export function dropExtraParagraphProps(xml: string): string | null {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml')
+  let changed = false
+  for (const p of Array.from(doc.getElementsByTagNameNS(A_NS, 'p'))) {
+    const pprs = Array.from(p.childNodes).filter((c) => c.nodeType === 1 && (c as Element).namespaceURI === A_NS && (c as Element).localName === 'pPr')
+    for (const extra of pprs.slice(1)) {
+      p.removeChild(extra)
+      changed = true
+    }
+  }
+  return changed ? new XMLSerializer().serializeToString(doc) : null
 }
 
 function fixParagraphs(data: Uint8Array) {
   const files = unzipSync(data)
   for (const name of Object.keys(files)) {
-    if (/^ppt\/(slides|slideLayouts|slideMasters|notesSlides)\/[^/]+\.xml$/.test(name)) files[name] = strToU8(onePprPerParagraph(strFromU8(files[name])))
+    if (!PART.test(name)) continue
+    const fixed = dropExtraParagraphProps(strFromU8(files[name]))
+    if (fixed !== null) files[name] = strToU8(fixed)
   }
   return zipSync(files)
 }
