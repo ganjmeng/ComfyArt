@@ -1,3 +1,4 @@
+import { agentError, agentErrorText } from './wsErrors'
 import { react, type Editor, type TLImageShape, type TLShapeId, type TLVideoShape } from 'tldraw'
 
 import * as actions from './actions'
@@ -168,7 +169,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
   if (outcome === 'declined') return { ...COST_DECLINED }
   if (outcome === 'error') {
     const err = resultsAtom.get()[id]?.error
-    throw new Error(err || 'generation submit failed')
+    throw new Error(err ? agentErrorText(err) : 'generation submit failed')
   }
   if (notes?.en) return { ids: [id], model: model.id, duration, duration_note: notes, note: `call wait_generation with these ids; the video is ${duration}s, not the ${args.duration}s asked: tell the user (duration_note, in their language)` }
   return { ids: [id], model: model.id, ...(video ? { duration } : {}), note: 'call wait_generation with these ids' }
@@ -182,7 +183,7 @@ async function started(editor: Editor, holder: TLShapeId | undefined) {
   if (outcome === 'declined') return { ...COST_DECLINED }
   if (outcome === 'error') {
     const err = resultsAtom.get()[holder]?.error
-    throw new Error(err || 'generation submit failed')
+    throw new Error(err ? agentErrorText(err) : 'generation submit failed')
   }
   return { ids: [holder], note: 'call wait_generation with these ids' }
 }
@@ -204,7 +205,7 @@ function waitResults(editor: Editor, ids: string[], timeout: number) {
       if (/已取消该生成，未扣费|Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed/.test(r.error)) {
         return { id, status: 'declined', cancelled: true, error: r.error }
       }
-      return { id, status: 'error', error: r.error }
+      return { id, status: 'error', ...agentError(r.error) }
     })
   }
   return new Promise<object>((resolve) => {
