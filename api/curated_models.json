@@ -1,7 +1,7 @@
 {
-  "_comment": "Product-curated models per feature (ganjmeng/ComfyArt#95 comment 6355206069, final list from Lovart in-app capture). Single source of truth for the model picker (GET /comfyart/wavespeed/models) and the agent's list_models: api/wavespeed.py load_config() narrows each listed feature in wavespeed_models.json to exactly these ids, in this order (the picker keeps this order: first id first, then Lovart order). 'default' (#134) is the feature default / Auto target when set, else the first id. 'default_params' (#134): request fields the feature default gets when the job leaves them unset (lowest quality tier). Switching the default is a one-line edit of 'default'. Features not listed here keep their wavespeed_models.json models. 'needs' lists request fields every model of that feature must accept (checked by tests against the catalog fixture and by scripts/check_curated_models.py against the live catalog). 'more' (#95 full Lovart list): every other Lovart in-app model that exists on WaveSpeed, in Lovart dropdown order; usable everywhere, shown after the recommended 'models' in the picker, and in list_models only with all=true.",
+  "_comment": "Product-curated models per feature (ganjmeng/ComfyArt#95 comment 6355206069, final list from Lovart in-app capture). Single source of truth for the model picker (GET /comfyart/wavespeed/models) and the agent's list_models: api/wavespeed.py load_config() narrows each listed feature in wavespeed_models.json to exactly these ids, in this order (the picker keeps this order: first id first, then Lovart order). 'default' (#134) is the feature default / Auto target when set, else the first id. 'default_params' (#134, optional): request fields the feature default gets when the job leaves them unset. #189: GPT Image models get none, so quality is never sent and WaveSpeed runs (and prices) its schema default (medium). Switching the default is a one-line edit of 'default'. Features not listed here keep their wavespeed_models.json models. 'needs' lists request fields every model of that feature must accept (checked by tests against the catalog fixture and by scripts/check_curated_models.py against the live catalog). 'more' (#95 full Lovart list): every other Lovart in-app model that exists on WaveSpeed, in Lovart dropdown order; usable everywhere, shown after the recommended 'models' in the picker, and in list_models only with all=true.",
   "features": {
-    "text_to_image": {"needs": ["prompt"], "default": "openai/gpt-image-2.5-flare/text-to-image", "default_params": {"quality": "low"}, "models": [
+    "text_to_image": {"needs": ["prompt"], "default": "openai/gpt-image-2.5-flare/text-to-image", "models": [
       "openai/gpt-image-2/text-to-image",
       "google/nano-banana-2.1/text-to-image",
       "bytedance/seedream-v5.0-pro",
@@ -25,7 +25,7 @@
       "ideogram-ai/ideogram-v4.5",
       "pruna-ai/p-image/ideogram",
       "recraft-ai/recraft-v3"]},
-    "image_edit": {"needs": ["prompt"], "default": "openai/gpt-image-2.5-flare/edit", "default_params": {"quality": "low"}, "models": [
+    "image_edit": {"needs": ["prompt"], "default": "openai/gpt-image-2.5-flare/edit", "models": [
       "openai/gpt-image-2/edit",
       "google/nano-banana-2.1/edit",
       "bytedance/seedream-v5.0-pro/edit",

@@ -282,3 +282,25 @@ async def test_clamp_sizes_for_quote_and_submitted_crop(curated, monkeypatch, pa
     assert crop.size == size
     assert sizes == [size, size]  # estimate + submit both priced/sent at the clipped size
     assert est["source"] == "quote" and est["price"] == pytest.approx(0.039) and curated["submits"]
+
+
+@pytest.mark.parametrize("model", [None, SUNBURST, FLARE])
+async def test_189_edit_sends_no_quality_and_quote_equals_medium_charge(curated, monkeypatch, model):
+    """#189: no quality pin; the mock price API (like WaveSpeed) prices a missing quality at the default medium tier,
+    so quote = charge = $0.039 (sunburst/flare edit, medium, 1k)."""
+    tiers = {"low": 0.013, "medium": 0.039, "high": 0.156}
+    seen = []
+
+    def price(inp):
+        seen.append(dict(inp))
+        return tiers[inp.get("quality", "medium")]
+    for m in (SUNBURST, FLARE):
+        curated["prices"][m] = price
+    inputs = {"feature": "image_edit", "image": put("o.png", png(noise(256, 256))), "mask": put("m.png", comfy_mask(100, 100, (10, 10, 50, 50))),
+              "paste": {"x": 20, "y": 20, "w": 100, "h": 100}, "prompt": "x", **({"model": model} if model else {})}
+    est = await wavespeed.estimate(dict(inputs))
+    await wavespeed.submit(dict(inputs))
+    [(sent, payload)] = curated["submits"]
+    assert sent == (model or SUNBURST)
+    assert "quality" not in payload and all("quality" not in q for q in seen)
+    assert est["source"] == "quote" and est["price"] == pytest.approx(0.039) == price(payload)
