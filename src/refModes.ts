@@ -1,6 +1,8 @@
 import type { ModelDef } from './models'
 import type { GeneratorShape } from './shapes/GeneratorShape'
 import { t } from './i18n'
+import { annotated } from './workflows'
+import { api, askCost } from './comfy'
 
 export interface RefMode {
   id: string
@@ -62,6 +64,20 @@ export const refLimit = (model: ModelDef) => (model.refs === 'qwen' ? QWEN_EDIT_
 
 export function modesFor(model: ModelDef): RefMode[] {
   return model.refs ? REF_MODES : model.control ? REF_MODES.filter((m) => m.control) : []
+}
+
+/** Upstream previewControl, now a cloud extraction (#81): the backend builds the same control map the job uses. */
+export async function previewControl(src: string, mode: RefMode, res: number): Promise<string> {
+  const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+  const inputs = { image: annotated(src), mode: mode.id, res }
+  let r = await api('/comfyart/wavespeed/control_preview', { ...init, body: JSON.stringify({ inputs }) })
+  if (r.status === 409) {
+    const price = (await r.json().catch(() => null))?.error?.confirm_usd
+    if (typeof price !== 'number' || !(await askCost(price))) throw new Error(t('jobs.costDeclined'))
+    r = await api('/comfyart/wavespeed/control_preview', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
+  }
+  if (!r.ok) throw new Error((await r.json().catch(() => null))?.error?.message ?? `preview failed: ${r.status}`)
+  return URL.createObjectURL(await r.blob())
 }
 
 export interface UsedRef { src: string; mode: RefMode }

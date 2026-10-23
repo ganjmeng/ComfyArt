@@ -812,6 +812,24 @@ async def _control_map(c: dict, size, res_default: int = 1024):
     return refprep.process_image(data, refprep.POSE_FALLBACK if mode in refprep.EXTRACTED else mode, res, size, resize)
 
 
+async def control_preview(inputs: dict) -> bytes:
+    """Upstream previewControl (#81): the control map one structure / color ref produces, as PNG.
+    Filtered modes are local Pillow filters (free); depth / normal / seg run their paid cloud map call
+    first, so they go through the same cost confirmation as a job. Pose has no cloud estimator: the
+    preview is the soft-edge map the flux path uses (the z-image default path extracts its skeleton itself)."""
+    image, mode = str(inputs.get("image") or ""), str(inputs.get("mode") or "")
+    if not image or not mode:
+        raise WaveSpeedError("image and mode are required", 400)
+    res = int(inputs.get("res") or 1024)
+    if mode in refprep.CLOUD_MAP and not inputs.get("confirmed"):
+        price, _ = await quote(resolve_model(refprep.CLOUD_MAP[mode][0], None), {})
+        if price is not None and needs_confirm(price):
+            raise WaveSpeedError(f"control map preview costs about ${price}; confirm to continue", 409, confirm=float(price))
+    if mode in refprep.COLOR:
+        return refprep.process_bytes(await _source_bytes(image), mode, res)
+    return refprep.to_png(await _control_map({"image": image, "mode": mode, "res": res}, None))
+
+
 async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> dict:
     """Structure control (#80): every structure ref becomes the control model's fields with its knobs;
     color modes replace their reference with the processed image (upstream preprocessor nodes)."""
@@ -1191,6 +1209,19 @@ async def wavespeed_run(request: web.Request) -> web.Response:
     except aiohttp.ClientError as e:
         return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}"))
     return web.json_response({"prompt_id": f"ws:{task}"})
+
+
+@routes.post("/comfyart/wavespeed/control_preview")
+async def wavespeed_control_preview(request: web.Request) -> web.Response:
+    inputs = (await json_body(request)).get("inputs")
+    if not isinstance(inputs, dict):
+        return error("inputs must be an object", 400)
+    try:
+        return web.Response(body=await control_preview(inputs), content_type="image/png")
+    except WaveSpeedError as e:
+        return _respond_error(e)
+    except aiohttp.ClientError as e:
+        return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}"))
 
 
 @routes.post("/comfyart/wavespeed/estimate")
