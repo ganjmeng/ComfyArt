@@ -153,32 +153,44 @@ export function inpaint(e: Editor, shape: TLImageShape, mask: HTMLCanvasElement,
   const bounds = maskBounds(mask)
   if (!bounds) return
   const k = src.w / mask.width
-  void feather // the cloud edit model blends the region itself
+  const crop = cropAround({ x: bounds.x * k, y: bounds.y * k, w: bounds.w * k, h: bounds.h * k }, src.w, src.h)
   const holder = spawnHolder(e, shape)
   void startJob(e, holder, (async () => {
-    return regionEdit(src, { x: bounds.x * k, y: bounds.y * k, w: bounds.w * k, h: bounds.h * k }, prompt)
+    const file = await maskFile(crop.w, crop.h, (ctx) => {
+      ctx.filter = `blur(${feather}px)`
+      ctx.drawImage(mask, crop.x / k, crop.y / k, crop.w / k, crop.h / k, 0, 0, crop.w, crop.h)
+    })
+    return regionGraph(src.image, crop, file, prompt)
   })(), { name: t('actions.inpaint', src.name) }, err)
   return holder
 }
 
-function regionEdit(src: Source, r: Crop, prompt: string): Promise<Built> {
-  const box = `x ${Math.round(r.x)}-${Math.round(r.x + r.w)}, y ${Math.round(r.y)}-${Math.round(r.y + r.h)} (image is ${src.w}x${src.h} px)`
-  return cloud(wsBuilt({ feature: 'image_edit', custom: 'inpaint', image: src.image, width: src.w, height: src.h, prompt: `Only inside the area ${box}: ${prompt}. ${keep}` }))
-}
-
-function moveEdit(src: Source, what: string, dx: number, dy: number): Promise<Built> {
-  const dir = `${Math.round(Math.abs(dx))} px ${dx < 0 ? 'left' : 'right'} and ${Math.round(Math.abs(dy))} px ${dy < 0 ? 'up' : 'down'}`
-  return cloud(wsBuilt({ feature: 'image_edit', image: src.image, width: src.w, height: src.h, prompt: `Move ${what} ${dir} (image is ${src.w}x${src.h} px), fill the old spot with matching background. ${keep}` }))
+/** #45 like the original touchGraph: only the crop goes to the edit model (masked edits default to
+ * gpt-image-2.5-sunburst/edit, backend), its result is pasted back with the mask, so pixels outside stay as they were. */
+export function regionGraph(image: string, crop: Crop, mask: string, prompt: string): Built {
+  return wsBuilt({ feature: 'image_edit', custom: 'inpaint', image, mask, paste: crop, prompt: `${prompt}. ${keep}` })
 }
 
 export function editRegion(e: Editor, shape: TLImageShape, region: Crop, prompt: string, err: ErrorSink) {
   const src = source(e, shape)
   if (!src) return
+  const crop = cropAround(region, src.w, src.h)
+  const feather = Math.max(4, Math.min(crop.w, crop.h) * 0.04)
   const holder = spawnHolder(e, shape)
   void startJob(e, holder, (async () => {
-    return regionEdit(src, region, prompt)
+    const mask = await maskFile(crop.w, crop.h, (ctx) => {
+      ctx.filter = `blur(${feather}px)`
+      ctx.fillRect(region.x - crop.x, region.y - crop.y, region.w, region.h)
+    })
+    return regionGraph(src.image, crop, mask, prompt)
   })(), { name: t('actions.localEdit', src.name) }, err)
   return holder
+}
+
+/** #45 like the original moveGraph: cloud erase on a crop around the old spot (mask grown 12 px), then the
+ * object's own pixels are composited at the new spot locally. No edit model is called. */
+export function moveGraph(image: string, mask: string, dx: number, dy: number): Built {
+  return wsBuilt({ feature: 'move_object', image, mask, dx: Math.round(dx), dy: Math.round(dy) })
 }
 
 export function moveObject(e: Editor, shape: TLImageShape, mask: HTMLCanvasElement, dx: number, dy: number, err: ErrorSink) {
@@ -186,11 +198,10 @@ export function moveObject(e: Editor, shape: TLImageShape, mask: HTMLCanvasEleme
   const bounds = maskBounds(mask)
   if (!src || !bounds) return
   const k = src.w / mask.width
-  const from = { x: Math.round(bounds.x * k), y: Math.round(bounds.y * k), w: Math.round(bounds.w * k), h: Math.round(bounds.h * k) }
-  const to = { x: Math.round(from.x + dx * k), y: Math.round(from.y + dy * k) }
   const holder = spawnHolder(e, shape)
   void startJob(e, holder, (async () => {
-    return moveEdit(src, `the object at x ${from.x}-${from.x + from.w}, y ${from.y}-${from.y + from.h}`, to.x - from.x, to.y - from.y)
+    const file = await maskFile(src.w, src.h, (ctx) => ctx.drawImage(mask, 0, 0, src.w, src.h))
+    return moveGraph(src.image, file, dx * k, dy * k)
   })(), { name: t('actions.moveObject', src.name) }, err)
   return holder
 }
@@ -200,7 +211,12 @@ export function moveTarget(e: Editor, shape: TLImageShape, target: { text: strin
   if (!src) return
   const holder = spawnHolder(e, shape)
   void startJob(e, holder, (async () => {
-    return moveEdit(src, 'text' in target ? `the ${target.text}` : `the object at pixel (${Math.round(target.x)}, ${Math.round(target.y)})`, dx, dy)
+    const sam = samGraph(src.image, target)
+    const [ref] = await waitForImages(await queuePrompt(sam.graph), sam.result)
+    const mask = lumaToAlpha(await loadImage(viewUrl(ref)), src.w, src.h)
+    if (!maskBounds(mask)) throw new Error(t('actions.noObjectFound'))
+    const file = await maskFile(src.w, src.h, (ctx) => ctx.drawImage(mask, 0, 0))
+    return moveGraph(src.image, file, dx, dy)
   })(), { name: t('actions.moveObject', src.name) }, err)
   return holder
 }
@@ -289,10 +305,28 @@ export function commentTarget(e: Editor, comment: CommentShape) {
 export function touchEdit(e: Editor, comment: CommentShape, err: ErrorSink) {
   const target = commentTarget(e, comment)
   if (!target) return
-  const { shape, src, region } = target
+  const { shape, src, marked, region } = target
+  const { kind, path } = comment.props
+  const crop = cropAround(region, src.w, src.h)
+  const [cw, ch] = [crop.w, crop.h]
+  const feather = Math.max(4, Math.min(cw, ch) * 0.04)
   const holder = spawnHolder(e, shape)
   void startJob(e, holder, (async () => {
-    return regionEdit(src, region, comment.props.text)
+    const object = marked && lumaToAlpha(await loadImage(marked.src), src.w, src.h)
+    const mask = await maskFile(cw, ch, (ctx) => {
+      const [rx, ry, rw, rh] = [region.x - crop.x, region.y - crop.y, region.w, region.h]
+      ctx.filter = `blur(${feather}px)`
+      if (object) {
+        for (let i = 0; i < 3; i++) ctx.drawImage(object, -crop.x, -crop.y)
+        return
+      }
+      ctx.beginPath()
+      if (kind === 'lasso') path.split(' ').map((p) => p.split(',').map(Number)).forEach(([u, v], i) => (i ? ctx.lineTo(rx + u * rw, ry + v * rh) : ctx.moveTo(rx + u * rw, ry + v * rh)))
+      else if (kind === 'point') ctx.ellipse(rx + rw / 2, ry + rh / 2, rw / 2, rh / 2, 0, 0, Math.PI * 2)
+      else ctx.rect(rx, ry, rw, rh)
+      ctx.fill()
+    })
+    return regionGraph(src.image, crop, mask, comment.props.text)
   })(), { name: t('actions.localEdit', src.name) }, err).then(() => {
     const r = resultsAtom.get()[holder]
     if (r) void notify({ kind: 'comment', title: r.error ? t('actions.commentEditFailed') : t('actions.commentEditDone'), body: comment.props.text.trim() || undefined, srcs: r.srcs })

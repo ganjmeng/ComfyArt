@@ -84,7 +84,8 @@ def _auto_choice(action: str, args: dict) -> dict | None:
             reason = {"zh": "只有 1 张参考图（或底图），用图片编辑的默认模型就够了",
                       "en": "there is one reference (or base) image, which the image-edit default model handles"}
         return {"model": cfg["features"]["image_edit"]["default"], "auto": not args.get("model"), "category": "references", "reason": reason}
-    return choose(feature, str(args.get("prompt") or ""), str(args.get("model") or "") or None, cfg)
+    masked = action in (load_table()[feature].get("masked") or {}).get("tools", [])
+    return choose(feature, str(args.get("prompt") or ""), str(args.get("model") or "") or None, cfg, masked=masked)
 
 
 def _tool(description: str, properties: dict, required: list[str] = (), **relay) -> dict:
@@ -182,7 +183,7 @@ SPECS: dict[str, dict] = {
         "Repaint only a region of an image shape following prompt; the rest stays untouched. x/y/width/"
         "height are in the image's own pixels (get_canvas pixels gives its size; comments sent by the "
         "user carry a ready region).",
-        {"id": _ID, **_REGION, "prompt": {"type": "string"}}, ["id", "x", "y", "width", "height", "prompt"],
+        {"id": _ID, **_REGION, "prompt": {"type": "string"}, "model": _MODEL_AUTO}, ["id", "x", "y", "width", "height", "prompt"],
         approval="局部重绘"),
     "erase_region": _tool(
         "Remove whatever is inside a region of an image shape and fill it with the surrounding "

@@ -42,6 +42,11 @@ export interface WsInputs {
   params?: Record<string, unknown>
   /** custom_workflow action (customMarkers.ts) this job belongs to; the user's model replaces the built-in one. */
   custom?: string
+  /** #45 region edit: crop box in image pixels; only this crop is edited, then pasted back with `mask` (crop-sized). */
+  paste?: { x: number; y: number; w: number; h: number }
+  /** #45 move object offset in image pixels (feature move_object). */
+  dx?: number
+  dy?: number
 }
 
 export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null; vendor?: string; recommended?: boolean; qualities?: string[]; aspect_ratios?: string[]; durations?: number[]; resolutions?: string[]; defaults?: Record<string, string | number>; name?: string; blurb?: { zh: string; en: string } }
