@@ -44,7 +44,7 @@ export function VoiceButton({ onText, onError }: { onText: (text: string) => voi
   const title = state === 'recording' ? t('voiceButton.clickToStopRecording') : state === 'processing' ? t('commentPanel.detecting') : t('voiceButton.voiceInput')
   const est = state === 'processing' && quote
     ? quote.durationEstimated
-      ? <span className="ca-gen__est ca-voice__est" data-testid="ws-voice-estimate" title={t('wsKey.durationEstimated')}><span className="ca-voice__est-note">{t('wsKey.durationEstimated')}</span>{quote.price != null ? <span>{` ≈$${quote.price.toFixed(4).replace(/0+$/, '')}`}</span> : null}</span>
+      ? <span className="ca-gen__est ca-voice__est" data-testid="ws-voice-estimate" title={t('wsKey.durationEstimated')}><span className="ca-voice__est-note">{t('wsKey.durationEstimatedShort')}</span>{quote.price != null ? <span>{` ≈$${quote.price.toFixed(4).replace(/0+$/, '')}`}</span> : null}</span>
       : quote.price != null ? <span className="ca-gen__est" data-testid="ws-voice-estimate">{`≈$${quote.price.toFixed(4).replace(/0+$/, '')}`}</span> : null
     : null
   return (

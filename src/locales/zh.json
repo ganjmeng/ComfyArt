@@ -1185,6 +1185,7 @@
   "wsKey.estimated": "估算价 {0}（暂时查不到实时价格）",
   "wsKey.estimatedTag": "估算价",
   "wsKey.durationEstimated": "读不到音频时长，按 60 秒估算，实际按时长扣费",
+  "wsKey.durationEstimatedShort": "按 60 秒估算",
   "wsKey.unpricedTag": "价格待确认",
   "wsKey.unpriced": "暂时查不到准确价格，生成前会再确认",
   "wsKey.fromEnv": "来自环境变量",
