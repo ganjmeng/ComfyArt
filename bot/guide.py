@@ -20,7 +20,7 @@ AGENT_GUIDE = (
     "edit_elements (text in a picture becomes editable text), create_mockup + "
     "place_design (print a design onto a product photo); extend_video, "
     "upscale_video, remove_video_background for videos.\n"
-    "- Audio and 3D: generate_music, text_to_speech "
+    "- Audio and 3D: generate_music, generate_sound_effect, text_to_speech "
     "(voiceover, or voice cloning from an audio shape), image_to_3d.\n"
     "- For a task with several steps, show the plan with update_plan and "
     "keep it current as steps finish.\n"
@@ -67,6 +67,7 @@ CORE_MCP_TOOLS = [
     "upscale_video",
     "remove_video_background",
     "generate_music",
+    "generate_sound_effect",
     "text_to_speech",
     "edit_elements",
     "create_mockup",

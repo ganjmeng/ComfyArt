@@ -162,6 +162,10 @@ SPECS: dict[str, dict] = {
         "instrumental). duration in seconds (default 30). Returns ids for wait_generation.",
         {"prompt": {"type": "string"}, "lyrics": {"type": "string"}, "duration": {"type": "integer"}},
         ["prompt"], approval="生成配乐"),
+    "generate_sound_effect": _tool(
+        "Generate a short sound effect (an audio element) from an English description. duration in "
+        "seconds (default 8; Stable Audio is trained on clips up to 47 s). Returns ids for wait_generation.",
+        {"prompt": {"type": "string"}, "duration": {"type": "integer"}}, ["prompt"], approval="生成音效"),
     "text_to_speech": _tool(
         "Read text aloud as an audio element. voice is a built-in voice id (zf_/zm_ Chinese female/male, "
         "af_/am_ American, bf_/bm_ British, jf_/jm_ Japanese; default zf_xiaoxiao; or the Qwen3-TTS speakers "
