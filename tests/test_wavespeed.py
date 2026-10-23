@@ -235,14 +235,16 @@ async def test_app_concurrency_limit(ws, monkeypatch):
 
 
 async def test_list_models_curated_only(ws):
-    out = await canvas.TOOLS["list_models"]["handler"]({})
+    out = await canvas.TOOLS["list_models"]["handler"]({"type": "image"})
     t2i = out["features"]["text_to_image"]
     ids = [m["id"] for m in t2i["models"]]
     assert t2i["default"] == T2I and ids[0] == T2I
     assert "made/up-model" not in ids and len(ids) == len(wavespeed.load_config()["features"]["text_to_image"]["models"])
-    assert next(m for m in t2i["models"] if m["id"] == T2I)["price"] == 0.03
-    assert out["features"]["image_to_video"]["available"] is True
-    assert out["features"]["split_layers"]["available"] is True and out["features"]["segment"]["available"] is True
+    assert next(m for m in t2i["models"] if m["id"] == T2I)["usd"] == 0.03
+    # unavailable (pending) features are left out of list_models
+    assert "image_to_video" in (await canvas.TOOLS["list_models"]["handler"]({"type": "video"}))["features"]
+    tools = (await canvas.TOOLS["list_models"]["handler"]({"type": "image_tools"}))["features"]
+    assert "split_layers" in tools and "segment" in tools
     assert "model" in canvas.TOOLS["edit_image"]["inputSchema"]["properties"]
 
 

@@ -231,6 +231,46 @@ async def grouped_models(refresh: bool = False) -> dict:
     return out
 
 
+AUDIO_FEATURES = {"music", "sound_effect", "text_to_speech", "voice_clone", "transcribe"}
+MODEL_KINDS = ("image", "image_tools", "video", "audio", "3d")
+
+
+def feature_kind(name: str) -> str:
+    if "3d" in name:
+        return "3d"
+    if "video" in name or name in ("motion_control", "lip_sync"):
+        return "video"
+    if name in AUDIO_FEATURES:
+        return "audio"
+    return "image" if name in ("text_to_image", "image_edit") else "image_tools"
+
+
+def compact_models(grouped: dict, kind: str | None = None, tool_features: dict | None = None) -> dict:
+    """list_models output small enough for the agent's 4000-char tool-result cap (bot/_cli_common.py).
+
+    No kind: each available feature's default plus the kinds to ask for. kind (image/video/audio/3d
+    or a feature name): those features' ids with price and the duration/ratio/resolution choices."""
+    live = {n: f for n, f in grouped.items() if f.get("available", True)}
+    if not kind:
+        return {"defaults": {n: f["default"] for n, f in live.items()},
+                "kinds": {k: [n for n in live if feature_kind(n) == k] for k in MODEL_KINDS},
+                "hint": "call list_models with type image, image_tools, video, audio, 3d or a feature name to get all ids and prices"}
+    names = [kind] if kind in live else [n for n in live if feature_kind(n) == kind]
+    if not names:
+        raise WaveSpeedError(f"unknown type {kind!r}; use one of {', '.join(MODEL_KINDS)} or a feature name", 400)
+    keep = ("durations", "aspect_ratios", "resolutions", "max_images")
+    tools: dict[str, list[str]] = {}
+    for tool, feature in (tool_features or {}).items():
+        tools.setdefault(feature, []).append(tool)
+    # generate_video runs both text-to-video and image-to-video ids (src/models.ts VIDEO_MODELS)
+    if "generate_video" in tools.get("image_to_video", []):
+        tools.setdefault("text_to_video", []).insert(0, "generate_video")
+    return {n: {"tools": tools.get(n, []), "default": live[n]["default"],
+                "models": [{"id": m["id"], "usd": m.get("price"), **{k: m[k] for k in keep if m.get(k)}}
+                           for m in live[n]["models"]]}
+            for n in names}
+
+
 def resolve_model(feature: str, model: str | None) -> str:
     config = load_config()
     cfg = config["features"].get(feature)
@@ -239,7 +279,8 @@ def resolve_model(feature: str, model: str | None) -> str:
     if not model:
         return cfg["default"]
     if model not in [m["id"] for m in cfg["models"]]:
-        raise WaveSpeedError(f"unknown model {model!r} for {feature}; pick one from list_models", 400)
+        valid = ", ".join(m["id"] for m in cfg["models"])
+        raise WaveSpeedError(f"unknown model {model!r} for {feature}; valid ids: {valid} (default {cfg['default']})", 400)
     return model
 
 
