@@ -58,3 +58,10 @@ def test_auto_ignores_earlier_manual_pick(result):
 def test_dropdown_follows_backend_picker_order_and_shows_display_name(result):
     assert result["tabs"]["text_to_video"] == ["kwaivgi/kling-v3.0-pro/text-to-video", "bytedance/seedance-2.0/text-to-video"]
     assert result["row"]["label"] == "GPT Image 2" and result["row"]["desc"] in ("English blurb", "中文描述")
+
+
+def test_frontend_reads_backend_default_without_reordering(result):
+    # #134: the default comes from the backend's single 'default' value; the dropdown keeps its order
+    assert result["defaultT2i"] == "openai/gpt-image-2.5-flare/text-to-image"
+    assert result["agentFirst"] == "openai/gpt-image-2.5-flare/text-to-image"
+    assert result["tabs"]["text_to_image"][0] == "openai/gpt-image-2/text-to-image"

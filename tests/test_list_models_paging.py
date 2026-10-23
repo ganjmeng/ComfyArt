@@ -31,6 +31,11 @@ def _cfg():
     return wavespeed.load_config()["features"]
 
 
+def _agent_order(f: dict, ids: list[str]) -> list[str]:
+    """#134: list_models shows the feature default first, the rest in curated order."""
+    return sorted(ids, key=lambda i: i != f["default"])
+
+
 async def _pages(kind):
     first = await canvas._list_models({"type": kind, "all": True})
     pages = [first] + [await canvas._list_models({"type": kind, "all": True, "page": p}) for p in range(2, first["pages"] + 1)]
@@ -55,14 +60,14 @@ async def test_all_pages_cover_every_model_once_in_order(kind):
             seen.setdefault(n, []).extend(m["id"] for m in f["models"])
             assert f["total"] == len(_cfg()[n]["models"])
     for n, ids in seen.items():
-        assert ids == [m["id"] for m in _cfg()[n]["models"]]
+        assert ids == _agent_order(_cfg()[n], [m["id"] for m in _cfg()[n]["models"]])
 
 
 async def test_default_view_is_recommended_first_with_hint():
     res = await canvas._list_models({"type": "image"})
     out = res["features"]
     cfg = _cfg()
-    assert [m["id"] for m in out["text_to_image"]["models"]] == cfg["text_to_image"]["recommended"]
+    assert [m["id"] for m in out["text_to_image"]["models"]] == _agent_order(cfg["text_to_image"], cfg["text_to_image"]["recommended"])
     assert out["text_to_image"]["models"][0]["id"] == cfg["text_to_image"]["default"]
     total = sum(len(cfg[n]["models"]) for n in out)
     rec = sum(len(f["models"]) for f in out.values())
@@ -73,7 +78,7 @@ async def test_default_view_is_recommended_first_with_hint():
 
 
 async def test_model_id_details_and_tiers():
-    out = (await canvas._list_models({"model_id": "openai/gpt-image-2.5-sunburst/text-to-image"}))["model"]
+    out = (await canvas._list_models({"model_id": "openai/gpt-image-2.5-flare/text-to-image"}))["model"]
     assert out["features"] == ["text_to_image"] and out["tiers"][:3] == ["low", "medium", "high"]
     assert "aspect_ratios" in out and _len(out) <= TOOL_RESULT_CAP
     with pytest.raises(wavespeed.WaveSpeedError, match="unknown model"):
@@ -100,13 +105,14 @@ def _tier(price: float | None) -> str:
 # price tier as the Lovart default for that request. Lovart defaults are EL's in-app capture (#95 comments
 # 6355196537 / 6355356309): canvas image generator GPT Image 2 (15 credits), video generator Seedance 2.0
 # 5s 720p (90 credits). Lovart's generators reuse the same model when reference images are attached, so
-# image_edit / image_to_video map to the same models' edit / i2v endpoints.
+# image_edit / image_to_video map to the same models' edit / i2v endpoints. #134: the image reference is
+# now the product default gpt-image-2.5 flare (text-to-image / edit).
 REQUESTS = [
-    ("产品海报，白底", "image", "text_to_image", "openai/gpt-image-2/text-to-image"),
-    ("给这张图换背景", "image", "image_edit", "openai/gpt-image-2/edit"),
-    ("赛博朋克城市夜景插画", "image", "text_to_image", "openai/gpt-image-2/text-to-image"),
-    ("logo 草图上色", "image", "image_edit", "openai/gpt-image-2/edit"),
-    ("电商主图 4 张", "image", "text_to_image", "openai/gpt-image-2/text-to-image"),
+    ("产品海报，白底", "image", "text_to_image", "openai/gpt-image-2.5-flare/text-to-image"),
+    ("给这张图换背景", "image", "image_edit", "openai/gpt-image-2.5-flare/edit"),
+    ("赛博朋克城市夜景插画", "image", "text_to_image", "openai/gpt-image-2.5-flare/text-to-image"),
+    ("logo 草图上色", "image", "image_edit", "openai/gpt-image-2.5-flare/edit"),
+    ("电商主图 4 张", "image", "text_to_image", "openai/gpt-image-2.5-flare/text-to-image"),
     ("5 秒产品旋转视频", "video", "text_to_video", "bytedance/seedance-2.0/text-to-video"),
     ("让这张照片动起来", "video", "image_to_video", "bytedance/seedance-2.0/image-to-video"),
     ("海边日落延时", "video", "text_to_video", "bytedance/seedance-2.0/text-to-video"),

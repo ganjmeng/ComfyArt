@@ -117,21 +117,33 @@ def _headers() -> dict[str, str]:
 
 
 def load_curated() -> dict:
-    """feature -> {"needs": [...], "models": [ids]} from api/curated_models.json (#95); first id = default."""
+    """feature -> {"needs": [...], "models": [ids], "default"?: id} from api/curated_models.json (#95);
+    default = the explicit "default" (#134), else the first id."""
     with open(CURATED, encoding="utf-8") as f:
         return json.load(f)["features"]
 
 
+def model_defaults(model: str) -> dict:
+    """Request fields filled in when a job leaves them unset (#134): a feature's 'default_params' for its 'default' model
+    (the default starts at its lowest quality tier). Keyed by the single 'default' value, so a switch is one edit."""
+    out: dict = {}
+    for cur in load_curated().values():
+        if model and cur.get("default") == model:
+            out.update(cur.get("default_params") or {})
+    return out
+
+
 def apply_curation(cfg: dict, curated: dict) -> dict:
-    """Narrow each curated feature to exactly the curated ids (in order, first = default)."""
+    """Narrow each curated feature to exactly the curated ids (in order; default = "default" if set, else first)."""
     for name, cur in curated.items():
         feature = cfg["features"].get(name)
         if feature is None or not cur.get("models"):
             continue
         old = {m["id"]: m for m in feature["models"]}
         feature["models"] = [old.get(i, {"id": i}) for i in cur["models"] + cur.get("more", [])]
-        feature["recommended"] = list(cur["models"])
-        feature["default"] = cur["models"][0]
+        feature["default"] = cur["default"] if cur.get("default") in cur["models"] + cur.get("more", []) else cur["models"][0]
+        # #134: a default from 'more' (flare edit) is still offered in the agent's recommended view
+        feature["recommended"] = list(cur["models"]) + ([feature["default"]] if feature["default"] not in cur["models"] else [])
     return cfg
 
 
@@ -254,16 +266,17 @@ def display_of(model_id: str) -> dict | None:
 
 
 def picker_order(feature: str, models: list[dict]) -> list[str]:
-    """Dropdown order (#95 product ruling): the feature default first, then Lovart's in-app order;
-    recommended models are not pulled to the top. Features Lovart has no dropdown for keep config order."""
+    """Dropdown order (#95 product ruling): the first curated id first, then Lovart's in-app order;
+    recommended models are not pulled to the top. Features Lovart has no dropdown for keep config order.
+    #134: an explicit feature default does not move in the dropdown (design rule); only Auto points at it."""
     order = _display()["lovart_order"].get({"text_to_image": "image", "image_edit": "image",
                                             "text_to_video": "video", "image_to_video": "video"}.get(feature, ""))
     if not order or not models:
         return [m["id"] for m in models]
     rank = {name: i for i, name in enumerate(order)}
-    default = next((m for m in models if m.get("default")), models[0])
-    rest = sorted((m for m in models if m is not default), key=lambda m: rank.get(m.get("name") or "", len(rank)))
-    return [default["id"]] + [m["id"] for m in rest]
+    first = models[0]
+    rest = sorted(models[1:], key=lambda m: rank.get(m.get("name") or "", len(rank)))
+    return [first["id"]] + [m["id"] for m in rest]
 
 
 def vendor_of(model_id: str) -> str:
@@ -370,7 +383,8 @@ def compact_models(grouped: dict, kind: str | None = None, tool_features: dict |
     def head(n: str) -> dict:
         return {"tools": tools.get(n, []), "default": live[n]["default"], "total": len(live[n]["models"])}
 
-    every = [(n, m) for n in names for m in live[n]["models"]]
+    # the agent sees each feature's default first (#134: the explicit default, not the first dropdown row)
+    every = [(n, m) for n in names for m in sorted(live[n]["models"], key=lambda m: m["id"] != live[n]["default"])]
     chosen = every if all_models else [(n, m) for n, m in every if m.get("recommended", True)]
     # default view: Chinese footer in the same style as the paged one (#95 EL ruling)
     hint = (f"共 {len(every)} 个，当前为推荐 {len(chosen)} 个，查看全部传 all=true、page=1"
@@ -781,7 +795,7 @@ def _ace_music_fields(props: dict, music, payload: dict) -> None:
         payload["tags"] = ", ".join([payload["tags"], *extra])
 
 
-async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: dict) -> dict:
+async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: dict, model: str = "") -> dict:
     """Map ComfyArt's logical inputs onto whatever fields this model's schema accepts."""
     props = schema.get("properties") or {}
     payload: dict = {}
@@ -815,6 +829,9 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
         await _custom_fields(session, inputs, payload)
     for k, v in (inputs.get("params") or {}).items():
         if k in props and v is not None:
+            payload[k] = v
+    for k, v in model_defaults(model).items():
+        if k in props and k not in payload:
             payload[k] = v
     prompt = str(inputs.get("prompt") or "").strip()
     layers = inputs.get("layers")
@@ -890,8 +907,13 @@ def needs_confirm(price: float) -> bool:
     return limit == 0 or price >= limit
 
 
-def _price_inputs(inputs: dict) -> dict:
-    out = {k: inputs[k] for k in _PRICE_FIELDS if isinstance(inputs.get(k), (int, float, str)) and k in inputs}
+def _price_inputs(inputs: dict, model: str = "") -> dict:
+    """Price-relevant fields; a tier picked under params (quality) and #134 model_defaults count too,
+    so the confirm price is the one for the tier that will actually run."""
+    params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+    merged = {**model_defaults(model), **{k: v for k, v in params.items() if v is not None}, **inputs}
+    out = {k: merged[k] for k in _PRICE_FIELDS if isinstance(merged.get(k), (int, float, str)) and k in merged}
+    inputs = merged
     if "ratio" in out:
         out["aspect_ratio"] = out.pop("ratio")
     if isinstance(inputs.get("width"), int) and isinstance(inputs.get("height"), int):
@@ -902,7 +924,7 @@ def _price_inputs(inputs: dict) -> dict:
 async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
     """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes.
     Falls back to the catalog base_price when the quote fails."""
-    body = {"model_id": model, "inputs": _price_inputs(inputs)}
+    body = {"model_id": model, "inputs": _price_inputs(inputs, model)}
     ck = json.dumps(body, sort_keys=True)
     hit = _quotes.get(ck)
     if hit and time.time() - hit[1] < QUOTE_TTL:
@@ -1154,7 +1176,7 @@ async def submit(inputs: dict) -> str:
             # expensive job: the page asks the user and resubmits with confirmed=true
             raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price))
     async with aiohttp.ClientSession(headers=_headers()) as session:
-        payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs))
+        payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())
         # never auto-retry a submit: a retry could be charged twice
         async with session.post(f"{_base()}/api/v3/{model}", json=payload) as res:

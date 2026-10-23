@@ -222,13 +222,13 @@ async def test_confirm_amount_includes_map_calls(ws, monkeypatch):
 
 async def test_color_modes_preprocess_refs_for_edit(ws, monkeypatch):
     import tests.test_wavespeed as tw
-    default = wavespeed.load_curated()["image_edit"]["models"][0]
+    default = wavespeed.load_config()["features"]["image_edit"]["default"]
     monkeypatch.setattr(tw, "MODELS", tw.MODELS + [_meta(default, {"prompt": {"type": "string"}, "images": {"type": "array", "maxItems": 3}}, ("prompt", "images"))])
     a, b = _photo("a.png"), _photo("b.png")
     await wavespeed.submit({"feature": "image_edit", "prompt": "p", "images": [a, b], "prep": [None, "recolor"]})
     model, payload = ws["submits"][0]
-    # #105: no pick -> the curated default (first id), never the last item in the list.
-    assert default == "openai/gpt-image-2/edit"
+    # #105/#134: no pick -> the curated default ("default" field), never the last item in the list.
+    assert default == "openai/gpt-image-2.5-flare/edit"
     assert model == default and ws["uploads"] == 2 and len(payload["images"]) == 2
 
 

@@ -41,6 +41,11 @@ export interface ModelDef {
 export const IMAGE_FEATURES = ['text_to_image', 'image_edit']
 export const VIDEO_FEATURES = ['text_to_video', 'image_to_video']
 export const FEATURE_MODELS: Record<string, ModelDef[]> = {}
+/** Feature default from the backend (#134: explicit `default` in api/curated_models.json, not the first dropdown row). */
+export const FEATURE_DEFAULTS: Record<string, string> = {}
+/** Default model of a feature list: the backend default, else the first entry. Dropdown order is untouched. */
+export const defaultOf = (feature: string, list: ModelDef[]) => list.find((m) => m.id === FEATURE_DEFAULTS[feature]) ?? list[0]
+const defaultFirst = (feature: string, list: ModelDef[]) => { const d = defaultOf(feature, list); return d ? [d, ...list.filter((m) => m !== d)] : list }
 
 export const AUTO_IMAGE = 'auto'
 export const AUTO_VIDEO = 'auto:video'
@@ -72,7 +77,7 @@ export function featurePicks(workflow: string, picks: unknown): Record<string, s
   return isAuto(workflow) ? {} : (picks as Record<string, string> | undefined) ?? {}
 }
 
-/** Dropdown order from the backend (#95): feature default first, then Lovart's in-app order. */
+/** Dropdown order from the backend (#95): first curated id, then Lovart's in-app order (#134: the default does not move). */
 export function byPickerOrder(f: CloudFeature | undefined) {
   if (!f) return []
   const rank = new Map((f.picker_order ?? []).map((id, i) => [id, i]))
@@ -91,7 +96,10 @@ async function useCloudImageModels() {
       ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }),
     }))
   }
-  for (const f of [...IMAGE_FEATURES, ...VIDEO_FEATURES]) FEATURE_MODELS[f] = defs([f], VIDEO_FEATURES.includes(f))
+  for (const f of [...IMAGE_FEATURES, ...VIDEO_FEATURES]) {
+    FEATURE_MODELS[f] = defs([f], VIDEO_FEATURES.includes(f))
+    if (all[f]?.default) FEATURE_DEFAULTS[f] = all[f].default
+  }
   const image = defs(['text_to_image'], false)
   const video = defs(['text_to_video', 'image_to_video'], true)
   if (image.length) IMAGE_MODELS.splice(0, IMAGE_MODELS.length, ...image)
@@ -121,7 +129,8 @@ export function installedModels(video: boolean): ModelDef[] {
 
 export function agentModels(video: boolean): ModelDef[] {
   const { auto, enabled } = modelPrefsAtom.get()
-  const list = installedModels(video)
+  // the feature default leads (#134) so fallbacks and "Auto off" start on it; the picker keeps its own order
+  const list = defaultFirst(video ? 'text_to_video' : 'text_to_image', installedModels(video))
   const picked = auto ? list : list.filter((m) => enabled.includes(m.id))
   return picked.length ? picked : list.length ? list.slice(0, 1) : (video ? VIDEO_MODELS : IMAGE_MODELS).slice(0, 1)
 }

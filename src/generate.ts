@@ -4,7 +4,7 @@ import { defaultTarget, refKind, uploadImage, validTarget, viewUrl, type PromptG
 import type { LoraPick } from './loras'
 import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from './jobs'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
-import { agentModels, AUTO_IMAGE, AUTO_VIDEO, FEATURE_MODELS, featurePicks, isCloudModel, isVideo, modelOf, refCap } from './models'
+import { agentModels, AUTO_IMAGE, AUTO_VIDEO, defaultOf, FEATURE_MODELS, featurePicks, isCloudModel, isVideo, modelOf, refCap } from './models'
 import { CUSTOM_GENERATE } from './customWorkflows'
 import { modelIn, wsBuilt } from './wavespeed'
 import { t } from './i18n'
@@ -90,10 +90,10 @@ export function colorsOf(shape: GeneratorShape): string[] {
 /** User picks for the secondary tabs of the model menu (image_edit, image_to_video); empty while Auto is on. */
 // Auto on: never reuse an earlier manual pick (#95 product ruling) -- the agent's pick or the feature default
 export const featureModelsOf = (shape: GeneratorShape) => featurePicks(shape.props.workflow, shape.meta.featureModels)
-/** The image-edit model reference images go to: the user's pick on that tab, else the feature default (first curated entry). */
+/** The image-edit model reference images go to: the user's pick on that tab, else the feature default (#134: backend `default`). */
 export const editModelOf = (shape: GeneratorShape) => {
   const list = FEATURE_MODELS.image_edit ?? []
-  return list.find((m) => m.id === featureModelsOf(shape).image_edit) ?? list[0]
+  return list.find((m) => m.id === featureModelsOf(shape).image_edit) ?? defaultOf('image_edit', list)
 }
 /** Input images beyond what the edit model accepts (#95): null when all fit, else how many are sent. */
 export const refOverflow = (shape: GeneratorShape) => refCap(editModelOf(shape), (baseOf(shape) ? 1 : 0) + refsOf(shape).length)
