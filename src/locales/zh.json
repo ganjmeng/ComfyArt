@@ -853,6 +853,7 @@
   "refModes.softEdge": "软边缘",
   "refModes.structure": "结构",
   "refModes.style": "风格",
+  "refModes.approx": "近似效果",
   "refModes.tile": "Tile 分块",
   "referencePanel.addReference": "添加参考",
   "referencePanel.addSelected": "添加选中的 {0} 张图片",

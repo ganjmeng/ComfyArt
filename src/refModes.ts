@@ -83,6 +83,10 @@ export function refHints(used: UsedRef[]): string[] {
 }
 
 
+/** Cloud modes that are still approximations of upstream: labelled 「近似效果」 in the menu (#80). */
+export const APPROX_MODES = new Set(['mlsd', 'tile', 'normal', 'seg'])
+for (const m of REF_MODES) if (APPROX_MODES.has(m.id)) m.label = `${m.label}（${t('refModes.approx')}）`
+
 /** Modes with no WaveSpeed model that accepts their map: they stay pickable and fall back to the prompt hint (#80). */
 export const NO_CLOUD_CONTROL = new Set(['normal', 'seg'])
 

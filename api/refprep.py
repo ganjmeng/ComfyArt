@@ -41,10 +41,10 @@ def process(img: Image.Image, mode: str, res: int = 1024, seed: int = 0) -> Imag
         out = _threshold(_edges(img, 0.6), 40).filter(ImageFilter.MaxFilter(3))
     elif mode == "mlsd":
         # straight-line emphasis: keep only long horizontal/vertical-ish edge runs
-        e = _threshold(_edges(img, 1.5), 96)
+        e = _threshold(_edges(img, 1.0), 48).filter(ImageFilter.MaxFilter(3))
         h = e.filter(ImageFilter.Kernel((5, 5), [0] * 10 + [1] * 5 + [0] * 10, 5))
         v = e.filter(ImageFilter.Kernel((5, 5), [0, 0, 1, 0, 0] * 5, 5))
-        out = _threshold(ImageChops.lighter(h, v), 200)
+        out = _threshold(ImageChops.lighter(h, v), 250)
     elif mode == "scribble":
         out = _threshold(_edges(img, 3.0), 80).filter(ImageFilter.MaxFilter(5))
     elif mode == "softedge":

@@ -853,6 +853,7 @@
   "refModes.softEdge": "Soft Edge",
   "refModes.structure": "Structure",
   "refModes.style": "Style",
+  "refModes.approx": "approximate",
   "refModes.tile": "Tile",
   "referencePanel.addReference": "Add Reference",
   "referencePanel.addSelected": "Add {0} selected image(s)",
