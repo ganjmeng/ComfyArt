@@ -168,7 +168,7 @@ SPECS: dict[str, dict] = {
         {"prompt": {"type": "string"}, "duration": {"type": "integer"}}, ["prompt"], approval="生成音效"),
     "text_to_speech": _tool(
         "Read text aloud as an audio element. voice is a built-in voice id (zf_/zm_ Chinese female/male, "
-        "af_/am_ American, bf_/bm_ British, jf_/jm_ Japanese; default zf_xiaoxiao; on Comfy Cloud the Qwen3-TTS speakers "
+        "af_/am_ American, bf_/bm_ British, jf_/jm_ Japanese; default zf_xiaoxiao; or the Qwen3-TTS speakers "
         "Serena, Vivian, Uncle_fu, Dylan, Eric, Ryan, Aiden, Ono_anna, Sohee; default Serena), or pass reference "
         "(an audio shape id) to clone that recording's voice. Returns ids for wait_generation.",
         {"text": {"type": "string"}, "voice": {"type": "string"}, "reference": _ID}, ["text"], approval="生成配音"),
