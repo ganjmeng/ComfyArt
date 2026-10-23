@@ -90,7 +90,9 @@ SPECS: dict[str, dict] = {
         "describe the shot; a tag only mentioned in passing is ignored. motion_video (a video shape id) "
         "makes the person in first_frame copy that video's body motion. speech_audio (an audio shape id) "
         "makes the person in first_frame say that audio with matching lip movement; the video lasts as long "
-        "as the audio. duration in seconds (5, 10 or 15).",
+        "as the audio. duration in seconds (5, 10 or 15); pass what the user asked for: it is rounded up to the "
+        "model's next allowed length (capped at its longest) and a duration_note in the result must be told "
+        "to the user.",
         {"prompt": {"type": "string"}, "model": {"type": "string"}, "ratio": {"type": "string"},
          "duration": {"type": "integer"}, "first_frame": {"type": "string"}, "last_frame": {"type": "string"},
          "reference_images": _IDS, "reference_videos": _IDS, "reference_audios": _IDS,

@@ -8,7 +8,8 @@ import { api } from './comfy'
 import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate } from './generate'
-import { DURATIONS, RATIOS, VIDEO_RATIOS } from './genOptions'
+import { durationNote, fitDuration, RATIOS, VIDEO_RATIOS } from './genOptions'
+import { tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
 import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom, whenSubmitted } from './jobs'
 import { agentModels } from './models'
@@ -132,8 +133,12 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
   if (wantsRefs && !model.refs && !(model.control && args.refs.every((_: unknown, i: number) => modes[i]))) throw new Error(`${model.label} does not accept refs; use a model with accepts_refs from list_models, give every ref a structure ref_mode, or drop refs`)
   const ratios = video ? VIDEO_RATIOS : RATIOS
   if (args.ratio && !ratios.includes(args.ratio)) throw new Error(`ratio must be one of ${ratios.join(', ')}`)
+  // #128: round the asked seconds up to the model's next allowed duration (capped at its longest) and say so
+  const lengths = model.durations?.map(Number)
+  const duration = fitDuration(args.duration, lengths)
+  const notes = video ? { zh: durationNote(args.duration, duration, lengths, (k, ...a) => tl('zh', k, ...a)), en: durationNote(args.duration, duration, lengths, (k, ...a) => tl('en', k, ...a)) } : null
   const props = video
-    ? { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? ratios[0], duration: DURATIONS.includes(args.duration) ? args.duration : DURATIONS[0] }
+    ? { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? ratios[0], duration }
     : { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? '1:1', count: Math.min(4, Math.max(1, Number(args.count) || 1)) }
   const media = video ? [...refUrls(editor, args.reference_images), ...refUrls(editor, args.reference_videos), ...refUrls(editor, args.reference_audios)] : []
   const motion = video && args.motion_video ? refUrls(editor, [args.motion_video])[0] : null
@@ -150,6 +155,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     ...(!video && modes.length ? { refModes: Object.fromEntries(refs.flatMap((src, i) => (modes[i] ? [[src, modes[i]]] : []))) } : {}),
     ...(!video && args.base ? { base: refUrls(editor, [args.base])[0], strength: Number(args.base_strength) || 60 } : {}),
     ...(video && !mode && args.last_frame ? { lastFrame: refUrls(editor, [args.last_frame])[0] } : {}),
+    ...(notes?.en ? { durationAsked: Number(args.duration) } : {}),
   }
   const id = createGenerator(editor, video, props, false)
   editor.updateShape<GeneratorShape>({ id, type: GENERATOR, meta })
@@ -161,7 +167,8 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     const err = resultsAtom.get()[id]?.error
     throw new Error(err || 'generation submit failed')
   }
-  return { ids: [id], model: model.id, note: 'call wait_generation with these ids' }
+  if (notes?.en) return { ids: [id], model: model.id, duration, duration_note: notes, note: `call wait_generation with these ids; the video is ${duration}s, not the ${args.duration}s asked: tell the user (duration_note, in their language)` }
+  return { ids: [id], model: model.id, ...(video ? { duration } : {}), note: 'call wait_generation with these ids' }
 }
 
 async function started(editor: Editor, holder: TLShapeId | undefined) {
@@ -247,7 +254,7 @@ const HANDLERS: Record<string, Handler> = {
   },
   style_transfer: (editor, args, onError) => started(editor, actions.styleTransfer(editor, imageOf(editor, args.id), String(args.style ?? ''), args.ref ? refUrls(editor, [args.ref])[0] : null, onError)),
   vectorize_image: async (editor, args) => ({ id: await vectorize(editor, imageOf(editor, args.id)) }),
-  extend_video: (editor, args, onError) => started(editor, actions.extendVideo(editor, videoOf(editor, args.id), String(args.prompt), DURATIONS.includes(args.duration) ? args.duration : DURATIONS[0], onError)),
+  extend_video: (editor, args, onError) => started(editor, actions.extendVideo(editor, videoOf(editor, args.id), String(args.prompt), fitDuration(args.duration), onError)),
   upscale_video: (editor, args, onError) => {
     const long = (VIDEO_TARGETS.find(([label]) => label === args.target) ?? VIDEO_TARGETS[0])[1]
     return started(editor, actions.upscaleVideo(editor, videoOf(editor, args.id), long, onError))

@@ -684,6 +684,16 @@ def _pick(options: list, value):
     return options[0]
 
 
+def fit_duration(options: list, seconds):
+    """#128: the shortest allowed duration not below the requested seconds, else the longest (3 -> 5, 7 -> 10, 20 -> 15)."""
+    try:
+        want = float(seconds)
+        nums = sorted((float(o), o) for o in options)
+    except (TypeError, ValueError):
+        return _pick(options, seconds)
+    return next((o for n, o in nums if n >= want), nums[-1][1])
+
+
 def _clamp(spec: dict, value):
     """Keep a free numeric value inside the schema's minimum/maximum (e.g. ace-step-1.5 takes 5..240 s)."""
     try:
@@ -728,7 +738,7 @@ def _av_fields(props: dict, required: set, inputs: dict, payload: dict) -> None:
         if "duration" in props:
             spec = props["duration"]
             enum = spec.get("enum")
-            payload["duration"] = _pick(enum, seconds) if enum else _clamp(spec, seconds)
+            payload["duration"] = fit_duration(enum, seconds) if enum else _clamp(spec, seconds)
         elif "music_length_ms" in props:
             payload["music_length_ms"] = int(float(seconds) * 1000)
     if inputs.get("resolution") and props.get("resolution", {}).get("enum"):
@@ -931,7 +941,16 @@ def _price_inputs(inputs: dict, model: str = "") -> dict:
 async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
     """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes.
     Falls back to the catalog base_price when the quote fails."""
-    body = {"model_id": model, "inputs": _price_inputs(inputs, model)}
+    priced = _price_inputs(inputs, model)
+    if "duration" in priced:
+        # #128: quote the duration that will actually be submitted (build_payload rounds it up to the schema enum)
+        try:
+            enum = ((_schema((await catalog()).get(model)).get("properties") or {}).get("duration") or {}).get("enum")
+        except (WaveSpeedError, aiohttp.ClientError, asyncio.TimeoutError, AttributeError):
+            enum = None
+        if enum:
+            priced["duration"] = fit_duration(enum, priced["duration"])
+    body = {"model_id": model, "inputs": priced}
     ck = json.dumps(body, sort_keys=True)
     hit = _quotes.get(ck)
     if hit and time.time() - hit[1] < QUOTE_TTL:
