@@ -54,10 +54,10 @@ async def test_structure_seg_passes_generation_prompt_as_text(maps):
 
 
 async def test_structure_seg_without_prompt_uses_full_image_box(maps):
+    # flux itself needs a prompt, so this checks the seg map step on its own
     wavespeed._map_cache.clear()
-    await wavespeed.submit({"feature": "structure_control", "prompt": "", "width": 512, "height": 512,
-                            "controls": [_ctl("seg", _photo())]})
-    pre = maps["submits"][0][1]
-    assert maps["submits"][0][0] == SAM and "prompt" not in pre
+    await wavespeed._control_map({**_ctl("seg", _photo()), "prompt": ""}, None)
+    model, pre = maps["submits"][0]
+    assert model == SAM and "prompt" not in pre
     box = pre["box_prompts"][0]
     assert box["x_min"] == 0 and box["y_min"] == 0 and box["x_max"] > 0 and box["y_max"] > 0
