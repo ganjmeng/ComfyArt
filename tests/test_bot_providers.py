@@ -146,6 +146,20 @@ class TestSpawnEnv:
         assert spawn_env()["MCP_TOOL_TIMEOUT"] == "5000"
 
 
+
+def _claude_cli_missing() -> bool:
+    """True when the claude CLI is not on PATH / known install paths."""
+    from ComfyArt.bot.claude_code import resolve_claude_command
+    return resolve_claude_command() is None
+
+
+_SKIP_NO_CLAUDE = pytest.mark.skipif(
+    _claude_cli_missing(),
+    reason="claude CLI not found (resolve_claude_command() is None); "
+           "_build_argv needs the binary — install Claude Code or skip on this host",
+)
+
+
 class TestStreamInput:
     def test_envelope_shape(self):
         from ComfyArt.bot.claude_code import build_stream_input
@@ -167,6 +181,7 @@ class TestStreamInput:
         assert content[1]["source"]["media_type"] == "image/png"
         assert content[2]["text"] == "what is this?"
 
+    @_SKIP_NO_CLAUDE
     def test_argv_switches_to_stream_input(self):
         from ComfyArt.bot.claude_code import ClaudeCodeProvider
         from ComfyArt.bot.providers import TurnRequest
@@ -183,6 +198,7 @@ class TestStreamInput:
 
 
 class TestModelOverride:
+    @_SKIP_NO_CLAUDE
     def test_claude_argv_model(self):
         from ComfyArt.bot.claude_code import ClaudeCodeProvider
         from ComfyArt.bot.providers import TurnRequest
