@@ -30,6 +30,8 @@ export interface WsInputs {
   lyrics?: string
   voice?: string
   layers?: number
+  /** ACE-Step only (src/music.ts): tempo, lyrics language and key; build_payload maps them. */
+  music?: { bpm?: number; language?: string; key?: string }
   scenes?: { prompt: string; duration: number }[]
   /** #80 structure control: the backend maps it onto the WaveSpeed control model. */
   control?: { mode: string; strength: number; start: number; end: number; res: number; resize: 'crop' | 'stretch' }

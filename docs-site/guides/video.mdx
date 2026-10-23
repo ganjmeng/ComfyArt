@@ -3,7 +3,7 @@ title: "Video"
 description: "Animate images, generate clips from frames or references, then edit, extend and upscale them."
 ---
 
-All video generation uses MiniMax H3 (see [Models](/guides/models#video)). Editing and upscaling run on core ComfyUI nodes. Every clip comes with sound generated together with the picture.
+All video generation uses MiniMax H3 (see [Models](/guides/models#video)). Upscaling runs on core ComfyUI nodes, and the video editor on the bundled ComfyArt Timeline Render node. Every clip comes with sound generated together with the picture.
 
 ## Animate an image
 
@@ -38,10 +38,28 @@ Select a video for its toolbar:
   <img src="/images/video-toolbar.webp" alt="Video toolbar above a generated clip" />
 </Frame>
 
-- **Crop Video** opens the video editor: trim and split into clips, set each clip's speed and volume, add fade transitions and captions, then **Export as New Video** or **Replace Original Video**.
+- **Crop Video** opens the video editor (see below).
 - **Extend Video** continues the clip from its last frame, with an optional prompt for what happens next.
 - **Upscale** to 1080p, 2K or 4K. Audio and frame rate are kept.
 - **Remove Background** cuts the subject out frame by frame onto black.
 - **Remix** runs the same prompt and settings again with a new seed.
 
 Videos can also be dropped into the chat as references for the Agent. The preview lightbox has a mute toggle.
+
+## Video editor
+
+**Crop Video** opens the editor with the selected video as the first clip. It can cut several videos and a music track into one new video.
+
+<Frame>
+  <img src="/images/video-editor.webp" alt="Video editor with three clips, a music track and beat marks on the timeline" />
+</Frame>
+
+- **Clips**: **Add Clip** appends any video on the current page. Drag a clip's edges to trim it, and use **Split** to cut it at the playhead. Select a clip to set its speed (0.5x to 2x) and volume, mute it, **Move Left** or **Move Right**, or delete it.
+- **Transitions**: click the point between two clips to pick a hard cut, **Fade**, **Fade to Black** or **Fade to White** and set its length. **Apply to All Transitions** copies it to every cut.
+- **Music**: **Add Music** puts an audio element from the page under the whole edit, for example a song made with [audio generation](/guides/audio-3d). Select it to set its volume and **Start at**, the second of the song that plays on the first frame. ComfyArt detects the song's beats and shows the BPM.
+- **Snap to Beats**: on by default. Beats show as marks on the timeline, and clicking the timeline moves the playhead to the nearest beat or clip edge, so **Split** cuts land on the beat.
+- **Captions**: **Add Caption** places text at the playhead. Set its start, end, font size and color.
+
+Undo, Redo and Reset are in the header. **Export** renders the edit in ComfyUI at the first clip's size and 24 fps, with the clips' audio mixed under the music, then **Export as New Video** places it next to the original or **Replace Original Video** swaps it in. Export uses the **ComfyArt Timeline Render** node that ships with ComfyArt, so it needs no extra model.
+
+Agents can make the same edit with the `edit_video` [MCP tool](/guides/mcp).

@@ -44,6 +44,7 @@ MODELS = [
     _meta("wavespeed-ai/video-upscaler", {"video": {"type": "string"}, "target_resolution": {"type": "string", "enum": ["720p", "1080p", "2k", "4k"]}}, ("video",), price=0.005),
     _meta("wavespeed-ai/video-background-remover", {"video": {"type": "string"}}, ("video",), price=0.01),
     _meta("wavespeed-ai/ace-step-1.5", {"tags": {"type": "string"}, "lyrics": {"type": "string"}, "duration": {"type": "number", "minimum": 5, "maximum": 240}, "seed": {"type": "integer"}}, ("tags", "lyrics"), price=0.0003),
+    _meta("minimax/music-3.0", {"prompt": {"type": "string"}, "lyrics": {"type": "string"}, "is_instrumental": {"type": "boolean"}}, ("prompt",), price=0.15),
     _meta("elevenlabs/music-v2", {"prompt": {"type": "string"}, "music_length_ms": {"type": "integer"}}, ("prompt", "music_length_ms"), price=0.75),
     _meta("mirelo-ai/sfx-2.0/text-to-audio", {"prompt": {"type": "string"}, "duration": {"type": "number"}}, price=0.016),
     _meta("wavespeed-ai/qwen3-tts/text-to-speech", {"text": {"type": "string"}, "language": {"type": "string", "enum": ["auto", "Chinese", "English"]}, "voice": {"type": "string", "enum": ["Vivian", "Serena", "Uncle_Fu"]}}, ("text", "language", "voice"), price=0.005),
@@ -457,7 +458,7 @@ async def test_audio_tools(ws):
     await wavespeed.submit({"feature": "text_to_speech", "text": "你好", "voice": "Uncle_fu"})
     await wavespeed.submit({"feature": "voice_clone", "text": "hi", "audio": _input_file("ref.wav")})
     (m1, p1), (m2, p2), (m3, p3), (m4, p4) = ws["submits"]
-    assert m1 == "wavespeed-ai/ace-step-1.5" and p1 == {"tags": "lofi", "lyrics": "[instrumental]", "duration": 30}
+    assert m1 == "minimax/music-3.0" and p1 == {"prompt": "lofi"}
     assert m2 == "mirelo-ai/sfx-2.0/text-to-audio" and p2 == {"prompt": "door slam", "duration": 3}
     assert m3 == "wavespeed-ai/qwen3-tts/text-to-speech" and p3 == {"text": "你好", "voice": "Uncle_Fu", "language": "auto"}
     assert m4 == "wavespeed-ai/qwen3-tts/voice-clone" and p4["text"] == "hi" and p4["audio"].startswith("https://cdn.test/")
@@ -465,8 +466,9 @@ async def test_audio_tools(ws):
 
 async def test_music_duration_clamped_to_model_range(ws):
     # bot generate_music accepts up to 1000 s; ace-step-1.5 only takes 5..240 s
-    await wavespeed.submit({"feature": "generate_music", "prompt": "lofi", "lyrics": "[verse] hi", "duration": 600})
-    await wavespeed.submit({"feature": "generate_music", "prompt": "lofi", "duration": 1})
+    ace = "wavespeed-ai/ace-step-1.5"
+    await wavespeed.submit({"feature": "generate_music", "model": ace, "prompt": "lofi", "lyrics": "[verse] hi", "duration": 600})
+    await wavespeed.submit({"feature": "generate_music", "model": ace, "prompt": "lofi", "duration": 1})
     (m1, p1), (_, p2) = ws["submits"]
     assert m1 == "wavespeed-ai/ace-step-1.5" and p1 == {"tags": "lofi", "lyrics": "[verse] hi", "duration": 240}
     assert p2["duration"] == 5 and p2["lyrics"] == "[instrumental]"
@@ -883,3 +885,31 @@ async def test_confirm_threshold_setting(ws):
         assert (await client.post("/comfyart/wavespeed/estimate", json={"inputs": 3})).status == 400
     finally:
         await client.close()
+
+
+# #119 upstream v1.0.1 music: default MiniMax Music 3, ACE-Step 1.5 optional; bpm/language/key only reach ACE-Step.
+async def test_music_default_is_minimax_music3(ws):
+    await wavespeed.submit({"feature": "music", "prompt": "lofi", "lyrics": "[verse] hi", "duration": 30})
+    (m, p), = ws["submits"]
+    assert m == "minimax/music-3.0"
+    assert not {"bpm", "language", "keyscale", "key", "tags"} & set(p)
+
+
+async def test_music_minimax_ignores_ace_settings(ws):
+    await wavespeed.submit({"feature": "music", "model": "minimax/music-3.0", "prompt": "lofi", "lyrics": "", "duration": 30})
+    (m, p), = ws["submits"]
+    assert m == "minimax/music-3.0" and p["prompt"] == "lofi" and not {"bpm", "language", "keyscale", "tags"} & set(p)
+
+
+async def test_music_ace_step_maps_bpm_language_key(ws):
+    await wavespeed.submit({"feature": "music", "model": "wavespeed-ai/ace-step-1.5", "prompt": "lofi", "lyrics": "", "duration": 30,
+                            "music": {"bpm": 92, "language": "zh", "key": "F minor"}})
+    (m, p), = ws["submits"]
+    assert m == "wavespeed-ai/ace-step-1.5"
+    assert p["tags"] == "lofi, 92 bpm, language zh, key F minor"
+
+
+def test_ace_music_fields_use_schema_fields_when_present():
+    payload = {"tags": "lofi"}
+    wavespeed._ace_music_fields({"tags": {}, "bpm": {}, "language": {}, "keyscale": {}}, {"bpm": "120", "language": "en", "key": "C major"}, payload)
+    assert payload == {"tags": "lofi", "bpm": 120, "language": "en", "keyscale": "C major"}

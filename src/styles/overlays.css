@@ -109,6 +109,13 @@
 .ca-ve__subs { position: relative; height: 26px; margin-top: 6px; }
 .ca-ve__sub { position: absolute; top: 0; height: 24px; padding: 0 6px; box-sizing: border-box; border-radius: 6px; background: rgba(59,130,246,.2); border: 1px solid rgba(59,130,246,.5); font-size: 12px; line-height: 22px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; }
 .ca-ve__sub[data-on] { background: var(--ca-blue); color: #fff; }
+.ca-ve__music { position: relative; height: 26px; margin-top: 6px; box-sizing: border-box; border-radius: 6px; background: rgba(250,188,37,.18); border: 1px solid rgba(250,188,37,.55); cursor: pointer; overflow: hidden; }
+.ca-ve__music[data-on] { border-color: var(--ca-blue); }
+.ca-ve__music-name { position: absolute; left: 6px; top: 0; font-size: 12px; line-height: 24px; white-space: nowrap; pointer-events: none; z-index: 1; }
+.ca-ve__beat { position: absolute; top: 4px; bottom: 4px; width: 1px; background: rgba(250,188,37,.9); pointer-events: none; }
+.ca-ve__pick { max-height: 320px; overflow-y: auto; min-width: 220px; }
+.ca-ve__pick-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; flex: none; background: #333; }
+.ca-ve__controls .ca-bar__btn[data-on] { color: var(--ca-blue); }
 .ca-ve__playhead { position: absolute; top: -6px; bottom: -4px; width: 2px; margin-left: -1px; background: #e53935; pointer-events: none; z-index: 3; }
 
 .ca-ask { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: .5px solid var(--ca-border); border-radius: 12px; }

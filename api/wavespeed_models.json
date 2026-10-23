@@ -365,8 +365,12 @@
    "types": [
     "ai-music"
    ],
-   "default": "wavespeed-ai/ace-step-1.5",
+   "default": "minimax/music-3.0",
    "models": [
+    {
+     "id": "minimax/music-3.0",
+     "local": "MiniMax Music 3"
+    },
     {
      "id": "wavespeed-ai/ace-step-1.5",
      "local": "ACE-Step"

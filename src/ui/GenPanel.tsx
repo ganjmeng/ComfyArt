@@ -221,7 +221,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
                       <div className="ca-gen__label">{group}</div>
                       {available.filter((m) => m.group === group).map((m) => (
                         <button key={m.id} type="button" className="ca-menu__item" onClick={() => setMeta({ refModes: { ...modes, [src]: m.id } })}>
-                          <span className="ca-menu__grow">{m.label}{m.download && <span className="ca-model__tag">{t('genPanel.modelWillDownloadOnFirst')}</span>}</span>
+                          <span className="ca-menu__grow">{m.label}</span>
                           {modeFor(src) === m.id && <span className="ca-icon">{Icons.check}</span>}
                         </button>
                       ))}

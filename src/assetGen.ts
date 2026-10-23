@@ -1,26 +1,28 @@
 import { createShapeId, type Editor, type TLImageShape, type TLShapeId } from 'tldraw'
 
-import { freeSpot, GAP, registerPlacer, selectResults, spawnHolder, startJob, type ErrorSink } from './jobs'
+import { freeSpot, GAP, registerPlacer, rowSpots, selectResults, spawnHolder, startJob, type ErrorSink } from './jobs'
 import { AUDIO, AUDIO_SIZE, MODEL } from './shapes/EmbedShapes'
 import { GENERATOR } from './shapes/GeneratorShape'
 import { annotated, type Built } from './workflows'
 import { t } from './i18n'
 import { wsBuilt } from './wavespeed'
+import { musicInputs } from './music'
 
 const QWEN_VOICES = ['Serena', 'Vivian', 'Uncle_fu', 'Dylan', 'Eric', 'Ryan', 'Aiden', 'Ono_anna', 'Sohee']
 export const voices = () => QWEN_VOICES // WaveSpeed qwen3-tts voices
 export const MUSIC_SECONDS = [15, 30, 60, 120]
+export { MUSIC_MODELS } from './music'
 export const SFX_SECONDS = [3, 5, 8, 15]
 const MODEL_SIZE = 480
 
 export type AudioSpec =
-  | { kind: 'music'; prompt: string; lyrics: string; seconds: number }
+  | { kind: 'music'; model: string; prompt: string; lyrics: string; seconds: number; bpm?: number; language?: string; key?: string }
   | { kind: 'speech'; text: string; voice: string }
   | { kind: 'clone'; text: string; reference: string }
   | { kind: 'sfx'; prompt: string; seconds: number }
 
 async function audioGraph(spec: AudioSpec): Promise<Built> {
-  if (spec.kind === 'music') return wsBuilt({ feature: 'music', prompt: spec.prompt, lyrics: spec.lyrics || '[instrumental]', duration: spec.seconds })
+  if (spec.kind === 'music') return wsBuilt(musicInputs(spec))
   if (spec.kind === 'sfx') return wsBuilt({ feature: 'sound_effect', prompt: spec.prompt, duration: spec.seconds })
   if (spec.kind === 'speech') return wsBuilt({ feature: 'text_to_speech', text: spec.text, voice: spec.voice })
   return wsBuilt({ feature: 'voice_clone', text: spec.text, audio: annotated(spec.reference) })
@@ -87,12 +89,13 @@ registerPlacer('audio', async (editor, holder, media, job) => {
 
 registerPlacer('model', async (editor, holder, media, job) => {
   const { w, h } = holder.props as { w: number; h: number }
+  const b = editor.getShapePageBounds(holder)!
   const ids: TLShapeId[] = []
   editor.run(() => {
     editor.deleteShape(holder.id)
-    media.forEach((m, i) => {
+    rowSpots(editor, holder, media.map(() => [w, h]), [b.minX, b.minY]).forEach((p, i) => {
       const id = createShapeId()
-      editor.createShape({ id, type: MODEL, x: holder.x + i * (w + GAP), y: holder.y, parentId: holder.parentId, props: { w, h, src: m.src, name: job.name, ext: 'glb' } })
+      editor.createShape({ id, type: MODEL, x: p.x, y: p.y, parentId: holder.parentId, props: { w, h, src: media[i].src, name: job.name, ext: 'glb' } })
       ids.push(id)
     })
   }, { history: 'ignore' })
