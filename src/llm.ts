@@ -2,6 +2,7 @@ import { atom } from 'tldraw'
 
 import { api, uploadImage, viewUrl } from './comfy'
 import { wsBodyError } from './wsErrors'
+import { estimateCost } from './wavespeedKey'
 import { t } from './i18n'
 import { botEnabledAtom, settingsAtom } from './bot'
 
@@ -41,14 +42,47 @@ export async function ask(prompt: string, system: string, images: string[]): Pro
   return body.text as string
 }
 
-export async function transcribe(audio: Blob): Promise<string> {
-  const ref = await uploadImage(audio, `voice-${Date.now()}.webm`)
-  return transcribeFile(viewUrl(ref))
+/** #185: audio length in seconds from the media element's metadata (whisper is charged per second); undefined when
+ * the browser can't tell (the quote then uses the 60 s fallback, labelled). MediaRecorder webm reports Infinity until
+ * seeked to the end, so seek far once before giving up. */
+export function mediaDuration(src: string | Blob, timeoutMs = 4000): Promise<number | undefined> {
+  return new Promise((resolve) => {
+    const el = document.createElement('audio')
+    const url = typeof src === 'string' ? src : URL.createObjectURL(src)
+    let done = false
+    const finish = (d?: number) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      el.removeAttribute('src'); el.load()
+      if (typeof src !== 'string') URL.revokeObjectURL(url)
+      resolve(d != null && Number.isFinite(d) && d > 0 ? d : undefined)
+    }
+    const timer = setTimeout(() => finish(), timeoutMs)
+    el.preload = 'metadata'
+    el.onerror = () => finish()
+    el.onloadedmetadata = () => {
+      if (Number.isFinite(el.duration)) return finish(el.duration)
+      el.ondurationchange = () => { if (Number.isFinite(el.duration)) finish(el.duration) }
+      el.currentTime = 1e101
+    }
+    el.src = url
+  })
 }
 
-export async function transcribeFile(src: string): Promise<string> {
-  // speech-to-text runs on WaveSpeed (wavespeed-ai/openai-whisper-turbo)
-  const res = await api('/comfyart/wavespeed/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
+export type TranscribeQuote = { price: number | null; durationEstimated: boolean }
+
+export async function transcribe(audio: Blob, onQuote?: (q: TranscribeQuote) => void): Promise<string> {
+  const [ref, duration] = await Promise.all([uploadImage(audio, `voice-${Date.now()}.webm`), mediaDuration(audio)])
+  return transcribeFile(viewUrl(ref), duration, onQuote)
+}
+
+export async function transcribeFile(src: string, duration?: number, onQuote?: (q: TranscribeQuote) => void): Promise<string> {
+  // speech-to-text runs on WaveSpeed (wavespeed-ai/openai-whisper-turbo), charged per second of audio (#185)
+  if (duration === undefined) duration = await mediaDuration(src)
+  if (onQuote) void estimateCost({ feature: 'transcribe', audio: src, ...(duration ? { duration } : {}) })
+    .then((e) => { if (e) onQuote({ price: e.price ?? null, durationEstimated: !!e.duration_estimated }) }).catch(() => {})
+  const res = await api('/comfyart/wavespeed/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src, ...(duration ? { duration } : {}) }) })
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(wsBodyError(body, `transcribe failed: ${res.status}`))
   return String(body.text ?? '')

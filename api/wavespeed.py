@@ -1046,6 +1046,21 @@ def tier_label(priced: dict) -> str:
     return " · ".join(parts)
 
 
+# #185: models charged per second of input media although their schema takes no duration (whisper is charged by audio
+# length). The caller passes the media length as `duration`; it is used only to price the job (sent to the free price
+# API, never in the submit payload, which only carries schema fields). Unknown length: priced at 60 s and labelled.
+DURATION_BILLED = {"wavespeed-ai/openai-whisper-turbo"}
+DURATION_FALLBACK_S = 60
+
+
+def media_seconds(inputs: dict) -> int | None:
+    """#185: the caller's media length in whole seconds (rounded up), or None when unknown/invalid."""
+    d = inputs.get("duration")
+    if isinstance(d, (int, float)) and not isinstance(d, bool) and math.isfinite(d) and d > 0:
+        return max(1, math.ceil(d))
+    return None
+
+
 async def priced_inputs(model: str, inputs: dict) -> dict:
     """The price-relevant fields as they will be submitted (#128 duration, #159 resolution/aspect_ratio)."""
     priced = _price_inputs(inputs, model)
@@ -1053,10 +1068,26 @@ async def priced_inputs(model: str, inputs: dict) -> dict:
         props = _schema((await catalog()).get(model)).get("properties") or {}
     except (WaveSpeedError, aiohttp.ClientError, asyncio.TimeoutError, AttributeError):
         props = {}
-    return _submitted_tier(props, inputs, priced)
+    out = _submitted_tier(props, inputs, priced)
+    if model in DURATION_BILLED and "duration" not in props:
+        out["duration"] = media_seconds(inputs) or DURATION_FALLBACK_S  # #185: pricing only
+    return out
+
+
+def duration_estimated(model: str, inputs: dict) -> bool:
+    """#185: a per-second model priced at the 60 s fallback because the media length is unknown."""
+    return model in DURATION_BILLED and media_seconds(inputs) is None
 
 
 async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
+    """#185 wrapper: a per-second job priced at the 60 s fallback is an estimate (「估算价」), never an exact quote."""
+    price, source = await _quote(model, inputs)
+    if source == "quote" and duration_estimated(model, inputs):
+        source = "estimate"
+    return price, source
+
+
+async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     """Price of one run via WaveSpeed's free POST /api/v3/model/price, cached 5 minutes, for the tier that will be
     submitted. #159: when the price API fails the catalog base_price is returned as source 'estimate' only if the
     submitted tier is the schema's default tier (the tier base_price is for), labelled 「估算价」/'Estimated'; otherwise
@@ -1081,6 +1112,11 @@ async def quote(model: str, inputs: dict) -> tuple[float | None, str]:
         pass
     meta = (await catalog()).get(model) or {}
     base = meta.get("base_price")
+    if model in DURATION_BILLED and isinstance(base, (int, float)) and not isinstance(base, bool) and priced.get("duration"):
+        # #185: the catalog base_price of a per-second model is its price per second of media (whisper $0.0007/s,
+        # WaveSpeed docs; a real 4.752 s clip was charged $0.0035 = 5 s x $0.0007), so the local estimate is
+        # base_price x rounded-up seconds (60 s when the length is unknown), labelled 「估算价」, never unpriced.
+        return round(float(base) * int(priced["duration"]), 6), "estimate"
     if isinstance(base, (int, float)) and not isinstance(base, bool) and _is_default_tier(_schema(meta).get("properties") or {}, priced):
         return float(base), "estimate"
     return None, "unpriced"
@@ -1120,6 +1156,8 @@ async def estimate(inputs: dict) -> dict:
            "confirm": needs_confirm(price) if price is not None else (source == "unpriced" or confirm_usd() == 0)}
     if not isinstance(inputs.get("scenes"), list) and tier:
         out["tier"] = tier
+    if not isinstance(inputs.get("scenes"), list) and feature == "transcribe" and duration_estimated(model, inputs):
+        out["duration_estimated"] = True  # #185: 「读不到音频时长，按 60 秒估算」
     return out
 
 
@@ -1880,11 +1918,13 @@ async def wavespeed_cancel(request: web.Request) -> web.Response:
 
 @routes.post("/comfyart/wavespeed/transcribe")
 async def wavespeed_transcribe(request: web.Request) -> web.Response:
-    src = (await json_body(request)).get("src")
+    body = await json_body(request)
+    src = body.get("src")
     if not isinstance(src, str) or not src:
         return error("src must be a /api/view URL", 400)
+    seconds = media_seconds(body)  # #185: audio length read by the page, prices the job (not sent to WaveSpeed)
     try:
-        text = await run_text({"feature": "transcribe", "audio": src})
+        text = await run_text({"feature": "transcribe", "audio": src, **({"duration": seconds} if seconds else {})})
     except WaveSpeedError as e:
         return _respond_error(e)
     except ValueError as e:
