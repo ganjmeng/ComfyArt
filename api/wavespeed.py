@@ -561,6 +561,39 @@ async def _upload(session: aiohttp.ClientSession, path: str, data: bytes | None 
     return url
 
 
+async def _image_size(value: str) -> tuple[int, int] | None:
+    """Pixel size of a source image, or None when it can't be read."""
+    from PIL import Image
+
+    try:
+        if value.startswith("data:"):
+            import base64
+            data = base64.b64decode(value.split(",", 1)[1])
+        else:
+            data = await _source_bytes(value)
+        with Image.open(io.BytesIO(data)) as img:
+            return img.size
+    except Exception:  # noqa: BLE001 - unreadable source: the caller falls back to the pre-submit error
+        return None
+
+
+async def seg_prompts(inputs: dict) -> dict:
+    """#120: sam3-image needs at least one of prompt / box_prompts / point_prompts. Use the user's boxes or
+    points when given; else the object description (or this generation's prompt) as text; else one
+    full-image box. With none of those the job fails here, before submit, so nothing is charged."""
+    params = dict(inputs.get("params") or {})
+    if params.get("box_prompts") or params.get("point_prompts"):
+        return inputs
+    text = str(inputs.get("prompt") or inputs.get("object") or "").strip()
+    if text:
+        return {**inputs, "prompt": text}
+    size = await _image_size(str(inputs.get("image") or "")) if inputs.get("image") else None
+    if not size:
+        raise WaveSpeedError(SEG_TARGET_MISSING, 400)
+    params["box_prompts"] = [{"x_min": 0, "y_min": 0, "x_max": int(size[0]), "y_max": int(size[1])}]
+    return {**inputs, "params": params}
+
+
 async def _media(session: aiohttp.ClientSession, value: str) -> str:
     if value.startswith(("http://", "https://", "data:")):
         return value
@@ -644,6 +677,9 @@ def _clamp(spec: dict, value):
 
 
 VOICE_SAMPLE_MISSING = "Please upload a voice sample first"
+# #120: wavespeed-ai/sam3-image rejects a job with no prompt, box or point; caught before submit (no charge)
+SEG_TARGET_MISSING = "Select or describe the object to segment first"
+SAM3_MODEL = "wavespeed-ai/sam3-image"
 
 
 def default_voice(spec: dict) -> str | None:
@@ -993,9 +1029,11 @@ async def _prepped(session: aiohttp.ClientSession, value: str, mode: str, res: i
     return await _upload(session, "", data, f"ref-{mode}-{uuid.uuid4().hex[:8]}.png")
 
 
-async def _cloud_map(feature: str, params: dict, image: str) -> bytes:
-    """One paid map call (depth-anything-v3 / sam3-image); already covered by the confirmed estimate."""
-    outs = await run_raw({"feature": feature, "image": image, "params": dict(params), "confirmed": True})
+async def _cloud_map(feature: str, params: dict, image: str, prompt: str = "") -> bytes:
+    """One paid map call (depth-anything-v3 / sam3-image); already covered by the confirmed estimate.
+    #120: the seg map passes this generation's prompt to sam3-image as its text prompt."""
+    outs = await run_raw({"feature": feature, "image": image, "params": dict(params), "confirmed": True,
+                          **({"prompt": prompt} if prompt else {})})
     if not outs:
         raise WaveSpeedError(f"{feature} returned no map", 502)
     return await _source_bytes(str(outs[0]))
@@ -1009,7 +1047,7 @@ async def _control_map(c: dict, size, res_default: int = 1024, fresh: bool = Fal
         data = None if fresh else _map_cache.get(key)  # fresh: 「重新提取」 forces a new paid extraction
         if data is None:
             feature, params = refprep.CLOUD_MAP[mode]
-            data = await _cloud_map(feature, params, str(c["image"]))
+            data = await _cloud_map(feature, params, str(c["image"]), str(c.get("prompt") or "").strip() if feature == "segment" else "")
             _map_cache.pop(key, None)  # the new map replaces the old entry
             if len(_map_cache) >= _MAP_CACHE_MAX:
                 _map_cache.pop(next(iter(_map_cache)))
@@ -1040,6 +1078,7 @@ async def control_preview(inputs: dict) -> bytes:
     # #81: `fresh` is 「重新提取」 — skip the cache, re-run (and re-confirm) the paid extraction
     fresh = bool(inputs.get("fresh"))
     # #109: one rule — preview_estimate says which map calls this request pays for (none when cached, unless fresh)
+    prompt = str(inputs.get("prompt") or "").strip()
     paid = [] if inputs.get("confirmed") else preview_estimate({"image": image, "mode": mode, "res": res, "fresh": fresh})
     if paid:
         price, _ = await quote(resolve_model(paid[0], None), {})
@@ -1047,7 +1086,7 @@ async def control_preview(inputs: dict) -> bytes:
             raise WaveSpeedError(f"control map preview costs about ${price}; confirm to continue", 409, confirm=float(price))
     if mode in refprep.COLOR:
         return refprep.process_bytes(await _source_bytes(image), mode, res)
-    return refprep.to_png(await _control_map({"image": image, "mode": mode, "res": res}, None, fresh=fresh))
+    return refprep.to_png(await _control_map({"image": image, "mode": mode, "res": res, "prompt": prompt}, None, fresh=fresh))
 
 
 async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> dict:
@@ -1071,7 +1110,7 @@ async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> 
             params.update({"mode": "pose" if c.get("mode") == "pose" else "canny", "strength": min(1.0, strengths[0])})
         else:
             inputs.pop("image", None)
-            maps = [await _control_map(c, size) for c in controls]
+            maps = [await _control_map({**c, "prompt": inputs.get("prompt")}, size) for c in controls]
             img = maps[0] if len(maps) == 1 else refprep.composite(list(zip(maps, strengths)), size or maps[0].size)
             params.update({
                 "control_image": await _upload(session, "", refprep.to_png(img), f"ref-control-{uuid.uuid4().hex[:8]}.png"),
@@ -1104,6 +1143,8 @@ async def submit(inputs: dict) -> str:
     meta = (await catalog()).get(model)
     if meta and needs_voice_sample(model, feature, _schema(meta), inputs):
         raise WaveSpeedError(VOICE_SAMPLE_MISSING, 400)
+    if feature == "segment" or model == SAM3_MODEL:
+        inputs = await seg_prompts(inputs)
     if not inputs.get("confirmed"):
         price, _ = await quote(model, inputs)
         if feature == "structure_control" and price is not None:
@@ -1123,7 +1164,8 @@ async def submit(inputs: dict) -> str:
     task = ((body or {}).get("data") or {}).get("id")
     if not task:
         raise WaveSpeedError("WaveSpeed did not return a task id")
-    _jobs[task] = {"model": model, "feature": feature, "started": time.time(), "next_poll": time.time() + POLL_MIN}
+    _jobs[task] = {"model": model, "feature": feature, "started": time.time(), "next_poll": time.time() + POLL_MIN,
+                   "inputs": _price_inputs(inputs)}
     log.info("WaveSpeed task %s submitted (%s)", task, model)
     return task
 
@@ -1319,6 +1361,8 @@ async def poll(task: str) -> dict:
         return await _poll_surface(task, job)
     now = time.time()
     if now - job["started"] > JOB_TIMEOUT:
+        if job.get("model"):
+            return _fail(task, str(await _timeout_error(task)))
         return _fail(task, f"WaveSpeed task timed out after {int(JOB_TIMEOUT)}s")
     if now < job["next_poll"]:
         return _history(task, "processing", [], {})
@@ -1362,19 +1406,76 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
         job["errors"] = 0
         data = (body or {}).get("data") or {}
         status = data.get("status")
-        if status == "failed":
-            return _fail(task, f"WaveSpeed task failed: {data.get('error') or 'unknown error'}")
+        if status == "timeout":
+            return _fail(task, str(await _timeout_error(task)))
+        if status in FAILED_STATUSES:
+            return _fail(task, f"WaveSpeed task {status}: {data.get('error') or 'unknown error'}")
         if status != "completed":
             return _history(task, status or "processing", [], {})
-        outputs = data.get("outputs") or []
+        outputs = [o for o in (data.get("outputs") or []) if isinstance(o, str) and o.startswith(("http://", "https://"))]
         if not outputs:
-            return _fail(task, "WaveSpeed task finished without output")
+            # #120: text-only results (or nothing) can't be saved as files; never report an empty success
+            return _fail(task, NO_OUTPUT)
         # CDN URLs expire after 7 days: keep a local copy right away
         refs = [await _download(session, task, i, url) for i, url in enumerate(outputs) if isinstance(url, str)]
     job["done"] = True
     job["result"] = _history(task, "completed", [], {"ws": {"images": refs}})
     log.info("WaveSpeed task %s completed (%d output%s)", task, len(refs), "" if len(refs) == 1 else "s")
     return job["result"]
+
+
+FAILED_STATUSES = ("failed", "cancelled", "timeout", "deleted")
+TEXT_KEYS = ("text", "transcription", "caption", "result", "output", "content")
+NO_OUTPUT = "WaveSpeed task finished without output"
+NO_TEXT = "WaveSpeed task finished without text"
+
+
+async def _timeout_error(task: str) -> "WaveSpeedError":
+    """#120: a timed-out task may still be billed; say how much (free price quote) instead of 'please retry'."""
+    job = _jobs.get(task) or {}
+    price = None
+    if job.get("model"):
+        try:
+            price, _ = await quote(job["model"], dict(job.get("inputs") or {}))
+        except Exception:  # noqa: BLE001 - the message is still useful without a price
+            price = None
+    if price is None:
+        return WaveSpeedError("WaveSpeed task timed out", 504)
+    return WaveSpeedError(f"WaveSpeed task timed out, may have been charged about (quoted price) ${round(float(price), 6):g}", 504)
+
+
+def text_of(value) -> str:
+    """Text from one text-model output: a plain string, a JSON string, or an object with a text-like field."""
+    if isinstance(value, str):
+        v = value.strip()
+        if v[:1] in "{[":
+            try:
+                return text_of(json.loads(v))
+            except ValueError:
+                return v
+        return v
+    if isinstance(value, list):
+        return "\n".join(t for t in (text_of(x) for x in value) if t)
+    if isinstance(value, dict):
+        for k in TEXT_KEYS:
+            if value.get(k):
+                return text_of(value[k])
+        if isinstance(value.get("segments"), list):
+            return " ".join(t for t in (text_of(x) for x in value["segments"]) if t)
+    return ""
+
+
+async def run_text(inputs: dict) -> str:
+    """Text models (whisper transcribe, image captioner): outputs may be text, JSON objects or text-file URLs."""
+    parts = []
+    for out in await run_raw(inputs):
+        if isinstance(out, str) and out.startswith(("http://", "https://")):
+            out = await fetch_text(out)
+        parts.append(text_of(out))
+    text = "\n".join(p for p in parts if p)
+    if not text:
+        raise WaveSpeedError(NO_TEXT, 502)
+    return text
 
 
 async def run_raw(inputs: dict, timeout: float = 120.0) -> list:
@@ -1395,11 +1496,20 @@ async def run_raw(inputs: dict, timeout: float = 120.0) -> list:
                 except (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError):
                     continue  # free result GET: retry until the deadline, never resubmit
                 data = (body or {}).get("data") or {}
-                if data.get("status") == "failed":
-                    raise WaveSpeedError(f"WaveSpeed task failed: {data.get('error') or 'unknown error'}")
-                if data.get("status") == "completed":
-                    return list(data.get("outputs") or [])
-        raise WaveSpeedError(f"WaveSpeed task timed out after {int(timeout)}s", 504)
+                status = data.get("status")
+                if status == "timeout":
+                    raise await _timeout_error(task)
+                if status in FAILED_STATUSES:
+                    raise WaveSpeedError(f"WaveSpeed task {status}: {data.get('error') or 'unknown error'}")
+                if status == "completed":
+                    outs = [o for o in (data.get("outputs") or []) if o not in (None, "", [], {})]
+                    if not outs:
+                        # some text models put the result next to outputs instead of inside it
+                        outs = [data[k] for k in TEXT_KEYS if isinstance(data.get(k), (str, dict, list)) and data.get(k)]
+                    if not outs:
+                        raise WaveSpeedError(NO_OUTPUT, 502)
+                    return outs
+        raise await _timeout_error(task)
     finally:
         if task in _jobs:
             _jobs[task]["done"] = True
@@ -1499,18 +1609,12 @@ async def wavespeed_transcribe(request: web.Request) -> web.Response:
     if not isinstance(src, str) or not src:
         return error("src must be a /api/view URL", 400)
     try:
-        outputs = await run_raw({"feature": "transcribe", "audio": src})
-        parts = []
-        for out in outputs:
-            text = await fetch_text(out) if isinstance(out, str) and out.startswith(("http://", "https://")) else out
-            if isinstance(text, dict):
-                text = text.get("text") or ""
-            parts.append(str(text))
+        text = await run_text({"feature": "transcribe", "audio": src})
     except WaveSpeedError as e:
         return _respond_error(e)
     except ValueError as e:
         return error(str(e), 404)
-    return web.json_response({"text": "\n".join(p.strip() for p in parts if p and p.strip())})
+    return web.json_response({"text": text})
 
 
 @routes.post("/comfyart/wavespeed/caption")
@@ -1519,13 +1623,12 @@ async def wavespeed_caption(request: web.Request) -> web.Response:
     if not isinstance(src, str) or not src:
         return error("src must be a /api/view URL", 400)
     try:
-        outputs = await run_raw({"feature": "caption", "image": src})
-        parts = [await fetch_text(o) if isinstance(o, str) and o.startswith(("http://", "https://")) else str(o) for o in outputs]
+        text = await run_text({"feature": "caption", "image": src})
     except WaveSpeedError as e:
         return _respond_error(e)
     except ValueError as e:
         return error(str(e), 404)
-    return web.json_response({"text": "\n".join(p.strip() for p in parts if p.strip())})
+    return web.json_response({"text": text})
 
 
 @routes.post("/comfyart/wavespeed/custom/check")
