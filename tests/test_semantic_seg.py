@@ -134,3 +134,19 @@ def test_zh_en_strings():
     assert "仅收识别费用" in zh["jobs.segNone"] and en["jobs.segNone"] == wavespeed.SEG_NONE
     assert zh["jobs.segAllBlack"] == "只识别到与背景同色的类别，分割图会是全黑，已停止，仅收识别费用"
     assert en["jobs.segAllBlack"] == wavespeed.SEG_ALL_BLACK
+
+
+async def test_reextract_always_reconfirms_with_zero_submits(maps, monkeypatch):
+    """#138 tester: 「重新提取」 on an already extracted seg ref must show the confirm (upper bound) and
+    make 0 WaveSpeed submits until confirmed, even though recognition and masks were cached."""
+    maps["by_model"] = {CAP: ["a dog next to a car"]}
+    ref = _photo()
+    await wavespeed.control_preview({"image": ref, "mode": "seg", "res": 512, "confirmed": True})
+    assert wavespeed._seg_cats and wavespeed._seg_masks  # extracted once, caches filled
+    before = len(maps["submits"])
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.001)
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.control_preview({"image": ref, "mode": "seg", "res": 512, "fresh": True})
+    assert e.value.status == 409 and e.value.seg_splits == 12 and e.value.seg_capped is True
+    assert e.value.confirm == round(0.001 + 12 * 0.005, 6)
+    assert len(maps["submits"]) == before  # 0 submits for the unconfirmed re-extract

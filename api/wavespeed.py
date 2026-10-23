@@ -1145,7 +1145,7 @@ def preview_estimate(inputs: dict) -> list[str]:
     if mode not in refprep.CLOUD_MAP or (not inputs.get("fresh") and (image, mode, res) in _map_cache):
         return []
     if mode == "seg":
-        return _seg_steps(image)
+        return ["caption"] + ["segment"] * refprep.SEG_MAX_CLASSES if inputs.get("fresh") else _seg_steps(image)
     return [refprep.CLOUD_MAP[mode][0]]
 
 
@@ -1162,11 +1162,13 @@ async def control_preview(inputs: dict) -> bytes:
     fresh = bool(inputs.get("fresh"))
     # #109: one rule — preview_estimate says which map calls this request pays for (none when cached, unless fresh)
     prompt = str(inputs.get("prompt") or "").strip()
-    paid = [] if inputs.get("confirmed") else preview_estimate({"image": image, "mode": mode, "res": res, "fresh": fresh})
     if fresh and mode == "seg":
+        # #138: re-extract drops recognition + per-class masks *before* the quote, so it always re-confirms
+        # at the upper bound (the retry-only-missing-classes cache is for retries after a failure)
         _seg_cats.pop(image, None)
         for k in [k for k in _seg_masks if k[0] == image]:
             _seg_masks.pop(k)
+    paid = [] if inputs.get("confirmed") else preview_estimate({"image": image, "mode": mode, "res": res, "fresh": fresh})
     splits = paid.count("segment") if paid and mode == "seg" else None
     capped = "caption" in paid
     if paid:
