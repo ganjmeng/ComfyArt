@@ -1,0 +1,77 @@
+---
+title: "自定义工作流"
+description: "让 ComfyArt 的功能跑你自己选的 WaveSpeed 模型。"
+---
+
+画布上的每个操作背后都是 WaveSpeed 上的一个模型。大部分功能的内置模型都可以换成你自己选的，比如换一个生图模型或编辑模型。
+
+自定义工作流是一个小 JSON 文件：写明 WaveSpeed 模型 id，可选地写明图片、提示词、尺寸填到这个模型的哪个请求字段。可以自己写，也可以交给 agent。
+
+## 交给 agent
+
+对 [ComfyArt 的 agent](/zh/guides/agent)（或任何通过 [MCP](/zh/guides/mcp) 接入的 agent）说「把这个模型接到快捷编辑」，并告诉它模型 id。它会用 `custom_workflow` 工具读规则、写文件、检查并安装。这套规则也是一个内置 skill：**接入自定义工作流**。
+
+没接入 ComfyArt 的 agent：打开项目菜单里的 **自定义工作流**，点 agent 提示旁边的按钮复制规则给它。
+
+## 自己做
+
+### 1. 写文件
+
+```json
+{
+  "model": "owner/model-name",
+  "fields": { "@prompt": "prompt", "@image": "image" },
+  "params": { "num_inference_steps": 30 }
+}
+```
+
+- `model`：WaveSpeed 模型 id（见 [wavespeed.ai/models](https://wavespeed.ai/models)），格式是 `owner/model-name`。
+- `fields`（可选）：把 ComfyArt 的标记对应到模型的请求字段。常见字段名（`prompt`、`image`、`images`、`mask_image`、`size`、`aspect_ratio`、`resolution`、`duration`、`last_image`、`num_layers`）会自动填，只有模型用别的名字时才需要写。
+- `params`（可选）：每次运行都固定发送的值。没有标记能填的必填字段写在这里。
+
+| 标记 | ComfyArt 填什么 |
+|---|---|
+| `@image` | 选中的图片（上传到 WaveSpeed，以 URL 发送） |
+| `@image2` | 第二张图，比如风格迁移的参考图（URL） |
+| `@mask` | 要修改的区域图片 URL，白色 = 修改 |
+| `@last` | 视频的尾帧（URL） |
+| `@prompt` | 提示词或修改指令 |
+| `@size` | 输出尺寸，格式是 `宽*高` |
+| `@width`、`@height` | 宽和高（像素），模型分开收时用 |
+| `@count` | 生成几个 / 几层 |
+| `@seconds` | 视频时长，单位是**秒** |
+
+标记不区分大小写。功能用不到的标记会被忽略并给出提示。不要把标记对应到模型没有的字段，检查时会被拒绝。
+
+### 2. 上传并指定
+
+打开项目菜单（左上角图标）→ **自定义工作流**。功能按图像生成、图像编辑、图像工具和视频分组。点某个功能旁边的上传按钮：ComfyArt 会对照 WaveSpeed 上这个模型的请求参数说明检查文件（免费查询），告诉你哪里不对：模型不存在、字段模型不接受、必填字段没填。通过后这个功能就用上它。每个功能的文件放在各自的文件夹里，即用户目录下的 `comfyart/workflows/<功能>/`（`edit`、`upscale`、`video` 等），下拉菜单里只列这个文件夹的文件。想换回来就选 **内置**。ComfyArt 不会删除你的文件；不要的直接去那个文件夹里删；正在用的文件被删后，这个功能会自动回到内置。
+
+运行按所选模型在 WaveSpeed 的价格计费。达到确认额度（默认 $0.50）的任务会先问你。
+
+## 各功能需要的标记
+
+| 功能 | 必需 | 可选 | 说明 |
+|---|---|---|---|
+| 文生图 | `@prompt`、`@size`（或 `@width` + `@height`） | `@count` | 作为一个新模型出现在生成器里。参考图和底图不会传入。 |
+| 快捷编辑 / 编辑文字 | `@image`、`@prompt` | | 合成和样机融合也会用它。`@prompt` 收到的是修改指令。 |
+| 风格迁移 | `@image`、`@prompt` | `@image2` | 没有参考图时，`@image2` 填同一张图。 |
+| 局部重绘 / 点选修改 | `@image`、`@prompt` | | 模型收到整张图，`@prompt` 里写明要改的区域和怎么改。 |
+| 扩展 | `@image`、`@prompt` | `@size` | `@size` 收到扩展后的画布尺寸。 |
+| 多角度 | `@image` | `@prompt` | 提示词是视角描述，比如 `<qma> front-right quarter view eye-level shot medium shot`。 |
+| 放大 | `@image` | | 模型有 `target_resolution` 时，选定的倍数填到这里。 |
+| 去背景 | `@image` | | 结果应保留透明通道。 |
+| 橡皮 | `@image`、`@mask` | | `@mask` 是要去掉的区域。 |
+| 图层拆分 | `@image` | `@prompt`、`@count` | `@count` 是层数。结果是多张 RGBA 图。 |
+| 视频生成 | `@prompt` | `@image`、`@last`、`@size`、`@seconds` | 用于首尾帧模式。参考生视频、动作控制、对口型和分镜仍用内置模型。 |
+| 动态图片 | `@image`、`@prompt` | `@size`、`@seconds`、`@last` | 开启循环时，`@last` 会再收到一次原图。 |
+
+功能需要输入图片却没有时，会报错说明，而不是不带图片直接跑。
+
+分镜、视频延长、增强细节放大、移动对象和视频放大始终用内置模型。
+
+## 示例：换一个编辑模型
+
+1. 在 WaveSpeed 上找到编辑模型，记下它的 id，以及图片和提示词字段的名字。
+2. 写 `{"model": "owner/edit-model"}`；字段名不是 `image` / `images` 和 `prompt` 时才需要加 `"fields"`。
+3. 上传，然后给 **快捷编辑 / 编辑文字** 选上它。
