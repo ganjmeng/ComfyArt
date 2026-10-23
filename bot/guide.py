@@ -11,7 +11,7 @@ AGENT_GUIDE = (
     "return ids right away, then call wait_generation with those ids to get the "
     "placed image or video shape ids. Write generation prompts in detailed "
     "English. Pass refs (image shape ids) when the result must follow existing "
-    "images. New results without frame or near land in this chat's own frame on "
+    "images; naming a reference in the prompt does not send it, only refs do. New results without frame or near land in this chat's own frame on "
     "the canvas (named after the chat).\n"
     "- Edit an existing image by shape id: edit_image, upscale_image, "
     "remove_background, expand_image, split_layers, change_angle, "
@@ -93,6 +93,18 @@ CORE_MCP_TOOLS = [
     "ask_user",
     "update_plan",
 ]
+
+# Tools that submit a paid WaveSpeed run (the keys of tool_features in
+# api/wavespeed_models.json; tests keep the two in sync). #142 caps these.
+PAID_TOOLS = frozenset({
+    "generate_image", "edit_image", "replace_text", "edit_region",
+    "move_object", "style_transfer", "edit_elements", "create_mockup",
+    "upscale_image", "remove_background", "expand_image", "split_layers",
+    "change_angle", "erase_region", "generate_video", "animate_image",
+    "extend_video", "upscale_video", "remove_video_background",
+    "generate_music", "generate_sound_effect", "text_to_speech",
+    "image_to_3d", "ocr", "transcribe",
+})
 
 COMFY_MCP_ALLOWED_TOOLS = [
     "server_info",
