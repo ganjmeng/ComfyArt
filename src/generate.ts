@@ -4,7 +4,7 @@ import { defaultTarget, refKind, uploadImage, validTarget, viewUrl, type PromptG
 import type { LoraPick } from './loras'
 import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from './jobs'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
-import { agentModels, AUTO_IMAGE, AUTO_VIDEO, defaultOf, FEATURE_MODELS, featurePicks, isCloudModel, isVideo, modelOf, refCap } from './models'
+import { agentModels, AUTO_IMAGE, AUTO_VIDEO, defaultOf, FEATURE_MODELS, featurePicks, hasNegative, isCloudModel, isVideo, modelOf, refCap, type ModelDef } from './models'
 import { CUSTOM_GENERATE } from './customWorkflows'
 import { modelIn, wsBuilt } from './wavespeed'
 import { t } from './i18n'
@@ -105,6 +105,8 @@ export const editModelOf = (shape: GeneratorShape) => {
 /** Input images beyond what the edit model accepts (#95): null when all fit, else how many are sent. */
 export const refOverflow = (shape: GeneratorShape) => refCap(editModelOf(shape), (baseOf(shape) ? 1 : 0) + refsOf(shape).length)
 export const negativeOf = (shape: GeneratorShape) => (shape.meta.negative as string | undefined) ?? ''
+/** #201: the negative prompt for this model, or undefined when its schema has no negative_prompt. */
+export const negativeFor = (shape: GeneratorShape, model: ModelDef | null | undefined) => (hasNegative(model) && negativeOf(shape).trim()) || undefined
 export const seedOf = (shape: GeneratorShape) => (shape.meta.seed as number | null | undefined) ?? null
 export const runOnOf = (shape: GeneratorShape) => validTarget(shape.meta.runOn) ?? defaultTarget()
 export const lorasOf = (shape: GeneratorShape) => (shape.meta.loras as LoraPick[] | undefined) ?? []
@@ -136,7 +138,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   if (isVideo(workflow) && isCloudModel(workflow)) {
     // #128: the confirm dialog states the actual duration when the agent asked for one the model doesn't take
     const note = durationNote(shape.meta?.durationAsked, duration, modelOf(workflow)?.durations?.map(Number))
-    const base = { prompt, ratio, duration, ...(note ? { duration_note: note } : {}), resolution: videoResOf(shape.props), seed: seedOf(shape) ?? undefined }
+    const base = { prompt, ratio, duration, ...(note ? { duration_note: note } : {}), resolution: videoResOf(shape.props), seed: seedOf(shape) ?? undefined, negative_prompt: negativeFor(shape, modelOf(workflow)) }
     const scenes = scenesOf(shape).filter((sc) => sc.prompt.trim())
     if (scenes.length) {
       // storyboard: the backend runs one cloud task per scene with the current model
@@ -171,6 +173,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     const images = [...(base ? [base.src] : []), ...refs].map(annotated)
     const { controls, prep } = applyRefs(picked, refStrengthsOf(shape), refControlsOf(shape))
     const seed = seedOf(shape) ?? undefined
+    const negative_prompt = negativeFor(shape, model)
     if (controls.length && !base) {
       // structure refs (canny/depth/pose/...): a WaveSpeed control model follows their maps, like upstream ControlNet
       return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })) })
@@ -181,8 +184,8 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     images.splice(cap)
     // reference images go to the image-edit feature; its default model is used unless the agent picked one
     return images.length
-      ? wsBuilt({ feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), prompt, images, width, height, seed, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined })
-      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
+      ? wsBuilt({ feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), prompt, images, width, height, seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined })
+      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined, width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent })
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')

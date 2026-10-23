@@ -920,6 +920,9 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
         payload["prompt"] = prompt
     if inputs.get("seed") is not None and "seed" in props:
         payload["seed"] = int(inputs["seed"]) % 2147483647
+    negative = str(inputs.get("negative_prompt") or "").strip()
+    if negative and "negative_prompt" in props:
+        payload["negative_prompt"] = negative  # #201: only models whose schema takes it
     if inputs.get("png") and "png" in (props.get("output_format", {}).get("enum") or []):
         payload["output_format"] = "png"
     missing = [k for k in schema.get("required") or [] if k not in payload]

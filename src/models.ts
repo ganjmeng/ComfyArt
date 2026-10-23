@@ -21,6 +21,8 @@ export interface ModelDef {
   caption?: string
   control?: string
   negative?: [string, string]
+  /** WaveSpeed request-schema fields (#201: negative_prompt shows the negative prompt box). */
+  inputs?: string[]
   lora?: string | null
   /** Picker group header (model family), starting price and quality tiers from the WaveSpeed schema (#95). */
   vendor?: string
@@ -55,6 +57,9 @@ export const isAuto = (workflow: string) => workflow === AUTO_IMAGE || workflow 
 export const IMAGE_MODELS: ModelDef[] = []
 
 export const VIDEO_MODELS: ModelDef[] = []
+
+/** #201: the negative prompt box shows only when the model's schema takes negative_prompt. */
+export const hasNegative = (m: ModelDef | null | undefined) => !!m && (!!m.negative || !!m.inputs?.includes('negative_prompt'))
 
 export const isVideo = (workflow: string) => workflow === AUTO_VIDEO || VIDEO_MODELS.some((m) => m.id === workflow)
 function customModels(): ModelDef[] {
@@ -91,7 +96,7 @@ async function useCloudImageModels() {
     const seen = new Set<string>()
     return names.flatMap((n) => byPickerOrder(all[n])).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
       // Lovart-style row (#95 design): display name + one-line description; the raw id only in the tooltip
-      id: m.id, label: m.name || m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, ratios: m.aspect_ratios, durations: m.durations, resolutions: m.resolutions, maxImages: m.max_images, defaults: m.defaults, desc: m.blurb?.[lang] ?? '', about: m.desc || undefined, files: [], cloud: true, lora: null,
+      id: m.id, label: m.name || m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, ratios: m.aspect_ratios, durations: m.durations, resolutions: m.resolutions, maxImages: m.max_images, defaults: m.defaults, inputs: m.inputs, desc: m.blurb?.[lang] ?? '', about: m.desc || undefined, files: [], cloud: true, lora: null,
       // control: structure refs run on WaveSpeed control models (#80), so the ControlNet knobs show like upstream
       ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }),
     }))
