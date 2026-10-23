@@ -1,6 +1,7 @@
 import { atom } from 'tldraw'
 
 import { api, uploadImage, viewUrl } from './comfy'
+import { wsBodyError } from './wsErrors'
 import { t } from './i18n'
 import { botEnabledAtom, settingsAtom } from './bot'
 
@@ -49,7 +50,7 @@ export async function transcribeFile(src: string): Promise<string> {
   // speech-to-text runs on WaveSpeed (wavespeed-ai/openai-whisper-turbo)
   const res = await api('/comfyart/wavespeed/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(body.error?.message ?? body.error ?? `transcribe failed: ${res.status}`)
+  if (!res.ok) throw new Error(wsBodyError(body, `transcribe failed: ${res.status}`))
   return String(body.text ?? '')
 }
 
@@ -70,7 +71,7 @@ async function cloudOcr(src: string): Promise<string> {
   setStatus(src, { stage: 'reading', tokens: 0 })
   const res = await api('/comfyart/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(body.error?.message ?? body.error ?? `ocr failed: ${res.status}`)
+  if (!res.ok) throw new Error(wsBodyError(body, `ocr failed: ${res.status}`))
   return ((body.lines ?? []) as { text?: string }[]).map((l) => l.text ?? '').join('\n')
 }
 
@@ -78,7 +79,7 @@ export async function captionImage(src: string): Promise<string> {
   // image captioning runs on WaveSpeed (wavespeed-ai/image-captioner)
   const res = await api('/comfyart/wavespeed/caption', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ src }) })
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(body.error?.message ?? body.error ?? `caption failed: ${res.status}`)
+  if (!res.ok) throw new Error(wsBodyError(body, `caption failed: ${res.status}`))
   return String(body.text ?? '')
 }
 

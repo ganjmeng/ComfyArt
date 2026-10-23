@@ -53,11 +53,13 @@ _uploaded: dict[tuple[str, int, int], str] = {}
 
 
 class WaveSpeedError(Exception):
-    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = ""):
+    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None):
         super().__init__(message)
         self.estimate = estimate  # #159: the price API failed; the dialog says 「估算价」/'Estimated'
         self.tier = tier  # #159: the tier that will be submitted, e.g. '480p · 5s'
         self.status = status
+        # #155: what the UI shows instead of the raw WaveSpeed text (insufficientCredit, moderation, rateLimit, invalidKey, failed)
+        self.kind = kind
         self.confirm = confirm
         self.seg_splits = seg_splits  # #135: 「识别加最多 N 次分割」 in the confirm dialog
         self.seg_capped = seg_capped  # True: N is the upper bound (nothing recognised yet, caption included)
@@ -163,17 +165,53 @@ def feature_of(tool_or_feature: str) -> str:
     return cfg["tool_features"].get(tool_or_feature, "")
 
 
+# #155: WaveSpeed error codes (https://wavespeed.ai/docs/error-codes): 1407 insufficient_credits, 1200 content moderation
+CODE_INSUFFICIENT = 1407
+CODE_MODERATION = 1200
+TOP_UP_URL = "https://wavespeed.ai/top-up"
+
+
+def error_kind(status: int | None, code=None, msg: str = "") -> str:
+    """Map an HTTP status / WaveSpeed code / message to the UI error kind shown in zh + en (never the raw text)."""
+    low = (msg or "").lower()
+    try:
+        code = int(code) if code is not None else None
+    except (TypeError, ValueError):
+        code = None
+    if status == 402 or code == CODE_INSUFFICIENT or "insufficient" in low or "balance" in low or "credit" in low:
+        return "insufficientCredit"
+    if code == CODE_MODERATION or "sensitive" in low or "moderation" in low:
+        return "moderation"
+    if status == 429 or code == 429:
+        return "rateLimit"
+    if status == 401:
+        return "invalidKey"
+    return "failed"
+
+
 def _status_error(status: int, body) -> WaveSpeedError:
     msg = ""
+    code = None
     if isinstance(body, dict):
         msg = str(body.get("message") or (body.get("data") or {}).get("error") or "")
+        code = body.get("code") if body.get("code") != status else None
+    kind = error_kind(status, code, msg)
     if status == 401:
-        return WaveSpeedError("WaveSpeed rejected the API key (401): check it in Settings > WaveSpeed API key", 401)
-    if status == 402 or "balance" in msg.lower():
-        return WaveSpeedError(f"WaveSpeed account balance is too low ({status}) {msg}".strip(), 402)
+        return WaveSpeedError("WaveSpeed rejected the API key (401): check it in Settings > WaveSpeed API key", 401, kind="invalidKey")
+    if kind == "insufficientCredit":
+        return WaveSpeedError(f"WaveSpeed account balance is too low, nothing was charged; top up at {TOP_UP_URL}", 402, kind=kind)
     if status == 429:
-        return WaveSpeedError("WaveSpeed rate limit reached (429): try again shortly", 429)
-    return WaveSpeedError(f"WaveSpeed request failed ({status}) {msg}".strip(), 502 if status >= 500 else status)
+        return WaveSpeedError("WaveSpeed rate limit reached (429): try again shortly", 429, kind=kind)
+    return WaveSpeedError(f"WaveSpeed request failed ({status}) {msg}".strip(), 502 if status >= 500 else status, kind=kind)
+
+
+def _task_error(status: str, data: dict) -> WaveSpeedError:
+    """A failed task: keep the detail for logs/Agent, tag the kind for the UI (#155)."""
+    err = str(data.get("error") or "")
+    kind = error_kind(None, data.get("code"), err)
+    if kind == "insufficientCredit":
+        return WaveSpeedError(f"WaveSpeed account balance is too low, nothing was charged; top up at {TOP_UP_URL}", 402, kind=kind)
+    return WaveSpeedError(f"WaveSpeed task {status}: {err or 'unknown error'}", kind=kind)
 
 
 async def _json(res: aiohttp.ClientResponse):
@@ -1522,13 +1560,16 @@ def _history(task: str, status: str, messages: list, outputs: dict) -> dict:
     return {f"ws:{task}": {"status": {"completed": done, "status_str": "error" if status == "failed" else status, "messages": messages}, "outputs": outputs}}
 
 
-def _fail(task: str, message: str) -> dict:
+def _fail(task: str, message: "str | WaveSpeedError") -> dict:
+    info: dict = {"exception_message": str(message)}
+    if isinstance(message, WaveSpeedError) and message.kind:
+        info["ws_kind"] = message.kind  # #155: the UI shows a readable zh/en message for this kind
     job = _jobs.get(task)
     if job:
         job["done"] = True
-        job["result"] = _history(task, "failed", [["execution_error", {"exception_message": message}]], {})
+        job["result"] = _history(task, "failed", [["execution_error", info]], {})
         return job["result"]
-    return _history(task, "failed", [["execution_error", {"exception_message": message}]], {})
+    return _history(task, "failed", [["execution_error", info]], {})
 
 
 async def poll(task: str) -> dict:
@@ -1583,7 +1624,7 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
             if res.status >= 400:
                 err = _status_error(res.status, body)
                 if res.status in (401, 402, 403):
-                    return _fail(task, str(err))
+                    return _fail(task, err)
                 raise _Transient(f"HTTP {res.status}")
         job["errors"] = 0
         data = (body or {}).get("data") or {}
@@ -1591,7 +1632,7 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
         if status == "timeout":
             return _fail(task, str(await _timeout_error(task)))
         if status in FAILED_STATUSES:
-            return _fail(task, f"WaveSpeed task {status}: {data.get('error') or 'unknown error'}")
+            return _fail(task, _task_error(status, data))
         if status != "completed":
             return _history(task, status or "processing", [], {})
         outputs = [o for o in (data.get("outputs") or []) if isinstance(o, str) and o.startswith(("http://", "https://"))]
@@ -1682,7 +1723,7 @@ async def run_raw(inputs: dict, timeout: float = 120.0) -> list:
                 if status == "timeout":
                     raise await _timeout_error(task)
                 if status in FAILED_STATUSES:
-                    raise WaveSpeedError(f"WaveSpeed task {status}: {data.get('error') or 'unknown error'}")
+                    raise _task_error(status, data)
                 if status == "completed":
                     outs = [o for o in (data.get("outputs") or []) if o not in (None, "", [], {})]
                     if not outs:
@@ -1706,6 +1747,8 @@ async def fetch_text(url: str) -> str:
 
 def _respond_error(e: WaveSpeedError) -> web.Response:
     body: dict = {"message": str(e)}
+    if e.kind:
+        body["kind"] = e.kind
     if e.confirm is not None:
         body["confirm_usd"] = e.confirm
         if e.seg_splits is not None:
@@ -1728,7 +1771,7 @@ async def wavespeed_run(request: web.Request) -> web.Response:
     except WaveSpeedError as e:
         return _respond_error(e)
     except aiohttp.ClientError as e:
-        return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}"))
+        return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}", kind="network"))
     return web.json_response({"prompt_id": f"ws:{task}"})
 
 
@@ -1742,7 +1785,7 @@ async def wavespeed_control_preview(request: web.Request) -> web.Response:
     except WaveSpeedError as e:
         return _respond_error(e)
     except aiohttp.ClientError as e:
-        return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}"))
+        return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}", kind="network"))
 
 
 @routes.post("/comfyart/wavespeed/estimate")

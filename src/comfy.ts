@@ -3,6 +3,7 @@ import { readLocal } from './localPrefs'
 import { t } from './i18n'
 import { onComfyEvent } from './ws'
 import { isWsGraph, WS_ID } from './wavespeed'
+import { wsBodyError, wsErrorText } from './wsErrors'
 import { keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus } from './wavespeedKey'
 
 const POLL_MS = 1500
@@ -136,6 +137,8 @@ function promptError(body: any, status: number): string {
     (ne?.errors ?? []).map((er: any) => `${ne.class_type ?? ''} #${id}: ${er.message}${er.details ? ` — ${er.details}` : ''}`))
   if (lines.length) return lines.join('\n')
   const top = body?.error
+  const readable = wsErrorText(top?.kind)
+  if (readable) return readable
   if (!top?.message) return `queue failed: ${status}`
   return top.details ? `${top.message}: ${top.details}` : top.message
 }
@@ -168,7 +171,7 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget())
   if (isWsGraph(prompt)) {
     const key = keyStatusAtom.get()
     if (key && !key.configured) { keySettingsOpenAtom.set(true); throw new Error(t('wsKey.needKey')) }
-    if (outOfCredit(key)) throw new Error(t('wsKey.needCredit'))
+    if (outOfCredit(key)) throw new Error(wsErrorText('insufficientCredit')!)
     const inputs = await wsHook(Object.values(prompt)[0].inputs as Record<string, unknown>)
     let ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
     let wsBody = await ws.json().catch(() => null)
@@ -230,7 +233,7 @@ export async function promptHistory(promptId: string): Promise<any> {
 
       : await api(`/history/${promptId}`)
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(body.error?.message ?? `history failed: ${res.status}`)
+  if (!res.ok) throw new Error(wsBodyError(body, `history failed: ${res.status}`))
   return body[promptId]
 }
 
@@ -241,7 +244,7 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
     if (hist) {
       const messages: [string, any][] = hist.status?.messages ?? []
       const err = messages.find((m) => m[0] === 'execution_error')
-      if (err) throw new Error(String(err[1]?.exception_message ?? 'execution failed'))
+      if (err) throw new Error(wsErrorText(err[1]?.ws_kind) ?? String(err[1]?.exception_message ?? 'execution failed'))
       if (messages.some((m) => m[0] === 'execution_interrupted')) throw new Error(t('jobs.interrupted'))
       const value = hist.outputs?.[node] ? pick(hist.outputs[node]) : null
       if (value) {

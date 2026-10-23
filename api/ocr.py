@@ -105,5 +105,5 @@ async def ocr(request: web.Request) -> web.Response:
     except (ValueError, OSError) as e:
         return error(str(e), 404)
     except wavespeed.WaveSpeedError as e:
-        return error(str(e), e.status)
+        return wavespeed._respond_error(e)  # #155: carries the error kind for the readable zh/en message
     return web.json_response({"lines": lines})

@@ -142,7 +142,7 @@
   "botSettings.available": "可用",
   "botSettings.availableAgents": "可用的 Agent",
   "botSettings.availableAgentsOnThisMachine": "启用并保存后显示本机可用的 Agent",
-  "botSettings.claudeCodeCodexQwenCode": "Claude Code、Codex、Qwen Code、DeepSeek Harness 用本机已登录的命令行工具，ComfyArt 不保存任何密钥。Local LLM 需要 API key 时，在启动 ComfyUI 前设置环境变量 COMFYART_LOCAL_LLM_API_KEY。",
+  "botSettings.claudeCodeCodexQwenCode": "Claude Code、Codex、Qwen Code、DeepSeek Harness 用本机已登录的命令行工具，ComfyArt 不保存任何密钥。Local LLM 需要 API key 时，设置环境变量 COMFYART_LOCAL_LLM_API_KEY。",
   "botSettings.comfyMcpCommand": "comfy-mcp 命令",
   "botSettings.enableAgentUseCommandLine": "启用 Agent：用本机已登录的 Claude Code、Codex 等命令行工具（需要先启用 MCP）",
   "botSettings.enableMcpLetTheAgent": "启用 MCP：允许 Agent 和本机其他 MCP 客户端操作打开的画布",
@@ -1202,5 +1202,11 @@
   "zoom.zoomTo": "缩放至 {0}%",
   "genOptions.durationMin": "该模型最短 {1} 秒，将按 {1} 秒生成（你要的是 {0} 秒）。",
   "genOptions.durationMax": "该模型最长 {1} 秒，将按 {1} 秒生成（你要的是 {0} 秒）。",
-  "genOptions.durationUp": "该模型不支持 {0} 秒，将按 {1} 秒生成。"
+  "genOptions.durationUp": "该模型不支持 {0} 秒，将按 {1} 秒生成。",
+  "wsErr.insufficientCredit": "WaveSpeed 余额不足，本次未扣费。请到 {0} 充值后再试。",
+  "wsErr.moderation": "WaveSpeed 判定提示词或图片含敏感内容，没有生成。请修改后再试。",
+  "wsErr.rateLimit": "WaveSpeed 当前请求太多，请稍等片刻再试。",
+  "wsErr.invalidKey": "WaveSpeed 拒绝了这个 API key，请在 设置 > WaveSpeed API key 里检查。",
+  "wsErr.network": "连不上 WaveSpeed，请检查网络后再试。",
+  "wsErr.failed": "WaveSpeed 没能完成这次任务，请检查输入后再试。"
 }

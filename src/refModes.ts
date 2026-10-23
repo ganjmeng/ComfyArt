@@ -1,5 +1,6 @@
 import type { ModelDef } from './models'
 import type { GeneratorShape } from './shapes/GeneratorShape'
+import { wsBodyError } from './wsErrors'
 import { t } from './i18n'
 import { annotated } from './workflows'
 import { api, askCost, CostDeclined } from './comfy'
@@ -98,7 +99,7 @@ export async function previewControl(src: string, mode: RefMode, res: number): P
     if (typeof price !== 'number' || !(await askCost(price, res1.conf?.error?.seg_splits, res1.conf?.error?.seg_capped))) throw new CostDeclined()
     res1 = await send({ inputs: { ...inputs, confirmed: true } })
   }
-  if (!res1.blob) throw new Error(res1.err?.error?.message ?? `preview failed: ${res1.r.status}`)
+  if (!res1.blob) throw new Error(wsBodyError(res1.err, `preview failed: ${res1.r.status}`))
   const url = URL.createObjectURL(res1.blob)
   issued.set(seen, url)
   return url
