@@ -150,3 +150,28 @@ def test_greyed_hint_lists_lora_models():
     assert "loraModelNames(shape)" in adv and "genAdvanced.loraModelsSep" in adv
     en = json.loads((ROOT / "src/locales/en.json").read_text())
     assert en["genAdvanced.loraUnsupported"].startswith("This model doesn't support LoRA") and "Switch" in en["genAdvanced.loraUnsupported"]
+
+
+def test_200_percent_sends_scale_2_and_fourth_blocked():
+    props = {"prompt": {}, "loras": LORAS}
+    assert wavespeed.lora_payload(props, {"loras": [{"name": HF, "strength": 200}]}) == [{"path": HF, "scale": 2.0}]
+    three = [{"name": f"{HF}?v={i}", "strength": 100} for i in range(3)]
+    assert len(wavespeed.lora_payload(props, {"loras": three})) == 3
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        wavespeed.lora_payload(props, {"loras": three + [{"name": HF, "strength": 100}]})
+    assert e.value.kind == "loraTooMany"
+    assert "export const MAX_LORAS = 3" in (ROOT / "src/loras.ts").read_text()
+    adv = (ROOT / "src/ui/GenAdvanced.tsx").read_text()
+    assert "loras.length >= MAX_LORAS" in adv and "if (full) return setUrlError(t('wsErr.loraTooMany'))" in adv
+
+
+def test_design_states_reuse_styles():
+    adv = (ROOT / "src/ui/GenAdvanced.tsx").read_text()
+    assert 'className="ca-workflows__warn ca-adv__lora"' in adv and "genAdvanced.loraUrlHelp" in adv
+    assert 'data-off={!hasLora || undefined} className="ca-adv__block"' in adv and "contentKey=" in adv
+    css = (ROOT / "src/styles/shell.css").read_text()
+    assert ".ca-adv__block[data-off] { opacity: .4; }" in css and "max-height: min(560px, calc(100vh - 240px))" in css
+    zh = json.loads((ROOT / "src/locales/zh.json").read_text())
+    en = json.loads((ROOT / "src/locales/en.json").read_text())
+    assert zh["genAdvanced.loraUrlHint"] == "粘贴 LoRA 链接" and en["genAdvanced.loraUrlHint"] == "Paste LoRA URL"
+    assert zh["genAdvanced.loraUrlHelp"] == "支持 HuggingFace 和 Civitai 链接" and en["genAdvanced.loraUrlHelp"] == "Supports HuggingFace and Civitai links"

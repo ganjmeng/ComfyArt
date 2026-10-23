@@ -10,6 +10,8 @@ export interface LoraPick { name: string; strength: number }
 
 export const DEFAULT_LORA_STRENGTH = 100
 export const MAX_LORA_STRENGTH = 200
+/** #202: WaveSpeed `loras` maxItems; the panel blocks a 4th. */
+export const MAX_LORAS = 3
 
 const SAVED = 'comfyart/lora-saved.json'
 

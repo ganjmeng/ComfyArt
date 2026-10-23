@@ -3,10 +3,8 @@ import { useValue } from 'tldraw'
 
 import { loraModelNames, loraSupported, lorasOf, negativeOf, seedOf } from '../generate'
 import { randomSeed } from '../workflows'
-import { DEFAULT_LORA_STRENGTH, loadLoras, loraFavoritesAtom, loraLabel, lorasAtom, toggleFavorite } from '../loras'
 import { hasNegative, type ModelDef } from '../models'
-import { DEFAULT_LORA_STRENGTH, forgetLora, loadSavedLoras, loraLabel, loraUrl, MAX_LORA_STRENGTH, saveLora, savedLorasAtom, type LoraPick } from '../loras'
-import type { ModelDef } from '../models'
+import { DEFAULT_LORA_STRENGTH, forgetLora, MAX_LORAS, loadSavedLoras, loraLabel, loraUrl, MAX_LORA_STRENGTH, saveLora, savedLorasAtom, type LoraPick } from '../loras'
 import type { GeneratorShape } from '../shapes/GeneratorShape'
 import { t } from '../i18n'
 import { Icons } from './icons'
@@ -26,8 +24,11 @@ export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape;
   const negative = showNegative ? negativeOf(shape) : ''
   const loras = lorasOf(shape)
   const count = (seed != null ? 1 : 0) + (negative ? 1 : 0) + (hasLora ? loras.length : 0)
+  const full = loras.length >= MAX_LORAS
   const addLora = (pick: LoraPick) => {
-    if (!loras.some((p) => p.name === pick.name)) setMeta({ loras: [...loras, pick] })
+    if (loras.some((p) => p.name === pick.name)) return void saveLora(pick)
+    if (full) return setUrlError(t('wsErr.loraTooMany'))  // #202: max 3 (WaveSpeed maxItems); a 4th is blocked, never sent
+    setMeta({ loras: [...loras, pick] })
     void saveLora(pick)
   }
   const addUrl = () => {
@@ -39,7 +40,7 @@ export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape;
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen} side="top" trigger={({ open: o, toggle }) => (
+    <Popover open={open} onOpenChange={setOpen} side="top" contentKey={`${hasLora}:${loras.length}:${saved?.length ?? 0}:${urlError}:${showNegative}:${seed != null}`} trigger={({ open: o, toggle }) => (
       <button type="button" className="ca-gen__pill" data-open={o || undefined} onClick={toggle}>
         <span className="ca-gen__pilltext">{t('genAdvanced.advanced')}{count ? ` · ${count}` : ''}</span><span className="ca-gen__chev">{Icons.chevron}</span>
       </button>
@@ -62,7 +63,8 @@ export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape;
           </>
         )}
         <div className="ca-gen__label">LoRA</div>
-        {!hasLora && <div className="ca-chat__hint" data-testid="lora-unsupported">{t('genAdvanced.loraUnsupported')}{loraModelNames(shape).length ? `${t('genAdvanced.loraModelsSep')}${loraModelNames(shape).join(t('genAdvanced.loraModelsJoin'))}` : ''}</div>}
+        {!hasLora && <div className="ca-landing__hint ca-adv__lora" data-testid="lora-unsupported">{t('genAdvanced.loraUnsupported')}{loraModelNames(shape).length ? `${t('genAdvanced.loraModelsSep')}${loraModelNames(shape).join(t('genAdvanced.loraModelsJoin'))}` : ''}</div>}
+        <div data-off={!hasLora || undefined} className="ca-adv__block">
         {loras.map((l) => (
           <div key={l.name} className="ca-adv__lora">
             <span className="ca-adv__name" title={l.name}>{loraLabel(l.name)}</span>
@@ -74,24 +76,26 @@ export function AdvancedPill({ shape, model, setMeta }: { shape: GeneratorShape;
           </div>
         ))}
         <div className="ca-style__row ca-adv__lora">
-          <input className="ca-assets__search" value={url} disabled={!hasLora} placeholder={t('genAdvanced.loraUrlHint')} data-testid="lora-url"
+          <input className="ca-assets__search" value={url} disabled={!hasLora || full} placeholder={t('genAdvanced.loraUrlHint')} data-testid="lora-url"
             onChange={(e) => { setUrl(e.target.value); setUrlError('') }}
             onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') addUrl() }} />
-          <button type="button" className="ca-panel__icon" title={t('genAdvanced.addLora')} disabled={!hasLora || !url.trim()} onClick={addUrl}>{Icons.plus}</button>
+          <button type="button" className="ca-panel__icon" title={t('genAdvanced.addLora')} disabled={!hasLora || full || !url.trim()} onClick={addUrl}>{Icons.plus}</button>
         </div>
-        {urlError && <div className="ca-landing__error" role="alert" onClick={() => setUrlError('')}>{urlError}</div>}
+        {urlError ? <div className="ca-workflows__warn ca-adv__lora" role="alert" data-testid="lora-error">{urlError}</div>
+          : <div className="ca-landing__hint ca-adv__lora">{t('genAdvanced.loraUrlHelp')}</div>}
         <div className="ca-gen__label">{t('genAdvanced.savedLoras')}</div>
         <div className="ca-adv__list">
           {saved !== null && !saved.length && <div className="ca-compose__empty">{t('genAdvanced.noSavedLoras')}</div>}
           {(saved ?? []).map((l) => (
             <div key={l.name} className="ca-adv__row">
-              <button type="button" className="ca-menu__item ca-adv__pick" title={l.name} disabled={!hasLora || loras.some((p) => p.name === l.name)} onClick={() => addLora(l)}>
+              <button type="button" className="ca-menu__item ca-adv__pick" title={l.name} disabled={!hasLora || full || loras.some((p) => p.name === l.name)} onClick={() => addLora(l)}>
                 <span className="ca-menu__grow">{loraLabel(l.name)}</span>
                 <span className="ca-panel__val">{l.strength}</span>
               </button>
               <button type="button" className="ca-panel__icon" title={t('genAdvanced.forget')} onClick={() => void forgetLora(l.name)}>{Icons.close}</button>
             </div>
           ))}
+        </div>
         </div>
       </div>
     </Popover>
