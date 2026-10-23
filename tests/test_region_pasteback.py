@@ -150,6 +150,7 @@ async def test_quote_equals_charge_for_sunburst_crop(curated):
     await wavespeed.submit(dict(inputs))
     model, payload = curated["submits"][0]
     assert model == SUNBURST
+    assert len(quoted.pop("images")) == len(payload["images"]) == 1  # #192: priced for the references it submits
     assert quoted == {k: payload[k] for k in ("resolution", "quality", "aspect_ratio", "size") if k in payload}
     assert est["price"] == pytest.approx(price(payload)) and est["source"] == "quote"
 

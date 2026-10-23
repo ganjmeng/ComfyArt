@@ -1061,6 +1061,15 @@ def media_seconds(inputs: dict) -> int | None:
     return None
 
 
+def ref_count(props: dict, inputs: dict) -> int:
+    """#192: how many reference images build_payload sends in `images` (image + images, capped at maxItems)."""
+    if "images" not in props:
+        return 0
+    images = [v for v in ([inputs.get("image")] if inputs.get("image") else []) + list(inputs.get("images") or []) if v]
+    limit = (props.get("images") or {}).get("maxItems")
+    return min(len(images), limit) if isinstance(limit, int) and limit > 0 else len(images)
+
+
 async def priced_inputs(model: str, inputs: dict) -> dict:
     """The price-relevant fields as they will be submitted (#128 duration, #159 resolution/aspect_ratio)."""
     priced = _price_inputs(inputs, model)
@@ -1069,6 +1078,10 @@ async def priced_inputs(model: str, inputs: dict) -> dict:
     except (WaveSpeedError, aiohttp.ClientError, asyncio.TimeoutError, AttributeError):
         props = {}
     out = _submitted_tier(props, inputs, priced)
+    if (n := ref_count(props, inputs)) and "images" in props:
+        # #192: WaveSpeed prices image edits by the number of reference images (sunburst +$0.015 per extra image; the
+        # free price API only counts them, verified with placeholder strings), so quote the count build_payload submits
+        out["images"] = [f"ref-{i + 1}" for i in range(n)]
     if model in DURATION_BILLED and "duration" not in props:
         out["duration"] = media_seconds(inputs) or DURATION_FALLBACK_S  # #185: pricing only
     return out
