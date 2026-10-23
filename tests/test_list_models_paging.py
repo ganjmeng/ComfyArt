@@ -94,7 +94,10 @@ def _tier(price: float | None) -> str:
 
 # Mock acceptance (#95): 10 sample requests, a scripted agent reads list_models (default view, as the
 # real agent does) and picks; the pick must be a recommended model of the right feature and in the same
-# price tier as the Lovart default for that request (Lovart defaults from the #95 capture; EL's list may refine).
+# price tier as the Lovart default for that request. Lovart defaults are EL's in-app capture (#95 comments
+# 6355196537 / 6355356309): canvas image generator GPT Image 2 (15 credits), video generator Seedance 2.0
+# 5s 720p (90 credits). Lovart's generators reuse the same model when reference images are attached, so
+# image_edit / image_to_video map to the same models' edit / i2v endpoints.
 REQUESTS = [
     ("产品海报，白底", "image", "text_to_image", "openai/gpt-image-2/text-to-image"),
     ("给这张图换背景", "image", "image_edit", "openai/gpt-image-2/edit"),

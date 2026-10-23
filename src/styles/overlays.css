@@ -301,3 +301,4 @@
 .ca-workflows__group { display: flex; flex-direction: column; gap: 6px; }
 .ca-workflows__row { display: grid; grid-template-columns: 1fr 1.3fr auto; align-items: center; gap: 4px 8px; font-size: 13px; }
 .ca-workflows__warn { grid-column: 1 / -1; font-size: 12px; color: var(--ca-error-text); }
+.ca-gen__notice { font-size: 11px; color: var(--ca-text-muted, #888); padding: 2px 4px; }

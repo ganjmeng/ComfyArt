@@ -36,3 +36,14 @@ def test_per_feature_tabs_and_tiers(result):
     assert list(result["tabs"]) == ["text_to_image", "image_edit", "text_to_video", "image_to_video"]
     assert result["tabs"]["image_edit"] == ["openai/gpt-image-2/edit", "google/nano-banana-pro/edit"]
     assert result["tiers"] == ["low", "medium", "high"]
+
+
+def test_switching_keeps_supported_and_resets_the_rest(result):
+    assert result["adjustKeep"] == {}
+    assert result["adjustReset"] == {"ratio": "16:9", "duration": 5, "resolution": "1080p"}
+    assert result["adjustTier"] == {"quality": "medium"}
+    assert result["adjustAuto"] == {}
+
+
+def test_extra_refs_capped_to_model_max(result):
+    assert result["refCap"] == [3, None, None]

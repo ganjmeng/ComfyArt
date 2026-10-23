@@ -4,7 +4,7 @@ import { defaultTarget, refKind, uploadImage, validTarget, viewUrl, type PromptG
 import type { LoraPick } from './loras'
 import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from './jobs'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
-import { agentModels, AUTO_IMAGE, AUTO_VIDEO, isCloudModel, isVideo, modelOf } from './models'
+import { agentModels, AUTO_IMAGE, AUTO_VIDEO, FEATURE_MODELS, isCloudModel, isVideo, modelOf, refCap } from './models'
 import { CUSTOM_GENERATE } from './customWorkflows'
 import { modelIn, wsBuilt } from './wavespeed'
 import { t } from './i18n'
@@ -89,6 +89,13 @@ export function colorsOf(shape: GeneratorShape): string[] {
 
 /** User picks for the secondary tabs of the model menu (image_edit, image_to_video); empty while Auto is on. */
 export const featureModelsOf = (shape: GeneratorShape) => (shape.meta.featureModels as Record<string, string> | undefined) ?? {}
+/** The image-edit model reference images go to: the user's pick on that tab, else the feature default (first curated entry). */
+export const editModelOf = (shape: GeneratorShape) => {
+  const list = FEATURE_MODELS.image_edit ?? []
+  return list.find((m) => m.id === featureModelsOf(shape).image_edit) ?? list[0]
+}
+/** Input images beyond what the edit model accepts (#95): null when all fit, else how many are sent. */
+export const refOverflow = (shape: GeneratorShape) => refCap(editModelOf(shape), (baseOf(shape) ? 1 : 0) + refsOf(shape).length)
 export const negativeOf = (shape: GeneratorShape) => (shape.meta.negative as string | undefined) ?? ''
 export const seedOf = (shape: GeneratorShape) => (shape.meta.seed as number | null | undefined) ?? null
 export const runOnOf = (shape: GeneratorShape) => validTarget(shape.meta.runOn) ?? defaultTarget()
@@ -159,7 +166,9 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
       return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })) })
     }
     const prepOf = new Map(picked.map((r, i) => [r.src, prep[i]]))
-    const refPrep = [...(base ? [null] : []), ...refs.map((r) => prepOf.get(r) ?? null)]
+    const cap = refOverflow(shape) ?? images.length
+    const refPrep = [...(base ? [null] : []), ...refs.map((r) => prepOf.get(r) ?? null)].slice(0, cap)
+    images.splice(cap)
     // reference images go to the image-edit feature; its default model is used unless the agent picked one
     return images.length
       ? wsBuilt({ feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), prompt, images, width, height, seed, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined })

@@ -37,13 +37,13 @@ export function settingsSummary(p: GeneratorShape['props'], video: boolean) {
 
 type Update = (patch: Partial<GeneratorShape['props']>) => void
 
-export function SettingsPill({ p, video, quality, tiers, update }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; update: Update }) {
+export function SettingsPill({ p, video, quality, tiers, caps, update }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update }) {
   const [open, setOpen] = useState(false)
   return (
     <Popover open={open} onOpenChange={setOpen} side="top" trigger={({ open: o, toggle }) => (
       <button type="button" className="ca-gen__pill" data-open={o || undefined} onClick={toggle}><span className="ca-gen__pilltext">{settingsSummary(p, video)}</span><span className="ca-gen__chev">{Icons.chevron}</span></button>
     )}>
-      <GenSettings p={p} video={video} quality={quality} tiers={tiers} update={update} />
+      <GenSettings p={p} video={video} quality={quality} tiers={tiers} caps={caps} update={update} />
     </Popover>
   )
 }
@@ -100,7 +100,13 @@ export function ModelPill({ video, model, picks, onPick, onAuto }: {
   )
 }
 
-export function GenSettings({ p, video, quality, tiers, update }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; update: Update }) {
+export function GenSettings({ p, video, quality, tiers, caps, update }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update }) {
+  // only what the selected model's schema accepts (#95); no enum in the schema means the full list
+  const only = <T,>(all: T[], ok?: T[]) => (ok?.length ? all.filter((v) => ok.map(String).includes(String(v))) : all)
+  const ratios = only(video ? VIDEO_RATIOS : RATIOS, caps?.ratios)
+  const shownRatios = ratios.length ? ratios : (video ? VIDEO_RATIOS : RATIOS)
+  const durations = only(DURATIONS, caps?.durations)
+  const vres = only(VIDEO_RESOLUTIONS, caps?.resolutions)
   return (
     <div className="ca-menu ca-gen__settings">
       <div className="ca-gen__title">{video ? t('genSettings.videoSettings') : t('genSettings.imageSettings')}</div>
@@ -120,7 +126,7 @@ export function GenSettings({ p, video, quality, tiers, update }: { p: Generator
         <>
           <div className="ca-gen__label">{t('genSettings.aspectRatio')}</div>
           <div className="ca-gen__ratios">
-            {(video ? VIDEO_RATIOS : RATIOS).map((r) => (
+            {shownRatios.map((r) => (
               <button key={r} type="button" className="ca-gen__ratio" data-on={p.ratio === r || undefined} onClick={() => update({ ratio: r })}>
                 <RatioShape ratio={r} />
                 <span>{r}</span>
@@ -132,12 +138,12 @@ export function GenSettings({ p, video, quality, tiers, update }: { p: Generator
       {video && (
         <>
           <div className="ca-gen__label">{t('genSettings.resolution')}</div>
-          <Chips value={VIDEO_RESOLUTIONS.includes(p.resolution) ? p.resolution : VIDEO_RESOLUTIONS[0]} options={VIDEO_RESOLUTIONS.map((r) => [r, r] as [string, string])} onPick={(r) => update({ resolution: r })} gen />
+          <Chips value={(vres.length ? vres : VIDEO_RESOLUTIONS).includes(p.resolution) ? p.resolution : (vres.length ? vres : VIDEO_RESOLUTIONS)[0]} options={(vres.length ? vres : VIDEO_RESOLUTIONS).map((r) => [r, r] as [string, string])} onPick={(r) => update({ resolution: r })} gen />
         </>
       )}
       <div className="ca-gen__label">{video ? t('common.duration') : t('genSettings.count')}</div>
       {video
-        ? <Chips value={p.duration} options={DURATIONS.map((d) => [d, `${d}s`] as [number, string])} onPick={(d) => update({ duration: d })} gen />
+        ? <Chips value={p.duration} options={(durations.length ? durations : DURATIONS).map((d) => [d, `${d}s`] as [number, string])} onPick={(d) => update({ duration: d })} gen />
         : <Chips value={p.count} options={COUNTS.map((n) => [n, String(n)] as [number, string])} onPick={(n) => update({ count: n })} gen />}
       {video && (
         <>

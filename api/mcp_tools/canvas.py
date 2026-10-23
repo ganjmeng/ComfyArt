@@ -60,7 +60,9 @@ SPECS: dict[str, dict] = {
         "starting price in USD per run and a one-line description. Pass an id as model to the matching tool, "
         "or omit model to use the default. type: image, image_tools, video, video_tools, audio, 3d or a "
         "feature name for that group's recommended models (without type only an index). all=true with "
-        "page (1..pages) lists every model. model_id: one model's params and quality tiers.",
+        "page (1..pages) lists every model. model_id: one model's params (accepted ratios, durations, "
+        "resolutions, max reference images) and quality tiers; call it before using a non-default model so "
+        "its params are valid. Extra reference images beyond its max are dropped, not charged.",
         {"type": {"type": "string"}, "all": {"type": "boolean"}, "page": {"type": "integer"},
          "model_id": {"type": "string"}}),
     "brand_kits": _tool(
@@ -276,7 +278,8 @@ SPECS: dict[str, dict] = {
         ["action"]),
 }
 
-_MODEL = {"type": "string", "description": "WaveSpeed model id from list_models for this tool's feature; omit for the default"}
+_MODEL = {"type": "string", "description": "WaveSpeed model id from list_models for this tool's feature; omit for the default. "
+          "Before using a non-default model, call list_models(model_id=...) for its accepted params"}
 for _name in load_config()["tool_features"]:
     if _name in SPECS:
         SPECS[_name]["inputSchema"]["properties"].setdefault("model", _MODEL)

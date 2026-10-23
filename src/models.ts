@@ -27,6 +27,12 @@ export interface ModelDef {
   price?: number | null
   recommended?: boolean
   qualities?: string[]
+  /** Schema enums and defaults (#95): the settings panel offers only these; switching models keeps what still fits. */
+  ratios?: string[]
+  durations?: number[]
+  resolutions?: string[]
+  maxImages?: number | null
+  defaults?: Record<string, string | number>
   /** The 'Auto' entry: the agent / backend default picks the model. */
   auto?: boolean
 }
@@ -67,7 +73,7 @@ async function useCloudImageModels() {
   const defs = (names: string[], video: boolean): ModelDef[] => {
     const seen = new Set<string>()
     return names.flatMap((n) => all[n]?.models ?? []).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
-      id: m.id, label: m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, desc: m.subtitle || m.id.split('/').slice(1).join('/') || m.id, about: m.desc || undefined, files: [], cloud: true, lora: null,
+      id: m.id, label: m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, ratios: m.aspect_ratios, durations: m.durations, resolutions: m.resolutions, maxImages: m.max_images, defaults: m.defaults, desc: m.subtitle || m.id.split('/').slice(1).join('/') || m.id, about: m.desc || undefined, files: [], cloud: true, lora: null,
       // control: structure refs run on WaveSpeed control models (#80), so the ControlNet knobs show like upstream
       ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }),
     }))
@@ -111,3 +117,27 @@ export function isInstalled(_id: string, _runOn?: string): boolean {
   // cloud models need no local files
   return true
 }
+
+type GenProps = { ratio: string; duration: number; resolution: string; quality: string }
+/** Settings to change when switching to `model` (#95): values the new model also supports are kept,
+ * the rest reset to its schema default (else its first option). Empty when nothing needs to change. */
+export function adjustForModel(p: GenProps, model: ModelDef | undefined, video: boolean): Partial<GenProps> {
+  if (!model || model.auto) return {}
+  const out: Partial<GenProps> = {}
+  const d = model.defaults ?? {}
+  const fit = <T,>(cur: T, opts: T[] | undefined, def: unknown): T | undefined => (opts?.length && !opts.includes(cur) ? (opts.includes(def as T) ? (def as T) : opts[0]) : undefined)
+  const ratio = fit(p.ratio, model.ratios?.filter((r) => /^\d+:\d+$/.test(r)), d.aspect_ratio)
+  if (ratio !== undefined) out.ratio = ratio
+  if (video) {
+    const dur = fit(Number(p.duration), model.durations?.map(Number), Number(d.duration))
+    if (dur !== undefined) out.duration = dur
+    const res = fit(p.resolution, model.resolutions, d.resolution)
+    if (res !== undefined) out.resolution = res
+  }
+  const q = fit(p.quality, model.qualities, d.quality)
+  if (q !== undefined) out.quality = q
+  return out
+}
+
+/** How many reference images this model takes; extra ones are dropped (with a notice) rather than failing the paid job. */
+export const refCap = (model: ModelDef | undefined, n: number) => (model?.maxImages && n > model.maxImages ? model.maxImages : null)

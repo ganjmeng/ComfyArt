@@ -208,6 +208,9 @@ def _caps(schema: dict) -> dict:
         out["qualities"] = props["quality"]["enum"]
     if "images" in props:
         out["max_images"] = props["images"].get("maxItems")
+    defaults = {k: props[k]["default"] for k in ("aspect_ratio", "resolution", "duration", "quality") if "default" in (props.get(k) or {})}
+    if defaults:
+        out["defaults"] = defaults
     return out
 
 
@@ -637,6 +640,28 @@ def _av_fields(props: dict, required: set, inputs: dict, payload: dict) -> None:
         payload["language"] = "auto" if "auto" in lang else lang[0]
 
 
+def _size_value(spec: dict, w: int, h: int) -> str:
+    """size as the schema wants it: free W*H, or the closest enum entry (ratios like 16:9 or sizes like 1024*1536)."""
+    enum = [str(v) for v in spec.get("enum") or []]
+    if not enum:
+        return f"{w}*{h}"
+    def shape(v: str):
+        for sep in (":", "*", "x"):
+            if sep in v:
+                a, b = v.split(sep, 1)
+                try:
+                    return float(a), float(b)
+                except ValueError:
+                    return None
+        return None
+    parsed = [(v, shape(v)) for v in enum]
+    good = [(v, d) for v, d in parsed if d and d[1]]
+    if not good:
+        return enum[0]
+    ratio = w / h
+    return min(good, key=lambda vd: (abs(math.log((vd[1][0] / vd[1][1]) / ratio)), abs(vd[1][0] * vd[1][1] - w * h) if ":" not in vd[0] else 0))[0]
+
+
 async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: dict) -> dict:
     """Map ComfyArt's logical inputs onto whatever fields this model's schema accepts."""
     props = schema.get("properties") or {}
@@ -657,7 +682,7 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
     w, h = inputs.get("width"), inputs.get("height")
     if w and h:
         if "size" in props and not props["size"].get("x-hidden"):
-            payload["size"] = f"{int(w)}*{int(h)}"
+            payload["size"] = _size_value(props["size"], int(w), int(h))
         if props.get("aspect_ratio", {}).get("enum"):
             payload["aspect_ratio"] = _nearest(props["aspect_ratio"]["enum"], w / h)
         if props.get("resolution", {}).get("enum"):

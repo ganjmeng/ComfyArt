@@ -471,6 +471,8 @@
   "genAdvanced.unknownModel": "Unknown model",
   "genPanel.addReference": "Add reference",
   "genPanel.autoDesc": "Agent picks the model for each request; turn off to choose yourself",
+  "genPanel.adjusted": "Adjusted for the new model",
+  "genPanel.refsCapped": "This model takes up to {0} reference images; only the first {0} will be sent",
   "genPanel.baseImage": "Base image",
   "genPanel.character": "Character",
   "genPanel.chooseFromAssets": "Choose from Assets",
