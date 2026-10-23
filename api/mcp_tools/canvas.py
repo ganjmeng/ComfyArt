@@ -45,7 +45,7 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
                 log.warning("auto model %s is disabled on the page; %s ran instead", choice["model"], ran)
                 choice = {**choice, "model": ran, "fallback": choice["model"],
                           "reason": {"zh": f"{choice['reason']['zh']}，但 {choice['model']} 已在模型设置里关闭，改用默认模型",
-                                     "en": f"{choice['reason']['en']}, but {choice['model']} is turned off in model settings, so the default model"}}
+                                     "en": f"{choice['reason']['en']}, but {choice['model']} is turned off in model settings, so the default model was used"}}
             result["model_choice"] = {**choice, "note": note(choice)}
         image = result.pop("png", None)
         if image:

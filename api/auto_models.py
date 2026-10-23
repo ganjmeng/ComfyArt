@@ -40,7 +40,7 @@ def choose(feature: str, prompt: str, named: str | None, catalog: dict) -> dict:
         log.warning("auto model %s for %s/%s not in catalog; falling back to %s", cat["model"], feature, cat["id"], cfg["default"])
         return {"model": cfg["default"], "auto": True, "category": cat["id"], "fallback": cat["model"],
                 "reason": {"zh": f"{cat['zh']}，但 {cat['model']} 当前不可用，改用默认模型",
-                           "en": f"{cat['en']}, but {cat['model']} is unavailable, so the default model"}}
+                           "en": f"{cat['en']}, but {cat['model']} is unavailable, so the default model was used"}}
     if cat:
         return {"model": cat["model"], "auto": True, "category": cat["id"], "reason": {"zh": cat["zh"], "en": cat["en"]}}
     return {"model": cfg["default"], "auto": True, "category": "default", "reason": dict(spec["default"]), "plain": True}
