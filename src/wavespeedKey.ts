@@ -36,7 +36,8 @@ export async function deleteKey(): Promise<void> {
   if (res.ok) keyStatusAtom.set((await res.json()) as KeyStatus)
 }
 
-export interface Estimate { price: number | null; confirm_usd: number; confirm: boolean }
+/** #159: source 'estimate' = the price API failed and `price` is the catalog estimate for `tier` (shown as 「估算价」/'Estimated'). */
+export interface Estimate { price: number | null; confirm_usd: number; confirm: boolean; source?: 'quote' | 'estimate' | 'none'; tier?: string }
 
 /** Estimated cost of a cloud job (backend caches WaveSpeed's /model/price quote for 5 minutes). */
 export async function estimateCost(inputs: Record<string, unknown>): Promise<Estimate | null> {

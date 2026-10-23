@@ -8,7 +8,7 @@ import { api } from './comfy'
 import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate } from './generate'
-import { durationNote, fitDuration, RATIOS, VIDEO_RATIOS } from './genOptions'
+import { durationNote, fitDuration, RATIOS, VIDEO_RATIOS, videoResolution } from './genOptions'
 import { tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
 import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom, whenSubmitted } from './jobs'
@@ -139,7 +139,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
   const duration = fitDuration(args.duration, lengths)
   const notes = video ? { zh: durationNote(args.duration, duration, lengths, (k, ...a) => tl('zh', k, ...a)), en: durationNote(args.duration, duration, lengths, (k, ...a) => tl('en', k, ...a)) } : null
   const props = video
-    ? { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? ratios[0], duration }
+    ? { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? ratios[0], duration, resolution: videoResolution(args.resolution == null ? '' : String(args.resolution), model.resolutions, model.defaults?.resolution) }
     : { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? '1:1', count: Math.min(4, Math.max(1, Number(args.count) || 1)) }
   const media = video ? [...refUrls(editor, args.reference_images), ...refUrls(editor, args.reference_videos), ...refUrls(editor, args.reference_audios)] : []
   const motion = video && args.motion_video ? refUrls(editor, [args.motion_video])[0] : null

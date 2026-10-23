@@ -12,7 +12,7 @@ import { PALETTE_MODE, applyRefs, refControlsOf, refHints, refLimit, refModesOf,
 import { paletteImage, palettePrompt } from './palette'
 import { annotated, randomSeed, type Built } from './workflows'
 import { MAX_VIDEO_REF_KINDS, VIDEO_AREAS, videoSize, type Scene } from './videoGraphs'
-import { durationNote, SHOTS, STYLES, VIDEO_RATIOS } from './genOptions'
+import { durationNote, SHOTS, STYLES, VIDEO_RATIOS, videoResolution } from './genOptions'
 
 export function scenesOf(shape: GeneratorShape): Scene[] {
   return (shape.meta.scenes as Scene[] | undefined) ?? []
@@ -50,10 +50,17 @@ export function targetSize({ ratio, resolution, workflow, cw, ch }: GeneratorSha
   return r >= 1 ? [snap16(short * r), short] : [short, snap16(short / r)]
 }
 
+/** #159: a video card never carries the image default '1K': the model's default/first tier (480p when unknown). */
+export function videoResOf(p: Pick<GeneratorShape['props'], 'resolution' | 'workflow'>): string {
+  const m = modelOf(p.workflow)
+  return videoResolution(p.resolution, m?.resolutions, m?.defaults?.resolution)
+}
+
 export function createGenerator(editor: Editor, video = false, props: Partial<GeneratorShape['props']> = {}, focus = true, from?: [number, number]): TLShapeId {
   const id = createShapeId()
   const ratio = props.ratio ?? (video ? VIDEO_RATIOS[0] : '1:1')
   const workflow = props.workflow || (video ? AUTO_VIDEO : AUTO_IMAGE)
+  if (video) props = { ...props, resolution: videoResOf({ resolution: props.resolution ?? '', workflow }) }
   const [w, h] = targetSize({ ...editor.getShapeUtil<GeneratorShape>(GENERATOR).getDefaultProps(), ...props, ratio, workflow })
   const [x, y] = freeSpot(editor, w, h, from)
   editor.createShape({ id, type: GENERATOR, x, y, props: { ...props, w, h, ratio, workflow } })
@@ -129,7 +136,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   if (isVideo(workflow) && isCloudModel(workflow)) {
     // #128: the confirm dialog states the actual duration when the agent asked for one the model doesn't take
     const note = durationNote(shape.meta?.durationAsked, duration, modelOf(workflow)?.durations?.map(Number))
-    const base = { prompt, ratio, duration, ...(note ? { duration_note: note } : {}), resolution: shape.props.resolution || '768p', seed: seedOf(shape) ?? undefined }
+    const base = { prompt, ratio, duration, ...(note ? { duration_note: note } : {}), resolution: videoResOf(shape.props), seed: seedOf(shape) ?? undefined }
     const scenes = scenesOf(shape).filter((sc) => sc.prompt.trim())
     if (scenes.length) {
       // storyboard: the backend runs one cloud task per scene with the current model
@@ -187,7 +194,7 @@ export function estimateInputsOf(shape: GeneratorShape): Record<string, unknown>
   const refs = refsOf(shape)
   if (isVideo(workflow)) {
     if (!isCloudModel(workflow)) return null
-    const base = { ratio, duration, resolution: shape.props.resolution || '768p' }
+    const base = { ratio, duration, resolution: videoResOf(shape.props) }
     const scenes = scenesOf(shape).filter((sc) => sc.prompt.trim())
     if (scenes.length) {
       const feature = refs[0] ? 'image_to_video' : 'text_to_video'

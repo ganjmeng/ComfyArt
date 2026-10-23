@@ -62,12 +62,13 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
     return inputs ? JSON.stringify(inputs) : ''
   }, [editor, shape?.id])
   const [estimate, setEstimate] = useState<number | null>(null)
+  const [estimated, setEstimated] = useState(false)  // #159: price API failed, show 「估算价」/'Estimated'
   useEffect(() => {
     setEstimate(null)
     if (!estKey) return
     let live = true
     // debounced; the backend caches each WaveSpeed quote for 5 minutes
-    const timer = setTimeout(() => { estimateCost(JSON.parse(estKey)).then((e) => { if (live) setEstimate(e?.price ?? null) }).catch(() => {}) }, 300)
+    const timer = setTimeout(() => { estimateCost(JSON.parse(estKey)).then((e) => { if (live) { setEstimate(e?.price ?? null); setEstimated(e?.source === 'estimate') } }).catch(() => {}) }, 300)
     return () => { live = false; clearTimeout(timer) }
   }, [estKey])
   if (!shape || !rect || running || canvasPick) return null
@@ -314,7 +315,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
             setAdjusted(Object.keys(patch).length > 0)
             update({ workflow: id, ...patch })
           }} />
-        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={t('wsKey.estimate', `$${estimate}`)}>{`≈$${estimate < 0.01 ? estimate.toFixed(4).replace(/0+$/, '') : estimate.toFixed(2)}`}</span>}
+        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={estimated ? t('wsKey.estimated', `$${estimate}`) : t('wsKey.estimate', `$${estimate}`)}>{`${estimated ? `${t('wsKey.estimatedTag')} ` : ''}≈$${estimate < 0.01 ? estimate.toFixed(4).replace(/0+$/, '') : estimate.toFixed(2)}`}</span>}
         <button type="button" className="ca-gen__send" disabled={!ready || noCredit} title={noCredit ? t('wsKey.needCredit') : estimate != null ? `${t('common.generate')} · ${t('wsKey.estimate', `$${estimate}`)}` : t('common.generate')} onClick={submit}>
           <span className="ca-icon">{Icons.send}</span>
         </button>
