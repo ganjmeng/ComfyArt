@@ -656,6 +656,8 @@
   "jobs.needVoiceSample": "Please upload a voice sample first",
   "jobs.needSegTarget": "Select or describe the object to segment first",
   "jobs.wsTimeout": "Generation timed out ({0}s), please retry",
+  "jobs.wsTimeoutCharged": "Generation timed out, charged ${0}",
+  "jobs.wsNoOutput": "The task finished but returned no result. Please try again",
   "kitEditor.createProject": "Create a project with this kit",
   "kitEditor.description": "Description",
   "kitEditor.dropFormats": "PNG, JPG, PDF · added to references",
