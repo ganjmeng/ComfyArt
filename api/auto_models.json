@@ -23,6 +23,8 @@
    "tool": "edit_image",
    "multi_reference": {"model": "google/nano-banana-2.1/edit",
      "zh": "给了 {n} 张参考图，需要多图参考和角色或产品一致", "en": "{n} reference images were given, which needs multi-reference and character or product consistency"},
+   "masked": {"model": "openai/gpt-image-2.5-sunburst/edit", "tools": ["edit_region"],
+     "zh": "这是带选区或涂抹蒙版的局部编辑（#45），只改选区，用精度更高的模型", "en": "this is an edit with a selection or brushed mask (#45), which only changes the selection and uses the more precise model"},
    "default": {"zh": "这是通用图片编辑的默认模型", "en": "the default model for general image editing"},
    "categories": [
     {"id": "keep_identity", "model": "google/nano-banana-2.1/edit",

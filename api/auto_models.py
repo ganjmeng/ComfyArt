@@ -15,7 +15,7 @@ def load_table() -> dict:
 
 
 def tool_feature(tool: str) -> str | None:
-    return next((f for f, spec in load_table().items() if spec["tool"] == tool), None)
+    return next((f for f, spec in load_table().items() if spec["tool"] == tool or tool in (spec.get("masked") or {}).get("tools", [])), None)
 
 
 def hit(keyword: str, text: str) -> bool:
@@ -26,13 +26,17 @@ def hit(keyword: str, text: str) -> bool:
     return k in text
 
 
-def choose(feature: str, prompt: str, named: str | None, catalog: dict) -> dict:
-    """catalog: load_config() result. Returns {model, auto, category, reason: {zh, en}}."""
+def choose(feature: str, prompt: str, named: str | None, catalog: dict, masked: bool = False) -> dict:
+    """catalog: load_config() result. Returns {model, auto, category, reason: {zh, en}}.
+    masked (#45): the edit has a selection or brushed mask -> the table's 'masked' row (user-named still wins)."""
     cfg = catalog["features"][feature]
     if named:
         return {"model": named, "auto": False, "category": "user",
                 "reason": {"zh": "你指定了这个模型", "en": "you named this model"}}
     spec = load_table()[feature]
+    row = spec.get("masked") if masked else None
+    if row and row["model"] in {m["id"] for m in cfg["models"]}:
+        return {"model": row["model"], "auto": True, "category": "masked", "reason": {"zh": row["zh"], "en": row["en"]}}
     text = (prompt or "").lower()
     cat = next((c for c in spec["categories"] if any(hit(k, text) for k in c["keywords"])), None)
     ids = {m["id"] for m in cfg["models"]}

@@ -1140,6 +1140,10 @@ async def estimate(inputs: dict) -> dict:
             price, source = None, "unpriced"  # #159: one scene without a price: no total, ask before submitting
         tier = ""
     else:
+        if inputs.get("feature") == "move_object":
+            inputs = move_erase_inputs(inputs)
+        elif paste_box(inputs) and inputs.get("mask"):
+            inputs = region_inputs(inputs)
         if inputs.get("feature") == "mockup_surface":
             return {"price": None, "currency": "USD", "source": "none", "confirm_usd": confirm_usd(), "confirm": confirm_usd() == 0}
         feature = feature_of(str(inputs.get("feature") or ""))
@@ -1408,6 +1412,10 @@ async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> 
 
 
 async def submit(inputs: dict) -> str:
+    if inputs.get("feature") == "move_object":
+        return await _submit_move(inputs)
+    if paste_box(inputs) and inputs.get("image") and inputs.get("mask"):
+        return await _submit_paste(inputs)
     if isinstance(inputs.get("scenes"), list):
         return await _submit_scenes(inputs)
     if inputs.get("feature") == "mockup_surface":
@@ -1457,6 +1465,222 @@ async def submit(inputs: dict) -> str:
     log.info("WaveSpeed task %s submitted (%s)", task, model)
     return task
 
+
+
+# #45 region edit / move object, like the original local graphs (upstream touchGraph / moveGraph at 5146230^1):
+# only a crop goes to the cloud model; its result is pasted back with the mask (ImageCompositeMasked), so every
+# pixel outside the mask stays byte-identical. Move object never calls an edit model: cloud erase on a crop around
+# the old spot (mask grown 12 px, tapered, like GrowMask), then the original object pixels are composited locally.
+TOUCH_PAD, TOUCH_MIN = 0.25, 384
+
+
+def masked_edit_model() -> str | None:
+    """#45/#133: default model for edits with a selection or brushed mask (api/auto_models.json image_edit.masked)."""
+    from .auto_models import load_table
+    model = (load_table().get("image_edit", {}).get("masked") or {}).get("model")
+    ids = {m["id"] for m in load_config()["features"].get("image_edit", {}).get("models", [])}
+    return model if model in ids else None
+
+
+def crop_around(region: dict, w: int, h: int) -> dict:
+    """Same box as cropAround in src/actions.ts (25% pad, at least 384 px, multiple of 8, clamped)."""
+    def grow(length, full):
+        return min(full, max(length * (1 + TOUCH_PAD * 2), TOUCH_MIN))
+    cw = min(w, round(grow(region["w"], w) / 8) * 8)
+    ch = min(h, round(grow(region["h"], h) / 8) * 8)
+
+    def clamp(v, size, full):
+        return round(min(max(v, 0), full - size))
+    return {"x": clamp(region["x"] + region["w"] / 2 - cw / 2, cw, w), "y": clamp(region["y"] + region["h"] / 2 - ch / 2, ch, h), "w": cw, "h": ch}
+
+
+def mask_array(data: bytes, size: tuple[int, int] | None = None):
+    """ComfyArt mask (white, target cut out) -> float mask 0..1, 1 = target (LoadImageMask channel alpha, inverted)."""
+    import numpy as np
+    from PIL import Image
+    img = Image.open(io.BytesIO(data)).convert("RGBA")
+    if size and img.size != size:
+        img = img.resize(size, Image.NEAREST)
+    return 1.0 - np.asarray(img.getchannel("A"), dtype=np.float32) / 255.0
+
+
+def mask_png(m) -> bytes:
+    """Float mask -> ComfyArt mask file (white, alpha 0 where the mask is 1)."""
+    import numpy as np
+    from PIL import Image
+    a = np.clip(np.round((1.0 - m) * 255.0), 0, 255).astype(np.uint8)
+    rgba = np.dstack([np.full_like(a, 255)] * 3 + [a])
+    buf = io.BytesIO()
+    Image.fromarray(rgba, "RGBA").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def grow_mask(m, expand: int = 12):
+    """ComfyUI GrowMask(expand, tapered_corners=True): grey dilation with a cross footprint, `expand` times."""
+    import numpy as np
+    out = m.copy()
+    for _ in range(expand):
+        p = np.pad(out, 1, mode="edge")
+        out = np.maximum.reduce([p[1:-1, 1:-1], p[:-2, 1:-1], p[2:, 1:-1], p[1:-1, :-2], p[1:-1, 2:]])
+    return out
+
+
+def bbox(m) -> dict | None:
+    import numpy as np
+    ys, xs = np.nonzero(m > 0)
+    if not len(xs):
+        return None
+    return {"x": int(xs.min()), "y": int(ys.min()), "w": int(xs.max() - xs.min() + 1), "h": int(ys.max() - ys.min() + 1)}
+
+
+def composite(dest, src, x: int, y: int, m):
+    """ImageCompositeMasked(resize_source=False): src pasted at (x, y) through mask m, clipped to dest.
+    Where m == 0 the destination bytes are kept as they are (never re-quantised)."""
+    import numpy as np
+    out = dest.copy()
+    H, W = dest.shape[:2]
+    h, w = src.shape[:2]
+    x0, y0, x1, y1 = max(0, x), max(0, y), min(W, x + w), min(H, y + h)
+    if x1 <= x0 or y1 <= y0:
+        return out
+    s = src[y0 - y:y1 - y, x0 - x:x1 - x].astype(np.float32)
+    mm = m[y0 - y:y1 - y, x0 - x:x1 - x][..., None]
+    d = dest[y0:y1, x0:x1].astype(np.float32)
+    mixed = np.clip(np.round(d * (1.0 - mm) + s * mm), 0, 255).astype(np.uint8)
+    out[y0:y1, x0:x1] = np.where(mm > 0, mixed, dest[y0:y1, x0:x1])
+    return out
+
+
+def _rgb(data: bytes, size: tuple[int, int] | None = None):
+    import numpy as np
+    from PIL import Image
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    if size and img.size != size:
+        img = img.resize(size, Image.BICUBIC)  # ImageScale bicubic
+    return np.asarray(img).copy()
+
+
+def _png(arr) -> bytes:
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.fromarray(arr, "RGB").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _save_input(data: bytes, prefix: str) -> str:
+    name = f"ws_{prefix}_{uuid.uuid4().hex[:10]}.png"
+    root = folder_paths.get_input_directory()
+    os.makedirs(root, exist_ok=True)
+    _write(os.path.join(root, name), data)
+    return f"{name} [input]"
+
+
+def paste_box(inputs: dict) -> dict | None:
+    p = inputs.get("paste")
+    if isinstance(p, dict) and all(isinstance(p.get(k), (int, float)) for k in ("x", "y", "w", "h")) and p["w"] > 0 and p["h"] > 0:
+        return {k: int(round(p[k])) for k in ("x", "y", "w", "h")}
+    return None
+
+
+def region_inputs(inputs: dict) -> dict:
+    """The edit job that actually runs for a pasted region edit: only the crop, at crop size, mask not sent.
+    estimate() and submit() both use this, so the quote is for the submitted size/tier (#183 approach)."""
+    box = paste_box(inputs)
+    sub = {k: v for k, v in inputs.items() if k not in ("paste", "mask")}
+    sub["width"], sub["height"] = box["w"], box["h"]
+    if not sub.get("model") and not sub.get("custom"):
+        picked = masked_edit_model()
+        if picked:
+            sub["model"] = picked
+    return sub
+
+
+def move_erase_inputs(inputs: dict) -> dict:
+    """Move object runs one cloud job: the erase_region default model (never an edit model)."""
+    return {"feature": "erase_region", **({"confirmed": True} if inputs.get("confirmed") else {})}
+
+
+async def _submit_paste(inputs: dict) -> str:
+    box = paste_box(inputs)
+    orig = await _source_bytes(str(inputs.get("image") or ""))
+    mask = await _source_bytes(str(inputs.get("mask") or ""))
+    from PIL import Image
+    with Image.open(io.BytesIO(orig)) as img:
+        crop = img.convert("RGB").crop((box["x"], box["y"], box["x"] + box["w"], box["y"] + box["h"]))
+        buf = io.BytesIO()
+        crop.save(buf, format="PNG")
+    sub = {**region_inputs(inputs), "image": _save_input(buf.getvalue(), "crop")}
+    task = await submit(sub)
+    group = f"pb-{task}"
+    _jobs[group] = {"paste": task, "orig": orig, "mask": mask, "box": box, "started": time.time(), "next_poll": 0.0, "done": False}
+    return group
+
+
+async def _submit_move(inputs: dict) -> str:
+    import numpy as np
+    orig = await _source_bytes(str(inputs.get("image") or ""))
+    rgb = _rgb(orig)
+    H, W = rgb.shape[:2]
+    m = mask_array(await _source_bytes(str(inputs.get("mask") or "")), (W, H))
+    src_box = bbox(m)
+    if not src_box:
+        raise WaveSpeedError("move object: the selection is empty", 400)
+    grown = grow_mask(m, 12)
+    box = crop_around(bbox(grown), W, H)
+    sl = np.s_[box["y"]:box["y"] + box["h"], box["x"]:box["x"] + box["w"]]
+    sub = {**move_erase_inputs(inputs), "image": _save_input(_png(rgb[sl]), "mvcrop"), "mask": _save_input(mask_png(grown[sl]), "mvmask")}
+    task = await submit(sub)
+    group = f"mv-{task}"
+    to = {"x": src_box["x"] + int(round(float(inputs.get("dx") or 0))), "y": src_box["y"] + int(round(float(inputs.get("dy") or 0)))}
+    _jobs[group] = {"move": task, "orig": orig, "m": m, "grown": grown, "box": box, "from": src_box, "to": to,
+                    "started": time.time(), "next_poll": 0.0, "done": False}
+    return group
+
+
+def paste_result(orig: bytes, mask: bytes, box: dict, result: bytes) -> bytes:
+    """touchGraph: ImageScale(result -> crop size, bicubic) + ImageCompositeMasked(original, at crop, crop mask)."""
+    dest = _rgb(orig)
+    src = _rgb(result, (box["w"], box["h"]))
+    return _png(composite(dest, src, box["x"], box["y"], mask_array(mask, (box["w"], box["h"]))))
+
+
+def move_result(orig: bytes, m, grown, box: dict, src_box: dict, to: dict, erased: bytes) -> bytes:
+    """moveGraph: erase result (crop) pasted back through the grown mask, then ImageCrop+CropMask of the object
+    from the original composited at the new spot (x/y clamped at 0 like the original graph)."""
+    import numpy as np
+    rgb = _rgb(orig)
+    sl = np.s_[box["y"]:box["y"] + box["h"], box["x"]:box["x"] + box["w"]]
+    out = composite(rgb, _rgb(erased, (box["w"], box["h"])), box["x"], box["y"], grown[sl])
+    fs = np.s_[src_box["y"]:src_box["y"] + src_box["h"], src_box["x"]:src_box["x"] + src_box["w"]]
+    out = composite(out, rgb[fs], max(0, to["x"]), max(0, to["y"]), m[fs])
+    return _png(out)
+
+
+async def _poll_wrapped(group: str, job: dict) -> dict:
+    task = job.get("paste") or job.get("move")
+    entry = (await poll(task)).get(f"ws:{task}") or {}
+    status = entry.get("status") or {}
+    if status.get("status_str") == "error":
+        job["done"] = True
+        job["result"] = _history(group, "failed", status.get("messages") or [], {})
+        return job["result"]
+    if not status.get("completed"):
+        return _history(group, "processing", [], {})
+    img = (((entry.get("outputs") or {}).get("ws") or {}).get("images") or [None])[0]
+    if img is None:
+        return _fail(group, "region edit finished without output")
+    out = {"filename": f"ws_{group[:15]}_{'paste' if job.get('paste') else 'move'}.png", "subfolder": SUBFOLDER, "type": "output"}
+    try:
+        result = _read(_ref_path(img))
+        data = (paste_result(job["orig"], job["mask"], job["box"], result) if job.get("paste")
+                else move_result(job["orig"], job["m"], job["grown"], job["box"], job["from"], job["to"], result))
+        os.makedirs(os.path.dirname(_ref_path(out)), exist_ok=True)
+        _write(_ref_path(out), data)
+    except (OSError, ValueError) as e:
+        return _fail(group, f"paste back failed: {e}")
+    job["done"] = True
+    job["result"] = _history(group, "completed", [], {"ws": {"images": [out]}})
+    return job["result"]
 
 async def _submit_scenes(inputs: dict) -> str:
     """Storyboard: scenes run one after another on image-to-video, each starting from the
@@ -1655,6 +1879,8 @@ async def poll(task: str) -> dict:
         return await _poll_group(task, job)
     if job.get("surface"):
         return await _poll_surface(task, job)
+    if job.get("paste") or job.get("move"):
+        return await _poll_wrapped(task, job)
     now = time.time()
     if now - job["started"] > JOB_TIMEOUT:
         if job.get("model"):

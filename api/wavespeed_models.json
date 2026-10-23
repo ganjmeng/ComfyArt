@@ -508,7 +508,7 @@
   "edit_image": "image_edit",
   "replace_text": "image_edit",
   "edit_region": "image_edit",
-  "move_object": "image_edit",
+  "move_object": "erase_region",
   "style_transfer": "image_edit",
   "edit_elements": "segment",
   "create_mockup": "image_edit",
