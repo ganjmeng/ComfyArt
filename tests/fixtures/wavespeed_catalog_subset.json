@@ -683,6 +683,93 @@
 "model_id": "bytedance/seedance-2.0-fast/video-extend",
 "name": "bytedance/seedance-2.0-fast/video-extend"
 },
+"bytedance/seedance-2.0/image-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"4:3",
+"3:4",
+"1:1",
+"21:9"
+]
+},
+"duration": {},
+"enable_web_search": {},
+"generate_audio": {},
+"image": {},
+"last_image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.24,
+"description": "Seedance 2.0 (Image-to-Video) generates Hollywood-grade cinematic videos from reference images and text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on ByteDance Seed's unified multimodal architecture, it preserves the input image's subject and composition while adding expressive, physically accurate motion.",
+"model_id": "bytedance/seedance-2.0/image-to-video",
+"name": "bytedance/seedance-2.0/image-to-video"
+},
+"bytedance/seedance-2.0/text-to-video": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"16:9",
+"9:16",
+"4:3",
+"3:4",
+"1:1",
+"21:9"
+]
+},
+"duration": {},
+"enable_web_search": {},
+"generate_audio": {},
+"prompt": {},
+"reference_audios": {
+"maxItems": 3
+},
+"reference_images": {
+"maxItems": 9
+},
+"reference_videos": {
+"maxItems": 3
+},
+"resolution": {
+"enum": [
+"480p",
+"720p",
+"1080p",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.24,
+"description": "Seedance 2.0 (Text-to-Video) generates Hollywood-grade cinematic videos from text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on ByteDance Seed's unified multimodal architecture, it leads on instruction adherence, motion quality, and visual aesthetics. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "bytedance/seedance-2.0/text-to-video",
+"name": "bytedance/seedance-2.0/text-to-video"
+},
 "bytedance/seedance-2.5/image-to-video": {
 "api_schema": {
 "api_schemas": [
@@ -888,6 +975,35 @@
 "description": "Seedream V5.0 Flash Layer Decomposition separates a single image into a base image and transparent image layers, faster and at lower cost than Pro.",
 "model_id": "bytedance/seedream-v5.0-flash/layer-decomposition",
 "name": "bytedance/seedream-v5.0-flash/layer-decomposition"
+},
+"bytedance/seedream-v5.0-lite/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"images": {
+"maxItems": 10
+},
+"output_format": {
+"enum": [
+"jpeg",
+"png"
+]
+},
+"prompt": {},
+"size": {}
+}
+}
+}
+]
+},
+"base_price": 0.035,
+"description": "Seedream 5.0-lite is a state-of-art image model by Bytedance. Seedream 4.0: Surpassing nano bananain every aspect.",
+"model_id": "bytedance/seedream-v5.0-lite/edit",
+"name": "bytedance/seedream-v5.0-lite/edit"
 },
 "bytedance/seedream-v5.0-pro": {
 "api_schema": {
@@ -2469,6 +2585,127 @@
 "description": "OpenAI's GPT Image 2.5 Sunburst Text-to-Image generates high-quality images from natural-language prompts, with five quality tiers up to 4K. Sunburst is the precision-focused GPT Image 2.5 tier that spends more time per image for extra fidelity on intricate detail. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
 "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
 "name": "openai/gpt-image-2.5-sunburst/text-to-image"
+},
+"openai/gpt-image-2/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"images": {
+"maxItems": 16
+},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+]
+},
+"prompt": {},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.07,
+"description": "OpenAI's GPT Image 2 Edit enables image editing from natural-language instructions with one or more reference images. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "openai/gpt-image-2/edit",
+"name": "openai/gpt-image-2/edit"
+},
+"openai/gpt-image-2/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+]
+},
+"prompt": {},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high"
+]
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+]
+}
+}
+}
+}
+]
+},
+"base_price": 0.06,
+"description": "OpenAI's GPT Image 2 Text-to-Image generates high-quality images from natural-language prompts. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+"model_id": "openai/gpt-image-2/text-to-image",
+"name": "openai/gpt-image-2/text-to-image"
 },
 "openai/sora-2/image-to-video": {
 "api_schema": {

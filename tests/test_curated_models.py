@@ -61,8 +61,8 @@ def test_every_original_feature_keeps_a_model_and_valid_default():
 
 def test_product_defaults():
     cfg = wavespeed.load_config()["features"]
-    assert cfg["text_to_image"]["default"] == "google/nano-banana-2.1/text-to-image"
-    assert cfg["text_to_video"]["default"] == "kwaivgi/kling-v3.0-std/text-to-video"
+    assert cfg["text_to_image"]["default"] == "openai/gpt-image-2/text-to-image"
+    assert cfg["text_to_video"]["default"] == "bytedance/seedance-2.0/text-to-video"
     assert cfg["image_to_3d"]["default"] == "tripo3d/h3.1/image-to-3d"
 
 
