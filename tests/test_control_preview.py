@@ -57,6 +57,19 @@ async def test_generate_reuses_preview_map(maps, mode, step):
     assert models.count(step) == 1 and models[0] == step and models[-1] == FLUX
 
 
+async def test_generate_sends_preview_map(maps, monkeypatch):
+    """The job's control image is built from the very map bytes the preview extracted."""
+    seen = []
+    real = refprep.process_image
+    monkeypatch.setattr(refprep, "process_image", lambda data, *a, **k: (seen.append(data), real(data, *a, **k))[1])
+    ref = _photo()
+    png = await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 512, "confirmed": True})
+    await wavespeed.submit(_job(ref, "depth"))
+    assert len(seen) == 2 and seen[0] is seen[1]
+    assert png == refprep.to_png(real(seen[0], "depth", 512, None, "crop"))
+    assert [m for m, _ in maps["submits"]].count(DEPTH) == 1
+
+
 async def test_changed_res_extracts_again(maps):
     ref = _photo()
     await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 1024, "confirmed": True})
@@ -74,4 +87,8 @@ def test_upstream_ui_restored():
     root = os.path.join(os.path.dirname(__file__), "..", "src")
     ui = open(os.path.join(root, "ui", "RefControls.tsx"), encoding="utf-8").read()
     assert "previewControl(src, mode, c.res)" in ui and "refControls.reextract" in ui and "ca-refctl__preview" in ui
-    assert "/comfyart/wavespeed/control_preview" in open(os.path.join(root, "refModes.ts"), encoding="utf-8").read()
+    modes = open(os.path.join(root, "refModes.ts"), encoding="utf-8").read()
+    assert "/comfyart/wavespeed/control_preview" in modes
+    # #81: 60s preview timeout aborts the request and surfaces an error (the button's finally restores it)
+    assert "PREVIEW_TIMEOUT_MS = 60_000" in modes and "signal: ctl.signal" in modes and "refControls.timeout" in modes
+    assert "finally" in ui and "setBusy(false)" in ui

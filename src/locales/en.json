@@ -831,6 +831,7 @@
   "refControls.extracting": "Extracting…",
   "refControls.fit": "Fit",
   "refControls.preview": "Preview control map",
+  "refControls.timeout": "Control map preview timed out after 60s, try again",
   "refControls.reextract": "Extract again",
   "refControls.resolution": "Detail",
   "refControls.start": "Start",

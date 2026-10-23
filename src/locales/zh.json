@@ -831,6 +831,7 @@
   "refControls.extracting": "提取中…",
   "refControls.fit": "适配",
   "refControls.preview": "预览控制图",
+  "refControls.timeout": "控制图预览超过 60 秒未返回，请重试",
   "refControls.reextract": "重新提取",
   "refControls.resolution": "精度",
   "refControls.start": "开始",
