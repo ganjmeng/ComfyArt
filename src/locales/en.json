@@ -142,7 +142,7 @@
   "botSettings.available": "Available",
   "botSettings.availableAgents": "Available Agents",
   "botSettings.availableAgentsOnThisMachine": "Available Agents on this machine appear after you enable and save",
-  "botSettings.claudeCodeCodexQwenCode": "Claude Code, Codex, Qwen Code and DeepSeek Harness use the command-line tools already signed in on this machine. ComfyArt stores no keys. If Local LLM needs an API key, set the COMFYART_LOCAL_LLM_API_KEY environment variable before starting ComfyUI.",
+  "botSettings.claudeCodeCodexQwenCode": "Claude Code, Codex, Qwen Code and DeepSeek Harness use the command-line tools already signed in on this machine. ComfyArt stores no keys. If Local LLM needs an API key, set the COMFYART_LOCAL_LLM_API_KEY environment variable.",
   "botSettings.comfyMcpCommand": "comfy-mcp command",
   "botSettings.enableAgentUseCommandLine": "Enable Agent: use command-line tools already signed in on this machine, such as Claude Code and Codex (requires MCP)",
   "botSettings.enableMcpLetTheAgent": "Enable MCP: let the Agent and other local MCP clients control the open canvas",
@@ -1202,5 +1202,11 @@
   "zoom.zoomTo": "Zoom to {0}%",
   "genOptions.durationMin": "This model's shortest video is {1}s, so it will be {1}s (you asked for {0}s).",
   "genOptions.durationMax": "This model's longest video is {1}s, so it will be {1}s (you asked for {0}s).",
-  "genOptions.durationUp": "This model doesn't take {0}s, so it will be {1}s."
+  "genOptions.durationUp": "This model doesn't take {0}s, so it will be {1}s.",
+  "wsErr.insufficientCredit": "Your WaveSpeed balance is too low. Nothing was charged this time. Top up at {0} and try again.",
+  "wsErr.moderation": "WaveSpeed flagged the prompt or image as sensitive content. Nothing was generated. Change it and try again.",
+  "wsErr.rateLimit": "WaveSpeed is getting too many requests right now. Wait a moment and try again.",
+  "wsErr.invalidKey": "WaveSpeed rejected the API key. Check it in Settings > WaveSpeed API key.",
+  "wsErr.network": "Could not reach WaveSpeed. Check your network and try again.",
+  "wsErr.failed": "WaveSpeed could not finish this job. Check the inputs and try again."
 }

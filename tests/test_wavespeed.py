@@ -94,7 +94,7 @@ async def ws(monkeypatch, fresh_user_dir):
     async def submit(request):
         state["auth"].add(request.headers.get("Authorization"))
         if state["submit_status"] != 200:
-            return web.json_response({"code": state["submit_status"], "message": "nope"}, status=state["submit_status"])
+            return web.json_response({"code": state.get("submit_code", state["submit_status"]), "message": state.get("submit_message", "nope")}, status=state["submit_status"])
         state["submits"].append((request.match_info["model"], await request.json()))
         return web.json_response({"code": 200, "data": {"id": f"task{len(state['submits'])}", "status": "created"}})
 
@@ -109,7 +109,9 @@ async def ws(monkeypatch, fresh_user_dir):
             model = state["submits"][int(tid[4:]) - 1][0] if tid.startswith("task") and tid[4:].isdigit() and int(tid[4:]) <= len(state["submits"]) else None
             data["outputs"] = state.get("by_model", {}).get(model) or state.get("outputs") or [str(request.url.with_path("/cdn/out.png"))]
         if st == "failed":
-            data["error"] = "content flagged"
+            data["error"] = state.get("task_error", "content flagged")
+            if "task_code" in state:
+                data["code"] = state["task_code"]
         return web.json_response({"code": 200, "data": data})
 
     async def upload(request):
@@ -937,3 +939,44 @@ async def test_quote_uses_rounded_duration_on_every_path(ws, monkeypatch):
     with pytest.raises(wavespeed.WaveSpeedError) as e:
         await wavespeed.submit(job)
     assert e.value.status == 409 and e.value.confirm == pytest.approx(0.6) and not ws["submits"]
+
+
+# #155: every WaveSpeed failure carries a kind so the UI shows a readable zh/en message instead of the raw text.
+@pytest.mark.parametrize("code,error,kind", [
+    (1407, "insufficient_credits", "insufficientCredit"),
+    (1200, "The content contains sensitive information.", "moderation"),
+    (1403, "Task Execution Failed: raw upstream trace", "failed"),
+])
+async def test_failed_task_kind(ws, code, error, kind):
+    ws.update(status="failed", task_code=code, task_error=error)
+    task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+    info = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"][0][1]
+    assert info["ws_kind"] == kind
+    if kind == "insufficientCredit":
+        assert "nothing was charged" in info["exception_message"] and wavespeed.TOP_UP_URL in info["exception_message"]
+
+
+@pytest.mark.parametrize("status,code,message,kind", [
+    (402, 402, "nope", "insufficientCredit"),
+    (400, 1407, "insufficient_credits", "insufficientCredit"),
+    (403, 403, "Insufficient balance", "insufficientCredit"),
+    (400, 1200, "The content contains sensitive information.", "moderation"),
+    (429, 429, "Too Many Requests", "rateLimit"),
+    (401, 401, "Unauthorized", "invalidKey"),
+    (500, 5000, "Internal Error xyz", "failed"),
+])
+async def test_submit_error_kind_reaches_route(ws, status, code, message, kind):
+    ws.update(submit_status=status, submit_code=code, submit_message=message)
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+    assert e.value.kind == kind
+    body = json.loads(wavespeed._respond_error(e.value).body)
+    assert body["error"]["kind"] == kind
+    assert not ws["submits"]  # nothing was submitted, so nothing was charged
+
+
+def test_error_kind_1407_is_insufficient_credit():
+    # https://wavespeed.ai/docs/error-codes: 1407 insufficient_credits
+    assert wavespeed.error_kind(None, 1407) == "insufficientCredit"
+    assert wavespeed.error_kind(None, "1200") == "moderation"
+    assert wavespeed.error_kind(500, None, "boom") == "failed"
