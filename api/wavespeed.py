@@ -1018,10 +1018,10 @@ def _submitted_tier(props: dict, inputs: dict, priced: dict) -> dict:
                 out["aspect_ratio"] = _nearest(ar_enum, float(a) / float(b))
         except (ValueError, ZeroDivisionError):
             pass
-    if props:
-        # a field the schema doesn't take is never submitted, so it never prices either
-        out = {k: v for k, v in out.items() if k in props}
-    return out
+    # a field the schema doesn't take is never submitted (build_payload only sends schema properties), so it never
+    # prices either. #182: this holds for an empty schema too (model missing from the catalog, or no properties):
+    # submit then sends none of these fields, so the quote must not price e.g. a storyboard scene's duration.
+    return {k: v for k, v in out.items() if k in props}
 
 
 def _is_default_tier(props: dict, priced: dict) -> bool:
