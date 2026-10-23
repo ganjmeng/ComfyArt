@@ -1,0 +1,489 @@
+{
+ "results": [
+  {
+   "scenario": "S3 brand",
+   "session": "qa97-S3-e512d9",
+   "llm_calls": 6,
+   "tools": [
+    "skill",
+    "generate_image",
+    "generate_image",
+    "create_mockup",
+    "wait_generation"
+   ],
+   "gens": [
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    },
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    },
+    {
+     "tool": "create_mockup",
+     "feature": "image_edit",
+     "model": "openai/gpt-image-2/edit",
+     "result": "pass"
+    }
+   ],
+   "start_shapes": [],
+   "error": "",
+   "final_text": "完成（mock）：S3 brand 已按 skill 步骤生成。",
+   "result": "pass",
+   "llm_requests_seen_by_mock": 6,
+   "isolation_ok": true
+  },
+  {
+   "scenario": "S4 packaging",
+   "session": "qa97-S4-3d2be9",
+   "llm_calls": 5,
+   "tools": [
+    "skill",
+    "generate_image",
+    "create_mockup",
+    "wait_generation"
+   ],
+   "gens": [
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    },
+    {
+     "tool": "create_mockup",
+     "feature": "image_edit",
+     "model": "openai/gpt-image-2/edit",
+     "result": "pass"
+    }
+   ],
+   "start_shapes": [],
+   "error": "",
+   "final_text": "完成（mock）：S4 packaging 已按 skill 步骤生成。",
+   "result": "pass",
+   "llm_requests_seen_by_mock": 5,
+   "isolation_ok": true,
+   "first_request_messages": 2
+  },
+  {
+   "scenario": "S5 thumbnail",
+   "session": "qa97-S5-5f8f97",
+   "llm_calls": 5,
+   "tools": [
+    "skill",
+    "generate_image",
+    "generate_image",
+    "wait_generation"
+   ],
+   "gens": [
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    },
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    }
+   ],
+   "start_shapes": [],
+   "error": "",
+   "final_text": "完成（mock）：S5 thumbnail 已按 skill 步骤生成。",
+   "result": "pass",
+   "llm_requests_seen_by_mock": 5,
+   "isolation_ok": true,
+   "first_request_messages": 2
+  },
+  {
+   "scenario": "S6 banner",
+   "session": "qa97-S6-03042e",
+   "llm_calls": 4,
+   "tools": [
+    "skill",
+    "generate_image",
+    "wait_generation"
+   ],
+   "gens": [
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    }
+   ],
+   "start_shapes": [],
+   "error": "",
+   "final_text": "完成（mock）：S6 banner 已按 skill 步骤生成。",
+   "result": "pass",
+   "llm_requests_seen_by_mock": 4,
+   "isolation_ok": true,
+   "first_request_messages": 2
+  },
+  {
+   "scenario": "S7 character",
+   "session": "qa97-S7-08029a",
+   "llm_calls": 5,
+   "tools": [
+    "skill",
+    "generate_image",
+    "generate_image",
+    "wait_generation"
+   ],
+   "gens": [
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    },
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    }
+   ],
+   "start_shapes": [],
+   "error": "",
+   "final_text": "完成（mock）：S7 character 已按 skill 步骤生成。",
+   "result": "pass",
+   "llm_requests_seen_by_mock": 5,
+   "isolation_ok": true,
+   "first_request_messages": 2
+  },
+  {
+   "scenario": "S8 product",
+   "session": "qa97-S8-4ae6a3",
+   "llm_calls": 6,
+   "tools": [
+    "skill",
+    "edit_image",
+    "edit_image",
+    "edit_image",
+    "wait_generation"
+   ],
+   "gens": [
+    {
+     "tool": "edit_image",
+     "feature": "image_edit",
+     "model": "openai/gpt-image-2/edit",
+     "result": "pass"
+    },
+    {
+     "tool": "edit_image",
+     "feature": "image_edit",
+     "model": "openai/gpt-image-2/edit",
+     "result": "pass"
+    },
+    {
+     "tool": "edit_image",
+     "feature": "image_edit",
+     "model": "openai/gpt-image-2/edit",
+     "result": "pass"
+    }
+   ],
+   "start_shapes": [
+    "shape:src"
+   ],
+   "error": "",
+   "final_text": "完成（mock）：S8 product 已按 skill 步骤生成。",
+   "result": "pass",
+   "llm_requests_seen_by_mock": 6,
+   "isolation_ok": true,
+   "first_request_messages": 2
+  },
+  {
+   "scenario": "S9 motion",
+   "session": "qa97-S9-f60760",
+   "llm_calls": 5,
+   "tools": [
+    "skill",
+    "generate_image",
+    "animate_image",
+    "wait_generation"
+   ],
+   "gens": [
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    },
+    {
+     "tool": "animate_image",
+     "feature": "image_to_video",
+     "model": "bytedance/seedance-2.0/image-to-video",
+     "result": "pass"
+    }
+   ],
+   "start_shapes": [],
+   "error": "",
+   "final_text": "完成（mock）：S9 motion 已按 skill 步骤生成。",
+   "result": "pass",
+   "llm_requests_seen_by_mock": 5,
+   "isolation_ok": true,
+   "first_request_messages": 2
+  },
+  {
+   "scenario": "S10 interior",
+   "session": "qa97-S10-fe0178",
+   "llm_calls": 5,
+   "tools": [
+    "skill",
+    "generate_image",
+    "generate_image",
+    "wait_generation"
+   ],
+   "gens": [
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    },
+    {
+     "tool": "generate_image",
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2/text-to-image",
+     "result": "pass"
+    }
+   ],
+   "start_shapes": [],
+   "error": "",
+   "final_text": "完成（mock）：S10 interior 已按 skill 步骤生成。",
+   "result": "pass",
+   "llm_requests_seen_by_mock": 5,
+   "isolation_ok": true,
+   "first_request_messages": 2
+  },
+  {
+   "scenario": "S11 custom-workflow",
+   "session": "qa97-S11-5a4637",
+   "llm_calls": 5,
+   "tools": [
+    "skill",
+    "custom_workflow",
+    "upscale_image",
+    "wait_generation"
+   ],
+   "gens": [
+    {
+     "tool": "upscale_image",
+     "feature": "upscale_image",
+     "model": "wavespeed-ai/image-upscaler",
+     "result": "pass"
+    }
+   ],
+   "start_shapes": [
+    "shape:src"
+   ],
+   "error": "",
+   "final_text": "完成（mock）：S11 custom-workflow 已按 skill 步骤生成。",
+   "result": "pass",
+   "llm_requests_seen_by_mock": 5,
+   "isolation_ok": true,
+   "first_request_messages": 2
+  },
+  {
+   "scenario": "CAP probe",
+   "session": "qa97-CAP-49863d",
+   "llm_calls": 30,
+   "tools": [
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas",
+    "get_canvas"
+   ],
+   "gens": [],
+   "start_shapes": [],
+   "cap_hit": true,
+   "error": "",
+   "final_text": "",
+   "result": "fail (cap 30 exceeded)",
+   "llm_requests_seen_by_mock": 30,
+   "isolation_ok": true,
+   "first_request_messages": 2
+  }
+ ],
+ "submits": [
+  [
+   "S3 brand",
+   "model/price"
+  ],
+  [
+   "S3 brand",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S3 brand",
+   "model/price"
+  ],
+  [
+   "S3 brand",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S3 brand",
+   "model/price"
+  ],
+  [
+   "S3 brand",
+   "openai/gpt-image-2/edit"
+  ],
+  [
+   "S4 packaging",
+   "model/price"
+  ],
+  [
+   "S4 packaging",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S4 packaging",
+   "model/price"
+  ],
+  [
+   "S4 packaging",
+   "openai/gpt-image-2/edit"
+  ],
+  [
+   "S5 thumbnail",
+   "model/price"
+  ],
+  [
+   "S5 thumbnail",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S5 thumbnail",
+   "model/price"
+  ],
+  [
+   "S5 thumbnail",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S6 banner",
+   "model/price"
+  ],
+  [
+   "S6 banner",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S7 character",
+   "model/price"
+  ],
+  [
+   "S7 character",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S7 character",
+   "model/price"
+  ],
+  [
+   "S7 character",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S8 product",
+   "model/price"
+  ],
+  [
+   "S8 product",
+   "openai/gpt-image-2/edit"
+  ],
+  [
+   "S8 product",
+   "model/price"
+  ],
+  [
+   "S8 product",
+   "openai/gpt-image-2/edit"
+  ],
+  [
+   "S8 product",
+   "model/price"
+  ],
+  [
+   "S8 product",
+   "openai/gpt-image-2/edit"
+  ],
+  [
+   "S9 motion",
+   "model/price"
+  ],
+  [
+   "S9 motion",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S9 motion",
+   "model/price"
+  ],
+  [
+   "S9 motion",
+   "bytedance/seedance-2.0/image-to-video"
+  ],
+  [
+   "S10 interior",
+   "model/price"
+  ],
+  [
+   "S10 interior",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S10 interior",
+   "model/price"
+  ],
+  [
+   "S10 interior",
+   "openai/gpt-image-2/text-to-image"
+  ],
+  [
+   "S11 custom-workflow",
+   "model/price"
+  ],
+  [
+   "S11 custom-workflow",
+   "wavespeed-ai/image-upscaler"
+  ]
+ ],
+ "real_key_loaded": false
+}
