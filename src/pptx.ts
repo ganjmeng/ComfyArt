@@ -1,7 +1,9 @@
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
 import PptxGenJS from 'pptxgenjs'
 import { getColorValue, renderPlaintextFromRichText, type Box, type Editor, type TLImageShape, type TLNoteShape, type TLShape, type TLShapeId } from 'tldraw'
 
 import { alphaOf } from './palette'
+import { download } from './psd'
 import type { RichDoc } from './richText'
 import { TEXT, type TextShape } from './shapes/TextShape'
 import { VECTOR, type VectorShape } from './shapes/VectorShape'
@@ -72,6 +74,38 @@ function textRuns(doc: RichDoc, k: number): PptxGenJS.TextProps[] {
   })
 }
 
+// #176: pptxgenjs 4.0.1 writes an <a:pPr> before *every run* of a multi-run paragraph (genXmlTextBody fills each run
+// with the text box's align/indent/bullet and emits paragraph props per run). OOXML allows one pPr, as the first child of
+// <a:p>, so PowerPoint offers a repair. Align is set once on the text box, never per run; after writing we parse each
+// slide/layout/master part as XML and drop only the *extra* pPr children of each <a:p> (the first one stays; runs, rPr
+// and everything else are untouched). Parts with no duplicates are left byte-for-byte as written.
+// Recheck on any pptxgenjs upgrade: if it stops emitting per-run pPr this becomes a no-op and can be removed.
+const A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+const PART = /^ppt\/(slides|slideLayouts|slideMasters|notesSlides)\/[^/]+\.xml$/
+
+export function dropExtraParagraphProps(xml: string): string | null {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml')
+  let changed = false
+  for (const p of Array.from(doc.getElementsByTagNameNS(A_NS, 'p'))) {
+    const pprs = Array.from(p.childNodes).filter((c) => c.nodeType === 1 && (c as Element).namespaceURI === A_NS && (c as Element).localName === 'pPr')
+    for (const extra of pprs.slice(1)) {
+      p.removeChild(extra)
+      changed = true
+    }
+  }
+  return changed ? new XMLSerializer().serializeToString(doc) : null
+}
+
+function fixParagraphs(data: Uint8Array) {
+  const files = unzipSync(data)
+  for (const name of Object.keys(files)) {
+    if (!PART.test(name)) continue
+    const fixed = dropExtraParagraphProps(strFromU8(files[name]))
+    if (fixed !== null) files[name] = strToU8(fixed)
+  }
+  return zipSync(files)
+}
+
 async function render(editor: Editor, ids: TLShapeId[], scale: number) {
   return dataUrl((await editor.toImage(ids, { format: 'png', scale, background: false })).blob)
 }
@@ -136,5 +170,6 @@ export async function exportPptx(editor: Editor, ids: TLShapeId[], editable: boo
     if (frame?.type === 'frame') slide.background = { color: 'FFFFFF' }
     for (const s of leaves(editor, group)) await addObject(editor, pptx, slide, s, place(editor.getShapePageBounds(s)!), k, scale)
   }
-  await pptx.writeFile({ fileName: `${name}.pptx` })
+  const data = (await pptx.write({ outputType: 'uint8array' })) as Uint8Array
+  download(new Blob([fixParagraphs(data) as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }), `${name}.pptx`)
 }

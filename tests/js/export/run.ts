@@ -1,11 +1,14 @@
 // #156: run the real export button once per format against a mock editor; write the produced files to OUT_DIR.
-import { writeFileSync, readFileSync, readdirSync, renameSync } from 'node:fs'
+import { writeFileSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import { DOMParser, XMLSerializer } from '@xmldom/xmldom'
 import { ExportDialog, exportAtom } from '../../../src/ui/ExportDialog'
 import { resetHooks } from './react'
 import { downloads } from './psd'
 
 const out = process.env.OUT_DIR!
+// #176: pptx.ts uses the browser's DOMParser/XMLSerializer; node has none, so supply xmldom's.
+Object.assign(globalThis, { DOMParser, XMLSerializer })
 const fix = process.env.FIXTURES!
 const g = globalThis as Record<string, unknown>
 const net: string[] = []
@@ -24,7 +27,11 @@ const shapes: Record<string, { type: string; x: number; y: number; w: number; h:
 }
 const props: Record<string, Record<string, unknown>> = {
   'shape:t1': { text: 'Hello ComfyArt', font: "'Inter', sans-serif", size: 24, color: '#112233', weight: 700, align: 'left',
-    rich: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello ' }, { type: 'text', text: '可编辑文字' }] }] } },
+    rich: { type: 'doc', content: [
+      { type: 'paragraph', content: [{ type: 'text', text: 'Hello ' }, { type: 'text', text: '可编辑文字' },
+        { type: 'text', text: ' mixed', marks: [{ type: 'italic' }, { type: 'underline' }, { type: 'textStyle', attrs: { color: '#AA0000', fontSize: '12px', fontFamily: 'Georgia' } }] }] },
+      { type: 'paragraph', content: [{ type: 'text', text: '第二段', marks: [{ type: 'textStyle', attrs: { color: '#00AA00' } }] }] },
+    ] } },
   'shape:r1': { kind: 'rect', fillType: 'solid', dash: 'solid', blend: 'normal', fill: '#FF0000', stroke: '', strokeWidth: 0, radius: 0, w: 200, h: 100 },
 }
 const toImageCalls: unknown[] = []
@@ -89,15 +96,14 @@ for (const [fmt, ids, scale] of [['png', ['shape:f1'], 2], ['pdf', ['shape:f1'],
   for (const d of downloads.slice(before)) writeFileSync(path.join(out, `${fmt}-${d.name}`), Buffer.from(await d.blob.arrayBuffer()))
   result[fmt] = { ...r, files }
 }
-// pptxgenjs writeFile in node writes `${name}.pptx` to the cwd (OUT_DIR).
-const r = await exportAs('pptx', ['shape:f1', 'shape:f2'], 1)
-const pptxFiles = readdirSync(out).filter((f) => f.endsWith('.pptx'))
-for (const f of pptxFiles) renameSync(path.join(out, f), path.join(out, `pptx-${f}`))
-result.pptx = { ...r, files: pptxFiles }
-const r2 = await exportAs('pptx-text', ['shape:f3'], 2)
-const textFiles = readdirSync(out).filter((f) => f.endsWith('.pptx') && !f.startsWith('pptx-'))
-for (const f of textFiles) renameSync(path.join(out, f), path.join(out, `pptx-text-${f}`))
-result['pptx-text'] = { ...r2, files: textFiles }
+// #176: pptx now goes through download() too (written, then each paragraph's duplicate <a:pPr> stripped).
+for (const [fmt, ids, scale] of [['pptx', ['shape:f1', 'shape:f2'], 1], ['pptx-text', ['shape:f3'], 2]] as const) {
+  const before = downloads.length
+  const r = await exportAs(fmt, [...ids], scale)
+  const files = downloads.slice(before).map((d) => d.name)
+  for (const d of downloads.slice(before)) writeFileSync(path.join(out, `${fmt}-${d.name}`), Buffer.from(await d.blob.arrayBuffer()))
+  result[fmt] = { ...r, files }
+}
 // #169: clicking Export with untouched defaults uses 2x
 const before = toImageCalls.length
 result.default = { ...(await exportAs(null, ['shape:f1'], 0)), calls: toImageCalls.slice(before) }
