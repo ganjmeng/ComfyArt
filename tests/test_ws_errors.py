@@ -61,3 +61,11 @@ def test_agent_relays_our_copy_verbatim(js):
 def test_bot_commands_use_agent_error():
     src = (ROOT / "src/botCommands.ts").read_text()
     assert "...agentError(r.error)" in src and src.count("agentErrorText(err)") == 2
+
+
+def test_top_up_link_clickable_in_card():
+    # #163 design nit: same copy, the top-up URL becomes a link styled like the card text (underlined, inherits colour)
+    src = (ROOT / "src/shapes/GeneratorShape.tsx").read_text()
+    assert "{withTopUpLink(error)}" in src and "href={TOP_UP_URL}" in src and 'target="_blank"' in src
+    css = (ROOT / "src/styles/canvas.css").read_text()
+    assert ".ca-gen-card__error a { color: inherit; text-decoration: underline;" in css

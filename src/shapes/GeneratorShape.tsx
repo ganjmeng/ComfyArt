@@ -1,3 +1,4 @@
+import { TOP_UP_URL } from '../wsErrors'
 import {
   BaseBoxShapeUtil,
   createShapePropsMigrationIds,
@@ -39,6 +40,13 @@ declare module 'tldraw' {
 export type GeneratorShape = TLShape<typeof GENERATOR>
 
 const versions = createShapePropsMigrationIds(GENERATOR, { AddDuration: 1, AddOptions: 2 })
+
+/** #163: the top-up URL in the insufficient-balance copy is clickable; same text, no new wording. */
+export function withTopUpLink(text: string) {
+  const i = text.indexOf(TOP_UP_URL)
+  if (i < 0) return text
+  return <>{text.slice(0, i)}<a href={TOP_UP_URL} target="_blank" rel="noreferrer" onPointerDown={(e) => e.stopPropagation()}>{TOP_UP_URL}</a>{text.slice(i + TOP_UP_URL.length)}</>
+}
 
 export class GeneratorShapeUtil extends BaseBoxShapeUtil<GeneratorShape> {
   static override type = GENERATOR
@@ -92,7 +100,7 @@ function GeneratorCard({ shape }: { shape: GeneratorShape }) {
   return (
     <HTMLContainer className="ca-gen-card" data-running={job ? true : undefined}>
       <span className="ca-gen-card__icon">{isVideo(shape.props.workflow) ? Icons.video : Icons.image}</span>
-      {error && <div className="ca-gen-card__error" role="alert">{error}</div>}
+      {error && <div className="ca-gen-card__error" role="alert">{withTopUpLink(error)}</div>}
       {job && <div className="ca-gen-ring" data-indeterminate={p > 0 ? undefined : true} style={{ '--ca-p': p } as React.CSSProperties} />}
     </HTMLContainer>
   )
