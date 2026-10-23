@@ -1,7 +1,7 @@
 """#41 guard: every original (upstream 5231d59) Agent feature is kept on main.
 
 Rule (#78): keep all original features, only swap local models for cloud ones.
-`custom_workflow` is excluded until #75 restores it as a cloud feature.
+`custom_workflow` was restored as a cloud feature by #75 and is now required too.
 """
 import ast
 import re
@@ -89,7 +89,7 @@ UPSTREAM_COMFY_MCP_ALLOWED_TOOLS = [
     "system_stats", "which",
 ]
 
-PENDING = {"custom_workflow"}  # tracked by #75
+PENDING: set = set()  # #75 restored custom_workflow; nothing pending
 
 
 def _missing(expected, actual):
