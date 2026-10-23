@@ -14,6 +14,7 @@ import { installedModels, isVideo, modelOf } from '../models'
 import { AssetGrid } from './AssetPicker'
 import { ColorPicker } from './ColorPicker'
 import { AdvancedPill } from './GenAdvanced'
+import { CUSTOM_GENERATE } from '../customWorkflows'
 import { ModelPill, SettingsPill } from './GenSettings'
 import { Icons } from './icons'
 import { StoryboardEditor } from './StoryboardEditor'
@@ -260,7 +261,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
         {vmode === 'frames' && (last ? slot(last, t('genPanel.lastFrame'), () => setMeta({ lastFrame: null })) : imagePicker('last', t('genPanel.lastFrame')))}
         {vmode === 'motion' && (motion ? slot(motion, t('genPanel.motionVideo'), () => setMeta({ motion: null })) : imagePicker('motion', t('genPanel.motionVideo')))}
         {vmode === 'lipsync' && (speech ? slot(speech, t('genPanel.speechAudio'), () => setMeta({ speech: null })) : imagePicker('speech', t('genPanel.speechAudio')))}
-        {!video && (base ? slot(base.src, t('genPanel.baseImage'), () => setMeta({ base: null })) : imagePicker('base', t('genPanel.baseImage')))}
+        {!video && model.id !== CUSTOM_GENERATE && (base ? slot(base.src, t('genPanel.baseImage'), () => setMeta({ base: null })) : imagePicker('base', t('genPanel.baseImage')))}
         <input ref={file} type="file" accept="image/*" hidden onChange={(e) => { void upload(e.target.files).catch((err) => onError(String(err))); e.target.value = '' }} />
       </div>
       {video && (

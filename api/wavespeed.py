@@ -243,6 +243,89 @@ def resolve_model(feature: str, model: str | None) -> str:
     return model
 
 
+# custom_workflow (cloud): a feature can run any WaveSpeed model; "fields" maps ComfyArt's values
+# (the upstream @markers) onto that model's request fields.
+MARKER_INPUTS = {"image", "image2", "mask", "last", "prompt", "size", "width", "height", "count", "seconds"}
+MEDIA_MARKERS = {"image", "image2", "mask", "last"}
+AUTO_FIELDS = {"image", "images", "mask_image", "prompt", "tags", "size", "aspect_ratio", "resolution", "duration",
+               "music_length_ms", "last_image", "num_layers", "seed", "output_format", "text", "lyrics", "voice", "voice_id", "language"}
+
+
+def custom_model(model: str | None, meta: dict) -> str:
+    if not isinstance(model, str) or "/" not in model:
+        raise WaveSpeedError("custom workflow needs a WaveSpeed model id like owner/model", 400)
+    if model not in meta:
+        raise WaveSpeedError(f"WaveSpeed has no model {model!r}", 400)
+    return model
+
+
+def check_custom(spec: dict, required: list[str], optional: list[str], meta: dict) -> dict:
+    """Validate a cloud custom workflow {model, fields: {"@marker": field}, params} for one feature."""
+    errors: list[str] = []
+    warnings: list[str] = []
+    codes: list[dict] = []  # structured errors so the UI can localize them
+    model = spec.get("model") if isinstance(spec, dict) else None
+    try:
+        custom_model(model, meta)
+    except WaveSpeedError as e:
+        code = "badModelId" if not (isinstance(model, str) and "/" in model) else "unknownModel"
+        return {"ok": False, "errors": [str(e)], "warnings": [], "fields": {}, "codes": [{"code": code, "model": str(model or "")}]}
+    schema = _schema(meta[model])
+    props = schema.get("properties") or {}
+    fields = {str(k).lstrip("@").lower(): v for k, v in (spec.get("fields") or {}).items()}
+    params = spec.get("params") or {}
+    usable = set(required) | set(optional) | ({"width", "height"} if "size" in required + optional else set())
+    for marker, field in fields.items():
+        if marker not in MARKER_INPUTS:
+            warnings.append(f"@{marker} is not a ComfyArt marker and is ignored.")
+        elif marker not in usable:
+            warnings.append(f"@{marker} is not used by this feature and is ignored.")
+        elif field not in props:
+            errors.append(f"@{marker} is mapped to {field!r}, which {model} does not accept.")
+            codes.append({"code": "badField", "model": model, "marker": "@" + marker, "field": str(field)})
+    for k in params:
+        if k not in props:
+            errors.append(f"param {k!r} is not accepted by {model}.")
+            codes.append({"code": "badParam", "model": model, "param": str(k)})
+    auto = {"image": "image" in props or "images" in props, "image2": "images" in props, "mask": "mask_image" in props,
+            "last": "last_image" in props, "prompt": "prompt" in props or "tags" in props,
+            "size": bool({"size", "aspect_ratio", "resolution"} & set(props)), "count": "num_layers" in props or "prompt" in props,
+            "seconds": "duration" in props or "music_length_ms" in props}
+    missing = [m for m in required if m not in fields and not auto.get(m) and not (m == "size" and "width" in fields and "height" in fields)]
+    if missing:
+        errors.append(f"{model} has no field for {', '.join('@' + m for m in missing)}; map it under fields.")
+        codes.append({"code": "missingFields", "model": model, "markers": ["@" + m for m in missing]})
+    covered = AUTO_FIELDS | set(fields.values()) | set(params)
+    unfilled = [k for k in schema.get("required") or [] if k not in covered]
+    if unfilled:
+        errors.append(f"{model} requires {', '.join(unfilled)}; set it under params or map a marker to it.")
+        codes.append({"code": "requiredParams", "model": model, "params": unfilled})
+    return {"ok": not errors, "errors": errors, "warnings": warnings, "fields": fields, "codes": codes, "price": meta[model].get("base_price")}
+
+
+async def _custom_fields(session: aiohttp.ClientSession, inputs: dict, payload: dict) -> None:
+    images = list(inputs.get("images") or [])
+    values = {"image": inputs.get("image"), "image2": images[0] if images else None, "mask": inputs.get("mask"),
+              "last": inputs.get("last_image"), "prompt": inputs.get("prompt"), "width": inputs.get("width"),
+              "height": inputs.get("height"), "count": inputs.get("layers"), "seconds": inputs.get("duration")}
+    if inputs.get("width") and inputs.get("height"):
+        values["size"] = f"{int(inputs['width'])}*{int(inputs['height'])}"
+    for marker, field in (inputs.get("fields") or {}).items():
+        marker = str(marker).lstrip("@").lower()
+        value = values.get(marker)
+        if value in (None, ""):
+            continue
+        if marker == "mask":
+            path = _local_path(str(value))
+            if not path:
+                raise WaveSpeedError("mask file not found", 400)
+            payload[field] = await _upload(session, path, mask_to_white(_read(path)), f"mask-{uuid.uuid4().hex[:8]}.png")
+        elif marker in MEDIA_MARKERS:
+            payload[field] = await _media(session, str(value))
+        else:
+            payload[field] = value
+
+
 def _read(path: str) -> bytes:
     with open(path, "rb") as f:
         return f.read()
@@ -432,6 +515,8 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
         payload["aspect_ratio"] = _nearest(props["aspect_ratio"]["enum"], float(a) / float(b))
     await _media_fields(session, props, inputs, payload)
     _av_fields(props, set(schema.get("required") or []), inputs, payload)
+    if inputs.get("custom"):
+        await _custom_fields(session, inputs, payload)
     for k, v in (inputs.get("params") or {}).items():
         if k in props and v is not None:
             payload[k] = v
@@ -692,10 +777,13 @@ async def submit(inputs: dict) -> str:
     if inputs.get("feature") == "mockup_surface":
         return await _submit_surface(inputs)
     feature = feature_of(str(inputs.get("feature") or ""))
-    picked = inputs.get("model")
-    if feature == "structure_control" and not picked:
-        picked = _structure_pick(inputs)
-    model = resolve_model(feature, picked)
+    if inputs.get("custom"):
+        model = custom_model(inputs.get("model"), await catalog())
+    else:
+        picked = inputs.get("model")
+        if feature == "structure_control" and not picked:
+            picked = _structure_pick(inputs)
+        model = resolve_model(feature, picked)
     _check_limits()
     meta = (await catalog()).get(model)
     if not inputs.get("confirmed"):
@@ -1107,6 +1195,16 @@ async def wavespeed_caption(request: web.Request) -> web.Response:
     except ValueError as e:
         return error(str(e), 404)
     return web.json_response({"text": "\n".join(p.strip() for p in parts if p.strip())})
+
+
+@routes.post("/comfyart/wavespeed/custom/check")
+async def wavespeed_custom_check(request: web.Request) -> web.Response:
+    body = await json_body(request)
+    try:
+        meta = await catalog()
+    except WaveSpeedError as e:
+        return _respond_error(e)
+    return web.json_response(check_custom(body.get("spec") or {}, list(body.get("required") or []), list(body.get("optional") or []), meta))
 
 
 @routes.get("/comfyart/wavespeed/models")

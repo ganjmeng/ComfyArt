@@ -38,6 +38,8 @@ export interface WsInputs {
   /** #80 color modes, parallel to images: the backend preprocesses those refs. */
   prep?: (string | null)[]
   params?: Record<string, unknown>
+  /** custom_workflow action (customMarkers.ts) this job belongs to; the user's model replaces the built-in one. */
+  custom?: string
 }
 
 export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null }

@@ -259,6 +259,17 @@ SPECS: dict[str, dict] = {
         {"action": {"type": "string", "enum": ["list", "read", "save"]}, "name": {"type": "string"},
          "path": {"type": "string"}, "instructions": {"type": "string"}},
         ["action"]),
+    "custom_workflow": _tool(
+        "Connect the user's own WaveSpeed model to a ComfyArt feature (image generation, edit, inpaint, "
+        "upscale, video...). action rules: how to describe the model, read it first. list: each feature's "
+        "markers, its saved files and the one in use. check: validate workflow ({model, fields, params} "
+        "object) or file for a feature and report what to fix. install: save workflow as name for "
+        "feature and use it (refused while check has errors). assign: give feature one of its files, or "
+        "file \"\" to switch back to built in. There is no delete; the user removes files on disk.",
+        {"action": {"type": "string", "enum": ["rules", "list", "check", "install", "assign"]},
+         "feature": {"type": "string"}, "workflow": {"type": "object"}, "file": {"type": "string"},
+         "name": {"type": "string"}},
+        ["action"]),
 }
 
 _MODEL = {"type": "string", "description": "WaveSpeed model id from list_models for this tool's feature; omit for the default"}

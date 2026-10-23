@@ -12,12 +12,12 @@ export function annotated(src: string): string {
 }
 
 export async function eraseGraph(image: string, mask: string): Promise<Built> {
-  return wsBuilt({ feature: 'erase_region', image, mask })
+  return wsBuilt({ feature: 'erase_region', custom: 'erase', image, mask })
 }
 
 export async function editGraph(image: string, prompt: string): Promise<Built> {
   // cloud edit (image_edit default: alibaba/qwen-image-3.0/edit)
-  return wsBuilt({ feature: 'edit_image', image, prompt })
+  return wsBuilt({ feature: 'edit_image', custom: 'edit', image, prompt })
 }
 
 export interface Crop { x: number; y: number; w: number; h: number }
@@ -39,7 +39,7 @@ export function anglePrompt(horizontal: number, vertical: number, zoom: number):
 }
 
 export async function layersGraph(image: string, layers: number, prompt: string): Promise<Built> {
-  return wsBuilt({ feature: 'split_layers', image, prompt, layers, png: true })
+  return wsBuilt({ feature: 'split_layers', custom: 'layers', image, prompt, layers, png: true })
 }
 
 export type SamTarget = { text: string } | { x: number; y: number } | { points: { x: number; y: number }[] } | { box: Crop }

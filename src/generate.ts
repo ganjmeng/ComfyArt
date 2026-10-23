@@ -5,6 +5,7 @@ import type { LoraPick } from './loras'
 import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from './jobs'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import { agentModels, isCloudModel, isVideo, modelOf } from './models'
+import { CUSTOM_GENERATE } from './customWorkflows'
 import { modelIn, wsBuilt } from './wavespeed'
 import { t } from './i18n'
 import { PALETTE_MODE, applyRefs, refControlsOf, refHints, refLimit, refModesOf, refStrengthsOf, usableRefs } from './refModes'
@@ -136,12 +137,16 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     if (mode === 'lipsync' && refs[0] && speech) return wsBuilt({ ...base, feature: 'lip_sync', image: annotated(refs[0]), audio: annotated(speech) })
     const last = lastFrameOf(shape)
     if (refs.length || last) {
-      return wsBuilt({ ...base, feature: 'image_to_video', model: modelIn('image_to_video', workflow), image: annotated(refs[0] ?? last!), last_image: refs[0] && last ? annotated(last) : undefined })
+      return wsBuilt({ ...base, feature: 'image_to_video', custom: 'video', model: modelIn('image_to_video', workflow), image: annotated(refs[0] ?? last!), last_image: refs[0] && last ? annotated(last) : undefined })
     }
-    return wsBuilt({ ...base, feature: 'text_to_video', model: modelIn('text_to_video', workflow) })
+    return wsBuilt({ ...base, feature: 'text_to_video', custom: 'video', model: modelIn('text_to_video', workflow) })
   }
   if (isVideo(workflow)) throw new Error(t('jobs.notInCloud'))
   const [width, height] = targetSize(shape.props)
+  if (model?.id === CUSTOM_GENERATE) {
+    // the user's own WaveSpeed text-to-image model (custom_workflow); reference and base images are not passed
+    return wsBuilt({ feature: 'text_to_image', custom: 'generate', model: CUSTOM_GENERATE, prompt, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
+  }
   if (model && isCloudModel(model.id)) {
     const base = baseOf(shape)
     const images = [...(base ? [base.src] : []), ...refs].map(annotated)

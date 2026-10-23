@@ -1,6 +1,7 @@
 import { atom } from 'tldraw'
 
 import { deleteUserFile, listUserFiles, readUserText, uploadImage, viewUrl, writeUserText } from './comfy'
+import { rulesText } from './customMarkers'
 import { t } from './i18n'
 import { uuid } from './id'
 
@@ -22,6 +23,7 @@ export const BUILTIN_SKILLS: Skill[] = [
   { id: 'product', name: t('skills.eCommerceProductImages'), instructions: 'Create e-commerce product imagery: a clean white-background hero shot (1:1), a lifestyle scene, and a detail close-up. Keep the product identical; when a reference is attached, use it as the product.' },
   { id: 'motion', name: t('skills.motionPoster'), instructions: 'Make a poster first (3:4) with generate_image, wait for it, then animate that image shape with animate_image using subtle motion (loop on) so the text stays readable.' },
   { id: 'interior', name: t('skills.interiorArchitecturalVisualization'), instructions: 'Produce photoreal interior or architecture renders: eye-level wide shot, natural light, accurate materials, 16:9. Add a detail vignette at 4:3.' },
+  { id: 'custom-workflow', name: t('skills.customWorkflow'), instructions: `${rulesText()}\n\nUse the custom_workflow tool for every step; action rules returns these same rules.` },
 ]
 
 export const skillAtom = atom<Skill | null>('skill', null)

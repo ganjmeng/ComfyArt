@@ -5,7 +5,8 @@ import { queuePrompt, uploadImage, viewUrl, waitForImages } from './comfy'
 import type { CommentShape } from './shapes/CommentShape'
 import { resultsAtom, spawnHolder, startJob, type ErrorSink, type MediaKind } from './jobs'
 import { notify } from './notices'
-import { annotated, layersGraph, samGraph, type Built, type Crop } from './workflows'
+import { anglePrompt, annotated, layersGraph, samGraph, type Built, type Crop } from './workflows'
+import { workflowConfigAtom } from './customWorkflows'
 import { nearestRatio } from './generate'
 import { VIDEO_RATIOS } from './genOptions'
 import { t } from './i18n'
@@ -48,34 +49,34 @@ const cloud = (b: Built) => Promise.resolve(b)
 const keep = 'Keep everything else in the image unchanged.'
 
 export const upscale = (e: Editor, s: TLImageShape, factor: number, err: ErrorSink) =>
-  run(e, s, t('common.upscale'), err, (src) => cloud(wsBuilt({ feature: 'upscale_image', image: src.image, params: { target_resolution: factor === 4 ? '4k' : '2k', target_megapixels: Math.round(src.w * src.h * factor * factor / 1e6) || 4 } })))
+  run(e, s, t('common.upscale'), err, (src) => cloud(wsBuilt({ feature: 'upscale_image', custom: 'upscale', image: src.image, params: { target_resolution: factor === 4 ? '4k' : '2k', target_megapixels: Math.round(src.w * src.h * factor * factor / 1e6) || 4 } })))
 
 export const creativeUpscale = (e: Editor, s: TLImageShape, factor: number, style: string, strength: number, err: ErrorSink) =>
   run(e, s, t('common.upscale'), err, (src) => cloud(wsBuilt({ feature: 'upscale_image', model: 'recraft-ai/recraft-creative-upscale', image: src.image, prompt: style, params: { creativity: strength, target_resolution: factor === 4 ? '4k' : '2k' } })))
 
 export const cutout = (e: Editor, s: TLImageShape, err: ErrorSink) =>
-  run(e, s, t('common.removeBackground'), err, (src) => cloud(wsBuilt({ feature: 'remove_background', image: src.image, png: true })))
+  run(e, s, t('common.removeBackground'), err, (src) => cloud(wsBuilt({ feature: 'remove_background', custom: 'cutout', image: src.image, png: true })))
 
 export const quickEdit = (e: Editor, s: TLImageShape, prompt: string, err: ErrorSink) =>
-  run(e, s, t('common.quickEdit'), err, (src) => cloud(wsBuilt({ feature: 'image_edit', image: src.image, prompt, width: src.w, height: src.h })))
+  run(e, s, t('common.quickEdit'), err, (src) => cloud(wsBuilt({ feature: 'image_edit', custom: 'edit', image: src.image, prompt, width: src.w, height: src.h })))
 
 export const editText = (e: Editor, s: TLImageShape, edits: [string, string][], err: ErrorSink) =>
-  run(e, s, t('common.editText'), err, (src) => cloud(wsBuilt({ feature: 'image_edit', image: src.image, width: src.w, height: src.h, prompt:
+  run(e, s, t('common.editText'), err, (src) => cloud(wsBuilt({ feature: 'image_edit', custom: 'edit', image: src.image, width: src.w, height: src.h, prompt:
     `${edits.map(([from, to]) => (to ? `Change the text "${from}" to "${to}" in the same font, color, size and position` : `Remove the text "${from}" and fill its area with the surrounding background`)).join('. ')}. Keep everything else in the image unchanged.` })))
 
 export const angles = (e: Editor, s: TLImageShape, h: number, v: number, z: number, err: ErrorSink) =>
-  run(e, s, t('common.multiAngle'), err, (src) => cloud(wsBuilt({ feature: 'change_angle', image: src.image, params: { horizontal_angle: Math.round(h), vertical_angle: Math.round(v), distance: z > 1.25 ? 0 : z < 0.8 ? 2 : 1 } })))
+  run(e, s, t('common.multiAngle'), err, (src) => cloud(wsBuilt({ feature: 'change_angle', custom: 'angles', image: src.image, prompt: workflowConfigAtom.get().angles ? anglePrompt(h, v, z) : undefined, params: { horizontal_angle: Math.round(h), vertical_angle: Math.round(v), distance: z > 1.25 ? 0 : z < 0.8 ? 2 : 1 } })))
 
 export const expand = (e: Editor, s: TLImageShape, pads: Pads, prompt: string, err: ErrorSink) => {
   const src = source(e, s)
   if (!src) return
   const k = s.props.w / src.w
-  return run(e, s, t('common.expand'), err, () => cloud(wsBuilt({ feature: 'expand_image', image: src.image, prompt, width: src.w + pads.l + pads.r, height: src.h + pads.t + pads.b })),
+  return run(e, s, t('common.expand'), err, () => cloud(wsBuilt({ feature: 'expand_image', custom: 'expand', image: src.image, prompt, width: src.w + pads.l + pads.r, height: src.h + pads.t + pads.b })),
     { size: [(src.w + pads.l + pads.r) * k, (src.h + pads.t + pads.b) * k] })
 }
 
 export const animate = (e: Editor, s: TLImageShape, prompt: string, err: ErrorSink, loop = true) =>
-  run(e, s, t('common.animateImage'), err, (src) => cloud(wsBuilt({ feature: 'image_to_video', image: src.image, last_image: loop ? src.image : undefined, prompt: prompt || 'Subtle seamless motion. Keep the composition, text and layout unchanged.', duration: 3, ratio: nearestRatio(src.w / src.h, VIDEO_RATIOS) })))
+  run(e, s, t('common.animateImage'), err, (src) => cloud(wsBuilt({ feature: 'image_to_video', custom: 'animate', image: src.image, last_image: loop ? src.image : undefined, prompt: prompt || 'Subtle seamless motion. Keep the composition, text and layout unchanged.', duration: 3, ratio: nearestRatio(src.w / src.h, VIDEO_RATIOS) })))
 
 export const upscaleVideo = (e: Editor, s: TLVideoShape, long: number, err: ErrorSink) =>
   run(e, s, t('actions.upscaleVideo'), err, (src) => cloud(wsBuilt({ feature: 'upscale_video', video: src.image, params: { target_resolution: long >= 3840 ? '4k' : long >= 2560 ? '2k' : '1080p' } })), { kind: 'video' })
@@ -87,7 +88,7 @@ export const extendVideo =(e: Editor, s: TLVideoShape, prompt: string, duration:
   run(e, s, t('common.extendVideo'), err, (src) => cloud(wsBuilt({ feature: 'extend_video', video: src.image, prompt: prompt || 'Continue the shot naturally.', duration })), { kind: 'video' })
 
 export const styleTransfer = (e: Editor, s: TLImageShape, style: string, ref: string | null, err: ErrorSink) =>
-  run(e, s, t('common.styleTransfer'), err, (src) => cloud(wsBuilt({ feature: 'image_edit', image: src.image, images: ref ? [annotated(ref)] : undefined, width: src.w, height: src.h,
+  run(e, s, t('common.styleTransfer'), err, (src) => cloud(wsBuilt({ feature: 'image_edit', custom: 'style', image: src.image, images: ref ? [annotated(ref)] : undefined, width: src.w, height: src.h,
     prompt: `Redraw this image in ${style || 'the style of the second image'}${ref && style ? ', matching the style of the second image' : ''}. Keep the composition and subject.` })))
 
 export const splitLayers = (e: Editor, s: TLImageShape, layers: number, prompt: string, err: ErrorSink) =>
@@ -120,7 +121,7 @@ export async function maskFile(w: number, h: number, paint: (ctx: CanvasRenderin
 }
 
 const eraseWith = (e: Editor, s: TLImageShape, err: ErrorSink, paint: (ctx: CanvasRenderingContext2D, src: Source) => void) =>
-  run(e, s, t('common.eraser'), err, async (src) => wsBuilt({ feature: 'erase_region', image: src.image, mask: await maskFile(src.w, src.h, (ctx) => paint(ctx, src)) }))
+  run(e, s, t('common.eraser'), err, async (src) => wsBuilt({ feature: 'erase_region', custom: 'erase', image: src.image, mask: await maskFile(src.w, src.h, (ctx) => paint(ctx, src)) }))
 
 export const erase = (e: Editor, s: TLImageShape, strokes: Stroke[], err: ErrorSink) =>
   eraseWith(e, s, err, (ctx, src) => drawStrokes(ctx, strokes, src.w, src.h))
@@ -156,7 +157,7 @@ export function inpaint(e: Editor, shape: TLImageShape, mask: HTMLCanvasElement,
 
 function regionEdit(src: Source, r: Crop, prompt: string): Promise<Built> {
   const box = `x ${Math.round(r.x)}-${Math.round(r.x + r.w)}, y ${Math.round(r.y)}-${Math.round(r.y + r.h)} (image is ${src.w}x${src.h} px)`
-  return cloud(wsBuilt({ feature: 'image_edit', image: src.image, width: src.w, height: src.h, prompt: `Only inside the area ${box}: ${prompt}. ${keep}` }))
+  return cloud(wsBuilt({ feature: 'image_edit', custom: 'inpaint', image: src.image, width: src.w, height: src.h, prompt: `Only inside the area ${box}: ${prompt}. ${keep}` }))
 }
 
 function moveEdit(src: Source, what: string, dx: number, dy: number): Promise<Built> {

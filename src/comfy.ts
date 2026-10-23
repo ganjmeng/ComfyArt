@@ -132,6 +132,14 @@ function promptError(body: any, status: number): string {
   return top.details ? `${top.message}: ${top.details}` : top.message
 }
 
+type WsHook = (inputs: Record<string, unknown>) => Promise<Record<string, unknown>>
+let wsHook: WsHook = async ({ custom: _custom, ...rest }) => rest
+
+/** custom_workflow swaps in the user's WaveSpeed model for jobs tagged with a custom action. */
+export function setWsHook(hook: WsHook) {
+  wsHook = hook
+}
+
 /** Second confirmation for costly cloud jobs, in the app's own Confirm dialog. */
 export function askCost(price: number): Promise<boolean> {
   return new Promise((resolve) => confirmAtom.set({
@@ -146,7 +154,7 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget())
     const key = keyStatusAtom.get()
     if (key && !key.configured) { keySettingsOpenAtom.set(true); throw new Error(t('wsKey.needKey')) }
     if (outOfCredit(key)) throw new Error(t('wsKey.needCredit'))
-    const inputs = Object.values(prompt)[0].inputs
+    const inputs = await wsHook(Object.values(prompt)[0].inputs as Record<string, unknown>)
     let ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
     let wsBody = await ws.json().catch(() => null)
     const price = wsBody?.error?.confirm_usd
