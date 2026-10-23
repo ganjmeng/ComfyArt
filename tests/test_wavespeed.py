@@ -71,6 +71,7 @@ def uncurated(monkeypatch):
 async def ws(monkeypatch, fresh_user_dir):
     state = {"status": "completed", "submits": [], "polls": 0, "uploads": 0, "auth": set(), "submit_status": 200, "result_status": 200, "prices": {}, "quotes": []}
     wavespeed._quotes.clear()
+    wavespeed._map_cache.clear()
     app = web.Application()
 
     async def price(request):

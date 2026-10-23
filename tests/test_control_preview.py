@@ -8,7 +8,7 @@ import pytest
 from PIL import Image
 
 from ComfyArt.api import refprep, wavespeed
-from tests.test_ref_structure import DEPTH, SAM, _photo, maps, ws  # noqa: F401  (fixtures)
+from tests.test_ref_structure import DEPTH, FLUX, SAM, _ctl, _photo, maps, ws  # noqa: F401  (fixtures)
 
 
 @pytest.mark.parametrize("mode", sorted(refprep.FILTERED | refprep.COLOR))
@@ -40,6 +40,28 @@ async def test_cloud_map_asks_cost_confirmation(maps, monkeypatch):
     assert e.value.status == 409 and e.value.confirm == 0.005 and maps["submits"] == []
     await wavespeed.control_preview({"image": _photo(), "mode": "depth", "res": 512, "confirmed": True})
     assert [m for m, _ in maps["submits"]] == [DEPTH]
+
+
+def _job(ref, mode):
+    return {"feature": "structure_control", "prompt": "p", "width": 512, "height": 512, "controls": [_ctl(mode, ref)]}
+
+
+@pytest.mark.parametrize("mode,step", [("depth", DEPTH), ("normal", DEPTH), ("seg", SAM)])
+async def test_generate_reuses_preview_map(maps, mode, step):
+    """#81 product rule: same src / mode / res as the preview -> exactly one cloud extraction, no second charge."""
+    ref = _photo()
+    await wavespeed.control_preview({"image": ref, "mode": mode, "res": 512, "confirmed": True})
+    assert wavespeed._map_steps(_job(ref, mode)) == []  # estimate no longer counts the map call
+    await wavespeed.submit(_job(ref, mode))
+    models = [m for m, _ in maps["submits"]]
+    assert models.count(step) == 1 and models[0] == step and models[-1] == FLUX
+
+
+async def test_changed_res_extracts_again(maps):
+    ref = _photo()
+    await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 1024, "confirmed": True})
+    await wavespeed.submit(_job(ref, "depth"))  # job ref is res 512
+    assert [m for m, _ in maps["submits"]] == [DEPTH, DEPTH, FLUX]
 
 
 async def test_missing_fields_400(ws):

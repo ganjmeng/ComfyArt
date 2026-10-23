@@ -761,7 +761,18 @@ def _structure_pick(inputs: dict) -> str:
 def _map_steps(inputs: dict) -> list[str]:
     """Features of the extra cloud map calls (depth-anything / sam3) a structure job runs before control."""
     cs = _controls(inputs)
-    return [refprep.CLOUD_MAP[m][0] for m in (str(c.get("mode") or "") for c in cs) if m in refprep.CLOUD_MAP]
+    return [refprep.CLOUD_MAP[str(c.get("mode") or "")][0] for c in cs
+            if str(c.get("mode") or "") in refprep.CLOUD_MAP and _map_key(c) not in _map_cache]
+
+
+# #81: cloud maps (depth / normal / seg) already extracted for a preview, keyed on (src, mode, res), so the
+# job that follows reuses the map with no second extraction or charge while those three are unchanged.
+_map_cache: dict[tuple[str, str, int], bytes] = {}
+_MAP_CACHE_MAX = 32
+
+
+def _map_key(c: dict, res_default: int = 1024) -> tuple[str, str, int]:
+    return (str(c.get("image") or ""), str(c.get("mode") or ""), int(c.get("res") or res_default))
 
 
 async def _steps_price(inputs: dict) -> float | None:
@@ -804,8 +815,14 @@ async def _control_map(c: dict, size, res_default: int = 1024):
     mode = str(c.get("mode") or "")
     res, resize = int(c.get("res") or res_default), str(c.get("resize") or "crop")
     if mode in refprep.CLOUD_MAP:
-        feature, params = refprep.CLOUD_MAP[mode]
-        data = await _cloud_map(feature, params, str(c["image"]))
+        key = _map_key(c, res_default)
+        data = _map_cache.get(key)
+        if data is None:
+            feature, params = refprep.CLOUD_MAP[mode]
+            data = await _cloud_map(feature, params, str(c["image"]))
+            if len(_map_cache) >= _MAP_CACHE_MAX:
+                _map_cache.pop(next(iter(_map_cache)))
+            _map_cache[key] = data
     else:
         data = await _source_bytes(str(c["image"]))
     # no pose estimator on WaveSpeed: on flux a pose ref guides through its soft-edge map
@@ -821,7 +838,7 @@ async def control_preview(inputs: dict) -> bytes:
     if not image or not mode:
         raise WaveSpeedError("image and mode are required", 400)
     res = int(inputs.get("res") or 1024)
-    if mode in refprep.CLOUD_MAP and not inputs.get("confirmed"):
+    if mode in refprep.CLOUD_MAP and not inputs.get("confirmed") and (image, mode, res) not in _map_cache:
         price, _ = await quote(resolve_model(refprep.CLOUD_MAP[mode][0], None), {})
         if price is not None and needs_confirm(price):
             raise WaveSpeedError(f"control map preview costs about ${price}; confirm to continue", 409, confirm=float(price))
