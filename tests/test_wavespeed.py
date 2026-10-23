@@ -73,6 +73,8 @@ async def ws(monkeypatch, fresh_user_dir):
     state = {"status": "completed", "submits": [], "polls": 0, "uploads": 0, "auth": set(), "submit_status": 200, "result_status": 200, "prices": {}, "quotes": []}
     wavespeed._quotes.clear()
     wavespeed._map_cache.clear()
+    wavespeed._seg_cats.clear()
+    wavespeed._seg_masks.clear()
     app = web.Application()
 
     async def price(request):
@@ -103,7 +105,9 @@ async def ws(monkeypatch, fresh_user_dir):
         st = state["status"]
         data = {"id": request.match_info["id"], "status": st, "outputs": [], "error": ""}
         if st == "completed":
-            data["outputs"] = state.get("outputs") or [str(request.url.with_path("/cdn/out.png"))]
+            tid = request.match_info["id"]
+            model = state["submits"][int(tid[4:]) - 1][0] if tid.startswith("task") and tid[4:].isdigit() and int(tid[4:]) <= len(state["submits"]) else None
+            data["outputs"] = state.get("by_model", {}).get(model) or state.get("outputs") or [str(request.url.with_path("/cdn/out.png"))]
         if st == "failed":
             data["error"] = "content flagged"
         return web.json_response({"code": 200, "data": data})

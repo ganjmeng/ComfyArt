@@ -8,7 +8,7 @@ import pytest
 from PIL import Image
 
 from ComfyArt.api import refprep, wavespeed
-from tests.test_ref_structure import DEPTH, FLUX, SAM, _ctl, _photo, maps, ws  # noqa: F401  (fixtures)
+from tests.test_ref_structure import CAP, DEPTH, FLUX, SAM, _ctl, _photo, maps, ws  # noqa: F401  (fixtures)
 
 
 @pytest.mark.parametrize("mode", sorted(refprep.FILTERED | refprep.COLOR))
@@ -29,7 +29,7 @@ async def test_pose_previews_its_soft_edge_map(ws):
 @pytest.mark.parametrize("mode,step", [("depth", DEPTH), ("normal", DEPTH), ("seg", SAM)])
 async def test_cloud_maps_run_their_map_call(maps, mode, step):
     png = await wavespeed.control_preview({"image": _photo(), "mode": mode, "res": 512})
-    assert [m for m, _ in maps["submits"]] == [step]
+    assert [m for m, _ in maps["submits"]] == ([CAP, step] if mode == "seg" else [step])
     assert Image.open(io.BytesIO(png)).size == (64, 48)
 
 
@@ -54,7 +54,8 @@ async def test_generate_reuses_preview_map(maps, mode, step):
     assert wavespeed._map_steps(_job(ref, mode)) == []  # estimate no longer counts the map call
     await wavespeed.submit(_job(ref, mode))
     models = [m for m, _ in maps["submits"]]
-    assert models.count(step) == 1 and models[0] == step and models[-1] == FLUX
+    assert models.count(step) == 1 and models[-1] == FLUX
+    assert models[0] == (CAP if mode == "seg" else step) and models.count(CAP) <= 1
 
 
 async def test_generate_sends_preview_map(maps, monkeypatch):

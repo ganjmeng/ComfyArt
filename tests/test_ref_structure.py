@@ -14,6 +14,7 @@ FLUX = "wavespeed-ai/flux-controlnet-union-pro-2.0"
 ZIMG = "wavespeed-ai/z-image-turbo/controlnet"
 DEPTH = "wavespeed-ai/depth-anything-v3/image"
 SAM = "wavespeed-ai/sam3-image"
+CAP = "wavespeed-ai/image-captioner"
 MODELS.extend([
     _meta(FLUX, {"prompt": {"type": "string"}, "control_image": {"type": "string"}, "controlnet_conditioning_scale": {"type": "number"},
                  "control_guidance_start": {"type": "number"}, "control_guidance_end": {"type": "number"}, "size": {"type": "string"},
@@ -83,6 +84,7 @@ def _png(color=(128, 128, 128), size=(64, 48)):
 def maps(ws, monkeypatch):
     """Cloud map calls answer with a real PNG at a cdn URL (mocked, nothing is fetched)."""
     ws["outputs"] = ["https://cdn.test/map.png"]
+    ws["by_model"] = {CAP: ["a cat on a sofa"]}  # #135 seg: the captioner names one COCO class (cat)
     real = wavespeed._source_bytes
 
     async def fake(value):
@@ -147,14 +149,15 @@ async def test_cloud_map_then_flux_with_knobs(maps, mode, step):
     await wavespeed.submit({"feature": "structure_control", "prompt": "a room", "width": 512, "height": 512,
                             "controls": [_ctl(mode, ref, strength=130, start=20, end=60)]})
     models = [m for m, _ in maps["submits"]]
-    assert models == [step, FLUX]  # two-step cloud: map first, then ControlNet
-    pre = maps["submits"][0][1]
+    pre_steps = [CAP, step] if mode == "seg" else [step]  # #135: seg recognises classes first
+    assert models == pre_steps + [FLUX]  # cloud map first, then ControlNet
+    pre = maps["submits"][len(pre_steps) - 1][1]
     assert pre["image"].startswith("https://cdn.test/up")
     if step == DEPTH:
         assert pre["colormap"] == "grayscale"
     else:
         assert pre["apply_mask"] is False
-    payload = maps["submits"][1][1]
+    payload = maps["submits"][-1][1]
     assert payload["controlnet_conditioning_scale"] == 1.3
     assert payload["control_guidance_start"] == 0.2 and payload["control_guidance_end"] == 0.6
     assert payload["control_image"].startswith("https://cdn.test/up") and payload["size"] == "512*512"
@@ -200,8 +203,8 @@ def test_composite_keeps_every_map():
 @pytest.mark.parametrize("modes,total", [
     (["canny"], 0.03),
     (["depth"], 0.035),
-    (["seg"], 0.035),
-    (["normal", "seg", "canny"], 0.04),
+    (["seg"], 0.091),  # #138: caption $0.001 + up to 12 sam3 (upper bound, nothing recognised before confirm)
+    (["normal", "seg", "canny"], 0.096),
     (["pose"], 0.012),
     (["pose", "depth"], 0.035),
 ])
