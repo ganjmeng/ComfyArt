@@ -27,7 +27,7 @@ export function localizeError(msg: string): string {
   if (/Please upload a voice sample first/.test(msg)) return t('jobs.needVoiceSample')
   if (/WaveSpeed task finished without (output|text)/.test(msg)) return t('jobs.wsNoOutput')
   if (/Select or describe the object to segment first/.test(msg)) return t('jobs.needSegTarget')
-  const charged = /WaveSpeed task timed out, charged \$([\d.]+)/.exec(msg)
+  const charged = /WaveSpeed task timed out, may have been charged about \(quoted price\) \$([\d.]+)/.exec(msg)
   if (charged) return t('jobs.wsTimeoutCharged', charged[1])
   const timeout = /WaveSpeed task timed out after (\d+)s/.exec(msg)
   if (timeout) return t('jobs.wsTimeout', timeout[1])

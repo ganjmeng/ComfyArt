@@ -64,7 +64,7 @@ async def test_timeout_status_stops_with_charged_amount(ws, bot_client, media):
     ws["prices"]["wavespeed-ai/image-captioner"] = 0.001371
     res = await bot_client.post("/comfyart/wavespeed/caption", json={"src": PIC})
     assert res.status == 504
-    assert "timed out, charged $0.001371" in await res.text()
+    assert "timed out, may have been charged about (quoted price) $0.001371" in await res.text()
     assert len(ws["submits"]) == 1 and ws["polls"] == 1  # terminal: no 900s polling, no resubmit
 
 
@@ -82,7 +82,7 @@ async def test_generate_job_timeout_status_reports_charge(ws):
     ws["status"] = "timeout"
     h = (await wavespeed.poll(task))[f"ws:{task}"]
     assert h["status"]["status_str"] == "error"
-    assert "charged $0.001371" in h["status"]["messages"][0][1]["exception_message"]
+    assert "may have been charged about (quoted price) $0.001371" in h["status"]["messages"][0][1]["exception_message"]
 
 
 async def test_generate_job_text_only_output_is_not_an_empty_success(ws):

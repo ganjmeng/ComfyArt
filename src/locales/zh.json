@@ -656,7 +656,7 @@
   "jobs.needVoiceSample": "请先上传样音",
   "jobs.needSegTarget": "请先框选或描述要分割的对象",
   "jobs.wsTimeout": "生成超时（{0} 秒），请重试",
-  "jobs.wsTimeoutCharged": "生成超时，已扣费 ${0}",
+  "jobs.wsTimeoutCharged": "生成超时，可能已按报价扣费约 ${0}",
   "jobs.wsNoOutput": "任务已完成但没有返回结果，请重试",
   "kitEditor.createProject": "使用此素材创建项目",
   "kitEditor.description": "描述",

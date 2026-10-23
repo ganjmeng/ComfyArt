@@ -1441,7 +1441,7 @@ async def _timeout_error(task: str) -> "WaveSpeedError":
             price = None
     if price is None:
         return WaveSpeedError("WaveSpeed task timed out", 504)
-    return WaveSpeedError(f"WaveSpeed task timed out, charged ${round(float(price), 6):g}", 504)
+    return WaveSpeedError(f"WaveSpeed task timed out, may have been charged about (quoted price) ${round(float(price), 6):g}", 504)
 
 
 def text_of(value) -> str:
