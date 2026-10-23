@@ -715,6 +715,7 @@
   "lightbox.rotateLeft": "Rotate Left",
   "lightbox.rotateRight": "Rotate Right",
   "lightbox.unmute": "Unmute",
+  "err.requestFailed": "Request failed ({0}). Please try again.",
   "llm.agentCallFailed": "Agent call failed: {0}",
   "memory.aestheticPreferences": "Aesthetic Preferences",
   "memory.basics": "Basics",

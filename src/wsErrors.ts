@@ -18,7 +18,8 @@ const fmtUsd = (n: number) => String(Math.round(n * 1e4) / 1e4)
 
 export function wsBodyError(body: any, fallback: string): string {
   const err = body?.error
-  return wsErrorText(err?.kind, err?.charged_usd) ?? (typeof err === 'string' ? err : err?.message ?? fallback)
+  // never stringify an object into "[object Object]": only string text passes through, otherwise the localized fallback
+  return wsErrorText(err?.kind, err?.charged_usd) ?? (typeof err === 'string' && err.trim() ? err : typeof err?.message === 'string' && err.message.trim() ? err.message : fallback)
 }
 
 export const RELAY_NOTE = 'user_message is already in the user\'s language; reply with it word for word (keep any link), do not paraphrase or quote a raw error'

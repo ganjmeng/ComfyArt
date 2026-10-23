@@ -715,6 +715,7 @@
   "lightbox.rotateLeft": "向左旋转",
   "lightbox.rotateRight": "向右旋转",
   "lightbox.unmute": "开启声音",
+  "err.requestFailed": "请求失败（{0}），请稍后再试。",
   "llm.agentCallFailed": "Agent 调用失败：{0}",
   "memory.aestheticPreferences": "审美偏好",
   "memory.basics": "基础信息",
