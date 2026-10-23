@@ -264,6 +264,8 @@ def _caps(schema: dict) -> dict:
         out["qualities"] = props["quality"]["enum"]
     if "images" in props:
         out["max_images"] = props["images"].get("maxItems")
+    if "loras" in props:
+        out["max_loras"] = (props["loras"] or {}).get("maxItems")  # #202
     defaults = {k: props[k]["default"] for k in ("aspect_ratio", "resolution", "duration", "quality") if "default" in (props.get(k) or {})}
     if defaults:
         out["defaults"] = defaults
@@ -866,6 +868,45 @@ def _ace_music_fields(props: dict, music, payload: dict) -> None:
         payload["tags"] = ", ".join([payload["tags"], *extra])
 
 
+# #202 LoRA: the user pastes a HuggingFace or Civitai URL plus a weight (0-200 %, scale = weight / 100); it is sent in the
+# model's `loras` field ([{path, scale}], WaveSpeed schema) and priced with it. A model without `loras` never drops them.
+_LORA_HF = re.compile(r"^https://(?:huggingface\.co|hf\.co)/[\w.-]+/[\w.-]+/(?:resolve|blob)/[^\s?#]+\.safetensors(?:\?[^\s#]*)?$")
+_LORA_CIVITAI = re.compile(r"^https://civitai\.com/(?:api/download/models/\d+(?:\?[^\s#]*)?|models/\d+(?:/[\w.-]*)?\?(?:[^\s#]*&)?modelVersionId=(\d+)[^\s#]*)$")
+
+
+def lora_url(url) -> str | None:
+    """The downloadable LoRA URL for a HuggingFace/Civitai link, or None when it is not one (#202)."""
+    u = str(url or "").strip()
+    if _LORA_HF.match(u):
+        return u.replace("/blob/", "/resolve/", 1)
+    m = _LORA_CIVITAI.match(u)
+    if m:
+        return f"https://civitai.com/api/download/models/{m.group(1)}" if m.group(1) else u
+    return None
+
+
+def lora_payload(props: dict, inputs: dict) -> list[dict]:
+    """`loras` as submitted and priced: [{path, scale}], or [] when the job has none. Raises (kind loraUrl /
+    loraUnsupported) for a bad URL or a model whose schema has no `loras`, so they are never silently ignored."""
+    picks = [p for p in (inputs.get("loras") or []) if isinstance(p, dict)]
+    if not picks:
+        return []
+    if "loras" not in props:
+        raise WaveSpeedError("this model does not support LoRA", 400, kind="loraUnsupported")
+    out = []
+    for p in picks:
+        path = lora_url(p.get("name") or p.get("path"))
+        if not path:
+            raise WaveSpeedError("LoRA URL must be a HuggingFace LoRA file link or a Civitai download link", 400, kind="loraUrl")
+        w = p.get("strength")
+        scale = float(w) / 100 if isinstance(w, (int, float)) and not isinstance(w, bool) else float(p.get("scale", 1))
+        out.append({"path": path, "scale": round(min(max(scale, 0.0), 4.0), 2)})
+    limit = (props.get("loras") or {}).get("maxItems")
+    if isinstance(limit, int) and limit > 0 and len(out) > limit:
+        raise WaveSpeedError(f"this model takes at most {limit} LoRAs", 400, kind="loraTooMany")
+    return out
+
+
 async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: dict, model: str = "") -> dict:
     """Map ComfyArt's logical inputs onto whatever fields this model's schema accepts."""
     props = schema.get("properties") or {}
@@ -923,6 +964,8 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
     negative = str(inputs.get("negative_prompt") or "").strip()
     if negative and "negative_prompt" in props:
         payload["negative_prompt"] = negative  # #201: only models whose schema takes it
+    if loras := lora_payload(props, inputs):
+        payload["loras"] = loras  # #202
     if inputs.get("png") and "png" in (props.get("output_format", {}).get("enum") or []):
         payload["output_format"] = "png"
     missing = [k for k in schema.get("required") or [] if k not in payload]
@@ -1087,6 +1130,8 @@ async def priced_inputs(model: str, inputs: dict) -> dict:
         out["images"] = [f"ref-{i + 1}" for i in range(n)]
     if model in DURATION_BILLED and "duration" not in props:
         out["duration"] = media_seconds(inputs) or DURATION_FALLBACK_S  # #185: pricing only
+    if props and (loras := lora_payload(props, inputs)):
+        out["loras"] = loras  # #202: quoted with the LoRAs it is submitted with, so quote == charge
     return out
 
 
@@ -1448,6 +1493,7 @@ async def submit(inputs: dict) -> str:
     meta = (await catalog()).get(model)
     if meta and needs_voice_sample(model, feature, _schema(meta), inputs):
         raise WaveSpeedError(VOICE_SAMPLE_MISSING, 400)
+    lora_payload(_schema(meta).get("properties") or {}, inputs)  # #202: bad URL / unsupported model fails before any quote
     if feature == "segment" or model == SAM3_MODEL:
         inputs = await seg_prompts(inputs)
     if not inputs.get("confirmed"):

@@ -19,6 +19,8 @@ export interface WsInputs {
   seed?: number
   /** #201: sent only for models whose schema has negative_prompt. */
   negative_prompt?: string
+  /** #202: [{name: URL, strength: %}]; the backend sends them in the model's `loras` field. */
+  loras?: { name: string; strength: number }[]
   png?: boolean
   video?: string
   audio?: string

@@ -1,12 +1,12 @@
 import { createShapeId, type Editor, type TLShape, type TLShapeId } from 'tldraw'
 
 import { defaultTarget, refKind, uploadImage, validTarget, viewUrl, type PromptGraph, type RefKind } from './comfy'
-import type { LoraPick } from './loras'
+import { supportsLora, type LoraPick } from './loras'
 import { freeSpot, spawnHolder, startJob, type ErrorSink, type GenInfo } from './jobs'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import { agentModels, AUTO_IMAGE, AUTO_VIDEO, defaultOf, FEATURE_MODELS, featurePicks, hasNegative, isCloudModel, isVideo, modelOf, refCap, type ModelDef } from './models'
 import { CUSTOM_GENERATE } from './customWorkflows'
-import { modelIn, wsBuilt } from './wavespeed'
+import { modelIn, WS_NODE, wsBuilt } from './wavespeed'
 import { t } from './i18n'
 import { PALETTE_MODE, applyRefs, refControlsOf, refHints, refLimit, refModesOf, refStrengthsOf, usableRefs } from './refModes'
 import { paletteImage, palettePrompt } from './palette'
@@ -111,6 +111,29 @@ export const seedOf = (shape: GeneratorShape) => (shape.meta.seed as number | nu
 export const runOnOf = (shape: GeneratorShape) => validTarget(shape.meta.runOn) ?? defaultTarget()
 export const lorasOf = (shape: GeneratorShape) => (shape.meta.loras as LoraPick[] | undefined) ?? []
 
+/** #202: the model a generator's WS job runs on (its pick, else the feature default), for LoRA support. */
+function runModelOf(inputs: Record<string, unknown>) {
+  const feature = String(inputs.feature ?? '')
+  const list = FEATURE_MODELS[feature] ?? []
+  return list.find((m) => m.id === inputs.model) ?? (inputs.model ? modelOf(String(inputs.model)) : defaultOf(feature, list))
+}
+/** #202: whether the generator's current job would run on a model that takes `loras`. */
+export function loraSupported(shape: GeneratorShape) {
+  const inputs = estimateBase(shape)
+  return !!inputs && supportsLora(runModelOf(inputs))
+}
+/** #202: names of the curated models (same kind as the card) that take `loras`, for the greyed hint. */
+export function loraModelNames(shape: GeneratorShape) {
+  const feats = isVideo(shape.props.workflow) ? ['text_to_video', 'image_to_video'] : ['text_to_image', 'image_edit']
+  return [...new Set(feats.flatMap((f) => (FEATURE_MODELS[f] ?? []).filter(supportsLora).map((m) => m.label)))]
+}
+/** #202: the card's LoRAs go with the job (never dropped: a model without `loras` makes the backend say so). */
+function applyLoras(graph: PromptGraph, shape: GeneratorShape) {
+  const loras = lorasOf(shape)
+  if (!loras.length) return
+  for (const node of Object.values(graph)) if (node.class_type === WS_NODE) node.inputs.loras = loras
+}
+
 function applySeed(graph: PromptGraph, seed: number) {
   for (const node of Object.values(graph)) {
     if (node.class_type === 'RandomNoise') node.inputs.noise_seed = seed
@@ -193,6 +216,13 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
 
 /** The price-relevant part of a generator's cloud job, without uploading any media (for the cost estimate). */
 export function estimateInputsOf(shape: GeneratorShape): Record<string, unknown> | null {
+  const inputs = estimateBase(shape)
+  const loras = lorasOf(shape)
+  // #202: quoted with the LoRAs it is submitted with, so the quote is the charge
+  return inputs && loras.length ? { ...inputs, loras } : inputs
+}
+
+function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
   const { ratio, workflow, duration } = shape.props
   const refs = refsOf(shape)
   if (isVideo(workflow)) {
@@ -220,7 +250,7 @@ export function generate(editor: Editor, shape: GeneratorShape, onError: ErrorSi
   const kind = isVideo(shape.props.workflow) ? 'video' : 'image'
   const name = shape.props.prompt || scenesOf(shape)[0]?.prompt || ''
   const seed = seedOf(shape) ?? randomSeed()
-  const built = generateGraph(shape).then((b) => { applySeed(b.graph, seed); return b })
+  const built = generateGraph(shape).then((b) => { applySeed(b.graph, seed); applyLoras(b.graph, shape); return b })
   return startJob(editor, shape.id, built, { name: name.slice(0, 32), kind, extra: { seed }, runOn: runOnOf(shape) }, onError)
 }
 
