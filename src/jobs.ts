@@ -24,6 +24,7 @@ const rawText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 // WaveSpeed backend errors arrive in English; show them in the UI language.
 export function localizeError(msg: string): string {
   if (/\(401\)|rejected the API key/.test(msg)) return t('jobs.wsKeyInvalid')
+  if (/Please upload a voice sample first/.test(msg)) return t('jobs.needVoiceSample')
   const timeout = /WaveSpeed task timed out after (\d+)s/.exec(msg)
   if (timeout) return t('jobs.wsTimeout', timeout[1])
   const failed = /^WaveSpeed task (?:failed: (.*)|finished without output)$/s.exec(msg)

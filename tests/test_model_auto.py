@@ -47,3 +47,14 @@ def test_switching_keeps_supported_and_resets_the_rest(result):
 
 def test_extra_refs_capped_to_model_max(result):
     assert result["refCap"] == [3, None, None]
+
+
+def test_auto_ignores_earlier_manual_pick(result):
+    # #95 ruling: panel Auto without an agent -> feature default; never an earlier manual pick
+    assert result["autoIgnoresManual"] == {}
+    assert result["manualKept"] == {"image_to_video": "x/manual"}
+
+
+def test_dropdown_follows_backend_picker_order_and_shows_display_name(result):
+    assert result["tabs"]["text_to_video"] == ["kwaivgi/kling-v3.0-pro/text-to-video", "bytedance/seedance-2.0/text-to-video"]
+    assert result["row"]["label"] == "GPT Image 2" and result["row"]["desc"] in ("English blurb", "中文描述")

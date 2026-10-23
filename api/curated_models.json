@@ -47,7 +47,6 @@
       "ideogram-ai/ideogram-v4.5/edit"]},
     "text_to_video": {"needs": ["prompt"], "models": [
       "bytedance/seedance-2.0/text-to-video",
-      "bytedance/seedance-2.5/text-to-video-turbo",
       "kwaivgi/kling-v3.0-std/text-to-video",
       "google/veo3.1-fast/text-to-video",
       "wavespeed-ai/minimax-h3/text-to-video"], "more": [
@@ -77,7 +76,6 @@
       "lightricks/ltx-2-pro/text-to-video"]},
     "image_to_video": {"needs": ["prompt"], "models": [
       "bytedance/seedance-2.0/image-to-video",
-      "bytedance/seedance-2.5/image-to-video-turbo",
       "kwaivgi/kling-v3.0-std/image-to-video",
       "google/veo3.1-fast/image-to-video",
       "wavespeed-ai/minimax-h3/image-to-video"], "more": [

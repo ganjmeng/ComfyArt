@@ -79,16 +79,17 @@ export function ModelPill({ video, model, picks, onPick, onAuto }: {
           <span className="ca-menu__grow">{t('genPanel.model')}</span>
           <span className="ca-chat__hint">{t('common.auto')}</span>
           <button type="button" className="ca-switch" role="switch" aria-checked={auto} data-on={auto || undefined} onClick={() => onAuto(!auto)}><span /></button>
+          <span className="ca-switch__state" data-on={auto || undefined}>{auto ? t('common.on') : t('common.off')}</span>
         </div>
         <div className="ca-panel__chips">
           {tabs.map((f) => <button key={f} type="button" className="ca-panel__chip" data-on={f === feature || undefined} onClick={() => setTab(f)}>{t(`genPanel.feature.${f}`)}</button>)}
         </div>
         {auto && <div className="ca-chat__hint">{t('genPanel.autoDesc')}</div>}
-        <div className="ca-models__list">
+        <div className="ca-models__list" data-auto={auto || undefined} aria-disabled={auto}>
           {list.map((m) => {
             const on = !auto && m.id === current
             return (
-              <button key={m.id} ref={on ? selected : undefined} type="button" className="ca-menu__item ca-modelprefs__row" disabled={auto} data-on={on || undefined} onClick={() => { onPick(feature, m.id); if (feature === tabs[0]) setOpen(false) }}>
+              <button key={m.id} ref={on ? selected : undefined} type="button" className="ca-menu__item ca-modelprefs__row" title={m.id} disabled={auto} aria-disabled={auto} data-on={on || undefined} onClick={() => { onPick(feature, m.id); if (feature === tabs[0]) setOpen(false) }}>
                 <span className="ca-menu__grow ca-model"><span>{m.label}</span><span className="ca-model__desc">{m.desc}</span></span>
                 {on && <span className="ca-icon">{Icons.check}</span>}
               </button>

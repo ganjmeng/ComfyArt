@@ -1,9 +1,9 @@
 import { atom } from 'tldraw'
 
 import { api, loadModelPaths, readUserJson, writeUserJson } from './comfy'
-import { loadCloudModels } from './wavespeed'
+import { loadCloudModels, type CloudFeature } from './wavespeed'
 import { CUSTOM_GENERATE, workflowConfigAtom } from './customWorkflows'
-import { t } from './i18n'
+import { lang, t } from './i18n'
 
 export interface ModelDef {
   id: string
@@ -67,13 +67,26 @@ const ALL = [...IMAGE_MODELS, ...VIDEO_MODELS].map((m) => m.id)
 export const modelPrefsAtom = atom<ModelPrefs>('model prefs', { auto: true, enabled: ALL })
 export const installedAtom = atom<string[] | null>('installed models', null)
 
+/** Per-feature manual picks stored on a generator; Auto on ignores them (#95: never reuse an earlier manual pick). */
+export function featurePicks(workflow: string, picks: unknown): Record<string, string> {
+  return isAuto(workflow) ? {} : (picks as Record<string, string> | undefined) ?? {}
+}
+
+/** Dropdown order from the backend (#95): feature default first, then Lovart's in-app order. */
+export function byPickerOrder(f: CloudFeature | undefined) {
+  if (!f) return []
+  const rank = new Map((f.picker_order ?? []).map((id, i) => [id, i]))
+  return [...f.models].sort((a, b) => (rank.get(a.id) ?? 1e9) - (rank.get(b.id) ?? 1e9))
+}
+
 /** Swap the local image models for the curated WaveSpeed text-to-image list (api/wavespeed_models.json). */
 async function useCloudImageModels() {
   const all = await loadCloudModels().catch(() => ({}) as Awaited<ReturnType<typeof loadCloudModels>>)
   const defs = (names: string[], video: boolean): ModelDef[] => {
     const seen = new Set<string>()
-    return names.flatMap((n) => all[n]?.models ?? []).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
-      id: m.id, label: m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, ratios: m.aspect_ratios, durations: m.durations, resolutions: m.resolutions, maxImages: m.max_images, defaults: m.defaults, desc: m.subtitle || m.id.split('/').slice(1).join('/') || m.id, about: m.desc || undefined, files: [], cloud: true, lora: null,
+    return names.flatMap((n) => byPickerOrder(all[n])).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
+      // Lovart-style row (#95 design): display name + one-line description; the raw id only in the tooltip
+      id: m.id, label: m.name || m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, ratios: m.aspect_ratios, durations: m.durations, resolutions: m.resolutions, maxImages: m.max_images, defaults: m.defaults, desc: m.blurb?.[lang] ?? '', about: m.desc || undefined, files: [], cloud: true, lora: null,
       // control: structure refs run on WaveSpeed control models (#80), so the ControlNet knobs show like upstream
       ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }),
     }))

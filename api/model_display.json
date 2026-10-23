@@ -1,0 +1,394 @@
+{
+ "_comment": "#95 picker rows like Lovart: display name + one-line zh/en description per model family. Keys are matched as substrings of the WaveSpeed model id, first match wins (specific keys first). The raw id is only shown in the hover tooltip. lovart_order: Lovart's in-app dropdown order (#95 comments by EL 09:29 for image, 6355690165 for video; 'Seedance 2.5 Turbo' is a WaveSpeed-only variant placed after Seedance 2.5). The picker shows the feature default first, then this order.",
+ "families": [
+  [
+   "nano-banana-2.1",
+   "Nano Banana 2.1",
+   "谷歌最新一代，画质与指令理解兼顾",
+   "Google's latest: strong quality and prompt following"
+  ],
+  [
+   "nano-banana-pro",
+   "Nano Banana Pro",
+   "谷歌旗舰，细节与文字渲染最强",
+   "Google's flagship, best detail and text rendering"
+  ],
+  [
+   "nano-banana-2-lite",
+   "Nano Banana 2 Lite",
+   "轻量快速，适合批量出图",
+   "Light and fast, good for batches"
+  ],
+  [
+   "nano-banana-2",
+   "Nano Banana 2",
+   "稳定通用，多图参考效果好",
+   "Reliable all-rounder, good with multiple references"
+  ],
+  [
+   "gpt-image-2.5-sunburst",
+   "GPT Image 2.5 Sunburst",
+   "偏重精度，五档质量可选",
+   "Precision-focused, five quality tiers"
+  ],
+  [
+   "gpt-image-2.5-flare",
+   "GPT Image 2.5 Flare",
+   "起步价低，档位高时画质更好",
+   "Low starting price, higher tiers for more quality"
+  ],
+  [
+   "gpt-image-2",
+   "GPT Image 2",
+   "Lovart 默认，构图和文字都很稳",
+   "Lovart's default, solid layout and text"
+  ],
+  [
+   "gpt-image-1.5",
+   "GPT Image 1.5",
+   "上一代 GPT 图像，风格稳定",
+   "Previous GPT image model, consistent style"
+  ],
+  [
+   "seedream-v5.0-pro",
+   "Seedream 5.0 Pro",
+   "字节旗舰，写实人像与时尚感强",
+   "ByteDance flagship, strong realism and fashion"
+  ],
+  [
+   "seedream-v5.0-lite",
+   "Seedream 5.0 Lite",
+   "Seedream 5 的平价版",
+   "Budget version of Seedream 5"
+  ],
+  [
+   "seedream-v4.5",
+   "Seedream 4.5",
+   "性价比高，海报设计常用",
+   "Good value, popular for posters"
+  ],
+  [
+   "seedream-v4",
+   "Seedream 4",
+   "最便宜的一档，适合草图",
+   "Cheapest tier, great for drafts"
+  ],
+  [
+   "uni-v1",
+   "Luma Uni-1",
+   "Luma 图像模型，光影自然",
+   "Luma's image model, natural lighting"
+  ],
+  [
+   "flux-3",
+   "Flux 3 Image",
+   "BFL 最新版，质感细腻",
+   "Latest from BFL, refined textures"
+  ],
+  [
+   "flux-2-pro",
+   "Flux 2 Pro",
+   "快速稳定的 Flux 专业版",
+   "Fast, dependable Flux Pro"
+  ],
+  [
+   "flux-2-max",
+   "Flux 2 Max",
+   "Flux 2 最高画质档",
+   "Flux 2 at maximum quality"
+  ],
+  [
+   "qwen-image-3.0-pro",
+   "Qwen-Image 3.0 Pro",
+   "通义专业版，中文文字渲染好",
+   "Qwen Pro, great at Chinese text"
+  ],
+  [
+   "qwen-image-3.0",
+   "Qwen-Image 3.0",
+   "通义图像，便宜且懂中文",
+   "Qwen image, cheap and fluent in Chinese"
+  ],
+  [
+   "midjourney",
+   "Midjourney",
+   "艺术感强，风格化出图",
+   "Highly artistic, stylized images"
+  ],
+  [
+   "ideogram-v4.5",
+   "Ideogram",
+   "擅长排版和文字设计",
+   "Great at typography and layout"
+  ],
+  [
+   "ideogram-v4",
+   "Ideogram 4",
+   "文字海报与 Logo 出色",
+   "Excellent for text posters and logos"
+  ],
+  [
+   "p-image/ideogram",
+   "Ideogram P-Image",
+   "极低价的快速出图",
+   "Very cheap, very fast"
+  ],
+  [
+   "recraft-v3",
+   "Recraft V3",
+   "矢量感与品牌设计风格",
+   "Vector-like, brand-design style"
+  ],
+  [
+   "seedance-2.5/text-to-video-turbo",
+   "Seedance 2.5 Turbo",
+   "Seedance 2.5 的加速版",
+   "Faster Seedance 2.5"
+  ],
+  [
+   "seedance-2.5/image-to-video-turbo",
+   "Seedance 2.5 Turbo",
+   "Seedance 2.5 的加速版",
+   "Faster Seedance 2.5"
+  ],
+  [
+   "seedance-2.5",
+   "Seedance 2.5",
+   "字节最新视频模型，动作流畅",
+   "ByteDance's newest video model, fluid motion"
+  ],
+  [
+   "seedance-2.0-fast",
+   "Seedance 2.0 Fast",
+   "更快更便宜的 2.0",
+   "Faster, cheaper 2.0"
+  ],
+  [
+   "seedance-2.0-mini",
+   "Seedance 2.0 Mini",
+   "轻量版，适合试镜头",
+   "Lightweight, good for test shots"
+  ],
+  [
+   "seedance-2.0",
+   "Seedance 2.0",
+   "Lovart 默认，画面稳定、镜头感好",
+   "Lovart's default, stable with good camera work"
+  ],
+  [
+   "seedance-v1-pro",
+   "Seedance Pro 1.0",
+   "上一代专业版，价格低",
+   "Previous Pro, low price"
+  ],
+  [
+   "kling-v4.0",
+   "Kling 4.0",
+   "可灵最新版，运动与物理更真实",
+   "Latest Kling, realistic motion and physics"
+  ],
+  [
+   "kling-video-o3",
+   "Kling 3.0 Omni",
+   "可灵全能版，支持多种输入",
+   "Kling all-in-one, many input types"
+  ],
+  [
+   "kling-video-o1",
+   "Kling O1",
+   "可灵 O1，理解复杂指令",
+   "Kling O1, handles complex prompts"
+  ],
+  [
+   "kling-v3.0",
+   "Kling 3.0",
+   "可灵 3.0，性价比高",
+   "Kling 3.0, good value"
+  ],
+  [
+   "kling-v2.6",
+   "Kling 2.6",
+   "可灵 2.6，便宜可带音频",
+   "Kling 2.6, cheap with audio"
+  ],
+  [
+   "kling-v2.5-turbo",
+   "Kling 2.5 Turbo",
+   "可灵加速版，出片快",
+   "Fast Kling turbo"
+  ],
+  [
+   "veo3.1-fast",
+   "Veo 3.1 Fast",
+   "谷歌 Veo 快速版，带原生音频",
+   "Fast Google Veo with native audio"
+  ],
+  [
+   "veo3.1",
+   "Veo 3.1",
+   "谷歌顶级视频，电影感强",
+   "Google's top video model, cinematic"
+  ],
+  [
+   "veo3-fast",
+   "Veo 3 Fast",
+   "Veo 3 快速版",
+   "Faster Veo 3"
+  ],
+  [
+   "veo3",
+   "Veo 3",
+   "上一代 Veo，带音频",
+   "Previous Veo, with audio"
+  ],
+  [
+   "gemini-omni-1.1-flash",
+   "Gemini Omni 1.1 Flash",
+   "Gemini 多模态视频，速度快",
+   "Gemini multimodal video, fast"
+  ],
+  [
+   "gemini-omni-flash",
+   "Gemini Omni Flash",
+   "Gemini 视频初版",
+   "First Gemini video model"
+  ],
+  [
+   "wan-3.0-prime",
+   "Wan 3.0 Prime",
+   "万相高画质档",
+   "Wan at its highest quality"
+  ],
+  [
+   "wan-3.0",
+   "Wan 3.0",
+   "万相最新版，中文理解好",
+   "Latest Wan, strong Chinese prompts"
+  ],
+  [
+   "wan-2.6",
+   "Wan 2.6",
+   "万相 2.6，便宜稳定",
+   "Wan 2.6, cheap and steady"
+  ],
+  [
+   "wan-2.5",
+   "Wan 2.5",
+   "万相 2.5，入门价位",
+   "Wan 2.5, entry price"
+  ],
+  [
+   "vidu/q3",
+   "Vidu Q3",
+   "生数最新版，动漫风出色",
+   "Latest Vidu, great for anime"
+  ],
+  [
+   "q2-pro",
+   "Vidu Q2 Pro",
+   "Vidu Q2 专业版",
+   "Vidu Q2 Pro"
+  ],
+  [
+   "q2",
+   "Vidu Q2",
+   "Vidu 平价档",
+   "Budget Vidu"
+  ],
+  [
+   "q1",
+   "Vidu Q1",
+   "Vidu 上一代，1080p",
+   "Previous Vidu, 1080p"
+  ],
+  [
+   "hailuo-2.3/fast",
+   "Hailuo 2.3 Fast",
+   "海螺 2.3 快速版",
+   "Faster Hailuo 2.3"
+  ],
+  [
+   "hailuo-2.3",
+   "Hailuo 2.3",
+   "海螺最新版，人物表现好",
+   "Latest Hailuo, good with people"
+  ],
+  [
+   "hailuo-02",
+   "Hailuo 02",
+   "海螺 02，稳定耐用",
+   "Hailuo 02, dependable"
+  ],
+  [
+   "minimax-h3",
+   "MiniMax-H3",
+   "最便宜的视频档，适合试稿",
+   "Cheapest video tier, good for drafts"
+  ],
+  [
+   "ltx-2",
+   "LTXV 2.0",
+   "Lightricks 开源视频，速度快",
+   "Lightricks open video model, fast"
+  ]
+ ],
+ "lovart_order": {
+  "image": [
+   "Nano Banana 2.1",
+   "Nano Banana Pro",
+   "Nano Banana 2",
+   "Nano Banana 2 Lite",
+   "GPT Image 2",
+   "GPT Image 2.5 Sunburst",
+   "GPT Image 2.5 Flare",
+   "GPT Image 1.5",
+   "Seedream 5.0 Pro",
+   "Seedream 5.0 Lite",
+   "Seedream 4.5",
+   "Seedream 4",
+   "Luma Uni-1",
+   "Flux 3 Image",
+   "Flux 2 Pro",
+   "Flux 2 Max",
+   "Qwen-Image 3.0",
+   "Qwen-Image 3.0 Pro",
+   "Midjourney",
+   "Ideogram 4",
+   "Ideogram",
+   "Ideogram P-Image",
+   "Recraft V3"
+  ],
+  "video": [
+   "Seedance 2.5",
+   "Seedance 2.0",
+   "Seedance 2.0 Fast",
+   "Seedance 2.0 Mini",
+   "Kling 4.0",
+   "Kling 3.0",
+   "Kling 3.0 Omni",
+   "Veo 3.1",
+   "Veo 3.1 Fast",
+   "Gemini Omni 1.1 Flash",
+   "Gemini Omni Flash",
+   "Kling O1",
+   "Kling 2.6",
+   "Kling 2.5 Turbo",
+   "Wan 3.0",
+   "Wan 3.0 Prime",
+   "Wan 2.6",
+   "Wan 2.5",
+   "Vidu Q3",
+   "Vidu Q2 Pro",
+   "Vidu Q2",
+   "Veo 3",
+   "Veo 3 Fast",
+   "Seedance Pro 1.0",
+   "Vidu Q1",
+   "Hailuo 02",
+   "Hailuo 2.3",
+   "Hailuo 2.3 Fast",
+   "MiniMax-H3",
+   "LTXV 2.0"
+  ]
+ }
+}

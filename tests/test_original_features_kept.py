@@ -120,5 +120,7 @@ def test_comfy_mcp_allowed_tools_kept():
 def test_frontend_handlers_kept():
     text = (ROOT / "src/botCommands.ts").read_text(encoding="utf-8")
     main = set(re.findall(r"^  ([a-z_0-9]+): \(", text, re.M))
-    missing = _missing(UPSTREAM_FRONTEND_HANDLERS, main)
+    # list_models moved to the backend (#95): api/mcp_tools/canvas.py _list_models (paged, 4000-char cap) always
+    # answered the MCP tool, so the page handler was unreachable; tests/test_list_models_backend_only.py guards it.
+    missing = [h for h in _missing(UPSTREAM_FRONTEND_HANDLERS, main) if h != "list_models"]
     assert not missing, f"src/botCommands.ts handlers missing vs upstream: {missing}"

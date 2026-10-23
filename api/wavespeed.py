@@ -236,6 +236,36 @@ _VENDORS = (("nano-banana", "Nano Banana"), ("gpt-image", "GPT Image"), ("seedre
             ("wan-", "Wan"), ("vidu", "Vidu"), ("hailuo", "Hailuo"), ("minimax", "MiniMax"), ("ltx", "LTX"))
 
 
+_DISPLAY: dict | None = None
+
+
+def _display() -> dict:
+    global _DISPLAY
+    if _DISPLAY is None:
+        with open(os.path.join(os.path.dirname(__file__), "model_display.json"), encoding="utf-8") as f:
+            _DISPLAY = json.load(f)
+    return _DISPLAY
+
+
+def display_of(model_id: str) -> dict | None:
+    """Lovart-style row (#95): display name + one-line zh/en description from api/model_display.json."""
+    hit = next((row for row in _display()["families"] if row[0] in model_id), None)
+    return {"name": hit[1], "blurb": {"zh": hit[2], "en": hit[3]}} if hit else None
+
+
+def picker_order(feature: str, models: list[dict]) -> list[str]:
+    """Dropdown order (#95 product ruling): the feature default first, then Lovart's in-app order;
+    recommended models are not pulled to the top. Features Lovart has no dropdown for keep config order."""
+    order = _display()["lovart_order"].get({"text_to_image": "image", "image_edit": "image",
+                                            "text_to_video": "video", "image_to_video": "video"}.get(feature, ""))
+    if not order or not models:
+        return [m["id"] for m in models]
+    rank = {name: i for i, name in enumerate(order)}
+    default = next((m for m in models if m.get("default")), models[0])
+    rest = sorted((m for m in models if m is not default), key=lambda m: rank.get(m.get("name") or "", len(rank)))
+    return [default["id"]] + [m["id"] for m in rest]
+
+
 def vendor_of(model_id: str) -> str:
     """Picker group like Lovart's dropdown (#95): model family, else the WaveSpeed vendor prefix."""
     low = model_id.lower()
@@ -264,9 +294,10 @@ async def grouped_models(refresh: bool = False) -> dict:
                 "default": entry["id"] == feature["default"],
                 "recommended": entry["id"] in feature.get("recommended", [entry["id"]]),
                 "vendor": vendor_of(entry["id"]),
+                **(display_of(entry["id"]) or {}),
                 **_caps(_schema(m)),
             })
-        out[name] = {"default": feature["default"], "types": feature["types"], "available": name not in cfg.get("pending_features", []), "models": models}
+        out[name] = {"default": feature["default"], "picker_order": picker_order(name, models), "types": feature["types"], "available": name not in cfg.get("pending_features", []), "models": models}
     return out
 
 
@@ -351,6 +382,9 @@ def compact_models(grouped: dict, kind: str | None = None, tool_features: dict |
         out = {"page": p, "pages": of, "features": feats}
         if hint:
             out["hint"] = hint
+        if of > 1:
+            # last key so it renders at the bottom of the page (#95 product ruling)
+            out["footer"] = f"共 {len(chosen)} 个，第 {p}/{of} 页" + (f"，翻页传 page={p + 1}" if p < of else "")
         return out
 
     # greedy page packing over (feature, model) rows in feature order, every page under the cap
@@ -611,6 +645,27 @@ def _clamp(spec: dict, value):
     return int(num) if spec.get("type") == "integer" or num.is_integer() else num
 
 
+VOICE_SAMPLE_MISSING = "Please upload a voice sample first"
+
+
+def default_voice(spec: dict) -> str | None:
+    """First preset voice a free-text voice field lists: schema default, else x-suggestions, else the
+    'system voice IDs: A, B, ...' list in its description."""
+    if spec.get("default"):
+        return str(spec["default"])
+    sugg = spec.get("x-suggestions") or []
+    if sugg:
+        return str(sugg[0])
+    m = re.search(r"voice IDs?:\s*([A-Za-z0-9_\-]+)", str(spec.get("description") or spec.get("x-hint") or ""))
+    return m.group(1) if m else None
+
+
+def needs_voice_sample(model: str, feature: str, schema: dict, inputs: dict) -> bool:
+    """Voice-clone models need an uploaded sample; say so before any quote/confirm/charge."""
+    cloning = feature == "voice_clone" or "voice-clone" in model
+    return cloning and "audio" in (schema.get("required") or []) and not inputs.get("audio")
+
+
 def _av_fields(props: dict, required: set, inputs: dict, payload: dict) -> None:
     """Video/audio knobs: duration, resolution, text, voice, language, lyrics."""
     seconds = inputs.get("duration")
@@ -635,6 +690,14 @@ def _av_fields(props: dict, required: set, inputs: dict, payload: dict) -> None:
                 payload[k] = _pick(enum, voice) if voice else enum[0]
             elif voice:
                 payload[k] = str(voice)
+            elif k in required and (preset := default_voice(props[k])):
+                payload[k] = preset  # free-text voice ids (speech-2.8-turbo, eleven-v4): first listed preset
+    if "custom_voice_id" in required and "custom_voice_id" not in payload and payload.get("audio"):
+        # minimax/voice-clone names the new voice: >= 8 chars, starts with a letter, letters + digits
+        payload["custom_voice_id"] = f"ComfyArt{uuid.uuid4().hex[:8]}"
+    model_spec = props.get("model") or {}
+    if "model" in required and model_spec.get("enum") and "model" not in payload:
+        payload["model"] = model_spec.get("default") or model_spec["enum"][0]
     lang = props.get("language", {}).get("enum")
     if lang and "text" in payload:
         payload["language"] = "auto" if "auto" in lang else lang[0]
@@ -1016,6 +1079,8 @@ async def submit(inputs: dict) -> str:
         model = resolve_model(feature, picked)
     _check_limits()
     meta = (await catalog()).get(model)
+    if meta and needs_voice_sample(model, feature, _schema(meta), inputs):
+        raise WaveSpeedError(VOICE_SAMPLE_MISSING, 400)
     if not inputs.get("confirmed"):
         price, _ = await quote(model, inputs)
         if feature == "structure_control" and price is not None:

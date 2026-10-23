@@ -9,7 +9,7 @@ import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate } from './generate'
 import { DURATIONS, RATIOS, VIDEO_RATIOS } from './genOptions'
-import { MAX_VIDEO_REF_KINDS, VIDEO_TARGETS } from './videoGraphs'
+import { VIDEO_TARGETS } from './videoGraphs'
 import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom } from './jobs'
 import { agentModels } from './models'
 import { AUDIO } from './shapes/EmbedShapes'
@@ -148,10 +148,8 @@ function waitResults(editor: Editor, ids: string[], timeout: number) {
 
 const HANDLERS: Record<string, Handler> = {
   ...LAYOUT_HANDLERS,
-  list_models: () => ({
-    image: agentModels(false).map((m) => ({ id: m.id, label: m.label, desc: m.about || m.desc, accepts_refs: !!m.refs, ratios: RATIOS })),
-    video: agentModels(true).map((m) => ({ id: m.id, label: m.label, desc: m.about || m.desc, accepts_first_frame: true, max_reference_images: MAX_VIDEO_REF_KINDS.image, max_reference_videos: MAX_VIDEO_REF_KINDS.video, max_reference_audios: MAX_VIDEO_REF_KINDS.audio, motion_control: true, lip_sync: true, ratios: VIDEO_RATIOS, durations: DURATIONS })),
-  }),
+  // list_models is answered by the backend (api/mcp_tools/canvas.py _list_models: paged, under the 4000-char cap);
+  // the MCP tool never reaches the page, so there is no frontend handler (#95).
   generate_image: (editor, args, onError, chat) => startGenerator(editor, false, args, onError, chat),
   generate_video: (editor, args, onError, chat) => startGenerator(editor, true, args, onError, chat),
   edit_image: (editor, args, onError) => started(editor, actions.quickEdit(editor, imageOf(editor, args.id), String(args.prompt), onError)),
