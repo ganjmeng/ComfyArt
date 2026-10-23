@@ -42,7 +42,7 @@ def exported(tmp_path_factory):
 def test_export_is_offline(exported):
     data, _ = exported
     assert data["net"] == []
-    for fmt in ("png", "pdf", "pptx"):
+    for fmt in ("png", "pdf", "jpeg", "svg", "pptx", "pptx-text", "default"):
         assert data["result"][fmt]["errors"] == [], fmt
         assert data["result"][fmt]["closed"] is True, fmt
 
@@ -98,3 +98,57 @@ def test_pptx_export_one_slide_per_frame(exported):
         assert sizes == [(400, 300), (800, 600)]
     calls = [c["ids"] for c in data["toImageCalls"] if c["ids"][0] in ("shape:f1", "shape:f2") and c["scale"] == 1 and c["format"] == "png"]
     assert calls == [["shape:f1"], ["shape:f2"]]  # sorted top-to-bottom
+
+
+# --- #169: JPG, SVG, editable-text PPTX, dialog default 2x ---------------------------------------------------------
+
+@needs_node
+def test_jpg_export_opens_with_scaled_size_and_background(exported):
+    data, out = exported
+    assert data["result"]["jpeg"]["files"] == ["Export_ test_1.jpg"]
+    img = Image.open(out / "jpeg-Export_ test_1.jpg")
+    img.load()
+    assert img.format == "JPEG" and img.size == (1600, 1200)
+    assert all(abs(a - b) <= 4 for a, b in zip(img.getpixel((10, 10)), COLORS[(1600, 1200)]))
+    # JPG has no alpha, so the dialog always asks for the canvas background
+    assert {"ids": ["shape:f1"], "format": "jpeg", "scale": 2, "background": True} in data["toImageCalls"]
+
+
+@needs_node
+def test_svg_export_is_vector_svg(exported):
+    data, out = exported
+    assert data["result"]["svg"]["files"] == ["Export_ test_1.svg"]
+    root = ET.fromstring((out / "svg-Export_ test_1.svg").read_bytes())
+    assert root.tag == "{http://www.w3.org/2000/svg}svg"
+    assert (root.get("width"), root.get("height"), root.get("viewBox")) == ("800", "600", "0 0 800 600")
+    assert any(c["format"] == "svg" and c["ids"] == ["shape:f1"] for c in data["toImageCalls"])
+
+
+@needs_node
+def test_pptx_editable_text_keeps_text_runs(exported):
+    data, out = exported
+    assert data["result"]["pptx-text"]["files"] == ["Export_ test_1.pptx"]
+    a = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+    with zipfile.ZipFile(out / "pptx-text-Export_ test_1.pptx") as z:
+        assert z.testzip() is None
+        names = z.namelist()
+        assert [n for n in names if re.fullmatch(r"ppt/slides/slide\d+\.xml", n)] == ["ppt/slides/slide1.xml"]
+        assert [n for n in names if n.startswith("ppt/media/") and not n.endswith("/")] == []  # nothing rasterized
+        slide = ET.fromstring(z.read("ppt/slides/slide1.xml"))
+    runs = slide.findall(f".//{a}r")
+    assert [r.find(f"{a}t").text for r in runs] == ["Hello ", "可编辑文字"]
+    rpr = runs[0].find(f"{a}rPr")
+    assert rpr.get("b") == "1" and rpr.find(f"{a}latin").get("typeface") == "Inter"
+    assert rpr.find(f"{a}solidFill/{a}srgbClr").get("val") == "112233"
+    assert int(rpr.get("sz")) == round(24 * 13.333 / 800 * 72 * 100)  # 24px on an 800px frame -> ~28.8pt
+    # the solid rect stays a native shape, not a picture
+    assert [g.get("prst") for g in slide.findall(f".//{a}prstGeom")] == ["rect", "rect"]
+    assert slide.find(".//{http://schemas.openxmlformats.org/presentationml/2006/main}pic") is None
+    assert not any(c["ids"] in (["shape:t1"], ["shape:r1"], ["shape:f3"]) for c in data["toImageCalls"])
+
+
+@needs_node
+def test_export_dialog_defaults_to_2x(exported):
+    data, _ = exported
+    assert data["defaults"] == ["png", 2]  # format and scale chips as the dialog first opens
+    assert data["result"]["default"]["calls"] == [{"ids": ["shape:f1"], "format": "png", "scale": 2, "background": False}]
