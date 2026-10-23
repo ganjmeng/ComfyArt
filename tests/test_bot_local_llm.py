@@ -249,3 +249,72 @@ def _collect(events: list[BotEvent]):
     async def emit(ev: BotEvent) -> None:
         events.append(ev)
     return emit
+
+
+def _tc(i, name, args):
+    return {"id": f"t{i}", "function": {"name": name,
+                                         "arguments": json.dumps(args)}}
+
+
+class TestLoopGuard:
+    async def _run(self, monkeypatch, steps):
+        provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
+        responses = [{"choices": [{"message": {"content": "", "tool_calls": [
+            _tc(i, n, a)]}}]} for i, (n, a) in enumerate(steps)]
+        responses.append({"choices": [{"message": {"content": "done",
+                                                   "tool_calls": []}}]})
+        llm_calls: list[int] = []
+        mcp_calls: list[tuple] = []
+
+        async def fake_request(session, method, url, *, headers,
+                               json_body=None, timeout=120):
+            if url.endswith("/chat/completions"):
+                llm_calls.append(1)
+                return responses.pop(0)
+            return {"result": {"tools": [{"name": "skill"},
+                                         {"name": "generate_image"}]}}
+
+        async def fake_call(session, endpoint, name, arguments):
+            mcp_calls.append((name, dict(arguments)))
+            return f"ok {name}", []
+
+        monkeypatch.setattr(provider, "_request_json", fake_request)
+        monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
+        events: list[BotEvent] = []
+        result = await provider.send(
+            TurnRequest(chat_id="c", user_text="go",
+                        mcp_endpoint="http://x/mcp", model="m1"),
+            _collect(events), TurnHandle())
+        return result, events, llm_calls, mcp_calls
+
+    async def test_identical_call_three_times_stops(self, monkeypatch):
+        gen = ("generate_image", {"prompt": "cat"})
+        result, events, llm, mcp = await self._run(
+            monkeypatch, [("skill", {"action": "list"}), gen, gen, gen, gen])
+        assert result.error == ""
+        assert len(llm) == 4  # no further LLM spend after the stop
+        assert [c[0] for c in mcp] == ["skill", "generate_image",
+                                       "generate_image"]
+        stop = events[-1]
+        assert stop.t == "delta"
+        assert stop.text.startswith("任务卡在重复步骤，已停止，未继续扣费")
+        assert "- skill ×1" in stop.text and "- generate_image ×2" in stop.text
+
+    async def test_different_args_do_not_stop(self, monkeypatch):
+        result, events, llm, mcp = await self._run(monkeypatch, [
+            ("generate_image", {"prompt": p}) for p in "abc"])
+        assert result.error == "" and len(mcp) == 3
+        assert events[-1].text == "done"
+
+    async def test_skill_read_once_per_turn(self, monkeypatch):
+        read = ("skill", {"action": "read", "name": "poster"})
+        result, events, llm, mcp = await self._run(monkeypatch, [
+            read, ("generate_image", {"prompt": "x"}),
+            ("skill", {"action": "read", "name": "Poster"}),
+            ("skill", {"action": "read", "name": "social"})])
+        assert result.error == ""
+        reads = [a["name"] for n, a in mcp if n == "skill"]
+        assert reads == ["poster", "social"]
+        results = [e.text for e in events if e.t == "tool_result"]
+        assert results[2] == "ok skill"  # cached result reused
+        assert events[-1].text == "done"

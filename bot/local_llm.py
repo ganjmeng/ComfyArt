@@ -34,6 +34,32 @@ _MAX_ITERATIONS = 80
 _MAX_WAIT_SLICES = 12
 _LLM_TIMEOUT_S = 300
 _HISTORY_CHAR_CAP = 16_000
+_REPEAT_STOP = 3
+_REPEAT_STOP_TEXT = "任务卡在重复步骤，已停止，未继续扣费"
+
+
+def _call_key(name: str, args: dict) -> str:
+    return name + "\x00" + json.dumps(args, sort_keys=True, ensure_ascii=False)
+
+
+def _skill_read_key(name: str, args: dict) -> str:
+    if name != "skill" or str(args.get("action") or "").lower() != "read":
+        return ""
+    ref = args.get("name") or args.get("id") or ""
+    return str(ref).strip().lower()
+
+
+def _stop_summary(done: list[str]) -> str:
+    lines = [_REPEAT_STOP_TEXT + "。"]
+    counts: dict[str, int] = {}
+    for name in done:
+        counts[name] = counts.get(name, 0) + 1
+    if counts:
+        lines.append("已完成：")
+        lines.extend(f"- {n} ×{c}" for n, c in counts.items())
+    else:
+        lines.append("已完成：无")
+    return "\n".join(lines)
 _THINK_RE = re.compile(r"(?:<think>|^)([\s\S]*?)</think>|<think>([\s\S]*)$")
 
 _SYSTEM_PROMPT = AGENT_GUIDE
@@ -265,6 +291,10 @@ class LocalLlmProvider(AgentProvider):
                 ]
 
                 usage: Optional[dict] = None
+                last_key = ""
+                repeat = 0
+                done: list[str] = []
+                skill_cache: dict[str, str] = {}
                 for _ in range(_MAX_ITERATIONS):
                     if handle.stop_requested:
                         return TurnResult(aborted=True, usage=usage)
@@ -313,12 +343,25 @@ class LocalLlmProvider(AgentProvider):
                             args = {}
                         if not isinstance(args, dict):
                             args = {}
+                        key = _call_key(name, args)
+                        repeat = repeat + 1 if key == last_key else 1
+                        last_key = key
+                        if repeat >= _REPEAT_STOP:
+                            _log.warning("[ComfyArt/local-llm] loop guard: %s "
+                                         "repeated %d times, stopping", name,
+                                         repeat)
+                            await emit(BotEvent(t="delta",
+                                                text=_stop_summary(done)))
+                            return TurnResult(usage=usage)
                         await emit(BotEvent(t="tool_use", name=name, input=args,
                                             id=tc_id))
                         tool_failed = False
                         images: list[str] = []
+                        skill_key = _skill_read_key(name, args)
                         try:
-                            if name == "wait_generation":
+                            if skill_key and skill_key in skill_cache:
+                                result_text = skill_cache[skill_key]
+                            elif name == "wait_generation":
                                 result_text = await self._wait_stage_done(
                                     session, turn.mcp_endpoint, args, model,
                                     handle)
@@ -328,6 +371,9 @@ class LocalLlmProvider(AgentProvider):
                         except _NET_ERRORS as e:
                             result_text = f"[error] {type(e).__name__}: {e}"
                             tool_failed = True
+                        if skill_key and not tool_failed:
+                            skill_cache.setdefault(skill_key, result_text)
+                        done.append(name)
                         if len(result_text) > TOOL_RESULT_CAP:
                             result_text = (
                                 result_text[:TOOL_RESULT_CAP]
