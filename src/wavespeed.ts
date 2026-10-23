@@ -31,6 +31,12 @@ export interface WsInputs {
   voice?: string
   layers?: number
   scenes?: { prompt: string; duration: number }[]
+  /** #80 structure control: the backend maps it onto the WaveSpeed control model. */
+  control?: { mode: string; strength: number; start: number; end: number; res: number; resize: 'crop' | 'stretch' }
+  /** #80 every structure ref with its own image and knobs (supersedes `control`). */
+  controls?: { image: string; mode: string; strength: number; start: number; end: number; res: number; resize: 'crop' | 'stretch' }[]
+  /** #80 color modes, parallel to images: the backend preprocesses those refs. */
+  prep?: (string | null)[]
   params?: Record<string, unknown>
   /** custom_workflow action (customMarkers.ts) this job belongs to; the user's model replaces the built-in one. */
   custom?: string

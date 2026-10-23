@@ -1,0 +1,85 @@
+{
+  "_comment": "Product-curated models per feature (ganjmeng/ComfyArt#95 comment 6355206069, final list from Lovart in-app capture). Single source of truth for the model picker (GET /comfyart/wavespeed/models) and the agent's list_models: api/wavespeed.py load_config() narrows each listed feature in wavespeed_models.json to exactly these ids, in this order; the first id is the default. Features not listed here keep their wavespeed_models.json models. 'needs' lists request fields every model of that feature must accept (checked by tests against the catalog fixture and by scripts/check_curated_models.py against the live catalog).",
+  "features": {
+    "text_to_image": {"needs": ["prompt"], "models": [
+      "openai/gpt-image-2/text-to-image",
+      "google/nano-banana-2.1/text-to-image",
+      "bytedance/seedream-v5.0-pro",
+      "openai/gpt-image-2.5-sunburst/text-to-image",
+      "openai/gpt-image-2.5-flare/text-to-image",
+      "alibaba/qwen-image-3.0/text-to-image"]},
+    "image_edit": {"needs": ["prompt"], "models": [
+      "openai/gpt-image-2/edit",
+      "google/nano-banana-2.1/edit",
+      "bytedance/seedream-v5.0-pro/edit",
+      "openai/gpt-image-2.5-sunburst/edit",
+      "bytedance/seedream-v5.0-lite/edit",
+      "alibaba/qwen-image-3.0/edit"]},
+    "text_to_video": {"needs": ["prompt"], "models": [
+      "bytedance/seedance-2.0/text-to-video",
+      "bytedance/seedance-2.5/text-to-video-turbo",
+      "kwaivgi/kling-v3.0-std/text-to-video",
+      "google/veo3.1-fast/text-to-video",
+      "wavespeed-ai/minimax-h3/text-to-video"]},
+    "image_to_video": {"needs": ["prompt"], "models": [
+      "bytedance/seedance-2.0/image-to-video",
+      "bytedance/seedance-2.5/image-to-video-turbo",
+      "kwaivgi/kling-v3.0-std/image-to-video",
+      "google/veo3.1-fast/image-to-video",
+      "wavespeed-ai/minimax-h3/image-to-video"]},
+    "reference_to_video": {"needs": ["prompt"], "models": [
+      "kwaivgi/kling-video-o3-std/reference-to-video",
+      "wavespeed-ai/minimax-h3/reference-to-video",
+      "alibaba/wan-3.0/reference-to-video",
+      "google/veo3.1-fast/reference-to-video"]},
+    "motion_control": {"needs": [], "models": [
+      "kwaivgi/kling-v3.0-std/motion-control",
+      "wavespeed-ai/wan-2.2/animate",
+      "pixverse/motion-control/mimic",
+      "bytedance/seedance-2.5/motion-control"]},
+    "lip_sync": {"needs": [], "models": [
+      "wavespeed-ai/infinitetalk-fast",
+      "kwaivgi/kling-lipsync/audio-to-video",
+      "bytedance/omni-human-2.0",
+      "sync/lipsync-3"]},
+    "extend_video": {"needs": [], "models": [
+      "wavespeed-ai/minimax-h3/video-extend",
+      "alibaba/wan-3.0/video-extend",
+      "bytedance/seedance-2.0-fast/video-extend",
+      "google/veo3.1-fast/video-extend"]},
+    "upscale_video": {"needs": [], "models": [
+      "wavespeed-ai/video-upscaler",
+      "wavespeed-ai/flashvsr",
+      "wavespeed-ai/video-upscaler-pro"]},
+    "remove_video_background": {"needs": [], "models": [
+      "wavespeed-ai/video-background-remover",
+      "bria/fibo/video-background-remover"]},
+    "music": {"needs": [], "models": [
+      "wavespeed-ai/ace-step-1.5",
+      "minimax/music-3.0",
+      "google/lyria-3.5/music",
+      "mureka-ai/mureka-v9/generate-bgm",
+      "elevenlabs/music-v2.5"]},
+    "sound_effect": {"needs": [], "models": [
+      "mirelo-ai/sfx-2.0/text-to-audio",
+      "elevenlabs/sound-effects-v2",
+      "kwaivgi/kling-text-to-audio",
+      "sonilo/v1/text-to-sfx"]},
+    "text_to_speech": {"needs": ["text"], "models": [
+      "wavespeed-ai/qwen3-tts/text-to-speech",
+      "minimax/speech-2.8-turbo",
+      "elevenlabs/eleven-v4",
+      "bytedance/seed-speech-tts-2.0"]},
+    "voice_clone": {"needs": [], "models": [
+      "wavespeed-ai/qwen3-tts/voice-clone",
+      "wavespeed-ai/omnivoice/voice-clone",
+      "kwaivgi/kling-v2.6/create-voice",
+      "minimax/voice-clone"]},
+    "image_to_3d": {"needs": [], "models": [
+      "tripo3d/h3.1/image-to-3d",
+      "tripo3d/h3.1/multiview-to-3d",
+      "wavespeed-ai/trellis-2/image-to-3d",
+      "wavespeed-ai/hunyuan-3d-v3.1/image-to-3d-rapid",
+      "hyper3d/rodin-v2.5/image-to-3d"]}
+  }
+}

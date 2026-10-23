@@ -26,6 +26,7 @@ import aiohttp
 import folder_paths
 from aiohttp import web
 
+from . import refprep
 from ._common import app_path, error, json_body, routes
 
 log = logging.getLogger("comfyart.wavespeed")
@@ -38,6 +39,7 @@ def _base() -> str:
 
 
 CONFIG = os.path.join(os.path.dirname(__file__), "wavespeed_models.json")
+CURATED = os.path.join(os.path.dirname(__file__), "curated_models.json")
 CATALOG_TTL = 24 * 3600
 POLL_MIN = 2.0
 POLL_MAX_BACKOFF = 15.0
@@ -114,9 +116,27 @@ def _headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {_key()}"}
 
 
+def load_curated() -> dict:
+    """feature -> {"needs": [...], "models": [ids]} from api/curated_models.json (#95); first id = default."""
+    with open(CURATED, encoding="utf-8") as f:
+        return json.load(f)["features"]
+
+
+def apply_curation(cfg: dict, curated: dict) -> dict:
+    """Narrow each curated feature to exactly the curated ids (in order, first = default)."""
+    for name, cur in curated.items():
+        feature = cfg["features"].get(name)
+        if feature is None or not cur.get("models"):
+            continue
+        old = {m["id"]: m for m in feature["models"]}
+        feature["models"] = [old.get(i, {"id": i}) for i in cur["models"]]
+        feature["default"] = cur["models"][0]
+    return cfg
+
+
 def load_config() -> dict:
     with open(CONFIG, encoding="utf-8") as f:
-        return json.load(f)
+        return apply_curation(json.load(f), load_curated())
 
 
 def feature_of(tool_or_feature: str) -> str:
@@ -231,17 +251,28 @@ async def grouped_models(refresh: bool = False) -> dict:
 
 
 AUDIO_FEATURES = {"music", "sound_effect", "text_to_speech", "voice_clone", "transcribe"}
-MODEL_KINDS = ("image", "image_tools", "video", "audio", "3d")
+MODEL_KINDS = ("image", "image_tools", "video", "video_tools", "audio", "3d")
+VIDEO_TOOLS = {"upscale_video", "remove_video_background"}
 
 
 def feature_kind(name: str) -> str:
     if "3d" in name:
         return "3d"
+    if name in VIDEO_TOOLS:  # own kind so "video" fits the 4000-char cap with 5 curated models (#95)
+        return "video_tools"
     if "video" in name or name in ("motion_control", "lip_sync"):
         return "video"
     if name in AUDIO_FEATURES:
         return "audio"
     return "image" if name in ("text_to_image", "image_edit") else "image_tools"
+
+
+def _compact_choices(v):
+    """[3, 4, ..., 15] -> "3-15" so the video kind stays under the 4000-char cap (#95)."""
+    if (isinstance(v, list) and len(v) >= 4 and all(isinstance(x, int) and not isinstance(x, bool) for x in v)
+            and v == list(range(v[0], v[0] + len(v)))):
+        return f"{v[0]}-{v[-1]}"
+    return v
 
 
 def compact_models(grouped: dict, kind: str | None = None, tool_features: dict | None = None) -> dict:
@@ -253,7 +284,7 @@ def compact_models(grouped: dict, kind: str | None = None, tool_features: dict |
     if not kind:
         return {"defaults": {n: f["default"] for n, f in live.items()},
                 "kinds": {k: [n for n in live if feature_kind(n) == k] for k in MODEL_KINDS},
-                "hint": "call list_models with type image, image_tools, video, audio, 3d or a feature name to get all ids and prices"}
+                "hint": "call list_models with type image, image_tools, video, video_tools, audio, 3d or a feature name to get all ids and prices"}
     names = [kind] if kind in live else [n for n in live if feature_kind(n) == kind]
     if not names:
         raise WaveSpeedError(f"unknown type {kind!r}; use one of {', '.join(MODEL_KINDS)} or a feature name", 400)
@@ -265,7 +296,7 @@ def compact_models(grouped: dict, kind: str | None = None, tool_features: dict |
     if "generate_video" in tools.get("image_to_video", []):
         tools.setdefault("text_to_video", []).insert(0, "generate_video")
     return {n: {"tools": tools.get(n, []), "default": live[n]["default"],
-                "models": [{"id": m["id"], "usd": m.get("price"), **{k: m[k] for k in keep if m.get(k)}}
+                "models": [{"id": m["id"], "usd": m.get("price"), **{k: _compact_choices(m[k]) for k in keep if m.get(k)}}
                            for m in live[n]["models"]]}
             for n in names}
 
@@ -681,10 +712,141 @@ async def estimate(inputs: dict) -> dict:
     else:
         if inputs.get("feature") == "mockup_surface":
             return {"price": None, "currency": "USD", "source": "none", "confirm_usd": confirm_usd(), "confirm": confirm_usd() == 0}
-        model = resolve_model(feature_of(str(inputs.get("feature") or "")), inputs.get("model"))
+        feature = feature_of(str(inputs.get("feature") or ""))
+        picked = inputs.get("model")
+        if feature == "structure_control" and not picked:
+            picked = _structure_pick(inputs)
+        model = resolve_model(feature, picked)
         price, source = await quote(model, inputs)
+        if feature == "structure_control" and price is not None:
+            extra = await _steps_price(inputs)  # depth / sam3 map calls are paid too (#80)
+            price = None if extra is None else round(float(price) + extra, 6)
     return {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
             "confirm": needs_confirm(price) if price is not None else confirm_usd() == 0}
+
+
+STRUCTURE_EXTRACT_MODEL = "wavespeed-ai/z-image-turbo/controlnet"
+STRUCTURE_FILTER_MODEL = "wavespeed-ai/flux-controlnet-union-pro-2.0"
+
+
+def _controls(inputs: dict) -> list[dict]:
+    """All structure refs of a job (#80): `controls` list (each with its own `image`), or the legacy single `control`."""
+    cs = inputs.get("controls")
+    if isinstance(cs, list):
+        return [c for c in cs if isinstance(c, dict)]
+    c = inputs.get("control")
+    return [{**c, "image": c.get("image") or inputs.get("image")}] if isinstance(c, dict) else []
+
+
+def _full_window(c: dict) -> bool:
+    return float(c.get("start", 0)) <= 0 and float(c.get("end", 100)) >= 100
+
+
+def structure_model(mode: str, count: int = 1, full_window: bool = True) -> str:
+    """Pose alone with the default 0-100 window uses z-image-turbo/controlnet, which extracts the skeleton
+    itself (WaveSpeed has no pose estimator and z-image returns no pose map). z-image has no start/end, so a
+    pose ref with a custom window, or mixed with other refs, goes to flux-controlnet-union-pro-2.0 with a
+    soft-edge map of the pose reference instead of being dropped (#80)."""
+    if mode in refprep.EXTRACTED and count == 1 and full_window:
+        return STRUCTURE_EXTRACT_MODEL
+    return STRUCTURE_FILTER_MODEL
+
+
+def _structure_pick(inputs: dict) -> str:
+    cs = _controls(inputs)
+    c = cs[0] if cs else {}
+    return structure_model(str(c.get("mode") or ""), len(cs), _full_window(c))
+
+
+def _map_steps(inputs: dict) -> list[str]:
+    """Features of the extra cloud map calls (depth-anything / sam3) a structure job runs before control."""
+    cs = _controls(inputs)
+    return [refprep.CLOUD_MAP[m][0] for m in (str(c.get("mode") or "") for c in cs) if m in refprep.CLOUD_MAP]
+
+
+async def _steps_price(inputs: dict) -> float | None:
+    total = 0.0
+    for feature in _map_steps(inputs):
+        price, _ = await quote(resolve_model(feature, None), {})
+        if price is None:
+            return None
+        total += float(price)
+    return total
+
+
+async def _source_bytes(value: str) -> bytes:
+    if value.startswith(("http://", "https://")):
+        # separate session: never send the WaveSpeed key to another host
+        async with aiohttp.ClientSession() as plain, plain.get(value) as res:
+            if res.status >= 400:
+                raise WaveSpeedError(f"could not read reference image ({res.status})", 400)
+            return await res.read()
+    path = _local_path(value)
+    if not path or not os.path.isfile(path):
+        raise WaveSpeedError(f"input file not found: {value}", 400)
+    return _read(path)
+
+
+async def _prepped(session: aiohttp.ClientSession, value: str, mode: str, res: int = 1024, size=None, resize: str = "crop") -> str:
+    data = refprep.process_bytes(await _source_bytes(value), mode, res, size, resize)
+    return await _upload(session, "", data, f"ref-{mode}-{uuid.uuid4().hex[:8]}.png")
+
+
+async def _cloud_map(feature: str, params: dict, image: str) -> bytes:
+    """One paid map call (depth-anything-v3 / sam3-image); already covered by the confirmed estimate."""
+    outs = await run_raw({"feature": feature, "image": image, "params": dict(params), "confirmed": True})
+    if not outs:
+        raise WaveSpeedError(f"{feature} returned no map", 502)
+    return await _source_bytes(str(outs[0]))
+
+
+async def _control_map(c: dict, size, res_default: int = 1024):
+    mode = str(c.get("mode") or "")
+    res, resize = int(c.get("res") or res_default), str(c.get("resize") or "crop")
+    if mode in refprep.CLOUD_MAP:
+        feature, params = refprep.CLOUD_MAP[mode]
+        data = await _cloud_map(feature, params, str(c["image"]))
+    else:
+        data = await _source_bytes(str(c["image"]))
+    # no pose estimator on WaveSpeed: on flux a pose ref guides through its soft-edge map
+    return refprep.process_image(data, refprep.POSE_FALLBACK if mode in refprep.EXTRACTED else mode, res, size, resize)
+
+
+async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> dict:
+    """Structure control (#80): every structure ref becomes the control model's fields with its knobs;
+    color modes replace their reference with the processed image (upstream preprocessor nodes)."""
+    controls = _controls(inputs)
+    inputs = dict(inputs)
+    inputs.pop("control", None)
+    inputs.pop("controls", None)
+    w, h = inputs.get("width"), inputs.get("height")
+    size = (int(w), int(h)) if w and h else None
+    controls = [c for c in controls if c.get("image")]
+    if controls:
+        params = dict(inputs.get("params") or {})
+        strengths = [float(c.get("strength", 80)) / 100 for c in controls]
+        if model == STRUCTURE_EXTRACT_MODEL:
+            c = controls[0]
+            # z-image takes the raw ref (WaveSpeed extracts the skeleton); apply the resolution / fit knobs before upload
+            data = refprep.scale_fit(await _source_bytes(str(c["image"])), int(c.get("res") or 1024), size, str(c.get("resize") or "crop"))
+            inputs["image"] = await _upload(session, "", refprep.to_png(data), f"ref-pose-{uuid.uuid4().hex[:8]}.png")
+            params.update({"mode": "pose" if c.get("mode") == "pose" else "canny", "strength": min(1.0, strengths[0])})
+        else:
+            inputs.pop("image", None)
+            maps = [await _control_map(c, size) for c in controls]
+            img = maps[0] if len(maps) == 1 else refprep.composite(list(zip(maps, strengths)), size or maps[0].size)
+            params.update({
+                "control_image": await _upload(session, "", refprep.to_png(img), f"ref-control-{uuid.uuid4().hex[:8]}.png"),
+                "controlnet_conditioning_scale": min(2.0, max(strengths)),
+                # one control_image: the guidance window spans every ref's start..end
+                "control_guidance_start": min(float(c.get("start", 0)) for c in controls) / 100,
+                "control_guidance_end": max(float(c.get("end", 100)) for c in controls) / 100,
+            })
+        inputs["params"] = params
+    prep = inputs.pop("prep", None)
+    if prep and inputs.get("images"):
+        inputs["images"] = [await _prepped(session, v, m) if m in refprep.COLOR else v for v, m in zip(inputs["images"], list(prep) + [None] * len(inputs["images"]))]
+    return inputs
 
 
 async def submit(inputs: dict) -> str:
@@ -696,16 +858,22 @@ async def submit(inputs: dict) -> str:
     if inputs.get("custom"):
         model = custom_model(inputs.get("model"), await catalog())
     else:
-        model = resolve_model(feature, inputs.get("model"))
+        picked = inputs.get("model")
+        if feature == "structure_control" and not picked:
+            picked = _structure_pick(inputs)
+        model = resolve_model(feature, picked)
     _check_limits()
     meta = (await catalog()).get(model)
     if not inputs.get("confirmed"):
         price, _ = await quote(model, inputs)
+        if feature == "structure_control" and price is not None:
+            extra = await _steps_price(inputs)
+            price = None if extra is None else round(float(price) + extra, 6)
         if price is not None and needs_confirm(price):
             # expensive job: the page asks the user and resubmits with confirmed=true
             raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price))
     async with aiohttp.ClientSession(headers=_headers()) as session:
-        payload = await build_payload(session, _schema(meta), inputs)
+        payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs))
         _submits.append(time.time())
         # never auto-retry a submit: a retry could be charged twice
         async with session.post(f"{_base()}/api/v3/{model}", json=payload) as res:

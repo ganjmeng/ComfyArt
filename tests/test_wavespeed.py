@@ -60,6 +60,13 @@ MODELS = [
 ]
 
 
+@pytest.fixture(autouse=True)
+def uncurated(monkeypatch):
+    # These tests exercise submit/poll/pricing mechanics on the mock MODELS above with the base
+    # wavespeed_models.json lineup; the #95 curated narrowing is covered in test_curated_models.py.
+    monkeypatch.setattr(wavespeed, "load_curated", lambda: {})
+
+
 @pytest.fixture
 async def ws(monkeypatch, fresh_user_dir):
     state = {"status": "completed", "submits": [], "polls": 0, "uploads": 0, "auth": set(), "submit_status": 200, "result_status": 200, "prices": {}, "quotes": []}

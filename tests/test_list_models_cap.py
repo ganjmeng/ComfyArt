@@ -53,7 +53,7 @@ async def test_every_list_models_result_fits_under_cap(kind):
 async def test_index_lists_kinds_and_defaults():
     out = await canvas._list_models({})
     f = out["features"]
-    assert f["defaults"]["text_to_video"] == "wavespeed-ai/minimax-h3/text-to-video"
+    assert f["defaults"]["text_to_video"] == "bytedance/seedance-2.0/text-to-video"
     assert "text_to_video" in f["kinds"]["video"] and "image_to_3d" in f["kinds"]["3d"]
     assert "type" in f["hint"]
 
@@ -79,7 +79,7 @@ def test_unknown_model_error_lists_valid_ids():
         wavespeed.resolve_model("image_to_video", "kling-guess")
     msg = str(e.value)
     assert "kling-guess" in msg and all(i in msg for i in _ids("image_to_video"))
-    assert "default wavespeed-ai/minimax-h3/image-to-video" in msg
+    assert "default bytedance/seedance-2.0/image-to-video" in msg
 
 
 async def test_agent_loop_sees_untruncated_video_ids(monkeypatch):
