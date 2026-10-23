@@ -35,6 +35,7 @@ _MAX_WAIT_SLICES = 12
 _LLM_TIMEOUT_S = 300
 _HISTORY_CHAR_CAP = 16_000
 _REPEAT_STOP = 3
+_CACHED_SKILL_STOP = 3  # cumulative cached skill re-reads per turn (A/B/A/B...)
 _REPEAT_STOP_TEXT = {
     "zh": "任务卡在重复步骤，已停止，未继续扣费。",
     "en": "The task got stuck repeating a step and was stopped; no further "
@@ -127,18 +128,17 @@ def _step_label(name: str, args: dict, lang: str) -> str:
 
 
 def _stop_summary(done: list[str], lang: str = "zh") -> str:
+    """One line: shown in the chat panel's error notice (no line breaks)."""
     zh = lang == "zh"
-    lines = [_REPEAT_STOP_TEXT["zh" if zh else "en"]]
     counts: dict[str, int] = {}
     for label in done:
         counts[label] = counts.get(label, 0) + 1
-    if counts:
-        lines.append("已完成：" if zh else "Done so far:")
-        lines.extend(f"- {n}" + (f" ×{c}" if c > 1 else "")
-                     for n, c in counts.items())
-    else:
-        lines.append("已完成：无" if zh else "Done so far: nothing")
-    return "\n".join(lines)
+    items = [n + (f" ×{c}" if c > 1 else "") for n, c in counts.items()]
+    if zh:
+        return (_REPEAT_STOP_TEXT["zh"] + "已完成："
+                + ("、".join(items) if items else "无"))
+    return (_REPEAT_STOP_TEXT["en"] + " Done so far: "
+            + (", ".join(items) if items else "nothing") + ".")
 
 
 _THINK_RE = re.compile(r"(?:<think>|^)([\s\S]*?)</think>|<think>([\s\S]*)$")
@@ -375,7 +375,9 @@ class LocalLlmProvider(AgentProvider):
                 last_key = ""
                 repeat = 0
                 done: list[str] = []
-                lang = _reply_lang(turn.user_text)
+                lang = (turn.lang if turn.lang in ("zh", "en")
+                        else _reply_lang(turn.user_text))
+                cache_hits = 0
                 skill_cache: dict[str, str] = {}
                 for _ in range(_MAX_ITERATIONS):
                     if handle.stop_requested:
@@ -428,20 +430,23 @@ class LocalLlmProvider(AgentProvider):
                         key = _call_key(name, args)
                         repeat = repeat + 1 if key == last_key else 1
                         last_key = key
-                        if repeat >= _REPEAT_STOP:
+                        skill_key = _skill_read_key(name, args)
+                        cached = bool(skill_key) and skill_key in skill_cache
+                        if cached:
+                            cache_hits += 1
+                        if repeat >= _REPEAT_STOP or (
+                                cache_hits >= _CACHED_SKILL_STOP):
                             _log.warning("[ComfyArt/local-llm] loop guard: %s "
-                                         "repeated %d times, stopping", name,
-                                         repeat)
-                            await emit(BotEvent(t="delta",
-                                                text=_stop_summary(done, lang)))
-                            return TurnResult(usage=usage)
+                                         "repeat=%d cached_skill_reads=%d, "
+                                         "stopping", name, repeat, cache_hits)
+                            return TurnResult(usage=usage,
+                                              error=_stop_summary(done, lang))
                         await emit(BotEvent(t="tool_use", name=name, input=args,
                                             id=tc_id))
                         tool_failed = False
                         images: list[str] = []
-                        skill_key = _skill_read_key(name, args)
                         try:
-                            if skill_key and skill_key in skill_cache:
+                            if cached:
                                 result_text = skill_cache[skill_key]
                             elif name == "wait_generation":
                                 result_text = await self._wait_stage_done(
@@ -455,7 +460,8 @@ class LocalLlmProvider(AgentProvider):
                             tool_failed = True
                         if skill_key and not tool_failed:
                             skill_cache.setdefault(skill_key, result_text)
-                        done.append(_step_label(name, args, lang))
+                        if not cached:  # only steps that actually ran
+                            done.append(_step_label(name, args, lang))
                         if len(result_text) > TOOL_RESULT_CAP:
                             result_text = (
                                 result_text[:TOOL_RESULT_CAP]

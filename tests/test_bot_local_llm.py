@@ -257,7 +257,7 @@ def _tc(i, name, args):
 
 
 class TestLoopGuard:
-    async def _run(self, monkeypatch, steps, user_text="做一张海报"):
+    async def _run(self, monkeypatch, steps, user_text="做一张海报", lang=""):
         provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
         responses = [{"choices": [{"message": {"content": "", "tool_calls": [
             _tc(i, n, a)]}}]} for i, (n, a) in enumerate(steps)]
@@ -282,7 +282,7 @@ class TestLoopGuard:
         monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
         events: list[BotEvent] = []
         result = await provider.send(
-            TurnRequest(chat_id="c", user_text=user_text,
+            TurnRequest(chat_id="c", user_text=user_text, lang=lang,
                         mcp_endpoint="http://x/mcp", model="m1"),
             _collect(events), TurnHandle())
         return result, events, llm_calls, mcp_calls
@@ -291,33 +291,53 @@ class TestLoopGuard:
         gen = ("generate_image", {"prompt": "cat"})
         result, events, llm, mcp = await self._run(
             monkeypatch, [("skill", {"action": "list"}), gen, gen, gen, gen])
-        assert result.error == ""
         assert len(llm) == 4  # no further LLM spend after the stop
         assert [c[0] for c in mcp] == ["skill", "generate_image",
                                        "generate_image"]
-        stop = events[-1]
-        assert stop.t == "delta"
-        assert stop.text.startswith("任务卡在重复步骤，已停止，未继续扣费")
-        assert stop.text.splitlines()[1:] == ["已完成：", "- 技能", "- 生成图像 ×2"]
-        assert "skill" not in stop.text and "generate_image" not in stop.text
+        # stop text goes out as the turn error -> red error notice in the panel
+        assert result.error == ("任务卡在重复步骤，已停止，未继续扣费。"
+                                "已完成：技能、生成图像 ×2")
+        assert not any(e.t == "delta" for e in events)
 
-    async def test_stop_message_english_for_english_user(self, monkeypatch):
+    async def test_stop_message_follows_ui_language_en(self, monkeypatch):
         gen = ("generate_image", {"prompt": "cat"})
         read = ("skill", {"action": "read", "name": "poster-design"})
+        # UI language wins over the message text
         result, events, llm, mcp = await self._run(
-            monkeypatch, [read, gen, gen, gen], user_text="make a poster")
-        assert events[-1].text.splitlines() == [
+            monkeypatch, [read, gen, gen, gen], user_text="做海报", lang="en")
+        assert result.error == (
             "The task got stuck repeating a step and was stopped; no further "
-            "charges.",
-            "Done so far:", "- Read skill: poster-design",
-            "- Generate image ×2"]
+            "charges. Done so far: Read skill: poster-design, "
+            "Generate image ×2.")
+        assert result.error.startswith(
+            "The task got stuck repeating a step and was stopped; no further "
+            "charges.")
 
-    async def test_stop_message_skill_read_label_zh(self, monkeypatch):
+    async def test_stop_message_follows_ui_language_zh(self, monkeypatch):
         gen = ("generate_image", {"prompt": "cat"})
         read = ("skill", {"action": "read", "name": "海报设计"})
         result, events, llm, mcp = await self._run(
-            monkeypatch, [read, gen, gen, gen])
-        assert "- 读取技能：海报设计" in events[-1].text
+            monkeypatch, [read, gen, gen, gen], user_text="poster", lang="zh")
+        assert result.error == ("任务卡在重复步骤，已停止，未继续扣费。"
+                                "已完成：读取技能：海报设计、生成图像 ×2")
+
+    async def test_no_ui_language_falls_back_to_message_text(self, monkeypatch):
+        gen = ("generate_image", {"prompt": "cat"})
+        result, *_ = await self._run(monkeypatch, [gen, gen, gen],
+                                     user_text="make a poster")
+        assert result.error.startswith("The task got stuck")
+
+    async def test_ab_alternating_skill_reads_stop_at_third_cache_hit(
+            self, monkeypatch):
+        a = ("skill", {"action": "read", "name": "poster"})
+        b = ("skill", {"action": "read", "name": "social"})
+        result, events, llm, mcp = await self._run(monkeypatch, [a, b] * 40)
+        # A, B run; A, B are cache hits 1-2; A (3rd hit) stops. Far below 80.
+        assert len(llm) == 5
+        assert [x[1]["name"] for x in mcp] == ["poster", "social"]
+        assert [e.t for e in events].count("tool_use") == 4
+        # done list: only reads that actually ran, cached ones not counted
+        assert result.error.endswith("已完成：读取技能：poster、读取技能：social")
 
     async def test_different_args_do_not_stop(self, monkeypatch):
         result, events, llm, mcp = await self._run(monkeypatch, [
@@ -366,4 +386,4 @@ class TestStepLabels:
     def test_empty_summary(self):
         from bot.local_llm import _stop_summary
         assert _stop_summary([], "zh").endswith("已完成：无")
-        assert _stop_summary([], "en").endswith("Done so far: nothing")
+        assert _stop_summary([], "en").endswith("Done so far: nothing.")

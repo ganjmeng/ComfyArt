@@ -122,7 +122,8 @@ def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
 
 
 def queue_or_begin(chat: dict, *, text: str, provider_text: str,
-                   attachments: list[dict], display_blocks: list[dict]) -> tuple[dict, Optional[dict]]:
+                   attachments: list[dict], display_blocks: list[dict],
+                   lang: str = "") -> tuple[dict, Optional[dict]]:
     if chat["id"] in ACTIVE_TURNS:
         user_msg = chat_store.create_message(chat_id=chat["id"], role="user", blocks=display_blocks, status="queued")
         QUEUED.setdefault(chat["id"], []).append({
@@ -130,10 +131,11 @@ def queue_or_begin(chat: dict, *, text: str, provider_text: str,
             "text": text,
             "provider_text": provider_text,
             "attachments": attachments,
+            "lang": lang,
         })
         broadcast("message_queued", {"chat_id": chat["id"], "user_message": user_msg})
         return user_msg, None
     user_msg = chat_store.create_message(chat_id=chat["id"], role="user", blocks=display_blocks)
     assistant_msg = begin_turn(chat, text=text, provider_text=provider_text,
-                               attachments=attachments, user_msg=user_msg)
+                               attachments=attachments, user_msg=user_msg, lang=lang)
     return user_msg, assistant_msg

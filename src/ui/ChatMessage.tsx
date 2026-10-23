@@ -130,13 +130,13 @@ function Thought({ text, live }: { text: string; live: boolean }) {
 
 type Pair = { use: BotBlock; result?: BotBlock; i: number }
 
-function StepGroup({ editor, steps }: { editor: Editor; steps: Pair[] }) {
+function StepGroup({ editor, steps, stopped }: { editor: Editor; steps: Pair[]; stopped?: boolean }) {
   const [open, setOpen] = useState(false)
   const failed = steps.filter((s) => s.result?.status === 'error').length
   return (
     <div className="ca-chat__tool" data-open={open || undefined}>
       <button type="button" className="ca-chat__step" onClick={() => setOpen(!open)}>
-        <span className="ca-icon">{failed ? Icons.close : Icons.check}</span>
+        <span className="ca-icon">{failed || stopped ? Icons.close : Icons.check}</span>
         <span>{t('chatMessage.usedTools', steps.length)}</span>
         <span className="ca-chat__arg">{[...new Set(steps.map((s) => toolLabel(s.use.name)))].join(t('common.listSep'))}</span>
         <span className="ca-chat__chev ca-icon">{Icons.chevron}</span>
@@ -155,8 +155,8 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   const outputs = done ? outputsOf(m.blocks.filter((b) => b.type !== 'task')) : []
   const items: ReactNode[] = []
   let run: Pair[] = []
-  const flush = () => {
-    if (run.length > 1) items.push(<StepGroup key={`g${run[0].i}`} editor={editor} steps={run} />)
+  const flush = (stopped = false) => {
+    if (run.length > 1) items.push(<StepGroup key={`g${run[0].i}`} editor={editor} steps={run} stopped={stopped} />)
     else if (run.length) items.push(<Step key={run[0].i} editor={editor} use={run[0].use} result={run[0].result} thumbs={false} />)
     run = []
   }
@@ -169,7 +169,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       items.push(<Plan key={`p${i}`} b={plan!} live={!done} />)
     } else if (b.type === 'tool_use' && done) run.push({ use: b, result: resultOf(b, i), i })
     else if (b.type !== 'tool_result') {
-      flush()
+      flush(b.type === 'notice' && b.level === 'error') // turn ended in error / loop-guard stop: reuse the failed icon
       if (b.type === 'text') items.push(<Markdown key={i} text={b.text ?? ''} />)
       if (b.type === 'thinking' && b.text?.trim()) items.push(<Thought key={i} text={b.text} live={!done && i === m.blocks.length - 1} />)
       if (b.type === 'tool_use') items.push(<Step key={i} editor={editor} use={b} result={resultOf(b, i)} />)
