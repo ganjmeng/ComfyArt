@@ -414,6 +414,7 @@ def _input_file(name, data=b"x"):
 
 
 async def test_text_to_video_default_and_mapping(ws):
+    ws["prices"].update({m["model_id"]: 0.01 for m in MODELS})  # #159: priced (an unpriced non-default tier always asks first)
     task = await wavespeed.submit({"feature": "text_to_video", "prompt": "waves", "ratio": "16:9", "duration": 5, "resolution": "768p", "seed": 3})
     model, payload = ws["submits"][0]
     assert model == "wavespeed-ai/minimax-h3/text-to-video"
@@ -422,6 +423,7 @@ async def test_text_to_video_default_and_mapping(ws):
 
 
 async def test_video_duration_snaps_to_enum_and_model_validated(ws):
+    ws["prices"].update({m["model_id"]: 0.01 for m in MODELS})  # #159: priced (an unpriced non-default tier always asks first)
     await wavespeed.submit({"feature": "text_to_video", "prompt": "x", "duration": 10})
     assert ws["submits"][0][1]["duration"] == 8
     await wavespeed.submit({"feature": "text_to_video", "model": "alibaba/wan-3.0/text-to-video", "prompt": "x", "duration": 10})
@@ -450,6 +452,7 @@ async def test_reference_motion_lipsync(ws):
 
 
 async def test_video_tools(ws):
+    ws["prices"].update({m["model_id"]: 0.01 for m in MODELS})  # #159: priced (an unpriced non-default tier always asks first)
     vid = _input_file("v.mp4")
     await wavespeed.submit({"feature": "extend_video", "video": vid, "prompt": "go on", "duration": 5})
     await wavespeed.submit({"feature": "upscale_video", "video": vid, "params": {"target_resolution": "4k"}})
@@ -511,6 +514,7 @@ async def test_transcribe_route(ws, bot_client, fresh_user_dir):
 
 
 async def test_storyboard_chains_last_frame_and_concats(ws, monkeypatch):
+    ws["prices"].update({m["model_id"]: 0.01 for m in MODELS})  # #159: priced (an unpriced non-default tier always asks first)
     frames, joined = [], []
     monkeypatch.setattr(wavespeed, "_last_frame", lambda src, out: (frames.append(src), wavespeed._write(out, b"png")))
     monkeypatch.setattr(wavespeed, "_concat", lambda paths, out: (joined.extend(paths), wavespeed._write(out, b"mp4")))

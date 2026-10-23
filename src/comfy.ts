@@ -152,12 +152,14 @@ export function setWsHook(hook: WsHook) {
 }
 
 /** Second confirmation for costly cloud jobs, in the app's own Confirm dialog. */
-export function askCost(price: number, segSplits?: number, segCapped?: boolean, note = '', estimate?: { tier?: string }): Promise<boolean> {
+export function askCost(price: number | null, segSplits?: number, segCapped?: boolean, note = '', estimate?: { tier?: string; unpriced?: boolean }): Promise<boolean> {
   // #138: seg maps quote an upper bound before anything is recognised (nothing is charged before this dialog);
   // on a retry only the classes still missing a mask are quoted
-  const p = price.toFixed(2)
+  const p = (price ?? 0).toFixed(2)
   // #159: the price API failed, so this is the catalog estimate for the tier that will be submitted, and it says so
-  const cost = estimate && typeof segSplits !== 'number' ? (estimate.tier ? t('jobs.confirmEstimateTier', p, estimate.tier) : t('jobs.confirmEstimate', p))
+  // #159: no price for the submitted tier: no amount at all, only the tier it will be charged at
+  const cost = estimate?.unpriced || price == null ? t('jobs.confirmUnpriced', estimate?.tier || t('jobs.thisTier'))
+    : estimate && typeof segSplits !== 'number' ? (estimate.tier ? t('jobs.confirmEstimateTier', p, estimate.tier) : t('jobs.confirmEstimate', p))
     : typeof segSplits !== 'number' ? t('jobs.confirmCost', p)
     : segCapped ? t('jobs.confirmSegMax', p, segSplits) : t('jobs.confirmSegLeft', p, segSplits)
   return new Promise((resolve) => confirmAtom.set({
@@ -176,10 +178,10 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget())
     let ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
     let wsBody = await ws.json().catch(() => null)
     const price = wsBody?.error?.confirm_usd
-    if (ws.status === 409 && typeof price === 'number') {
+    if (ws.status === 409 && (typeof price === 'number' || wsBody?.error?.unpriced)) {
       // jobs of $0.50 or more need an explicit yes before they are submitted
       // #128: the actual duration when it differs from the one asked
-      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, typeof inputs.duration_note === 'string' ? inputs.duration_note : '', wsBody?.error?.estimate ? { tier: typeof wsBody.error.tier === 'string' ? wsBody.error.tier : undefined } : undefined))) throw new CostDeclined()
+      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, typeof inputs.duration_note === 'string' ? inputs.duration_note : '', wsBody?.error?.estimate || wsBody?.error?.unpriced ? { tier: typeof wsBody.error.tier === 'string' ? wsBody.error.tier : undefined, unpriced: !!wsBody.error.unpriced } : undefined))) throw new CostDeclined()
       ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
       wsBody = await ws.json().catch(() => null)
     }
