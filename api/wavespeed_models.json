@@ -85,6 +85,22 @@
     }
    ]
   },
+  "structure_control": {
+   "types": [
+    "image-to-image"
+   ],
+   "default": "wavespeed-ai/flux-controlnet-union-pro-2.0",
+   "models": [
+    {
+     "id": "wavespeed-ai/flux-controlnet-union-pro-2.0",
+     "local": "ControlNetApplyAdvanced + Canny/LineArt/HED/M-LSD/Scribble/Tile preprocessors"
+    },
+    {
+     "id": "wavespeed-ai/z-image-turbo/controlnet",
+     "local": "DepthAnythingV2Preprocessor / DWPreprocessor + ControlNet"
+    }
+   ]
+  },
   "change_angle": {
    "types": [
     "image-to-image"
