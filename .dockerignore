@@ -7,3 +7,7 @@ docs-site
 timeline/node_modules
 **/__pycache__
 *.pyc
+.env
+*.env
+**/.env
+**/*.env

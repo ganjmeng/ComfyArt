@@ -45,3 +45,10 @@ def test_no_key_baked_into_packaging():
         t = f.read_text()
         assert "wavespeed.env" not in t
         assert not re.search(r"WAVESPEED_API_KEY=\S*[A-Za-z0-9]{8}", t)
+
+
+def test_dockerignore_excludes_env_files():
+    # `COPY .` must never pull a key file (e.g. a plugin-dir .env) into the image.
+    ignore = (ROOT / ".dockerignore").read_text().split()
+    for pat in (".env", "*.env", "**/.env", "**/*.env"):
+        assert pat in ignore, pat
