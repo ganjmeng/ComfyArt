@@ -62,10 +62,12 @@ Qwen Image 2512 用 **ComfyArt Precise UNET Loader** 节点加载。ComfyUI 的 
 
 ## 音频与 3D
 
-配乐、音效、配音和声音克隆走 WaveSpeed 云端模型，不需要本地文件。
-
 | 功能 | 文件 | 目录 |
 |---|---|---|
+| 配乐 | `ace_step_v1_3.5b.safetensors` | `checkpoints` |
+| 音效 | `stable-audio-open-1.0.safetensors`（`checkpoints`）、`t5-base.safetensors`（`text_encoders`） | |
+| 配音 | [comfyui-kokoro](https://github.com/stavsap/comfyui-kokoro)，第一次使用时自动下载模型 | |
+| 声音克隆 | [ComfyUI-Easy-IndexTTS2](https://github.com/yolain/ComfyUI-Easy-IndexTTS2)，第一次使用时自动下载 IndexTTS-2 | |
 | 转 3D | `trellis_2_int8_convrot.safetensors`（`diffusion_models`）、`trellis_2_shape_vae_bf16.safetensors` 和 `trellis_2_texture_vae_bf16.safetensors`（`vae`）、`dino_v3_L_naf_fp32.safetensors`（`clip_vision`），以及 `birefnet.safetensors` | |
 | 转 3D（Pixal3D） | `pixal3d_int8_convrot.safetensors`（`diffusion_models`）、`moge_2_vitl_normal_fp16.safetensors`（`geometry_estimation`），以及上面的 TRELLIS.2 两个 VAE、`dino_v3_L_naf_fp32` 和 `birefnet` | |
 | 多视角转 3D | `pixal3d_multiview_int8_convrot.safetensors`（`diffusion_models`），以及上面的 TRELLIS.2 两个 VAE、`dino_v3_L_naf_fp32` 和 `birefnet` | |

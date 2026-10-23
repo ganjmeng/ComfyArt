@@ -39,16 +39,16 @@ async def test_mcp_is_off_by_default(bot_client):
     assert resp.status == 403
 
 
-async def test_removed_workflow_tools_are_not_exposed(bot_client):
-    # #74: sound effects stay (upstream has them, WaveSpeed serves them); ComfyUI workflow tools lost their features
+async def test_original_agent_tools_are_kept(bot_client):
+    # #74: every upstream agent tool stays; sound effects and the ComfyUI workflow tools are kept
     from ComfyArt.bot.guide import AGENT_GUIDE, COMFY_MCP_ALLOWED_TOOLS
     tools = (await (await bot_client.post("/comfyart/mcp", json=_rpc("tools/list"))).json())["result"]["tools"]
     by_name = {t["name"]: t for t in tools}
     assert "generate_sound_effect" in by_name and "generate_sound_effect" in CORE_MCP_TOOLS
     assert "generate_sound_effect" in AGENT_GUIDE
     assert "Comfy Cloud" not in by_name["text_to_speech"]["description"]
-    gone = {"validate_workflow", "search_templates", "get_template", "list_workflow_slots", "list_workflow_notes", "workflow_deps", "node_dependencies"}
-    assert not gone & set(COMFY_MCP_ALLOWED_TOOLS)
+    kept = {"validate_workflow", "search_templates", "get_template", "list_workflow_slots", "list_workflow_notes", "workflow_deps", "node_dependencies"}
+    assert kept <= set(COMFY_MCP_ALLOWED_TOOLS)
 
 
 async def test_tools_list_matches_the_core_list(bot_client):

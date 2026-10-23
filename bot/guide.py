@@ -91,7 +91,14 @@ CORE_MCP_TOOLS = [
 COMFY_MCP_ALLOWED_TOOLS = [
     "server_info",
     "nodes",
+    "validate_workflow",
     "search_models",
+    "search_templates",
+    "get_template",
+    "list_workflow_slots",
+    "list_workflow_notes",
+    "workflow_deps",
+    "node_dependencies",
     "system_stats",
     "which",
 ]

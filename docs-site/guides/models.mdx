@@ -62,10 +62,12 @@ Video trim and the video editor use core nodes only.
 
 ## Audio and 3D
 
-Music, sound effects, voiceover and voice cloning run on WaveSpeed cloud models and need no local files.
-
 | Feature | Files | Folder |
 |---|---|---|
+| Music | `ace_step_v1_3.5b.safetensors` | `checkpoints` |
+| Sound effects | `stable-audio-open-1.0.safetensors` (`checkpoints`), `t5-base.safetensors` (`text_encoders`) | |
+| Voiceover | [comfyui-kokoro](https://github.com/stavsap/comfyui-kokoro), which downloads its model on first use | |
+| Voice cloning | [ComfyUI-Easy-IndexTTS2](https://github.com/yolain/ComfyUI-Easy-IndexTTS2), which downloads IndexTTS-2 on first use | |
 | Image to 3D | `trellis_2_int8_convrot.safetensors` (`diffusion_models`), `trellis_2_shape_vae_bf16.safetensors` and `trellis_2_texture_vae_bf16.safetensors` (`vae`), `dino_v3_L_naf_fp32.safetensors` (`clip_vision`), plus `birefnet.safetensors` | |
 | Image to 3D (Pixal3D) | `pixal3d_int8_convrot.safetensors` (`diffusion_models`), `moge_2_vitl_normal_fp16.safetensors` (`geometry_estimation`), plus the TRELLIS.2 VAEs, `dino_v3_L_naf_fp32` and `birefnet` above | |
 | Multi-view to 3D | `pixal3d_multiview_int8_convrot.safetensors` (`diffusion_models`), plus the TRELLIS.2 VAEs, `dino_v3_L_naf_fp32` and `birefnet` above | |
