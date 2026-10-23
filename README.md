@@ -27,7 +27,9 @@ Documentation with screenshots for every feature: **[comfyart.org](https://comfy
 
 ## Install
 
-Put this folder in `ComfyUI/custom_nodes/`, install the Python requirements into ComfyUI's environment (`pip install -r requirements.txt`: `pypdfium2` for PDF uploads and `rapidocr` for Edit Elements), restart ComfyUI and open `http://127.0.0.1:8188/comfyart/`. The built page is in `dist/`; after changing `src/`, rebuild with `npm install && npm run build`.
+**Quick start (no GPU, no existing ComfyUI):** `./scripts/start.sh` installs a CPU-only ComfyUI host next to this folder (in `~/.comfyart-runtime`) and opens on `http://127.0.0.1:8188/comfyart/`; re-running it just starts. Or with Docker: `docker build -t comfyart . && docker run -p 8188:8188 -e WAVESPEED_API_KEY=... -v comfyart-user:/opt/ComfyUI/user comfyart`.
+
+Into an existing ComfyUI: Put this folder in `ComfyUI/custom_nodes/`, install the Python requirements into ComfyUI's environment (`pip install -r requirements.txt`: `pypdfium2` for PDF uploads and `rapidocr` for Edit Elements), restart ComfyUI and open `http://127.0.0.1:8188/comfyart/`. The built page is in `dist/`; after changing `src/`, rebuild with `npm install && npm run build`.
 
 Projects, their snapshot history and agent chats are saved in a SQLite database, `user/__comfyart/data.db`. Projects from older versions (JSON files under `comfyart/projects/`) are imported automatically the first time you open ComfyArt; the files are left in place. The interface starts in ComfyUI's language and can be switched from the settings menu.
 
