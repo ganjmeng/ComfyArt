@@ -811,15 +811,16 @@ async def _cloud_map(feature: str, params: dict, image: str) -> bytes:
     return await _source_bytes(str(outs[0]))
 
 
-async def _control_map(c: dict, size, res_default: int = 1024):
+async def _control_map(c: dict, size, res_default: int = 1024, fresh: bool = False):
     mode = str(c.get("mode") or "")
     res, resize = int(c.get("res") or res_default), str(c.get("resize") or "crop")
     if mode in refprep.CLOUD_MAP:
         key = _map_key(c, res_default)
-        data = _map_cache.get(key)
+        data = None if fresh else _map_cache.get(key)  # fresh: 「重新提取」 forces a new paid extraction
         if data is None:
             feature, params = refprep.CLOUD_MAP[mode]
             data = await _cloud_map(feature, params, str(c["image"]))
+            _map_cache.pop(key, None)  # the new map replaces the old entry
             if len(_map_cache) >= _MAP_CACHE_MAX:
                 _map_cache.pop(next(iter(_map_cache)))
             _map_cache[key] = data
@@ -827,6 +828,14 @@ async def _control_map(c: dict, size, res_default: int = 1024):
         data = await _source_bytes(str(c["image"]))
     # no pose estimator on WaveSpeed: on flux a pose ref guides through its soft-edge map
     return refprep.process_image(data, refprep.POSE_FALLBACK if mode in refprep.EXTRACTED else mode, res, size, resize)
+
+
+def preview_estimate(inputs: dict) -> list[str]:
+    """Map-call features a preview request would pay for: none when cached, unless `fresh` (re-extract)."""
+    image, mode, res = str(inputs.get("image") or ""), str(inputs.get("mode") or ""), int(inputs.get("res") or 1024)
+    if mode not in refprep.CLOUD_MAP or (not inputs.get("fresh") and (image, mode, res) in _map_cache):
+        return []
+    return [refprep.CLOUD_MAP[mode][0]]
 
 
 async def control_preview(inputs: dict) -> bytes:
@@ -838,13 +847,15 @@ async def control_preview(inputs: dict) -> bytes:
     if not image or not mode:
         raise WaveSpeedError("image and mode are required", 400)
     res = int(inputs.get("res") or 1024)
-    if mode in refprep.CLOUD_MAP and not inputs.get("confirmed") and (image, mode, res) not in _map_cache:
+    # #81: `fresh` is 「重新提取」 — skip the cache, re-run (and re-confirm) the paid extraction
+    fresh = bool(inputs.get("fresh"))
+    if mode in refprep.CLOUD_MAP and not inputs.get("confirmed") and (fresh or (image, mode, res) not in _map_cache):
         price, _ = await quote(resolve_model(refprep.CLOUD_MAP[mode][0], None), {})
         if price is not None and needs_confirm(price):
             raise WaveSpeedError(f"control map preview costs about ${price}; confirm to continue", 409, confirm=float(price))
     if mode in refprep.COLOR:
         return refprep.process_bytes(await _source_bytes(image), mode, res)
-    return refprep.to_png(await _control_map({"image": image, "mode": mode, "res": res}, None))
+    return refprep.to_png(await _control_map({"image": image, "mode": mode, "res": res}, None, fresh=fresh))
 
 
 async def _prepare(session: aiohttp.ClientSession, model: str, inputs: dict) -> dict:

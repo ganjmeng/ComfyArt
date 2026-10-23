@@ -105,3 +105,51 @@ def test_upstream_ui_restored():
     # #81: 60s preview timeout aborts the request and surfaces an error (the button's finally restores it)
     assert "PREVIEW_TIMEOUT_MS = 60_000" in modes and "signal: ctl.signal" in modes and "refControls.timeout" in modes
     assert "finally" in ui and "setBusy(false)" in ui
+
+
+async def test_reextract_calls_cloud_again_when_cached(maps):
+    """#81 product rule: 「重新提取」 (fresh) bypasses the (src, mode, res) cache and extracts again."""
+    ref = _photo()
+    await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 512, "confirmed": True})
+    await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 512, "confirmed": True})  # cached
+    assert [m for m, _ in maps["submits"]] == [DEPTH]
+    await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 512, "confirmed": True, "fresh": True})
+    assert [m for m, _ in maps["submits"]] == [DEPTH, DEPTH]
+
+
+async def test_reextract_asks_cost_confirmation_even_when_cached(maps, monkeypatch):
+    ref = _photo()
+    await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 512, "confirmed": True})
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.001)
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 512, "fresh": True})
+    assert e.value.status == 409 and e.value.confirm == 0.005
+    assert [m for m, _ in maps["submits"]] == [DEPTH]
+
+
+async def test_generate_after_reextract_uses_new_map(maps, monkeypatch):
+    """The re-extracted map replaces the cache entry; generate uses it with 0 extra extractions."""
+    seen = []
+    real = refprep.process_image
+    monkeypatch.setattr(refprep, "process_image", lambda data, *a, **k: (seen.append(data), real(data, *a, **k))[1])
+    ref = _photo()
+    await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 512, "confirmed": True})
+    await wavespeed.control_preview({"image": ref, "mode": "depth", "res": 512, "confirmed": True, "fresh": True})
+    assert wavespeed._map_steps(_job(ref, "depth")) == []
+    await wavespeed.submit(_job(ref, "depth"))
+    assert [m for m, _ in maps["submits"]].count(DEPTH) == 2
+    assert seen[-1] is seen[1] and seen[-1] is wavespeed._map_cache[(ref, "depth", 512)]
+
+
+def test_reextract_estimate_includes_extraction(maps):
+    ref = _photo()
+    q = {"image": ref, "mode": "depth", "res": 512}
+    wavespeed._map_cache[(ref, "depth", 512)] = b"old"
+    assert wavespeed.preview_estimate(q) == []
+    assert wavespeed.preview_estimate({**q, "fresh": True}) == [refprep.CLOUD_MAP["depth"][0]]
+
+
+def test_ui_sends_fresh_on_reextract():
+    root = os.path.join(os.path.dirname(__file__), "..", "src")
+    modes = open(os.path.join(root, "refModes.ts"), encoding="utf-8").read()
+    assert "previewed.has(seen) ? { fresh: true }" in modes and "previewed.add(seen)" in modes

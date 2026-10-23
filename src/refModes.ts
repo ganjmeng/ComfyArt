@@ -68,10 +68,14 @@ export function modesFor(model: ModelDef): RefMode[] {
 
 export const PREVIEW_TIMEOUT_MS = 60_000
 
+// #81: (src, mode, res) already previewed; asking again is 「重新提取」, which must bypass the backend map cache
+const previewed = new Set<string>()
+
 /** Upstream previewControl, now a cloud extraction (#81): the backend builds the same control map the job uses. */
 export async function previewControl(src: string, mode: RefMode, res: number): Promise<string> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
-  const inputs = { image: annotated(src), mode: mode.id, res }
+  const seen = `${src}\n${mode.id}\n${res}`
+  const inputs = { image: annotated(src), mode: mode.id, res, ...(previewed.has(seen) ? { fresh: true } : {}) }
   // #81: each request gives up after PREVIEW_TIMEOUT_MS so the button comes back with an error instead of spinning
   const send = async (body: object) => {
     const ctl = new AbortController()
@@ -93,6 +97,7 @@ export async function previewControl(src: string, mode: RefMode, res: number): P
     res1 = await send({ inputs: { ...inputs, confirmed: true } })
   }
   if (!res1.blob) throw new Error(res1.err?.error?.message ?? `preview failed: ${res1.r.status}`)
+  previewed.add(seen)
   return URL.createObjectURL(res1.blob)
 }
 
