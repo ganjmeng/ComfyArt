@@ -152,4 +152,46 @@ def test_reextract_estimate_includes_extraction(maps):
 def test_ui_sends_fresh_on_reextract():
     root = os.path.join(os.path.dirname(__file__), "..", "src")
     modes = open(os.path.join(root, "refModes.ts"), encoding="utf-8").read()
-    assert "previewed.has(seen) ? { fresh: true }" in modes and "previewed.add(seen)" in modes
+    assert "wantsFresh(issued, seen, shownPreviews())" in modes and "issued.set(seen, url)" in modes
+
+
+def test_ui_fresh_follows_button_state():
+    """#109 behaviour: run src/refFresh.ts under node; fresh only while the issued preview is displayed."""
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node not installed")
+    path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "refFresh.ts"))
+    script = f"""
+const {{ previewKey, wantsFresh }} = await import({path!r});
+const k = previewKey('a.png', 'depth', 512), issued = new Map();
+const first = wantsFresh(issued, k, []);
+issued.set(k, 'blob:1');
+console.log(JSON.stringify([
+  first,                                                   // 预览控制图
+  wantsFresh(issued, k, ['blob:1']),                       // preview shown: 重新提取
+  wantsFresh(issued, k, []),                               // panel closed and reopened: 预览控制图
+  wantsFresh(issued, previewKey('a.png', 'depth', 1024), ['blob:1']),  // other res
+]));
+"""
+    r = subprocess.run([node, "--experimental-strip-types", "--no-warnings", "--input-type=module", "-e", script],
+                       capture_output=True, text=True, timeout=30)
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.strip() == "[false,true,false,false]"
+
+
+async def test_preview_confirm_uses_preview_estimate(maps, monkeypatch):
+    """#109: control_preview asks for confirmation exactly when preview_estimate reports a paid call."""
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.001)
+    calls = []
+    real = wavespeed.preview_estimate
+    monkeypatch.setattr(wavespeed, "preview_estimate", lambda q: calls.append(q) or real(q))
+    ref = _photo()
+    q = {"image": ref, "mode": "depth", "res": 512}
+    await wavespeed.control_preview({**q, "confirmed": True})  # fills the cache
+    await wavespeed.control_preview(q)  # cached: estimate empty, no confirm, no call
+    monkeypatch.setattr(wavespeed, "preview_estimate", lambda q: calls.append(q) or [refprep.CLOUD_MAP["depth"][0]])
+    with pytest.raises(wavespeed.WaveSpeedError) as e:
+        await wavespeed.control_preview(q)  # estimate says paid -> 409 even though cached
+    assert e.value.status == 409 and len(calls) == 2 and [m for m, _ in maps["submits"]] == [DEPTH]

@@ -3,6 +3,7 @@ import type { GeneratorShape } from './shapes/GeneratorShape'
 import { t } from './i18n'
 import { annotated } from './workflows'
 import { api, askCost } from './comfy'
+import { previewKey, wantsFresh } from './refFresh'
 
 export interface RefMode {
   id: string
@@ -68,14 +69,15 @@ export function modesFor(model: ModelDef): RefMode[] {
 
 export const PREVIEW_TIMEOUT_MS = 60_000
 
-// #81: (src, mode, res) already previewed; asking again is 「重新提取」, which must bypass the backend map cache
-const previewed = new Set<string>()
+// #81/#109: last preview URL per (src, mode, res); fresh only while that preview is still displayed (button shows 重新提取)
+const issued = new Map<string, string>()
+const shownPreviews = () => Array.from(document.querySelectorAll<HTMLImageElement>('img.ca-refctl__preview'), (i) => i.getAttribute('src') ?? '')
 
 /** Upstream previewControl, now a cloud extraction (#81): the backend builds the same control map the job uses. */
 export async function previewControl(src: string, mode: RefMode, res: number): Promise<string> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
-  const seen = `${src}\n${mode.id}\n${res}`
-  const inputs = { image: annotated(src), mode: mode.id, res, ...(previewed.has(seen) ? { fresh: true } : {}) }
+  const seen = previewKey(src, mode.id, res)
+  const inputs = { image: annotated(src), mode: mode.id, res, ...(wantsFresh(issued, seen, shownPreviews()) ? { fresh: true } : {}) }
   // #81: each request gives up after PREVIEW_TIMEOUT_MS so the button comes back with an error instead of spinning
   const send = async (body: object) => {
     const ctl = new AbortController()
@@ -97,8 +99,9 @@ export async function previewControl(src: string, mode: RefMode, res: number): P
     res1 = await send({ inputs: { ...inputs, confirmed: true } })
   }
   if (!res1.blob) throw new Error(res1.err?.error?.message ?? `preview failed: ${res1.r.status}`)
-  previewed.add(seen)
-  return URL.createObjectURL(res1.blob)
+  const url = URL.createObjectURL(res1.blob)
+  issued.set(seen, url)
+  return url
 }
 
 export interface UsedRef { src: string; mode: RefMode }

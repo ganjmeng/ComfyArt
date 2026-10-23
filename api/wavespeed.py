@@ -1016,8 +1016,10 @@ async def control_preview(inputs: dict) -> bytes:
     res = int(inputs.get("res") or 1024)
     # #81: `fresh` is 「重新提取」 — skip the cache, re-run (and re-confirm) the paid extraction
     fresh = bool(inputs.get("fresh"))
-    if mode in refprep.CLOUD_MAP and not inputs.get("confirmed") and (fresh or (image, mode, res) not in _map_cache):
-        price, _ = await quote(resolve_model(refprep.CLOUD_MAP[mode][0], None), {})
+    # #109: one rule — preview_estimate says which map calls this request pays for (none when cached, unless fresh)
+    paid = [] if inputs.get("confirmed") else preview_estimate({"image": image, "mode": mode, "res": res, "fresh": fresh})
+    if paid:
+        price, _ = await quote(resolve_model(paid[0], None), {})
         if price is not None and needs_confirm(price):
             raise WaveSpeedError(f"control map preview costs about ${price}; confirm to continue", 409, confirm=float(price))
     if mode in refprep.COLOR:
