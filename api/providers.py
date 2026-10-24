@@ -16,6 +16,19 @@ from .settings import get_setting
 NO_KEY_DETAIL = "no-wavespeed-key"
 
 
+NO_KEY_ERROR = {
+    "zh": "还没有设置 WaveSpeed Key，请先在 WaveSpeed Key 设置里填写。",
+    "en": "No WaveSpeed key yet: set one in WaveSpeed key settings.",
+}
+
+
+def no_key_error(lang: str) -> str:
+    """#227: the no-Key chat error follows the UI language; bilingual only when the language is unknown."""
+    if lang in NO_KEY_ERROR:
+        return NO_KEY_ERROR[lang]
+    return f"{NO_KEY_ERROR['zh']} / {NO_KEY_ERROR['en']}"
+
+
 class AgentLlmProvider(LocalLlmProvider):
     """The unchanged agent loop (built-in ComfyArt Agent); the key lookup also covers the WaveSpeed LLM
     default (#120). #219: no WaveSpeed key -> a clear status instead of a raw 401, and a saved model name
@@ -46,8 +59,7 @@ class AgentLlmProvider(LocalLlmProvider):
         if base and is_wavespeed_url(base) and not llm_api_key(base):
             from ..bot.providers import TurnResult
 
-            return TurnResult(error="还没有设置 WaveSpeed Key，请先在 WaveSpeed Key 设置里填写。"
-                                    " / No WaveSpeed key yet: set one in WaveSpeed key settings.")
+            return TurnResult(error=no_key_error(getattr(turn, "lang", "")))
         return await super().send(turn, emit, handle)
 
     async def list_models(self) -> list[str]:

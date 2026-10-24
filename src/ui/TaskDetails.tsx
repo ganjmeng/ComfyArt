@@ -5,6 +5,7 @@ import { fileSrc } from '../jobs'
 import { Icons } from './icons'
 import { Modal } from './Modal'
 import { t } from '../i18n'
+import { stepState } from './stepState'
 
 const AUDIO_FILES = ['flac', 'mp3', 'wav', 'ogg', 'opus', 'm4a']
 
@@ -46,7 +47,8 @@ function steps(blocks: BotBlock[]): Step[] {
     if (b.type === 'task') return [{ label: b.label ?? t('common.generate'), detail: b.detail?.prompt ?? '', state: b.error ? t('chatMessage.failed') : b.srcs ? t('common.done') : t('taskDetails.generating') }]
     if (b.type !== 'tool_use') return []
     const r = b.id ? results.get(b.id) : blocks[i + 1]?.type === 'tool_result' ? blocks[i + 1] : undefined
-    const state = !r ? t('agentPanel.inProgress') : r.status === 'error' ? t('chatMessage.failed') : r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : t('common.done')
+    const kind = stepState(r)
+    const state = !r ? t('agentPanel.inProgress') : kind === 'cancelled' ? t('chatMessage.cancelled') : kind === 'error' ? t('chatMessage.failed') : r.duration_ms != null ? `${(r.duration_ms / 1000).toFixed(1)}s` : t('common.done')
     return [{ label: toolLabel(b.name), detail: JSON.stringify(b.input ?? {}), state, result: r?.status === 'error' ? r.text : undefined }]
   })
 }

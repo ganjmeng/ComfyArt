@@ -232,7 +232,8 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
     chat_store.update_message(chat_id, state.message_id, blocks=state.blocks, status=status,
                               resume_token_after=token, usage=usage)
     updates: dict = {"resume_token": token} if token else {}
-    if not (chat.get("title") or "").strip():
+    # #227: a failed/aborted turn (e.g. no WaveSpeed Key) must not name the chat or its board
+    if status == "done" and not (chat.get("title") or "").strip():
         updates["title"] = _derive_title(text)
     if updates:
         chat_store.update_chat(chat_id, **updates)
