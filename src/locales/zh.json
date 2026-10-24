@@ -782,6 +782,7 @@
   "mockup.x": "左右",
   "mockup.y": "上下",
   "modePanel.areasSelectedEachWillBecome": "已框选 {0} 个区域，将拆分为独立图层",
+  "modePanel.angleLimit": "最大 90°，不支持背面",
   "modePanel.back": "背面",
   "modePanel.brush": "笔刷",
   "modePanel.cameraView": "相机",
