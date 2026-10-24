@@ -274,6 +274,7 @@ const reducers: Record<string, (e: any) => void> = {
   }),
   turn_tool_use: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, { type: 'tool_use', name: e.name, input: e.input, id: e.id })),
   turn_tool_result: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, { type: 'tool_result', name: e.name, text: e.text, status: e.status, id: e.id, duration_ms: e.duration_ms })),
+  turn_retry: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block)),
   turn_ask: (e) => {
     patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, { type: 'ask', status: 'pending', ...e }))
     if (chatsAtom.get().some((c) => c.id === e.chat_id)) void notify({ kind: 'suggestion', title: t('bot.agentIsWaitingForYour'), body: e.prompt, chat: e.chat_id })

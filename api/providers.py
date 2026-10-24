@@ -1,3 +1,5 @@
+import os
+
 from ..bot.providers import ProviderStatus
 from ..bot import (
     ClaudeCodeProvider,
@@ -61,6 +63,12 @@ class AgentLlmProvider(LocalLlmProvider):
 
             return TurnResult(error=no_key_error(getattr(turn, "lang", "")))
         return await super().send(turn, emit, handle)
+
+    def _max_steps(self) -> int:
+        from ..bot.local_llm import _MAX_STEPS_ENV, max_steps_from
+        if os.environ.get(_MAX_STEPS_ENV):
+            return super()._max_steps()
+        return max_steps_from(get_setting("bot-max-steps"))
 
     async def list_models(self) -> list[str]:
         models = await super().list_models()

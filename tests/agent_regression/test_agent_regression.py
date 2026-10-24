@@ -62,6 +62,8 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
                     selection=list(case.selection), brand_kit=case.brand_kit)
     monkeypatch.setattr(canvas, "submit_command", page)
     monkeypatch.setattr(local_llm, "_LLM_TIMEOUT_S", 0.3)  # the timeout fault sleeps 1 s
+    monkeypatch.setattr(local_llm, "_RETRY_BACKOFF_S", (0.01, 0.01))  # #232 retry waits, shortened
+    monkeypatch.setattr(local_llm, "_RATE_LIMIT_WAIT_S", (0.01, 0.01))
     caplog.set_level(logging.DEBUG)
     ACTIVE_TURNS.clear(); QUEUED.clear(); paid_guard.TURNS.clear()
     chat = chat_store.create_chat(user="default", project="p231", provider="local-llm")
@@ -90,6 +92,7 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
         "tools": [str(b.get("name", "")).split("__")[-1] for b in uses], "uses": uses, "results": results,
         "status": last["status"], "reply": "".join(b.get("text", "") for b in last["blocks"] if b["type"] == "text").strip(),
         "notices": [b["text"] for b in last["blocks"] if b["type"] == "notice"],
+        "retries": [b for b in blocks if b["type"] == "retry"],
         "logs": caplog.text + out + err + json.dumps(messages, ensure_ascii=False), "usage": usage,
         "messages": len(llm.requests[-1]["messages"]) if llm.requests else 0,
     }
@@ -117,6 +120,8 @@ def _check(r: dict) -> None:
         assert r["reply"] and bool(CJK.search(r["reply"])) == (lang == "zh"), r["reply"]
     if c.error:
         assert r["notices"] and r["notices"][-1].startswith(c.error[lang]), r["notices"]
+        # #232: the zh UI accepts only Chinese errors, the en UI only English ones
+        assert bool(CJK.search(r["notices"][-1])) == (lang == "zh"), r["notices"]
     if c.reply:
         assert c.reply[lang] in r["reply"]
     # 4. paid calls == expected (no double charge), all with the (sentinel) key, none to the real hosts
@@ -195,11 +200,28 @@ def _x_slides(r):
 def _x_cancel(r):
     first, second = r["results"][:2]
     assert json.loads(first["text"])["cancelled"] is True  # the step shows 已取消 / Cancelled
+    assert first["status"] == second["status"] == "cancelled"  # #232: never "success"
     # the guard refusal reaches the model as text (local_llm marks only transport errors as is_error)
     assert second["text"].startswith("[tool error]") and ("已取消" in second["text"] or "Cancelled" in second["text"])  # retry refused
     assert r["page"].confirms == 1  # one confirm dialog, no second ask
     loc = {lg: json.loads((ROOT / "src" / "locales" / f"{lg}.json").read_text()) for lg in ("zh", "en")}
     assert loc["zh"]["chatMessage.cancelled"] == "已取消" and loc["en"]["chatMessage.cancelled"] == "Cancelled"
+
+
+def _retry_kind(r):
+    return "5xx" if r["case"].id.split("-")[1] == "500" else r["case"].id.split("-")[1]
+
+
+def _x_retry_rows(r):
+    """#232: two retry rows (attempt 1/2, 2/2) of the fault kind; the paid tool ran once."""
+    rows = r["retries"]
+    assert [(b["kind"], b["attempt"], b["max"]) for b in rows] == [(_retry_kind(r), 1, 2), (_retry_kind(r), 2, 2)]
+    assert all(b["until"] > 0 and b["wait_s"] >= 0 for b in rows)
+
+
+def _x_fail_done(r):
+    _x_retry_rows(r)
+    assert ("已完成：生成图像" if r["lang"] == "zh" else "Done so far: Generate image.") in r["notices"][-1]
 
 
 EXTRA = {k[3:]: v for k, v in globals().items() if k.startswith("_x_")}
