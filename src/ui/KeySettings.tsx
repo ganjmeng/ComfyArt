@@ -81,7 +81,7 @@ export function KeySettings() {
           </>
         )}
         <label className="ca-rename__field">
-          <span>{t('wsKey.confirmUsd', usd.trim() || 'X')}</span>
+          <span>{t('wsKey.confirmUsd', usd.trim() && Number.isFinite(Number(usd)) ? thresholdUsd(Number(usd)) : 'X')}</span>
           <input className="ca-panel__input" data-testid="ws-confirm-usd" inputMode="decimal" value={usd} onChange={(e) => setUsd(e.target.value)} onBlur={saveUsd} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') saveUsd() }} />
         </label>
         {usdErr && <div className="ca-chat__hint" role="alert" style={{ color: 'var(--ca-error-text)' }}>{usdErr}</div>}

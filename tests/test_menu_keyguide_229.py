@@ -60,3 +60,4 @@ def test_threshold_shows_two_decimals(tmp_path):
     assert got == ["0.50", "0.00", "1.00", "2.25", "10.00", "0.13", "0.00"]
     ks = (ROOT / "src/ui/KeySettings.tsx").read_text()
     assert "setUsd(thresholdUsd(v))" in ks and "setUsd(thresholdUsd(x))" in ks and "String(v)" not in ks
+    assert "t('wsKey.confirmUsd', usd.trim() && Number.isFinite(Number(usd)) ? thresholdUsd(Number(usd)) : 'X')" in ks  # label reads $0.50
