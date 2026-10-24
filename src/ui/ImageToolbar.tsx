@@ -246,7 +246,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
             <button type="button" className="ca-menu__item" onClick={() => setPrefs({ pinned: DEFAULT_PINNED, names: true })}><span className="ca-menu__grow">{t('imageToolbar.restoreDefaults')}</span></button>
           </div>
         ) : moreView?.menu ? moreView.menu : (
-        <div className="ca-menu">
+        <div className="ca-menu ca-menu--image">
           {unpinned.map((t) => <Item key={t.id} icon={t.icon} label={t.label} onClick={t.menu ? () => setInMore(t.id) : close(t.run!)} />)}
           {frame?.type === 'frame' && <Item icon={Icons.frame} label={t('imageToolbar.fillArtboard')} onClick={close(() => fitFrame(true))} />}
           {frame?.type === 'frame' && <Item icon={Icons.frame} label={t('imageToolbar.fitArtboard')} onClick={close(() => fitFrame(false))} />}

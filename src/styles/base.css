@@ -13,6 +13,8 @@
   --ca-empty-icon: rgba(0,0,0,.12);
   --ca-shine: #f4f4f4;
   --ca-shadow: 0 4px 16px rgba(0,0,0,.08);
+  --ca-shadow-menu: 0 16px 24px -8px rgba(0,0,0,.06), 0 4px 8px -4px rgba(0,0,0,.04), 0 1px 1px 0 rgba(0,0,0,.02);
+  --ca-border-w: 1px;
   --ca-error-bg: #fee2e2;
   --ca-error-text: #991b1b;
   --ca-dim: rgba(255,255,255,.7);
@@ -31,6 +33,8 @@
   --ca-empty-icon: rgba(255,255,255,.16);
   --ca-shine: #2e2e2e;
   --ca-shadow: 0 4px 16px rgba(0,0,0,.5);
+  --ca-shadow-menu: var(--ca-shadow);
+  --ca-border-w: .5px;
   --ca-error-bg: #4a1d1d;
   --ca-error-text: #fca5a5;
   --ca-dim: rgba(0,0,0,.6);
@@ -124,6 +128,9 @@ body { font-family: var(--ca-font); color: var(--ca-text); }
 .ca-menu__item:disabled { opacity: .4; cursor: default; background: transparent; }
 .ca-menu__grow { flex: 1; }
 .ca-menu__key { color: var(--ca-muted); padding-left: 24px; }
+/* Reusable image-menu style (image toolbar "more" menu and future submenus such as #244's). Light theme only; in dark these rules don't apply and .ca-menu renders unchanged. */
+:root:not([data-theme="dark"]) .ca-menu--image { border-width: var(--ca-border-w); max-width: 240px; box-shadow: var(--ca-shadow-menu); }
+:root:not([data-theme="dark"]) .ca-menu--image .ca-menu__item { align-items: flex-start; height: auto; min-height: 32px; padding: 6px 8px; white-space: normal; overflow-wrap: break-word; }
 
 .ca-label {
   position: absolute;
