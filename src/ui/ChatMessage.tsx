@@ -10,6 +10,7 @@ import { Markdown } from './Markdown'
 import { Thumb } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { t } from '../i18n'
+import { stepState } from './stepState'
 
 const GEN_TOOLS = new Set(['generate_image', 'generate_video', 'edit_image', 'animate_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers', 'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer', 'extend_video', 'upscale_video', 'remove_video_background', 'generate_music', 'generate_sound_effect', 'text_to_speech', 'image_to_3d', 'edit_elements', 'create_mockup', 'create_slides'])
 
@@ -28,11 +29,12 @@ function summary(b: BotBlock): string {
 function Step({ editor, use, result, thumbs = true }: { editor: Editor; use: BotBlock; result?: BotBlock; thumbs?: boolean }) {
   const [open, setOpen] = useState(false)
   const outputs = result && thumbs ? outputsOf([result]) : []
-  const state = !result ? t('chatMessage.inProgress') : result.status === 'error' ? t('chatMessage.failed') : result.duration_ms != null ? `${(result.duration_ms / 1000).toFixed(1)}s` : ''
+  const kind = stepState(result)
+  const state = kind === 'running' ? t('chatMessage.inProgress') : kind === 'cancelled' ? t('chatMessage.cancelled') : kind === 'error' ? t('chatMessage.failed') : result?.duration_ms != null ? `${(result.duration_ms / 1000).toFixed(1)}s` : ''
   return (
-    <div className="ca-chat__tool" data-error={result?.status === 'error' || undefined}>
+    <div className="ca-chat__tool" data-error={kind === 'error' || undefined} data-cancelled={kind === 'cancelled' || undefined}>
       <button type="button" className="ca-chat__step" onClick={() => setOpen(!open)}>
-        <span className="ca-icon">{GEN_TOOLS.has(toolName(use.name)) ? Icons.genImage : result?.status === 'error' ? Icons.close : result ? Icons.check : Icons.agent}</span>
+        <span className="ca-icon">{GEN_TOOLS.has(toolName(use.name)) ? Icons.genImage : kind === 'error' ? Icons.close : kind === 'done' ? Icons.check : Icons.agent}</span>
         <span>{toolLabel(use.name)}</span>
         <span className="ca-chat__arg">{summary(use)}</span>
         <span className="ca-chat__status">{state}</span>
