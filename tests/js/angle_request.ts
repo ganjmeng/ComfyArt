@@ -13,7 +13,10 @@ const cases = [
   { h: 0, v: 80, z: 7 },
   { h: 180, v: -40, z: 2.9 },
   { h: 359, v: 0, z: 5 },
-  { h: 400, v: 0, z: 1.3 },
+  { h: 360, v: 0, z: 1.3 },
+  { h: 400, v: 0, z: 8 },
+  { h: Number.NaN, v: 0, z: 5 },
+  { h: Number.POSITIVE_INFINITY, v: 0, z: 5 },
 ]
 function nearest(h: number): string {
   const az = ((h % 360) + 360) % 360
@@ -31,7 +34,7 @@ const out = cases.map((c) => {
     throw new Error(`panel caption diverges from distance at z=${c.z}: ${caption}`)
   }
   const view = nearest(params.horizontal_angle)
-  if (!caption.includes(view)) throw new Error(`caption "${caption}" does not match sent ${params.horizontal_angle} (${view})`)
-  return { h: c.h, v: c.v, z: c.z, ...params, caption }
+  if (Number.isFinite(c.h) && !caption.includes(view)) throw new Error(`caption "${caption}" does not match sent ${params.horizontal_angle} (${view})`)
+  return { h: Number.isFinite(c.h) ? c.h : Object.is(c.h, Number.NaN) ? 'NaN' : 'Infinity', v: c.v, z: c.z, ...params, caption }
 })
 console.log(JSON.stringify(out))

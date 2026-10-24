@@ -162,11 +162,6 @@
 }
 .ca-panel[data-wide] { width: 480px; padding: 12px 16px; }
 .ca-panel:has(.ca-angle) { width: 320px; }
-.ca-panel__body { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
-.ca-panel[data-scroll] { overflow: hidden; }
-.ca-panel[data-scroll] .ca-panel__body { overflow-y: auto; flex: 1 1 auto; }
-.ca-panel[data-scroll] .ca-panel__foot { flex: none; }
-.ca-panel__note { margin: 0; color: var(--ca-muted); font-size: 12px; line-height: 16px; }
 .ca-angle { display: flex; flex-direction: column; gap: 6px; }
 .ca-angle__bar { display: flex; gap: 6px; }
 .ca-angle__inset { margin-left: auto; }

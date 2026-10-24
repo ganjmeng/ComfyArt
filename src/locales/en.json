@@ -788,7 +788,6 @@
   "mockup.x": "Left–right",
   "mockup.y": "Up–down",
   "modePanel.areasSelectedEachWillBecome": "{0} areas selected, each will become its own layer",
-  "modePanel.angleLimit": "Up to 90°, back view not supported",
   "modePanel.back": "Back",
   "modePanel.brush": "Brush",
   "modePanel.cameraView": "Camera",

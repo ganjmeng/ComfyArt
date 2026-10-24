@@ -24,10 +24,10 @@ const RATIO_GROUPS: [string, [string, number][]][] = [
 ]
 const EXPAND_LIMIT = 4096
 const ANGLE_PRESETS: [string, Partial<{ h: number; v: number; z: number }>][] = [
-  [t('modePanel.front'), { h: 0, v: 0 }], [t('modePanel.frontLeft'), { h: -45, v: 0 }], [t('modePanel.frontRight'), { h: 45, v: 0 }], [t('modePanel.left'), { h: -90, v: 0 }], [t('modePanel.right'), { h: 90, v: 0 }],
+  [t('modePanel.front'), { h: 0, v: 0 }], [t('modePanel.frontLeft'), { h: 315, v: 0 }], [t('modePanel.frontRight'), { h: 45, v: 0 }], [t('modePanel.left'), { h: 270, v: 0 }], [t('modePanel.right'), { h: 90, v: 0 }], [t('modePanel.back'), { h: 180, v: 0 }],
   [t('modePanel.top'), { v: 50 }], [t('modePanel.lowAngle'), { v: -25 }], [t('modePanel.closeUp'), { z: 8 }], [t('modePanel.medium'), { z: 5 }], [t('modePanel.wide'), { z: 1 }],
 ]
-const ALL_ANGLES = [-90, -45, 45, 90]
+const ALL_ANGLES = [315, 45, 270, 90]
 
 function ocrStatusText(status: OcrStatus | undefined): string {
   if (!status) return t('modePanel.detectingText')
@@ -106,7 +106,6 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
   const below = PROMPT_MODES.includes(mode)
   let left: number
   let top: number
-  let maxH: number | undefined
   if (below) {
     left = Math.min(Math.max(rect.l, EDGE), host.width - size.w - EDGE)
     top = rect.b + GAP
@@ -115,15 +114,13 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
     const s = (rect.r - rect.l) / iw
     const right = rect.r + (mode === 'expand' ? pads.r * s : 0)
     left = right + GAP + size.w > host.width - EDGE ? Math.max(EDGE, rect.l - size.w - GAP) : right + GAP
-    const dock = editor.getContainer().querySelector('.ca-dock')
-    const dockTop = dock ? dock.getBoundingClientRect().top - host.top : host.height
-    const bottomLimit = dockTop - GAP
+    top = Math.min(Math.max(rect.t, EDGE), host.height - size.h - EDGE)
     if (mode === 'angles') {
-      const cap = Math.max(160, bottomLimit - EDGE)
-      top = Math.min(Math.max(rect.t, EDGE), Math.max(EDGE, bottomLimit - Math.min(size.h, cap)))
-      maxH = Math.max(160, bottomLimit - top)
-    } else {
-      top = Math.min(Math.max(rect.t, EDGE), host.height - size.h - EDGE)
+      const dock = editor.getContainer().querySelector('.ca-dock')
+      const dockTop = dock ? dock.getBoundingClientRect().top - host.top : host.height
+      const bottom = dockTop - GAP
+      // Full panel, no scroll. Shift it up so the generate button clears the dock.
+      top = Math.min(top, Math.max(EDGE, bottom - size.h))
     }
   }
 
@@ -194,8 +191,7 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
       ref={panel}
       className="ca-panel"
       data-wide={below || undefined}
-      data-scroll={mode === 'angles' || undefined}
-      style={{ left, top, maxHeight: maxH }}
+      style={{ left, top }}
       onPointerDown={(e) => e.stopPropagation()}
       onWheel={(e) => e.stopPropagation()}
     >
@@ -208,7 +204,6 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
         </>
       ) : (
         <>
-          <div className="ca-panel__body">
           <div className="ca-panel__head">
             <span>{TITLES[mode]}</span>
             {mode === 'erase' && (
@@ -245,8 +240,7 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
               <div className="ca-panel__chips">
                 {ANGLE_PRESETS.map(([label, patch]) => <button key={label} type="button" className="ca-panel__chip" onClick={() => setAngle({ ...angle, ...patch })}>{label}</button>)}
               </div>
-              <Slider label={t('modePanel.horizontal')} value={angle.h} min={-90} max={90} onChange={(v) => setAngle({ ...angle, h: v })} />
-              <p className="ca-panel__note">{t('modePanel.angleLimit')}</p>
+              <Slider label={t('modePanel.horizontal')} value={angle.h} min={0} max={360} onChange={(v) => setAngle({ ...angle, h: v })} />
               <Slider label={t('modePanel.vertical')} value={angle.v} min={-30} max={60} onChange={(v) => setAngle({ ...angle, v })} />
               <Slider label={t('modePanel.distance')} value={angle.z} min={0} max={10} step={0.1} onChange={(v) => setAngle({ ...angle, z: v })} />
               <button type="button" className="ca-panel__secondary" onClick={allAngles}>{t('modePanel.generate4AnglesAtOnce')}</button>
@@ -277,7 +271,6 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
               <textarea className="ca-panel__prompt ca-panel__prompt--boxed" value={prompt} placeholder={t('modePanel.describeTheExpandedAreaOptional')} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
             </>
           )}
-          </div>
           <div className="ca-panel__foot">
             <button type="button" className="ca-panel__secondary" onClick={exitMode}>{t('common.cancel')}</button>
             <button type="button" className="ca-panel__primary" disabled={!canSubmit} onClick={submit}>{mode === 'erase' ? t('modePanel.erase') : mode === 'separate' ? t('modePanel.separate') : t('common.generate')}</button>
