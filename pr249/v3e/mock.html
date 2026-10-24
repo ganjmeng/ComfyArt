@@ -1,0 +1,101 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--ca-font:Inter,-apple-system,"PingFang SC","Noto Sans CJK SC",sans-serif;--ca-float:#fff;--ca-border:rgba(0,0,0,.08);--ca-text:rgba(0,0,0,.9);--ca-muted:rgba(0,0,0,.4);--ca-hover:rgba(0,0,0,.05);--ca-field:rgba(0,0,0,.04);--ca-strong:rgba(0,0,0,.9);--ca-shadow:0 16px 24px -8px rgba(0,0,0,.06),0 4px 8px -4px rgba(0,0,0,.04);--sub:rgba(0,0,0,.55)}
+*{box-sizing:border-box}html,body{margin:0;background:#e8e8e8;font:400 13px/20px var(--ca-font);color:var(--ca-text)}
+body{display:flex;justify-content:center;align-items:flex-start;padding:24px;min-height:100vh}
+.panel{width:320px;padding:16px;border-radius:16px;background:var(--ca-float);border:.5px solid var(--ca-border);box-shadow:var(--ca-shadow);display:flex;flex-direction:column;gap:12px}
+.head{display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:15px}
+.head__reset{width:24px;height:24px;padding:2px;border:none;border-radius:6px;background:transparent;color:var(--ca-muted);cursor:pointer;display:grid;place-items:center}
+.head__reset:hover{background:var(--ca-hover);color:var(--ca-text)}
+.head__reset svg{width:16px;height:16px}
+.angle{display:flex;flex-direction:column;gap:6px}
+.bar{display:flex;gap:6px}
+.chip{height:28px;padding:0 10px;border:.5px solid var(--ca-border);border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.chip:hover{background:var(--ca-hover)}.chip[data-on]{border-color:var(--ca-strong)}
+.chip.inset{margin-left:auto}.chip:disabled{opacity:.5;cursor:default}
+.seg{display:flex;background:var(--ca-field);border-radius:8px;padding:2px}.seg div{flex:1;text-align:center;height:28px;line-height:28px;border-radius:6px;color:var(--sub)}.seg .on{background:var(--ca-float);color:var(--ca-text);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.hda{display:flex;align-items:center;gap:2px}.pvb{font-size:12px;font-weight:500;color:var(--sub);padding:0 6px;height:24px;line-height:24px;border-radius:6px}
+.view{height:240px;border-radius:10px;overflow:hidden;background:var(--ca-field)}
+.view canvas{display:block;width:100%!important;height:100%!important}
+.prompt{text-align:center;overflow:hidden;color:var(--ca-muted);font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;width:100%}
+.pch{height:26px;padding:0;border-radius:8px;background:var(--ca-field);border:none;color:var(--sub);font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;line-height:1;white-space:nowrap;cursor:pointer}
+.pch[data-on]{background:var(--ca-float);color:var(--ca-text);box-shadow:inset 0 0 0 1px var(--ca-strong)}
+.row{display:grid;grid-template-columns:max-content 1fr 40px;align-items:center;gap:8px;color:var(--ca-muted)}
+.row .val{text-align:right;color:var(--ca-text);font-variant-numeric:tabular-nums}
+.tr{position:relative;height:16px}.rail{position:absolute;left:0;right:0;top:7px;height:2px;border-radius:1px;background:rgba(0,0,0,.12)}
+.fill{position:absolute;left:0;top:7px;height:2px;background:var(--ca-strong);border-radius:1px}
+.th{position:absolute;top:2px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#fff;border:2px solid var(--ca-strong)}
+.four{height:36px;border-radius:10px;border:.5px solid var(--ca-border);background:transparent;display:flex;align-items:center;justify-content:center;font:inherit;cursor:pointer}
+.four:hover{background:var(--ca-hover)}
+.foot{display:flex;gap:8px}.foot>button{flex:1;height:36px;border-radius:10px;font:inherit;font-size:14px;cursor:pointer}
+.cancel{border:.5px solid var(--ca-border);background:transparent}.go{border:none;background:var(--ca-strong);color:#fff}
+</style></head><body>
+<div class="panel" id="panel">
+  <div class="head"><span>多角度</span><span class="hda">
+    <button type="button" class="head__reset" title="重置" aria-label="reset">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a5 5 0 1 0 1.5-3.5"/><path d="M3 2.5V5h2.5"/></svg>
+    </button><span class="pvb">预览</span></span>
+  </div>
+  <div class="angle">
+    <div class="seg" id="bar"></div>
+    <div class="view" id="view"></div>
+    <div class="prompt" id="prompt"></div>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div id="sliders"></div>
+  <button type="button" class="four">一次生成 4 个角度</button>
+  <div class="foot"><button type="button" class="cancel">取消</button><button type="button" class="go">生成</button></div>
+</div>
+<script type="module">
+import { buildScene, COLORS_MAIN, COLORS_V3D } from './scene.js';
+const q = new URLSearchParams(location.search);
+const view0 = q.get('view') || 'camera'; // camera | object
+const palette = q.get('palette') === 'main' ? COLORS_MAIN : COLORS_V3D;
+const angle = { h: 45, v: 0, z: 5 };
+let inset = true;
+
+const AZ = [[0,'front view'],[45,'front-right quarter view'],[90,'right side view'],[135,'back-right quarter view'],[180,'back view'],[225,'back-left quarter view'],[270,'left side view'],[315,'front-left quarter view']];
+function promptText(h,v,z){
+  const az=((h%360)+360)%360;
+  const azKw=AZ.reduce((b,c)=>{const d=a=>Math.min(Math.abs(az-a),360-Math.abs(az-a));return d(c[0])<d(b[0])?c:b;})[1];
+  const el=v<=-15?'low-angle shot':v<=15?'eye-level shot':v<=45?'elevated shot':'high-angle shot';
+  const dist=z>=7?'close-up':z>=3?'medium shot':'wide shot';
+  return `${azKw} ${el} ${dist}`;
+}
+
+const labels={right:'右侧',left:'左侧',top:'顶面',bottom:'底面',back:'背面'};
+const scene = buildScene(document.getElementById('view'), palette, labels);
+scene.apply(angle); scene.setView(view0, inset); scene.render();
+requestAnimationFrame(()=>{ scene.apply(angle); scene.setView(view0, inset); scene.render(); });
+setTimeout(()=>{ scene.render(); }, 50);
+
+const bar = document.getElementById('bar');
+function renderBar(){bar.innerHTML=`<div class="${view0==='object'?'on':''}">主体</div><div class="${view0==='camera'?'on':''}">摄像头</div>`;}
+renderBar();
+
+const PRESETS=[['左前',{h:315,v:0}],['右前',{h:45,v:0}],['左侧',{h:270,v:0}],['右侧',{h:90,v:0}],['背面',{h:180,v:0}],['俯视',{v:50}],['仰视',{v:-25}],['特写',{z:8}],['中等',{z:5}],['广角',{z:1}]];
+const chips=document.getElementById('chips');
+PRESETS.forEach(([lab,patch])=>{
+  const b=document.createElement('button'); b.type='button'; b.className='pch'; b.textContent=lab;
+  const on = ('h' in patch ? patch.h===angle.h : true) && ('v' in patch ? patch.v===angle.v : true) && ('z' in patch ? patch.z===angle.z : true);
+  // only highlight exact angle matches for direction presets; for z-only when h/v match defaults loosely — match main: any patch keys
+  let match=true; for (const k of Object.keys(patch)) if (angle[k]!==patch[k]) match=false;
+  // Prefer single selected: 右前 for default
+  if (lab==='右前' && angle.h===45 && angle.v===0) match=true;
+  if (lab!=='右前' && angle.h===45 && angle.v===0 && angle.z===5 && 'h' in patch) match=false;
+  if (lab==='中等' && angle.z===5 && angle.h===45) match=false; // only 右前 selected at default
+  if (match && lab==='右前') b.dataset.on='';
+  chips.appendChild(b);
+});
+
+function slider(lab,val,min,max){
+  const pct=((val-min)/(max-min))*100;
+  return `<label class="row"><span>${lab}</span><div class="tr"><div class="rail"></div><div class="fill" style="width:${pct}%"></div><div class="th" style="left:${pct}%"></div></div><span class="val">${val}</span></label>`;
+}
+document.getElementById('sliders').innerHTML =
+  slider('水平', angle.h, 0, 360) +
+  slider('垂直', angle.v, -30, 60) +
+  slider('远近', angle.z, 0, 10);
+document.getElementById('prompt').textContent = '右前 · 平视 · 中景';
+document.getElementById('panel').dataset.ready='1';
+</script></body></html>
