@@ -20,7 +20,7 @@ import { ProjectHeader } from './ProjectHeader'
 import { detailsAtom } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { t } from '../i18n'
-import { keySettingsOpenAtom } from '../wavespeedKey'
+import { keySettingsOpenAtom, keyStatusAtom } from '../wavespeedKey'
 
 const NEAR_BOTTOM = 80
 
@@ -99,6 +99,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
   const messages = useValue(messagesAtom)
   const chat = useValue('current chat', () => chatsAtom.get().find((c) => c.id === chatIdAtom.get()) ?? null, [])
   const providers = useValue(providersAtom)
+  const keyStatus = useValue(keyStatusAtom)
   const enabled = useValue(botEnabledAtom)
   const dock = useValue(dockAtom)
   const hasFrame = useValue('chat frame', () => !!(chat && chatFrameOf(editor, chat.id, true)), [editor, chat?.id])
@@ -160,7 +161,8 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
             <button type="button" className="ca-panel__primary" onClick={() => botSettingsOpenAtom.set(true)}>{t('agentPanel.openAgentSettings')}</button>
           </div>
         )}
-        {enabled !== false && messages.length === 0 && providers.find((p) => p.id === (chat?.provider ?? BUILTIN_AGENT))?.detail === NO_KEY_DETAIL && (
+        {enabled !== false && messages.length === 0 && providers.find((p) => p.id === (chat?.provider ?? BUILTIN_AGENT))?.detail === NO_KEY_DETAIL && !keyStatus?.configured && (  // #229: hide as soon as a Key is saved
+
           <div className="ca-chat__notice" data-level="error">
             {t('agentPanel.noWavespeedKey')}{' '}
             <a href="#" onClick={(e) => { e.preventDefault(); keySettingsOpenAtom.set(true) }}>{t('agentPanel.setWavespeedKey')}</a>

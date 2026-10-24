@@ -8,6 +8,8 @@ import { errorText } from '../jobs'
 import { newProject, openView, type ProjectEntry } from '../projects'
 import { loadSkills, type Skill } from '../skills'
 import { Icons } from '../ui/icons'
+import { NoKeyNotice } from '../ui/NoKeyNotice'
+import { refreshKeyStatus } from '../wavespeedKey'
 import { isEnter } from '../ui/keys'
 import { Popover } from '../ui/Popover'
 import { loadEntries, ProjectCard } from './Projects'
@@ -42,6 +44,7 @@ export function Home() {
 
   useEffect(() => {
     input.current?.focus()
+    void refreshKeyStatus()
     void loadProviders().then(() => {
       const on = !!botEnabledAtom.get()
       setAgent(on)
@@ -86,6 +89,7 @@ export function Home() {
   return (
     <div className="ca-landing">
       <h1 className="ca-landing__title">{t('home.whatToDesign')}</h1>
+      {agent && <NoKeyNotice className="ca-landing__notice" />}
       <div
         className="ca-landing__box"
         data-drop={drop || undefined}
