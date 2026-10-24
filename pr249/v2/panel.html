@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>pr249-v2</title>
+<style>
+  :root {
+    --ca-font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --ca-float: #ffffff;
+    --ca-border: rgba(0,0,0,.07);
+    --ca-text: rgba(0,0,0,.9);
+    --ca-muted: rgba(0,0,0,.3);
+    --ca-hover: rgba(0,0,0,.06);
+    --ca-active: rgba(0,0,0,.08);
+    --ca-field: rgba(0,0,0,.04);
+    --ca-strong: rgba(0,0,0,.9);
+    /* #243 light: elevation-300 + 1px border */
+    --ca-shadow: 0 16px 24px -8px rgba(0,0,0,.06), 0 4px 8px -4px rgba(0,0,0,.04), 0 1px 1px 0 rgba(0,0,0,.02);
+    --ca-border-w: 1px;
+    --ca-track: rgba(0,0,0,.08);
+    --ca-thumb: #111;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ca-float: #161616;
+    --ca-border: rgba(255,255,255,.1);
+    --ca-text: rgba(255,255,255,.9);
+    --ca-muted: rgba(255,255,255,.4);
+    --ca-hover: rgba(255,255,255,.08);
+    --ca-active: rgba(255,255,255,.12);
+    --ca-field: rgba(255,255,255,.06);
+    --ca-strong: rgba(255,255,255,.92);
+    --ca-shadow: 0 4px 16px rgba(0,0,0,.5);
+    --ca-border-w: .5px;
+    --ca-track: rgba(255,255,255,.12);
+    --ca-thumb: #f2f2f2;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; }
+  body {
+    font-family: var(--ca-font);
+    color: var(--ca-text);
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+  }
+  /* 1. outer/inner padding aligned with sibling .ca-panel (16px) */
+  .ca-panel {
+    width: 320px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-radius: 16px;
+    background: var(--ca-float);
+    /* 6. border weight + shadow matching #243/#245 light */
+    border: var(--ca-border-w) solid var(--ca-border);
+    box-shadow: var(--ca-shadow);
+    font: 400 13px/20px var(--ca-font);
+    color: var(--ca-text);
+  }
+  .ca-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 22px;
+    min-height: 22px;
+  }
+  .ca-angle { display: flex; flex-direction: column; gap: 6px; }
+  /* 2. 相机/对象/预览 row */
+  .ca-angle__bar { display: flex; gap: 8px; align-items: center; }
+  .ca-angle__inset { margin-left: auto; }
+  .ca-angle__inset:disabled { opacity: .45; cursor: default; }
+  /* stage slot — exact 286×240; pixels pasted from main after render */
+  .ca-angle__view {
+    width: 286px;
+    height: 240px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #e8e4df; /* light field-ish; overwritten by paste */
+    flex: none;
+  }
+  :root[data-theme="dark"] .ca-angle__view { background: #2a2a2a; }
+  .ca-angle__prompt {
+    overflow: hidden;
+    color: var(--ca-muted);
+    font-size: 11px;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* 3. preset chips — taller, rounder, less cramped */
+  .ca-panel__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .ca-panel__chip {
+    height: 30px;
+    padding: 0 10px;
+    border: var(--ca-border-w) solid var(--ca-border);
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: 400 13px/20px var(--ca-font);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ca-panel__chip:hover:not(:disabled) { background: var(--ca-hover); }
+  .ca-panel__chip[data-on] {
+    border-color: var(--ca-strong);
+    background: var(--ca-active);
+  }
+  /* tab row uses same chip, slightly tighter pad to keep stage y close */
+  .ca-angle__bar .ca-panel__chip {
+    height: 30px;
+    padding: 0 12px;
+  }
+  /* 4. sliders */
+  .ca-panel__row {
+    display: grid;
+    grid-template-columns: 36px 1fr 40px;
+    align-items: center;
+    gap: 10px;
+    color: var(--ca-muted);
+    min-height: 28px;
+    font-size: 13px;
+  }
+  .ca-panel__val {
+    text-align: right;
+    color: var(--ca-text);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+  }
+  .ca-panel__row input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 28px;
+    background: transparent;
+    margin: 0;
+    padding: 0;
+  }
+  .ca-panel__row input[type="range"]::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 1px;
+    background: var(--ca-track);
+  }
+  .ca-panel__row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    margin-top: -5px;
+    border-radius: 50%;
+    background: var(--ca-thumb);
+    border: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,.16);
+    cursor: pointer;
+  }
+  /* Lovart: no tick marks / no 一格格刻度 */
+  .ca-panel__row input[type="range"]::-webkit-slider-tick,
+  .ca-panel__row input[type="range"]::-moz-range-track {
+    background: var(--ca-track);
+  }
+  /* 5. buttons */
+  .ca-panel__secondary.full {
+    width: 100%;
+    height: 38px;
+    border-radius: 10px;
+    border: var(--ca-border-w) solid var(--ca-border);
+    background: transparent;
+    color: inherit;
+    font: 400 14px/20px var(--ca-font);
+    cursor: pointer;
+  }
+  .ca-panel__secondary.full:hover { background: var(--ca-hover); }
+  .ca-panel__foot {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 2px;
+  }
+  .ca-panel__foot > button {
+    flex: 1;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 10px;
+    font: 400 14px/20px var(--ca-font);
+    cursor: pointer;
+  }
+  .ca-panel__secondary {
+    border: var(--ca-border-w) solid var(--ca-border);
+    background: transparent;
+    color: inherit;
+  }
+  .ca-panel__secondary:hover { background: var(--ca-hover); }
+  .ca-panel__primary {
+    border: none;
+    background: var(--ca-strong);
+    color: var(--ca-float);
+  }
+</style>
+</head>
+<body>
+  <div class="ca-panel" id="panel">
+    <div class="ca-panel__head"><span>多角度</span></div>
+    <div class="ca-angle">
+      <div class="ca-angle__bar" id="tabs"></div>
+      <div class="ca-angle__view" id="stage" data-stage="1"></div>
+      <div class="ca-angle__prompt">front-right quarter view eye-level shot medium shot</div>
+    </div>
+    <div class="ca-panel__chips" id="chips"></div>
+    <label class="ca-panel__row"><span>水平</span><input type="range" min="0" max="360" value="45" /><span class="ca-panel__val">45</span></label>
+    <label class="ca-panel__row"><span>垂直</span><input type="range" min="-30" max="60" value="0" /><span class="ca-panel__val">0</span></label>
+    <label class="ca-panel__row"><span>远近</span><input type="range" min="0" max="10" step="0.1" value="5" /><span class="ca-panel__val">5</span></label>
+    <button type="button" class="ca-panel__secondary full">一次生成 4 个角度</button>
+    <div class="ca-panel__foot">
+      <button type="button" class="ca-panel__secondary">取消</button>
+      <button type="button" class="ca-panel__primary">生成</button>
+    </div>
+  </div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const theme = params.get('theme') || 'light';
+  const view = params.get('view') || 'object'; // camera | object
+  if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+  const tabs = [
+    { id: 'camera', label: '相机' },
+    { id: 'object', label: '对象' },
+    { id: 'preview', label: '预览', inset: true, disabled: view === 'object' },
+  ];
+  const tabEl = document.getElementById('tabs');
+  tabs.forEach(t => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ca-panel__chip' + (t.inset ? ' ca-angle__inset' : '');
+    b.textContent = t.label;
+    if (t.id === view) b.setAttribute('data-on', '');
+    if (t.id === 'preview' && view === 'camera') {
+      // preview chip is "on" when inset active; default on for camera compares
+      b.setAttribute('data-on', '');
+    }
+    if (t.disabled) b.disabled = true;
+    tabEl.appendChild(b);
+  });
+
+  const chips = ['左前','右前','左侧','右侧','背面','俯视','仰视','特写','中等','广角']; // v2: drop 正面 only; keep 背面
+  const chipEl = document.getElementById('chips');
+  chips.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ca-panel__chip';
+    b.textContent = c;
+    chipEl.appendChild(b);
+  });
+</script>
+</body>
+</html>
