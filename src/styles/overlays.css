@@ -368,4 +368,5 @@
 .ca-cz__switch input:focus-visible + .ca-cz__track { outline: 2px solid var(--ca-strong); outline-offset: 2px; }
 .ca-menu__chev { width: 16px; height: 16px; color: var(--ca-muted); transition: transform .15s; }
 .ca-menu__sub[data-open] .ca-menu__chev { transform: rotate(180deg); }
-.ca-menu__nested .ca-menu__item { padding-left: 20px; }
+.ca-menu__nested { display: flex; flex-direction: column; align-self: stretch; }
+.ca-menu__nested .ca-menu__item { width: 100%; box-sizing: border-box; padding-left: 20px; }
