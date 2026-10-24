@@ -70,12 +70,12 @@ BAR_FITS = """() => {
   const modes = [...foot.querySelectorAll('.ca-composer__mode')]
   return {
     modes: modes.map((m) => m.innerText.trim()),
-    clipped: modes.some((m) => m.scrollWidth > m.clientWidth + 1) || [...foot.querySelectorAll('.ca-composer__mode[title] > .ca-menu__grow')].some((m) => m.scrollWidth > m.clientWidth + 1),
+    clipped: modes.some((m) => m.scrollWidth > m.clientWidth + 1) || [...foot.querySelectorAll('.ca-composer__mode[data-agent-name] > .ca-menu__grow')].some((m) => m.scrollWidth > m.clientWidth + 1),
     overlap: kids.some((r, i) => i > 0 && r.left < kids[i - 1].right - 0.5),
     overflow: kids.some((r) => r.right > fr.right + 0.5 || r.left < fr.left - 0.5),
     sendInside: (() => { const r = foot.querySelector('.ca-gen__send').getBoundingClientRect(); return r.width > 0 && r.left >= fr.left - 0.5 && r.right <= fr.right + 0.5 })(),
     // every control except the agent-name button keeps its natural size
-    squeezed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-bar__btn, :scope > .ca-gen__send, :scope > .ca-pop-anchor:has(> .ca-composer__mode:not([title]))')]
+    squeezed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-bar__btn, :scope > .ca-gen__send, :scope > .ca-pop-anchor:has(> .ca-composer__mode:not([data-agent-name]))')]
       .filter((e) => e.getBoundingClientRect().width + 0.5 < e.scrollWidth || e.getBoundingClientRect().width === 0).map((e) => e.className),
   }
 }"""
@@ -86,12 +86,13 @@ NAME_CLIPPED: dict = {}  # agent short name -> truncated with an ellipsis at the
 
 async def _bar_fits(pg, agent="ComfyArt"):
     bar = await pg.evaluate(BAR_FITS)
-    assert bar["modes"] == ["Agent", agent], bar  # DOM text is the whole name; only the visible part may end in an ellipsis
+    assert bar["modes"] == ["", agent], bar  # mode button: icon + chevron only
     assert not bar["overlap"] and not bar["overflow"], bar
     assert bar["sendInside"] and not bar["squeezed"], bar  # send / settings / mic never pushed out or squeezed
     NAME_CLIPPED[agent] = bar["clipped"]
-    if bar["clipped"]:  # only the agent-name button may shrink, and it keeps the full name on hover
-        assert await pg.locator(".ca-composer__mode[title] > .ca-menu__grow").get_attribute("title"), bar
+    assert not bar["clipped"], bar  # every short name shows in full at the default width; the ellipsis is only a fallback
+    mode_btn = pg.locator(".ca-composer__mode:not([data-agent-name])").first
+    assert await mode_btn.get_attribute("title") == "Agent"
 
 
 async def _crop(pg, loc, name, pad=8):
@@ -150,10 +151,10 @@ async def test_new_user_defaults_to_builtin_and_can_switch(app_url, fake_tools, 
         await pg.wait_for_timeout(800)
         from ComfyArt.api import settings as _s
         assert _s.get_setting("enable-mcp") is True
-        assert (await trigger.inner_text()).strip() == "Claude Code"
+        assert (await trigger.inner_text()).strip() == "Claude"
         from ComfyArt.api import settings
         assert settings.get_setting("bot-provider") == "claude-code"
-        await _bar_fits(pg, "Claude Code")  # an external tool's name also shows in full at the default width
+        await _bar_fits(pg, "Claude")  # an external tool's name also shows in full at the default width
         if SHOTS:
             await pg.screenshot(**_shot(f"switched-{lang}"))
             await _crop(pg, pg.locator(".ca-composer__foot"), f"close-bar-cc-{lang}")
@@ -257,8 +258,8 @@ async def test_url_host_change_shows_reenter_key_helper(app_url, fake_tools, mon
         await browser.close()
 
 
-ALL_AGENTS = [("claude-code", "Claude Code", "Claude Code"), ("codex", "Codex", "Codex"), ("qwen-code", "Qwen Code", "Qwen Code"),
-              ("deepseek-harness", "DeepSeek Harness", "DS Harness")]
+ALL_AGENTS = [("claude-code", "Claude Code", "Claude"), ("codex", "Codex", "Codex"), ("qwen-code", "Qwen Code", "Qwen"),
+              ("deepseek-harness", "DeepSeek Harness", "dsh")]
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
@@ -300,6 +301,8 @@ async def test_every_agent_fits_the_bar(app_url, fake_tools, monkeypatch, lang):
             assert (await trigger.inner_text()).strip() == short
             assert await trigger.locator("[title]").first.get_attribute("title") == full
             await _bar_fits(pg, short)
+            w = (await pg.locator(".ca-composer__mode[data-agent-name]").bounding_box())["width"]
+            assert w <= 100, (short, w)  # each short name button stays within ~95px
             await _crop(pg, pg.locator(".ca-composer__foot"), f"close-bar-{pid}-{lang}")
         print(f"NAME_CLIPPED[{lang}]", NAME_CLIPPED)
         await browser.close()

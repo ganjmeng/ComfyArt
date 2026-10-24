@@ -284,8 +284,9 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           onOpenChange={(o) => setMenu(o ? 'mode' : null)}
           side="top"
           trigger={({ open, toggle }) => (
-            <button type="button" className="ca-bar__btn ca-composer__mode" data-open={open || undefined} onClick={toggle}>
-              <span className="ca-icon">{Icons[modeInfo[2]]}</span><span>{modeInfo[1]}</span><span className="ca-icon">{Icons.chevron}</span>
+            <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' ? modeInfo[1] : undefined} data-open={open || undefined} onClick={toggle}>
+              {/* #219: in agent mode the bar needs the room for the agent name: icon + chevron only, 'Agent' on hover */}
+              <span className="ca-icon">{Icons[modeInfo[2]]}</span>{mode !== 'agent' && <span>{modeInfo[1]}</span>}<span className="ca-icon">{Icons.chevron}</span>
             </button>
           )}
         >
