@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useValue } from 'tldraw'
 
 import { t } from '../i18n'
+import { thresholdUsd } from '../usd'
 import { deleteKey, getConfirmUsd, setConfirmUsd, KeyError, keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus, saveKey, WAVESPEED_KEYS_URL } from '../wavespeedKey'
 import { Modal } from './Modal'
 
@@ -30,7 +31,7 @@ export function KeySettings() {
     if (!open) return
     setDraft(''); setErr(''); setUsdErr('')
     void refreshKeyStatus()
-    getConfirmUsd().then((v) => setUsd(String(v))).catch(() => {})
+    getConfirmUsd().then((v) => setUsd(thresholdUsd(v))).catch(() => {})
   }, [open])
 
   if (!open) return null
@@ -48,7 +49,7 @@ export function KeySettings() {
     const v = Number(usd)
     if (usd.trim() === '' || !Number.isFinite(v) || v < 0 || v > 1000) { setUsdErr(t('wsKey.confirmBad')); return }
     setUsdErr('')
-    setConfirmUsd(v).then((x) => setUsd(String(x))).catch(() => setUsdErr(t('wsKey.confirmBad')))
+    setConfirmUsd(v).then((x) => setUsd(thresholdUsd(x))).catch(() => setUsdErr(t('wsKey.confirmBad')))
   }
 
   return (

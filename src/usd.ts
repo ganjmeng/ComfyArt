@@ -5,3 +5,6 @@ export function usd(n: number): string {
   const [i, d = ''] = s.split('.')
   return `${i}.${d.padEnd(2, '0')}`
 }
+
+/** #229: the Key dialog's confirm threshold always shows two decimals (0.5 -> "0.50"). */
+export const thresholdUsd = (n: number) => (Number.isFinite(n) ? n : 0).toFixed(2)

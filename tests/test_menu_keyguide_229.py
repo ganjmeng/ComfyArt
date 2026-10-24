@@ -49,3 +49,14 @@ def test_notice_copy_unchanged():
     en = json.loads((ROOT / "src/locales/en.json").read_text())
     assert zh["agentPanel.noWavespeedKey"] == "还没有设置 WaveSpeed Key，ComfyArt Agent 暂时不能用。"
     assert zh["agentPanel.setWavespeedKey"] == "去设置 Key" and en["agentPanel.setWavespeedKey"] == "Set key"
+
+
+@node
+def test_threshold_shows_two_decimals(tmp_path):
+    out = tmp_path / "u.mjs"
+    subprocess.run([str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/rolldown.config.mjs"], cwd=ROOT, check=True,
+                   capture_output=True, env={**os.environ, "OUT": str(out), "ENTRY": "threshold_usd.ts"})
+    got = json.loads(subprocess.run(["node", str(out)], check=True, capture_output=True, text=True).stdout)
+    assert got == ["0.50", "0.00", "1.00", "2.25", "10.00", "0.13", "0.00"]
+    ks = (ROOT / "src/ui/KeySettings.tsx").read_text()
+    assert "setUsd(thresholdUsd(v))" in ks and "setUsd(thresholdUsd(x))" in ks and "String(v)" not in ks
