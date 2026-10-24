@@ -271,8 +271,7 @@ function PreviewBtn({ tool, names, hints, onUnpin }: { tool: Tool; names: boolea
   return (
     <span className="ca-bar__btn ca-cz__tool" title={names ? undefined : tool.label}>
       <span className="ca-icon">{tool.icon}</span>
-      {names && <span className="ca-cz__label">{tool.label}</span>}
-      {names && hints && tool.hint && <span className="ca-bar__hint ca-cz__hint">{tool.hint}</span>}
+      {names && <span className="ca-cz__label">{tool.label}{hints && tool.hint && <span className="ca-bar__hint">{tool.hint}</span>}</span>}
       <button type="button" className="ca-cz__x" title={t('imageToolbar.unpin')} aria-label={`${t('imageToolbar.unpin')} ${tool.label}`} onClick={onUnpin}>{Icons.close}</button>
     </span>
   )
@@ -294,7 +293,11 @@ export function CustomizeDialog({ tools, onClose }: { tools: Tool[]; onClose: ()
   useEffect(() => { void document.fonts?.ready.then(() => setFit(0)) }, [])
   useLayoutEffect(() => {
     const el = barRef.current
-    if (fit < 2 && el && el.scrollWidth > el.clientWidth + 1) setFit(fit + 1)
+    if (fit >= 2 || !el?.parentElement) return
+    // measure children, not scrollWidth: the always-on unpin × overhangs the bar edge
+    const cs = getComputedStyle(el), kids = [...el.children] as HTMLElement[]
+    const need = kids.reduce((a, c) => a + c.offsetWidth, 0) + (parseFloat(cs.columnGap) || 0) * Math.max(0, kids.length - 1) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth)
+    if (need > el.parentElement.clientWidth - 16 + 0.5) setFit(fit + 1)
   })
   return (
     <div className="ca-modal ca-cz-modal" onPointerDown={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) onClose() }}>
