@@ -51,7 +51,7 @@
   box-sizing: border-box;
   border-radius: 20px;
   background: var(--ca-float);
-  border: .5px solid var(--ca-border);
+  border: var(--ca-border-w) solid var(--ca-border);
   box-shadow: var(--ca-shadow);
   font: 400 13px/20px var(--ca-font);
   color: var(--ca-text);
@@ -120,7 +120,7 @@
 .ca-gen__label { margin: 12px 0 8px; }
 .ca-gen__chips, .ca-gen__ratios { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .ca-gen__chip, .ca-gen__ratio {
-  border: .5px solid var(--ca-border);
+  border: var(--ca-border-w) solid var(--ca-border);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -154,7 +154,7 @@
   box-sizing: border-box;
   border-radius: 16px;
   background: var(--ca-float);
-  border: .5px solid var(--ca-border);
+  border: var(--ca-border-w) solid var(--ca-border);
   box-shadow: var(--ca-shadow);
   font: 400 13px/20px var(--ca-font);
   color: var(--ca-text);
@@ -218,7 +218,7 @@
 .ca-panel__chip {
   height: 28px;
   padding: 0 10px;
-  border: .5px solid var(--ca-border);
+  border: var(--ca-border-w) solid var(--ca-border);
   border-radius: 8px;
   background: transparent;
   color: inherit;
@@ -230,7 +230,7 @@
 .ca-panel__foot { display: flex; gap: 8px; justify-content: flex-end; }
 .ca-panel__foot > button { height: 36px; padding: 0 16px; border-radius: 10px; font: inherit; font-size: 14px; cursor: pointer; }
 .ca-panel:not([data-wide]) .ca-panel__foot > button { flex: 1; }
-.ca-panel__secondary { border: .5px solid var(--ca-border); background: transparent; color: inherit; }
+.ca-panel__secondary { border: var(--ca-border-w) solid var(--ca-border); background: transparent; color: inherit; }
 .ca-panel__secondary:hover { background: var(--ca-hover); }
 .ca-panel__primary { border: none; background: var(--ca-strong); color: var(--ca-float); }
 .ca-panel__primary:disabled { background: var(--ca-field); color: var(--ca-muted); cursor: default; }
