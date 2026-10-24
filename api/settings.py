@@ -4,7 +4,7 @@ from ._common import app_path, error, json_body, read_json, routes, write_json
 
 SETTINGS_SPEC: dict[str, object] = {
     # #219: the built-in agent works out of the box (only a WaveSpeed key is needed)
-    "enable-mcp": True,
+    "enable-mcp": False,
     "enable-bot": True,
     "bot-provider": "local-llm",
     "bot-model-claude-code": "",
@@ -51,11 +51,13 @@ def mcp_enabled() -> bool:
 
 
 def bot_enabled() -> bool:
-    return mcp_enabled() and bool(get_setting("enable-bot"))
+    # #219: the built-in agent reaches the canvas through an internal-only MCP channel, so the Agent no
+    # longer depends on the external MCP switch; external tools are gated separately (bot_send / mcp_post)
+    return bool(get_setting("enable-bot"))
 
 
 def bot_disabled() -> web.Response:
-    return error("the ComfyArt Agent is off: turn on MCP and the Agent in Agent settings", 403)
+    return error("the ComfyArt Agent is off: turn it on in Agent settings", 403)
 
 
 @routes.get("/comfyart/settings")

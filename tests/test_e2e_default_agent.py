@@ -55,6 +55,12 @@ async def _page(p, url, lang):
     return browser, pg
 
 
+CONFIRM = {
+    "zh": "外部 Agent 需要开启 MCP，开启后本机的 MCP 客户端可以读写当前画布。开启？",
+    "en": "External agents need MCP. Once on, MCP clients on this computer can read and edit your canvas. Turn on?",
+}
+
+
 def _shot(name):
     return {"path": f"{SHOTS}/{name}.png"} if SHOTS else None
 
@@ -91,7 +97,15 @@ async def test_new_user_defaults_to_builtin_and_can_switch(app_url, fake_tools, 
         if SHOTS:
             await pg.screenshot(**_shot(f"picker-{lang}"))
         await items.filter(has_text="Codex").click()
-        await pg.wait_for_timeout(500)
+        dialog = pg.locator(".ca-modal")
+        await dialog.wait_for()
+        assert CONFIRM[lang] in await dialog.inner_text()
+        if SHOTS:
+            await pg.screenshot(**_shot(f"confirm-{lang}"))
+        await dialog.locator(".ca-panel__primary").click()  # accept: MCP on, then switch
+        await pg.wait_for_timeout(800)
+        from ComfyArt.api import settings as _s
+        assert _s.get_setting("enable-mcp") is True
         assert "Codex" in await trigger.inner_text()
         from ComfyArt.api import settings
         assert settings.get_setting("bot-provider") == "codex"
@@ -119,4 +133,33 @@ async def test_no_key_shows_notice_with_link(app_url, fake_tools, monkeypatch, l
         await notice.locator("a").click()
         await pg.wait_for_timeout(300)
         assert await pg.locator(".ca-modal, [role=dialog]").count() > 0
+        await browser.close()
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+async def test_external_tool_confirm_cancel_keeps_builtin(app_url, fake_tools, monkeypatch, lang):  # noqa: F811
+    monkeypatch.setenv("WAVESPEED_API_KEY", "mock-key-not-real")
+    from ComfyArt.api import settings as _s
+    assert _s.get_setting("enable-mcp") is False
+    async with pw.async_playwright() as p:
+        try:
+            browser, pg = await _page(p, app_url, lang)
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
+        for _ in range(3):
+            if await pg.locator(".ca-modal").count():
+                await pg.keyboard.press("Escape")
+                await pg.wait_for_timeout(300)
+        trigger = pg.get_by_title("选择 Agent" if lang == "zh" else "Select agent").first
+        await trigger.click()
+        await pg.locator(".ca-agentpick .ca-menu__item").filter(has_text="Claude Code").click()
+        dialog = pg.locator(".ca-modal")
+        await dialog.wait_for()
+        assert CONFIRM[lang] in await dialog.inner_text()
+        await dialog.locator(".ca-panel__secondary").click()  # cancel
+        await pg.wait_for_timeout(800)
+        assert await pg.locator(".ca-modal").count() == 0
+        assert (await trigger.inner_text()).strip().startswith("ComfyArt Agent")
+        assert _s.get_setting("enable-mcp") is False
+        assert _s.get_setting("bot-provider") == "local-llm"
         await browser.close()

@@ -24,6 +24,12 @@ class AgentLlmProvider(LocalLlmProvider):
     id = "local-llm"
     label = "ComfyArt Agent (built-in)"
 
+    @staticmethod
+    def _mcp_headers() -> dict:
+        # #219: the in-process secret lets the built-in agent use the canvas tools while external MCP is off
+        from .mcp import INTERNAL_HEADER, INTERNAL_TOKEN
+        return {**LocalLlmProvider._mcp_headers(), INTERNAL_HEADER: INTERNAL_TOKEN}
+
     async def probe(self) -> ProviderStatus:
         base = self._base_url()
         if base and is_wavespeed_url(base) and not llm_api_key(base):

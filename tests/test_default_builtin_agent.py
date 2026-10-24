@@ -25,7 +25,8 @@ def no_env_keys(monkeypatch):
 def test_fresh_install_defaults(monkeypatch):
     monkeypatch.setattr(settings, "read_json", lambda *_a, **_k: {})
     assert settings.get_setting("bot-provider") == "local-llm"
-    assert settings.mcp_enabled() and settings.bot_enabled()  # no switches to turn on first
+    assert settings.bot_enabled()  # the Agent works without turning anything on first
+    assert not settings.mcp_enabled()  # but external MCP access stays off by default
     assert settings.get_setting("bot-local-llm-key") == ""
 
 
@@ -131,3 +132,42 @@ def test_frontend_default_and_copy():
         for k in ("agentPanel.noWavespeedKey", "agentPanel.setWavespeedKey", "botSettings.localLlmModel", "botSettings.localLlmKey", "agentPicker.fellBackToBuiltin"):
             assert loc[k]
     assert "'password'" in (root / "src/ui/BotSettings.tsx").read_text()
+    zh = json.loads((root / "src/locales/zh.json").read_text())["agentPicker.enableMcpConfirm"]
+    en = json.loads((root / "src/locales/en.json").read_text())["agentPicker.enableMcpConfirm"]
+    assert zh == "外部 Agent 需要开启 MCP，开启后本机的 MCP 客户端可以读写当前画布。开启？"
+    assert en == "External agents need MCP. Once on, MCP clients on this computer can read and edit your canvas. Turn on?"
+
+
+def _rpc(method):
+    return {"jsonrpc": "2.0", "id": 1, "method": method, "params": {}}
+
+
+async def test_external_mcp_refused_while_off_but_builtin_agent_works(bot_client):
+    import aiohttp
+    write_settings(**{"enable-mcp": False, "enable-bot": True})
+    # an outside MCP client (or an external tool) is refused while the switch is off
+    resp = await bot_client.post("/comfyart/mcp", json=_rpc("tools/list"))
+    assert resp.status == 403
+    forged = await bot_client.post("/comfyart/mcp", json=_rpc("tools/list"), headers={"X-ComfyArt-Internal": "guess"})
+    assert forged.status == 403
+    # the built-in agent still gets its canvas tools through the internal channel
+    agent = get_provider("local-llm")
+    async with aiohttp.ClientSession() as session:
+        tools = await agent._mcp_list_tools(session, str(bot_client.make_url("/comfyart/mcp")))
+    assert tools and all(t.get("name") for t in tools)
+    status = await (await bot_client.get("/comfyart/bot/status")).json()
+    assert status["enabled"] is True
+
+
+async def test_external_tool_send_refused_while_mcp_off(bot_client):
+    write_settings(**{"enable-mcp": False, "enable-bot": True})
+    chat = (await (await bot_client.post("/comfyart/bot/chats", json={"project": "p", "provider": "codex"})).json())["chat"]
+    resp = await bot_client.post(f"/comfyart/bot/chats/{chat['id']}/send", json={"text": "hi"})
+    assert resp.status == 403
+    assert "MCP" in (await resp.json())["error"]
+
+
+def test_internal_token_not_in_settings_or_logs(caplog):
+    from ComfyArt.api import mcp
+    assert mcp.INTERNAL_TOKEN not in repr(settings.all_settings())
+    assert mcp.INTERNAL_TOKEN not in caplog.text

@@ -3,6 +3,7 @@ import { atom, useValue } from 'tldraw'
 
 import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, lostProvider, NO_KEY_DETAIL, providerLabel, loadProviders, messagesAtom, newProviderAtom, openChat, providersAtom, saveSettings, settingsAtom, updateChat } from '../bot'
 import { errorText } from '../jobs'
+import { confirmAtom } from './Confirm'
 import { Icons } from './icons'
 import { Popover } from './Popover'
 import { t } from '../i18n'
@@ -24,10 +25,23 @@ export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
   const fail = (e: unknown) => onError(errorText(e))
   const lost = lostProvider()
 
-  const pick = (id: string) => {
+  const choose = (id: string) => {
     newProviderAtom.set(id)
     void saveSettings({ 'bot-provider': id }).catch(fail)
     if (chat && started) void openChat(null)
+  }
+
+  // #219: external tools talk to the canvas over MCP, which is off by default; ask before turning it on.
+  // Cancel keeps the previous agent; the built-in agent never needs the switch.
+  const pick = (id: string) => {
+    if (id === BUILTIN_AGENT || settingsAtom.get()['enable-mcp'] === true) return choose(id)
+    setOpen(false)
+    confirmAtom.set({
+      title: t('agentPicker.enableMcpTitle'),
+      desc: t('agentPicker.enableMcpConfirm'),
+      ok: t('agentPicker.enableMcpOk'),
+      run: () => { void saveSettings({ 'enable-mcp': true }).then(() => choose(id)).catch(fail) },
+    })
   }
 
   return (
