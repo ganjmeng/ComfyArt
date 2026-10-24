@@ -1,0 +1,137 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--ca-blue:#3b82f6;--ca-font:Inter,-apple-system,"PingFang SC","Noto Sans CJK SC",sans-serif;--ca-float:#fff;--ca-border:rgba(0,0,0,.07);--ca-text:rgba(0,0,0,.9);--ca-muted:rgba(0,0,0,.3);--ca-hover:rgba(0,0,0,.06);--ca-active:rgba(0,0,0,.08);--ca-field:rgba(0,0,0,.04);--ca-strong:rgba(0,0,0,.9);--ca-shadow-menu:0 16px 24px -8px rgba(0,0,0,.06),0 4px 8px -4px rgba(0,0,0,.04),0 1px 1px 0 rgba(0,0,0,.02);--ca-border-w:1px;--canvas:#f5f5f5;--sub:rgba(0,0,0,.55);--inv:#fff}
+:root[data-theme=dark]{--ca-float:#161616;--ca-border:rgba(255,255,255,.1);--ca-text:rgba(255,255,255,.9);--ca-muted:rgba(255,255,255,.4);--ca-hover:rgba(255,255,255,.08);--ca-active:rgba(255,255,255,.12);--ca-field:rgba(255,255,255,.06);--ca-strong:rgba(255,255,255,.92);--ca-shadow-menu:0 4px 16px rgba(0,0,0,.5);--ca-border-w:.5px;--canvas:#0d0d0d;--sub:rgba(255,255,255,.6);--inv:#111}
+*{box-sizing:border-box}html,body{margin:0;width:1280px;height:800px;overflow:hidden;font-family:var(--ca-font);color:var(--ca-text);font-size:12px}
+.app{position:fixed;inset:0;display:flex;background:var(--ca-float)}
+.side{width:300px;border-right:var(--ca-border-w) solid var(--ca-border);padding:14px;color:var(--sub)}
+.side .b{background:var(--ca-field);border-radius:12px;padding:10px 12px;color:var(--ca-text);margin:30px 0 16px;line-height:1.5}
+.cv{flex:1;position:relative;background:var(--canvas);background-image:radial-gradient(var(--ca-border) 1px,transparent 1px);background-size:20px 20px}
+.img{position:absolute;left:170px;top:150px;width:520px;height:520px;outline:1.5px solid var(--ca-blue)}
+.cap{position:absolute;left:170px;top:130px;width:520px;display:flex;justify-content:space-between;color:var(--ca-blue);font-size:11px}
+.h{position:absolute;width:8px;height:8px;background:#fff;border:1.5px solid var(--ca-blue)}
+.art{width:100%;height:100%;display:block}
+.pop{position:absolute;left:640px;top:150px;width:260px;background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);border-radius:12px;box-shadow:var(--ca-shadow-menu);padding:12px}
+.hd{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:13px;margin-bottom:10px}
+.ib{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--sub)}
+.seg{display:flex;background:var(--ca-field);border-radius:8px;padding:2px;margin-bottom:8px}
+.seg div{flex:1;text-align:center;height:24px;line-height:24px;border-radius:6px;color:var(--sub)}
+.seg .on{background:var(--ca-float);color:var(--ca-text);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.stage{height:172px;border-radius:8px;background:var(--ca-field);display:grid;place-items:center;perspective:500px;position:relative;cursor:grab}
+.cube{width:72px;height:72px;position:relative;transform-style:preserve-3d}
+.f{position:absolute;inset:0;border:1px solid var(--ca-muted);background:var(--ca-float);opacity:.92}
+.f.fr{overflow:hidden;opacity:1}.f.fr svg{width:100%;height:100%}
+.hint{position:absolute;bottom:6px;width:100%;text-align:center;color:var(--ca-muted);font-size:10.5px}
+.row{margin-top:10px}.lab{display:flex;justify-content:space-between;color:var(--sub);margin-bottom:4px}.lab b{font-weight:500;color:var(--ca-text);font-variant-numeric:tabular-nums}
+.tr{position:relative;height:16px}.rail{position:absolute;left:0;right:0;top:7px;height:2px;border-radius:1px;background:var(--ca-active)}
+.fill{position:absolute;left:0;top:7px;height:2px;background:var(--ca-strong);border-radius:1px}
+.tk{display:none}
+.th{position:absolute;top:2px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--ca-float);border:2px solid var(--ca-strong)}
+.ft{display:flex;gap:8px;margin-top:14px}.btn{flex:1;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:500}
+.cancel{border:var(--ca-border-w) solid var(--ca-border);border-color:var(--ca-active)}
+.go{background:var(--ca-strong);color:var(--inv)}.go.hv{opacity:.85;box-shadow:0 0 0 3px var(--ca-active)}
+.price{font-size:11px;opacity:.7;font-variant-numeric:tabular-nums}
+.tip{position:absolute;right:12px;bottom:-30px;background:var(--ca-strong);color:var(--inv);font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap}
+.cur{position:absolute;width:14px;height:20px}
+.bar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);border-radius:12px;box-shadow:var(--ca-shadow-menu);padding:6px 10px;display:flex;gap:14px;color:var(--sub)}
+.chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:10px;width:100%}.chip{height:26px;padding:0;border-radius:8px;background:var(--ca-field);border:none;color:var(--sub);font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;line-height:1;white-space:nowrap}.chip.on{background:var(--ca-float);color:var(--ca-text);box-shadow:inset 0 0 0 1px var(--ca-strong)}
+.row.dis .lab b{color:var(--ca-muted)}.row.dis .tr{opacity:.35}
+.cnt{flex:0 0 auto;width:52px;height:32px;border-radius:8px;border:var(--ca-border-w) solid var(--ca-active);display:flex;align-items:center;justify-content:center;gap:2px;font-variant-numeric:tabular-nums;position:relative}.cnt.lock{color:var(--ca-muted)}
+.cancel{flex:0 0 64px}.menu{position:absolute;bottom:38px;left:0;width:64px;background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);border-radius:10px;box-shadow:var(--ca-shadow-menu);padding:4px;z-index:3}.mi{height:28px;border-radius:6px;padding:0 8px;display:flex;align-items:center;justify-content:space-between}.mi.on{background:var(--ca-hover)}
+.st3{display:block}.ro{position:absolute;left:6px;top:6px;display:flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:10px;background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);font-size:10.5px;color:var(--sub);font-variant-numeric:tabular-nums;box-shadow:0 1px 2px rgba(0,0,0,.05)}.ro b{font-weight:500}.ro i{width:1px;height:9px;background:var(--ca-active)}
+.stage{height:176px}.hint{bottom:4px;font-size:10px;color:var(--ca-muted);opacity:.75}
+.pvb{font-size:12px;font-weight:500;color:var(--sub);padding:0 6px;height:24px;line-height:24px;border-radius:6px}.hda{display:flex;align-items:center;gap:2px}
+.four{margin-top:12px;height:32px;border-radius:8px;border:var(--ca-border-w) solid var(--ca-active);display:flex;align-items:center;justify-content:center;font-weight:500}
+.cthumb{position:absolute;right:6px;bottom:6px;width:46px;height:46px;border-radius:6px;overflow:hidden;border:var(--ca-border-w) solid var(--ca-border);box-shadow:0 1px 3px rgba(0,0,0,.12);background:var(--ca-float)}.cthumb>*{width:100%;height:100%;display:block}
+.cancel{flex:1}
+</style></head><body><div class="app" id="app"></div><script>
+const q=new URLSearchParams(location.search),L=q.get('lang')||'zh',T=q.get('theme')||'light',TAB=q.get('tab')||'subject',ST=q.get('state')||'default',Z=+(q.get('zoom')||1);
+document.documentElement.dataset.theme=T;
+const PRE=q.get('preset')||'',MENU=q.get('menu')==='open',N=+(q.get('n')||(MENU?2:1));
+const S={zh:{pre:['左前','右前','左侧','右侧','背面','俯视','仰视','特写','中等','广角'],f4:'一次生成 4 个角度',pv:'预览',four:'4 个角度',g4:'生成 4 张',t:'多角度',sub:'主体',cam:'摄像头',r:'旋转',ti:'倾斜',z:'缩放',zs:['特写','中景','远景'],c:'取消',g:'生成',reset:'重置',h1:'拖动方块旋转主体',h2:'拖动相机环绕拍摄',tip:'预计消耗 $0.03 · 按当前角度生成 1 张',prompt:'木桌上的咖啡，晨光',side:'已生成 1 张图片。选中图片后，可在 ⋯ 菜单里打开「多角度」。',tools:['选择','评论','涂鸦','图像生成']},
+en:{pre:['Front-L','Front-R','Left','Right','Back','Top','Low','Close-up','Medium','Wide'],f4:'Generate 4 angles at once',pv:'Preview',four:'4 angles',g4:'Generate 4',t:'Multi-angle',sub:'Subject',cam:'Camera',r:'Rotate',ti:'Tilt',z:'Zoom',zs:['Close-up','Medium','Wide'],c:'Cancel',g:'Generate',reset:'Reset',h1:'Drag the cube to turn the subject',h2:'Drag the camera to orbit',tip:'Est. $0.03 · 1 image at this angle',prompt:'Coffee on a wooden table, morning light',side:'Generated 1 image. Select it and open Multi-angle from the ⋯ menu.',tools:['Select','Comment','Draw','Image gen']}}[L];
+const four=PRE==='four';let rot=45,tilt=-30,zoom=1; if(ST==='snapped'){rot=-45;tilt=30;zoom=0}if(ST==='back'){rot=180;tilt=0}if(four){tilt=0}if(ST==='min'){rot=-90;tilt=-30;zoom=0}
+const art=`<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" class="art"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d7a7"/><stop offset="1" stop-color="#e9a86b"/></linearGradient><linearGradient id="tb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a5f34"/><stop offset="1" stop-color="#5e3519"/></linearGradient></defs><rect width="100" height="58" fill="url(#sky)"/><rect x="58" y="6" width="34" height="40" rx="1" fill="#fff6e6" opacity=".75"/><line x1="75" y1="6" x2="75" y2="46" stroke="#e2c49b" stroke-width="1.2"/><rect y="56" width="100" height="44" fill="url(#tb)"/><ellipse cx="50" cy="80" rx="22" ry="5" fill="#000" opacity=".25"/><path d="M33 58 h34 l-3 22 q-14 5 -28 0z" fill="#efe7da"/><ellipse cx="50" cy="58" rx="17" ry="3.6" fill="#3a2414"/><path d="M67 62 q9 1 7 8 q-2 5 -9 4" fill="none" stroke="#efe7da" stroke-width="3"/><circle cx="18" cy="38" r="9" fill="#5f8f4e"/><circle cx="12" cy="28" r="7" fill="#76a862"/><rect x="10" y="44" width="14" height="14" rx="2" fill="#e9e1d3"/></svg>`;
+const ico={reset:'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a5 5 0 1 0 1.5-3.5"/><path d="M3 2.5V5h2.5"/></svg>'};
+const pct=(v,a,b)=>(v-a)/(b-a)*100;
+function slider(lab,val,disp,a,b,ticks,dis){return `<div class="row ${dis?'dis':''}"><div class="lab"><span>${lab}</span><b>${disp}</b></div><div class="tr"><div class="rail"></div><div class="fill" style="width:${pct(val,a,b)}%"></div>${ticks.map(t=>`<div class="tk" style="left:${pct(t,a,b)}%"></div>`).join('')}<div class="th" style="left:${pct(val,a,b)}%"></div></div></div>`}
+const D2R=Math.PI/180;
+function P3(p,yaw,pitch){const t=yaw*D2R,f=pitch*D2R;const x=p[0]*Math.cos(t)+p[2]*Math.sin(t),z1=-p[0]*Math.sin(t)+p[2]*Math.cos(t);const y=p[1]*Math.cos(f)-z1*Math.sin(f),z=p[1]*Math.sin(f)+z1*Math.cos(f);return [x,y,z]}
+const dark=T==='dark',FACE=dark?'#2a2a2a':'#ffffff',EDGE=dark?'rgba(255,255,255,.28)':'rgba(0,0,0,.18)',LBL=dark?'rgba(255,255,255,.42)':'rgba(0,0,0,.28)',GRID=dark?'rgba(255,255,255,.10)':'rgba(0,0,0,.08)',ACC='#3b82f6';
+const ZL=L==='zh'?['特写','中景','远景']:['Close','Medium','Wide'];
+const FL=L==='zh'?{r:'右',l:'左',b:'背',t:'顶',d:'底'}:{r:'R',l:'L',b:'B',t:'T',d:'Bt'};
+const hOf=r=>((r%360)+360)%360;
+function readout(){return `<div class="ro"><b>${L==='zh'?'水平':'H'} ${four?'4×':hOf(rot)+'°'}</b><i></i><b>${L==='zh'?'垂直':'V'} ${tilt}°</b><i></i><b>${ZL[zoom]}</b></div>`}
+function floorGrid(cx,cy,s,yaw,pitch,y0,ext,ring){let o='';for(let i=-ext;i<=ext;i++){for(const [a,b] of [[[i,y0,-ext],[i,y0,ext]],[[-ext,y0,i],[ext,y0,i]]]){const A=P3(a,yaw,pitch),B=P3(b,yaw,pitch);o+=`<line x1="${cx+A[0]*s}" y1="${cy-A[1]*s}" x2="${cx+B[0]*s}" y2="${cy-B[1]*s}"/>`}}
+ let pts=[];for(let k=0;k<=72;k++){const a=k*5*D2R;const p=P3([Math.sin(a)*ring,y0,Math.cos(a)*ring],yaw,pitch);pts.push((cx+p[0]*s).toFixed(1)+','+(cy-p[1]*s).toFixed(1))}
+ return `<defs><radialGradient id="fg"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient><mask id="fm"><ellipse cx="${cx}" cy="${cy+ (pitch>0?10:30)}" rx="${s*ext*1.1}" ry="${s*ext*.55}" fill="url(#fg)"/></mask></defs><g mask="url(#fm)" stroke="${GRID}" stroke-width=".6" opacity=".55">${o}</g><polyline points="${pts.join(' ')}" fill="none" stroke="${EDGE}" stroke-width="1" stroke-dasharray="2 3"/>`}
+function ringDot(cx,cy,s,yaw,pitch,y0,ring,h,on){const a=h*D2R,p=P3([Math.sin(a)*ring,y0,Math.cos(a)*ring],yaw,pitch);return `<circle cx="${cx+p[0]*s}" cy="${cy-p[1]*s}" r="${on?3.6:2.4}" fill="${on?ACC:FACE}" stroke="${on?'#fff':EDGE}" stroke-width="1"/>`}
+function cubeSVG(W=236,H=172){
+ const cx=W/2,cy=H/2+2,s=[44,37,30][zoom],yaw=-rot,pitch=tilt;
+ const F=[['f',[-1,1,1],[2,0,0],[0,-2,0],[0,0,1]],['r',[1,1,1],[0,0,-2],[0,-2,0],[1,0,0]],['b',[1,1,-1],[-2,0,0],[0,-2,0],[0,0,-1]],['l',[-1,1,-1],[0,0,2],[0,-2,0],[-1,0,0]],['t',[-1,1,-1],[2,0,0],[0,0,2],[0,1,0]],['d',[-1,-1,1],[2,0,0],[0,0,-2],[0,-1,0]]];
+ const Lt=[-.45,.75,.5];const ln=Math.hypot(...Lt);
+ let faces=F.map(([k,o,u,v,n])=>{const nn=P3(n,yaw,pitch);const O=P3(o,yaw,pitch),U=P3(u,yaw,pitch),V=P3(v,yaw,pitch);const c=P3(n,yaw,pitch);return {k,nz:nn[2],z:c[2],m:[U[0]*s,-U[1]*s,V[0]*s,-V[1]*s,cx+O[0]*s,cy-O[1]*s],sh:(n[0]*Lt[0]+n[1]*Lt[1]+n[2]*Lt[2])/ln}}).filter(f=>f.nz>0.02).sort((a,b)=>a.z-b.z);
+ const shadowY=-1.55;const sp=[[-1.1,shadowY,-1.1],[1.1,shadowY,-1.1],[1.1,shadowY,1.1],[-1.1,shadowY,1.1]].map(p=>P3(p,yaw,pitch)).map(p=>`${cx+p[0]*s},${cy-p[1]*s+4}`).join(' ');
+ let g=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="st3"><defs><filter id="bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter><clipPath id="fc" clipPathUnits="userSpaceOnUse"><rect x=".012" y=".012" width=".976" height=".976" rx=".09"/></clipPath><linearGradient id="hl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
+ g+=floorGrid(cx,cy,s,yaw,pitch,-1.6,3,2.2);
+ if(four)[-90,-45,45,90].forEach(h=>g+=ringDot(cx,cy,s,yaw,pitch,-1.6,2.2,h-rot+rot,true));
+ g+=`<polygon points="${sp}" fill="#000" opacity="${dark?.35:.07}" filter="url(#bl)"/>`;
+ const VV=[];for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1]){const p=P3([x,y,z],yaw,pitch);VV.push({w:[x,y,z],x:cx+p[0]*s,y:cy-p[1]*s})}
+ const vis=n=>P3(n,yaw,pitch)[2]>0.02;
+ const fillA=dark?'rgba(255,255,255,.07)':'rgba(255,255,255,.82)',edgeS=dark?'rgba(255,255,255,.42)':'rgba(0,0,0,.26)',edgeH=dark?'rgba(255,255,255,.2)':'rgba(0,0,0,.14)';
+ // hidden edges first
+ let eF='',eB='';for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){const a=VV[i].w,b=VV[j].w;const diff=[0,1,2].filter(k=>a[k]!==b[k]);if(diff.length!==1)continue;const k=diff[0];const n1=[0,0,0],n2=[0,0,0];const o=[0,1,2].filter(t=>t!==k);n1[o[0]]=a[o[0]];n2[o[1]]=a[o[1]];const seg=`M${VV[i].x.toFixed(2)} ${VV[i].y.toFixed(2)}L${VV[j].x.toFixed(2)} ${VV[j].y.toFixed(2)}`;if(vis(n1)||vis(n2))eF+=seg;else eB+=seg}
+ g+=`<path d="${eB}" stroke="${edgeH}" stroke-width=".8" stroke-dasharray="2 2" fill="none"/>`;
+ for(const f of faces){const b=Math.max(0,f.sh);const shade=dark?(0.25-0.2*b):(0.06-0.06*b);const m=f.m.map(x=>x.toFixed(3)).join(',');
+  g+=`<g transform="matrix(${m})"><rect width="1" height="1" fill="${fillA}"/>`;
+  if(f.k==='f'){g+=`<clipPath id="fq"><path d="M.14 0H1V1H0V.14Q0 0 .14 0Z"/></clipPath><g clip-path="url(#fq)"><g transform="scale(.01)">${art.replace('class="art"','width="100" height="100"')}</g></g><path d="M.14 0H1V1H0V.14Q0 0 .14 0Z" fill="none" stroke="${ACC}" stroke-opacity=".55" stroke-width=".9" vector-effect="non-scaling-stroke"/>`}
+  else{g+=`<text x=".5" y=".56" text-anchor="middle" font-size=".16" font-weight="400" fill="${dark?'rgba(255,255,255,.45)':'rgba(0,0,0,.38)'}" font-family="Inter,PingFang SC,Noto Sans CJK SC,sans-serif">${FL[f.k]}</text>`}
+  g+=`<rect width="1" height="1" fill="#000" opacity="${shade.toFixed(3)}"/></g>`}
+ g+=`<path d="${eF}" stroke="${edgeS}" stroke-width=".9" stroke-linejoin="round" fill="none"/>`;
+ const ar=`stroke="${dark?'rgba(255,255,255,.28)':'rgba(0,0,0,.2)'}" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+ g+=`<path d="M${cx-40} ${H-24} Q${cx} ${H-13} ${cx+40} ${H-24}" ${ar}/><path d="M${cx-40} ${H-24} l5 -1 M${cx-40} ${H-24} l2.5 4 M${cx+40} ${H-24} l-5 -1 M${cx+40} ${H-24} l-2.5 4" ${ar}/>`;
+ g+=`<path d="M${W-24} ${cy-34} Q${W-14} ${cy} ${W-24} ${cy+34}" ${ar}/><path d="M${W-24} ${cy-34} l1 5 M${W-24} ${cy-34} l4 2.5 M${W-24} ${cy+34} l1 -5 M${W-24} ${cy+34} l4 -2.5" ${ar}/>`;
+ return g+'</svg>'}
+function sphereSVG(W=236,H=172){
+ const cx=W/2,cy=H/2+6,R=48,vy=-25,vp=14;let g=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="st3"><defs><filter id="bl2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter></defs>`;
+ g+=`<ellipse cx="${cx}" cy="${cy+R+12}" rx="${R*.8}" ry="7" fill="#000" opacity="${dark?.5:.10}" filter="url(#bl2)"/>`;
+ const circ=(fn,hi)=>{let fr='',bk='';let prev=null;for(let k=0;k<=96;k++){const p=P3(fn(k/96*2*Math.PI),vy,vp);const pt=[cx+p[0]*R,cy-p[1]*R];if(prev){const seg=`M${prev[0].toFixed(1)} ${prev[1].toFixed(1)}L${pt[0].toFixed(1)} ${pt[1].toFixed(1)}`;if(p[2]>=0)fr+=seg;else bk+=seg}prev=pt}
+  return `<path d="${bk}" stroke="${hi||EDGE}" stroke-width="${hi?1.1:.7}" opacity=".45" stroke-dasharray="2 2" fill="none"/><path d="${fr}" stroke="${hi||EDGE}" stroke-width="${hi?1.4:.8}" fill="none"/>`};
+ g+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${EDGE}" stroke-width=".9"/>`;
+ for(const m of [0,45,90,135])g+=circ(a=>[Math.sin(m*D2R)*Math.cos(a),Math.sin(a),Math.cos(m*D2R)*Math.cos(a)]);
+ for(const la of [-30,30,60])g+=circ(a=>[Math.cos(la*D2R)*Math.sin(a),Math.sin(la*D2R),Math.cos(la*D2R)*Math.cos(a)]);
+ const hiC=dark?'rgba(255,255,255,.5)':'rgba(0,0,0,.38)';
+ g+=circ(a=>[Math.sin(a),0,Math.cos(a)],hiC);
+ const hr=rot*D2R;g+=circ(a=>[Math.sin(hr)*Math.cos(a),Math.sin(a),Math.cos(hr)*Math.cos(a)],hiC);
+ // 4-angle markers
+ if(four)for(const h of [-90,-45,45,90]){const a=h*D2R,v=tilt*D2R;const p=P3([Math.sin(a)*Math.cos(v),Math.sin(v),Math.cos(a)*Math.cos(v)],vy,vp);g+=`<circle cx="${cx+p[0]*R}" cy="${cy-p[1]*R}" r="3.2" fill="${ACC}" stroke="#fff"/>`}
+ // image tile
+ g+=`<g transform="translate(${cx-20} ${cy-20})"><rect width="40" height="40" rx="5" fill="${FACE}"/><svg width="40" height="40" viewBox="0 0 100 100">${art.replace(/class="art"/,'').replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'')}</svg><rect width="40" height="40" rx="5" fill="none" stroke="${ACC}" stroke-width="1.4"/></g>`;
+ // camera
+ const d=[.78,1,1.22][zoom],a=hr,v=tilt*D2R,p=P3([Math.sin(a)*Math.cos(v)*d,Math.sin(v)*d,Math.cos(a)*Math.cos(v)*d],vy,vp);const X=cx+p[0]*R,Y=cy-p[1]*R,sc=1+p[2]*.18;
+ g+=`<line x1="${cx}" y1="${cy}" x2="${X}" y2="${Y}" stroke="${ACC}" stroke-width="1" stroke-dasharray="3 2"/>`;
+ const ang=Math.atan2(cy-Y,cx-X)/D2R;
+ g+=`<g transform="translate(${X} ${Y}) scale(${sc}) rotate(${ang})"><circle r="13" fill="${ACC}" opacity=".06"/><rect x="-9" y="-7" width="13" height="14" rx="3" fill="${FACE}" stroke="${dark?'rgba(255,255,255,.85)':'rgba(0,0,0,.5)'}" stroke-width="1"/><path d="M4 -4 L10 -6.5 V6.5 L4 4Z" fill="${FACE}" stroke="${dark?'rgba(255,255,255,.85)':'rgba(0,0,0,.5)'}" stroke-width="1" stroke-linejoin="round"/><circle cx="-2.5" cy="0" r="2.6" fill="${ACC}"/></g>`;
+ const ch=`stroke="${dark?'rgba(255,255,255,.5)':'rgba(0,0,0,.35)'}" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+ g+=`<path d="M${cx-4} ${cy-R-8} l4 -4 l4 4" ${ch}/><path d="M${cx-4} ${cy+R+5} l4 4 l4 -4" ${ch}/><path d="M${cx-R-8} ${cy-4} l-4 4 l4 4" ${ch}/><path d="M${cx+R+8} ${cy-4} l4 4 l-4 4" ${ch}/>`;
+ return g+'</svg>'}
+
+const subjectStage=`<div class="stage">${cubeSVG()}${readout()}<div class="hint">${S.h1}</div></div>`;
+const camStage=`<div class="stage">${sphereSVG()}${readout()}<div class="hint">${S.h2}</div><div class="cthumb">${art}</div></div>`;
+const hover=ST==='snapped'&&!q.get('nohover');
+document.getElementById('app').innerHTML=`<div class="side"><div class="b">${S.prompt}</div><div style="width:84px;height:84px;border-radius:8px;overflow:hidden">${art}</div><p style="line-height:1.6">${S.side}</p></div>
+<div class="cv"><div class="cap"><span>▣ ${S.prompt}</span><span>1024 × 1024</span></div><div class="img">${art}</div>
+${[[166,146],[686,146],[166,666],[686,666]].map(p=>`<div class="h" style="left:${p[0]}px;top:${p[1]}px"></div>`).join('')}
+<div class="pop" id="pop" style="transform:scale(${Z});transform-origin:0 0"><div class="hd"><span>${S.t}</span><span class="hda"><span class="ib" title="${S.reset}">${ico.reset}</span><span class="pvb">${S.pv}</span></span></div>
+<div class="seg"><div class="${TAB==='subject'?'on':''}">${S.sub}</div><div class="${TAB==='camera'?'on':''}">${S.cam}</div></div>
+${TAB==='subject'?subjectStage:camStage}
+<div class="chips">${S.pre.map((p,i)=>`<span class="chip ${[-45,45,-90,90,180][i]===rot?'on':''}">${p}</span>`).join('')}</div>
+${slider(S.r,rot,four?S.four:rot+'°',-180,180,[-180,-135,-90,-45,0,45,90,135,180],four)}
+${slider(S.ti,tilt,tilt+'°',-30,60,[-30,0,30,60])}
+${slider(S.z,zoom,S.zs[zoom],0,2,[0,1,2])}
+<div class="four">${S.f4}</div><div class="ft"><div class="btn cancel">${S.c}</div><div class="btn go ${hover?'hv':''}">${S.g}<span class="price">$0.03</span></div></div>
+${hover?`<div class="tip">${S.tip}</div><svg class="cur" style="right:50px;bottom:4px" viewBox="0 0 14 20"><path d="M1 1 v15 l4 -4 l3 6 l2.5 -1 l-3 -6 h5.5z" fill="#fff" stroke="#000" stroke-width="1"/></svg>`:''}
+</div><div class="bar">${S.tools.map(t=>`<span>${t}</span>`).join('')}</div></div>`;
+if(q.get('entry')){const P=document.getElementById('pop');P.style.display='none';const it=L==='zh'?['图层拆分','编辑文字','多角度','动态图片','扩图','调整','裁剪','翻转与旋转']:['Layers','Edit text','Multi-angle','Motion','Expand','Adjust','Crop','Flip & rotate'];
+const tb=document.createElement('div');tb.innerHTML=`<div style="position:absolute;left:300px;top:96px;height:34px;background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);border-radius:10px;box-shadow:var(--ca-shadow-menu);display:flex;align-items:center;gap:14px;padding:0 10px;color:var(--ca-text)">${(L==='zh'?['快速编辑','放大','去背景','局部重绘']:['Quick edit','Upscale','Remove BG','Inpaint']).map(t=>`<span>${t}</span>`).join('')}<span style="background:var(--ca-active);border-radius:6px;padding:2px 6px">⋯</span></div>
+<div id="emenu" style="position:absolute;left:560px;top:136px;width:180px;background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);border-radius:12px;box-shadow:var(--ca-shadow-menu);padding:4px">${it.map((t,i)=>`<div style="height:30px;line-height:30px;padding:0 10px;border-radius:8px;${i==2?'background:var(--ca-hover);font-weight:500':''}">${t}</div>`).join('')}<div style="border-top:var(--ca-border-w) solid var(--ca-border);margin:4px 0"></div><div style="height:30px;line-height:30px;padding:0 10px;color:var(--sub)">${L==='zh'?'自定义工具栏':'Customize toolbar'}</div></div>`;document.querySelector('.cv').appendChild(tb)}
+</script></body></html>
