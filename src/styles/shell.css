@@ -105,7 +105,7 @@
 .ca-side__badge { position: absolute; right: 4px; bottom: 4px; display: flex; width: 18px; height: 18px; padding: 3px; border-radius: 6px; background: rgba(0,0,0,.55); color: #fff; box-sizing: border-box; }
 .ca-side__badge svg { width: 100%; height: 100%; }
 .ca-side__empty { padding: 16px 20px; text-align: center; color: var(--ca-muted); font-size: 13px; }
-.ca-side__rule { height: .5px; margin: 8px 0; background: var(--ca-border); }
+.ca-side__rule { height: var(--ca-border-w); margin: 8px 0; background: var(--ca-border); }
 .ca-layer { display: flex; align-items: center; gap: 10px; height: 44px; padding-right: 12px; cursor: pointer; }
 .ca-layer:hover { background: var(--ca-hover); }
 .ca-layer[data-on] { background: rgba(59,130,246,.1); }
@@ -141,7 +141,7 @@
 .ca-comment[data-selected] .ca-comment__pin { box-shadow: 0 0 0 2px var(--ca-float), 0 0 0 4px var(--ca-blue); }
 .ca-cpanel { width: 300px; }
 
-.ca-menu__sep { height: .5px; margin: 4px 0; background: var(--ca-border); }
+.ca-menu__sep { height: var(--ca-border-w); margin: 4px 0; background: var(--ca-border); }
 button.ca-head__logo { padding: 0; border: none; border-radius: 8px; background: none; cursor: pointer; }
 button.ca-head__logo:hover, button.ca-head__logo[data-open] { background: var(--ca-hover); }
 .ca-root[data-chat="max"] .ca-main { display: none; }
