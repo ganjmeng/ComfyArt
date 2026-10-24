@@ -256,6 +256,8 @@
 .ca-md__code:hover > button { opacity: 1; }
 .ca-composer__mode { white-space: nowrap; }
 .ca-composer__foot > .ca-pop-anchor:has(> .ca-composer__mode) { flex-shrink: 0; }
+/* #219: an external agent's longer name (e.g. Claude Code) needs the room: the ref button keeps only its icon (label stays in its tooltip) */
+.ca-composer__foot:has(.ca-composer__mode[data-external]) .ca-refbtn > span:not(.ca-icon) { display: none; }
 .ca-chat__tool { display: flex; flex-direction: column; gap: 6px; }
 .ca-chat__tool > .ca-chat__step { width: 100%; padding: 0; border: none; background: none; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
 .ca-chat__tool > .ca-chat__step:hover { color: var(--ca-text); }

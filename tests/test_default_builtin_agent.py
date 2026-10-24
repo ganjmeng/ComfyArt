@@ -171,3 +171,50 @@ def test_internal_token_not_in_settings_or_logs(caplog):
     from ComfyArt.api import mcp
     assert mcp.INTERNAL_TOKEN not in repr(settings.all_settings())
     assert mcp.INTERNAL_TOKEN not in caplog.text
+
+
+async def test_settings_file_is_private(bot_client):
+    import os
+    import stat
+    resp = await bot_client.put("/comfyart/settings", json={"bot-local-llm-key": "sk-custom-secret"})
+    assert resp.status == 200
+    mode = stat.S_IMODE(os.stat(settings._file()).st_mode)
+    assert mode == 0o600, oct(mode)
+
+
+async def _put(client, body):
+    resp = await client.put("/comfyart/settings", json=body)
+    assert resp.status == 200
+    return await resp.json()
+
+
+async def test_hostname_change_clears_custom_key(bot_client):
+    await _put(bot_client, {"bot-local-llm-url": CUSTOM, "bot-local-llm-key": "sk-custom-secret"})
+    # same host, other path: the key stays
+    out = await _put(bot_client, {"bot-local-llm-url": CUSTOM + "/beta", "bot-local-llm-key": settings.MASK})
+    assert out["bot-local-llm-key"] == settings.MASK and settings.get_setting("bot-local-llm-key") == "sk-custom-secret"
+    # a new hostname: the stored key is cleared, the user must re-enter it
+    out = await _put(bot_client, {"bot-local-llm-url": "https://other-llm.example.org/v1", "bot-local-llm-key": settings.MASK})
+    assert out["bot-local-llm-key"] == "" and settings.get_setting("bot-local-llm-key") == ""
+    # a new key sent together with the new URL is kept
+    await _put(bot_client, {"bot-local-llm-url": CUSTOM, "bot-local-llm-key": "sk-new"})
+    assert settings.get_setting("bot-local-llm-key") == "sk-new"
+
+
+async def test_back_to_wavespeed_host_clears_key_and_uses_wavespeed_key(bot_client, no_env_keys, monkeypatch):
+    await _put(bot_client, {"bot-local-llm-url": CUSTOM, "bot-local-llm-key": "sk-custom-secret"})
+    await _put(bot_client, {"bot-local-llm-url": WS_URL})
+    assert settings.get_setting("bot-local-llm-key") == ""
+    monkeypatch.setenv("WAVESPEED_API_KEY", "ws-mock-key")
+    assert llm_key.llm_api_key(WS_URL) == "ws-mock-key"
+
+
+def test_url_change_helper_copy():
+    from pathlib import Path
+    import json
+    root = Path(__file__).resolve().parent.parent
+    zh = json.loads((root / "src/locales/zh.json").read_text())["botSettings.urlChangedReenterKey"]
+    en = json.loads((root / "src/locales/en.json").read_text())["botSettings.urlChangedReenterKey"]
+    assert zh == "地址已更改，请重新填写 Key" and en == "URL changed. Please re-enter the key."
+    ui = (root / "src/ui/BotSettings.tsx").read_text()
+    assert 'className="ca-menu__key">{t(\'botSettings.urlChangedReenterKey\')}' in ui  # same grey style as "Not detected"

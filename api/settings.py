@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from aiohttp import web
 
 from ._common import app_path, error, json_body, read_json, routes, write_json
@@ -65,6 +67,10 @@ async def get_settings(_request: web.Request) -> web.Response:
     return web.json_response(_masked(all_settings()))
 
 
+def _host(url: str) -> str:
+    return (urlparse(str(url or "").strip()).hostname or "").lower()
+
+
 def _masked(values: dict) -> dict:
     return {k: (MASK if k in SECRET_KEYS and v else v) for k, v in values.items()}
 
@@ -81,7 +87,13 @@ async def put_settings(request: web.Request) -> web.Response:
         if key in CHOICES and value not in CHOICES[key]:
             return error(f"{key} must be one of {', '.join(CHOICES[key])}", 400)
     current = all_settings()
+    old_host = _host(current["bot-local-llm-url"])
     # the UI echoes the mask back for an untouched key: keep the stored value
     current.update({k: v for k, v in body.items() if not (k in SECRET_KEYS and v == MASK)})
-    write_json(_file(), current)
+    # #219: a stored custom key belongs to its host; a new hostname clears it unless a new key came with it.
+    # Back on a WaveSpeed host the key is cleared too and the WaveSpeed key is used as usual.
+    new_key = body.get("bot-local-llm-key")
+    if _host(current["bot-local-llm-url"]) != old_host and (new_key is None or new_key == MASK):
+        current["bot-local-llm-key"] = ""
+    write_json(_file(), current, mode=0o600)  # holds the custom endpoint key
     return web.json_response(_masked(current))

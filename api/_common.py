@@ -46,10 +46,18 @@ def read_json(path: str, default):
         return default
 
 
-def write_json(path: str, data) -> None:
+def write_json(path: str, data, mode: int | None = None) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
+    if mode is not None:  # create the temp file with the final mode, so it is never readable by others
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+        os.chmod(tmp, mode)
+        handle = os.fdopen(fd, "w", encoding="utf-8")
+    else:
+        handle = open(tmp, "w", encoding="utf-8")
+    with handle as f:
         json.dump(data, f, ensure_ascii=False)
     os.replace(tmp, path)
 

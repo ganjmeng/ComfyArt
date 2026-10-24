@@ -50,7 +50,7 @@ export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
       onOpenChange={(o) => { setOpen(o); if (o) void loadProviders().catch(fail) }}
       side="top"
       trigger={({ open: o, toggle }) => (
-        <button type="button" className="ca-bar__btn ca-composer__mode" title={t('agentPicker.selectAgent')} data-open={o || undefined} onClick={toggle}>
+        <button type="button" className="ca-bar__btn ca-composer__mode" title={t('agentPicker.selectAgent')} data-external={(provider && provider.id !== BUILTIN_AGENT) || undefined} data-open={o || undefined} onClick={toggle}>
           <span className="ca-menu__grow" title={provider ? providerLabel(provider) : undefined}>{provider ? (provider.id === BUILTIN_AGENT ? t('agentPicker.builtinAgentShort') : providerLabel(provider)) : t('agentPicker.selectAgent')}</span><span className="ca-icon">{Icons.chevron}</span>
         </button>
       )}

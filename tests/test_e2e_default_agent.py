@@ -20,6 +20,9 @@ MISSING = ("qwen-code", "deepseek-harness")
 
 @pytest.fixture()
 def fake_tools(monkeypatch):
+    from ComfyArt.bot import providers as registry
+    for pid in [k for k in registry._REGISTRY if k not in ("local-llm", *DETECTED, *MISSING)]:
+        monkeypatch.delitem(registry._REGISTRY, pid)  # hide test-only agents (Fake, Fake Models) from the UI
     from ComfyArt.bot import get_provider
     from ComfyArt.bot.local_llm import LocalLlmProvider
     from ComfyArt.bot.providers import ProviderStatus
@@ -74,9 +77,9 @@ BAR_FITS = """() => {
 }"""
 
 
-async def _bar_fits(pg):
+async def _bar_fits(pg, agent="ComfyArt"):
     bar = await pg.evaluate(BAR_FITS)
-    assert bar["modes"] == ["Agent", "ComfyArt"], bar
+    assert bar["modes"] == ["Agent", agent], bar
     assert not bar["clipped"] and not bar["overlap"] and not bar["overflow"], bar
 
 
@@ -125,7 +128,7 @@ async def test_new_user_defaults_to_builtin_and_can_switch(app_url, fake_tools, 
         if SHOTS:
             await pg.screenshot(**_shot(f"picker-{lang}"))
             await _crop(pg, menu, f"close-picker-{lang}")
-        await items.filter(has_text="Codex").click()
+        await items.filter(has_text="Claude Code").click()
         dialog = pg.locator(".ca-modal")
         await dialog.wait_for()
         assert CONFIRM[lang] in await dialog.inner_text()
@@ -136,11 +139,13 @@ async def test_new_user_defaults_to_builtin_and_can_switch(app_url, fake_tools, 
         await pg.wait_for_timeout(800)
         from ComfyArt.api import settings as _s
         assert _s.get_setting("enable-mcp") is True
-        assert "Codex" in await trigger.inner_text()
+        assert (await trigger.inner_text()).strip() == "Claude Code"
         from ComfyArt.api import settings
-        assert settings.get_setting("bot-provider") == "codex"
+        assert settings.get_setting("bot-provider") == "claude-code"
+        await _bar_fits(pg, "Claude Code")  # an external tool's name also shows in full at the default width
         if SHOTS:
             await pg.screenshot(**_shot(f"switched-{lang}"))
+            await _crop(pg, pg.locator(".ca-composer__foot"), f"close-bar-cc-{lang}")
         await browser.close()
 
 
@@ -193,4 +198,40 @@ async def test_external_tool_confirm_cancel_keeps_builtin(app_url, fake_tools, m
         assert (await trigger.inner_text()).strip() == "ComfyArt"
         assert _s.get_setting("enable-mcp") is False
         assert _s.get_setting("bot-provider") == "local-llm"
+        await browser.close()
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+async def test_url_host_change_shows_reenter_key_helper(app_url, fake_tools, monkeypatch, lang):  # noqa: F811
+    monkeypatch.setenv("WAVESPEED_API_KEY", "mock-key-not-real")
+    from conftest import write_settings
+    write_settings(**{"bot-local-llm-url": "https://llm.example.com/v1", "bot-local-llm-key": "sk-mock-custom"})
+    helper = "地址已更改，请重新填写 Key" if lang == "zh" else "URL changed. Please re-enter the key."
+    async with pw.async_playwright() as p:
+        try:
+            browser, pg = await _page(p, app_url, lang)
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
+        for _ in range(3):
+            if await pg.locator(".ca-modal").count():
+                await pg.keyboard.press("Escape")
+                await pg.wait_for_timeout(300)
+        await pg.get_by_title("选择 Agent" if lang == "zh" else "Select agent").first.click()
+        await pg.locator(".ca-agentpick .ca-menu__item").filter(has_text="Agent 设置" if lang == "zh" else "Agent Settings").click()
+        modal = pg.locator(".ca-modal__card")
+        await modal.wait_for()
+        url_in = modal.locator("label.ca-rename__field", has_text="模型地址" if lang == "zh" else "model URL").locator("input")
+        key_field = modal.locator("label.ca-rename__field", has_text="API Key" if lang == "zh" else "API key")
+        assert await key_field.get_by_text(helper).count() == 0
+        await url_in.fill("https://llm.example.com/v2")  # same host: key kept, no helper
+        assert await key_field.get_by_text(helper).count() == 0
+        await url_in.fill("https://other-llm.example.org/v1")
+        line = key_field.get_by_text(helper)
+        await line.wait_for()
+        assert await line.get_attribute("class") == "ca-menu__key"  # the existing grey 'Not detected' style
+        assert await key_field.locator("input").input_value() == ""
+        if SHOTS:
+            await _crop(pg, key_field, f"close-key-helper-{lang}")
+        await url_in.fill("https://llm.wavespeed.ai/v1")  # back on WaveSpeed: cleared, WaveSpeed key used, no helper
+        assert await key_field.get_by_text(helper).count() == 0
         await browser.close()
