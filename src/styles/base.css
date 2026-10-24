@@ -128,10 +128,9 @@ body { font-family: var(--ca-font); color: var(--ca-text); }
 .ca-menu__item:disabled { opacity: .4; cursor: default; background: transparent; }
 .ca-menu__grow { flex: 1; }
 .ca-menu__key { color: var(--ca-muted); padding-left: 24px; }
-/* Reusable image-menu style (image toolbar "more" menu and its future submenus). Light theme only; dark keeps .ca-menu as is. */
-.ca-menu--image { border-width: var(--ca-border-w); }
-:root:not([data-theme="dark"]) .ca-menu--image { max-width: 240px; box-shadow: var(--ca-shadow-menu); }
-:root:not([data-theme="dark"]) .ca-menu--image .ca-menu__item { height: auto; min-height: 32px; padding: 6px 8px; white-space: normal; overflow-wrap: anywhere; }
+/* Reusable image-menu style (image toolbar "more" menu and future submenus such as #244's). Light theme only; in dark these rules don't apply and .ca-menu renders unchanged. */
+:root:not([data-theme="dark"]) .ca-menu--image { border-width: var(--ca-border-w); max-width: 240px; box-shadow: var(--ca-shadow-menu); }
+:root:not([data-theme="dark"]) .ca-menu--image .ca-menu__item { align-items: flex-start; height: auto; min-height: 32px; padding: 6px 8px; white-space: normal; overflow-wrap: break-word; }
 
 .ca-label {
   position: absolute;
