@@ -25,9 +25,10 @@ def test_saved_custom_endpoint_and_model_still_win(monkeypatch):
 
 
 def test_registered_provider_keeps_the_original_agent_loop():
+    # #219: probe/send/list_models only add the no-key status and the saved-model fallback, then call the original
     p = get_provider("local-llm")
     assert isinstance(p, AgentLlmProvider) and isinstance(p, LocalLlmProvider)
-    for name in ("send", "probe", "_history_messages", "list_models"):
+    for name in ("_history_messages", "_build_tools", "_mcp_list_tools", "_request_json"):
         assert getattr(AgentLlmProvider, name) is getattr(LocalLlmProvider, name)
 
 

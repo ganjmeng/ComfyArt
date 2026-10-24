@@ -43,10 +43,10 @@ def test_raw_text_never_shown(js):
 
 
 def test_old_comfyui_copy_cleaned():
-    # #30: Local LLM and LM Studio stay; only the "before starting ComfyUI" leftover goes
+    # #30: only the "before starting ComfyUI" leftover goes; #219 renamed Local LLM to the built-in agent
     for f, old in (("en.json", "before starting ComfyUI"), ("zh.json", "在启动 ComfyUI 前")):
         text = json.loads((ROOT / "src/locales" / f).read_text())["botSettings.claudeCodeCodexQwenCode"]
-        assert old not in text and "Local LLM" in text and "COMFYART_LOCAL_LLM_API_KEY" in text
+        assert old not in text and "COMFYART_LOCAL_LLM_API_KEY" in text
 
 
 def test_agent_relays_our_copy_verbatim(js):

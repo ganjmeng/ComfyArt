@@ -3,9 +3,10 @@ from aiohttp import web
 from ._common import app_path, error, json_body, read_json, routes, write_json
 
 SETTINGS_SPEC: dict[str, object] = {
-    "enable-mcp": False,
-    "enable-bot": False,
-    "bot-provider": "",
+    # #219: the built-in agent works out of the box (only a WaveSpeed key is needed)
+    "enable-mcp": True,
+    "enable-bot": True,
+    "bot-provider": "local-llm",
     "bot-model-claude-code": "",
     "bot-model-codex": "",
     "bot-model-qwen-code": "",
@@ -14,6 +15,8 @@ SETTINGS_SPEC: dict[str, object] = {
     # WaveSpeed key); any other OpenAI-compatible endpoint / model can still be set in Agent settings
     "bot-local-llm-url": "https://llm.wavespeed.ai/v1",
     "bot-model-local-llm": "deepseek/deepseek-v4.1-flash-1017",
+    # #219: key for a custom endpoint; empty = WaveSpeed key, but only on WaveSpeed URLs. Never returned in clear.
+    "bot-local-llm-key": "",
     "bot-enable-comfy-mcp": False,
     "bot-comfy-mcp-command": "",
     "ocr-engine": "local",
@@ -23,6 +26,9 @@ SETTINGS_SPEC: dict[str, object] = {
     "proactive-review": False,
     "proactive-daily": 5,
 }
+
+SECRET_KEYS = ("bot-local-llm-key",)
+MASK = "********"
 
 CHOICES: dict[str, tuple[str, ...]] = {"ocr-engine": ("local", "agent")}
 
@@ -54,7 +60,11 @@ def bot_disabled() -> web.Response:
 
 @routes.get("/comfyart/settings")
 async def get_settings(_request: web.Request) -> web.Response:
-    return web.json_response(all_settings())
+    return web.json_response(_masked(all_settings()))
+
+
+def _masked(values: dict) -> dict:
+    return {k: (MASK if k in SECRET_KEYS and v else v) for k, v in values.items()}
 
 
 @routes.put("/comfyart/settings")
@@ -69,6 +79,7 @@ async def put_settings(request: web.Request) -> web.Response:
         if key in CHOICES and value not in CHOICES[key]:
             return error(f"{key} must be one of {', '.join(CHOICES[key])}", 400)
     current = all_settings()
-    current.update(body)
+    # the UI echoes the mask back for an untouched key: keep the stored value
+    current.update({k: v for k, v in body.items() if not (k in SECRET_KEYS and v == MASK)})
     write_json(_file(), current)
-    return web.json_response(current)
+    return web.json_response(_masked(current))
