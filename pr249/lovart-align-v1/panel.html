@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<title>lovart-align-v1</title>
+<style>
+  :root {
+    --ca-font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --panel: #ffffff;
+    --text: rgba(0,0,0,.88);
+    --muted: rgba(0,0,0,.38);
+    --track-bg: #f0f0f0;
+    --field: #f4f4f4;
+    --border: rgba(0,0,0,.08);
+    --strong: #1a1a1a;
+    --thumb: #1a1a1a;
+    --slider-active: #1a1a1a;
+    --slider-rest: #e6e6e6;
+    --seg-bg: #f2f2f2;
+    --shadow: 0 8px 28px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.04);
+  }
+  :root[data-theme="dark"] {
+    --panel: #1c1c1c;
+    --text: rgba(255,255,255,.9);
+    --muted: rgba(255,255,255,.4);
+    --track-bg: #2a2a2a;
+    --field: #2a2a2a;
+    --border: rgba(255,255,255,.1);
+    --strong: #f2f2f2;
+    --thumb: #f2f2f2;
+    --slider-active: #f2f2f2;
+    --slider-rest: #3a3a3a;
+    --seg-bg: #2a2a2a;
+    --shadow: 0 8px 28px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.3);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; }
+  body {
+    font-family: var(--ca-font);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 28px;
+  }
+  /* Lovart dialog shell */
+  .panel {
+    width: 320px;
+    padding: 18px 18px 16px;
+    border-radius: 16px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    border: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font: 400 13px/18px var(--ca-font);
+  }
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 24px;
+  }
+  .head__title {
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 22px;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .head__actions {
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .head__preview {
+    height: 24px; padding: 0 8px;
+    border: none; background: transparent;
+    color: var(--muted); cursor: pointer;
+    font: 500 12px/18px var(--ca-font);
+    border-radius: 6px;
+  }
+  .head__preview:hover { background: rgba(0,0,0,.04); color: var(--text); }
+  :root[data-theme="dark"] .head__preview:hover { background: rgba(255,255,255,.06); }
+  .head__reset {
+    width: 24px; height: 24px;
+    border: none; background: transparent;
+    color: var(--muted); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 6px; padding: 0;
+  }
+  .head__reset:hover { background: rgba(0,0,0,.04); color: var(--text); }
+  :root[data-theme="dark"] .head__reset:hover { background: rgba(255,255,255,.06); }
+  .head__reset svg { width: 16px; height: 16px; }
+
+  /* Lovart segmented tabs: 主体 | 摄像头 */
+  .seg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: 3px;
+    background: var(--seg-bg);
+    border-radius: 10px;
+  }
+  .seg__btn {
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font: 500 13px/18px var(--ca-font);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .seg__btn[data-on] {
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 1px rgba(0,0,0,.04);
+    font-weight: 560;
+  }
+
+  .stage {
+    width: 284px;
+    height: 240px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--field);
+    flex: none;
+    align-self: center;
+  }
+  .hint {
+    margin: -6px 0 0;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Preset chips — Lovart quiet radius/gaps */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chip {
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text);
+    font: 400 12.5px/18px var(--ca-font);
+    cursor: pointer;
+  }
+  .chip:hover { background: rgba(0,0,0,.04); }
+  :root[data-theme="dark"] .chip:hover { background: rgba(255,255,255,.06); }
+  .chip[data-on] {
+    border-color: var(--strong);
+    background: rgba(0,0,0,.04);
+  }
+
+  /* Lovart sliders: label/value row + thin continuous track, no ticks */
+  .sliders { display: flex; flex-direction: column; gap: 12px; }
+  .slider {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .slider__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12.5px;
+    line-height: 16px;
+  }
+  .slider__label { color: var(--text); font-weight: 450; }
+  .slider__val { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .slider input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+  }
+  .slider input[type="range"]::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 1px;
+    background: linear-gradient(to right,
+      var(--slider-active) 0%,
+      var(--slider-active) var(--pct, 50%),
+      var(--slider-rest) var(--pct, 50%),
+      var(--slider-rest) 100%);
+  }
+  .slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 11px;
+    height: 11px;
+    margin-top: -4.5px;
+    border-radius: 50%;
+    background: var(--thumb);
+    border: none;
+    box-shadow: none;
+    cursor: pointer;
+  }
+
+  /* 四角度 separate bottom */
+  .four {
+    width: 100%;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font: 400 13px/18px var(--ca-font);
+    cursor: pointer;
+  }
+  .four:hover { background: rgba(0,0,0,.03); }
+
+  .foot {
+    display: flex;
+    gap: 10px;
+  }
+  .foot > button {
+    flex: 1;
+    height: 40px;
+    border-radius: 12px;
+    font: 500 14px/20px var(--ca-font);
+    cursor: pointer;
+  }
+  .btn-sec {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+  }
+  .btn-sec:hover { background: rgba(0,0,0,.03); }
+  .btn-pri {
+    border: none;
+    background: var(--strong);
+    color: var(--panel);
+  }
+</style>
+</head>
+<body>
+  <div class="panel" id="panel">
+    <div class="head">
+      <span class="head__title">多角度</span>
+      <div class="head__actions">
+        <button type="button" class="head__reset" aria-label="reset" title="重置">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-2.5-6.2"/><polyline points="21 3 21 9 15 9"/>
+          </svg>
+        </button>
+        <button type="button" class="head__preview" aria-label="preview" title="预览">预览</button>
+      </div>
+    </div>
+    <div class="seg" id="seg"></div>
+    <div class="stage" id="stage" data-stage="1"></div>
+    <div class="hint">front-right quarter view eye-level shot medium shot</div>
+    <div class="chips" id="chips"></div>
+    <div class="sliders">
+      <div class="slider" style="--pct:12.5%">
+        <div class="slider__meta"><span class="slider__label">水平</span><span class="slider__val">45</span></div>
+        <input type="range" min="0" max="360" value="45" />
+      </div>
+      <div class="slider" style="--pct:33.3%">
+        <div class="slider__meta"><span class="slider__label">垂直</span><span class="slider__val">0</span></div>
+        <input type="range" min="-30" max="60" value="0" />
+      </div>
+      <div class="slider" style="--pct:50%">
+        <div class="slider__meta"><span class="slider__label">远近</span><span class="slider__val">5</span></div>
+        <input type="range" min="0" max="10" step="0.1" value="5" />
+      </div>
+    </div>
+    <button type="button" class="four">一次生成 4 个角度</button>
+    <div class="foot">
+      <button type="button" class="btn-sec">取消</button>
+      <button type="button" class="btn-pri">生成</button>
+    </div>
+  </div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const theme = params.get('theme') || 'light';
+  // view: subject (主体) | camera (摄像头)
+  const view = params.get('view') || 'subject';
+  if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+  const seg = document.getElementById('seg');
+  [['subject','主体'],['camera','摄像头']].forEach(([id, label]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'seg__btn';
+    b.textContent = label;
+    if (id === view) b.setAttribute('data-on', '');
+    seg.appendChild(b);
+  });
+
+  // presets: no 正面; keep 背面 + 左侧/右侧 etc.
+  const chips = ['左前','右前','左侧','右侧','背面','俯视','仰视','特写','中等','广角'];
+  const chipEl = document.getElementById('chips');
+  chips.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.textContent = c;
+    chipEl.appendChild(b);
+  });
+
+  // wire pct for filled track
+  document.querySelectorAll('.slider').forEach(row => {
+    const input = row.querySelector('input');
+    const sync = () => {
+      const min = +input.min, max = +input.max, v = +input.value;
+      const pct = ((v - min) / (max - min)) * 100;
+      row.style.setProperty('--pct', pct + '%');
+      row.querySelector('.slider__val').textContent =
+        input.step && input.step !== '1' && String(v).includes('.') ? v : String(v);
+    };
+    input.addEventListener('input', sync);
+    sync();
+  });
+</script>
+</body>
+</html>
