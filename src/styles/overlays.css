@@ -347,8 +347,11 @@
 .ca-cz__bar > * { flex: none; }
 .ca-cz__bar .ca-bar__btn { cursor: default; }
 .ca-cz__tool { position: relative; }
-.ca-cz__x { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; z-index: 1; padding: 2px; display: block; border: none; border-radius: 50%; background: var(--ca-strong); color: var(--ca-float); cursor: pointer; }
-.ca-cz__x svg { width: 12px; height: 12px; }
+.ca-cz__tool--rm { background: var(--ca-hover); }
+.ca-cz__x { position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; z-index: 1; padding: 2px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border: none; border-radius: 2px; background: none; color: var(--ca-muted); opacity: .7; cursor: pointer; }
+.ca-cz__x:hover { opacity: 1; color: var(--ca-strong); }
+.ca-cz__x svg { width: 6px; height: 6px; }
+.ca-cz__card[aria-disabled] { cursor: default; }
 .ca-cz__x:focus-visible { outline: 2px solid var(--ca-blue); outline-offset: 1px; }
 .ca-cz__grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-content: start; padding: 16px 24px; }
 .ca-cz__card { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: none; border-radius: 10px; background: var(--ca-float); box-shadow: inset 0 0 0 var(--ca-border-w) var(--ca-border); color: var(--ca-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }

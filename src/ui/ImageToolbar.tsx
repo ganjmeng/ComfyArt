@@ -267,12 +267,16 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   )
 }
 
+// the quick-edit tab is always on the bar; it cannot be unpinned
+const FIXED_TOOLS = new Set(['quick'])
+
 function PreviewBtn({ tool, names, hints, onUnpin }: { tool: Tool; names: boolean; hints: boolean; onUnpin: () => void }) {
+  const fixed = FIXED_TOOLS.has(tool.id)
   return (
-    <span className="ca-bar__btn ca-cz__tool" title={names ? undefined : tool.label}>
+    <span className={`ca-bar__btn ca-cz__tool${fixed ? '' : ' ca-cz__tool--rm'}`} data-tool={tool.id} title={names ? undefined : tool.label}>
       <span className="ca-icon">{tool.icon}</span>
       {names && <span className="ca-cz__label">{tool.label}{hints && tool.hint && <span className="ca-bar__hint">{tool.hint}</span>}</span>}
-      <button type="button" className="ca-cz__x" title={t('imageToolbar.unpin')} aria-label={`${t('imageToolbar.unpin')} ${tool.label}`} onClick={onUnpin}>{Icons.close}</button>
+      {!fixed && <button type="button" className="ca-cz__x" title={t('imageToolbar.unpin')} aria-label={`${t('imageToolbar.unpin')} ${tool.label}`} onClick={onUnpin}>{Icons.close}</button>}
     </span>
   )
 }
@@ -287,14 +291,14 @@ export function CustomizeDialog({ tools, onClose }: { tools: Tool[]; onClose: ()
   const byId = new Map(tools.map((x) => [x.id, x]))
   const cards = ALL_TOOLS.map((id) => byId.get(id)).filter((x): x is Tool => !!x)
   const shown = cards.filter((x) => pinned.includes(x.id) && x.when !== false)
-  const flip = (id: string) => setPinned((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
+  const flip = (id: string) => !FIXED_TOOLS.has(id) && setPinned((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
   const save = () => { setPrefs({ pinned, names }); onClose() }
   useLayoutEffect(() => setFit(0), [pinned, names])
   useEffect(() => { void document.fonts?.ready.then(() => setFit(0)) }, [])
   useLayoutEffect(() => {
     const el = barRef.current
     if (fit >= 2 || !el?.parentElement) return
-    // measure children, not scrollWidth: the always-on unpin × overhangs the bar edge
+    // measure children, not scrollWidth
     const cs = getComputedStyle(el), kids = [...el.children] as HTMLElement[]
     const need = kids.reduce((a, c) => a + c.offsetWidth, 0) + (parseFloat(cs.columnGap) || 0) * Math.max(0, kids.length - 1) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth)
     if (need > el.parentElement.clientWidth - 16 + 0.5) setFit(fit + 1)
@@ -322,7 +326,7 @@ export function CustomizeDialog({ tools, onClose }: { tools: Tool[]; onClose: ()
           {cards.map((x) => {
             const on = pinned.includes(x.id)
             return (
-              <button key={x.id} type="button" className="ca-cz__card" data-tool={x.id} aria-pressed={on} onClick={() => flip(x.id)}>
+              <button key={x.id} type="button" className="ca-cz__card" data-tool={x.id} aria-pressed={on} aria-disabled={FIXED_TOOLS.has(x.id) || undefined} onClick={() => flip(x.id)}>
                 <span className="ca-icon">{x.icon}</span><span className="ca-menu__grow">{x.label}</span>
                 <span className="ca-icon ca-cz__pin" data-on={on || undefined}>{on ? Icons.pinSolid : Icons.pinOutline}</span>
               </button>
