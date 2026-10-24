@@ -9,7 +9,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2822,
+  "tokens": 2861,
   "status": "done",
   "tools": [
    "generate_image",
@@ -28,7 +28,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2807,
+  "tokens": 2847,
   "status": "done",
   "tools": [
    "generate_image",
@@ -47,7 +47,7 @@
   "paid_expected": 4,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2821,
+  "tokens": 2861,
   "status": "done",
   "tools": [
    "generate_image",
@@ -66,7 +66,7 @@
   "paid_expected": 4,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2808,
+  "tokens": 2849,
   "status": "done",
   "tools": [
    "generate_image",
@@ -85,7 +85,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3917,
+  "tokens": 3971,
   "status": "done",
   "tools": [
    "get_canvas",
@@ -105,7 +105,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3893,
+  "tokens": 3946,
   "status": "done",
   "tools": [
    "get_canvas",
@@ -125,7 +125,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2636,
+  "tokens": 2677,
   "status": "done",
   "tools": [
    "generate_video",
@@ -144,7 +144,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2619,
+  "tokens": 2660,
   "status": "done",
   "tools": [
    "generate_video",
@@ -163,7 +163,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3736,
+  "tokens": 3790,
   "status": "done",
   "tools": [
    "get_canvas",
@@ -183,7 +183,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3714,
+  "tokens": 3767,
   "status": "done",
   "tools": [
    "get_canvas",
@@ -203,7 +203,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2635,
+  "tokens": 2674,
   "status": "done",
   "tools": [
    "generate_music",
@@ -222,7 +222,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2621,
+  "tokens": 2662,
   "status": "done",
   "tools": [
    "generate_music",
@@ -241,7 +241,7 @@
   "paid_expected": 2,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3755,
+  "tokens": 3810,
   "status": "done",
   "tools": [
    "generate_sound_effect",
@@ -261,7 +261,7 @@
   "paid_expected": 2,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3708,
+  "tokens": 3763,
   "status": "done",
   "tools": [
    "generate_sound_effect",
@@ -281,7 +281,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3700,
+  "tokens": 3753,
   "status": "done",
   "tools": [
    "edit_elements",
@@ -301,7 +301,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3652,
+  "tokens": 3705,
   "status": "done",
   "tools": [
    "edit_elements",
@@ -321,7 +321,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2615,
+  "tokens": 2654,
   "status": "done",
   "tools": [
    "image_to_3d",
@@ -340,7 +340,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2600,
+  "tokens": 2640,
   "status": "done",
   "tools": [
    "image_to_3d",
@@ -359,7 +359,7 @@
   "paid_expected": 1,
   "llm_requests": 5,
   "messages": 10,
-  "tokens": 5253,
+  "tokens": 5320,
   "status": "done",
   "tools": [
    "brand_kits",
@@ -380,7 +380,7 @@
   "paid_expected": 1,
   "llm_requests": 5,
   "messages": 10,
-  "tokens": 5221,
+  "tokens": 5288,
   "status": "done",
   "tools": [
    "brand_kits",
@@ -401,7 +401,7 @@
   "paid_expected": 2,
   "llm_requests": 7,
   "messages": 10,
-  "tokens": 6851,
+  "tokens": 6945,
   "status": "done",
   "tools": [
    "generate_image",
@@ -423,7 +423,7 @@
   "paid_expected": 2,
   "llm_requests": 7,
   "messages": 10,
-  "tokens": 6801,
+  "tokens": 6895,
   "status": "done",
   "tools": [
    "generate_image",
@@ -445,7 +445,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2724,
+  "tokens": 2764,
   "status": "done",
   "tools": [
    "create_slides",
@@ -464,7 +464,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2707,
+  "tokens": 2747,
   "status": "done",
   "tools": [
    "create_slides",
@@ -483,13 +483,13 @@
   "paid_expected": 0,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2719,
+  "tokens": 2761,
   "status": "done",
   "tools": [
    "generate_image",
    "generate_image"
   ],
-  "note": "refused retry step shows success: to fix in #232",
+  "note": "",
   "result": "pass"
  },
  {
@@ -502,13 +502,13 @@
   "paid_expected": 0,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2689,
+  "tokens": 2729,
   "status": "done",
   "tools": [
    "generate_image",
    "generate_image"
   ],
-  "note": "refused retry step shows success: to fix in #232",
+  "note": "",
   "result": "pass"
  },
  {
@@ -546,149 +546,149 @@
  {
   "case": "15-429",
   "lang": "en",
-  "title": "fault injection: LLM 429",
+  "title": "fault injection: LLM 429, retries exhausted",
   "steps": 1,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
+  "llm_requests": 4,
   "messages": 4,
-  "tokens": 784,
+  "tokens": 798,
   "status": "error",
   "tools": [
    "generate_image"
   ],
-  "note": "baseline, flips in P1-a #232",
+  "note": "",
   "result": "pass"
  },
  {
   "case": "15-429-retry",
   "lang": "en",
   "title": "fault injection: LLM 429 retried x2 (P1-a)",
-  "steps": 1,
+  "steps": 2,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
-  "messages": 4,
-  "tokens": 784,
-  "status": "error",
+  "llm_requests": 5,
+  "messages": 6,
+  "tokens": 2850,
+  "status": "done",
   "tools": [
-   "generate_image"
+   "generate_image",
+   "wait_generation"
   ],
-  "note": "P1-a #232",
-  "result": "xfail",
-  "error": "assert ['generate_image'] == ['generate_im...t_generation']"
+  "note": "",
+  "result": "pass"
  },
  {
   "case": "15-429-retry",
   "lang": "zh",
   "title": "fault injection: LLM 429 retried x2 (P1-a)",
-  "steps": 1,
+  "steps": 2,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
-  "messages": 4,
-  "tokens": 783,
-  "status": "error",
+  "llm_requests": 5,
+  "messages": 6,
+  "tokens": 2845,
+  "status": "done",
   "tools": [
-   "generate_image"
+   "generate_image",
+   "wait_generation"
   ],
-  "note": "P1-a #232",
-  "result": "xfail",
-  "error": "assert ['generate_image'] == ['generate_im...t_generation']"
+  "note": "",
+  "result": "pass"
  },
  {
   "case": "15-429",
   "lang": "zh",
-  "title": "fault injection: LLM 429",
+  "title": "fault injection: LLM 429, retries exhausted",
   "steps": 1,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
+  "llm_requests": 4,
   "messages": 4,
-  "tokens": 783,
+  "tokens": 796,
   "status": "error",
   "tools": [
    "generate_image"
   ],
-  "note": "baseline, flips in P1-a #232",
+  "note": "",
   "result": "pass"
  },
  {
   "case": "15-500",
   "lang": "en",
-  "title": "fault injection: LLM 500",
+  "title": "fault injection: LLM 500, retries exhausted",
   "steps": 1,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
+  "llm_requests": 4,
   "messages": 4,
-  "tokens": 784,
+  "tokens": 798,
   "status": "error",
   "tools": [
    "generate_image"
   ],
-  "note": "baseline, flips in P1-a #232",
+  "note": "",
   "result": "pass"
  },
  {
   "case": "15-500-retry",
   "lang": "en",
   "title": "fault injection: LLM 500 retried x2 (P1-a)",
-  "steps": 1,
+  "steps": 2,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
-  "messages": 4,
-  "tokens": 784,
-  "status": "error",
+  "llm_requests": 5,
+  "messages": 6,
+  "tokens": 2850,
+  "status": "done",
   "tools": [
-   "generate_image"
+   "generate_image",
+   "wait_generation"
   ],
-  "note": "P1-a #232",
-  "result": "xfail",
-  "error": "assert ['generate_image'] == ['generate_im...t_generation']"
+  "note": "",
+  "result": "pass"
  },
  {
   "case": "15-500-retry",
   "lang": "zh",
   "title": "fault injection: LLM 500 retried x2 (P1-a)",
-  "steps": 1,
+  "steps": 2,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
-  "messages": 4,
-  "tokens": 783,
-  "status": "error",
+  "llm_requests": 5,
+  "messages": 6,
+  "tokens": 2845,
+  "status": "done",
   "tools": [
-   "generate_image"
+   "generate_image",
+   "wait_generation"
   ],
-  "note": "P1-a #232",
-  "result": "xfail",
-  "error": "assert ['generate_image'] == ['generate_im...t_generation']"
+  "note": "",
+  "result": "pass"
  },
  {
   "case": "15-500",
   "lang": "zh",
-  "title": "fault injection: LLM 500",
+  "title": "fault injection: LLM 500, retries exhausted",
   "steps": 1,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
+  "llm_requests": 4,
   "messages": 4,
-  "tokens": 783,
+  "tokens": 796,
   "status": "error",
   "tools": [
    "generate_image"
   ],
-  "note": "baseline, flips in P1-a #232",
+  "note": "",
   "result": "pass"
  },
  {
@@ -701,7 +701,7 @@
   "paid_expected": 0,
   "llm_requests": 80,
   "messages": 160,
-  "tokens": 297570,
+  "tokens": 298650,
   "status": "error",
   "tools": [
    "get_canvas",
@@ -798,7 +798,7 @@
   "paid_expected": 0,
   "llm_requests": 80,
   "messages": 160,
-  "tokens": 297370,
+  "tokens": 298450,
   "status": "error",
   "tools": [
    "get_canvas",
@@ -888,75 +888,75 @@
  {
   "case": "15-timeout",
   "lang": "en",
-  "title": "fault injection: LLM timeout",
+  "title": "fault injection: LLM timeout, retries exhausted",
   "steps": 1,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
+  "llm_requests": 4,
   "messages": 4,
-  "tokens": 784,
+  "tokens": 798,
   "status": "error",
   "tools": [
    "generate_image"
   ],
-  "note": "baseline, flips in P1-a #232",
+  "note": "",
   "result": "pass"
  },
  {
   "case": "15-timeout-retry",
   "lang": "en",
   "title": "fault injection: LLM timeout retried x2 (P1-a)",
-  "steps": 1,
+  "steps": 2,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
-  "messages": 4,
-  "tokens": 784,
-  "status": "error",
+  "llm_requests": 5,
+  "messages": 6,
+  "tokens": 2850,
+  "status": "done",
   "tools": [
-   "generate_image"
+   "generate_image",
+   "wait_generation"
   ],
-  "note": "P1-a #232",
-  "result": "xfail",
-  "error": "assert ['generate_image'] == ['generate_im...t_generation']"
+  "note": "",
+  "result": "pass"
  },
  {
   "case": "15-timeout-retry",
   "lang": "zh",
   "title": "fault injection: LLM timeout retried x2 (P1-a)",
-  "steps": 1,
+  "steps": 2,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
-  "messages": 4,
-  "tokens": 783,
-  "status": "error",
+  "llm_requests": 5,
+  "messages": 6,
+  "tokens": 2845,
+  "status": "done",
   "tools": [
-   "generate_image"
+   "generate_image",
+   "wait_generation"
   ],
-  "note": "P1-a #232",
-  "result": "xfail",
-  "error": "assert ['generate_image'] == ['generate_im...t_generation']"
+  "note": "",
+  "result": "pass"
  },
  {
   "case": "15-timeout",
   "lang": "zh",
-  "title": "fault injection: LLM timeout",
+  "title": "fault injection: LLM timeout, retries exhausted",
   "steps": 1,
   "limit": 12,
   "paid_calls": 1,
   "paid_expected": 1,
-  "llm_requests": 2,
+  "llm_requests": 4,
   "messages": 4,
-  "tokens": 783,
+  "tokens": 796,
   "status": "error",
   "tools": [
    "generate_image"
   ],
-  "note": "baseline, flips in P1-a #232",
+  "note": "",
   "result": "pass"
  }
 ]
