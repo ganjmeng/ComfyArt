@@ -1,11 +1,14 @@
+from urllib.parse import urlparse
+
 from aiohttp import web
 
 from ._common import app_path, error, json_body, read_json, routes, write_json
 
 SETTINGS_SPEC: dict[str, object] = {
+    # #219: the built-in agent works out of the box (only a WaveSpeed key is needed)
     "enable-mcp": False,
-    "enable-bot": False,
-    "bot-provider": "",
+    "enable-bot": True,
+    "bot-provider": "local-llm",
     "bot-model-claude-code": "",
     "bot-model-codex": "",
     "bot-model-qwen-code": "",
@@ -14,6 +17,8 @@ SETTINGS_SPEC: dict[str, object] = {
     # WaveSpeed key); any other OpenAI-compatible endpoint / model can still be set in Agent settings
     "bot-local-llm-url": "https://llm.wavespeed.ai/v1",
     "bot-model-local-llm": "deepseek/deepseek-v4.1-flash-1017",
+    # #219: key for a custom endpoint; empty = WaveSpeed key, but only on WaveSpeed URLs. Never returned in clear.
+    "bot-local-llm-key": "",
     "bot-enable-comfy-mcp": False,
     "bot-comfy-mcp-command": "",
     "ocr-engine": "local",
@@ -23,6 +28,9 @@ SETTINGS_SPEC: dict[str, object] = {
     "proactive-review": False,
     "proactive-daily": 5,
 }
+
+SECRET_KEYS = ("bot-local-llm-key",)
+MASK = "********"
 
 CHOICES: dict[str, tuple[str, ...]] = {"ocr-engine": ("local", "agent")}
 
@@ -45,16 +53,26 @@ def mcp_enabled() -> bool:
 
 
 def bot_enabled() -> bool:
-    return mcp_enabled() and bool(get_setting("enable-bot"))
+    # #219: the built-in agent reaches the canvas through an internal-only MCP channel, so the Agent no
+    # longer depends on the external MCP switch; external tools are gated separately (bot_send / mcp_post)
+    return bool(get_setting("enable-bot"))
 
 
 def bot_disabled() -> web.Response:
-    return error("the ComfyArt Agent is off: turn on MCP and the Agent in Agent settings", 403)
+    return error("the ComfyArt Agent is off: turn it on in Agent settings", 403)
 
 
 @routes.get("/comfyart/settings")
 async def get_settings(_request: web.Request) -> web.Response:
-    return web.json_response(all_settings())
+    return web.json_response(_masked(all_settings()))
+
+
+def _host(url: str) -> str:
+    return (urlparse(str(url or "").strip()).hostname or "").lower()
+
+
+def _masked(values: dict) -> dict:
+    return {k: (MASK if k in SECRET_KEYS and v else v) for k, v in values.items()}
 
 
 @routes.put("/comfyart/settings")
@@ -69,6 +87,13 @@ async def put_settings(request: web.Request) -> web.Response:
         if key in CHOICES and value not in CHOICES[key]:
             return error(f"{key} must be one of {', '.join(CHOICES[key])}", 400)
     current = all_settings()
-    current.update(body)
-    write_json(_file(), current)
-    return web.json_response(current)
+    old_host = _host(current["bot-local-llm-url"])
+    # the UI echoes the mask back for an untouched key: keep the stored value
+    current.update({k: v for k, v in body.items() if not (k in SECRET_KEYS and v == MASK)})
+    # #219: a stored custom key belongs to its host; a new hostname clears it unless a new key came with it.
+    # Back on a WaveSpeed host the key is cleared too and the WaveSpeed key is used as usual.
+    new_key = body.get("bot-local-llm-key")
+    if _host(current["bot-local-llm-url"]) != old_host and (new_key is None or new_key == MASK):
+        current["bot-local-llm-key"] = ""
+    write_json(_file(), current, mode=0o600)  # holds the custom endpoint key
+    return web.json_response(_masked(current))

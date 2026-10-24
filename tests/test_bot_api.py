@@ -24,9 +24,12 @@ async def test_everything_is_off_by_default(bot_client):
     assert (await bot_client.post("/comfyart/bot/complete", json={"text": "hi"})).status == 403
 
 
-async def test_bot_needs_mcp_too(bot_client, fake_provider):
+async def test_bot_works_without_mcp_but_external_send_needs_it(bot_client, fake_provider):
+    # #219: the Agent no longer needs the MCP switch; only external tools sending a turn do
     write_settings(**{"enable-mcp": False, "enable-bot": True})
-    assert (await bot_client.get("/comfyart/bot/chats?project=p")).status == 403
+    assert (await bot_client.get("/comfyart/bot/chats?project=p")).status == 200
+    chat = (await (await bot_client.post("/comfyart/bot/chats", json={"project": "p", "provider": "fake-test"})).json())["chat"]
+    assert (await bot_client.post(f"/comfyart/bot/chats/{chat['id']}/send", json={"text": "hi"})).status == 403
 
 
 async def test_create_requires_project_and_known_provider(bot_client, fake_provider):

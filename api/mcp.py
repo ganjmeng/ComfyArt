@@ -8,6 +8,9 @@ from . import chat_store, paid_guard
 from ._common import routes
 from .mcp_tools import TOOLS, bot_tools
 from .mcp_tools._context import BOT_CHAT_ID, PROJECT
+import hmac
+import secrets
+
 from .settings import mcp_enabled
 
 _log = logging.getLogger(__name__)
@@ -111,9 +114,19 @@ async def _dispatch(msg: dict) -> dict | None:
     return _error(msg_id, -32601, f"method not found: {method}")
 
 
+# #219: the built-in agent calls this endpoint in-process with a per-process secret header, so it works while
+# the external MCP switch is off; every other caller (local MCP clients, external tools) needs the switch on.
+INTERNAL_HEADER = "X-ComfyArt-Internal"
+INTERNAL_TOKEN = secrets.token_urlsafe(32)
+
+
+def internal_request(request: web.Request) -> bool:
+    return hmac.compare_digest(request.headers.get(INTERNAL_HEADER, ""), INTERNAL_TOKEN)
+
+
 @routes.post("/comfyart/mcp")
 async def mcp_post(request: web.Request) -> web.Response:
-    if not mcp_enabled():
+    if not mcp_enabled() and not internal_request(request):
         return web.json_response(_error(None, -32000, "ComfyArt MCP is off: turn it on in Agent settings"), status=403)
     try:
         msg = await request.json()

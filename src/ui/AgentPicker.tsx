@@ -1,13 +1,18 @@
 import { useState } from 'react'
 import { atom, useValue } from 'tldraw'
 
-import { chatIdAtom, chatsAtom, defaultProvider, loadProviders, messagesAtom, newProviderAtom, openChat, providersAtom, saveSettings, settingsAtom, updateChat } from '../bot'
+import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, lostProvider, NO_KEY_DETAIL, providerLabel, loadProviders, messagesAtom, newProviderAtom, openChat, providersAtom, saveSettings, settingsAtom, updateChat, type ProviderInfo } from '../bot'
 import { errorText } from '../jobs'
+import { confirmAtom } from './Confirm'
 import { Icons } from './icons'
 import { Popover } from './Popover'
 import { t } from '../i18n'
 
 export const botSettingsOpenAtom = atom('bot settings open', false)
+
+// #219: the composer bar shows a short name; the full name stays in the list and on hover
+const SHORT_LABELS: Record<string, string> = { 'claude-code': 'Claude', 'qwen-code': 'Qwen', 'deepseek-harness': 'dsh' }
+const shortLabel = (p: ProviderInfo) => (p.id === BUILTIN_AGENT ? t('agentPicker.builtinAgentShort') : SHORT_LABELS[p.id] ?? providerLabel(p))
 
 export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
   const [open, setOpen] = useState(false)
@@ -22,11 +27,25 @@ export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
   const model = String(settings[modelKey] ?? '')
   const options = provider?.model_options ?? provider?.models.map((m) => ({ value: m, label: m, group: '' })) ?? []
   const fail = (e: unknown) => onError(errorText(e))
+  const lost = lostProvider()
 
-  const pick = (id: string) => {
+  const choose = (id: string) => {
     newProviderAtom.set(id)
     void saveSettings({ 'bot-provider': id }).catch(fail)
     if (chat && started) void openChat(null)
+  }
+
+  // #219: external tools talk to the canvas over MCP, which is off by default; ask before turning it on.
+  // Cancel keeps the previous agent; the built-in agent never needs the switch.
+  const pick = (id: string) => {
+    if (id === BUILTIN_AGENT || settingsAtom.get()['enable-mcp'] === true) return choose(id)
+    setOpen(false)
+    confirmAtom.set({
+      title: t('agentPicker.enableMcpTitle'),
+      desc: t('agentPicker.enableMcpConfirm'),
+      ok: t('agentPicker.enableMcpOk'),
+      run: () => { void saveSettings({ 'enable-mcp': true }).then(() => choose(id)).catch(fail) },
+    })
   }
 
   return (
@@ -35,8 +54,8 @@ export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
       onOpenChange={(o) => { setOpen(o); if (o) void loadProviders().catch(fail) }}
       side="top"
       trigger={({ open: o, toggle }) => (
-        <button type="button" className="ca-bar__btn ca-composer__mode" title={t('agentPicker.selectAgent')} data-open={o || undefined} onClick={toggle}>
-          <span className="ca-menu__grow">{provider?.label ?? t('agentPicker.selectAgent')}</span><span className="ca-icon">{Icons.chevron}</span>
+        <button type="button" className="ca-bar__btn ca-composer__mode" title={t('agentPicker.selectAgent')} data-agent-name data-open={o || undefined} onClick={toggle}>
+          <span className="ca-menu__grow" title={provider ? providerLabel(provider) : undefined}>{provider ? shortLabel(provider) : t('agentPicker.selectAgent')}</span><span className="ca-icon">{Icons.chevron}</span>
         </button>
       )}
     >
@@ -44,11 +63,12 @@ export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
         <div className="ca-gen__title">Agent</div>
         {providers.map((p) => (
           <button key={p.id} type="button" className="ca-menu__item" disabled={!p.available} title={p.detail || p.version} onClick={() => pick(p.id)}>
-            <span className="ca-menu__grow">{p.label}{!p.available && <span className="ca-menu__key"> {t('agentPicker.unavailable')}</span>}</span>
+            <span className="ca-menu__grow">{providerLabel(p)}{!p.available && <span className="ca-menu__key"> {p.id === BUILTIN_AGENT ? t('agentPicker.unavailable') : t('agentPicker.notDetected')}</span>}</span>
             {p.id === providerId && <span className="ca-icon">{Icons.check}</span>}
           </button>
         ))}
-        {provider && !provider.available && provider.detail && <div className="ca-chat__hint">{provider.detail}</div>}
+        {provider && !provider.available && provider.detail && provider.detail !== NO_KEY_DETAIL && <div className="ca-chat__hint">{provider.detail}</div>}
+        {lost && <div className="ca-chat__hint">{t('agentPicker.fellBackToBuiltin', providerLabel(lost))}</div>}
         {chat && started && <div className="ca-chat__hint">{t('agentPicker.switchingAgentStartsANew')}</div>}
         {options.length > 0 && (
           <>

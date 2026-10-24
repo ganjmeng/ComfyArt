@@ -255,6 +255,15 @@
 .ca-md__code > button { position: absolute; top: 4px; right: 4px; opacity: 0; }
 .ca-md__code:hover > button { opacity: 1; }
 .ca-composer__mode { white-space: nowrap; }
+.ca-composer__foot > .ca-pop-anchor:has(> .ca-composer__mode) { flex-shrink: 0; }
+/* #219: every control keeps its size; only the agent-name button may shrink, with a trailing ellipsis (full name on hover) */
+.ca-composer__foot > * { flex-shrink: 0; }
+.ca-composer__foot > .ca-gen__spacer { flex-shrink: 1; }
+.ca-composer__foot > .ca-pop-anchor:has(> .ca-composer__mode[data-agent-name]) { flex-shrink: 1; min-width: 0; }
+.ca-composer__mode[data-agent-name] { max-width: 100%; min-width: 0; }
+.ca-composer__mode[data-agent-name] > .ca-menu__grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* #219: the agent name needs the room: in the agent bar the ref button keeps only its icon (its tooltip explains it) */
+.ca-composer__foot:has(.ca-composer__mode[data-agent-name]) .ca-refbtn > span:not(.ca-icon) { display: none; }
 .ca-chat__tool { display: flex; flex-direction: column; gap: 6px; }
 .ca-chat__tool > .ca-chat__step { width: 100%; padding: 0; border: none; background: none; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
 .ca-chat__tool > .ca-chat__step:hover { color: var(--ca-text); }
