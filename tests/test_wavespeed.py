@@ -60,6 +60,14 @@ MODELS = [
     _meta("acme/my-edit", {"input_image": {"type": "string"}, "instruction": {"type": "string"}, "strength": {"type": "number"}, "dims": {"type": "string"}}, ("input_image", "instruction", "strength")),
 ]
 
+# #249: the multiple-angles model was missing here, so build_payload saw an empty schema and dropped
+# horizontal_angle / vertical_angle / distance. The fixture entry is the parameter definition the mock serves.
+_ANGLE_ID = "wavespeed-ai/qwen-image/edit-multiple-angles"
+with open(os.path.join(os.path.dirname(__file__), "fixtures", "wavespeed_catalog_subset.json"), encoding="utf-8") as _angle_f:
+    _angle_meta = json.load(_angle_f)[_ANGLE_ID]
+if not any(m.get("model_id") == _ANGLE_ID for m in MODELS):
+    MODELS.append(_angle_meta)
+
 
 @pytest.fixture(autouse=True)
 def uncurated(monkeypatch):

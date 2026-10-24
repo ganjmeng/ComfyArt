@@ -172,8 +172,9 @@ SPECS: dict[str, dict] = {
         "Split an image shape into separate transparent layers (layers: how many, default 4).",
         {"id": _ID, "layers": {"type": "integer"}, "prompt": {"type": "string"}}, ["id"], approval="图层拆分"),
     "change_angle": _tool(
-        "Re-render an image shape from another camera angle: horizontal -180..180 degrees, vertical "
-        "-90..90 degrees, zoom 0.5..2.",
+        "Re-render an image shape from another camera angle. horizontal is sent as 0..359 "
+        "(0 front, 90 right, 270 left, 180 back). Negative degrees wrap into that range, so -90 is sent as 270. "
+        "vertical -30..60 (clamped), zoom 0..10 (7 or more is close-up, 3 up to 7 is medium, below 3 is wide).",
         {"id": _ID, "horizontal": _POINT, "vertical": _POINT, "zoom": _POINT}, ["id"], approval="多角度"),
     "replace_text": _tool(
         "Replace text rendered inside an image shape: from is the current text, to the new text.",

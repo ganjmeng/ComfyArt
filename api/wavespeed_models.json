@@ -105,14 +105,11 @@
    "types": [
     "image-to-image"
    ],
-   "default": "wavespeed-ai/qwen-image/edit-2509-multiple-angles",
+   "default": "wavespeed-ai/qwen-image/edit-multiple-angles",
    "models": [
     {
-     "id": "wavespeed-ai/qwen-image/edit-2509-multiple-angles",
+     "id": "wavespeed-ai/qwen-image/edit-multiple-angles",
      "local": "multiangle-qwen-image"
-    },
-    {
-     "id": "wavespeed-ai/qwen-image/edit-multiple-angles"
     }
    ]
   },
