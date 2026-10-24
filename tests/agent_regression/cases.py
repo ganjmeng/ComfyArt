@@ -8,7 +8,6 @@ from typing import Optional
 from harness import Shape, Step
 
 IMG = "shape:img1"
-P1A = "P1-a #232"  # expectation flips when the LLM retry (P1-a) lands
 
 
 def ids(last: dict) -> dict:
@@ -56,28 +55,34 @@ def _gen_then_reply(tool, args, zh, en):
     return [Step(calls=[(tool, args)]), Step(calls=[("wait_generation", ids)]), done(zh, en)]
 
 
+_FAIL = {  # #232: zh UI accepts Chinese only, en UI English only
+    "timeout": {"zh": "模型响应超时，已重试 2 次仍失败", "en": "The model timed out; still failing after 2 retries"},
+    "429": {"zh": "模型请求过于频繁（HTTP 429），已重试 2 次仍失败", "en": "Too many requests to the model (HTTP 429); still failing after 2 retries"},
+    "500": {"zh": "模型服务出错（HTTP 500），已重试 2 次仍失败", "en": "The model service failed (HTTP 500); still failing after 2 retries"},
+}
+
+
 def faults(kind):
-    """LLM fault after one paid image: today the turn ends with the HTTP/timeout error at once (no retry)."""
+    """LLM fault after one paid image that never clears: retried twice (3 LLM attempts), then a bilingual
+    error listing the steps already done. The paid tool is not re-run."""
     return Case(
-        id=f"15-{kind}", title=f"fault injection: LLM {kind}",
+        id=f"15-{kind}", title=f"fault injection: LLM {kind}, retries exhausted",
         turns=[{"zh": "画一只猫", "en": "Draw a cat"}],
-        script=[Step(calls=[("generate_image", {"prompt": "a cat"})]), Step(fault=kind),
-                done("已完成", "Done")],
+        script=[Step(calls=[("generate_image", {"prompt": "a cat"})]), Step(fault=kind), Step(fault=kind),
+                Step(fault=kind), done("已完成", "Done")],
         tools=["generate_image"], paid=1, shapes={"image": 1}, status="error",
-        error={"zh": "TimeoutError" if kind == "timeout" else f"HTTP {kind}",
-               "en": "TimeoutError" if kind == "timeout" else f"HTTP {kind}"},
-        llm_requests=2, baseline_for=P1A)
+        error=_FAIL[kind], llm_requests=4, extra="fail_done")
 
 
 def faults_retry(kind):
-    """What P1-a must do: retry the LLM call twice, then carry on; the paid tool is never re-run."""
+    """P1-a: retry the LLM call twice, then carry on; the paid tool is never re-run."""
     return Case(
         id=f"15-{kind}-retry", title=f"fault injection: LLM {kind} retried x2 (P1-a)",
         turns=[{"zh": "画一只猫", "en": "Draw a cat"}],
         script=[Step(calls=[("generate_image", {"prompt": "a cat"})]), Step(fault=kind), Step(fault=kind),
                 Step(calls=[("wait_generation", ids)]), done("已完成", "Done")],
         tools=["generate_image", "wait_generation"], paid=1, shapes={"image": 1},
-        llm_requests=5, xfail=P1A)
+        llm_requests=5, extra="retry_rows")
 
 
 CASES: list[Case] = [
@@ -159,7 +164,6 @@ CASES: list[Case] = [
           Step(calls=[("generate_image", {"prompt": "a cat, retry"})]),  # the model tries again: the guard refuses
           done("已取消该生成，未扣费。要怎么调整？", "Cancelled this generation; nothing was charged. How should I adjust?")],
          ["generate_image", "generate_image"], 0, {}, decline=True,
-         note="refused retry step shows success: to fix in #232",
          reply={"zh": "已取消", "en": "Cancelled"}, extra="cancel"),
     Case("14", "no key: immediate message, no model call",
          [{"zh": "画一张猫", "en": "Draw a cat"}], [], [], 0, {}, no_key=True, status="error",
@@ -170,5 +174,7 @@ CASES: list[Case] = [
          [{"zh": "检查所有页面", "en": "Check every page"}],
          [Step(calls=[("get_canvas", {"page": f"p{i}"})]) for i in range(81)],
          ["get_canvas"] * 80, 0, {}, limit=80, status="error",
-         error={"zh": "too many tool-call iterations", "en": "too many tool-call iterations"}, llm_requests=80),
+         error={"zh": "已达到 80 步上限，已停止，未继续扣费。已完成：查看画布 ×80",
+                "en": "Reached the 80-step limit and stopped; no further charges. Done so far: View canvas ×80."},
+         llm_requests=80),
 ]

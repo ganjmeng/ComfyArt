@@ -36,6 +36,33 @@ _LLM_TIMEOUT_S = 300
 _HISTORY_CHAR_CAP = 16_000
 _REPEAT_STOP = 3
 _CACHED_SKILL_STOP = 3  # cumulative cached skill re-reads per turn (A/B/A/B...)
+_MAX_STEPS_ENV = "COMFYART_AGENT_MAX_STEPS"
+_MAX_STEPS_RANGE = (1, 500)
+# #232: an LLM request that timed out, got 429 or a 5xx is retried twice; tool calls (paid) never are.
+_LLM_RETRIES = 2
+_RETRY_BACKOFF_S = (2.0, 4.0)       # timeout / 5xx: wait before retry 1, 2
+_RATE_LIMIT_WAIT_S = (5.0, 10.0)    # 429 without Retry-After: countdown before retry 1, 2
+_RATE_LIMIT_WAIT_CAP_S = 60.0
+_STEP_LIMIT_TEXT = {
+    "zh": "已达到 {n} 步上限，已停止，未继续扣费。",
+    "en": "Reached the {n}-step limit and stopped; no further charges.",
+}
+_LLM_FAIL_TEXT = {
+    "timeout": {"zh": "模型响应超时，已重试 {r} 次仍失败，已停止，请稍后再试。",
+                "en": "The model timed out; still failing after {r} retries, so the task stopped. "
+                      "Please try again later."},
+    "429": {"zh": "模型请求过于频繁（HTTP 429），已重试 {r} 次仍失败，已停止，请稍后再试。",
+            "en": "Too many requests to the model (HTTP 429); still failing after {r} retries, "
+                  "so the task stopped. Please try again later."},
+    "5xx": {"zh": "模型服务出错（HTTP {status}），已重试 {r} 次仍失败，已停止，请稍后再试。",
+            "en": "The model service failed (HTTP {status}); still failing after {r} retries, "
+                  "so the task stopped. Please try again later."},
+}
+# The paid guard's cancel / refusal texts (api/paid_guard.py) and a declined confirm: the step shows
+# 已取消 / Cancelled, never success (#232, regression case 13). Same patterns as src/ui/stepState.ts.
+_CANCEL_RE = re.compile(
+    r'"cancelled"\s*:\s*true|"status"\s*:\s*"declined"|已取消该生成，未扣费|'
+    r"Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed")
 _REPEAT_STOP_TEXT = {
     "zh": "任务卡在重复步骤，已停止，未继续扣费。",
     "en": "The task got stuck repeating a step and was stopped; no further "
@@ -127,6 +154,69 @@ def _step_label(name: str, args: dict, lang: str) -> str:
     return "其他步骤" if zh else "Other step"
 
 
+class LlmHttpError(RuntimeError):
+    """A non-2xx answer; keeps the status and Retry-After for the retry policy (#232)."""
+
+    def __init__(self, status: int, text: str, retry_after: Optional[float] = None) -> None:
+        super().__init__(f"HTTP {status}: {text[:300]}")
+        self.status = status
+        self.retry_after = retry_after
+
+
+def _retry_after(value: Optional[str]) -> Optional[float]:
+    try:
+        return max(0.0, float(str(value).strip())) if value else None
+    except ValueError:
+        return None
+
+
+def _retry_kind(exc: BaseException) -> str:
+    """'timeout' | '429' | '5xx' for a retryable LLM failure, '' otherwise."""
+    if isinstance(exc, asyncio.TimeoutError):
+        return "timeout"
+    if isinstance(exc, LlmHttpError):
+        if exc.status == 429:
+            return "429"
+        if 500 <= exc.status < 600:
+            return "5xx"
+    return ""
+
+
+def _done_items(done: list[str], zh: bool) -> str:
+    counts: dict[str, int] = {}
+    for label in done:
+        counts[label] = counts.get(label, 0) + 1
+    items = [n + (f" ×{c}" if c > 1 else "") for n, c in counts.items()]
+    if zh:
+        return "已完成：" + ("、".join(items) if items else "无")
+    return "Done so far: " + (", ".join(items) if items else "nothing") + "."
+
+
+def _with_done(head: str, done: list[str], lang: str) -> str:
+    """One line for the red error notice: what happened + the steps already done (no line breaks)."""
+    zh = lang == "zh"
+    return head + ("" if zh else " ") + _done_items(done, zh)
+
+
+def _step_limit_summary(done: list[str], limit: int, lang: str = "zh") -> str:
+    return _with_done(_STEP_LIMIT_TEXT["zh" if lang == "zh" else "en"].format(n=limit), done, lang)
+
+
+def _llm_fail_summary(kind: str, exc: BaseException, done: list[str], lang: str = "zh") -> str:
+    status = getattr(exc, "status", "")
+    head = _LLM_FAIL_TEXT[kind]["zh" if lang == "zh" else "en"].format(r=_LLM_RETRIES, status=status)
+    return _with_done(head, done, lang)
+
+
+def max_steps_from(value: object, default: int = _MAX_ITERATIONS) -> int:
+    try:
+        n = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return default
+    lo, hi = _MAX_STEPS_RANGE
+    return min(hi, max(lo, n)) if n > 0 else default
+
+
 def _stop_summary(done: list[str], lang: str = "zh") -> str:
     """One line: shown in the chat panel's error notice (no line breaks)."""
     zh = lang == "zh"
@@ -196,7 +286,8 @@ class LocalLlmProvider(AgentProvider):
         ) as resp:
             text = await resp.text()
             if resp.status >= 400:
-                raise RuntimeError(f"HTTP {resp.status}: {text[:300]}")
+                raise LlmHttpError(resp.status, text,
+                                   _retry_after(resp.headers.get("Retry-After")))
             return json.loads(text) if text else {}
 
     async def probe(self) -> ProviderStatus:
@@ -343,6 +434,44 @@ class LocalLlmProvider(AgentProvider):
             if unloaded:
                 await lms.load_model(model)
 
+    def _max_steps(self) -> int:
+        """#232: the step limit is configurable (env here; the built-in agent also reads its setting)."""
+        return max_steps_from(os.environ.get(_MAX_STEPS_ENV), _MAX_ITERATIONS)
+
+    async def _llm_request(self, session: aiohttp.ClientSession, url: str,
+                           body: dict, emit: EmitFn, handle: TurnHandle) -> dict:
+        """POST to the LLM; a timeout, 429 or 5xx is retried _LLM_RETRIES times. Each wait shows as a
+        retry row in the chat (429: with a countdown). Tool calls never go through here, so a paid
+        run is never repeated."""
+        attempt = 0
+        while True:
+            try:
+                return await self._request_json(
+                    session, "POST", url, headers=self._api_headers(),
+                    json_body=body, timeout=_LLM_TIMEOUT_S)
+            except (asyncio.TimeoutError, LlmHttpError) as e:
+                kind = _retry_kind(e)
+                if not kind or attempt >= _LLM_RETRIES or handle.stop_requested:
+                    raise
+                if kind == "429":
+                    ra = getattr(e, "retry_after", None)
+                    wait = min(_RATE_LIMIT_WAIT_CAP_S,
+                               ra if ra is not None else _RATE_LIMIT_WAIT_S[attempt])
+                else:
+                    wait = _RETRY_BACKOFF_S[attempt]
+                attempt += 1
+                _log.warning("[ComfyArt/local-llm] LLM %s, retry %d/%d in %.1fs",
+                             kind, attempt, _LLM_RETRIES, wait)
+                await emit(BotEvent(t="retry", name=kind, input={
+                    "attempt": attempt, "max": _LLM_RETRIES, "wait_s": round(wait, 1),
+                    "until": int((time.time() + wait) * 1000),
+                    "http_status": getattr(e, "status", 0)}))
+                end = time.monotonic() + wait
+                while not handle.stop_requested and time.monotonic() < end:
+                    await asyncio.sleep(min(0.25, max(0.0, end - time.monotonic())))
+                if handle.stop_requested:
+                    raise e
+
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
         base = self._base_url()
@@ -379,20 +508,26 @@ class LocalLlmProvider(AgentProvider):
                         else _reply_lang(turn.user_text))
                 cache_hits = 0
                 skill_cache: dict[str, str] = {}
-                for _ in range(_MAX_ITERATIONS):
+                limit = self._max_steps()
+                for _ in range(limit):
                     if handle.stop_requested:
                         return TurnResult(aborted=True, usage=usage)
-                    data = await self._request_json(
-                        session, "POST", f"{base}/chat/completions",
-                        headers=self._api_headers(),
-                        json_body={
-                            "model": model,
-                            "messages": messages,
-                            **({"tools": tools, "tool_choice": "auto"} if tools else {}),
-                            "temperature": 0.2,
-                        },
-                        timeout=_LLM_TIMEOUT_S,
-                    )
+                    try:
+                        data = await self._llm_request(
+                            session, f"{base}/chat/completions", {
+                                "model": model,
+                                "messages": messages,
+                                **({"tools": tools, "tool_choice": "auto"} if tools else {}),
+                                "temperature": 0.2,
+                            }, emit, handle)
+                    except (asyncio.TimeoutError, LlmHttpError) as e:
+                        if handle.stop_requested:
+                            return TurnResult(aborted=True, usage=usage)
+                        kind = _retry_kind(e)
+                        if not kind:
+                            raise
+                        return TurnResult(usage=usage,
+                                          error=_llm_fail_summary(kind, e, done, lang))
                     usage = merge_usage(usage, data.get("usage"))
                     message = (data.get("choices") or [{}])[0].get("message") or {}
                     content = self._extract_text(message.get("content") or "")
@@ -468,7 +603,8 @@ class LocalLlmProvider(AgentProvider):
                                 + f"\n…[truncated {len(result_text) - TOOL_RESULT_CAP} chars]")
                         await emit(BotEvent(
                             t="tool_result", name=name, text=result_text,
-                            id=tc_id, is_error=tool_failed))
+                            id=tc_id, is_error=tool_failed,
+                            detail="cancelled" if _CANCEL_RE.search(result_text) else ""))
                         messages.append({
                             "role": "tool",
                             "tool_call_id": tc_id or name,
@@ -481,7 +617,7 @@ class LocalLlmProvider(AgentProvider):
                                 *({"type": "image_url", "image_url": {"url": u}}
                                   for u in images),
                             ]})
-                return TurnResult(error="too many tool-call iterations",
+                return TurnResult(error=_step_limit_summary(done, limit, lang),
                                   usage=usage)
         except asyncio.CancelledError:
             raise
