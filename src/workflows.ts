@@ -26,6 +26,23 @@ const AZIMUTHS: [number, string][] = [
   [0, 'front view'], [45, 'front-right quarter view'], [90, 'right side view'], [135, 'back-right quarter view'],
   [180, 'back view'], [225, 'back-left quarter view'], [270, 'left side view'], [315, 'front-left quarter view'],
 ]
+const DISTANCE_WORDS = ['close-up', 'medium shot', 'wide shot'] as const
+
+const clampNum = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
+
+/** Shared by the panel caption and the request: 0 close-up (z ≥ 7), 1 medium (3 ≤ z < 7), 2 wide (z < 3). */
+export function angleDistance(z: number): 0 | 1 | 2 {
+  return z >= 7 ? 0 : z >= 3 ? 1 : 2
+}
+
+/** Model ranges: horizontal −90..90 (0 front, left negative), vertical −30..60. Out-of-range values are clamped, not wrapped. */
+export function angleParams(h: number, v: number, z: number) {
+  return {
+    horizontal_angle: clampNum(Math.round(h), -90, 90),
+    vertical_angle: clampNum(Math.round(v), -30, 60),
+    distance: angleDistance(z),
+  }
+}
 
 export function anglePrompt(horizontal: number, vertical: number, zoom: number): string {
   const az = ((horizontal % 360) + 360) % 360
@@ -34,7 +51,7 @@ export function anglePrompt(horizontal: number, vertical: number, zoom: number):
     return d(cur[0]) < d(best[0]) ? cur : best
   })[1]
   const elKw = vertical <= -15 ? 'low-angle shot' : vertical <= 15 ? 'eye-level shot' : vertical <= 45 ? 'elevated shot' : 'high-angle shot'
-  const distKw = zoom >= 7 ? 'close-up' : zoom >= 3 ? 'medium shot' : 'wide shot'
+  const distKw = DISTANCE_WORDS[angleDistance(zoom)]
   return `<qma> ${azKw} ${elKw} ${distKw}`
 }
 

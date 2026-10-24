@@ -5,8 +5,7 @@ import { queuePrompt, uploadImage, viewUrl, waitForImages } from './comfy'
 import type { CommentShape } from './shapes/CommentShape'
 import { resultsAtom, spawnHolder, startJob, type ErrorSink, type MediaKind } from './jobs'
 import { notify } from './notices'
-import { anglePrompt, annotated, layersGraph, samGraph, type Built, type Crop } from './workflows'
-import { workflowConfigAtom } from './customWorkflows'
+import { angleParams, annotated, layersGraph, samGraph, type Built, type Crop } from './workflows'
 import { nearestRatio } from './generate'
 import { VIDEO_RATIOS } from './genOptions'
 import { t } from './i18n'
@@ -68,7 +67,7 @@ export const editText = (e: Editor, s: TLImageShape, edits: [string, string][], 
     `${edits.map(([from, to]) => (to ? `Change the text "${from}" to "${to}" in the same font, color, size and position` : `Remove the text "${from}" and fill its area with the surrounding background`)).join('. ')}. Keep everything else in the image unchanged.` })))
 
 export const angles = (e: Editor, s: TLImageShape, h: number, v: number, z: number, err: ErrorSink) =>
-  run(e, s, t('common.multiAngle'), err, (src) => cloud(wsBuilt({ feature: 'change_angle', custom: 'angles', image: src.image, prompt: workflowConfigAtom.get().angles ? anglePrompt(h, v, z) : undefined, params: { horizontal_angle: Math.round(h), vertical_angle: Math.round(v), distance: z > 1.25 ? 0 : z < 0.8 ? 2 : 1 } })))
+  run(e, s, t('common.multiAngle'), err, (src) => cloud(wsBuilt({ feature: 'change_angle', custom: 'angles', image: src.image, params: angleParams(h, v, z) })))
 
 export const expand = (e: Editor, s: TLImageShape, pads: Pads, prompt: string, err: ErrorSink) => {
   const src = source(e, s)

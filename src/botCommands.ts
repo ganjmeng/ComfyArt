@@ -247,7 +247,7 @@ const HANDLERS: Record<string, Handler> = {
   expand_image: (editor, args, onError) => started(editor, actions.expand(editor, imageOf(editor, args.id),
     { l: Number(args.left) || 0, t: Number(args.top) || 0, r: Number(args.right) || 0, b: Number(args.bottom) || 0 }, String(args.prompt ?? ''), onError)),
   split_layers: (editor, args, onError) => started(editor, actions.splitLayers(editor, imageOf(editor, args.id), Number(args.layers) || 4, String(args.prompt ?? ''), onError)),
-  change_angle: (editor, args, onError) => started(editor, actions.angles(editor, imageOf(editor, args.id), Number(args.horizontal) || 0, Number(args.vertical) || 0, Number(args.zoom) || 1, onError)),
+  change_angle: (editor, args, onError) => started(editor, actions.angles(editor, imageOf(editor, args.id), Number(args.horizontal) || 0, Number(args.vertical) || 0, Number(args.zoom ?? 5), onError)),
   replace_text: (editor, args, onError) => started(editor, actions.editText(editor, imageOf(editor, args.id), [[String(args.from), String(args.to)]], onError)),
   edit_region: (editor, args, onError) => started(editor, actions.editRegion(editor, imageOf(editor, args.id), regionOf(args), String(args.prompt), onError)),
   erase_region: (editor, args, onError) => started(editor, actions.eraseRegion(editor, imageOf(editor, args.id), regionOf(args), onError)),

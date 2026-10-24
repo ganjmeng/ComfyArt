@@ -6479,24 +6479,26 @@
 {
 "request_schema": {
 "properties": {
-"distance": {},
-"enable_base64_output": {},
-"enable_sync_mode": {},
-"horizontal_angle": {},
+"distance": {"type": "integer", "minimum": 0, "maximum": 2, "default": 1},
+"enable_base64_output": {"type": "boolean"},
+"enable_sync_mode": {"type": "boolean"},
+"horizontal_angle": {"type": "integer", "minimum": -90, "maximum": 90, "default": 0},
 "images": {
+"type": "array",
 "maxItems": 3
 },
 "output_format": {
+"type": "string",
 "enum": [
 "jpeg",
 "png",
 "webp"
 ]
 },
-"prompt": {},
-"seed": {},
-"size": {},
-"vertical_angle": {}
+"prompt": {"type": "string"},
+"seed": {"type": "integer"},
+"size": {"type": "string"},
+"vertical_angle": {"type": "integer", "minimum": -30, "maximum": 60, "default": 0}
 }
 }
 }
