@@ -17,7 +17,7 @@ EN = json.loads((ROOT / "src/locales/en.json").read_text())
 
 # 1. no-Key error follows the UI language
 def test_no_key_error_follows_lang():
-    from api.providers import no_key_error
+    from ComfyArt.api.providers import no_key_error
     en, zh = no_key_error("en"), no_key_error("zh")
     assert en == "No WaveSpeed key yet: set one in WaveSpeed key settings."
     assert not any("\u4e00" <= c <= "\u9fff" for c in en)
@@ -26,8 +26,8 @@ def test_no_key_error_follows_lang():
 
 
 def test_send_uses_turn_lang(monkeypatch):
-    import api.providers as prov
-    from bot.providers import TurnRequest
+    import ComfyArt.api.providers as prov
+    from ComfyArt.bot.providers import TurnRequest
     p = prov.AgentLlmProvider(base_url=lambda: "https://llm.wavespeed.ai/v1")
     monkeypatch.setattr(prov, "llm_api_key", lambda base: "")
     for lang in ("en", "zh"):
