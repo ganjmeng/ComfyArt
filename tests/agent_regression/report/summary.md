@@ -1,6 +1,6 @@
 # Agent regression (#231)
 
-Mocks only, $0. pass: 34, xfail: 8
+Mocks only, $0. pass: 36, xfail: 6
 
 | case | lang | result | steps/limit | paid (exp) | LLM req | msgs | tokens | status | note |
 |---|---|---|---|---|---|---|---|---|---|
@@ -24,12 +24,12 @@ Mocks only, $0. pass: 34, xfail: 8
 | 09 single image to 3D | zh | pass | 2/12 | 1 (1) | 3 | 6 | 2600 | done |  |
 | 10 poster with brand kit font + colors | en | pass | 4/12 | 1 (1) | 5 | 10 | 5253 | done |  |
 | 10 poster with brand kit font + colors | zh | pass | 4/12 | 1 (1) | 5 | 10 | 5221 | done |  |
-| 11 multi-turn 'brighter' edits the original, no new shape | en | xfail | 5/12 | 2 (2) | 7 | 10 | 6825 | done | edit_image places its result next to the original (tool contract), so 'brighter' adds a 2nd image |
-| 11 multi-turn 'brighter' edits the original, no new shape | zh | xfail | 5/12 | 2 (2) | 7 | 10 | 6777 | done | edit_image places its result next to the original (tool contract), so 'brighter' adds a 2nd image |
+| 11 multi-turn 'brighter': 1 new image edited from the untouched original | en | pass | 5/12 | 2 (2) | 7 | 10 | 6851 | done |  |
+| 11 multi-turn 'brighter': 1 new image edited from the untouched original | zh | pass | 5/12 | 2 (2) | 7 | 10 | 6801 | done |  |
 | 12 PPTX deck, editable mode | en | pass | 2/12 | 1 (1) | 3 | 6 | 2724 | done |  |
 | 12 PPTX deck, editable mode | zh | pass | 2/12 | 1 (1) | 3 | 6 | 2707 | done |  |
-| 13 over threshold -> Cancel: no charge, no retry | en | pass | 2/12 | 0 (0) | 3 | 6 | 2719 | done |  |
-| 13 over threshold -> Cancel: no charge, no retry | zh | pass | 2/12 | 0 (0) | 3 | 6 | 2689 | done |  |
+| 13 over threshold -> Cancel: no charge, no retry | en | pass | 2/12 | 0 (0) | 3 | 6 | 2719 | done | refused retry step shows success: to fix in #232 |
+| 13 over threshold -> Cancel: no charge, no retry | zh | pass | 2/12 | 0 (0) | 3 | 6 | 2689 | done | refused retry step shows success: to fix in #232 |
 | 14 no key: immediate message, no model call | en | pass | 0/12 | 0 (0) | 0 | 0 | 0 | error |  |
 | 14 no key: immediate message, no model call | zh | pass | 0/12 | 0 (0) | 0 | 0 | 0 | error |  |
 | 15-429 fault injection: LLM 429 | en | pass | 1/12 | 1 (1) | 2 | 4 | 784 | error | baseline, flips in P1-a #232 |

@@ -173,7 +173,18 @@ def _x_brand(r):
 
 
 def _x_edit_original(r):
+    """'brighter' = exactly 1 new image made FROM the original; the original is untouched; 1 paid call per edit."""
+    from dataclasses import asdict
+    page = r["page"]
     assert _args(r, "edit_image")["id"] == "shape:gen1"
+    (edit,) = page.edits
+    orig = page.shapes["shape:gen1"]
+    assert asdict(orig) == edit["input"]                       # same id / props / asset, unchanged
+    assert set(page.shapes) - edit["before"] == set(edit["output"]) and len(edit["output"]) == 1
+    new = page.shapes[edit["output"][0]]
+    assert new.type == "image" and new.props["source"] == orig.id and new.props["asset"] != orig.props["asset"]
+    edits = [p for p in page.payloads if p["tool"] == "edit_image"]
+    assert len(edits) == 1 and edits[0]["image"] == orig.props["asset"]  # edit input references the original
 
 
 def _x_slides(r):
@@ -200,7 +211,7 @@ async def test_agent_regression(case, lang, monkeypatch, caplog, capfd):
     row = {"case": case.id, "lang": lang, "title": case.title, "steps": len(r["uses"]), "limit": case.limit,
            "paid_calls": len(r["ws"].submits), "paid_expected": case.paid, "llm_requests": len(r["llm"].requests),
            "messages": r["messages"], "tokens": sum(r["llm"].usage.values()),
-           "status": r["status"], "tools": r["tools"], "note": case.xfail or (f"baseline, flips in {case.baseline_for}" if case.baseline_for else "")}
+           "status": r["status"], "tools": r["tools"], "note": case.xfail or case.note or (f"baseline, flips in {case.baseline_for}" if case.baseline_for else "")}
     try:
         _check(r)
         row["result"] = "pass"

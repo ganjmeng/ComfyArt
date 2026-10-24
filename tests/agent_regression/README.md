@@ -20,7 +20,8 @@ key sentinel in logs or the stored chat, steps <= limit (actual steps recorded).
 Known gaps / expected to change:
 - `15-*` (LLM timeout / 429 / 500): baseline today is no retry, the turn ends with the error after one
   paid call. `15-*-retry` are strict xfail `P1-a #232` (retry the LLM twice, never the paid tool).
-- `11` "brighter" edits the original: strict xfail, `edit_image` places the result next to the
-  original by contract, so a second image appears.
+- `11` "brighter" (product ruling): exactly 1 new image whose edit input is the original, the original
+  is unchanged (id/props/asset), 1 paid call per edit.
+- `13`: the guard-refused retry step shows as success in the chat; to fix in #232.
 - `12` covers the editable deck (`create_slides`); the PPTX file export itself is covered by
   `tests/test_export_formats.py`.

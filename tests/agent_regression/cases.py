@@ -40,6 +40,7 @@ class Case:
     llm_requests: Optional[int] = None
     xfail: str = ""                         # known gap: expected to change (reason)
     baseline_for: str = ""                  # current behaviour recorded; flips in that PR
+    note: str = ""                          # free-form note shown in the report
     extra: Optional[str] = None             # name of an extra check in the test module
 
 
@@ -137,15 +138,14 @@ CASES: list[Case] = [
           done("海报做好了", "Poster done")],
          ["brand_kits", "generate_image", "wait_generation", "add_text"], 1, {"image": 1, "text": 1},
          brand_kit=BRAND, extra="brand"),
-    Case("11", "multi-turn 'brighter' edits the original, no new shape",
+    Case("11", "multi-turn 'brighter': 1 new image edited from the untouched original",
          [{"zh": "画一张咖啡店海报", "en": "Make a coffee shop poster"}, {"zh": "再亮一点", "en": "Make it brighter"}],
          [*_gen_then_reply("generate_image", {"prompt": "coffee shop poster"}, "海报好了", "Poster ready"),
           Step(calls=[("get_canvas", {})]),
           *_gen_then_reply("edit_image", lambda last: {"id": [s["id"] for s in last["shapes"] if s["type"] == "image"][0],
                                                       "prompt": "make it brighter"}, "调亮了", "Brighter now")],
-         ["generate_image", "wait_generation", "get_canvas", "edit_image", "wait_generation"], 2, {"image": 1},
-         extra="edit_original",
-         xfail="edit_image places its result next to the original (tool contract), so 'brighter' adds a 2nd image"),
+         ["generate_image", "wait_generation", "get_canvas", "edit_image", "wait_generation"], 2, {"image": 2},
+         extra="edit_original"),  # product ruling: 1 new edited image beside an untouched original
     Case("12", "PPTX deck, editable mode",
          [{"zh": "做一个 3 页的产品介绍 PPT，文字要可编辑", "en": "Make a 3-slide product deck with editable text"}],
          [Step(calls=[("create_slides", {"title": "Product", "slides": [
@@ -159,6 +159,7 @@ CASES: list[Case] = [
           Step(calls=[("generate_image", {"prompt": "a cat, retry"})]),  # the model tries again: the guard refuses
           done("已取消该生成，未扣费。要怎么调整？", "Cancelled this generation; nothing was charged. How should I adjust?")],
          ["generate_image", "generate_image"], 0, {}, decline=True,
+         note="refused retry step shows success: to fix in #232",
          reply={"zh": "已取消", "en": "Cancelled"}, extra="cancel"),
     Case("14", "no key: immediate message, no model call",
          [{"zh": "画一张猫", "en": "Draw a cat"}], [], [], 0, {}, no_key=True, status="error",

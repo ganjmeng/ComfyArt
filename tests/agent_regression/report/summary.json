@@ -394,14 +394,14 @@
  {
   "case": "11",
   "lang": "en",
-  "title": "multi-turn 'brighter' edits the original, no new shape",
+  "title": "multi-turn 'brighter': 1 new image edited from the untouched original",
   "steps": 5,
   "limit": 12,
   "paid_calls": 2,
   "paid_expected": 2,
   "llm_requests": 7,
   "messages": 10,
-  "tokens": 6825,
+  "tokens": 6851,
   "status": "done",
   "tools": [
    "generate_image",
@@ -410,21 +410,20 @@
    "edit_image",
    "wait_generation"
   ],
-  "note": "edit_image places its result next to the original (tool contract), so 'brighter' adds a 2nd image",
-  "result": "xfail",
-  "error": "assert {'image': 2} == {'image': 1}"
+  "note": "",
+  "result": "pass"
  },
  {
   "case": "11",
   "lang": "zh",
-  "title": "multi-turn 'brighter' edits the original, no new shape",
+  "title": "multi-turn 'brighter': 1 new image edited from the untouched original",
   "steps": 5,
   "limit": 12,
   "paid_calls": 2,
   "paid_expected": 2,
   "llm_requests": 7,
   "messages": 10,
-  "tokens": 6777,
+  "tokens": 6801,
   "status": "done",
   "tools": [
    "generate_image",
@@ -433,9 +432,8 @@
    "edit_image",
    "wait_generation"
   ],
-  "note": "edit_image places its result next to the original (tool contract), so 'brighter' adds a 2nd image",
-  "result": "xfail",
-  "error": "assert {'image': 2} == {'image': 1}"
+  "note": "",
+  "result": "pass"
  },
  {
   "case": "12",
@@ -491,7 +489,7 @@
    "generate_image",
    "generate_image"
   ],
-  "note": "",
+  "note": "refused retry step shows success: to fix in #232",
   "result": "pass"
  },
  {
@@ -510,7 +508,7 @@
    "generate_image",
    "generate_image"
   ],
-  "note": "",
+  "note": "refused retry step shows success: to fix in #232",
   "result": "pass"
  },
  {

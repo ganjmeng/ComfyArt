@@ -103,10 +103,14 @@ class FakePage:
         self.models: list[tuple[str, str, str]] = []  # (tool, feature, model)
         self.n = 0
         self.confirms = 0
+        self.payloads: list[dict] = []       # what went to (mock) WaveSpeed, per submit
+        self.edits: list[dict] = []          # edit_image: snapshot of the input shape + the output id
 
     def _new(self, kind: str, **kw) -> Shape:
         self.n += 1
         s = Shape(id=f"shape:gen{self.n}", type=kind, x=600 * self.n, **kw)
+        if kind in ("image", "video", "audio", "model3d"):
+            s.props.setdefault("asset", f"asset:{s.id}")
         self.shapes[s.id] = s
         return s
 
@@ -127,10 +131,15 @@ class FakePage:
         model = str(args.get("edit_model") or args.get("model") or cfg["features"][feature]["default"])
         self.models.append((tool, feature, model))
         import aiohttp
+        payload = {"prompt": args.get("prompt") or args.get("text") or ""}
+        src = self.shapes.get(str(args.get("id") or args.get("first_frame") or ""))
+        if src is not None:
+            payload["image"] = src.props.get("asset", "")  # the input image the edit/i2v is made from
         async with aiohttp.ClientSession() as s:
             for _ in range(units):
+                self.payloads.append({"tool": tool, "model": model, **payload})
                 async with s.post(f"{self.ws_url}/api/v3/{model}", headers={"Authorization": f"Bearer {wavespeed._key()}"},
-                                  json={"prompt": args.get("prompt") or args.get("text") or ""}) as r:
+                                  json=payload) as r:
                     assert r.status == 200
         return model
 
@@ -179,6 +188,9 @@ class FakePage:
             if self.decline:
                 return dict(COST_DECLINED)
             units = gen_units(action, args)
+            if action == "edit_image":
+                from dataclasses import asdict
+                self.edits.append({"input": asdict(self.shapes[args["id"]]), "before": set(self.shapes)})
             model = await self._submit(action, args, units)
             job = f"job:{len(self.jobs) + 1}"
             if action == "edit_elements":
@@ -188,7 +200,10 @@ class FakePage:
                 sub = self._new("text", text="50% OFF", parent=frame.id)
                 self.jobs[job] = [bg.id, title.id, sub.id]
             else:
-                self.jobs[job] = [self._new(KINDS[action]).id for _ in range(units)]
+                extra = {"source": args["id"]} if action == "edit_image" else {}
+                self.jobs[job] = [self._new(KINDS[action], props=dict(extra)).id for _ in range(units)]
+            if action == "edit_image":
+                self.edits[-1]["output"] = self.jobs[job]
             return {"ids": [job], "model": model, "note": "call wait_generation with these ids"}
         return {"ok": True}
 
