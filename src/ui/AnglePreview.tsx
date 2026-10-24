@@ -13,8 +13,6 @@ const SPHERE = 1.5
 const NEAR = 0.8
 const FAR = 1.1
 const RING_LAT = -40 * DEG
-const H_MIN = -90
-const H_MAX = 90
 const V_MIN = -30
 const V_MAX = 60
 const PICK_PX = 14
@@ -27,7 +25,8 @@ type Handle = 'yaw' | 'pitch' | 'distance'
 export type AngleView = 'camera' | 'object'
 
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x))
-const fit = (a: Angle): Angle => ({ h: Math.round(clamp(a.h, H_MIN, H_MAX)), v: Math.round(clamp(a.v, V_MIN, V_MAX)), z: Math.round(clamp(a.z, 0, 10) * 10) / 10 })
+const wrap = (d: number) => ((d % 360) + 360) % 360
+const fit = (a: Angle): Angle => ({ h: Math.round(wrap(a.h)) % 360, v: Math.round(clamp(a.v, V_MIN, V_MAX)), z: Math.round(clamp(a.z, 0, 10) * 10) / 10 })
 const handleDistance = (z: number) => FAR - ((FAR - NEAR) * z) / 10
 
 function faceTexture(THREE: typeof T, label: string) {

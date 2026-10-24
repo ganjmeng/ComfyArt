@@ -1,4 +1,8 @@
-"""#249: at 1280×800 the multi-angle Generate button is fully visible and clickable. Mock only, $0."""
+"""#249: at 1280×800 the multi-angle panel matches main and Generate is fully visible. Mock only, $0.
+
+Sliders, presets and the 4-angle button are on screen without scrolling. The generate
+button sits above the bottom dock.
+"""
 from __future__ import annotations
 
 import io
@@ -27,11 +31,11 @@ def _png() -> bytes:
     return buf.getvalue()
 
 
-@pytest.mark.parametrize("lang,more,tool,generate,note", [
-    ("zh", "更多", "多角度", "生成", "最大 90°，不支持背面"),
-    ("en", "More", "Multi-Angle", "Generate", "Up to 90°, back view not supported"),
+@pytest.mark.parametrize("lang,more,tool,generate,back,four", [
+    ("zh", "更多", "多角度", "生成", "背面", "一次生成 4 个角度"),
+    ("en", "More", "Multi-Angle", "Generate", "Back", "Generate 4 angles at once"),
 ])
-async def test_generate_visible_at_1280x800(app_url, tmp_path, lang, more, tool, generate, note):  # noqa: F811
+async def test_generate_visible_at_1280x800(app_url, tmp_path, lang, more, tool, generate, back, four):  # noqa: F811
     async with pw.async_playwright() as p:
         try:
             browser = await p.chromium.launch(channel="chrome", args=["--no-sandbox", "--disable-dev-shm-usage"])
@@ -55,26 +59,50 @@ async def test_generate_visible_at_1280x800(app_url, tmp_path, lang, more, tool,
         await pg.locator(".tl-image").first.click()
         await pg.locator(".ca-toolbar").get_by_role("button", name=more).click()
         await pg.get_by_role("button", name=tool, exact=True).click()
-        panel = pg.locator(".ca-panel[data-scroll]")
+        panel = pg.locator(".ca-panel")
         await panel.wait_for()
-        await pg.get_by_text(note, exact=True).wait_for()
-        h = panel.locator("input[type=range]").nth(0)
-        v = panel.locator("input[type=range]").nth(1)
-        assert await h.get_attribute("min") == "-90" and await h.get_attribute("max") == "90"
-        assert await v.get_attribute("min") == "-30" and await v.get_attribute("max") == "60"
-        btn = panel.locator(".ca-panel__primary", has_text=generate)
-        await btn.wait_for()
+        await pg.wait_for_timeout(400)
         if SHOTS:
             Path(SHOTS).mkdir(parents=True, exist_ok=True)
             await pg.screenshot(path=f"{SHOTS}/angle-{lang}.png")
-        box = await btn.bounding_box()
-        assert box and box["height"] >= 30 and box["width"] >= 40
-        vp = pg.viewport_size
-        assert box["x"] >= -0.5 and box["y"] >= -0.5
-        assert box["x"] + box["width"] <= vp["width"] + 0.5
-        assert box["y"] + box["height"] <= vp["height"] + 0.5
+        assert await panel.get_attribute("data-scroll") is None
+        assert await pg.get_by_text("最大 90°" if lang == "zh" else "Up to 90°").count() == 0
+        scrolled = await panel.evaluate("el => el.scrollHeight > el.clientHeight + 1")
+        assert scrolled is False
+        ranges = panel.locator("input[type=range]")
+        assert await ranges.count() == 3
+        assert await ranges.nth(0).get_attribute("min") == "0" and await ranges.nth(0).get_attribute("max") == "360"
+        assert await ranges.nth(1).get_attribute("min") == "-30" and await ranges.nth(1).get_attribute("max") == "60"
+        assert await ranges.nth(2).get_attribute("min") == "0" and await ranges.nth(2).get_attribute("max") == "10"
+        back_btn = panel.get_by_role("button", name=back, exact=True)
+        four_btn = panel.get_by_role("button", name=four, exact=True)
+        btn = panel.locator(".ca-panel__primary", has_text=generate)
+        await btn.wait_for()
         dock = await pg.locator(".ca-dock").bounding_box()
-        assert dock and box["y"] + box["height"] <= dock["y"] + 0.5
+        vp = pg.viewport_size
+        assert dock and vp
+
+        async def fully_visible(locator):
+            box = await locator.bounding_box()
+            assert box and box["width"] > 8 and box["height"] > 8
+            assert box["x"] >= -0.5 and box["y"] >= -0.5
+            assert box["x"] + box["width"] <= vp["width"] + 0.5
+            assert box["y"] + box["height"] <= vp["height"] + 0.5
+            assert box["y"] + box["height"] <= dock["y"] + 0.5
+            hit = await pg.evaluate(
+                """(b) => {
+                  const el = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2)
+                  const panel = document.querySelector('.ca-panel')
+                  return !!(el && panel && panel.contains(el))
+                }""",
+                box,
+            )
+            assert hit
+            return box
+
+        for locator in (ranges.nth(0), ranges.nth(1), ranges.nth(2), back_btn, four_btn):
+            await fully_visible(locator)
+        box = await fully_visible(btn)
         covered = await pg.evaluate(
             """(b) => {
               const btn = document.querySelector('.ca-panel .ca-panel__primary')

@@ -1,7 +1,7 @@
 """#249: edit-multiple-angles request body. Mock catalog only, no WaveSpeed call, $0.
 
-The panel stays −90..90 (left negative). The new model takes horizontal_angle in 0..359,
-so −90 is wrapped to 270 (left) and 270 is not clamped to 90. The caption is not a prompt.
+The panel matches main (0..360, back preset). Sent horizontal_angle is wrapped into 0..359
+(360 becomes 0). NaN and other non-finite values are sent as 0. The caption is not a prompt.
 """
 from __future__ import annotations
 
@@ -28,7 +28,10 @@ EXPECT = [
     {"h": 0, "horizontal_angle": 0, "vertical_angle": 60, "distance": 0},  # v=80 clamped, z=7 close-up
     {"h": 180, "horizontal_angle": 180, "vertical_angle": -30, "distance": 2},  # back, v=-40 clamped, z=2.9 wide
     {"h": 359, "horizontal_angle": 359, "vertical_angle": 0, "distance": 1},  # in 0..359, z=5
-    {"h": 400, "horizontal_angle": 40, "vertical_angle": 0, "distance": 2},  # past 359 wraps, z=1.3 wide
+    {"h": 360, "horizontal_angle": 0, "vertical_angle": 0, "distance": 2},  # 360 → 0, z=1.3 wide
+    {"h": 400, "horizontal_angle": 40, "vertical_angle": 0, "distance": 0},  # past 359 wraps, z=8 close-up
+    {"h": "NaN", "horizontal_angle": 0, "vertical_angle": 0, "distance": 1},
+    {"h": "Infinity", "horizontal_angle": 0, "vertical_angle": 0, "distance": 1},
 ]
 
 
@@ -54,12 +57,12 @@ def test_mock_catalog_defines_angle_params():
     assert [m["id"] for m in feature["models"]] == [ANGLE]
     zh = json.loads((ROOT / "src/locales/zh.json").read_text())
     en = json.loads((ROOT / "src/locales/en.json").read_text())
-    assert zh["modePanel.angleLimit"] == "最大 90°，不支持背面"
-    assert en["modePanel.angleLimit"] == "Up to 90°, back view not supported"
+    assert "modePanel.angleLimit" not in zh and "modePanel.angleLimit" not in en
     panel = (ROOT / "src/ui/ModePanel.tsx").read_text()
-    assert "const ALL_ANGLES = [-90, -45, 45, 90]" in panel
-    assert "min={-90}" in panel and "max={90}" in panel
-    assert "modePanel.angleLimit" in panel
+    assert "const ALL_ANGLES = [315, 45, 270, 90]" in panel
+    assert "min={0}" in panel and "max={360}" in panel
+    assert "modePanel.back" in panel and "modePanel.angleLimit" not in panel
+    assert "data-scroll" not in panel
     actions = (ROOT / "src/actions.ts").read_text()
     assert "params: angleParams(h, v, z)" in actions and "anglePrompt" not in actions
 
@@ -75,6 +78,7 @@ async def test_angle_request_body(ws, tmp_path):  # noqa: F811
             "feature": "change_angle", "image": IMG, "confirmed": True,
             "params": {k: row[k] for k in ("horizontal_angle", "vertical_angle", "distance")},
         })
+        wavespeed._jobs.clear()  # the case list is longer than the app's 8-job cap
     assert len(ws["submits"]) == len(EXPECT)
     for (model, payload), row in zip(ws["submits"], built):
         assert model == ANGLE

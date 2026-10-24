@@ -35,11 +35,12 @@ export function angleDistance(z: number): 0 | 1 | 2 {
   return z >= 7 ? 0 : z >= 3 ? 1 : 2
 }
 
-/** edit-multiple-angles takes horizontal_angle in 0..359 (0 front, 90 right, 270 left).
- *  The panel is still −90..90 with left negative, so a negative is wrapped, not clamped:
- *  −90 (left) is sent as 270, −45 as 315. 360 lands on 0. */
+/** edit-multiple-angles takes horizontal_angle in 0..359. 360 lands on 0.
+ *  Anything that is not a finite number (NaN, Infinity) is sent as 0. */
 function horizontalAngle(h: number): number {
-  return ((Math.round(h) % 360) + 360) % 360
+  const n = Math.round(Number(h))
+  if (!Number.isFinite(n)) return 0
+  return ((n % 360) + 360) % 360
 }
 
 /** Vertical stays −30..60. Distance uses angleDistance. */

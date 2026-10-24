@@ -16,7 +16,7 @@ export const CUSTOM_ACTIONS: ActionSpec[] = [
   { id: 'style', group: 'edit', required: ['image', 'prompt'], optional: ['image2'], feature: 'image_edit', note: 'Style transfer. @image2 is the style reference; without one ComfyArt passes the source image again.' },
   { id: 'inpaint', group: 'edit', required: ['image', 'prompt'], optional: [], feature: 'image_edit', note: 'Edit a region: @prompt names the area to change and what to do there.' },
   { id: 'expand', group: 'edit', required: ['image', 'prompt'], optional: ['size'], feature: 'expand_image', note: 'Outpaint. @size receives the new canvas size.' },
-  { id: 'angles', group: 'edit', required: ['image'], optional: ['prompt'], feature: 'change_angle', note: 'horizontal_angle (0..359; panel negatives wrap, so -90 is sent as 270), vertical_angle and distance are sent. The panel sentence is a caption only; cloud calls do not send it as prompt.' },
+  { id: 'angles', group: 'edit', required: ['image'], optional: ['prompt'], feature: 'change_angle', note: 'horizontal_angle is sent in 0..359 (360 becomes 0; a non-finite value becomes 0), plus vertical_angle and distance. The panel sentence is a caption only; cloud calls do not send it as prompt.' },
   { id: 'upscale', group: 'tools', required: ['image'], optional: [], feature: 'upscale_image', note: 'Image upscale; the target size the user picked goes to target_resolution when the model has it.' },
   { id: 'cutout', group: 'tools', required: ['image'], optional: [], feature: 'remove_background', note: 'Background removal. The result should keep an alpha channel.' },
   { id: 'erase', group: 'tools', required: ['image', 'mask'], optional: [], feature: 'erase_region', note: 'Object removal. @mask is the area to remove (white = remove).' },
