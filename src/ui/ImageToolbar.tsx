@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { ALL_TOOLS, DEFAULT_PINNED, MENU_GEN, MENU_MAIN, MORE_TOOLS, isFixed, migratePrefs, withFixed, type BarPrefs } from './toolbarPrefs'
 import { createPortal } from 'react-dom'
 import { atom, useEditor, useValue, type Editor, type TLImageShape } from 'tldraw'
 
@@ -31,24 +32,7 @@ const GAP = 22
 const EDGE = 8
 const AUTO_LAYERS = 4
 const BAR_KEY = 'comfyart.toolbar'
-const DEFAULT_PINNED = ['chat', 'quick', 'inpaint', 'cutout', 'upscale', 'expand']
-const MENU_MAIN = ['erase', 'text', 'crop', 'style', 'adjust', 'layers', 'animate', 'angles']
-const MENU_GEN = ['regenerate', 'remix', 'copyPrompt', 'export']
-const MORE_TOOLS = ['effects', 'elements', 'move', 'mockup', 'to3d', 'transform', 'vectorize', 'ocr', 'smudge', 'preview', 'info']
-export const ALL_TOOLS = [...DEFAULT_PINNED, ...MENU_MAIN, ...MENU_GEN, ...MORE_TOOLS]
-
-interface BarPrefs { pinned: string[]; names: boolean; seen: string[] }
-
-function readPrefs(): BarPrefs {
-  try {
-    const stored = JSON.parse(readLocal(BAR_KEY) ?? 'null') as Partial<BarPrefs> | null
-    if (!stored?.pinned) return { pinned: DEFAULT_PINNED, names: stored?.names ?? true, seen: ALL_TOOLS }
-    const seen = stored.seen ?? []
-    return { pinned: [...stored.pinned, ...DEFAULT_PINNED.filter((id) => !seen.includes(id) && !stored.pinned!.includes(id))], names: stored.names ?? true, seen: ALL_TOOLS }
-  } catch {
-    return { pinned: DEFAULT_PINNED, names: true, seen: ALL_TOOLS }
-  }
-}
+function readPrefs(): BarPrefs { return migratePrefs(readLocal(BAR_KEY)) }
 
 const prefsAtom = atom<BarPrefs>('image toolbar', readPrefs())
 
@@ -267,11 +251,8 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   )
 }
 
-// the quick-edit tab is always on the bar; it cannot be unpinned
-const FIXED_TOOLS = new Set(['quick'])
-
 function PreviewBtn({ tool, names, hints, onUnpin }: { tool: Tool; names: boolean; hints: boolean; onUnpin: () => void }) {
-  const fixed = FIXED_TOOLS.has(tool.id)
+  const fixed = isFixed(tool.id)
   return (
     <span className={`ca-bar__btn ca-cz__tool${fixed ? '' : ' ca-cz__tool--rm'}`} data-tool={tool.id} title={names ? undefined : tool.label}>
       <span className="ca-icon">{tool.icon}</span>
@@ -291,10 +272,10 @@ export function CustomizeDialog({ tools, onClose }: { tools: Tool[]; onClose: ()
   const byId = new Map(tools.map((x) => [x.id, x]))
   const cards = ALL_TOOLS.map((id) => byId.get(id)).filter((x): x is Tool => !!x)
   const shown = cards.filter((x) => pinned.includes(x.id) && x.when !== false)
-  const fixedShown = shown.filter((x) => FIXED_TOOLS.has(x.id))
+  const fixedShown = shown.filter((x) => isFixed(x.id))
   const btn = (x: Tool) => <PreviewBtn key={x.id} tool={x} names={names && fit < 2} hints={fit < 1} onUnpin={() => flip(x.id)} />
-  const flip = (id: string) => !FIXED_TOOLS.has(id) && setPinned((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
-  const save = () => { setPrefs({ pinned, names }); onClose() }
+  const flip = (id: string) => !isFixed(id) && setPinned((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
+  const save = () => { setPrefs({ pinned: withFixed(pinned), names }); onClose() }
   useLayoutEffect(() => setFit(0), [pinned, names])
   useEffect(() => { void document.fonts?.ready.then(() => setFit(0)) }, [])
   useLayoutEffect(() => {
@@ -320,7 +301,7 @@ export function CustomizeDialog({ tools, onClose }: { tools: Tool[]; onClose: ()
           <div ref={barRef} className="ca-bar ca-cz__bar">
             {fixedShown.map(btn)}
             {fixedShown.length > 0 && <div className="ca-bar__sep" />}
-            {shown.filter((x) => !FIXED_TOOLS.has(x.id)).map(btn)}
+            {shown.filter((x) => !isFixed(x.id)).map(btn)}
             <span className="ca-bar__btn" title={t('imageToolbar.more')}><span className="ca-icon">{Icons.more}</span></span>
             <div className="ca-bar__sep" />
             <span className="ca-bar__btn" title={t('common.download')}><span className="ca-icon">{Icons.download}</span></span>
@@ -330,7 +311,7 @@ export function CustomizeDialog({ tools, onClose }: { tools: Tool[]; onClose: ()
           {cards.map((x) => {
             const on = pinned.includes(x.id)
             return (
-              <button key={x.id} type="button" className="ca-cz__card" data-tool={x.id} aria-pressed={on} aria-disabled={FIXED_TOOLS.has(x.id) || undefined} onClick={() => flip(x.id)}>
+              <button key={x.id} type="button" className="ca-cz__card" data-tool={x.id} aria-pressed={on} aria-disabled={isFixed(x.id) || undefined} onClick={() => flip(x.id)}>
                 <span className="ca-icon">{x.icon}</span><span className="ca-menu__grow">{x.label}</span>
                 <span className="ca-icon ca-cz__pin" data-on={on || undefined}>{on ? Icons.pinSolid : Icons.pinOutline}</span>
               </button>
