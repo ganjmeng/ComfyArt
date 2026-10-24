@@ -59,7 +59,7 @@ const hOf=r=>((r%360)+360)%360;
 function readout(){return `<div class="ro"><b>${L==='zh'?'水平':'H'} ${four?'4×':hOf(rot)+'°'}</b><i></i><b>${L==='zh'?'垂直':'V'} ${tilt}°</b><i></i><b>${ZL[zoom]}</b></div>`}
 function floorGrid(cx,cy,s,yaw,pitch,y0,ext,ring){let o='';for(let i=-ext;i<=ext;i++){for(const [a,b] of [[[i,y0,-ext],[i,y0,ext]],[[-ext,y0,i],[ext,y0,i]]]){const A=P3(a,yaw,pitch),B=P3(b,yaw,pitch);o+=`<line x1="${cx+A[0]*s}" y1="${cy-A[1]*s}" x2="${cx+B[0]*s}" y2="${cy-B[1]*s}"/>`}}
  let pts=[];for(let k=0;k<=72;k++){const a=k*5*D2R;const p=P3([Math.sin(a)*ring,y0,Math.cos(a)*ring],yaw,pitch);pts.push((cx+p[0]*s).toFixed(1)+','+(cy-p[1]*s).toFixed(1))}
- return `<defs><radialGradient id="fg"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient><mask id="fm"><ellipse cx="${cx}" cy="${cy+ (pitch>0?10:30)}" rx="${s*ext*1.1}" ry="${s*ext*.55}" fill="url(#fg)"/></mask></defs><g mask="url(#fm)" stroke="${GRID}" stroke-width=".8">${o}</g><polyline points="${pts.join(' ')}" fill="none" stroke="${EDGE}" stroke-width="1" stroke-dasharray="2 3"/>`}
+ return `<defs><radialGradient id="fg"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient><mask id="fm"><ellipse cx="${cx}" cy="${cy+ (pitch>0?10:30)}" rx="${s*ext*1.1}" ry="${s*ext*.55}" fill="url(#fg)"/></mask></defs><g mask="url(#fm)" stroke="${GRID}" stroke-width=".6" opacity=".55">${o}</g><polyline points="${pts.join(' ')}" fill="none" stroke="${EDGE}" stroke-width="1" stroke-dasharray="2 3"/>`}
 function ringDot(cx,cy,s,yaw,pitch,y0,ring,h,on){const a=h*D2R,p=P3([Math.sin(a)*ring,y0,Math.cos(a)*ring],yaw,pitch);return `<circle cx="${cx+p[0]*s}" cy="${cy-p[1]*s}" r="${on?3.6:2.4}" fill="${on?ACC:FACE}" stroke="${on?'#fff':EDGE}" stroke-width="1"/>`}
 function cubeSVG(W=236,H=172){
  const cx=W/2,cy=H/2+2,s=[44,37,30][zoom],yaw=-rot,pitch=tilt;
@@ -70,27 +70,32 @@ function cubeSVG(W=236,H=172){
  let g=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="st3"><defs><filter id="bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter><clipPath id="fc" clipPathUnits="userSpaceOnUse"><rect x=".012" y=".012" width=".976" height=".976" rx=".09"/></clipPath><linearGradient id="hl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
  g+=floorGrid(cx,cy,s,yaw,pitch,-1.6,3,2.2);
  if(four)[-90,-45,45,90].forEach(h=>g+=ringDot(cx,cy,s,yaw,pitch,-1.6,2.2,h-rot+rot,true));
- g+=`<polygon points="${sp}" fill="#000" opacity="${dark?.55:.16}" filter="url(#bl)"/>`;
- for(const f of faces){const b=Math.max(0,f.sh);const shade=dark?(0.55-0.35*b):(0.16-0.16*b);const m=f.m.map(x=>x.toFixed(3)).join(',');
-  g+=`<g transform="matrix(${m})"><rect x=".012" y=".012" width=".976" height=".976" rx=".09" fill="${FACE}" stroke="${EDGE}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
-  if(f.k==='f'){g+=`<g clip-path="url(#fc)"><g transform="scale(.01)">${art.replace('class="art"','width="100" height="100"')}</g></g><rect x=".012" y=".012" width=".976" height=".976" rx=".09" fill="url(#hl)"/><rect x=".012" y=".012" width=".976" height=".976" rx=".09" fill="none" stroke="${ACC}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`}
-  else{g+=`<text x=".5" y=".6" text-anchor="middle" font-size=".3" font-weight="600" fill="${LBL}" font-family="Inter,PingFang SC,Noto Sans CJK SC,sans-serif">${FL[f.k]}</text>`;
-   if(f.k==='t'||f.k==='d'){const y=f.k==='t'?.86:.14,dy=f.k==='t'?-.07:.07;g+=`<path d="M.42 ${y} L.5 ${y+dy*-0} L.58 ${y}" transform="translate(0 0)" fill="none"/><path d="M.43 ${f.k==='t'?.8:.2} L.5 ${f.k==='t'?.88:.12} L.57 ${f.k==='t'?.8:.2}" fill="none" stroke="${ACC}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`}}
-  g+=`<rect x=".012" y=".012" width=".976" height=".976" rx=".09" fill="#000" opacity="${shade.toFixed(3)}"/></g>`}
- // drag handles: horizontal orbit arc + vertical arc
- const ar=`stroke="${dark?'rgba(255,255,255,.55)':'rgba(0,0,0,.4)'}" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
- g+=`<path d="M${cx-46} ${H-24} Q${cx} ${H-10} ${cx+46} ${H-24}" ${ar}/><path d="M${cx-46} ${H-24} l6 -1 M${cx-46} ${H-24} l3 5 M${cx+46} ${H-24} l-6 -1 M${cx+46} ${H-24} l-3 5" ${ar}/>`;
- g+=`<path d="M${W-26} ${cy-40} Q${W-14} ${cy} ${W-26} ${cy+40}" ${ar}/><path d="M${W-26} ${cy-40} l1 6 M${W-26} ${cy-40} l5 3 M${W-26} ${cy+40} l1 -6 M${W-26} ${cy+40} l5 -3" ${ar}/>`;
+ g+=`<polygon points="${sp}" fill="#000" opacity="${dark?.35:.07}" filter="url(#bl)"/>`;
+ const VV=[];for(const x of[-1,1])for(const y of[-1,1])for(const z of[-1,1]){const p=P3([x,y,z],yaw,pitch);VV.push({w:[x,y,z],x:cx+p[0]*s,y:cy-p[1]*s})}
+ const vis=n=>P3(n,yaw,pitch)[2]>0.02;
+ const fillA=dark?'rgba(255,255,255,.07)':'rgba(255,255,255,.82)',edgeS=dark?'rgba(255,255,255,.42)':'rgba(0,0,0,.26)',edgeH=dark?'rgba(255,255,255,.2)':'rgba(0,0,0,.14)';
+ // hidden edges first
+ let eF='',eB='';for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){const a=VV[i].w,b=VV[j].w;const diff=[0,1,2].filter(k=>a[k]!==b[k]);if(diff.length!==1)continue;const k=diff[0];const n1=[0,0,0],n2=[0,0,0];const o=[0,1,2].filter(t=>t!==k);n1[o[0]]=a[o[0]];n2[o[1]]=a[o[1]];const seg=`M${VV[i].x.toFixed(2)} ${VV[i].y.toFixed(2)}L${VV[j].x.toFixed(2)} ${VV[j].y.toFixed(2)}`;if(vis(n1)||vis(n2))eF+=seg;else eB+=seg}
+ g+=`<path d="${eB}" stroke="${edgeH}" stroke-width=".8" stroke-dasharray="2 2" fill="none"/>`;
+ for(const f of faces){const b=Math.max(0,f.sh);const shade=dark?(0.25-0.2*b):(0.06-0.06*b);const m=f.m.map(x=>x.toFixed(3)).join(',');
+  g+=`<g transform="matrix(${m})"><rect width="1" height="1" fill="${fillA}"/>`;
+  if(f.k==='f'){g+=`<clipPath id="fq"><path d="M.14 0H1V1H0V.14Q0 0 .14 0Z"/></clipPath><g clip-path="url(#fq)"><g transform="scale(.01)">${art.replace('class="art"','width="100" height="100"')}</g></g><path d="M.14 0H1V1H0V.14Q0 0 .14 0Z" fill="none" stroke="${ACC}" stroke-opacity=".55" stroke-width=".9" vector-effect="non-scaling-stroke"/>`}
+  else{g+=`<text x=".5" y=".56" text-anchor="middle" font-size=".16" font-weight="400" fill="${dark?'rgba(255,255,255,.45)':'rgba(0,0,0,.38)'}" font-family="Inter,PingFang SC,Noto Sans CJK SC,sans-serif">${FL[f.k]}</text>`}
+  g+=`<rect width="1" height="1" fill="#000" opacity="${shade.toFixed(3)}"/></g>`}
+ g+=`<path d="${eF}" stroke="${edgeS}" stroke-width=".9" stroke-linejoin="round" fill="none"/>`;
+ const ar=`stroke="${dark?'rgba(255,255,255,.28)':'rgba(0,0,0,.2)'}" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+ g+=`<path d="M${cx-40} ${H-24} Q${cx} ${H-13} ${cx+40} ${H-24}" ${ar}/><path d="M${cx-40} ${H-24} l5 -1 M${cx-40} ${H-24} l2.5 4 M${cx+40} ${H-24} l-5 -1 M${cx+40} ${H-24} l-2.5 4" ${ar}/>`;
+ g+=`<path d="M${W-24} ${cy-34} Q${W-14} ${cy} ${W-24} ${cy+34}" ${ar}/><path d="M${W-24} ${cy-34} l1 5 M${W-24} ${cy-34} l4 2.5 M${W-24} ${cy+34} l1 -5 M${W-24} ${cy+34} l4 -2.5" ${ar}/>`;
  return g+'</svg>'}
 function sphereSVG(W=236,H=172){
- const cx=W/2,cy=H/2+8,R=56,vy=-25,vp=14;let g=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="st3"><defs><filter id="bl2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter></defs>`;
+ const cx=W/2,cy=H/2+6,R=48,vy=-25,vp=14;let g=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="st3"><defs><filter id="bl2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter></defs>`;
  g+=`<ellipse cx="${cx}" cy="${cy+R+12}" rx="${R*.8}" ry="7" fill="#000" opacity="${dark?.5:.10}" filter="url(#bl2)"/>`;
  const circ=(fn,hi)=>{let fr='',bk='';let prev=null;for(let k=0;k<=96;k++){const p=P3(fn(k/96*2*Math.PI),vy,vp);const pt=[cx+p[0]*R,cy-p[1]*R];if(prev){const seg=`M${prev[0].toFixed(1)} ${prev[1].toFixed(1)}L${pt[0].toFixed(1)} ${pt[1].toFixed(1)}`;if(p[2]>=0)fr+=seg;else bk+=seg}prev=pt}
   return `<path d="${bk}" stroke="${hi||EDGE}" stroke-width="${hi?1.1:.7}" opacity=".45" stroke-dasharray="2 2" fill="none"/><path d="${fr}" stroke="${hi||EDGE}" stroke-width="${hi?1.4:.8}" fill="none"/>`};
  g+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${EDGE}" stroke-width=".9"/>`;
  for(const m of [0,45,90,135])g+=circ(a=>[Math.sin(m*D2R)*Math.cos(a),Math.sin(a),Math.cos(m*D2R)*Math.cos(a)]);
  for(const la of [-30,30,60])g+=circ(a=>[Math.cos(la*D2R)*Math.sin(a),Math.sin(la*D2R),Math.cos(la*D2R)*Math.cos(a)]);
- const hiC=dark?'rgba(255,255,255,.7)':'rgba(0,0,0,.55)';
+ const hiC=dark?'rgba(255,255,255,.5)':'rgba(0,0,0,.38)';
  g+=circ(a=>[Math.sin(a),0,Math.cos(a)],hiC);
  const hr=rot*D2R;g+=circ(a=>[Math.sin(hr)*Math.cos(a),Math.sin(a),Math.cos(hr)*Math.cos(a)],hiC);
  // 4-angle markers
@@ -101,7 +106,7 @@ function sphereSVG(W=236,H=172){
  const d=[.78,1,1.22][zoom],a=hr,v=tilt*D2R,p=P3([Math.sin(a)*Math.cos(v)*d,Math.sin(v)*d,Math.cos(a)*Math.cos(v)*d],vy,vp);const X=cx+p[0]*R,Y=cy-p[1]*R,sc=1+p[2]*.18;
  g+=`<line x1="${cx}" y1="${cy}" x2="${X}" y2="${Y}" stroke="${ACC}" stroke-width="1" stroke-dasharray="3 2"/>`;
  const ang=Math.atan2(cy-Y,cx-X)/D2R;
- g+=`<g transform="translate(${X} ${Y}) scale(${sc}) rotate(${ang})"><circle r="15" fill="${ACC}" opacity=".12"/><rect x="-9" y="-7" width="13" height="14" rx="3" fill="${FACE}" stroke="${dark?'rgba(255,255,255,.85)':'rgba(0,0,0,.75)'}" stroke-width="1.3"/><path d="M4 -4 L10 -6.5 V6.5 L4 4Z" fill="${FACE}" stroke="${dark?'rgba(255,255,255,.85)':'rgba(0,0,0,.75)'}" stroke-width="1.3" stroke-linejoin="round"/><circle cx="-2.5" cy="0" r="2.6" fill="${ACC}"/></g>`;
+ g+=`<g transform="translate(${X} ${Y}) scale(${sc}) rotate(${ang})"><circle r="13" fill="${ACC}" opacity=".06"/><rect x="-9" y="-7" width="13" height="14" rx="3" fill="${FACE}" stroke="${dark?'rgba(255,255,255,.85)':'rgba(0,0,0,.5)'}" stroke-width="1"/><path d="M4 -4 L10 -6.5 V6.5 L4 4Z" fill="${FACE}" stroke="${dark?'rgba(255,255,255,.85)':'rgba(0,0,0,.5)'}" stroke-width="1" stroke-linejoin="round"/><circle cx="-2.5" cy="0" r="2.6" fill="${ACC}"/></g>`;
  const ch=`stroke="${dark?'rgba(255,255,255,.5)':'rgba(0,0,0,.35)'}" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
  g+=`<path d="M${cx-4} ${cy-R-8} l4 -4 l4 4" ${ch}/><path d="M${cx-4} ${cy+R+5} l4 4 l4 -4" ${ch}/><path d="M${cx-R-8} ${cy-4} l-4 4 l4 4" ${ch}/><path d="M${cx+R+8} ${cy-4} l4 4 l-4 4" ${ch}/>`;
  return g+'</svg>'}
