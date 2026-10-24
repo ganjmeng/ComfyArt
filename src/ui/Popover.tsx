@@ -1,9 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useEscape } from './escape'
-
-const GAP = 8
-const EDGE = 8
+import { placePopover } from './popoverPlace'
 
 export function Popover({ trigger, children, side = 'bottom', align = 'start', open, onOpenChange, contentKey }: {
   trigger: (props: { open: boolean; toggle: () => void }) => ReactNode
@@ -16,18 +14,13 @@ export function Popover({ trigger, children, side = 'bottom', align = 'start', o
 }) {
   const anchor = useRef<HTMLSpanElement>(null)
   const panel = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  const [pos, setPos] = useState<{ left: number; top: number; maxHeight?: number } | null>(null)
 
   useLayoutEffect(() => {
     if (!open || !anchor.current || !panel.current) return
     const a = anchor.current.getBoundingClientRect()
     const p = panel.current.getBoundingClientRect()
-    let left = align === 'start' ? a.left : align === 'end' ? a.right - p.width : a.left + a.width / 2 - p.width / 2
-    left = Math.min(Math.max(left, EDGE), innerWidth - p.width - EDGE)
-    let top = side === 'top' ? a.top - p.height - GAP : a.bottom + GAP
-    if (top < EDGE) top = a.bottom + GAP
-    if (top + p.height > innerHeight - EDGE) top = Math.max(EDGE, a.top - p.height - GAP)
-    setPos({ left, top })
+    setPos(placePopover(a, { width: p.width, height: panel.current.scrollHeight || p.height }, { width: innerWidth, height: innerHeight }, side, align))
   }, [open, side, align, contentKey])
 
   useEffect(() => {
@@ -51,7 +44,7 @@ export function Popover({ trigger, children, side = 'bottom', align = 'start', o
         <div
           ref={panel}
           className="ca-pop"
-          style={pos ?? { left: -9999, top: -9999 }}
+          style={pos ? (pos.maxHeight ? { ...pos, overflowY: 'auto' } : pos) : { left: -9999, top: -9999 }}
           onPointerDown={(e) => e.stopPropagation()}
           onWheel={(e) => e.stopPropagation()}
         >

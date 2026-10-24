@@ -4,6 +4,7 @@ import { t } from '../i18n'
 import { newProject, openView } from '../projects'
 import { Confirm } from '../ui/Confirm'
 import { Icons } from '../ui/icons'
+import { KeySettings } from '../ui/KeySettings'
 import { SettingsMenu } from '../ui/SettingsMenu'
 import '../styles/home.css'
 import { Home } from './Home'
@@ -29,6 +30,7 @@ export function HomeApp({ view }: { view: View }) {
       </nav>
       <main className="ca-home__main">{view === 'home' ? <Home /> : view === 'projects' ? <Projects /> : <NotFound id={view.missing} />}</main>
       <Confirm />
+      <KeySettings />
     </div>
   )
 }
