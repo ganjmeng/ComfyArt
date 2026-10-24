@@ -43,7 +43,7 @@ Each feature has a default model and a curated list in `api/wavespeed_models.jso
 |---|---|
 | `text_to_image` | `alibaba/qwen-image-3.0/text-to-image` |
 | `image_edit` | `alibaba/qwen-image-3.0/edit` |
-| `change_angle` | `wavespeed-ai/qwen-image/edit-2509-multiple-angles` |
+| `change_angle` | `wavespeed-ai/qwen-image/edit-multiple-angles` |
 | `expand_image` | `bria/expand` |
 | `split_layers` | `bytedance/seedream-v5.0-flash/layer-decomposition` |
 | `remove_background` | `wavespeed-ai/image-background-remover` |

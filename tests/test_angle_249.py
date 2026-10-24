@@ -1,7 +1,7 @@
-"""#249: multiple-angles request body. Mock catalog only, no WaveSpeed call, $0.
+"""#249: edit-multiple-angles request body. Mock catalog only, no WaveSpeed call, $0.
 
-The panel caption and the distance field share angleDistance. horizontal 270 is clamped
-into −90..90 before it is submitted, and the caption is not sent as a prompt.
+The panel stays −90..90 (left negative). The new model takes horizontal_angle in 0..359,
+so −90 is wrapped to 270 (left) and 270 is not clamped to 90. The caption is not a prompt.
 """
 from __future__ import annotations
 
@@ -17,16 +17,18 @@ from ComfyArt.api import wavespeed
 from test_wavespeed import MODELS, ws  # noqa: F401  (ws fixture)
 
 ROOT = Path(__file__).resolve().parent.parent
-ANGLE = "wavespeed-ai/qwen-image/edit-2509-multiple-angles"
+ANGLE = "wavespeed-ai/qwen-image/edit-multiple-angles"
 IMG = "https://cdn.test/in.png"
 # viewpoint words the panel shows and the request must not carry
 BANNED = ("<qma>", "close-up", "medium shot", "wide shot", "eye-level", "front view", "quarter view", "side view")
 EXPECT = [
-    {"h": -90, "horizontal_angle": -90, "vertical_angle": 0, "distance": 2},
-    {"h": 90, "horizontal_angle": 90, "vertical_angle": 0, "distance": 1},
-    {"h": 270, "horizontal_angle": 90, "vertical_angle": 0, "distance": 0},  # 270 clamped to 90
+    {"h": -90, "horizontal_angle": 270, "vertical_angle": 0, "distance": 2},  # left, z=1.3 wide
+    {"h": 90, "horizontal_angle": 90, "vertical_angle": 0, "distance": 1},  # right, z=5 medium
+    {"h": 270, "horizontal_angle": 270, "vertical_angle": 0, "distance": 0},  # left stays 270, z=8 close-up
     {"h": 0, "horizontal_angle": 0, "vertical_angle": 60, "distance": 0},  # v=80 clamped, z=7 close-up
-    {"h": 0, "horizontal_angle": 0, "vertical_angle": -30, "distance": 2},  # v=-40 clamped, z=2.9 wide
+    {"h": 180, "horizontal_angle": 180, "vertical_angle": -30, "distance": 2},  # back, v=-40 clamped, z=2.9 wide
+    {"h": 359, "horizontal_angle": 359, "vertical_angle": 0, "distance": 1},  # in 0..359, z=5
+    {"h": 400, "horizontal_angle": 40, "vertical_angle": 0, "distance": 2},  # past 359 wraps, z=1.3 wide
 ]
 
 
@@ -43,9 +45,13 @@ def _built(tmp_path):
 def test_mock_catalog_defines_angle_params():
     meta = next(m for m in MODELS if m["model_id"] == ANGLE)
     props = meta["api_schema"]["api_schemas"][0]["request_schema"]["properties"]
-    assert props["horizontal_angle"]["minimum"] == -90 and props["horizontal_angle"]["maximum"] == 90
+    assert props["horizontal_angle"]["minimum"] == 0 and props["horizontal_angle"]["maximum"] == 359
     assert props["vertical_angle"]["minimum"] == -30 and props["vertical_angle"]["maximum"] == 60
     assert props["distance"]["minimum"] == 0 and props["distance"]["maximum"] == 2
+    cfg = json.loads((ROOT / "api/wavespeed_models.json").read_text())
+    feature = cfg["features"]["change_angle"]
+    assert feature["default"] == ANGLE
+    assert [m["id"] for m in feature["models"]] == [ANGLE]
     zh = json.loads((ROOT / "src/locales/zh.json").read_text())
     en = json.loads((ROOT / "src/locales/en.json").read_text())
     assert zh["modePanel.angleLimit"] == "最大 90°，不支持背面"
@@ -53,6 +59,7 @@ def test_mock_catalog_defines_angle_params():
     panel = (ROOT / "src/ui/ModePanel.tsx").read_text()
     assert "const ALL_ANGLES = [-90, -45, 45, 90]" in panel
     assert "min={-90}" in panel and "max={90}" in panel
+    assert "modePanel.angleLimit" in panel
     actions = (ROOT / "src/actions.ts").read_text()
     assert "params: angleParams(h, v, z)" in actions and "anglePrompt" not in actions
 
@@ -74,6 +81,9 @@ async def test_angle_request_body(ws, tmp_path):  # noqa: F811
         assert payload["horizontal_angle"] == row["horizontal_angle"]
         assert payload["vertical_angle"] == row["vertical_angle"]
         assert payload["distance"] == row["distance"]
+        assert 0 <= payload["horizontal_angle"] <= 359
+        assert -30 <= payload["vertical_angle"] <= 60
+        assert payload["distance"] in (0, 1, 2)
         assert payload["images"] == [IMG]
         assert "prompt" not in payload
         blob = json.dumps(payload)

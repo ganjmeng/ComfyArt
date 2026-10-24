@@ -35,10 +35,17 @@ export function angleDistance(z: number): 0 | 1 | 2 {
   return z >= 7 ? 0 : z >= 3 ? 1 : 2
 }
 
-/** Model ranges: horizontal −90..90 (0 front, left negative), vertical −30..60. Out-of-range values are clamped, not wrapped. */
+/** edit-multiple-angles takes horizontal_angle in 0..359 (0 front, 90 right, 270 left).
+ *  The panel is still −90..90 with left negative, so a negative is wrapped, not clamped:
+ *  −90 (left) is sent as 270, −45 as 315. 360 lands on 0. */
+function horizontalAngle(h: number): number {
+  return ((Math.round(h) % 360) + 360) % 360
+}
+
+/** Vertical stays −30..60. Distance uses angleDistance. */
 export function angleParams(h: number, v: number, z: number) {
   return {
-    horizontal_angle: clampNum(Math.round(h), -90, 90),
+    horizontal_angle: horizontalAngle(h),
     vertical_angle: clampNum(Math.round(v), -30, 60),
     distance: angleDistance(z),
   }
