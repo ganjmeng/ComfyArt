@@ -1233,7 +1233,7 @@
   "agentPicker.enableMcpConfirm": "外部 Agent 需要开启 MCP，开启后本机的 MCP 客户端可以读写当前画布。开启？",
   "agentPicker.enableMcpOk": "开启",
   "botSettings.localLlmKey": "内置 Agent API Key",
-  "botSettings.localLlmKeyHint": "留空：WaveSpeed 地址沿用 WaveSpeed Key，其他地址不发送 Key",
+  "botSettings.localLlmKeyHint": "留空则使用 WaveSpeed Key",
   "botSettings.urlChangedReenterKey": "地址已更改，请重新填写 Key",
   "botSettings.localLlmModel": "内置 Agent 模型名",
   "botSettings.localLlmModelHint": "例如 deepseek/deepseek-v4.1-flash-1017；拿不到模型列表时也用这个",

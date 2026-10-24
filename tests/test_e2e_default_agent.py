@@ -223,12 +223,21 @@ async def test_url_host_change_shows_reenter_key_helper(app_url, fake_tools, mon
         url_in = modal.locator("label.ca-rename__field", has_text="模型地址" if lang == "zh" else "model URL").locator("input")
         key_field = modal.locator("label.ca-rename__field", has_text="API Key" if lang == "zh" else "API key")
         assert await key_field.get_by_text(helper).count() == 0
+        hint = "留空则使用 WaveSpeed Key" if lang == "zh" else "Leave empty to use your WaveSpeed key"
+        assert await key_field.locator("input").get_attribute("placeholder") == hint
+        fit = await key_field.locator("input").evaluate("""(el) => { const cs = getComputedStyle(el); const c = document.createElement('canvas').getContext('2d');
+          c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+          return [c.measureText(el.placeholder).width, room] }""")
+        assert fit[0] <= fit[1], fit  # the placeholder is not cut off
         await url_in.fill("https://llm.example.com/v2")  # same host: key kept, no helper
         assert await key_field.get_by_text(helper).count() == 0
         await url_in.fill("https://other-llm.example.org/v1")
         line = key_field.get_by_text(helper)
         await line.wait_for()
-        assert await line.get_attribute("class") == "ca-menu__key"  # the existing grey 'Not detected' style
+        assert await line.get_attribute("class") == "ca-adv__help"  # the existing grey helper style
+        key_in = key_field.locator("input")
+        lb, ib = await line.bounding_box(), await key_in.bounding_box()
+        assert abs(lb["x"] - ib["x"]) < 0.5, (lb, ib)  # left-aligned with the input's left edge
         assert await key_field.locator("input").input_value() == ""
         if SHOTS:
             await _crop(pg, key_field, f"close-key-helper-{lang}")

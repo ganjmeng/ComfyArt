@@ -217,4 +217,4 @@ def test_url_change_helper_copy():
     en = json.loads((root / "src/locales/en.json").read_text())["botSettings.urlChangedReenterKey"]
     assert zh == "地址已更改，请重新填写 Key" and en == "URL changed. Please re-enter the key."
     ui = (root / "src/ui/BotSettings.tsx").read_text()
-    assert 'className="ca-menu__key">{t(\'botSettings.urlChangedReenterKey\')}' in ui  # same grey style as "Not detected"
+    assert 'className="ca-adv__help">{t(\'botSettings.urlChangedReenterKey\')}' in ui  # existing grey helper style, no padding

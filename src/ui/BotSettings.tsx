@@ -75,7 +75,7 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
           <label key={key} className="ca-rename__field">
             <span>{label}</span>
             <input className="ca-panel__input" type={type ?? 'text'} autoComplete="off" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => edit(key, e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
-            {key === KEY_KEY && keyCleared && !draft[KEY_KEY] && <span className="ca-menu__key">{t('botSettings.urlChangedReenterKey')}</span>}
+            {key === KEY_KEY && keyCleared && !draft[KEY_KEY] && <span className="ca-adv__help">{t('botSettings.urlChangedReenterKey')}</span>}
           </label>
         ))}
         {FLAGS.map(([key, label]) => (
