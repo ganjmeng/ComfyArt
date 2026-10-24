@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { atom, useValue, type Editor, type TLShapeId } from 'tldraw'
 
 import { draftAtom, isRefShape, sendToAgent, uploadRefs, type RefShape } from '../agent'
-import { botEnabledAtom, branchFrom, chatIdAtom, chatsAtom, deleteChat, messagesAtom, openChat, providersAtom, stopTurn, type BotMessage } from '../bot'
+import { BUILTIN_AGENT, NO_KEY_DETAIL, botEnabledAtom, branchFrom, chatIdAtom, chatsAtom, deleteChat, messagesAtom, openChat, providersAtom, stopTurn, type BotMessage } from '../bot'
 import { chatFrameOf, locateChatFrame } from '../chatFrame'
 import { errorText } from '../jobs'
 import { libraryAtom } from '../library'
@@ -20,6 +20,7 @@ import { ProjectHeader } from './ProjectHeader'
 import { detailsAtom } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { t } from '../i18n'
+import { keySettingsOpenAtom } from '../wavespeedKey'
 
 const NEAR_BOTTOM = 80
 
@@ -157,6 +158,12 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
             <div>{t('agentPanel.agentIsNotEnabledYet')}</div>
             <div className="ca-chat__hint">{t('agentPanel.enableMcpAndAgentIn')}</div>
             <button type="button" className="ca-panel__primary" onClick={() => botSettingsOpenAtom.set(true)}>{t('agentPanel.openAgentSettings')}</button>
+          </div>
+        )}
+        {enabled !== false && messages.length === 0 && providers.find((p) => p.id === (chat?.provider ?? BUILTIN_AGENT))?.detail === NO_KEY_DETAIL && (
+          <div className="ca-chat__notice" data-level="error">
+            {t('agentPanel.noWavespeedKey')}{' '}
+            <a href="#" onClick={(e) => { e.preventDefault(); keySettingsOpenAtom.set(true) }}>{t('agentPanel.setWavespeedKey')}</a>
           </div>
         )}
         {enabled !== false && messages.length === 0 && (

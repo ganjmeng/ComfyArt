@@ -136,7 +136,20 @@ export async function saveSettings(patch: BotSettings) {
 export function defaultProvider(): string {
   const providers = providersAtom.get()
   const saved = String(settingsAtom.get()['bot-provider'] ?? '')
-  return providers.find((p) => p.id === saved && p.available)?.id ?? providers.find((p) => p.available)?.id ?? providers[0]?.id ?? ''
+  // #219: the built-in agent is the default; a remembered external tool that is no longer detected falls back to it
+  return providers.find((p) => p.id === saved && p.available)?.id ?? providers.find((p) => p.id === BUILTIN_AGENT)?.id ?? providers.find((p) => p.available)?.id ?? providers[0]?.id ?? ''
+}
+
+export const BUILTIN_AGENT = 'local-llm'
+export const NO_KEY_DETAIL = 'no-wavespeed-key'
+
+export const providerLabel = (p: ProviderInfo) => (p.id === BUILTIN_AGENT ? t('agentPicker.builtinAgent') : p.label)
+
+/** #219: the remembered external tool that is gone, so the picker can say it fell back to the built-in agent. */
+export function lostProvider(): ProviderInfo | null {
+  const saved = String(settingsAtom.get()['bot-provider'] ?? '')
+  const p = providersAtom.get().find((x) => x.id === saved)
+  return p && !p.available && saved !== BUILTIN_AGENT ? p : null
 }
 
 export const currentChat = () => chatsAtom.get().find((c) => c.id === chatIdAtom.get()) ?? null

@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useValue } from 'tldraw'
 
-import { botEnabledAtom, providersAtom, refreshBot, saveSettings, settingsAtom, type BotSettings as Settings } from '../bot'
+import { BUILTIN_AGENT, botEnabledAtom, providerLabel, providersAtom, refreshBot, saveSettings, settingsAtom, type BotSettings as Settings } from '../bot'
 import { errorText } from '../jobs'
 import { botSettingsOpenAtom } from './AgentPicker'
 import { Modal } from './Modal'
 import { t } from '../i18n'
 
-const TEXT_FIELDS: [string, string, string][] = [
+// #219: the built-in agent's endpoint, model and key; the key is a password field and comes back masked
+const TEXT_FIELDS: [string, string, string, ('text' | 'password')?][] = [
   ['bot-local-llm-url', t('botSettings.localLlmUrl'), t('botSettings.localLlmUrlHint')],
+  ['bot-model-local-llm', t('botSettings.localLlmModel'), t('botSettings.localLlmModelHint')],
+  ['bot-local-llm-key', t('botSettings.localLlmKey'), t('botSettings.localLlmKeyHint'), 'password'],
   ['bot-comfy-mcp-command', t('botSettings.comfyMcpCommand'), t('botSettings.leaveEmptyToFindComfy')],
 ]
 const SWITCHES: [string, string][] = [
@@ -49,15 +52,15 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
         {!enabled && <div className="ca-chat__hint">{t('botSettings.availableAgentsOnThisMachine')}</div>}
         {providers.map((p) => (
           <div key={p.id} className="ca-keys__row">
-            <span>{p.label}</span>
-            <span className="ca-menu__key" title={p.detail}>{p.available ? p.version || t('botSettings.available') : p.detail || t('botSettings.unavailable')}</span>
+            <span>{providerLabel(p)}</span>
+            <span className="ca-menu__key" title={p.detail}>{p.available ? p.version || t('botSettings.available') : p.id === BUILTIN_AGENT ? t('botSettings.unavailable') : t('agentPicker.notDetected')}</span>
           </div>
         ))}
         <div className="ca-chat__hint">{t('botSettings.claudeCodeCodexQwenCode')}</div>
-        {TEXT_FIELDS.map(([key, label, hint]) => (
+        {TEXT_FIELDS.map(([key, label, hint, type]) => (
           <label key={key} className="ca-rename__field">
             <span>{label}</span>
-            <input className="ca-panel__input" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />
+            <input className="ca-panel__input" type={type ?? 'text'} autoComplete="off" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />
           </label>
         ))}
         {FLAGS.map(([key, label]) => (

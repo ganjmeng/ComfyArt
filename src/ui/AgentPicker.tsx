@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { atom, useValue } from 'tldraw'
 
-import { chatIdAtom, chatsAtom, defaultProvider, loadProviders, messagesAtom, newProviderAtom, openChat, providersAtom, saveSettings, settingsAtom, updateChat } from '../bot'
+import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, lostProvider, NO_KEY_DETAIL, providerLabel, loadProviders, messagesAtom, newProviderAtom, openChat, providersAtom, saveSettings, settingsAtom, updateChat } from '../bot'
 import { errorText } from '../jobs'
 import { Icons } from './icons'
 import { Popover } from './Popover'
@@ -22,6 +22,7 @@ export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
   const model = String(settings[modelKey] ?? '')
   const options = provider?.model_options ?? provider?.models.map((m) => ({ value: m, label: m, group: '' })) ?? []
   const fail = (e: unknown) => onError(errorText(e))
+  const lost = lostProvider()
 
   const pick = (id: string) => {
     newProviderAtom.set(id)
@@ -36,7 +37,7 @@ export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
       side="top"
       trigger={({ open: o, toggle }) => (
         <button type="button" className="ca-bar__btn ca-composer__mode" title={t('agentPicker.selectAgent')} data-open={o || undefined} onClick={toggle}>
-          <span className="ca-menu__grow">{provider?.label ?? t('agentPicker.selectAgent')}</span><span className="ca-icon">{Icons.chevron}</span>
+          <span className="ca-menu__grow" title={provider ? providerLabel(provider) : undefined}>{provider ? (provider.id === BUILTIN_AGENT ? t('agentPicker.builtinAgentShort') : providerLabel(provider)) : t('agentPicker.selectAgent')}</span><span className="ca-icon">{Icons.chevron}</span>
         </button>
       )}
     >
@@ -44,11 +45,12 @@ export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
         <div className="ca-gen__title">Agent</div>
         {providers.map((p) => (
           <button key={p.id} type="button" className="ca-menu__item" disabled={!p.available} title={p.detail || p.version} onClick={() => pick(p.id)}>
-            <span className="ca-menu__grow">{p.label}{!p.available && <span className="ca-menu__key"> {t('agentPicker.unavailable')}</span>}</span>
+            <span className="ca-menu__grow">{providerLabel(p)}{!p.available && <span className="ca-menu__key"> {p.id === BUILTIN_AGENT ? t('agentPicker.unavailable') : t('agentPicker.notDetected')}</span>}</span>
             {p.id === providerId && <span className="ca-icon">{Icons.check}</span>}
           </button>
         ))}
-        {provider && !provider.available && provider.detail && <div className="ca-chat__hint">{provider.detail}</div>}
+        {provider && !provider.available && provider.detail && provider.detail !== NO_KEY_DETAIL && <div className="ca-chat__hint">{provider.detail}</div>}
+        {lost && <div className="ca-chat__hint">{t('agentPicker.fellBackToBuiltin', providerLabel(lost))}</div>}
         {chat && started && <div className="ca-chat__hint">{t('agentPicker.switchingAgentStartsANew')}</div>}
         {options.length > 0 && (
           <>
