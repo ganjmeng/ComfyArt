@@ -291,6 +291,8 @@ export function CustomizeDialog({ tools, onClose }: { tools: Tool[]; onClose: ()
   const byId = new Map(tools.map((x) => [x.id, x]))
   const cards = ALL_TOOLS.map((id) => byId.get(id)).filter((x): x is Tool => !!x)
   const shown = cards.filter((x) => pinned.includes(x.id) && x.when !== false)
+  const fixedShown = shown.filter((x) => FIXED_TOOLS.has(x.id))
+  const btn = (x: Tool) => <PreviewBtn key={x.id} tool={x} names={names && fit < 2} hints={fit < 1} onUnpin={() => flip(x.id)} />
   const flip = (id: string) => !FIXED_TOOLS.has(id) && setPinned((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
   const save = () => { setPrefs({ pinned, names }); onClose() }
   useLayoutEffect(() => setFit(0), [pinned, names])
@@ -316,7 +318,9 @@ export function CustomizeDialog({ tools, onClose }: { tools: Tool[]; onClose: ()
         </div>
         <div className="ca-cz__preview">
           <div ref={barRef} className="ca-bar ca-cz__bar">
-            {shown.map((x) => <PreviewBtn key={x.id} tool={x} names={names && fit < 2} hints={fit < 1} onUnpin={() => flip(x.id)} />)}
+            {fixedShown.map(btn)}
+            {fixedShown.length > 0 && <div className="ca-bar__sep" />}
+            {shown.filter((x) => !FIXED_TOOLS.has(x.id)).map(btn)}
             <span className="ca-bar__btn" title={t('imageToolbar.more')}><span className="ca-icon">{Icons.more}</span></span>
             <div className="ca-bar__sep" />
             <span className="ca-bar__btn" title={t('common.download')}><span className="ca-icon">{Icons.download}</span></span>

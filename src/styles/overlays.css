@@ -346,7 +346,7 @@
 .ca-cz__bar .ca-bar__btn { cursor: default; }
 .ca-cz__tool { position: relative; }
 .ca-cz__tool--rm { background: var(--ca-hover); }
-.ca-cz__x { position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; z-index: 1; padding: 2px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border: none; border-radius: 2px; background: none; color: var(--ca-muted); opacity: .7; cursor: pointer; }
+.ca-cz__x { position: absolute; top: 1px; right: 1px; width: 10px; height: 10px; z-index: 1; padding: 2px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border: none; border-radius: 2px; background: none; color: var(--ca-muted); opacity: 1; cursor: pointer; }
 .ca-cz__x:hover { opacity: 1; color: var(--ca-strong); }
 .ca-cz__x svg { width: 6px; height: 6px; }
 .ca-cz__card[aria-disabled] { cursor: default; }
