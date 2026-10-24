@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { atom, useValue } from 'tldraw'
 
-import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, lostProvider, NO_KEY_DETAIL, providerLabel, loadProviders, messagesAtom, newProviderAtom, openChat, providersAtom, saveSettings, settingsAtom, updateChat } from '../bot'
+import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, lostProvider, NO_KEY_DETAIL, providerLabel, loadProviders, messagesAtom, newProviderAtom, openChat, providersAtom, saveSettings, settingsAtom, updateChat, type ProviderInfo } from '../bot'
 import { errorText } from '../jobs'
 import { confirmAtom } from './Confirm'
 import { Icons } from './icons'
@@ -9,6 +9,10 @@ import { Popover } from './Popover'
 import { t } from '../i18n'
 
 export const botSettingsOpenAtom = atom('bot settings open', false)
+
+// #219: the composer bar shows a short name; the full name stays in the list and on hover
+const SHORT_LABELS: Record<string, string> = { 'deepseek-harness': 'DS Harness' }
+const shortLabel = (p: ProviderInfo) => (p.id === BUILTIN_AGENT ? t('agentPicker.builtinAgentShort') : SHORT_LABELS[p.id] ?? providerLabel(p))
 
 export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
   const [open, setOpen] = useState(false)
@@ -51,7 +55,7 @@ export function AgentPicker({ onError }: { onError: (msg: string) => void }) {
       side="top"
       trigger={({ open: o, toggle }) => (
         <button type="button" className="ca-bar__btn ca-composer__mode" title={t('agentPicker.selectAgent')} data-external={(provider && provider.id !== BUILTIN_AGENT) || undefined} data-open={o || undefined} onClick={toggle}>
-          <span className="ca-menu__grow" title={provider ? providerLabel(provider) : undefined}>{provider ? (provider.id === BUILTIN_AGENT ? t('agentPicker.builtinAgentShort') : providerLabel(provider)) : t('agentPicker.selectAgent')}</span><span className="ca-icon">{Icons.chevron}</span>
+          <span className="ca-menu__grow" title={provider ? providerLabel(provider) : undefined}>{provider ? shortLabel(provider) : t('agentPicker.selectAgent')}</span><span className="ca-icon">{Icons.chevron}</span>
         </button>
       )}
     >

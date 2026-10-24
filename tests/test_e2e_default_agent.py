@@ -70,17 +70,28 @@ BAR_FITS = """() => {
   const modes = [...foot.querySelectorAll('.ca-composer__mode')]
   return {
     modes: modes.map((m) => m.innerText.trim()),
-    clipped: modes.some((m) => m.scrollWidth > m.clientWidth + 1),
+    clipped: modes.some((m) => m.scrollWidth > m.clientWidth + 1) || [...foot.querySelectorAll('.ca-composer__mode[title] > .ca-menu__grow')].some((m) => m.scrollWidth > m.clientWidth + 1),
     overlap: kids.some((r, i) => i > 0 && r.left < kids[i - 1].right - 0.5),
     overflow: kids.some((r) => r.right > fr.right + 0.5 || r.left < fr.left - 0.5),
+    sendInside: (() => { const r = foot.querySelector('.ca-gen__send').getBoundingClientRect(); return r.width > 0 && r.left >= fr.left - 0.5 && r.right <= fr.right + 0.5 })(),
+    // every control except the agent-name button keeps its natural size
+    squeezed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-bar__btn, :scope > .ca-gen__send, :scope > .ca-pop-anchor:has(> .ca-composer__mode:not([title]))')]
+      .filter((e) => e.getBoundingClientRect().width + 0.5 < e.scrollWidth || e.getBoundingClientRect().width === 0).map((e) => e.className),
   }
 }"""
 
 
+NAME_CLIPPED: dict = {}  # agent short name -> truncated with an ellipsis at the default width (reported, not failed)
+
+
 async def _bar_fits(pg, agent="ComfyArt"):
     bar = await pg.evaluate(BAR_FITS)
-    assert bar["modes"] == ["Agent", agent], bar
-    assert not bar["clipped"] and not bar["overlap"] and not bar["overflow"], bar
+    assert bar["modes"] == ["Agent", agent], bar  # DOM text is the whole name; only the visible part may end in an ellipsis
+    assert not bar["overlap"] and not bar["overflow"], bar
+    assert bar["sendInside"] and not bar["squeezed"], bar  # send / settings / mic never pushed out or squeezed
+    NAME_CLIPPED[agent] = bar["clipped"]
+    if bar["clipped"]:  # only the agent-name button may shrink, and it keeps the full name on hover
+        assert await pg.locator(".ca-composer__mode[title] > .ca-menu__grow").get_attribute("title"), bar
 
 
 async def _crop(pg, loc, name, pad=8):
@@ -223,7 +234,7 @@ async def test_url_host_change_shows_reenter_key_helper(app_url, fake_tools, mon
         url_in = modal.locator("label.ca-rename__field", has_text="模型地址" if lang == "zh" else "model URL").locator("input")
         key_field = modal.locator("label.ca-rename__field", has_text="API Key" if lang == "zh" else "API key")
         assert await key_field.get_by_text(helper).count() == 0
-        hint = "留空则使用 WaveSpeed Key" if lang == "zh" else "Leave empty to use your WaveSpeed key"
+        hint = "WaveSpeed 地址可留空" if lang == "zh" else "Optional for WaveSpeed URLs"
         assert await key_field.locator("input").get_attribute("placeholder") == hint
         fit = await key_field.locator("input").evaluate("""(el) => { const cs = getComputedStyle(el); const c = document.createElement('canvas').getContext('2d');
           c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
@@ -243,4 +254,52 @@ async def test_url_host_change_shows_reenter_key_helper(app_url, fake_tools, mon
             await _crop(pg, key_field, f"close-key-helper-{lang}")
         await url_in.fill("https://llm.wavespeed.ai/v1")  # back on WaveSpeed: cleared, WaveSpeed key used, no helper
         assert await key_field.get_by_text(helper).count() == 0
+        await browser.close()
+
+
+ALL_AGENTS = [("claude-code", "Claude Code", "Claude Code"), ("codex", "Codex", "Codex"), ("qwen-code", "Qwen Code", "Qwen Code"),
+              ("deepseek-harness", "DeepSeek Harness", "DS Harness")]
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+async def test_every_agent_fits_the_bar(app_url, fake_tools, monkeypatch, lang):  # noqa: F811
+    """All 5 agents: the name shows in full (short label in the bar, full name on hover), and the send button,
+    settings and mic icons keep their size inside the bar."""
+    monkeypatch.setenv("WAVESPEED_API_KEY", "mock-key-not-real")
+    from ComfyArt.bot import get_provider
+    from ComfyArt.bot.providers import ProviderStatus
+
+    async def ok(*_a):
+        return ProviderStatus(available=True, version="1.0.0", logged_in=True, detail="")
+    for pid, *_ in ALL_AGENTS:
+        monkeypatch.setattr(get_provider(pid), "probe", ok)
+    from conftest import write_settings
+    write_settings(**{"enable-mcp": True})
+    async with pw.async_playwright() as p:
+        try:
+            browser, pg = await _page(p, app_url, lang)
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
+        for _ in range(3):
+            if await pg.locator(".ca-modal").count():
+                await pg.keyboard.press("Escape")
+                await pg.wait_for_timeout(300)
+        trigger = pg.get_by_title("选择 Agent" if lang == "zh" else "Select agent").first
+        await trigger.wait_for()
+        await _bar_fits(pg)
+        await _crop(pg, pg.locator(".ca-composer__foot"), f"close-bar-local-llm-{lang}")
+        for pid, full, short in ALL_AGENTS:
+            await pg.keyboard.press("Escape")
+            await pg.wait_for_timeout(200)
+            if not await pg.locator(".ca-agentpick").is_visible():
+                await trigger.click()
+            item = pg.locator(".ca-agentpick .ca-menu__item").filter(has_text=full).first
+            await item.wait_for(timeout=5000)
+            await item.click()
+            await pg.wait_for_timeout(600)
+            assert (await trigger.inner_text()).strip() == short
+            assert await trigger.locator("[title]").first.get_attribute("title") == full
+            await _bar_fits(pg, short)
+            await _crop(pg, pg.locator(".ca-composer__foot"), f"close-bar-{pid}-{lang}")
+        print(f"NAME_CLIPPED[{lang}]", NAME_CLIPPED)
         await browser.close()

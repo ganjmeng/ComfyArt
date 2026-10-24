@@ -1233,7 +1233,7 @@
   "agentPicker.enableMcpConfirm": "External agents need MCP. Once on, MCP clients on this computer can read and edit your canvas. Turn on?",
   "agentPicker.enableMcpOk": "Turn on",
   "botSettings.localLlmKey": "Built-in agent API key",
-  "botSettings.localLlmKeyHint": "Leave empty to use your WaveSpeed key",
+  "botSettings.localLlmKeyHint": "Optional for WaveSpeed URLs",
   "botSettings.urlChangedReenterKey": "URL changed. Please re-enter the key.",
   "botSettings.localLlmModel": "Built-in agent model name",
   "botSettings.localLlmModelHint": "e.g. deepseek/deepseek-v4.1-flash-1017; also used when the model list can't be fetched",
