@@ -1,5 +1,5 @@
 .ca-kit { position: fixed; inset: 0; z-index: 900; display: flex; flex-direction: column; background: var(--ca-float); color: var(--ca-text); font: 400 14px/22px var(--ca-font); }
-.ca-kit__bar { display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 16px; flex: none; border-bottom: .5px solid var(--ca-border); }
+.ca-kit__bar { display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 16px; flex: none; border-bottom: var(--ca-border-w) solid var(--ca-border); }
 .ca-kit__spacer { flex: 1; }
 .ca-kit__scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .ca-kit__page { max-width: 840px; margin: 0 auto; padding: 32px 24px 120px; box-sizing: border-box; }
@@ -15,7 +15,7 @@
 .ca-kit__link:hover { color: var(--ca-text); background: var(--ca-hover); }
 .ca-kit__link .ca-icon { width: 16px; height: 16px; }
 
-.ca-kit__section { padding: 24px 0; border-top: .5px solid var(--ca-border); margin-top: 24px; }
+.ca-kit__section { padding: 24px 0; border-top: var(--ca-border-w) solid var(--ca-border); margin-top: 24px; }
 .ca-kit__section + .ca-kit__section { margin-top: 0; }
 .ca-kit__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .ca-kit__head h3 { margin: 0; font: 500 14px/22px var(--ca-font); }
@@ -36,11 +36,11 @@
 .ca-kit__colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .ca-kit__color { display: flex; flex-direction: column; gap: 6px; }
 .ca-kit__color .ca-pop-anchor { display: flex; }
-.ca-kit__swatch { flex: 1; height: 44px; padding: 0 14px; border: .5px solid var(--ca-border); border-radius: 10px; font: 500 13px/20px var(--ca-font); text-align: left; cursor: pointer; }
+.ca-kit__swatch { flex: 1; height: 44px; padding: 0 14px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 10px; font: 500 13px/20px var(--ca-font); text-align: left; cursor: pointer; }
 .ca-kit__role { height: 26px; border: none; border-radius: 6px; background: var(--ca-field); color: var(--ca-muted); font: inherit; font-size: 12px; }
 
 .ca-kit__fonts { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.ca-kit__font { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: .5px solid var(--ca-border); border-radius: 12px; }
+.ca-kit__font { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 12px; }
 .ca-kit__sample { width: 44px; font-size: 26px; line-height: 32px; text-align: center; }
 .ca-kit__fontname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
