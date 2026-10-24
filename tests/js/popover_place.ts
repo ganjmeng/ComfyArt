@@ -8,5 +8,5 @@ console.log(JSON.stringify([
   placePopover(r(900, 700, 32, 32), { width: 160, height: 300 }, view, 'bottom', 'end'),  // flips up
   placePopover(r(900, 40, 32, 32), menu, view, 'bottom', 'end'),  // capped below, scrolls
   placePopover(r(900, 740, 32, 32), menu, view, 'bottom', 'end'),  // capped above, scrolls
-  placePopover(r(900, 790, 32, 32), menu, view, 'bottom', 'end'),  // anchor at edge: pinned to viewport
+  placePopover(r(900, 80, 32, 32), menu, { width: 1280, height: 200 }, 'bottom', 'end'),  // tiny window: pinned to viewport
 ]))

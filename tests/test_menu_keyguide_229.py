@@ -21,8 +21,8 @@ def test_popover_placement_stays_in_viewport(tmp_path):
     assert fits == {"left": 772, "top": 80} and flips["top"] == 700 - 8 - 300 and "maxHeight" not in flips
     assert below["top"] == 80 and below["maxHeight"] == 800 - 8 - 80
     assert above["maxHeight"] == 740 - 16 and above["top"] == 8
-    assert pinned == {"left": 772, "top": 8, "maxHeight": 784}
-    for p in (below, above, pinned):  # whole panel, so the last item (Fill Artboard) can be scrolled to
+    assert pinned == {"left": 772, "top": 8, "maxHeight": 184}
+    for p in (below, above):  # whole panel, so the last item (Fill Artboard) can be scrolled to
         assert p["top"] >= 8 and p["top"] + p["maxHeight"] <= 792
 
 
