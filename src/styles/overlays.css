@@ -254,8 +254,8 @@
 .ca-md__code { position: relative; }
 .ca-md__code > button { position: absolute; top: 4px; right: 4px; opacity: 0; }
 .ca-md__code:hover > button { opacity: 1; }
-.ca-composer__mode { white-space: nowrap; max-width: 100%; overflow: hidden; }
-.ca-composer__mode .ca-menu__grow { overflow: hidden; text-overflow: ellipsis; }
+.ca-composer__mode { white-space: nowrap; }
+.ca-composer__foot > .ca-pop-anchor:has(> .ca-composer__mode) { flex-shrink: 0; }
 .ca-chat__tool { display: flex; flex-direction: column; gap: 6px; }
 .ca-chat__tool > .ca-chat__step { width: 100%; padding: 0; border: none; background: none; font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
 .ca-chat__tool > .ca-chat__step:hover { color: var(--ca-text); }

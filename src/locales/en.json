@@ -1236,5 +1236,5 @@
   "botSettings.localLlmKeyHint": "Leave empty: WaveSpeed URLs reuse the WaveSpeed key; other URLs get no key",
   "botSettings.localLlmModel": "Built-in agent model name",
   "botSettings.localLlmModelHint": "e.g. deepseek/deepseek-v4.1-flash-1017; also used when the model list can't be fetched",
-  "agentPicker.builtinAgentShort": "ComfyArt Agent"
+  "agentPicker.builtinAgentShort": "ComfyArt"
 }

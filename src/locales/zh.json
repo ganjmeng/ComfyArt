@@ -1236,5 +1236,5 @@
   "botSettings.localLlmKeyHint": "留空：WaveSpeed 地址沿用 WaveSpeed Key，其他地址不发送 Key",
   "botSettings.localLlmModel": "内置 Agent 模型名",
   "botSettings.localLlmModelHint": "例如 deepseek/deepseek-v4.1-flash-1017；拿不到模型列表时也用这个",
-  "agentPicker.builtinAgentShort": "ComfyArt Agent"
+  "agentPicker.builtinAgentShort": "ComfyArt"
 }
