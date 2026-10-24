@@ -42,7 +42,7 @@ def test_model_pages_mention_key_and_cost():
 
 def test_settings_menu_user_guide():
     src = (ROOT / "src/ui/SettingsMenu.tsx").read_text()
-    assert "DOCS_SITE = 'https://comfyart.mintlify.app'" in (ROOT / "src/docsConfig.ts").read_text()
+    assert "DOCS_SITE = 'https://ghhsdob.mintlify.site'" in (ROOT / "src/docsConfig.ts").read_text()
     assert "from '../docsConfig'" in src and "/zh`" in src and "http" not in src.split("docsUrl", 1)[1].split("}", 1)[0]
     assert 'data-testid="settings-guide"' in src and 'className="ca-menu__item"' in src
     assert json.loads((ROOT / "src/locales/en.json").read_text())["settings.userGuide"] == "User Guide"
@@ -73,3 +73,10 @@ def test_no_original_site_images():
         for lang, name in re.findall(r'src="/images/ours/(en|zh)/([a-z0-9-]+)\.webp"', s):
             assert lang == ("zh" if p.relative_to(DOCS).parts[0] == "zh" else "en"), (p, name)
             assert (imgs / "ours" / lang / f"{name}.webp").is_file(), (p, name)
+
+
+def test_docs_site_url_not_placeholder():
+    # #211: the hosted site is live; the old placeholder must not ship in src or dist.
+    for p in list((ROOT / "src").rglob("*.ts*")) + list((ROOT / "dist").rglob("*.js")):
+        assert "comfyart.mintlify.app" not in p.read_text(errors="ignore"), p
+    assert any("ghhsdob.mintlify.site" in p.read_text(errors="ignore") for p in (ROOT / "dist").rglob("*.js"))
