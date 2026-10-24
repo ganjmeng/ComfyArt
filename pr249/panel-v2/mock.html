@@ -1,0 +1,74 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--ca-blue:#3b82f6;--ca-font:Inter,-apple-system,"PingFang SC","Noto Sans CJK SC",sans-serif;--ca-float:#fff;--ca-border:rgba(0,0,0,.07);--ca-text:rgba(0,0,0,.9);--ca-muted:rgba(0,0,0,.3);--ca-hover:rgba(0,0,0,.06);--ca-active:rgba(0,0,0,.08);--ca-field:rgba(0,0,0,.04);--ca-strong:rgba(0,0,0,.9);--ca-shadow-menu:0 16px 24px -8px rgba(0,0,0,.06),0 4px 8px -4px rgba(0,0,0,.04),0 1px 1px 0 rgba(0,0,0,.02);--ca-border-w:1px;--canvas:#f5f5f5;--sub:rgba(0,0,0,.55);--inv:#fff}
+:root[data-theme=dark]{--ca-float:#161616;--ca-border:rgba(255,255,255,.1);--ca-text:rgba(255,255,255,.9);--ca-muted:rgba(255,255,255,.4);--ca-hover:rgba(255,255,255,.08);--ca-active:rgba(255,255,255,.12);--ca-field:rgba(255,255,255,.06);--ca-strong:rgba(255,255,255,.92);--ca-shadow-menu:0 4px 16px rgba(0,0,0,.5);--ca-border-w:.5px;--canvas:#0d0d0d;--sub:rgba(255,255,255,.6);--inv:#111}
+*{box-sizing:border-box}html,body{margin:0;width:1280px;height:800px;overflow:hidden;font-family:var(--ca-font);color:var(--ca-text);font-size:12px}
+.app{position:fixed;inset:0;display:flex;background:var(--ca-float)}
+.side{width:300px;border-right:var(--ca-border-w) solid var(--ca-border);padding:14px;color:var(--sub)}
+.side .b{background:var(--ca-field);border-radius:12px;padding:10px 12px;color:var(--ca-text);margin:30px 0 16px;line-height:1.5}
+.cv{flex:1;position:relative;background:var(--canvas);background-image:radial-gradient(var(--ca-border) 1px,transparent 1px);background-size:20px 20px}
+.img{position:absolute;left:170px;top:150px;width:520px;height:520px;outline:1.5px solid var(--ca-blue)}
+.cap{position:absolute;left:170px;top:130px;width:520px;display:flex;justify-content:space-between;color:var(--ca-blue);font-size:11px}
+.h{position:absolute;width:8px;height:8px;background:#fff;border:1.5px solid var(--ca-blue)}
+.art{width:100%;height:100%;display:block}
+.pop{position:absolute;left:640px;top:150px;width:260px;background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);border-radius:12px;box-shadow:var(--ca-shadow-menu);padding:12px}
+.hd{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:13px;margin-bottom:10px}
+.ib{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--sub)}
+.seg{display:flex;background:var(--ca-field);border-radius:8px;padding:2px;margin-bottom:8px}
+.seg div{flex:1;text-align:center;height:24px;line-height:24px;border-radius:6px;color:var(--sub)}
+.seg .on{background:var(--ca-float);color:var(--ca-text);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.stage{height:172px;border-radius:8px;background:var(--ca-field);display:grid;place-items:center;perspective:500px;position:relative;cursor:grab}
+.cube{width:72px;height:72px;position:relative;transform-style:preserve-3d}
+.f{position:absolute;inset:0;border:1px solid var(--ca-muted);background:var(--ca-float);opacity:.92}
+.f.fr{overflow:hidden;opacity:1}.f.fr svg{width:100%;height:100%}
+.hint{position:absolute;bottom:6px;width:100%;text-align:center;color:var(--ca-muted);font-size:10.5px}
+.row{margin-top:10px}.lab{display:flex;justify-content:space-between;color:var(--sub);margin-bottom:4px}.lab b{font-weight:500;color:var(--ca-text);font-variant-numeric:tabular-nums}
+.tr{position:relative;height:16px}.rail{position:absolute;left:0;right:0;top:7px;height:2px;border-radius:1px;background:var(--ca-active)}
+.fill{position:absolute;left:0;top:7px;height:2px;background:var(--ca-strong);border-radius:1px}
+.tk{position:absolute;top:4px;width:2px;height:8px;margin-left:-1px;border-radius:1px;background:var(--ca-muted)}
+.th{position:absolute;top:2px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--ca-float);border:2px solid var(--ca-strong)}
+.ft{display:flex;gap:8px;margin-top:14px}.btn{flex:1;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:500}
+.cancel{border:var(--ca-border-w) solid var(--ca-border);border-color:var(--ca-active)}
+.go{background:var(--ca-strong);color:var(--inv)}.go.hv{opacity:.85;box-shadow:0 0 0 3px var(--ca-active)}
+.price{font-size:11px;opacity:.7;font-variant-numeric:tabular-nums}
+.tip{position:absolute;right:12px;bottom:-30px;background:var(--ca-strong);color:var(--inv);font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap}
+.cur{position:absolute;width:14px;height:20px}
+.bar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);border-radius:12px;box-shadow:var(--ca-shadow-menu);padding:6px 10px;display:flex;gap:14px;color:var(--sub)}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}.chip{height:22px;padding:0 8px;border-radius:11px;border:var(--ca-border-w) solid var(--ca-active);color:var(--sub);font-size:11px;line-height:20px}.chip.on{background:var(--ca-strong);color:var(--inv);border-color:var(--ca-strong)}
+.row.dis .lab b{color:var(--ca-muted)}.row.dis .tr{opacity:.35}
+.cnt{flex:0 0 auto;width:52px;height:32px;border-radius:8px;border:var(--ca-border-w) solid var(--ca-active);display:flex;align-items:center;justify-content:center;gap:2px;font-variant-numeric:tabular-nums;position:relative}.cnt.lock{color:var(--ca-muted)}
+.cancel{flex:0 0 64px}.menu{position:absolute;bottom:38px;left:0;width:64px;background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);border-radius:10px;box-shadow:var(--ca-shadow-menu);padding:4px;z-index:3}.mi{height:28px;border-radius:6px;padding:0 8px;display:flex;align-items:center;justify-content:space-between}.mi.on{background:var(--ca-hover)}
+</style></head><body><div class="app" id="app"></div><script>
+const q=new URLSearchParams(location.search),L=q.get('lang')||'zh',T=q.get('theme')||'light',TAB=q.get('tab')||'subject',ST=q.get('state')||'default',Z=+(q.get('zoom')||1);
+document.documentElement.dataset.theme=T;
+const PRE=q.get('preset')||'',MENU=q.get('menu')==='open',N=+(q.get('n')||(MENU?2:1));
+const S={zh:{pre:['左侧','左前','右前','右侧','四角度'],four:'4 个角度',g4:'生成 4 张',t:'多角度',sub:'主体',cam:'摄像头',r:'旋转',ti:'倾斜',z:'缩放',zs:['特写','中等','广角'],c:'取消',g:'生成',reset:'重置',h1:'拖动方块旋转主体',h2:'拖动相机环绕拍摄',tip:'预计消耗 $0.03 · 按当前角度生成 1 张',prompt:'木桌上的咖啡，晨光',side:'已生成 1 张图片。选中图片后，可在 ⋯ 菜单里打开「多角度」。',tools:['选择','评论','涂鸦','图像生成']},
+en:{pre:['Left','Front-left','Front-right','Right','4 angles'],four:'4 angles',g4:'Generate 4',t:'Multi-angle',sub:'Subject',cam:'Camera',r:'Rotate',ti:'Tilt',z:'Zoom',zs:['Close-up','Medium','Wide'],c:'Cancel',g:'Generate',reset:'Reset',h1:'Drag the cube to turn the subject',h2:'Drag the camera to orbit',tip:'Est. $0.03 · 1 image at this angle',prompt:'Coffee on a wooden table, morning light',side:'Generated 1 image. Select it and open Multi-angle from the ⋯ menu.',tools:['Select','Comment','Draw','Image gen']}}[L];
+const four=PRE==='four';let rot=45,tilt=-30,zoom=1; if(ST==='snapped'){rot=-45;tilt=30;zoom=0}if(four){tilt=0}if(ST==='min'){rot=-90;tilt=-30;zoom=0}
+const art=`<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" class="art"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d7a7"/><stop offset="1" stop-color="#e9a86b"/></linearGradient><linearGradient id="tb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a5f34"/><stop offset="1" stop-color="#5e3519"/></linearGradient></defs><rect width="100" height="58" fill="url(#sky)"/><rect x="58" y="6" width="34" height="40" rx="1" fill="#fff6e6" opacity=".75"/><line x1="75" y1="6" x2="75" y2="46" stroke="#e2c49b" stroke-width="1.2"/><rect y="56" width="100" height="44" fill="url(#tb)"/><ellipse cx="50" cy="80" rx="22" ry="5" fill="#000" opacity=".25"/><path d="M33 58 h34 l-3 22 q-14 5 -28 0z" fill="#efe7da"/><ellipse cx="50" cy="58" rx="17" ry="3.6" fill="#3a2414"/><path d="M67 62 q9 1 7 8 q-2 5 -9 4" fill="none" stroke="#efe7da" stroke-width="3"/><circle cx="18" cy="38" r="9" fill="#5f8f4e"/><circle cx="12" cy="28" r="7" fill="#76a862"/><rect x="10" y="44" width="14" height="14" rx="2" fill="#e9e1d3"/></svg>`;
+const ico={reset:'<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a5 5 0 1 0 1.5-3.5"/><path d="M3 2.5V5h2.5"/></svg>'};
+const pct=(v,a,b)=>(v-a)/(b-a)*100;
+function slider(lab,val,disp,a,b,ticks,dis){return `<div class="row ${dis?'dis':''}"><div class="lab"><span>${lab}</span><b>${disp}</b></div><div class="tr"><div class="rail"></div><div class="fill" style="width:${pct(val,a,b)}%"></div>${ticks.map(t=>`<div class="tk" style="left:${pct(t,a,b)}%"></div>`).join('')}<div class="th" style="left:${pct(val,a,b)}%"></div></div></div>`}
+const subjectStage=`<div class="stage"><div class="cube" style="transform:rotateX(${-tilt*0.6}deg) rotateY(${-rot}deg) scale(${[1.25,1,.75][zoom]})">
+<div class="f fr" style="transform:translateZ(36px)">${art}</div><div class="f" style="transform:rotateY(180deg) translateZ(36px)"></div><div class="f" style="transform:rotateY(90deg) translateZ(36px)"></div><div class="f" style="transform:rotateY(-90deg) translateZ(36px)"></div><div class="f" style="transform:rotateX(90deg) translateZ(36px)"></div><div class="f" style="transform:rotateX(-90deg) translateZ(36px)"></div></div><div class="hint">${S.h1}</div></div>`;
+// camera: sphere wireframe + camera handle positioned by rot/tilt
+const R=62,cx=118,cy=80,ar=rot*Math.PI/180,at=tilt*Math.PI/180,dist=[.8,1,1.18][zoom];
+const hx=cx+Math.sin(ar)*R*dist*Math.cos(at),hy=cy-Math.sin(at)*R*dist*.9+Math.cos(ar)*8;
+const camStage=`<div class="stage"><svg width="236" height="160" viewBox="0 0 236 160" fill="none" stroke="var(--ca-muted)" stroke-width=".8"><circle cx="${cx}" cy="${cy}" r="${R}"/><ellipse cx="${cx}" cy="${cy}" rx="${R}" ry="16"/><ellipse cx="${cx}" cy="${cy}" rx="${R*.5}" ry="${R}"/><ellipse cx="${cx}" cy="${cy}" rx="${R}" ry="${R*.55}" opacity=".5"/><line x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke-dasharray="2 2"/><foreignObject x="${cx-22}" y="${cy-22}" width="44" height="44"><div xmlns="http://www.w3.org/1999/xhtml" style="width:44px;height:44px;border-radius:4px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.2)">${art}</div></foreignObject><g transform="translate(${hx-9} ${hy-7}) rotate(${-rot/3} 9 7)"><rect width="14" height="12" rx="2.5" fill="var(--ca-float)" stroke="var(--ca-strong)" stroke-width="1.2"/><path d="M14 4 l5 -2.5 v9 l-5 -2.5z" fill="var(--ca-float)" stroke="var(--ca-strong)" stroke-width="1.2" stroke-linejoin="round"/><circle cx="7" cy="6" r="2" stroke="var(--ca-strong)" stroke-width="1.2"/></g></svg><div class="hint">${S.h2}</div></div>`;
+const hover=ST==='snapped';
+document.getElementById('app').innerHTML=`<div class="side"><div class="b">${S.prompt}</div><div style="width:84px;height:84px;border-radius:8px;overflow:hidden">${art}</div><p style="line-height:1.6">${S.side}</p></div>
+<div class="cv"><div class="cap"><span>▣ ${S.prompt}</span><span>1024 × 1024</span></div><div class="img">${art}</div>
+${[[166,146],[686,146],[166,666],[686,666]].map(p=>`<div class="h" style="left:${p[0]}px;top:${p[1]}px"></div>`).join('')}
+<div class="pop" id="pop" style="transform:scale(${Z});transform-origin:0 0"><div class="hd"><span>${S.t}</span><span class="ib" title="${S.reset}">${ico.reset}</span></div>
+<div class="seg"><div class="${TAB==='subject'?'on':''}">${S.sub}</div><div class="${TAB==='camera'?'on':''}">${S.cam}</div></div>
+${TAB==='subject'?subjectStage:camStage}
+<div class="chips">${S.pre.map((p,i)=>`<span class="chip ${(four&&i==4)||(!four&&[-90,-45,45,90][i]===rot)?'on':''}">${p}</span>`).join('')}</div>
+${slider(S.r,rot,four?S.four:rot+'°',-90,90,[-90,-45,0,45,90],four)}
+${slider(S.ti,tilt,tilt+'°',-30,60,[-30,0,30,60])}
+${slider(S.z,zoom,S.zs[zoom],0,2,[0,1,2])}
+<div class="ft"><div class="btn cancel">${S.c}</div><div class="cnt ${four?'lock':''}">×${four?4:N}${four?'<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>':'<svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>'}${MENU?`<div class="menu">${[1,2,3,4].map(k=>`<div class="mi ${k==N?'on':''}">×${k}${k==N?'<span>✓</span>':''}</div>`).join('')}</div>`:''}</div><div class="btn go ${hover?'hv':''}">${four?S.g4:S.g}<span class="price">$${(0.03*(four?4:N)).toFixed(2)}</span></div></div>
+${hover?`<div class="tip">${S.tip}</div><svg class="cur" style="right:50px;bottom:4px" viewBox="0 0 14 20"><path d="M1 1 v15 l4 -4 l3 6 l2.5 -1 l-3 -6 h5.5z" fill="#fff" stroke="#000" stroke-width="1"/></svg>`:''}
+</div><div class="bar">${S.tools.map(t=>`<span>${t}</span>`).join('')}</div></div>`;
+if(q.get('entry')){const P=document.getElementById('pop');P.style.display='none';const it=L==='zh'?['图层拆分','编辑文字','多角度','动态图片','扩图','调整','裁剪','翻转与旋转']:['Layers','Edit text','Multi-angle','Motion','Expand','Adjust','Crop','Flip & rotate'];
+const tb=document.createElement('div');tb.innerHTML=`<div style="position:absolute;left:300px;top:96px;height:34px;background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);border-radius:10px;box-shadow:var(--ca-shadow-menu);display:flex;align-items:center;gap:14px;padding:0 10px;color:var(--ca-text)">${(L==='zh'?['快速编辑','放大','去背景','局部重绘']:['Quick edit','Upscale','Remove BG','Inpaint']).map(t=>`<span>${t}</span>`).join('')}<span style="background:var(--ca-active);border-radius:6px;padding:2px 6px">⋯</span></div>
+<div id="emenu" style="position:absolute;left:560px;top:136px;width:180px;background:var(--ca-float);border:var(--ca-border-w) solid var(--ca-border);border-radius:12px;box-shadow:var(--ca-shadow-menu);padding:4px">${it.map((t,i)=>`<div style="height:30px;line-height:30px;padding:0 10px;border-radius:8px;${i==2?'background:var(--ca-hover);font-weight:500':''}">${t}</div>`).join('')}<div style="border-top:var(--ca-border-w) solid var(--ca-border);margin:4px 0"></div><div style="height:30px;line-height:30px;padding:0 10px;color:var(--sub)">${L==='zh'?'自定义工具栏':'Customize toolbar'}</div></div>`;document.querySelector('.cv').appendChild(tb)}
+</script></body></html>
