@@ -408,3 +408,12 @@
 .ca-composer__mid .ca-composer__modetext { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ca-composer__foot[data-fit="3"] .ca-composer__mid > .ca-pop-anchor:has(> .ca-composer__mode) { flex-shrink: 1; min-width: 0; }
 .ca-composer__foot[data-fit="3"] .ca-composer__mid .ca-composer__mode { max-width: 100%; min-width: 0; }
+/* #250 v2: the mode arrow uses the same colour as the settings / model arrows */
+.ca-composer__mid .ca-composer__mode > .ca-icon:last-child { color: inherit; }
+/* #250 v2: the agent name takes its natural width first, so free space in the bar is used before it ellipsizes */
+.ca-composer__mid .ca-composer__mode[data-agent] > .ca-menu__grow { flex: 0 1 auto; }
+/* #250 v2: at narrow widths the bar gaps tighten so the agent name gets the free space */
+@container ca-composer-foot (max-width: 320px) {
+  .ca-composer__mid { gap: 2px; }
+  .ca-composer__mid .ca-composer__mode { gap: 2px; padding: 0 4px; }
+}
