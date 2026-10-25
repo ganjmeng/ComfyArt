@@ -1,22 +1,20 @@
 import { useValue } from 'tldraw'
 
-import { directSettingsAtom, type DirectSettings } from '../agent'
 import { VIDEO_RATIOS } from '../genOptions'
-import { agentModels, AUTO_IMAGE, AUTO_VIDEO, modelOf } from '../models'
+import { agentModels, AUTO_IMAGE, AUTO_VIDEO, modelOf, modelPrefsAtom, saveDirectSettings, type DirectSettings } from '../models'
 import { GENERATOR_DEFAULTS, type GeneratorShape } from '../shapes/GeneratorShape'
 import { ModelPill, SettingsPill } from './GenSettings'
 
 /** Image / video mode: model + settings pills. Used by the canvas composer and (#287) the home composer;
- *  both read and write the same directSettingsAtom, and home hands its pick to the new project. */
-export function DirectPills({ video, within = '.ca-composer', spacer = true }: { video: boolean; within?: string; spacer?: boolean }) {
+ *  both read and write the one saved store (modelPrefs.image / modelPrefs.video), so a pick on either side shows on both. */
+export function DirectPills({ video, within = '.ca-composer', spacer = true, onError }: { video: boolean; within?: string; spacer?: boolean; onError?: (msg: string) => void }) {
   const key = video ? 'video' : 'image'
-  const settings = useValue('direct settings', () => directSettingsAtom.get()[key], [key])
+  const settings = useValue('direct settings', () => modelPrefsAtom.get()[key] ?? {}, [key])
   const workflow = settings.workflow || (video ? AUTO_VIDEO : AUTO_IMAGE)
   const p: GeneratorShape['props'] = { ...GENERATOR_DEFAULTS, ratio: video ? VIDEO_RATIOS[0] : '1:1', ...settings, workflow }
   const model = modelOf(workflow)!
   const update = (patch: DirectSettings) => {
-    const all = directSettingsAtom.get()
-    directSettingsAtom.set({ ...all, [key]: { ...all[key], ...patch } })
+    void saveDirectSettings(key, patch).catch((e) => onError?.(String(e)))
   }
   return (
     <>

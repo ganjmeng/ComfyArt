@@ -1,13 +1,13 @@
 import type { Editor, TLImageShape } from 'tldraw'
 
-import { agentModeAtom, directSettingsAtom, extraRefsAtom, generateDirect, sendToAgent, type AgentMode } from '../agent'
+import { agentModeAtom, extraRefsAtom, generateDirect, sendToAgent, type AgentMode } from '../agent'
 import { refreshBot } from '../bot'
 import { refFromUrl } from '../comfy'
 import { editElements } from '../elements'
 import { placeMedia, toMedia, type ErrorSink } from '../jobs'
 import { loadSkills, skillAtom } from '../skills'
 
-const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool', 'ds']
+const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool']
 const REF_LONG = 512
 const GAP = 20
 
@@ -32,7 +32,6 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   const refs = url.searchParams.getAll('ref')
   const skillId = url.searchParams.get('skill')
   const tool = url.searchParams.get('tool')
-  const ds = url.searchParams.get('ds')
   if (!text && !refs.length && !skillId) return
   for (const k of KEYS) url.searchParams.delete(k)
   history.replaceState(null, '', url)
@@ -43,13 +42,6 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   }
 
   agentModeAtom.set(mode)
-  // #287: model / settings picked on the home page
-  if (ds && mode !== 'agent') {
-    try {
-      const picked = JSON.parse(ds)
-      if (picked && typeof picked === 'object') directSettingsAtom.set({ ...directSettingsAtom.get(), [mode]: picked })
-    } catch { /* ignore a bad param */ }
-  }
   const skill = skillId ? (await loadSkills()).find((s) => s.id === skillId) ?? null : null
   if (skill) skillAtom.set(skill)
   const shapes = await placeRefs(editor, refs)

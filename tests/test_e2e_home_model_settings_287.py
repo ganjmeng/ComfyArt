@@ -1,6 +1,6 @@
 """#287: the home composer has the canvas's right group: model → settings → voice/send in image/video mode,
-only model prefs in Agent mode (no Ref button: home has no canvas). The model picked on home carries into
-the new project. Mocks only, $0."""
+only model prefs in Agent mode (no Ref button: home has no canvas). The model picked on home is one saved store shared with
+the canvas (modelPrefs.image / .video): a pick on either side shows on both. Mocks only, $0."""
 from __future__ import annotations
 
 import pytest
@@ -83,4 +83,16 @@ async def test_home_model_carries_into_project(app_url, fake_tools, monkeypatch)
         await pg.locator(".ca-composer [data-pill=model]").wait_for(timeout=15000)
         title = await pg.locator(".ca-composer [data-pill=model]").get_attribute("title")
         assert picked in title, (picked, title)
+        # one shared saved store: change it on the canvas, home shows the change
+        await pg.locator(".ca-composer [data-pill=model]").click()
+        menu2 = pg.locator("[data-testid=model-menu]")
+        row2 = menu2.locator(".ca-modelprefs__row").nth(2)
+        picked2 = await row2.get_attribute("title")
+        await row2.click()
+        await pg.wait_for_timeout(500)
+        await pg.goto(app_url)
+        await pg.locator(".ca-landing__mode").wait_for(timeout=15000)
+        await _mode(pg, "Image")
+        await pg.wait_for_function(
+            "t => (document.querySelector('.ca-landing__foot [data-pill=model]')?.title || '').includes(t)", arg=picked2, timeout=10000)
         await browser.close()

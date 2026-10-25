@@ -11,7 +11,7 @@ import { ask, ocrLines, parseJson, transcribeFile } from './llm'
 import { AUDIO, AUDIO_SIZE, type AudioShape } from './shapes/EmbedShapes'
 import { refFrameContents, refFrameOf, refLinkedOf } from './chatFrame'
 import { memoryPrompt } from './memory'
-import { modelOf } from './models'
+import { directSettings, modelOf } from './models'
 import type { CommentShape } from './shapes/CommentShape'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Skill } from './skills'
@@ -120,8 +120,7 @@ export function commentsToChat(editor: Editor, comments: CommentShape[]) {
   extraRefsAtom.set([...new Set([...extraRefsAtom.get(), ...images.map((s) => s.id)])])
 }
 
-export type DirectSettings = Partial<GeneratorShape['props']>
-export const directSettingsAtom = atom<Record<'image' | 'video', DirectSettings>>('direct settings', { image: {}, video: {} })
+export type { DirectSettings } from './models'
 
 export interface DirectRun { refs: RefShape[]; prompt: string; near?: TLShapeId }
 
@@ -129,7 +128,7 @@ const RESULT_GAP = 40
 
 function startDirect(editor: Editor, run: DirectRun, video: boolean, onError: ErrorSink): BotBlock {
   const refs = run.refs.filter((r): r is TLImageShape => r.type === 'image')
-  const settings = directSettingsAtom.get()[video ? 'video' : 'image']
+  const settings = directSettings(video ? 'video' : 'image')
   const picked = settings.ratio ?? (video ? VIDEO_RATIOS[0] : '1:1')
   const ratio = video && refs[0] ? nearestRatio(refs[0].props.w / refs[0].props.h, VIDEO_RATIOS) : picked
   const media = video && run.refs.some((r) => r.type !== 'image')

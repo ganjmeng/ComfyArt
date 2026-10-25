@@ -17,7 +17,7 @@ import { AgentLogo } from '../ui/agentLogos'
 import { ComposerSlot, useSlot } from '../ui/ComposerSlot'
 import { DirectPills } from '../ui/DirectPills'
 import { ModelPrefs } from '../ui/ModelPrefs'
-import { directSettingsAtom } from '../agent'
+import { loadModels } from '../models'
 import { loadEntries, ProjectCard } from './Projects'
 
 const RECENT = 5
@@ -56,6 +56,7 @@ export function Home() {
   useEffect(() => {
     input.current?.focus()
     void refreshKeyStatus()
+    void loadModels().catch((e) => setError(errorText(e)))  // #287: same model list / saved picks as the canvas
     void loadProviders().then(() => {
       const on = !!botEnabledAtom.get()
       setAgent(on)
@@ -73,9 +74,7 @@ export function Home() {
     setSending(true)
     setError('')
     try {
-      // #287: the model / settings picked here carry into the new project
-      const ds = mode === 'agent' ? '' : JSON.stringify(directSettingsAtom.get()[mode])
-      await startProject({ ask: text.trim(), mode, ref: refs, ...(ds && ds !== '{}' ? { ds } : {}) })
+      await startProject({ ask: text.trim(), mode, ref: refs })  // #287: model / settings live in the shared saved store
       setText('')
       setRefs([])
     } catch (e) {
@@ -162,7 +161,7 @@ export function Home() {
           </Popover>
           <div className="ca-landing__spacer" />
           {/* #287: same right group as the canvas (#272): model → settings → voice/send; agent mode shows only prefs (no Ref: home has no canvas) */}
-          {mode !== 'agent' && <DirectPills video={mode === 'video'} within=".ca-landing__box" spacer={false} />}
+          {mode !== 'agent' && <DirectPills video={mode === 'video'} within=".ca-landing__box" spacer={false} onError={setError} />}
           {mode === 'agent' && agent && <ModelPrefs onError={setError} within=".ca-landing__box" />}
           <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={hasContent && !uploading && !sending} onSend={() => void send()} onError={setError}
             onText={(v) => setText((cur) => `${cur}${cur ? ' ' : ''}${v}`)} />
