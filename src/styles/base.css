@@ -130,6 +130,8 @@ body { font-family: var(--ca-font); color: var(--ca-text); }
 .ca-menu__item:disabled { opacity: .4; cursor: default; background: transparent; }
 .ca-menu__grow { flex: 1; }
 .ca-menu__key { color: var(--ca-muted); padding-left: 24px; }
+/* Image toolbar "more" menu: never taller than the window; overflow scrolls inside the menu (#253). */
+.ca-menu--image { max-height: calc(100vh - 64px); overflow-y: auto; overscroll-behavior: contain; }
 /* Reusable image-menu style (image toolbar "more" menu and future submenus such as #244's). Light theme only; in dark these rules don't apply and .ca-menu renders unchanged. */
 :root:not([data-theme="dark"]) .ca-menu--image { border-width: var(--ca-border-w); max-width: 240px; box-shadow: var(--ca-shadow-menu); }
 :root:not([data-theme="dark"]) .ca-menu--image .ca-menu__item { align-items: flex-start; height: auto; min-height: 32px; padding: 6px 8px; white-space: normal; overflow-wrap: break-word; }
