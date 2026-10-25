@@ -34,8 +34,8 @@ export function ModelPrefs({ onError }: { onError: (msg: string) => void }) {
           <button type="button" className="ca-switch" role="switch" aria-checked={prefs.auto} data-on={prefs.auto || undefined} onClick={() => save({ ...prefs, auto: !prefs.auto })}><span /></button>
         </div>
         <div className="ca-panel__chips">
-          <button type="button" className="ca-panel__chip" data-on={tab === 'image' || undefined} onClick={() => setTab('image')}>Image</button>
-          <button type="button" className="ca-panel__chip" data-on={tab === 'video' || undefined} onClick={() => setTab('video')}>Video</button>
+          <button type="button" className="ca-panel__chip" data-on={tab === 'image' || undefined} onClick={() => setTab('image')}>{t('modelPrefs.image')}</button>
+          <button type="button" className="ca-panel__chip" data-on={tab === 'video' || undefined} onClick={() => setTab('video')}>{t('modelPrefs.video')}</button>
         </div>
         <div className="ca-chat__hint">{prefs.auto ? t('modelPrefs.theAgentPicksAutomaticallyFrom') : t('modelPrefs.theAgentOnlyUsesChecked')}</div>
         {(tab === 'image' ? IMAGE_MODELS : VIDEO_MODELS).map((m) => {
