@@ -223,10 +223,10 @@ def _stop_summary(done: list[str], lang: str = "zh") -> str:
     counts: dict[str, int] = {}
     for label in done:
         counts[label] = counts.get(label, 0) + 1
-    items = [n + (f" ×{c}" if c > 1 else "") for n, c in counts.items()]
+    items = [n + (f" ×{c}" if c > 1 else "") for n, c in counts.items()]
     if zh:
         return (_REPEAT_STOP_TEXT["zh"] + "已完成："
-                + ("、".join(items) if items else "无"))
+                + ("、".join(items) if items else "无") + "。")
     return (_REPEAT_STOP_TEXT["en"] + " Done so far: "
             + (", ".join(items) if items else "nothing") + ".")
 

@@ -50,15 +50,46 @@ function download(src: string, name: string) {
   a.click()
 }
 
+function Tip({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  const [show, setShow] = useState(false)
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
+  const ref = useRef<HTMLSpanElement>(null)
+  useLayoutEffect(() => {
+    // .ca-tip-wrap is display:contents — measure the child button, not the wrap.
+    const el = ref.current?.firstElementChild as HTMLElement | null
+    if (!show || !el) return
+    const r = el.getBoundingClientRect()
+    setPos({ left: r.left + r.width / 2, top: r.bottom + 8 })
+  }, [show])
+  return (
+    <span ref={ref} className="ca-tip-wrap" onPointerEnter={() => setShow(true)} onPointerLeave={() => setShow(false)}>
+      {children}
+      {show && pos && createPortal(
+        <div className="ca-tip" style={{ left: pos.left, top: pos.top }}>
+          <span className="ca-tip__name">{label}</span>
+          {hint && <span className="ca-tip__key">{hint}</span>}
+        </div>,
+        document.body,
+      )}
+    </span>
+  )
+}
+
 function Btn({ icon, label, hint, open, onClick }: { icon: ReactNode; label?: string; hint?: string; open?: boolean; onClick: () => void }) {
   const names = useValue('tool names', () => prefsAtom.get().names, [])
   const shown = names ? label : undefined
-  return (
-    <button type="button" className="ca-bar__btn" data-open={open || undefined} title={shown ? undefined : label ?? hint} onClick={onClick}>
+  const tipLabel = label ?? hint
+  // Icon-only (no visible name): keep title/aria-label so a11y + e2e (e.g. 更多/More) still find the btn.
+  const a11y = !shown && tipLabel ? tipLabel : undefined
+  const btn = (
+    <button type="button" className="ca-bar__btn" data-open={open || undefined} title={a11y} aria-label={a11y} onClick={onClick}>
       <span className="ca-icon">{icon}</span>
       {shown && <span>{shown}{hint && <span className="ca-bar__hint">{hint}</span>}</span>}
     </button>
   )
+  // names on: no tip (bar already shows grey shortcuts). names off: name + keycap, or name only.
+  if (names || !tipLabel) return btn
+  return <Tip label={tipLabel} hint={label ? hint : undefined}>{btn}</Tip>
 }
 
 function Item({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
@@ -161,7 +192,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
     editor.updateShape<TLImageShape>({ id: shape.id, type: 'image', x: (fw - w) / 2, y: (fh - h) / 2, rotation: 0, props: { w, h } })
   }
   const tools: Tool[] = [
-    { id: 'chat', icon: Icons.comment, label: t('canvasChat.chat'), hint: 'Shift Enter', run: () => openCanvasChat(editor) },
+    { id: 'chat', icon: Icons.comment, label: t('canvasChat.chat'), run: () => openCanvasChat(editor) },
     { id: 'quick', icon: Icons.quick, label: t('common.quickEdit'), hint: 'Tab', run: mode$('quick') },
     { id: 'upscale', icon: Icons.upscale, label: t('common.upscale'), menu: <UpscaleMenu editor={editor} shape={shape} w={iw} h={ih} onDone={() => setMenu(null)} onError={onError} /> },
     {
@@ -244,7 +275,8 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
         </div>
         )}
       </Popover>
-      <div className="ca-bar__sep" />
+      {/* #244: no divider before download — bar gap (4px) matches the other tools; don't leave an
+          extra gap where the old sep sat (design: spacing before 下载 equals spacing between tools). */}
       <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
       {customize && createPortal(<CustomizeDialog tools={tools} onClose={() => setCustomize(false)} />, document.body)}
     </div>
@@ -300,18 +332,16 @@ export function CustomizeDialog({ tools, onClose }: { tools: Tool[]; onClose: ()
         <div className="ca-cz__preview">
           <div ref={barRef} className="ca-bar ca-cz__bar">
             {fixedShown.map(btn)}
-            {fixedShown.length > 0 && <div className="ca-bar__sep" />}
             {shown.filter((x) => !isFixed(x.id)).map(btn)}
             <span className="ca-bar__btn" title={t('imageToolbar.more')}><span className="ca-icon">{Icons.more}</span></span>
-            <div className="ca-bar__sep" />
             <span className="ca-bar__btn" title={t('common.download')}><span className="ca-icon">{Icons.download}</span></span>
           </div>
         </div>
         <div className="ca-cz__grid">
-          {cards.map((x) => {
+          {cards.filter((x) => !isFixed(x.id)).map((x) => {
             const on = pinned.includes(x.id)
             return (
-              <button key={x.id} type="button" className="ca-cz__card" data-tool={x.id} aria-pressed={on} aria-disabled={isFixed(x.id) || undefined} onClick={() => flip(x.id)}>
+              <button key={x.id} type="button" className="ca-cz__card" data-tool={x.id} aria-pressed={on} onClick={() => flip(x.id)}>
                 <span className="ca-icon">{x.icon}</span><span className="ca-menu__grow">{x.label}</span>
                 <span className="ca-icon ca-cz__pin" data-on={on || undefined}>{on ? Icons.pinSolid : Icons.pinOutline}</span>
               </button>
