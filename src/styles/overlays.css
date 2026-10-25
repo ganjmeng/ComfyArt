@@ -435,3 +435,11 @@
 .ca-composer__foot:has(> .ca-composer__mid > .ca-composer__pillspacer) > .ca-gen__spacer { flex: 0 0 0; min-width: 0; }
 /* #268: popover capped to the composer width — its content shrinks with it, never overflows */
 .ca-pop[data-fit] > * { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }
+/* #274 input-bar polish (reference-measured values). Spacing / size / radius / shadow only — layout, order, colours, collapse order unchanged.
+   Specificity beats the #250 data-fit and container rules, so the values hold at every width. */
+.ca-composer { border-radius: 20px; padding-right: 8px; padding-bottom: 7px; } /* + 1px border: send button sits 9 from the right edge, 8 from the bottom */
+.ca-composer .ca-composer__foot { gap: 6px; } /* + → mode */
+.ca-composer .ca-composer__foot .ca-bar__btn.ca-composer__mode { gap: 6px; padding-left: 6px; padding-right: 6px; } /* icon → text → arrow */
+.ca-composer .ca-composer__foot .ca-gen__pill { gap: 4px; } /* model / settings: text → arrow */
+.ca-composer .ca-composer__slot > .ca-icon { width: 16px; height: 16px; } /* voice / send glyph; the button stays 32 */
+:root[data-theme="light"] .ca-menu { box-shadow: 0 4px 24px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04); }
