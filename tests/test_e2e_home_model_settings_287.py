@@ -75,14 +75,11 @@ async def test_home_model_carries_into_project(app_url, fake_tools, monkeypatch)
         picked = await row.get_attribute("title")
         await row.click()
         assert picked in (await pg.locator(".ca-landing__foot [data-pill=model]").get_attribute("title"))
-        # stop the canvas from running the generation; we only check the handoff
-        await pg.route("**/wavespeed/**", lambda r: r.abort())
         await pg.locator(".ca-landing__input").fill("a cat")
         await pg.keyboard.press("Enter")
         await pg.wait_for_url("**project=*", timeout=15000)
-        await pg.locator(".ca-composer [data-pill=model]").wait_for(timeout=15000)
-        title = await pg.locator(".ca-composer [data-pill=model]").get_attribute("title")
-        assert picked in title, (picked, title)
+        await pg.wait_for_function(
+            "t => (document.querySelector('.ca-composer [data-pill=model]')?.title || '').includes(t)", arg=picked, timeout=15000)
         # one shared saved store: change it on the canvas, home shows the change
         await pg.locator(".ca-composer [data-pill=model]").click()
         menu2 = pg.locator("[data-testid=model-menu]")

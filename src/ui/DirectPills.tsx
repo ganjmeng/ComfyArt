@@ -12,7 +12,8 @@ export function DirectPills({ video, within = '.ca-composer', spacer = true, onE
   const settings = useValue('direct settings', () => modelPrefsAtom.get()[key] ?? {}, [key])
   const workflow = settings.workflow || (video ? AUTO_VIDEO : AUTO_IMAGE)
   const p: GeneratorShape['props'] = { ...GENERATOR_DEFAULTS, ratio: video ? VIDEO_RATIOS[0] : '1:1', ...settings, workflow }
-  const model = modelOf(workflow)!
+  // a saved pick may not be in the model list yet (still loading / no longer offered): show Auto until it is
+  const model = modelOf(workflow) ?? modelOf(video ? AUTO_VIDEO : AUTO_IMAGE)!
   const update = (patch: DirectSettings) => {
     void saveDirectSettings(key, patch).catch((e) => onError?.(String(e)))
   }
