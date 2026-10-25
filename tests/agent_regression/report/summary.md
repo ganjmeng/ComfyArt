@@ -24,8 +24,8 @@ Mocks only, $0. pass: 42
 | 09 single image to 3D | zh | pass | 2/12 | 1 (1) | 3 | 6 | 2640 | done |  |
 | 10 poster with brand kit font + colors | en | pass | 4/12 | 1 (1) | 5 | 10 | 5320 | done |  |
 | 10 poster with brand kit font + colors | zh | pass | 4/12 | 1 (1) | 5 | 10 | 5288 | done |  |
-| 11 multi-turn 'brighter': 1 new image edited from the untouched original | en | pass | 5/12 | 2 (2) | 7 | 10 | 6945 | done |  |
-| 11 multi-turn 'brighter': 1 new image edited from the untouched original | zh | pass | 5/12 | 2 (2) | 7 | 10 | 6895 | done |  |
+| 11 multi-turn 'brighter': 1 new image edited from the untouched original | en | pass | 5/12 | 2 (2) | 7 | 10 | 7058 | done |  |
+| 11 multi-turn 'brighter': 1 new image edited from the untouched original | zh | pass | 5/12 | 2 (2) | 7 | 10 | 7007 | done |  |
 | 12 PPTX deck, editable mode | en | pass | 2/12 | 1 (1) | 3 | 6 | 2764 | done |  |
 | 12 PPTX deck, editable mode | zh | pass | 2/12 | 1 (1) | 3 | 6 | 2747 | done |  |
 | 13 over threshold -> Cancel: no charge, no retry | en | pass | 2/12 | 0 (0) | 3 | 6 | 2761 | done |  |

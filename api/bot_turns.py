@@ -7,6 +7,7 @@ from typing import Optional
 from server import PromptServer
 
 from ..bot import BotEvent, TurnHandle, TurnRequest, get_provider
+from ..bot.local_llm import turn_result_from_blocks
 from ..bot._cli_common import resolve_comfy_mcp_argv
 from ..bot.guide import COMFY_MCP_ALLOWED_TOOLS
 from . import bot_asks, chat_store, paid_guard
@@ -108,8 +109,15 @@ def _replay_history(chat_id: str, current_message_id: str) -> list[dict]:
         if row["id"] in skip or row["role"] not in ("user", "assistant"):
             continue
         text = blocks_text(row["blocks"])
-        if text:
-            history.append({"role": row["role"], "text": text})
+        item = {"role": row["role"], "text": text}
+        # #234: each assistant turn records the shapes it placed and the failures,
+        # so later context can keep id / type / model / prompt without the raw tool output.
+        if row["role"] == "assistant":
+            recorded = turn_result_from_blocks(row["blocks"])
+            if recorded:
+                item["result"] = recorded
+        if text or item.get("result"):
+            history.append(item)
     return history
 
 

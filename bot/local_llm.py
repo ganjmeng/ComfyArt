@@ -33,7 +33,15 @@ _API_KEY_ENV = "COMFYART_LOCAL_LLM_API_KEY"
 _MAX_ITERATIONS = 80
 _MAX_WAIT_SLICES = 12
 _LLM_TIMEOUT_S = 300
-_HISTORY_CHAR_CAP = 16_000
+# #234: input is counted in tokens against the model's context window (32k when the
+# endpoint does not say). 70% of that window is the input budget; the rest is left
+# for the reply and tool calls. Past the budget, the latest 6 turns stay verbatim
+# and older turns become one summary of at most 2000 tokens.
+_FALLBACK_CONTEXT_WINDOW = 32_000
+_INPUT_BUDGET_PERCENT = 70
+_VERBATIM_TURNS = 6
+_SUMMARY_TOKEN_CAP = 2_000
+_SUMMARY_HEADER = "Earlier conversation summary:"
 _REPEAT_STOP = 3
 _CACHED_SKILL_STOP = 3  # cumulative cached skill re-reads per turn (A/B/A/B...)
 _MAX_STEPS_ENV = "COMFYART_AGENT_MAX_STEPS"
@@ -236,6 +244,452 @@ _THINK_RE = re.compile(r"(?:<think>|^)([\s\S]*?)</think>|<think>([\s\S]*)$")
 _SYSTEM_PROMPT = AGENT_GUIDE
 
 
+_WINDOW_FIELDS = (
+    "context_window", "context_length", "max_context_length",
+    "max_model_len", "max_context_tokens", "n_ctx",
+)
+_WINDOW_NESTED = ("meta", "metadata", "details", "architecture")
+_DATA_URL_RE = re.compile(r"data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=\r\n]+", re.I)
+_REQ_RES = (
+    re.compile(r"(?:数量|count|qty)\s*[:：]?\s*\d+\s*(?:张|幅|个|images?|pictures?|shots?)?", re.I),
+    re.compile(r"\d+\s*(?:张|幅|个|images?|pictures?|shots?)", re.I),
+    re.compile(r"(?:尺寸|大小|size|ratio|分辨率|resolution)\s*[:：]?\s*(?:\d+\s*[:：x×]\s*\d+|[^\s,，。;；]{1,24})", re.I),
+    re.compile(r"\d+\s*[:：x×]\s*\d+"),
+    re.compile(r"\d+\s*(?:px|像素|秒|seconds?|minutes?)", re.I),
+    re.compile(r"(?:风格|style)\s*[:：]?\s*[^\n,，。;；]{1,40}", re.I),
+    re.compile(r"[\u4e00-\u9fffA-Za-z0-9]{1,16}风格"),
+    re.compile(r"(?:预算|budget|不超过|under|max)\s*[:：]?\s*\$?\d+(?:\.\d+)?", re.I),
+    re.compile(r"\$\d+(?:\.\d+)?"),
+)
+_DECISION_RE = re.compile(
+    r"(?:决定|改为|改成|就用|选定|decided|decision|we'll use|we will use|let's use|going with|switch to)"
+    r"[^\n。.]{0,80}", re.I)
+_FAIL_RE = re.compile(r"(?:失败|出错|报错|failed|failure|error)\s*[:：]?\s*[^\n]{0,120}", re.I)
+_SHAPE_TYPE = {
+    "generate_image": "image", "edit_image": "image", "upscale_image": "image",
+    "remove_background": "image", "expand_image": "image", "animate_image": "image",
+    "replace_text": "image", "edit_region": "image", "erase_region": "image",
+    "move_object": "image", "style_transfer": "image", "vectorize_image": "image",
+    "split_layers": "image", "change_angle": "image", "edit_elements": "image",
+    "create_mockup": "image", "generate_video": "video", "edit_video": "video",
+    "extend_video": "video", "upscale_video": "video", "remove_video_background": "video",
+    "generate_music": "audio", "generate_sound_effect": "audio", "text_to_speech": "audio",
+    "image_to_3d": "model3d", "add_text": "text", "add_shape": "shape",
+    "create_frame": "frame", "place_html": "html", "create_slides": "slides",
+}
+
+
+def _positive_int(value: object) -> int:
+    if isinstance(value, bool) or value is None:
+        return 0
+    if isinstance(value, int):
+        return value if value > 0 else 0
+    if isinstance(value, float):
+        return int(value) if value > 0 else 0
+    if isinstance(value, str):
+        try:
+            n = int(value.strip())
+        except ValueError:
+            return 0
+        return n if n > 0 else 0
+    return 0
+
+
+def explicit_context_window(model_info: object) -> int:
+    """The context window a model payload actually states, or 0 when it does not."""
+    if not isinstance(model_info, dict):
+        return 0
+    for key in _WINDOW_FIELDS:
+        n = _positive_int(model_info.get(key))
+        if n:
+            return n
+    for nest in _WINDOW_NESTED:
+        inner = model_info.get(nest)
+        if isinstance(inner, dict):
+            for key in _WINDOW_FIELDS:
+                n = _positive_int(inner.get(key))
+                if n:
+                    return n
+    return 0
+
+
+def context_window_tokens(model_info: object) -> int:
+    """#234: tokens in this model's window. Unknown (or a missing payload) is 32k."""
+    found = explicit_context_window(model_info)
+    return found if found else _FALLBACK_CONTEXT_WINDOW
+
+
+def input_token_budget(window: object) -> int:
+    """70% of the model window. A missing/invalid window uses the 32k fallback."""
+    size = window if isinstance(window, int) and window > 0 else _FALLBACK_CONTEXT_WINDOW
+    return size * _INPUT_BUDGET_PERCENT // 100
+
+
+def count_tokens(text: str) -> int:
+    """Token count used against the model window. CJK, kana and hangul are 1 token;
+    every other character is 1/4 token (rounded up). No network and no tokenizer download."""
+    if not text:
+        return 0
+    cjk = other = 0
+    for ch in text:
+        o = ord(ch)
+        if ((0x3400 <= o <= 0x9FFF) or (0xF900 <= o <= 0xFAFF)
+                or (0x3040 <= o <= 0x30FF) or (0xAC00 <= o <= 0xD7AF)
+                or (0xFF00 <= o <= 0xFFEF)):
+            cjk += 1
+        else:
+            other += 1
+    return cjk + (other + 3) // 4
+
+
+def truncate_to_tokens(text: str, limit: int) -> str:
+    if limit <= 0 or not text:
+        return ""
+    if count_tokens(text) <= limit:
+        return text
+    lo, hi = 0, len(text)
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if count_tokens(text[:mid]) <= limit:
+            lo = mid
+        else:
+            hi = mid - 1
+    return text[:lo].rstrip()
+
+
+def _content_tokens(content: object) -> int:
+    if isinstance(content, str):
+        return count_tokens(content)
+    if isinstance(content, list):
+        return sum(count_tokens(str(part.get("text") or ""))
+                   for part in content
+                   if isinstance(part, dict) and part.get("type") == "text")
+    return count_tokens(str(content or ""))
+
+
+def _strip_screenshots(text: str) -> str:
+    """Raw screenshots never enter the summary (#234)."""
+    return _DATA_URL_RE.sub("", text or "")
+
+
+def _looks_raw(text: str) -> bool:
+    s = (text or "").strip()
+    return s.startswith("{") or s.startswith("[")
+
+
+def _plain(text: str) -> str:
+    text = _strip_screenshots(text).strip()
+    if not text or _looks_raw(text):
+        return ""
+    return text
+
+
+def _one_sentence(text: str, limit: int = 120) -> str:
+    text = " ".join((text or "").split())
+    if not text:
+        return ""
+    sentence = re.split(r"(?<=[。．.!?！？])\s*", text, maxsplit=1)[0]
+    if len(sentence) > limit:
+        sentence = sentence[:limit].rstrip()
+    return sentence
+
+
+def _uniq(items: list[str]) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        key = item.strip()
+        if key and key not in seen:
+            seen.add(key)
+            out.append(key)
+    return out
+
+
+def _requirements(text: str) -> list[str]:
+    found = []
+    for pattern in _REQ_RES:
+        found.extend(m.group(0).strip() for m in pattern.finditer(text))
+    return found
+
+
+def _decisions(text: str) -> list[str]:
+    return [m.group(0).strip() for m in _DECISION_RE.finditer(text)]
+
+
+def _failures_in_text(text: str) -> list[dict]:
+    out = []
+    for m in _FAIL_RE.finditer(text):
+        reason = _one_sentence(_strip_screenshots(m.group(0)), 160)
+        if reason:
+            out.append({"attempt": "turn", "reason": reason})
+    return out
+
+
+def _tool_base(name: str) -> str:
+    return re.sub(r"^mcp__\w+__", "", name or "")
+
+
+def _shape_ids(value: object) -> list[str]:
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    if isinstance(value, dict) and value.get("id"):
+        return [str(value["id"])]
+    if isinstance(value, list):
+        ids: list[str] = []
+        for item in value:
+            ids.extend(_shape_ids(item))
+        return ids
+    return []
+
+
+def _json_obj(text: str) -> Optional[dict]:
+    try:
+        data = json.loads(text)
+    except (ValueError, TypeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _failure_reason(text: str, data: Optional[dict]) -> str:
+    if isinstance(data, dict):
+        for key in ("error", "message", "reason", "note"):
+            val = data.get(key)
+            if isinstance(val, dict):
+                val = val.get("en") or val.get("zh") or ""
+            if isinstance(val, str) and val.strip() and not _looks_raw(val):
+                return _one_sentence(_strip_screenshots(val), 160)
+        if data.get("status") in ("error", "declined", "cancelled"):
+            return _one_sentence(str(data.get("status")), 160)
+    cleaned = re.sub(r"^\[(?:tool error|error)\]\s*", "", _strip_screenshots(text or "")).strip()
+    if not cleaned or _looks_raw(cleaned):
+        return "tool failed"
+    return _one_sentence(cleaned, 160)
+
+
+def _shape_line(shape: dict) -> str:
+    prompt = _one_sentence(_strip_screenshots(str(shape.get("prompt") or "")), 120)
+    return (f"id={shape.get('id')} type={shape.get('type') or ''} "
+            f"model={shape.get('model') or ''} prompt={prompt}")
+
+
+def turn_result_from_blocks(blocks: Optional[list[dict]]) -> Optional[dict]:
+    """#234: one record per turn — each placed shape (id, type, model, one-sentence
+    prompt) and each failed attempt. Raw tool JSON and screenshots are not kept."""
+    pending: list[dict] = []
+    shapes: list[dict] = []
+    failures: list[dict] = []
+    seen: set[str] = set()
+
+    def add_shape(sid: str, kind: str, model: str, prompt: str) -> None:
+        sid = str(sid or "").strip()
+        if not sid or sid in seen:
+            return
+        seen.add(sid)
+        shapes.append({
+            "id": sid,
+            "type": kind or "shape",
+            "model": model or "",
+            "prompt": _one_sentence(_strip_screenshots(prompt), 120),
+        })
+
+    def slot_for(job: str) -> Optional[dict]:
+        if job:
+            for slot in reversed(pending):
+                if job in slot["ids"]:
+                    return slot
+        for slot in reversed(pending):
+            if slot["tool"] in _SHAPE_TYPE:
+                return slot
+        return None
+
+    for block in blocks or []:
+        if not isinstance(block, dict):
+            continue
+        kind = block.get("type")
+        name = _tool_base(str(block.get("name") or ""))
+        if kind == "tool_use":
+            args = block.get("input") if isinstance(block.get("input"), dict) else {}
+            prompt = str(args.get("prompt") or args.get("text") or args.get("to") or "")
+            model = str(args.get("model") or args.get("edit_model") or "")
+            pending.append({"tool": name, "prompt": prompt, "model": model, "ids": []})
+            continue
+        if kind != "tool_result":
+            continue
+        text = str(block.get("text") or "")
+        data = _json_obj(text)
+        status = str(block.get("status") or "")
+        failed = (status in ("error", "cancelled")
+                  or text.startswith("[tool error]") or text.startswith("[error]")
+                  or (isinstance(data, dict) and (
+                      data.get("cancelled") or data.get("status") in ("error", "declined", "cancelled"))))
+        if failed:
+            failures.append({"attempt": name or "tool", "reason": _failure_reason(text, data)})
+            continue
+        if not isinstance(data, dict):
+            continue
+        model = str(data.get("model") or "")
+        slot = next((s for s in reversed(pending) if s["tool"] == name), None)
+        if slot is not None:
+            if model and not slot["model"]:
+                slot["model"] = model
+            slot["ids"] = [str(i) for i in (data.get("ids") or []) if i]
+        if name == "wait_generation":
+            for res in data.get("results") or []:
+                if not isinstance(res, dict):
+                    continue
+                if res.get("status") in ("error", "declined", "cancelled") or res.get("error") or res.get("cancelled"):
+                    failures.append({
+                        "attempt": name,
+                        "reason": _failure_reason(str(res.get("error") or res.get("status") or ""), res),
+                    })
+                    continue
+                job = str(res.get("id") or "")
+                owner = slot_for(job)
+                kind_name = _SHAPE_TYPE.get((owner or {}).get("tool") or "", "shape")
+                model_name = (owner or {}).get("model") or ""
+                prompt = (owner or {}).get("prompt") or ""
+                for sid in _shape_ids(res.get("shapes")):
+                    add_shape(sid, kind_name, model_name, prompt)
+            continue
+        if name in _SHAPE_TYPE:
+            owner = slot or {}
+            kind_name = "frame" if name == "create_slides" else _SHAPE_TYPE[name]
+            model_name = owner.get("model") or model
+            prompt = owner.get("prompt") or ""
+            if data.get("id"):
+                add_shape(str(data["id"]), kind_name, model_name, prompt)
+            for sid in _shape_ids(data.get("frames")):
+                add_shape(str(sid), "frame", model_name, prompt)
+            for sid in _shape_ids(data.get("shapes")):
+                add_shape(str(sid), kind_name, model_name, prompt)
+    if not shapes and not failures:
+        return None
+    return {"shapes": shapes, "failures": failures}
+
+
+def _result_suffix(result: Optional[dict]) -> str:
+    if not isinstance(result, dict):
+        return ""
+    parts = [_shape_line(s) for s in result.get("shapes") or [] if isinstance(s, dict) and s.get("id")]
+    for fail in result.get("failures") or []:
+        if isinstance(fail, dict) and (fail.get("attempt") or fail.get("reason")):
+            parts.append(f"failed {fail.get('attempt') or 'tool'}: {fail.get('reason') or ''}".rstrip())
+    if not parts:
+        return ""
+    return "[turn result] " + "; ".join(parts)
+
+
+def _group_turns(history: Optional[list[dict]]) -> list[list[dict]]:
+    turns: list[list[dict]] = []
+    current: list[dict] = []
+    for msg in history or []:
+        if not isinstance(msg, dict):
+            continue
+        role = msg.get("role")
+        if role not in ("user", "assistant"):
+            continue
+        text = str(msg.get("text") or "").strip()
+        result = msg.get("result") if isinstance(msg.get("result"), dict) else None
+        if not text and not result:
+            continue
+        if role == "user" and current:
+            turns.append(current)
+            current = []
+        current.append({"role": role, "text": text, "result": result})
+    if current:
+        turns.append(current)
+    return turns
+
+
+def _render_turns(turns: list[list[dict]]) -> list[dict]:
+    out: list[dict] = []
+    for turn in turns:
+        for msg in turn:
+            suffix = _result_suffix(msg.get("result")) if msg["role"] == "assistant" else ""
+            text = msg["text"]
+            content = f"{text}\n{suffix}" if text and suffix else (text or suffix)
+            if content:
+                out.append({"role": msg["role"], "content": content})
+    return out
+
+
+def _summarize_turns(turns: list[list[dict]]) -> str:
+    """Goals, explicit requirements, decisions, shapes and failures. Nothing else."""
+    goals: list[str] = []
+    reqs: list[str] = []
+    decisions: list[str] = []
+    shapes: list[dict] = []
+    failures: list[dict] = []
+    seen: set[str] = set()
+    for turn in turns:
+        for msg in turn:
+            result = msg.get("result") if isinstance(msg.get("result"), dict) else {}
+            for shape in result.get("shapes") or []:
+                if isinstance(shape, dict) and shape.get("id") and str(shape["id"]) not in seen:
+                    seen.add(str(shape["id"]))
+                    shapes.append(shape)
+            for fail in result.get("failures") or []:
+                if isinstance(fail, dict):
+                    failures.append(fail)
+            text = _plain(msg.get("text") or "")
+            if not text:
+                continue
+            if msg["role"] == "user":
+                goal = _one_sentence(text, 160)
+                if goal:
+                    goals.append(goal)
+                reqs.extend(_requirements(text))
+            else:
+                failures.extend(_failures_in_text(text))
+            decisions.extend(_decisions(text))
+    lines = [_SUMMARY_HEADER]
+    if goals:
+        lines.append("Goals: " + "; ".join(_uniq(goals)))
+    if reqs:
+        lines.append("Requirements: " + "; ".join(_uniq(reqs)))
+    if decisions:
+        lines.append("Decisions: " + "; ".join(_uniq(decisions)))
+    # Failures stay ahead of the shape list so the 2000-token cap drops extra
+    # shapes before it drops a failed attempt.
+    if failures:
+        lines.append("Failures:")
+        for fail in failures:
+            attempt = str(fail.get("attempt") or "tool")
+            reason = _one_sentence(_strip_screenshots(str(fail.get("reason") or "")), 160)
+            if attempt or reason:
+                lines.append(f"- {attempt}: {reason}")
+    if shapes:
+        lines.append("Shapes:")
+        lines.extend("- " + _shape_line(s) for s in shapes)
+    if len(lines) == 1:
+        lines.append("Earlier turns were compressed.")
+    return "\n".join(lines)
+
+
+def _message_tokens(messages: list[dict]) -> int:
+    return sum(count_tokens(str(m.get("content") or "")) for m in messages)
+
+
+def fit_history(history: Optional[list[dict]], *, context_window: Optional[int] = None,
+                reserved_tokens: int = 0) -> list[dict]:
+    """History that fits the input budget. Over the budget, the last 6 turns stay
+    verbatim and earlier turns are one summary of at most 2000 tokens."""
+    budget = max(0, input_token_budget(context_window) - max(0, int(reserved_tokens or 0)))
+    turns = _group_turns(history)
+    verbatim = _render_turns(turns)
+    if _message_tokens(verbatim) <= budget:
+        return verbatim
+    head, tail = turns[:-_VERBATIM_TURNS], turns[-_VERBATIM_TURNS:]
+    tail_msgs = _render_turns(tail)
+    room = min(_SUMMARY_TOKEN_CAP, max(0, budget - _message_tokens(tail_msgs)))
+    summary = truncate_to_tokens(_summarize_turns(head), room) if head and room else ""
+    out: list[dict] = []
+    if summary.strip():
+        out.append({"role": "system", "content": summary})
+    out.extend(tail_msgs)
+    return out
+
+
 def _user_content(text: str, attachments: Optional[list[dict]]):
     images = [
         {"type": "image_url",
@@ -423,20 +877,40 @@ class LocalLlmProvider(AgentProvider):
         } for tool in tools]
 
     @staticmethod
-    def _history_messages(history: Optional[list[dict]]) -> list[dict]:
-        out: list[dict] = []
-        total = 0
-        for msg in reversed(history or []):
-            role = msg.get("role")
-            text = str(msg.get("text") or "").strip()
-            if role not in ("user", "assistant") or not text:
-                continue
-            total += len(text)
-            if total > _HISTORY_CHAR_CAP:
-                break
-            out.append({"role": role, "content": text})
-        out.reverse()
-        return out
+    def _history_messages(history: Optional[list[dict]], *,
+                          context_window: Optional[int] = None,
+                          reserved_tokens: int = 0) -> list[dict]:
+        """#234: keep history inside 70% of the model window. Unknown window = 32k."""
+        return fit_history(history, context_window=context_window,
+                           reserved_tokens=reserved_tokens)
+
+    async def _context_window(self, session: aiohttp.ClientSession, model: str) -> int:
+        """Tokens in `model`'s window, from the endpoint's /models payload. 32k if it
+        does not say, the model is missing, or the request fails."""
+        cache: dict = getattr(self, "_model_windows", None) or {}
+        self._model_windows = cache
+        if model and model in cache:
+            return cache[model]
+        base = self._base_url()
+        if not base:
+            return _FALLBACK_CONTEXT_WINDOW
+        try:
+            data = await self._request_json(
+                session, "GET", f"{base}/models", headers=self._api_headers(), timeout=10)
+        except _NET_ERRORS:
+            return _FALLBACK_CONTEXT_WINDOW
+        if isinstance(data, dict):
+            for entry in data.get("data") or []:
+                if not isinstance(entry, dict) or not entry.get("id"):
+                    continue
+                window = explicit_context_window(entry)
+                if window:
+                    cache[str(entry["id"])] = window
+        # Remember a miss too, so a model that never advertises a window does not
+        # refetch /models on every turn. A failed request is not cached.
+        if model and model not in cache:
+            cache[model] = _FALLBACK_CONTEXT_WINDOW
+        return cache.get(model) or _FALLBACK_CONTEXT_WINDOW
 
     async def _wait_stage_done(self, session: aiohttp.ClientSession,
                                endpoint: str, args: dict, model: str,
@@ -520,12 +994,15 @@ class LocalLlmProvider(AgentProvider):
 
                 tools = self._build_tools(
                     await self._mcp_list_tools(session, turn.mcp_endpoint)) if turn.mcp_endpoint else []
+                system = _SYSTEM_PROMPT if tools else ""
+                user_msg = _user_content(turn.user_text, turn.attachments)
+                window = await self._context_window(session, model)
                 messages: list[dict] = [
-                    *([{"role": "system", "content": _SYSTEM_PROMPT}] if tools else []),
-                    *self._history_messages(turn.history),
-                    {"role": "user",
-                     "content": _user_content(turn.user_text,
-                                              turn.attachments)},
+                    *([{"role": "system", "content": system}] if system else []),
+                    *self._history_messages(
+                        turn.history, context_window=window,
+                        reserved_tokens=_content_tokens(system) + _content_tokens(user_msg)),
+                    {"role": "user", "content": user_msg},
                 ]
 
                 usage: Optional[dict] = None

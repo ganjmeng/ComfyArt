@@ -64,12 +64,13 @@ class TestHistory:
             {"role": "assistant", "content": "a1"},
         ]
 
-    def test_char_cap_keeps_recent(self):
+    def test_under_default_window_keeps_every_turn(self):
+        # #234: the fixed 16_000-character chop is gone. Four ~9k-token messages
+        # still fit in 70% of the 32k fallback, so the recent ones are not dropped.
         history = [{"role": "user", "text": f"m{i}" + "x" * 9000}
                    for i in range(4)]
         msgs = LocalLlmProvider._history_messages(history)
-        assert len(msgs) == 1
-        assert msgs[0]["content"].startswith("m3")
+        assert [m["content"][:2] for m in msgs] == ["m0", "m1", "m2", "m3"]
 
     def test_none_history(self):
         assert LocalLlmProvider._history_messages(None) == []
