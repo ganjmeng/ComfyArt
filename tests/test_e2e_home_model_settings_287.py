@@ -76,12 +76,12 @@ async def test_home_model_carries_into_project(app_url, fake_tools, monkeypatch)
         row = menu.locator(".ca-modelprefs__row").nth(1)
         picked = await row.get_attribute("title")
         await row.click()
-        assert picked in (await pg.locator(".ca-landing__foot [data-pill=model]").get_attribute("title"))
+        assert picked == (await pg.locator(".ca-landing__foot [data-pill=model]").get_attribute("data-model"))
         await pg.locator(".ca-landing__input").fill("a cat")
         await pg.keyboard.press("Enter")
         await pg.wait_for_url("**project=*", timeout=15000)
         await pg.wait_for_function(
-            "t => (document.querySelector('.ca-composer [data-pill=model]')?.title || '').includes(t)", arg=picked, timeout=15000)
+            "t => (document.querySelector('.ca-composer [data-pill=model]')?.dataset.model || '') === t", arg=picked, timeout=15000)
         # one shared saved store: change it on the canvas, home shows the change
         await pg.locator(".ca-composer [data-pill=model]").click()
         menu2 = pg.locator("[data-testid=model-menu]")
@@ -93,7 +93,7 @@ async def test_home_model_carries_into_project(app_url, fake_tools, monkeypatch)
         await pg.locator(".ca-landing__mode").wait_for(timeout=15000)
         await _mode(pg, "Image")
         await pg.wait_for_function(
-            "t => (document.querySelector('.ca-landing__foot [data-pill=model]')?.title || '').includes(t)", arg=picked2, timeout=10000)
+            "t => (document.querySelector('.ca-landing__foot [data-pill=model]')?.dataset.model || '') === t", arg=picked2, timeout=10000)
         await browser.close()
 
 
@@ -166,6 +166,7 @@ async def test_model_icon_button(app_url, fake_tools, monkeypatch, width):  # no
         btn = pg.locator(".ca-landing__foot [data-pill=model]")
         box = await btn.bounding_box()
         assert round(box["width"]) == 32 and round(box["height"]) == 32, box
+        assert await btn.get_attribute("title") is None  # only <Tip>, no native title (no double tip)
         assert await btn.locator(".ca-gen__pilltext").count() == 0 and await btn.get_attribute("data-auto") == "true"
         await btn.hover()
         assert (await pg.locator(".ca-tip__name").inner_text()).strip() == "模型偏好 · 自动"

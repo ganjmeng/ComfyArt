@@ -83,7 +83,7 @@ export function ModelPill({ video, model, picks, onPick, onAuto, align = 'end', 
     <Popover open={open} onOpenChange={setOpen} side={side} align={align} within={within} viewportCap={side === 'bottom'} trigger={({ open: o, toggle }) => (
       // #287 final spec: 32x32 icon button (fixed cube), hover tip 模型偏好 · <model> / 自动
       <Tip label={`${t('modelPrefs.modelPreferences')} · ${auto ? t('common.auto') : model.label}`}>
-        <button type="button" className="ca-bar__btn ca-bar__btn--icon ca-modelbtn" data-pill="model" data-auto={auto || undefined} data-open={o || undefined} title={`${model.label} (${model.id})`} aria-label={`${t('modelPrefs.modelPreferences')} · ${auto ? t('common.auto') : model.label}`} onClick={toggle}>
+        <button type="button" className="ca-bar__btn ca-bar__btn--icon ca-modelbtn" data-pill="model" data-auto={auto || undefined} data-open={o || undefined} data-model={model.id} aria-label={`${t('modelPrefs.modelPreferences')} · ${auto ? t('common.auto') : model.label}`} onClick={toggle}>
           <span className="ca-icon">{Icons.cube}</span>
         </button>
       </Tip>
