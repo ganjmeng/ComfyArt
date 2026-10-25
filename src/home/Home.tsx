@@ -15,6 +15,9 @@ import { Popover } from '../ui/Popover'
 import { shortLabel, useCurrentAgent } from '../ui/AgentPicker'
 import { AgentLogo } from '../ui/agentLogos'
 import { ComposerSlot, useSlot } from '../ui/ComposerSlot'
+import { DirectPills } from '../ui/DirectPills'
+import { ModelPrefs } from '../ui/ModelPrefs'
+import { directSettingsAtom } from '../agent'
 import { loadEntries, ProjectCard } from './Projects'
 
 const RECENT = 5
@@ -70,7 +73,9 @@ export function Home() {
     setSending(true)
     setError('')
     try {
-      await startProject({ ask: text.trim(), mode, ref: refs })
+      // #287: the model / settings picked here carry into the new project
+      const ds = mode === 'agent' ? '' : JSON.stringify(directSettingsAtom.get()[mode])
+      await startProject({ ask: text.trim(), mode, ref: refs, ...(ds && ds !== '{}' ? { ds } : {}) })
       setText('')
       setRefs([])
     } catch (e) {
@@ -156,6 +161,9 @@ export function Home() {
             </div>
           </Popover>
           <div className="ca-landing__spacer" />
+          {/* #287: same right group as the canvas (#272): model → settings → voice/send; agent mode shows only prefs (no Ref: home has no canvas) */}
+          {mode !== 'agent' && <DirectPills video={mode === 'video'} within=".ca-landing__box" spacer={false} />}
+          {mode === 'agent' && agent && <ModelPrefs onError={setError} within=".ca-landing__box" />}
           <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={hasContent && !uploading && !sending} onSend={() => void send()} onError={setError}
             onText={(v) => setText((cur) => `${cur}${cur ? ' ' : ''}${v}`)} />
         </div>

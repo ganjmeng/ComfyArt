@@ -90,3 +90,10 @@ body { background: var(--ca-float); }
 .ca-missing h1 { margin: 0; font: 600 24px/32px var(--ca-font); }
 .ca-missing p { margin: 0; max-width: 420px; color: var(--ca-muted); font: 400 14px/22px var(--ca-font); }
 .ca-missing__acts { display: flex; gap: 8px; margin-top: 8px; }
+
+/* #287: model / settings pills on the home bar fold to icons on narrow screens */
+.ca-landing__foot .ca-gen__pill { min-width: 0; }
+@media (max-width: 480px) {
+  .ca-landing__foot [data-pill] > .ca-gen__pilltext { display: none; }
+  .ca-landing__foot [data-pill] > .ca-gen__pillicon { display: flex; width: 18px; height: 18px; }
+}

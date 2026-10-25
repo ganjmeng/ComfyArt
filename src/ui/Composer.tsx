@@ -1,25 +1,22 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useValue, type Editor, type TLShapeId } from 'tldraw'
 
-import { agentModeAtom, directSettingsAtom, DOC_ACCEPT, docsAtom, draftAtom, eachLine, eachRuns, extraRefsAtom, generateDirect, isRefShape, kitsAtom, refKindOf, sendToAgent, srcOf, uploadRefs, type AgentMode, type DirectSettings, type RefShape } from '../agent'
+import { agentModeAtom, DOC_ACCEPT, docsAtom, draftAtom, eachLine, eachRuns, extraRefsAtom, generateDirect, isRefShape, kitsAtom, refKindOf, sendToAgent, srcOf, uploadRefs, type AgentMode, type RefShape } from '../agent'
 import { EachButton, EachRole, useEach } from './EachToggle'
 import { RefFrameButton } from './RefFrameButton'
 import { placeAsset } from '../assets'
 import { botEnabledAtom, loadProviders, messagesAtom, providerLabel } from '../bot'
-import { VIDEO_RATIOS } from '../genOptions'
 import { errorText } from '../jobs'
 import { KIND_LABELS, libraryAtom } from '../library'
-import { agentModels, AUTO_IMAGE, AUTO_VIDEO, modelOf } from '../models'
-import { GENERATOR, type GeneratorShape, type GeneratorShapeUtil } from '../shapes/GeneratorShape'
 import type { AudioShape } from '../shapes/EmbedShapes'
 import { loadSkills, saveSkill, skillAtom, type Skill } from '../skills'
 import { AssetGrid } from './AssetPicker'
-import { ModelPill, SettingsPill } from './GenSettings'
 import { schedulesOpenAtom } from '../schedules'
 import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPicker'
 import { AgentLogo } from './agentLogos'
 import { Icons } from './icons'
 import { ModelPrefs } from './ModelPrefs'
+import { DirectPills } from './DirectPills'
 import { ComposerSlot, useSlot } from './ComposerSlot'
 import { SkillForm, skillsOpenAtom } from './SkillsDialog'
 import { Popover } from './Popover'
@@ -44,26 +41,6 @@ function RefThumb({ editor, s }: { editor: Editor; s: RefShape }) {
   const kind = refKindOf(s)
   if (kind === 'audio') return <span className="ca-icon">{Icons.music}</span>
   return kind === 'video' ? <video src={srcOf(editor, s) ?? ''} muted preload="metadata" /> : <img src={srcOf(editor, s) ?? ''} alt="" />
-}
-
-function DirectPills({ editor, video }: { editor: Editor; video: boolean }) {
-  const key = video ? 'video' : 'image'
-  const settings = useValue('direct settings', () => directSettingsAtom.get()[key], [key])
-  const workflow = settings.workflow || (video ? AUTO_VIDEO : AUTO_IMAGE)
-  const p: GeneratorShape['props'] = { ...editor.getShapeUtil<GeneratorShapeUtil>(GENERATOR).getDefaultProps(), ratio: video ? VIDEO_RATIOS[0] : '1:1', ...settings, workflow }
-  const model = modelOf(workflow)!
-  const update = (patch: DirectSettings) => {
-    const all = directSettingsAtom.get()
-    directSettingsAtom.set({ ...all, [key]: { ...all[key], ...patch } })
-  }
-  return (
-    <>
-      {/* #268: only + and mode sit left; model and settings group right, next to voice/send */}
-      <div className="ca-composer__pillspacer" />
-      <ModelPill video={video} model={model} onPick={(_f, id) => update({ workflow: id })} onAuto={(on) => update({ workflow: on ? (video ? AUTO_VIDEO : AUTO_IMAGE) : agentModels(video)[0].id })} align="end" within=".ca-composer" />
-      <SettingsPill p={p} video={video} quality={!!model.steps} tiers={model.qualities} update={update} align="end" within=".ca-composer" />
-    </>
-  )
 }
 
 /** #250: how far the composer bar has to fold so +, voice and send stay inside it.
@@ -338,7 +315,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
             {mode === 'agent' && <><div className="ca-menu__sep" /><AgentExtras onError={onError} close={() => setMenu(null)} /></>}
           </div>
         </Popover>
-        {mode !== 'agent' && <DirectPills editor={editor} video={mode === 'video'} />}
+        {mode !== 'agent' && <DirectPills video={mode === 'video'} />}
         </div>
         {/* #268: right group = reference / preferences (agent) or settings, next to voice/send */}
         <div className="ca-gen__spacer" />
