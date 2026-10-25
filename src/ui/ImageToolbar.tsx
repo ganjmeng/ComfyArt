@@ -59,7 +59,7 @@ function Tip({ label, hint, children }: { label: string; hint?: string; children
     const el = ref.current?.firstElementChild as HTMLElement | null
     if (!show || !el) return
     const r = el.getBoundingClientRect()
-    setPos({ left: r.left + r.width / 2, top: r.bottom + 8 })
+    setPos({ left: r.left + r.width / 2, top: r.top - 6 }) // #262: bottom edge 6px above the button (CSS shifts up by 100%)
   }, [show])
   return (
     <span ref={ref} className="ca-tip-wrap" onPointerEnter={() => setShow(true)} onPointerLeave={() => setShow(false)}>

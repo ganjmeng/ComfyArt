@@ -136,20 +136,21 @@ body { font-family: var(--ca-font); color: var(--ca-text); }
 .ca-menu--image { border-width: var(--ca-border-w); max-width: 240px; box-shadow: var(--ca-shadow-menu); }
 .ca-menu--image .ca-menu__item { align-items: flex-start; height: auto; min-height: 32px; padding: 6px 8px; white-space: normal; overflow-wrap: break-word; }
 
-/* #244: names-off hover tip — name + grey keycap (or name only). 28px tall, 8px below the button. */
+/* #262: names-off hover tip — dark chip 6px above the button; name + optional keycap. */
 .ca-tip-wrap { display: contents; }
 .ca-tip {
-  position: fixed; z-index: 400; transform: translateX(-50%);
-  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
-  box-sizing: border-box; border-radius: 8px; border: .5px solid var(--ca-border);
-  background: var(--ca-float); color: var(--ca-text); font: 400 12px/28px var(--ca-font);
-  box-shadow: var(--ca-shadow-menu); pointer-events: none; white-space: nowrap;
+  position: fixed; z-index: 400; transform: translate(-50%, -100%);
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px;
+  box-sizing: border-box; border-radius: 6px; border: none;
+  background: #1a1a1a; color: #fff; font: 400 12px/26px var(--ca-font);
+  box-shadow: 0 2px 8px rgba(0,0,0,.16); pointer-events: none; white-space: nowrap;
 }
+:root[data-theme="dark"] .ca-tip { box-shadow: 0 0 0 .5px rgba(255,255,255,.14), 0 2px 8px rgba(0,0,0,.16); }
 .ca-tip__name { flex: none; }
 .ca-tip__key {
   display: inline-flex; align-items: center; height: 18px; padding: 0 6px;
-  border-radius: 5px; border: .5px solid var(--ca-border); background: var(--ca-field);
-  color: var(--ca-muted); font: 500 11px/18px var(--ca-font);
+  border-radius: 4px; border: none; background: rgba(255,255,255,.16);
+  color: rgba(255,255,255,.72); font: 500 11px/18px var(--ca-font);
 }
 
 .ca-label {
