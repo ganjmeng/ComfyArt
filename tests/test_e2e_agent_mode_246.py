@@ -82,10 +82,16 @@ async def test_mode_menu_agent_flow(app_url, fake_tools, monkeypatch, lang, them
         assert await logo.evaluate("e => getComputedStyle(e).opacity") == await off.locator(".ca-agentpick__name").evaluate("e => getComputedStyle(e).opacity")
         assert await logo.evaluate("e => getComputedStyle(e).backgroundColor") == "rgba(0, 0, 0, 0)"  # no tile
         ob = await off.bounding_box()
-        assert ob["height"] <= 32.5, ob  # name and status on one 32px line
+        assert ob["height"] <= 32.5, ob  # name and 去配置 on one 32px line
         nb = await off.locator(".ca-agentpick__name").bounding_box()
-        sb = await off.locator(".ca-agentpick__status").bounding_box()
+        # #247 align: 去配置 lives in the ✓ column (ca-agentpick__check), same right edge as checks
+        sb = await off.locator(".ca-agentpick__setup").bounding_box()
+        cb = await off.locator(".ca-agentpick__check").bounding_box()
         assert abs(nb["y"] - sb["y"]) < 4 and nb["x"] < sb["x"], (nb, sb)
+        assert abs((sb["x"] + sb["width"]) - (cb["x"] + cb["width"])) < 2, (sb, cb)
+        on = rows.filter(has_text="Claude Code").first
+        on_check = await on.locator(".ca-agentpick__check").bounding_box()
+        assert abs((cb["x"] + cb["width"]) - (on_check["x"] + on_check["width"])) < 2, (cb, on_check)
         await off.click()
         await pg.locator(".ca-modal").wait_for()
         await _shot(pg, f"04-setup-{lang}-{theme}")
