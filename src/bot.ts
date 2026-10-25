@@ -104,6 +104,8 @@ export const chatsAtom = atom<BotChat[]>('bot chats', [])
 export const chatIdAtom = atom<string | null>('bot chat id', null)
 export const messagesAtom = atom<BotMessage[]>('bot messages', [])
 export const newProviderAtom = atom<string>('bot new provider', '')
+/** #294: whether the Agent list has arrived. 'loading' until the first /bot/status answers; on failure, the real error text. */
+export const providersStateAtom = atom<{ state: 'loading' | 'ready' | 'error'; error?: string }>('bot providers state', { state: 'loading' })
 
 let project = ''
 let me = ''
@@ -120,7 +122,15 @@ const send = (body: unknown, method = 'POST'): RequestInit => ({ method, headers
 export async function loadProviders(opts?: { refresh?: boolean }) {
   // #247: 「重新检测」passes refresh so the server drops the 60s probe cache
   const q = opts?.refresh ? '?refresh=1' : ''
-  const status = await json<{ enabled: boolean; user: string; providers: ProviderInfo[] }>(`/comfyart/bot/status${q}`)
+  let status: { enabled: boolean; user: string; providers: ProviderInfo[] }
+  try {
+    status = await json<{ enabled: boolean; user: string; providers: ProviderInfo[] }>(`/comfyart/bot/status${q}`)
+  } catch (e) {
+    // #294: keep an already-loaded list on a failed re-check; only the first load reports the error to send
+    if (providersStateAtom.get().state !== 'ready') providersStateAtom.set({ state: 'error', error: e instanceof Error ? e.message : String(e) })
+    throw e
+  }
+  providersStateAtom.set({ state: 'ready' })
   me = status.user
   botEnabledAtom.set(status.enabled)
   providersAtom.set(status.providers)
@@ -183,7 +193,13 @@ async function ensureChat(): Promise<BotChat> {
   const current = currentChat()
   if (current) return current
   const provider = newProviderAtom.get() || defaultProvider()
-  if (!provider) throw new Error(t('bot.noAgentAvailableConfigureOne'))
+  if (!provider) {
+    // #294: never claim "no Agent" while the list is still loading or when loading it failed
+    const ps = providersStateAtom.get()
+    if (ps.state === 'loading') throw new Error(t('bot.agentListLoading'))
+    if (ps.state === 'error') throw new Error(t('bot.agentListLoadFailed', ps.error ?? ''))
+    throw new Error(t('bot.noAgentAvailableConfigureOne'))
+  }
   const { chat } = await json<{ chat: BotChat }>('/comfyart/bot/chats', send({ project, provider }))
   upsertChat(chat)
   chatIdAtom.set(chat.id)
@@ -327,7 +343,7 @@ export async function refreshBot(opts?: { refresh?: boolean }) {
 
 export function startBot(projectId: string, isStale: () => boolean) {
   project = projectId
-  void refreshBot()
+  void refreshBot().catch(() => {})  // #294: a failed first load is kept in providersStateAtom and shown on send
   const stops = [
     onComfyEvent('comfyart-bot', (e: { event: string }) => {
       if (!isStale()) reducers[e.event]?.(e)
