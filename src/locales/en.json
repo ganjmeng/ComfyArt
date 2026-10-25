@@ -126,6 +126,8 @@
   "bot.generateVideo": "Generate video",
   "bot.locateElements": "Locate elements",
   "bot.lookAtCanvas": "Look at canvas",
+  "bot.agentListLoading": "Loading the Agent list…",
+  "bot.agentListLoadFailed": "Couldn’t load the Agent list: {0}",
   "bot.noAgentAvailableConfigureOne": "No Agent available. Configure one in Agent Settings.",
   "bot.placeWebPage": "Place web page",
   "bot.plan": "Plan",
