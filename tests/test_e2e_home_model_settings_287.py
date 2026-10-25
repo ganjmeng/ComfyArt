@@ -103,9 +103,11 @@ POP = """() => { const p = document.querySelector('.ca-pop'); const b = document
            maxH: parseFloat(p.style.maxHeight) || 0, scrolls: p.scrollHeight > p.clientHeight + 1 } }"""
 COUNT_VISIBLE = """() => { const p = document.querySelector('.ca-pop');
   const l = [...p.querySelectorAll('.ca-gen__label')].find((e) => /^(数量|Count)$/.test(e.textContent.trim()));
-  const row = l.parentElement; row.scrollIntoView({ block: 'nearest' });
-  const r = row.getBoundingClientRect(), q = p.getBoundingClientRect();
-  return r.top >= q.top - 1 && r.bottom <= q.bottom + 1 }"""
+  if (!l) return 'no label: ' + p.innerText.slice(0, 200);
+  const ctl = l.nextElementSibling || l; ctl.scrollIntoView({ block: 'nearest' });
+  const q = p.getBoundingClientRect();
+  const ok = [l, ctl].every((e) => { const r = e.getBoundingClientRect(); return r.top >= q.top - 1 && r.bottom <= q.bottom + 1 });
+  return ok || JSON.stringify([q, l.getBoundingClientRect(), ctl.getBoundingClientRect()]) }"""
 
 
 async def _open_settings(app_url, p, w, h, scroll_to_bottom=False):
@@ -117,7 +119,8 @@ async def _open_settings(app_url, p, w, h, scroll_to_bottom=False):
     await _mode(pg, "图像")
     if scroll_to_bottom:  # bar near the bottom edge: not enough room below
         await pg.evaluate("""() => { const f = document.querySelector('.ca-landing__foot');
-          const s = document.scrollingElement; s.scrollTop += f.getBoundingClientRect().bottom - innerHeight + 24 }""")
+          let s = f.parentElement; while (s && !(s.scrollHeight > s.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(s).overflowY))) s = s.parentElement;
+          s = s || document.scrollingElement; s.scrollTop += f.getBoundingClientRect().bottom - innerHeight + 24 }""")
     await pg.locator(".ca-landing__foot [data-pill=settings]").click()
     await pg.locator(".ca-pop").wait_for(timeout=5000)
     await pg.wait_for_timeout(200)
@@ -145,5 +148,5 @@ async def test_home_popover_placement(app_url, fake_tools, monkeypatch, case):  
             assert m["bottom"] <= m["btnTop"], m
         else:
             assert m["maxH"] and m["maxH"] <= m["vh"] - 64 + 1 and m["scrolls"], m
-        assert await pg.evaluate(COUNT_VISIBLE)
+        assert (await pg.evaluate(COUNT_VISIBLE)) is True
         await browser.close()
