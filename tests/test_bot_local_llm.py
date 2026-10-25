@@ -519,7 +519,8 @@ class TestPruneScreenshots233:
         urls = [p["image_url"]["url"] for m in out if isinstance(m.get("content"), list)
                 for p in m["content"] if p.get("type") == "image_url"]
         assert urls == ["data:att", "u3", "u4"]
-        texts = [p["text"] for m in out[2:] if isinstance(m.get("content"), list) for p in m["content"]]
+        texts = [p["text"] for m in out[2:] if isinstance(m.get("content"), list)
+                 for p in m["content"] if p.get("type") == "text"]
         assert texts.count("[older screenshot omitted]") == 2
         # the stored history is not mutated
         assert msgs[2]["content"][1]["image_url"]["url"] == "u1"
