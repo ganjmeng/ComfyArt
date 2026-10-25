@@ -6,7 +6,7 @@ import { Icons } from './icons'
 import { Popover } from './Popover'
 import { t } from '../i18n'
 
-export function ModelPrefs({ onError, within = '.ca-composer' }: { onError: (msg: string) => void; within?: string }) {
+export function ModelPrefs({ onError, within = '.ca-composer', side = 'top' }: { onError: (msg: string) => void; within?: string; side?: 'top' | 'bottom' }) {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'image' | 'video'>('image')
   const prefs = useValue(modelPrefsAtom)
@@ -18,7 +18,8 @@ export function ModelPrefs({ onError, within = '.ca-composer' }: { onError: (msg
     <Popover
       open={open}
       onOpenChange={setOpen}
-      side="top"
+      side={side}
+      viewportCap={side === 'bottom'}
       align="end"
       within={within}
       trigger={({ open: o, toggle: flip }) => (

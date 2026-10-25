@@ -161,8 +161,8 @@ export function Home() {
           </Popover>
           <div className="ca-landing__spacer" />
           {/* #287: same right group as the canvas (#272): model → settings → voice/send; agent mode shows only prefs (no Ref: home has no canvas) */}
-          {mode !== 'agent' && <DirectPills video={mode === 'video'} within=".ca-landing__box" spacer={false} onError={setError} />}
-          {mode === 'agent' && agent && <ModelPrefs onError={setError} within=".ca-landing__box" />}
+          {mode !== 'agent' && <DirectPills video={mode === 'video'} within=".ca-landing__box" spacer={false} onError={setError} side="bottom" />}
+          {mode === 'agent' && agent && <ModelPrefs onError={setError} within=".ca-landing__box" side="bottom" />}
           <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={hasContent && !uploading && !sending} onSend={() => void send()} onError={setError}
             onText={(v) => setText((cur) => `${cur}${cur ? ' ' : ''}${v}`)} />
         </div>

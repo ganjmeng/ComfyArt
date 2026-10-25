@@ -3,6 +3,8 @@ only model prefs in Agent mode (no Ref button: home has no canvas). The model pi
 the canvas (modelPrefs.image / .video): a pick on either side shows on both. Mocks only, $0."""
 from __future__ import annotations
 
+import os
+
 import pytest
 
 pw = pytest.importorskip("playwright.async_api")
@@ -92,4 +94,56 @@ async def test_home_model_carries_into_project(app_url, fake_tools, monkeypatch)
         await _mode(pg, "Image")
         await pg.wait_for_function(
             "t => (document.querySelector('.ca-landing__foot [data-pill=model]')?.title || '').includes(t)", arg=picked2, timeout=10000)
+        await browser.close()
+
+
+POP = """() => { const p = document.querySelector('.ca-pop'); const b = document.querySelector('.ca-landing__foot [data-pill=settings]');
+  if (!p || !b) return null; const r = p.getBoundingClientRect(), a = b.getBoundingClientRect();
+  return { top: r.top, bottom: r.bottom, btnTop: a.top, btnBottom: a.bottom, vh: innerHeight,
+           maxH: parseFloat(p.style.maxHeight) || 0, scrolls: p.scrollHeight > p.clientHeight + 1 } }"""
+COUNT_VISIBLE = """() => { const p = document.querySelector('.ca-pop');
+  const l = [...p.querySelectorAll('.ca-gen__label')].find((e) => /^(数量|Count)$/.test(e.textContent.trim()));
+  const row = l.parentElement; row.scrollIntoView({ block: 'nearest' });
+  const r = row.getBoundingClientRect(), q = p.getBoundingClientRect();
+  return r.top >= q.top - 1 && r.bottom <= q.bottom + 1 }"""
+
+
+async def _open_settings(app_url, p, w, h, scroll_to_bottom=False):
+    browser = await p.chromium.launch()
+    pg = await (await browser.new_context(viewport={"width": w, "height": h})).new_page()
+    await pg.add_init_script("localStorage.setItem('comfyart.lang','zh')")
+    await pg.goto(app_url)
+    await pg.wait_for_function("document.querySelector('.ca-landing__mode')?.dataset.agent", timeout=15000)
+    await _mode(pg, "图像")
+    if scroll_to_bottom:  # bar near the bottom edge: not enough room below
+        await pg.evaluate("""() => { const f = document.querySelector('.ca-landing__foot');
+          const s = document.scrollingElement; s.scrollTop += f.getBoundingClientRect().bottom - innerHeight + 24 }""")
+    await pg.locator(".ca-landing__foot [data-pill=settings]").click()
+    await pg.locator(".ca-pop").wait_for(timeout=5000)
+    await pg.wait_for_timeout(200)
+    return browser, pg
+
+
+@pytest.mark.parametrize("case", ["down", "flip", "cap", "narrow"])
+async def test_home_popover_placement(app_url, fake_tools, monkeypatch, case):  # noqa: F811
+    """Product + EL rule: home popovers open down; flip up if no room below; if neither fits, cap to
+    window - 64 with inner scroll. The 数量 row is never clipped (reachable inside the panel)."""
+    monkeypatch.setenv("WAVESPEED_API_KEY", "mock-key-not-real")
+    w, h = {"down": (1280, 800), "flip": (1280, 800), "cap": (1280, 360), "narrow": (360, 800)}[case]
+    async with pw.async_playwright() as p:
+        try:
+            browser, pg = await _open_settings(app_url, p, w, h, scroll_to_bottom=case == "flip")
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
+        if os.environ.get("SHOT287"):
+            await pg.screenshot(path=f"{os.environ['SHOT287']}-pop-{case}.png")
+        m = await pg.evaluate(POP)
+        assert m and m["top"] >= 0 and m["bottom"] <= m["vh"] + 1, m
+        if case in ("down", "narrow"):
+            assert m["top"] >= m["btnBottom"], m
+        elif case == "flip":
+            assert m["bottom"] <= m["btnTop"], m
+        else:
+            assert m["maxH"] and m["maxH"] <= m["vh"] - 64 + 1 and m["scrolls"], m
+        assert await pg.evaluate(COUNT_VISIBLE)
         await browser.close()
