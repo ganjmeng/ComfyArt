@@ -1,0 +1,46 @@
+{
+ "radius": "20px",
+ "right": 9,
+ "bottom": 8,
+ "footH": 32,
+ "footW": 354,
+ "tops": [
+  748,
+  748,
+  748,
+  748,
+  748
+ ],
+ "btns": [
+  [
+   "ca-bar__btn ca-bar__btn--icon",
+   25,
+   32,
+   "6px"
+  ],
+  [
+   "ca-bar__btn ca-composer__mode",
+   63,
+   86,
+   "6px"
+  ],
+  [
+   "ca-gen__pill",
+   203,
+   58,
+   "4px"
+  ],
+  [
+   "ca-gen__pill",
+   263,
+   72,
+   "4px"
+  ],
+  [
+   "ca-composer__slot ca-voice",
+   347,
+   32,
+   "normal"
+  ]
+ ]
+}
