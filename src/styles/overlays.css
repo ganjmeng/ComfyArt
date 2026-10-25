@@ -290,7 +290,7 @@
 :root[data-theme="dark"] .ca-chat__notice[data-level="warn"] { color: #fbbf24; }
 :root[data-theme="dark"] .ca-chat__notice[data-level="error"] { color: #f87171; }
 .ca-chat__user[data-queued] .ca-chat__bubble { opacity: .6; }
-.ca-agentpick { width: 260px; }
+.ca-agentpick { width: 300px; }
 .ca-agentpick select { width: 100%; }
 .ca-details__steps li { margin-bottom: 6px; }
 .ca-details__step { display: flex; gap: 8px; color: var(--ca-text); }

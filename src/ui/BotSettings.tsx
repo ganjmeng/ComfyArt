@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useValue } from 'tldraw'
 
-import { BUILTIN_AGENT, botEnabledAtom, providerLabel, providersAtom, refreshBot, saveSettings, settingsAtom, type BotSettings as Settings } from '../bot'
+import { BUILTIN_AGENT, botEnabledAtom, providerLabel, providersAtom, refreshBot, saveSettings, settingsAtom, type BotSettings as Settings, type ProviderInfo } from '../bot'
 import { errorText } from '../jobs'
-import { botSettingsOpenAtom } from './AgentPicker'
+import { agentSetupFocusAtom, botSettingsOpenAtom } from './AgentPicker'
+import { docsUrl } from './SettingsMenu'
 import { Modal } from './Modal'
 import { t } from '../i18n'
 
@@ -51,10 +52,10 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
 
   if (!open) return null
   const close = () => botSettingsOpenAtom.set(false)
-  const save = () => void saveSettings(draft).then(refreshBot).then(close).catch((e) => onError(errorText(e)))
+  const save = () => void saveSettings(draft).then(() => refreshBot()).then(close).catch((e) => onError(errorText(e)))
 
   return (
-    <Modal title={t('botSettings.agentSettings')} onClose={close}>
+    <Modal className="ca-botsettings" title={t('botSettings.agentSettings')} onClose={close}>
       <div className="ca-rename__body">
         {SWITCHES.map(([key, label]) => (
           <label key={key} className="ca-notice__push">
@@ -62,15 +63,6 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
             <span>{label}</span>
           </label>
         ))}
-        <div className="ca-gen__label">{t('botSettings.availableAgents')}</div>
-        {!enabled && <div className="ca-chat__hint">{t('botSettings.availableAgentsOnThisMachine')}</div>}
-        {providers.map((p) => (
-          <div key={p.id} className="ca-keys__row">
-            <span>{providerLabel(p)}</span>
-            <span className="ca-menu__key" title={p.detail}>{p.available ? p.version || t('botSettings.available') : p.id === BUILTIN_AGENT ? t('botSettings.unavailable') : t('agentPicker.notDetected')}</span>
-          </div>
-        ))}
-        <div className="ca-chat__hint">{t('botSettings.claudeCodeCodexQwenCode')}</div>
         {TEXT_FIELDS.map(([key, label, hint, type]) => (
           <label key={key} className="ca-rename__field">
             <span>{label}</span>
@@ -78,6 +70,8 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
             {key === KEY_KEY && keyCleared && !draft[KEY_KEY] && <span className="ca-adv__help">{t('botSettings.urlChangedReenterKey')}</span>}
           </label>
         ))}
+        <div className="ca-chat__hint">{t('botSettings.claudeCodeCodexQwenCode')}</div>
+        <AgentSetup providers={providers} enabled={enabled} onError={onError} />
         {FLAGS.map(([key, label]) => (
           <label key={key} className="ca-notice__push">
             <input type="checkbox" checked={!!draft[key]} onChange={(e) => setDraft({ ...draft, [key]: e.target.checked })} />
@@ -97,5 +91,60 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
         </div>
       </div>
     </Modal>
+  )
+}
+
+// #247: setup guide for each external agent tool the backend knows about (no new tools here).
+// Install links go to each tool's official docs only; we never write install commands ourselves.
+export const AGENT_DOCS: Record<string, string> = {
+  'claude-code': 'https://docs.claude.com/en/docs/claude-code/overview',
+  codex: 'https://developers.openai.com/codex/cli',
+  'qwen-code': 'https://github.com/QwenLM/qwen-code',
+  'deepseek-harness': 'https://www.npmjs.com/package/@deepseek-ai/dsh',
+}
+export const AGENT_GUIDE_PATH = '/guides/external-agents'
+export const mcpConfig = (origin: string) => JSON.stringify({ mcpServers: { comfyart: { type: 'http', url: `${origin}/comfyart/mcp` } } }, null, 2)
+
+function AgentSetup({ providers, enabled, onError }: { providers: ProviderInfo[]; enabled: boolean | null; onError: (msg: string) => void }) {
+  const [copied, setCopied] = useState<string | null>(null)
+  const [checking, setChecking] = useState(false)
+  const config = mcpConfig(location.origin)
+  const guide = `${docsUrl()}${AGENT_GUIDE_PATH}`
+  const copy = (id: string) => void navigator.clipboard?.writeText(config).then(() => { setCopied(id); setTimeout(() => setCopied(null), 1500) }).catch(() => {})
+  const focus = useValue(agentSetupFocusAtom)
+  useEffect(() => {
+    if (!focus) return
+    document.querySelector(`.ca-agentsetup__card[data-agent="${focus}"]`)?.scrollIntoView({ block: 'start' })
+    agentSetupFocusAtom.set(null)
+  }, [focus, providers.length])
+  const check = () => { setChecking(true); void refreshBot({ refresh: true }).catch((e) => onError(errorText(e))).finally(() => setChecking(false)) }
+  return (
+    <section className="ca-agentsetup" data-testid="agent-setup">
+      <div className="ca-gen__label">{t('agentSetup.title')}</div>
+      <div className="ca-chat__hint">{t('agentSetup.desc')}</div>
+      {!enabled && <div className="ca-chat__hint">{t('botSettings.availableAgentsOnThisMachine')}</div>}
+      {providers.filter((p) => p.id !== BUILTIN_AGENT).map((p) => (
+        <div key={p.id} className="ca-agentsetup__card" data-agent={p.id}>
+          <div className="ca-agentsetup__head">
+            <span className="ca-agentsetup__name">{providerLabel(p)}</span>
+            <span className="ca-agentsetup__chip" data-on={p.available || undefined} title={p.detail || p.version}>{p.available ? t('agentSetup.connected') : t('agentPicker.notDetected')}</span>
+          </div>
+          <ol className="ca-agentsetup__steps">
+            <li>
+              <span>{t('agentSetup.install')}</span>
+              {AGENT_DOCS[p.id] && <a href={AGENT_DOCS[p.id]} target="_blank" rel="noopener noreferrer">{t('agentSetup.officialDocs')}</a>}
+              <a href={guide} target="_blank" rel="noopener noreferrer">{t('agentSetup.viewGuide')}</a>
+            </li>
+            <li>
+              <span>{t('agentSetup.connect')}</span>
+              <div className="ca-agentsetup__code"><pre>{config}</pre><button type="button" className="ca-panel__secondary" onClick={() => copy(p.id)}>{copied === p.id ? t('agentSetup.copied') : t('agentSetup.copy')}</button></div>
+            </li>
+            <li>
+              <button type="button" className="ca-panel__secondary" disabled={checking} onClick={check}>{t('agentSetup.checkAgain')}</button>
+            </li>
+          </ol>
+        </div>
+      ))}
+    </section>
   )
 }

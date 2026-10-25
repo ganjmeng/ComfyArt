@@ -1,0 +1,58 @@
+---
+title: "外部 Agent"
+description: "用你电脑上已安装的 Claude Code、Codex、Qwen Code 或 DeepSeek Harness 来操作画布。"
+---
+
+除了内置的 ComfyArt Agent，ComfyArt 也可以调用你电脑上已安装的 Agent。**Agent 设置 → 外部 Agent** 里每个工具一张卡片，步骤和本页一致。
+
+<img src="/images/ours/zh/external-agents-settings.webp" alt="Agent 设置中的外部 Agent 区域" />
+
+## 支持的工具
+
+| 工具 | 官方文档 |
+| --- | --- |
+| Claude Code | [docs.claude.com](https://docs.claude.com/en/docs/claude-code/overview) |
+| Codex | [developers.openai.com/codex/cli](https://developers.openai.com/codex/cli) |
+| Qwen Code | [github.com/QwenLM/qwen-code](https://github.com/QwenLM/qwen-code) |
+| DeepSeek Harness | [npmjs.com/package/@deepseek-ai/dsh](https://www.npmjs.com/package/@deepseek-ai/dsh) |
+
+## 状态是什么意思
+
+- **已连接**：ComfyArt 在这台电脑上找到了这个工具，可以直接启动。
+- **未检测到**：ComfyArt 找不到这个工具。先安装（第 1 步），再点 **重新检测**。
+
+## 第 1 步：安装
+
+在卡片上打开官方文档，按说明安装并登录。先在终端里运行一次（例如 `claude` 或 `codex`）完成登录。
+
+## 第 2 步：连接 ComfyArt
+
+点卡片上的 **复制**，把 MCP 配置加到工具的 MCP 设置里。卡片上显示的就是你当前使用的地址，不用自己改。各工具的命令见 [MCP 服务](/zh/guides/mcp)。
+
+从模式菜单启动 Agent 时，ComfyArt 会自动传入这份配置。只有你在终端里单独运行该工具时，才需要自己添加。
+
+地址取决于你的运行方式：
+
+| 运行方式 | MCP 地址 |
+| --- | --- |
+| 作为 ComfyUI 插件 | `http://127.0.0.1:8188/comfyart/mcp`（ComfyUI 不在这个地址时换成你的 ComfyUI 地址） |
+| 用 `scripts/start.sh` 独立运行 | `http://127.0.0.1:8188/comfyart/mcp`，设置了 `PORT=...` 时换成该端口 |
+| Docker | `http://127.0.0.1:8188/comfyart/mcp`，或你用 `-p` 映射的主机端口 |
+
+## 第 3 步：重新检测
+
+点卡片上的 **重新检测**。状态变成 **已连接** 就可以用了。
+
+## 切换到外部 Agent
+
+打开对话框下方的模式菜单。已连接的工具可以直接选择；未检测到的工具显示 **未检测到 · 去配置**，点击会打开 Agent 设置里对应的卡片。
+
+<img src="/images/ours/zh/external-agents-picker.webp" alt="模式菜单中未检测到的工具" />
+
+## 常见问题
+
+**安装后仍显示未检测到。** 在新终端里确认命令能运行（`claude --version`、`codex --version`、`qwen --version`、`dsh --version`）。如果是在 ComfyArt 启动后才安装的，重启 ComfyArt 让它读到新的 PATH，再点 **重新检测**。
+
+**Agent 提示未登录。** 在终端里运行一次该工具并完成登录，然后重新发送消息。
+
+**Agent 看不到画布。** 确认 Agent 设置里 **启用 MCP** 已打开，并且浏览器里该项目的标签页开着。见 [MCP 服务](/zh/guides/mcp)。

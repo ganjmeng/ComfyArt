@@ -141,7 +141,7 @@
 .ca-gen__chip[data-on], .ca-gen__ratio[data-on] { border-color: var(--ca-strong); }
 .ca-gen__shape { display: block; box-sizing: border-box; border: 1.5px solid currentColor; border-radius: 3px; }
 
-.ca-bar__hint { margin-left: 4px; color: var(--ca-muted); }
+.ca-bar__hint { margin-left: 4px; color: var(--ca-text); opacity: .65; }
 
 .ca-panel {
   position: absolute;

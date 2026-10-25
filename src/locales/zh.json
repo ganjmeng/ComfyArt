@@ -1247,6 +1247,16 @@
   "botSettings.localLlmModelHint": "例如 deepseek/deepseek-v4.1-flash-1017；拿不到模型列表时也用这个",
   "agentPicker.builtinAgentShort": "ComfyArt",
   "agentSetup.setUp": "去配置",
+  "agentSetup.title": "外部 Agent",
+  "agentSetup.desc": "用你电脑上已安装的 Agent 来操作画布。",
+  "agentSetup.connected": "已连接",
+  "agentSetup.install": "安装",
+  "agentSetup.officialDocs": "官方文档",
+  "agentSetup.connect": "连接 ComfyArt",
+  "agentSetup.copy": "复制",
+  "agentSetup.copied": "已复制",
+  "agentSetup.checkAgain": "重新检测",
+  "agentSetup.viewGuide": "查看教程",
   "imageToolbar.moreTools": "更多工具",
   "imageToolbar.unpin": "取消固定"
 }

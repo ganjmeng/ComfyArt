@@ -16,8 +16,11 @@ async def bot_status(request: web.Request) -> web.Response:
     user = request_user(request)
     if not bot_enabled():
         return web.json_response({"enabled": False, "user": user, "providers": []})
+    refresh = request.rel_url.query.get("refresh") == "1"
     out = []
     for provider in list_providers():
+        if refresh:
+            provider.clear_probe_cache()
         try:
             st = await provider.probe()
         except Exception as e:
