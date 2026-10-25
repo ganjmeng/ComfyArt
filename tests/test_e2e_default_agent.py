@@ -77,7 +77,7 @@ BAR_FITS = """() => {
     overflow: kids.some((r) => r.right > fr.right + 0.5 || r.left < fr.left - 0.5),
     sendInside: (() => { const r = foot.querySelector('.ca-gen__send').getBoundingClientRect(); return r.width > 0 && r.left >= fr.left - 0.5 && r.right <= fr.right + 0.5 })(),
     // every control except the agent-name button keeps its natural size
-    squeezed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-bar__btn, :scope > .ca-gen__send, :scope > .ca-pop-anchor:has(> .ca-composer__mode:not([data-agent]))')]
+    squeezed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-bar__btn, :scope > .ca-gen__send, :scope > .ca-composer__mid > .ca-pop-anchor:has(> .ca-composer__mode:not([data-agent]))')]
       .filter((e) => e.getBoundingClientRect().width + 0.5 < e.scrollWidth || e.getBoundingClientRect().width === 0).map((e) => e.className),
   }
 }"""

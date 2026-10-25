@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useValue, type Editor, type TLShapeId } from 'tldraw'
 
 import { agentModeAtom, directSettingsAtom, DOC_ACCEPT, docsAtom, draftAtom, eachLine, eachRuns, extraRefsAtom, generateDirect, isRefShape, kitsAtom, refKindOf, sendToAgent, srcOf, uploadRefs, type AgentMode, type DirectSettings, type RefShape } from '../agent'
@@ -64,6 +64,28 @@ function DirectPills({ editor, video }: { editor: Editor; video: boolean }) {
   )
 }
 
+/** #250: how far the composer bar has to fold so +, voice and send stay inside it.
+ *  0 full · 1 settings drops its tail ("1K · 1:1") · 2 settings icon only · 3 model icon only (the mode button always keeps its text).
+ *  The group never squeezes its buttons (no cut-off text); it folds one step at a time until nothing overflows. */
+function useFootFit(dep: unknown) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [fit, setFit] = useState(0)
+  const [width, setWidth] = useState(0)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setWidth(Math.round(el.clientWidth)))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  useLayoutEffect(() => { setFit(0) }, [width, dep])
+  useLayoutEffect(() => {
+    const mid = ref.current?.querySelector('.ca-composer__mid')
+    if (mid && fit < 3 && mid.scrollWidth > mid.clientWidth) setFit(fit + 1)
+  })
+  return { ref, fit }
+}
+
 export function Composer({ editor, busy, onError }: { editor: Editor; busy: boolean; onError: (msg: string) => void }) {
   const started = useValue('chat started', () => messagesAtom.get().length > 0, [])
   const draft = useValue(draftAtom)
@@ -83,6 +105,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const [hidden, setHidden] = useState<TLShapeId[]>([])
   const [drop, setDrop] = useState(false)
   const each = useEach()
+  const foot = useFootFit(`${mode}|${draft.length > 0}`)
 
   const shown = selected.filter((s) => !hidden.includes(s.id))
   const refs = [...shown, ...extra.map((id) => editor.getShape(id)).filter((s): s is RefShape => !!s && isRefShape(s) && !shown.some((x) => x.id === s.id))]
@@ -209,7 +232,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           }
         }}
       />
-      <div className="ca-composer__foot">
+      <div ref={foot.ref} className="ca-composer__foot" data-fit={foot.fit || undefined}>
         <input ref={file} type="file" accept={FILE_ACCEPT} multiple hidden onChange={(e) => { void upload(e.target.files); e.target.value = '' }} />
         <Popover
           open={menu === 'plus' || menu === 'skills' || menu === 'assets' || menu === 'create'}
@@ -281,13 +304,15 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
             </div>
           )}
         </Popover>
+        {/* #250: mode / settings / model share one shrinkable group, so +, voice and send always stay inside the bar */}
+        <div className="ca-composer__mid">
         <Popover
           open={menu === 'mode'}
           onOpenChange={(o) => { setMenu(o ? 'mode' : null); if (o) void loadProviders().catch(fail) }}
           side="top"
           trigger={({ open, toggle }) => (
-            <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' && agent ? providerLabel(agent) : undefined} data-agent={mode === 'agent' && agent ? agent.id : undefined} data-open={open || undefined} onClick={toggle}>
-              {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span className="ca-menu__grow">{shortLabel(agent)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span>{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
+            <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' && agent ? providerLabel(agent) : modeInfo[1]} data-agent={mode === 'agent' && agent ? agent.id : undefined} data-open={open || undefined} onClick={toggle}>
+              {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span className="ca-menu__grow">{shortLabel(agent)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-composer__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
             </button>
           )}
         >
@@ -304,6 +329,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           </div>
         </Popover>
         {mode !== 'agent' && <DirectPills editor={editor} video={mode === 'video'} />}
+        </div>
         {refs.length > 1 && <EachButton compact on={each.on} onChange={each.setOn} />}
         {mode === 'agent' && !agentOff && <RefFrameButton editor={editor} />}
         {mode === 'agent' && <ModelPrefs onError={onError} />}
