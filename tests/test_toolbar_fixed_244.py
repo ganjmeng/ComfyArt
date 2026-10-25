@@ -32,17 +32,17 @@ def test_fixed_tools_and_migration(tmp_path):
 def test_preview_markup():
     src = (ROOT / "src/ui/ImageToolbar.tsx").read_text()
     dlg = src[src.index("export function CustomizeDialog"):]
-    # fixed tools first, then removable ones, then ⋯ and download — no divider before download
+    # fixed tools first, then removable ones, then ⋯ and download
     assert "{fixedShown.map(btn)}" in dlg
     assert "!isFixed(x.id)).map(btn)" in dlg
     assert dlg.index("{fixedShown.map(btn)}") < dlg.index("!isFixed(x.id)).map(btn)")
     # no sep in the customize preview bar
     preview = dlg[dlg.index("ca-cz__bar"):dlg.index("ca-cz__grid")]
     assert "ca-bar__sep" not in preview
-    # main toolbar: no sep before download
+    # main toolbar: #283 version A (supersedes #244) puts the upstream 5231d59 sep back right before download
     main = src[src.index("export function ImageToolbar"):src.index("export function CustomizeDialog")]
     assert 'hint={t(\'common.download\')}' in main or 'hint={t("common.download")}' in main
-    assert "ca-bar__sep" not in main.split("Icons.download")[0].split("Popover")[-1]
+    assert main.split("Icons.download")[0].split("Popover")[-1].count("ca-bar__sep") == 1
     # fixed tools get no unpin ×, stay off the pin list, and cannot be toggled off
     assert "{!fixed && <button" in src and "!isFixed(id) && setPinned" in dlg and "withFixed(pinned)" in dlg
     assert "cards.filter((x) => !isFixed(x.id))" in dlg
