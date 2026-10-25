@@ -343,9 +343,21 @@ class TestTurn:
         result, _events = await _turn(TurnRequest(
             chat_id="c1", user_text="look", attachments=[{"media_type": "image/png", "data": "AAAA"}]))
         assert result.error == ""
-        assert dict(_seen(seen))["prompt"]["prompt"] == [
-            {"type": "image", "mimeType": "image/png", "data": "AAAA"},
-            {"type": "text", "text": "look"}]
+        prompt = dict(_seen(seen))["prompt"]["prompt"]
+        # The user's attachment stays; the new session also carries AGENT_GUIDE (#238).
+        assert prompt[0] == {"type": "image", "mimeType": "image/png", "data": "AAAA"}
+        assert prompt[1]["type"] == "text" and prompt[1]["text"].endswith("look")
+        assert "WaveSpeed, and ComfyUI is only the host app" in prompt[1]["text"]
+        assert "local ComfyUI" not in prompt[1]["text"]
+
+    async def test_resume_does_not_send_the_guide_again(self, fake_runtime):
+        seen = fake_runtime()
+        result, _events = await _turn(TurnRequest(
+            chat_id="c1", user_text="hi", resume_token="old-session",
+            history=[{"role": "user", "text": "EARLIER_GOAL"}],
+        ))
+        assert result.error == ""
+        assert dict(_seen(seen))["prompt"]["prompt"] == [{"type": "text", "text": "hi"}]
 
     async def test_non_image_attachment_is_refused(self, fake_runtime):
         fake_runtime(image=True)

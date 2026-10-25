@@ -14,6 +14,7 @@ from ._cli_common import (
     kill_process_tree,
     run_command,
 )
+from .external_context import apply_cold_start
 from .deepseek_harness_runtime import (
     BOT_PROFILE,
     chat_cwd,
@@ -274,6 +275,9 @@ class DeepSeekHarnessProvider(AgentProvider):
         }, timeout=SESSION_TIMEOUT_S)
         _log.info("[ComfyArt/deepseek-harness] chat=%s model=%s", turn.chat_id, model)
 
+        # #238: DeepSeek has no AGENTS.md / system-prompt flag, so a new session carries
+        # AGENT_GUIDE here. A resumed session already has it and is not sent the guide again.
+        turn = apply_cold_start(turn, prepend_guide=True)
         blocks, block_error = _prompt_blocks(turn, image_supported)
         if block_error:
             return TurnResult(resume_token=session_id, error=block_error)

@@ -252,14 +252,26 @@ class TestModelOverride:
             {"role": "assistant", "text": "first answer"},
         ]
 
-    async def test_stateful_provider_gets_no_history(self, client, fake_provider):
+    async def test_stateful_provider_gets_history_for_a_cold_start(self, client, fake_provider):
+        # #238: the replay is attached even for a stateful CLI. A cold start uses it;
+        # a resumed session (resume token from the previous turn) must not be rewritten.
+        fake_provider.script = [BotEvent(t="delta", text="answer")]
         resp = await client.post("/comfyart/bot/chats",
                                  json={"project": "p", "provider": "fake-test"})
         chat = (await resp.json())["chat"]
         await client.post(f"/comfyart/bot/chats/{chat['id']}/send",
                           json={"text": "one"})
         await _wait_done(client, chat["id"])
-        assert fake_provider.last_turn.history is None
+        assert fake_provider.last_turn.history == []
+        assert not fake_provider.last_turn.resume_token
+        await client.post(f"/comfyart/bot/chats/{chat['id']}/send",
+                          json={"text": "two"})
+        await _wait_done(client, chat["id"])
+        assert fake_provider.last_turn.resume_token == "tok-1"
+        assert fake_provider.last_turn.history == [
+            {"role": "user", "text": "one"},
+            {"role": "assistant", "text": "answer"},
+        ]
 
     async def test_blank_setting_means_default(self, client, fake_provider):
         resp = await client.post("/comfyart/bot/chats",

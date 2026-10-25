@@ -25,7 +25,15 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
 from ..bot.guide import PAID_TOOLS
-from ..bot.local_llm import _SKILL_HINT_RE, _reply_lang, _step_label
+from ..bot.external_context import clip_image_blocks
+from ..bot.local_llm import (
+    _MAX_STEPS_ENV,
+    _SKILL_HINT_RE,
+    _reply_lang,
+    _step_label,
+    _step_limit_summary,
+    max_steps_from,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -155,6 +163,9 @@ class TurnGuard:
     done: list[str] = field(default_factory=list)
     stopped: str = ""
     declined_items: set[str] = field(default_factory=set)
+    # #238: external CLIs only. The built-in agent counts steps in its own loop.
+    external_steps: int = 0
+    screenshots_sent: int = 0
 
     def summary(self) -> str:
         counts: dict[str, int] = {}
@@ -190,10 +201,43 @@ def end_turn(chat_id: str) -> str:
     return guard.stopped if guard else ""
 
 
-def before_call(chat_id: str, name: str, args: dict) -> Optional[str]:
+def external_step_limit() -> int:
+    """#238: same cap as the built-in agent (setting, or COMFYART_AGENT_MAX_STEPS)."""
+    import os
+
+    from .settings import get_setting
+
+    env = os.environ.get(_MAX_STEPS_ENV)
+    if env:
+        return max_steps_from(env)
+    return max_steps_from(get_setting("bot-max-steps"))
+
+
+def _external_step_block(guard: TurnGuard) -> Optional[str]:
+    """Refuse the call once this external turn has used its step budget. Nothing runs."""
+    if guard.stopped:
+        return guard.stopped
+    limit = external_step_limit()
+    if guard.external_steps >= limit:
+        guard.stopped = _step_limit_summary(guard.done, limit, guard.lang)
+        if guard.on_stop:
+            guard.on_stop()
+        return guard.stopped
+    guard.external_steps += 1
+    return None
+
+
+def before_call(chat_id: str, name: str, args: dict, *, external: bool = False) -> Optional[str]:
     """None to let the call run; otherwise the error text (nothing submitted)."""
     guard = TURNS.get(chat_id)
-    if guard is None or name not in PAID_TOOLS:
+    if guard is None:
+        return None
+    if external:
+        # A stopped external turn refuses every later tool, paid or not.
+        blocked = _external_step_block(guard)
+        if blocked:
+            return blocked
+    if name not in PAID_TOOLS:
         return None
     if guard.stopped:
         return guard.stopped
@@ -234,6 +278,16 @@ def after_call(chat_id: str, name: str, args: dict, payload: Any,
         elif user_declined(payload):
             # At most one cost-confirm dialog per plan item this turn (#127).
             guard.declined_items.add(guard.plan_item)
+
+
+def clip_external_screenshots(chat_id: str, blocks: list[dict]) -> list[dict]:
+    """#238: at most 2 screenshot images returned to an external CLI during one turn."""
+    guard = TURNS.get(chat_id)
+    if guard is None or not blocks:
+        return blocks
+    clipped, guard.screenshots_sent = clip_image_blocks(
+        blocks, already_sent=guard.screenshots_sent)
+    return clipped
 
 
 def stop_later(provider: Any, handle: Any) -> Callable[[], None]:

@@ -16,6 +16,7 @@ from ._cli_common import (
     run_command,
     tool_result_text,
 )
+from .external_context import apply_cold_start
 from .guide import AGENT_GUIDE
 from .providers import (
     AgentProvider,
@@ -181,6 +182,7 @@ class ClaudeCodeProvider(AgentProvider):
 
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
+        turn = apply_cold_start(turn)
         return await run_cli_turn(
             self._build_argv(turn),
             cwd=self._resolve_home(),
