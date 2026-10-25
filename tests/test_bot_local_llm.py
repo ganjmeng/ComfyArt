@@ -498,3 +498,35 @@ def test_system_prompt_says_wavespeed_not_local():
     from ComfyArt.bot.guide import AGENT_GUIDE
     assert "WaveSpeed, and ComfyUI is only the host app" in AGENT_GUIDE
     assert "local ComfyUI" not in AGENT_GUIDE
+
+
+class TestPruneScreenshots233:
+    """#233: only the latest 2 tool screenshots per round reach the LLM; older ones become a text line."""
+
+    @staticmethod
+    def _shot(name, *urls):
+        return {"role": "user", "content": [{"type": "text", "text": f"Images returned by {name}:"},
+                                            *({"type": "image_url", "image_url": {"url": u}} for u in urls)]}
+
+    def test_keeps_latest_two_and_placeholders_older(self):
+        from ComfyArt.bot.local_llm import _prune_screenshots
+        user = {"role": "user", "content": [{"type": "text", "text": "hi"},
+                                            {"type": "image_url", "image_url": {"url": "data:att"}}]}
+        msgs = [{"role": "system", "content": "s"}, user,
+                self._shot("a", "u1"), {"role": "tool", "content": "r"},
+                self._shot("b", "u2", "u3"), self._shot("c", "u4")]
+        out = _prune_screenshots(msgs)
+        urls = [p["image_url"]["url"] for m in out if isinstance(m.get("content"), list)
+                for p in m["content"] if p.get("type") == "image_url"]
+        assert urls == ["data:att", "u3", "u4"]
+        texts = [p["text"] for m in out[2:] if isinstance(m.get("content"), list)
+                 for p in m["content"] if p.get("type") == "text"]
+        assert texts.count("[older screenshot omitted]") == 2
+        # the stored history is not mutated
+        assert msgs[2]["content"][1]["image_url"]["url"] == "u1"
+        assert len(out) == len(msgs) and out[3] is msgs[3]
+
+    def test_noop_with_two_or_fewer(self):
+        from ComfyArt.bot.local_llm import _prune_screenshots
+        msgs = [self._shot("a", "u1"), self._shot("b", "u2")]
+        assert _prune_screenshots(msgs) == msgs

@@ -248,6 +248,34 @@ def _user_content(text: str, attachments: Optional[list[dict]]):
     return [{"type": "text", "text": text}, *images]
 
 
+KEEP_SCREENSHOTS = 2  # #233: only the latest N tool screenshots go to the LLM each round
+_TOOL_IMAGES_PREFIX = "Images returned by "
+
+
+def _prune_screenshots(messages: list[dict], keep: int = KEEP_SCREENSHOTS) -> list[dict]:
+    """Return a copy of `messages` where only the newest `keep` tool-returned images stay; each older
+    one becomes a one-line text placeholder. The user's own attachments are never touched, and the
+    stored history (`messages` itself) is left as is, so a later round can still prune correctly."""
+    seen = 0
+    out: list[dict] = [None] * len(messages)  # type: ignore[list-item]
+    for i in range(len(messages) - 1, -1, -1):
+        m = messages[i]
+        c = m.get("content")
+        if (m.get("role") != "user" or not isinstance(c, list) or not c
+                or not str(c[0].get("text", "")).startswith(_TOOL_IMAGES_PREFIX)):
+            out[i] = m
+            continue
+        parts = []
+        for part in reversed(c):
+            if part.get("type") == "image_url":
+                seen += 1
+                if seen > keep:
+                    part = {"type": "text", "text": "[older screenshot omitted]"}
+            parts.append(part)
+        out[i] = {**m, "content": parts[::-1]}
+    return out
+
+
 class LocalLlmProvider(AgentProvider):
     id = "local-llm"
     label = "Local LLM"
@@ -516,7 +544,7 @@ class LocalLlmProvider(AgentProvider):
                         data = await self._llm_request(
                             session, f"{base}/chat/completions", {
                                 "model": model,
-                                "messages": messages,
+                                "messages": _prune_screenshots(messages),
                                 **({"tools": tools, "tool_choice": "auto"} if tools else {}),
                                 "temperature": 0.2,
                             }, emit, handle)
@@ -613,7 +641,7 @@ class LocalLlmProvider(AgentProvider):
                         if images:
                             messages.append({"role": "user", "content": [
                                 {"type": "text",
-                                 "text": f"Images returned by {name}:"},
+                                 "text": f"{_TOOL_IMAGES_PREFIX}{name}:"},
                                 *({"type": "image_url", "image_url": {"url": u}}
                                   for u in images),
                             ]})
