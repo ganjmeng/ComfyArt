@@ -197,7 +197,9 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
             state.last_persist = now
             chat_store.update_message(chat_id, state.message_id, blocks=state.blocks)
 
-    history = None if provider.capabilities().stateful else _replay_history(chat_id, state.message_id)
+    # #238: external CLIs keep their own resumed session, but a cold start still needs
+    # this history so the same token budget can be applied. They ignore it when resuming.
+    history = _replay_history(chat_id, state.message_id)
 
     comfy_mcp_argv = _comfy_mcp_argv()
     paid_guard.begin_turn(chat_id, text=text,

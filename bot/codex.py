@@ -22,6 +22,7 @@ from ._cli_common import (
     run_cli_turn,
     run_command,
 )
+from .external_context import apply_cold_start
 from .guide import AGENT_GUIDE
 from .providers import (
     AgentProvider,
@@ -372,6 +373,7 @@ class CodexCodeProvider(AgentProvider):
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
         home = self._resolve_home()
+        turn = apply_cold_start(turn)
         argv, temp_files = self._build_argv(turn, home)
         try:
             return await run_cli_turn(

@@ -19,7 +19,8 @@ SUPPORTED_PROTOCOL_VERSIONS = ("2024-11-05", "2025-03-26", "2025-06-18")
 DEFAULT_PROTOCOL_VERSION = "2025-06-18"
 
 INSTRUCTIONS = (
-    "Window into ComfyArt, a design canvas running on this ComfyUI. Call "
+    "Window into ComfyArt, a design canvas. Images, videos and audio are generated "
+    "by cloud models called through WaveSpeed, and ComfyUI is only the host app. Call "
     "get_canvas first. Every canvas tool is executed by the open ComfyArt page "
     "of the project; without that browser tab they fail with a timeout. "
     "Generation tools return ids at once: wait_generation on them, then "
@@ -63,7 +64,7 @@ def _payload_to_content(payload) -> list[dict]:
     return blocks
 
 
-async def _tools_call(params: dict) -> dict | None:
+async def _tools_call(params: dict, *, external: bool = False) -> dict | None:
     name = params.get("name")
     spec = TOOLS.get(name)
     if spec is None or not _tool_visible(name):
@@ -72,15 +73,20 @@ async def _tools_call(params: dict) -> dict | None:
     if not isinstance(arguments, dict):
         arguments = {}
     chat_id = BOT_CHAT_ID.get()
-    # #142: paid cap + product-reference check, for every provider, before the run is submitted
-    refused = paid_guard.before_call(chat_id, name, arguments) if chat_id else None
+    # #142: paid cap + product-reference check, for every provider, before the run is submitted.
+    # #238: external CLIs also hit the shared step cap here. The built-in agent sends the
+    # internal header and keeps counting steps in its own loop.
+    refused = paid_guard.before_call(chat_id, name, arguments, external=external) if chat_id else None
     if refused:
         return {"content": [{"type": "text", "text": refused}], "isError": True}
     try:
         payload = await spec["handler"](arguments)
         if chat_id:
             paid_guard.after_call(chat_id, name, arguments, payload, True)
-        return {"content": _payload_to_content(payload), "isError": False}
+        content = _payload_to_content(payload)
+        if external and chat_id:
+            content = paid_guard.clip_external_screenshots(chat_id, content)
+        return {"content": content, "isError": False}
     except (ValueError, TypeError, KeyError) as e:
         return {"content": [{"type": "text", "text": f"{type(e).__name__}: {e}"}], "isError": True}
     except Exception as e:
@@ -88,7 +94,7 @@ async def _tools_call(params: dict) -> dict | None:
         return {"content": [{"type": "text", "text": f"{type(e).__name__}: {e}"}], "isError": True}
 
 
-async def _dispatch(msg: dict) -> dict | None:
+async def _dispatch(msg: dict, *, external: bool = False) -> dict | None:
     method = msg.get("method")
     msg_id = msg.get("id")
     params = msg.get("params") or {}
@@ -101,7 +107,7 @@ async def _dispatch(msg: dict) -> dict | None:
     if method == "tools/list":
         return _result(msg_id, _tools_list())
     if method == "tools/call":
-        outcome = await _tools_call(params)
+        outcome = await _tools_call(params, external=external)
         if outcome is None:
             return _error(msg_id, -32602, f"unknown tool {params.get('name')!r}")
         return _result(msg_id, outcome)
@@ -141,7 +147,7 @@ async def mcp_post(request: web.Request) -> web.Response:
     chat_token = BOT_CHAT_ID.set(chat_id if chat else "")
     project_token = PROJECT.set(chat["project"] if chat else str(request.query.get("project") or ""))
     try:
-        response = await _dispatch(msg)
+        response = await _dispatch(msg, external=not internal_request(request))
     finally:
         BOT_CHAT_ID.reset(chat_token)
         PROJECT.reset(project_token)

@@ -16,6 +16,7 @@ from ._cli_common import (
     run_cli_turn,
     run_command,
 )
+from .external_context import apply_cold_start
 from .guide import AGENT_GUIDE, COMFY_MCP_ALLOWED_TOOLS, CORE_MCP_TOOLS
 from .providers import (
     AgentProvider,
@@ -230,6 +231,7 @@ class QwenCodeProvider(AgentProvider):
         if turn.mcp_endpoint:
             await asyncio.to_thread(write_project_settings, home,
                                     turn.mcp_endpoint, turn.comfy_mcp_argv)
+        turn = apply_cold_start(turn)
         return await run_cli_turn(
             self._build_argv(turn),
             cwd=home,
