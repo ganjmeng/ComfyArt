@@ -20,6 +20,16 @@ MAKE_FRAME = """() => {
 }"""
 
 
+COLLAPSE = {"zh": "收起对话区", "en": "Collapse chat"}
+
+
+async def _canvas_visible(pg, lang, width):
+    """At <=640px the open chat covers the canvas (shell.css hides .ca-main), so collapse it first."""
+    if width <= 640 and await pg.locator(".ca-root[data-chat=open]").count():
+        await pg.locator(f".ca-agent [title='{COLLAPSE[lang]}'], .ca-agent [data-tip='{COLLAPSE[lang]}']").first.click()
+        await pg.locator(".ca-root[data-chat=closed]").wait_for(state="attached")
+
+
 async def _dismiss(pg):
     for _ in range(3):
         if await pg.locator(".ca-modal").count():
@@ -57,6 +67,7 @@ async def test_frame_toolbar_polish(app_url, fake_tools, lang, width, theme):  #
         await _dismiss(pg)
         await pg.set_viewport_size({"width": width, "height": 800})
         await pg.wait_for_function("!!window.__caEditor")
+        await _canvas_visible(pg, lang, width)
         await pg.evaluate(MAKE_FRAME)
         bar = pg.locator(".ca-toolbar--frame")
         await bar.wait_for()
@@ -68,8 +79,9 @@ async def test_frame_toolbar_polish(app_url, fake_tools, lang, width, theme):  #
         seps = bar.locator(".ca-bar__sep")
         await _check_seps(bar, theme, 2)  # frame toolbar: same count as main
         # (1) native title -> <Tip>, same text
-        btn = bar.locator("[title]").first
-        if await btn.count():
+        loc = bar.locator("[title]").first
+        if await loc.count():
+            btn = await loc.element_handle()  # pin it: once converted, "[title]" would resolve to the next one
             text = await btn.get_attribute("title")
             await btn.hover()
             tip = pg.locator(".ca-tip")
@@ -125,6 +137,7 @@ async def test_image_toolbar_separator(app_url, fake_tools, width, theme):  # no
         await _dismiss(pg)
         await pg.set_viewport_size({"width": width, "height": 800})
         await pg.wait_for_function("!!window.__caEditor")
+        await _canvas_visible(pg, "zh", width)
         await pg.evaluate(MAKE_IMAGE)
         bar = pg.locator(".ca-toolbar--image")
         await bar.wait_for()
