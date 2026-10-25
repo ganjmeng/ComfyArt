@@ -12,6 +12,7 @@ import { NoKeyNotice } from '../ui/NoKeyNotice'
 import { refreshKeyStatus } from '../wavespeedKey'
 import { isEnter } from '../ui/keys'
 import { Popover } from '../ui/Popover'
+import { ComposerSlot, useSlot } from '../ui/ComposerSlot'
 import { loadEntries, ProjectCard } from './Projects'
 
 const RECENT = 5
@@ -38,6 +39,9 @@ export function Home() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [drop, setDrop] = useState(false)
+  const [composing, setComposing] = useState(false)
+  const hasContent = !!text.trim() || refs.length > 0  // #276: an image with no text counts as content
+  const { showSend, setVoice } = useSlot(hasContent, composing)
   const input = useRef<HTMLTextAreaElement>(null)
   const file = useRef<HTMLInputElement>(null)
   const breakdown = useRef<HTMLInputElement>(null)
@@ -57,8 +61,11 @@ export function Home() {
   }, [])
 
   const send = () => {
-    if (!text.trim() || uploading) return
-    newProject({ ask: text.trim(), mode, ref: refs })
+    if (!hasContent || uploading) return
+    const ask = text.trim()
+    setText('')
+    setRefs([])
+    newProject({ ask, mode, ref: refs })
   }
   const upload = async (files: FileList | null) => {
     setUploading(true)
@@ -113,9 +120,11 @@ export function Home() {
           value={text}
           placeholder={EXAMPLES[example]}
           onChange={(e) => setText(e.target.value)}
+          onCompositionStart={() => setComposing(true)}
+          onCompositionEnd={() => setComposing(false)}
           onKeyDown={(e) => {
             if (e.key === 'Tab' && !text) { e.preventDefault(); setText(EXAMPLES[example]) }
-            if (isEnter(e) && !e.shiftKey) { e.preventDefault(); send() }
+            if (isEnter(e) && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send() }
           }}
         />
         <div className="ca-landing__foot">
@@ -135,7 +144,8 @@ export function Home() {
             </div>
           </Popover>
           <div className="ca-landing__spacer" />
-          <button type="button" className="ca-landing__send" disabled={!text.trim() || uploading} title={t('composer.send')} onClick={send}><span className="ca-icon">{Icons.send}</span></button>
+          <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={hasContent && !uploading} onSend={send} onError={setError}
+            onText={(v) => setText((cur) => `${cur}${cur ? ' ' : ''}${v}`)} />
         </div>
         <input ref={file} type="file" accept="image/*" multiple hidden onChange={(e) => { void upload(e.target.files); e.target.value = '' }} />
       </div>

@@ -23,9 +23,6 @@ body { background: var(--ca-float); }
 .ca-landing__mode { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: none; border-radius: 10px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .ca-landing__mode:hover, .ca-landing__mode[data-open] { background: var(--ca-hover); }
 .ca-landing__mode .ca-icon { width: 18px; height: 18px; }
-.ca-landing__send { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%; background: var(--ca-strong); color: var(--ca-float); cursor: pointer; }
-.ca-landing__send:disabled { opacity: .25; cursor: default; }
-.ca-landing__send .ca-icon { width: 18px; height: 18px; }
 .ca-landing__refs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .ca-landing__ref { position: relative; width: 48px; height: 48px; }
 .ca-landing__ref img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }

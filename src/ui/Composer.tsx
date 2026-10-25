@@ -20,7 +20,7 @@ import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPic
 import { AgentLogo } from './agentLogos'
 import { Icons } from './icons'
 import { ModelPrefs } from './ModelPrefs'
-import { VoiceButton, type State as VoiceState } from './VoiceButton'
+import { ComposerSlot, useSlot } from './ComposerSlot'
 import { SkillForm, skillsOpenAtom } from './SkillsDialog'
 import { Popover } from './Popover'
 import { t } from '../i18n'
@@ -110,9 +110,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   // #250 v2: one action slot on the right. Empty input → voice (waveform); text or an attached image → send (↑).
   // Whitespace-only counts as empty. The slot does not flip while an IME is composing, and stays on voice while recording.
   const [composing, setComposing] = useState(false)
-  const [voice, setVoice] = useState<VoiceState>('idle')
   const content = !!draft.trim()
-  const slotRef = useRef(false)
   const foot = useFootFit(`${mode}|${draft.length > 0}`)
 
   const shown = selected.filter((s) => !hidden.includes(s.id))
@@ -141,8 +139,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const fail = (e: unknown) => onError(errorText(e))
   const upload = (files: FileList | null) => uploadRefs(editor, Array.from(files ?? [])).catch(fail)
   const imageFiles = (list: DataTransfer) => Array.from(list.files)
-  if (!composing) slotRef.current = (content || refs.length > 0) && voice === 'idle'
-  const showSend = slotRef.current
+  const { showSend, setVoice } = useSlot(content || refs.length > 0, composing)
   const send = () => {
     const text = draft.trim()
     if ((!text && !refs.length) || agentOff) return  // #268: an image with no text counts as content
@@ -348,14 +345,9 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
         {refs.length > 1 && <EachButton compact on={each.on} onChange={each.setOn} />}
         {mode === 'agent' && !agentOff && <RefFrameButton editor={editor} />}
         {mode === 'agent' && <ModelPrefs onError={onError} />}
-        <div className="ca-composer__slotwrap" data-slot={showSend ? 'send' : 'voice'}>
-          <VoiceButton slot hidden={showSend} onState={setVoice} onError={onError} onText={(t) => draftAtom.set(`${draftAtom.get()}${draftAtom.get() ? ' ' : ''}${t}`)} />
-          {showSend && (
-            <button type="button" className="ca-gen__send ca-composer__slot" data-slot="send" disabled={!(content || refs.length > 0) || agentOff} title={busy && mode === 'agent' ? t('composer.sendQueuedAfterTheCurrent') : t('composer.send')} onClick={send}>
-              <span className="ca-icon">{Icons.send}</span>
-            </button>
-          )}
-        </div>
+        <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={(content || refs.length > 0) && !agentOff} onSend={send}
+          title={busy && mode === 'agent' ? t('composer.sendQueuedAfterTheCurrent') : t('composer.send')} onError={onError}
+          onText={(t) => draftAtom.set(`${draftAtom.get()}${draftAtom.get() ? ' ' : ''}${t}`)} />
       </div>
     </div>
   )
