@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs-site"
 PAGES = sorted(p.name for p in (DOCS / "guides").glob("*.mdx"))
 TOC = ["getting-started", "home", "models", "wavespeed-key", "canvas", "design", "generate", "image-tools",
-       "elements-mockups", "video", "audio-3d", "assets", "agent", "mcp", "custom-workflows"]
+       "elements-mockups", "video", "audio-3d", "assets", "agent", "mcp", "external-agents", "custom-workflows"]
 
 
 def _all_md():
