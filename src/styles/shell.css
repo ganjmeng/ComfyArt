@@ -296,3 +296,27 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-pickbar { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 300; gap: 10px; padding-left: 14px; }
 .ca-libpick { overflow-y: auto; padding: 8px; }
 .ca-libpick .ca-assets__grid { margin-bottom: 8px; }
+
+/* #246: agent group in the composer mode menu scrolls when many tools are detected */
+.ca-agentpick__list { display: flex; flex-direction: column; max-height: 240px; overflow-y: auto; }
+
+
+/* #246 v3: agent rows: logo | name … status | fixed ✓ column; one 32px line like main */
+.ca-agentpick__row { height: 32px; min-height: 32px; align-items: center; }
+.ca-agentpick__text { flex: 1; min-width: 0; display: flex; flex-wrap: nowrap; align-items: center; column-gap: 12px; }
+.ca-agentpick__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-agentpick__status { flex: none; margin-left: auto; color: var(--ca-muted); white-space: nowrap; }
+.ca-agentpick__check { flex: none; width: 16px; height: 16px; display: inline-flex; }
+/* not detected: dimmed by opacity only, same for every child */
+/* not detected: logo greyscale + same opacity as the name, no tile; status stays readable, 去配置 stays blue */
+.ca-agentpick__off > .ca-agentlogo { filter: grayscale(1); }
+.ca-agentpick__off > .ca-agentlogo, .ca-agentpick__off .ca-agentpick__name { opacity: .45; }
+.ca-agentpick__off:hover > .ca-agentlogo, .ca-agentpick__off:hover .ca-agentpick__name { opacity: .7; }
+.ca-agentpick__row { gap: 8px; }
+.ca-agentpick__row > .ca-icon { flex: none; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
+.ca-agentpick__setup { color: var(--ca-blue); }
+.ca-agentlogo img { display: block; width: 16px; height: 16px; }
+.ca-agentlogo__dark { display: none !important; }
+:root[data-theme="dark"] .ca-agentlogo__light { display: none !important; }
+:root[data-theme="dark"] .ca-agentlogo__dark { display: block !important; }
+.ca-agentpick { max-width: 340px; }

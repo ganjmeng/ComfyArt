@@ -5,7 +5,7 @@ import { agentModeAtom, directSettingsAtom, DOC_ACCEPT, docsAtom, draftAtom, eac
 import { EachButton, EachRole, useEach } from './EachToggle'
 import { RefFrameButton } from './RefFrameButton'
 import { placeAsset } from '../assets'
-import { botEnabledAtom, messagesAtom } from '../bot'
+import { botEnabledAtom, loadProviders, messagesAtom, providerLabel } from '../bot'
 import { VIDEO_RATIOS } from '../genOptions'
 import { errorText } from '../jobs'
 import { KIND_LABELS, libraryAtom } from '../library'
@@ -16,7 +16,8 @@ import { loadSkills, saveSkill, skillAtom, type Skill } from '../skills'
 import { AssetGrid } from './AssetPicker'
 import { ModelPill, SettingsPill } from './GenSettings'
 import { schedulesOpenAtom } from '../schedules'
-import { AgentPicker } from './AgentPicker'
+import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPicker'
+import { AgentLogo } from './agentLogos'
 import { Icons } from './icons'
 import { ModelPrefs } from './ModelPrefs'
 import { VoiceButton } from './VoiceButton'
@@ -131,6 +132,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const kitMentions = at ? library.filter((k) => k.name.toLowerCase().includes(at[1].toLowerCase()) && !kits.some((x) => x.id === k.id)).slice(0, 8) : []
   const clearAt = () => draftAtom.set(draft.slice(0, at!.index) + (at!.index ? ' ' : ''))
   const modeInfo = MODES.find(([m]) => m === mode)!
+  const agent = useCurrentAgent()
 
   return (
     <div
@@ -281,27 +283,28 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
         </Popover>
         <Popover
           open={menu === 'mode'}
-          onOpenChange={(o) => setMenu(o ? 'mode' : null)}
+          onOpenChange={(o) => { setMenu(o ? 'mode' : null); if (o) void loadProviders().catch(fail) }}
           side="top"
           trigger={({ open, toggle }) => (
-            <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' ? modeInfo[1] : undefined} data-open={open || undefined} onClick={toggle}>
-              {/* #219: in agent mode the bar needs the room for the agent name: icon + chevron only, 'Agent' on hover */}
-              <span className="ca-icon">{Icons[modeInfo[2]]}</span>{mode !== 'agent' && <span>{modeInfo[1]}</span>}<span className="ca-icon">{Icons.chevron}</span>
+            <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' && agent ? providerLabel(agent) : undefined} data-agent={mode === 'agent' && agent ? agent.id : undefined} data-open={open || undefined} onClick={toggle}>
+              {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span className="ca-menu__grow">{shortLabel(agent)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span>{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
             </button>
           )}
         >
-          <div className="ca-menu">
-            {MODES.map(([m, label, icon]) => (
+          <div className="ca-menu ca-agentpick">
+            <AgentItems onError={onError} current={mode === 'agent'} close={() => setMenu(null)} onChosen={() => agentModeAtom.set('agent')} />
+            <div className="ca-menu__sep" />
+            {MODES.filter(([m]) => m !== 'agent').map(([m, label, icon]) => (
               <button key={m} type="button" className="ca-menu__item" onClick={() => { agentModeAtom.set(m); setMenu(null) }}>
                 <span className="ca-icon">{Icons[icon]}</span><span className="ca-menu__grow">{label}</span>
                 {m === mode && <span className="ca-icon">{Icons.check}</span>}
               </button>
             ))}
+            {mode === 'agent' && <><div className="ca-menu__sep" /><AgentExtras onError={onError} close={() => setMenu(null)} /></>}
           </div>
         </Popover>
         {mode !== 'agent' && <DirectPills editor={editor} video={mode === 'video'} />}
         {refs.length > 1 && <EachButton compact on={each.on} onChange={each.setOn} />}
-        {mode === 'agent' && !agentOff && <AgentPicker onError={onError} />}
         {mode === 'agent' && !agentOff && <RefFrameButton editor={editor} />}
         {mode === 'agent' && <ModelPrefs onError={onError} />}
         <div className="ca-gen__spacer" />
