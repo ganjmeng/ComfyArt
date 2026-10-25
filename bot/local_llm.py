@@ -73,6 +73,14 @@ _CANCEL_RE = re.compile(
     r'"cancelled"\s*:\s*true|"status"\s*:\s*"declined"|已取消该生成，未扣费|'
     r"Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed|"
     r"已取消，没有扣费。|Cancelled\. Nothing was charged\.")
+# #236: image tools covered by the #133 table. Video is outside that table.
+_FALLBACK_TOOLS = frozenset({"generate_image", "edit_image", "edit_region"})
+_GUARD_RE = re.compile(
+    r"未继续扣费|no further charges|不要再提交|do not resubmit|blocked before submitting",
+    re.I)
+_MODEL_FAIL_RE = re.compile(
+    r"wavespeed|generation submit failed|unknown model|task failed|调用失败|生成失败",
+    re.I)
 _REPEAT_STOP_TEXT = {
     "zh": "任务卡在重复步骤，已停止，未继续扣费。",
     "en": "The task got stuck repeating a step and was stopped; no further "
@@ -179,6 +187,100 @@ def _retry_after(value: Optional[str]) -> Optional[float]:
         return max(0.0, float(str(value).strip())) if value else None
     except ValueError:
         return None
+
+
+def _tool_base(name: str) -> str:
+    return re.sub(r"^mcp__\w+__", "", name or "")
+
+
+def _json_obj(text: str) -> Optional[dict]:
+    body = text or ""
+    for prefix in ("[tool error] ", "[error] "):
+        if body.startswith(prefix):
+            body = body[len(prefix):]
+            break
+    try:
+        data = json.loads(body)
+    except ValueError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _payload_failed(data: dict) -> bool:
+    """A model run failed. A declined confirm or an explicit same-model refusal is not one."""
+    status = str(data.get("status") or "")
+    if status in ("declined", "cancelled") or data.get("cancelled") or data.get("same_model_retry") is False:
+        return False
+    if status in ("failed", "error"):
+        return True
+    err = data.get("error")
+    if not err or status in ("done", "running"):
+        return False
+    blob = str(err)
+    return bool(data.get("model") or data.get("model_choice") or _MODEL_FAIL_RE.search(blob))
+
+
+def model_call_failed(name: str, args: dict, text: str) -> Optional[str]:
+    """The model id that failed, '' when the payload omits it, or None when this is not a model failure.
+
+    '' means the caller should use the id from the call that started the job. A cost-confirm
+    decline and a paid-guard refusal are not model failures, so they never switch models.
+    """
+    base = _tool_base(name)
+    if base not in _FALLBACK_TOOLS and base != "wait_generation":
+        return None
+    if _CANCEL_RE.search(text or "") or _GUARD_RE.search(text or ""):
+        return None
+    data = _json_obj(text or "")
+    if base == "wait_generation":
+        if not isinstance(data, dict):
+            return None
+        bad = [r for r in data.get("results") or []
+               if isinstance(r, dict) and r.get("status") == "error" and not r.get("cancelled")]
+        if not bad:
+            return None
+        return str(bad[0].get("model") or "")
+    failed = isinstance(data, dict) and _payload_failed(data)
+    if not failed and ((text or "").startswith("[tool error]") or (text or "").startswith("[error]")):
+        failed = _MODEL_FAIL_RE.search(text or "") is not None
+    if not failed:
+        return None
+    if isinstance(data, dict):
+        mc = data.get("model_choice") if isinstance(data.get("model_choice"), dict) else {}
+        found = mc.get("model") or data.get("model") or ""
+        if found:
+            return str(found)
+    return str((args or {}).get("model") or (args or {}).get("edit_model") or "")
+
+
+def _remember_generation(gens: dict, name: str, args: dict, text: str) -> None:
+    base = _tool_base(name)
+    if base not in _FALLBACK_TOOLS or (text or "").startswith(("[tool error]", "[error]")):
+        return
+    data = _json_obj(text)
+    if not isinstance(data, dict) or data.get("error") or data.get("cancelled"):
+        return
+    if str(data.get("status") or "") in ("failed", "error", "declined", "cancelled"):
+        return
+    mc = data.get("model_choice") if isinstance(data.get("model_choice"), dict) else {}
+    model = str(mc.get("model") or data.get("model") or "")
+    call = {k: v for k, v in (args or {}).items() if k != "fallback_for"}
+    for gid in data.get("ids") or []:
+        if gid:
+            gens[str(gid)] = {"name": base, "args": call, "model": model}
+
+
+def _cost_block_note(failed: str, target: str, lang: str) -> str:
+    zh = f"未改用备用模型 {target}：再提交会超出本轮费用规则，没有用 {failed} 再次提交。"
+    en = (f"Did not switch to {target}: another submit would exceed this turn's cost rules, "
+          f"so {failed} was not submitted again.")
+    return f"{zh} / {en}" if lang == "zh" else f"{en} / {zh}"
+
+
+def _no_switch_note(failed: str, target: str, lang: str) -> str:
+    zh = f"没有同意换模型，所以没有改用 {target}，也没有用 {failed} 再次提交。"
+    en = f"The switch was not accepted, so {target} was not used and {failed} was not submitted again."
+    return f"{zh} / {en}" if lang == "zh" else f"{en} / {zh}"
 
 
 def _retry_kind(exc: BaseException) -> str:
@@ -1190,7 +1292,10 @@ class LocalLlmProvider(AgentProvider):
         paid = [it for it in parsed if it["name"] in PAID_TOOLS]
         chunks: list[Optional[list]] = [None] * len(parsed)
 
+        ran: list[int] = []
+
         async def run_mcp(i: int) -> None:
+            ran.append(i)
             chunks[i] = await self._emit_mcp(
                 parsed[i], session=session, turn=turn, emit=emit, handle=handle,
                 done=done, lang=lang, skill_cache=skill_cache, llm_model=llm_model)
@@ -1256,6 +1361,14 @@ class LocalLlmProvider(AgentProvider):
         for ch in chunks:
             if ch:
                 messages.extend(ch)
+        for i in ran:  # #236: one fallback per failed model call, after its result is in the transcript
+            it, ch = parsed[i], chunks[i]
+            if handle.stop_requested or not ch or it["cached"] or it["args"].get("fallback_for"):
+                continue
+            await self._maybe_model_fallback(
+                session, turn.mcp_endpoint, handle, emit, lang, messages, done,
+                turn.chat_id, it["name"], it["args"], str(ch[0].get("content") or ""),
+                loop["gens"])
         if decision == "cancel":
             text = quote.cancel_text if quote else CANCEL_TEXT[lang_key]
             await emit(BotEvent(t="delta", text=text))
@@ -1263,6 +1376,117 @@ class LocalLlmProvider(AgentProvider):
         if tripped:
             return TurnResult(usage=usage, error=_stop_summary(done, lang))
         return None
+
+    async def _speak(self, messages: list[dict], emit: EmitFn, text: str) -> None:
+        """Put one line in the reply and in the transcript. It names the model and why nothing else ran."""
+        messages.append({"role": "user", "content": text + " Do not submit the failed model again."})
+        await emit(BotEvent(t="delta", text=text))
+
+    async def _run_fallback_tool(self, session: aiohttp.ClientSession, endpoint: str,
+                                 emit: EmitFn, lang: str, messages: list[dict], done: list[str],
+                                 name: str, args: dict) -> str:
+        base = _tool_base(name)
+        tc_id = f"fb-{base}-{len(messages)}"
+        messages.append({"role": "assistant", "content": None, "tool_calls": [{
+            "id": tc_id, "type": "function",
+            "function": {"name": base, "arguments": json.dumps(args, ensure_ascii=False)},
+        }]})
+        await emit(BotEvent(t="tool_use", name=base, input=args, id=tc_id))
+        images: list[str] = []
+        try:
+            result_text, images = await self._mcp_call_tool(session, endpoint, base, args)
+        except _NET_ERRORS as e:
+            result_text = f"[error] {type(e).__name__}: {e}"
+        if len(result_text) > TOOL_RESULT_CAP:
+            result_text = (result_text[:TOOL_RESULT_CAP]
+                           + f"\n…[truncated {len(result_text) - TOOL_RESULT_CAP} chars]")
+        detail = "cancelled" if _CANCEL_RE.search(result_text) else ""
+        messages.append({"role": "tool", "tool_call_id": tc_id, "content": result_text})
+        await emit(BotEvent(t="tool_result", name=base, text=result_text, id=tc_id,
+                            is_error=result_text.startswith(("[tool error]", "[error]")),
+                            detail=detail))
+        done.append(_step_label(base, args, lang))
+        if images:
+            messages.append({"role": "user", "content": [
+                {"type": "text", "text": f"Images returned by {base}:"},
+                *({"type": "image_url", "image_url": {"url": u}} for u in images),
+            ]})
+        return result_text
+
+    async def _confirm_fallback(self, session: aiohttp.ClientSession, endpoint: str,
+                                emit: EmitFn, lang: str, messages: list[dict], done: list[str],
+                                failed: str, target: str) -> bool:
+        """#236: a paid fallback asks first. Anything other than an explicit yes does not submit."""
+        zh = lang == "zh"
+        prompt = (f"「{failed}」调用失败。要按对应表改用备用模型「{target}」再试一次吗？"
+                  f"仍会走现有费用确认，不会用同一模型再提交。" if zh else
+                  f"{failed} failed. Switch to the fallback model {target} from the table and try once? "
+                  f"The usual cost check still applies, and the same model will not be submitted again.")
+        args = {"prompt": prompt, "options": [
+            {"id": "yes", "label": "换备用模型" if zh else "Use the fallback"},
+            {"id": "no", "label": "不换" if zh else "Don't switch"},
+        ], "min_selections": 1, "max_selections": 1, "allow_other": False}
+        text = await self._run_fallback_tool(
+            session, endpoint, emit, lang, messages, done, "ask_user", args)
+        data = _json_obj(text) or {}
+        return data.get("status") == "answered" and "yes" in (data.get("selected") or [])
+
+    async def _maybe_model_fallback(self, session: aiohttp.ClientSession, endpoint: str,
+                                    handle: TurnHandle, emit: EmitFn, lang: str,
+                                    messages: list[dict], done: list[str], chat_id: str,
+                                    name: str, args: dict, result_text: str,
+                                    gens: dict) -> None:
+        """#236: on a model failure, switch once to the #133 backup. Never the same paid model."""
+        if handle.stop_requested or not endpoint or (args or {}).get("fallback_for"):
+            return
+        _remember_generation(gens, name, args, result_text)
+        signal = model_call_failed(name, args, result_text)
+        if signal is None:
+            return
+        base = _tool_base(name)
+        if base == "wait_generation":
+            data = _json_obj(result_text) or {}
+            bad = [r for r in data.get("results") or []
+                   if isinstance(r, dict) and r.get("status") == "error" and not r.get("cancelled")]
+            if not bad:
+                return
+            info = gens.get(str(bad[0].get("id") or ""))
+            if not info or not info.get("name"):
+                return
+            tool, call_args = info["name"], dict(info["args"])
+            failed = signal or str(info.get("model") or "")
+        else:
+            tool = base
+            call_args = {k: v for k, v in args.items() if k != "fallback_for"}
+            failed = signal or str(args.get("model") or args.get("edit_model") or "")
+        if not failed:
+            from ..api.mcp_tools.canvas import _auto_choice
+            picked = _auto_choice(tool, call_args)
+            failed = str(picked["model"]) if picked else ""
+        if not failed or not tool:
+            return
+        from ..api.mcp_tools.canvas import _fallback_choice
+        choice = _fallback_choice(tool, call_args, failed)
+        if not choice or choice["model"] == failed:
+            _log.warning("[ComfyArt/local-llm] no distinct #133 fallback for %s; not submitting it again", failed)
+            return
+        target = str(choice["model"])
+        from ..api.paid_guard import fallback_allowed
+        if not fallback_allowed(chat_id, tool, call_args):
+            _log.warning("[ComfyArt/local-llm] fallback to %s blocked by the cost rules", target)
+            await self._speak(messages, emit, _cost_block_note(failed, target, lang))
+            return
+        if tool in PAID_TOOLS:
+            agreed = await self._confirm_fallback(
+                session, endpoint, emit, lang, messages, done, failed, target)
+            if handle.stop_requested or not agreed:
+                if not handle.stop_requested:
+                    await self._speak(messages, emit, _no_switch_note(failed, target, lang))
+                return
+        text = await self._run_fallback_tool(
+            session, endpoint, emit, lang, messages, done, tool,
+            {**call_args, "fallback_for": failed})
+        _remember_generation(gens, tool, {**call_args, "fallback_for": failed}, text)
 
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
@@ -1302,7 +1526,8 @@ class LocalLlmProvider(AgentProvider):
                 lang = (turn.lang if turn.lang in ("zh", "en")
                         else _reply_lang(turn.user_text))
                 skill_cache: dict[str, str] = {}
-                loop = {"repeat": 0, "last_key": "", "cache_hits": 0}
+                gens: dict[str, dict] = {}
+                loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens}
                 gate = _PlanGate()
                 limit = self._max_steps()
                 for _ in range(limit):
