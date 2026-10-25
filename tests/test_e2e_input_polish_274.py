@@ -39,7 +39,7 @@ async def test_input_bar_polish(app_url, fake_tools, monkeypatch, width):  # noq
         assert abs(m["plusToMode"] - 6) <= 0.5, m  # + → mode 4 → 6
         assert m["modeGap"] == "6px" and m["modePad"] == ["6px", "6px"], m
         assert abs(m["modeIconText"] - 6) <= 0.5 and abs(m["modeTextArrow"] - 6) <= 0.5, m  # mode icon → text → arrow 2 → 6
-        assert m["pillGaps"] == ["4px", "4px"], m  # model / settings text → arrow 2 → 4
+        assert m["pillGaps"] == ["4px"], m  # settings text → arrow 2 → 4 (#287: model is a 32px icon button, no text/arrow)
         assert m["slot"][:2] == [32, 32] and m["glyph"] == [16, 16], m  # glyph 18 → 16, button stays 32
         assert m["slot"][2] == "rgb(255, 255, 255)" and m["slot"][3] == "rgb(17, 17, 17)", m  # dark: white circle, black icon
         assert max(m["tops"]) - min(m["tops"]) <= 1, m  # still one row (360 included)
