@@ -15,10 +15,11 @@ export function placePopover(a: Rect, p: { width: number; height: number }, view
   const room = (s: 'top' | 'bottom') => (s === 'top' ? above : below)
   const fit = order.find((s) => room(s) >= p.height)
   if (fit) return { left, top: fit === 'top' ? a.top - GAP - p.height : a.bottom + GAP }
-  // #287 (home): neither side fits → centre in the window, height capped to window - 64, scroll inside
+  // #287 (home): neither side fits → the roomier side (down on ties), capped to min(room, window - 64), scrolls inside
   if (viewportCap) {
-    const maxHeight = Math.max(view.height - 64, 0)
-    return { left, top: Math.max((view.height - Math.min(p.height, maxHeight)) / 2, 32), maxHeight }
+    const down = below >= above
+    const maxHeight = Math.max(Math.min(down ? below : above, view.height - 64), 0)
+    return { left, top: down ? a.bottom + GAP : a.top - GAP - maxHeight, maxHeight }
   }
   const s = above > below ? 'top' : 'bottom'
   const h = Math.max(room(s), 0)
