@@ -17,18 +17,31 @@ def test_popover_placement_stays_in_viewport(tmp_path):
     out = tmp_path / "p.mjs"
     subprocess.run([str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/rolldown.config.mjs"], cwd=ROOT, check=True,
                    capture_output=True, env={**os.environ, "OUT": str(out), "ENTRY": "popover_place.ts"})
-    fits, flips, below, above, pinned = json.loads(subprocess.run(["node", str(out)], check=True, capture_output=True, text=True).stdout)
+    data = json.loads(subprocess.run(["node", str(out)], check=True, capture_output=True, text=True).stdout)
+    fits, flips, below, above, pinned = data["placePopover"]
     assert fits == {"left": 772, "top": 80} and flips["top"] == 700 - 8 - 300 and "maxHeight" not in flips
     assert below["top"] == 80 and below["maxHeight"] == 800 - 8 - 80
     assert above["maxHeight"] == 740 - 16 and above["top"] == 8
     assert pinned == {"left": 772, "top": 8, "maxHeight": 184}
     for p in (below, above):  # whole panel, so the last item (Fill Artboard) can be scrolled to
         assert p["top"] >= 8 and p["top"] + p["maxHeight"] <= 792
+    # #253: image-toolbar More menu — one scroll layer on .ca-pop via placeBarMenu
+    down, up, short = data["placeBarMenu"]
+    assert down == {"left": 969, "top": 241, "maxHeight": 543}  # 4px below bar, right=btn.right, height=min(736, 800-241-16)
+    assert up["top"] + up["maxHeight"] == 620 - 4 and up["maxHeight"] == min(800 - 64, 620 - 4 - 16)  # flipped up
+    assert up["left"] == 969
+    assert short["top"] == 168 and short["maxHeight"] == min(500 - 64, 500 - 168 - 16)  # short window opens down
 
 
 def test_popover_scrolls_when_capped():
     src = (ROOT / "src/ui/Popover.tsx").read_text()
     assert "placePopover(" in src and "overflowY: 'auto'" in src and "scrollHeight" in src
+    assert "placeBarMenu" in src and 'bar?: string' in src
+    assert 'bar=".ca-toolbar"' in (ROOT / "src/ui/ImageToolbar.tsx").read_text()
+    css = (ROOT / "src/styles/base.css").read_text()
+    # only .ca-pop scrolls; .ca-menu--image must not re-cap height (#253 double-scroll regression)
+    assert "max-height: calc(100vh - 64px)" not in css
+    assert ".ca-menu--image { max-height" not in css
 
 
 def test_home_shows_existing_no_key_notice_on_open():
