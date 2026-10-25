@@ -155,12 +155,24 @@ async def test_quote_equals_charge(catalog, tool, model):
     EXECUTED.add((tool, model))
 
 
+def _duration_ok(model: str, value: int) -> bool:
+    """Recorded schema has a duration field that accepts `value`: enum contains it, min<=value<=max, or unconstrained."""
+    props = wavespeed._schema(FIXTURE.get(model) or {}).get("properties") or {}
+    if "duration" not in props:
+        return False
+    d = props["duration"] or {}
+    if d.get("enum") is not None:
+        return value in d["enum"]
+    lo, hi = d.get("minimum"), d.get("maximum")
+    return (lo is None or lo <= value) and (hi is None or value <= hi)
+
+
 def tier_cases(per_tool: int = 2):
     """Fixed pick: the first `per_tool` models (config order) of each duration tool whose recorded schema has duration."""
     out = []
     for tool in DURATION_TOOLS:
         picked = [c for c in cases() if c.values[0] == tool and not c.marks
-                  and "duration" in json.dumps(FIXTURE.get(c.values[1]) or {})][:per_tool]
+                  and _duration_ok(c.values[1], 5) and _duration_ok(c.values[1], 10)][:per_tool]
         out += [pytest.param(*c.values, id=f"{tool}:{c.values[1]}") for c in picked]
     return out
 
@@ -207,8 +219,7 @@ def test_coverage_counts_only_executed_cases():
     # runs last in this file: only cases that passed the schema gate and finished count as covered
     all_cases = cases()
     skipped = [c.id for c in all_cases if c.marks]
-    if not EXECUTED:
-        pytest.skip("test_quote_equals_charge was not run in this session")
+    assert EXECUTED, "no test_quote_equals_charge case executed (all skipped, or not run before this test)"
     covered = {t for t, _ in EXECUTED}
     print(f"\n#203 coverage: {len(EXECUTED)}/{len(all_cases)} cases executed, {len(skipped)} skipped (no recorded schema): {skipped}")
     assert covered == set(TOOLS), f"tools with 0 executed cases: {sorted(set(TOOLS) - covered)}"
