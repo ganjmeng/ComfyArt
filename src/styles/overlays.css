@@ -449,7 +449,9 @@
 
 /* #283 toolbar polish (design polish-v1, e1016b9) — all selection toolbars match the image toolbar (#244/#262).
    Separators are KEPT at main's positions; only their style follows the reference spec (EL version A): 1 device px, near full height. */
-.ca-toolbar .ca-bar__sep { align-self: stretch; width: 1px; margin: 1px 6px; background: #EFEFEF; transform: scaleX(.5); flex: none; }
+/* #283 version A: full-height pale hairline, 1 physical px, ~1px top/bottom, ~10px left/right */
+.ca-toolbar .ca-bar__sep { align-self: stretch; width: 1px; margin: 1px 10px; background: #EFEFEF; flex: none; }
+@media (min-resolution: 2dppx) { .ca-toolbar .ca-bar__sep { transform: scaleX(.5); } }
 :root[data-theme="dark"] .ca-toolbar .ca-bar__sep { background: rgba(255,255,255,.08); }
 .ca-toolbar { gap: 4px; }
 .ca-toolbar .ca-panel__chips { gap: 4px; flex-wrap: nowrap; }

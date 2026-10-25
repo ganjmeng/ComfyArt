@@ -27,12 +27,31 @@ async def _dismiss(pg):
             await pg.wait_for_timeout(300)
 
 
+SEP = """e => { const c = getComputedStyle(e), r = e.getBoundingClientRect(), p = e.parentElement.getBoundingClientRect()
+  return { bg: c.backgroundColor, phys: r.width * devicePixelRatio, ml: parseFloat(c.marginLeft), mr: parseFloat(c.marginRight),
+    top: r.top - p.top, bottom: p.bottom - r.bottom, h: r.height, ph: p.height } }"""
+SEP_BG = {"light": "rgb(239, 239, 239)", "dark": "rgba(255, 255, 255, 0.08)"}
+
+
+async def _check_seps(bar, theme, expected):
+    """#283 version A: count/positions as main; 1 physical px, #EFEFEF / white 8%, near full height, ~10px each side."""
+    seps = bar.locator(".ca-bar__sep")
+    assert await seps.count() == expected
+    for i in range(expected):
+        st = await seps.nth(i).evaluate(SEP)
+        assert st["bg"] == SEP_BG[theme], st
+        assert abs(st["phys"] - 1) < 0.05, st  # exactly one device pixel wide
+        assert 8 <= st["ml"] <= 12 and 8 <= st["mr"] <= 12, st  # ~10px left/right
+        assert st["h"] >= st["ph"] - 12 and st["top"] <= 6 and st["bottom"] <= 6, st  # near full height
+
+
+@pytest.mark.parametrize("theme", ["light", "dark"])
 @pytest.mark.parametrize("width", [1280, 360])
 @pytest.mark.parametrize("lang", ["zh", "en"])
-async def test_frame_toolbar_polish(app_url, fake_tools, lang, width):  # noqa: F811
+async def test_frame_toolbar_polish(app_url, fake_tools, lang, width, theme):  # noqa: F811
     async with pw.async_playwright() as p:
         try:
-            browser, pg = await _page(p, app_url, lang, "light")
+            browser, pg = await _page(p, app_url, lang, theme)
         except Exception as e:
             pytest.skip(f"chromium not available: {e}")
         await _dismiss(pg)
@@ -47,9 +66,7 @@ async def test_frame_toolbar_polish(app_url, fake_tools, lang, width):  # noqa: 
         assert b["x"] >= 0 and b["x"] + b["width"] <= width + 0.5, b
         # separators kept, styled as hairlines
         seps = bar.locator(".ca-bar__sep")
-        if await seps.count():
-            st = await seps.first.evaluate("e => { const c = getComputedStyle(e); return [c.transform, c.backgroundColor] }")
-            assert st[0] != "none" and st[1] in ("rgb(239, 239, 239)",), st
+        await _check_seps(bar, theme, 2)  # frame toolbar: same count as main
         # (1) native title -> <Tip>, same text
         btn = bar.locator("[title]").first
         if await btn.count():
@@ -80,4 +97,39 @@ async def test_menu_padding_scoped(app_url, fake_tools):  # noqa: F811
           return [mk('ca-menu'), mk('ca-menu ca-menu--bar')]
         }""")
         assert pads == ["0px 10px", "6px 8px"], pads
+        await browser.close()
+
+
+MAKE_IMAGE = """() => {
+  const ed = window.__caEditor
+  const c = document.createElement('canvas'); c.width = 64; c.height = 64
+  const g = c.getContext('2d'); g.fillStyle = '#c66'; g.fillRect(0, 0, 64, 64)
+  const assetId = 'asset:e2e283'
+  ed.createAssets([{ id: assetId, typeName: 'asset', type: 'image', meta: {},
+    props: { name: 'e2e.png', src: c.toDataURL('image/png'), w: 640, h: 480, mimeType: 'image/png', isAnimated: false } }])
+  ed.createShape({ type: 'image', x: 0, y: 0, props: { assetId, w: 640, h: 480 } })
+  const s = ed.getCurrentPageShapes().find((s) => s.type === 'image')
+  ed.select(s.id); ed.zoomToSelection()
+}"""
+
+
+@pytest.mark.parametrize("theme", ["light", "dark"])
+@pytest.mark.parametrize("width", [1280, 360])
+async def test_image_toolbar_separator(app_url, fake_tools, width, theme):  # noqa: F811
+    """#283 version A: the image toolbar gets its upstream 5231d59 separator back (tools | download), hairline spec."""
+    async with pw.async_playwright() as p:
+        try:
+            browser, pg = await _page(p, app_url, "zh", theme)
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
+        await _dismiss(pg)
+        await pg.set_viewport_size({"width": width, "height": 800})
+        await pg.wait_for_function("!!window.__caEditor")
+        await pg.evaluate(MAKE_IMAGE)
+        bar = pg.locator(".ca-toolbar--image")
+        await bar.wait_for()
+        await pg.wait_for_timeout(300)
+        await _check_seps(bar, theme, 1)
+        # the separator sits right before the last control (download)
+        assert await bar.evaluate("b => { const k = [...b.children]; return k.indexOf(b.querySelector(':scope > .ca-bar__sep')) === k.length - 2 }")
         await browser.close()

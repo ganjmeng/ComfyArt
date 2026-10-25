@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { ALL_TOOLS, DEFAULT_PINNED, MENU_GEN, MENU_MAIN, MORE_TOOLS, isFixed, migratePrefs, withFixed, type BarPrefs } from './toolbarPrefs'
-import { createPortal } from 'react-dom'
 import { atom, useEditor, useValue, type Editor, type TLImageShape } from 'tldraw'
 
+import { createPortal } from 'react-dom'
 import { Tip } from './Tip'
 import * as actions from '../actions'
 import { extractText } from '../agent'
@@ -251,7 +251,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
         </div>
         )}
       </Popover>
-      <div className="ca-bar__sep" />{/* #283: upstream 5231d59 grouping: tools | download */}
+      <div className="ca-bar__sep" />{/* #283 version A (supersedes #244): upstream 5231d59 grouping, tools | download */}
       <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
       {customize && createPortal(<CustomizeDialog tools={tools} onClose={() => setCustomize(false)} />, document.body)}
     </div>
