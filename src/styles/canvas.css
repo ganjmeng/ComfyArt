@@ -126,7 +126,9 @@
   font: inherit;
   cursor: pointer;
 }
-.ca-gen__chip { height: 36px; border-radius: 999px; }
+.ca-gen__chip { height: 36px; border-radius: 999px; min-width: 0; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* #270: labels never wrap */
+:lang(en) .ca-gen__chip { font-size: 12px; padding: 0 2px; } /* #270: long English chip labels fit without truncation */
+.ca-gen__label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ca-gen__ratio {
   display: flex;
   flex-direction: column;
