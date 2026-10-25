@@ -1247,6 +1247,16 @@
   "botSettings.localLlmModelHint": "e.g. deepseek/deepseek-v4.1-flash-1017; also used when the model list can't be fetched",
   "agentPicker.builtinAgentShort": "ComfyArt",
   "agentSetup.setUp": "Set up",
+  "agentSetup.title": "External agents",
+  "agentSetup.desc": "Use an agent installed on your computer to work on the canvas.",
+  "agentSetup.connected": "Connected",
+  "agentSetup.install": "Install",
+  "agentSetup.officialDocs": "Official docs",
+  "agentSetup.connect": "Connect to ComfyArt",
+  "agentSetup.copy": "Copy",
+  "agentSetup.copied": "Copied",
+  "agentSetup.checkAgain": "Check again",
+  "agentSetup.viewGuide": "View guide",
   "imageToolbar.moreTools": "More Tools",
   "imageToolbar.unpin": "Unpin"
 }

@@ -300,23 +300,36 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 /* #246: agent group in the composer mode menu scrolls when many tools are detected */
 .ca-agentpick__list { display: flex; flex-direction: column; max-height: 240px; overflow-y: auto; }
 
-
-/* #246 v3: agent rows: logo | name … status | fixed ✓ column; one 32px line like main */
-.ca-agentpick__row { height: 32px; min-height: 32px; align-items: center; }
+/* #246/#247: logo | name … | right column shared by 去配置 and ✓ (same vertical edge) */
+.ca-agentpick__row { height: 32px; min-height: 32px; align-items: center; gap: 8px; }
 .ca-agentpick__text { flex: 1; min-width: 0; display: flex; flex-wrap: nowrap; align-items: center; column-gap: 12px; }
 .ca-agentpick__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ca-agentpick__status { flex: none; margin-left: auto; color: var(--ca-muted); white-space: nowrap; }
-.ca-agentpick__check { flex: none; width: 16px; height: 16px; display: inline-flex; }
-/* not detected: dimmed by opacity only, same for every child */
-/* not detected: logo greyscale + same opacity as the name, no tile; status stays readable, 去配置 stays blue */
+.ca-agentpick__check { flex: none; min-width: 52px; height: 16px; display: inline-flex; align-items: center; justify-content: flex-end; }
+/* not detected: logo greyscale + same opacity as the name; 去配置 stays blue in the check column */
 .ca-agentpick__off > .ca-agentlogo { filter: grayscale(1); }
 .ca-agentpick__off > .ca-agentlogo, .ca-agentpick__off .ca-agentpick__name { opacity: .45; }
 .ca-agentpick__off:hover > .ca-agentlogo, .ca-agentpick__off:hover .ca-agentpick__name { opacity: .7; }
-.ca-agentpick__row { gap: 8px; }
 .ca-agentpick__row > .ca-icon { flex: none; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
-.ca-agentpick__setup { color: var(--ca-blue); }
+.ca-agentpick__setup { color: var(--ca-blue); white-space: nowrap; }
 .ca-agentlogo img { display: block; width: 16px; height: 16px; }
 .ca-agentlogo__dark { display: none !important; }
 :root[data-theme="dark"] .ca-agentlogo__light { display: none !important; }
 :root[data-theme="dark"] .ca-agentlogo__dark { display: block !important; }
 .ca-agentpick { max-width: 340px; }
+/* #247: Agent settings is wider so the MCP config reads without wrapping */
+.ca-modal__card.ca-botsettings { width: min(560px, calc(100vw - 32px)); }
+.ca-agentsetup { display: flex; flex-direction: column; gap: 8px; }
+.ca-agentsetup__card { border: var(--ca-border-w) solid var(--ca-border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.ca-agentsetup__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ca-agentsetup__name { font-weight: 500; }
+.ca-agentsetup__chip { font-size: 12px; line-height: 20px; padding: 0 8px; border-radius: 10px; background: var(--ca-field); color: var(--ca-muted); }
+.ca-agentsetup__chip[data-on] { background: color-mix(in srgb, #16a34a 14%, transparent); color: #15803d; }
+:root[data-theme="dark"] .ca-agentsetup__chip[data-on] { color: #4ade80; }
+.ca-agentsetup__steps { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.ca-agentsetup__steps li > span:first-child { margin-right: 8px; }
+.ca-agentsetup__steps a, .ca-agentsetup__guide { color: var(--ca-blue); font-size: 13px; }
+.ca-agentsetup__steps a + a { margin-left: 12px; }
+.ca-agentsetup__guide { align-self: flex-start; }
+.ca-agentsetup__code { display: flex; align-items: flex-start; gap: 8px; margin-top: 4px; }
+.ca-agentsetup__code pre { flex: 1; min-width: 0; margin: 0; padding: 8px; border-radius: 6px; background: var(--ca-field); font: 11px/16px ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }

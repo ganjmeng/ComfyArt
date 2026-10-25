@@ -1,0 +1,58 @@
+---
+title: "External agents"
+description: "Use Claude Code, Codex, Qwen Code or DeepSeek Harness installed on your computer to work on the canvas."
+---
+
+Besides the built-in ComfyArt Agent, ComfyArt can drive an agent you have already installed on your computer. The same steps appear in **Agent Settings → External agents**, one card per tool.
+
+<img src="/images/ours/en/external-agents-settings.webp" alt="External agents section in Agent Settings" />
+
+## Supported tools
+
+| Tool | Official docs |
+| --- | --- |
+| Claude Code | [docs.claude.com](https://docs.claude.com/en/docs/claude-code/overview) |
+| Codex | [developers.openai.com/codex/cli](https://developers.openai.com/codex/cli) |
+| Qwen Code | [github.com/QwenLM/qwen-code](https://github.com/QwenLM/qwen-code) |
+| DeepSeek Harness | [npmjs.com/package/@deepseek-ai/dsh](https://www.npmjs.com/package/@deepseek-ai/dsh) |
+
+## What the status means
+
+- **Connected**: ComfyArt found the tool's command on this computer and can start it.
+- **Not detected**: ComfyArt cannot find the command. Install it (step 1), then click **Check again**.
+
+## Step 1: Install
+
+Open the tool's official docs from the card and follow its install and sign-in steps. Sign in once in a terminal (for example run `claude` or `codex`) so the tool is ready to use.
+
+## Step 2: Connect to ComfyArt
+
+Click **Copy** on the card to copy the MCP config and add it to the tool's MCP settings. The address on the card is the one you are using right now, so it is always correct. Per-tool commands are in [MCP server](/guides/mcp).
+
+When ComfyArt starts the agent from the mode menu, it passes this config automatically. You only need to add it yourself when you run the tool on its own in a terminal.
+
+The address depends on how you run ComfyArt:
+
+| How you run it | MCP address |
+| --- | --- |
+| As a ComfyUI plugin | `http://127.0.0.1:8188/comfyart/mcp` (use your ComfyUI address if it listens elsewhere) |
+| Standalone with `scripts/start.sh` | `http://127.0.0.1:8188/comfyart/mcp`, or the port you set with `PORT=...` |
+| Docker | `http://127.0.0.1:8188/comfyart/mcp`, or the host port you mapped with `-p` |
+
+## Step 3: Check again
+
+Click **Check again** on the card. When the status changes to **Connected**, the tool is ready.
+
+## Switch to an external agent
+
+Open the mode menu below the chat box. Connected tools can be picked directly. A tool that is not detected shows **Not detected · Set up**; clicking it opens its card in Agent Settings.
+
+<img src="/images/ours/en/external-agents-picker.webp" alt="Mode menu with tools that are not detected" />
+
+## FAQ
+
+**It says Not detected after installing.** Make sure the command runs in a new terminal (`claude --version`, `codex --version`, `qwen --version`, `dsh --version`). If you installed it after starting ComfyArt, restart ComfyArt so it sees the updated PATH, then click **Check again**.
+
+**The agent says I'm not logged in.** Run the tool once in a terminal and finish its sign-in, then send your message again.
+
+**The agent can't see the canvas.** Make sure **Enable MCP** is on in Agent Settings and the project tab is open in the browser. See [MCP server](/guides/mcp).

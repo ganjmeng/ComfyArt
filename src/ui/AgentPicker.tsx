@@ -8,6 +8,7 @@ import { Icons } from './icons'
 import { t } from '../i18n'
 
 export const botSettingsOpenAtom = atom('bot settings open', false)
+// #247: which tool card the Agent settings should scroll to when opened from 去配置
 export const agentSetupFocusAtom = atom<string | null>('agent setup focus', null)
 
 // #219: the composer bar shows a short name; the full name stays in the list and on hover
@@ -58,8 +59,8 @@ export function AgentItems({ onError, current, close, onChosen }: { onError: (ms
         // #247: an undetected tool can't be picked; the whole row (40%) opens its setup card instead
         <button key={p.id} type="button" className="ca-menu__item ca-agentpick__row ca-agentpick__off" title={t('agentPicker.notDetected')} onClick={() => { close(); agentSetupFocusAtom.set(p.id); botSettingsOpenAtom.set(true) }}>
           <AgentLogo id={p.id} />
-          <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span><span className="ca-agentpick__status"><span className="ca-agentpick__setup">{t('agentSetup.setUp')}</span></span></span>
-          <span className="ca-agentpick__check" />
+          <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span></span>
+          <span className="ca-agentpick__check"><span className="ca-agentpick__setup">{t('agentSetup.setUp')}</span></span>
         </button>
       ) : (
         <button key={p.id} type="button" className="ca-menu__item ca-agentpick__row" disabled={!p.available} title={p.detail || p.version} onClick={() => pick(p.id)}>
