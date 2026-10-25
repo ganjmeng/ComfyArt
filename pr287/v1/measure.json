@@ -1,0 +1,1100 @@
+{
+ "before-agent-closed-zh-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-agent-prefs-zh-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-closed-zh-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-model-zh-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-settings-zh-dark-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-agent-closed-zh-light-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-agent-prefs-zh-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-closed-zh-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-model-zh-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-settings-zh-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-agent-closed-en-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-agent-prefs-en-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-closed-en-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-model-en-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-settings-en-dark-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-agent-closed-en-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-agent-prefs-en-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-closed-en-light-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-model-en-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-image-settings-en-light-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "before-agent-closed-zh-dark-360": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "语音输入",
+    "x": 297,
+    "r": 329,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "after-agent-closed-zh-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "模型偏好",
+    "x": 965,
+    "r": 997,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-bar__btn ca-bar__btn--icon"
+   },
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "after-agent-prefs-zh-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "模型偏好",
+    "x": 965,
+    "r": 997,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-bar__btn ca-bar__btn--icon"
+   },
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 657,
+    "r": 997,
+    "t": 134,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-modelprefs",
+    "l": 657,
+    "r": 997,
+    "t": 134,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-image-closed-zh-dark-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "自动",
+    "x": 813.015625,
+    "r": 877.015625,
+    "w": 64,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 张",
+    "x": 883.015625,
+    "r": 997,
+    "w": 113.984375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "after-image-model-zh-dark-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "自动",
+    "x": 813.015625,
+    "r": 877.015625,
+    "w": 64,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 张",
+    "x": 883.015625,
+    "r": 997,
+    "w": 113.984375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 537.015625,
+    "r": 877.015625,
+    "t": 108,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-modelprefs ca-models",
+    "l": 537.015625,
+    "r": 877.015625,
+    "t": 108,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-image-settings-zh-dark-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "自动",
+    "x": 813.015625,
+    "r": 877.015625,
+    "w": 64,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 张",
+    "x": 883.015625,
+    "r": 997,
+    "w": 113.984375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 677,
+    "r": 997,
+    "t": 280,
+    "b": 792,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-gen__settings",
+    "l": 677,
+    "r": 997,
+    "t": 280,
+    "b": 878,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-agent-closed-zh-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "模型偏好",
+    "x": 965,
+    "r": 997,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-bar__btn ca-bar__btn--icon"
+   },
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "after-agent-prefs-zh-light-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "模型偏好",
+    "x": 965,
+    "r": 997,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-bar__btn ca-bar__btn--icon"
+   },
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 657,
+    "r": 997,
+    "t": 134,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-modelprefs",
+    "l": 657,
+    "r": 997,
+    "t": 134,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-image-closed-zh-light-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "自动",
+    "x": 813.015625,
+    "r": 877.015625,
+    "w": 64,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 张",
+    "x": 883.015625,
+    "r": 997,
+    "w": 113.984375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "after-image-model-zh-light-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "自动",
+    "x": 813.015625,
+    "r": 877.015625,
+    "w": 64,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 张",
+    "x": 883.015625,
+    "r": 997,
+    "w": 113.984375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 537.015625,
+    "r": 877.015625,
+    "t": 108,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-modelprefs ca-models",
+    "l": 537.015625,
+    "r": 877.015625,
+    "t": 108,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-image-settings-zh-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "自动",
+    "x": 813.015625,
+    "r": 877.015625,
+    "w": 64,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 张",
+    "x": 883.015625,
+    "r": 997,
+    "w": 113.984375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "语音输入",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 677,
+    "r": 997,
+    "t": 280,
+    "b": 792,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-gen__settings",
+    "l": 677,
+    "r": 997,
+    "t": 280,
+    "b": 878,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-agent-closed-en-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Model Preferences",
+    "x": 965,
+    "r": 997,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-bar__btn ca-bar__btn--icon"
+   },
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "after-agent-prefs-en-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Model Preferences",
+    "x": 965,
+    "r": 997,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-bar__btn ca-bar__btn--icon"
+   },
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 657,
+    "r": 997,
+    "t": 134,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-modelprefs",
+    "l": 657,
+    "r": 997,
+    "t": 134,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-image-closed-en-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Auto",
+    "x": 766.375,
+    "r": 833.15625,
+    "w": 66.78125,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 image(s)",
+    "x": 839.15625,
+    "r": 997,
+    "w": 157.84375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "after-image-model-en-dark-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "Auto",
+    "x": 766.375,
+    "r": 833.15625,
+    "w": 66.78125,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 image(s)",
+    "x": 839.15625,
+    "r": 997,
+    "w": 157.84375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 493.15625,
+    "r": 833.15625,
+    "t": 108,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-modelprefs ca-models",
+    "l": 493.15625,
+    "r": 833.15625,
+    "t": 108,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-image-settings-en-dark-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Auto",
+    "x": 766.375,
+    "r": 833.15625,
+    "w": 66.78125,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 image(s)",
+    "x": 839.15625,
+    "r": 997,
+    "w": 157.84375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 677,
+    "r": 997,
+    "t": 280,
+    "b": 792,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-gen__settings",
+    "l": 677,
+    "r": 997,
+    "t": 280,
+    "b": 878,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-agent-closed-en-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Model Preferences",
+    "x": 965,
+    "r": 997,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-bar__btn ca-bar__btn--icon"
+   },
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "after-agent-prefs-en-light-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "Model Preferences",
+    "x": 965,
+    "r": 997,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-bar__btn ca-bar__btn--icon"
+   },
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 657,
+    "r": 997,
+    "t": 134,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-modelprefs",
+    "l": 657,
+    "r": 997,
+    "t": 134,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-image-closed-en-light-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "Auto",
+    "x": 766.375,
+    "r": 833.15625,
+    "w": 66.78125,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 image(s)",
+    "x": 839.15625,
+    "r": 997,
+    "w": 157.84375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ },
+ "after-image-model-en-light-1280": {
+  "startMode": "Agent",
+  "right": [
+   {
+    "t": "Auto",
+    "x": 766.375,
+    "r": 833.15625,
+    "w": 66.78125,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 image(s)",
+    "x": 839.15625,
+    "r": 997,
+    "w": 157.84375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 493.15625,
+    "r": 833.15625,
+    "t": 108,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-modelprefs ca-models",
+    "l": 493.15625,
+    "r": 833.15625,
+    "t": 108,
+    "b": 232,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-image-settings-en-light-1280": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "Auto",
+    "x": 766.375,
+    "r": 833.15625,
+    "w": 66.78125,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "1K · 1:1 · 1 image(s)",
+    "x": 839.15625,
+    "r": 997,
+    "w": 157.84375,
+    "h": 32,
+    "cls": "ca-gen__pill"
+   },
+   {
+    "t": "Voice input",
+    "x": 1003,
+    "r": 1035,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ],
+  "pop": [
+   {
+    "cls": "ca-pop",
+    "l": 677,
+    "r": 997,
+    "t": 280,
+    "b": 792,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   },
+   {
+    "cls": "ca-menu ca-gen__settings",
+    "l": 677,
+    "r": 997,
+    "t": 280,
+    "b": 878,
+    "boxL": 290,
+    "boxR": 1050,
+    "boxT": 152,
+    "boxB": 285
+   }
+  ]
+ },
+ "after-agent-closed-zh-dark-360": {
+  "startMode": "ComfyArt",
+  "right": [
+   {
+    "t": "模型偏好",
+    "x": 259,
+    "r": 291,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-bar__btn ca-bar__btn--icon"
+   },
+   {
+    "t": "语音输入",
+    "x": 297,
+    "r": 329,
+    "w": 32,
+    "h": 32,
+    "cls": "ca-composer__slot ca-voice"
+   }
+  ]
+ }
+}
