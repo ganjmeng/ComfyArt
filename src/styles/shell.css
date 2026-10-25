@@ -334,5 +334,11 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-agentsetup__code { display: flex; align-items: flex-start; gap: 8px; margin-top: 4px; }
 .ca-agentsetup__code pre { flex: 1; min-width: 0; margin: 0; padding: 8px; border-radius: 6px; background: var(--ca-field); font: 11px/16px ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 
-/* #287 model button icon: vendor monogram */
-.ca-modelicon { width: 18px; height: 18px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 9.5px; font-weight: 600; letter-spacing: -.02em; line-height: 1; flex: none; }
+/* #287 model button (final spec) */
+.ca-modelbtn { width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: rgba(0,0,0,.9); }
+.ca-modelbtn .ca-icon, .ca-modelbtn .ca-icon svg { width: 18px; height: 18px; }
+.ca-modelbtn:hover, .ca-modelbtn[data-open] { background: rgba(0,0,0,.06); }
+.ca-modelbtn:active { background: rgba(0,0,0,.08); }
+[data-theme=dark] .ca-modelbtn, .dark .ca-modelbtn { color: rgba(255,255,255,.9); }
+[data-theme=dark] .ca-modelbtn:hover, [data-theme=dark] .ca-modelbtn[data-open], .dark .ca-modelbtn:hover { background: rgba(255,255,255,.06); }
+[data-theme=dark] .ca-modelbtn:active, .dark .ca-modelbtn:active { background: rgba(255,255,255,.08); }

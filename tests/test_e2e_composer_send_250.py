@@ -85,7 +85,8 @@ async def test_send_stays_in_bar(app_url, fake_tools, monkeypatch, width, lang, 
         assert not bar["settingsCut"] and not bar["midCut"], bar  # folded or iconised, never cut mid-text
         assert bar["modelW"] <= 120.5, bar
         if width >= 900:  # v2: room for the middle tier, so settings must not jump straight to the icon
-            assert next(x for x in bar["pills"] if x["pill"] == "settings")["text"] == SHORT[mode], bar
+            # #287: the model is now a 32px icon button, so settings may show in full; never jumps to icon only
+            assert next(x for x in bar["pills"] if x["pill"] == "settings")["text"].startswith(SHORT[mode]), bar
         if width == 360:
             assert all(x["text"] == "" and x["icon"] for x in bar["pills"][1:]), bar  # phone: settings and model icon only
             assert bar["pills"][0]["text"], bar  # mode keeps its text

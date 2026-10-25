@@ -64,16 +64,6 @@ export function SettingsPill({ p, video, quality, tiers, caps, update, align, wi
  * agent / feature default picks and the list is greyed), per-feature tabs and a flat list of name + one-line
  * description. The cost is only shown next to send. Quality tiers appear in the settings once a model is picked.
  */
-/** #287: the current model's icon: Auto mark, else a vendor monogram (no third-party logos are bundled for models). */
-export function ModelIcon({ model }: { model: ModelDef }) {
-  if (model.auto) return <span className="ca-icon" data-model-icon="auto">{Icons.quick}</span>
-  const v = (model.vendor || model.id.split('/')[0] || model.label).replace(/[^a-z0-9]/gi, '')
-  const mono = (v[0] ?? '?').toUpperCase() + (v[1] ?? '').toLowerCase()
-  let h = 0
-  for (const c of v) h = (h * 31 + c.charCodeAt(0)) % 360
-  return <span className="ca-modelicon" data-model-icon={v} style={{ background: `hsl(${h} 55% 45%)` }}>{mono}</span>
-}
-
 export function ModelPill({ video, model, picks, onPick, onAuto, align = 'end', within, side = 'top' }: {
   video: boolean; model: ModelDef; picks?: Record<string, string>; align?: 'start' | 'end'; within?: string; side?: 'top' | 'bottom'
   onPick: (feature: string, id: string) => void; onAuto: (on: boolean) => void
@@ -91,10 +81,10 @@ export function ModelPill({ video, model, picks, onPick, onAuto, align = 'end', 
   const selected = useCallback((el: HTMLElement | null) => el?.scrollIntoView({ block: 'nearest' }), [])
   return (
     <Popover open={open} onOpenChange={setOpen} side={side} align={align} within={within} viewportCap={side === 'bottom'} trigger={({ open: o, toggle }) => (
-      // #287 ruling: 32x32 icon button like the prefs button, showing the current model's icon; full name in the hover tip
-      <Tip label={auto ? t('common.auto') : `${model.label} (${model.id})`}>
-        <button type="button" className="ca-bar__btn ca-bar__btn--icon" data-pill="model" data-auto={auto || undefined} data-open={o || undefined} title={auto ? t('common.auto') : `${model.label} (${model.id})`} aria-label={`${t('genPanel.model')}: ${auto ? t('common.auto') : model.label}`} onClick={toggle}>
-          <ModelIcon model={model} />
+      // #287 final spec: 32x32 icon button (fixed cube), hover tip 模型偏好 · <model> / 自动
+      <Tip label={`${t('modelPrefs.modelPreferences')} · ${auto ? t('common.auto') : model.label}`}>
+        <button type="button" className="ca-bar__btn ca-bar__btn--icon ca-modelbtn" data-pill="model" data-auto={auto || undefined} data-open={o || undefined} title={`${model.label} (${model.id})`} aria-label={`${t('modelPrefs.modelPreferences')} · ${auto ? t('common.auto') : model.label}`} onClick={toggle}>
+          <span className="ca-icon">{Icons.cube}</span>
         </button>
       </Tip>
     )}>
@@ -109,12 +99,6 @@ export function ModelPill({ video, model, picks, onPick, onAuto, align = 'end', 
           {tabs.map((f) => <button key={f} type="button" className="ca-panel__chip" data-on={f === feature || undefined} onClick={() => setTab(f)}>{t(`genPanel.feature.${f}`)}</button>)}
         </div>
         {auto && <div className="ca-chat__hint">{t('genPanel.autoDesc')}</div>}
-        {/* #287: 自动 / Auto is always the first option */}
-        <button type="button" className="ca-menu__item ca-modelprefs__row" data-model-auto data-on={auto || undefined} onClick={() => { if (!auto) onAuto(true); setOpen(false) }}>
-          <span className="ca-icon">{Icons.quick}</span>
-          <span className="ca-menu__grow ca-model"><span>{t('common.auto')}</span><span className="ca-model__desc">{t('genPanel.autoDesc')}</span></span>
-          {auto && <span className="ca-icon">{Icons.check}</span>}
-        </button>
         <div className="ca-models__list" data-auto={auto || undefined} aria-disabled={auto}>
           {list.map((m) => {
             const on = !auto && m.id === current
