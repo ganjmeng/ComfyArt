@@ -117,10 +117,11 @@ async def _open_settings(app_url, p, w, h, scroll_to_bottom=False):
     await pg.goto(app_url)
     await pg.wait_for_function("document.querySelector('.ca-landing__mode')?.dataset.agent", timeout=15000)
     await _mode(pg, "图像")
-    if scroll_to_bottom:  # bar near the bottom edge: not enough room below
+    if scroll_to_bottom:  # force the bar near the bottom edge: not enough room below
+        await pg.add_style_tag(content=".ca-landing__box{transform:translateY(var(--y287,0px))}")
         await pg.evaluate("""() => { const f = document.querySelector('.ca-landing__foot');
-          let s = f.parentElement; while (s && !(s.scrollHeight > s.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(s).overflowY))) s = s.parentElement;
-          s = s || document.scrollingElement; s.scrollTop += f.getBoundingClientRect().bottom - innerHeight + 24 }""")
+          const d = innerHeight - 24 - f.getBoundingClientRect().bottom;
+          document.querySelector('.ca-landing__box').style.setProperty('--y287', d + 'px') }""")
     await pg.locator(".ca-landing__foot [data-pill=settings]").click()
     await pg.locator(".ca-pop").wait_for(timeout=5000)
     await pg.wait_for_timeout(200)
