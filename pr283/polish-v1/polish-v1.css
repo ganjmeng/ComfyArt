@@ -1,0 +1,49 @@
+/* #283 polish-v1 — mock override, style only. Load AFTER app CSS (injected by shot plan).
+   Target = image toolbar (already Lovart-aligned in #244). No DOM / copy / order changes. */
+
+/* 1. Dividers: image toolbar has none. Hide inside selection toolbars only (dock and menus untouched).
+      Neighbouring buttons then fall back to the bar's own gap: 4. */
+.ca-toolbar > .ca-bar__sep,
+.ca-toolbar .ca-bar__sep { display: none; }
+
+/* 2. Button gap 4 everywhere (the frame's chip group used 6). */
+.ca-toolbar { gap: 4px; }
+.ca-toolbar .ca-panel__chips { gap: 4px; flex-wrap: nowrap; }
+
+/* 3. Icons 20 (the text toolbar rendered 14). B/I/U are glyphs, not icons: kept at 13px. */
+.ca-toolbar .ca-bar__btn > .ca-icon,
+.ca-toolbar .ca-bar__btn--icon > .ca-icon,
+.ca-toolbar .ca-bar__btn--icon > svg { width: 20px; height: 20px; }
+.ca-toolbar .ca-pick__chev { width: 16px; height: 16px; }   /* dropdown chevron same as the image ⌄ */
+
+/* 4. Hover/active tint: linked reference button (data-on) used --ca-active (.12) → .08 like everything else. */
+.ca-toolbar .ca-bar__btn[data-on] { background: var(--ca-hover); }
+.ca-toolbar .ca-bar__btn[data-on]:hover { background: var(--ca-hover); }
+
+/* 5. ⋯ / dropdown menus opened from toolbars → image .ca-menu spec (radius 12, padding 4, rows 32, padding 6 8). */
+.ca-menu .ca-menu__item { min-height: 32px; padding: 6px 8px; border-radius: 8px; }
+
+/* 6. Frame/artboard + 参考区 */
+/* 6a. 固定/适应 chips and 自动/手动: keep them, drop the border, same 32 height and 8 radius as the bar buttons */
+.ca-toolbar .ca-panel__chip {
+  height: 32px; padding: 0 8px; border: none; border-radius: 8px; background: transparent;
+}
+.ca-toolbar .ca-panel__chip:hover { background: var(--ca-hover); }
+.ca-toolbar .ca-panel__chip[data-on] { background: var(--ca-hover); border: none; color: var(--ca-text); }
+/* 6b. swatch: the fill comes from shape data (inline style), so CSS can't change the colour itself.
+       Make it 16, square-rounded 4, with an image-toolbar-style hairline ring so pure white stops glaring. */
+.ca-toolbar:has(.ca-frame__name) .ca-tools__dot {
+  width: 16px; height: 16px; border-radius: 4px !important;
+  box-shadow: inset 0 0 0 1px var(--ca-border), 0 0 0 .5px rgba(255,255,255,.14);
+}
+:root[data-theme="dark"] .ca-toolbar:has(.ca-frame__name) .ca-tools__dot { filter: brightness(.88); }
+/* 6c. overflow at 1280: tighten only — name field 120→88, numeric fields narrower, label padding 8→6 */
+.ca-toolbar .ca-frame__name { width: 88px; padding: 0 6px; }
+.ca-toolbar .ca-num, .ca-toolbar .ca-num input { max-width: 56px; }
+.ca-toolbar .ca-num input { padding: 0 4px; }
+.ca-toolbar .ca-bar__btn:not(.ca-bar__btn--icon) { padding: 0 8px; }
+.ca-toolbar .ca-bar__btn--icon { width: 32px; }
+.ca-toolbar .ca-bar__label { padding: 0 6px; }
+
+/* 7. Tooltips: CSS can't create .ca-tip from native title= (needs the <Tip> component, JS).
+      Nothing here; listed under "needs code". */
