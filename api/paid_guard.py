@@ -160,10 +160,10 @@ class TurnGuard:
         counts: dict[str, int] = {}
         for label in self.done:
             counts[label] = counts.get(label, 0) + 1
-        items = [k + (f" ×{c}" if c > 1 else "") for k, c in counts.items()]
+        items = [k + (f" ×{c}" if c > 1 else "") for k, c in counts.items()]
         if self.lang == "zh":
             return (CAP_TEXT["zh"].format(n=self.cap) + "。已完成："
-                    + ("、".join(items) if items else "无"))
+                    + ("、".join(items) if items else "无") + "。")
         return (CAP_TEXT["en"].format(n=self.cap) + " Done so far: "
                 + (", ".join(items) if items else "nothing") + ".")
 

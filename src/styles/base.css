@@ -130,9 +130,25 @@ body { font-family: var(--ca-font); color: var(--ca-text); }
 .ca-menu__item:disabled { opacity: .4; cursor: default; background: transparent; }
 .ca-menu__grow { flex: 1; }
 .ca-menu__key { color: var(--ca-muted); padding-left: 24px; }
-/* Reusable image-menu style (image toolbar "more" menu and future submenus such as #244's). Light theme only; in dark these rules don't apply and .ca-menu renders unchanged. */
-:root:not([data-theme="dark"]) .ca-menu--image { border-width: var(--ca-border-w); max-width: 240px; box-shadow: var(--ca-shadow-menu); }
-:root:not([data-theme="dark"]) .ca-menu--image .ca-menu__item { align-items: flex-start; height: auto; min-height: 32px; padding: 6px 8px; white-space: normal; overflow-wrap: break-word; }
+/* Image toolbar "more" menu visual parity in light and dark (#244). Height/scroll live on the outer .ca-pop (placeBarMenu) — do not re-add max-height/overflow here (double-scroll). */
+.ca-menu--image { border-width: var(--ca-border-w); max-width: 240px; box-shadow: var(--ca-shadow-menu); }
+.ca-menu--image .ca-menu__item { align-items: flex-start; height: auto; min-height: 32px; padding: 6px 8px; white-space: normal; overflow-wrap: break-word; }
+
+/* #244: names-off hover tip — name + grey keycap (or name only). 28px tall, 8px below the button. */
+.ca-tip-wrap { display: contents; }
+.ca-tip {
+  position: fixed; z-index: 400; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
+  box-sizing: border-box; border-radius: 8px; border: .5px solid var(--ca-border);
+  background: var(--ca-float); color: var(--ca-text); font: 400 12px/28px var(--ca-font);
+  box-shadow: var(--ca-shadow-menu); pointer-events: none; white-space: nowrap;
+}
+.ca-tip__name { flex: none; }
+.ca-tip__key {
+  display: inline-flex; align-items: center; height: 18px; padding: 0 6px;
+  border-radius: 5px; border: .5px solid var(--ca-border); background: var(--ca-field);
+  color: var(--ca-muted); font: 500 11px/18px var(--ca-font);
+}
 
 .ca-label {
   position: absolute;

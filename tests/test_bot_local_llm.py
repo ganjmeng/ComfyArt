@@ -296,7 +296,7 @@ class TestLoopGuard:
                                        "generate_image"]
         # stop text goes out as the turn error -> red error notice in the panel
         assert result.error == ("任务卡在重复步骤，已停止，未继续扣费。"
-                                "已完成：技能、生成图像 ×2")
+                                "已完成：技能、生成图像 ×2。")
         assert not any(e.t == "delta" for e in events)
 
     async def test_stop_message_follows_ui_language_en(self, monkeypatch):
@@ -308,7 +308,7 @@ class TestLoopGuard:
         assert result.error == (
             "The task got stuck repeating a step and was stopped; no further "
             "charges. Done so far: Read skill: poster-design, "
-            "Generate image ×2.")
+            "Generate image ×2.")
         assert result.error.startswith(
             "The task got stuck repeating a step and was stopped; no further "
             "charges.")
@@ -319,7 +319,7 @@ class TestLoopGuard:
         result, events, llm, mcp = await self._run(
             monkeypatch, [read, gen, gen, gen], user_text="poster", lang="zh")
         assert result.error == ("任务卡在重复步骤，已停止，未继续扣费。"
-                                "已完成：读取技能：海报设计、生成图像 ×2")
+                                "已完成：读取技能：海报设计、生成图像 ×2。")
 
     async def test_no_ui_language_falls_back_to_message_text(self, monkeypatch):
         gen = ("generate_image", {"prompt": "cat"})
@@ -337,7 +337,7 @@ class TestLoopGuard:
         assert [x[1]["name"] for x in mcp] == ["poster", "social"]
         assert [e.t for e in events].count("tool_use") == 4
         # done list: only reads that actually ran, cached ones not counted
-        assert result.error.endswith("已完成：读取技能：poster、读取技能：social")
+        assert result.error.endswith("已完成：读取技能：poster、读取技能：social。")
 
     async def test_different_args_do_not_stop(self, monkeypatch):
         result, events, llm, mcp = await self._run(monkeypatch, [
@@ -385,7 +385,7 @@ class TestStepLabels:
 
     def test_empty_summary(self):
         from bot.local_llm import _stop_summary
-        assert _stop_summary([], "zh").endswith("已完成：无")
+        assert _stop_summary([], "zh").endswith("已完成：无。")
         assert _stop_summary([], "en").endswith("Done so far: nothing.")
 
 

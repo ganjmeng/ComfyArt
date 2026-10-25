@@ -195,7 +195,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
               {m.status !== 'streaming' && (
                 <div className="ca-chat__acts ca-chat__acts--bot">
                   {!busy && i === messages.length - 1 && lastUser === i - 1 && (
-                    <button type="button" className="ca-history__del" title={t('common.regenerate')} onClick={() => void resend(editor, messages[i - 1]).catch(fail)}>{Icons.replace}</button>
+                    <button type="button" className="ca-history__del" title={t('common.regenerate')} onClick={() => void resend(editor, messages[i - 1]).catch(fail)}>{Icons.resetCcw}</button>
                   )}
                   <CopyButton text={textOf(m)} />
                   <button type="button" className="ca-history__del" title={t('agentPanel.taskDetails')} onClick={() => detailsAtom.set(m.id)}>{Icons.files}</button>

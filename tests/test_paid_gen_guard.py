@@ -123,7 +123,7 @@ async def test_s8_replay_local_llm_fifth_paid_submit_is_zero(monkeypatch, submit
     error, events, llm = await _local(monkeypatch, steps)
     assert len(_paid(submits)) == 4  # the 5th paid submit never happens
     assert error.startswith(ZH_STOP)
-    assert "已完成：" in error and "生成图像 ×4" in error
+    assert "已完成：" in error and "生成图像 ×4" in error and error.rstrip().endswith("。")
     assert len(llm) == 10  # skill + 4×(gen, wait) + the refused 5th; no LLM spend after
     fifth = [e for e in events if e.t == "tool_result" and e.id == "t9"][0]
     assert fifth.text.startswith("[tool error] " + ZH_STOP)
@@ -174,7 +174,7 @@ async def test_s8_replay_claude_code_fifth_paid_submit_is_zero(bot_client, submi
 
 async def test_stop_text_follows_ui_language_en(monkeypatch, submits):
     error, *_ = await _local(monkeypatch, [_s8_gen(i, refs=["shape:src"]) for i in range(6)], lang="en")
-    assert error.startswith(EN_STOP) and "Generate image ×4" in error
+    assert error.startswith(EN_STOP) and "Generate image ×4" in error
 
 
 async def test_count_argument_counts_images(monkeypatch, submits):
