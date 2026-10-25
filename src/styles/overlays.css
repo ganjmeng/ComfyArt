@@ -417,3 +417,21 @@
   .ca-composer__mid { gap: 2px; }
   .ca-composer__mid .ca-composer__mode { gap: 2px; padding: 0 4px; }
 }
+/* #250 v2: voice and send share one 32px round slot; only the icon swaps (120ms fade). White circle, black icon */
+.ca-composer__slotwrap { display: flex; flex: none; width: 32px; height: 32px; }
+.ca-composer__slot { display: flex; align-items: center; justify-content: center; flex: none; width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%; cursor: pointer; background: #fff; color: #111; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.12); }
+.ca-composer__slot:disabled { background: #fff; color: #111; opacity: .5; }
+.ca-composer__slotwrap > [hidden] { display: none; }
+.ca-composer__slot > .ca-icon { animation: ca-slot-fade 120ms ease-out; }
+@keyframes ca-slot-fade { from { opacity: 0; } to { opacity: 1; } }
+.ca-composer__slot.ca-voice[data-state="recording"] { color: #fff; background: #e5484d; }
+.ca-composer__slot > .ca-icon { width: 18px; height: 18px; }
+
+/* #268 light theme: black circle, white icon */
+:root[data-theme="light"] .ca-composer__slot, :root[data-theme="light"] .ca-composer__slot:disabled { background: #111; color: #fff; box-shadow: none; }
+/* #268: model left, settings right — the group grows and a spacer pushes settings to the slot */
+.ca-composer__foot > .ca-composer__mid:has(> .ca-composer__pillspacer) { flex: 1 1 auto; }
+.ca-composer__mid > .ca-composer__pillspacer { flex: 1 1 0; min-width: 0; }
+.ca-composer__foot:has(> .ca-composer__mid > .ca-composer__pillspacer) > .ca-gen__spacer { flex: 0 0 0; min-width: 0; }
+/* #268: popover capped to the composer width — its content shrinks with it, never overflows */
+.ca-pop[data-fit] > * { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; }

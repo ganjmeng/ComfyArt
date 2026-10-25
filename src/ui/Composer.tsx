@@ -20,7 +20,7 @@ import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPic
 import { AgentLogo } from './agentLogos'
 import { Icons } from './icons'
 import { ModelPrefs } from './ModelPrefs'
-import { VoiceButton } from './VoiceButton'
+import { VoiceButton, type State as VoiceState } from './VoiceButton'
 import { SkillForm, skillsOpenAtom } from './SkillsDialog'
 import { Popover } from './Popover'
 import { t } from '../i18n'
@@ -58,8 +58,10 @@ function DirectPills({ editor, video }: { editor: Editor; video: boolean }) {
   }
   return (
     <>
-      <SettingsPill p={p} video={video} quality={!!model.steps} tiers={model.qualities} update={update} />
-      <ModelPill video={video} model={model} onPick={(_f, id) => update({ workflow: id })} onAuto={(on) => update({ workflow: on ? (video ? AUTO_VIDEO : AUTO_IMAGE) : agentModels(video)[0].id })} />
+      {/* #268: only + and mode sit left; model and settings group right, next to voice/send */}
+      <div className="ca-composer__pillspacer" />
+      <ModelPill video={video} model={model} onPick={(_f, id) => update({ workflow: id })} onAuto={(on) => update({ workflow: on ? (video ? AUTO_VIDEO : AUTO_IMAGE) : agentModels(video)[0].id })} align="end" within=".ca-composer" />
+      <SettingsPill p={p} video={video} quality={!!model.steps} tiers={model.qualities} update={update} align="end" within=".ca-composer" />
     </>
   )
 }
@@ -105,6 +107,12 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const [hidden, setHidden] = useState<TLShapeId[]>([])
   const [drop, setDrop] = useState(false)
   const each = useEach()
+  // #250 v2: one action slot on the right. Empty input → voice (waveform); text or an attached image → send (↑).
+  // Whitespace-only counts as empty. The slot does not flip while an IME is composing, and stays on voice while recording.
+  const [composing, setComposing] = useState(false)
+  const [voice, setVoice] = useState<VoiceState>('idle')
+  const content = !!draft.trim()
+  const slotRef = useRef(false)
   const foot = useFootFit(`${mode}|${draft.length > 0}`)
 
   const shown = selected.filter((s) => !hidden.includes(s.id))
@@ -133,9 +141,11 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const fail = (e: unknown) => onError(errorText(e))
   const upload = (files: FileList | null) => uploadRefs(editor, Array.from(files ?? [])).catch(fail)
   const imageFiles = (list: DataTransfer) => Array.from(list.files)
+  if (!composing) slotRef.current = (content || refs.length > 0) && voice === 'idle'
+  const showSend = slotRef.current
   const send = () => {
     const text = draft.trim()
-    if (!text || agentOff) return
+    if ((!text && !refs.length) || agentOff) return  // #268: an image with no text counts as content
     draftAtom.set('')
     extraRefsAtom.set([])
     kitsAtom.set([])
@@ -223,6 +233,8 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
         value={draft}
         placeholder={t('composer.describeYourDesignNeedsFor')}
         onChange={(e) => draftAtom.set(e.target.value)}
+        onCompositionStart={() => setComposing(true)}
+        onCompositionEnd={() => setComposing(false)}
         onPaste={(e) => { const files = imageFiles(e.clipboardData); if (!files.length) return; e.preventDefault(); e.stopPropagation(); void uploadRefs(editor, files).catch(fail) }}
         onKeyDown={(e) => {
           e.stopPropagation()
@@ -310,6 +322,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           open={menu === 'mode'}
           onOpenChange={(o) => { setMenu(o ? 'mode' : null); if (o) void loadProviders().catch(fail) }}
           side="top"
+          within=".ca-composer"
           trigger={({ open, toggle }) => (
             <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' && agent ? providerLabel(agent) : modeInfo[1]} data-agent={mode === 'agent' && agent ? agent.id : undefined} data-open={open || undefined} onClick={toggle}>
               {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span className="ca-menu__grow">{shortLabel(agent)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-composer__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
@@ -330,14 +343,19 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
         </Popover>
         {mode !== 'agent' && <DirectPills editor={editor} video={mode === 'video'} />}
         </div>
+        {/* #268: right group = reference / preferences (agent) or settings, next to voice/send */}
+        <div className="ca-gen__spacer" />
         {refs.length > 1 && <EachButton compact on={each.on} onChange={each.setOn} />}
         {mode === 'agent' && !agentOff && <RefFrameButton editor={editor} />}
         {mode === 'agent' && <ModelPrefs onError={onError} />}
-        <div className="ca-gen__spacer" />
-        <VoiceButton onError={onError} onText={(t) => draftAtom.set(`${draftAtom.get()}${draftAtom.get() ? ' ' : ''}${t}`)} />
-        <button type="button" className="ca-gen__send" disabled={!draft.trim() || agentOff} title={busy && mode === 'agent' ? t('composer.sendQueuedAfterTheCurrent') : t('composer.send')} onClick={send}>
-          <span className="ca-icon">{Icons.send}</span>
-        </button>
+        <div className="ca-composer__slotwrap" data-slot={showSend ? 'send' : 'voice'}>
+          <VoiceButton slot hidden={showSend} onState={setVoice} onError={onError} onText={(t) => draftAtom.set(`${draftAtom.get()}${draftAtom.get() ? ' ' : ''}${t}`)} />
+          {showSend && (
+            <button type="button" className="ca-gen__send ca-composer__slot" data-slot="send" disabled={!(content || refs.length > 0) || agentOff} title={busy && mode === 'agent' ? t('composer.sendQueuedAfterTheCurrent') : t('composer.send')} onClick={send}>
+              <span className="ca-icon">{Icons.send}</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

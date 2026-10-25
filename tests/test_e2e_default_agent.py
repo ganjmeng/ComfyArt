@@ -75,9 +75,9 @@ BAR_FITS = """() => {
     clipped: modes.some((m) => m.scrollWidth > m.clientWidth + 1) || [...foot.querySelectorAll('.ca-composer__mode[data-agent] > .ca-menu__grow')].some((m) => m.scrollWidth > m.clientWidth + 1),
     overlap: kids.some((r, i) => i > 0 && r.left < kids[i - 1].right - 0.5),
     overflow: kids.some((r) => r.right > fr.right + 0.5 || r.left < fr.left - 0.5),
-    sendInside: (() => { const r = foot.querySelector('.ca-gen__send').getBoundingClientRect(); return r.width > 0 && r.left >= fr.left - 0.5 && r.right <= fr.right + 0.5 })(),
+    sendInside: (() => { const r = foot.querySelector('.ca-composer__slotwrap > :not([hidden])').getBoundingClientRect(); return r.width > 0 && r.left >= fr.left - 0.5 && r.right <= fr.right + 0.5 })(),
     // every control except the agent-name button keeps its natural size
-    squeezed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-bar__btn, :scope > .ca-gen__send, :scope > .ca-composer__mid > .ca-pop-anchor:has(> .ca-composer__mode:not([data-agent]))')]
+    squeezed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-bar__btn, :scope > .ca-composer__slotwrap > .ca-composer__slot:not([hidden]), :scope > .ca-composer__mid > .ca-pop-anchor:has(> .ca-composer__mode:not([data-agent]))')]
       .filter((e) => e.getBoundingClientRect().width + 0.5 < e.scrollWidth || e.getBoundingClientRect().width === 0).map((e) => e.className),
   }
 }"""

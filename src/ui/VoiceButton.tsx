@@ -5,10 +5,13 @@ import { transcribe, type TranscribeQuote } from '../llm'
 import { Icons } from './icons'
 import { t } from '../i18n'
 
-type State = 'idle' | 'recording' | 'processing'
+export type State = 'idle' | 'recording' | 'processing'
 
-export function VoiceButton({ onText, onError }: { onText: (text: string) => void; onError: (msg: string) => void }) {
-  const [state, setState] = useState<State>('idle')
+/** #250 v2: `slot` renders the voice button as the round composer action slot (waveform icon), sharing its place with send.
+ *  `hidden` keeps it mounted (so a recording in flight is not lost) while send occupies the slot. */
+export function VoiceButton({ onText, onError, slot, hidden, onState }: { onText: (text: string) => void; onError: (msg: string) => void; slot?: boolean; hidden?: boolean; onState?: (s: State) => void }) {
+  const [state, setStateRaw] = useState<State>('idle')
+  const setState = (s: State) => { setStateRaw(s); onState?.(s) }
   const recorder = useRef<MediaRecorder | null>(null)
   const [quote, setQuote] = useState<TranscribeQuote | null>(null)  // #185: per-second whisper price while transcribing
 
@@ -52,13 +55,15 @@ export function VoiceButton({ onText, onError }: { onText: (text: string) => voi
     {est}
     <button
       type="button"
-      className="ca-bar__btn ca-bar__btn--icon ca-voice"
+      className={slot ? 'ca-composer__slot ca-voice' : 'ca-bar__btn ca-bar__btn--icon ca-voice'}
+      data-slot={slot ? 'voice' : undefined}
+      hidden={hidden}
       data-state={state}
       title={title}
       disabled={state === 'processing'}
       onClick={() => (state === 'recording' ? recorder.current?.stop() : void start())}
     >
-      <span className="ca-icon">{Icons.mic}</span>
+      <span className="ca-icon">{slot ? Icons.wave : Icons.mic}</span>
     </button>
     </>
   )
