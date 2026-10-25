@@ -37,15 +37,22 @@ def test_official_links_and_guide_path():
     assert "/comfyart/mcp" in SETTINGS
 
 
+def _off_row() -> str:
+    i = PICKER.index("ca-agentpick__off")
+    start = PICKER.rfind("<button", 0, i)
+    return PICKER[start:PICKER.index("</button>", i) + len("</button>")]
+
+
 def test_undetected_row_opens_setup_not_switch():
-    block = PICKER[PICKER.index("ca-agentpick__setup"):][:400]
-    assert "agentSetupFocusAtom.set(p.id)" in block and "botSettingsOpenAtom.set(true)" in block
-    assert "setAgent" not in block and "pick(" not in block
+    # #257: whole-row button opens settings; onClick is on the row, not a nested setup button
+    off = _off_row()
+    assert "agentSetupFocusAtom.set(p.id)" in off and "botSettingsOpenAtom.set(true)" in off
+    assert "pick(p.id)" not in off
 
 
 def test_undetected_row_whole_row_opens_settings():
     # #257/#247: whole-row button opens settings (not aria-disabled); 去配置 sits in the ✓ column
-    off = PICKER[PICKER.index("ca-agentpick__off"):PICKER.index("ca-agentpick__off") + 700]
+    off = _off_row()
     assert 'type="button"' in off and "botSettingsOpenAtom.set(true)" in off
     assert "aria-disabled" not in off
     assert "未检测到 ·" not in off and "notDetected')} ·" not in off
