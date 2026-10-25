@@ -9,7 +9,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2861,
+  "tokens": 3353,
   "status": "done",
   "tools": [
    "generate_image",
@@ -28,7 +28,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2847,
+  "tokens": 3339,
   "status": "done",
   "tools": [
    "generate_image",
@@ -47,7 +47,7 @@
   "paid_expected": 4,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2861,
+  "tokens": 3353,
   "status": "done",
   "tools": [
    "generate_image",
@@ -66,7 +66,7 @@
   "paid_expected": 4,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2849,
+  "tokens": 3341,
   "status": "done",
   "tools": [
    "generate_image",
@@ -85,7 +85,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3971,
+  "tokens": 4627,
   "status": "done",
   "tools": [
    "get_canvas",
@@ -105,7 +105,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3946,
+  "tokens": 4602,
   "status": "done",
   "tools": [
    "get_canvas",
@@ -125,7 +125,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2677,
+  "tokens": 3169,
   "status": "done",
   "tools": [
    "generate_video",
@@ -144,7 +144,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2660,
+  "tokens": 3152,
   "status": "done",
   "tools": [
    "generate_video",
@@ -163,7 +163,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3790,
+  "tokens": 4446,
   "status": "done",
   "tools": [
    "get_canvas",
@@ -183,7 +183,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3767,
+  "tokens": 4423,
   "status": "done",
   "tools": [
    "get_canvas",
@@ -203,7 +203,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2674,
+  "tokens": 3166,
   "status": "done",
   "tools": [
    "generate_music",
@@ -222,7 +222,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2662,
+  "tokens": 3154,
   "status": "done",
   "tools": [
    "generate_music",
@@ -241,7 +241,7 @@
   "paid_expected": 2,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3810,
+  "tokens": 4466,
   "status": "done",
   "tools": [
    "generate_sound_effect",
@@ -261,7 +261,7 @@
   "paid_expected": 2,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3763,
+  "tokens": 4419,
   "status": "done",
   "tools": [
    "generate_sound_effect",
@@ -281,7 +281,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3753,
+  "tokens": 4409,
   "status": "done",
   "tools": [
    "edit_elements",
@@ -301,7 +301,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 8,
-  "tokens": 3705,
+  "tokens": 4361,
   "status": "done",
   "tools": [
    "edit_elements",
@@ -321,7 +321,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2654,
+  "tokens": 3146,
   "status": "done",
   "tools": [
    "image_to_3d",
@@ -340,7 +340,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2640,
+  "tokens": 3132,
   "status": "done",
   "tools": [
    "image_to_3d",
@@ -359,7 +359,7 @@
   "paid_expected": 1,
   "llm_requests": 5,
   "messages": 10,
-  "tokens": 5320,
+  "tokens": 6140,
   "status": "done",
   "tools": [
    "brand_kits",
@@ -380,7 +380,7 @@
   "paid_expected": 1,
   "llm_requests": 5,
   "messages": 10,
-  "tokens": 5288,
+  "tokens": 6108,
   "status": "done",
   "tools": [
    "brand_kits",
@@ -401,7 +401,7 @@
   "paid_expected": 2,
   "llm_requests": 7,
   "messages": 10,
-  "tokens": 7058,
+  "tokens": 8206,
   "status": "done",
   "tools": [
    "generate_image",
@@ -423,7 +423,7 @@
   "paid_expected": 2,
   "llm_requests": 7,
   "messages": 10,
-  "tokens": 7007,
+  "tokens": 8155,
   "status": "done",
   "tools": [
    "generate_image",
@@ -445,7 +445,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2764,
+  "tokens": 3256,
   "status": "done",
   "tools": [
    "create_slides",
@@ -464,7 +464,7 @@
   "paid_expected": 1,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2747,
+  "tokens": 3239,
   "status": "done",
   "tools": [
    "create_slides",
@@ -483,7 +483,7 @@
   "paid_expected": 0,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2761,
+  "tokens": 3253,
   "status": "done",
   "tools": [
    "generate_image",
@@ -502,7 +502,7 @@
   "paid_expected": 0,
   "llm_requests": 3,
   "messages": 6,
-  "tokens": 2729,
+  "tokens": 3221,
   "status": "done",
   "tools": [
    "generate_image",
@@ -553,7 +553,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 4,
-  "tokens": 798,
+  "tokens": 962,
   "status": "error",
   "tools": [
    "generate_image"
@@ -571,7 +571,7 @@
   "paid_expected": 1,
   "llm_requests": 5,
   "messages": 6,
-  "tokens": 2850,
+  "tokens": 3342,
   "status": "done",
   "tools": [
    "generate_image",
@@ -590,7 +590,7 @@
   "paid_expected": 1,
   "llm_requests": 5,
   "messages": 6,
-  "tokens": 2845,
+  "tokens": 3337,
   "status": "done",
   "tools": [
    "generate_image",
@@ -609,7 +609,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 4,
-  "tokens": 796,
+  "tokens": 960,
   "status": "error",
   "tools": [
    "generate_image"
@@ -627,7 +627,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 4,
-  "tokens": 798,
+  "tokens": 962,
   "status": "error",
   "tools": [
    "generate_image"
@@ -645,7 +645,7 @@
   "paid_expected": 1,
   "llm_requests": 5,
   "messages": 6,
-  "tokens": 2850,
+  "tokens": 3342,
   "status": "done",
   "tools": [
    "generate_image",
@@ -664,7 +664,7 @@
   "paid_expected": 1,
   "llm_requests": 5,
   "messages": 6,
-  "tokens": 2845,
+  "tokens": 3337,
   "status": "done",
   "tools": [
    "generate_image",
@@ -683,7 +683,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 4,
-  "tokens": 796,
+  "tokens": 960,
   "status": "error",
   "tools": [
    "generate_image"
@@ -701,7 +701,7 @@
   "paid_expected": 0,
   "llm_requests": 80,
   "messages": 160,
-  "tokens": 298650,
+  "tokens": 311770,
   "status": "error",
   "tools": [
    "get_canvas",
@@ -798,7 +798,7 @@
   "paid_expected": 0,
   "llm_requests": 80,
   "messages": 160,
-  "tokens": 298450,
+  "tokens": 311570,
   "status": "error",
   "tools": [
    "get_canvas",
@@ -895,7 +895,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 4,
-  "tokens": 798,
+  "tokens": 962,
   "status": "error",
   "tools": [
    "generate_image"
@@ -913,7 +913,7 @@
   "paid_expected": 1,
   "llm_requests": 5,
   "messages": 6,
-  "tokens": 2850,
+  "tokens": 3342,
   "status": "done",
   "tools": [
    "generate_image",
@@ -932,7 +932,7 @@
   "paid_expected": 1,
   "llm_requests": 5,
   "messages": 6,
-  "tokens": 2845,
+  "tokens": 3337,
   "status": "done",
   "tools": [
    "generate_image",
@@ -951,7 +951,7 @@
   "paid_expected": 1,
   "llm_requests": 4,
   "messages": 4,
-  "tokens": 796,
+  "tokens": 960,
   "status": "error",
   "tools": [
    "generate_image"

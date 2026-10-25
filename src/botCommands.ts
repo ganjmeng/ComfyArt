@@ -5,7 +5,7 @@ import * as actions from './actions'
 import { generateAudio, imageTo3d, MUSIC_MODELS, viewsTo3d, voices } from './assetGen'
 import { editElements } from './elements'
 import { bakeToImage, createMockup } from './mockup'
-import { api } from './comfy'
+import { api, popAgentCommand, pushAgentCommand } from './comfy'
 import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate } from './generate'
@@ -320,11 +320,14 @@ export function registerCommandBus(editor: Editor, project: string, isStale: () 
       editor.markHistoryStoppingPoint(`agent:${msg.action}`)
       Promise.resolve()
         .then(() => {
+          // #235: depth stays up until the handler promise settles, so startJob can snapshot the plan bypass
+          pushAgentCommand()
           // generate_image/video pick their model from list_models themselves; other tools pass it to the cloud job
           setPendingModel(msg.action === 'generate_image' || msg.action === 'generate_video' ? undefined : msg.args?.model)
           try { return handler(editor, msg.args ?? {}, onError, msg.chat ?? '') } finally { setPendingModel(undefined) }
         })
         .then((result) => reply({ ok: true, result }), (e) => reply({ ok: false, error: errorText(e) }))
+        .finally(() => popAgentCommand())
     }),
   ]
   return () => stops.forEach((stop) => stop())
