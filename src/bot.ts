@@ -114,8 +114,10 @@ async function json<T>(path: string, init?: RequestInit): Promise<T> {
 
 const send = (body: unknown, method = 'POST'): RequestInit => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 
-export async function loadProviders() {
-  const status = await json<{ enabled: boolean; user: string; providers: ProviderInfo[] }>('/comfyart/bot/status')
+export async function loadProviders(opts?: { refresh?: boolean }) {
+  // #247: 「重新检测」passes refresh so the server drops the 60s probe cache
+  const q = opts?.refresh ? '?refresh=1' : ''
+  const status = await json<{ enabled: boolean; user: string; providers: ProviderInfo[] }>(`/comfyart/bot/status${q}`)
   me = status.user
   botEnabledAtom.set(status.enabled)
   providersAtom.set(status.providers)
@@ -312,8 +314,8 @@ function watchDirectTasks() {
   })
 }
 
-export async function refreshBot() {
-  await Promise.all([loadProviders(), loadSettings()])
+export async function refreshBot(opts?: { refresh?: boolean }) {
+  await Promise.all([loadProviders(opts), loadSettings()])
   if (botEnabledAtom.get()) await loadChats()
   else chatsAtom.set([])
 }

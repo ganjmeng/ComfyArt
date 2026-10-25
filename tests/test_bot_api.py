@@ -149,6 +149,23 @@ async def test_status_survives_a_failing_probe(bot_client, fake_provider, monkey
     assert entry["available"] is False and "untrusted mount point" in entry["detail"]
 
 
+async def test_status_refresh_clears_probe_cache(bot_client, fake_provider, monkeypatch):
+    from ComfyArt.bot import providers as providers_mod
+    cleared: list[str] = []
+    orig = providers_mod.AgentProvider.clear_probe_cache
+
+    def tracking(self):
+        cleared.append(self.id)
+        return orig(self)
+
+    monkeypatch.setattr(providers_mod.AgentProvider, "clear_probe_cache", tracking)
+    cold = await bot_client.get("/comfyart/bot/status")
+    assert cold.status == 200 and cleared == []
+    warm = await bot_client.get("/comfyart/bot/status?refresh=1")
+    assert warm.status == 200
+    assert "fake-test" in cleared
+
+
 def test_reap_marks_unfinished_messages_aborted():
     chat = chat_store.create_chat(user="default", project="p", provider="codex")
     msg = chat_store.create_message(chat_id=chat["id"], role="assistant", blocks=[], status="streaming")

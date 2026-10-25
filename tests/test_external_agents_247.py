@@ -43,6 +43,31 @@ def test_undetected_row_opens_setup_not_switch():
     assert "setAgent" not in block and "pick(" not in block
 
 
+def test_undetected_row_whole_row_opens_settings():
+    # #257/#247: whole-row button opens settings (not aria-disabled); 去配置 sits in the ✓ column
+    off = PICKER[PICKER.index("ca-agentpick__off"):PICKER.index("ca-agentpick__off") + 700]
+    assert 'type="button"' in off and "botSettingsOpenAtom.set(true)" in off
+    assert "aria-disabled" not in off
+    assert "未检测到 ·" not in off and "notDetected')} ·" not in off
+    assert "ca-agentpick__check" in off and "ca-agentpick__setup" in off
+    assert off.index("ca-agentpick__check") < off.index("ca-agentpick__setup")
+    css = (ROOT / "src/styles/shell.css").read_text()
+    assert "min-width: 52px" in css and "justify-content: flex-end" in css
+
+
+def test_redetect_clears_probe_cache():
+    bot_ts = (ROOT / "src/bot.ts").read_text()
+    settings = SETTINGS
+    api = (ROOT / "api/bot.py").read_text()
+    providers = (ROOT / "bot/providers.py").read_text()
+    assert "refresh: true" in settings or "refresh: true" in settings.replace(" ", "")
+    assert "refreshBot({ refresh: true })" in settings
+    assert "?refresh=1" in bot_ts and "opts?.refresh" in bot_ts
+    assert 'query.get("refresh") == "1"' in api
+    assert "clear_probe_cache()" in api
+    assert "def clear_probe_cache(self)" in providers
+
+
 def test_docs_pages_nav_and_links():
     nav = json.loads((DOCS / "docs.json").read_text())
     flat = json.dumps(nav)

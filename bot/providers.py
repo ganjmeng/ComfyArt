@@ -71,6 +71,11 @@ class AgentProvider(ABC):
     @abstractmethod
     def capabilities(self) -> ProviderCaps: ...
 
+    def clear_probe_cache(self) -> None:
+        # #247: 「重新检测」asks /bot/status?refresh=1 so the next probe is not a stale 60s hit
+        if hasattr(self, "_probe_cache"):
+            self._probe_cache = None
+
     async def list_models(self) -> list[str]:
         return []
 

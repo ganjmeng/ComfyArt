@@ -52,7 +52,7 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
 
   if (!open) return null
   const close = () => botSettingsOpenAtom.set(false)
-  const save = () => void saveSettings(draft).then(refreshBot).then(close).catch((e) => onError(errorText(e)))
+  const save = () => void saveSettings(draft).then(() => refreshBot()).then(close).catch((e) => onError(errorText(e)))
 
   return (
     <Modal className="ca-botsettings" title={t('botSettings.agentSettings')} onClose={close}>
@@ -117,7 +117,7 @@ function AgentSetup({ providers, enabled, onError }: { providers: ProviderInfo[]
     document.querySelector(`.ca-agentsetup__card[data-agent="${focus}"]`)?.scrollIntoView({ block: 'start' })
     agentSetupFocusAtom.set(null)
   }, [focus, providers.length])
-  const check = () => { setChecking(true); void refreshBot().catch((e) => onError(errorText(e))).finally(() => setChecking(false)) }
+  const check = () => { setChecking(true); void refreshBot({ refresh: true }).catch((e) => onError(errorText(e))).finally(() => setChecking(false)) }
   return (
     <section className="ca-agentsetup" data-testid="agent-setup">
       <div className="ca-gen__label">{t('agentSetup.title')}</div>
