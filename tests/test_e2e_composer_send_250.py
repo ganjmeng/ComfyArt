@@ -23,7 +23,7 @@ FOOT = """() => {
   return {
     send: inside(s), plus: inside(r('.ca-bar__btn--icon')), hit: !!hit && foot.querySelector('.ca-composer__slotwrap').contains(hit),
     fixed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-composer__slotwrap > :not([hidden])')].every((e) => e.getBoundingClientRect().width >= 31.5),
-    pills: [...foot.querySelectorAll('.ca-composer__mode, [data-pill]')].map((e) => ({ pill: e.dataset.pill || 'mode', text: e.innerText.trim(), title: e.title, icon: vis(e.querySelector('.ca-gen__pillicon, .ca-icon')) })),
+    pills: [...foot.querySelectorAll('.ca-composer__mode, [data-pill]')].map((e) => ({ pill: e.dataset.pill || 'mode', text: e.innerText.trim(), title: e.title, aria: e.getAttribute('aria-label') || '', icon: vis(e.querySelector('.ca-gen__pillicon, .ca-icon')) })),
     settingsCut: (() => { const t = foot.querySelector("[data-pill=settings] > .ca-gen__pilltext"); return vis(t) && t.scrollWidth > t.clientWidth })(),
     midCut: (() => { const m = foot.querySelector(".ca-composer__mid"); return m.scrollWidth > m.clientWidth })(),
     agentFull: (() => { const t = foot.querySelector('.ca-composer__mode[data-agent] > .ca-menu__grow'); return !t || t.scrollWidth <= t.clientWidth + 0.5 })(),
@@ -81,7 +81,7 @@ async def test_send_stays_in_bar(app_url, fake_tools, monkeypatch, width, lang, 
         assert [x["pill"] for x in bar["pills"]] == ["mode", "model", "settings"], bar  # #268 final: mode left; model, settings right
         assert bar["order"] is True, bar["order"]  # #268: mode < model < settings < voice/send, model+settings grouped right next to the slot
         assert len(bar["pills"]) == 3, bar  # mode, settings and model are all kept, none hidden
-        assert all(x["title"] for x in bar["pills"]), bar  # full text on hover
+        assert all((x["aria"] if x["pill"] == "model" else x["title"]) for x in bar["pills"]), bar  # full text on hover (model: icon button, Tip + aria-label only, #287)
         assert not bar["settingsCut"] and not bar["midCut"], bar  # folded or iconised, never cut mid-text
         assert bar["modelW"] <= 120.5, bar
         if width >= 900:  # v2: room for the middle tier, so settings must not jump straight to the icon
