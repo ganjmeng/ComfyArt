@@ -5,6 +5,7 @@
 .ca-keys__row { display: flex; justify-content: space-between; align-items: center; height: 30px; }
 .ca-keys kbd { padding: 2px 6px; border-radius: 6px; background: var(--ca-field); font: 400 12px/16px var(--ca-font); color: var(--ca-muted); }
 .ca-rename { width: min(420px, calc(100vw - 32px)); }
+.ca-rename__field--batch > .ca-panel__input { flex: none; }
 .ca-rename__body { display: flex; flex-direction: column; gap: 12px; min-height: 0; padding: 0 20px 20px; overflow-y: auto; }
 .ca-rename__field { display: flex; flex-direction: column; gap: 6px; }
 .ca-rename__field--key > .ca-panel__input { flex: none; }
