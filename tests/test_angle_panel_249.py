@@ -65,6 +65,9 @@ async def test_generate_visible_at_1280x800(app_url, tmp_path, lang, theme):  # 
         panel = pg.locator(".ca-panel")
         await panel.wait_for()
         await panel.locator(".ca-angle__view canvas").wait_for()
+        fee = panel.locator(".ca-panel__primary .ca-angle__fee")
+        four_fee = panel.locator(".ca-angle__four .ca-angle__fee")
+        await fee.wait_for()
         await pg.wait_for_timeout(700)
         if SHOTS:
             Path(SHOTS).mkdir(parents=True, exist_ok=True)
@@ -101,13 +104,32 @@ async def test_generate_visible_at_1280x800(app_url, tmp_path, lang, theme):  # 
         assert await vals.nth(0).inner_text() == "45"
         assert await vals.nth(1).inner_text() == "0"
         assert await vals.nth(2).inner_text() == "5"
+        val_style = await vals.first.evaluate("""el => {
+          const s = getComputedStyle(el)
+          const probe = document.createElement('span')
+          probe.style.color = 'var(--ca-text)'
+          document.body.appendChild(probe)
+          const ink = getComputedStyle(probe).color
+          probe.remove()
+          return { size: s.fontSize, weight: s.fontWeight, nums: s.fontVariantNumeric, color: s.color, ink, lab: getComputedStyle(el.parentElement).color }
+        }""")
+        assert val_style["size"] == "13px" and str(val_style["weight"]) in ("500", "medium") and "tabular-nums" in val_style["nums"]
+        assert val_style["color"] == val_style["ink"] and val_style["color"] != val_style["lab"]
+        icon = await panel.locator(".ca-angle__reset svg").bounding_box()
+        preview_size = await panel.locator(".ca-angle__preview").evaluate("el => parseFloat(getComputedStyle(el).fontSize)")
+        assert icon and abs(icon["width"] - preview_size) <= 1 and abs(icon["height"] - preview_size) <= 1
+        assert await fee.inner_text() == "≈$0.025"
+        assert await four_fee.inner_text() == "≈$0.10"
+        tight = await panel.locator(".ca-panel__primary, .ca-angle__four").evaluate_all("els => els.filter(el => el.scrollWidth > el.clientWidth + 1).map(el => el.textContent)")
+        assert tight == []
         ranges = panel.locator("input[type=range]")
         assert await ranges.count() == 3
         assert await ranges.nth(0).get_attribute("min") == "0" and await ranges.nth(0).get_attribute("max") == "359"
         assert await ranges.nth(1).get_attribute("min") == "-30" and await ranges.nth(1).get_attribute("max") == "60"
         assert await ranges.nth(2).get_attribute("min") == "0" and await ranges.nth(2).get_attribute("max") == "10"
         back_btn = panel.get_by_role("button", name=back, exact=True)
-        four_btn = panel.get_by_role("button", name=four, exact=True)
+        four_btn = panel.locator(".ca-angle__four")
+        assert four in (await four_btn.inner_text())
         btn = panel.locator(".ca-panel__primary", has_text=generate)
         await btn.wait_for()
         dock = await pg.locator(".ca-dock").bounding_box()

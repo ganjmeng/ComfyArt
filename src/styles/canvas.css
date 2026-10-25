@@ -223,7 +223,7 @@ html[lang="en"] .ca-angle__chip { font-size: 11px; letter-spacing: -0.04em; }
 .ca-angle__chip[data-on]:hover { background: var(--ca-float); }
 .ca-angle__row { display: block; margin-top: 10px; color: var(--ca-angle-sub); }
 .ca-angle__lab { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; font-size: 13px; font-weight: 400; }
-.ca-angle__val { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; color: inherit; }
+.ca-angle__val { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ca-text); }
 .ca-angle__row input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -260,6 +260,10 @@ html[lang="en"] .ca-angle__chip { font-size: 11px; letter-spacing: -0.04em; }
   background: var(--ca-float);
 }
 .ca-angle__four {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
   height: 32px;
   margin-top: 12px;
@@ -270,9 +274,12 @@ html[lang="en"] .ca-angle__chip { font-size: 11px; letter-spacing: -0.04em; }
   font: 500 13px/32px var(--ca-font);
   cursor: pointer;
 }
+.ca-angle__fee { font-size: 11px; font-weight: 400; letter-spacing: -.2px; font-variant-numeric: tabular-nums; color: var(--ca-muted); white-space: nowrap; }
 .ca-angle__four:hover { background: var(--ca-hover); }
 .ca-panel--angle .ca-panel__foot { margin-top: 14px; }
-.ca-panel--angle .ca-panel__foot > button { height: 32px; border-radius: 8px; font-weight: 500; }
+.ca-panel--angle .ca-panel__foot > button { height: 32px; padding: 0 8px; border-radius: 8px; font-weight: 500; white-space: nowrap; }
+.ca-panel--angle .ca-panel__primary { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.ca-panel--angle .ca-panel__primary .ca-angle__fee { color: inherit; opacity: .7; }
 .ca-panel--angle .ca-panel__secondary { border-color: var(--ca-active); }
 .ca-panel__head { display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 15px; }
 .ca-panel__icon {
@@ -289,6 +296,8 @@ html[lang="en"] .ca-angle__chip { font-size: 11px; letter-spacing: -0.04em; }
 .ca-panel__icon:hover:not(:disabled) { background: var(--ca-hover); color: var(--ca-text); }
 .ca-panel__icon:disabled { opacity: .5; cursor: default; }
 .ca-panel__icon svg { width: 100%; height: 100%; }
+.ca-panel__icon.ca-angle__reset { align-items: center; justify-content: center; padding: 0; }
+.ca-panel__icon.ca-angle__reset svg { width: 12px; height: 12px; }
 .ca-panel__prompt {
   min-height: 48px;
   max-height: 160px;

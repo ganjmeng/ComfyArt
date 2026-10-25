@@ -9,6 +9,8 @@ import { Icons } from './icons'
 import { boxesAtom, brushAtom, exitMode, modeAtom, OWN_PANEL, padsAtom, strokesAtom, type Mode } from './mode'
 import { useElementSize, useSelectedImage, useSelectionRect } from './selection'
 import { t } from '../i18n'
+import { usd } from '../usd'
+import { featurePrice, loadCloudModels } from '../wavespeed'
 import { isEnter } from './keys'
 import { useEscape } from './escape'
 
@@ -102,6 +104,7 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
   const [angle, setAngle] = useState(ANGLE_HOME)
   const [angleView, setAngleView] = useState<AngleView>('object')
   const [angleInset, setAngleInset] = useState(true)
+  const [anglePrice, setAnglePrice] = useState<number | null>(null)
   const [layers, setLayers] = useState(4)
   const [ratio, setRatio] = useState(t('modePanel.free'))
   const [scale, setScale] = useState(1)
@@ -115,6 +118,15 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
     setRatio(t('modePanel.free'))
     setScale(1)
     requestAnimationFrame(() => focus.current?.focus())
+  }, [mode])
+
+  useEffect(() => {
+    if (mode !== 'angles') return
+    let live = true
+    const read = () => setAnglePrice(featurePrice('change_angle'))
+    if (featurePrice('change_angle') != null) read()
+    else loadCloudModels().then(() => { if (live) read() }).catch(() => {})
+    return () => { live = false }
   }, [mode])
 
   useEffect(() => {
@@ -300,7 +312,10 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
                 <AngleSlider label={t('modePanel.horizontal')} value={angle.h} min={0} max={359} onChange={(v) => setAngle({ ...angle, h: v })} />
                 <AngleSlider label={t('modePanel.vertical')} value={angle.v} min={-30} max={60} onChange={(v) => setAngle({ ...angle, v })} />
                 <AngleSlider label={t('modePanel.distance')} value={angle.z} min={0} max={10} step={0.1} onChange={(v) => setAngle({ ...angle, z: v })} />
-                <button type="button" className="ca-angle__four" onClick={allAngles}>{t('modePanel.generate4AnglesAtOnce')}</button>
+                <button type="button" className="ca-angle__four" onClick={allAngles}>
+                  {t('modePanel.generate4AnglesAtOnce')}
+                  {anglePrice != null && <span className="ca-angle__fee">{`≈$${usd(anglePrice * ALL_ANGLES.length)}`}</span>}
+                </button>
               </div>
             </>
           )}
@@ -331,7 +346,10 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
           )}
           <div className="ca-panel__foot">
             <button type="button" className="ca-panel__secondary" onClick={exitMode}>{t('common.cancel')}</button>
-            <button type="button" className="ca-panel__primary" disabled={!canSubmit} onClick={submit}>{mode === 'erase' ? t('modePanel.erase') : mode === 'separate' ? t('modePanel.separate') : t('common.generate')}</button>
+            <button type="button" className="ca-panel__primary" disabled={!canSubmit} onClick={submit}>
+              {mode === 'erase' ? t('modePanel.erase') : mode === 'separate' ? t('modePanel.separate') : t('common.generate')}
+              {mode === 'angles' && anglePrice != null && <span className="ca-angle__fee">{`≈$${usd(anglePrice)}`}</span>}
+            </button>
           </div>
         </>
       )}

@@ -66,6 +66,14 @@ export function setPendingModel(model: unknown) {
 
 let features: Record<string, CloudFeature> = {}
 
+/** Catalog base_price of a feature's default model, once `loadCloudModels` has filled `features`. */
+export function featurePrice(name: string): number | null {
+  const feature = features[name]
+  const model = feature?.models.find((m) => m.id === feature.default) ?? feature?.models[0]
+  const price = model?.price
+  return typeof price === 'number' && Number.isFinite(price) ? price : null
+}
+
 /** model if it belongs to the feature's curated list, else undefined (backend default). */
 export const modelIn = (feature: string, model: string | undefined) => (model && features[feature]?.models.some((m) => m.id === model) ? model : undefined)
 
