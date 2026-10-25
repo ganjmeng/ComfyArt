@@ -1,6 +1,6 @@
 import type { Editor, TLImageShape } from 'tldraw'
 
-import { agentModeAtom, extraRefsAtom, generateDirect, sendToAgent, type AgentMode } from '../agent'
+import { agentModeAtom, draftAtom, extraRefsAtom, generateDirect, sendToAgent, type AgentMode } from '../agent'
 import { refreshBot } from '../bot'
 import { refFromUrl } from '../comfy'
 import { editElements } from '../elements'
@@ -53,4 +53,17 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   if (mode !== 'agent') return generateDirect(editor, text, [{ refs: shapes, prompt: text }], mode === 'video', onError)
   skillAtom.set(null)
   await sendToAgent(editor, text, shapes, skill)
+}
+
+/** #286: the project couldn't be created on the canvas page, so the home draft would be lost. Put the prompt from
+ *  the URL back into the canvas chat box (and its mode), drop the handoff params so nothing auto-sends, and report. */
+export function restoreHandoff(onError: ErrorSink, message: string) {
+  const url = new URL(location.href)
+  const text = url.searchParams.get('ask')?.trim() ?? ''
+  const mode = url.searchParams.get('mode') as AgentMode | null
+  for (const k of KEYS) url.searchParams.delete(k)
+  history.replaceState(null, '', url)
+  if (mode) agentModeAtom.set(mode)
+  if (text) draftAtom.set(text)
+  onError(message)
 }

@@ -14,7 +14,8 @@ from ._cli_common import (
     merge_usage,
 )
 from . import lms
-from .guide import AGENT_GUIDE, CORE_MCP_TOOLS
+from .guide import AGENT_GUIDE, CORE_MCP_TOOLS, PAID_TOOLS
+from .plan_quote import CANCEL_TEXT, QUOTE_TOOL, canon_key
 from .providers import (
     AgentProvider,
     BotEvent,
@@ -70,7 +71,8 @@ _LLM_FAIL_TEXT = {
 # 已取消 / Cancelled, never success (#232, regression case 13). Same patterns as src/ui/stepState.ts.
 _CANCEL_RE = re.compile(
     r'"cancelled"\s*:\s*true|"status"\s*:\s*"declined"|已取消该生成，未扣费|'
-    r"Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed")
+    r"Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed|"
+    r"已取消，没有扣费。|Cancelled\. Nothing was charged\.")
 _REPEAT_STOP_TEXT = {
     "zh": "任务卡在重复步骤，已停止，未继续扣费。",
     "en": "The task got stuck repeating a step and was stopped; no further "
@@ -126,6 +128,7 @@ _STEP_LABELS: dict[str, tuple[str, str]] = {
     'custom_workflow': ('自定义工作流', 'Custom workflows'),
     'ask_user': ('向你提问', 'Ask you'),
     'update_plan': ('计划', 'Plan'),
+    'quote_plan': ('确认费用', 'Confirm cost'),
 }
 _CJK_RE = re.compile(r"[\u3400-\u9fff\uf900-\ufaff]")
 _SKILL_HINT_RE = re.compile(
@@ -241,7 +244,59 @@ def _stop_summary(done: list[str], lang: str = "zh") -> str:
 
 _THINK_RE = re.compile(r"(?:<think>|^)([\s\S]*?)</think>|<think>([\s\S]*)$")
 
-_SYSTEM_PROMPT = AGENT_GUIDE
+# #235: built-in agent only. External CLIs keep AGENT_GUIDE unchanged (#238).
+_PLAN_QUOTE_RULE = (
+    "Multi-step paid task: when the task needs two or more paid generations, "
+    "call update_plan, then quote_plan, before any paid tool. quote_plan steps "
+    "are {text, tool, model, arguments} for every paid step, using only the "
+    "selected model (do not include a fallback model). quote_plan estimates the "
+    "total and does not generate or charge. If it asks the user, wait. If they "
+    "decline, stop and do not retry. If it says to start, call each paid tool "
+    "with the same arguments. A single paid generation does not use quote_plan. "
+    "Do not tell the user a per-step or running cost; the confirm card is the "
+    "only cost display, and only when the total reaches the threshold."
+)
+_SYSTEM_PROMPT = AGENT_GUIDE + "\n\n" + _PLAN_QUOTE_RULE
+_PLAN_REFUSE = {
+    "zh": "[tool error] 这是多步付费任务。请先调用 quote_plan 列出每一个付费步骤，用户确认后再调用付费工具。这次调用没有执行。",
+    "en": "[tool error] This is a multi-step paid task. Call quote_plan with every paid step and wait for the user before any paid tool. This call did not run.",
+}
+_QUOTE_PLAN_TOOL = {
+    "type": "function",
+    "function": {
+        "name": QUOTE_TOOL,
+        "description": (
+            "Estimate the total of a multi-step paid task and, when it reaches "
+            "the user's confirm limit, ask before any paid tool runs. Does not "
+            "generate or charge. steps: one object per paid step with text (step "
+            "name), tool, model (the selected model only; do not pass a fallback "
+            "model), and arguments (the exact arguments you will pass to that "
+            "tool). Call it after update_plan and before any paid tool when the "
+            "task needs two or more paid generations. A single paid generation "
+            "does not use this. If the result says start, call each paid tool "
+            "with the same arguments. If the user declines, stop and do not retry."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "text": {"type": "string"},
+                            "tool": {"type": "string"},
+                            "model": {"type": "string"},
+                            "arguments": {"type": "object"},
+                        },
+                        "required": ["text", "tool", "arguments"],
+                    },
+                },
+            },
+            "required": ["steps"],
+        },
+    },
+}
 
 
 _WINDOW_FIELDS = (
@@ -730,6 +785,28 @@ def _prune_screenshots(messages: list[dict], keep: int = KEEP_SCREENSHOTS) -> li
     return out
 
 
+class _PlanGate:
+    """#235: after the user presses 开始, only the quoted calls may run.
+
+    Under the threshold, and when the model never calls quote_plan, each job
+    still confirms on its own (#127). Refusing those calls would block a plan
+    item the user can still approve one at a time.
+    """
+
+    def __init__(self) -> None:
+        self.strict = False
+        self.keys: set[tuple] = set()
+
+    def allow(self, quote, strict: bool) -> None:
+        self.strict = strict
+        self.keys = set(quote.keys)
+
+    def blocks(self, name: str, args: dict) -> bool:
+        if not self.strict or name not in PAID_TOOLS:
+            return False
+        return canon_key(name, args) not in self.keys
+
+
 class LocalLlmProvider(AgentProvider):
     id = "local-llm"
     label = "Local LLM"
@@ -974,6 +1051,219 @@ class LocalLlmProvider(AgentProvider):
                 if handle.stop_requested:
                     raise e
 
+    def _threshold(self) -> float:
+        from ComfyArt.api.wavespeed import confirm_usd
+        return float(confirm_usd())
+
+    async def _price_one(self, model: str, inputs: dict):
+        from ComfyArt.api.wavespeed import quote
+        price, _source = await quote(model, inputs)
+        return price
+
+    async def _models_for(self, feature: str):
+        from ComfyArt.api.wavespeed import grouped_models
+        grouped = await grouped_models()
+        feat = grouped.get(feature) or {}
+        rows = []
+        for m in feat.get("models") or []:
+            price = m.get("price")
+            rows.append((str(m.get("id") or ""),
+                         float(price) if isinstance(price, (int, float)) and not isinstance(price, bool) else None))
+        return rows
+
+    async def _quote_steps(self, steps, lang: str):
+        from .plan_quote import build_quote
+        return await build_quote(steps, lang, threshold=self._threshold(),
+                                 pricer=self._price_one, models_for=self._models_for)
+
+    async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle) -> str:
+        """'start' or 'cancel'. No live turn to ask, or a dismiss, cancels (nothing is charged)."""
+        if handle.stop_requested:
+            return "cancel"
+        from ComfyArt.api.bot_turns import ACTIVE_TURNS
+        from ComfyArt.api.mcp_tools.bot_tools import _await_ask
+        state = ACTIVE_TURNS.get(turn.chat_id)
+        if state is None:
+            return "cancel"
+        try:
+            outcome = await _await_ask(turn.chat_id, state, spec)
+        except Exception:
+            _log.exception("[ComfyArt/local-llm] plan confirm failed")
+            return "cancel"
+        selected = outcome.get("selected") or []
+        if outcome.get("status") == "answered" and "start" in selected:
+            return "start"
+        return "cancel"
+
+    def _implicit_step(self, item: dict, lang: str) -> dict:
+        args = item["args"]
+        return {
+            "text": _step_label(item["name"], args, lang),
+            "tool": item["name"],
+            "model": str(args.get("model") or ""),
+            "arguments": args,
+        }
+
+    async def _emit_mcp(self, item: dict, *, session, turn, emit, handle,
+                        done: list, lang: str, skill_cache: dict, llm_model: str) -> list[dict]:
+        """Run one real MCP tool and return the chat messages for it. Emits the tool row."""
+        name, args, tc_id = item["name"], item["args"], item["id"]
+        skill_key, cached = item["skill_key"], item["cached"]
+        await emit(BotEvent(t="tool_use", name=name, input=args, id=tc_id))
+        tool_failed = False
+        images: list[str] = []
+        try:
+            if cached:
+                result_text = skill_cache[skill_key]
+            elif name == "wait_generation":
+                result_text = await self._wait_stage_done(
+                    session, turn.mcp_endpoint, args, llm_model, handle)
+            else:
+                result_text, images = await self._mcp_call_tool(
+                    session, turn.mcp_endpoint, name, args)
+        except _NET_ERRORS as e:
+            result_text = f"[error] {type(e).__name__}: {e}"
+            tool_failed = True
+        if skill_key and not tool_failed:
+            skill_cache.setdefault(skill_key, result_text)
+        if not cached:
+            done.append(_step_label(name, args, lang))
+        if len(result_text) > TOOL_RESULT_CAP:
+            result_text = (result_text[:TOOL_RESULT_CAP]
+                           + f"\n…[truncated {len(result_text) - TOOL_RESULT_CAP} chars]")
+        await emit(BotEvent(
+            t="tool_result", name=name, text=result_text, id=tc_id, is_error=tool_failed,
+            detail="cancelled" if _CANCEL_RE.search(result_text) else ""))
+        out = [{"role": "tool", "tool_call_id": tc_id or name, "content": result_text}]
+        if images:
+            out.append({"role": "user", "content": [
+                {"type": "text", "text": f"{_TOOL_IMAGES_PREFIX}{name}:"},
+                *({"type": "image_url", "image_url": {"url": u}} for u in images),
+            ]})
+        return out
+
+    async def _emit_result(self, item: dict, text: str, *, emit, done: list, lang: str,
+                           is_error: bool = False, detail: str = "", count_done: bool = True) -> list[dict]:
+        name, args, tc_id = item["name"], item["args"], item["id"]
+        await emit(BotEvent(t="tool_use", name=name, input=args, id=tc_id))
+        if count_done and not item["cached"]:
+            done.append(_step_label(name, args, lang))
+        await emit(BotEvent(
+            t="tool_result", name=name, text=text, id=tc_id, is_error=is_error, detail=detail))
+        return [{"role": "tool", "tool_call_id": tc_id or name, "content": text}]
+
+    async def _dispatch_tools(self, tool_calls, *, session, turn, emit, handle,
+                              messages, done, lang, skill_cache, loop, gate, usage,
+                              llm_model: str) -> Optional[TurnResult]:
+        """One assistant message. A multi-step paid batch is priced before any paid tool_use."""
+        parsed = []
+        tripped = False
+        for tool_call in tool_calls:
+            if handle.stop_requested:
+                return TurnResult(aborted=True, usage=usage)
+            fn = tool_call.get("function") or {}
+            name = str(fn.get("name") or "")
+            tc_id = str(tool_call.get("id") or "")
+            raw_args = fn.get("arguments") or "{}"
+            try:
+                args = json.loads(raw_args) if isinstance(raw_args, str) else raw_args
+            except ValueError:
+                args = {}
+            if not isinstance(args, dict):
+                args = {}
+            key = _call_key(name, args)
+            loop["repeat"] = loop["repeat"] + 1 if key == loop["last_key"] else 1
+            loop["last_key"] = key
+            skill_key = _skill_read_key(name, args)
+            cached = bool(skill_key) and skill_key in skill_cache
+            if cached:
+                loop["cache_hits"] += 1
+            if loop["repeat"] >= _REPEAT_STOP or loop["cache_hits"] >= _CACHED_SKILL_STOP:
+                _log.warning("[ComfyArt/local-llm] loop guard: %s repeat=%d cached_skill_reads=%d, stopping",
+                             name, loop["repeat"], loop["cache_hits"])
+                tripped = True
+                break
+            parsed.append({"name": name, "args": args, "id": tc_id,
+                           "skill_key": skill_key, "cached": cached})
+
+        quote_item = next((it for it in parsed if it["name"] == QUOTE_TOOL), None)
+        paid = [it for it in parsed if it["name"] in PAID_TOOLS]
+        chunks: list[Optional[list]] = [None] * len(parsed)
+
+        async def run_mcp(i: int) -> None:
+            chunks[i] = await self._emit_mcp(
+                parsed[i], session=session, turn=turn, emit=emit, handle=handle,
+                done=done, lang=lang, skill_cache=skill_cache, llm_model=llm_model)
+
+        # Checklist (and any other free tool) lands before the confirm card.
+        for i, it in enumerate(parsed):
+            if it["name"] not in PAID_TOOLS and it["name"] != QUOTE_TOOL:
+                await run_mcp(i)
+
+        decision = ""
+        quote = None
+        quote_error = ""
+        if quote_item is not None or len(paid) >= 2:
+            steps = (quote_item["args"].get("steps") if quote_item is not None
+                     else [self._implicit_step(it, lang) for it in paid])
+            try:
+                quote = await self._quote_steps(steps if isinstance(steps, list) else [], lang)
+            except Exception as e:
+                _log.exception("[ComfyArt/local-llm] plan quote failed")
+                quote_error = f"[error] {type(e).__name__}: {e}"
+                decision = "error"
+            else:
+                if quote is None:
+                    decision = "passthrough"
+                elif not quote.ask:
+                    gate.allow(quote, False)
+                    decision = "start"
+                else:
+                    choice = await self._confirm_plan(quote.ask_spec(), turn, handle)
+                    if handle.stop_requested:
+                        return TurnResult(aborted=True, usage=usage)
+                    if choice == "start":
+                        gate.allow(quote, True)
+                        decision = "start"
+                    else:
+                        decision = "cancel"
+
+        lang_key = "zh" if lang == "zh" else "en"
+        for i, it in enumerate(parsed):
+            if chunks[i] is not None:
+                continue
+            name = it["name"]
+            if name == QUOTE_TOOL:
+                if decision == "error":
+                    chunks[i] = await self._emit_result(
+                        it, quote_error, emit=emit, done=done, lang=lang, is_error=True)
+                elif decision == "cancel":
+                    text = quote.cancel_text if quote else CANCEL_TEXT[lang_key]
+                    chunks[i] = await self._emit_result(
+                        it, text, emit=emit, done=done, lang=lang, detail="cancelled")
+                else:
+                    text = quote.started_result() if quote else json.dumps({"ok": True, "start": True})
+                    chunks[i] = await self._emit_result(it, text, emit=emit, done=done, lang=lang)
+                continue
+            if name in PAID_TOOLS and decision == "cancel":
+                continue  # do not emit a paid row: the user stopped before anything ran
+            if name in PAID_TOOLS and gate.blocks(name, it["args"]):
+                chunks[i] = await self._emit_result(
+                    it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
+                continue
+            await run_mcp(i)
+
+        for ch in chunks:
+            if ch:
+                messages.extend(ch)
+        if decision == "cancel":
+            text = quote.cancel_text if quote else CANCEL_TEXT[lang_key]
+            await emit(BotEvent(t="delta", text=text))
+            return TurnResult(usage=usage)
+        if tripped:
+            return TurnResult(usage=usage, error=_stop_summary(done, lang))
+        return None
+
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
         base = self._base_url()
@@ -994,6 +1284,8 @@ class LocalLlmProvider(AgentProvider):
 
                 tools = self._build_tools(
                     await self._mcp_list_tools(session, turn.mcp_endpoint)) if turn.mcp_endpoint else []
+                if tools:  # #235 synthetic tool: not an MCP tool, so external agents never see it
+                    tools = [*tools, _QUOTE_PLAN_TOOL]
                 system = _SYSTEM_PROMPT if tools else ""
                 user_msg = _user_content(turn.user_text, turn.attachments)
                 window = await self._context_window(session, model)
@@ -1006,13 +1298,12 @@ class LocalLlmProvider(AgentProvider):
                 ]
 
                 usage: Optional[dict] = None
-                last_key = ""
-                repeat = 0
                 done: list[str] = []
                 lang = (turn.lang if turn.lang in ("zh", "en")
                         else _reply_lang(turn.user_text))
-                cache_hits = 0
                 skill_cache: dict[str, str] = {}
+                loop = {"repeat": 0, "last_key": "", "cache_hits": 0}
+                gate = _PlanGate()
                 limit = self._max_steps()
                 for _ in range(limit):
                     if handle.stop_requested:
@@ -1053,75 +1344,12 @@ class LocalLlmProvider(AgentProvider):
                         "content": content or None,
                         "tool_calls": tool_calls,
                     })
-                    for tool_call in tool_calls:
-                        if handle.stop_requested:
-                            return TurnResult(aborted=True, usage=usage)
-                        fn = tool_call.get("function") or {}
-                        name = str(fn.get("name") or "")
-                        tc_id = str(tool_call.get("id") or "")
-                        raw_args = fn.get("arguments") or "{}"
-                        try:
-                            args = (json.loads(raw_args)
-                                    if isinstance(raw_args, str) else raw_args)
-                        except ValueError:
-                            args = {}
-                        if not isinstance(args, dict):
-                            args = {}
-                        key = _call_key(name, args)
-                        repeat = repeat + 1 if key == last_key else 1
-                        last_key = key
-                        skill_key = _skill_read_key(name, args)
-                        cached = bool(skill_key) and skill_key in skill_cache
-                        if cached:
-                            cache_hits += 1
-                        if repeat >= _REPEAT_STOP or (
-                                cache_hits >= _CACHED_SKILL_STOP):
-                            _log.warning("[ComfyArt/local-llm] loop guard: %s "
-                                         "repeat=%d cached_skill_reads=%d, "
-                                         "stopping", name, repeat, cache_hits)
-                            return TurnResult(usage=usage,
-                                              error=_stop_summary(done, lang))
-                        await emit(BotEvent(t="tool_use", name=name, input=args,
-                                            id=tc_id))
-                        tool_failed = False
-                        images: list[str] = []
-                        try:
-                            if cached:
-                                result_text = skill_cache[skill_key]
-                            elif name == "wait_generation":
-                                result_text = await self._wait_stage_done(
-                                    session, turn.mcp_endpoint, args, model,
-                                    handle)
-                            else:
-                                result_text, images = await self._mcp_call_tool(
-                                    session, turn.mcp_endpoint, name, args)
-                        except _NET_ERRORS as e:
-                            result_text = f"[error] {type(e).__name__}: {e}"
-                            tool_failed = True
-                        if skill_key and not tool_failed:
-                            skill_cache.setdefault(skill_key, result_text)
-                        if not cached:  # only steps that actually ran
-                            done.append(_step_label(name, args, lang))
-                        if len(result_text) > TOOL_RESULT_CAP:
-                            result_text = (
-                                result_text[:TOOL_RESULT_CAP]
-                                + f"\n…[truncated {len(result_text) - TOOL_RESULT_CAP} chars]")
-                        await emit(BotEvent(
-                            t="tool_result", name=name, text=result_text,
-                            id=tc_id, is_error=tool_failed,
-                            detail="cancelled" if _CANCEL_RE.search(result_text) else ""))
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": tc_id or name,
-                            "content": result_text,
-                        })
-                        if images:
-                            messages.append({"role": "user", "content": [
-                                {"type": "text",
-                                 "text": f"{_TOOL_IMAGES_PREFIX}{name}:"},
-                                *({"type": "image_url", "image_url": {"url": u}}
-                                  for u in images),
-                            ]})
+                    stopped = await self._dispatch_tools(
+                        tool_calls, session=session, turn=turn, emit=emit, handle=handle,
+                        messages=messages, done=done, lang=lang, skill_cache=skill_cache,
+                        loop=loop, gate=gate, usage=usage, llm_model=model)
+                    if stopped is not None:
+                        return stopped
                 return TurnResult(error=_step_limit_summary(done, limit, lang),
                                   usage=usage)
         except asyncio.CancelledError:

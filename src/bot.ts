@@ -1,6 +1,6 @@
 import { atom, react } from 'tldraw'
 
-import { api } from './comfy'
+import { api, setAgentPlanConfirmed } from './comfy'
 import { resultsAtom } from './jobs'
 import { notify } from './notices'
 import { onComfyEvent, onReconnect } from './ws'
@@ -26,6 +26,9 @@ export interface BotBlock {
   max_selections?: number
   allow_other?: boolean
   kind?: string
+  lines?: { text: string; price: string }[]
+  total?: string
+  total_label?: string
   selected?: string[]
   other_text?: string
   label?: string
@@ -277,6 +280,7 @@ const reducers: Record<string, (e: any) => void> = {
     if (chatIdAtom.get() === e.chat_id) messagesAtom.set([...messagesAtom.get(), e.user_message])
   },
   turn_start: (e) => {
+    setAgentPlanConfirmed(false)
     chatsAtom.set(chatsAtom.get().map((c) => (c.id === e.chat_id ? { ...c, busy: true } : c)))
     if (chatIdAtom.get() !== e.chat_id) return
     const rest = messagesAtom.get().filter((m) => m.id !== e.user_message.id)
@@ -301,6 +305,7 @@ const reducers: Record<string, (e: any) => void> = {
     ...m, blocks: m.blocks.map((b) => (b.type === 'ask' && b.ask_id === e.ask_id ? { ...b, status: e.status, selected: e.selected ?? b.selected, other_text: e.other_text ?? b.other_text } : b)),
   })),
   turn_done: (e) => {
+    setAgentPlanConfirmed(false)
     const chat = chatsAtom.get().find((c) => c.id === e.chat_id)
     chatsAtom.set(chatsAtom.get().map((c) => (c.id === e.chat_id ? { ...c, busy: false, ...(e.title ? { title: e.title } : {}) } : c)))
     if (chatIdAtom.get() === e.chat_id) void openChat(e.chat_id)

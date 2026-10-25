@@ -78,6 +78,7 @@
   "agentPicker.selectAgent": "Select Agent",
   "agentPicker.switchingAgentStartsANew": "Switching Agent starts a new chat",
   "agentPicker.unavailable": "· Unavailable",
+  "app.createFailed": "Couldn’t create the project. Your prompt is back in the chat box, so you can send it again.",
   "app.expandChat": "Expand chat",
   "app.page": "Page",
   "app.refresh": "Refresh",
