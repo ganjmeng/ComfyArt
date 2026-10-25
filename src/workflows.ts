@@ -26,6 +26,31 @@ const AZIMUTHS: [number, string][] = [
   [0, 'front view'], [45, 'front-right quarter view'], [90, 'right side view'], [135, 'back-right quarter view'],
   [180, 'back view'], [225, 'back-left quarter view'], [270, 'left side view'], [315, 'front-left quarter view'],
 ]
+const DISTANCE_WORDS = ['close-up', 'medium shot', 'wide shot'] as const
+
+const clampNum = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
+
+/** Shared by the panel caption and the request: 0 close-up (z ≥ 7), 1 medium (3 ≤ z < 7), 2 wide (z < 3). */
+export function angleDistance(z: number): 0 | 1 | 2 {
+  return z >= 7 ? 0 : z >= 3 ? 1 : 2
+}
+
+/** edit-multiple-angles takes horizontal_angle in 0..359. 360 lands on 0.
+ *  Anything that is not a finite number (NaN, Infinity) is sent as 0. */
+function horizontalAngle(h: number): number {
+  const n = Math.round(Number(h))
+  if (!Number.isFinite(n)) return 0
+  return ((n % 360) + 360) % 360
+}
+
+/** Vertical stays −30..60. Distance uses angleDistance. */
+export function angleParams(h: number, v: number, z: number) {
+  return {
+    horizontal_angle: horizontalAngle(h),
+    vertical_angle: clampNum(Math.round(v), -30, 60),
+    distance: angleDistance(z),
+  }
+}
 
 export function anglePrompt(horizontal: number, vertical: number, zoom: number): string {
   const az = ((horizontal % 360) + 360) % 360
@@ -34,7 +59,7 @@ export function anglePrompt(horizontal: number, vertical: number, zoom: number):
     return d(cur[0]) < d(best[0]) ? cur : best
   })[1]
   const elKw = vertical <= -15 ? 'low-angle shot' : vertical <= 15 ? 'eye-level shot' : vertical <= 45 ? 'elevated shot' : 'high-angle shot'
-  const distKw = zoom >= 7 ? 'close-up' : zoom >= 3 ? 'medium shot' : 'wide shot'
+  const distKw = DISTANCE_WORDS[angleDistance(zoom)]
   return `<qma> ${azKw} ${elKw} ${distKw}`
 }
 

@@ -115,6 +115,13 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
     const right = rect.r + (mode === 'expand' ? pads.r * s : 0)
     left = right + GAP + size.w > host.width - EDGE ? Math.max(EDGE, rect.l - size.w - GAP) : right + GAP
     top = Math.min(Math.max(rect.t, EDGE), host.height - size.h - EDGE)
+    if (mode === 'angles') {
+      const dock = editor.getContainer().querySelector('.ca-dock')
+      const dockTop = dock ? dock.getBoundingClientRect().top - host.top : host.height
+      const bottom = dockTop - GAP
+      // Full panel, no scroll. Shift it up so the generate button clears the dock.
+      top = Math.min(top, Math.max(EDGE, bottom - size.h))
+    }
   }
 
   const textEdits = (): [string, string][] => (lines ?? []).flatMap((line, i) => ((edits[i] ?? '').trim() !== line ? [[line, (edits[i] ?? '').trim()] as [string, string]] : []))
