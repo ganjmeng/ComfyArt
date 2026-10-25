@@ -1,7 +1,7 @@
 body { background: var(--ca-float); }
 .ca-home { position: fixed; inset: 0; display: flex; background: var(--ca-float); color: var(--ca-text); font: 400 14px/22px var(--ca-font); }
 
-.ca-rail { width: 60px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 0; border-right: .5px solid var(--ca-border); box-sizing: border-box; }
+.ca-rail { width: 60px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 0; border-right: var(--ca-border-w) solid var(--ca-border); box-sizing: border-box; }
 .ca-rail__logo { display: inline-flex; width: 30px; height: 30px; margin-bottom: 12px; color: var(--ca-strong); }
 .ca-rail__logo svg { width: 100%; height: 100%; }
 .ca-rail__btn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: none; border-radius: 10px; background: transparent; color: var(--ca-text); cursor: pointer; }
@@ -14,7 +14,7 @@ body { background: var(--ca-float); }
 .ca-landing { max-width: 1600px; margin: 0 auto; padding: 96px 48px 64px; box-sizing: border-box; }
 .ca-landing__title { margin: 0 0 24px; text-align: center; font: 400 24px/32px var(--ca-font); }
 .ca-landing__notice { max-width: 760px; margin: 0 auto 12px; box-sizing: border-box; }
-.ca-landing__box { max-width: 760px; margin: 0 auto; padding: 14px 14px 10px 18px; border: .5px solid var(--ca-border); border-radius: 24px; box-shadow: var(--ca-shadow); box-sizing: border-box; background: var(--ca-float); }
+.ca-landing__box { max-width: 760px; margin: 0 auto; padding: 14px 14px 10px 18px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 24px; box-shadow: var(--ca-shadow); box-sizing: border-box; background: var(--ca-float); }
 .ca-landing__box[data-drop] { outline: 2px dashed var(--ca-blue); outline-offset: -2px; }
 .ca-landing__input { width: 100%; min-height: 64px; max-height: 240px; resize: none; border: none; outline: none; background: transparent; font: inherit; color: inherit; box-sizing: border-box; }
 .ca-landing__input::placeholder { color: var(--ca-muted); }
@@ -33,7 +33,7 @@ body { background: var(--ca-float); }
 .ca-landing__error { max-width: 760px; margin: 8px auto 0; padding: 6px 12px; border-radius: 8px; background: var(--ca-error-bg); color: var(--ca-error-text); cursor: pointer; box-sizing: border-box; }
 .ca-landing__quick { max-width: 760px; margin: 16px auto 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ca-landing__hint { color: var(--ca-muted); font-size: 13px; }
-.ca-landing__chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: .5px solid var(--ca-border); border-radius: 16px; background: transparent; color: inherit; font: 400 13px/20px var(--ca-font); cursor: pointer; }
+.ca-landing__chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 16px; background: transparent; color: inherit; font: 400 13px/20px var(--ca-font); cursor: pointer; }
 .ca-landing__chip:hover { background: var(--ca-hover); }
 .ca-landing__chip .ca-icon { width: 16px; height: 16px; }
 .ca-landing__section { margin-top: 64px; }
@@ -43,7 +43,7 @@ body { background: var(--ca-float); }
 .ca-landing__link:hover { color: var(--ca-text); }
 
 .ca-skillgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.ca-skillcard { display: flex; align-items: center; gap: 10px; padding: 12px; border: .5px solid var(--ca-border); border-radius: 12px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ca-skillcard { display: flex; align-items: center; gap: 10px; padding: 12px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 12px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .ca-skillcard:hover { background: var(--ca-hover); }
 .ca-skillcard__icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--ca-field); overflow: hidden; }
 .ca-skillcard__icon img { width: 100%; height: 100%; object-fit: cover; }
@@ -54,10 +54,10 @@ body { background: var(--ca-float); }
 .ca-projects__head h1 { margin: 0; font: 500 24px/32px var(--ca-font); }
 .ca-projects__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px 16px; }
 .ca-projects__empty { color: var(--ca-muted); padding: 24px 0; }
-.ca-projects__bar { position: fixed; left: calc(50% + 30px); bottom: 24px; transform: translateX(-50%); display: flex; gap: 8px; padding: 8px; border: .5px solid var(--ca-border); border-radius: 14px; background: var(--ca-float); box-shadow: var(--ca-shadow); }
+.ca-projects__bar { position: fixed; left: calc(50% + 30px); bottom: 24px; transform: translateX(-50%); display: flex; gap: 8px; padding: 8px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 14px; background: var(--ca-float); box-shadow: var(--ca-shadow); }
 
 .ca-pcard { min-width: 0; }
-.ca-pcard__cover { position: relative; display: grid; grid-template-columns: 1fr; width: 100%; aspect-ratio: 16 / 9.4; padding: 0; overflow: hidden; border: .5px solid var(--ca-border); border-radius: 12px; background: var(--ca-field); cursor: pointer; }
+.ca-pcard__cover { position: relative; display: grid; grid-template-columns: 1fr; width: 100%; aspect-ratio: 16 / 9.4; padding: 0; overflow: hidden; border: var(--ca-border-w) solid var(--ca-border); border-radius: 12px; background: var(--ca-field); cursor: pointer; }
 .ca-pcard__cover[data-count="2"] { grid-template-columns: 1fr 1fr; }
 .ca-pcard__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ca-pcard__cover:hover { border-color: var(--ca-muted); }
@@ -78,7 +78,7 @@ body { background: var(--ca-float); }
 
 @media (max-width: 640px) {
   .ca-home { flex-direction: column-reverse; }
-  .ca-rail { width: auto; flex-direction: row; justify-content: space-around; padding: 6px 16px; border-right: none; border-top: .5px solid var(--ca-border); }
+  .ca-rail { width: auto; flex-direction: row; justify-content: space-around; padding: 6px 16px; border-right: none; border-top: var(--ca-border-w) solid var(--ca-border); }
   .ca-rail__logo, .ca-rail__spacer { display: none; }
   .ca-landing { padding: 48px 16px 32px; }
   .ca-projects { padding: 24px 16px 96px; }
