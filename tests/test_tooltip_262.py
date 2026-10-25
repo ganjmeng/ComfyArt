@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 BASE = (ROOT / "src/styles/base.css").read_text()
-TB = (ROOT / "src/ui/ImageToolbar.tsx").read_text()
+TB = (ROOT / "src/ui/ImageToolbar.tsx").read_text() + (ROOT / "src/ui/Tip.tsx").read_text()  # #287: Tip moved to its own file
 
 
 def rule(sel):

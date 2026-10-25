@@ -16,6 +16,8 @@ import { resultsAtom } from '../jobs'
 import { Icons } from '../ui/icons'
 
 export const GENERATOR = 'generator'
+/** #287: shared with the home composer, which has no editor to ask for defaults. */
+export const GENERATOR_DEFAULTS: GeneratorShape['props'] = { w: 512, h: 512, prompt: '', ratio: '1:1', resolution: '1K', count: 1, workflow: '', duration: 5, transparent: false, quality: 'standard', style: '', cw: 1024, ch: 1024 }
 
 declare module 'tldraw' {
   export interface TLGlobalShapePropsMap {
@@ -74,7 +76,7 @@ export class GeneratorShapeUtil extends BaseBoxShapeUtil<GeneratorShape> {
   })
 
   override getDefaultProps(): GeneratorShape['props'] {
-    return { w: 512, h: 512, prompt: '', ratio: '1:1', resolution: '1K', count: 1, workflow: '', duration: 5, transparent: false, quality: 'standard', style: '', cw: 1024, ch: 1024 }
+    return { ...GENERATOR_DEFAULTS }
   }
 
   override canEdit() {

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useEscape } from './escape'
 import { placeBarMenu, placePopover } from './popoverPlace'
 
-export function Popover({ trigger, children, side = 'bottom', align = 'start', open, onOpenChange, contentKey, bar, within }: {
+export function Popover({ trigger, children, side = 'bottom', align = 'start', open, onOpenChange, contentKey, bar, within, viewportCap }: {
   trigger: (props: { open: boolean; toggle: () => void }) => ReactNode
   children: ReactNode
   side?: 'top' | 'bottom'
@@ -15,6 +15,8 @@ export function Popover({ trigger, children, side = 'bottom', align = 'start', o
   bar?: string
   /** #268: CSS selector of a panel the popover must stay inside (left edge clamped to it). */
   within?: string
+  /** #287: when neither side fits, cap to window height - 64 (scrolls inside) instead of the larger side's room. */
+  viewportCap?: boolean
 }) {
   const anchor = useRef<HTMLSpanElement>(null)
   const panel = useRef<HTMLDivElement>(null)
@@ -28,12 +30,12 @@ export function Popover({ trigger, children, side = 'bottom', align = 'start', o
     const view = { width: innerWidth, height: innerHeight }
     const barEl = bar ? anchor.current.closest(bar) : null
     const btn = anchor.current.firstElementChild?.getBoundingClientRect() ?? a
-    const at = barEl ? placeBarMenu(barEl.getBoundingClientRect(), btn, size, view) : placePopover(a, size, view, side, align)
+    const at = barEl ? placeBarMenu(barEl.getBoundingClientRect(), btn, size, view) : placePopover(a, size, view, side, align, viewportCap)
     const box = within ? anchor.current.closest(within)?.getBoundingClientRect() : null
     let place: { left: number; top: number; maxHeight?: number; width?: number } = at
     if (box) place = size.width > box.width ? { ...at, left: box.left, width: box.width } : { ...at, left: Math.max(box.left, Math.min(at.left, box.right - size.width)) }
     setPos(place)
-  }, [open, side, align, contentKey, bar, within])
+  }, [open, side, align, contentKey, bar, within, viewportCap])
 
   useEffect(() => {
     if (!open) return

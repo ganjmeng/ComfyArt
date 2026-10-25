@@ -1,3 +1,4 @@
+import type { GeneratorShape } from './shapes/GeneratorShape'
 import { atom } from 'tldraw'
 
 import { api, loadModelPaths, readUserJson, writeUserJson } from './comfy'
@@ -69,7 +70,10 @@ function customModels(): ModelDef[] {
 
 export const modelOf = (workflow: string) => [autoDef(false), autoDef(true), ...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].find((m) => m.id === workflow)
 
-export interface ModelPrefs { auto: boolean; enabled: string[] }
+/** #287: `image` / `video` hold the model + settings the image/video composer uses. Home and canvas
+ *  read and write this one store (saved to comfyart/models.json), so a change on either side shows on both. */
+export interface ModelPrefs { auto: boolean; enabled: string[]; image?: DirectSettings; video?: DirectSettings }
+export type DirectSettings = Partial<GeneratorShape['props']>
 
 const FILE = 'comfyart/models.json'
 const ALL = [...IMAGE_MODELS, ...VIDEO_MODELS].map((m) => m.id)
@@ -120,6 +124,13 @@ export async function loadModels() {
   if (prefs) modelPrefsAtom.set(prefs)
   const names: string[] = files.ok ? await files.json() : []
   installedAtom.set([...IMAGE_MODELS, ...VIDEO_MODELS].filter((m) => m.files.every((f) => names.includes(f) || f in paths)).map((m) => m.id))
+}
+
+export const directSettings = (key: 'image' | 'video'): DirectSettings => modelPrefsAtom.get()[key] ?? {}
+
+export function saveDirectSettings(key: 'image' | 'video', patch: DirectSettings) {
+  const prefs = modelPrefsAtom.get()
+  return saveModelPrefs({ ...prefs, [key]: { ...prefs[key], ...patch } })
 }
 
 export async function saveModelPrefs(prefs: ModelPrefs) {
