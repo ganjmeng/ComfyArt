@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useEscape } from './escape'
-import { placePopover } from './popoverPlace'
+import { placeBarMenu, placePopover } from './popoverPlace'
 
-export function Popover({ trigger, children, side = 'bottom', align = 'start', open, onOpenChange, contentKey }: {
+export function Popover({ trigger, children, side = 'bottom', align = 'start', open, onOpenChange, contentKey, bar }: {
   trigger: (props: { open: boolean; toggle: () => void }) => ReactNode
   children: ReactNode
   side?: 'top' | 'bottom'
@@ -11,6 +11,8 @@ export function Popover({ trigger, children, side = 'bottom', align = 'start', o
   open: boolean
   onOpenChange: (open: boolean) => void
   contentKey?: string
+  /** CSS selector of the toolbar the trigger sits in: place with placeBarMenu so the menu never covers it. */
+  bar?: string
 }) {
   const anchor = useRef<HTMLSpanElement>(null)
   const panel = useRef<HTMLDivElement>(null)
@@ -20,8 +22,12 @@ export function Popover({ trigger, children, side = 'bottom', align = 'start', o
     if (!open || !anchor.current || !panel.current) return
     const a = anchor.current.getBoundingClientRect()
     const p = panel.current.getBoundingClientRect()
-    setPos(placePopover(a, { width: p.width, height: panel.current.scrollHeight || p.height }, { width: innerWidth, height: innerHeight }, side, align))
-  }, [open, side, align, contentKey])
+    const size = { width: p.width, height: panel.current.scrollHeight || p.height }
+    const view = { width: innerWidth, height: innerHeight }
+    const barEl = bar ? anchor.current.closest(bar) : null
+    const btn = anchor.current.firstElementChild?.getBoundingClientRect() ?? a
+    setPos(barEl ? placeBarMenu(barEl.getBoundingClientRect(), btn, size, view) : placePopover(a, size, view, side, align))
+  }, [open, side, align, contentKey, bar])
 
   useEffect(() => {
     if (!open) return

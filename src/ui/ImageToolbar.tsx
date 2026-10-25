@@ -220,7 +220,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   return (
     <div ref={bar} className="ca-bar ca-toolbar" style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
       {pinned.map(barTool)}
-      <Popover open={menu === 'more'} onOpenChange={toggle('more')} align="end" contentKey={inMore ?? (moreTools ? 'tools' : '')} trigger={({ open, toggle: flip }) => <Btn icon={Icons.more} hint={t('imageToolbar.more')} open={open} onClick={flip} />}>
+      <Popover open={menu === 'more'} onOpenChange={toggle('more')} align="end" bar=".ca-toolbar" contentKey={inMore ?? (moreTools ? 'tools' : '')} trigger={({ open, toggle: flip }) => <Btn icon={Icons.more} hint={t('imageToolbar.more')} open={open} onClick={flip} />}>
         {moreView?.menu ? moreView.menu : (
         <div className="ca-menu ca-menu--image">
           {frame?.type === 'frame' && <Item icon={Icons.frame} label={t('imageToolbar.fillArtboard')} onClick={close(() => fitFrame(true))} />}
