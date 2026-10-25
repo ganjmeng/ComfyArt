@@ -115,6 +115,7 @@ export const Icons = {
   animate: <Svg><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M8.5 14.5v-5h2.2M8.5 12h1.8M12.7 9.5v5M15.2 14.5v-5h2.2M15.2 12h1.8" /></Svg>,
   expand: <Svg><path d="M9 4H5.5A1.5 1.5 0 0 0 4 5.5V9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15M15 20h3.5a1.5 1.5 0 0 0 1.5-1.5V15" /><rect x="9" y="9" width="6" height="6" rx="1" /></Svg>,
   undo: <Svg><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></Svg>,
+  reset: <Svg><path d="M19.5 12a7.5 7.5 0 1 1-2.1-5.2" /><path d="M19.5 4.2V8H15.7" /></Svg>,
   redo: <Svg><path d="m15 14 5-5-5-5" /><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" /></Svg>,
   refs: <Svg><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><circle cx="15.5" cy="9.5" r="1.8" /><path d="m4 17 4.5-4.5a1.6 1.6 0 0 1 2.2 0L16 18" /></Svg>,
 }

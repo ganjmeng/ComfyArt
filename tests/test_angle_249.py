@@ -55,16 +55,35 @@ def test_mock_catalog_defines_angle_params():
     feature = cfg["features"]["change_angle"]
     assert feature["default"] == ANGLE
     assert [m["id"] for m in feature["models"]] == [ANGLE]
+    assert meta["base_price"] == 0.025
     zh = json.loads((ROOT / "src/locales/zh.json").read_text())
     en = json.loads((ROOT / "src/locales/en.json").read_text())
     assert "modePanel.angleLimit" not in zh and "modePanel.angleLimit" not in en
     panel = (ROOT / "src/ui/ModePanel.tsx").read_text()
     assert "const ALL_ANGLES = [315, 45, 270, 90]" in panel
-    assert "min={0}" in panel and "max={360}" in panel
+    assert "min={0}" in panel and "max={359}" in panel
+    presets = panel.split("const ANGLE_PRESETS", 1)[1].split("const ALL_ANGLES", 1)[0]
+    assert "modePanel.back" in presets and "modePanel.front" not in presets and "modePanel.chipFrontRight" in presets
+    # main's 俯视 / 仰视: vertical 50 and -25, no extra snap stops. #258 must not change what is sent.
+    assert "[t('modePanel.top'), { v: 50 }]" in presets and "[t('modePanel.chipLow'), { v: -25 }]" in presets
+    assert "datalist" not in panel and "snap" not in panel
+    vert = panel.split("modePanel.vertical", 1)[1].split("/>", 1)[0]
+    assert "min={-30}" in vert and "max={60}" in vert and "step=" not in vert
+    assert "angleReading" in panel and "modePanel.readLevel" in panel
     assert "modePanel.back" in panel and "modePanel.angleLimit" not in panel
     assert "data-scroll" not in panel
+    assert "featurePrice('change_angle')" in panel and "usd(anglePrice)" in panel and "usd(anglePrice * ALL_ANGLES.length)" in panel
+    assert "0.025" not in panel and "0.03" not in panel
+    css = (ROOT / "src/styles/canvas.css").read_text()
+    val = css.split(".ca-angle__val {", 1)[1].split("}", 1)[0]
+    assert "font-size: 13px" in val and "font-weight: 500" in val and "tabular-nums" in val and "color: var(--ca-text)" in val
+    reset = css.split(".ca-panel__icon.ca-angle__reset svg {", 1)[1].split("}", 1)[0]
+    assert "width: 12px" in reset and "height: 12px" in reset
+    preview = css.split(".ca-angle__preview {", 1)[1].split("}", 1)[0]
+    assert "12px" in preview
     actions = (ROOT / "src/actions.ts").read_text()
     assert "params: angleParams(h, v, z)" in actions and "anglePrompt" not in actions
+    assert "angleReading" not in actions and "readLevel" not in actions
 
 
 @pytest.mark.skipif(not (ROOT / "node_modules" / ".bin" / "rolldown").exists() or not shutil.which("node"), reason="needs node + npm install")
