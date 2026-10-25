@@ -1,0 +1,7 @@
+/* pr271 lovart-polish-v1 — CSS overrides only (spacing/size/radius/icon/shadow). No structure, copy, order or color-role change. */
+.ca-composer { border-radius: 20px; padding-right: 10px; padding-bottom: 10px; }   /* L: ~20 radius, ~9/8 btn->edge; ours 18, 13/13 */
+.ca-composer__foot { gap: 6px; }                                                   /* L: +→mode ~21 glyph gap; ours 14 */
+.ca-composer .ca-composer__foot .ca-bar__btn.ca-composer__mode { gap: 6px; padding-left: 6px; padding-right: 6px; }           /* L: icon→text 8, text→chev glyph 10; ours 2/2 */
+.ca-composer .ca-composer__foot .ca-gen__pill { gap: 4px; }                                                        /* text→chev align w/ mode */
+.ca-composer__slot.ca-voice svg { width: 16px; height: 16px; }                     /* L: arrow glyph ~16 box; ours 18 */
+html:not([data-theme=dark]) .ca-menu { box-shadow: 0 4px 24px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04); } /* L light: soft, near-borderless */
