@@ -12,8 +12,8 @@ import { defaultKitId, loadLibrary } from './library'
 import { loadMemory } from './memory'
 import { loadModels } from './models'
 import { loadProject, NEW_PARAM } from './projects'
-import { startAutosave } from './autosave'
-import { takeHandoff } from './home/handoff'
+import { saveStateAtom, startAutosave } from './autosave'
+import { restoreHandoff, takeHandoff } from './home/handoff'
 import { markDark, themeAtom } from './theme'
 import { overrides } from './overrides'
 import { CommentShapeUtil, CommentTool } from './shapes/CommentShape'
@@ -199,14 +199,23 @@ export function App({ id }: { id: string }) {
         const autosave = startAutosave(editor, id, () => !staleRef.current, () => channel.postMessage({ project: id, tab: TAB }))
         stopAutosave = autosave.stop
         const url = new URL(location.href)
+        const created = url.searchParams.has(NEW_PARAM) ? autosave.save().then(() => saveStateAtom.get()) : Promise.resolve(null)
         if (url.searchParams.has(NEW_PARAM)) {
-          void autosave.save()
           url.searchParams.delete(NEW_PARAM)
           history.replaceState(null, '', url)
         }
-        takeHandoff(editor, setError).catch((e) => setError(errorText(e)))
+        // #286: creating the project is the first save; if it fails, give the prompt back instead of sending it
+        void created.then((s) => {
+          if (!alive) return
+          if (s?.state === 'error') restoreHandoff(setError, [t('app.createFailed'), s.error].filter(Boolean).join(' '))
+          else takeHandoff(editor, setError).catch((e) => setError(errorText(e)))
+        })
       })
-      .catch((e) => setError(String(e)))
+      .catch((e) => {
+        if (!alive) return
+        if (new URL(location.href).searchParams.has('ask')) restoreHandoff(setError, [t('app.createFailed'), String(e)].join(' '))
+        else setError(String(e))
+      })
     const channel = new BroadcastChannel(CHANNEL)
     channel.onmessage = (e: MessageEvent<{ project: string; tab: string }>) => {
       if (e.data.project !== id || e.data.tab === TAB) return

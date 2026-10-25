@@ -78,6 +78,7 @@
   "agentPicker.selectAgent": "选择 Agent",
   "agentPicker.switchingAgentStartsANew": "切换 Agent 会新开一个对话",
   "agentPicker.unavailable": "· 不可用",
+  "app.createFailed": "项目创建失败，你的提问已经放回对话框，可以直接重新发送。",
   "app.expandChat": "展开对话区",
   "app.page": "页面",
   "app.refresh": "刷新",
