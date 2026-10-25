@@ -377,3 +377,26 @@
 .ca-menu__sub[data-open] .ca-menu__chev { transform: rotate(180deg); }
 .ca-menu__nested { display: flex; flex-direction: column; align-self: stretch; }
 .ca-menu__nested .ca-menu__item { width: 100%; box-sizing: border-box; padding-left: 20px; }
+/* #250: mode / settings / model sit in one group; +, voice and send never shrink, so send stays inside the bar.
+   Buttons keep their size; Composer sets data-fit to fold step by step: settings "1K · 1:1 · 1 image(s)" → "1K · 1:1" → icon,
+   then model icon, mode last. The model button is capped at 120 with an ellipsis. Full text is in each title. */
+.ca-composer__foot { container: ca-composer-foot / inline-size; }
+.ca-composer__foot > .ca-composer__mid { display: flex; align-items: center; gap: 4px; flex-shrink: 1; min-width: 0; overflow: hidden; }
+.ca-composer__mid > .ca-pop-anchor { flex-shrink: 0; }
+.ca-composer__mid > .ca-pop-anchor:has(> .ca-composer__mode[data-agent]) { flex-shrink: 1; min-width: 0; }
+.ca-composer__mid [data-pill=model] { max-width: 120px; }
+.ca-gen__pillicon { display: none; }
+.ca-composer__foot[data-fit] .ca-composer__mid .ca-gen__pillmore { display: none; }
+.ca-composer__foot:is([data-fit="2"], [data-fit="3"], [data-fit="4"]) [data-pill=settings] > .ca-gen__pilltext,
+.ca-composer__foot:is([data-fit="3"], [data-fit="4"]) [data-pill=model] > .ca-gen__pilltext,
+.ca-composer__foot[data-fit="4"] .ca-composer__modetext { display: none; }
+.ca-composer__foot:is([data-fit="2"], [data-fit="3"], [data-fit="4"]) [data-pill=settings] > .ca-gen__pillicon,
+.ca-composer__foot:is([data-fit="3"], [data-fit="4"]) [data-pill=model] > .ca-gen__pillicon { display: flex; width: 18px; height: 18px; }
+.ca-composer__foot:is([data-fit="2"], [data-fit="3"], [data-fit="4"]) [data-pill=settings],
+.ca-composer__foot:is([data-fit="3"], [data-fit="4"]) [data-pill=model] { padding: 0 6px; }
+/* phone width (#250 acceptance at 360): all three are icon only */
+@container ca-composer-foot (max-width: 320px) {
+  .ca-composer__mid [data-pill] > .ca-gen__pilltext, .ca-composer__mid .ca-composer__modetext { display: none; }
+  .ca-composer__mid [data-pill] > .ca-gen__pillicon { display: flex; width: 18px; height: 18px; }
+  .ca-composer__mid [data-pill] { padding: 0 6px; }
+}

@@ -1,0 +1,65 @@
+"""#250: in image / video mode the composer bar folds (settings text → short → icon, model icon, mode icon last)
+so +, voice and send always stay inside the bar and send is clickable. 1280 and 360 wide, zh and en. Mocks only ($0)."""
+from __future__ import annotations
+
+import pytest
+
+from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401  (fixtures)
+from test_e2e_default_agent import fake_tools  # noqa: F401
+
+pw = pytest.importorskip("playwright.async_api")
+from test_e2e_default_agent import pytestmark  # noqa: E402,F401
+
+LABEL = {"image": {"zh": "图像", "en": "Image"}, "video": {"zh": "视频", "en": "Video"}}
+
+FOOT = """() => {
+  const c = document.querySelector('.ca-composer').getBoundingClientRect()
+  const foot = document.querySelector('.ca-composer__foot'); const fr = foot.getBoundingClientRect()
+  const r = (s) => foot.querySelector(s).getBoundingClientRect()
+  const inside = (b) => b.width > 0 && b.left >= fr.left - 0.5 && b.right <= fr.right + 0.5 && b.right <= Math.min(c.right, innerWidth) + 0.5
+  const s = r('.ca-gen__send'); const hit = document.elementFromPoint(s.left + s.width / 2, s.top + s.height / 2)
+  const vis = (e) => !!e && e.getBoundingClientRect().width > 0
+  return {
+    send: inside(s), plus: inside(r('.ca-bar__btn--icon')), hit: !!hit && foot.querySelector('.ca-gen__send').contains(hit),
+    fixed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-gen__send')].every((e) => e.getBoundingClientRect().width >= 31.5),
+    pills: [...foot.querySelectorAll('.ca-composer__mode, [data-pill]')].map((e) => ({ text: e.innerText.trim(), title: e.title, icon: vis(e.querySelector('.ca-gen__pillicon, .ca-icon')) })),
+    settingsCut: (() => { const t = foot.querySelector("[data-pill=settings] > .ca-gen__pilltext"); return vis(t) && t.scrollWidth > t.clientWidth })(),
+    midCut: (() => { const m = foot.querySelector(".ca-composer__mid"); return m.scrollWidth > m.clientWidth })(),
+    modelW: foot.querySelector('[data-pill=model]').getBoundingClientRect().width,
+  }
+}"""
+
+
+@pytest.mark.parametrize("mode", ["image", "video"])
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("width", [1280, 360])
+async def test_send_stays_in_bar(app_url, fake_tools, monkeypatch, width, lang, mode):  # noqa: F811
+    monkeypatch.setenv("WAVESPEED_API_KEY", "mock-key-not-real")
+    async with pw.async_playwright() as p:
+        try:
+            browser = await p.chromium.launch()
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
+        ctx = await browser.new_context(viewport={"width": width, "height": 800})
+        pg = await ctx.new_page()
+        await pg.add_init_script(f"localStorage.setItem('comfyart.lang','{lang}')")
+        await pg.goto(app_url + "?project=e250&new=1")
+        await pg.locator(".ca-composer__mode").wait_for()
+        await pg.wait_for_timeout(1500)
+        for _ in range(3):
+            if await pg.locator(".ca-modal").count():
+                await pg.keyboard.press("Escape")
+                await pg.wait_for_timeout(300)
+        await pg.locator(".ca-composer__mode").click()
+        await pg.locator(".ca-agentpick .ca-menu__item:not(.ca-agentpick__row)").filter(has_text=LABEL[mode][lang]).first.click()
+        await pg.locator(".ca-composer__input").fill("a cat")
+        await pg.wait_for_timeout(400)
+        bar = await pg.evaluate(FOOT)
+        assert bar["send"] and bar["plus"] and bar["hit"] and bar["fixed"], bar
+        assert len(bar["pills"]) == 3, bar  # mode, settings and model are all kept, none hidden
+        assert all(x["title"] for x in bar["pills"]), bar  # full text on hover
+        assert not bar["settingsCut"] and not bar["midCut"], bar  # folded or iconised, never cut mid-text
+        assert bar["modelW"] <= 120.5, bar
+        if width == 360:
+            assert all(x["text"] == "" and x["icon"] for x in bar["pills"]), bar  # phone: icon only
+        await browser.close()

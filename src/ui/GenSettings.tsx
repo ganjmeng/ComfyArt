@@ -45,9 +45,13 @@ export function SettingsPill({ p, video, quality, tiers, caps, update }: { p: Ge
   // #159: write the displayed video tier back, so the quote and the submit use what the card shows
   const vres = video ? shownVideoRes(p, caps) : null
   useEffect(() => { if (vres && vres !== p.resolution) update({ resolution: vres }) }, [vres, p.resolution]) // eslint-disable-line react-hooks/exhaustive-deps
+  // #250: a narrow composer bar drops the trailing part ("1K · 1:1 · 1 image(s)" → "1K · 1:1"); the full text stays in the tooltip
+  const full = settingsSummary(p, video, caps)
+  const short = video ? `${p.ratio} · ${p.duration}s` : p.resolution === 'custom' ? `${p.cw}×${p.ch}` : `${p.resolution} · ${p.ratio}`
+  const rest = full.startsWith(short) && full.length > short.length ? full.slice(short.length) : ''
   return (
     <Popover open={open} onOpenChange={setOpen} side="top" trigger={({ open: o, toggle }) => (
-      <button type="button" className="ca-gen__pill" data-open={o || undefined} onClick={toggle}><span className="ca-gen__pilltext">{settingsSummary(p, video, caps)}</span><span className="ca-gen__chev">{Icons.chevron}</span></button>
+      <button type="button" className="ca-gen__pill" data-pill="settings" data-open={o || undefined} title={full} onClick={toggle}><span className="ca-icon ca-gen__pillicon">{Icons.adjust}</span><span className="ca-gen__pilltext">{rest ? <>{short}<span className="ca-gen__pillmore">{rest}</span></> : full}</span><span className="ca-gen__chev">{Icons.chevron}</span></button>
     )}>
       <GenSettings p={p} video={video} quality={quality} tiers={tiers} caps={caps} update={update} />
     </Popover>
@@ -76,8 +80,8 @@ export function ModelPill({ video, model, picks, onPick, onAuto }: {
   const selected = useCallback((el: HTMLElement | null) => el?.scrollIntoView({ block: 'nearest' }), [])
   return (
     <Popover open={open} onOpenChange={setOpen} side="top" align="end" trigger={({ open: o, toggle }) => (
-      <button type="button" className="ca-gen__pill" data-open={o || undefined} title={model.auto ? model.label : `${model.label} (${model.id})`} onClick={toggle}>
-        <span className="ca-gen__pilltext">{model.label}</span><span className="ca-gen__chev">{Icons.chevron}</span>
+      <button type="button" className="ca-gen__pill" data-pill="model" data-open={o || undefined} title={model.auto ? model.label : `${model.label} (${model.id})`} onClick={toggle}>
+        <span className="ca-icon ca-gen__pillicon">{Icons.cube}</span><span className="ca-gen__pilltext">{model.label}</span><span className="ca-gen__chev">{Icons.chevron}</span>
       </button>
     )}>
       <div className="ca-menu ca-modelprefs ca-models" data-testid="model-menu">
