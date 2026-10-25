@@ -39,7 +39,7 @@ export function Confirm() {
           </div>
         )) : null}
         {ask.total != null && ask.total !== '' ? (
-          <div className="ca-plan__head">
+          <div className="ca-keys__row ca-plan__head">
             <span className="ca-lib__name">{ask.totalLabel}</span>
             <span className="ca-panel__val">{ask.total}</span>
           </div>

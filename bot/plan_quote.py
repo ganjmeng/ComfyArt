@@ -264,7 +264,9 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         ))
     total = round(sum(ln.amount for ln in lines), 4)
     ask = _needs_ask(total, threshold, any(ln.unpriced for ln in lines))
-    total_text = f"${usd(total)}"
+    # One estimated line makes the sum an estimate too: 「约 $0.64」 / "about $0.64".
+    money = f"${usd(total)}"
+    total_text = f"{ABOUT[lang]} {money}" if any(ln.approx for ln in lines) else money
     return Quote(
         lines=lines, total=total, n=len(lines), ask=ask, lang=lang,
         prompt=_PROMPT[lang].format(n=len(lines), total=usd(total), threshold=threshold_text(threshold)),

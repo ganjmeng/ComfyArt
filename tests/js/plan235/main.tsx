@@ -20,7 +20,7 @@ confirmAtom.set({
     { text: zh ? '生成视频 · Seedance' : 'Generate video · Seedance', price: zh ? '约 $0.24' : 'about $0.24' },
   ],
   totalLabel: zh ? '总价' : 'Total',
-  total: '$0.64',
+  total: zh ? '约 $0.64' : 'about $0.64',
   run: () => { (globalThis as any).__choice = 'start' },
   cancel: () => { (globalThis as any).__choice = 'cancel' },
 })

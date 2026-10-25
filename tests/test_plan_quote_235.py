@@ -109,10 +109,10 @@ async def test_unknown_price_uses_the_dearest_model_and_marks_approx():
     assert quote is not None and quote.ask
     assert quote.lines[0].price == "约 $0.24" and "mystery" in quote.lines[0].text
     assert quote.lines[1].price == "约 $0.90" and "dearest-video" in quote.lines[1].text
-    assert quote.total == 1.14
+    assert quote.total == 1.14 and quote.total_text == "约 $1.14"
     assert called == ["acme/mystery"]  # a named model is quoted; an empty one is not
     en = await build_quote(steps, "en", threshold=0.5, pricer=pricer, models_for=models_for)
-    assert en is not None and en.lines[0].price == "about $0.24"
+    assert en is not None and en.lines[0].price == "about $0.24" and en.total_text == "about $1.14"
 
 
 async def test_fully_unpriced_step_still_asks_without_a_fake_zero():
@@ -130,6 +130,31 @@ async def test_fully_unpriced_step_still_asks_without_a_fake_zero():
     assert quote.lines[0].price == "约"
     assert "$0.00" not in quote.lines[0].price
     assert quote.lines[1].price == "$0.10"
+    assert quote.total_text == "约 $0.10"  # the unpriced line makes the sum an estimate too
+
+
+async def test_an_estimate_line_prefixes_the_total():
+    """One 「约」 line makes the total 「约 $0.64」 / "about $0.64". Exact lines leave the total bare."""
+    steps = [_step("海报", "generate_image", POSTER, prompt="p"),
+             _step("视频", "generate_video", "acme/mystery", prompt="v")]
+
+    async def pricer(model, inputs):
+        return 0.40 if model == POSTER else None
+
+    async def models_for(feature):
+        return [("acme/dearest-video", 0.24)] if feature == "text_to_video" else []
+
+    zh = await build_quote(steps, "zh", threshold=0.5, pricer=pricer, models_for=models_for)
+    en = await build_quote(steps, "en", threshold=0.5, pricer=pricer, models_for=models_for)
+    assert zh is not None and en is not None
+    assert zh.lines[0].price == "$0.40" and zh.lines[1].price == "约 $0.24"
+    assert zh.total_text == "约 $0.64" and en.total_text == "about $0.64"
+    assert en.lines[1].price == "about $0.24"
+    exact, _ = await _quote(
+        [_step("a", "generate_image", POSTER, prompt="p"),
+         _step("b", "generate_image", POSTER, prompt="q")],
+        threshold=0.5, prices={POSTER: 0.32})
+    assert exact is not None and exact.total_text == "$0.64"
 
 
 async def test_fallback_is_not_priced_and_count_is_multiplied():
