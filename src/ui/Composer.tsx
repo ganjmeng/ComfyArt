@@ -287,7 +287,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           side="top"
           trigger={({ open, toggle }) => (
             <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' && agent ? providerLabel(agent) : undefined} data-agent={mode === 'agent' && agent ? agent.id : undefined} data-open={open || undefined} onClick={toggle}>
-              {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span>{shortLabel(agent)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span>{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
+              {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span className="ca-menu__grow">{shortLabel(agent)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span>{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
             </button>
           )}
         >

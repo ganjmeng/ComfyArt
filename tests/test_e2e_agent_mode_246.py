@@ -36,12 +36,11 @@ async def test_mode_menu_agent_flow(app_url, fake_tools, monkeypatch, lang, them
     image = "图像" if lang == "zh" else "Image"
     async with pw.async_playwright() as p:
         try:
-            browser, pg = await _page(p, app_url, lang)
+            browser, pg = await _page(p, app_url, lang, theme)
         except Exception as e:
             pytest.skip(f"chromium not available: {e}")
         await _dismiss(pg)
-        if theme == "dark":
-            await pg.evaluate("document.documentElement.dataset.theme = 'dark'")
+        assert await pg.evaluate("document.documentElement.dataset.theme || 'light'") == theme
         btn = pg.locator(".ca-composer__mode")
         assert await btn.count() == 1  # no separate agent button any more
         assert (await btn.inner_text()).strip() == "ComfyArt"

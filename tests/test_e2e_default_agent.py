@@ -45,11 +45,13 @@ def fake_tools(monkeypatch):
         monkeypatch.setattr(get_provider(pid), "list_models", models.__get__(get_provider(pid)))
 
 
-async def _page(p, url, lang):
+async def _page(p, url, lang, theme=None):
     browser = await p.chromium.launch()
     ctx = await browser.new_context(viewport={"width": 1280, "height": 800}, device_scale_factor=2)
     pg = await ctx.new_page()
     await pg.add_init_script(f"localStorage.setItem('comfyart.lang','{lang}')")
+    if theme:
+        await pg.add_init_script(f"localStorage.setItem('comfyart.theme','{theme}')")
     await pg.goto(url)
     await pg.wait_for_timeout(1500)
     await pg.mouse.click(28, 83)  # home: new project
@@ -70,12 +72,12 @@ BAR_FITS = """() => {
   const modes = [...foot.querySelectorAll('.ca-composer__mode')]
   return {
     modes: modes.map((m) => m.innerText.trim()),
-    clipped: modes.some((m) => m.scrollWidth > m.clientWidth + 1) || [...foot.querySelectorAll('.ca-composer__mode[data-agent-name] > .ca-menu__grow')].some((m) => m.scrollWidth > m.clientWidth + 1),
+    clipped: modes.some((m) => m.scrollWidth > m.clientWidth + 1) || [...foot.querySelectorAll('.ca-composer__mode[data-agent] > .ca-menu__grow')].some((m) => m.scrollWidth > m.clientWidth + 1),
     overlap: kids.some((r, i) => i > 0 && r.left < kids[i - 1].right - 0.5),
     overflow: kids.some((r) => r.right > fr.right + 0.5 || r.left < fr.left - 0.5),
     sendInside: (() => { const r = foot.querySelector('.ca-gen__send').getBoundingClientRect(); return r.width > 0 && r.left >= fr.left - 0.5 && r.right <= fr.right + 0.5 })(),
     // every control except the agent-name button keeps its natural size
-    squeezed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-bar__btn, :scope > .ca-gen__send, :scope > .ca-pop-anchor:has(> .ca-composer__mode:not([data-agent-name]))')]
+    squeezed: [...foot.querySelectorAll(':scope > .ca-pop-anchor > .ca-bar__btn--icon, :scope > .ca-bar__btn, :scope > .ca-gen__send, :scope > .ca-pop-anchor:has(> .ca-composer__mode:not([data-agent]))')]
       .filter((e) => e.getBoundingClientRect().width + 0.5 < e.scrollWidth || e.getBoundingClientRect().width === 0).map((e) => e.className),
   }
 }"""
