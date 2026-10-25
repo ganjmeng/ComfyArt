@@ -79,8 +79,10 @@ function Btn({ icon, label, hint, open, onClick }: { icon: ReactNode; label?: st
   const names = useValue('tool names', () => prefsAtom.get().names, [])
   const shown = names ? label : undefined
   const tipLabel = label ?? hint
+  // Icon-only (no visible name): keep title/aria-label so a11y + e2e (e.g. 更多/More) still find the btn.
+  const a11y = !shown && tipLabel ? tipLabel : undefined
   const btn = (
-    <button type="button" className="ca-bar__btn" data-open={open || undefined} onClick={onClick}>
+    <button type="button" className="ca-bar__btn" data-open={open || undefined} title={a11y} aria-label={a11y} onClick={onClick}>
       <span className="ca-icon">{icon}</span>
       {shown && <span>{shown}{hint && <span className="ca-bar__hint">{hint}</span>}</span>}
     </button>
