@@ -48,7 +48,9 @@ function moveTo(editor: Editor, s: TLShape, b: Box, x: number, y: number) {
 function autoLayout(editor: Editor, frame: TLFrameShape) {
   const items = childBoxes(editor, frame).sort((a, b) => a.b.y - b.b.y || a.b.x - b.b.x)
   if (!items.length) return
-  const fixedW = sizingOf(frame, 'w') === 'fixed'
+  // #282: the reference area never shrinks on drop: items wrap inside its current width and it only grows downward
+  const keep = !!frame.meta.refFrame
+  const fixedW = keep || sizingOf(frame, 'w') === 'fixed'
   const cols = Math.ceil(Math.sqrt(items.length))
   const rows: typeof items[] = []
   for (const item of items) {
@@ -67,6 +69,10 @@ function autoLayout(editor: Editor, frame: TLFrameShape) {
     }
     width = Math.max(width, x)
     y += Math.max(...row.map(({ b }) => b.h)) + PAD
+  }
+  if (keep) {
+    editor.updateShape<TLFrameShape>({ id: frame.id, type: 'frame', props: { w: Math.max(frame.props.w, width), h: Math.max(frame.props.h, y) } })
+    return
   }
   editor.updateShape<TLFrameShape>({ id: frame.id, type: 'frame', props: { ...(fixedW ? {} : { w: width }), ...(sizingOf(frame, 'h') === 'hug' || !fixedW ? { h: y } : {}) } })
 }
