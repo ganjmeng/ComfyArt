@@ -77,9 +77,15 @@ async def test_mode_menu_agent_flow(app_url, fake_tools, monkeypatch, lang, them
         # undetected tool: whole row dimmed, click opens Agent settings
         await btn.click()
         off = rows.filter(has_text="Qwen Code")
-        if theme == "dark":
-            bg = await off.locator(".ca-agentlogo").evaluate("e => getComputedStyle(e).backgroundColor")
-            assert bg != "rgba(0, 0, 0, 0)", bg  # Qwen's dark mark gets a light plate
+        logo = off.locator(".ca-agentlogo")
+        assert await logo.evaluate("e => getComputedStyle(e).filter") == "grayscale(1)"
+        assert await logo.evaluate("e => getComputedStyle(e).opacity") == await off.locator(".ca-agentpick__name").evaluate("e => getComputedStyle(e).opacity")
+        assert await logo.evaluate("e => getComputedStyle(e).backgroundColor") == "rgba(0, 0, 0, 0)"  # no tile
+        ob = await off.bounding_box()
+        assert ob["height"] <= 32.5, ob  # name and status on one 32px line
+        nb = await off.locator(".ca-agentpick__name").bounding_box()
+        sb = await off.locator(".ca-agentpick__status").bounding_box()
+        assert abs(nb["y"] - sb["y"]) < 4 and nb["x"] < sb["x"], (nb, sb)
         await off.click()
         await pg.locator(".ca-modal").wait_for()
         await _shot(pg, f"04-setup-{lang}-{theme}")

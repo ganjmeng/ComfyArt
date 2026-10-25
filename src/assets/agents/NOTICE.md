@@ -17,3 +17,4 @@ Claude: https://www.anthropic.com/press-kit checked first; no direct SVG downloa
 Disabled (undetected) rows: logos sit at 55% opacity. In the dark theme a light 1px plate is placed behind dimmed logos and always behind Qwen Code, so its dark mark stays visible. No logo is recolored.
 
 Gemini CLI uses the Gemini spark (approved by product, #246 19:20); the label "Gemini CLI" tells them apart.
+| Qwen Code (dark theme) | qwen-code-dark.svg | https://github.com/QwenLM/qwen-code/blob/main/packages/vscode-ide-companion/assets/sidebar-icon.svg (official mono mark; `currentColor` set to #FFFFFF, paths untouched) |
