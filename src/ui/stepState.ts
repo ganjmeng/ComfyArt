@@ -3,7 +3,7 @@ export type StepState = 'running' | 'error' | 'cancelled' | 'done'
 
 interface StepResult { status?: string; text?: string }
 
-const CANCEL_RE = /"cancelled"\s*:\s*true|"status"\s*:\s*"declined"|已取消该生成，未扣费|Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed/
+const CANCEL_RE = /"cancelled"\s*:\s*true|"status"\s*:\s*"declined"|已取消该生成，未扣费|Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed|已取消，没有扣费。|Cancelled\. Nothing was charged\./
 
 export function stepState(result?: StepResult): StepState {
   if (!result) return 'running'

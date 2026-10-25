@@ -152,6 +152,15 @@ export function setWsHook(hook: WsHook) {
   wsHook = hook
 }
 
+/** #235: after the user presses 开始 on a plan quote, agent jobs in this turn skip jobs.confirmCost. */
+let planConfirmed = false
+let agentDepth = 0
+export function setAgentPlanConfirmed(on: boolean) { planConfirmed = on }
+export function pushAgentCommand() { agentDepth += 1 }
+export function popAgentCommand() { agentDepth = Math.max(0, agentDepth - 1) }
+/** True only while an agent command is on the stack and the plan was confirmed. */
+export function planBypassNow() { return planConfirmed && agentDepth > 0 }
+
 /** Second confirmation for costly cloud jobs, in the app's own Confirm dialog. */
 export function askCost(price: number | null, segSplits?: number, segCapped?: boolean, note = '', estimate?: { tier?: string; unpriced?: boolean }): Promise<boolean> {
   // #138: seg maps quote an upper bound before anything is recognised (nothing is charged before this dialog);
@@ -169,13 +178,15 @@ export function askCost(price: number | null, segSplits?: number, segCapped?: bo
   }))
 }
 
-export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget()): Promise<string> {
+export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(), confirmed = false): Promise<string> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
   if (isWsGraph(prompt)) {
     const key = keyStatusAtom.get()
     if (key && !key.configured) { keySettingsOpenAtom.set(true); throw new Error(t('wsKey.needKey')) }
     if (outOfCredit(key)) throw new Error(wsErrorText('insufficientCredit')!)
     const inputs = await wsHook(Object.values(prompt)[0].inputs as Record<string, unknown>)
+    // #235: the plan card already approved these agent steps, so the server must not 409
+    if (confirmed) inputs.confirmed = true
     let ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
     let wsBody = await ws.json().catch(() => null)
     const price = wsBody?.error?.confirm_usd

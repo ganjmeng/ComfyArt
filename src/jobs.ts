@@ -1,6 +1,6 @@
 import { AssetRecordType, atom, createShapeId, isShapeId, type Editor, type TLParentId, type JsonValue, type TLAssetId, type TLImageAsset, type TLShape, type TLShapeId, type TLVideoAsset } from 'tldraw'
 
-import { cancelPrompt, CostDeclined, mediaMeta, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
+import { cancelPrompt, CostDeclined, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Built } from './workflows'
 import { t } from './i18n'
@@ -225,6 +225,8 @@ export async function startJob(
   opts: { name: string; kind?: MediaKind; placer?: string; extra?: Record<string, unknown>; runOn?: string },
   onError: ErrorSink,
 ) {
+  // Snapshot before any await: queuePrompt runs after build, and the command depth may already have popped.
+  const skipConfirm = planBypassNow()
   const model = takePendingModel()
   // Register before any await so agent tools can await whenSubmitted immediately (#127).
   openSubmitGate(holderId)
@@ -232,7 +234,7 @@ export async function startJob(
     const { graph, result, partial } = await build
     withModel(graph, model)
     const job: Job = {
-      id: await queuePrompt(graph, opts.runOn),
+      id: await queuePrompt(graph, opts.runOn, skipConfirm),
       node: result,
       ...(partial ? { partial } : {}),
       name: opts.name,

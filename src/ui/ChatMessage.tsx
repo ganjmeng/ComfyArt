@@ -2,8 +2,10 @@ import { useEffect, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
 import { answerAsk, outputsOf, toolLabel, toolName, type BotBlock, type BotMessage } from '../bot'
+import { setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
 import { errorText } from '../jobs'
+import { confirmAtom } from './Confirm'
 import { schedulesOpenAtom } from '../schedules'
 import { Icons } from './icons'
 import { Markdown } from './Markdown'
@@ -110,6 +112,55 @@ function Ask({ b }: { b: BotBlock }) {
   )
 }
 
+/** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles. */
+function PlanQuote({ b }: { b: BotBlock }) {
+  const [error, setError] = useState('')
+  const askId = b.ask_id
+  const pending = b.status === 'pending'
+  const startLabel = (b.options ?? []).find((o) => o.id === 'start')?.label ?? ''
+  useEffect(() => {
+    if (!pending || !askId) return
+    let live = true
+    const open = () => confirmAtom.set({
+      title: t('jobs.confirmTitle'),
+      desc: b.prompt ?? '',
+      ok: startLabel,
+      lines: b.lines ?? [],
+      totalLabel: b.total_label,
+      total: b.total,
+      run: () => {
+        if (!live) return
+        setAgentPlanConfirmed(true)
+        void answerAsk(askId, ['start'], '').catch((e) => {
+          if (!live) return
+          setAgentPlanConfirmed(false)
+          setError(errorText(e))
+          open()
+        })
+      },
+      cancel: () => {
+        if (!live) return
+        setAgentPlanConfirmed(false)
+        void answerAsk(askId, ['cancel'], '').catch((e) => { if (live) setError(errorText(e)) })
+      },
+    })
+    open()
+    return () => {
+      live = false
+      const cur = confirmAtom.get()
+      if (cur && cur.desc === (b.prompt ?? '')) confirmAtom.set(null)
+    }
+  }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
+  if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
+  const started = b.status === 'answered' && (b.selected ?? []).includes('start')
+  return (
+    <div className="ca-chat__memo">
+      <span className="ca-icon">{started ? Icons.check : Icons.close}</span>
+      {b.prompt} → {started ? startLabel : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
+    </div>
+  )
+}
+
 function Task({ editor, b }: { editor: Editor; b: BotBlock }) {
   return (
     <div className="ca-chat__task">
@@ -200,7 +251,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       if (b.type === 'thinking' && b.text?.trim()) items.push(<Thought key={i} text={b.text} live={!done && i === m.blocks.length - 1} />)
       if (b.type === 'tool_use') items.push(<Step key={i} editor={editor} use={b} result={resultOf(b, i)} />)
       if (b.type === 'retry') items.push(<Retry key={i} b={b} live={!done && !m.blocks.slice(i + 1).some((x) => x.type === 'retry')} />)
-      if (b.type === 'ask') items.push(<Ask key={b.ask_id ?? i} b={b} />)
+      if (b.type === 'ask') items.push(b.kind === 'plan_quote' ? <PlanQuote key={b.ask_id ?? i} b={b} /> : <Ask key={b.ask_id ?? i} b={b} />)
       if (b.type === 'task') items.push(<Task key={i} editor={editor} b={b} />)
       if (b.type === 'notice') items.push(<div key={i} className="ca-chat__notice" data-level={b.level}>{b.text}</div>)
     }
