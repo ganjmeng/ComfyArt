@@ -14,6 +14,7 @@
   --ca-shine: #f4f4f4;
   --ca-shadow: 0 16px 24px -8px rgba(0,0,0,.06), 0 4px 8px -4px rgba(0,0,0,.04), 0 1px 1px 0 rgba(0,0,0,.02);
   --ca-shadow-menu: var(--ca-shadow);
+  --ca-shadow-float: var(--ca-shadow);
   --ca-backdrop: rgba(0,0,0,.4);
   --ca-border-w: 1px;
   --ca-error-bg: #fee2e2;
@@ -35,6 +36,7 @@
   --ca-shine: #2e2e2e;
   --ca-shadow: 0 4px 16px rgba(0,0,0,.5);
   --ca-shadow-menu: var(--ca-shadow);
+  --ca-shadow-float: var(--ca-shadow);
   --ca-backdrop: rgba(0,0,0,.25);
   --ca-border-w: .5px;
   --ca-error-bg: #4a1d1d;
