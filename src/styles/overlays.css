@@ -443,3 +443,5 @@
 .ca-composer .ca-composer__foot .ca-gen__pill { gap: 4px; } /* model / settings: text → arrow */
 .ca-composer .ca-composer__slot > .ca-icon { width: 16px; height: 16px; } /* voice / send glyph; the button stays 32 */
 :root[data-theme="light"] .ca-menu { box-shadow: 0 4px 24px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04); }
+/* #276: the home composer reuses the same voice/send slot — 16px glyph, button stays 32 */
+.ca-landing__foot .ca-composer__slot > .ca-icon { width: 16px; height: 16px; }
