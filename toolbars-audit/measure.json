@@ -1,0 +1,589 @@
+{
+ "image-zh-dark-1280": {
+  "bar": {
+   "cls": "ca-bar ca-toolbar",
+   "h": 44,
+   "w": 541.703125,
+   "radius": "14px",
+   "shadow": "rgba(0, 0, 0, 0.04) 0px 1px 2px 0px",
+   "bg": "rgb(22, 22, 22)",
+   "border": "1px solid rgba(255, 255, 255, 0.1)",
+   "pad": "0px 6px",
+   "gapCss": "4px",
+   "nBtn": 7,
+   "btnGaps": [
+    4
+   ],
+   "btnH": [
+    32
+   ],
+   "btnW": [
+    121,
+    68,
+    68,
+    81,
+    94,
+    36,
+    36
+   ],
+   "btnRadius": "8px",
+   "btnPad": "0px 8px",
+   "btnFont": "13px 400",
+   "icon": [
+    20,
+    20
+   ],
+   "sep": null,
+   "labels": [
+    "快捷编辑Tab",
+    "对话",
+    "放大",
+    "去背景",
+    "橡皮工具",
+    "更多",
+    "下载"
+   ]
+  },
+  "hoverBg": "rgba(255, 255, 255, 0.08)",
+  "tip": {
+   "native": null
+  },
+  "menu": {
+   "w": 200,
+   "radius": "12px",
+   "shadow": "rgba(0, 0, 0, 0.5) 0px 4px 16px 0px",
+   "pad": "4px",
+   "bg": "rgb(22, 22, 22)",
+   "itemH": 32,
+   "itemRadius": "8px",
+   "itemFont": "13px",
+   "itemPad": "6px 8px",
+   "sep": "rgba(255, 255, 255, 0.1)"
+  }
+ },
+ "video-zh-dark-1280": {
+  "bar": {
+   "cls": "ca-bar ca-toolbar",
+   "h": 44,
+   "w": 412,
+   "radius": "14px",
+   "shadow": "rgba(0, 0, 0, 0.04) 0px 1px 2px 0px",
+   "bg": "rgb(22, 22, 22)",
+   "border": "1px solid rgba(255, 255, 255, 0.1)",
+   "pad": "0px 6px",
+   "gapCss": "4px",
+   "nBtn": 4,
+   "btnGaps": [
+    4
+   ],
+   "btnH": [
+    32
+   ],
+   "btnW": [
+    94,
+    94,
+    68,
+    81
+   ],
+   "btnRadius": "8px",
+   "btnPad": "0px 8px",
+   "btnFont": "13px 400",
+   "icon": [
+    20,
+    20
+   ],
+   "sep": {
+    "w": 1,
+    "h": 42,
+    "bg": "rgba(255, 255, 255, 0.1)",
+    "margin": "0px 2px"
+   },
+   "labels": [
+    "视频裁剪",
+    "视频延长",
+    "放大",
+    "去背景"
+   ]
+  },
+  "hoverBg": "rgba(255, 255, 255, 0.08)",
+  "tip": {
+   "native": null
+  },
+  "menu": null
+ },
+ "audio-zh-dark-1280": {
+  "bar": {
+   "cls": "ca-bar ca-toolbar",
+   "h": 44,
+   "w": 120.109375,
+   "radius": "14px",
+   "shadow": "rgba(0, 0, 0, 0.04) 0px 1px 2px 0px",
+   "bg": "rgb(22, 22, 22)",
+   "border": "1px solid rgba(255, 255, 255, 0.1)",
+   "pad": "0px 6px",
+   "gapCss": "4px",
+   "nBtn": 1,
+   "btnGaps": [],
+   "btnH": [
+    32
+   ],
+   "btnW": [
+    32
+   ],
+   "btnRadius": "8px",
+   "btnPad": "0px",
+   "btnFont": "13px 400",
+   "icon": [
+    20,
+    20
+   ],
+   "sep": {
+    "w": 1,
+    "h": 42,
+    "bg": "rgba(255, 255, 255, 0.1)",
+    "margin": "0px 2px"
+   },
+   "labels": [
+    "下载"
+   ]
+  },
+  "hoverBg": "rgba(255, 255, 255, 0.08)",
+  "tip": {
+   "native": "下载"
+  },
+  "menu": null
+ },
+ "text-zh-dark-1280": {
+  "bar": {
+   "cls": "ca-bar ca-toolbar",
+   "h": 44,
+   "w": 545,
+   "radius": "14px",
+   "shadow": "rgba(0, 0, 0, 0.04) 0px 1px 2px 0px",
+   "bg": "rgb(22, 22, 22)",
+   "border": "1px solid rgba(255, 255, 255, 0.1)",
+   "pad": "0px 6px",
+   "gapCss": "4px",
+   "nBtn": 8,
+   "btnGaps": [
+    4,
+    13
+   ],
+   "btnH": [
+    32
+   ],
+   "btnW": [
+    32,
+    32,
+    130,
+    100,
+    64,
+    54,
+    32,
+    32
+   ],
+   "btnRadius": "8px",
+   "btnPad": "0px",
+   "btnFont": "13px 400",
+   "icon": [
+    14,
+    14
+   ],
+   "sep": {
+    "w": 1,
+    "h": 42,
+    "bg": "rgba(255, 255, 255, 0.1)",
+    "margin": "0px 2px"
+   },
+   "labels": [
+    "文字颜色",
+    "描边",
+    "Arial",
+    "Regular",
+    "80",
+    "",
+    "文字设置",
+    "下载"
+   ]
+  },
+  "hoverBg": "rgba(255, 255, 255, 0.08)",
+  "tip": {
+   "native": "文字颜色"
+  },
+  "menu": null
+ },
+ "shape-zh-dark-1280": {
+  "bar": {
+   "cls": "ca-bar ca-toolbar",
+   "h": 44,
+   "w": 442.484375,
+   "radius": "14px",
+   "shadow": "rgba(0, 0, 0, 0.04) 0px 1px 2px 0px",
+   "bg": "rgb(22, 22, 22)",
+   "border": "1px solid rgba(255, 255, 255, 0.1)",
+   "pad": "0px 6px",
+   "gapCss": "4px",
+   "nBtn": 4,
+   "btnGaps": [
+    4,
+    283.5,
+    13
+   ],
+   "btnH": [
+    32
+   ],
+   "btnW": [
+    32,
+    32,
+    32,
+    32
+   ],
+   "btnRadius": "8px",
+   "btnPad": "0px",
+   "btnFont": "13px 400",
+   "icon": [
+    20,
+    20
+   ],
+   "sep": {
+    "w": 1,
+    "h": 42,
+    "bg": "rgba(255, 255, 255, 0.1)",
+    "margin": "0px 2px"
+   },
+   "labels": [
+    "填充",
+    "描边",
+    "锁定比例",
+    "下载"
+   ]
+  },
+  "hoverBg": "rgba(255, 255, 255, 0.08)",
+  "tip": {
+   "native": "填充"
+  },
+  "menu": null
+ },
+ "pen-zh-dark-1280": {
+  "bar": {
+   "cls": "ca-bar ca-toolbar",
+   "h": 44,
+   "w": 342.484375,
+   "radius": "14px",
+   "shadow": "rgba(0, 0, 0, 0.04) 0px 1px 2px 0px",
+   "bg": "rgb(22, 22, 22)",
+   "border": "1px solid rgba(255, 255, 255, 0.1)",
+   "pad": "0px 6px",
+   "gapCss": "4px",
+   "nBtn": 4,
+   "btnGaps": [
+    4,
+    183.5,
+    13
+   ],
+   "btnH": [
+    32
+   ],
+   "btnW": [
+    32,
+    32,
+    32,
+    32
+   ],
+   "btnRadius": "8px",
+   "btnPad": "0px",
+   "btnFont": "13px 400",
+   "icon": [
+    20,
+    20
+   ],
+   "sep": {
+    "w": 1,
+    "h": 42,
+    "bg": "rgba(255, 255, 255, 0.1)",
+    "margin": "0px 2px"
+   },
+   "labels": [
+    "填充",
+    "描边",
+    "锁定比例",
+    "下载"
+   ]
+  },
+  "hoverBg": "rgba(255, 255, 255, 0.08)",
+  "tip": {
+   "native": "填充"
+  },
+  "menu": null
+ },
+ "pen-nodes-zh-dark-1280": {
+  "bar": {
+   "cls": "ca-bar ca-toolbar",
+   "h": 44,
+   "w": 342.484375,
+   "radius": "14px",
+   "shadow": "rgba(0, 0, 0, 0.04) 0px 1px 2px 0px",
+   "bg": "rgb(22, 22, 22)",
+   "border": "1px solid rgba(255, 255, 255, 0.1)",
+   "pad": "0px 6px",
+   "gapCss": "4px",
+   "nBtn": 4,
+   "btnGaps": [
+    4,
+    183.5,
+    13
+   ],
+   "btnH": [
+    32
+   ],
+   "btnW": [
+    32,
+    32,
+    32,
+    32
+   ],
+   "btnRadius": "8px",
+   "btnPad": "0px",
+   "btnFont": "13px 400",
+   "icon": [
+    20,
+    20
+   ],
+   "sep": {
+    "w": 1,
+    "h": 42,
+    "bg": "rgba(255, 255, 255, 0.1)",
+    "margin": "0px 2px"
+   },
+   "labels": [
+    "填充",
+    "描边",
+    "锁定比例",
+    "下载"
+   ]
+  },
+  "hoverBg": "rgba(255, 255, 255, 0.08)",
+  "tip": {
+   "native": "填充"
+  },
+  "menu": null
+ },
+ "note-zh-dark-1280": {
+  "bar": null
+ },
+ "frame-zh-dark-1280": {
+  "bar": {
+   "cls": "ca-bar ca-toolbar",
+   "h": 44,
+   "w": 954.484375,
+   "radius": "14px",
+   "shadow": "rgba(0, 0, 0, 0.04) 0px 1px 2px 0px",
+   "bg": "rgb(22, 22, 22)",
+   "border": "1px solid rgba(255, 255, 255, 0.1)",
+   "pad": "0px 6px",
+   "gapCss": "4px",
+   "nBtn": 13,
+   "btnGaps": [
+    87.7,
+    4,
+    13,
+    6
+   ],
+   "btnH": [
+    28,
+    32
+   ],
+   "btnW": [
+    48,
+    48,
+    32,
+    32,
+    32,
+    48,
+    48,
+    94,
+    68,
+    32,
+    32,
+    32,
+    32
+   ],
+   "btnRadius": "8px",
+   "btnPad": "0px 10px",
+   "btnFont": "13px 400",
+   "icon": [
+    20,
+    20
+   ],
+   "sep": {
+    "w": 1,
+    "h": 42,
+    "bg": "rgba(255, 255, 255, 0.1)",
+    "margin": "0px 2px"
+   },
+   "labels": [
+    "固定",
+    "固定",
+    "锁定宽高比",
+    "尺寸预设",
+    "填充、描边和圆角",
+    "自动",
+    "手动",
+    "适应内容",
+    "生成",
+    "全屏播放",
+    "批量下载",
+    "打包下载",
+    "导出画板"
+   ]
+  },
+  "hoverBg": "rgba(255, 255, 255, 0.08)",
+  "tip": {
+   "native": "宽度选项"
+  },
+  "menu": null
+ },
+ "refframe-zh-dark-1280": {
+  "bar": {
+   "cls": "ca-bar ca-toolbar",
+   "h": 44,
+   "w": 1065.484375,
+   "radius": "14px",
+   "shadow": "rgba(0, 0, 0, 0.04) 0px 1px 2px 0px",
+   "bg": "rgb(22, 22, 22)",
+   "border": "1px solid rgba(255, 255, 255, 0.1)",
+   "pad": "0px 6px",
+   "gapCss": "4px",
+   "nBtn": 14,
+   "btnGaps": [
+    214.8,
+    87.7,
+    4,
+    13,
+    6
+   ],
+   "btnH": [
+    32,
+    28
+   ],
+   "btnW": [
+    107,
+    48,
+    48,
+    32,
+    32,
+    32,
+    48,
+    48,
+    94,
+    68,
+    32,
+    32,
+    32,
+    32
+   ],
+   "btnRadius": "8px",
+   "btnPad": "0px 8px",
+   "btnFont": "13px 400",
+   "icon": [
+    20,
+    20
+   ],
+   "sep": {
+    "w": 1,
+    "h": 42,
+    "bg": "rgba(255, 255, 255, 0.1)",
+    "margin": "0px 2px"
+   },
+   "labels": [
+    "已链接对话",
+    "适应",
+    "适应",
+    "锁定宽高比",
+    "尺寸预设",
+    "填充、描边和圆角",
+    "自动",
+    "手动",
+    "适应内容",
+    "生成",
+    "全屏播放",
+    "批量下载",
+    "打包下载",
+    "导出画板"
+   ]
+  },
+  "hoverBg": "rgba(255, 255, 255, 0.12)",
+  "tip": {
+   "native": null
+  },
+  "menu": null
+ },
+ "multi-zh-dark-1280": {
+  "bar": {
+   "cls": "ca-bar ca-toolbar",
+   "h": 44,
+   "w": 514,
+   "radius": "14px",
+   "shadow": "rgba(0, 0, 0, 0.04) 0px 1px 2px 0px",
+   "bg": "rgb(22, 22, 22)",
+   "border": "1px solid rgba(255, 255, 255, 0.1)",
+   "pad": "0px 6px",
+   "gapCss": "4px",
+   "nBtn": 7,
+   "btnGaps": [
+    4,
+    13
+   ],
+   "btnH": [
+    32
+   ],
+   "btnW": [
+    68,
+    94,
+    94,
+    94,
+    36,
+    36,
+    36
+   ],
+   "btnRadius": "8px",
+   "btnPad": "0px 8px",
+   "btnFont": "13px 400",
+   "icon": [
+    20,
+    20
+   ],
+   "sep": {
+    "w": 1,
+    "h": 42,
+    "bg": "rgba(255, 255, 255, 0.1)",
+    "margin": "0px 2px"
+   },
+   "labels": [
+    "对话",
+    "自动整理",
+    "创建编组",
+    "合并图层",
+    "对齐",
+    "分布",
+    "下载"
+   ]
+  },
+  "hoverBg": "rgba(255, 255, 255, 0.08)",
+  "tip": {
+   "native": null
+  },
+  "menu": {
+   "w": 200,
+   "radius": "12px",
+   "shadow": "rgba(0, 0, 0, 0.5) 0px 4px 16px 0px",
+   "pad": "4px",
+   "bg": "rgb(22, 22, 22)",
+   "itemH": 32,
+   "itemRadius": "8px",
+   "itemFont": "13px",
+   "itemPad": "0px 10px",
+   "sep": null
+  }
+ }
+}
