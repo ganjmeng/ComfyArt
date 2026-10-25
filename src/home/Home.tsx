@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 
 import type { AgentMode } from '../agent'
-import { botEnabledAtom, loadProviders } from '../bot'
+import { botEnabledAtom, loadProviders, providerLabel } from '../bot'
 import { thumbUrl, uploadImage, viewUrl } from '../comfy'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
-import { newProject, openView, type ProjectEntry } from '../projects'
+import { newProject, openView, startProject, type ProjectEntry } from '../projects'
 import { loadSkills, type Skill } from '../skills'
 import { Icons } from '../ui/icons'
 import { NoKeyNotice } from '../ui/NoKeyNotice'
 import { refreshKeyStatus } from '../wavespeedKey'
 import { isEnter } from '../ui/keys'
 import { Popover } from '../ui/Popover'
+import { shortLabel, useCurrentAgent } from '../ui/AgentPicker'
+import { AgentLogo } from '../ui/agentLogos'
 import { ComposerSlot, useSlot } from '../ui/ComposerSlot'
 import { loadEntries, ProjectCard } from './Projects'
 
@@ -40,6 +42,8 @@ export function Home() {
   const [error, setError] = useState('')
   const [drop, setDrop] = useState(false)
   const [composing, setComposing] = useState(false)
+  const [sending, setSending] = useState(false)
+  const current = useCurrentAgent()  // #278: same agent the canvas mode button shows
   const hasContent = !!text.trim() || refs.length > 0  // #276: an image with no text counts as content
   const { showSend, setVoice } = useSlot(hasContent, composing)
   const input = useRef<HTMLTextAreaElement>(null)
@@ -60,12 +64,20 @@ export function Home() {
     return () => clearInterval(timer)
   }, [])
 
-  const send = () => {
-    if (!hasContent || uploading) return
-    const ask = text.trim()
-    setText('')
-    setRefs([])
-    newProject({ ask, mode, ref: refs })
+  // #278: keep the draft until the new project is created; on failure it stays and an error shows
+  const send = async () => {
+    if (!hasContent || uploading || sending) return
+    setSending(true)
+    setError('')
+    try {
+      await startProject({ ask: text.trim(), mode, ref: refs })
+      setText('')
+      setRefs([])
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setSending(false)
+    }
   }
   const upload = async (files: FileList | null) => {
     setUploading(true)
@@ -124,14 +136,14 @@ export function Home() {
           onCompositionEnd={() => setComposing(false)}
           onKeyDown={(e) => {
             if (e.key === 'Tab' && !text) { e.preventDefault(); setText(EXAMPLES[example]) }
-            if (isEnter(e) && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send() }
+            if (isEnter(e) && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send() }
           }}
         />
         <div className="ca-landing__foot">
           <button type="button" className="ca-rail__btn" title={t('home.addImage')} onClick={() => file.current?.click()}><span className="ca-icon">{Icons.plus}</span></button>
           <Popover open={modeMenu} onOpenChange={setModeMenu} trigger={({ open, toggle }) => (
-            <button type="button" className="ca-landing__mode" data-open={open || undefined} onClick={toggle}>
-              <span className="ca-icon">{Icons[modeInfo[2]]}</span>{modeInfo[1]}<span className="ca-icon">{Icons.chevron}</span>
+            <button type="button" className="ca-landing__mode" title={mode === 'agent' && current ? providerLabel(current) : modeInfo[1]} data-agent={mode === 'agent' && current ? current.id : undefined} data-open={open || undefined} onClick={toggle}>
+              {mode === 'agent' && current ? <><AgentLogo id={current.id} /><span className="ca-landing__modetext">{shortLabel(current)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-landing__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
             </button>
           )}>
             <div className="ca-menu">
@@ -144,7 +156,7 @@ export function Home() {
             </div>
           </Popover>
           <div className="ca-landing__spacer" />
-          <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={hasContent && !uploading} onSend={send} onError={setError}
+          <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={hasContent && !uploading && !sending} onSend={() => void send()} onError={setError}
             onText={(v) => setText((cur) => `${cur}${cur ? ' ' : ''}${v}`)} />
         </div>
         <input ref={file} type="file" accept="image/*" multiple hidden onChange={(e) => { void upload(e.target.files); e.target.value = '' }} />

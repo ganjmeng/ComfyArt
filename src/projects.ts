@@ -79,6 +79,12 @@ export function newProject(params: Record<string, string | string[]> = {}) {
   location.assign(projectUrl(uuid().slice(0, 8), { [NEW_PARAM]: '1', ...params }))
 }
 
+/** #278: home send waits until the project service answers before leaving, so a failure keeps the draft on the home page. */
+export async function startProject(params: Record<string, string | string[]> = {}) {
+  await call<{ projects: ProjectEntry[] }>('/comfyart/projects')
+  newProject(params)
+}
+
 export async function projectExists(id: string) {
   return (await loadProject(id)) !== null
 }
