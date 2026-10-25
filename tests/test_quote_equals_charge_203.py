@@ -46,6 +46,8 @@ TOOLS = {
     "remove_video_background": "remove_video_background",
 }
 VIDEO_TOOLS = {"text_to_video", "image_to_video", "reference_to_video", "extend_video"}
+DURATION_TOOLS = ("text_to_video", "image_to_video", "reference_to_video", "extend_video", "generate_music", "generate_sound_effect")
+EXECUTED: set[tuple[str, str]] = set()  # (tool, model) cases that really ran past the schema gate
 
 
 def cases():
@@ -150,17 +152,37 @@ async def test_quote_equals_charge(catalog, tool, model):
     if "images" in quoted_inputs:
         assert len(payload.get("images") or []) == len(quoted_inputs["images"])
     assert est["price"] == pytest.approx(charged(payload)), (quoted_inputs, payload)
+    EXECUTED.add((tool, model))
 
 
-@pytest.mark.parametrize("tool,model", [c for c in cases() if c.values[0] in ("text_to_video", "image_to_video", "generate_music")][:6])
+def tier_cases(per_tool: int = 2):
+    """Fixed pick: the first `per_tool` models (config order) of each duration tool whose recorded schema has duration."""
+    out = []
+    for tool in DURATION_TOOLS:
+        picked = [c for c in cases() if c.values[0] == tool and not c.marks
+                  and "duration" in json.dumps(FIXTURE.get(c.values[1]) or {})][:per_tool]
+        out += [pytest.param(*c.values, id=f"{tool}:{c.values[1]}") for c in picked]
+    return out
+
+
+@pytest.mark.parametrize("tool,model", tier_cases())
 async def test_other_tier_is_quoted_at_that_tier(catalog, tool, model):
     # breakage check: change the priced field, the quote follows it and still equals the charge
     catalog["prices"][model] = price_of
     job = job_for(tool, model)
+    job["duration"] = 5
+    est5 = await wavespeed.estimate(dict(job))
     job["duration"] = 10
     est = await wavespeed.estimate(dict(job))
+    assert est["source"] == "quote", est
+    assert catalog["quotes"][-1]["model_id"] == model
+    assert catalog["quotes"][-1]["inputs"].get("duration") == 10, catalog["quotes"][-1]
     await wavespeed.submit(dict(job))
-    assert est["price"] == pytest.approx(charged(catalog["submits"][-1][1]))
+    sent_model, payload = catalog["submits"][-1]
+    assert sent_model == model
+    assert payload.get("duration") == 10, payload
+    assert est["price"] != pytest.approx(est5["price"]), (est5, est)
+    assert est["price"] == pytest.approx(charged(payload))
 
 
 def test_price_function_sees_every_priced_field():
@@ -174,3 +196,19 @@ def test_price_function_sees_every_priced_field():
 def test_every_listed_feature_has_cases():
     tools = {c.values[0] for c in cases()}
     assert tools == set(TOOLS), set(TOOLS) - tools
+
+
+def test_tier_cases_cover_every_duration_tool():
+    tools = {c.values[0] for c in tier_cases()}
+    assert tools == set(DURATION_TOOLS), set(DURATION_TOOLS) - tools
+
+
+def test_coverage_counts_only_executed_cases():
+    # runs last in this file: only cases that passed the schema gate and finished count as covered
+    all_cases = cases()
+    skipped = [c.id for c in all_cases if c.marks]
+    if not EXECUTED:
+        pytest.skip("test_quote_equals_charge was not run in this session")
+    covered = {t for t, _ in EXECUTED}
+    print(f"\n#203 coverage: {len(EXECUTED)}/{len(all_cases)} cases executed, {len(skipped)} skipped (no recorded schema): {skipped}")
+    assert covered == set(TOOLS), f"tools with 0 executed cases: {sorted(set(TOOLS) - covered)}"
