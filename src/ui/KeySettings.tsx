@@ -70,7 +70,7 @@ export function KeySettings() {
           <div className="ca-chat__hint">{t('wsKey.envReadOnly')}</div>
         ) : (
           <>
-            <label className="ca-rename__field">
+            <label className="ca-rename__field ca-rename__field--key">
               <span>{status?.configured ? t('wsKey.replace') : t('wsKey.enter')}</span>
               <input className="ca-panel__input" type="password" autoComplete="off" value={draft} placeholder={t('wsKey.placeholder')} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter' && draft.trim()) save() }} />
             </label>
@@ -80,7 +80,7 @@ export function KeySettings() {
             </div>
           </>
         )}
-        <label className="ca-rename__field">
+        <label className="ca-rename__field ca-rename__field--key">
           <span>{t('wsKey.confirmUsd', usd.trim() && Number.isFinite(Number(usd)) ? thresholdUsd(Number(usd)) : 'X')}</span>
           <input className="ca-panel__input" data-testid="ws-confirm-usd" inputMode="decimal" value={usd} onChange={(e) => setUsd(e.target.value)} onBlur={saveUsd} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') saveUsd() }} />
         </label>
