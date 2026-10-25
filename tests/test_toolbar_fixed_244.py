@@ -53,6 +53,14 @@ def test_preview_markup():
     assert "background: none" in x and "border-radius: 50%" not in x
     tip = (ROOT / "src/styles/base.css").read_text()
     assert ".ca-tip {" in tip and ".ca-tip__key" in tip
+    # #261: 对话 shows no Shift Enter (names-on grey hint / names-off tip); 快捷编辑 keeps Tab
+    chat = [ln for ln in src.splitlines() if "id: 'chat'" in ln][0]
+    quick = [ln for ln in src.splitlines() if "id: 'quick'" in ln][0]
+    assert "Shift Enter" not in chat and "hint:" not in chat
+    assert "hint: 'Tab'" in quick or 'hint: "Tab"' in quick
+    multi = (ROOT / "src/ui/MultiToolbar.tsx").read_text()
+    mchat = [ln for ln in multi.splitlines() if "canvasChat.chat" in ln][0]
+    assert "Shift Enter" not in mchat
 
 
 def test_default_order_has_no_inpaint_expand():

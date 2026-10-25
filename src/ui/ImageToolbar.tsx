@@ -192,7 +192,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
     editor.updateShape<TLImageShape>({ id: shape.id, type: 'image', x: (fw - w) / 2, y: (fh - h) / 2, rotation: 0, props: { w, h } })
   }
   const tools: Tool[] = [
-    { id: 'chat', icon: Icons.comment, label: t('canvasChat.chat'), hint: 'Shift Enter', run: () => openCanvasChat(editor) },
+    { id: 'chat', icon: Icons.comment, label: t('canvasChat.chat'), run: () => openCanvasChat(editor) },
     { id: 'quick', icon: Icons.quick, label: t('common.quickEdit'), hint: 'Tab', run: mode$('quick') },
     { id: 'upscale', icon: Icons.upscale, label: t('common.upscale'), menu: <UpscaleMenu editor={editor} shape={shape} w={iw} h={ih} onDone={() => setMenu(null)} onError={onError} /> },
     {
