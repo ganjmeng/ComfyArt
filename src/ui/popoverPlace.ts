@@ -23,15 +23,15 @@ export function placePopover(a: Rect, p: { width: number; height: number }, view
 }
 
 /** Menu that hangs off a toolbar: never covers the toolbar, right edge on the trigger's right edge.
- * Opens below (bar bottom + 8) unless fewer than 240px are left there, then above (bar top - 8).
- * Height is capped at min(window - 64, room left in that direction); overflow scrolls inside. */
+ * Opens 4px below the bar; height = min(window - 64, window - menu top - 16), overflow scrolls inside.
+ * Only if fewer than 240px would be left below does it open 4px above the bar instead. */
 export function placeBarMenu(bar: Rect, btn: Rect, p: { width: number; height: number }, view: { width: number; height: number }): { left: number; top: number; maxHeight: number } {
-  const G = 8, M = 8
-  const left = Math.min(Math.max(btn.right - p.width, M), view.width - p.width - M)
-  const below = view.height - M - (bar.bottom + G)
+  const G = 4, M = 16
+  const left = Math.min(Math.max(btn.right - p.width, 8), view.width - p.width - 8)
+  const top = bar.bottom + G
+  const below = view.height - top - M
   const above = bar.top - G - M
   const up = below < 240 && above > below
   const maxHeight = Math.max(Math.min(view.height - 64, up ? above : below), 0)
-  const h = Math.min(p.height, maxHeight)
-  return { left, top: up ? bar.top - G - h : bar.bottom + G, maxHeight }
+  return { left, top: up ? bar.top - G - Math.min(p.height, maxHeight) : top, maxHeight }
 }
