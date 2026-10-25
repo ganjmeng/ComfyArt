@@ -166,9 +166,14 @@ async def test_model_icon_button(app_url, fake_tools, monkeypatch, width):  # no
         btn = pg.locator(".ca-landing__foot [data-pill=model]")
         box = await btn.bounding_box()
         assert round(box["width"]) == 32 and round(box["height"]) == 32, box
-        assert (await btn.inner_text()).strip() == ""
+        assert await btn.locator(".ca-gen__pilltext").count() == 0 and await btn.get_attribute("data-auto") == "true"
+        assert await btn.locator("[data-model-icon=auto]").count() == 1
+        await btn.hover()
+        assert (await pg.locator(".ca-tip__name").inner_text()).strip() == "自动"
         await btn.click()
         menu = pg.locator("[data-testid=model-menu]")
         await menu.wait_for(timeout=5000)
-        assert await menu.locator(".ca-switch").count() >= 1 and "自动" in await menu.inner_text()
+        assert await menu.locator(".ca-switch").count() >= 1
+        first = menu.locator(".ca-menu__item").first
+        assert await first.get_attribute("data-model-auto") is not None and "自动" in await first.inner_text()
         await browser.close()
