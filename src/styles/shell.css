@@ -176,7 +176,7 @@ button.ca-head__logo:hover, button.ca-head__logo[data-open] { background: var(--
 .ca-composer__foot .ca-gen__pill { max-width: 100%; }
 .ca-composer__mode { color: var(--ca-text); }
 .ca-composer__mode .ca-icon { width: 18px; height: 18px; }
-.ca-composer__mode .ca-icon:last-child { width: 14px; height: 14px; color: var(--ca-muted); }
+.ca-composer__mode .ca-icon:last-child { width: 16px; height: 16px; color: var(--ca-muted); }
 .ca-skills { width: 260px; max-height: 420px; overflow: auto; }
 .ca-skilled { width: 340px; gap: 8px; }
 .ca-skilled .ca-panel__prompt--boxed { min-height: 120px; }

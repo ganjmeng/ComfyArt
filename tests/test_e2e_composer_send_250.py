@@ -27,7 +27,7 @@ FOOT = """() => {
     settingsCut: (() => { const t = foot.querySelector("[data-pill=settings] > .ca-gen__pilltext"); return vis(t) && t.scrollWidth > t.clientWidth })(),
     midCut: (() => { const m = foot.querySelector(".ca-composer__mid"); return m.scrollWidth > m.clientWidth })(),
     agentFull: (() => { const t = foot.querySelector('.ca-composer__mode[data-agent] > .ca-menu__grow'); return !t || t.scrollWidth <= t.clientWidth + 0.5 })(),
-    chevSame: (() => { const a = foot.querySelector('.ca-composer__mode > .ca-icon:last-child'), b = foot.querySelector('[data-pill] .ca-gen__chev'); return !b || getComputedStyle(a).color === getComputedStyle(b).color })(),
+    chevSame: (() => { const a = foot.querySelector('.ca-composer__mode > .ca-icon:last-child'), b = foot.querySelector('[data-pill] .ca-gen__chev'); const ra = a.getBoundingClientRect(); const sz = Math.abs(ra.width - 16) < 0.5 && Math.abs(ra.height - 16) < 0.5; const bs = [...foot.querySelectorAll('[data-pill] .ca-gen__chev')].every((e) => { const r = e.getBoundingClientRect(); return r.width === 0 || (Math.abs(r.width - 16) < 0.5 && Math.abs(r.height - 16) < 0.5) }); return sz && bs && (!b || getComputedStyle(a).color === getComputedStyle(b).color) })(),
     modelW: (foot.querySelector('[data-pill=model]') || { getBoundingClientRect: () => ({ width: 0 }) }).getBoundingClientRect().width,
     modeText: (() => { const t = foot.querySelector('.ca-composer__mode > .ca-composer__modetext, .ca-composer__mode > .ca-menu__grow'); return t ? { text: t.textContent.trim(), w: t.getBoundingClientRect().width } : null })(),
     modeChev: (() => { const m = foot.querySelector('.ca-composer__mode'); const c = m.querySelector(':scope > .ca-icon:last-child'); const a = c.getBoundingClientRect(), b = m.getBoundingClientRect(); return a.width >= 10 && a.right <= b.right + 0.5 })(),
@@ -70,7 +70,7 @@ async def test_send_stays_in_bar(app_url, fake_tools, monkeypatch, width, lang, 
         # the mode button always shows its text (never icon only), and its arrow stays visible even if the text ellipsizes
         assert bar["modeText"] and bar["modeText"]["text"] and bar["modeText"]["w"] >= 12, bar
         assert bar["modeChev"], bar
-        assert bar["chevSame"], bar  # mode arrow same colour as settings / model arrows
+        assert bar["chevSame"], bar  # mode arrow same colour and 16x16 size as settings / model arrows
         if mode == "agent":
             assert bar["agentFull"], bar  # "ComfyArt" shows in full when the bar has room (incl. 360)
             await browser.close()
