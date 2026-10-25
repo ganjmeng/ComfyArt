@@ -127,7 +127,7 @@ export function CropBar() {
           </button>
         )}
       >
-        <div className="ca-menu">
+        <div className="ca-menu ca-menu--bar">
           {PRESETS.map(([id, , hint]) => (
             <button key={id} type="button" className="ca-menu__item" onClick={() => apply(id)}>
               <span className="ca-menu__grow">{presetLabel(id)}</span>
