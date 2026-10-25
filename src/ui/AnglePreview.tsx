@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import type * as T from 'three'
 
-import { anglePrompt } from '../workflows'
 import { t } from '../i18n'
 
 export interface Angle { h: number; v: number; z: number }
@@ -17,9 +16,18 @@ const V_MIN = -30
 const V_MAX = 60
 const PICK_PX = 14
 const INSET = 0.38
-const YAW = 0x00d4ff
-const PITCH = 0xff66ff
-const DIST = 0xffcc00
+// v3g / v3d: same geometry as main, desaturated accents sampled from the approved panel.
+const YAW = 0x5b8fb8
+const PITCH = 0xb87a9e
+const DIST = 0xc4a35a
+const FACE_BG = '#2F333C'
+const FACE_GRID = '#454B58'
+const FACE_TEXT = '#C5CAD6'
+const FRONT = 0xe2e5ea
+const EDGE = 0x22262e
+const WIRE = 0x8e96a6
+const INSET_BORDER = 0x8e96a6
+const INSET_BG = 0x2a2a2a
 
 type Handle = 'yaw' | 'pitch' | 'distance'
 export type AngleView = 'camera' | 'object'
@@ -33,9 +41,9 @@ function faceTexture(THREE: typeof T, label: string) {
   const c = document.createElement('canvas')
   c.width = c.height = 256
   const g = c.getContext('2d')!
-  g.fillStyle = '#2a2d36'
+  g.fillStyle = FACE_BG
   g.fillRect(0, 0, 256, 256)
-  g.strokeStyle = '#3d4150'
+  g.strokeStyle = FACE_GRID
   for (let i = 0; i <= 256; i += 32) {
     g.beginPath()
     g.moveTo(i, 0)
@@ -44,7 +52,7 @@ function faceTexture(THREE: typeof T, label: string) {
     g.lineTo(256, i)
     g.stroke()
   }
-  g.fillStyle = '#aeb4c2'
+  g.fillStyle = FACE_TEXT
   g.font = 'bold 40px sans-serif'
   g.textAlign = 'center'
   g.textBaseline = 'middle'
@@ -74,15 +82,15 @@ function buildScene(THREE: typeof T, el: HTMLDivElement) {
   sun.position.set(3, 5, 4)
   scene.add(sun)
 
-  const front = new THREE.MeshBasicMaterial({ color: 0xd8dbe2 })
+  const front = new THREE.MeshBasicMaterial({ color: FRONT })
   const cube = new THREE.BoxGeometry(1, 1, 1)
   const faces = [t('modePanel.right'), t('modePanel.left'), t('modePanel.faceTop'), t('modePanel.faceBottom'), '', t('modePanel.back')].map((label, i) => (i === 4 ? front : faceTexture(THREE, label)))
   scene.add(new THREE.Mesh(cube, faces))
-  scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(cube), new THREE.LineBasicMaterial({ color: 0x1a1a1a, transparent: true, opacity: 0.6 })))
+  scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(cube), new THREE.LineBasicMaterial({ color: EDGE, transparent: true, opacity: 0.6 })))
 
   const gizmos = new THREE.Group()
   scene.add(gizmos)
-  gizmos.add(new THREE.Mesh(new THREE.SphereGeometry(SPHERE, 12, 8), new THREE.MeshBasicMaterial({ color: 0x8a93a6, wireframe: true, transparent: true, opacity: 0.14, depthWrite: false })))
+  gizmos.add(new THREE.Mesh(new THREE.SphereGeometry(SPHERE, 12, 8), new THREE.MeshBasicMaterial({ color: WIRE, wireframe: true, transparent: true, opacity: 0.14, depthWrite: false })))
 
   const ringR = SPHERE * Math.cos(RING_LAT)
   const ringY = SPHERE * Math.sin(RING_LAT)
@@ -167,11 +175,11 @@ function buildScene(THREE: typeof T, el: HTMLDivElement) {
     renderer.setScissorTest(true)
     renderer.setViewport(w - side - 6, 6, side, side)
     renderer.setScissor(w - side - 6, 6, side, side)
-    renderer.setClearColor(0x8a93a6, 1)
+    renderer.setClearColor(INSET_BORDER, 1)
     renderer.clear()
     renderer.setViewport(w - side - 5, 7, side - 2, side - 2)
     renderer.setScissor(w - side - 5, 7, side - 2, side - 2)
-    renderer.setClearColor(0x282828, 1)
+    renderer.setClearColor(INSET_BG, 1)
     renderer.clear()
     renderer.render(scene, shot)
     renderer.setClearColor(0x000000, 0)
@@ -184,7 +192,7 @@ function buildScene(THREE: typeof T, el: HTMLDivElement) {
     const mine = ++token
     front.map?.dispose()
     front.map = null
-    front.color.set(0xd8dbe2)
+    front.color.set(FRONT)
     if (src) {
       const tex = await new THREE.TextureLoader().loadAsync(src).catch(() => null)
       if (!tex || mine !== token) return tex?.dispose()
@@ -268,13 +276,11 @@ function buildScene(THREE: typeof T, el: HTMLDivElement) {
 
 type Scene = ReturnType<typeof buildScene>
 
-export function AnglePreview({ value, src, onChange }: { value: Angle; src: string | null; onChange: (a: Angle) => void }) {
+export function AnglePreview({ value, src, onChange, view, inset }: { value: Angle; src: string | null; onChange: (a: Angle) => void; view: AngleView; inset: boolean }) {
   const host = useRef<HTMLDivElement>(null)
   const scene = useRef<Scene | null>(null)
   const latest = useRef({ value, src, onChange })
   latest.current = { value, src, onChange }
-  const [view, setView] = useState<AngleView>('camera')
-  const [inset, setInset] = useState(true)
   const viewState = useRef({ view, inset })
   viewState.current = { view, inset }
 
@@ -350,15 +356,5 @@ export function AnglePreview({ value, src, onChange }: { value: Angle; src: stri
     scene.current?.setView(view, inset)
   }, [view, inset])
 
-  return (
-    <div className="ca-angle">
-      <div className="ca-angle__bar">
-        <button type="button" className="ca-panel__chip" data-on={view === 'camera' || undefined} title={t('modePanel.cameraViewTooltip')} aria-pressed={view === 'camera'} onClick={() => setView('camera')}>{t('modePanel.cameraView')}</button>
-        <button type="button" className="ca-panel__chip" data-on={view === 'object' || undefined} title={t('modePanel.objectViewTooltip')} aria-pressed={view === 'object'} onClick={() => setView('object')}>{t('modePanel.objectView')}</button>
-        <button type="button" className="ca-panel__chip ca-angle__inset" data-on={(view === 'camera' && inset) || undefined} disabled={view === 'object'} title={inset ? t('modePanel.hideShotPreview') : t('modePanel.showShotPreview')} aria-pressed={view === 'camera' && inset} onClick={() => setInset(!inset)}>{t('modePanel.shotPreview')}</button>
-      </div>
-      <div ref={host} className="ca-angle__view" />
-      <div className="ca-angle__prompt" title={anglePrompt(value.h, value.v, value.z)}>{anglePrompt(value.h, value.v, value.z).replace(/^<\w+> /, '')}</div>
-    </div>
-  )
+  return <div ref={host} className="ca-angle__view" />
 }

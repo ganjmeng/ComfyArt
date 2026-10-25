@@ -60,11 +60,15 @@ def test_mock_catalog_defines_angle_params():
     assert "modePanel.angleLimit" not in zh and "modePanel.angleLimit" not in en
     panel = (ROOT / "src/ui/ModePanel.tsx").read_text()
     assert "const ALL_ANGLES = [315, 45, 270, 90]" in panel
-    assert "min={0}" in panel and "max={360}" in panel
+    assert "min={0}" in panel and "max={359}" in panel
+    presets = panel.split("const ANGLE_PRESETS", 1)[1].split("const ALL_ANGLES", 1)[0]
+    assert "modePanel.back" in presets and "modePanel.front" not in presets and "modePanel.chipFrontRight" in presets
+    assert "angleReading" in panel and "modePanel.readLevel" in panel
     assert "modePanel.back" in panel and "modePanel.angleLimit" not in panel
     assert "data-scroll" not in panel
     actions = (ROOT / "src/actions.ts").read_text()
     assert "params: angleParams(h, v, z)" in actions and "anglePrompt" not in actions
+    assert "angleReading" not in actions and "readLevel" not in actions
 
 
 @pytest.mark.skipif(not (ROOT / "node_modules" / ".bin" / "rolldown").exists() or not shutil.which("node"), reason="needs node + npm install")
