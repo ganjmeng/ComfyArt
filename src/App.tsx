@@ -157,6 +157,7 @@ export function App({ id }: { id: string }) {
   const onMount = useCallback((ed: Editor) => {
     ed.user.updateUserPreferences({ colorScheme: themeAtom.get(), locale: lang === 'zh' ? 'zh-cn' : 'en' })
     setEditor(ed)
+    ;(window as unknown as { __caEditor?: Editor }).__caEditor = ed // #282: e2e tests drive the canvas
     const stopFrames = registerFrameRules(ed)
     const stopCrop = registerCropRule(ed)
     return () => { stopFrames(); stopCrop() }
