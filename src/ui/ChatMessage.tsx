@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
 import { answerAsk, outputsOf, toolLabel, toolName, type BotBlock, type BotMessage } from '../bot'
@@ -46,6 +46,30 @@ function Step({ editor, use, result, thumbs = true }: { editor: Editor; use: Bot
         </div>
       )}
       {outputs.length > 0 && <div className="ca-chat__thumbs">{outputs.map((s) => <Thumb key={s} editor={editor} src={s} />)}</div>}
+    </div>
+  )
+}
+
+/** #232: an LLM timeout / 429 / 5xx retry, drawn as an ordinary tool row; 429 counts down to the retry. */
+function Retry({ b: block, live }: { b: BotBlock; live: boolean }) {
+  const b = block as BotBlock & { kind?: string; attempt?: number; max?: number; until?: number; http_status?: number }
+  const [now, setNow] = useState(() => Date.now())
+  const left = Math.ceil(((b.until ?? 0) - now) / 1000)
+  const waiting = live && left > 0
+  useEffect(() => {
+    if (!waiting) return
+    const id = setInterval(() => setNow(Date.now()), 250)
+    return () => clearInterval(id)
+  }, [waiting])
+  const reason = b.kind === '429' ? t('chatMessage.retryRateLimited', b.attempt ?? 1, b.max ?? 2) : b.kind === 'timeout' ? t('chatMessage.retryTimeout', b.attempt ?? 1, b.max ?? 2) : t('chatMessage.retryServer', b.http_status || '5xx', b.attempt ?? 1, b.max ?? 2)
+  return (
+    <div className="ca-chat__tool" data-retry={b.kind}>
+      <div className="ca-chat__step" style={{ cursor: 'default' }}>
+        <span className="ca-icon">{Icons.agent}</span>
+        <span>{t('chatMessage.retry')}</span>
+        <span className="ca-chat__arg">{reason}</span>
+        <span className="ca-chat__status">{waiting ? t('chatMessage.retryIn', left) : live ? t('chatMessage.inProgress') : t('chatMessage.retried')}</span>
+      </div>
     </div>
   )
 }
@@ -175,6 +199,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       if (b.type === 'text') items.push(<Markdown key={i} text={b.text ?? ''} />)
       if (b.type === 'thinking' && b.text?.trim()) items.push(<Thought key={i} text={b.text} live={!done && i === m.blocks.length - 1} />)
       if (b.type === 'tool_use') items.push(<Step key={i} editor={editor} use={b} result={resultOf(b, i)} />)
+      if (b.type === 'retry') items.push(<Retry key={i} b={b} live={!done && !m.blocks.slice(i + 1).some((x) => x.type === 'retry')} />)
       if (b.type === 'ask') items.push(<Ask key={b.ask_id ?? i} b={b} />)
       if (b.type === 'task') items.push(<Task key={i} editor={editor} b={b} />)
       if (b.type === 'notice') items.push(<div key={i} className="ca-chat__notice" data-level={b.level}>{b.text}</div>)

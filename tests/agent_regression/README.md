@@ -17,11 +17,14 @@ Each case checks: tool-call order and args, model ids in `api/curated_models.jso
 the canvas, reply/notice language follows the UI, paid submits == expected (no double charge), no
 key sentinel in logs or the stored chat, steps <= limit (actual steps recorded).
 
-Known gaps / expected to change:
-- `15-*` (LLM timeout / 429 / 500): baseline today is no retry, the turn ends with the error after one
-  paid call. `15-*-retry` are strict xfail `P1-a #232` (retry the LLM twice, never the paid tool).
+Fault and limit cases (#232):
+- `15-*-retry` (LLM timeout / 429 / 500 twice, then OK): the LLM call is retried twice with two retry rows
+  (attempt 1/2, 2/2), the turn finishes, the paid tool ran once.
+- `15-timeout` / `15-429` / `15-500` (fault never clears): 3 LLM attempts, then a bilingual error that lists
+  the steps already done; the zh UI accepts only Chinese, the en UI only English. 1 paid call.
+- `15-steps80`: stops at the (configurable, default 80) step limit with a bilingual notice + done steps.
 - `11` "brighter" (product ruling): exactly 1 new image whose edit input is the original, the original
   is unchanged (id/props/asset), 1 paid call per edit.
-- `13`: the guard-refused retry step shows as success in the chat; to fix in #232.
+- `13`: the declined step and the guard-refused retry both carry tool status `cancelled` (已取消 / Cancelled).
 - `12` covers the editable deck (`create_slides`); the PPTX file export itself is covered by
   `tests/test_export_formats.py`.

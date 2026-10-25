@@ -141,7 +141,8 @@ def _apply_event(state: _TurnState, ev: BotEvent) -> Optional[dict]:
         state.blocks.append(block)
         return payload
     if ev.t == "tool_result":
-        tool_status = "error" if ev.is_error else "success"
+        # #232: a declined / guard-refused paid step is "cancelled", never success
+        tool_status = "cancelled" if ev.detail == "cancelled" else ("error" if ev.is_error else "success")
         block = {"type": "tool_result", "name": ev.name, "text": ev.text,
                  "status": tool_status}
         payload = {"event": "turn_tool_result", "name": ev.name,
@@ -154,6 +155,10 @@ def _apply_event(state: _TurnState, ev: BotEvent) -> Optional[dict]:
                 block["duration_ms"] = payload["duration_ms"] = duration_ms
         state.blocks.append(block)
         return payload
+    if ev.t == "retry":  # #232: LLM timeout / 429 / 5xx retry row (429 shows a countdown)
+        block = {"type": "retry", "kind": ev.name, **(ev.input or {})}
+        state.blocks.append(block)
+        return {"event": "turn_retry", "block": block}
     return None
 
 
@@ -180,7 +185,7 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
         payload.update({"chat_id": chat_id, "message_id": state.message_id})
         broadcast(payload.pop("event"), payload)
         now = time.monotonic()
-        if ev.t in ("tool_use", "tool_result") or now - state.last_persist > _PERSIST_INTERVAL_S:
+        if ev.t in ("tool_use", "tool_result", "retry") or now - state.last_persist > _PERSIST_INTERVAL_S:
             state.last_persist = now
             chat_store.update_message(chat_id, state.message_id, blocks=state.blocks)
 

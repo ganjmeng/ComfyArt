@@ -387,3 +387,114 @@ class TestStepLabels:
         from bot.local_llm import _stop_summary
         assert _stop_summary([], "zh").endswith("已完成：无")
         assert _stop_summary([], "en").endswith("Done so far: nothing.")
+
+
+class TestRetry232:
+    """#232: LLM timeout / 429 / 5xx retried twice with a retry row; tool calls (paid) never retried."""
+
+    async def _run(self, monkeypatch, faults, lang="zh", env_steps=None):
+        from ComfyArt.bot import local_llm
+        from ComfyArt.bot.local_llm import LlmHttpError
+        monkeypatch.setattr(local_llm, "_RETRY_BACKOFF_S", (0.0, 0.0))
+        monkeypatch.setattr(local_llm, "_RATE_LIMIT_WAIT_S", (0.0, 0.0))
+        provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
+        script = [{"choices": [{"message": {"content": "", "tool_calls": [_tc(0, "generate_image", {"prompt": "cat"})]}}]},
+                  *faults, {"choices": [{"message": {"content": "ok", "tool_calls": []}}]}]
+        llm, paid = [], []
+
+        async def fake_request(session, method, url, *, headers, json_body=None, timeout=120):
+            if url.endswith("/chat/completions"):
+                llm.append(1)
+                step = script.pop(0)
+                if isinstance(step, BaseException):
+                    raise step
+                return step
+            return {"result": {"tools": [{"name": "generate_image"}]}}
+
+        async def fake_call(session, endpoint, name, arguments):
+            paid.append(name)
+            return "{}", []
+
+        monkeypatch.setattr(provider, "_request_json", fake_request)
+        monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
+        events: list[BotEvent] = []
+        result = await provider.send(TurnRequest(chat_id="c", user_text="画猫", lang=lang,
+                                                 mcp_endpoint="http://x/mcp", model="m"),
+                                     _collect(events), TurnHandle())
+        return result, events, llm, paid, LlmHttpError
+
+    async def test_429_retry_after_and_rows(self, monkeypatch):
+        from ComfyArt.bot.local_llm import LlmHttpError
+        result, events, llm, paid, _ = await self._run(
+            monkeypatch, [LlmHttpError(429, "slow down", 0.0), LlmHttpError(503, "busy")])
+        assert result.error == "" and len(llm) == 4 and paid == ["generate_image"]
+        rows = [e for e in events if e.t == "retry"]
+        assert [(e.name, e.input["attempt"], e.input["max"]) for e in rows] == [("429", 1, 2), ("5xx", 2, 2)]
+
+    async def test_exhausted_is_bilingual_with_done_steps(self, monkeypatch):
+        import asyncio
+        for lang, want in (("zh", "模型响应超时，已重试 2 次仍失败，已停止，请稍后再试。已完成：生成图像"),
+                           ("en", "The model timed out; still failing after 2 retries, so the task stopped. "
+                                  "Please try again later. Done so far: Generate image.")):
+            result, _, llm, paid, _ = await self._run(
+                monkeypatch, [asyncio.TimeoutError()] * 3, lang=lang)
+            assert result.error == want and len(llm) == 4 and paid == ["generate_image"]
+
+    async def test_4xx_not_retried(self, monkeypatch):
+        from ComfyArt.bot.local_llm import LlmHttpError
+        result, events, llm, _, _ = await self._run(monkeypatch, [LlmHttpError(401, "bad key")])
+        assert len(llm) == 2 and "HTTP 401" in result.error
+        assert not any(e.t == "retry" for e in events)
+
+    async def test_cancel_text_marks_step_cancelled(self, monkeypatch):
+        provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
+        script = [{"choices": [{"message": {"content": "", "tool_calls": [_tc(0, "generate_image", {"prompt": "c"})]}}]},
+                  {"choices": [{"message": {"content": "ok", "tool_calls": []}}]}]
+
+        async def fake_request(session, method, url, *, headers, json_body=None, timeout=120):
+            return script.pop(0) if url.endswith("/chat/completions") else {"result": {"tools": [{"name": "generate_image"}]}}
+
+        async def fake_call(session, endpoint, name, arguments):
+            return "[tool error] 已取消该生成，未扣费。", []
+
+        monkeypatch.setattr(provider, "_request_json", fake_request)
+        monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
+        events: list[BotEvent] = []
+        await provider.send(TurnRequest(chat_id="c", user_text="画", mcp_endpoint="http://x/mcp", model="m"),
+                            _collect(events), TurnHandle())
+        (res,) = [e for e in events if e.t == "tool_result"]
+        assert res.detail == "cancelled"
+
+
+class TestStepLimit232:
+    def test_max_steps_clamped(self, monkeypatch):
+        from ComfyArt.bot.local_llm import max_steps_from
+        assert max_steps_from("30") == 30 and max_steps_from(0) == 80 and max_steps_from("x") == 80
+        assert max_steps_from(9999) == 500
+        monkeypatch.setenv("COMFYART_AGENT_MAX_STEPS", "5")
+        assert LocalLlmProvider(base_url=lambda: "")._max_steps() == 5
+
+    async def test_limit_message_lists_done_steps(self, monkeypatch):
+        monkeypatch.setenv("COMFYART_AGENT_MAX_STEPS", "3")
+        provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
+        n = iter(range(100))
+
+        async def fake_request(session, method, url, *, headers, json_body=None, timeout=120):
+            if url.endswith("/chat/completions"):
+                return {"choices": [{"message": {"content": "", "tool_calls": [_tc(next(n), "get_canvas", {"p": next(n)})]}}]}
+            return {"result": {"tools": [{"name": "get_canvas"}]}}
+
+        async def fake_call(session, endpoint, name, arguments):
+            return "{}", []
+
+        monkeypatch.setattr(provider, "_request_json", fake_request)
+        monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
+        result = await provider.send(TurnRequest(chat_id="c", user_text="x", lang="en", mcp_endpoint="http://x/mcp",
+                                                 model="m"), _collect([]), TurnHandle())
+        assert result.error == "Reached the 3-step limit and stopped; no further charges. Done so far: View canvas ×3."
+
+
+def test_system_prompt_says_wavespeed_not_local():
+    from ComfyArt.bot.guide import AGENT_GUIDE
+    assert "WaveSpeed, and ComfyUI is only the host app" in AGENT_GUIDE
+    assert "local ComfyUI" not in AGENT_GUIDE
