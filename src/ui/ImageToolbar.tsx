@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { ALL_TOOLS, DEFAULT_PINNED, MENU_GEN, MENU_MAIN, MORE_TOOLS, isFixed, migratePrefs, withFixed, type BarPrefs } from './toolbarPrefs'
+import { createPortal } from 'react-dom'
 import { atom, useEditor, useValue, type Editor, type TLImageShape } from 'tldraw'
 
 import * as actions from '../actions'
@@ -24,26 +26,13 @@ import { readLocal, writeLocal } from '../localPrefs'
 import { t } from '../i18n'
 import { copyText } from '../clipboard'
 import { isEnter } from './keys'
+import { useEscape } from './escape'
 
 const GAP = 22
 const EDGE = 8
 const AUTO_LAYERS = 4
 const BAR_KEY = 'comfyart.toolbar'
-const DEFAULT_PINNED = ['chat', 'quick', 'upscale', 'cutout', 'erase']
-const ALL_TOOLS = ['chat', 'quick', 'upscale', 'cutout', 'erase', 'layers', 'text', 'angles', 'animate', 'move', 'expand', 'adjust', 'crop', 'vectorize', 'elements', 'mockup', 'to3d', 'transform', 'inpaint', 'style', 'ocr', 'effects', 'smudge', 'regenerate', 'remix', 'copyPrompt', 'info', 'preview', 'export']
-
-interface BarPrefs { pinned: string[]; names: boolean; seen: string[] }
-
-function readPrefs(): BarPrefs {
-  try {
-    const stored = JSON.parse(readLocal(BAR_KEY) ?? 'null') as Partial<BarPrefs> | null
-    if (!stored?.pinned) return { pinned: DEFAULT_PINNED, names: stored?.names ?? true, seen: ALL_TOOLS }
-    const seen = stored.seen ?? []
-    return { pinned: [...stored.pinned, ...DEFAULT_PINNED.filter((id) => !seen.includes(id) && !stored.pinned!.includes(id))], names: stored.names ?? true, seen: ALL_TOOLS }
-  } catch {
-    return { pinned: DEFAULT_PINNED, names: true, seen: ALL_TOOLS }
-  }
-}
+function readPrefs(): BarPrefs { return migratePrefs(readLocal(BAR_KEY)) }
 
 const prefsAtom = atom<BarPrefs>('image toolbar', readPrefs())
 
@@ -119,6 +108,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   const [menu, setMenu] = useState<string | null>(null)
   const [inMore, setInMore] = useState<string | null>(null)
   const [customize, setCustomize] = useState(false)
+  const [moreTools, setMoreTools] = useState(false)
   const prefs = useValue(prefsAtom)
 
   useLayoutEffect(() => {
@@ -160,7 +150,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
       onError(errorText(e))
     }
   }
-  const toggle = (m: string) => (o: boolean) => { setMenu(o ? m : null); setCustomize(false); setInMore(null) }
+  const toggle = (m: string) => (o: boolean) => { setMenu(o ? m : null); setInMore(null); setMoreTools(false) }
   const mode$ = (m: Mode) => () => enterMode(m)
   const frame = editor.getShape(shape.parentId as any)
   const fitFrame = (cover: boolean) => {
@@ -223,41 +213,118 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
     ? <Popover key={t.id} open={menu === t.id} onOpenChange={toggle(t.id)} trigger={({ open, toggle: tg }) => <Btn icon={t.icon} label={t.label} open={open} onClick={tg} />}>{t.menu}</Popover>
     : <Btn key={t.id} icon={t.icon} label={t.label} hint={t.hint} onClick={t.run!} />)
   const moreView = tools.find((t) => t.id === inMore)
-  const pin = (id: string) => {
-    const list = prefsAtom.get().pinned
-    setPrefs({ pinned: list.includes(id) ? list.filter((x) => x !== id) : [...list, id] })
-  }
+  const menuItem = (t: Tool) => <Item key={t.id} icon={t.icon} label={t.label} onClick={t.menu ? () => setInMore(t.id) : close(t.run!)} />
+  const groups = [MENU_MAIN, MENU_GEN].map((ids) => unpinned.filter((t) => ids.includes(t.id)))
+  const moreList = unpinned.filter((t) => MORE_TOOLS.includes(t.id))
 
   return (
     <div ref={bar} className="ca-bar ca-toolbar" style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
       {pinned.map(barTool)}
-      <Popover open={menu === 'more'} onOpenChange={toggle('more')} align="end" contentKey={customize ? 'customize' : inMore ?? ''} trigger={({ open, toggle: flip }) => <Btn icon={Icons.more} hint={t('imageToolbar.more')} open={open} onClick={flip} />}>
-        {customize ? (
-          <div className="ca-menu ca-customize">
-            <div className="ca-gen__label">{t('imageToolbar.chooseToolsToShowOn')}</div>
-            {usable.map((t) => (
-              <button key={t.id} type="button" className="ca-menu__item" onClick={() => pin(t.id)}>
-                <span className="ca-icon">{t.icon}</span><span className="ca-menu__grow">{t.label}</span>
-                <span className="ca-icon ca-customize__check">{prefs.pinned.includes(t.id) && Icons.check}</span>
-              </button>
-            ))}
-            <div className="ca-menu__sep" />
-            <button type="button" className="ca-menu__item" onClick={() => setPrefs({ names: !prefsAtom.get().names })}><span className="ca-menu__grow">{t('imageToolbar.showToolNames')}</span><span className="ca-icon ca-customize__check">{prefs.names && Icons.check}</span></button>
-            <button type="button" className="ca-menu__item" onClick={() => setPrefs({ pinned: DEFAULT_PINNED, names: true })}><span className="ca-menu__grow">{t('imageToolbar.restoreDefaults')}</span></button>
-          </div>
-        ) : moreView?.menu ? moreView.menu : (
+      <Popover open={menu === 'more'} onOpenChange={toggle('more')} align="end" bar=".ca-toolbar" contentKey={inMore ?? (moreTools ? 'tools' : '')} trigger={({ open, toggle: flip }) => <Btn icon={Icons.more} hint={t('imageToolbar.more')} open={open} onClick={flip} />}>
+        {moreView?.menu ? moreView.menu : (
         <div className="ca-menu ca-menu--image">
-          {unpinned.map((t) => <Item key={t.id} icon={t.icon} label={t.label} onClick={t.menu ? () => setInMore(t.id) : close(t.run!)} />)}
           {frame?.type === 'frame' && <Item icon={Icons.frame} label={t('imageToolbar.fillArtboard')} onClick={close(() => fitFrame(true))} />}
           {frame?.type === 'frame' && <Item icon={Icons.frame} label={t('imageToolbar.fitArtboard')} onClick={close(() => fitFrame(false))} />}
           {originalOf(shape) && <Item icon={Icons.restore} label={t('imageToolbar.restoreOriginal')} onClick={close(() => restoreOriginal(editor, shape))} />}
+          {groups.map((g, i) => g.length > 0 && (
+            <div key={i} className="ca-menu__group">
+              {(i > 0 || frame?.type === 'frame' || !!originalOf(shape)) && <div className="ca-menu__sep" />}
+              {g.map(menuItem)}
+            </div>
+          ))}
+          {moreList.length > 0 && <>
+            <div className="ca-menu__sep" />
+            <button type="button" className="ca-menu__item ca-menu__sub" aria-expanded={moreTools} data-open={moreTools || undefined} onClick={() => setMoreTools(!moreTools)}>
+              <span className="ca-icon">{Icons.more}</span><span className="ca-menu__grow">{t('imageToolbar.moreTools')}</span><span className="ca-icon ca-menu__chev">{Icons.chevron}</span>
+            </button>
+            {moreTools && <div className="ca-menu__nested">{moreList.map(menuItem)}</div>}
+          </>}
           <div className="ca-menu__sep" />
-          <Item icon={Icons.grid} label={t('imageToolbar.customizeToolbar')} onClick={() => setCustomize(true)} />
+          <Item icon={Icons.grid} label={t('imageToolbar.customizeToolbar')} onClick={() => { setMenu(null); setCustomize(true) }} />
         </div>
         )}
       </Popover>
       <div className="ca-bar__sep" />
       <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
+      {customize && createPortal(<CustomizeDialog tools={tools} onClose={() => setCustomize(false)} />, document.body)}
+    </div>
+  )
+}
+
+function PreviewBtn({ tool, names, hints, onUnpin }: { tool: Tool; names: boolean; hints: boolean; onUnpin: () => void }) {
+  const fixed = isFixed(tool.id)
+  return (
+    <span className={`ca-bar__btn ca-cz__tool${fixed ? '' : ' ca-cz__tool--rm'}`} data-tool={tool.id} title={names ? undefined : tool.label}>
+      <span className="ca-icon">{tool.icon}</span>
+      {names && <span className="ca-cz__label">{tool.label}{hints && tool.hint && <span className="ca-bar__hint">{tool.hint}</span>}</span>}
+      {!fixed && <button type="button" className="ca-cz__x" title={t('imageToolbar.unpin')} aria-label={`${t('imageToolbar.unpin')} ${tool.label}`} onClick={onUnpin}>{Icons.close}</button>}
+    </span>
+  )
+}
+
+export function CustomizeDialog({ tools, onClose }: { tools: Tool[]; onClose: () => void }) {
+  const init = prefsAtom.get()
+  const [pinned, setPinned] = useState<string[]>(init.pinned)
+  const [names, setNames] = useState(init.names)
+  const [fit, setFit] = useState(0)
+  const barRef = useRef<HTMLDivElement>(null)
+  useEscape(true, onClose)
+  const byId = new Map(tools.map((x) => [x.id, x]))
+  const cards = ALL_TOOLS.map((id) => byId.get(id)).filter((x): x is Tool => !!x)
+  const shown = cards.filter((x) => pinned.includes(x.id) && x.when !== false)
+  const fixedShown = shown.filter((x) => isFixed(x.id))
+  const btn = (x: Tool) => <PreviewBtn key={x.id} tool={x} names={names && fit < 2} hints={fit < 1} onUnpin={() => flip(x.id)} />
+  const flip = (id: string) => !isFixed(id) && setPinned((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
+  const save = () => { setPrefs({ pinned: withFixed(pinned), names }); onClose() }
+  useLayoutEffect(() => setFit(0), [pinned, names])
+  useEffect(() => { void document.fonts?.ready.then(() => setFit(0)) }, [])
+  useLayoutEffect(() => {
+    const el = barRef.current
+    if (fit >= 2 || !el?.parentElement) return
+    // measure children, not scrollWidth
+    const cs = getComputedStyle(el), kids = [...el.children] as HTMLElement[]
+    const need = kids.reduce((a, c) => a + c.offsetWidth, 0) + (parseFloat(cs.columnGap) || 0) * Math.max(0, kids.length - 1) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth)
+    if (need > el.parentElement.clientWidth - 16 + 0.5) setFit(fit + 1)
+  })
+  return (
+    <div className="ca-modal ca-cz-modal" onPointerDown={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) onClose() }}>
+      <div className="ca-modal__card ca-cz" role="dialog" aria-modal="true" aria-label={t('imageToolbar.customizeToolbar')}>
+        <div className="ca-cz__head">
+          <div>
+            <div className="ca-cz__title">{t('imageToolbar.customizeToolbar')}</div>
+            <div className="ca-cz__sub">{t('imageToolbar.chooseToolsToShowOn')}</div>
+          </div>
+          <button type="button" className="ca-panel__icon ca-cz__reset" title={t('imageToolbar.restoreDefaults')} onClick={() => { setPinned(DEFAULT_PINNED); setNames(true) }}>{Icons.resetCcw}</button>
+          <button type="button" className="ca-panel__icon" title={t('common.close')} onClick={onClose}>{Icons.close}</button>
+        </div>
+        <div className="ca-cz__preview">
+          <div ref={barRef} className="ca-bar ca-cz__bar">
+            {fixedShown.map(btn)}
+            {fixedShown.length > 0 && <div className="ca-bar__sep" />}
+            {shown.filter((x) => !isFixed(x.id)).map(btn)}
+            <span className="ca-bar__btn" title={t('imageToolbar.more')}><span className="ca-icon">{Icons.more}</span></span>
+            <div className="ca-bar__sep" />
+            <span className="ca-bar__btn" title={t('common.download')}><span className="ca-icon">{Icons.download}</span></span>
+          </div>
+        </div>
+        <div className="ca-cz__grid">
+          {cards.map((x) => {
+            const on = pinned.includes(x.id)
+            return (
+              <button key={x.id} type="button" className="ca-cz__card" data-tool={x.id} aria-pressed={on} aria-disabled={isFixed(x.id) || undefined} onClick={() => flip(x.id)}>
+                <span className="ca-icon">{x.icon}</span><span className="ca-menu__grow">{x.label}</span>
+                <span className="ca-icon ca-cz__pin" data-on={on || undefined}>{on ? Icons.pinSolid : Icons.pinOutline}</span>
+              </button>
+            )
+          })}
+        </div>
+        <div className="ca-cz__foot">
+          <label className="ca-cz__switch"><input type="checkbox" role="switch" checked={names} onChange={(e) => setNames(e.target.checked)} /><span className="ca-cz__track" />{t('imageToolbar.showToolNames')}</label>
+          <span className="ca-menu__grow" />
+          <button type="button" className="ca-panel__secondary ca-cz__btn" onClick={onClose}>{t('common.cancel')}</button>
+          <button type="button" className="ca-panel__primary ca-cz__btn" onClick={save}>{t('common.save')}</button>
+        </div>
+      </div>
     </div>
   )
 }
