@@ -140,7 +140,9 @@ async def test_new_user_defaults_to_builtin_and_can_switch(app_url, fake_tools, 
         for label in ("Qwen Code", "DeepSeek Harness"):
             row = items.filter(has_text=label)
             assert "ca-agentpick__off" in await row.get_attribute("class")
-            assert f"{nd} · {setup}" in " ".join((await row.inner_text()).split())
+            txt = " ".join((await row.inner_text()).split())
+            assert txt.endswith(setup) and nd not in txt, txt  # only the blue Set up on the right
+            assert await row.get_attribute("title") == nd  # hover says Not detected
         # image / video sit below the agent group in the same menu
         assert await menu.locator(".ca-menu__item:not(.ca-agentpick__row)").filter(has_text="图像" if lang == "zh" else "Image").count() >= 1
         if SHOTS:

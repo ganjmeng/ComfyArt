@@ -298,7 +298,7 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-libpick .ca-assets__grid { margin-bottom: 8px; }
 
 /* #246: agent group in the composer mode menu scrolls when many tools are detected */
-.ca-agentpick__list { display: flex; flex-direction: column; min-width: 260px; max-height: 240px; overflow-y: auto; }
+.ca-agentpick__list { display: flex; flex-direction: column; max-height: 240px; overflow-y: auto; }
 
 
 /* #246 v3: agent rows: logo | name … status | fixed ✓ column; one 32px line like main */

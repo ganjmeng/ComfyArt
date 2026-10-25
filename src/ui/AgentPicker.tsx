@@ -56,9 +56,9 @@ export function AgentItems({ onError, current, close, onChosen }: { onError: (ms
       <div className="ca-agentpick__list">
       {[...providers].sort((x, y) => rank(x) - rank(y)).map((p) => !p.available && p.id !== BUILTIN_AGENT ? (
         // #247: an undetected tool can't be picked; the whole row (40%) opens its setup card instead
-        <button key={p.id} type="button" className="ca-menu__item ca-agentpick__row ca-agentpick__off" title={p.detail || p.version} onClick={() => { close(); agentSetupFocusAtom.set(p.id); botSettingsOpenAtom.set(true) }}>
+        <button key={p.id} type="button" className="ca-menu__item ca-agentpick__row ca-agentpick__off" title={t('agentPicker.notDetected')} onClick={() => { close(); agentSetupFocusAtom.set(p.id); botSettingsOpenAtom.set(true) }}>
           <AgentLogo id={p.id} />
-          <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span><span className="ca-agentpick__status">{t('agentPicker.notDetected')} · <span className="ca-agentpick__setup">{t('agentSetup.setUp')}</span></span></span>
+          <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span><span className="ca-agentpick__status"><span className="ca-agentpick__setup">{t('agentSetup.setUp')}</span></span></span>
           <span className="ca-agentpick__check" />
         </button>
       ) : (
