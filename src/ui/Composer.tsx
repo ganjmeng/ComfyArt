@@ -5,7 +5,7 @@ import { agentModeAtom, DOC_ACCEPT, docsAtom, draftAtom, eachLine, eachRuns, ext
 import { EachButton, EachRole, useEach } from './EachToggle'
 import { RefFrameButton } from './RefFrameButton'
 import { placeAsset } from '../assets'
-import { botEnabledAtom, loadProviders, messagesAtom, providerLabel } from '../bot'
+import { botEnabledAtom, loadProviders, messagesAtom, providerLabel, providersStateAtom } from '../bot'
 import { errorText } from '../jobs'
 import { KIND_LABELS, libraryAtom } from '../library'
 import type { AudioShape } from '../shapes/EmbedShapes'
@@ -71,6 +71,8 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const mode = useValue(agentModeAtom)
   const enabled = useValue(botEnabledAtom)
   const agentOff = mode === 'agent' && enabled === false
+  const listLoading = useValue('agent list loading', () => providersStateAtom.get().state === 'loading', [])
+  const agentLoading = mode === 'agent' && listLoading  // #294: no sending to an Agent until the list has arrived
   const skill = useValue(skillAtom)
   const extra = useValue(extraRefsAtom)
   const kits = useValue(kitsAtom)
@@ -119,7 +121,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const { showSend, setVoice } = useSlot(content || refs.length > 0, composing)
   const send = () => {
     const text = draft.trim()
-    if ((!text && !refs.length) || agentOff) return  // #268: an image with no text counts as content
+    if ((!text && !refs.length) || agentOff || agentLoading) return  // #268: an image with no text counts as content
     draftAtom.set('')
     extraRefsAtom.set([])
     kitsAtom.set([])
@@ -322,8 +324,8 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
         {refs.length > 1 && <EachButton compact on={each.on} onChange={each.setOn} />}
         {mode === 'agent' && !agentOff && <RefFrameButton editor={editor} />}
         {mode === 'agent' && <ModelPrefs onError={onError} />}
-        <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={(content || refs.length > 0) && !agentOff} onSend={send}
-          title={busy && mode === 'agent' ? t('composer.sendQueuedAfterTheCurrent') : t('composer.send')} onError={onError}
+        <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={(content || refs.length > 0) && !agentOff && !agentLoading} onSend={send}
+          title={agentLoading ? t('bot.agentListLoading') : busy && mode === 'agent' ? t('composer.sendQueuedAfterTheCurrent') : t('composer.send')} onError={onError}
           onText={(t) => draftAtom.set(`${draftAtom.get()}${draftAtom.get() ? ' ' : ''}${t}`)} />
       </div>
     </div>

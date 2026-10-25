@@ -125,6 +125,8 @@
   "bot.generateVideo": "生成视频",
   "bot.locateElements": "定位元素",
   "bot.lookAtCanvas": "观察画面",
+  "bot.agentListLoading": "正在加载 Agent 列表，请稍候",
+  "bot.agentListLoadFailed": "Agent 列表加载失败：{0}",
   "bot.noAgentAvailableConfigureOne": "没有可用的 Agent，请在 Agent 设置里配置",
   "bot.placeWebPage": "放置网页",
   "bot.plan": "计划",
