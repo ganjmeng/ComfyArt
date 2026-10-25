@@ -53,7 +53,7 @@ export function KeySettings() {
   }
 
   return (
-    <Modal title={t('wsKey.title')} onClose={close}>
+    <Modal title={t('wsKey.title')} className="ca-rename ca-rename--key" onClose={close}>
       <div className="ca-rename__body">
         <div className="ca-keys__row">
           <span>{t('wsKey.status')}</span>

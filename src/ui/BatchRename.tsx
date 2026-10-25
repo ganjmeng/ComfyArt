@@ -29,13 +29,13 @@ export function BatchRename({ editor }: { editor: Editor }) {
     <Modal title={t('batchRename.batchRename')} onClose={close}>
       <div className="ca-rename__body">
         <div className="ca-chat__hint">{t('batchRename.nameTheSelectedElementsIn')}</div>
-        <label className="ca-rename__field"><span>{t('batchRename.prefixOptional')}</span>
+        <label className="ca-rename__field ca-rename__field--batch"><span>{t('batchRename.prefixOptional')}</span>
           <input className="ca-panel__input" value={prefix} placeholder={t('batchRename.optional')} onChange={(e) => setPrefix(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
         </label>
         <div className="ca-rename__field"><span>{t('batchRename.numberFormat')}</span>
           <Chips value={pad} options={FORMATS} onPick={setPad} />
         </div>
-        <label className="ca-rename__field"><span>{t('batchRename.startAt')}</span>
+        <label className="ca-rename__field ca-rename__field--batch"><span>{t('batchRename.startAt')}</span>
           <input className="ca-panel__input" type="number" min={0} value={start} onChange={(e) => setStart(Math.max(0, Number(e.target.value) || 0))} onKeyDown={(e) => e.stopPropagation()} />
         </label>
         <div className="ca-chat__hint">{t('batchRename.preview', [0, 1, 2].slice(0, ids.length).map(name).join(t('common.listSep')) + (ids.length > 3 ? '…' : ''))}</div>
