@@ -122,6 +122,12 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const send = () => {
     const text = draft.trim()
     if ((!text && !refs.length) || agentOff || agentLoading) return  // #268: an image with no text counts as content
+    // #294: after a failed Agent-list load, every agent-mode send re-loads the list once first.
+    // Still failing → toast the real error and keep the draft; succeeded → send as normal.
+    if (mode === 'agent' && providersStateAtom.get().state === 'error') {
+      void loadProviders().then(send, (e) => onError(t('bot.agentListLoadFailed', errorText(e))))
+      return
+    }
     draftAtom.set('')
     extraRefsAtom.set([])
     kitsAtom.set([])
