@@ -124,7 +124,7 @@ export function MultiToolbar({ onError }: { onError: (msg: string) => void }) {
       </Popover>
       <div className="ca-bar__sep" />
       <Popover open={menu === 'download'} onOpenChange={pick('download')} align="end" trigger={({ open, toggle }) => <Btn icon={Icons.download} title={t('common.download')} open={open} onClick={toggle} />}>
-        <div className="ca-menu">
+        <div className="ca-menu ca-menu--bar">
           <button type="button" className="ca-menu__item" onClick={act(downloadAll)}><span className="ca-menu__grow">{t('common.download')}</span></button>
           <button type="button" className="ca-menu__item" onClick={act(() => exportPsd(editor, shapes, name))}><span className="ca-menu__grow">{t('multiToolbar.exportPsd')}</span></button>
           <button type="button" className="ca-menu__item" onClick={act(() => exportAtom.set(ids))}><span className="ca-menu__grow">{t('multiToolbar.exportAs')}</span></button>

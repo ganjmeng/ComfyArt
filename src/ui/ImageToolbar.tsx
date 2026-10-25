@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { ALL_TOOLS, DEFAULT_PINNED, MENU_GEN, MENU_MAIN, MORE_TOOLS, isFixed, migratePrefs, withFixed, type BarPrefs } from './toolbarPrefs'
-import { createPortal } from 'react-dom'
 import { atom, useEditor, useValue, type Editor, type TLImageShape } from 'tldraw'
 
+import { createPortal } from 'react-dom'
 import { Tip } from './Tip'
 import * as actions from '../actions'
 import { extractText } from '../agent'
@@ -225,7 +225,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   const moreList = unpinned.filter((t) => MORE_TOOLS.includes(t.id))
 
   return (
-    <div ref={bar} className="ca-bar ca-toolbar" style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
+    <div ref={bar} className="ca-bar ca-toolbar ca-toolbar--image" style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
       {pinned.map(barTool)}
       <Popover open={menu === 'more'} onOpenChange={toggle('more')} align="end" bar=".ca-toolbar" contentKey={inMore ?? (moreTools ? 'tools' : '')} trigger={({ open, toggle: flip }) => <Btn icon={Icons.more} hint={t('imageToolbar.more')} open={open} onClick={flip} />}>
         {moreView?.menu ? moreView.menu : (
@@ -251,8 +251,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
         </div>
         )}
       </Popover>
-      {/* #244: no divider before download — bar gap (4px) matches the other tools; don't leave an
-          extra gap where the old sep sat (design: spacing before 下载 equals spacing between tools). */}
+      <div className="ca-bar__sep" />{/* #283 version A (supersedes #244): upstream 5231d59 grouping, tools | download */}
       <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
       {customize && createPortal(<CustomizeDialog tools={tools} onClose={() => setCustomize(false)} />, document.body)}
     </div>

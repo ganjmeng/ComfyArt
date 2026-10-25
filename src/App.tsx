@@ -1,3 +1,4 @@
+import { ToolbarTips } from './ui/Tip'
 import { getAssetUrlsByImport } from '@tldraw/assets/imports.vite'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadSnapshot, Tldraw, useValue, type Editor, type TLAssetStore, type TLComponents, type TLShape } from 'tldraw'
@@ -296,6 +297,7 @@ export function App({ id }: { id: string }) {
               <MultiToolbar onError={setError} />
               <TextToolbar onError={setError} />
               <ShapeToolbar />
+              <ToolbarTips />
               <FrameToolbar onError={setError} />
               <EmbedToolbar onError={setError} />
               <Dock onError={setError} />

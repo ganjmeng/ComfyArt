@@ -446,3 +446,32 @@
 :root[data-theme="light"] .ca-menu { box-shadow: 0 4px 24px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04); }
 /* #276: the home composer reuses the same voice/send slot — 16px glyph, button stays 32 */
 .ca-landing__foot .ca-composer__slot > .ca-icon { width: 16px; height: 16px; }
+
+/* #283 toolbar polish (design polish-v1, e1016b9) — all selection toolbars match the image toolbar (#244/#262).
+   Separators are KEPT at main's positions; only their style follows the reference spec (EL version A): 1 device px, near full height. */
+/* #283 version A: full-height pale hairline, 1 physical px, ~1px top/bottom, ~10px left/right */
+.ca-toolbar .ca-bar__sep { align-self: stretch; width: 1px; margin: 1px 10px; background: #EFEFEF; flex: none; }
+@media (min-resolution: 2dppx) { .ca-toolbar .ca-bar__sep { transform: scaleX(.5); } }
+:root[data-theme="dark"] .ca-toolbar .ca-bar__sep { background: rgba(255,255,255,.08); }
+.ca-toolbar { gap: 4px; }
+.ca-toolbar .ca-panel__chips { gap: 4px; flex-wrap: nowrap; }
+.ca-toolbar .ca-bar__btn > .ca-icon,
+.ca-toolbar .ca-bar__btn--icon > .ca-icon,
+.ca-toolbar .ca-bar__btn--icon > svg { width: 20px; height: 20px; }
+.ca-toolbar .ca-pick__chev { width: 16px; height: 16px; }
+.ca-toolbar .ca-bar__btn[data-on] { background: var(--ca-hover); }
+.ca-toolbar .ca-bar__btn[data-on]:hover { background: var(--ca-hover); }
+/* toolbar dropdowns only (insert menu and other .ca-menu untouched) */
+.ca-menu--bar .ca-menu__item { height: auto; min-height: 32px; padding: 6px 8px; border-radius: 8px; }
+.ca-toolbar .ca-panel__chip { height: 32px; padding: 0 8px; border: none; border-radius: 8px; background: transparent; }
+.ca-toolbar .ca-panel__chip:hover { background: var(--ca-hover); }
+.ca-toolbar .ca-panel__chip[data-on] { background: var(--ca-hover); border: none; color: var(--ca-text); }
+.ca-toolbar:has(.ca-frame__name) .ca-tools__dot { width: 16px; height: 16px; border-radius: 4px !important; box-shadow: inset 0 0 0 1px var(--ca-border), 0 0 0 .5px rgba(255,255,255,.14); }
+.ca-toolbar .ca-frame__name { width: 88px; padding: 0 6px; }
+.ca-toolbar .ca-num, .ca-toolbar .ca-num input { max-width: 56px; }
+.ca-toolbar .ca-num input { padding: 0 4px; }
+.ca-toolbar .ca-bar__btn:not(.ca-bar__btn--icon) { padding: 0 8px; }
+.ca-toolbar .ca-bar__btn--icon { width: 32px; }
+.ca-toolbar .ca-bar__label { padding: 0 6px; }
+/* frame bar clamped inside the viewport (FrameToolbar.tsx); if still wider, it scrolls instead of being cut */
+.ca-toolbar--frame { overflow-x: auto; scrollbar-width: none; }

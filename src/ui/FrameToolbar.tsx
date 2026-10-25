@@ -184,9 +184,11 @@ export function FrameToolbar({ onError }: { onError: (msg: string) => void }) {
   })
   if (!frame || !rect) return null
   const host = editor.getContainer().getBoundingClientRect()
-  const left = Math.min(Math.max((rect.l + rect.r) / 2 - width / 2, EDGE), host.width - width - EDGE)
+  // #283: keep the whole bar on screen: clamp right edge first, then left, so a bar wider than the host starts at EDGE (scrolls) instead of being cut on the left
+  const left = Math.max(EDGE, Math.min((rect.l + rect.r) / 2 - width / 2, host.width - width - EDGE))
   let top = rect.t - GAP - 44
   if (top < EDGE) top = rect.b + GAP
+  top = Math.max(EDGE, Math.min(top, host.height - 44 - EDGE))
   const size = (key: 'w' | 'h', v: number) => v >= 16 && editor.updateShape<TLFrameShape>({ id: frame.id, type: 'frame', props: { [key]: v } })
   const ratio = frame.meta.ratio as number | undefined
   const lock = () => editor.updateShape<TLFrameShape>({ id: frame.id, type: 'frame', meta: { ...frame.meta, ratio: ratio ? null : frame.props.w / frame.props.h } })
@@ -207,7 +209,7 @@ export function FrameToolbar({ onError }: { onError: (msg: string) => void }) {
   }
 
   return (
-    <div ref={bar} className="ca-bar ca-toolbar" style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
+    <div ref={bar} className="ca-bar ca-toolbar ca-toolbar--frame" style={{ left, top, maxWidth: host.width - 2 * EDGE }} onPointerDown={(e) => e.stopPropagation()}>
       {typeof frame.meta.chatId === 'string' && (
         <button type="button" className="ca-bar__btn" title={t('chatFrame.locateChatTip')} onClick={() => { chatViewAtom.set('open'); openChat(frame.meta.chatId as string).catch((e) => onError(errorText(e))) }}>
           <span className="ca-icon">{Icons.agent}</span><span>{t('chatFrame.locateChat')}</span>
@@ -229,7 +231,7 @@ export function FrameToolbar({ onError }: { onError: (msg: string) => void }) {
         onOpenChange={setPresets}
         trigger={({ open, toggle }) => <button type="button" className="ca-bar__btn ca-bar__btn--icon" title={t('frameToolbar.sizePresets')} data-open={open || undefined} onClick={toggle}><span className="ca-icon">{Icons.chevron}</span></button>}
       >
-        <div className="ca-menu">
+        <div className="ca-menu ca-menu--bar">
           {SIZE_PRESETS.map(([label, w, h]) => (
             <button key={label} type="button" className="ca-menu__item" onClick={() => { setPresets(false); editor.updateShape<TLFrameShape>({ id: frame.id, type: 'frame', props: { w, h }, meta: { ...frame.meta, ratio: ratio ? w / h : null } }) }}>
               <span className="ca-menu__grow">{label}</span><span className="ca-menu__key">{w} × {h}</span>
@@ -237,7 +239,7 @@ export function FrameToolbar({ onError }: { onError: (msg: string) => void }) {
           ))}
         </div>
       </Popover>
-      <Section title={t('frameToolbar.style')} icon={<span className="ca-tools__dot" style={{ background: style.fill || '#FFFFFF', borderRadius: Math.min(style.radius ?? 0, 6) }} />}>
+      <Section title={t('frameToolbar.style')} icon={<span className="ca-tools__dot" style={{ background: style.fill || 'var(--ca-field)', borderRadius: Math.min(style.radius ?? 0, 6) }} />}>
         <div className="ca-style__row">
           <ColorPicker value={style.fill ?? ''} title={t('styleToolbars.fill')} allowNone onChange={(c) => setStyle({ fill: c })} />
           <ColorPicker value={style.stroke ?? ''} title={t('styleToolbars.strokeColor')} allowNone onChange={(c) => setStyle({ stroke: c })} />

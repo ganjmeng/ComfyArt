@@ -114,7 +114,7 @@ export function VideoToolbar({ onError }: { onError: Err }) {
           </button>
         )}
       >
-        <div className="ca-menu">
+        <div className="ca-menu ca-menu--bar">
           {VIDEO_TARGETS.map(([label, long]) => {
             const over = Math.max(asset.props.w, asset.props.h) >= long
             return (
