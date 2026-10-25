@@ -296,3 +296,27 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-pickbar { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 300; gap: 10px; padding-left: 14px; }
 .ca-libpick { overflow-y: auto; padding: 8px; }
 .ca-libpick .ca-assets__grid { margin-bottom: 8px; }
+
+/* #246: agent group in the composer mode menu scrolls when many tools are detected */
+.ca-agentpick__list { display: flex; flex-direction: column; max-height: 240px; overflow-y: auto; }
+
+
+/* #246 v3: agent rows: logo | name ··· status | fixed ✓ column; 32px like the ⋯ menu */
+.ca-agentpick__row { min-height: 32px; height: auto; align-items: center; }
+.ca-agentpick__text { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; }
+.ca-agentpick__name { white-space: nowrap; }
+.ca-agentpick__status { margin-left: auto; color: var(--ca-muted); white-space: nowrap; }
+.ca-agentpick__check { flex: none; width: 16px; height: 16px; display: inline-flex; }
+.ca-agentpick__off > :not(.ca-agentlogo) { opacity: .4; }
+.ca-agentpick__off > .ca-agentlogo { opacity: .55; }
+.ca-agentpick__off:hover > * { opacity: .7; }
+/* Dark: subtle light plate behind dimmed logos so dark marks (e.g. Qwen) stay legible; logo itself untouched. */
+:root[data-theme="dark"] .ca-agentpick__off > .ca-agentlogo { background: rgba(255,255,255,.9); border-radius: 4px; padding: 1px; box-sizing: content-box; }
+.ca-agentpick__setup { color: var(--ca-blue); }
+.ca-agentlogo img { display: block; width: 16px; height: 16px; }
+.ca-agentlogo__dark { display: none !important; }
+:root[data-theme="dark"] .ca-agentlogo__light { display: none !important; }
+:root[data-theme="dark"] .ca-agentlogo__dark { display: block !important; }
+/* #246: Qwen's dark mark is hard to see on the dark theme; a light plate behind it, logo itself untouched */
+:root[data-theme="dark"] .ca-agentlogo[data-id="qwen-code"] { background: rgba(255,255,255,.9); border-radius: 4px; padding: 1px; box-sizing: content-box; }
+.ca-agentpick { max-width: 340px; }
