@@ -388,15 +388,23 @@
 .ca-gen__pillicon { display: none; }
 .ca-composer__foot[data-fit] .ca-composer__mid .ca-gen__pillmore { display: none; }
 .ca-composer__foot:is([data-fit="2"], [data-fit="3"], [data-fit="4"]) [data-pill=settings] > .ca-gen__pilltext,
-.ca-composer__foot:is([data-fit="3"], [data-fit="4"]) [data-pill=model] > .ca-gen__pilltext,
-.ca-composer__foot[data-fit="4"] .ca-composer__modetext { display: none; }
+.ca-composer__foot:is([data-fit="3"], [data-fit="4"]) [data-pill=model] > .ca-gen__pilltext { display: none; }
 .ca-composer__foot:is([data-fit="2"], [data-fit="3"], [data-fit="4"]) [data-pill=settings] > .ca-gen__pillicon,
 .ca-composer__foot:is([data-fit="3"], [data-fit="4"]) [data-pill=model] > .ca-gen__pillicon { display: flex; width: 18px; height: 18px; }
 .ca-composer__foot:is([data-fit="2"], [data-fit="3"], [data-fit="4"]) [data-pill=settings],
 .ca-composer__foot:is([data-fit="3"], [data-fit="4"]) [data-pill=model] { padding: 0 6px; }
-/* phone width (#250 acceptance at 360): all three are icon only */
+/* #250 v2: once folding starts, tighten padding and gaps first so the short settings tier ("16:9 · 5s") still fits next to mode and model */
+.ca-composer__foot[data-fit] .ca-composer__mid { gap: 2px; }
+.ca-composer__foot[data-fit] .ca-composer__mode { gap: 2px; padding: 0 4px; }
+.ca-composer__foot[data-fit] .ca-composer__mid [data-pill] { padding: 0 4px 0 6px; }
+/* phone width (#250 acceptance at 360): settings and model icon only; the mode button always keeps its text */
 @container ca-composer-foot (max-width: 320px) {
-  .ca-composer__mid [data-pill] > .ca-gen__pilltext, .ca-composer__mid .ca-composer__modetext { display: none; }
+  .ca-composer__mid [data-pill] > .ca-gen__pilltext { display: none; }
   .ca-composer__mid [data-pill] > .ca-gen__pillicon { display: flex; width: 18px; height: 18px; }
   .ca-composer__mid [data-pill] { padding: 0 6px; }
 }
+/* #250 v2: the mode label never turns into an icon. Only after settings and model are icons (fit 3) may it ellipsize, and its arrow always stays */
+.ca-composer__mid .ca-composer__mode > .ca-icon { flex: none; }
+.ca-composer__mid .ca-composer__modetext { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ca-composer__foot[data-fit="3"] .ca-composer__mid > .ca-pop-anchor:has(> .ca-composer__mode) { flex-shrink: 1; min-width: 0; }
+.ca-composer__foot[data-fit="3"] .ca-composer__mid .ca-composer__mode { max-width: 100%; min-width: 0; }

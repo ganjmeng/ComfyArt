@@ -65,7 +65,7 @@ function DirectPills({ editor, video }: { editor: Editor; video: boolean }) {
 }
 
 /** #250: how far the composer bar has to fold so +, voice and send stay inside it.
- *  0 full · 1 settings drops its tail ("1K · 1:1") · 2 settings icon only · 3 model icon only · 4 mode icon only.
+ *  0 full · 1 settings drops its tail ("1K · 1:1") · 2 settings icon only · 3 model icon only (the mode button always keeps its text).
  *  The group never squeezes its buttons (no cut-off text); it folds one step at a time until nothing overflows. */
 function useFootFit(dep: unknown) {
   const ref = useRef<HTMLDivElement>(null)
@@ -81,7 +81,7 @@ function useFootFit(dep: unknown) {
   useLayoutEffect(() => { setFit(0) }, [width, dep])
   useLayoutEffect(() => {
     const mid = ref.current?.querySelector('.ca-composer__mid')
-    if (mid && fit < 4 && mid.scrollWidth > mid.clientWidth) setFit(fit + 1)
+    if (mid && fit < 3 && mid.scrollWidth > mid.clientWidth) setFit(fit + 1)
   })
   return { ref, fit }
 }
