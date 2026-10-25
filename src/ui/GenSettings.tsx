@@ -80,8 +80,9 @@ export function ModelPill({ video, model, picks, onPick, onAuto, align = 'end', 
   const selected = useCallback((el: HTMLElement | null) => el?.scrollIntoView({ block: 'nearest' }), [])
   return (
     <Popover open={open} onOpenChange={setOpen} side={side} align={align} within={within} viewportCap={side === 'bottom'} trigger={({ open: o, toggle }) => (
-      <button type="button" className="ca-gen__pill" data-pill="model" data-open={o || undefined} title={model.auto ? model.label : `${model.label} (${model.id})`} onClick={toggle}>
-        <span className="ca-icon ca-gen__pillicon">{Icons.cube}</span><span className="ca-gen__pilltext">{model.label}</span><span className="ca-gen__chev">{Icons.chevron}</span>
+      // #287 ruling: 32x32 icon button like the prefs button; the model name lives in the title, Auto stays in the popover
+      <button type="button" className="ca-bar__btn ca-bar__btn--icon" data-pill="model" data-open={o || undefined} title={model.auto ? model.label : `${model.label} (${model.id})`} aria-label={`${t('genPanel.model')}: ${model.label}`} onClick={toggle}>
+        <span className="ca-icon">{Icons.cube}</span>
       </button>
     )}>
       <div className="ca-menu ca-modelprefs ca-models" data-testid="model-menu">

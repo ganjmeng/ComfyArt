@@ -151,3 +151,24 @@ async def test_home_popover_placement(app_url, fake_tools, monkeypatch, case):  
             assert m["maxH"] and m["maxH"] <= m["vh"] - 64 + 1 and m["scrolls"], m
         assert (await pg.evaluate(COUNT_VISIBLE)) is True
         await browser.close()
+
+
+@pytest.mark.parametrize("width", [1280, 360])
+async def test_model_icon_button(app_url, fake_tools, monkeypatch, width):  # noqa: F811
+    """Ruling: model selector is a 32x32 icon button like 偏好; no 自动 text pill; Auto stays in the popover."""
+    monkeypatch.setenv("WAVESPEED_API_KEY", "mock-key-not-real")
+    async with pw.async_playwright() as p:
+        try:
+            browser, pg = await _home(p, app_url, "zh", width)
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
+        await _mode(pg, "图像")
+        btn = pg.locator(".ca-landing__foot [data-pill=model]")
+        box = await btn.bounding_box()
+        assert round(box["width"]) == 32 and round(box["height"]) == 32, box
+        assert (await btn.inner_text()).strip() == ""
+        await btn.click()
+        menu = pg.locator("[data-testid=model-menu]")
+        await menu.wait_for(timeout=5000)
+        assert await menu.locator(".ca-switch").count() >= 1 and "自动" in await menu.inner_text()
+        await browser.close()
