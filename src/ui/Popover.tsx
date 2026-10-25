@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useEscape } from './escape'
 import { placeBarMenu, placePopover } from './popoverPlace'
 
-export function Popover({ trigger, children, side = 'bottom', align = 'start', open, onOpenChange, contentKey, bar }: {
+export function Popover({ trigger, children, side = 'bottom', align = 'start', open, onOpenChange, contentKey, bar, within }: {
   trigger: (props: { open: boolean; toggle: () => void }) => ReactNode
   children: ReactNode
   side?: 'top' | 'bottom'
@@ -13,10 +13,12 @@ export function Popover({ trigger, children, side = 'bottom', align = 'start', o
   contentKey?: string
   /** CSS selector of the toolbar the trigger sits in: place with placeBarMenu so the menu never covers it. */
   bar?: string
+  /** #268: CSS selector of a panel the popover must stay inside (left edge clamped to it). */
+  within?: string
 }) {
   const anchor = useRef<HTMLSpanElement>(null)
   const panel = useRef<HTMLDivElement>(null)
-  const [pos, setPos] = useState<{ left: number; top: number; maxHeight?: number } | null>(null)
+  const [pos, setPos] = useState<{ left: number; top: number; maxHeight?: number; width?: number } | null>(null)
 
   useLayoutEffect(() => {
     if (!open || !anchor.current || !panel.current) return
@@ -26,8 +28,12 @@ export function Popover({ trigger, children, side = 'bottom', align = 'start', o
     const view = { width: innerWidth, height: innerHeight }
     const barEl = bar ? anchor.current.closest(bar) : null
     const btn = anchor.current.firstElementChild?.getBoundingClientRect() ?? a
-    setPos(barEl ? placeBarMenu(barEl.getBoundingClientRect(), btn, size, view) : placePopover(a, size, view, side, align))
-  }, [open, side, align, contentKey, bar])
+    const at = barEl ? placeBarMenu(barEl.getBoundingClientRect(), btn, size, view) : placePopover(a, size, view, side, align)
+    const box = within ? anchor.current.closest(within)?.getBoundingClientRect() : null
+    let place: { left: number; top: number; maxHeight?: number; width?: number } = at
+    if (box) place = size.width > box.width ? { ...at, left: box.left, width: box.width } : { ...at, left: Math.max(box.left, Math.min(at.left, box.right - size.width)) }
+    setPos(place)
+  }, [open, side, align, contentKey, bar, within])
 
   useEffect(() => {
     if (!open) return
@@ -50,6 +56,7 @@ export function Popover({ trigger, children, side = 'bottom', align = 'start', o
         <div
           ref={panel}
           className="ca-pop"
+          data-fit={pos?.width ? '' : undefined}
           style={pos ? (pos.maxHeight ? { ...pos, overflowY: 'auto' } : pos) : { left: -9999, top: -9999 }}
           onPointerDown={(e) => e.stopPropagation()}
           onWheel={(e) => e.stopPropagation()}

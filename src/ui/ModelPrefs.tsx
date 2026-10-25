@@ -19,6 +19,8 @@ export function ModelPrefs({ onError }: { onError: (msg: string) => void }) {
       open={open}
       onOpenChange={setOpen}
       side="top"
+      align="end"
+      within=".ca-composer"
       trigger={({ open: o, toggle: flip }) => (
         <button type="button" className="ca-bar__btn ca-bar__btn--icon" title={t('modelPrefs.modelPreferences')} data-open={o || undefined} onClick={flip}>
           <span className="ca-icon">{Icons.adjust}</span>

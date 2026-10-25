@@ -40,7 +40,7 @@ export function settingsSummary(p: GeneratorShape['props'], video: boolean, caps
 
 type Update = (patch: Partial<GeneratorShape['props']>) => void
 
-export function SettingsPill({ p, video, quality, tiers, caps, update }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update }) {
+export function SettingsPill({ p, video, quality, tiers, caps, update, align, within }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update; align?: 'start' | 'end'; within?: string }) {
   const [open, setOpen] = useState(false)
   // #159: write the displayed video tier back, so the quote and the submit use what the card shows
   const vres = video ? shownVideoRes(p, caps) : null
@@ -50,7 +50,7 @@ export function SettingsPill({ p, video, quality, tiers, caps, update }: { p: Ge
   const short = video ? `${p.ratio} · ${p.duration}s` : p.resolution === 'custom' ? `${p.cw}×${p.ch}` : `${p.resolution} · ${p.ratio}`
   const rest = full.startsWith(short) && full.length > short.length ? full.slice(short.length) : ''
   return (
-    <Popover open={open} onOpenChange={setOpen} side="top" trigger={({ open: o, toggle }) => (
+    <Popover open={open} onOpenChange={setOpen} side="top" align={align} within={within} trigger={({ open: o, toggle }) => (
       <button type="button" className="ca-gen__pill" data-pill="settings" data-open={o || undefined} title={full} onClick={toggle}><span className="ca-icon ca-gen__pillicon">{Icons.adjust}</span><span className="ca-gen__pilltext">{rest ? <>{short}<span className="ca-gen__pillmore">{rest}</span></> : full}</span><span className="ca-gen__chev">{Icons.chevron}</span></button>
     )}>
       <GenSettings p={p} video={video} quality={quality} tiers={tiers} caps={caps} update={update} />
@@ -63,8 +63,8 @@ export function SettingsPill({ p, video, quality, tiers, caps, update }: { p: Ge
  * agent / feature default picks and the list is greyed), per-feature tabs and a flat list of name + one-line
  * description. The cost is only shown next to send. Quality tiers appear in the settings once a model is picked.
  */
-export function ModelPill({ video, model, picks, onPick, onAuto }: {
-  video: boolean; model: ModelDef; picks?: Record<string, string>
+export function ModelPill({ video, model, picks, onPick, onAuto, align = 'end', within }: {
+  video: boolean; model: ModelDef; picks?: Record<string, string>; align?: 'start' | 'end'; within?: string
   onPick: (feature: string, id: string) => void; onAuto: (on: boolean) => void
 }) {
   const [open, setOpen] = useState(false)
@@ -79,7 +79,7 @@ export function ModelPill({ video, model, picks, onPick, onAuto }: {
   // keep the selected row in view when the (scrolling) menu opens
   const selected = useCallback((el: HTMLElement | null) => el?.scrollIntoView({ block: 'nearest' }), [])
   return (
-    <Popover open={open} onOpenChange={setOpen} side="top" align="end" trigger={({ open: o, toggle }) => (
+    <Popover open={open} onOpenChange={setOpen} side="top" align={align} within={within} trigger={({ open: o, toggle }) => (
       <button type="button" className="ca-gen__pill" data-pill="model" data-open={o || undefined} title={model.auto ? model.label : `${model.label} (${model.id})`} onClick={toggle}>
         <span className="ca-icon ca-gen__pillicon">{Icons.cube}</span><span className="ca-gen__pilltext">{model.label}</span><span className="ca-gen__chev">{Icons.chevron}</span>
       </button>
