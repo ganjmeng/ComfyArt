@@ -1,0 +1,50 @@
+<!doctype html><html data-theme="dark"><head><meta charset="utf-8">
+<link rel="stylesheet" href="base.css"><link rel="stylesheet" href="shell.css"><link rel="stylesheet" href="canvas.css"><link rel="stylesheet" href="overlays.css">
+<style>
+html,body,#root{height:auto!important;margin:0}.before .ca-menu--image{width:max-content}body{background:#0b0b0b;font-family:var(--ca-font);color:var(--ca-text)}
+.wrap{display:flex;gap:24px;padding:28px 28px 24px}
+.col{width:560px}.cap{font:500 13px/20px var(--ca-font);color:rgba(255,255,255,.75);margin:0 0 10px}.cap small{color:rgba(255,255,255,.4);font-weight:400;margin-left:8px}
+.cell{position:relative;height:440px;border-radius:14px;overflow:hidden;background:#1A1A1A}
+.bd{position:absolute;inset:-40px;filter:blur(38px);opacity:.9}
+.bd i{position:absolute;border-radius:50%}
+.img{position:absolute;left:40px;top:70px;width:220px;height:220px;border-radius:4px;background:linear-gradient(160deg,#5a4a3a,#2b2a33 55%,#20303a);box-shadow:0 0 0 1.5px var(--ca-blue)}
+.img:after{content:"";position:absolute;left:30%;top:38%;width:40%;height:40%;border-radius:50%;background:radial-gradient(#c9a77a,#6b4b2d 70%,transparent 71%);opacity:.8}
+.cell .ca-modal{position:absolute}
+.title{font:600 15px/22px var(--ca-font);color:rgba(255,255,255,.9);padding:0 28px}
+.notes{padding:0 28px 26px;font:12px/18px var(--ca-font);color:rgba(255,255,255,.55)}
+/* ===== proposed dark (batch 2) — scoped to .after ===== */
+:root[data-theme="dark"] .after .ca-bar{border:none;box-shadow:inset 0 0 0 .5px var(--ca-border),0 1px 2px rgba(0,0,0,.04)}
+:root[data-theme="dark"] .after .ca-menu{border:none;box-shadow:inset 0 0 0 .5px var(--ca-border),var(--ca-shadow)}
+:root[data-theme="dark"] .after .ca-menu--image{max-width:240px}
+:root[data-theme="dark"] .after .ca-menu--image .ca-menu__item{align-items:flex-start;height:auto;min-height:32px;padding:6px 8px;white-space:normal;overflow-wrap:break-word}
+:root[data-theme="dark"] .after .ca-modal{background:rgba(0,0,0,.6)}
+:root[data-theme="dark"] .after .ca-modal__card{box-shadow:inset 0 0 0 .5px var(--ca-border),var(--ca-shadow-menu)}
+</style></head><body><div id="root"></div>
+<script>
+const q=new URLSearchParams(location.search),L=q.get('lang')||'zh',S=q.get('screen')||'menu';
+const T={zh:{b:'现在（main 0ec5d4d · 深色）',a:'改后（第二批提议 · 深色）',
+ menu:{t:'图片「更多」菜单 + 工具条',n:'改动：描边 .5px 改用内阴影画（main 上实际被画成 1px）；长文案在 240px 内换行，菜单不再被撑宽。'},
+ modal:{t:'WaveSpeed 密钥弹窗 + 遮罩',n:'改动：深色遮罩 .25 → .6；弹窗补 .5px 内阴影描边，阴影换成浮层阴影变量。'},
+ tb:['快速编辑','放大','去背景','局部重绘','更多'],
+ items:['转 3D','多视角转 3D','照此再画','填充画板','恢复原图','Pixal3D 多视角：选中的图从左到右依次作为前、左、后、右视图'],cust:'自定义工具栏',
+ k:{title:'WaveSpeed 密钥',status:'状态',ok:'可用 · 余额 $12.40',saved:'已保存的密钥',replace:'更换密钥',ph:'粘贴 WaveSpeed Key',get:'还没有密钥？去这里获取：',usd:'单次费用达到 $0.5 时先确认（0 = 每次都确认）',del:'删除',close:'关闭',save:'保存'}},
+ en:{b:'Now (main 0ec5d4d · dark)',a:'Proposed (batch 2 · dark)',
+ menu:{t:'Image “More” menu + toolbar',n:'Change: .5px borders drawn as an inset shadow (main paints them 1px); long labels wrap inside 240px so the menu no longer widens.'},
+ modal:{t:'WaveSpeed key dialog + backdrop',n:'Change: dark backdrop .25 → .6; dialog gets a .5px inset-shadow border and the float-shadow variable.'},
+ tb:['Quick Edit','Upscale','Remove BG','Inpaint','More'],
+ items:['Image to 3D','Multi-view to 3D','Remix','Fill Artboard','Restore Original','Pixal3D multi-view: the selected images, left to right, are the front, left, back and right views'],cust:'Customize Toolbar',
+ k:{title:'WaveSpeed API key',status:'Status',ok:'Ready · balance $12.40',saved:'Saved key',replace:'Replace key',ph:'Paste your WaveSpeed key',get:'No key yet? Get one at',usd:'Ask before jobs costing $0.5 or more (0 = always)',del:'Delete',close:'Close',save:'Save'}}}[L];
+const X='<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 6l8 8M14 6l-8 8"/></svg>';
+const ic='<span class="ca-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="4" width="12" height="12" rx="3"/></svg></span>';
+const bd=`<div class="bd"><i style="left:-40px;top:-60px;width:360px;height:300px;background:#3a3048"></i><i style="left:260px;top:40px;width:380px;height:320px;background:#1f3a44"></i><i style="left:80px;top:260px;width:420px;height:260px;background:#3d2f22"></i><i style="left:380px;top:300px;width:240px;height:200px;background:#2a2f3f"></i></div>`;
+function menuScene(){return `${bd}<div class="img"></div>
+<div class="ca-bar" style="position:absolute;left:40px;top:22px">${T.tb.map((t,i)=>`<button class="ca-bar__btn" ${i==4?'data-open':''}>${t}</button>`).join('')}</div>
+<div class="ca-menu ca-menu--image" style="position:absolute;left:${L=="zh"?200:150}px;top:76px">${T.items.map(t=>`<button class="ca-menu__item">${ic}<span class="ca-menu__grow">${t}</span></button>`).join('')}<div class="ca-menu__sep"></div><button class="ca-menu__item">${ic}<span class="ca-menu__grow">${T.cust}</span></button></div>`}
+function modalScene(){const k=T.k;return `${bd}<div class="img"></div><div class="ca-modal"><div class="ca-modal__card ca-rename" style="width:420px"><div class="ca-side__head"><span>${k.title}</span><button class="ca-panel__icon">${X}</button></div>
+<div class="ca-rename__body"><div class="ca-keys__row"><span>${k.status}</span><span class="ca-menu__key">${k.ok}</span></div><div class="ca-keys__row"><span>${k.saved}</span><span class="ca-menu__key">••••••••a91f</span></div>
+<label class="ca-rename__field"><span>${k.replace}</span><input class="ca-panel__input" placeholder="${k.ph}"></label><div class="ca-chat__hint">${k.get} <a style="color:var(--ca-blue)">wavespeed.ai/accesskey</a></div>
+<label class="ca-rename__field"><span>${k.usd}</span><input class="ca-panel__input" value="0.5"></label>
+<div class="ca-panel__foot"><button class="ca-panel__secondary">${k.del}</button><button class="ca-panel__secondary">${k.close}</button><button class="ca-panel__primary" disabled>${k.save}</button></div></div></div></div>`}
+const sc=S==='modal'?modalScene:menuScene;
+document.getElementById('root').innerHTML=`<div style="padding-top:22px" class="title">#243 深色第二批 · ${T[S].t}</div><div class="wrap"><div class="col"><p class="cap">${T.b}</p><div class="cell before">${sc()}</div></div><div class="col"><p class="cap">${T.a}<small>${L}-dark</small></p><div class="cell after">${sc()}</div></div></div><div class="notes">${T[S].n}</div>`;
+</script></body></html>
