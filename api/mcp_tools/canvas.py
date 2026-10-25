@@ -30,22 +30,46 @@ def _schema(properties: dict, required: list[str] = ()) -> dict:
 
 def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
     async def handler(args: dict) -> dict:
+        args = dict(args)
+        fallback_for = str(args.pop("fallback_for", "") or "")
         if approval:
             label = str(args.get("prompt") or args.get("to") or "")[:80]
             blocked = await maybe_ask_run_approval(f"{approval}{'：' + label if label else ''}")
             if blocked is not None:
                 return blocked
-        choice = _auto_choice(action, args)
-        if choice and choice["auto"] and choice["category"] != "references" and "model" not in args and choice["model"] != load_config()["features"][tool_feature(action)]["default"]:
-            args = {**args, "model": choice["model"], "auto_model": True} if "edit_model" not in choice else {**args, "edit_model": choice["edit_model"]}
+        if fallback_for:
+            # #236: switch once, to a different model from the #133 table. Never submit the failed model again.
+            choice = _fallback_choice(action, args, fallback_for)
+            if not choice or choice["model"] == fallback_for:
+                return _same_model_block(fallback_for)
+            if "edit_model" in choice:
+                args.pop("model", None)
+                args.pop("auto_model", None)
+                args["edit_model"] = choice["edit_model"]
+            else:
+                args.pop("edit_model", None)
+                args["model"] = choice["model"]
+                args["auto_model"] = True
+            if (args.get("edit_model") or args.get("model")) == fallback_for:
+                return _same_model_block(fallback_for)
+        else:
+            choice = _auto_choice(action, args)
+            if choice and choice["auto"] and choice["category"] != "references" and "model" not in args and choice["model"] != load_config()["features"][tool_feature(action)]["default"]:
+                args = {**args, "model": choice["model"], "auto_model": True} if "edit_model" not in choice else {**args, "edit_model": choice["edit_model"]}
         result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
         if choice and isinstance(result, dict) and not result.get("cancelled"):
             ran = result.get("model")
             if choice["auto"] and "edit_model" not in choice and choice["category"] != "references" and ran and ran != choice["model"]:
                 log.warning("auto model %s is disabled on the page; %s ran instead", choice["model"], ran)
-                choice = {**choice, "model": ran, "fallback": choice["model"],
-                          "reason": {"zh": f"{choice['reason']['zh']}，但 {choice['model']} 已在模型设置里关闭，改用默认模型",
-                                     "en": f"{choice['reason']['en']}, but {choice['model']} is turned off in model settings, so the default model was used"}}
+                if choice.get("category") == "fallback":
+                    asked, failed = choice["model"], choice.get("fallback") or choice["model"]
+                    choice = {**choice, "model": ran, "fallback": failed,
+                              "reason": {"zh": f"{failed} 调用失败，备用模型 {asked} 已在模型设置里关闭，实际改用 {ran}",
+                                         "en": f"{failed} failed, and the fallback {asked} is turned off in model settings, so {ran} ran"}}
+                else:
+                    choice = {**choice, "model": ran, "fallback": choice["model"],
+                              "reason": {"zh": f"{choice['reason']['zh']}，但 {choice['model']} 已在模型设置里关闭，改用默认模型",
+                                         "en": f"{choice['reason']['en']}, but {choice['model']} is turned off in model settings, so the default model was used"}}
             result["model_choice"] = {**choice, "note": note(choice)}
         image = result.pop("png", None)
         if image:
@@ -57,6 +81,57 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
 async def _wait_generation(args: dict) -> dict:
     timeout = max(1, min(int(args.get("timeout_s") or WAIT_MAX_S), WAIT_MAX_S))
     return await submit_command("wait_generation", {**args, "timeout_s": timeout}, PROJECT.get(), timeout + 15)
+
+
+def _running_feature(action: str, args: dict) -> str | None:
+    """Feature whose model actually runs. Refs and a base image run on image_edit (#133)."""
+    if action == "generate_image" and (args.get("refs") or args.get("base")):
+        return "image_edit"
+    return tool_feature(action)
+
+
+def _fallback_choice(action: str, args: dict, failed: str) -> dict | None:
+    """#236: one backup from the #133 table, never the model that just failed.
+
+    The table's model for this task is the backup when it is a different model.
+    When that model is the one that failed, the backup is the feature default
+    (the table's 通用 row, and the same stand-in #133 uses when a table model
+    cannot run). None when both are the model that failed: do not submit it again.
+    """
+    failed = str(failed or "")
+    feature = _running_feature(action, args)
+    if not feature or not failed:
+        return None
+    clean = {k: v for k, v in args.items() if k not in ("model", "edit_model", "auto_model", "fallback_for")}
+    primary = _auto_choice(action, clean)
+    if not primary:
+        return None
+    cfg = load_config()["features"][feature]
+    ids = {m["id"] for m in cfg["models"]}
+    default = cfg["default"]
+    table_model = primary["model"]
+    if table_model in ids and table_model != failed:
+        target = table_model
+        why = {"zh": f"{failed} 调用失败，按对应表改用备用模型：{primary['reason']['zh']}",
+               "en": f"{failed} failed, so the table's fallback was used: {primary['reason']['en']}"}
+    elif default in ids and default != failed:
+        target = default
+        why = {"zh": f"{failed} 调用失败，按对应表改用默认备用模型",
+               "en": f"{failed} failed, so the table's default fallback model was used"}
+    else:
+        return None
+    choice = {"model": target, "auto": True, "category": "fallback", "fallback": failed, "reason": why}
+    if action == "generate_image" and (clean.get("refs") or clean.get("base")):
+        choice["edit_model"] = target
+    return choice
+
+
+def _same_model_block(model: str) -> dict:
+    """#236: a paid submit is never repeated on the model that just failed."""
+    log.warning("refusing to submit %s again after it failed", model)
+    return {"status": "failed", "model": model, "same_model_retry": False,
+            "error": f"the same model was not submitted again: {model}",
+            "note": f"没有用 {model} 再次提交。/ Did not submit {model} again."}
 
 
 def _auto_choice(action: str, args: dict) -> dict | None:

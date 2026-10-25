@@ -227,6 +227,24 @@ def _external_step_block(guard: TurnGuard) -> Optional[str]:
     return None
 
 
+def fallback_allowed(chat_id: str, name: str, args: dict) -> bool:
+    """#236: a fallback submit has to stay inside this turn's cost rules.
+
+    Read-only. A missing guard allows it (the MCP check still runs on the real
+    call). Over the cap, a declined plan item, a stopped turn, or a missing
+    product reference all refuse it, and nothing here stops the turn or submits.
+    """
+    guard = TURNS.get(chat_id)
+    if guard is None or name not in PAID_TOOLS:
+        return True
+    if guard.stopped or guard.plan_item in guard.declined_items:
+        return False
+    if not passes_ref(name, args, guard.refs):
+        return False
+    used = guard.used.get(guard.plan_item, 0)
+    return used + gen_units(name, args) <= guard.cap
+
+
 def before_call(chat_id: str, name: str, args: dict, *, external: bool = False) -> Optional[str]:
     """None to let the call run; otherwise the error text (nothing submitted)."""
     guard = TURNS.get(chat_id)
