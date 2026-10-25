@@ -1,0 +1,35 @@
+{
+  "bar_on": [
+    "快捷编辑Tab",
+    "对话",
+    "放大",
+    "去背景",
+    "橡皮工具"
+  ],
+  "tip_chat": {
+    "visible": true,
+    "text": "对话",
+    "name": "对话",
+    "key": null,
+    "html": "<span class=\"ca-tip__name\">对话</span>",
+    "rect": {
+      "x": 737,
+      "y": 239.0625,
+      "w": 46,
+      "h": 28
+    }
+  },
+  "tip_quick": {
+    "visible": true,
+    "text": "快捷编辑 Tab",
+    "name": "快捷编辑",
+    "key": "Tab",
+    "html": "<span class=\"ca-tip__name\">快捷编辑</span><span class=\"ca-tip__key\">Tab</span>",
+    "rect": {
+      "x": 665.2890625,
+      "y": 239.0625,
+      "w": 109.421875,
+      "h": 28
+    }
+  }
+}
