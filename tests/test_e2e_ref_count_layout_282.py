@@ -69,3 +69,34 @@ async def test_ref_count_and_layout(app_url, fake_tools, width):  # noqa: F811
         assert st["w"] == size0["w"] and st["h"] > size0["h"] and st["inside"], (size0, st)
         assert await _count(btn) == "8"
         await browser.close()
+
+
+@pytest.mark.parametrize("width", [1280, 360])
+async def test_ref_count_hidden_when_unlinked(app_url, fake_tools, width):  # noqa: F811
+    """Product ruling: the count shows only while the reference area is linked to the chat."""
+    async with pw.async_playwright() as p:
+        try:
+            browser, pg = await _page(p, app_url, "zh", "dark")
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
+        for _ in range(3):
+            if await pg.locator(".ca-modal").count():
+                await pg.keyboard.press("Escape")
+                await pg.wait_for_timeout(300)
+        await pg.set_viewport_size({"width": width, "height": 800})
+        await pg.wait_for_function("!!window.__caEditor")
+        btn = pg.locator(".ca-composer__foot .ca-refbtn")
+        await btn.click()  # creates the reference area and links it
+        await pg.wait_for_timeout(300)
+        for _ in range(2):
+            await pg.evaluate(ADD, [300, 200])
+        await pg.wait_for_timeout(300)
+        assert await _count(btn) == "2"
+        await btn.click()  # unlink: the frame still holds 2 items
+        await pg.wait_for_timeout(300)
+        assert await btn.get_attribute("data-on") is None
+        assert await _count(btn) is None  # items but not linked: no count
+        await btn.click()  # link again: count comes back
+        await pg.wait_for_timeout(300)
+        assert await _count(btn) == "2"
+        await browser.close()

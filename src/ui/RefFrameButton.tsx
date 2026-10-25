@@ -21,8 +21,8 @@ export function RefFrameButton({ editor }: { editor: Editor }) {
   return (
     <button type="button" className="ca-bar__btn ca-refbtn" data-on={state?.linked || undefined} title={title} onClick={click}>
       <span className="ca-icon">{Icons.frame}</span><span>{t('chatFrame.ref')}</span>
-      {/* #282: the count is its own span so the agent-bar collapse (which hides the word) never hides the number */}
-      {state?.count ? <span className="ca-refbtn__count">{state.count}</span> : null}
+      {/* #282: the count is its own span so the agent-bar collapse (which hides the word) never hides the number; shown only when linked (product) */}
+      {state?.linked && state.count ? <span className="ca-refbtn__count">{state.count}</span> : null}
     </button>
   )
 }
