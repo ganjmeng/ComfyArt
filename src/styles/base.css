@@ -15,10 +15,10 @@
   --ca-scroll-thumb: rgba(0,0,0,.36);
   --ca-scroll-track: rgba(0,0,0,.06);
   --ca-q-body-max: 240px;
-  /* #337 density (QUESTION-CARD-MVP mock; tune toward Lovart) */
+  /* #337 density 1:1 (PIXEL-GAP-REMAINING; opt-h 28 lock; block-gap 8) */
   --ca-opt-h: 28px;
   --ca-opt-gap: 2px;
-  --ca-block-gap: 10px;
+  --ca-block-gap: 8px;
   --ca-btn-h: 28px;
   --ca-empty: #e6e6e6;
   --ca-empty-icon: rgba(0,0,0,.12);
@@ -26,6 +26,8 @@
   --ca-shadow: 0 16px 24px -8px rgba(0,0,0,.06), 0 4px 8px -4px rgba(0,0,0,.04), 0 1px 1px 0 rgba(0,0,0,.02);
   --ca-shadow-menu: var(--ca-shadow);
   --ca-shadow-float: var(--ca-shadow);
+  /* #337 1:1 — Question card local light shadow (not global float 16px stack) */
+  --ca-q-shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.05);
   --ca-backdrop: rgba(0,0,0,.4);
   --ca-border-w: 1px;
   --ca-error-bg: #fee2e2;
@@ -53,6 +55,7 @@
   --ca-shadow: 0 4px 16px rgba(0,0,0,.5);
   --ca-shadow-menu: var(--ca-shadow);
   --ca-shadow-float: var(--ca-shadow);
+  --ca-q-shadow: 0 2px 10px rgba(0,0,0,.45);
   --ca-backdrop: rgba(0,0,0,.25);
   --ca-border-w: .5px;
   --ca-error-bg: #4a1d1d;
