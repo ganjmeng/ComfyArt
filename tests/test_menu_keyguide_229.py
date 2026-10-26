@@ -54,7 +54,7 @@ def test_home_shows_existing_no_key_notice_on_open():
     assert "t('agentPanel.noWavespeedKey')" in notice and "t('agentPanel.setWavespeedKey')" in notice
     assert "status.configured) return null" in notice and "keySettingsOpenAtom.set(true)" in notice
     assert "<KeySettings />" in (ROOT / "src/home/HomeApp.tsx").read_text()
-    assert "!keyStatus?.configured" in (ROOT / "src/ui/AgentPanel.tsx").read_text()
+    assert "keyMissing(keyStatus)" in (ROOT / "src/ui/AgentPanel.tsx").read_text()  # #305: null ≠ missing
 
 
 def test_notice_copy_unchanged():

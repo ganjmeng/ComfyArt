@@ -23,8 +23,12 @@ export async function call<T>(path: string, init?: RequestInit): Promise<T | nul
 
 export const loadProject = (id: string) => call<TLEditorSnapshot>(url(id))
 
-export const saveProject = (id: string, snapshot: TLEditorSnapshot, name: string, covers: string[]) =>
-  call<ProjectEntry>(url(id), send('PUT', { snapshot, name, covers }))
+export async function saveProject(id: string, snapshot: TLEditorSnapshot, name: string, covers: string[]): Promise<ProjectEntry> {
+  const entry = await call<ProjectEntry>(url(id), send('PUT', { snapshot, name, covers }))
+  // #305: call() treats HTTP 404 as null; that must not look like a successful save
+  if (!entry) throw new Error(t('err.requestFailed', 404))
+  return entry
+}
 
 export async function listProjects(): Promise<ProjectEntry[]> {
   return (await call<{ projects: ProjectEntry[] }>('/comfyart/projects'))?.projects ?? []

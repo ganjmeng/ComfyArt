@@ -98,5 +98,8 @@ export function ProjectHeader({ editor, projectId, children }: { editor: Editor;
 function SaveStatus() {
   const { state, error, time } = useValue(saveStateAtom)
   if (state === 'error') return <button type="button" className="ca-save" data-state={state} title={error} onClick={() => void saveNow()}>{t('projectHeader.saveFailed')}</button>
+  // #305: hide green 「已保存」until a real persist sets `time` (initial pending / load-before-save)
+  if (state === 'saved' && time == null) return null
+  if (state === 'pending' && time == null) return null
   return <span className="ca-save" data-state={state} title={time ? t('projectHeader.savedAt', new Date(time).toLocaleTimeString()) : undefined}>{state === 'saved' ? t('projectHeader.saved') : t('projectHeader.saving')}</span>
 }

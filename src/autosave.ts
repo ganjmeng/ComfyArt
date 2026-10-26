@@ -8,7 +8,7 @@ export type SaveState = 'saved' | 'pending' | 'saving' | 'error'
 
 const SAVE_DELAY = 800
 
-export const saveStateAtom = atom<{ state: SaveState; error?: string; time?: number }>('save state', { state: 'saved' })
+export const saveStateAtom = atom<{ state: SaveState; error?: string; time?: number }>('save state', { state: 'pending' })  // #305: never green until a real persist
 
 let flushCurrent: (() => Promise<void>) | null = null
 

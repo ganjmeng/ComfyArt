@@ -9,7 +9,7 @@ import { newProject, openView, startProject, type ProjectEntry } from '../projec
 import { loadSkills, type Skill } from '../skills'
 import { Icons } from '../ui/icons'
 import { NoKeyNotice } from '../ui/NoKeyNotice'
-import { refreshKeyStatus } from '../wavespeedKey'
+import { keyMissing, keySettingsOpenAtom, keyStatusAtom, refreshKeyStatus } from '../wavespeedKey'
 import { isEnter } from '../ui/keys'
 import { Popover } from '../ui/Popover'
 import { shortLabel, useCurrentAgent } from '../ui/AgentPicker'
@@ -71,6 +71,10 @@ export function Home() {
   // #278: keep the draft until the new project is created; on failure it stays and an error shows
   const send = async () => {
     if (!hasContent || uploading || sending) return
+    // #305: guide once; keep the ask in the box when Key is missing
+    let key = keyStatusAtom.get()
+    if (!key) key = await refreshKeyStatus()
+    if (keyMissing(key)) { keySettingsOpenAtom.set(true); return }
     setSending(true)
     setError('')
     try {

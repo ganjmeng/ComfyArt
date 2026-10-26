@@ -10,7 +10,8 @@ const money = (n: number) => `$${n.toFixed(2)}`
 
 export function keyStateText(): string {
   const s = keyStatusAtom.get()
-  if (!s?.configured) return t('wsKey.notSet')
+  if (s === null) return t('wsKey.checking')  // #305: loading ≠ Not set
+  if (!s.configured) return t('wsKey.notSet')
   if (s.error === 'invalid') return t('wsKey.invalid')
   if (s.error) return t('wsKey.network')
   if (s.balance === null) return t('wsKey.checking')

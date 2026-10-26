@@ -1,6 +1,6 @@
 import { AssetRecordType, atom, createShapeId, isShapeId, type Editor, type TLParentId, type JsonValue, type TLAssetId, type TLImageAsset, type TLShape, type TLShapeId, type TLVideoAsset } from 'tldraw'
 
-import { cancelPrompt, CostDeclined, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
+import { cancelPrompt, CostDeclined, NeedKeyError, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Built } from './workflows'
 import { t } from './i18n'
@@ -248,11 +248,11 @@ export async function startJob(
     editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: job as any } })
     await finish(editor, holderId, job, onError)
   } catch (e) {
-    const declined = e instanceof CostDeclined
-    settleSubmitGate(holderId, declined ? 'declined' : 'error')
+    const soft = e instanceof CostDeclined || e instanceof NeedKeyError
+    settleSubmitGate(holderId, e instanceof CostDeclined ? 'declined' : soft ? 'error' : 'error')
     const holder = editor.getShape(holderId)
-    if (declined) {
-      // Nothing charged. Drop temp/agent holders; leave GenPanel cards in place (#127).
+    if (soft) {
+      // Nothing charged / key guide already open. Drop temp holders; no stacked toast. #127/#305
       if (holder?.meta.temp || holder?.meta.quiet) editor.deleteShape(holderId)
       else if (holder) editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: null } })
       report(holderId, { srcs: [], error: errorText(e) })
