@@ -39,13 +39,18 @@ async def _await_ask(chat_id: str, state, spec: dict, *,
         block["selected"] = outcome["selected"]
     if outcome.get("other_text"):
         block["other_text"] = outcome["other_text"]
+    if outcome.get("answers") is not None:
+        block["answers"] = outcome["answers"]
     chat_store.update_message(chat_id, state.message_id, blocks=state.blocks)
-    broadcast("turn_ask_resolved", {
+    payload = {
         "chat_id": chat_id, "message_id": state.message_id,
         "ask_id": ask.id, "status": outcome["status"],
         "selected": outcome.get("selected"),
         "other_text": outcome.get("other_text"),
-    })
+    }
+    if outcome.get("answers") is not None:
+        payload["answers"] = outcome["answers"]
+    broadcast("turn_ask_resolved", payload)
     return outcome
 
 
@@ -61,9 +66,27 @@ async def ask_user(args: dict) -> dict:
         return {"status": outcome["status"],
                 "note": "the user did not answer; proceed conservatively or "
                         "end the turn"}
-    return {"status": "answered",
-            "selected": outcome.get("selected") or [],
-            "other_text": outcome.get("other_text") or ""}
+    selected = outcome.get("selected") or []
+    other_text = outcome.get("other_text") or ""
+    answers = outcome.get("answers")
+    result = {"status": "answered",
+              "selected": selected,
+              "other_text": other_text}
+    if answers is not None:
+        result["answers"] = answers
+    skipped = (
+        bool(spec.get("allow_skip"))
+        and not selected
+        and not other_text
+        and (not answers or all(
+            not (a.get("selected") or []) and not a.get("other_text")
+            for a in (answers or {}).values()
+        ))
+    )
+    if skipped:
+        result["note"] = bot_asks.skip_note()
+        result["skipped"] = True
+    return result
 
 
 async def maybe_ask_run_approval(action: str) -> dict | None:
@@ -150,6 +173,7 @@ ASK_USER_SCHEMA = {
                     "id": {"type": "string"},
                     "label": {"type": "string"},
                     "description": {"type": "string"},
+                    "recommended": {"type": "boolean"},
                 },
                 "required": ["id", "label"],
                 "additionalProperties": False,
@@ -158,21 +182,66 @@ ASK_USER_SCHEMA = {
         "min_selections": {"type": "integer"},
         "max_selections": {"type": "integer"},
         "allow_other": {"type": "boolean"},
+        "allow_skip": {"type": "boolean"},
+        "defaults": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+        "page": {"type": "integer"},
+        "page_count": {"type": "integer"},
+        "questions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "prompt": {"type": "string"},
+                    "options": {
+                        "type": "array",
+                        "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string"},
+                    "label": {"type": "string"},
+                    "description": {"type": "string"},
+                    "recommended": {"type": "boolean"},
+                },
+                "required": ["id", "label"],
+                "additionalProperties": False,
+            },
+                    },
+                    "min_selections": {"type": "integer"},
+                    "max_selections": {"type": "integer"},
+                    "allow_other": {"type": "boolean"},
+                    "defaults": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "page": {"type": "integer"},
+                    "placeholder": {"type": "string"},
+                },
+                "required": ["id", "prompt"],
+                "additionalProperties": False,
+            },
+        },
     },
-    "required": ["prompt", "options"],
     "additionalProperties": False,
 }
 
 TOOLS: dict[str, dict] = {
     "ask_user": {
         "description": (
-            "Pause and ask the user a question in the chat panel; blocks "
-            "until they answer (or a few minutes pass). Use when a decision "
-            "genuinely belongs to the user: creative direction, destructive "
-            "actions, long generations. options are the choices; set "
-            "min/max_selections for multi-select and allow_other to accept "
-            "free text. Returns {status, selected, other_text} — status "
-            "cancelled/expired means no answer, don't retry immediately."
+            "Pause and ask the user in the chat panel. Pass either a single "
+            "prompt+options (legacy) or questions[] for one card with several "
+            "questions (text / single-select / multi-select can mix) and "
+            "optional page/page_count for in-card paging (Next advances the "
+            "local page; Submit resolves). Blocks until they answer, skip, or "
+            "a few minutes pass. Use when a required parameter or creative "
+            "choice is missing. options are choices (A–E); min/max_selections "
+            "for multi-select; allow_other for free text; allow_skip (default "
+            "true). Returns {status, selected, other_text, answers?}; skipped "
+            "answers include a note — continue with sensible defaults and do "
+            "not re-ask immediately. status cancelled/expired means no answer."
         ),
         "inputSchema": ASK_USER_SCHEMA,
         "handler": ask_user,

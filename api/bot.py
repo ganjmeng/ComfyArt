@@ -258,19 +258,42 @@ async def bot_answer_ask(request: web.Request) -> web.Response:
         return bot_disabled()
     chat = _owned_chat(request)
     body = await json_body(request)
-    selected = body.get("selected")
-    if not isinstance(selected, list):
+    raw_selected = body.get("selected")
+    if raw_selected is None:
+        selected: list[str] = []
+    elif isinstance(raw_selected, list):
+        selected = [str(s) for s in raw_selected]
+    else:
         return error("selected must be a list", 400)
-    selected = [str(s) for s in selected]
     other_text = str(body.get("other_text") or "")
     ask = bot_asks.PENDING.get(request.match_info["aid"])
     if ask is None or ask.chat_id != chat["id"]:
         return error("ask not found or already resolved", 409)
+    raw_answers = body.get("answers")
+    answers = None
+    if raw_answers is not None:
+        if not isinstance(raw_answers, dict):
+            return error("answers must be an object", 400)
+        answers = {}
+        for qid, ans in raw_answers.items():
+            if not isinstance(ans, dict):
+                return error(f"answers[{qid}] must be an object", 400)
+            entry = {"selected": [str(s) for s in (ans.get("selected") or [])]}
+            oth = str(ans.get("other_text") or "")
+            if oth:
+                entry["other_text"] = oth
+            answers[str(qid)] = entry
+        qs = ask.spec.get("questions") or []
+        # Flatten single-question answers onto selected/other_text for legacy.
+        if len(qs) == 1 and qs[0]["id"] in answers and not selected and not other_text:
+            flat = answers[qs[0]["id"]]
+            selected = list(flat.get("selected") or [])
+            other_text = str(flat.get("other_text") or "")
     try:
-        bot_asks.validate_answer(ask.spec, selected, other_text)
+        bot_asks.validate_answer(ask.spec, selected, other_text, answers)
     except ValueError as e:
         return error(str(e), 422)
-    if bot_asks.resolve_ask(ask.id, "answered", selected, other_text) is None:
+    if bot_asks.resolve_ask(ask.id, "answered", selected, other_text or None, answers) is None:
         return error("ask not found or already resolved", 409)
     return web.json_response({"ok": True}, status=202)
 

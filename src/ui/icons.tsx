@@ -101,6 +101,7 @@ export const Icons = {
   genImage: <Svg><path d="M20 11.5V17a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h5.5" /><path d="m4.5 16.5 4-4a1.6 1.6 0 0 1 2.2 0L15 17" /><path d="M18 2.5v5M15.5 5h5" /></Svg>,
   chevron: <Svg><path d="m7 10 5 5 5-5" /></Svg>,
   check: <Svg><path d="m5 12.5 4.5 4.5L19 7.5" /></Svg>,
+  question: <Svg><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></Svg>,
   send: <Svg><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" /></Svg>,
   download: <Svg><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14" /></Svg>,
   more: <Svg fill><circle cx="5.5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="18.5" cy="12" r="1.6" /></Svg>,
