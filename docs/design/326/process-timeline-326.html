@@ -1,40 +1,63 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"/><title>#326 process-timeline · Lovart-faithful</title>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>#326 process-timeline · Lucide + ChainOfThoughtStep rail (v3)</title>
 <style>
 :root{
   --ca-font:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-  --muted:rgba(0,0,0,.38);          /* ~#9c9c9c on white */
-  --muted-active:rgba(0,0,0,.28);   /* lighter shimmer base ~#b9 */
+  --muted:rgba(0,0,0,.38);
+  --muted-active:rgba(0,0,0,.28);
   --text:rgba(0,0,0,.9);
   --float:#fff;
   --page:#f0f0f0;
-  --rail:rgba(0,0,0,.16);
   --card-border:rgba(0,0,0,.09);
   --card-text:rgba(0,0,0,.4);
+  --rail-opacity:.2;
 }
 *{box-sizing:border-box}
-body{margin:0;padding:24px 28px 32px;font:400 13px/20px var(--ca-font);background:var(--page);color:var(--text)}
+body{margin:0;padding:24px 28px 28px;font:400 13px/20px var(--ca-font);background:var(--page);color:var(--text)}
 .sheet{max-width:720px;margin:0 auto}
-.cap{font:500 11px/16px var(--ca-font);color:rgba(0,0,0,.45);margin:0 0 8px;letter-spacing:.02em}
-.ref-wrap{background:#fff;border-radius:12px;padding:14px 16px 16px;margin-bottom:18px}
-.ref-wrap img{display:block;width:100%;max-width:560px;height:auto;border-radius:4px}
-.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.cap{font:500 11px/16px var(--ca-font);color:rgba(0,0,0,.45);margin:0 0 10px;letter-spacing:.02em}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
 .panel{background:var(--float);border-radius:12px;padding:18px 16px 16px}
-.panel.dark{background:#1c1c1c;--muted:rgba(255,255,255,.4);--muted-active:rgba(255,255,255,.28);--text:rgba(255,255,255,.9);--float:#1c1c1c;--rail:rgba(255,255,255,.22);--card-border:rgba(255,255,255,.14);--card-text:rgba(255,255,255,.45);color:var(--text)}
+.panel.dark{
+  background:#1c1c1c;
+  --muted:rgba(255,255,255,.4);
+  --muted-active:rgba(255,255,255,.28);
+  --text:rgba(255,255,255,.9);
+  --float:#1c1c1c;
+  --card-border:rgba(255,255,255,.14);
+  --card-text:rgba(255,255,255,.45);
+  color:var(--text);
+}
 .panel-label{font:500 10px/14px var(--ca-font);color:var(--muted);margin:0 0 14px;letter-spacing:.06em;text-transform:uppercase}
 .timeline{position:relative}
-.trow{display:grid;grid-template-columns:18px 1fr;column-gap:10px;align-items:start;position:relative;padding-bottom:10px}
-.trow:last-of-type{padding-bottom:0}
-.icon-col{position:relative;width:18px;display:flex;justify-content:center;padding-top:1px}
-.icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);position:relative;z-index:1;background:var(--float)}
-.icon svg{width:16px;height:16px;display:block}
-/* dashed vertical rail through icon centers */
-.trow:not(:last-of-type) .icon-col::after{
-  content:"";position:absolute;top:19px;left:50%;transform:translateX(-50%);
-  width:0;bottom:-10px;border-left:1.5px dashed var(--rail);z-index:0;
+/* AI Elements ChainOfThoughtStep row */
+.trow{display:grid;grid-template-columns:16px 1fr;column-gap:12px;align-items:stretch;position:relative}
+.icon-col{position:relative;width:16px;display:flex;justify-content:center;align-items:flex-start;align-self:stretch}
+.icon{
+  width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;
+  color:var(--muted);position:relative;z-index:1;background:var(--float);
 }
-.body{min-width:0;padding-top:0}
-.title{font:500 13px/18px var(--ca-font);color:var(--muted)}
+.icon svg{width:16px;height:16px;display:block}
+/* solid 1px rail — mirrors: absolute top-7 bottom-0 left-1/2 -mx-px w-px bg-border */
+.trow:not(.is-last) .icon-col::after{
+  content:"";
+  position:absolute;
+  top:28px; /* top-7 */
+  bottom:0;
+  left:50%;
+  width:1px;
+  margin-left:-0.5px; /* -mx-px */
+  background:currentColor;
+  opacity:var(--rail-opacity);
+  z-index:0;
+  pointer-events:none;
+}
+.body{min-width:0;padding-bottom:16px}
+.trow.is-last .body{padding-bottom:0}
+.title{font:500 13px/18px var(--ca-font);color:var(--muted);margin:0;padding-top:0}
+/* first line aligns with 16px icon — line-height 18, nudge */
+.trow .title{line-height:16px}
 .title.active{
   background:linear-gradient(100deg,var(--muted-active) 28%,var(--muted) 48%,rgba(0,0,0,.55) 50%,var(--muted) 52%,var(--muted-active) 72%) 0 0/280% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -45,7 +68,6 @@ body{margin:0;padding:24px 28px 32px;font:400 13px/20px var(--ca-font);backgroun
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
 @keyframes shine{from{background-position:100% 0}to{background-position:0 0}}
-/* wide rounded status card — NOT a pill chip */
 .status-card{
   margin-top:10px;
   display:block;width:100%;
@@ -56,122 +78,149 @@ body{margin:0;padding:24px 28px 32px;font:400 13px/20px var(--ca-font);backgroun
   color:var(--card-text);
   background:transparent;
 }
-.note{margin:4px 2px 0;font:400 11.5px/1.55 var(--ca-font);color:rgba(0,0,0,.45);max-width:720px}
-.note code{font-size:11px;background:rgba(127,127,127,.12);padding:1px 4px;border-radius:3px}
+.attr{margin:2px 2px 0;font:400 10.5px/1.5 var(--ca-font);color:rgba(0,0,0,.4)}
+.attr code{font-size:10.5px;background:rgba(127,127,127,.12);padding:1px 4px;border-radius:3px}
 </style></head><body>
 <div class="sheet">
-
-  <p class="cap">Lovart 实测（Ashley 认可）</p>
-  <div class="ref-wrap">
-    <img src="lovart-process-timeline-liked.png" alt="Lovart process timeline — Ashley approved"/>
-  </div>
-
-  <p class="cap">Recreation · Light / Dark</p>
+  <p class="cap">Icons = Lucide via Vercel AI Elements · rail = solid 1px like ChainOfThoughtStep (not dashed)</p>
   <div class="pair">
+
     <!-- LIGHT -->
-    <div class="panel">
+    <div class="panel" id="panel-light">
       <div class="panel-label">Light</div>
       <div class="timeline">
         <div class="trow">
           <div class="icon-col"><span class="icon" aria-hidden="true">
-            <!-- Thought = brain (top-down, center fissure) — NOT clock -->
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3.5C10.2 3.5 9.1 4.1 8.3 5.0C7.2 4.5 5.8 4.9 5.2 6.1C4.0 6.6 3.3 7.9 3.5 9.2C2.8 10.2 2.9 11.6 3.7 12.6C3.4 13.9 4.2 15.3 5.6 15.8C5.9 17.2 7.2 18.2 8.7 18.2C9.5 19.1 10.6 19.6 12 19.6C13.4 19.6 14.5 19.1 15.3 18.2C16.8 18.2 18.1 17.2 18.4 15.8C19.8 15.3 20.6 13.9 20.3 12.6C21.1 11.6 21.2 10.2 20.5 9.2C20.7 7.9 20.0 6.6 18.8 6.1C18.2 4.9 16.8 4.5 15.7 5.0C14.9 4.1 13.8 3.5 12 3.5Z"/>
-              <path d="M12 4.2v14.8"/>
-              <path d="M12 9.0H9.8M12 14.2h2.2"/>
+            <!-- Lucide Brain -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 18V5"/>
+              <path d="M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4"/>
+              <path d="M17.707 6.294A3 3 0 1012 5a3 3 0 10-5.707 1.294"/>
+              <path d="M17.996 5.125a4 4 0 012.526 5.77"/>
+              <path d="M18 18a4 4 0 002-7.465"/>
+              <path d="M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517"/>
+              <path d="M6 18a4 4 0 01-2-7.465"/>
+              <path d="M6.004 5.125a4 4 0 00-2.526 5.77"/>
             </svg>
           </span></div>
-          <div class="body"><div class="title">Thought</div></div>
+          <div class="body"><p class="title">Thought</p></div>
         </div>
         <div class="trow">
           <div class="icon-col"><span class="icon" aria-hidden="true">
-            <!-- Skill ready = scroll / parchment -->
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 5.5h7.5c1.1 0 2 .85 2 1.9v9.6"/>
-              <path d="M8 5.5v10.2c0 1.7 1.25 2.95 2.95 2.95h.9"/>
-              <path d="M17.5 16.9c0 1.2-.95 2.2-2.15 2.25H11"/>
-              <path d="M15.5 3.85c1.2.1 2.1 1.05 2.1 2.2"/>
-              <path d="M10.4 9.4h4.5M10.4 12.5h4.5"/>
+            <!-- Lucide ScrollText -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 12h-5"/>
+              <path d="M15 8h-5"/>
+              <path d="M19 17V5a2 2 0 0 0-2-2H4"/>
+              <path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/>
             </svg>
           </span></div>
-          <div class="body"><div class="title">Skill ready</div></div>
+          <div class="body"><p class="title">Skill ready</p></div>
         </div>
         <div class="trow">
           <div class="icon-col"><span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3.5C10.2 3.5 9.1 4.1 8.3 5.0C7.2 4.5 5.8 4.9 5.2 6.1C4.0 6.6 3.3 7.9 3.5 9.2C2.8 10.2 2.9 11.6 3.7 12.6C3.4 13.9 4.2 15.3 5.6 15.8C5.9 17.2 7.2 18.2 8.7 18.2C9.5 19.1 10.6 19.6 12 19.6C13.4 19.6 14.5 19.1 15.3 18.2C16.8 18.2 18.1 17.2 18.4 15.8C19.8 15.3 20.6 13.9 20.3 12.6C21.1 11.6 21.2 10.2 20.5 9.2C20.7 7.9 20.0 6.6 18.8 6.1C18.2 4.9 16.8 4.5 15.7 5.0C14.9 4.1 13.8 3.5 12 3.5Z"/>
-              <path d="M12 4.2v14.8"/>
-              <path d="M12 9.0H9.8M12 14.2h2.2"/>
+            <!-- Lucide Globe -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+              <path d="M2 12h20"/>
             </svg>
           </span></div>
-          <div class="body"><div class="title">Thought</div></div>
+          <div class="body"><p class="title">Searching the web</p></div>
         </div>
         <div class="trow">
           <div class="icon-col"><span class="icon" aria-hidden="true">
-            <!-- Searching = globe with lat/long -->
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="8"/>
-              <path d="M4.2 12h15.6"/>
-              <path d="M12 4c2.35 2.45 3.55 5.05 3.55 8s-1.2 5.55-3.55 8c-2.35-2.45-3.55-5.05-3.55-8S9.65 6.45 12 4z"/>
+            <!-- Lucide Image -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+              <circle cx="9" cy="9" r="2"/>
+              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
             </svg>
           </span></div>
-          <div class="body"><div class="title active">Searching the web</div></div>
+          <div class="body"><p class="title">Generating images…</p></div>
+        </div>
+        <div class="trow is-last">
+          <div class="icon-col"><span class="icon" aria-hidden="true">
+            <!-- Lucide Video -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/>
+              <rect x="2" y="6" width="14" height="12" rx="2"/>
+            </svg>
+          </span></div>
+          <div class="body">
+            <p class="title active">Generating Video…</p>
+            <div class="status-card">Generating Video…</div>
+          </div>
         </div>
       </div>
-      <div class="status-card">Searching the web</div>
     </div>
 
     <!-- DARK -->
-    <div class="panel dark">
+    <div class="panel dark" id="panel-dark">
       <div class="panel-label">Dark</div>
       <div class="timeline">
         <div class="trow">
           <div class="icon-col"><span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3.5C10.2 3.5 9.1 4.1 8.3 5.0C7.2 4.5 5.8 4.9 5.2 6.1C4.0 6.6 3.3 7.9 3.5 9.2C2.8 10.2 2.9 11.6 3.7 12.6C3.4 13.9 4.2 15.3 5.6 15.8C5.9 17.2 7.2 18.2 8.7 18.2C9.5 19.1 10.6 19.6 12 19.6C13.4 19.6 14.5 19.1 15.3 18.2C16.8 18.2 18.1 17.2 18.4 15.8C19.8 15.3 20.6 13.9 20.3 12.6C21.1 11.6 21.2 10.2 20.5 9.2C20.7 7.9 20.0 6.6 18.8 6.1C18.2 4.9 16.8 4.5 15.7 5.0C14.9 4.1 13.8 3.5 12 3.5Z"/>
-              <path d="M12 4.2v14.8"/>
-              <path d="M12 9.0H9.8M12 14.2h2.2"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 18V5"/>
+              <path d="M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4"/>
+              <path d="M17.707 6.294A3 3 0 1012 5a3 3 0 10-5.707 1.294"/>
+              <path d="M17.996 5.125a4 4 0 012.526 5.77"/>
+              <path d="M18 18a4 4 0 002-7.465"/>
+              <path d="M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517"/>
+              <path d="M6 18a4 4 0 01-2-7.465"/>
+              <path d="M6.004 5.125a4 4 0 00-2.526 5.77"/>
             </svg>
           </span></div>
-          <div class="body"><div class="title">Thought</div></div>
+          <div class="body"><p class="title">Thought</p></div>
         </div>
         <div class="trow">
           <div class="icon-col"><span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M8 5.5h7.5c1.1 0 2 .85 2 1.9v9.6"/>
-              <path d="M8 5.5v10.2c0 1.7 1.25 2.95 2.95 2.95h.9"/>
-              <path d="M17.5 16.9c0 1.2-.95 2.2-2.15 2.25H11"/>
-              <path d="M15.5 3.85c1.2.1 2.1 1.05 2.1 2.2"/>
-              <path d="M10.4 9.4h4.5M10.4 12.5h4.5"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 12h-5"/>
+              <path d="M15 8h-5"/>
+              <path d="M19 17V5a2 2 0 0 0-2-2H4"/>
+              <path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/>
             </svg>
           </span></div>
-          <div class="body"><div class="title">Skill ready</div></div>
+          <div class="body"><p class="title">Skill ready</p></div>
         </div>
         <div class="trow">
           <div class="icon-col"><span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3.5C10.2 3.5 9.1 4.1 8.3 5.0C7.2 4.5 5.8 4.9 5.2 6.1C4.0 6.6 3.3 7.9 3.5 9.2C2.8 10.2 2.9 11.6 3.7 12.6C3.4 13.9 4.2 15.3 5.6 15.8C5.9 17.2 7.2 18.2 8.7 18.2C9.5 19.1 10.6 19.6 12 19.6C13.4 19.6 14.5 19.1 15.3 18.2C16.8 18.2 18.1 17.2 18.4 15.8C19.8 15.3 20.6 13.9 20.3 12.6C21.1 11.6 21.2 10.2 20.5 9.2C20.7 7.9 20.0 6.6 18.8 6.1C18.2 4.9 16.8 4.5 15.7 5.0C14.9 4.1 13.8 3.5 12 3.5Z"/>
-              <path d="M12 4.2v14.8"/>
-              <path d="M12 9.0H9.8M12 14.2h2.2"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+              <path d="M2 12h20"/>
             </svg>
           </span></div>
-          <div class="body"><div class="title">Thought</div></div>
+          <div class="body"><p class="title">Searching the web</p></div>
         </div>
         <div class="trow">
           <div class="icon-col"><span class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="8"/>
-              <path d="M4.2 12h15.6"/>
-              <path d="M12 4c2.35 2.45 3.55 5.05 3.55 8s-1.2 5.55-3.55 8c-2.35-2.45-3.55-5.05-3.55-8S9.65 6.45 12 4z"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+              <circle cx="9" cy="9" r="2"/>
+              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
             </svg>
           </span></div>
-          <div class="body"><div class="title active">Searching the web</div></div>
+          <div class="body"><p class="title">Generating images…</p></div>
+        </div>
+        <div class="trow is-last">
+          <div class="icon-col"><span class="icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/>
+              <rect x="2" y="6" width="14" height="12" rx="2"/>
+            </svg>
+          </span></div>
+          <div class="body">
+            <p class="title active">Generating Video…</p>
+            <div class="status-card">Generating Video…</div>
+          </div>
         </div>
       </div>
-      <div class="status-card">Searching the web</div>
     </div>
-  </div>
 
-  <p class="note">Thought icon for <code>#326</code> / full timeline = <strong>brain</strong>（Lovart）. Tip <code>#325</code> @ <code>466ced8</code> still ships clock for <code>Icons.think</code> — design recommends swapping to brain before or as follow-up.</p>
+  </div>
+  <p class="attr">Lucide icons (Brain · ScrollText · Globe · Image · Video) · Vercel AI Elements <code>ChainOfThoughtStep</code> solid <code>w-px</code> rail</p>
 </div>
 </body></html>
