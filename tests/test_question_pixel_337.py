@@ -70,17 +70,20 @@ def test_no_entrance_animation_on_q() -> None:
 
 
 def test_letter_tokens_340_lock() -> None:
-    """#340: soft letter-on (.55) + dark fg; unselected --ca-letter/.06 + .45; ban #1a1a1a+white."""
+    """#340: letter-on #2d2d2d + #fff; unselected .06/.45 flat; ban mid-gray+.55/dark-fg and tip #1a1a1a."""
     assert "--ca-letter: rgba(0,0,0,.06);" in BASE
     assert "--ca-letter-fg: rgba(0,0,0,.45);" in BASE
-    assert "--ca-letter-on: rgba(0,0,0,.55);" in BASE
-    assert "--ca-letter-on-fg: var(--ca-text);" in BASE
+    assert "--ca-letter-on: #2d2d2d;" in BASE
+    assert "--ca-letter-on-fg: #fff;" in BASE
     assert "--ca-opt-on: #ebebeb;" in BASE
-    # dark
+    # void previous after-mock
+    assert "--ca-letter-on: rgba(0,0,0,.55);" not in BASE
+    assert "--ca-letter-on-fg: var(--ca-text);" not in BASE
+    # dark: light letter fg when on
     assert "--ca-letter: rgba(255,255,255,.08);" in BASE
     assert "--ca-letter-fg: rgba(255,255,255,.45);" in BASE
-    assert "--ca-letter-on: rgba(255,255,255,.22);" in BASE
-    assert "--ca-letter-on-fg: var(--ca-text);" in BASE
+    assert "--ca-letter-on: #404040;" in BASE
+    assert "--ca-letter-on-fg: #fff;" in BASE
     assert "--ca-opt-on: rgba(255,255,255,.12);" in BASE
 
     letter = OVER.split(".ca-q__letter {")[1].split("}")[0]
@@ -92,10 +95,9 @@ def test_letter_tokens_340_lock() -> None:
     on = OVER.split(".ca-q__opt[data-on] .ca-q__letter")[1].split("}")[0]
     assert "background: var(--ca-letter-on)" in on
     assert "color: var(--ca-letter-on-fg)" in on
-    # ban white-on-#1a1a1a selected letter
+    # ban tip near-black #1a1a1a (use softer #2d2d2d via token)
     assert "#1a1a1a" not in on
-    assert "#fff" not in on and "white" not in on.lower()
-    assert "color: #fff" not in OVER.split("/* #328/#335/#337 Question")[1].split(".ca-memory")[0]
+    assert "rgba(0,0,0,.55)" not in on
 
     # selected row soft only via --ca-opt-on; no --ca-strong border
     on_row = OVER.split(".ca-q__opt[data-on] {")[1].split("}")[0]

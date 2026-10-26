@@ -212,7 +212,7 @@
   width: 20px; height: 20px; border-radius: 4px; background: var(--ca-letter);
   font: 500 11px/14px var(--ca-font); color: var(--ca-letter-fg);
 }
-/* #340: selected letter mid-gray + dark fg — NOT #1a1a1a / white */
+/* #340: selected letter #2d2d2d + #fff (void .55/dark-fg; softer than tip #1a1a1a) */
 .ca-q__opt[data-on] .ca-q__letter {
   color: var(--ca-letter-on-fg); background: var(--ca-letter-on);
 }
