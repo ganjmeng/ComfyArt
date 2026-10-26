@@ -247,21 +247,25 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
               </button>
             ))}
             {allowOther && (
-              <button type="button" className="ca-q__opt" data-on={st.otherOn || undefined} data-other="" onClick={toggleOther}>
-                <span className="ca-q__letter">{otherLetter}</span>
-                <span className="ca-q__text">{t('chatMessage.other')}</span>
-                {st.otherOn && (
+              st.otherOn ? (
+                <div className="ca-q__opt ca-q__opt--other" data-on="" data-other="" onClick={toggleOther}>
+                  <span className="ca-q__letter">{otherLetter}</span>
                   <input
-                    className="ca-q__input"
+                    className="ca-q__other-input"
                     value={st.other}
-                    placeholder={q.placeholder || t('chatMessage.other')}
+                    placeholder={q.placeholder || t('chatMessage.writeYourIdea')}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => onChange({ ...st, other: e.target.value })}
                     onKeyDown={(e) => e.stopPropagation()}
                     autoFocus
                   />
-                )}
-              </button>
+                </div>
+              ) : (
+                <button type="button" className="ca-q__opt" data-other="" onClick={toggleOther}>
+                  <span className="ca-q__letter">{otherLetter}</span>
+                  <span className="ca-q__text">{t('chatMessage.other')}</span>
+                </button>
+              )
             )}
           </>
         )}
