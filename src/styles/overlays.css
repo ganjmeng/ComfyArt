@@ -209,11 +209,12 @@
 }
 .ca-q__letter {
   flex: none; display: inline-flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; border-radius: 4px; background: var(--ca-active);
-  font: 500 11px/14px var(--ca-font); color: var(--ca-muted);
+  width: 20px; height: 20px; border-radius: 4px; background: var(--ca-letter);
+  font: 500 11px/14px var(--ca-font); color: var(--ca-letter-fg);
 }
+/* #340: selected letter mid-gray + dark fg — NOT #1a1a1a / white */
 .ca-q__opt[data-on] .ca-q__letter {
-  color: var(--ca-text); background: var(--ca-letter-on);
+  color: var(--ca-letter-on-fg); background: var(--ca-letter-on);
 }
 .ca-q__text { flex: 1; min-width: 0; font-size: 13px; line-height: 18px; }
 .ca-q__rec { flex: none; font: 400 11px/14px var(--ca-font); color: var(--ca-muted); }
@@ -226,10 +227,10 @@
 .ca-q__opt[data-other]:hover { background: var(--ca-hover); }
 .ca-q__opt[data-other][data-on] { background: var(--ca-opt-on); }
 .ca-q__opt[data-other] .ca-q__letter {
-  color: var(--ca-muted); background: var(--ca-active);
+  color: var(--ca-letter-fg); background: var(--ca-letter);
 }
 .ca-q__opt[data-other][data-on] .ca-q__letter {
-  color: var(--ca-text); background: var(--ca-letter-on);
+  color: var(--ca-letter-on-fg); background: var(--ca-letter-on);
 }
 .ca-q__input {
   width: 100%; height: var(--ca-opt-h, 28px); padding: 0 10px; border: none; border-radius: 8px;

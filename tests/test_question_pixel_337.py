@@ -67,3 +67,47 @@ def test_chat_pad_optional_tighten() -> None:
 def test_no_entrance_animation_on_q() -> None:
     q = OVER.split(".ca-q {")[1].split(".ca-q__head")[0]
     assert "animation" not in q and "@keyframes" not in OVER.split("/* #328/#335/#337 Question")[1].split(".ca-memory")[0]
+
+
+def test_letter_tokens_340_lock() -> None:
+    """#340: soft letter-on (.55) + dark fg; unselected --ca-letter/.06 + .45; ban #1a1a1a+white."""
+    assert "--ca-letter: rgba(0,0,0,.06);" in BASE
+    assert "--ca-letter-fg: rgba(0,0,0,.45);" in BASE
+    assert "--ca-letter-on: rgba(0,0,0,.55);" in BASE
+    assert "--ca-letter-on-fg: var(--ca-text);" in BASE
+    assert "--ca-opt-on: #ebebeb;" in BASE
+    # dark
+    assert "--ca-letter: rgba(255,255,255,.08);" in BASE
+    assert "--ca-letter-fg: rgba(255,255,255,.45);" in BASE
+    assert "--ca-letter-on: rgba(255,255,255,.22);" in BASE
+    assert "--ca-letter-on-fg: var(--ca-text);" in BASE
+    assert "--ca-opt-on: rgba(255,255,255,.12);" in BASE
+
+    letter = OVER.split(".ca-q__letter {")[1].split("}")[0]
+    assert "background: var(--ca-letter)" in letter
+    assert "color: var(--ca-letter-fg)" in letter
+    assert "var(--ca-active)" not in letter
+    assert "var(--ca-muted)" not in letter
+
+    on = OVER.split(".ca-q__opt[data-on] .ca-q__letter")[1].split("}")[0]
+    assert "background: var(--ca-letter-on)" in on
+    assert "color: var(--ca-letter-on-fg)" in on
+    # ban white-on-#1a1a1a selected letter
+    assert "#1a1a1a" not in on
+    assert "#fff" not in on and "white" not in on.lower()
+    assert "color: #fff" not in OVER.split("/* #328/#335/#337 Question")[1].split(".ca-memory")[0]
+
+    # selected row soft only via --ca-opt-on; no --ca-strong border
+    on_row = OVER.split(".ca-q__opt[data-on] {")[1].split("}")[0]
+    assert "background: var(--ca-opt-on)" in on_row
+    assert "--ca-strong" not in on_row
+
+
+def test_multi_block_page_chrome() -> None:
+    """#340 Scope B: questions[] → multiple .ca-q__block + pager + mid-page Next."""
+    assert "onPage.map((q) => (" in CHAT
+    assert 'className="ca-q__block"' in CHAT
+    assert "showPager" in CHAT and "ca-q__page" in CHAT
+    assert "chatMessage.next" in CHAT
+    assert "chatMessage.submit" in CHAT
+    assert "isLast ?" in CHAT
