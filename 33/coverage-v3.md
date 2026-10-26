@@ -1,10 +1,10 @@
 # #33 功能覆盖表 v3
 
-> **基线 tip**：`main` `d1629e9`（含 #154 WaveSpeed mock、#156/#169/#170/#171 导出与报错抽测等）  
+> **基线 tip**：`main` `4253d3e`（含 #154 WaveSpeed mock、#156/#169/#170/#171；#351 覆盖表）  
 > **规则**：全程 mock / $0；不做 Playwright e2e；不卡 CI。  
-> **本 PR（PR1）**：只刷新对照表。本地画布工具补测见 **PR2**（`tests/test_local_canvas_tools.py`），不挡本 PR。
+> **本 PR（PR2 / v3.1）**：`tests/test_local_canvas_tools.py` 为本地画布工具补 mock happy/error；§D 标 ✅。
 
-列说明：`file::test` 指向当前 tip 上存在的用例；✅ = 已有；○ = 可选加固；🔲 = M6 / PR2 后续。
+列说明：`file::test` 指向当前 tip 上存在的用例；✅ = 已有；○ = 可选加固；🔲 = M6 后续。
 
 ---
 
@@ -68,7 +68,7 @@
 |---|---|---|---|
 | 项目新建/打开/保存往返 | `test_project_flow.py::test_new_edit_save_reopen…` ✅ | `::test_bad_save_keeps_previous_copy` ✅ | |
 | 项目列表 CRUD / 版本 | `test_projects.py` ✅ | 删除联动 chat 等 ✅ | |
-| MCP 工具列表与中继 | `test_mcp.py` ✅ | `::test_page_errors_come_back_as_tool_errors` / 无页面 / 超时 ✅ | `focus` 仅有错误中继抽测 |
+| MCP 工具列表与中继 | `test_mcp.py` ✅ | `::test_page_errors_come_back_as_tool_errors` / 无页面 / 超时 ✅ | `focus` happy/error 见 §D `test_local_canvas_tools` |
 | Agent 回归集（#231） | `tests/agent_regression/`（含 create_slides / add_text / update_shapes 脚本路径）✅ | fault-retry / 步数上限 (#232) ✅ | mock LLM + mock WS；$0 |
 | 原版工具未删守卫 | `test_original_features_kept.py` ✅ | — | 只断言工具仍在，不替代行为测 |
 | PDF 导入 | `test_pdf.py::test_pages_are_rendered_into_input` ✅ | `::test_not_a_pdf_is_a_bad_request` ✅ | |
@@ -78,19 +78,24 @@
 
 ---
 
-## D. 本地画布工具缺口 → **PR2 / M6，不挡本 PR**
+## D. 本地画布工具 → **PR2 DONE**（`tests/test_local_canvas_tools.py`）
 
-下列工具不走 WaveSpeed 云端；#33 产品绿灯只要求覆盖表刷新 + 导出 mock。行为测放到 PR2 `tests/test_local_canvas_tools.py`：
+下列工具不走 WaveSpeed 云端。PR2 用 MCP page-relay stub（同 `test_mcp.py`）补专用 mock happy + error；$0，无 Playwright。
 
-| 工具 | 现状 | 计划 |
-|---|---|---|
-| `vectorize_image` | 仅工具保留断言 / guide | PR2 本地 happy + 坏输入 |
-| `place_design` | 同上 | PR2 |
-| `place_html` | 同上 | PR2 |
-| `create_slides` | Agent 回归 case `12` 有脚本路径；无独立 pytest 单测文件 | PR2 补专用单测（导出 PPTX 已由 `test_export_formats` 覆盖） |
-| `add_text` / `add_shape` / `create_frame` | Agent 回归部分触及；无 `test_local_canvas_tools` | PR2 |
-| `update_shapes` / `delete_shapes` | 同上 | PR2 |
-| `focus` | `test_mcp.py` 仅错误中继 | PR2 补 happy |
+| 工具 | 正常路径 (happy) | 报错路径 (error) | 备注 |
+|---|---|---|---|
+| `vectorize_image` | `test_local_canvas_tools.py::test_vectorize_image_happy` ✅ | `::test_vectorize_image_error_not_an_image` ✅ | 本地矢量化 |
+| `place_design` | `::test_place_design_happy` ✅ | `::test_place_design_error_not_a_mockup` ✅ | 样机贴图 |
+| `place_html` | `::test_place_html_happy` ✅ | `::test_place_html_error_bad_html` ✅ | |
+| `create_slides` | `::test_create_slides_happy_local_frames` ✅ | `::test_create_slides_error_empty_slides` ✅ | 无 image 的本地 frames；导出 PPTX 见 `test_export_formats`；Agent case `12` 仍有带图路径 |
+| `add_text` | `::test_add_text_happy` ✅ | `::test_add_text_error_missing_frame` ✅ | |
+| `add_shape` | `::test_add_shape_happy` ✅ | `::test_add_shape_error_bad_kind` ✅ | |
+| `create_frame` | `::test_create_frame_happy` ✅ | `::test_create_frame_error_missing_child` ✅ | |
+| `update_shapes` | `::test_update_shapes_happy` ✅ | `::test_update_shapes_error_not_array` ✅ | |
+| `delete_shapes` | `::test_delete_shapes_happy` ✅ | `::test_delete_shapes_error_missing` ✅ | |
+| `focus` | `::test_focus_happy` ✅ | `::test_focus_error_missing_shape` ✅（`test_mcp.py` 亦有） | |
+
+`python -m pytest -v tests/test_local_canvas_tools.py` 期望：**20 passed**。
 
 ---
 
@@ -108,13 +113,26 @@
 | PNG/PDF/PPTX 导出 mock | 有（#162） | **仍满足**；并含 JPG/SVG/可编辑 PPTX/默认 2x（#169） |
 | 图/视/音/3D 报错抽测 | 发版前计划 | **已落地**（#170） |
 | 覆盖表文档 | issue 评论 + `33/coverage-v2.png` | **本文件** `33/coverage-v3.md` 按 tip 重扫 |
-| 本地画布工具 | 「无 mock」 | 仍列缺口，明确 **PR2** |
+| 本地画布工具 | 「无 mock」 / v3 列缺口 | **v3.1 PR2** `test_local_canvas_tools.py` ✅ |
 | `style_transfer` 专用 submit | 未单列 | 标为 **可选加固** |
 
 ---
 
 ## G. 关卡建议
 
-1. 产品勾选 #33 AC：导出 mock（#156）✅ + 覆盖表（本 PR）✅  
-2. 本地工具与 #241 项进 M6 / 开 PR2，**不**作为本 PR 合并阻塞  
+1. 产品勾选 #33 AC：导出 mock（#156）✅ + 覆盖表（#351）✅ + 本地画布工具 mocks（本 PR / PR2）✅  
+2. #241 lang+socket → **M6**，**非阻塞**  
 3. 可选：补 `style_transfer` 专用 submit happy（hardening）
+
+---
+
+## H. v3.1 注记（PR2）
+
+相对 #351 / v3：
+
+| 项 | v3（#351） | v3.1（本 PR） |
+|---|---|---|
+| `tests/test_local_canvas_tools.py` | 未建 | **新建**：10 工具 × happy/error = 20 tests |
+| §D 本地画布工具 | 缺口表 → PR2 | **标 ✅**，指向新文件 |
+| #241 leftovers | M6 非阻塞 | **仍 M6 非阻塞** |
+| CI gate | 不改 | **不改** |
