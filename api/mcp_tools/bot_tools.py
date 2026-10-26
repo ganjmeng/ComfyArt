@@ -61,9 +61,15 @@ async def ask_user(args: dict) -> dict:
         return {"status": outcome["status"],
                 "note": "the user did not answer; proceed conservatively or "
                         "end the turn"}
-    return {"status": "answered",
-            "selected": outcome.get("selected") or [],
-            "other_text": outcome.get("other_text") or ""}
+    selected = outcome.get("selected") or []
+    other_text = outcome.get("other_text") or ""
+    result = {"status": "answered",
+              "selected": selected,
+              "other_text": other_text}
+    if spec.get("allow_skip") and not selected and not other_text:
+        result["note"] = bot_asks.skip_note()
+        result["skipped"] = True
+    return result
 
 
 async def maybe_ask_run_approval(action: str) -> dict | None:
@@ -150,6 +156,7 @@ ASK_USER_SCHEMA = {
                     "id": {"type": "string"},
                     "label": {"type": "string"},
                     "description": {"type": "string"},
+                    "recommended": {"type": "boolean"},
                 },
                 "required": ["id", "label"],
                 "additionalProperties": False,
@@ -158,6 +165,13 @@ ASK_USER_SCHEMA = {
         "min_selections": {"type": "integer"},
         "max_selections": {"type": "integer"},
         "allow_other": {"type": "boolean"},
+        "allow_skip": {"type": "boolean"},
+        "defaults": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+        "page": {"type": "integer"},
+        "page_count": {"type": "integer"},
     },
     "required": ["prompt", "options"],
     "additionalProperties": False,
@@ -166,13 +180,18 @@ ASK_USER_SCHEMA = {
 TOOLS: dict[str, dict] = {
     "ask_user": {
         "description": (
-            "Pause and ask the user a question in the chat panel; blocks "
-            "until they answer (or a few minutes pass). Use when a decision "
-            "genuinely belongs to the user: creative direction, destructive "
-            "actions, long generations. options are the choices; set "
-            "min/max_selections for multi-select and allow_other to accept "
-            "free text. Returns {status, selected, other_text} — status "
-            "cancelled/expired means no answer, don't retry immediately."
+            "Pause and ask the user ONE question in the chat panel (one "
+            "prompt per call; for several questions, call ask_user again). "
+            "Blocks until they answer, skip, or a few minutes pass. Use when "
+            "a required parameter or creative choice is missing, or a "
+            "decision genuinely belongs to the user. options are the "
+            "choices (shown as A–E); set min/max_selections for multi-select, "
+            "allow_other for free text, allow_skip (default true) so they "
+            "can skip, defaults or option.recommended to pre-select, and "
+            "optional page/page_count for the header. Returns "
+            "{status, selected, other_text}; skipped answers include a note "
+            "— continue with sensible defaults and do not re-ask immediately. "
+            "status cancelled/expired means no answer."
         ),
         "inputSchema": ASK_USER_SCHEMA,
         "handler": ask_user,

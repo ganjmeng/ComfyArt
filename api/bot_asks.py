@@ -5,8 +5,13 @@ from typing import Optional
 ASK_TIMEOUT_S = 540.0
 RUN_APPROVAL_WAIT_S = 45.0
 RUN_APPROVAL_KIND = "run_approval"
+QUESTION_KIND = "question"
 
 _MAX_OPTIONS = 12
+_SKIP_NOTE = (
+    "user skipped this question; continue with sensible defaults or omit "
+    "this preference — do not re-ask immediately"
+)
 
 
 class PendingAsk:
@@ -45,18 +50,52 @@ def validate_spec(args: dict) -> dict:
         option = {"id": oid, "label": label}
         if raw.get("description"):
             option["description"] = str(raw["description"])
+        if raw.get("recommended"):
+            option["recommended"] = True
         options.append(option)
     min_selections = int(args.get("min_selections") or 1)
     max_selections = int(args.get("max_selections") or 1)
     if not (0 <= min_selections <= max_selections <= len(options)):
         raise ValueError("min/max_selections out of range")
-    return {
+    allow_other = bool(args.get("allow_other"))
+    allow_skip = bool(args["allow_skip"]) if "allow_skip" in args else True
+    defaults: list[str] = []
+    raw_defaults = args.get("defaults")
+    if raw_defaults is not None:
+        if not isinstance(raw_defaults, list):
+            raise ValueError("defaults must be a list of option ids")
+        defaults = [str(d) for d in raw_defaults]
+        unknown = [d for d in defaults if d not in seen_ids]
+        if unknown:
+            raise ValueError(f"unknown default ids: {unknown}")
+        if len(defaults) > max_selections:
+            raise ValueError(f"defaults exceed max_selections ({max_selections})")
+    elif any(o.get("recommended") for o in options):
+        defaults = [o["id"] for o in options if o.get("recommended")][:max_selections]
+    spec = {
         "prompt": prompt,
         "options": options,
         "min_selections": min_selections,
         "max_selections": max_selections,
-        "allow_other": bool(args.get("allow_other")),
+        "allow_other": allow_other,
+        "allow_skip": allow_skip,
+        "kind": QUESTION_KIND,
     }
+    if defaults:
+        spec["defaults"] = defaults
+    if args.get("page") is not None:
+        page = int(args["page"])
+        if page < 1:
+            raise ValueError("page must be >= 1")
+        spec["page"] = page
+    if args.get("page_count") is not None:
+        page_count = int(args["page_count"])
+        if page_count < 1:
+            raise ValueError("page_count must be >= 1")
+        spec["page_count"] = page_count
+    if "page" in spec and "page_count" in spec and spec["page"] > spec["page_count"]:
+        raise ValueError("page cannot exceed page_count")
+    return spec
 
 
 def is_run_approval(spec: dict) -> bool:
@@ -119,6 +158,17 @@ def validate_answer(spec: dict, selected: list[str],
         raise ValueError(f"at most {spec['max_selections']} selections")
     if other_text and not spec["allow_other"]:
         raise ValueError("free-text answer is not allowed for this ask")
+    skipping = (
+        bool(spec.get("allow_skip"))
+        and not selected
+        and not other_text
+    )
+    if skipping:
+        return
     if len(selected) < spec["min_selections"] and not (
             other_text and spec["allow_other"]):
         raise ValueError(f"at least {spec['min_selections']} selections")
+
+
+def skip_note() -> str:
+    return _SKIP_NOTE

@@ -76,21 +76,126 @@ function Retry({ b: block, live }: { b: BotBlock; live: boolean }) {
   )
 }
 
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+function askDefaults(b: BotBlock): string[] {
+  if (b.defaults?.length) return b.defaults.slice(0, b.max_selections ?? 1)
+  const rec = (b.options ?? []).filter((o) => o.recommended).map((o) => o.id)
+  return rec.slice(0, b.max_selections ?? 1)
+}
+
+function askAnswerLabels(b: BotBlock): string {
+  const options = b.options ?? []
+  const labels = (b.selected ?? []).map((id) => options.find((o) => o.id === id)?.label ?? id)
+  return [...labels, b.other_text].filter(Boolean).join(t('common.listSep'))
+}
+
+/** Historical chip asks (no kind) keep the memo path; new question cards use the grey Q/A bubble. */
+function AskMemo({ b }: { b: BotBlock }) {
+  const labels = askAnswerLabels(b)
+  return (
+    <div className="ca-chat__memo">
+      <span className="ca-icon">{Icons.check}</span>
+      {b.prompt} → {b.status === 'answered' ? labels : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
+    </div>
+  )
+}
+
+function QuestionAnswered({ b }: { b: BotBlock }) {
+  if (b.status !== 'answered') {
+    return (
+      <div className="ca-chat__memo">
+        <span className="ca-icon">{Icons.check}</span>
+        {b.prompt} → {b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
+      </div>
+    )
+  }
+  const answer = askAnswerLabels(b) || t('chatMessage.skipped')
+  return (
+    <div className="ca-qmemo">
+      <div className="ca-qmemo__row"><span className="ca-qmemo__k">{t('chatMessage.qaAsk')}</span><span className="ca-qmemo__v">{b.prompt}</span></div>
+      <div className="ca-qmemo__row"><span className="ca-qmemo__k">{t('chatMessage.qaAnswer')}</span><span className="ca-qmemo__v">{answer}</span></div>
+    </div>
+  )
+}
+
+/** #328/#330: Lovart-style Question card for default ask / kind=question. */
+function QuestionCard({ b }: { b: BotBlock }) {
+  const options = b.options ?? []
+  const multi = (b.max_selections ?? 1) > 1
+  const allowOther = !!b.allow_other
+  const allowSkip = b.allow_skip !== false
+  const [picked, setPicked] = useState<string[]>(() => askDefaults(b))
+  const [otherOn, setOtherOn] = useState(false)
+  const [other, setOther] = useState('')
+  const [error, setError] = useState('')
+  if (b.status !== 'pending') return <QuestionAnswered b={b} />
+
+  const toggle = (id: string) => {
+    if (!multi) setOtherOn(false)
+    setPicked(multi ? (picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id].slice(-(b.max_selections ?? 1))) : [id])
+  }
+  const toggleOther = () => {
+    if (otherOn) { setOtherOn(false); return }
+    setOtherOn(true)
+    if (!multi) setPicked([])
+  }
+  const submit = (selected: string[], text: string) => void answerAsk(b.ask_id!, selected, text).catch((e) => setError(errorText(e)))
+  const canSubmit = picked.length > 0 || (allowOther && otherOn && other.trim().length > 0)
+  const otherLetter = LETTERS[options.length] ?? '?'
+  const recommended = new Set([...(b.defaults ?? []), ...options.filter((o) => o.recommended).map((o) => o.id)])
+  const page = b.page && b.page_count ? `${b.page} / ${b.page_count}` : null
+
+  return (
+    <div className="ca-q">
+      <div className="ca-q__head">
+        <div className="ca-q__label"><span className="ca-icon">{Icons.question}</span>{t('chatMessage.question')}</div>
+        {page && <div className="ca-q__page">{page}</div>}
+      </div>
+      <div className="ca-q__prompt">{b.prompt}{multi && <span className="ca-menu__key">{t('chatMessage.multipleChoice')}</span>}</div>
+      <div className="ca-q__opts">
+        {options.map((o, i) => (
+          <button key={o.id} type="button" className="ca-q__opt" title={o.description} data-on={picked.includes(o.id) || undefined} onClick={() => toggle(o.id)}>
+            <span className="ca-q__letter">{LETTERS[i] ?? String(i + 1)}</span>
+            <span className="ca-q__text">{o.label}</span>
+            {recommended.has(o.id) && <span className="ca-q__rec">{t('chatMessage.recommended')}</span>}
+          </button>
+        ))}
+        {allowOther && (
+          <button type="button" className="ca-q__opt" data-on={otherOn || undefined} data-other="" onClick={toggleOther}>
+            <span className="ca-q__letter">{otherLetter}</span>
+            <span className="ca-q__text">{t('chatMessage.other')}</span>
+            {otherOn && (
+              <input
+                className="ca-q__input"
+                value={other}
+                placeholder={t('chatMessage.writeYourIdea')}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setOther(e.target.value)}
+                onKeyDown={(e) => e.stopPropagation()}
+                autoFocus
+              />
+            )}
+          </button>
+        )}
+      </div>
+      {error && <div className="ca-chat__hint">{error}</div>}
+      <div className="ca-q__foot">
+        {allowSkip && <button type="button" className="ca-q__skip" onClick={() => submit([], '')}>{t('chatMessage.skip')}</button>}
+        <button type="button" className="ca-q__submit" disabled={!canSubmit} onClick={() => submit(picked, otherOn ? other.trim() : '')}>{t('chatMessage.submit')}</button>
+      </div>
+    </div>
+  )
+}
+
+/** run_approval keeps the chip one-click Ask UI. */
 function Ask({ b }: { b: BotBlock }) {
   const [picked, setPicked] = useState<string[]>([])
   const [other, setOther] = useState('')
   const [error, setError] = useState('')
   const multi = (b.max_selections ?? 1) > 1
   const options = b.options ?? []
-  if (b.status !== 'pending') {
-    const labels = (b.selected ?? []).map((id) => options.find((o) => o.id === id)?.label ?? id)
-    return (
-      <div className="ca-chat__memo">
-        <span className="ca-icon">{Icons.check}</span>
-        {b.prompt} → {b.status === 'answered' ? [...labels, b.other_text].filter(Boolean).join(t('common.listSep')) : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
-      </div>
-    )
-  }
+  if (b.status !== 'pending') return <AskMemo b={b} />
   const toggle = (id: string) => setPicked(multi ? (picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id]) : [id])
   const submit = (selected: string[]) => void answerAsk(b.ask_id!, selected, other.trim()).catch((e) => setError(errorText(e)))
   return (
@@ -110,6 +215,15 @@ function Ask({ b }: { b: BotBlock }) {
       )}
     </div>
   )
+}
+
+function renderAsk(b: BotBlock, key: string | number) {
+  if (b.kind === 'plan_quote') return <PlanQuote key={key} b={b} />
+  if (b.kind === 'run_approval') return <Ask key={key} b={b} />
+  // New question cards (kind=question) and in-flight pending without kind use QuestionCard.
+  // Historical answered chips without kind keep the memo path.
+  if (b.status !== 'pending' && b.kind !== 'question') return <AskMemo key={key} b={b} />
+  return <QuestionCard key={key} b={b} />
 }
 
 /** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles. */
@@ -251,7 +365,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       if (b.type === 'thinking' && b.text?.trim()) items.push(<Thought key={i} text={b.text} live={!done && i === m.blocks.length - 1} />)
       if (b.type === 'tool_use') items.push(<Step key={i} editor={editor} use={b} result={resultOf(b, i)} />)
       if (b.type === 'retry') items.push(<Retry key={i} b={b} live={!done && !m.blocks.slice(i + 1).some((x) => x.type === 'retry')} />)
-      if (b.type === 'ask') items.push(b.kind === 'plan_quote' ? <PlanQuote key={b.ask_id ?? i} b={b} /> : <Ask key={b.ask_id ?? i} b={b} />)
+      if (b.type === 'ask') items.push(renderAsk(b, b.ask_id ?? i))
       if (b.type === 'task') items.push(<Task key={i} editor={editor} b={b} />)
       if (b.type === 'notice') items.push(<div key={i} className="ca-chat__notice" data-level={b.level}>{b.text}</div>)
     }

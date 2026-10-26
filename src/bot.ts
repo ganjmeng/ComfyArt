@@ -7,7 +7,7 @@ import { onComfyEvent, onReconnect } from './ws'
 import { lang, t } from './i18n'
 import { wsBodyError } from './wsErrors'
 
-export interface AskOption { id: string; label: string; description?: string }
+export interface AskOption { id: string; label: string; description?: string; recommended?: boolean }
 export interface BotBlock {
   type: string
   text?: string
@@ -25,6 +25,10 @@ export interface BotBlock {
   min_selections?: number
   max_selections?: number
   allow_other?: boolean
+  allow_skip?: boolean
+  defaults?: string[]
+  page?: number
+  page_count?: number
   kind?: string
   lines?: { text: string; price: string }[]
   total?: string
