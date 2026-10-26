@@ -254,7 +254,7 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
                   <input
                     className="ca-q__input"
                     value={st.other}
-                    placeholder={q.placeholder || t('chatMessage.writeYourIdea')}
+                    placeholder={q.placeholder || t('chatMessage.other')}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => onChange({ ...st, other: e.target.value })}
                     onKeyDown={(e) => e.stopPropagation()}
