@@ -321,7 +321,7 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-agentpick__check > .ca-icon,
 .ca-agentpick__check > .ca-icon svg { width: 18px; height: 18px; }
 /* #312: Model label + select closer to agent-row scale */
-/* #316: Model Popover trigger (no native select) + ask row polish */
+/* #316/#349: Model section + FieldSelect menu (AgentExtras uses FieldSelect; modelbtn kept as token alias) */
 .ca-agentpick__section { display: flex; flex-direction: column; padding: 0 10px; }
 .ca-agentpick__sectiontitle { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--ca-muted); margin: 6px 0 4px; }
 .ca-agentpick__modelbtn {
@@ -335,7 +335,7 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-agentpick__modelmenu { min-width: 100%; max-width: 320px; }
 .ca-agentpick__modelmenu .ca-menu__item > .ca-icon,
 .ca-agentpick__modelmenu .ca-menu__item > .ca-icon svg { width: 18px; height: 18px; }
-/* #318: shared FieldSelect (same tokens as #316 modelbtn; AgentPicker can migrate later) */
+/* #318/#349: shared FieldSelect — AgentExtras Model + Audio/OCR/blend/Kit/Workflows */
 .ca-fieldselect-wrap { width: 100%; min-width: 0; }
 .ca-fieldselect-wrap > .ca-pop-anchor { display: flex; width: 100%; min-width: 0; }
 .ca-fieldselect {

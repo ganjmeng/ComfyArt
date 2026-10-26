@@ -7,7 +7,7 @@ import { keyMissing, keySettingsOpenAtom, keyStatusAtom, refreshKeyStatus } from
 import { EachButton, EachRole, useEach } from './EachToggle'
 import { RefFrameButton } from './RefFrameButton'
 import { placeAsset } from '../assets'
-import { botEnabledAtom, loadProviders, messagesAtom, providerLabel, providersStateAtom } from '../bot'
+import { botEnabledAtom, loadProviders, loadSettings, messagesAtom, providerLabel, providersStateAtom } from '../bot'
 import { errorText } from '../jobs'
 import { KIND_LABELS, libraryAtom } from '../library'
 import type { AudioShape } from '../shapes/EmbedShapes'
@@ -323,7 +323,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
         <div className="ca-composer__mid">
         <Popover
           open={menu === 'mode'}
-          onOpenChange={(o) => { setMenu(o ? 'mode' : null); if (o) void loadProviders().catch(fail) }}
+          onOpenChange={(o) => { setMenu(o ? 'mode' : null); if (o) void Promise.all([loadProviders(), loadSettings()]).catch(fail) }}
           side="top"
           within=".ca-composer"
           trigger={({ open, toggle }) => (
