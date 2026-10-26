@@ -232,7 +232,7 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
 
   return (
     <div className="ca-q__block">
-      <div className="ca-q__prompt">{q.prompt}{multi && <span className="ca-menu__key">{t('chatMessage.multipleChoice')}</span>}</div>
+      <div className="ca-q__prompt">{q.prompt}{multi && <span className="ca-q__hint">{t('chatMessage.multipleChoice')}</span>}</div>
       <div className="ca-q__opts">
         {textOnly ? (
           <div className="ca-q__opt" data-text="" data-on={st.other.trim() ? true : undefined}>
@@ -336,7 +336,7 @@ function QuestionCard({ b }: { b: BotBlock }) {
         {isLast ? (
           <button type="button" className="ca-q__submit" disabled={!allOk} onClick={onSubmit}>{t('chatMessage.submit')} <span className="ca-q__key">↵</span></button>
         ) : (
-          <button type="button" className="ca-q__submit" disabled={!pageOk} onClick={onNext}>{t('chatMessage.next')} <span className="ca-icon ca-q__key-icon">{Icons.next}</span></button>
+          <button type="button" className="ca-q__submit" disabled={!pageOk} onClick={onNext}>{t('chatMessage.next')} <span className="ca-q__key">→</span></button>
         )}
       </div>
     </div>
