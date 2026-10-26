@@ -56,11 +56,23 @@ def test_undetected_row_whole_row_opens_settings():
     off = _off_row()
     assert 'type="button"' in off and "botSettingsOpenAtom.set(true)" in off
     assert "aria-disabled" not in off
-    assert "未检测到 ·" not in off and "notDetected')} ·" not in off
     assert "ca-agentpick__check" in off and "ca-agentpick__setup" in off
     assert off.index("ca-agentpick__check") < off.index("ca-agentpick__setup")
     css = (ROOT / "src/styles/shell.css").read_text()
     assert "min-width: 52px" in css and "justify-content: flex-end" in css
+
+
+def test_undetected_row_shows_detail_reason():
+    # #324: off row shows one-line reason (status) + title prefers provider.detail
+    off = _off_row()
+    assert "offRowTitle(p)" in off and "offRowReason(p)" in off
+    assert "ca-agentpick__status" in off
+    assert "offRowTitle" in PICKER and "offRowReason" in PICKER
+    assert "executable not found" in PICKER  # probe-miss → short i18n
+    assert "agentPicker.notDetected" in PICKER and "agentSetup.setUp" in PICKER
+    css = (ROOT / "src/styles/shell.css").read_text()
+    assert "ca-agentpick__off .ca-agentpick__status" in css
+    assert "max-width: 140px" in css
 
 
 def test_redetect_clears_probe_cache():

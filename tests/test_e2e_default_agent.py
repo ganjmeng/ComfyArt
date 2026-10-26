@@ -141,8 +141,10 @@ async def test_new_user_defaults_to_builtin_and_can_switch(app_url, fake_tools, 
             row = items.filter(has_text=label)
             assert "ca-agentpick__off" in await row.get_attribute("class")
             txt = " ".join((await row.inner_text()).split())
-            assert txt.endswith(setup) and nd not in txt, txt  # only the blue Set up on the right
-            assert await row.get_attribute("title") == nd  # hover says Not detected
+            # #324: visible「未检测到」+「去配置」; title exposes provider.detail
+            assert txt.endswith(setup) and nd in txt, txt
+            assert await row.locator(".ca-agentpick__status").inner_text() == nd
+            assert await row.get_attribute("title") == "executable not found"
         # image / video sit below the agent group in the same menu
         assert await menu.locator(".ca-menu__item:not(.ca-agentpick__row)").filter(has_text="图像" if lang == "zh" else "Image").count() >= 1
         if SHOTS:
