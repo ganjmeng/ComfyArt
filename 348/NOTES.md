@@ -1,6 +1,7 @@
 # #348 process-timeline row kinds · review-assets
 
 **Code tip:** `81f7292a3e7b7726a7c7e13a2c6a19603552458d` · branch `fix/p1-348-process-row-kinds` · closes #348.  
+**#78 review-assets SHA:** 
 **#78 tip path:** `docs/design/348/78/` on branch `fix/p1-348-process-row-kinds`.
 
 ## Honest source
