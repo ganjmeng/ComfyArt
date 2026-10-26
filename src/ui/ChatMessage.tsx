@@ -64,6 +64,18 @@ function processModelName(input?: Record<string, any>): string | undefined {
   return typeof m === 'string' && m.trim() ? m.trim() : undefined
 }
 
+function processAspectRatio(input?: Record<string, any>): string | undefined {
+  const raw = input?.aspect_ratio ?? input?.aspectRatio ?? input?.ratio ?? input?.params?.aspect_ratio
+  if (typeof raw === 'string' && raw.trim()) {
+    const s = raw.trim().replace(':', ' / ')
+    if (/^\d+(\.\d+)?\s*\/\s*\d+(\.\d+)?$/.test(s)) return s
+  }
+  const w = Number(input?.width ?? input?.w)
+  const h = Number(input?.height ?? input?.h)
+  if (w > 0 && h > 0) return `${w} / ${h}`
+  return undefined
+}
+
 function searchResultCount(use: BotBlock, result?: BotBlock): number | undefined {
   const raw = use.input?.num_results ?? use.input?.count ?? use.input?.n ?? result?.detail?.count ?? result?.detail?.num_results
   if (typeof raw === 'number' && raw > 0) return raw
@@ -579,12 +591,16 @@ type ProcessStep = {
   label: string
   live: boolean
   text?: string
+  /** CSS aspect-ratio when known from tool/job; chat hero defaults via tokens otherwise. */
+  aspectRatio?: string
 }
 
 /** #326: Lovart-style multi-step process rail (solid spine · status card outside). */
 function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
   const [openKey, setOpenKey] = useState<string | null>(null)
   const live = steps.find((s) => s.live)
+  // #356: flat grey media hero under live image/video only (sibling — not a new kind)
+  const mediaHero = live && (live.kind === 'image' || live.kind === 'video') ? live : undefined
   return (
     <div className="ca-process" data-live={live ? true : undefined}>
       <div className="ca-process__steps">
@@ -616,7 +632,16 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
           )
         })}
       </div>
-      {live && <div className="ca-process__status">{live.label}</div>}
+      {/* #356 Lovart RS/110: image/video live → title then hero; no bordered status between */}
+      {live && !mediaHero && <div className="ca-process__status">{live.label}</div>}
+      {mediaHero && (
+        <div
+          className="ca-media-hero"
+          data-kind={mediaHero.kind}
+          aria-hidden="true"
+          style={mediaHero.aspectRatio ? { aspectRatio: mediaHero.aspectRatio } : undefined}
+        />
+      )}
       {steps.map((s) => (
         openKey === s.key && s.text?.trim() ? (
           <div key={`d-${s.key}`} className="ca-process__detail">{s.text.trim()}</div>
@@ -720,6 +745,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
         }
         const pages = kindResolved === 'search_pages' ? searchResultCount(b, result) : undefined
         const model = (kindResolved === 'image' || kindResolved === 'video') ? processModelName(b.input) : undefined
+        const aspectRatio = (kindResolved === 'image' || kindResolved === 'video') ? processAspectRatio(b.input) : undefined
         proc.push({
           key: `p${i}`,
           kind: kindResolved,
@@ -730,6 +756,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
           }),
           live: stepLive,
           text: b.type === 'thinking' ? b.text : undefined,
+          aspectRatio,
         })
         return
       }

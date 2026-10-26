@@ -11,11 +11,42 @@
 .ca-gen-card__error a { color: inherit; text-decoration: underline; pointer-events: all; cursor: pointer; }
 .ca-gen-card__error { position: absolute; left: 8px; right: 8px; top: 8px; padding: 6px 12px; border-radius: 8px; background: var(--ca-error-bg); color: var(--ca-error-text); font-size: 13px; overflow-wrap: anywhere; }
 .ca-gen-card__icon svg { width: 100%; height: 100%; }
-.ca-gen-card[data-running] {
-  background: linear-gradient(100deg, var(--ca-empty) 30%, var(--ca-shine) 50%, var(--ca-empty) 70%) 0 0 / 300% 100%;
-  animation: ca-shine 1.4s linear infinite;
+/* #356 canvas Generating frame — single flat grey + pill (Lovart 01 / 04e); no shimmer/ring/nested stroke */
+.ca-gen-card[data-running],
+.ca-gen-frame[data-running] {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  background: var(--ca-gen-frame-bg);
+  border-radius: var(--ca-gen-frame-radius);
+  border: none;
+  outline: none;
+  box-shadow: none;
+  animation: none;
+  overflow: hidden;
 }
-.ca-gen-card[data-running] .ca-gen-card__icon { display: none; }
+.ca-gen-card[data-running] .ca-gen-card__icon,
+.ca-gen-frame[data-running] .ca-gen-card__icon { display: none; }
+.ca-gen-frame__pill {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  background: var(--ca-gen-pill-bg);
+  color: var(--ca-gen-pill-fg);
+  border-radius: var(--ca-gen-pill-radius);
+  padding: var(--ca-gen-pill-pad);
+  font: 500 12px/1 var(--ca-font);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+  border: none;
+  box-shadow: none;
+}
+.ca-gen-card[data-running] .ca-gen-ring,
+.ca-gen-frame[data-running] .ca-gen-ring { display: none !important; }
+/* #356: while generating — no selection border chrome (handles hidden in GeneratorShapeUtil) */
 @property --ca-p { syntax: '<number>'; inherits: false; initial-value: 0; }
 @property --ca-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 .ca-gen-ring {
