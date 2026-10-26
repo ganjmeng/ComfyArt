@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""#337 #78: capture Question card inside real tip dist AgentPanel (.ca-agent).
+"""#337/#340 #78: capture Question card inside real tip dist AgentPanel (.ca-agent).
 
 Honest label: Playwright Chromium + tip dist AgentPanel (production React QuestionCard)
 against stubbed ComfyArt aiohttp routes — NOT full Electron desktop / not live LLM ask.
 Closer than tip-CSS / chat-shell HTML harness: real .ca-agent chrome, composer, chat list,
-tip CSS/JS from dist @ HEAD (post-#338 1:1 remaining; behavior keep from #338).
+tip CSS/JS from dist @ HEAD (#340 letter-on #2d2d2d+#fff + multi-block page chrome).
+
+Shots: light+dark × soft-select letter + multi-block page (open/single/multi) × Lovart compares.
 """
 from __future__ import annotations
 
@@ -17,7 +19,7 @@ import types
 from pathlib import Path
 
 ROOT = Path("/workspace/ComfyArt_337").resolve()
-OUT = Path("/workspace/comfyart-337-sidebar-live/shots")
+OUT = Path("/workspace/comfyart-340-sidebar-live/shots")
 OUT.mkdir(parents=True, exist_ok=True)
 
 # Import path: /workspace/ComfyArt -> ComfyArt_337
@@ -230,14 +232,16 @@ def seed_chat(
     *,
     pid: str,
     title: str,
-    prompt: str,
-    options: list[dict],
+    prompt: str | None = None,
+    options: list[dict] | None = None,
     max_selections: int = 1,
     placeholder: str | None = None,
+    questions: list[dict] | None = None,
+    page_count: int | None = None,
 ) -> tuple[str, str]:
     """Create project + chat + pending kind=question ask. Returns (chat_id, ask_id)."""
     project_store.save_project(
-        "default", pid, json.dumps(_snapshot(f"#337 {title}"), ensure_ascii=False), f"#337 {title}", []
+        "default", pid, json.dumps(_snapshot(f"#340 {title}"), ensure_ascii=False), f"#340 {title}", []
     )
     chat = chat_store.create_chat(
         user="default", project=pid, provider="comfyart", title=title, run_mode="ask"
@@ -247,16 +251,24 @@ def seed_chat(
         role="user",
         blocks=[{"type": "text", "text": "帮我做一套新中式茶饮品牌视觉"}],
     )
-    spec_raw: dict = {
-        "prompt": prompt,
-        "options": options,
-        "allow_other": True,
-        "allow_skip": True,
-        "min_selections": 1,
-        "max_selections": max_selections,
-    }
-    if placeholder:
-        spec_raw["placeholder"] = placeholder
+    if questions is not None:
+        spec_raw: dict = {
+            "questions": questions,
+            "allow_skip": True,
+        }
+        if page_count is not None:
+            spec_raw["page_count"] = page_count
+    else:
+        spec_raw = {
+            "prompt": prompt or "",
+            "options": options or [],
+            "allow_other": True,
+            "allow_skip": True,
+            "min_selections": 1,
+            "max_selections": max_selections,
+        }
+        if placeholder:
+            spec_raw["placeholder"] = placeholder
     spec = bot_asks.validate_spec(spec_raw)
     asst = chat_store.create_message(
         chat_id=chat["id"],
@@ -275,7 +287,21 @@ def seed_chat(
             block,
         ],
     )
-    print("seeded chat", chat["id"], "ask", ask.id, "spec.kind", spec.get("kind"), "max", max_selections)
+    nq = len(spec.get("questions") or [])
+    print(
+        "seeded chat",
+        chat["id"],
+        "ask",
+        ask.id,
+        "spec.kind",
+        spec.get("kind"),
+        "questions",
+        nq,
+        "pages",
+        spec.get("page_count"),
+        "max",
+        max_selections,
+    )
     return chat["id"], ask.id
 
 
@@ -358,6 +384,42 @@ async def interact_multi(page, theme: str) -> None:
     await shot_state(page, prefix)
 
 
+async def interact_multicard(page, theme: str) -> None:
+    """RS/94·105: ‹n of N› + ≥2 .ca-q__block (open/single/multi) + mid-page 下一步→."""
+    prefix = f"{theme}-multicard"
+    await page.locator(".ca-q").wait_for()
+    blocks = page.locator(".ca-q__block")
+    n_blocks = await blocks.count()
+    assert n_blocks >= 2, f"expected multi-block page, got {n_blocks} .ca-q__block"
+    pager = page.locator(".ca-q__page")
+    assert await pager.count() >= 1, "missing ‹ n of N › pager"
+    # soft-select on single block (2nd) option B
+    await page.locator(".ca-q__block").nth(1).locator(".ca-q__opt").filter(
+        has=page.locator(".ca-q__letter", has_text="B")
+    ).click()
+    # multi block (3rd) pick A+B
+    multi_block = page.locator(".ca-q__block").nth(2)
+    assert await multi_block.locator(".ca-q__hint").count() >= 1, "missing （多选）"
+    await multi_block.locator(".ca-q__opt").filter(has=page.locator(".ca-q__letter", has_text="A")).click()
+    await multi_block.locator(".ca-q__opt").filter(has=page.locator(".ca-q__letter", has_text="B")).click()
+    # fill open text so pageOk for Next
+    open_in = page.locator(".ca-q__block").nth(0).locator(".ca-q__input")
+    await open_in.fill("源野 / 户外背包")
+    await open_in.blur()
+    await page.wait_for_timeout(200)
+    next_btn = page.locator(".ca-q__submit")
+    txt = (await next_btn.inner_text()).replace("\n", " ")
+    assert "下一步" in txt or "Next" in txt or "→" in txt, f"expected mid-page Next, got {txt!r}"
+    await shot_state(page, prefix)
+    # scroll body so multi block + （多选） visible for #78 (max-height clip)
+    body = page.locator(".ca-q__body")
+    await body.evaluate("el => { el.scrollTop = el.scrollHeight }")
+    await page.wait_for_timeout(150)
+    await shot_state(page, prefix + "-scroll")
+    # ensure 3 blocks present in DOM even if clipped
+    assert n_blocks >= 3, f"expected ≥3 blocks on page, got {n_blocks}"
+
+
 async def run_theme(browser, base_url: str, pid: str, theme: str, mode: str) -> None:
     ctx = await browser.new_context(
         viewport={"width": 1440, "height": 900},
@@ -388,7 +450,9 @@ async def run_theme(browser, base_url: str, pid: str, theme: str, mode: str) -> 
 
     await open_seeded_chat(page, "")
     await page.wait_for_timeout(400)
-    if mode == "multi":
+    if mode == "multicard":
+        await interact_multicard(page, theme)
+    elif mode == "multi":
         await interact_multi(page, theme)
     else:
         await interact_single(page, theme)
@@ -406,8 +470,57 @@ async def main() -> None:
         {"id": "b", "label": "包装袋主视觉"},
         {"id": "c", "label": "门店空间物料"},
     ]
-    pid_single = "p337sidebar"
-    pid_multi = "p337multi"
+    # RS/94·105 multi-block page (open + single + multi) + page 2 for pager/Next
+    multicard_questions = [
+        {
+            "id": "brand",
+            "prompt": "品牌名称是什么？行业或品类是什么？",
+            "options": [],
+            "allow_other": True,
+            "placeholder": "例如：源野 / 户外背包品牌…",
+            "page": 1,
+        },
+        {
+            "id": "vibe",
+            "prompt": "品牌想传递什么样的气质或风格？",
+            "options": [
+                {"id": "a", "label": "极简高级"},
+                {"id": "b", "label": "活泼年轻"},
+                {"id": "c", "label": "自然有机"},
+                {"id": "d", "label": "未来科技"},
+            ],
+            "allow_other": True,
+            "max_selections": 1,
+            "min_selections": 1,
+            "page": 1,
+        },
+        {
+            "id": "deliverables",
+            "prompt": "你期望这套品牌视觉包含哪些交付物？",
+            "options": [
+                {"id": "a", "label": "品牌故事海报"},
+                {"id": "b", "label": "包装袋主视觉"},
+                {"id": "c", "label": "门店空间物料"},
+            ],
+            "allow_other": True,
+            "max_selections": 3,
+            "min_selections": 1,
+            "placeholder": "其他方向…",
+            "page": 1,
+        },
+        {
+            "id": "audience",
+            "prompt": "这套视觉面向哪类消费者与价格带？",
+            "options": single_opts,
+            "allow_other": True,
+            "max_selections": 1,
+            "min_selections": 1,
+            "page": 2,
+        },
+    ]
+    pid_single = "p340sidebar"
+    pid_multi = "p340multi"
+    pid_multicard = "p340multicard"
     seed_chat(
         pid=pid_single,
         title="茶饮视觉方向",
@@ -423,6 +536,12 @@ async def main() -> None:
         max_selections=3,
         placeholder="其他方向…",
     )
+    seed_chat(
+        pid=pid_multicard,
+        title="一卡多题叠卡",
+        questions=multicard_questions,
+        page_count=2,
+    )
     server, base_url = await start_app()
     print("app", base_url)
     try:
@@ -431,6 +550,7 @@ async def main() -> None:
             for theme in ("light", "dark"):
                 await run_theme(browser, base_url, pid_single, theme, "single")
                 await run_theme(browser, base_url, pid_multi, theme, "multi")
+                await run_theme(browser, base_url, pid_multicard, theme, "multicard")
             await browser.close()
     finally:
         await server.close()
