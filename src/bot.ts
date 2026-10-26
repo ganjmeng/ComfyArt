@@ -166,6 +166,14 @@ export async function saveSettings(patch: BotSettings) {
   applySettings(await json<BotSettings>('/comfyart/settings', send(patch, 'PUT')))
 }
 
+/** #321: probe Local LLM URL / key / model without sending a chat turn. */
+export type LocalLlmTestCode = 'ok' | 'no_url' | 'unreachable' | 'auth_failed' | 'model_missing' | 'timeout'
+export type LocalLlmTestResult = { ok: boolean; code: LocalLlmTestCode; model?: string; status?: number; models?: string[]; detail?: string }
+export async function testLocalLlm(draft: { url?: string; key?: string; model?: string }) {
+  return json<LocalLlmTestResult>('/comfyart/bot/local-llm/test', send(draft))
+}
+
+
 export function defaultProvider(): string {
   const providers = providersAtom.get()
   const saved = String(settingsAtom.get()['bot-provider'] ?? '')

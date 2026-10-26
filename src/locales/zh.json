@@ -1297,5 +1297,14 @@
   "chatMessage.next": "下一步",
   "chatMessage.pageOf": "{0} of {1}",
   "chatMessage.prevPage": "上一页",
-  "chatMessage.nextPage": "下一页"
+  "chatMessage.nextPage": "下一页",
+  "botSettings.testConnection": "测试连接",
+  "botSettings.testing": "测试中…",
+  "botSettings.testOk": "连接成功",
+  "botSettings.testNoUrl": "请先填写模型地址",
+  "botSettings.testUnreachable": "连不上该地址，请检查地址是否正确、服务是否已启动",
+  "botSettings.testAuthFailed": "鉴权失败，请检查 API Key 是否正确",
+  "botSettings.testModelMissing": "模型「{0}」不存在，请核对模型名或换一个已加载的模型",
+  "botSettings.testTimeout": "连接超时，请稍后重试或检查网络",
+  "botSettings.testFailed": "测试失败，请稍后重试"
 }

@@ -909,6 +909,56 @@ class _PlanGate:
         return canon_key(name, args) not in self.keys
 
 
+TEST_TIMEOUT_S = 10.0
+
+
+async def test_local_llm(*, base_url: str, api_key: str = "", model: str = "",
+                         timeout: float = TEST_TIMEOUT_S) -> dict:
+    """#321: light probe — reachability, auth, optional model id. No chat completion."""
+    base = (base_url or "").strip().rstrip("/")
+    if not base:
+        return {"ok": False, "code": "no_url"}
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{base}/models",
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=timeout),
+            ) as resp:
+                body = await resp.text()
+                if resp.status in (401, 403):
+                    return {"ok": False, "code": "auth_failed", "status": resp.status}
+                if resp.status >= 400:
+                    return {"ok": False, "code": "unreachable", "status": resp.status}
+                try:
+                    data = json.loads(body) if body else {}
+                except ValueError:
+                    data = {}
+    except asyncio.TimeoutError:
+        return {"ok": False, "code": "timeout"}
+    except (aiohttp.ClientError, OSError) as e:
+        return {"ok": False, "code": "unreachable", "detail": str(e)[:200]}
+
+    rows = data.get("data") if isinstance(data, dict) else None
+    models = [
+        str(m.get("id") or "")
+        for m in (rows or [])
+        if isinstance(m, dict) and m.get("id")
+    ]
+    want = (model or "").strip()
+    if want and models and want not in models:
+        return {
+            "ok": False,
+            "code": "model_missing",
+            "model": want,
+            "models": models[:20],
+        }
+    return {"ok": True, "code": "ok", "models": models[:20]}
+
+
 class LocalLlmProvider(AgentProvider):
     id = "local-llm"
     label = "Local LLM"
