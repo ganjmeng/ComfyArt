@@ -7,15 +7,21 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_minimap_default_on():
     src = (ROOT / 'src/ui/CanvasTools.tsx').read_text()
     assert 'useState(true)' in src
-    assert 'minimap default on' in src or 'useState(true)' in src
+    assert 'CanvasMinimap' in src
+    assert 'ca-minimap__frame' in src
+    css = (ROOT / 'src/styles/shell.css').read_text()
+    assert '.ca-minimap__frame' in css
 
 
-def test_history_and_layers_collapsed_with_empty_copy():
+def test_history_and_layers_with_empty_copy():
     src = (ROOT / 'src/ui/SidePanel.tsx').read_text()
-    assert 'useState(false)' in src  # history + layers
+    assert 'useState(false)' in src  # history collapsed
     assert "t('sidePanel.noHistoryYet')" in src
     assert "t('sidePanel.noLayersYet')" in src
     assert 'setLayers' in src
+    assert 'data-section="layers"' in src
+    # layers section before history so empty copy is findable
+    assert src.index("t('common.layers')") < src.index("t('sidePanel.history')")
     # must not render LayerTree unconditionally on first paint
     assert 'layers &&' in src
 
@@ -23,14 +29,19 @@ def test_history_and_layers_collapsed_with_empty_copy():
 def test_no_layers_i18n():
     assert '"sidePanel.noLayersYet": "No layers yet"' in (ROOT / 'src/locales/en.json').read_text()
     assert '"sidePanel.noLayersYet"' in (ROOT / 'src/locales/zh.json').read_text()
+    assert '"sidePanel.noLayersYet": "暂无图层"' in (ROOT / 'src/locales/zh.json').read_text()
 
 
 def test_text_default_not_near_black():
     src = (ROOT / 'src/shapes/TextShape.tsx').read_text()
     assert 'defaultTextColor' in src
+    assert 'readableTextColor' in src
     assert "color: defaultTextColor()" in src
+    assert 'color: readableTextColor(p.color)' in src
     # getDefaultProps must not hardcode #000000
     assert "color: '#000000'" not in src.split('getDefaultProps')[1].split('}')[0]
+    # TextTool must stamp theme-aware color at create time
+    assert 'color: defaultTextColor()' in src.split('class TextTool')[1]
 
 
 def test_genpanel_clears_dock():

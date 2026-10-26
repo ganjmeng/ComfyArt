@@ -13,7 +13,7 @@ import { createMockup } from '../mockup'
 import { genInfoOf, regenerate, remix } from '../generate'
 import { originalOf, restoreOriginal } from '../imageOps'
 import { errorText } from '../jobs'
-import { TEXT, type TextShape } from '../shapes/TextShape'
+import { TEXT, defaultTextColor, type TextShape } from '../shapes/TextShape'
 import { vectorize } from '../vectorize'
 import { exportAtom } from './ExportDialog'
 import { Icons } from './icons'
@@ -151,7 +151,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
       const text = await extractText(editor, shape)
       if (!text) throw new Error(t('imageToolbar.noTextDetected'))
       const b = editor.getShapePageBounds(shape)!
-      editor.createShape<TextShape>({ type: TEXT, x: b.maxX + 40, y: b.y, props: { text, size: 24, autoSize: false, w: b.w } })
+      editor.createShape<TextShape>({ type: TEXT, x: b.maxX + 40, y: b.y, props: { text, size: 24, autoSize: false, w: b.w, color: defaultTextColor() } })
       void copyText(text).catch(() => undefined)
     } catch (e) {
       onError(errorText(e))

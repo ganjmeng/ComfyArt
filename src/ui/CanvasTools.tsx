@@ -45,15 +45,29 @@ function BackToContent() {
   )
 }
 
+
+/** #307: DefaultMinimap fills the whole canvas when empty so the viewport is invisible.
+ *  Overlay an inset frame so the empty viewport is always readable. */
+function CanvasMinimap() {
+  const editor = useEditor()
+  const empty = useValue('minimap empty', () => editor.getCurrentPageShapeIds().size === 0, [editor])
+  return (
+    <div className="ca-minimap" data-empty={empty || undefined} onPointerDown={(e) => e.stopPropagation()}>
+      <DefaultMinimap />
+      {empty && <div className="ca-minimap__frame" aria-hidden />}
+    </div>
+  )
+}
+
 export function CanvasTools({ zoom }: { zoom: React.ReactNode }) {
   const side = useValue(sideAtom)
-  const [map, setMap] = useState(true)  // #307: minimap default on (empty viewport frame OK)
+  const [map, setMap] = useState(true)  // #307: minimap default on + empty viewport frame
   const toggle = (s: Side) => () => sideAtom.set(side === s ? null : s)
 
   return (
     <>
       <BackToContent />
-      {map && <div className="ca-minimap" onPointerDown={(e) => e.stopPropagation()}><DefaultMinimap /></div>}
+      {map && <CanvasMinimap />}
       <div className="ca-tools" onPointerDown={(e) => e.stopPropagation()}>
         <Background />
         <button type="button" className="ca-bar__btn ca-bar__btn--icon" title={t('common.layers')} data-on={side === 'layers' || undefined} onClick={toggle('layers')}>

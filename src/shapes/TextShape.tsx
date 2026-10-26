@@ -51,7 +51,7 @@ export function textStyle(p: TextShape['props']): React.CSSProperties {
     fontFamily: p.font,
     fontWeight: p.weight,
     fontSize: p.size,
-    color: p.color,
+    color: readableTextColor(p.color),
     textAlign: p.align as React.CSSProperties['textAlign'],
     letterSpacing: `${p.letter}px`,
     lineHeight: p.line,
@@ -102,10 +102,31 @@ function Text({ shape }: { shape: TextShape }) {
   )
 }
 
-/** #307: default theme is dark — near-black (#000) was invisible on the canvas. */
-function defaultTextColor() {
-  if (typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light') return '#000000'
-  return '#f2f2f2'
+/** #307: theme-aware readable default — never bake near-black onto a dark canvas. */
+export function defaultTextColor(): string {
+  if (typeof document === 'undefined') return '#f2f2f2'
+  const theme = document.documentElement.dataset.theme
+  if (theme === 'light') return '#000000'
+  if (theme === 'dark') return '#f2f2f2'
+  // theme unset: prefer computed --ca-text, else app default (dark)
+  const css = getComputedStyle(document.documentElement).getPropertyValue('--ca-text').trim()
+  return css || '#f2f2f2'
+}
+
+function isNearBlack(color: string): boolean {
+  const c = color.trim().toLowerCase()
+  if (!c || c === 'black' || c === '#000' || c === '#000000') return true
+  const m = c.match(/^rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
+  if (m) return +m[1] + +m[2] + +m[3] < 40
+  return false
+}
+
+/** Display/edit color: lift near-black defaults when the app theme is dark. */
+export function readableTextColor(color: string): string {
+  const theme = typeof document !== 'undefined' ? document.documentElement.dataset.theme : 'dark'
+  if (theme === 'light') return color || '#000000'
+  if (!color || isNearBlack(color)) return '#f2f2f2'
+  return color
 }
 
 export class TextShapeUtil extends BaseBoxShapeUtil<TextShape> {
@@ -178,7 +199,7 @@ export class TextTool extends StateNode {
     const editor = this.editor
     const p = editor.inputs.getCurrentPagePoint()
     const id = createShapeId()
-    editor.createShape<TextShape>({ id, type: TEXT, x: p.x, y: p.y, props: { text: t('common.text') } })
+    editor.createShape<TextShape>({ id, type: TEXT, x: p.x, y: p.y, props: { text: t('common.text'), color: defaultTextColor() } })
     editor.setCurrentTool('select')
     editor.select(id)
     editor.setEditingShape(id)

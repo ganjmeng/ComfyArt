@@ -20,26 +20,26 @@ function reveal(editor: Editor, id: TLShapeId) {
 }
 
 function Layers({ editor }: { editor: Editor }) {
-  // #307: history + layers collapsed on first screen; empty copy when opened
+  // #307: Layers first + empty copy visible; history collapsed until opened
   const [history, setHistory] = useState(false)
-  const [layers, setLayers] = useState(false)
+  const [layers, setLayers] = useState(true) // open so 「暂无图层」 is visible without hunting
   const items = useValue('history', () => generated(editor), [editor])
   const hasLayers = useValue('has layers', () => editor.getCurrentPageShapeIds().size > 0, [editor])
   return (
     <>
-      <button type="button" className="ca-side__section" onClick={() => setHistory(!history)}>
-        <span>{t('sidePanel.history')}</span><span className="ca-icon" data-flip={history || undefined}>{Icons.chevron}</span>
-      </button>
-      {history && (items.length
-        ? <div className="ca-side__grid">{items.map((m) => <button key={m.id} type="button" className="ca-side__cell" onClick={() => reveal(editor, m.id)}><Preview m={m} /></button>)}</div>
-        : <div className="ca-side__empty">{t('sidePanel.noHistoryYet')}</div>)}
-      <div className="ca-side__rule" />
-      <button type="button" className="ca-side__section" onClick={() => setLayers(!layers)}>
+      <button type="button" className="ca-side__section" data-section="layers" onClick={() => setLayers(!layers)}>
         <span>{t('common.layers')}</span><span className="ca-icon" data-flip={layers || undefined}>{Icons.chevron}</span>
       </button>
       {layers && (hasLayers
         ? <LayerTree editor={editor} />
         : <div className="ca-side__empty">{t('sidePanel.noLayersYet')}</div>)}
+      <div className="ca-side__rule" />
+      <button type="button" className="ca-side__section" data-section="history" onClick={() => setHistory(!history)}>
+        <span>{t('sidePanel.history')}</span><span className="ca-icon" data-flip={history || undefined}>{Icons.chevron}</span>
+      </button>
+      {history && (items.length
+        ? <div className="ca-side__grid">{items.map((m) => <button key={m.id} type="button" className="ca-side__cell" onClick={() => reveal(editor, m.id)}><Preview m={m} /></button>)}</div>
+        : <div className="ca-side__empty">{t('sidePanel.noHistoryYet')}</div>)}
     </>
   )
 }
