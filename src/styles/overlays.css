@@ -149,23 +149,27 @@
 .ca-q__chev:disabled { opacity: .35; cursor: default; }
 .ca-q__chev-icon { width: 14px; height: 14px; }
 .ca-q__chev-icon--left { transform: scaleX(-1); }
-/* #335 body: max-height + visible thin scrollbar (RS/94) */
+/* #335 body: max-height + always-visible thin scrollbar (RS/94; product: thumb must be naked-eye clear) */
 .ca-q__body {
   display: flex; flex-direction: column; gap: 16px;
   flex: 1 1 auto; min-height: 0; max-height: var(--ca-q-body-max);
-  overflow-x: hidden; overflow-y: auto; padding-right: 6px;
+  overflow-x: hidden; overflow-y: scroll; /* force gutter + thumb when content overflows */
+  padding-right: 4px;
   scrollbar-width: thin;
-  scrollbar-color: var(--ca-scroll-thumb) transparent;
+  scrollbar-color: var(--ca-scroll-thumb) var(--ca-scroll-track);
 }
 .ca-q__body::-webkit-scrollbar { width: 5px; }
-.ca-q__body::-webkit-scrollbar-track { background: transparent; }
-.ca-q__body::-webkit-scrollbar-thumb {
-  background: var(--ca-scroll-thumb); border-radius: 3px; min-height: 24px;
+.ca-q__body::-webkit-scrollbar-track {
+  background: var(--ca-scroll-track); border-radius: 3px;
 }
-.ca-q__body::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.35); }
+.ca-q__body::-webkit-scrollbar-thumb {
+  background: var(--ca-scroll-thumb); border-radius: 3px; min-height: 28px;
+  border: 1px solid transparent; background-clip: padding-box;
+}
+.ca-q__body::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.55); }
 :root[data-theme="dark"] .ca-q__body::-webkit-scrollbar-thumb:hover,
 .ca-root[data-theme="dark"] .ca-q__body::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,.4);
+  background: rgba(255,255,255,.62);
 }
 .ca-q__block { display: flex; flex-direction: column; gap: 8px; }
 .ca-q__prompt { font-weight: 500; line-height: 20px; color: var(--ca-text); }

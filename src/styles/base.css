@@ -12,7 +12,8 @@
   /* #335 soft select / scroll — QUESTION-CARD-MVP.md (RS/95); --ca-strong NOT for option stroke */
   --ca-opt-on: #ebebeb;
   --ca-letter-on: rgba(0,0,0,.55);
-  --ca-scroll-thumb: rgba(0,0,0,.22);
+  --ca-scroll-thumb: rgba(0,0,0,.36);
+  --ca-scroll-track: rgba(0,0,0,.06);
   --ca-q-body-max: 272px;
   --ca-empty: #e6e6e6;
   --ca-empty-icon: rgba(0,0,0,.12);
@@ -38,7 +39,8 @@
   --ca-strong: rgba(255,255,255,.92);
   --ca-opt-on: rgba(255,255,255,.12);
   --ca-letter-on: rgba(255,255,255,.22);
-  --ca-scroll-thumb: rgba(255,255,255,.28);
+  --ca-scroll-thumb: rgba(255,255,255,.42);
+  --ca-scroll-track: rgba(255,255,255,.08);
   --ca-q-body-max: 272px;
   --ca-empty: #262626;
   --ca-empty-icon: rgba(255,255,255,.16);
