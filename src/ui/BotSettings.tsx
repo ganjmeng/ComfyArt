@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useValue } from 'tldraw'
 
 import { BUILTIN_AGENT, botEnabledAtom, providerLabel, providersAtom, refreshBot, saveSettings, settingsAtom, testLocalLlm, type BotSettings as Settings, type LocalLlmTestCode, type ProviderInfo } from '../bot'
@@ -6,6 +6,7 @@ import { errorText } from '../jobs'
 import { agentSetupFocusAtom, botSettingsOpenAtom } from './AgentPicker'
 import { docsUrl } from './SettingsMenu'
 import { FieldSelect } from './FieldSelect'
+import { Icons } from './icons'
 import { Modal } from './Modal'
 import { t } from '../i18n'
 
@@ -48,6 +49,8 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
   const [draft, setDraft] = useState<Settings>({})
   const [testing, setTesting] = useState(false)
   const [testState, setTestState] = useState<{ ok: boolean; text: string } | null>(null)
+  // #345: Advanced (comfy-mcp) starts collapsed
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   // #219: a stored custom key belongs to its host; a new host clears it (the backend enforces the same rule)
   const hostChanged = hostOf(draft[URL_KEY]) !== hostOf(settings[URL_KEY])
   const keyCleared = hostChanged && !!settings[KEY_KEY] && hostOf(draft[URL_KEY]) !== WAVESPEED_HOST
@@ -90,43 +93,69 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
   return (
     <Modal className="ca-botsettings" title={t('botSettings.agentSettings')} onClose={close}>
       <div className="ca-rename__body">
-        {SWITCHES.map(([key, label]) => (
-          <label key={key} className="ca-notice__push">
-            <input type="checkbox" checked={!!draft[key]} onChange={(e) => setDraft({ ...draft, [key]: e.target.checked })} />
-            <span>{label}</span>
-          </label>
-        ))}
-        {llmFields.map(([key, label, hint, type]) => (
-          <label key={key} className="ca-rename__field">
-            <span>{label}</span>
-            <input className="ca-panel__input" type={type ?? 'text'} autoComplete="off" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => edit(key, e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
-            {key === KEY_KEY && keyCleared && !draft[KEY_KEY] && <span className="ca-adv__help">{t('botSettings.urlChangedReenterKey')}</span>}
-          </label>
-        ))}
-        <div className="ca-botsettings__test" data-testid="local-llm-test">
-          <button type="button" className="ca-panel__secondary" disabled={testing} onClick={testConnection}>
-            {testing ? t('botSettings.testing') : t('botSettings.testConnection')}
+        {/* #345 ① Built-in Agent */}
+        <section className="ca-botsettings__section" data-testid="botsettings-builtin">
+          <div className="ca-botsettings__sectiontitle">{t('botSettings.builtinAgent')}</div>
+          <div className="ca-chat__hint">{t('botSettings.builtinAgentHint')}</div>
+          {llmFields.map(([key, label, hint, type]) => (
+            <label key={key} className="ca-rename__field">
+              <span>{label}</span>
+              <input className="ca-panel__input" type={type ?? 'text'} autoComplete="off" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => edit(key, e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
+              {key === KEY_KEY && keyCleared && !draft[KEY_KEY] && <span className="ca-adv__help">{t('botSettings.urlChangedReenterKey')}</span>}
+              {key === KEY_KEY && <span className="ca-adv__help">{t('botSettings.localLlmKeyEnvHint')}</span>}
+            </label>
+          ))}
+          <div className="ca-botsettings__test" data-testid="local-llm-test">
+            <button type="button" className="ca-panel__secondary" disabled={testing} onClick={testConnection}>
+              {testing ? t('botSettings.testing') : t('botSettings.testConnection')}
+            </button>
+            {testState && (
+              <span className="ca-botsettings__testmsg" data-ok={testState.ok || undefined} data-err={!testState.ok || undefined} role="status">
+                {testState.text}
+              </span>
+            )}
+          </div>
+        </section>
+
+        {/* #345 ② Local third-party agents — switches + AgentSetup; dependency logic unchanged */}
+        <AgentSetup providers={providers} enabled={enabled} onError={onError}>
+          {SWITCHES.map(([key, label]) => (
+            <label key={key} className="ca-notice__push">
+              <input type="checkbox" checked={!!draft[key]} onChange={(e) => setDraft({ ...draft, [key]: e.target.checked })} />
+              <span>{label}</span>
+            </label>
+          ))}
+        </AgentSetup>
+
+        {/* #345 ③ Advanced — collapsed by default */}
+        <section className="ca-botsettings__section" data-testid="botsettings-advanced">
+          <button
+            type="button"
+            className="ca-botsettings__advtoggle"
+            aria-expanded={advancedOpen}
+            onClick={() => setAdvancedOpen((v) => !v)}
+          >
+            <span className="ca-botsettings__sectiontitle">{t('botSettings.advanced')}</span>
+            <span className="ca-icon" data-flip={advancedOpen || undefined}>{Icons.chevron}</span>
           </button>
-          {testState && (
-            <span className="ca-botsettings__testmsg" data-ok={testState.ok || undefined} data-err={!testState.ok || undefined} role="status">
-              {testState.text}
-            </span>
+          {advancedOpen && (
+            <div className="ca-botsettings__advbody">
+              {otherFields.map(([key, label, hint, type]) => (
+                <label key={key} className="ca-rename__field">
+                  <span>{label}</span>
+                  <input className="ca-panel__input" type={type ?? 'text'} autoComplete="off" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => edit(key, e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
+                </label>
+              ))}
+              {FLAGS.map(([key, label]) => (
+                <label key={key} className="ca-notice__push">
+                  <input type="checkbox" checked={!!draft[key]} onChange={(e) => setDraft({ ...draft, [key]: e.target.checked })} />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
           )}
-        </div>
-        {otherFields.map(([key, label, hint, type]) => (
-          <label key={key} className="ca-rename__field">
-            <span>{label}</span>
-            <input className="ca-panel__input" type={type ?? 'text'} autoComplete="off" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => edit(key, e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
-          </label>
-        ))}
-        <div className="ca-chat__hint">{t('botSettings.claudeCodeCodexQwenCode')}</div>
-        <AgentSetup providers={providers} enabled={enabled} onError={onError} />
-        {FLAGS.map(([key, label]) => (
-          <label key={key} className="ca-notice__push">
-            <input type="checkbox" checked={!!draft[key]} onChange={(e) => setDraft({ ...draft, [key]: e.target.checked })} />
-            <span>{label}</span>
-          </label>
-        ))}
+        </section>
+
         <label className="ca-rename__field">
           <span>{t('botSettings.ocrEngine')}</span>
           <FieldSelect
@@ -158,7 +187,12 @@ export const AGENT_DOCS: Record<string, string> = {
 export const AGENT_GUIDE_PATH = '/guides/external-agents'
 export const mcpConfig = (origin: string) => JSON.stringify({ mcpServers: { comfyart: { type: 'http', url: `${origin}/comfyart/mcp` } } }, null, 2)
 
-function AgentSetup({ providers, enabled, onError }: { providers: ProviderInfo[]; enabled: boolean | null; onError: (msg: string) => void }) {
+function AgentSetup({ providers, enabled, onError, children }: {
+  providers: ProviderInfo[]
+  enabled: boolean | null
+  onError: (msg: string) => void
+  children?: ReactNode
+}) {
   const [copied, setCopied] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
   const config = mcpConfig(location.origin)
@@ -172,9 +206,10 @@ function AgentSetup({ providers, enabled, onError }: { providers: ProviderInfo[]
   }, [focus, providers.length])
   const check = () => { setChecking(true); void refreshBot({ refresh: true }).catch((e) => onError(errorText(e))).finally(() => setChecking(false)) }
   return (
-    <section className="ca-agentsetup" data-testid="agent-setup">
-      <div className="ca-gen__label">{t('agentSetup.title')}</div>
+    <section className="ca-agentsetup ca-botsettings__section" data-testid="agent-setup">
+      <div className="ca-botsettings__sectiontitle">{t('agentSetup.title')}</div>
       <div className="ca-chat__hint">{t('agentSetup.desc')}</div>
+      {children}
       {!enabled && <div className="ca-chat__hint">{t('botSettings.availableAgentsOnThisMachine')}</div>}
       {providers.filter((p) => p.id !== BUILTIN_AGENT).map((p) => (
         <div key={p.id} className="ca-agentsetup__card" data-agent={p.id}>

@@ -368,6 +368,21 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-botsettings__testmsg[data-err] { color: #dc2626; }
 :root[data-theme="dark"] .ca-botsettings__testmsg[data-ok] { color: #4ade80; }
 :root[data-theme="dark"] .ca-botsettings__testmsg[data-err] { color: #f87171; }
+
+/* #345: BotSettings sections + Advanced collapse */
+.ca-botsettings__section { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.ca-botsettings__section + .ca-botsettings__section,
+.ca-botsettings__section + .ca-agentsetup,
+.ca-agentsetup + .ca-botsettings__section { margin-top: 8px; padding-top: 12px; border-top: var(--ca-border-w) solid var(--ca-border); }
+.ca-botsettings__sectiontitle { font: 600 13px/18px var(--ca-font); color: var(--ca-text); }
+.ca-botsettings__advtoggle {
+  display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 0; border: none; background: none; color: inherit; cursor: pointer; text-align: left;
+}
+.ca-botsettings__advtoggle .ca-icon { width: 16px; height: 16px; color: var(--ca-muted); transition: transform .15s; }
+.ca-botsettings__advtoggle .ca-icon[data-flip] { transform: rotate(180deg); }
+.ca-botsettings__advbody { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+
 .ca-agentsetup { display: flex; flex-direction: column; gap: 8px; }
 .ca-agentsetup__card { border: var(--ca-border-w) solid var(--ca-border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
 .ca-agentsetup__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
