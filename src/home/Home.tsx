@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import type { AgentMode } from '../agent'
-import { botEnabledAtom, loadProviders, providerLabel } from '../bot'
+import { botEnabledAtom, loadProviders, loadSettings, providerLabel } from '../bot'
 import { thumbUrl, uploadImage, viewUrl } from '../comfy'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
@@ -57,7 +57,8 @@ export function Home() {
     input.current?.focus()
     void refreshKeyStatus()
     void loadModels().catch((e) => setError(errorText(e)))  // #287: same model list / saved picks as the canvas
-    void loadProviders().then(() => {
+    // #315: load settings with providers so AgentExtras Model matches canvas (shared bot-model-*)
+    void Promise.all([loadProviders(), loadSettings()]).then(() => {
       const on = !!botEnabledAtom.get()
       setAgent(on)
       if (!on) setMode('image')
@@ -150,7 +151,7 @@ export function Home() {
           <button type="button" className="ca-bar__btn ca-bar__btn--icon ca-landing__add" title={t('home.addImage')} onClick={() => file.current?.click()}><span className="ca-icon">{Icons.plus}</span></button>
           <Popover
             open={modeMenu}
-            onOpenChange={(o) => { setModeMenu(o); if (o) void loadProviders().catch((e) => setError(errorText(e))) }}
+            onOpenChange={(o) => { setModeMenu(o); if (o) void Promise.all([loadProviders(), loadSettings()]).catch((e) => setError(errorText(e))) }}
             side="bottom"
             align="start"
             within=".ca-landing__box"

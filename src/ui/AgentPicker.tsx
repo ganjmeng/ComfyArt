@@ -66,7 +66,7 @@ export function AgentItems({ onError, current, close, onChosen }: { onError: (ms
         <button key={p.id} type="button" className="ca-menu__item ca-agentpick__row" disabled={!p.available} title={p.detail || p.version} onClick={() => pick(p.id)}>
           <AgentLogo id={p.id} />
           <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span>{!p.available && <span className="ca-agentpick__status">{t('botSettings.unavailable')}</span>}</span>
-          <span className="ca-agentpick__check">{current && p.id === providerId ? <span className="ca-icon">{Icons.check}</span> : null}</span>
+          <span className="ca-agentpick__check">{current && p.id === providerId && Icons.check}</span>
         </button>
       ))}
       </div>
@@ -83,6 +83,7 @@ export function AgentExtras({ onError, close }: { onError: (msg: string) => void
   const settings = useValue(settingsAtom)
   const chat = useValue('current chat', () => chatsAtom.get().find((c) => c.id === chatIdAtom.get()) ?? null, [])
   const pending = useValue(newProviderAtom)
+  // #315: same provider resolution as the pill; model always from shared settings (Home must loadSettings)
   const providerId = chat?.provider ?? (pending || defaultProvider())
   const provider = providers.find((p) => p.id === providerId)
   const modelKey = `bot-model-${providerId}`
