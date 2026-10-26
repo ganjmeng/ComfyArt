@@ -78,7 +78,7 @@ function Retry({ b: block, live }: { b: BotBlock; live: boolean }) {
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-type QState = { selected: string[]; otherOn: boolean; other: string }
+type QState = { selected: string[]; other: string }
 
 function askQuestions(b: BotBlock): AskQuestion[] {
   if (b.questions?.length) return b.questions
@@ -109,7 +109,7 @@ function qDefaults(q: AskQuestion): string[] {
 function initQStates(questions: AskQuestion[]): Record<string, QState> {
   const out: Record<string, QState> = {}
   for (const q of questions) {
-    out[q.id] = { selected: qDefaults(q), otherOn: false, other: '' }
+    out[q.id] = { selected: qDefaults(q), other: '' }
   }
   return out
 }
@@ -138,15 +138,15 @@ function qFilled(q: AskQuestion, st: QState): boolean {
   const textOnly = !(q.options?.length) && !!q.allow_other
   if (textOnly) return st.other.trim().length > 0
   if (st.selected.length > 0) return true
-  return !!(q.allow_other && st.otherOn && st.other.trim().length > 0)
+  return !!(q.allow_other && st.other.trim().length > 0)
 }
 
 function toAnswers(questions: AskQuestion[], states: Record<string, QState>): AskAnswers {
   const answers: AskAnswers = {}
   for (const q of questions) {
-    const st = states[q.id] ?? { selected: [], otherOn: false, other: '' }
+    const st = states[q.id] ?? { selected: [], other: '' }
     const entry: { selected: string[]; other_text?: string } = { selected: st.selected }
-    if (q.allow_other && (st.otherOn || !(q.options?.length)) && st.other.trim()) {
+    if (q.allow_other && st.other.trim()) {
       entry.other_text = st.other.trim()
     }
     answers[q.id] = entry
@@ -209,7 +209,8 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
   const otherLetter = LETTERS[options.length] ?? 'A'
 
   const toggle = (id: string) => {
-    if (!multi) onChange({ ...st, otherOn: false, selected: [id] })
+    // Product lock: pick A–D keeps other text; only moves soft-select (do NOT clear other)
+    if (!multi) onChange({ ...st, selected: [id] })
     else {
       const selected = st.selected.includes(id)
         ? st.selected.filter((x) => x !== id)
@@ -217,23 +218,31 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
       onChange({ ...st, selected })
     }
   }
-  const toggleOther = () => {
-    if (st.otherOn) { onChange({ ...st, otherOn: false }); return }
-    onChange({ ...st, otherOn: true, selected: multi ? st.selected : [] })
+  const onOther = (value: string) => {
+    // Single-select: typing/filling other clears A–D soft-select; multi: other coexists
+    if (!multi && value.trim()) onChange({ ...st, selected: [], other: value })
+    else onChange({ ...st, other: value })
   }
+  const stealOther = () => {
+    // Refocus nonempty other steals soft-select back (deselects A–D); text stays
+    if (!multi && st.other.trim() && st.selected.length) onChange({ ...st, selected: [] })
+  }
+  // Soft-select on other only when it is the active answer (single: no A–D selected; multi: when filled)
+  const otherOn = !!st.other.trim() && (multi || st.selected.length === 0)
 
   return (
     <div className="ca-q__block">
       <div className="ca-q__prompt">{q.prompt}{multi && <span className="ca-menu__key">{t('chatMessage.multipleChoice')}</span>}</div>
       <div className="ca-q__opts">
         {textOnly ? (
-          <div className="ca-q__opt" data-on="" data-other="" data-text="">
+          <div className="ca-q__opt" data-text="" data-on={st.other.trim() ? true : undefined}>
             <span className="ca-q__letter">A</span>
-            <input
+            <textarea
               className="ca-q__input"
+              rows={1}
               value={st.other}
               placeholder={q.placeholder || t('chatMessage.writeYourIdea')}
-              onChange={(e) => onChange({ ...st, otherOn: true, other: e.target.value })}
+              onChange={(e) => onOther(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()}
             />
           </div>
@@ -247,25 +256,18 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
               </button>
             ))}
             {allowOther && (
-              st.otherOn ? (
-                <div className="ca-q__opt ca-q__opt--other" data-on="" data-other="" onClick={toggleOther}>
-                  <span className="ca-q__letter">{otherLetter}</span>
-                  <input
-                    className="ca-q__other-input"
-                    value={st.other}
-                    placeholder={q.placeholder || t('chatMessage.writeYourIdea')}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onChange({ ...st, other: e.target.value })}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    autoFocus
-                  />
-                </div>
-              ) : (
-                <button type="button" className="ca-q__opt" data-other="" onClick={toggleOther}>
-                  <span className="ca-q__letter">{otherLetter}</span>
-                  <span className="ca-q__text">{t('chatMessage.other')}</span>
-                </button>
-              )
+              <div className="ca-q__opt" data-other="" data-text="" data-on={otherOn || undefined}>
+                <span className="ca-q__letter">{otherLetter}</span>
+                <textarea
+                  className="ca-q__input"
+                  rows={1}
+                  value={st.other}
+                  placeholder={q.placeholder || t('chatMessage.other')}
+                  onChange={(e) => onOther(e.target.value)}
+                  onFocus={stealOther}
+                  onKeyDown={(e) => e.stopPropagation()}
+                />
+              </div>
             )}
           </>
         )}
@@ -286,8 +288,8 @@ function QuestionCard({ b }: { b: BotBlock }) {
   if (b.status !== 'pending') return <QuestionAnswered b={b} />
 
   const onPage = questions.filter((q) => (q.page ?? 1) === page)
-  const pageOk = onPage.every((q) => qFilled(q, states[q.id] ?? { selected: [], otherOn: false, other: '' }))
-  const allOk = questions.every((q) => qFilled(q, states[q.id] ?? { selected: [], otherOn: false, other: '' }))
+  const pageOk = onPage.every((q) => qFilled(q, states[q.id] ?? { selected: [], other: '' }))
+  const allOk = questions.every((q) => qFilled(q, states[q.id] ?? { selected: [], other: '' }))
   const isLast = page >= pageCount
   const showPager = pageCount > 1
 
@@ -325,7 +327,7 @@ function QuestionCard({ b }: { b: BotBlock }) {
       </div>
       <div className="ca-q__body">
         {onPage.map((q) => (
-          <QuestionBlock key={q.id} q={q} st={states[q.id] ?? { selected: [], otherOn: false, other: '' }} onChange={(next) => setQ(q.id, next)} />
+          <QuestionBlock key={q.id} q={q} st={states[q.id] ?? { selected: [], other: '' }} onChange={(next) => setQ(q.id, next)} />
         ))}
       </div>
       {error && <div className="ca-chat__hint">{error}</div>}

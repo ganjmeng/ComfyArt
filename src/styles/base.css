@@ -14,7 +14,12 @@
   --ca-letter-on: rgba(0,0,0,.55);
   --ca-scroll-thumb: rgba(0,0,0,.36);
   --ca-scroll-track: rgba(0,0,0,.06);
-  --ca-q-body-max: 272px;
+  --ca-q-body-max: 240px;
+  /* #337 density (QUESTION-CARD-MVP mock; tune toward Lovart) */
+  --ca-opt-h: 28px;
+  --ca-opt-gap: 2px;
+  --ca-block-gap: 10px;
+  --ca-btn-h: 28px;
   --ca-empty: #e6e6e6;
   --ca-empty-icon: rgba(0,0,0,.12);
   --ca-shine: #f4f4f4;
@@ -41,7 +46,7 @@
   --ca-letter-on: rgba(255,255,255,.22);
   --ca-scroll-thumb: rgba(255,255,255,.42);
   --ca-scroll-track: rgba(255,255,255,.08);
-  --ca-q-body-max: 272px;
+  --ca-q-body-max: 240px;
   --ca-empty: #262626;
   --ca-empty-icon: rgba(255,255,255,.16);
   --ca-shine: #2e2e2e;
