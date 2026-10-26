@@ -287,6 +287,18 @@
 .ca-plan__step[data-status="done"] .ca-plan__mark { border: none; }
 .ca-chat__arg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ca-muted); opacity: .8; }
 .ca-chat__io { display: flex; flex-direction: column; gap: 6px; }
+/* #323 v4: static Icons.think (clock) live+done+waiting; title ca-shine when live; no spin/check/breath/halo */
+.ca-chat__thinkicon {
+  flex: none; width: 18px; height: 18px; color: var(--ca-muted);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ca-chat__thinkicon .ca-icon { width: 18px; height: 18px; }
+.ca-chat__thought[data-live] .ca-chat__thinklabel,
+.ca-chat__thinking .ca-chat__thinklabel {
+  background: linear-gradient(100deg, var(--ca-muted) 30%, var(--ca-text) 50%, var(--ca-muted) 70%) 0 0 / 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: ca-shine 1.8s linear infinite;
+}
 .ca-chat__thoughttext { max-height: 240px; overflow: auto; padding: 8px 10px; border-left: 2px solid var(--ca-border); color: var(--ca-muted); font-size: 12px; line-height: 18px; white-space: pre-wrap; }
 .ca-chat__io pre { margin: 0; max-height: 200px; overflow: auto; padding: 8px 10px; border-radius: 8px; background: var(--ca-field); font-size: 12px; line-height: 18px; white-space: pre-wrap; word-break: break-all; }
 .ca-chat__notice { padding: 8px 12px; border-radius: 10px; background: var(--ca-field); font-size: 13px; color: var(--ca-muted); }

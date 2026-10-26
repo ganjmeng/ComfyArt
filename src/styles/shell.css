@@ -56,7 +56,7 @@
 .ca-chat__user { align-self: flex-end; max-width: 85%; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .ca-chat__bubble { padding: 10px 14px; border-radius: 16px; background: var(--ca-field); white-space: pre-wrap; word-break: break-word; }
 .ca-chat__bot { display: flex; flex-direction: column; gap: 10px; }
-.ca-chat__thinking { align-self: flex-start; background: linear-gradient(100deg, var(--ca-muted) 30%, var(--ca-text) 50%, var(--ca-muted) 70%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ca-shine 1.6s linear infinite; }
+.ca-chat__thinking { align-self: flex-start; } /* #323 v4: shimmer on .ca-chat__thinklabel only; Icons.think static */
 .ca-chat__task { display: flex; flex-direction: column; gap: 8px; }
 .ca-chat__step { display: flex; align-items: center; gap: 6px; color: var(--ca-muted); }
 .ca-chat__step .ca-icon { width: 18px; height: 18px; }
