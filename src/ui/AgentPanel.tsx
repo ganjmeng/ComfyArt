@@ -187,8 +187,8 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
               <AssistantBlocks editor={editor} m={m} />
               {m.status === 'streaming' && (
                 <div className="ca-chat__thinking">
-                  <span className="ca-chat__thinkicon"><span className="ca-icon">{Icons.agent}</span></span>
-                  <span>{m.blocks.length ? t('agentPanel.working') : t('agentPanel.thinking')}</span>
+                  <span className="ca-chat__thinkicon"><span className="ca-chat__thinkspin" aria-hidden="true" /></span>
+                  <span className="ca-chat__thinklabel">{m.blocks.length ? t('agentPanel.working') : t('agentPanel.thinking')}</span>
                   <button type="button" className="ca-panel__chip" onClick={() => void stopTurn().catch(fail)}>{t('agentPanel.stop')}</button>
                 </div>
               )}
