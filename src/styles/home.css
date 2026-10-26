@@ -23,7 +23,7 @@ body { background: var(--ca-float); }
 .ca-landing__mode { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: none; border-radius: 10px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .ca-landing__mode:hover, .ca-landing__mode[data-open] { background: var(--ca-hover); }
 .ca-landing__mode .ca-icon { width: 18px; height: 18px; }
-/* #278: the agent name (e.g. "ComfyArt") replaces the fixed "Agent"; a long name ellipsizes, the arrow stays */
+/* #306: mode pill shows the mode name (Agent/图像/视频); long labels ellipsize, the arrow stays */
 .ca-landing__mode { max-width: 220px; }
 .ca-landing__modetext { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ca-landing__mode > .ca-icon { flex: none; }

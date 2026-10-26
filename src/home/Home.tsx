@@ -12,9 +12,10 @@ import { NoKeyNotice } from '../ui/NoKeyNotice'
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, refreshKeyStatus } from '../wavespeedKey'
 import { isEnter } from '../ui/keys'
 import { Popover } from '../ui/Popover'
-import { shortLabel, useCurrentAgent } from '../ui/AgentPicker'
+import { useCurrentAgent } from '../ui/AgentPicker'
 import { AgentLogo } from '../ui/agentLogos'
 import { ComposerSlot, useSlot } from '../ui/ComposerSlot'
+import { MODE_OPTIONS, modeOf } from '../ui/modeOptions'
 import { DirectPills } from '../ui/DirectPills'
 import { ModelPrefs } from '../ui/ModelPrefs'
 import { loadModels } from '../models'
@@ -30,7 +31,6 @@ const QUICK: [keyof typeof Icons, string, string][] = [
   ['effects', t('home.quickCreative'), t('home.quickCreativePrompt')],
   ['page', t('home.quickWebsite'), t('home.quickWebsitePrompt')],
 ]
-const MODES: [AgentMode, string, keyof typeof Icons][] = [['agent', 'Agent', 'agent'], ['image', t('composer.image'), 'genImage'], ['video', t('common.video'), 'genVideo']]
 
 export function Home() {
   const [text, setText] = useState('')
@@ -110,8 +110,8 @@ export function Home() {
       setUploading(false)
     }
   }
-  const modes = MODES.filter(([m]) => agent || m !== 'agent')
-  const modeInfo = MODES.find(([m]) => m === mode)!
+  const modes = MODE_OPTIONS.filter(([m]) => agent || m !== 'agent')
+  const modeInfo = modeOf(mode)
 
   return (
     <div className="ca-landing">
@@ -151,7 +151,8 @@ export function Home() {
           <button type="button" className="ca-rail__btn" title={t('home.addImage')} onClick={() => file.current?.click()}><span className="ca-icon">{Icons.plus}</span></button>
           <Popover open={modeMenu} onOpenChange={setModeMenu} trigger={({ open, toggle }) => (
             <button type="button" className="ca-landing__mode" title={mode === 'agent' && current ? providerLabel(current) : modeInfo[1]} data-agent={mode === 'agent' && current ? current.id : undefined} data-open={open || undefined} onClick={toggle}>
-              {mode === 'agent' && current ? <><AgentLogo id={current.id} /><span className="ca-landing__modetext">{shortLabel(current)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-landing__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
+              {/* #306: same as canvas composer — mode name, not agent shortLabel */}
+              {mode === 'agent' && current ? <><AgentLogo id={current.id} /><span className="ca-landing__modetext">{modeInfo[1]}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-landing__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
             </button>
           )}>
             <div className="ca-menu">
