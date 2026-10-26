@@ -37,7 +37,14 @@
 .ca-kit__color { display: flex; flex-direction: column; gap: 6px; }
 .ca-kit__color .ca-pop-anchor { display: flex; }
 .ca-kit__swatch { flex: 1; height: 44px; padding: 0 14px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 10px; font: 500 13px/20px var(--ca-font); text-align: left; cursor: pointer; }
-.ca-kit__role { height: 26px; border: none; border-radius: 6px; background: var(--ca-field); color: var(--ca-muted); font: inherit; font-size: 12px; }
+/* #318: role FieldSelect trigger (beside/under swatch; ~28–32px) */
+.ca-kit__role {
+  height: 28px; padding: 0 6px 0 8px; border: none; border-radius: 6px;
+  background: var(--ca-field); color: var(--ca-muted); font-size: 12px; line-height: 16px;
+}
+.ca-kit__role[data-open] { background: var(--ca-hover); color: var(--ca-text); }
+.ca-kit__role > .ca-icon { width: 14px; height: 14px; }
+.ca-kit__color > .ca-fieldselect-wrap { width: 100%; }
 
 .ca-kit__fonts { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
 .ca-kit__font { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 12px; }

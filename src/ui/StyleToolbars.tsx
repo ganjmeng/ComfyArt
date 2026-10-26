@@ -7,6 +7,7 @@ import { richEditorAtom, richVersionAtom } from '../richText'
 import { TEXT, type TextShape } from '../shapes/TextShape'
 import { BLEND_MODES, VECTOR, type GradientStop, type VectorShape } from '../shapes/VectorShape'
 import { ColorPicker } from './ColorPicker'
+import { FieldSelect } from './FieldSelect'
 import { FontPicker } from './FontPicker'
 import { Icons } from './icons'
 import { Popover } from './Popover'
@@ -227,9 +228,14 @@ function FillEditor({ editor, p, set }: { editor: ReturnType<typeof useEditor>; 
         </div>
       )}
       <div className="ca-gen__label">{t('styleToolbars.blendMode')}</div>
-      <select className="ca-panel__input" value={p.blend} onChange={(e) => set({ blend: e.target.value })} onKeyDown={(e) => e.stopPropagation()}>
-        {BLEND_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
-      </select>
+      <FieldSelect
+        value={p.blend}
+        options={BLEND_MODES.map((m) => ({ id: m, label: m }))}
+        onChange={(id) => set({ blend: id })}
+        within=".ca-toolbar"
+        menuClassName="ca-fieldselect__menu--toolbar"
+        onKeyDown={(e) => e.stopPropagation()}
+      />
     </>
   )
 }

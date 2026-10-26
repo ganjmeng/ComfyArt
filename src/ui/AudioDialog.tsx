@@ -3,6 +3,7 @@ import { atom, useValue, type Editor } from 'tldraw'
 
 import { generateAudio, MUSIC_MODELS, MUSIC_SECONDS, SFX_SECONDS, voices, type AudioSpec } from '../assetGen'
 import { AUDIO, type AudioShape } from '../shapes/EmbedShapes'
+import { FieldSelect } from './FieldSelect'
 import { Modal } from './Modal'
 import { Chips } from './Chips'
 import { t } from '../i18n'
@@ -64,18 +65,24 @@ export function AudioDialog({ editor, onError }: { editor: Editor; onError: (msg
           <>
             <textarea className="ca-panel__prompt ca-panel__prompt--boxed" value={lyrics} placeholder={t('audio.lyricsPlaceholder')} onChange={(e) => setLyrics(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
             <div className="ca-rename__field"><span>{t('audio.model')}</span>
-              <select className="ca-panel__input" value={model} onChange={(e) => setModel(e.target.value)}>
-                {MUSIC_MODELS.map((m) => <option key={m.id} value={m.id} title={m.desc}>{m.label}</option>)}
-              </select>
+              <FieldSelect
+                value={model}
+                options={MUSIC_MODELS.map((m) => ({ id: m.id, label: m.label, title: m.desc }))}
+                onChange={setModel}
+              />
             </div>
           </>
         )}
         {tab === 'speech' ? (
           <div className="ca-rename__field"><span>{t('audio.voice')}</span>
-            <select className="ca-panel__input" value={voice} onChange={(e) => setVoice(e.target.value)}>
-              {reference && <option value={CLONE}>{t('audio.cloneSelected')}</option>}
-              {list.map((v) => <option key={v} value={v}>{v}</option>)}
-            </select>
+            <FieldSelect
+              value={voice}
+              options={[
+                ...(reference ? [{ id: CLONE, label: t('audio.cloneSelected') }] : []),
+                ...list.map((v) => ({ id: v, label: v, title: v })),
+              ]}
+              onChange={setVoice}
+            />
           </div>
         ) : (
           <div className="ca-rename__field"><span>{t('audio.duration')}</span>

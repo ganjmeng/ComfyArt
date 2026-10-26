@@ -11,6 +11,7 @@ import { newProject } from '../projects'
 import { AssetGrid } from './AssetPicker'
 import { ColorPicker } from './ColorPicker'
 import { confirmAtom } from './Confirm'
+import { FieldSelect } from './FieldSelect'
 import { FontPicker } from './FontPicker'
 import { Icons } from './icons'
 import { isEnter } from './keys'
@@ -200,10 +201,15 @@ export function KitEditor({ onError }: { onError: (msg: string) => void }) {
                       onChange={(v) => set(v ? { colors: item.colors.map((x, j) => (j === i ? v : x)) } : { colors: item.colors.filter((_, j) => j !== i), roles: roles.filter((_, j) => j !== i) })}
                       trigger={({ toggle }) => <button type="button" className="ca-kit__swatch" style={{ background: c, color: textColor(c) }} onClick={toggle}>{c}</button>}
                     />
-                    <select className="ca-kit__role" value={roles[i]} onChange={(e) => set({ roles: roles.map((r, j) => (j === i ? e.target.value : r)) })}>
-                      <option value="">{t('libraryPanel.uncategorized')}</option>
-                      {Object.entries(COLOR_ROLES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                    </select>
+                    <FieldSelect
+                      value={roles[i]}
+                      options={[
+                        { id: '', label: t('libraryPanel.uncategorized') },
+                        ...Object.entries(COLOR_ROLES).map(([key, label]) => ({ id: key, label })),
+                      ]}
+                      onChange={(id) => set({ roles: roles.map((r, j) => (j === i ? id : r)) })}
+                      triggerClassName="ca-kit__role"
+                    />
                   </div>
                 ))}
               </div>

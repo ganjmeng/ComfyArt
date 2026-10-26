@@ -5,6 +5,7 @@ import { BUILTIN_AGENT, botEnabledAtom, providerLabel, providersAtom, refreshBot
 import { errorText } from '../jobs'
 import { agentSetupFocusAtom, botSettingsOpenAtom } from './AgentPicker'
 import { docsUrl } from './SettingsMenu'
+import { FieldSelect } from './FieldSelect'
 import { Modal } from './Modal'
 import { t } from '../i18n'
 
@@ -80,10 +81,14 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
         ))}
         <label className="ca-rename__field">
           <span>{t('botSettings.ocrEngine')}</span>
-          <select className="ca-panel__input" value={String(draft['ocr-engine'] ?? 'local')} onChange={(e) => setDraft({ ...draft, 'ocr-engine': e.target.value })}>
-            <option value="local">{t('botSettings.ocrLocal')}</option>
-            <option value="agent">{t('botSettings.ocrAgent')}</option>
-          </select>
+          <FieldSelect
+            value={String(draft['ocr-engine'] ?? 'local')}
+            options={[
+              { id: 'local', label: t('botSettings.ocrLocal') },
+              { id: 'agent', label: t('botSettings.ocrAgent') },
+            ]}
+            onChange={(id) => setDraft({ ...draft, 'ocr-engine': id })}
+          />
         </label>
         <div className="ca-panel__foot">
           <button type="button" className="ca-panel__secondary" onClick={close}>{t('common.cancel')}</button>
