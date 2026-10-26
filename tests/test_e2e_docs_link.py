@@ -14,7 +14,7 @@ pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("*")), reason="need
 SHOTS = os.environ.get("DOCS_LINK_SHOTS")
 
 
-@pytest.mark.parametrize("lang,want", [("zh", "https://ghhsdob.mintlify.site/zh"), ("en", "https://ghhsdob.mintlify.site")])
+@pytest.mark.parametrize("lang,want", [("zh", "https://comfyart.org/zh"), ("en", "https://comfyart.org")])
 async def test_settings_guide_opens_docs(app_url, lang, want):  # noqa: F811
     async with pw.async_playwright() as p:
         try:
