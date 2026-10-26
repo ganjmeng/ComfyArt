@@ -19,6 +19,19 @@ const SHORT_LABELS: Record<string, string> = { 'deepseek-harness': 'DeepSeek' }
 const rank = (p: ProviderInfo) => (p.id === BUILTIN_AGENT ? 0 : p.available ? 1 : 2)
 export const shortLabel = (p: ProviderInfo) => (p.id === BUILTIN_AGENT ? t('agentPicker.builtinAgentShort') : SHORT_LABELS[p.id] ?? providerLabel(p))
 
+// #324: off-row title prefers provider.detail; empty → docs「未检测到 · 去配置」
+export function offRowTitle(p: ProviderInfo) {
+  const d = (p.detail || '').trim()
+  if (d && d !== NO_KEY_DETAIL) return d
+  return `${t('agentPicker.notDetected')} · ${t('agentSetup.setUp')}`
+}
+// #324: visible one-line reason — probe miss stays short i18n; keep other details as-is
+export function offRowReason(p: ProviderInfo) {
+  const d = (p.detail || '').trim()
+  if (!d || d === NO_KEY_DETAIL || /executable not found/i.test(d)) return t('agentPicker.notDetected')
+  return d
+}
+
 // #246: the agent list lives in the composer mode menu; same items, ✓, #220 disabled/confirm rules
 export function useCurrentAgent() {
   const providers = useValue(providersAtom)
@@ -59,9 +72,9 @@ export function AgentItems({ onError, current, close, onChosen }: { onError: (ms
       <div className="ca-agentpick__list">
       {[...providers].sort((x, y) => rank(x) - rank(y)).map((p) => !p.available && p.id !== BUILTIN_AGENT ? (
         // #247: an undetected tool can't be picked; the whole row (40%) opens its setup card instead
-        <button key={p.id} type="button" className="ca-menu__item ca-agentpick__row ca-agentpick__off" title={t('agentPicker.notDetected')} onClick={() => { close(); agentSetupFocusAtom.set(p.id); botSettingsOpenAtom.set(true) }}>
+        <button key={p.id} type="button" className="ca-menu__item ca-agentpick__row ca-agentpick__off" title={offRowTitle(p)} onClick={() => { close(); agentSetupFocusAtom.set(p.id); botSettingsOpenAtom.set(true) }}>
           <AgentLogo id={p.id} />
-          <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span></span>
+          <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span><span className="ca-agentpick__status">{offRowReason(p)}</span></span>
           <span className="ca-agentpick__check"><span className="ca-agentpick__setup">{t('agentSetup.setUp')}</span></span>
         </button>
       ) : (

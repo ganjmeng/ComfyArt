@@ -304,12 +304,12 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-agentpick__row { height: 32px; min-height: 32px; align-items: center; gap: 8px; }
 .ca-agentpick__text { flex: 1; min-width: 0; display: flex; flex-wrap: nowrap; align-items: center; column-gap: 12px; }
 .ca-agentpick__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ca-agentpick__status { flex: none; margin-left: auto; color: var(--ca-muted); white-space: nowrap; }
+.ca-agentpick__status { flex: none; margin-left: auto; max-width: 140px; overflow: hidden; text-overflow: ellipsis; color: var(--ca-muted); white-space: nowrap; }
 .ca-agentpick__check { flex: none; min-width: 52px; height: 16px; display: inline-flex; align-items: center; justify-content: flex-end; }
-/* not detected: logo greyscale + same opacity as the name; 去配置 stays blue in the check column */
+/* not detected: logo greyscale + same opacity as the name/status; 去配置 stays blue in the check column */
 .ca-agentpick__off > .ca-agentlogo { filter: grayscale(1); }
-.ca-agentpick__off > .ca-agentlogo, .ca-agentpick__off .ca-agentpick__name { opacity: .45; }
-.ca-agentpick__off:hover > .ca-agentlogo, .ca-agentpick__off:hover .ca-agentpick__name { opacity: .7; }
+.ca-agentpick__off > .ca-agentlogo, .ca-agentpick__off .ca-agentpick__name, .ca-agentpick__off .ca-agentpick__status { opacity: .45; }
+.ca-agentpick__off:hover > .ca-agentlogo, .ca-agentpick__off:hover .ca-agentpick__name, .ca-agentpick__off:hover .ca-agentpick__status { opacity: .7; }
 .ca-agentpick__row > .ca-icon { flex: none; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
 .ca-agentpick__setup { color: var(--ca-blue); white-space: nowrap; }
 .ca-agentlogo img { display: block; width: 16px; height: 16px; }
