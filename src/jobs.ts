@@ -177,7 +177,20 @@ const defaultPlacer: Placer = async (editor, holder, media, job) => {
 }
 
 export function selectResults(editor: Editor, holder: TLShape, ids: TLShapeId[]) {
-  if (!holder.meta.quiet) editor.select(...ids)
+  if (!ids.length) return
+  // #322 Agent (quiet): follow the latest result once. Manual gen (#307): select only — no zoom.
+  if (holder.meta.quiet) {
+    editor.select(ids[ids.length - 1]!)
+    followResultViewport(editor)
+    return
+  }
+  editor.select(...ids)
+}
+
+/** #322: one-shot viewport follow after Agent place; skip mid-pan/pinch so we don't yank the camera. */
+export function followResultViewport(editor: Editor) {
+  if (editor.getCameraState() !== 'idle' || editor.inputs.getIsPanning() || editor.inputs.isPinching) return
+  editor.zoomToSelection({ animation: { duration: 200 } })
 }
 
 async function keepPartial(editor: Editor, holder: TLShape, job: Job): Promise<number> {

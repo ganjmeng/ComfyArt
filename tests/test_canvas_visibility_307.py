@@ -47,8 +47,8 @@ def test_genpanel_clears_dock():
 
 def test_no_select_results_zoom():
     src = (ROOT / 'src/jobs.ts').read_text()
-    # zoom-to-fit dropped per product
-    sel = src.split('export function selectResults')[1].split('export ')[0]
+    # #307: manual (non-quiet) selectResults must not zoom; Agent follow lives in followResultViewport (#322)
+    sel = src.split('export function selectResults')[1].split('export function followResultViewport')[0]
     assert 'zoomToSelection' not in sel
 
 
