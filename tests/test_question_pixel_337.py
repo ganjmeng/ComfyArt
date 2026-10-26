@@ -113,3 +113,40 @@ def test_multi_block_page_chrome() -> None:
     assert "chatMessage.next" in CHAT
     assert "chatMessage.submit" in CHAT
     assert "isLast ?" in CHAT
+
+def test_pager_next_source_asserts_334() -> None:
+    """#334: UI-layer pager / Next / last-page Submit source locks (deferred from #333 test sign)."""
+    # pager gate + markup
+    assert "const showPager = pageCount > 1" in CHAT
+    assert 'className="ca-q__page"' in CHAT
+    assert "chatMessage.pageOf" in CHAT
+    assert 'className="ca-q__chev"' in CHAT
+    assert ".ca-q__page {" in OVER
+    assert ".ca-q__chev {" in OVER
+    # mid-page Next vs last-page Submit branch
+    assert "const isLast = page >= pageCount" in CHAT
+    assert "const onNext = () => { if (!pageOk) return; go(page + 1) }" in CHAT
+    assert "const onSubmit = () => { if (!allOk) return; resolve(toAnswers(questions, states)) }" in CHAT
+    assert "isLast ?" in CHAT
+    assert 'chatMessage.next' in CHAT and 'ca-q__key">→</span>' in CHAT
+    assert 'chatMessage.submit' in CHAT and 'ca-q__key">↵</span>' in CHAT
+    # disabled gates
+    assert "disabled={!pageOk}" in CHAT
+    assert "disabled={!allOk}" in CHAT
+    # chevron prev disabled on page 1; next gated by furthest/pageOk
+    assert "disabled={page <= 1}" in CHAT
+    assert "disabled={page >= pageCount || (page >= furthest && !pageOk)}" in CHAT
+
+
+def test_open_text_input_no_textarea_clip_334() -> None:
+    """#334: open-text / Other use <input> (not textarea) so glyphs are not UA-pad clipped."""
+    block = CHAT.split("function QuestionBlock")[1].split("\nfunction ")[0]
+    assert "textarea" not in block
+    assert 'type="text"' in block
+    assert 'className="ca-q__input"' in block
+    # CSS: single-line ellipsis, no field-sizing textarea path
+    css = OVER.split(".ca-q__opt[data-text] .ca-q__input,")[1].split(".ca-q__opt[data-text] .ca-q__input:focus")[0]
+    assert "text-overflow: ellipsis" in css
+    assert "white-space: nowrap" in css
+    assert "field-sizing" not in css
+    assert "line-height: 18px" in css
