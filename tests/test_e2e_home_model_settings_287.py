@@ -44,7 +44,10 @@ async def test_home_right_group(app_url, fake_tools, monkeypatch, lang, image, v
         # Agent mode: prefs only, no Ref button, no model/settings pills
         assert await foot.locator(".ca-refbtn").count() == 0
         assert await foot.locator("[data-pill]").count() == 0
-        assert await foot.locator(".ca-bar__btn--icon").count() == 1
+        # #306: plus is also ca-bar__btn--icon (canvas parity); prefs is the non-add icon
+        assert await foot.locator(".ca-bar__btn--icon").count() >= 1
+        assert await foot.locator(".ca-landing__add").count() == 1
+        assert await foot.locator(".ca-bar__btn--icon:not(.ca-landing__add)").count() == 1
         for label in (image, video):
             await _mode(pg, label)
             pills = await foot.locator("[data-pill]").evaluate_all("els => els.map(e => e.dataset.pill)")

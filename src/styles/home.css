@@ -97,3 +97,8 @@ body { background: var(--ca-float); }
   .ca-landing__foot [data-pill] > .ca-gen__pilltext { display: none; }
   .ca-landing__foot [data-pill] > .ca-gen__pillicon { display: flex; width: 18px; height: 18px; }
 }
+
+/* #306: Home foot matches canvas — 32px controls, menu clamps inside the input box */
+.ca-landing__add { flex: none; }
+.ca-landing__foot > .ca-pop-anchor { display: inline-flex; align-items: center; }
+.ca-landing__foot .ca-bar__btn--icon { width: 32px; height: 32px; }
