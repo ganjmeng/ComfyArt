@@ -543,12 +543,12 @@
   white-space: pre-wrap;
 }
 
-/* #356 chat media hero — flat grey under live image/video only; no shimmer */
+/* #358 chat media hero — flat grey under live image/video; left = icon column (Lovart), not label column */
 .ca-media-hero {
   box-sizing: border-box;
   margin-top: var(--ca-media-hero-gap);
-  margin-left: calc(var(--ca-process-col) + var(--ca-process-gutter));
-  /* clamp so 1:1 height stays ≤ max-h when column is wide */
+  margin-left: 0; /* #358: align with ProcessTimeline icon rail, not past gutter to label column */
+  /* clamp so 1:1 height stays ≤ max-h when column is wide; width fills to content right */
   width: min(var(--ca-media-hero-width), 100%, var(--ca-media-hero-max-h));
   max-width: 100%;
   max-height: var(--ca-media-hero-max-h);
