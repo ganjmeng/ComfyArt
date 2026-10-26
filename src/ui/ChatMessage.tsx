@@ -632,7 +632,8 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
           )
         })}
       </div>
-      {live && <div className="ca-process__status">{live.label}</div>}
+      {/* #356 Lovart RS/110: image/video live → title then hero; no bordered status between */}
+      {live && !mediaHero && <div className="ca-process__status">{live.label}</div>}
       {mediaHero && (
         <div
           className="ca-media-hero"

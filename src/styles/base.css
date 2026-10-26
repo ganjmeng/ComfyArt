@@ -46,7 +46,7 @@
   --ca-media-hero-ar-video: 1 / 1;
   --ca-media-hero-max-h: 240px;
   --ca-gen-frame-bg: #CECFD2;
-  --ca-gen-frame-radius: 8px;
+  --ca-gen-frame-radius: 0;
   --ca-gen-frame-border: 1px solid transparent;
   --ca-gen-pill-bg: #5C5C5C;
   --ca-gen-pill-fg: #FFFFFF;

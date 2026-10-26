@@ -4,17 +4,21 @@
 <title>#356 canvas-generating-dark</title>
 <link rel="stylesheet" href="tip.css"/>
 <style>
-  html,body{margin:0;background:#121212;}
+  html,body{margin:0;background:#0f0f0f;}
   .tag{font:500 11px/16px Inter,system-ui,sans-serif;color:var(--ca-muted);margin:12px 20px 0;}
-  .canvas-stage{width:560px;height:400px;margin:12px 20px 20px;border-radius:12px;position:relative;
-    background:#0a0a0a;display:flex;align-items:center;justify-content:center;}
-  .ca-gen-card.ca-gen-frame{width:280px;height:280px;display:flex;align-items:center;justify-content:center;position:relative;}
+  /* soft canvas backdrop — frame itself is the ONLY grey rect (no nested square) */
+  .canvas-stage{width:560px;height:400px;margin:12px 20px 20px;position:relative;
+    background:#1a1a1a;display:flex;align-items:center;justify-content:center;}
+  .ca-gen-card.ca-gen-frame{
+    width:300px;height:300px;position:relative;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:0 !important;
+  }
 </style>
 <body>
-  <div class="tag">after · canvas Generating frame (dark) + pill</div>
+  <div class="tag">after · canvas Generating (dark) — flat soft grey, radius 0, pill, no selection handles</div>
   <div class="canvas-stage">
     <div class="ca-gen-card ca-gen-frame" data-running="true">
-      <span class="ca-gen-card__icon"></span>
       <div class="ca-gen-frame__pill">Generating</div>
     </div>
   </div>

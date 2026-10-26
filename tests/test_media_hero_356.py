@@ -33,6 +33,7 @@ def test_tokens_light_dark() -> None:
     # video default AR is 1/1 per MEDIA-HERO.md (not 16/9)
     assert "--ca-media-hero-ar-video: 1 / 1" in BASE
     assert "--ca-media-hero-ar-image: 1 / 1" in BASE
+    assert "--ca-gen-frame-radius: 0" in BASE  # Ashley: canvas Generating 无圆角
 
 
 def test_chat_hero_css_flat_no_shimmer() -> None:
@@ -61,6 +62,12 @@ def test_no_hero_on_code_plan_ask() -> None:
     assert "kind === 'image' || live.kind === 'video'" in proc or "kind === \"image\"" in proc
 
 
+def test_canvas_no_selection_chrome_while_generating() -> None:
+    assert "hideSelectionBoundsFg" in GEN
+    assert "hideResizeHandles" in GEN
+    assert "hideRotateHandle" in GEN
+
+
 def test_canvas_gen_frame_flat_pill() -> None:
     assert "ca-gen-frame" in GEN
     assert "ca-gen-frame__pill" in GEN
@@ -79,7 +86,14 @@ def test_pill_i18n() -> None:
 
 
 def test_coexist_348_shimmer_status() -> None:
-    # live title still uses active label (ca-shine via CSS); status card remains
+    # live title still uses active label (ca-shine via CSS); spine intact
     assert "ca-process__label--active" in CHAT
     assert "ca-process__status" in CHAT
     assert "ca-process__spine" in CHAT
+
+
+def test_no_status_card_when_media_hero() -> None:
+    """Lovart RS/110: image/video live → title then hero; no bordered status between."""
+    proc = CHAT.split("function ProcessTimeline")[1].split("\nfunction ")[0]
+    assert "live && !mediaHero" in proc
+    assert "ca-media-hero" in proc

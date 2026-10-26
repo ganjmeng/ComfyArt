@@ -11,7 +11,6 @@ import {
 } from 'tldraw'
 
 import { isVideo } from '../models'
-import { progressAtom } from '../progress'
 import { resultsAtom } from '../jobs'
 import { Icons } from '../ui/icons'
 import { t } from '../i18n'
@@ -84,12 +83,31 @@ export class GeneratorShapeUtil extends BaseBoxShapeUtil<GeneratorShape> {
     return false
   }
 
+  /** #356: while generating — no selection border / resize / rotate chrome (Lovart) */
+  override hideSelectionBoundsFg(shape: GeneratorShape) {
+    return !!(shape.meta as { job?: unknown }).job
+  }
+
+  override hideSelectionBoundsBg(shape: GeneratorShape) {
+    return !!(shape.meta as { job?: unknown }).job
+  }
+
+  override hideResizeHandles(shape: GeneratorShape) {
+    return !!(shape.meta as { job?: unknown }).job
+  }
+
+  override hideRotateHandle(shape: GeneratorShape) {
+    return !!(shape.meta as { job?: unknown }).job
+  }
+
   override component(shape: GeneratorShape) {
     return <GeneratorCard shape={shape} />
   }
 
   override getIndicatorPath(shape: GeneratorShape) {
+    // Empty path while generating so no selection stroke either
     const path = new Path2D()
+    if ((shape.meta as { job?: unknown }).job) return path
     path.rect(0, 0, shape.props.w, shape.props.h)
     return path
   }
@@ -97,18 +115,16 @@ export class GeneratorShapeUtil extends BaseBoxShapeUtil<GeneratorShape> {
 
 function GeneratorCard({ shape }: { shape: GeneratorShape }) {
   const job = shape.meta.job as { id: string } | undefined
-  const progress = useValue('generator progress', () => (job ? progressAtom.get()[job.id] : undefined), [job?.id])
   const error = useValue('generator error', () => (job ? undefined : resultsAtom.get()[shape.id]?.error), [job?.id, shape.id])
-  const p = progress && progress.max > 0 ? Math.min(1, progress.value / progress.max) : 0
   return (
     <HTMLContainer
       className={job ? 'ca-gen-card ca-gen-frame' : 'ca-gen-card'}
       data-running={job ? true : undefined}
+      style={{ width: '100%', height: '100%' }}
     >
       <span className="ca-gen-card__icon">{isVideo(shape.props.workflow) ? Icons.video : Icons.image}</span>
       {error && <div className="ca-gen-card__error" role="alert">{withTopUpLink(error)}</div>}
       {job && <div className="ca-gen-frame__pill">{t('taskDetails.generating')}</div>}
-      {job && <div className="ca-gen-ring" data-indeterminate={p > 0 ? undefined : true} style={{ '--ca-p': p } as React.CSSProperties} />}
     </HTMLContainer>
   )
 }
