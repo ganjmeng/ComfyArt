@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" data-theme="dark" class="ca-root">
+<meta charset="utf-8"/>
+<title>#356 canvas-generating-dark</title>
+<link rel="stylesheet" href="tip.css"/>
+<style>
+  html,body{margin:0;background:#121212;}
+  .tag{font:500 11px/16px Inter,system-ui,sans-serif;color:var(--ca-muted);margin:12px 20px 0;}
+  .canvas-stage{width:560px;height:400px;margin:12px 20px 20px;border-radius:12px;position:relative;
+    background:#0a0a0a;display:flex;align-items:center;justify-content:center;}
+  .ca-gen-card.ca-gen-frame{width:280px;height:280px;display:flex;align-items:center;justify-content:center;position:relative;}
+</style>
+<body>
+  <div class="tag">after · canvas Generating frame (dark) + pill</div>
+  <div class="canvas-stage">
+    <div class="ca-gen-card ca-gen-frame" data-running="true">
+      <span class="ca-gen-card__icon"></span>
+      <div class="ca-gen-frame__pill">Generating</div>
+    </div>
+  </div>
+</body></html>
