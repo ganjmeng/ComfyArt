@@ -231,8 +231,8 @@ button.ca-head__logo:hover, button.ca-head__logo[data-open] { background: var(--
 
 .ca-text { overflow: visible; }
 .ca-text__box { position: absolute; left: 0; top: 0; margin: 0; }
-.ca-text__rich .ProseMirror { outline: none; white-space: inherit; }
-.ca-text__rich .ProseMirror p { margin: 0; }
+.ca-text__rich .ProseMirror { outline: none; white-space: inherit; color: inherit; }
+.ca-text__rich .ProseMirror p { margin: 0; color: inherit; }
 .ca-rich__mark { font: 600 15px/1 Georgia, serif; }
 .ca-text__input { position: absolute; left: 0; top: 0; height: 100%; margin: 0; padding: 0; border: none; outline: none; resize: none; overflow: hidden; background: transparent; box-sizing: content-box; caret-color: var(--ca-blue); }
 .ca-panel__lines { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }

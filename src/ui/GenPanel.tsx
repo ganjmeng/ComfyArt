@@ -191,7 +191,10 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
 
   const host = editor.getContainer().getBoundingClientRect()
   const left = Math.min(Math.max((rect.l + rect.r) / 2 - size.w / 2, EDGE), host.width - size.w - EDGE)
-  const floor = host.height - 72 - size.h
+  // #307: never cover the bottom dock (style/doodle bars can make it taller than 72px)
+  const dock = editor.getContainer().querySelector('.ca-dock') as HTMLElement | null
+  const dockTop = dock ? dock.getBoundingClientRect().top - host.top : host.height - 80
+  const floor = dockTop - GAP - size.h
   const top = Math.max(EDGE, Math.min(rect.b + GAP, floor))
   const model = modelOf(p.workflow) ?? modelOf(video ? AUTO_VIDEO : AUTO_IMAGE)!
   const overflow = video ? null : refOverflow(shape)
