@@ -47,6 +47,7 @@ export const Icons = {
   soundOff: <Svg><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" /><path d="m16 9.5 5 5M21 9.5l-5 5" /></Svg>,
   panelRight: <Svg><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" /><path d="M14.5 4.5v15" /></Svg>,
   agent: <Svg fill><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19m-3 7.2a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8m6 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8M8.2 15h7.6a4.2 4.2 0 0 1-7.6 0" /></Svg>,
+  think: <Svg><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v5l3.5 2" /></Svg>,
   skill: <Svg><path d="M6 3.5h9l3 3V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z" /><path d="M9 10h6M9 13.5h6M9 17h3.5" /></Svg>,
   upload: <Svg><path d="M15.5 8.5 10 14a2.1 2.1 0 0 0 3 3l6-6a3.5 3.5 0 0 0-5-5l-6.2 6.2a5 5 0 0 0 7 7L20 14" /></Svg>,
   next: <Svg><path d="m10 7 5 5-5 5" /></Svg>,

@@ -287,18 +287,12 @@
 .ca-plan__step[data-status="done"] .ca-plan__mark { border: none; }
 .ca-chat__arg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ca-muted); opacity: .8; }
 .ca-chat__io { display: flex; flex-direction: column; gap: 6px; }
-/* #323 v3: live = ca-spin ring (Plan active mark); done = Icons.check; title shimmer only; no breath/halo */
+/* #323 v4: static Icons.think (clock) live+done+waiting; title ca-shine when live; no spin/check/breath/halo */
 .ca-chat__thinkicon {
   flex: none; width: 18px; height: 18px; color: var(--ca-muted);
   display: inline-flex; align-items: center; justify-content: center;
 }
 .ca-chat__thinkicon .ca-icon { width: 18px; height: 18px; }
-.ca-chat__thinkspin {
-  flex: none; width: 14px; height: 14px; box-sizing: border-box;
-  border: 1.5px solid currentColor; border-radius: 50%;
-  border-color: currentColor transparent currentColor currentColor;
-  animation: ca-spin 1s linear infinite;
-}
 .ca-chat__thought[data-live] .ca-chat__thinklabel,
 .ca-chat__thinking .ca-chat__thinklabel {
   background: linear-gradient(100deg, var(--ca-muted) 30%, var(--ca-text) 50%, var(--ca-muted) 70%) 0 0 / 300% 100%;

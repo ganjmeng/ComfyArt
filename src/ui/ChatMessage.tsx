@@ -195,9 +195,7 @@ function Thought({ text, live }: { text: string; live: boolean }) {
   return (
     <div className="ca-chat__tool ca-chat__thought" data-live={live || undefined} data-open={open || undefined}>
       <button type="button" className="ca-chat__step" onClick={() => setOpen(!open)}>
-        <span className="ca-chat__thinkicon">{live
-          ? <span className="ca-chat__thinkspin" aria-hidden="true" />
-          : <span className="ca-icon">{Icons.check}</span>}</span>
+        <span className="ca-chat__thinkicon"><span className="ca-icon">{Icons.think}</span></span>
         <span className="ca-chat__thinklabel">{live ? t('chatMessage.thinking') : t('chatMessage.thought')}</span>
         {!open && <span className="ca-chat__arg">{text.trim().split('\n').at(-1)}</span>}
         <span className="ca-chat__chev ca-icon">{Icons.chevron}</span>

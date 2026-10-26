@@ -1,4 +1,4 @@
-"""#323 v3: live ca-spin spinner + check when done; title shimmer only (no breath/halo/agent smile)."""
+"""#323 v4: static Icons.think clock; live title shimmer; no spin/check/breath/halo on Thought."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,49 +8,46 @@ CHAT = (ROOT / "src/ui/ChatMessage.tsx").read_text()
 PANEL = (ROOT / "src/ui/AgentPanel.tsx").read_text()
 OVERLAYS = (ROOT / "src/styles/overlays.css").read_text()
 SHELL = (ROOT / "src/styles/shell.css").read_text()
+ICONS = (ROOT / "src/ui/icons.tsx").read_text()
 
 
-def test_thought_live_spinner_done_check() -> None:
-    assert "function Thought" in CHAT
+def test_icons_think_clock() -> None:
+    assert "think:" in ICONS
+    # clock outline: circle + hand path
+    block = ICONS.split("think:")[1].split(",\n")[0]
+    assert "circle" in block and "cx=\"12\"" in block
+    assert "ca-spin" not in block
+
+
+def test_thought_static_think_icon() -> None:
     thought = CHAT.split("function Thought")[1].split("\nfunction ")[0]
     assert "data-live={live || undefined}" in thought
-    assert 'className="ca-chat__thinkspin"' in thought
-    assert "Icons.check" in thought
+    assert "Icons.think" in thought
+    assert "Icons.check" not in thought
     assert "Icons.agent" not in thought
+    assert "ca-chat__thinkspin" not in thought
     assert 'className="ca-chat__thinklabel"' in thought
-    assert "stream-light" not in thought
-    assert "ca-stream" not in thought
 
 
-def test_agentpanel_thinking_has_spinner() -> None:
-    assert 'className="ca-chat__thinking"' in PANEL
+def test_agentpanel_thinking_uses_think() -> None:
     block = PANEL.split('className="ca-chat__thinking"')[1].split("</div>")[0]
-    assert 'className="ca-chat__thinkspin"' in block
+    assert "Icons.think" in block
     assert 'className="ca-chat__thinklabel"' in block
+    assert "ca-chat__thinkspin" not in block
     assert "Icons.agent" not in block
 
 
-def test_css_no_breath_halo() -> None:
+def test_css_no_spin_breath_halo() -> None:
+    assert "ca-chat__thinkspin" not in OVERLAYS
     assert "ca-think-breath" not in OVERLAYS
-    assert "@keyframes ca-think-breath" not in OVERLAYS
     assert ".ca-chat__thinkicon::after" not in OVERLAYS
     assert "stream-light" not in OVERLAYS
 
 
-def test_thinkspin_uses_ca_spin() -> None:
-    assert ".ca-chat__thinkspin" in OVERLAYS
-    block = OVERLAYS.split(".ca-chat__thinkspin")[1].split("}")[0]
-    assert "ca-spin 1s" in block
-    assert "border-radius: 50%" in block
-
-
-def test_live_label_shimmer_not_icon() -> None:
+def test_live_label_shimmer_only() -> None:
     assert ".ca-chat__thought[data-live] .ca-chat__thinklabel" in OVERLAYS
     assert ".ca-chat__thinking .ca-chat__thinklabel" in OVERLAYS
     block = OVERLAYS.split(".ca-chat__thinking .ca-chat__thinklabel")[1].split("}")[0]
     assert "ca-shine 1.8s" in block
-    assert "background-clip: text" in block or "-webkit-background-clip: text" in block
-    # parent waiting bar must NOT carry shimmer (icon would clip)
     shell_rule = SHELL.split(".ca-chat__thinking {")[1].split("}")[0]
     assert "ca-shine" not in shell_rule
-    assert "color: transparent" not in shell_rule
