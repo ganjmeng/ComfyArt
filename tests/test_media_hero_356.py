@@ -42,7 +42,8 @@ def test_chat_hero_css_flat_no_shimmer() -> None:
     assert "ca-shine" not in block
     assert "animation" not in block
     assert "var(--ca-media-hero-bg)" in block
-    assert "var(--ca-process-col)" in block  # align past rail
+    # #358: left = icon column — do NOT indent past rail via process-col+gutter
+    assert "margin-left: calc(var(--ca-process-col)" not in block
 
 
 def test_chat_hero_wired_image_video_live_only() -> None:

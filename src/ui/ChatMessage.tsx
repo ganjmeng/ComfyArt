@@ -599,7 +599,8 @@ type ProcessStep = {
 function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
   const [openKey, setOpenKey] = useState<string | null>(null)
   const live = steps.find((s) => s.live)
-  // #356: flat grey media hero under live image/video only (sibling — not a new kind)
+  // #356/#358: flat grey media hero under live image/video only (sibling — not a new kind);
+  // left edge = icon column (Lovart), not indented to label column
   const mediaHero = live && (live.kind === 'image' || live.kind === 'video') ? live : undefined
   return (
     <div className="ca-process" data-live={live ? true : undefined}>
@@ -632,7 +633,7 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
           )
         })}
       </div>
-      {/* #356 Lovart RS/110: image/video live → title then hero; no bordered status between */}
+      {/* #356/#358 Lovart: image/video live → title then hero (icon-column left); no bordered status between */}
       {live && !mediaHero && <div className="ca-process__status">{live.label}</div>}
       {mediaHero && (
         <div
