@@ -317,6 +317,12 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 :root[data-theme="dark"] .ca-agentlogo__light { display: none !important; }
 :root[data-theme="dark"] .ca-agentlogo__dark { display: block !important; }
 .ca-agentpick { max-width: 340px; }
+/* #312: selected ✓ ~18px (balanced with 16px logo / 32px row); was raw SVG filling 52px column */
+.ca-agentpick__check > .ca-icon,
+.ca-agentpick__check > .ca-icon svg { width: 18px; height: 18px; }
+/* #312: Model label + select closer to agent-row scale */
+.ca-agentpick .ca-gen__title { font-size: 13px; font-weight: 500; line-height: 20px; margin: 6px 0 4px; }
+.ca-agentpick select.ca-panel__input { height: 32px; font-size: 13px; line-height: 20px; }
 /* #247: Agent settings is wider so the MCP config reads without wrapping */
 .ca-modal__card.ca-botsettings { width: min(560px, calc(100vw - 32px)); }
 .ca-agentsetup { display: flex; flex-direction: column; gap: 8px; }

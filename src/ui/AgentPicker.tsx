@@ -66,7 +66,7 @@ export function AgentItems({ onError, current, close, onChosen }: { onError: (ms
         <button key={p.id} type="button" className="ca-menu__item ca-agentpick__row" disabled={!p.available} title={p.detail || p.version} onClick={() => pick(p.id)}>
           <AgentLogo id={p.id} />
           <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span>{!p.available && <span className="ca-agentpick__status">{t('botSettings.unavailable')}</span>}</span>
-          <span className="ca-agentpick__check">{current && p.id === providerId && Icons.check}</span>
+          <span className="ca-agentpick__check">{current && p.id === providerId ? <span className="ca-icon">{Icons.check}</span> : null}</span>
         </button>
       ))}
       </div>
