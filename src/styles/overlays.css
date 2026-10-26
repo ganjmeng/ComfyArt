@@ -296,7 +296,7 @@
 :root[data-theme="dark"] .ca-chat__notice[data-level="error"] { color: #f87171; }
 .ca-chat__user[data-queued] .ca-chat__bubble { opacity: .6; }
 .ca-agentpick { width: 300px; }
-.ca-agentpick select { width: 100%; }
+/* #316: native select removed from agentpick */
 .ca-details__steps li { margin-bottom: 6px; }
 .ca-details__step { display: flex; gap: 8px; color: var(--ca-text); }
 .ca-details__detail { font-size: 12px; line-height: 18px; white-space: pre-wrap; word-break: break-all; max-height: 120px; overflow: auto; }

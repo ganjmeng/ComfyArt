@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { atom, useValue } from 'tldraw'
 
 import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, lostProvider, NO_KEY_DETAIL, providerLabel, messagesAtom, newProviderAtom, openChat, providersAtom, saveSettings, settingsAtom, updateChat, type ProviderInfo } from '../bot'
@@ -6,6 +7,7 @@ import { confirmAtom } from './Confirm'
 import { AgentLogo } from './agentLogos'
 import { Icons } from './icons'
 import { t } from '../i18n'
+import { Popover } from './Popover'
 
 export const botSettingsOpenAtom = atom('bot settings open', false)
 // #247: which tool card the Agent settings should scroll to when opened from 去配置
@@ -66,7 +68,7 @@ export function AgentItems({ onError, current, close, onChosen }: { onError: (ms
         <button key={p.id} type="button" className="ca-menu__item ca-agentpick__row" disabled={!p.available} title={p.detail || p.version} onClick={() => pick(p.id)}>
           <AgentLogo id={p.id} />
           <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span>{!p.available && <span className="ca-agentpick__status">{t('botSettings.unavailable')}</span>}</span>
-          <span className="ca-agentpick__check">{current && p.id === providerId && Icons.check}</span>
+          <span className="ca-agentpick__check">{current && p.id === providerId ? <span className="ca-icon">{Icons.check}</span> : null}</span>
         </button>
       ))}
       </div>
@@ -83,25 +85,54 @@ export function AgentExtras({ onError, close }: { onError: (msg: string) => void
   const settings = useValue(settingsAtom)
   const chat = useValue('current chat', () => chatsAtom.get().find((c) => c.id === chatIdAtom.get()) ?? null, [])
   const pending = useValue(newProviderAtom)
-  // #315: same provider resolution as the pill; model always from shared settings (Home must loadSettings)
   const providerId = chat?.provider ?? (pending || defaultProvider())
   const provider = providers.find((p) => p.id === providerId)
   const modelKey = `bot-model-${providerId}`
   const model = String(settings[modelKey] ?? '')
   const options = provider?.model_options ?? provider?.models.map((m) => ({ value: m, label: m, group: '' })) ?? []
   const fail = (e: unknown) => onError(errorText(e))
+  const [modelOpen, setModelOpen] = useState(false)
+  // #316: label for trigger — empty value shows Default; otherwise full id (ellipsis + title)
+  const modelLabel = (() => {
+    if (!model) return t('common.default')
+    const hit = options.find((o) => o.value === model)
+    return hit ? (hit.group ? `${hit.group} · ${hit.label}` : hit.label) : model
+  })()
+  const pickModel = (value: string) => {
+    setModelOpen(false)
+    void saveSettings({ [modelKey]: value }).catch(fail)
+  }
   return (
     <>
       {options.length > 0 && (
-        <>
-          <div className="ca-gen__title">{t('agentPicker.model')}</div>
-          <select className="ca-panel__input" value={model} onChange={(e) => void saveSettings({ [modelKey]: e.target.value }).catch(fail)}>
-            <option value="">{t('common.default')}</option>
-            {options.map((o) => <option key={o.value} value={o.value}>{o.group ? `${o.group} · ` : ''}{o.label}</option>)}
-          </select>
-        </>
+        <div className="ca-agentpick__section">
+          <div className="ca-agentpick__sectiontitle">{t('agentPicker.model')}</div>
+          <Popover open={modelOpen} onOpenChange={setModelOpen} side="bottom" align="start" trigger={({ open, toggle }) => (
+            <button type="button" className="ca-agentpick__modelbtn" data-open={open || undefined} title={model || t('common.default')} onClick={toggle}>
+              <span className="ca-agentpick__modeltext">{modelLabel}</span>
+              <span className="ca-icon">{Icons.chevron}</span>
+            </button>
+          )}>
+            <div className="ca-menu ca-agentpick__modelmenu">
+              <button type="button" className="ca-menu__item" data-on={!model || undefined} onClick={() => pickModel('')}>
+                <span className="ca-menu__grow">{t('common.default')}</span>
+                {!model && <span className="ca-icon">{Icons.check}</span>}
+              </button>
+              {options.map((o) => {
+                const label = o.group ? `${o.group} · ${o.label}` : o.label
+                const on = model === o.value
+                return (
+                  <button key={o.value} type="button" className="ca-menu__item" title={o.value} data-on={on || undefined} onClick={() => pickModel(o.value)}>
+                    <span className="ca-menu__grow">{label}</span>
+                    {on && <span className="ca-icon">{Icons.check}</span>}
+                  </button>
+                )
+              })}
+            </div>
+          </Popover>
+        </div>
       )}
-      <label className="ca-notice__push">
+      <label className="ca-agentpick__ask" data-disabled={!chat || undefined}>
         <input
           type="checkbox"
           checked={chat?.run_mode === 'ask'}
