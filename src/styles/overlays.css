@@ -180,12 +180,14 @@
 .ca-q__opt[data-text] { cursor: text; background: transparent; }
 .ca-q__opt[data-text]:hover { background: var(--ca-hover); }
 .ca-q__opt[data-text][data-on] { background: var(--ca-opt-on); }
+/* #334: open-text / Other = letter+input (not textarea); kill UA pad clip vs Lovart/MVP */
 .ca-q__opt[data-text] .ca-q__input,
 .ca-q__opt[data-other] .ca-q__input {
-  flex: 1; min-width: 0; margin: 0; width: auto; height: 20px; min-height: 20px; padding: 0;
+  flex: 1; min-width: 0; margin: 0; width: auto; height: 18px; min-height: 18px; padding: 0;
   border: none; outline: none; box-shadow: none; background: transparent; color: var(--ca-text);
-  font: inherit; font-size: 13px; line-height: 20px; resize: none; overflow: hidden;
-  field-sizing: content;
+  font: inherit; font-size: 13px; line-height: 18px;
+  /* single-line input: no overflow:hidden glyph clip; ellipsis like Lovart long placeholder */
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ca-q__opt[data-text] .ca-q__input:focus,
 .ca-q__opt[data-other] .ca-q__input:focus {

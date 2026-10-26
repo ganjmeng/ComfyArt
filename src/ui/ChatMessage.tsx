@@ -237,9 +237,9 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
         {textOnly ? (
           <div className="ca-q__opt" data-text="" data-on={st.other.trim() ? true : undefined}>
             <span className="ca-q__letter">A</span>
-            <textarea
+            <input
+              type="text"
               className="ca-q__input"
-              rows={1}
               value={st.other}
               placeholder={q.placeholder || t('chatMessage.writeYourIdea')}
               onChange={(e) => onOther(e.target.value)}
@@ -258,9 +258,9 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
             {allowOther && (
               <div className="ca-q__opt" data-other="" data-text="" data-on={otherOn || undefined}>
                 <span className="ca-q__letter">{otherLetter}</span>
-                <textarea
+                <input
+                  type="text"
                   className="ca-q__input"
-                  rows={1}
                   value={st.other}
                   placeholder={q.placeholder || t('chatMessage.other')}
                   onChange={(e) => onOther(e.target.value)}
