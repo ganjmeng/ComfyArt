@@ -4,7 +4,7 @@
 Honest label: Playwright Chromium + tip dist AgentPanel (production React QuestionCard)
 against stubbed ComfyArt aiohttp routes — NOT full Electron desktop / not live LLM ask.
 Closer than tip-CSS / chat-shell HTML harness: real .ca-agent chrome, composer, chat list,
-tip CSS/JS from dist @ fb56d4f (behavior from 54baf74).
+tip CSS/JS from dist @ HEAD (post-#338 1:1 remaining; behavior keep from #338).
 """
 from __future__ import annotations
 
@@ -226,31 +226,38 @@ async def start_app() -> tuple[TestServer, str]:
     return server, str(server.make_url("/comfyart/"))
 
 
-def seed_chat() -> tuple[str, str]:
+def seed_chat(
+    *,
+    pid: str,
+    title: str,
+    prompt: str,
+    options: list[dict],
+    max_selections: int = 1,
+    placeholder: str | None = None,
+) -> tuple[str, str]:
     """Create project + chat + pending kind=question ask. Returns (chat_id, ask_id)."""
     project_store.save_project(
-        "default", PID, json.dumps(_snapshot("#337 sidebar"), ensure_ascii=False), "#337 sidebar", []
+        "default", pid, json.dumps(_snapshot(f"#337 {title}"), ensure_ascii=False), f"#337 {title}", []
     )
     chat = chat_store.create_chat(
-        user="default", project=PID, provider="comfyart", title="茶饮视觉方向", run_mode="ask"
+        user="default", project=pid, provider="comfyart", title=title, run_mode="ask"
     )
     user_msg = chat_store.create_message(
         chat_id=chat["id"],
         role="user",
         blocks=[{"type": "text", "text": "帮我做一套新中式茶饮品牌视觉"}],
     )
-    # Spec first so we can create_ask with real id, then persist block on assistant message
-    spec = bot_asks.validate_spec(
-        {
-            "prompt": PROMPT,
-            "options": OPTS,
-            "allow_other": True,
-            "allow_skip": True,
-            "min_selections": 1,
-            "max_selections": 1,
-        }
-    )
-    # create assistant message first to get message_id, then create_ask, then patch blocks
+    spec_raw: dict = {
+        "prompt": prompt,
+        "options": options,
+        "allow_other": True,
+        "allow_skip": True,
+        "min_selections": 1,
+        "max_selections": max_selections,
+    }
+    if placeholder:
+        spec_raw["placeholder"] = placeholder
+    spec = bot_asks.validate_spec(spec_raw)
     asst = chat_store.create_message(
         chat_id=chat["id"],
         role="assistant",
@@ -268,15 +275,15 @@ def seed_chat() -> tuple[str, str]:
             block,
         ],
     )
-    print("seeded chat", chat["id"], "ask", ask.id, "spec.kind", spec.get("kind"))
+    print("seeded chat", chat["id"], "ask", ask.id, "spec.kind", spec.get("kind"), "max", max_selections)
     return chat["id"], ask.id
 
 
 async def open_seeded_chat(page, chat_id: str) -> None:
-    # Open history popover and click our chat
     await page.locator("aside.ca-agent").wait_for(timeout=30000)
-    # wait for chats to load (history button present)
-    hist = page.locator('button.ca-split__chev[title*="历史"], button.ca-split__chev[title*="History"], button.ca-split__chev').first
+    hist = page.locator(
+        'button.ca-split__chev[title*="历史"], button.ca-split__chev[title*="History"], button.ca-split__chev'
+    ).first
     await hist.wait_for(timeout=15000)
     await hist.click()
     item = page.locator(".ca-history__item").first
@@ -285,25 +292,10 @@ async def open_seeded_chat(page, chat_id: str) -> None:
     await page.locator(".ca-q").wait_for(timeout=15000)
 
 
-async def set_theme(page, theme: str) -> None:
-    await page.evaluate(
-        """(theme) => {
-      localStorage.setItem('comfyart.theme', theme);
-      document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light';
-      // also try mark via any react if present — dataset is enough for CSS vars
-    }""",
-        theme,
-    )
-    # Force a soft reload of CSS vars by toggling — but React themeAtom may still be old.
-    # Reload page with init script is cleaner for theme switches.
-
-
 async def shot_state(page, name: str) -> None:
     agent = page.locator("aside.ca-agent")
     await agent.wait_for()
-    # full agent column (real product width ~400)
     await agent.screenshot(path=str(OUT / f"{name}-col.png"))
-    # wider stage: agent + some canvas
     box = await agent.bounding_box()
     if box:
         await page.screenshot(
@@ -315,49 +307,58 @@ async def shot_state(page, name: str) -> None:
                 "height": box["height"],
             },
         )
+    # card crop for denser compare
+    card = page.locator(".ca-q")
+    if await card.count():
+        await card.first.screenshot(path=str(OUT / f"{name}-card.png"))
     print("wrote", name)
 
 
-async def reset_card(page) -> None:
-    """Reload chat by re-opening so React state resets to empty pending."""
-    # Click new chat then re-open history — loses ask. Better: navigate reload.
-    pass
-
-
-async def interact_and_capture(page, theme: str) -> None:
+async def interact_single(page, theme: str) -> None:
     prefix = theme
-
-    # empty other
     await page.locator(".ca-q").wait_for()
-    # ensure no selection
-    # click skip area? Just assert empty textarea
     other = page.locator(".ca-q__opt[data-other] .ca-q__input")
     await other.fill("")
-    # clear any selected by... we can't easily clear without toggle. Reload for clean empty.
     await shot_state(page, f"{prefix}-empty")
 
-    # filled other soft-on
     await other.fill("包装袋")
     await other.blur()
     await page.wait_for_timeout(200)
     await shot_state(page, f"{prefix}-other")
 
-    # keep-text after A click
     await page.locator(".ca-q__opt").filter(has=page.locator(".ca-q__letter", has_text="A")).click()
     await page.wait_for_timeout(200)
-    # verify text kept
     val = await other.input_value()
     assert val == "包装袋", val
     await shot_state(page, f"{prefix}-keep")
 
-    # soft-select B · empty other — clear other first then click B
     await other.fill("")
     await page.locator(".ca-q__opt").filter(has=page.locator(".ca-q__letter", has_text="B")).click()
     await page.wait_for_timeout(200)
     await shot_state(page, f"{prefix}-soft")
 
 
-async def run_theme(browser, base_url: str, chat_id: str, theme: str) -> None:
+async def interact_multi(page, theme: str) -> None:
+    """RS/105: （多选） hint, ≥2 soft-select stacked, Other末字母 input."""
+    prefix = f"{theme}-multi"
+    await page.locator(".ca-q").wait_for()
+    hint = page.locator(".ca-q__hint")
+    assert await hint.count() >= 1, "missing （多选） hint"
+    # select A then B (stacked soft)
+    await page.locator(".ca-q__opt").filter(has=page.locator(".ca-q__letter", has_text="A")).click()
+    await page.locator(".ca-q__opt").filter(has=page.locator(".ca-q__letter", has_text="B")).click()
+    await page.wait_for_timeout(150)
+    other = page.locator(".ca-q__opt[data-other] .ca-q__input")
+    await other.fill("其他方向补充")
+    await other.blur()
+    await page.wait_for_timeout(200)
+    # A and B should stay on in multi; other also soft-on
+    on_count = await page.locator(".ca-q__opt[data-on]").count()
+    assert on_count >= 2, f"expected ≥2 soft-select, got {on_count}"
+    await shot_state(page, prefix)
+
+
+async def run_theme(browser, base_url: str, pid: str, theme: str, mode: str) -> None:
     ctx = await browser.new_context(
         viewport={"width": 1440, "height": 900},
         locale="zh-CN",
@@ -370,43 +371,66 @@ async def run_theme(browser, base_url: str, chat_id: str, theme: str) -> None:
       localStorage.setItem('comfyart.theme', '{theme}');
     """
     )
-    await page.goto(base_url + f"?project={PID}", wait_until="networkidle")
-    # wait for canvas / agent
+    await page.goto(base_url + f"?project={pid}", wait_until="networkidle")
     try:
         await page.locator("aside.ca-agent").wait_for(timeout=45000)
     except Exception:
-        # dump for debug
-        await page.screenshot(path=str(OUT / f"debug-{theme}-boot.png"), full_page=True)
+        await page.screenshot(path=str(OUT / f"debug-{theme}-{mode}-boot.png"), full_page=True)
         html = await page.content()
-        (OUT / f"debug-{theme}-boot.html").write_text(html[:50000], encoding="utf-8")
+        (OUT / f"debug-{theme}-{mode}-boot.html").write_text(html[:50000], encoding="utf-8")
         raise
-    await page.wait_for_timeout(1500)
-    # dismiss modals if any
+    await page.wait_for_timeout(1200)
     if await page.locator(".ca-modal").count():
         try:
             await page.locator(".ca-modal button").last.click(timeout=2000)
         except Exception:
             pass
 
-    await open_seeded_chat(page, chat_id)
-    await page.wait_for_timeout(500)
-    await interact_and_capture(page, theme)
+    await open_seeded_chat(page, "")
+    await page.wait_for_timeout(400)
+    if mode == "multi":
+        await interact_multi(page, theme)
+    else:
+        await interact_single(page, theme)
     await ctx.close()
 
 
 async def main() -> None:
-    chat_id, ask_id = seed_chat()
+    single_opts = [
+        {"id": "a", "label": "高端精品茶饮"},
+        {"id": "b", "label": "年轻快时尚茶饮"},
+        {"id": "c", "label": "社区日常茶饮"},
+    ]
+    multi_opts = [
+        {"id": "a", "label": "品牌故事海报"},
+        {"id": "b", "label": "包装袋主视觉"},
+        {"id": "c", "label": "门店空间物料"},
+    ]
+    pid_single = "p337sidebar"
+    pid_multi = "p337multi"
+    seed_chat(
+        pid=pid_single,
+        title="茶饮视觉方向",
+        prompt="这套视觉面向哪类消费者与价格带？",
+        options=single_opts,
+        max_selections=1,
+    )
+    seed_chat(
+        pid=pid_multi,
+        title="多选物料方向",
+        prompt="本次需要哪些视觉物料？",
+        options=multi_opts,
+        max_selections=3,
+        placeholder="其他方向…",
+    )
     server, base_url = await start_app()
-    print("app", base_url, "chat", chat_id, "ask", ask_id)
+    print("app", base_url)
     try:
         async with async_playwright() as p:
-            try:
-                browser = await p.chromium.launch()
-            except Exception as e:
-                print("chromium launch failed", e)
-                raise
+            browser = await p.chromium.launch()
             for theme in ("light", "dark"):
-                await run_theme(browser, base_url, chat_id, theme)
+                await run_theme(browser, base_url, pid_single, theme, "single")
+                await run_theme(browser, base_url, pid_multi, theme, "multi")
             await browser.close()
     finally:
         await server.close()
