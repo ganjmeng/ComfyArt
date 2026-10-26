@@ -1289,5 +1289,9 @@
   "agentSetup.checkAgain": "重新检测",
   "agentSetup.viewGuide": "查看教程",
   "imageToolbar.moreTools": "更多工具",
-  "imageToolbar.unpin": "取消固定"
+  "imageToolbar.unpin": "取消固定",
+  "chatMessage.next": "下一步",
+  "chatMessage.pageOf": "{0} of {1}",
+  "chatMessage.prevPage": "上一页",
+  "chatMessage.nextPage": "下一页"
 }

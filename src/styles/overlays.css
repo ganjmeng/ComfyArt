@@ -138,9 +138,25 @@
 .ca-q__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ca-q__label { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; }
 .ca-q__label .ca-icon { width: 16px; height: 16px; opacity: .7; }
-.ca-q__page { font: 400 12px/16px var(--ca-font); color: var(--ca-muted); white-space: nowrap; }
+.ca-q__page { display: inline-flex; align-items: center; gap: 4px; font: 400 12px/16px var(--ca-font); color: var(--ca-muted); white-space: nowrap; }
+.ca-q__chev {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border: none; border-radius: 6px;
+  background: transparent; color: var(--ca-muted); cursor: pointer;
+}
+.ca-q__chev:hover:not(:disabled) { background: var(--ca-hover); color: var(--ca-text); }
+.ca-q__chev:disabled { opacity: .35; cursor: default; }
+.ca-q__chev-icon { width: 14px; height: 14px; }
+.ca-q__chev-icon--left { transform: scaleX(-1); }
+.ca-q__body { display: flex; flex-direction: column; gap: 16px; }
+.ca-q__block { display: flex; flex-direction: column; gap: 8px; }
 .ca-q__prompt { font-weight: 500; line-height: 20px; }
 .ca-q__opts { display: flex; flex-direction: column; gap: 6px; }
+.ca-q__opt[data-text] { cursor: default; }
+.ca-q__opt[data-text] .ca-q__input { flex: 1; margin: 0; width: auto; background: transparent; }
+.ca-q__key { margin-left: 4px; opacity: .75; font-weight: 400; }
+.ca-q__key-icon { width: 14px; height: 14px; margin-left: 2px; vertical-align: -2px; }
+.ca-qmemo__block + .ca-qmemo__block { margin-top: 8px; padding-top: 8px; border-top: var(--ca-border-w) solid var(--ca-border); }
 .ca-q__opt {
   display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 8px;
   border: var(--ca-border-w) solid transparent; border-radius: 8px;
@@ -174,6 +190,7 @@
 }
 .ca-q__skip:hover { background: var(--ca-hover); }
 .ca-q__submit {
+  display: inline-flex; align-items: center; justify-content: center; gap: 2px;
   height: 32px; padding: 0 14px; border: none; border-radius: 8px; font: inherit; cursor: pointer;
   background: var(--ca-strong); color: var(--ca-float);
 }

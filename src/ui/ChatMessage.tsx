@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
-import { answerAsk, outputsOf, toolLabel, toolName, type BotBlock, type BotMessage } from '../bot'
+import { answerAsk, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
 import { setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
 import { errorText } from '../jobs'
@@ -78,16 +78,80 @@ function Retry({ b: block, live }: { b: BotBlock; live: boolean }) {
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-function askDefaults(b: BotBlock): string[] {
-  if (b.defaults?.length) return b.defaults.slice(0, b.max_selections ?? 1)
-  const rec = (b.options ?? []).filter((o) => o.recommended).map((o) => o.id)
-  return rec.slice(0, b.max_selections ?? 1)
+type QState = { selected: string[]; otherOn: boolean; other: string }
+
+function askQuestions(b: BotBlock): AskQuestion[] {
+  if (b.questions?.length) return b.questions
+  return [{
+    id: '_',
+    prompt: b.prompt ?? '',
+    options: b.options ?? [],
+    min_selections: b.min_selections,
+    max_selections: b.max_selections,
+    allow_other: b.allow_other,
+    defaults: b.defaults,
+    page: b.page ?? 1,
+  }]
+}
+
+function askPageCount(b: BotBlock, questions: AskQuestion[]): number {
+  if (b.page_count && b.page_count > 0) return b.page_count
+  return Math.max(1, ...questions.map((q) => q.page ?? 1))
+}
+
+function qDefaults(q: AskQuestion): string[] {
+  const max = q.max_selections ?? (q.options?.length ? 1 : 0)
+  if (q.defaults?.length) return q.defaults.slice(0, max)
+  const rec = (q.options ?? []).filter((o) => o.recommended).map((o) => o.id)
+  return rec.slice(0, max)
+}
+
+function initQStates(questions: AskQuestion[]): Record<string, QState> {
+  const out: Record<string, QState> = {}
+  for (const q of questions) {
+    out[q.id] = { selected: qDefaults(q), otherOn: false, other: '' }
+  }
+  return out
+}
+
+function qAnswerLabels(q: AskQuestion, selected: string[], other?: string): string {
+  const options = q.options ?? []
+  const labels = selected.map((id) => options.find((o) => o.id === id)?.label ?? id)
+  return [...labels, other].filter(Boolean).join(t('common.listSep'))
 }
 
 function askAnswerLabels(b: BotBlock): string {
+  const questions = askQuestions(b)
+  if (b.answers && questions.length) {
+    return questions.map((q) => {
+      const a = b.answers![q.id]
+      if (!a) return ''
+      return qAnswerLabels(q, a.selected ?? [], a.other_text)
+    }).filter(Boolean).join(t('common.listSep')) || ''
+  }
   const options = b.options ?? []
   const labels = (b.selected ?? []).map((id) => options.find((o) => o.id === id)?.label ?? id)
   return [...labels, b.other_text].filter(Boolean).join(t('common.listSep'))
+}
+
+function qFilled(q: AskQuestion, st: QState): boolean {
+  const textOnly = !(q.options?.length) && !!q.allow_other
+  if (textOnly) return st.other.trim().length > 0
+  if (st.selected.length > 0) return true
+  return !!(q.allow_other && st.otherOn && st.other.trim().length > 0)
+}
+
+function toAnswers(questions: AskQuestion[], states: Record<string, QState>): AskAnswers {
+  const answers: AskAnswers = {}
+  for (const q of questions) {
+    const st = states[q.id] ?? { selected: [], otherOn: false, other: '' }
+    const entry: { selected: string[]; other_text?: string } = { selected: st.selected }
+    if (q.allow_other && (st.otherOn || !(q.options?.length)) && st.other.trim()) {
+      entry.other_text = st.other.trim()
+    }
+    answers[q.id] = entry
+  }
+  return answers
 }
 
 /** Historical chip asks (no kind) keep the memo path; new question cards use the grey Q/A bubble. */
@@ -110,6 +174,23 @@ function QuestionAnswered({ b }: { b: BotBlock }) {
       </div>
     )
   }
+  const questions = askQuestions(b)
+  if (questions.length > 1 || (b.answers && Object.keys(b.answers).length > 1)) {
+    return (
+      <div className="ca-qmemo">
+        {questions.map((q) => {
+          const a = b.answers?.[q.id]
+          const answer = a ? (qAnswerLabels(q, a.selected ?? [], a.other_text) || t('chatMessage.skipped')) : (askAnswerLabels(b) || t('chatMessage.skipped'))
+          return (
+            <div key={q.id} className="ca-qmemo__block">
+              <div className="ca-qmemo__row"><span className="ca-qmemo__k">{t('chatMessage.qaAsk')}</span><span className="ca-qmemo__v">{q.prompt}</span></div>
+              <div className="ca-qmemo__row"><span className="ca-qmemo__k">{t('chatMessage.qaAnswer')}</span><span className="ca-qmemo__v">{answer}</span></div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
   const answer = askAnswerLabels(b) || t('chatMessage.skipped')
   return (
     <div className="ca-qmemo">
@@ -119,70 +200,138 @@ function QuestionAnswered({ b }: { b: BotBlock }) {
   )
 }
 
-/** #328/#330: Lovart-style Question card for default ask / kind=question. */
+function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChange: (next: QState) => void }) {
+  const options = q.options ?? []
+  const multi = (q.max_selections ?? 1) > 1
+  const allowOther = !!q.allow_other
+  const textOnly = !options.length && allowOther
+  const recommended = new Set([...(q.defaults ?? []), ...options.filter((o) => o.recommended).map((o) => o.id)])
+  const otherLetter = LETTERS[options.length] ?? 'A'
+
+  const toggle = (id: string) => {
+    if (!multi) onChange({ ...st, otherOn: false, selected: [id] })
+    else {
+      const selected = st.selected.includes(id)
+        ? st.selected.filter((x) => x !== id)
+        : [...st.selected, id].slice(-(q.max_selections ?? 1))
+      onChange({ ...st, selected })
+    }
+  }
+  const toggleOther = () => {
+    if (st.otherOn) { onChange({ ...st, otherOn: false }); return }
+    onChange({ ...st, otherOn: true, selected: multi ? st.selected : [] })
+  }
+
+  return (
+    <div className="ca-q__block">
+      <div className="ca-q__prompt">{q.prompt}{multi && <span className="ca-menu__key">{t('chatMessage.multipleChoice')}</span>}</div>
+      <div className="ca-q__opts">
+        {textOnly ? (
+          <div className="ca-q__opt" data-on="" data-other="" data-text="">
+            <span className="ca-q__letter">A</span>
+            <input
+              className="ca-q__input"
+              value={st.other}
+              placeholder={q.placeholder || t('chatMessage.writeYourIdea')}
+              onChange={(e) => onChange({ ...st, otherOn: true, other: e.target.value })}
+              onKeyDown={(e) => e.stopPropagation()}
+            />
+          </div>
+        ) : (
+          <>
+            {options.map((o, i) => (
+              <button key={o.id} type="button" className="ca-q__opt" title={o.description} data-on={st.selected.includes(o.id) || undefined} onClick={() => toggle(o.id)}>
+                <span className="ca-q__letter">{LETTERS[i] ?? String(i + 1)}</span>
+                <span className="ca-q__text">{o.label}</span>
+                {recommended.has(o.id) && <span className="ca-q__rec">{t('chatMessage.recommended')}</span>}
+              </button>
+            ))}
+            {allowOther && (
+              <button type="button" className="ca-q__opt" data-on={st.otherOn || undefined} data-other="" onClick={toggleOther}>
+                <span className="ca-q__letter">{otherLetter}</span>
+                <span className="ca-q__text">{t('chatMessage.other')}</span>
+                {st.otherOn && (
+                  <input
+                    className="ca-q__input"
+                    value={st.other}
+                    placeholder={q.placeholder || t('chatMessage.writeYourIdea')}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => onChange({ ...st, other: e.target.value })}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    autoFocus
+                  />
+                )}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** #328/#330: Lovart-style Question card — multi-q + in-card paging. */
 function QuestionCard({ b }: { b: BotBlock }) {
-  const options = b.options ?? []
-  const multi = (b.max_selections ?? 1) > 1
-  const allowOther = !!b.allow_other
+  const questions = askQuestions(b)
+  const pageCount = askPageCount(b, questions)
   const allowSkip = b.allow_skip !== false
-  const [picked, setPicked] = useState<string[]>(() => askDefaults(b))
-  const [otherOn, setOtherOn] = useState(false)
-  const [other, setOther] = useState('')
+  const [page, setPage] = useState(1)
+  const [furthest, setFurthest] = useState(1)
+  const [states, setStates] = useState<Record<string, QState>>(() => initQStates(questions))
   const [error, setError] = useState('')
   if (b.status !== 'pending') return <QuestionAnswered b={b} />
 
-  const toggle = (id: string) => {
-    if (!multi) setOtherOn(false)
-    setPicked(multi ? (picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id].slice(-(b.max_selections ?? 1))) : [id])
+  const onPage = questions.filter((q) => (q.page ?? 1) === page)
+  const pageOk = onPage.every((q) => qFilled(q, states[q.id] ?? { selected: [], otherOn: false, other: '' }))
+  const allOk = questions.every((q) => qFilled(q, states[q.id] ?? { selected: [], otherOn: false, other: '' }))
+  const isLast = page >= pageCount
+  const showPager = pageCount > 1
+
+  const setQ = (id: string, next: QState) => setStates((s) => ({ ...s, [id]: next }))
+  const go = (n: number) => {
+    const next = Math.max(1, Math.min(pageCount, n))
+    setPage(next)
+    setFurthest((f) => Math.max(f, next))
   }
-  const toggleOther = () => {
-    if (otherOn) { setOtherOn(false); return }
-    setOtherOn(true)
-    if (!multi) setPicked([])
+  const resolve = (answers: AskAnswers) => {
+    const qs = questions
+    const flatSel = qs.length === 1 ? (answers[qs[0].id]?.selected ?? []) : []
+    const flatOther = qs.length === 1 ? (answers[qs[0].id]?.other_text ?? '') : ''
+    void answerAsk(b.ask_id!, flatSel, flatOther, answers).catch((e) => setError(errorText(e)))
   }
-  const submit = (selected: string[], text: string) => void answerAsk(b.ask_id!, selected, text).catch((e) => setError(errorText(e)))
-  const canSubmit = picked.length > 0 || (allowOther && otherOn && other.trim().length > 0)
-  const otherLetter = LETTERS[options.length] ?? '?'
-  const recommended = new Set([...(b.defaults ?? []), ...options.filter((o) => o.recommended).map((o) => o.id)])
-  const page = b.page && b.page_count ? `${b.page} / ${b.page_count}` : null
+  const onSkip = () => resolve(Object.fromEntries(questions.map((q) => [q.id, { selected: [] as string[] }])))
+  const onNext = () => { if (!pageOk) return; go(page + 1) }
+  const onSubmit = () => { if (!allOk) return; resolve(toAnswers(questions, states)) }
 
   return (
     <div className="ca-q">
       <div className="ca-q__head">
         <div className="ca-q__label"><span className="ca-icon">{Icons.question}</span>{t('chatMessage.question')}</div>
-        {page && <div className="ca-q__page">{page}</div>}
-      </div>
-      <div className="ca-q__prompt">{b.prompt}{multi && <span className="ca-menu__key">{t('chatMessage.multipleChoice')}</span>}</div>
-      <div className="ca-q__opts">
-        {options.map((o, i) => (
-          <button key={o.id} type="button" className="ca-q__opt" title={o.description} data-on={picked.includes(o.id) || undefined} onClick={() => toggle(o.id)}>
-            <span className="ca-q__letter">{LETTERS[i] ?? String(i + 1)}</span>
-            <span className="ca-q__text">{o.label}</span>
-            {recommended.has(o.id) && <span className="ca-q__rec">{t('chatMessage.recommended')}</span>}
-          </button>
-        ))}
-        {allowOther && (
-          <button type="button" className="ca-q__opt" data-on={otherOn || undefined} data-other="" onClick={toggleOther}>
-            <span className="ca-q__letter">{otherLetter}</span>
-            <span className="ca-q__text">{t('chatMessage.other')}</span>
-            {otherOn && (
-              <input
-                className="ca-q__input"
-                value={other}
-                placeholder={t('chatMessage.writeYourIdea')}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setOther(e.target.value)}
-                onKeyDown={(e) => e.stopPropagation()}
-                autoFocus
-              />
-            )}
-          </button>
+        {showPager && (
+          <div className="ca-q__page">
+            <button type="button" className="ca-q__chev" disabled={page <= 1} aria-label={t('chatMessage.prevPage')} onClick={() => go(page - 1)}>
+              <span className="ca-icon ca-q__chev-icon ca-q__chev-icon--left">{Icons.next}</span>
+            </button>
+            <span>{t('chatMessage.pageOf', page, pageCount)}</span>
+            <button type="button" className="ca-q__chev" disabled={page >= pageCount || (page >= furthest && !pageOk)} aria-label={t('chatMessage.nextPage')} onClick={() => { if (page < furthest || pageOk) go(page + 1) }}>
+              <span className="ca-icon ca-q__chev-icon">{Icons.next}</span>
+            </button>
+          </div>
         )}
+      </div>
+      <div className="ca-q__body">
+        {onPage.map((q) => (
+          <QuestionBlock key={q.id} q={q} st={states[q.id] ?? { selected: [], otherOn: false, other: '' }} onChange={(next) => setQ(q.id, next)} />
+        ))}
       </div>
       {error && <div className="ca-chat__hint">{error}</div>}
       <div className="ca-q__foot">
-        {allowSkip && <button type="button" className="ca-q__skip" onClick={() => submit([], '')}>{t('chatMessage.skip')}</button>}
-        <button type="button" className="ca-q__submit" disabled={!canSubmit} onClick={() => submit(picked, otherOn ? other.trim() : '')}>{t('chatMessage.submit')}</button>
+        {allowSkip && <button type="button" className="ca-q__skip" onClick={onSkip}>{t('chatMessage.skip')}</button>}
+        {isLast ? (
+          <button type="button" className="ca-q__submit" disabled={!allOk} onClick={onSubmit}>{t('chatMessage.submit')} <span className="ca-q__key">↵</span></button>
+        ) : (
+          <button type="button" className="ca-q__submit" disabled={!pageOk} onClick={onNext}>{t('chatMessage.next')} <span className="ca-icon ca-q__key-icon">{Icons.next}</span></button>
+        )}
       </div>
     </div>
   )

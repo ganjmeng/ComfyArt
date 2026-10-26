@@ -8,6 +8,18 @@ import { lang, t } from './i18n'
 import { wsBodyError } from './wsErrors'
 
 export interface AskOption { id: string; label: string; description?: string; recommended?: boolean }
+export interface AskQuestion {
+  id: string
+  prompt: string
+  options?: AskOption[]
+  min_selections?: number
+  max_selections?: number
+  allow_other?: boolean
+  defaults?: string[]
+  page?: number
+  placeholder?: string
+}
+export type AskAnswers = Record<string, { selected: string[]; other_text?: string }>
 export interface BotBlock {
   type: string
   text?: string
@@ -29,6 +41,8 @@ export interface BotBlock {
   defaults?: string[]
   page?: number
   page_count?: number
+  questions?: AskQuestion[]
+  answers?: AskAnswers
   kind?: string
   lines?: { text: string; price: string }[]
   total?: string
@@ -228,9 +242,12 @@ export async function stopTurn() {
   if (chat?.busy) await json(`/comfyart/bot/chats/${chat.id}/stop`, { method: 'POST' })
 }
 
-export async function answerAsk(askId: string, selected: string[], other: string) {
+export async function answerAsk(askId: string, selected: string[], other: string, answers?: AskAnswers) {
   const chat = currentChat()
-  if (chat) await json(`/comfyart/bot/chats/${chat.id}/asks/${askId}/answer`, send({ selected, other_text: other }))
+  if (!chat) return
+  const body: Record<string, unknown> = { selected, other_text: other }
+  if (answers !== undefined) body.answers = answers
+  await json(`/comfyart/bot/chats/${chat.id}/asks/${askId}/answer`, send(body))
 }
 
 export async function updateChat(id: string, patch: Partial<Pick<BotChat, 'title' | 'run_mode' | 'pinned' | 'archived'>>) {
@@ -306,7 +323,7 @@ const reducers: Record<string, (e: any) => void> = {
     if (chatsAtom.get().some((c) => c.id === e.chat_id)) void notify({ kind: 'suggestion', title: t('bot.agentIsWaitingForYour'), body: e.prompt, chat: e.chat_id })
   },
   turn_ask_resolved: (e) => patchMessages(e.chat_id, e.message_id, (m) => ({
-    ...m, blocks: m.blocks.map((b) => (b.type === 'ask' && b.ask_id === e.ask_id ? { ...b, status: e.status, selected: e.selected ?? b.selected, other_text: e.other_text ?? b.other_text } : b)),
+    ...m, blocks: m.blocks.map((b) => (b.type === 'ask' && b.ask_id === e.ask_id ? { ...b, status: e.status, selected: e.selected ?? b.selected, other_text: e.other_text ?? b.other_text, answers: e.answers ?? b.answers } : b)),
   })),
   turn_done: (e) => {
     setAgentPlanConfirmed(false)

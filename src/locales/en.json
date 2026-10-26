@@ -1289,5 +1289,9 @@
   "agentSetup.checkAgain": "Check again",
   "agentSetup.viewGuide": "View guide",
   "imageToolbar.moreTools": "More Tools",
-  "imageToolbar.unpin": "Unpin"
+  "imageToolbar.unpin": "Unpin",
+  "chatMessage.next": "Next",
+  "chatMessage.pageOf": "{0} of {1}",
+  "chatMessage.prevPage": "Previous page",
+  "chatMessage.nextPage": "Next page"
 }

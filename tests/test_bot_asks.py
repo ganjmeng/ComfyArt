@@ -102,3 +102,101 @@ def test_allow_skip_false_explicit():
         "prompt": "q", "options": OPTS, "allow_skip": False,
     })
     assert spec["allow_skip"] is False
+
+
+def test_validate_spec_questions_multi_and_paging():
+    spec = bot_asks.validate_spec({
+        "questions": [
+            {
+                "id": "brand",
+                "prompt": "Brand name?",
+                "allow_other": True,
+                "options": [],
+                "page": 1,
+            },
+            {
+                "id": "style",
+                "prompt": "Style?",
+                "options": OPTS,
+                "page": 1,
+            },
+            {
+                "id": "pack",
+                "prompt": "Packaging?",
+                "options": [
+                    {"id": "bag", "label": "Bag"},
+                    {"id": "box", "label": "Box"},
+                    {"id": "can", "label": "Can"},
+                ],
+                "max_selections": 2,
+                "page": 2,
+            },
+        ],
+        "page_count": 2,
+        "allow_skip": True,
+    })
+    assert spec["kind"] == bot_asks.QUESTION_KIND
+    assert spec["page_count"] == 2
+    assert len(spec["questions"]) == 3
+    assert spec["prompt"] == "Brand name?"
+    assert spec["questions"][0]["options"] == []
+    assert spec["questions"][0]["allow_other"] is True
+
+
+def test_validate_spec_questions_rejects_bad():
+    with pytest.raises(ValueError, match="duplicate question"):
+        bot_asks.validate_spec({
+            "questions": [
+                {"id": "a", "prompt": "A?", "options": OPTS},
+                {"id": "a", "prompt": "B?", "options": OPTS},
+            ],
+        })
+    with pytest.raises(ValueError, match="allow_other"):
+        bot_asks.validate_spec({
+            "questions": [
+                {"id": "a", "prompt": "A?", "options": []},
+            ],
+        })
+    with pytest.raises(ValueError, match="exceed page_count"):
+        bot_asks.validate_spec({
+            "questions": [
+                {"id": "a", "prompt": "A?", "options": OPTS, "page": 3},
+            ],
+            "page_count": 2,
+        })
+
+
+def test_validate_answer_answers_map():
+    spec = bot_asks.validate_spec({
+        "questions": [
+            {"id": "brand", "prompt": "Brand?", "allow_other": True, "options": [], "page": 1},
+            {"id": "style", "prompt": "Style?", "options": OPTS, "page": 1},
+        ],
+        "page_count": 1,
+        "allow_skip": False,
+    })
+    bot_asks.validate_answer(spec, [], "", {
+        "brand": {"selected": [], "other_text": "Acme"},
+        "style": {"selected": ["a"]},
+    })
+    with pytest.raises(ValueError, match="missing answers"):
+        bot_asks.validate_answer(spec, [], "", {"brand": {"selected": [], "other_text": "Acme"}})
+    with pytest.raises(ValueError, match="at least"):
+        bot_asks.validate_answer(spec, [], "", {
+            "brand": {"selected": [], "other_text": "Acme"},
+            "style": {"selected": []},
+        })
+
+
+def test_validate_answer_answers_skip():
+    spec = bot_asks.validate_spec({
+        "questions": [
+            {"id": "a", "prompt": "A?", "options": OPTS},
+            {"id": "b", "prompt": "B?", "options": OPTS},
+        ],
+    })
+    bot_asks.validate_answer(spec, [], "", {})
+    bot_asks.validate_answer(spec, [], "", {
+        "a": {"selected": []},
+        "b": {"selected": []},
+    })
