@@ -14,7 +14,7 @@ import type { AudioShape } from '../shapes/EmbedShapes'
 import { loadSkills, saveSkill, skillAtom, type Skill } from '../skills'
 import { AssetGrid } from './AssetPicker'
 import { schedulesOpenAtom } from '../schedules'
-import { AgentExtras, AgentItems, useCurrentAgent } from './AgentPicker'
+import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPicker'
 import { AgentLogo } from './agentLogos'
 import { Icons } from './icons'
 import { ModelPrefs } from './ModelPrefs'
@@ -328,8 +328,8 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           within=".ca-composer"
           trigger={({ open, toggle }) => (
             <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' && agent ? providerLabel(agent) : modeInfo[1]} data-agent={mode === 'agent' && agent ? agent.id : undefined} data-open={open || undefined} onClick={toggle}>
-              {/* #306: pill = mode name (Agent/图像/视频), never agent product shortLabel like ComfyArt */}
-              {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span className="ca-composer__modetext">{modeInfo[1]}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-composer__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
+              {/* Ashley: agent pill shows product shortLabel (e.g. ComfyArt); image/video keep mode name. Home matches. */}
+              {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span className="ca-composer__modetext">{shortLabel(agent)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-composer__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
             </button>
           )}
         >

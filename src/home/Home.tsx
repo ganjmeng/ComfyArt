@@ -12,7 +12,7 @@ import { NoKeyNotice } from '../ui/NoKeyNotice'
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, refreshKeyStatus } from '../wavespeedKey'
 import { isEnter } from '../ui/keys'
 import { Popover } from '../ui/Popover'
-import { useCurrentAgent } from '../ui/AgentPicker'
+import { shortLabel, useCurrentAgent } from '../ui/AgentPicker'
 import { AgentLogo } from '../ui/agentLogos'
 import { ComposerSlot, useSlot } from '../ui/ComposerSlot'
 import { MODE_OPTIONS, modeOf } from '../ui/modeOptions'
@@ -151,8 +151,8 @@ export function Home() {
           <button type="button" className="ca-rail__btn" title={t('home.addImage')} onClick={() => file.current?.click()}><span className="ca-icon">{Icons.plus}</span></button>
           <Popover open={modeMenu} onOpenChange={setModeMenu} trigger={({ open, toggle }) => (
             <button type="button" className="ca-landing__mode" title={mode === 'agent' && current ? providerLabel(current) : modeInfo[1]} data-agent={mode === 'agent' && current ? current.id : undefined} data-open={open || undefined} onClick={toggle}>
-              {/* #306: same as canvas composer — mode name, not agent shortLabel */}
-              {mode === 'agent' && current ? <><AgentLogo id={current.id} /><span className="ca-landing__modetext">{modeInfo[1]}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-landing__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
+              {/* Ashley: same as canvas — agent pill = shortLabel (ComfyArt); image/video = mode name */}
+              {mode === 'agent' && current ? <><AgentLogo id={current.id} /><span className="ca-landing__modetext">{shortLabel(current)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-landing__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
             </button>
           )}>
             <div className="ca-menu">
