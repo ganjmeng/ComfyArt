@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useValue } from 'tldraw'
 
-import { BUILTIN_AGENT, botEnabledAtom, providerLabel, providersAtom, refreshBot, saveSettings, settingsAtom, type BotSettings as Settings, type ProviderInfo } from '../bot'
+import { BUILTIN_AGENT, botEnabledAtom, providerLabel, providersAtom, refreshBot, saveSettings, settingsAtom, testLocalLlm, type BotSettings as Settings, type LocalLlmTestCode, type ProviderInfo } from '../bot'
 import { errorText } from '../jobs'
 import { agentSetupFocusAtom, botSettingsOpenAtom } from './AgentPicker'
 import { docsUrl } from './SettingsMenu'
@@ -16,6 +16,7 @@ const TEXT_FIELDS: [string, string, string, ('text' | 'password')?][] = [
   ['bot-local-llm-key', t('botSettings.localLlmKey'), t('botSettings.localLlmKeyHint'), 'password'],
   ['bot-comfy-mcp-command', t('botSettings.comfyMcpCommand'), t('botSettings.leaveEmptyToFindComfy')],
 ]
+const LLM_FIELD_KEYS = new Set(['bot-local-llm-url', 'bot-model-local-llm', 'bot-local-llm-key'])
 const SWITCHES: [string, string][] = [
   ['enable-mcp', t('botSettings.enableMcpLetTheAgent')],
   ['enable-bot', t('botSettings.enableAgentUseCommandLine')],
@@ -26,8 +27,18 @@ const FLAGS: [string, string][] = [
 
 const URL_KEY = 'bot-local-llm-url'
 const KEY_KEY = 'bot-local-llm-key'
+const MODEL_KEY = 'bot-model-local-llm'
 const WAVESPEED_HOST = 'llm.wavespeed.ai'
 const hostOf = (url: unknown) => { try { return new URL(String(url ?? '').trim()).hostname.toLowerCase() } catch { return '' } }
+
+const TEST_MSG: Record<LocalLlmTestCode, (model?: string) => string> = {
+  ok: () => t('botSettings.testOk'),
+  no_url: () => t('botSettings.testNoUrl'),
+  unreachable: () => t('botSettings.testUnreachable'),
+  auth_failed: () => t('botSettings.testAuthFailed'),
+  model_missing: (model) => t('botSettings.testModelMissing', model || ''),
+  timeout: () => t('botSettings.testTimeout'),
+}
 
 export function BotSettings({ onError }: { onError: (msg: string) => void }) {
   const open = useValue(botSettingsOpenAtom)
@@ -35,6 +46,8 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
   const providers = useValue(providersAtom)
   const enabled = useValue(botEnabledAtom)
   const [draft, setDraft] = useState<Settings>({})
+  const [testing, setTesting] = useState(false)
+  const [testState, setTestState] = useState<{ ok: boolean; text: string } | null>(null)
   // #219: a stored custom key belongs to its host; a new host clears it (the backend enforces the same rule)
   const hostChanged = hostOf(draft[URL_KEY]) !== hostOf(settings[URL_KEY])
   const keyCleared = hostChanged && !!settings[KEY_KEY] && hostOf(draft[URL_KEY]) !== WAVESPEED_HOST
@@ -43,17 +56,36 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
     if (key === URL_KEY && hostOf(value) !== hostOf(settings[URL_KEY]) && draft[KEY_KEY] === settings[KEY_KEY]) next[KEY_KEY] = ''
     if (key === URL_KEY && hostOf(value) === hostOf(settings[URL_KEY])) next[KEY_KEY] = settings[KEY_KEY] ?? ''
     setDraft(next)
+    setTestState(null)
   }
 
   useEffect(() => {
     if (open) void refreshBot().catch((e) => onError(errorText(e)))
   }, [open])
 
-  useEffect(() => setDraft(settings), [settings])
+  useEffect(() => { setDraft(settings); setTestState(null) }, [settings])
 
   if (!open) return null
   const close = () => botSettingsOpenAtom.set(false)
   const save = () => void saveSettings(draft).then(() => refreshBot()).then(close).catch((e) => onError(errorText(e)))
+  const testConnection = () => {
+    if (testing) return
+    setTesting(true)
+    setTestState(null)
+    void testLocalLlm({
+      url: String(draft[URL_KEY] ?? ''),
+      key: String(draft[KEY_KEY] ?? ''),
+      model: String(draft[MODEL_KEY] ?? ''),
+    }).then((r) => {
+      const code = (r.code in TEST_MSG ? r.code : 'unreachable') as LocalLlmTestCode
+      setTestState({ ok: !!r.ok, text: TEST_MSG[code](r.model) })
+    }).catch(() => {
+      setTestState({ ok: false, text: t('botSettings.testFailed') })
+    }).finally(() => setTesting(false))
+  }
+
+  const llmFields = TEXT_FIELDS.filter(([key]) => LLM_FIELD_KEYS.has(key))
+  const otherFields = TEXT_FIELDS.filter(([key]) => !LLM_FIELD_KEYS.has(key))
 
   return (
     <Modal className="ca-botsettings" title={t('botSettings.agentSettings')} onClose={close}>
@@ -64,11 +96,27 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
             <span>{label}</span>
           </label>
         ))}
-        {TEXT_FIELDS.map(([key, label, hint, type]) => (
+        {llmFields.map(([key, label, hint, type]) => (
           <label key={key} className="ca-rename__field">
             <span>{label}</span>
             <input className="ca-panel__input" type={type ?? 'text'} autoComplete="off" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => edit(key, e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
             {key === KEY_KEY && keyCleared && !draft[KEY_KEY] && <span className="ca-adv__help">{t('botSettings.urlChangedReenterKey')}</span>}
+          </label>
+        ))}
+        <div className="ca-botsettings__test" data-testid="local-llm-test">
+          <button type="button" className="ca-panel__secondary" disabled={testing} onClick={testConnection}>
+            {testing ? t('botSettings.testing') : t('botSettings.testConnection')}
+          </button>
+          {testState && (
+            <span className="ca-botsettings__testmsg" data-ok={testState.ok || undefined} data-err={!testState.ok || undefined} role="status">
+              {testState.text}
+            </span>
+          )}
+        </div>
+        {otherFields.map(([key, label, hint, type]) => (
+          <label key={key} className="ca-rename__field">
+            <span>{label}</span>
+            <input className="ca-panel__input" type={type ?? 'text'} autoComplete="off" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => edit(key, e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
           </label>
         ))}
         <div className="ca-chat__hint">{t('botSettings.claudeCodeCodexQwenCode')}</div>

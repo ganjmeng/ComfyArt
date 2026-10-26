@@ -298,5 +298,33 @@ async def bot_answer_ask(request: web.Request) -> web.Response:
     return web.json_response({"ok": True}, status=202)
 
 
+
+@routes.post("/comfyart/bot/local-llm/test")
+async def bot_test_local_llm(request: web.Request) -> web.Response:
+    """#321: test Local LLM URL / key / model from the settings draft (no chat turn)."""
+    import os
+
+    from ..bot.local_llm import _API_KEY_ENV, test_local_llm
+    from .llm_key import is_wavespeed_url, llm_api_key
+    from .settings import MASK, get_setting
+
+    body = await json_body(request)
+    url = str(body["url"] if "url" in body else get_setting("bot-local-llm-url") or "").strip()
+    model = str(body["model"] if "model" in body else get_setting("bot-model-local-llm") or "").strip()
+    raw_key = body.get("key")
+    env = os.environ.get(_API_KEY_ENV, "")
+    if env:
+        key = env
+    elif raw_key is not None and raw_key != MASK:
+        key = str(raw_key).strip()
+        if not key and is_wavespeed_url(url):
+            key = llm_api_key(url)
+    else:
+        key = llm_api_key(url)
+    result = await test_local_llm(base_url=url, api_key=key, model=model)
+    return web.json_response(result)
+
+
+
 def reap_stale_messages() -> None:
     chat_store.abort_unfinished()

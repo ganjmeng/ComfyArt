@@ -531,3 +531,123 @@ class TestPruneScreenshots233:
         from ComfyArt.bot.local_llm import _prune_screenshots
         msgs = [self._shot("a", "u1"), self._shot("b", "u2")]
         assert _prune_screenshots(msgs) == msgs
+
+
+class TestLocalLlmTest321:
+    """#321: light probe for Settings → Local LLM「测试连接」."""
+
+    async def test_no_url(self):
+        from ComfyArt.bot.local_llm import test_local_llm
+        assert await test_local_llm(base_url="") == {"ok": False, "code": "no_url"}
+        assert await test_local_llm(base_url="   ") == {"ok": False, "code": "no_url"}
+
+    async def test_ok_and_model_missing(self):
+        from aiohttp import web
+        from aiohttp.test_utils import TestServer
+        from ComfyArt.bot.local_llm import test_local_llm
+
+        app = web.Application()
+        seen = {}
+
+        async def models(request):
+            seen["auth"] = request.headers.get("Authorization")
+            return web.json_response({"data": [{"id": "alpha"}, {"id": "beta"}]})
+
+        app.router.add_get("/v1/models", models)
+        server = TestServer(app)
+        await server.start_server()
+        try:
+            base = str(server.make_url("/v1"))
+            ok = await test_local_llm(base_url=base, api_key="k", model="alpha")
+            assert ok["ok"] and ok["code"] == "ok" and "alpha" in ok["models"]
+            assert seen["auth"] == "Bearer k"
+            miss = await test_local_llm(base_url=base, model="nope")
+            assert miss == {"ok": False, "code": "model_missing", "model": "nope",
+                            "models": ["alpha", "beta"]}
+            # empty model list: cannot verify → still ok
+            empty_ok = await test_local_llm(base_url=base, model="")
+            assert empty_ok["ok"] and empty_ok["code"] == "ok"
+        finally:
+            await server.close()
+
+    async def test_auth_failed(self):
+        from aiohttp import web
+        from aiohttp.test_utils import TestServer
+        from ComfyArt.bot.local_llm import test_local_llm
+
+        app = web.Application()
+
+        async def models(request):
+            return web.Response(status=401, text="unauthorized")
+
+        app.router.add_get("/v1/models", models)
+        server = TestServer(app)
+        await server.start_server()
+        try:
+            r = await test_local_llm(base_url=str(server.make_url("/v1")), api_key="bad")
+            assert r["ok"] is False and r["code"] == "auth_failed" and r["status"] == 401
+        finally:
+            await server.close()
+
+    async def test_unreachable(self):
+        from ComfyArt.bot.local_llm import test_local_llm
+        r = await test_local_llm(base_url="http://127.0.0.1:1/v1", timeout=0.5)
+        assert r["ok"] is False and r["code"] == "unreachable"
+
+    async def test_timeout(self, monkeypatch):
+        import asyncio
+        from ComfyArt.bot import local_llm
+
+        class SlowSession:
+            def __init__(self, *a, **k): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *a): pass
+            def get(self, *a, **k):
+                raise asyncio.TimeoutError()
+
+        monkeypatch.setattr(local_llm.aiohttp, "ClientSession", SlowSession)
+        r = await local_llm.test_local_llm(base_url="http://x/v1")
+        assert r == {"ok": False, "code": "timeout"}
+
+
+class TestLocalLlmTestRoute321:
+    async def test_route_uses_draft_and_codes(self, bot_client):
+        from aiohttp import web
+        from aiohttp.test_utils import TestServer
+        from conftest import write_settings
+
+        app = web.Application()
+
+        async def models(request):
+            auth = request.headers.get("Authorization")
+            if auth != "Bearer draft-key":
+                return web.Response(status=403, text="no")
+            return web.json_response({"data": [{"id": "m1"}]})
+
+        app.router.add_get("/v1/models", models)
+        server = TestServer(app)
+        await server.start_server()
+        try:
+            base = str(server.make_url("/v1"))
+            write_settings(**{"bot-local-llm-url": "http://old/v1", "bot-model-local-llm": "old",
+                              "bot-local-llm-key": "saved-key"})
+            # draft overrides saved; wrong key → auth_failed
+            res = await bot_client.post("/comfyart/bot/local-llm/test",
+                                        json={"url": base, "key": "wrong", "model": "m1"})
+            assert res.status == 200
+            body = await res.json()
+            assert body["ok"] is False and body["code"] == "auth_failed"
+            # draft key works
+            res = await bot_client.post("/comfyart/bot/local-llm/test",
+                                        json={"url": base, "key": "draft-key", "model": "m1"})
+            assert (await res.json()) == {"ok": True, "code": "ok", "models": ["m1"]}
+            # model missing
+            res = await bot_client.post("/comfyart/bot/local-llm/test",
+                                        json={"url": base, "key": "draft-key", "model": "ghost"})
+            body = await res.json()
+            assert body["code"] == "model_missing" and body["model"] == "ghost"
+            # empty url in draft
+            res = await bot_client.post("/comfyart/bot/local-llm/test", json={"url": "", "key": "", "model": ""})
+            assert (await res.json())["code"] == "no_url"
+        finally:
+            await server.close()
