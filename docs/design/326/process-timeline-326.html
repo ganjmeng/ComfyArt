@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"/><title>#326 process-timeline</title>
+<style>
+:root{
+  --ca-font:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --ca-text:rgba(0,0,0,.9);
+  --ca-muted:rgba(0,0,0,.3);
+  --ca-float:#fff;
+  --page:#e8e8e8;
+  --chip-bg:rgba(0,0,0,.06);
+  --chip-border:rgba(0,0,0,.08);
+  --line:rgba(0,0,0,.18);
+}
+[data-theme=dark]{
+  --ca-text:rgba(255,255,255,.9);
+  --ca-muted:rgba(255,255,255,.4);
+  --ca-float:#1c1c1c;
+  --page:#111;
+  --chip-bg:rgba(255,255,255,.08);
+  --chip-border:rgba(255,255,255,.1);
+  --line:rgba(255,255,255,.22);
+}
+*{box-sizing:border-box}
+body{margin:0;padding:28px;font:400 13px/20px var(--ca-font);background:var(--page);color:var(--ca-text)}
+h1{font:600 15px/22px var(--ca-font);margin:0 0 6px}
+.hint{color:var(--ca-muted);font-size:12px;margin:0 0 18px;line-height:1.45}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:900px}
+.panel{background:var(--ca-float);border-radius:14px;padding:16px 14px}
+.label{font-size:10px;color:var(--ca-muted);margin-bottom:14px;letter-spacing:.04em;text-transform:uppercase}
+.timeline{position:relative;padding-left:0}
+.trow{display:grid;grid-template-columns:18px 1fr;column-gap:10px;align-items:start;position:relative;padding-bottom:16px}
+.trow:last-child{padding-bottom:0}
+.icon-col{position:relative;width:18px;display:flex;justify-content:center;padding-top:2px}
+.icon{flex:none;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:var(--ca-muted);position:relative;z-index:1;background:var(--ca-float)}
+.icon svg{width:16px;height:16px;display:block}
+/* dashed vertical rail through icon centers */
+.trow:not(:last-child) .icon-col::after{
+  content:"";
+  position:absolute;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  width:0;
+  bottom:-16px;
+  border-left:1.5px dashed var(--line);
+  z-index:0;
+}
+.body{min-width:0;padding-top:1px}
+.title{font-weight:500;line-height:18px}
+.static{color:var(--ca-muted)}
+.shine{
+  background:linear-gradient(100deg,var(--ca-muted) 30%,var(--ca-text) 50%,var(--ca-muted) 70%) 0 0/300% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:shine 1.2s linear infinite;font-weight:500
+}
+@keyframes shine{from{background-position:100% 0}to{background-position:0 0}}
+.chip{
+  display:inline-flex;align-items:center;margin-top:6px;
+  font-size:11px;line-height:16px;font-weight:500;
+  color:var(--ca-muted);
+  background:var(--chip-bg);
+  border:1px solid var(--chip-border);
+  border-radius:999px;padding:2px 8px
+}
+.note{margin-top:20px;font-size:12px;color:var(--ca-muted);max-width:900px;line-height:1.5}
+code{font-size:11px;background:rgba(127,127,127,.12);padding:1px 4px;border-radius:3px}
+</style></head><body>
+<h1>#326 — Agent 过程卡完整时间线</h1>
+<p class="hint">Icons 静态描边 ~16px muted；仅活跃行标题 shimmer；无 spinner / check / breath / halo。完成行 muted 静态文案；活跃行下方 status chip。</p>
+<div class="grid">
+  <!-- Light -->
+  <div class="panel">
+    <div class="label">Light · process timeline</div>
+    <div class="timeline">
+      <div class="trow">
+        <div class="icon-col"><span class="icon" aria-hidden="true">
+          <!-- Thought / clock-circle = Icons.think -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5v5l3 1.8"/></svg>
+        </span></div>
+        <div class="body"><div class="title static">Thought</div></div>
+      </div>
+      <div class="trow">
+        <div class="icon-col"><span class="icon" aria-hidden="true">
+          <!-- Skill / document = Icons.skill -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7.2L19 8.3V20.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4.8"/><path d="M9.5 12h5M9.5 15.5h5"/></svg>
+        </span></div>
+        <div class="body"><div class="title static">Skill ready</div></div>
+      </div>
+      <div class="trow">
+        <div class="icon-col"><span class="icon" aria-hidden="true">
+          <!-- Search / globe (NOT magnifier) -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M4.5 12h15"/><path d="M12 4c2.2 2.4 3.3 4.9 3.3 8S14.2 17.6 12 20c-2.2-2.4-3.3-4.9-3.3-8S9.8 6.4 12 4z"/></svg>
+        </span></div>
+        <div class="body">
+          <div class="title shine">Searching the web</div>
+          <span class="chip">Searching the web</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dark -->
+  <div class="panel" data-theme="dark" style="background:#1c1c1c;color:rgba(255,255,255,.9)">
+    <div class="label" style="color:rgba(255,255,255,.4)">Dark · process timeline</div>
+    <div class="timeline" style="--ca-muted:rgba(255,255,255,.4);--ca-text:rgba(255,255,255,.9);--ca-float:#1c1c1c;--chip-bg:rgba(255,255,255,.08);--chip-border:rgba(255,255,255,.1);--line:rgba(255,255,255,.22)">
+      <div class="trow">
+        <div class="icon-col"><span class="icon" aria-hidden="true" style="color:rgba(255,255,255,.4);background:#1c1c1c">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5v5l3 1.8"/></svg>
+        </span></div>
+        <div class="body"><div class="title static" style="color:rgba(255,255,255,.4)">Thought</div></div>
+      </div>
+      <div class="trow">
+        <div class="icon-col"><span class="icon" aria-hidden="true" style="color:rgba(255,255,255,.4);background:#1c1c1c">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7.2L19 8.3V20.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4.8"/><path d="M9.5 12h5M9.5 15.5h5"/></svg>
+        </span></div>
+        <div class="body"><div class="title static" style="color:rgba(255,255,255,.4)">Skill ready</div></div>
+      </div>
+      <div class="trow">
+        <div class="icon-col"><span class="icon" aria-hidden="true" style="color:rgba(255,255,255,.4);background:#1c1c1c">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M4.5 12h15"/><path d="M12 4c2.2 2.4 3.3 4.9 3.3 8S14.2 17.6 12 20c-2.2-2.4-3.3-4.9-3.3-8S9.8 6.4 12 4z"/></svg>
+        </span></div>
+        <div class="body">
+          <div class="title" style="background:linear-gradient(100deg,rgba(255,255,255,.4) 30%,rgba(255,255,255,.9) 50%,rgba(255,255,255,.4) 70%) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 1.2s linear infinite;font-weight:500">Searching the web</div>
+          <span class="chip" style="color:rgba(255,255,255,.4);background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1)">Searching the web</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="note">Icon map：Thought → <code>Icons.think</code>（clock-circle）；Skill ready → <code>Icons.skill</code>（document）；Searching the web → <strong>new globe</strong>（非 magnifier search）。#325 仍为 Thought-only v4；本卡拥有完整过程时间线。相关清单见 #323。</p>
+</body></html>
