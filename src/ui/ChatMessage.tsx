@@ -16,6 +16,48 @@ import { stepState } from './stepState'
 
 const GEN_TOOLS = new Set(['generate_image', 'generate_video', 'edit_image', 'animate_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers', 'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer', 'extend_video', 'upscale_video', 'remove_video_background', 'generate_music', 'generate_sound_effect', 'text_to_speech', 'image_to_3d', 'edit_elements', 'create_mockup', 'create_slides'])
 
+/** #326 process-timeline kinds (Lovart multi-step card). */
+type ProcessKind = 'thought' | 'skill' | 'search' | 'image' | 'video' | 'tool'
+
+const VIDEO_TOOLS = new Set(['generate_video', 'animate_image', 'extend_video', 'upscale_video', 'remove_video_background'])
+const SEARCH_TOOLS = new Set(['WebSearch', 'web_search', 'google_web_search', 'WebFetch', 'web_fetch', 'websearch'])
+const IMAGE_PROCESS_TOOLS = new Set([
+  'generate_image', 'edit_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers',
+  'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer',
+  'edit_elements', 'create_mockup', 'create_slides', 'wait_generation', 'image_to_3d', 'vectorize_image',
+])
+
+const PROCESS_ICONS: Record<ProcessKind, ReactNode> = {
+  thought: Icons.think,
+  skill: Icons.scrollText,
+  search: Icons.globe,
+  image: Icons.imageLine,
+  video: Icons.videoLine,
+  tool: Icons.agent,
+}
+
+function processKindOf(b: BotBlock): ProcessKind | null {
+  if (b.type === 'thinking') return 'thought'
+  if (b.type !== 'tool_use') return null
+  const n = toolName(b.name)
+  if (n === 'skill' || n === 'Skill') return 'skill'
+  if (SEARCH_TOOLS.has(n) || /search|fetch/i.test(n) && /web/i.test(n)) return 'search'
+  if (VIDEO_TOOLS.has(n)) return 'video'
+  if (IMAGE_PROCESS_TOOLS.has(n)) return 'image'
+  // Other generation-ish tools still join the rail with a generic icon
+  if (GEN_TOOLS.has(n)) return n.includes('video') || n.includes('animate') ? 'video' : 'image'
+  return null
+}
+
+function processLabel(kind: ProcessKind, live: boolean, fallback?: string): string {
+  if (kind === 'thought') return live ? t('chatMessage.thinking') : t('chatMessage.thought')
+  if (kind === 'skill') return t('chatMessage.skillReady')
+  if (kind === 'search') return t('chatMessage.searchingWeb')
+  if (kind === 'image') return t('chatMessage.generatingImages')
+  if (kind === 'video') return t('chatMessage.generatingVideo')
+  return fallback || t('chatMessage.inProgress')
+}
+
 export function textOf(m: BotMessage): string {
   return m.blocks.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('').trim()
 }
@@ -459,6 +501,59 @@ function Plan({ b, live }: { b: BotBlock; live: boolean }) {
   )
 }
 
+type ProcessStep = {
+  key: string
+  kind: ProcessKind
+  label: string
+  live: boolean
+  text?: string
+}
+
+/** #326: Lovart-style multi-step process rail (solid spine · status card outside). */
+function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
+  const [openKey, setOpenKey] = useState<string | null>(null)
+  const live = steps.find((s) => s.live)
+  return (
+    <div className="ca-process" data-live={live ? true : undefined}>
+      <div className="ca-process__steps">
+        <div className="ca-process__spine" aria-hidden="true" />
+        {steps.map((s) => {
+          const canOpen = s.kind === 'thought' && !!s.text?.trim()
+          const open = openKey === s.key
+          const row = (
+            <>
+              <span className={`ca-process__icon ca-process__icon--${s.kind}`} data-kind={s.kind}>
+                <span className="ca-icon">{PROCESS_ICONS[s.kind]}</span>
+              </span>
+              <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>{s.label}</span>
+            </>
+          )
+          return (
+            <div key={s.key} className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind}>
+              {canOpen ? (
+                <button
+                  type="button"
+                  className="ca-process__rowbtn"
+                  onClick={() => setOpenKey(open ? null : s.key)}
+                  aria-expanded={open}
+                >
+                  {row}
+                </button>
+              ) : row}
+            </div>
+          )
+        })}
+      </div>
+      {live && <div className="ca-process__status">{live.label}</div>}
+      {steps.map((s) => (
+        openKey === s.key && s.text?.trim() ? (
+          <div key={`d-${s.key}`} className="ca-process__detail">{s.text.trim()}</div>
+        ) : null
+      ))}
+    </div>
+  )
+}
+
 function Thought({ text, live }: { text: string; live: boolean }) {
   const [open, setOpen] = useState(false)
   return (
@@ -501,23 +596,64 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   const outputs = done ? outputsOf(m.blocks.filter((b) => b.type !== 'task')) : []
   const items: ReactNode[] = []
   let run: Pair[] = []
+  let proc: ProcessStep[] = []
   const flush = (stopped = false) => {
     if (run.length > 1) items.push(<StepGroup key={`g${run[0].i}`} editor={editor} steps={run} stopped={stopped} />)
     else if (run.length) items.push(<Step key={run[0].i} editor={editor} use={run[0].use} result={run[0].result} thumbs={false} />)
     run = []
   }
+  const flushProc = () => {
+    if (!proc.length) return
+    const onlyThought = proc.every((s) => s.kind === 'thought')
+    // #325 single Thought row stays on Thought tip specs (no rail)
+    if (onlyThought && proc.length === 1) {
+      const s = proc[0]
+      items.push(<Thought key={s.key} text={s.text ?? ''} live={!!s.live} />)
+    } else {
+      items.push(<ProcessTimeline key={`pt${proc[0].key}`} steps={proc} />)
+    }
+    proc = []
+  }
   let planShown = false
   m.blocks.forEach((b, i) => {
+    const kind = processKindOf(b)
     if (isPlan(b)) {
       if (planShown) return
       planShown = true
+      flushProc()
       flush()
       items.push(<Plan key={`p${i}`} b={plan!} live={!done} />)
-    } else if (b.type === 'tool_use' && done) run.push({ use: b, result: resultOf(b, i), i })
-    else if (b.type !== 'tool_result') {
+      return
+    }
+    // #326: process-eligible blocks join the rail (live + done); skip tool_result siblings
+    if (kind && (b.type === 'thinking' ? !!b.text?.trim() : true) && b.type !== 'tool_result') {
+      // When done, process tool_use still rails (muted); do not also fold into StepGroup
+      if (b.type === 'tool_use' || b.type === 'thinking') {
+        flush() // non-process tool run ends before process rail
+        // Live = last block while streaming, or in-flight tool without result while no later process step
+        const stepLive = !done && (
+          i === m.blocks.length - 1
+          || (b.type === 'tool_use' && !resultOf(b, i) && !m.blocks.slice(i + 1).some((x) => processKindOf(x)))
+        )
+        proc.push({
+          key: `p${i}`,
+          kind,
+          label: processLabel(kind, stepLive, b.type === 'tool_use' ? toolLabel(b.name) : b.label),
+          live: stepLive,
+          text: b.type === 'thinking' ? b.text : undefined,
+        })
+        return
+      }
+    }
+    if (b.type === 'tool_use' && done) {
+      flushProc()
+      run.push({ use: b, result: resultOf(b, i), i })
+      return
+    }
+    if (b.type !== 'tool_result') {
+      flushProc()
       flush(b.type === 'notice' && b.level === 'error') // turn ended in error / loop-guard stop: reuse the failed icon
       if (b.type === 'text') items.push(<Markdown key={i} text={b.text ?? ''} />)
-      if (b.type === 'thinking' && b.text?.trim()) items.push(<Thought key={i} text={b.text} live={!done && i === m.blocks.length - 1} />)
       if (b.type === 'tool_use') items.push(<Step key={i} editor={editor} use={b} result={resultOf(b, i)} />)
       if (b.type === 'retry') items.push(<Retry key={i} b={b} live={!done && !m.blocks.slice(i + 1).some((x) => x.type === 'retry')} />)
       if (b.type === 'ask') items.push(renderAsk(b, b.ask_id ?? i))
@@ -525,6 +661,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       if (b.type === 'notice') items.push(<div key={i} className="ca-chat__notice" data-level={b.level}>{b.text}</div>)
     }
   })
+  flushProc()
   flush()
   if (outputs.length) items.push(<div key="results" className="ca-chat__thumbs ca-chat__results">{outputs.map((s) => <Thumb key={s} editor={editor} src={s} />)}</div>)
   return <>{items}</>

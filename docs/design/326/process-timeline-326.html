@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>#326 process-timeline v3.4</title>
+<style>
+:root{
+  --font:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --muted:rgba(0,0,0,.38);
+  --muted-active:rgba(0,0,0,.28);
+  --float:#fff;
+  --page:#f0f0f0;
+  --card-border:rgba(0,0,0,.09);
+  --card-text:rgba(0,0,0,.4);
+  --rail:rgba(0,0,0,.2);
+  --ico:16px;
+  --col:16px;
+  --gutter:12px;
+  --step:30px; /* icon-top → next icon-top */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{margin:0;padding:24px 28px 28px;font:400 13px/20px var(--font);background:var(--page);color:rgba(0,0,0,.9)}
+.sheet{max-width:720px;margin:0 auto}
+.cap{font:500 11px/16px var(--font);color:rgba(0,0,0,.45);margin:0 0 10px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
+.panel{background:var(--float);border-radius:12px;padding:18px 16px 16px}
+.panel.dark{
+  background:#1c1c1c;color:rgba(255,255,255,.9);
+  --muted:rgba(255,255,255,.4);
+  --muted-active:rgba(255,255,255,.28);
+  --float:#1c1c1c;
+  --card-border:rgba(255,255,255,.14);
+  --card-text:rgba(255,255,255,.45);
+  --rail:rgba(255,255,255,.22);
+}
+.panel-label{font:500 10px/14px var(--font);color:var(--muted);margin:0 0 14px;letter-spacing:.06em;text-transform:uppercase}
+
+/* Timeline: steps (icons+labels) then status card as sibling — spine never enters status */
+.timeline{display:flex;flex-direction:column}
+.steps{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  /* spine lives here; height = 4*step + ico */
+}
+
+/* ONE solid 1px spine on icon-column center, first→last icon center */
+.steps > .spine{
+  position:absolute;
+  left:calc(var(--col) / 2 - 0.5px);
+  top:calc(var(--ico) / 2);
+  bottom:calc(var(--ico) / 2);
+  width:1px;
+  background:var(--rail);
+  z-index:0;
+  pointer-events:none;
+}
+
+.row{
+  display:grid;
+  grid-template-columns:var(--col) var(--gutter) minmax(0,1fr);
+  align-items:start;
+  height:var(--step);
+  position:relative;
+}
+.row:last-child{
+  height:var(--ico); /* last icon row only — no extra step gap below */
+}
+
+.icon{
+  width:var(--col);
+  height:var(--ico);
+  display:flex;
+  align-items: start;
+  justify-content:center;
+  color:var(--muted);
+  background:var(--float); /* opaque punch over spine */
+  position:relative;
+  z-index:1;
+  /* slight vertical pad via box so AA fringe of spine is covered */
+  box-shadow:0 0 0 1px var(--float);
+}
+.icon svg{
+  width:var(--ico);
+  height:var(--ico);
+  display:block;
+  flex:none;
+}
+/* Optical ink-bias nudges only (±1px) — boxes stay on axis */
+.icon.opt-scroll svg{transform:translateX(0.5px)}
+.icon.opt-video svg{transform:translateX(0.5px)}
+
+.label{
+  grid-column:3;
+  height:var(--ico);
+  display:flex;
+  align-items: start;
+  font:500 13px/1 var(--font);
+  color:var(--muted);
+  white-space:nowrap;
+}
+.label.active{
+  background:linear-gradient(100deg,var(--muted-active) 28%,var(--muted) 48%,rgba(0,0,0,.55) 50%,var(--muted) 52%,var(--muted-active) 72%) 0 0/280% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:shine 1.4s linear infinite;
+}
+.panel.dark .label.active{
+  background:linear-gradient(100deg,rgba(255,255,255,.28) 28%,rgba(255,255,255,.4) 48%,rgba(255,255,255,.78) 50%,rgba(255,255,255,.4) 52%,rgba(255,255,255,.28) 72%) 0 0/280% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+@keyframes shine{from{background-position:100% 0}to{background-position:0 0}}
+
+.status-card{
+  margin-top:10px;
+  margin-left:calc(var(--col) + var(--gutter));
+  border:1px solid var(--card-border);
+  border-radius:12px;
+  padding:11px 14px;
+  font:500 13px/18px var(--font);
+  color:var(--card-text);
+}
+.attr{margin:2px 0 0;font:400 10.5px/1.5 var(--font);color:rgba(0,0,0,.4)}
+</style></head><body>
+<div class="sheet">
+  <p class="cap">v3.4 · single spine on icon-axis · equal step · labels centered · status outside rail</p>
+  <div class="pair">
+    <div class="panel" id="panel-light">
+      <div class="panel-label">Light</div>
+      <div class="timeline">
+        <div class="steps" data-steps>
+          <div class="spine" aria-hidden="true"></div>
+          <div class="row">
+            <span class="icon" data-icon="brain"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V5"/><path d="M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4"/><path d="M17.707 6.294A3 3 0 1012 5a3 3 0 10-5.707 1.294"/><path d="M17.996 5.125a4 4 0 012.526 5.77"/><path d="M18 18a4 4 0 002-7.465"/><path d="M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517"/><path d="M6 18a4 4 0 01-2-7.465"/><path d="M6.004 5.125a4 4 0 00-2.526 5.77"/></svg></span>
+            <div class="label">Thought</div>
+          </div>
+          <div class="row">
+            <span class="icon opt-scroll" data-icon="scroll"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg></span>
+            <div class="label">Skill ready</div>
+          </div>
+          <div class="row">
+            <span class="icon" data-icon="globe"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span>
+            <div class="label">Searching the web</div>
+          </div>
+          <div class="row">
+            <span class="icon" data-icon="image"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>
+            <div class="label">Generating images…</div>
+          </div>
+          <div class="row">
+            <span class="icon opt-video" data-icon="video"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg></span>
+            <div class="label active">Generating Video…</div>
+          </div>
+        </div>
+        <div class="status-card">Generating Video…</div>
+      </div>
+    </div>
+    <div class="panel dark" id="panel-dark">
+      <div class="panel-label">Dark</div>
+      <div class="timeline">
+        <div class="steps" data-steps>
+          <div class="spine" aria-hidden="true"></div>
+          <div class="row">
+            <span class="icon" data-icon="brain"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V5"/><path d="M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4"/><path d="M17.707 6.294A3 3 0 1012 5a3 3 0 10-5.707 1.294"/><path d="M17.996 5.125a4 4 0 012.526 5.77"/><path d="M18 18a4 4 0 002-7.465"/><path d="M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517"/><path d="M6 18a4 4 0 01-2-7.465"/><path d="M6.004 5.125a4 4 0 00-2.526 5.77"/></svg></span>
+            <div class="label">Thought</div>
+          </div>
+          <div class="row">
+            <span class="icon opt-scroll" data-icon="scroll"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg></span>
+            <div class="label">Skill ready</div>
+          </div>
+          <div class="row">
+            <span class="icon" data-icon="globe"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></span>
+            <div class="label">Searching the web</div>
+          </div>
+          <div class="row">
+            <span class="icon" data-icon="image"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></span>
+            <div class="label">Generating images…</div>
+          </div>
+          <div class="row">
+            <span class="icon opt-video" data-icon="video"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg></span>
+            <div class="label active">Generating Video…</div>
+          </div>
+        </div>
+        <div class="status-card">Generating Video…</div>
+      </div>
+    </div>
+  </div>
+  <p class="attr">v3.4 · spine = pure CSS top/bottom 8px of steps · Lucide Brain · ScrollText · Globe · Image · Video</p>
+</div>
+</body></html>
