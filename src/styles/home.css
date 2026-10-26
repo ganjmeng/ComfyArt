@@ -91,7 +91,7 @@ body { background: var(--ca-float); }
 .ca-missing p { margin: 0; max-width: 420px; color: var(--ca-muted); font: 400 14px/22px var(--ca-font); }
 .ca-missing__acts { display: flex; gap: 8px; margin-top: 8px; }
 
-/* #287: model / settings pills on the home bar fold to icons on narrow screens */
+/* #287/#349: Home foot DirectPills ≡ canvas (same component + 32px tokens); fold to icons on narrow */
 .ca-landing__foot .ca-gen__pill { min-width: 0; }
 @media (max-width: 480px) {
   .ca-landing__foot [data-pill] > .ca-gen__pilltext { display: none; }

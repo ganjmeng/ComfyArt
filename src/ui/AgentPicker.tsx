@@ -1,13 +1,12 @@
-import { useState } from 'react'
 import { atom, useValue } from 'tldraw'
 
 import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, lostProvider, NO_KEY_DETAIL, providerLabel, messagesAtom, newProviderAtom, openChat, providersAtom, saveSettings, settingsAtom, updateChat, type ProviderInfo } from '../bot'
 import { errorText } from '../jobs'
 import { confirmAtom } from './Confirm'
 import { AgentLogo } from './agentLogos'
+import { FieldSelect } from './FieldSelect'
 import { Icons } from './icons'
 import { t } from '../i18n'
-import { Popover } from './Popover'
 
 export const botSettingsOpenAtom = atom('bot settings open', false)
 // #247: which tool card the Agent settings should scroll to when opened from 去配置
@@ -104,45 +103,27 @@ export function AgentExtras({ onError, close }: { onError: (msg: string) => void
   const model = String(settings[modelKey] ?? '')
   const options = provider?.model_options ?? provider?.models.map((m) => ({ value: m, label: m, group: '' })) ?? []
   const fail = (e: unknown) => onError(errorText(e))
-  const [modelOpen, setModelOpen] = useState(false)
-  // #316: label for trigger — empty value shows Default; otherwise full id (ellipsis + title)
-  const modelLabel = (() => {
-    if (!model) return t('common.default')
-    const hit = options.find((o) => o.value === model)
-    return hit ? (hit.group ? `${hit.group} · ${hit.label}` : hit.label) : model
-  })()
-  const pickModel = (value: string) => {
-    setModelOpen(false)
-    void saveSettings({ [modelKey]: value }).catch(fail)
-  }
+  // #349: shared FieldSelect (same bot-model-* source for Home + canvas; #316 tokens via .ca-fieldselect)
+  const fieldOptions = [
+    { id: '', label: t('common.default') },
+    ...options.map((o) => ({
+      id: o.value,
+      label: o.group ? `${o.group} · ${o.label}` : o.label,
+      title: o.value,
+    })),
+  ]
   return (
     <>
       {options.length > 0 && (
         <div className="ca-agentpick__section">
           <div className="ca-agentpick__sectiontitle">{t('agentPicker.model')}</div>
-          <Popover open={modelOpen} onOpenChange={setModelOpen} side="bottom" align="start" trigger={({ open, toggle }) => (
-            <button type="button" className="ca-agentpick__modelbtn" data-open={open || undefined} title={model || t('common.default')} onClick={toggle}>
-              <span className="ca-agentpick__modeltext">{modelLabel}</span>
-              <span className="ca-icon">{Icons.chevron}</span>
-            </button>
-          )}>
-            <div className="ca-menu ca-agentpick__modelmenu">
-              <button type="button" className="ca-menu__item" data-on={!model || undefined} onClick={() => pickModel('')}>
-                <span className="ca-menu__grow">{t('common.default')}</span>
-                {!model && <span className="ca-icon">{Icons.check}</span>}
-              </button>
-              {options.map((o) => {
-                const label = o.group ? `${o.group} · ${o.label}` : o.label
-                const on = model === o.value
-                return (
-                  <button key={o.value} type="button" className="ca-menu__item" title={o.value} data-on={on || undefined} onClick={() => pickModel(o.value)}>
-                    <span className="ca-menu__grow">{label}</span>
-                    {on && <span className="ca-icon">{Icons.check}</span>}
-                  </button>
-                )
-              })}
-            </div>
-          </Popover>
+          <FieldSelect
+            value={model}
+            options={fieldOptions}
+            onChange={(value) => { void saveSettings({ [modelKey]: value }).catch(fail) }}
+            placeholder={t('common.default')}
+            menuClassName="ca-agentpick__modelmenu"
+          />
         </div>
       )}
       <label className="ca-agentpick__ask" data-disabled={!chat || undefined}>
