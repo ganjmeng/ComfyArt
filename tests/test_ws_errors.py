@@ -44,9 +44,16 @@ def test_raw_text_never_shown(js):
 
 def test_old_comfyui_copy_cleaned():
     # #30: only the "before starting ComfyUI" leftover goes; #219 renamed Local LLM to the built-in agent
+    # #345: wall text split into builtin/third-party hints; env-key note lives on localLlmKeyEnvHint
     for f, old in (("en.json", "before starting ComfyUI"), ("zh.json", "在启动 ComfyUI 前")):
-        text = json.loads((ROOT / "src/locales" / f).read_text())["botSettings.claudeCodeCodexQwenCode"]
-        assert old not in text and "COMFYART_LOCAL_LLM_API_KEY" in text
+        data = json.loads((ROOT / "src/locales" / f).read_text())
+        text = " ".join([
+            data["botSettings.localLlmKeyEnvHint"],
+            data["botSettings.builtinAgentHint"],
+            data["agentSetup.desc"],
+        ])
+        assert old not in text and "COMFYART_LOCAL_LLM_API_KEY" in data["botSettings.localLlmKeyEnvHint"]
+        assert "botSettings.claudeCodeCodexQwenCode" not in data
 
 
 def test_agent_relays_our_copy_verbatim(js):
