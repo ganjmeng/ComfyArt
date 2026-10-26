@@ -321,8 +321,26 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-agentpick__check > .ca-icon,
 .ca-agentpick__check > .ca-icon svg { width: 18px; height: 18px; }
 /* #312: Model label + select closer to agent-row scale */
-.ca-agentpick .ca-gen__title { font-size: 13px; font-weight: 500; line-height: 20px; margin: 6px 0 4px; }
-.ca-agentpick select.ca-panel__input { height: 32px; font-size: 13px; line-height: 20px; }
+/* #316: Model Popover trigger (no native select) + ask row polish */
+.ca-agentpick__section { display: flex; flex-direction: column; padding: 0 10px; }
+.ca-agentpick__sectiontitle { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--ca-muted); margin: 6px 0 4px; }
+.ca-agentpick__modelbtn {
+  display: flex; align-items: center; gap: 6px; width: 100%; height: 32px; padding: 0 8px 0 10px;
+  font-size: 13px; line-height: 20px; color: var(--ca-text); text-align: left;
+  background: var(--ca-field); border: var(--ca-border-w) solid var(--ca-border); border-radius: 8px; cursor: pointer;
+}
+.ca-agentpick__modelbtn[data-open] { background: var(--ca-hover); }
+.ca-agentpick__modelbtn > .ca-icon { flex: none; width: 16px; height: 16px; }
+.ca-agentpick__modeltext { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-agentpick__modelmenu { min-width: 100%; max-width: 320px; }
+.ca-agentpick__modelmenu .ca-menu__item > .ca-icon,
+.ca-agentpick__modelmenu .ca-menu__item > .ca-icon svg { width: 18px; height: 18px; }
+.ca-agentpick__ask {
+  display: flex; align-items: center; gap: 8px; min-height: 32px; margin: 4px 10px 0;
+  font-size: 13px; line-height: 20px; color: var(--ca-text); cursor: pointer;
+}
+.ca-agentpick__ask[data-disabled] { color: var(--ca-muted); cursor: default; }
+.ca-agentpick__ask input { width: 16px; height: 16px; flex: none; }
 /* #247: Agent settings is wider so the MCP config reads without wrapping */
 .ca-modal__card.ca-botsettings { width: min(560px, calc(100vw - 32px)); }
 .ca-agentsetup { display: flex; flex-direction: column; gap: 8px; }

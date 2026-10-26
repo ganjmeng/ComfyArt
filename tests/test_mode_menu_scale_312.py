@@ -23,10 +23,9 @@ def test_check_sized_under_agentpick() -> None:
 
 
 def test_model_section_scaled_under_agentpick() -> None:
-    assert ".ca-agentpick .ca-gen__title" in SHELL
-    chunk = SHELL[SHELL.index(".ca-agentpick .ca-gen__title") : SHELL.index(".ca-agentpick .ca-gen__title") + 280]
-    assert "13px" in chunk
-    assert ".ca-agentpick select.ca-panel__input" in SHELL
-    sel = SHELL[SHELL.index(".ca-agentpick select.ca-panel__input") : SHELL.index(".ca-agentpick select.ca-panel__input") + 160]
-    assert "32px" in sel
-    assert "13px" in sel
+    # #316: Model is Popover trigger; section title 12px, trigger 32px / 13px
+    assert ".ca-agentpick__sectiontitle" in SHELL
+    assert ".ca-agentpick__modelbtn" in SHELL
+    assert "height: 32px" in SHELL.split(".ca-agentpick__modelbtn")[1].split("}")[0]
+    assert "font-size: 13px" in SHELL.split(".ca-agentpick__modelbtn")[1].split("}")[0]
+
