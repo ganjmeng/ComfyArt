@@ -1,4 +1,4 @@
-"""#323 v4: static Icons.think clock; live title shimmer; no spin/check/breath/halo on Thought."""
+"""#323 v4: static Icons.think Lucide Brain; live title shimmer; no spin/check/breath/halo on Thought."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -11,11 +11,14 @@ SHELL = (ROOT / "src/styles/shell.css").read_text()
 ICONS = (ROOT / "src/ui/icons.tsx").read_text()
 
 
-def test_icons_think_clock() -> None:
+def test_icons_think_brain() -> None:
     assert "think:" in ICONS
-    # clock outline: circle + hand path
+    # Lucide Brain outline paths (current lucide main icons/brain.svg)
     block = ICONS.split("think:")[1].split(",\n")[0]
-    assert "circle" in block and "cx=\"12\"" in block
+    assert 'd="M12 18V5"' in block
+    assert 'd="M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4"' in block
+    assert 'd="M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517"' in block
+    assert "circle" not in block  # no clock circle
     assert "ca-spin" not in block
 
 
