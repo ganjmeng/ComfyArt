@@ -177,12 +177,7 @@ const defaultPlacer: Placer = async (editor, holder, media, job) => {
 }
 
 export function selectResults(editor: Editor, holder: TLShape, ids: TLShapeId[]) {
-  if (holder.meta.quiet || !ids.length) return
-  editor.select(...ids)
-  // #307: zoom-to-fit unless the user is actively panning/zooming the canvas
-  if (editor.getCameraState() === 'idle' && !editor.inputs.isPanning && !editor.inputs.isPinching) {
-    editor.zoomToSelection({ animation: { duration: 200 } })
-  }
+  if (!holder.meta.quiet) editor.select(...ids)
 }
 
 async function keepPartial(editor: Editor, holder: TLShape, job: Job): Promise<number> {
