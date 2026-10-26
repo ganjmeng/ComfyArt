@@ -10,6 +10,9 @@ export const keySettingsOpenAtom = atom('wavespeed key settings', false)
 export const WAVESPEED_KEYS_URL = 'https://wavespeed.ai/accesskey'
 
 export const outOfCredit = (s: KeyStatus | null) => !!s?.configured && s.balance !== null && s.balance <= 0
+/** True only after status has loaded and no key is configured. null (still loading) is not "missing". #305 */
+export const keyMissing = (s: KeyStatus | null) => !!s && !s.configured
+
 
 export async function refreshKeyStatus(): Promise<KeyStatus | null> {
   const res = await api('/comfyart/wavespeed/key').catch(() => null)
@@ -28,12 +31,19 @@ export async function saveKey(key: string): Promise<KeyStatus> {
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new KeyError(body?.error?.message ?? `save failed: ${res.status}`, body?.error?.reason ?? 'error')
   keyStatusAtom.set(body as KeyStatus)
+  // #305: clear Agent no-key probe + models.enabled without wiping the open chat
+  void import('./bot').then((m) => m.refreshBot({ refresh: true })).catch(() => {})
+  void import('./wavespeed').then((m) => m.loadCloudModels()).catch(() => {})
   return body as KeyStatus
 }
 
 export async function deleteKey(): Promise<void> {
   const res = await api('/comfyart/wavespeed/key', { method: 'DELETE' })
-  if (res.ok) keyStatusAtom.set((await res.json()) as KeyStatus)
+  if (res.ok) {
+    keyStatusAtom.set((await res.json()) as KeyStatus)
+    void import('./bot').then((m) => m.refreshBot({ refresh: true })).catch(() => {})
+    void import('./wavespeed').then((m) => m.loadCloudModels()).catch(() => {})
+  }
 }
 
 /** #159: source 'estimate' = the price API failed and `price` is the catalog estimate for `tier` (shown as 「估算价」/'Estimated'). */

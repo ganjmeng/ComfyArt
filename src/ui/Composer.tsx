@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useValue, type Editor, type TLShapeId } from 'tldraw'
 
 import { agentModeAtom, DOC_ACCEPT, docsAtom, draftAtom, eachLine, eachRuns, extraRefsAtom, generateDirect, isRefShape, kitsAtom, refKindOf, sendToAgent, srcOf, uploadRefs, type AgentMode, type RefShape } from '../agent'
+
+import { keyMissing, keySettingsOpenAtom, keyStatusAtom, refreshKeyStatus } from '../wavespeedKey'
 import { EachButton, EachRole, useEach } from './EachToggle'
 import { RefFrameButton } from './RefFrameButton'
 import { placeAsset } from '../assets'
@@ -128,18 +130,37 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       void loadProviders().then(send, (e) => onError(t('bot.agentListLoadFailed', errorText(e))))
       return
     }
-    draftAtom.set('')
-    extraRefsAtom.set([])
-    kitsAtom.set([])
-    if (mode === 'agent') {
-      skillAtom.set(null)
-      docsAtom.set([])
+    // #305: guide once without wiping the draft when Key is missing
+    const go = async () => {
+      let key = keyStatusAtom.get()
+      if (!key) key = await refreshKeyStatus()
+      if (keyMissing(key)) {
+        keySettingsOpenAtom.set(true)
+        return
+      }
+      const keptRefs = refs
+      const keptSkill = skill
+      const keptKits = kits
+      const keptDocs = docs
+      draftAtom.set('')
+      extraRefsAtom.set([])
+      kitsAtom.set([])
+      if (mode === 'agent') {
+        skillAtom.set(null)
+        docsAtom.set([])
+      }
+      const targets = keptRefs.length > 1 ? each.targets(keptRefs) : []
+      each.reset()
+      try {
+        if (mode === 'agent') await sendToAgent(editor, text, keptRefs, keptSkill, keptKits, keptDocs, targets.length ? eachLine(keptRefs, targets) : '')
+        else await generateDirect(editor, text, eachRuns(keptRefs, targets, () => text), mode === 'video', onError)
+      } catch (e) {
+        // restore composer content if the send never reached the chat / job
+        draftAtom.set(text || draftAtom.get())
+        fail(e)
+      }
     }
-    const targets = refs.length > 1 ? each.targets(refs) : []
-    each.reset()
-    void (mode === 'agent'
-      ? sendToAgent(editor, text, refs, skill, kits, docs, targets.length ? eachLine(refs, targets) : '')
-      : generateDirect(editor, text, eachRuns(refs, targets, () => text), mode === 'video', onError)).catch(fail)
+    void go()
   }
 
   const filtered = slash ? skills.filter((s) => s.name.includes(slash[1])) : skills

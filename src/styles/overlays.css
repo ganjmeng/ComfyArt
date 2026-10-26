@@ -290,7 +290,7 @@
 .ca-chat__thoughttext { max-height: 240px; overflow: auto; padding: 8px 10px; border-left: 2px solid var(--ca-border); color: var(--ca-muted); font-size: 12px; line-height: 18px; white-space: pre-wrap; }
 .ca-chat__io pre { margin: 0; max-height: 200px; overflow: auto; padding: 8px 10px; border-radius: 8px; background: var(--ca-field); font-size: 12px; line-height: 18px; white-space: pre-wrap; word-break: break-all; }
 .ca-chat__notice { padding: 8px 12px; border-radius: 10px; background: var(--ca-field); font-size: 13px; color: var(--ca-muted); }
-.ca-chat__notice[data-level="error"] { background: rgba(220,38,38,.08); color: #dc2626; white-space: nowrap; }
+.ca-chat__notice[data-level="error"] { background: rgba(220,38,38,.08); color: #dc2626; white-space: normal; overflow-wrap: anywhere; }  /* #305: key CTA must not clip */
 .ca-chat__notice[data-level="warn"] { background: rgba(217,119,6,.1); color: #b45309; }
 :root[data-theme="dark"] .ca-chat__notice[data-level="warn"] { color: #fbbf24; }
 :root[data-theme="dark"] .ca-chat__notice[data-level="error"] { color: #f87171; }

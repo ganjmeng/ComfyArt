@@ -5,7 +5,7 @@ import { usd } from './usd'
 import { onComfyEvent } from './ws'
 import { isWsGraph, WS_ID } from './wavespeed'
 import { wsBodyError, wsErrorText } from './wsErrors'
-import { keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus } from './wavespeedKey'
+import { keyMissing, keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus } from './wavespeedKey'
 
 const POLL_MS = 1500
 
@@ -14,6 +14,14 @@ export class CostDeclined extends Error {
   constructor(message = t('jobs.costDeclined')) {
     super(message)
     this.name = 'CostDeclined'
+  }
+}
+
+/** No WaveSpeed key configured; settings already opened — soft like CostDeclined. #305 */
+export class NeedKeyError extends Error {
+  constructor(message = t('wsKey.needKey')) {
+    super(message)
+    this.name = 'NeedKeyError'
   }
 }
 
@@ -181,8 +189,9 @@ export function askCost(price: number | null, segSplits?: number, segCapped?: bo
 export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(), confirmed = false): Promise<string> {
   const init = { method: 'POST', headers: { 'Content-Type': 'application/json' } }
   if (isWsGraph(prompt)) {
-    const key = keyStatusAtom.get()
-    if (key && !key.configured) { keySettingsOpenAtom.set(true); throw new Error(t('wsKey.needKey')) }
+    let key = keyStatusAtom.get()
+    if (!key) key = await refreshKeyStatus()  // #305: null is loading, not a free pass
+    if (keyMissing(key)) { keySettingsOpenAtom.set(true); throw new NeedKeyError() }
     if (outOfCredit(key)) throw new Error(wsErrorText('insufficientCredit')!)
     const inputs = await wsHook(Object.values(prompt)[0].inputs as Record<string, unknown>)
     // #235: the plan card already approved these agent steps, so the server must not 409

@@ -1,5 +1,7 @@
 // WaveSpeed cloud generation: tools build a one-node pseudo graph that the backend
 // (/comfyart/wavespeed/*) runs on api.wavespeed.ai. No local ComfyUI model is loaded.
+import { atom } from 'tldraw'
+
 import type { PromptGraph } from './comfy'
 import type { Built } from './workflows'
 
@@ -95,9 +97,16 @@ export function withModel(graph: PromptGraph, model: string | undefined) {
   for (const node of Object.values(graph)) if (node.class_type === WS_NODE && !node.inputs.model) node.inputs.model = model
 }
 
+/** #305: mirrors backend `enabled: has_key()` so UI cannot look generatable when cloud is disabled. */
+export const cloudEnabledAtom = atom<boolean | null>('cloud enabled', null)
+
 export async function loadCloudModels(): Promise<Record<string, CloudFeature>> {
   const res = await fetch('/comfyart/wavespeed/models')
   if (!res.ok) return {}
-  features = ((await res.json()).features ?? {}) as Record<string, CloudFeature>
+  const body = await res.json() as { enabled?: boolean; features?: Record<string, CloudFeature> }
+  const enabled = body.enabled !== false
+  cloudEnabledAtom.set(enabled)
+  // when no key, keep catalog empty so generate paths cannot look ready
+  features = enabled ? ((body.features ?? {}) as Record<string, CloudFeature>) : {}
   return features
 }

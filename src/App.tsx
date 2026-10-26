@@ -177,7 +177,10 @@ export function App({ id }: { id: string }) {
     Promise.all([loadProject(id), loadLibrary()])
       .then(([snap]) => {
         if (!alive) return
-        if (snap) loadSnapshot(editor.store, snap)
+        if (snap) {
+          loadSnapshot(editor.store, snap)
+          saveStateAtom.set({ state: 'saved', time: Date.now() })  // #305: loaded from disk = real persist
+        }
         const doc = editor.getDocumentSettings()
         const kit = new URL(location.href).searchParams.get('kit')
         if (!snap && !('brandKit' in doc.meta)) editor.updateDocumentSettings({ meta: { ...doc.meta, brandKit: kit ?? defaultKitId() } })

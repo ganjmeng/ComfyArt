@@ -1020,8 +1020,11 @@ def valid_confirm_usd(v) -> bool:
 
 
 def needs_confirm(price: float) -> bool:
+    """True when `price` meets the confirm threshold (4dp, same as bot/plan_quote). #305"""
     limit = confirm_usd()
-    return limit == 0 or price >= limit
+    if limit == 0:
+        return True
+    return round(float(price), 4) >= round(float(limit), 4)
 
 
 def _price_inputs(inputs: dict, model: str = "") -> dict:

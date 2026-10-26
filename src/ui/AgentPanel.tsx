@@ -20,7 +20,7 @@ import { ProjectHeader } from './ProjectHeader'
 import { detailsAtom } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { t } from '../i18n'
-import { keySettingsOpenAtom, keyStatusAtom } from '../wavespeedKey'
+import { keyMissing, keySettingsOpenAtom, keyStatusAtom } from '../wavespeedKey'
 
 const NEAR_BOTTOM = 80
 
@@ -161,7 +161,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
             <button type="button" className="ca-panel__primary" onClick={() => botSettingsOpenAtom.set(true)}>{t('agentPanel.openAgentSettings')}</button>
           </div>
         )}
-        {enabled !== false && messages.length === 0 && providers.find((p) => p.id === (chat?.provider ?? BUILTIN_AGENT))?.detail === NO_KEY_DETAIL && !keyStatus?.configured && (  // #229: hide as soon as a Key is saved
+        {enabled !== false && messages.length === 0 && providers.find((p) => p.id === (chat?.provider ?? BUILTIN_AGENT))?.detail === NO_KEY_DETAIL && keyMissing(keyStatus) && (  // #229/#305: hide while loading or once a Key is saved
 
           <div className="ca-chat__notice" data-level="error">
             {t('agentPanel.noWavespeedKey')}{' '}
