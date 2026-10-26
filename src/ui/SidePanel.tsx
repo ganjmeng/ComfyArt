@@ -20,8 +20,11 @@ function reveal(editor: Editor, id: TLShapeId) {
 }
 
 function Layers({ editor }: { editor: Editor }) {
-  const [history, setHistory] = useState(true)
+  // #307: history + layers collapsed on first screen; empty copy when opened
+  const [history, setHistory] = useState(false)
+  const [layers, setLayers] = useState(false)
   const items = useValue('history', () => generated(editor), [editor])
+  const hasLayers = useValue('has layers', () => editor.getCurrentPageShapeIds().size > 0, [editor])
   return (
     <>
       <button type="button" className="ca-side__section" onClick={() => setHistory(!history)}>
@@ -31,7 +34,12 @@ function Layers({ editor }: { editor: Editor }) {
         ? <div className="ca-side__grid">{items.map((m) => <button key={m.id} type="button" className="ca-side__cell" onClick={() => reveal(editor, m.id)}><Preview m={m} /></button>)}</div>
         : <div className="ca-side__empty">{t('sidePanel.noHistoryYet')}</div>)}
       <div className="ca-side__rule" />
-      <LayerTree editor={editor} />
+      <button type="button" className="ca-side__section" onClick={() => setLayers(!layers)}>
+        <span>{t('common.layers')}</span><span className="ca-icon" data-flip={layers || undefined}>{Icons.chevron}</span>
+      </button>
+      {layers && (hasLayers
+        ? <LayerTree editor={editor} />
+        : <div className="ca-side__empty">{t('sidePanel.noLayersYet')}</div>)}
     </>
   )
 }

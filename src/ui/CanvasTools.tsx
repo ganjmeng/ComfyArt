@@ -47,7 +47,7 @@ function BackToContent() {
 
 export function CanvasTools({ zoom }: { zoom: React.ReactNode }) {
   const side = useValue(sideAtom)
-  const [map, setMap] = useState(false)
+  const [map, setMap] = useState(true)  // #307: minimap default on (empty viewport frame OK)
   const toggle = (s: Side) => () => sideAtom.set(side === s ? null : s)
 
   return (

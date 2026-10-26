@@ -177,7 +177,12 @@ const defaultPlacer: Placer = async (editor, holder, media, job) => {
 }
 
 export function selectResults(editor: Editor, holder: TLShape, ids: TLShapeId[]) {
-  if (!holder.meta.quiet) editor.select(...ids)
+  if (holder.meta.quiet || !ids.length) return
+  editor.select(...ids)
+  // #307: zoom-to-fit unless the user is actively panning/zooming the canvas
+  if (editor.getCameraState() === 'idle' && !editor.inputs.isPanning && !editor.inputs.isPinching) {
+    editor.zoomToSelection({ animation: { duration: 200 } })
+  }
 }
 
 async function keepPartial(editor: Editor, holder: TLShape, job: Job): Promise<number> {
@@ -207,9 +212,16 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
   } catch (e) {
     const holder = editor.getShape(holderId)
     const kept = holder ? await keepPartial(editor, holder, job).catch(() => 0) : 0
-    if (holder?.meta.temp) editor.deleteShape(holderId)
-    else if (holder) editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: null, quiet: false } })
     const msg = errorText(e) + (kept ? ` ${t('jobs.partialKept', kept)}` : '')
+    // #307: abort/stop must not leave an empty content frame — drop temp/quiet posters;
+    // keep compose cards (prompt) with clear error copy, or last partial results.
+    const interrupted = /interrupt/i.test(msg) || msg === t('jobs.interrupted')
+    const composePrompt = holder?.type === GENERATOR && !!(holder as GeneratorShape).props.prompt?.trim()
+    if (holder && kept === 0 && (holder.meta.temp || holder.meta.quiet || (interrupted && !composePrompt))) {
+      editor.deleteShape(holderId)
+    } else if (holder) {
+      editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: null, quiet: false } })
+    }
     report(holderId, { srcs: [], error: msg })
     if (holder) onError(msg)
   } finally {

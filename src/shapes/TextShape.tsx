@@ -102,6 +102,12 @@ function Text({ shape }: { shape: TextShape }) {
   )
 }
 
+/** #307: default theme is dark — near-black (#000) was invisible on the canvas. */
+function defaultTextColor() {
+  if (typeof document !== 'undefined' && document.documentElement.dataset.theme === 'light') return '#000000'
+  return '#f2f2f2'
+}
+
 export class TextShapeUtil extends BaseBoxShapeUtil<TextShape> {
   static override type = TEXT
   static override props: RecordProps<TextShape> = {
@@ -130,7 +136,7 @@ export class TextShapeUtil extends BaseBoxShapeUtil<TextShape> {
   })
 
   override getDefaultProps(): TextShape['props'] {
-    return { w: 1, h: 1, text: '', font: 'Arial', weight: 400, size: 80, color: '#000000', stroke: '', align: 'left', letter: 0, line: 1.3, autoSize: true, decoration: 'none', transform: 'none', rich: null }
+    return { w: 1, h: 1, text: '', font: 'Arial', weight: 400, size: 80, color: defaultTextColor(), stroke: '', align: 'left', letter: 0, line: 1.3, autoSize: true, decoration: 'none', transform: 'none', rich: null }
   }
 
   override canEdit() {
