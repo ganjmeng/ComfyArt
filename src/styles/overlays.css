@@ -287,6 +287,38 @@
 .ca-plan__step[data-status="done"] .ca-plan__mark { border: none; }
 .ca-chat__arg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ca-muted); opacity: .8; }
 .ca-chat__io { display: flex; flex-direction: column; gap: 6px; }
+/* #323: live think breath + halo on left Icons.agent; completed thought stays static */
+.ca-chat__thinkicon {
+  position: relative; flex: none; width: 18px; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ca-chat__thinkicon .ca-icon { width: 18px; height: 18px; }
+.ca-chat__thinking > .ca-chat__thinkicon { color: var(--ca-muted); } /* shimmer sets color:transparent on parent */
+.ca-chat__thought[data-live] .ca-chat__thinkicon,
+.ca-chat__thinking .ca-chat__thinkicon {
+  animation: ca-think-breath 1.8s ease-in-out infinite alternate;
+}
+.ca-chat__thought[data-live] .ca-chat__thinkicon::after,
+.ca-chat__thinking .ca-chat__thinkicon::after {
+  content: ''; position: absolute; inset: -2px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,0,0,.10) 0%, transparent 70%);
+  filter: blur(6px); pointer-events: none; z-index: -1;
+}
+:root[data-theme="dark"] .ca-chat__thought[data-live] .ca-chat__thinkicon::after,
+:root[data-theme="dark"] .ca-chat__thinking .ca-chat__thinkicon::after {
+  background: radial-gradient(circle, rgba(255,255,255,.16) 0%, transparent 70%);
+  filter: blur(7px);
+}
+@keyframes ca-think-breath {
+  from { opacity: .55; transform: scale(.96); }
+  to   { opacity: 1;   transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ca-chat__thought[data-live] .ca-chat__thinkicon,
+  .ca-chat__thinking .ca-chat__thinkicon,
+  .ca-chat__thinking { animation: none !important; opacity: .85; }
+  .ca-chat__thinkicon::after { display: none; }
+}
 .ca-chat__thoughttext { max-height: 240px; overflow: auto; padding: 8px 10px; border-left: 2px solid var(--ca-border); color: var(--ca-muted); font-size: 12px; line-height: 18px; white-space: pre-wrap; }
 .ca-chat__io pre { margin: 0; max-height: 200px; overflow: auto; padding: 8px 10px; border-radius: 8px; background: var(--ca-field); font-size: 12px; line-height: 18px; white-space: pre-wrap; word-break: break-all; }
 .ca-chat__notice { padding: 8px 12px; border-radius: 10px; background: var(--ca-field); font-size: 13px; color: var(--ca-muted); }

@@ -193,9 +193,9 @@ function Plan({ b, live }: { b: BotBlock; live: boolean }) {
 function Thought({ text, live }: { text: string; live: boolean }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="ca-chat__tool ca-chat__thought" data-open={open || undefined}>
+    <div className="ca-chat__tool ca-chat__thought" data-live={live || undefined} data-open={open || undefined}>
       <button type="button" className="ca-chat__step" onClick={() => setOpen(!open)}>
-        <span className="ca-icon">{Icons.agent}</span>
+        <span className="ca-chat__thinkicon"><span className="ca-icon">{Icons.agent}</span></span>
         <span>{live ? t('chatMessage.thinking') : t('chatMessage.thought')}</span>
         {!open && <span className="ca-chat__arg">{text.trim().split('\n').at(-1)}</span>}
         <span className="ca-chat__chev ca-icon">{Icons.chevron}</span>
