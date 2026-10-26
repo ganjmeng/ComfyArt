@@ -5,6 +5,7 @@ import { checkProblem, checkWorkflow, CUSTOM_ACTIONS, parseApiWorkflow, rulesTex
 import { listCustomWorkflows, readCustomWorkflow, saveCustomWorkflow, setCustomWorkflow, workflowConfigAtom } from '../customWorkflows'
 import { errorText } from '../jobs'
 import { CopyButton } from './CopyButton'
+import { FieldSelect } from './FieldSelect'
 import { Icons } from './icons'
 import { Modal } from './Modal'
 import { t } from '../i18n'
@@ -76,10 +77,14 @@ export function WorkflowsDialog({ onError }: { onError: (msg: string) => void })
             {CUSTOM_ACTIONS.filter((a) => a.group === group).map(({ id }) => (
               <div key={id} className="ca-workflows__row">
                 <span>{t(`customWorkflows.action.${id}`)}</span>
-                <select className="ca-panel__input" value={files[id]?.includes(config[id] ?? '') ? config[id] : ''} onChange={(e) => run(pick(id, e.target.value))}>
-                  <option value="">{t('customWorkflows.builtIn')}</option>
-                  {(files[id] ?? []).map((f) => <option key={f} value={f}>{f.replace(/\.json$/, '')}</option>)}
-                </select>
+                <FieldSelect
+                  value={files[id]?.includes(config[id] ?? '') ? (config[id] ?? '') : ''}
+                  options={[
+                    { id: '', label: t('customWorkflows.builtIn') },
+                    ...(files[id] ?? []).map((f) => ({ id: f, label: f.replace(/\.json$/, ''), title: f })),
+                  ]}
+                  onChange={(v) => run(pick(id, v))}
+                />
                 <button type="button" className="ca-panel__icon" title={`${t('customWorkflows.upload')} (comfyart/workflows/${id}/)`} onClick={() => { target.current = id; upload.current?.click() }}>{Icons.upload}</button>
                 {(problems[id]?.length ?? 0) > 0 && <span className="ca-workflows__warn">{problems[id]!.join(' ')}</span>}
               </div>

@@ -335,6 +335,22 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-agentpick__modelmenu { min-width: 100%; max-width: 320px; }
 .ca-agentpick__modelmenu .ca-menu__item > .ca-icon,
 .ca-agentpick__modelmenu .ca-menu__item > .ca-icon svg { width: 18px; height: 18px; }
+/* #318: shared FieldSelect (same tokens as #316 modelbtn; AgentPicker can migrate later) */
+.ca-fieldselect-wrap { width: 100%; min-width: 0; }
+.ca-fieldselect-wrap > .ca-pop-anchor { display: flex; width: 100%; min-width: 0; }
+.ca-fieldselect {
+  display: flex; align-items: center; gap: 6px; width: 100%; height: 32px; padding: 0 8px 0 10px;
+  font-size: 13px; line-height: 20px; color: var(--ca-text); text-align: left;
+  background: var(--ca-field); border: var(--ca-border-w) solid var(--ca-border); border-radius: 8px; cursor: pointer;
+}
+.ca-fieldselect[data-open] { background: var(--ca-hover); }
+.ca-fieldselect > .ca-icon { flex: none; width: 16px; height: 16px; }
+.ca-fieldselect__text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-fieldselect__menu { min-width: 100%; max-width: 320px; }
+.ca-fieldselect__menu .ca-menu__item > .ca-icon,
+.ca-fieldselect__menu .ca-menu__item > .ca-icon svg { width: 18px; height: 18px; }
+.ca-fieldselect__menu--toolbar { max-width: 240px; }
+
 .ca-agentpick__ask {
   display: flex; align-items: center; gap: 8px; min-height: 32px; margin: 4px 10px 0;
   font-size: 13px; line-height: 20px; color: var(--ca-text); cursor: pointer;
