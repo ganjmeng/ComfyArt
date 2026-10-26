@@ -16,8 +16,12 @@ import { stepState } from './stepState'
 
 const GEN_TOOLS = new Set(['generate_image', 'generate_video', 'edit_image', 'animate_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers', 'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer', 'extend_video', 'upscale_video', 'remove_video_background', 'generate_music', 'generate_sound_effect', 'text_to_speech', 'image_to_3d', 'edit_elements', 'create_mockup', 'create_slides'])
 
-/** #326 process-timeline kinds (Lovart multi-step card). */
-type ProcessKind = 'thought' | 'skill' | 'search' | 'image' | 'video' | 'tool'
+/** #326/#348 process-timeline kinds (Lovart multi-step card). */
+type ProcessKind =
+  | 'thought' | 'outputting' | 'skill' | 'skill_file_read' | 'search' | 'search_pages'
+  | 'image' | 'video'
+  | 'code' | 'code_generated' | 'code_updated' | 'design_validated' | 'preview_artifact'
+  | 'tool'
 
 const VIDEO_TOOLS = new Set(['generate_video', 'animate_image', 'extend_video', 'upscale_video', 'remove_video_background'])
 const SEARCH_TOOLS = new Set(['WebSearch', 'web_search', 'google_web_search', 'WebFetch', 'web_fetch', 'websearch'])
@@ -26,22 +30,67 @@ const IMAGE_PROCESS_TOOLS = new Set([
   'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer',
   'edit_elements', 'create_mockup', 'create_slides', 'wait_generation', 'image_to_3d', 'vectorize_image',
 ])
+const CODE_GENERATED_TOOLS = new Set(['Write', 'write_file', 'create_file', 'WriteFile', 'code_generated'])
+const CODE_UPDATED_TOOLS = new Set(['Edit', 'str_replace', 'apply_patch', 'NotebookEdit', 'code_updated'])
+const DESIGN_VALIDATED_TOOLS = new Set(['validate_workflow', 'design_validated', 'validate_design'])
+const PREVIEW_ARTIFACT_TOOLS = new Set(['preview_artifact', 'place_html'])
+const CODE_HEADER_TOOLS = new Set(['writing_code', 'write_code', 'WritingCode', 'code'])
+const CODE_SUB_KINDS = new Set<ProcessKind>(['code_generated', 'code_updated', 'design_validated', 'preview_artifact'])
 
 const PROCESS_ICONS: Record<ProcessKind, ReactNode> = {
   thought: Icons.think,
+  outputting: Icons.think,
   skill: Icons.scrollText,
+  skill_file_read: Icons.fileSearch,
   search: Icons.globe,
+  search_pages: Icons.globe,
   image: Icons.imageLine,
   video: Icons.videoLine,
+  code: Icons.squareCode,
+  code_generated: Icons.fileCode,
+  code_updated: Icons.filePenLine,
+  design_validated: Icons.listChecks,
+  preview_artifact: Icons.sparkles,
   tool: Icons.agent,
 }
 
-function processKindOf(b: BotBlock): ProcessKind | null {
+function skillActionIsFileRead(input?: Record<string, any>): boolean {
+  const action = String(input?.action ?? '').toLowerCase()
+  return action === 'read' || action === 'file' || action === 'read_file' || action === 'file_read'
+}
+
+function processModelName(input?: Record<string, any>): string | undefined {
+  const m = input?.model ?? input?.model_name ?? input?.modelName
+  return typeof m === 'string' && m.trim() ? m.trim() : undefined
+}
+
+function searchResultCount(use: BotBlock, result?: BotBlock): number | undefined {
+  const raw = use.input?.num_results ?? use.input?.count ?? use.input?.n ?? result?.detail?.count ?? result?.detail?.num_results
+  if (typeof raw === 'number' && raw > 0) return raw
+  if (typeof raw === 'string' && /^\d+$/.test(raw) && Number(raw) > 0) return Number(raw)
+  const text = result?.text ?? ''
+  const urls = text.match(/https?:\/\//g)
+  if (urls && urls.length > 0) return urls.length
+  return undefined
+}
+
+function processKindOf(b: BotBlock, opts?: { result?: BotBlock; live?: boolean }): ProcessKind | null {
   if (b.type === 'thinking') return 'thought'
   if (b.type !== 'tool_use') return null
   const n = toolName(b.name)
-  if (n === 'skill' || n === 'Skill') return 'skill'
-  if (SEARCH_TOOLS.has(n) || /search|fetch/i.test(n) && /web/i.test(n)) return 'search'
+  if (n === 'skill' || n === 'Skill') return skillActionIsFileRead(b.input) ? 'skill_file_read' : 'skill'
+  if (SEARCH_TOOLS.has(n) || (/search|fetch/i.test(n) && /web/i.test(n))) {
+    if (!opts?.live) {
+      const nPages = searchResultCount(b, opts?.result)
+      if (nPages != null) return 'search_pages'
+    }
+    return 'search'
+  }
+  if (CODE_HEADER_TOOLS.has(n) || /^writing[_-]?code$/i.test(n)) return 'code'
+  if (CODE_GENERATED_TOOLS.has(n)) return 'code_generated'
+  if (CODE_UPDATED_TOOLS.has(n)) return 'code_updated'
+  if (DESIGN_VALIDATED_TOOLS.has(n)) return 'design_validated'
+  if (PREVIEW_ARTIFACT_TOOLS.has(n)) return 'preview_artifact'
   if (VIDEO_TOOLS.has(n)) return 'video'
   if (IMAGE_PROCESS_TOOLS.has(n)) return 'image'
   // Other generation-ish tools still join the rail with a generic icon
@@ -49,13 +98,36 @@ function processKindOf(b: BotBlock): ProcessKind | null {
   return null
 }
 
-function processLabel(kind: ProcessKind, live: boolean, fallback?: string): string {
+function withModelSuffix(label: string, live: boolean, model?: string): string {
+  if (!live || !model) return label
+  return `${label} ${t('chatMessage.usingModel', model)}`
+}
+
+function processLabel(
+  kind: ProcessKind,
+  live: boolean,
+  opts?: { fallback?: string; model?: string; pages?: number },
+): string {
   if (kind === 'thought') return live ? t('chatMessage.thinking') : t('chatMessage.thought')
+  if (kind === 'outputting') return live ? t('chatMessage.outputting') : t('chatMessage.thought')
   if (kind === 'skill') return t('chatMessage.skillReady')
-  if (kind === 'search') return t('chatMessage.searchingWeb')
-  if (kind === 'image') return t('chatMessage.generatingImages')
-  if (kind === 'video') return t('chatMessage.generatingVideo')
-  return fallback || t('chatMessage.inProgress')
+  if (kind === 'skill_file_read') return live ? t('chatMessage.skillFileReadLive') : t('chatMessage.skillFileRead')
+  if (kind === 'search') return live ? t('chatMessage.searchingWeb') : t('chatMessage.webSearchDone')
+  if (kind === 'search_pages') return t('chatMessage.webPages', opts?.pages ?? 0)
+  if (kind === 'image') {
+    const base = live ? t('chatMessage.generatingImages') : t('chatMessage.imagesGenerated')
+    return withModelSuffix(base, live, opts?.model)
+  }
+  if (kind === 'video') {
+    const base = live ? t('chatMessage.generatingVideo') : t('chatMessage.videoGenerated')
+    return withModelSuffix(base, live, opts?.model)
+  }
+  if (kind === 'code') return live ? t('chatMessage.writingCodeLive') : t('chatMessage.writingCode')
+  if (kind === 'code_generated') return t('chatMessage.codeGenerated')
+  if (kind === 'code_updated') return t('chatMessage.codeUpdated')
+  if (kind === 'design_validated') return t('chatMessage.designValidated')
+  if (kind === 'preview_artifact') return t('chatMessage.previewArtifact')
+  return opts?.fallback || t('chatMessage.inProgress')
 }
 
 export function textOf(m: BotMessage): string {
@@ -616,7 +688,6 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   }
   let planShown = false
   m.blocks.forEach((b, i) => {
-    const kind = processKindOf(b)
     if (isPlan(b)) {
       if (planShown) return
       planShown = true
@@ -626,19 +697,37 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       return
     }
     // #326: process-eligible blocks join the rail (live + done); skip tool_result siblings
-    if (kind && (b.type === 'thinking' ? !!b.text?.trim() : true) && b.type !== 'tool_result') {
+    // Resolve kind with result context (search_pages needs tool_result count)
+    const result = b.type === 'tool_use' ? resultOf(b, i) : undefined
+    const stepLiveProbe = !done && (
+      i === m.blocks.length - 1
+      || (b.type === 'tool_use' && !result && !m.blocks.slice(i + 1).some((x) => processKindOf(x)))
+    )
+    const kindResolved = processKindOf(b, { result, live: stepLiveProbe })
+    if (kindResolved && (b.type === 'thinking' ? !!b.text?.trim() : true) && b.type !== 'tool_result') {
       // When done, process tool_use still rails (muted); do not also fold into StepGroup
       if (b.type === 'tool_use' || b.type === 'thinking') {
         flush() // non-process tool run ends before process rail
-        // Live = last block while streaming, or in-flight tool without result while no later process step
-        const stepLive = !done && (
-          i === m.blocks.length - 1
-          || (b.type === 'tool_use' && !resultOf(b, i) && !m.blocks.slice(i + 1).some((x) => processKindOf(x)))
-        )
+        const stepLive = stepLiveProbe
+        // Writing-code sub-steps: ensure a muted `code` header row precedes the first sub-kind
+        if (CODE_SUB_KINDS.has(kindResolved) && !proc.some((s) => s.kind === 'code')) {
+          proc.push({
+            key: `p${i}-code`,
+            kind: 'code',
+            label: processLabel('code', false),
+            live: false,
+          })
+        }
+        const pages = kindResolved === 'search_pages' ? searchResultCount(b, result) : undefined
+        const model = (kindResolved === 'image' || kindResolved === 'video') ? processModelName(b.input) : undefined
         proc.push({
           key: `p${i}`,
-          kind,
-          label: processLabel(kind, stepLive, b.type === 'tool_use' ? toolLabel(b.name) : b.label),
+          kind: kindResolved,
+          label: processLabel(kindResolved, stepLive, {
+            fallback: b.type === 'tool_use' ? toolLabel(b.name) : b.label,
+            model,
+            pages,
+          }),
           live: stepLive,
           text: b.type === 'thinking' ? b.text : undefined,
         })
@@ -651,6 +740,15 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       return
     }
     if (b.type !== 'tool_result') {
+      // #348: streaming wait / emitting reply → Outputting… on the rail (Brain)
+      if (!done && proc.length && !proc.some((s) => s.live) && (b.type === 'text' || b.type === 'notice' || b.type === 'ask' || b.type === 'task')) {
+        proc.push({
+          key: `out${i}`,
+          kind: 'outputting',
+          label: processLabel('outputting', true),
+          live: true,
+        })
+      }
       flushProc()
       flush(b.type === 'notice' && b.level === 'error') // turn ended in error / loop-guard stop: reuse the failed icon
       if (b.type === 'text') items.push(<Markdown key={i} text={b.text ?? ''} />)
@@ -661,6 +759,15 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       if (b.type === 'notice') items.push(<div key={i} className="ca-chat__notice" data-level={b.level}>{b.text}</div>)
     }
   })
+  // Streaming with process rail but no live row yet → Outputting… wait state
+  if (!done && proc.length && !proc.some((s) => s.live)) {
+    proc.push({
+      key: 'out-end',
+      kind: 'outputting',
+      label: processLabel('outputting', true),
+      live: true,
+    })
+  }
   flushProc()
   flush()
   if (outputs.length) items.push(<div key="results" className="ca-chat__thumbs ca-chat__results">{outputs.map((s) => <Thumb key={s} editor={editor} src={s} />)}</div>)
