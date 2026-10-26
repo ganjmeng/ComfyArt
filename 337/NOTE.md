@@ -1,15 +1,15 @@
 # #78 Question card assets for PR #338 · issue #337
 
-- tip: `54baf74` (`fix/p1-337-question-other-input`) — product-locked LIVE MVP
-  https://github.com/ganjmeng/ComfyArt/issues/337#issuecomment-6410414076
+- tip: `fb56d4f` (`fix/p1-337-question-other-input`) — tests on tip; product behavior from `54baf74`
+  https://github.com/ganjmeng/ComfyArt/pull/338
 
-## after-live/ (this pin) — chat-shell harness · tip 54baf74
+## sidebar-live/ (this pin) — tip dist AgentPanel + seeded ask
 
-**Honest label:** `chat-shell harness · tip 54baf74 · ~300 left chat column · not Electron/ComfyUI runtime.`
+**Honest label:** `Playwright + tip dist AgentPanel (.ca-agent ~400px) + seeded bot_asks kind=question · NOT full Electron/ComfyUI desktop.`
 
-Embeds tip dist/src CSS (`.ca-agent` / `.ca-chat` / `.ca-composer` + `.ca-q*`) in a 300px left chat column with messages above + composer below + canvas stub. Reads as **sidebar-embedded** column evidence, not a floating tip-CSS card.
+Production React QuestionCard inside real agent sidebar chrome (composer + chat history + tip CSS/JS). Stubbed aiohttp, no live LLM.
 
-Still **not** a live Electron/ComfyUI session with a real mock ask payload.
+See `sidebar-live/NOTES.md`. Closer than rejected chat-shell `after-live/` @ `83cc4ea`.
 
 ### States captured (light + dark)
 | id | state |
@@ -19,7 +19,12 @@ Still **not** a live Electron/ComfyUI session with a real mock ask payload.
 | `*-keep` | A soft-on · other text **kept** after A–D click |
 | `*-soft` | B soft-select · other empty |
 
-`*-col.png` = agent-column crop; full stage includes canvas stub.
+## after-live/ (prior REJECTED pin 83cc4ea) — chat-shell harness
+
+**Honest label:** `chat-shell harness · tip 54baf74 · ~300 left chat column · not Electron/ComfyUI runtime.`
+
+Formal COMMENT HOLD by EL/design/test/PM — do **not** claim as live Electron sidebar.
+
 
 ## after/ (prior pin edf1ea9)
 tip-CSS-only harness at ~300 column (floating card). Superseded for #78 direction by **after-live/**.
