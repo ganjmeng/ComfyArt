@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useValue, type Editor, type TLShapeId } from 'tldraw'
 
-import { agentModeAtom, DOC_ACCEPT, docsAtom, draftAtom, eachLine, eachRuns, extraRefsAtom, generateDirect, isRefShape, kitsAtom, refKindOf, sendToAgent, srcOf, uploadRefs, type AgentMode, type RefShape } from '../agent'
+import { agentModeAtom, DOC_ACCEPT, docsAtom, draftAtom, eachLine, eachRuns, extraRefsAtom, generateDirect, isRefShape, kitsAtom, refKindOf, sendToAgent, srcOf, uploadRefs, type RefShape } from '../agent'
 
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, refreshKeyStatus } from '../wavespeedKey'
 import { EachButton, EachRole, useEach } from './EachToggle'
@@ -14,19 +14,19 @@ import type { AudioShape } from '../shapes/EmbedShapes'
 import { loadSkills, saveSkill, skillAtom, type Skill } from '../skills'
 import { AssetGrid } from './AssetPicker'
 import { schedulesOpenAtom } from '../schedules'
-import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPicker'
+import { AgentExtras, AgentItems, useCurrentAgent } from './AgentPicker'
 import { AgentLogo } from './agentLogos'
 import { Icons } from './icons'
 import { ModelPrefs } from './ModelPrefs'
 import { DirectPills } from './DirectPills'
 import { ComposerSlot, useSlot } from './ComposerSlot'
 import { SkillForm, skillsOpenAtom } from './SkillsDialog'
+import { MODE_OPTIONS, modeOf } from './modeOptions'
 import { Popover } from './Popover'
 import { t } from '../i18n'
 import { uuid } from '../id'
 import { isEnter } from './keys'
 
-const MODES: [AgentMode, string, keyof typeof Icons][] = [['agent', 'Agent', 'agent'], ['image', t('composer.image'), 'genImage'], ['video', t('common.video'), 'genVideo']]
 const REVIEW_PROMPT = t('composer.canvasReviewUseGetCanvas')
 const SKILL_PROMPT = t('composer.turnTheApproachCompletedIn')
 
@@ -167,7 +167,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const mentions = at ? images.filter((s) => imageName(editor, s).toLowerCase().includes(at[1].toLowerCase())).slice(0, 8) : []
   const kitMentions = at ? library.filter((k) => k.name.toLowerCase().includes(at[1].toLowerCase()) && !kits.some((x) => x.id === k.id)).slice(0, 8) : []
   const clearAt = () => draftAtom.set(draft.slice(0, at!.index) + (at!.index ? ' ' : ''))
-  const modeInfo = MODES.find(([m]) => m === mode)!
+  const modeInfo = modeOf(mode)
   const agent = useCurrentAgent()
 
   return (
@@ -328,14 +328,15 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           within=".ca-composer"
           trigger={({ open, toggle }) => (
             <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' && agent ? providerLabel(agent) : modeInfo[1]} data-agent={mode === 'agent' && agent ? agent.id : undefined} data-open={open || undefined} onClick={toggle}>
-              {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span className="ca-menu__grow">{shortLabel(agent)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-composer__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
+              {/* #306: pill = mode name (Agent/图像/视频), never agent product shortLabel like ComfyArt */}
+              {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span className="ca-composer__modetext">{modeInfo[1]}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-composer__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
             </button>
           )}
         >
           <div className="ca-menu ca-agentpick">
             <AgentItems onError={onError} current={mode === 'agent'} close={() => setMenu(null)} onChosen={() => agentModeAtom.set('agent')} />
             <div className="ca-menu__sep" />
-            {MODES.filter(([m]) => m !== 'agent').map(([m, label, icon]) => (
+            {MODE_OPTIONS.filter(([m]) => m !== 'agent').map(([m, label, icon]) => (
               <button key={m} type="button" className="ca-menu__item" onClick={() => { agentModeAtom.set(m); setMenu(null) }}>
                 <span className="ca-icon">{Icons[icon]}</span><span className="ca-menu__grow">{label}</span>
                 {m === mode && <span className="ca-icon">{Icons.check}</span>}

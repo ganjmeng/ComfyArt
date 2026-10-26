@@ -333,6 +333,7 @@
   "compose.renderName": "{0} · 渲染",
   "compose.requestDetails": "渲染会发送的内容",
   "composer.addAssets": "添加素材",
+  "composer.agent": "Agent",
   "composer.audio": "音频",
   "composer.canvasReview": "画布巡检",
   "composer.canvasReviewUseGetCanvas": "画布巡检：用 get_canvas 和 view_canvas 逐个画板检查画布，指出品牌色或字体不一致、错别字、文字看不清、裁切、分辨率低、版式层级、尺寸缺漏等问题，每条写成“问题：… 建议：…”。没问题就简单说明。先不要改动画布。",

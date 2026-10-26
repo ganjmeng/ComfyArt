@@ -333,6 +333,7 @@
   "compose.renderName": "{0} · Render",
   "compose.requestDetails": "What Render sends",
   "composer.addAssets": "Add Assets",
+  "composer.agent": "Agent",
   "composer.audio": "Audio",
   "composer.canvasReview": "Canvas Review",
   "composer.canvasReviewUseGetCanvas": "Canvas review: use get_canvas and view_canvas to check the canvas artboard by artboard. Point out issues such as inconsistent brand colors or fonts, typos, hard-to-read text, cropping, low resolution, layout hierarchy, and missing sizes. Write each item as \"Issue: … Suggestion: …\". If there are no issues, say so briefly. Do not change the canvas yet.",
