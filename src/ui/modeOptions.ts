@@ -2,7 +2,7 @@ import type { AgentMode } from '../agent'
 import { t } from '../i18n'
 import { Icons } from './icons'
 
-/** #306: Home + canvas composer share one mode list; pill shows these labels, never a product/agent name. */
+/** Shared mode list for Home + canvas (image/video labels). Agent-mode pill uses shortLabel, not composer.agent. */
 export const MODE_OPTIONS: [AgentMode, string, keyof typeof Icons][] = [
   ['agent', t('composer.agent'), 'agent'],
   ['image', t('composer.image'), 'genImage'],
