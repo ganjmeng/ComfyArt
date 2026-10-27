@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh" data-theme="light" class="ca-root">
+<meta charset="utf-8"/>
+<title>#360 no-chip-row crop light</title>
+<link rel="stylesheet" href="tip.css"/>
+<style>
+  html,body{margin:0;background:#fff;}
+  .frame{width:360px;margin:12px;padding:12px 14px 28px;border-radius:12px;
+    background:var(--ca-float);color:var(--ca-text);border:1px dashed #ccc;}
+  .tag{font:500 11px/16px Inter,system-ui,sans-serif;color:var(--ca-muted);margin:0 0 8px;}
+  .proof{margin-top:14px;font:500 11px/16px Inter,system-ui,sans-serif;color:#15803d;}
+</style>
+<body>
+<div class="frame" id="shot">
+  <div class="tag">negative crop · zero pill/chip suggestion buttons under Done</div>
+  <div class="ca-chat__done">
+    <div class="ca-md">
+      <p><strong>已生成完成：</strong>一张红色草莓静物图。</p>
+      <p>下一步建议：可以试试换个背景，或者生成同系列的第二张角度。</p>
+    </div>
+    <div class="ca-chat__feedback" data-testid="chat-done-feedback">
+  <button type="button" class="ca-chat__fb" aria-label="Thumbs up"><span class="ca-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4.5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 4.5 11H7z"/><path d="M7 11V9.2A3.2 3.2 0 0 1 10.2 6h.3l.8-2.2A1.8 1.8 0 0 1 13 2.5h.2A1.8 1.8 0 0 1 15 4.3V7h3.2a1.8 1.8 0 0 1 1.75 2.22l-1.2 5.1A2.5 2.5 0 0 1 16.3 16.5H7"/></svg></span></button>
+  <button type="button" class="ca-chat__fb" aria-label="Thumbs down"><span class="ca-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13V4h2.5A1.5 1.5 0 0 1 21 5.5v6A1.5 1.5 0 0 1 19.5 13H17z"/><path d="M17 13v1.8A3.2 3.2 0 0 1 13.8 18h-.3l-.8 2.2A1.8 1.8 0 0 1 11 21.5h-.2A1.8 1.8 0 0 1 9 19.7V17H5.8a1.8 1.8 0 0 1-1.75-2.22l1.2-5.1A2.5 2.5 0 0 1 7.7 7.5H17"/></svg></span></button>
+</div>
+  </div>
+  <!-- Intentionally empty: no ca-panel__chips / ca-gen__chips / suggestion pills -->
+  <div class="ca-done-no-chips" data-testid="no-chip-row"></div>
+  <div class="proof">✓ no suggestion chip / pill row in this Done turn</div>
+</div>
+</body></html>

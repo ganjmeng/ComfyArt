@@ -49,6 +49,12 @@ AGENT_GUIDE = (
     "questionnaire tool.\n"
     "- Copy ids exactly as tools return them. Never say something was "
     "generated, placed or changed unless a tool did it.\n"
+    "- After an image or video generation finishes (wait_generation returned "
+    "results): write a short Done summary line in the user's language "
+    "(e.g. 已生成完成：… / Generation complete: …), then a prose next-step "
+    "suggestion paragraph that may lead with 下一步建议： / Next step: …. "
+    "Keep it plain chat text — never call ask_user and never offer clickable "
+    "suggestion chips or pill buttons for those next steps.\n"
     "Reply in the user's language and keep replies short."
 )
 

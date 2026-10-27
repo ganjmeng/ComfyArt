@@ -242,6 +242,8 @@
   "chatMessage.submit": "提交",
   "chatMessage.thinking": "思考中…",
   "chatMessage.thought": "思考过程",
+  "chatMessage.thumbsUp": "点赞",
+  "chatMessage.thumbsDown": "点踩",
   "chatMessage.skillReady": "技能就绪",
   "chatMessage.skillFileReadLive": "正在读取技能文件…",
   "chatMessage.skillFileRead": "技能文件已读",
