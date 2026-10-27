@@ -1,8 +1,9 @@
 import { useState } from 'react'
 
 import { t } from '../i18n'
-import { Icons } from '../ui/icons'
 import { ArtiMemory } from './ArtiMemory'
+import { ArtiLevelAvatar } from '../ui/ArtiMascot'
+import { resolveArtiLevel } from '../artiLevel'
 
 type LearnedTab = 'memory' | 'skills' | 'evolution'
 
@@ -99,12 +100,13 @@ export function Arti() {
     <div className="ca-arti" data-testid="arti-page">
       <section className="ca-arti__level" data-testid="arti-level-card">
         <div className="ca-arti__avatar" aria-hidden="true" data-testid="arti-avatar">
-          <span className="ca-icon">{Icons.sparkles}</span>
+          {/* #371 SHOULD: share same level sheet as composer badge */}
+          <ArtiLevelAvatar />
         </div>
         <div className="ca-arti__levelbody">
           <div className="ca-arti__levelrow">
             <span className="ca-arti__status">{t('arti.levelStatus')}</span>
-            <span className="ca-arti__lv">{t('arti.level', 1)}</span>
+            <span className="ca-arti__lv">{t('arti.level', resolveArtiLevel())}</span>
           </div>
           <p className="ca-arti__levelhint">{t('arti.levelHint')}</p>
         </div>
