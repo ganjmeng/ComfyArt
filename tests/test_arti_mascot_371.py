@@ -219,3 +219,13 @@ def test_376_notify_panel_lovart_1to1() -> None:
     assert "align-items: center" in empty and "text-align: center" in empty
     # outside-click must not treat clicks inside the panel as outside
     assert "panel.contains(tgt)" in MASCOT
+
+
+def test_376_close_bare_icon_with_hover_highlight() -> None:
+    """Lovart CN: × is a bare icon; hover shows a small rounded-square highlight behind it."""
+    base = _rule(".arti-notify__close")
+    assert "background: transparent" in base and "border: none" in base
+    assert "border-radius: 6px" in base
+    i = SHELL.index(".arti-notify__close:hover {")
+    hov = SHELL[i:SHELL.index("}", i)]
+    assert "background: var(--ca-hover" in hov
