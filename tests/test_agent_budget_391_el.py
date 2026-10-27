@@ -477,3 +477,38 @@ def test_quote_declined_body_count_is_actual_and_zero_omits_clause(n, zh, en):
     from ComfyArt.bot.agent_loop import _card_body
     for lk, want in (("zh", zh), ("en", en)):
         assert _card_body("user_stop:quote_declined", lk, n=n, m=4, x=None, kind="image") == want
+
+
+# Tester HOLD 9eb9296: whole run -- 2 images generated, then the quote is declined -> body carries the real 2 ----
+async def test_whole_run_two_generated_then_declined_card_says_2(monkeypatch, store):
+    # step 1 generates 2 images inside the budget; step 2's third image is quoted over the budget -> declined
+    class Prices:
+        asked = 0
+
+        def get(self, name):
+            self.asked += 1
+            return 0.1 if self.asked <= 2 else 5.0
+    r = Rig(monkeypatch, lambda m, n: calls(GEN, GEN) if n == 0 else calls(GEN) if n == 1 else reply("好"),
+            store=store, prices=Prices(), policy={"credits_usd": 1.0},
+            confirm=False, mcp=lambda name, a, i: json.dumps({"id": f"shape:g{i}"}))
+    res, ev = await r.send("画 3 张猫")
+    assert len(r.paid_mcp()) == 2
+    s = stop_of(res)
+    assert (s["reason"], s["sub"]) == ("user_stop", "quote_declined")
+    c = card(ev)["copy"]
+    assert c["key"] == "user_stop:quote_declined"
+    assert c["zh"]["body"] == "报价没有确认，不会扣费；已保留之前生成的 2 张"
+    assert c["en"]["body"] == "Quote not confirmed, so no charge; kept the 2 images generated earlier"
+
+
+# non-image cancelled copy: n=0 omits the kept clause; n>0 names the real count and unit ------------------------
+@pytest.mark.parametrize("kind,n,zh,en", [
+    ("video", 0, "报价没有确认，不会扣费", "Quote not confirmed, so no charge"),
+    ("video", 2, "报价没有确认，不会扣费；已保留生成的 2 段视频", "Quote not confirmed, so no charge; Kept the 2 videos already generated"),
+    ("text", 0, "报价没有确认，不会扣费", "Quote not confirmed, so no charge"),
+    ("text", 4, "报价没有确认，不会扣费；已保留生成的 4 条文案", "Quote not confirmed, so no charge; Kept the 4 texts already generated"),
+])
+def test_quote_declined_non_image_body(kind, n, zh, en):
+    from ComfyArt.bot.agent_loop import _card_body
+    assert _card_body("user_stop:quote_declined", "zh", n=n, m=None, x=None, kind=kind) == zh
+    assert _card_body("user_stop:quote_declined", "en", n=n, m=None, x=None, kind=kind) == en
