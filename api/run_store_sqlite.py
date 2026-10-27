@@ -53,6 +53,8 @@ class AgentUsageEvent(db.Base):
     tokens:       Mapped[int] = mapped_column(Integer, default=0)
     reason:       Mapped[str] = mapped_column(Text, default="")
     artifact_ids: Mapped[str] = mapped_column(Text, default="[]")
+    status:       Mapped[str] = mapped_column(String, default="done")   # pending | done | failed
+    call_id:      Mapped[str] = mapped_column(String, default="")       # per-call idempotency id
     created_at:   Mapped[float] = mapped_column(Float)
 
 
@@ -147,18 +149,47 @@ class SqliteRunStore(RunStore):
                       .values(lease_owner=None, lease_expires_at=0.0))
 
     def mark_interrupted(self):
+        now = self._clock()
         with db.session() as s, s.begin():
-            res = s.execute(update(AgentRun).where(AgentRun.status == "running").values(
+            res = s.execute(update(AgentRun).where(
+                AgentRun.status == "running",
+                or_(AgentRun.lease_owner.is_(None), AgentRun.lease_expires_at < now)).values(
                 status="paused", status_detail="interrupted", lease_owner=None, lease_expires_at=0.0,
                 updated_at=self._clock()))
             return res.rowcount or 0
 
-    def add_usage_event(self, *, run_id, kind, reason, tool="", amount_usd=0.0, tokens=0, artifact_ids=None,
-                        owner_id=LOCAL_OWNER_ID, workspace_id=LOCAL_WORKSPACE_ID):
+    def _usage_row(self, *, run_id, kind, reason, tool="", amount_usd=0.0, tokens=0, artifact_ids=None,
+                   status="done", call_id="", owner_id=LOCAL_OWNER_ID, workspace_id=LOCAL_WORKSPACE_ID):
+        return AgentUsageEvent(run_id=run_id, owner_id=owner_id, workspace_id=workspace_id, kind=kind,
+                               tool=tool, amount_usd=float(amount_usd), tokens=int(tokens), reason=reason,
+                               status=status, call_id=call_id,
+                               artifact_ids=json.dumps(list(artifact_ids or [])), created_at=self._clock())
+
+    def add_usage_event(self, **kw):
         with db.session() as s, s.begin():
-            s.add(AgentUsageEvent(run_id=run_id, owner_id=owner_id, workspace_id=workspace_id, kind=kind,
-                                  tool=tool, amount_usd=float(amount_usd), tokens=int(tokens), reason=reason,
-                                  artifact_ids=json.dumps(list(artifact_ids or [])), created_at=self._clock()))
+            s.add(self._usage_row(**kw))
+
+    def save_checkpoint_with_usage(self, run_id, lease_owner, *, status, step, state, usage, status_detail=""):
+        now = self._clock()
+        with db.session() as s, s.begin():
+            res = s.execute(update(AgentRun).where(AgentRun.id == run_id, AgentRun.lease_owner == lease_owner)
+                            .values(status=status, status_detail=status_detail, step=step, updated_at=now,
+                                    state=json.dumps(state, ensure_ascii=False, default=str)))
+            if res.rowcount != 1:
+                return None  # not our lease: nothing was written
+            row = self._usage_row(run_id=run_id, **usage)
+            s.add(row)
+            s.flush()
+            return int(row.seq)
+
+    def finish_usage_event(self, event_id, *, status, amount_usd=0.0, artifact_ids=None, reason=None):
+        values = {"status": status, "amount_usd": float(amount_usd)}
+        if artifact_ids is not None:
+            values["artifact_ids"] = json.dumps(list(artifact_ids))
+        if reason is not None:
+            values["reason"] = reason
+        with db.session() as s, s.begin():
+            s.execute(update(AgentUsageEvent).where(AgentUsageEvent.seq == event_id).values(**values))
 
     def list_usage_events(self, *, run_id=None, owner_id=None):
         q = select(AgentUsageEvent)
@@ -169,7 +200,8 @@ class SqliteRunStore(RunStore):
         with db.session() as s:
             return [{"run_id": e.run_id, "owner_id": e.owner_id, "workspace_id": e.workspace_id, "kind": e.kind,
                      "tool": e.tool, "amount_usd": e.amount_usd, "tokens": e.tokens, "reason": e.reason,
-                     "artifact_ids": json.loads(e.artifact_ids or "[]"), "created_at": e.created_at}
+                     "artifact_ids": json.loads(e.artifact_ids or "[]"), "created_at": e.created_at,
+                     "status": e.status, "call_id": e.call_id, "id": e.seq}
                     for e in s.scalars(q.order_by(AgentUsageEvent.seq))]
 
     def add_run_log(self, *, run_id, record, owner_id=LOCAL_OWNER_ID, workspace_id=LOCAL_WORKSPACE_ID,

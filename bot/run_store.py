@@ -36,6 +36,18 @@ class RunStore(ABC):
         """Transactional per-step write. Only the lease holder may write; returns False otherwise."""
 
     @abstractmethod
+    def save_checkpoint_with_usage(self, run_id: str, lease_owner: str, *, status: str, step: int, state: dict,
+                                   usage: dict, status_detail: str = "") -> Optional[int]:
+        """Atomically write the checkpoint AND insert a usage event (status 'pending') in ONE
+        transaction, so a paid call never goes out without its metering row. Returns the usage
+        event id, or None when the lease is not ours (nothing written)."""
+
+    @abstractmethod
+    def finish_usage_event(self, event_id: int, *, status: str, amount_usd: float = 0.0,
+                           artifact_ids: Optional[list] = None, reason: Optional[str] = None) -> None:
+        """Move a pending usage event to done|failed once the call returns."""
+
+    @abstractmethod
     def acquire_lease(self, run_id: str, lease_owner: str, ttl_s: float) -> bool:
         """DB lease (lease_owner, lease_expires_at). True when free, expired or already ours."""
 
@@ -47,11 +59,13 @@ class RunStore(ABC):
 
     @abstractmethod
     def mark_interrupted(self) -> int:
-        """On server start: every `running` run becomes paused(interrupted) and its lease is freed."""
+        """On server start: `running` runs whose lease has EXPIRED (or that have none) become
+        paused(interrupted). Runs still leased by another live instance are left alone."""
 
     @abstractmethod
     def add_usage_event(self, *, run_id: str, kind: str, reason: str, tool: str = "",
                         amount_usd: float = 0.0, tokens: int = 0, artifact_ids: Optional[list] = None,
+                        status: str = "done", call_id: str = "",
                         owner_id: str = LOCAL_OWNER_ID, workspace_id: str = LOCAL_WORKSPACE_ID) -> None:
         """Unified metering record: who (owner/workspace/run), how much, why."""
 

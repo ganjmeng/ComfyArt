@@ -125,6 +125,12 @@ class Rig:
         return [c for c in self.mcp if c[0] == "generate_image"]
 
 
+def expire_leases(store, by=3600):
+    """Advance the store's clock past every lease (the crashed process can no longer renew)."""
+    import time as _t
+    store._clock = lambda: _t.time() + by
+
+
 def stop_of(res):
     return res.run["stop"]
 
@@ -138,7 +144,7 @@ def card(events):
 
 def test_policy_layers_defaults_and_legacy_env(caplog):
     p = resolve_policy(env={})
-    assert (p["hard_cap_steps"], p["token_window_multiple"], p["wall_time_s"], p["stall_steps"]) == (300, 3, 900, 4)
+    assert (p["hard_cap_steps"], p["token_window_multiple"], p["wall_time_s"], p["stall_steps"]) == (300, 40, 900, 4)
     assert p.enabled
     assert resolve_policy(workspace={"hard_cap_steps": 50}, user={"hard_cap_steps": 70}, env={})["hard_cap_steps"] == 70
     assert resolve_policy(user={"hard_cap_steps": 99999}, env={})["hard_cap_steps"] == 1000  # clamped
@@ -150,10 +156,11 @@ def test_policy_layers_defaults_and_legacy_env(caplog):
 
 
 def test_stop_reasons_and_sub_reasons_are_fixed():
-    assert {r.value for r in StopReason} == {"done", "budget", "stalled", "hard_cap", "user_stop", "error"}
-    assert set(SUB_REASONS[StopReason.STALLED]) >= {"no_progress", "repeat", "tool_error", "readonly_limit"}
-    assert set(SUB_REASONS[StopReason.BUDGET]) >= {"paused", "exhausted", "unattended_skipped",
-                                                    "paid_confirm_declined", "paid_confirm_unattended_skipped"}
+    assert {r.value for r in StopReason} == {"done", "budget", "stuck", "hard_cap", "user_stop", "error"}
+    assert set(SUB_REASONS[StopReason.STUCK]) >= {"no_progress", "repeat", "tool_error", "readonly_limit"}
+    assert set(SUB_REASONS[StopReason.BUDGET]) == {"paused", "exhausted", "unattended_skipped"}
+    assert "self_check_failed" in SUB_REASONS[StopReason.STUCK]
+    assert set(SUB_REASONS[StopReason.USER_STOP]) == {"", "quote_declined"}
     assert confirm_policy("unattended", "soft_limit") == "skip" and confirm_policy("interactive", "soft_limit") != "skip"
 
 
@@ -166,11 +173,18 @@ def test_images_count_as_tokens():
 def test_soft_pause_only_when_projection_exceeds_and_once():
     clk = Clock()
     b = RunBudget(BudgetLimits(tokens=1000, credits=5, wall_s=900, hard_steps=300), k=5, clock=clk)
-    b.charge_tokens(100); b.end_step()
-    assert b.should_soft_pause(remaining_steps=3) is None          # 100 + 3*100 <= 1000: not exceeded
-    assert b.should_soft_pause(remaining_steps=12) == "tokens"     # 100 + 12*100 > 1000: exceeded
+    b.charge_tokens(100); b.charge_credits(1.0); b.end_step()
+    assert b.should_soft_pause(remaining_steps=3) is None          # 1 + 3*1 <= 5: not exceeded
+    assert b.should_soft_pause(remaining_steps=12) == "credits"    # 1 + 12*1 > 5: exceeded
     b.soft_used = True
     assert b.should_soft_pause(remaining_steps=12) is None         # at most once per run
+
+
+def test_soft_pause_only_interrupts_for_money():
+    """tokens / time projections never interrupt the user (they run to the hard limit)."""
+    b = RunBudget(BudgetLimits(tokens=1000, credits=5, wall_s=900, hard_steps=300), k=5, clock=Clock())
+    b.charge_tokens(100); b.end_step()
+    assert b.should_soft_pause(remaining_steps=50) is None         # 100 + 50*100 tokens > 1000, no money
 
 
 def test_tracker_readonly_whitelist_and_stall():
@@ -203,8 +217,12 @@ async def test_hard_cap_stops_and_says_so(monkeypatch, store):
     r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})), policy={"hard_cap_steps": 5},
             store=store)
     res, ev = await r.send("加很多字")
-    assert stop_of(res)["reason"] == "hard_cap" and "5 步上限" in res.error  # announced, not silent
-    assert len(r.mcp) == 5 and card(ev)["can_continue"]
+    c = card(ev)
+    assert stop_of(res)["reason"] == "hard_cap" and res.error  # announced, not silent
+    assert c["copy"]["zh"]["title"] == "先停在这里了" and c["copy"]["zh"]["body"].startswith("已完成 ")
+    assert (c["copy"]["zh"]["primary"], c["copy"]["zh"]["secondary"]) == ("继续", "先到这里")
+    assert "5 步" not in res.error and "上限" not in res.error  # the cap number is never shown
+    assert len(r.mcp) == 5 and c["can_continue"]
 
 
 async def test_default_hard_cap_is_not_80(monkeypatch, store):
@@ -214,23 +232,23 @@ async def test_default_hard_cap_is_not_80(monkeypatch, store):
     assert stop_of(res)["reason"] == "done" and len([c for c in r.mcp if c[0] == "add_text"]) == 120
 
 
-async def test_stalled_no_progress_after_one_nudge(monkeypatch, store):
+async def test_stuck_no_progress_after_one_nudge(monkeypatch, store):
     r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})), store=store,
             mcp=lambda name, a, i: "ok")
     res, _ = await r.send("加字")
-    assert stop_of(res) ["reason"] == "stalled" and stop_of(res)["sub"] == "no_progress"
+    assert stop_of(res) ["reason"] == "stuck" and stop_of(res)["sub"] == "no_progress"
     nudges = [m for m in r.requests[-1] if m["role"] == "user" and "换一个思路" in str(m.get("content"))]
     assert len(nudges) == 1                       # "try another approach" at most once
     assert len(r.mcp) == 8                        # 4 unchanged -> nudge -> 4 unchanged -> stop
 
 
-async def test_stalled_repeat(monkeypatch, store):
+async def test_stuck_repeat(monkeypatch, store):
     r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": "same"})), store=store)
     res, _ = await r.send("加字")
     assert stop_of(res)["sub"] == "repeat"
 
 
-async def test_stalled_tool_error_after_3_failures(monkeypatch, store):
+async def test_stuck_tool_error_after_3_failures(monkeypatch, store):
     r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})), store=store,
             mcp=lambda name, a, i: aiohttp.ClientConnectionError("down"))
     res, _ = await r.send("加字")
@@ -238,7 +256,7 @@ async def test_stalled_tool_error_after_3_failures(monkeypatch, store):
 
 
 async def test_readonly_steps_are_not_no_progress(monkeypatch, store):
-    """8 read-only steps, then real work: never stalled; the same reads in a row are not 'no progress'."""
+    """8 read-only steps, then real work: never stuck; the same reads in a row are not 'no progress'."""
     def script(m, n):
         if n < 8:
             return calls(("get_canvas", {"page": f"p{n}"}))
@@ -276,15 +294,40 @@ async def test_error_llm_retry_exhausted(monkeypatch, store):
 
 
 async def test_soft_limit_exceeded_pauses_interactive(monkeypatch, store):
+    """Money projection over budget: pause once, card says done / remaining / estimated cost."""
+    r = Rig(monkeypatch, lambda m, n: calls(("generate_image", {"prompt": f"p{n}", "model": "m"})), store=store,
+            policy={"credits_usd": 1.0}, prices={"generate_image": 0.4},
+            mcp=lambda name, a, i: json.dumps({"id": f"shape:s{i}"}))
+    res, ev = await r.send("画 4 张猫")
+    s = stop_of(res)
+    assert (s["reason"], s["sub"]) == ("budget", "paused") and s["dimension"] == "credits"
+    c = card(ev)
+    assert c["can_continue"] and c["estimate"]["credits"] > 0 and c["remaining"]["deliverables"] >= 1
+    zh = c["copy"]["zh"]
+    assert zh["title"] == "预算用完了" and zh["primary"] == "继续" and zh["secondary"] == "先到这里"
+    assert zh["body"].startswith("已完成 ") and "/4" in zh["body"] and "继续大约需要" in zh["body"] and "积分" in zh["body"]
+    assert store.get_run(res.run["run_id"])["status"] == "paused"
+
+
+async def test_tokens_budget_exhaustion_stops_without_asking(monkeypatch, store):
     big = "x" * 8000
     r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})), store=store, window=2000,
             policy={"token_window_multiple": 2}, mcp=lambda name, a, i: json.dumps({"id": f"s{i}", "t": big}))
     res, ev = await r.send("画 4 张猫")
     s = stop_of(res)
-    assert (s["reason"], s["sub"]) == ("budget", "paused") and s["dimension"] == "tokens"
-    c = card(ev)
-    assert c["can_continue"] and c["estimate"] and c["remaining"]["deliverables"] == 4
-    assert store.get_run(res.run["run_id"])["status"] == "paused"
+    assert (s["reason"], s["sub"], s["dimension"]) == ("budget", "exhausted", "tokens")
+    assert r.confirms == [] and "max_steps" not in json.dumps(s)
+
+
+async def test_credits_budget_exhaustion(monkeypatch, store):
+    r = Rig(monkeypatch, lambda m, n: calls(("generate_image", {"prompt": f"p{n}", "model": "m"})), store=store,
+            policy={"credits_usd": 1.0, "soft_fraction": 1.0}, prices={"generate_image": 0.5},
+            mcp=lambda name, a, i: json.dumps({"id": f"shape:s{i}"}))
+    r.p  # noqa: B018
+    res, _ = await r.send("做一下", goal="")
+    s = stop_of(res)
+    assert (s["reason"], s["dimension"]) == ("budget", "credits") and "max_steps" not in json.dumps(s)
+    assert len(r.paid_mcp()) == 2 and res.run["log"]["credits_usd"] == pytest.approx(1.0)
 
 
 async def test_soft_limit_not_exceeded_runs_through(monkeypatch, store):
@@ -297,14 +340,15 @@ async def test_soft_limit_not_exceeded_runs_through(monkeypatch, store):
 
 async def test_unattended_never_waits_and_charges_nothing_over_budget(monkeypatch, store):
     big = "x" * 8000
-    r = Rig(monkeypatch, lambda m, n: calls(("generate_image", {"prompt": f"p{n}", "model": "m"})),
-            store=store, window=2000, policy={"token_window_multiple": 2}, prices={"generate_image": 0.0},
-            mcp=lambda name, a, i: json.dumps({"ids": [f"j{i}"], "t": big}))
+    r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"p{n}"})),
+            store=store, window=2000, policy={"token_window_multiple": 2},
+            mcp=lambda name, a, i: json.dumps({"id": f"s{i}", "t": big}))
     res, ev = await r.send("画 4 张猫", mode="unattended")
     s = stop_of(res)
     assert (s["reason"], s["sub"]) == ("budget", "unattended_skipped")
     assert r.confirms == []                                  # never asked
-    assert [e for e in ev if e.t == "notify"]                # the user is notified
+    assert len([e for e in ev if e.t == "notify"]) == 1      # exactly one notification
+    assert r.paid_mcp() == [] and res.run["log"]["paid_calls"] == 0
     assert store.get_run(res.run["run_id"])["status"] == "paused"  # checkpoint kept
 
 
@@ -312,7 +356,7 @@ async def test_unattended_paid_over_quote_is_skipped_not_charged(monkeypatch, st
     r = Rig(monkeypatch, [calls(("generate_image", {"prompt": "a", "model": "m"}))], store=store,
             policy={"credits_usd": 1.0}, prices={"generate_image": 1.5})
     res, _ = await r.send("画一张猫", mode="unattended")
-    assert stop_of(res)["sub"] == "paid_confirm_unattended_skipped" and r.confirms == []
+    assert stop_of(res)["sub"] == "unattended_skipped" and r.confirms == []
     assert r.paid_mcp() == [] and res.run["log"]["credits_usd"] == 0
     assert [e for e in store.list_usage_events(run_id=res.run["run_id"]) if e["kind"] == "paid_call"] == []
 
@@ -321,7 +365,8 @@ async def test_paid_over_quote_needs_confirm_never_auto_continue(monkeypatch, st
     r = Rig(monkeypatch, [calls(("generate_image", {"prompt": "a", "model": "m"}))], store=store,
             policy={"credits_usd": 1.0}, prices={"generate_image": 1.5}, confirm=False)
     res, _ = await r.send("画一张猫")
-    assert stop_of(res)["sub"] == "paid_confirm_declined"
+    assert stop_of(res)["reason"] == "user_stop" and stop_of(res)["sub"] == "quote_declined"
+    assert not res.error  # cancelled by the user: not shown as an error
     assert len(r.confirms) == 1 and r.paid_mcp() == []
     assert res.run["log"]["credits_usd"] == 0
 
@@ -357,7 +402,7 @@ async def test_long_runs_never_overflow_the_window(monkeypatch, store):
     window = 16_000
     for steps in (150, 200):
         r = Rig(monkeypatch, lambda m, n, steps=steps: calls(("add_text", {"text": f"x{n}"})) if n < steps
-                else reply("好了"), store=store, window=window, policy={"token_window_multiple": 50},
+                else reply("好了"), store=store, window=window, policy={"token_window_multiple": 200},
                 mcp=lambda name, a, i: (json.dumps({"id": f"s{i}", "note": "y" * 600}), [IMG]))
         res, ev = await r.send("把标语逐条加到画布上")
         assert stop_of(res)["reason"] == "done", stop_of(res)
@@ -394,28 +439,32 @@ async def test_checkpoint_written_every_step(monkeypatch, store):
 
 
 async def test_restart_resume_is_idempotent_no_duplicate_paid(monkeypatch, store):
-    gen = ("generate_image", {"prompt": "cat", "model": "m"})
-
-    def first(m, n):
-        if n == 0:
-            return calls(gen)
-        return Crash()
-    r = Rig(monkeypatch, first, store=store, prices={"generate_image": 0.5})
+    cat = ("generate_image", {"prompt": "cat", "model": "m"})
+    dog = ("generate_image", {"prompt": "dog", "model": "m"})
+    # one step, two paid calls: the first finishes, the process dies inside the second (before the step checkpoint)
+    r = Rig(monkeypatch, [calls(cat, dog)], store=store, prices={"generate_image": 0.5},
+            mcp=lambda name, a, i: Crash() if a.get("prompt") == "dog" else json.dumps({"id": "shape:g1"}))
     with pytest.raises(Crash):
         await r.send("生成一下", goal="")
     (run,) = store.list_runs(chat_id="c")
     assert run["status"] == "running"
-    assert store.mark_interrupted() == 1                       # restart
+    assert store.mark_interrupted() == 0                       # lease still live: maybe another instance
+    expire_leases(store)
+    assert store.mark_interrupted() == 1                       # restart after the lease expired
     run = store.get_run(run["id"])
     assert (run["status"], run["status_detail"]) == ("paused", "interrupted")
-    # resume: the model re-issues the same paid call; it is reused, not re-run
-    r2 = Rig(monkeypatch, [calls(gen), reply("好了")], store=store, prices={"generate_image": 0.5})
+    # resume: the crashed step's exact tool calls (same tool_call_id) are replayed: cat is reused, dog
+    # (pending, outcome unknown) is not re-called
+    r2 = Rig(monkeypatch, [reply("好了")], store=store, prices={"generate_image": 0.5})
     res, _ = await r2.send("", resume=run["id"])
     assert res.run, res.error
     assert stop_of(res)["reason"] == "done"
-    assert len(r.paid_mcp()) + len(r2.paid_mcp()) == 1
+    assert len(r.paid_mcp()) == 2 and r2.paid_mcp() == []
     paid = [e for e in store.list_usage_events(run_id=run["id"]) if e["kind"] == "paid_call"]
-    assert len(paid) == 1 and res.run["log"]["credits_usd"] == pytest.approx(0.5)
+    assert sorted(e["status"] for e in paid) == ["done", "pending"]
+    # replayed without asking the model again: its first request already carries both results of the crashed step
+    tool_msgs = [m for m in r2.requests[0] if m["role"] == "tool"]
+    assert len(tool_msgs) == 2 and "shape:g1" in str(tool_msgs[0].get("content"))
 
 
 async def test_crash_during_paid_call_never_recalls(monkeypatch, store):
@@ -424,11 +473,14 @@ async def test_crash_during_paid_call_never_recalls(monkeypatch, store):
             mcp=lambda name, a, i: Crash())
     with pytest.raises(Crash):
         await r.send("画一张猫")
+    expire_leases(store)
     store.mark_interrupted()
     (run,) = store.list_runs(chat_id="c")
-    r2 = Rig(monkeypatch, [calls(gen), reply("好了")], store=store, prices={"generate_image": 0.5})
+    r2 = Rig(monkeypatch, [reply("好了")], store=store, prices={"generate_image": 0.5})
     await r2.send("", resume=run["id"])
     assert r2.paid_mcp() == []  # pending marker was durable: no second paid call
+    ev = [e for e in store.list_usage_events(run_id=run["id"]) if e["kind"] == "paid_call"]
+    assert [e["status"] for e in ev] == ["pending"]  # written with the pending checkpoint, survived the crash
 
 
 async def test_continue_resumes_without_redoing_steps(monkeypatch, store):

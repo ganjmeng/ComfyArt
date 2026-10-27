@@ -57,11 +57,15 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
         monkeypatch.setenv("WAVESPEED_API_KEY", WS_KEY)
         monkeypatch.setenv("COMFYART_LOCAL_LLM_API_KEY", LLM_KEY)
         llm_url = base + "/mockllm/v1"
-    write_settings(**{"enable-bot": True, "bot-local-llm-url": llm_url, "bot-model-local-llm": "mock-agent-model"})
+    write_settings(**{"enable-bot": True, "bot-local-llm-url": llm_url, "bot-model-local-llm": "mock-agent-model",
+                      **case.settings})
     page = FakePage(ws_url=base + "/mockws", decline=case.decline, shapes=[*map(_copy, case.shapes_initial)],
                     selection=list(case.selection), brand_kit=case.brand_kit)
     monkeypatch.setattr(canvas, "submit_command", page)
-    monkeypatch.setattr(local_llm, "_LLM_TIMEOUT_S", 0.3)  # the timeout fault sleeps 1 s
+    # the timeout fault sleeps 1 s; other cases get a roomy timeout so a slow mock answer on a long
+    # (300-step) run is not mistaken for a timeout and retried (the 15-hardcap-en flake)
+    faulty = any(getattr(st, "fault", None) == "timeout" for st in case.script)
+    monkeypatch.setattr(local_llm, "_LLM_TIMEOUT_S", 0.3 if faulty else 30)
     monkeypatch.setattr(local_llm, "_RETRY_BACKOFF_S", (0.01, 0.01))  # #232 retry waits, shortened
     monkeypatch.setattr(local_llm, "_RATE_LIMIT_WAIT_S", (0.01, 0.01))
     caplog.set_level(logging.DEBUG)
@@ -73,7 +77,8 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
             for turn in case.turns:
                 r = await client.post(f"/comfyart/bot/chats/{chat['id']}/send", json={"text": turn[lang], "lang": lang})
                 assert r.status == 200, await r.text()
-                messages = (await wait_bot_done(client, chat["id"], timeout=30))["messages"]
+                # long (120/300-step) cases need more than 30 s on a loaded box (was the 15-hardcap-en flake)
+                messages = (await wait_bot_done(client, chat["id"], timeout=180 if case.limit >= 120 else 30))["messages"]
     finally:
         await client.close()
     out, err = capfd.readouterr()
@@ -252,9 +257,9 @@ def _x_hard_cap(r):
     assert card["stop"]["reason"] == "hard_cap" and card["can_continue"] is True
 
 
-def _x_stalled(r):
+def _x_stuck(r):
     card = _run_stop(r)
-    assert card["stop"]["reason"] == "stalled" and card["stop"]["sub"] == "readonly_limit"
+    assert card["stop"]["reason"] == "stuck" and card["stop"]["sub"] == "readonly_limit"
 
 
 def _x_sc_pass(r):

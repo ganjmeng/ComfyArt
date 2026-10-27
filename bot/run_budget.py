@@ -27,7 +27,7 @@ _log = logging.getLogger(__name__)
 class StopReason(str, Enum):
     DONE = "done"
     BUDGET = "budget"
-    STALLED = "stalled"
+    STUCK = "stuck"
     HARD_CAP = "hard_cap"
     USER_STOP = "user_stop"
     ERROR = "error"
@@ -35,12 +35,11 @@ class StopReason(str, Enum):
 
 SUB_REASONS: dict[StopReason, frozenset[str]] = {
     StopReason.DONE: frozenset({""}),
-    StopReason.BUDGET: frozenset({"paused", "exhausted", "unattended_skipped",
-                                  "paid_confirm_unattended_skipped", "paid_confirm_declined"}),
-    StopReason.STALLED: frozenset({"no_progress", "repeat", "tool_error", "readonly_limit"}),
+    StopReason.BUDGET: frozenset({"paused", "exhausted", "unattended_skipped"}),
+    StopReason.STUCK: frozenset({"no_progress", "repeat", "tool_error", "readonly_limit", "self_check_failed"}),
     StopReason.HARD_CAP: frozenset({""}),
-    StopReason.USER_STOP: frozenset({""}),
-    StopReason.ERROR: frozenset({"llm_retry_exhausted", "tool"}),
+    StopReason.USER_STOP: frozenset({"", "quote_declined"}),
+    StopReason.ERROR: frozenset({"llm_retry_exhausted", "tool", "network"}),
 }
 BUDGET_DIMENSIONS = ("tokens", "credits", "time")
 
@@ -81,7 +80,7 @@ LEGACY_MAX_STEPS_ENV = "COMFYART_AGENT_MAX_STEPS"
 SYSTEM_DEFAULTS: dict[str, Any] = {
     FEATURE_FLAG: True,
     "hard_cap_steps": 300,
-    "token_window_multiple": 3,     # per-run token cap = 3 x model window (rolling compression on)
+    "token_window_multiple": 40,    # per-run token cap = 40 x model window; every request's re-sent input counts
     "wall_time_s": 15 * 60,
     "credits_usd": 5.0,             # paid ceiling per run; every paid call is also capped by its quote
     "soft_fraction": 0.8,           # UI hint level; pausing is projection driven
@@ -95,11 +94,12 @@ SYSTEM_DEFAULTS: dict[str, Any] = {
     "keep_screenshots": 2,
     "image_tokens": 1_500,          # conservative per image when the provider rule is unknown
     "lease_s": 60,
+    "lease_heartbeat_s": 0,         # 0 = lease_s / 3; renews the lease while a long tool call runs
 }
 # Valid ranges for user/workspace overrides; out of range values are clamped.
 POLICY_RANGES: dict[str, tuple[float, float]] = {
     "hard_cap_steps": (1, 1000),
-    "token_window_multiple": (1, 50),
+    "token_window_multiple": (1, 200),
     "wall_time_s": (30, 6 * 3600),
     "credits_usd": (0, 1000),
     "soft_fraction": (0.1, 1.0),
@@ -113,6 +113,7 @@ POLICY_RANGES: dict[str, tuple[float, float]] = {
     "keep_screenshots": (0, 10),
     "image_tokens": (85, 20_000),
     "lease_s": (5, 3600),
+    "lease_heartbeat_s": (0, 3600),
 }
 # Task tiers (from the first plan): the multiplier scales tokens / time for longer work.
 TIER_MULTIPLIER = {"chat": 1.0, "single_gen": 1.0, "batch_or_long": 2.0}
@@ -282,6 +283,15 @@ class RunBudget:
     def tick(self) -> None:
         self.used.wall_s = self._wall0 + (self._clock() - self._t0)
 
+    def charge_request(self, *, usage: Optional[dict], request_tokens: int, output_tokens: int) -> int:
+        """#391: one model request costs its INPUT (the whole re-sent context) + output + reasoning
+        (+ images, already inside request_tokens). Prefer the provider's usage.prompt_tokens."""
+        pt = (usage or {}).get("prompt_tokens") if isinstance(usage, dict) else None
+        inp = pt if isinstance(pt, int) and pt > 0 else int(request_tokens)
+        n = max(0, inp) + max(0, int(output_tokens))
+        self.charge_tokens(n)
+        return n
+
     def charge_tokens(self, n: int) -> None:
         self.used.tokens += max(0, int(n))
 
@@ -335,9 +345,17 @@ class RunBudget:
         return None
 
     def should_soft_pause(self, remaining_steps: int) -> Optional[str]:
+        """Product rule: only MONEY interrupts the user. The soft pause fires only when spent +
+        projected credits exceed the credit budget (once per run); tokens / time run on to their
+        hard limit without asking."""
         if self.soft_used or remaining_steps <= 0:
             return None
-        return self.over_projection(remaining_steps)
+        self.tick()
+        return "credits" if self._credits_over(remaining_steps) else None
+
+    def _credits_over(self, remaining_steps: int) -> bool:
+        p = self.projection(remaining_steps)
+        return p["credits"] > 0 and self.used.credits + p["credits"] > self.limits.credits
 
     def extend(self, factor: float = 1.0) -> None:
         """'Continue' after a soft pause / exhaustion: add another budget of the same size."""
@@ -437,10 +455,10 @@ class ProgressTracker:
     repeat_run: int = 0
     nudged: bool = False
     seen_artifacts: list = field(default_factory=list)
-    stalled_at: int = 0
+    stuck_at: int = 0
 
     def observe(self, step: int, obs: list[StepObservation], canvas_fp: str = "") -> Optional[str]:
-        """Feed one loop step (one assistant message worth of tool calls). Returns a stalled
+        """Feed one loop step (one assistant message worth of tool calls). Returns a stuck
         sub-reason (no_progress|repeat|tool_error|readonly_limit) or None."""
         if not obs:
             return None
@@ -448,9 +466,12 @@ class ProgressTracker:
         new_ids: set[str] = set()
         all_ro = True
         for o in obs:
-            call = _h(o.tool, o.args_key)
-            self.repeat_run = self.repeat_run + 1 if call == self.last_call else 1
-            self.last_call = call
+            if o.tool not in READ_ONLY_TOOLS:
+                # Polling (wait_generation / get_canvas ...) is not "repeat"; read-only steps are
+                # bounded only by readonly_max.
+                call = _h(o.tool, o.args_key)
+                self.repeat_run = self.repeat_run + 1 if call == self.last_call else 1
+                self.last_call = call
             self.fail_run = self.fail_run + 1 if o.failed else 0
             if not o.failed:
                 new_ids |= artifact_ids(o.result) - seen
@@ -477,7 +498,7 @@ class ProgressTracker:
         return None
 
     def _stall(self, step: int, sub: str) -> str:
-        self.stalled_at = step
+        self.stuck_at = step
         return sub
 
     def reset_after_nudge(self) -> None:

@@ -40,6 +40,7 @@ class Case:
     xfail: str = ""                         # known gap: expected to change (reason)
     baseline_for: str = ""                  # current behaviour recorded; flips in that PR
     note: str = ""                          # free-form note shown in the report
+    settings: dict = field(default_factory=dict)  # extra app settings for this case
     extra: Optional[str] = None             # name of an extra check in the test module
 
 
@@ -181,12 +182,14 @@ CASES: list[Case] = [
          [{"zh": "把这 400 条标语逐条加到画布上", "en": "Add these 400 slogans to the canvas one by one"}],
          [Step(calls=[("add_text", {"text": f"slogan {i}"})]) for i in range(301)],
          ["add_text"] * 300, 0, {"text": 300}, limit=300, status="error",
-         error={"zh": "已达到 300 步上限", "en": "Reached the 300-step limit"}, llm_requests=300, extra="hard_cap"),
-    Case("15-readonly", "#391 read-only steps are not 'no progress' up to 8 in a row, then stalled",
+         error={"zh": "先停在这里了", "en": "Paused here for now"}, llm_requests=300, extra="hard_cap",
+         # the token budget must not end a 300-step run first: this case tests the step cap only
+         settings={"agent-token-window-multiple": 200}),
+    Case("15-readonly", "#391 read-only steps are not 'no progress' up to 8 in a row, then stuck",
          [{"zh": "检查所有页面", "en": "Check every page"}],
          [Step(calls=[("get_canvas", {"page": f"p{i}"})]) for i in range(40)],
          ["get_canvas"] * 18, 0, {}, limit=40, status="error",
-         error={"zh": "任务卡住了（连续只读步骤过多）", "en": "The task is stuck (too many read-only steps in a row)"}, extra="stalled"),
+         error={"zh": "任务卡住了（连续只读步骤过多）", "en": "The task is stuck (too many read-only steps in a row)"}, extra="stuck"),
     # #383 goal self-check
     Case("16-sc-pass", "#383 4 images generated, 4 on the canvas -> done, self_check pass",
          [{"zh": "画 4 张柯基插画", "en": "Draw 4 corgi illustrations"}],

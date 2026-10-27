@@ -1,13 +1,15 @@
 """#391 + #383: the budget + progress driven agent loop (feature flag agent.budget_loop).
 
 Replaces the fixed step count: a run stops on done (after the #383 goal self-check), budget
-(tokens / credits / wall time), stalled (no progress), the hard cap (300 by default, always
+(tokens / credits / wall time), stuck (no progress), the hard cap (300 by default, always
 announced), user stop or error. Every step is checkpointed server-side through RunStore under a
 DB lease, so a restart or a "continue" resumes from the last step without repeating paid calls.
 """
 from __future__ import annotations
 
 import asyncio
+
+import aiohttp
 import json
 import logging
 import time
@@ -49,15 +51,13 @@ _STOP_TEXT = {
     "budget:unattended_skipped": {"zh": "无人值守任务预计会超出{dim}预算，已保存断点并停止，未扣费。",
                                   "en": "Unattended run would exceed the {dim} budget; checkpoint saved, stopped, "
                                         "nothing charged."},
-    "budget:paid_confirm_unattended_skipped": {
-        "zh": "无人值守任务需要确认超出报价的付费调用，已保存断点并跳过，未扣费。",
-        "en": "Unattended run needed confirmation for a paid call over the quote; checkpoint saved, skipped, "
-              "nothing charged."},
-    "budget:paid_confirm_declined": {"zh": "超出报价的付费调用未确认，已停止，未扣费。",
-                                     "en": "The paid call over the quote was not confirmed; stopped, nothing charged."},
-    "stalled": {"zh": "任务卡住了（{sub}），停在第 {step} 步，换思路重试后仍无进展，已停止，未继续扣费。",
+    "user_stop:quote_declined": {"zh": "已取消：超出报价的付费调用未确认，未扣费。",
+                                 "en": "Cancelled: the paid call over the quote was not confirmed; nothing charged."},
+    "stuck": {"zh": "任务卡住了（{sub}），停在第 {step} 步，换思路重试后仍无进展，已停止，未继续扣费。",
                 "en": "The task is stuck ({sub}) at step {step}; still no progress after trying another "
                       "approach, so it stopped with no further charges."},
+    "hard_cap": {"zh": "先停在这里了，进度已保存，点「继续」接着做。",
+                 "en": "Paused here for now; progress is saved. Press Continue to keep going."},
     "error:llm_retry_exhausted": {"zh": "{detail}", "en": "{detail}"},
     "error:tool": {"zh": "工具出错：{detail}", "en": "Tool error: {detail}"},
 }
@@ -65,9 +65,10 @@ _DIM = {"zh": {"tokens": "token ", "credits": "积分", "time": "时长"},
         "en": {"tokens": "token", "credits": "credit", "time": "time"}}
 _STALL_LABEL = {
     "zh": {"no_progress": "连续多步没有新产出", "repeat": "同一调用反复出现", "tool_error": "工具连续失败",
-           "readonly_limit": "连续只读步骤过多"},
+           "readonly_limit": "连续只读步骤过多", "self_check_failed": "结果未通过自检"},
     "en": {"no_progress": "no new output for several steps", "repeat": "the same call repeated",
-           "tool_error": "tool failed repeatedly", "readonly_limit": "too many read-only steps in a row"},
+           "tool_error": "tool failed repeatedly", "readonly_limit": "too many read-only steps in a row",
+           "self_check_failed": "the result failed the self-check"},
 }
 _SELF_CHECK_NUDGE = {
     "zh": "系统核对：目标要求 {exp} 个{kind}，目前只有 {placed} 个落到画布。请继续把缺的 {miss} 个做完并放到画布上，不要只回复文字。",
@@ -134,6 +135,23 @@ class RunContext:
             raise LeaseLost(self.run_id)
         self.store.renew_lease(self.run_id, self.lease_owner, self.policy["lease_s"])
 
+    def pending_paid(self, key: str, usage: dict) -> Optional[int]:
+        """Write the pending checkpoint AND the pending usage event in one transaction."""
+        if not self.store:
+            return None
+        eid = self.store.save_checkpoint_with_usage(
+            self.run_id, self.lease_owner, status="running", step=self.budget.used.steps, state=self.state(),
+            usage={"owner_id": self.owner_id, "workspace_id": self.workspace_id, "status": "pending",
+                   "call_id": key, **usage})
+        if eid is None:
+            raise LeaseLost(self.run_id)
+        self.store.renew_lease(self.run_id, self.lease_owner, self.policy["lease_s"])
+        return eid
+
+    def heartbeat_s(self) -> float:
+        hb = float(self.policy.get("lease_heartbeat_s") or 0)
+        return hb if hb > 0 else max(1.0, float(self.policy["lease_s"]) / 3)
+
     def usage_event(self, **kw) -> None:
         if self.store:
             self.store.add_usage_event(run_id=self.run_id, owner_id=self.owner_id,
@@ -142,6 +160,42 @@ class RunContext:
 
 class LeaseLost(RuntimeError):
     pass
+
+
+class lease_heartbeat:
+    """#391: renew the run lease in the background while one (possibly long, e.g. video) tool call
+    runs, so a call longer than lease_s never lets another instance take the run over."""
+
+    def __init__(self, ctx: Optional["RunContext"]) -> None:
+        self.ctx = ctx
+        self.task: Optional[asyncio.Task] = None
+        self.renewals = 0
+        self.lost = False
+
+    async def _beat(self) -> None:
+        ctx = self.ctx
+        while True:
+            await asyncio.sleep(ctx.heartbeat_s())
+            ok = ctx.store.renew_lease(ctx.run_id, ctx.lease_owner, ctx.policy["lease_s"])
+            self.renewals += 1
+            if not ok:
+                self.lost = True
+                _log.warning("[ComfyArt/agent] lease lost for %s during a tool call", ctx.run_id)
+                return
+
+    async def __aenter__(self):
+        if self.ctx is not None and self.ctx.store is not None:
+            self.task = asyncio.create_task(self._beat())
+        return self
+
+    async def __aexit__(self, *exc):
+        if self.task is not None:
+            self.task.cancel()
+            try:
+                await self.task
+            except (asyncio.CancelledError, Exception):  # noqa: BLE001
+                pass
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -242,6 +296,90 @@ def _remaining_steps(ctx: RunContext) -> int:
     return int(round(missing * per)) + 1
 
 
+# #391/#383 stop card copy (locked in #391 comment 6440534008). {n} delivered, {m} expected,
+# {x} credits to continue, {step} where it got stuck, {miss} what failed the self-check.
+CARD_COPY = {
+    "done": {"zh": ("已完成", "生成了 {n} 张，已放到画布上", None, None),
+             "en": ("Done", "Made {n}, placed on the canvas", None, None)},
+    "budget": {"zh": ("预算用完了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续", "先到这里"),
+               "en": ("Budget used up", "{n}/{m} done; continuing needs about {x} credits", "Continue",
+                      "Stop here")},
+    "hard_cap": {"zh": ("先停在这里了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续", "先到这里"),
+                 "en": ("Paused here for now", "{n}/{m} done; continuing needs about {x} credits", "Continue",
+                        "Stop here")},
+    "stuck": {"zh": ("卡住了", "卡在：{step}", "换个说法再试", None),
+              "en": ("Stuck", "Stuck at: {step}", "Try rephrasing", None)},
+    "stuck:self_check_failed": {"zh": ("结果未通过自检", "已交付 {n} 张，还差：{miss}", "继续", None),
+                                "en": ("Result failed the self-check", "Delivered {n}; still missing: {miss}",
+                                       "Continue", None)},
+    "user_stop": {"zh": ("已停止", "已保留生成的 {n} 张", "继续", None),
+                  "en": ("Stopped", "Kept the {n} already generated", "Continue", None)},
+    "user_stop:quote_declined": {"zh": ("已取消", "未扣费，已保留生成的 {n} 张", "继续", None),
+                                 "en": ("Cancelled", "Nothing charged; kept the {n} already generated",
+                                        "Continue", None)},
+    "error": {"zh": ("出错了", "{reason}", "重试", None),
+              "en": ("Something went wrong", "{reason}", "Retry", None)},
+}
+# primary button action: continue the run from its checkpoint | rephrase (focus the composer) | retry
+_PRIMARY_ACTION = {"stuck": "rephrase", "error": "retry"}
+
+
+_DETAIL_LABEL = {"zh": ("步数", "token", "积分", "用时"), "en": ("steps", "tokens", "credits", "time")}
+
+
+def _fmt_tokens(n: int) -> str:
+    return f"{round(n / 1000, 1)}k" if n >= 1000 else str(n)
+
+
+def _dangling_tool_calls(messages: list) -> Optional[dict]:
+    """The assistant tool-call message of a step that crashed before its tool results were recorded."""
+    for i in range(len(messages) - 1, -1, -1):
+        m = messages[i]
+        if m.get("role") == "assistant" and m.get("tool_calls"):
+            ids = {tc.get("id") for tc in m["tool_calls"]}
+            answered = {x.get("tool_call_id") for x in messages[i + 1:] if x.get("role") == "tool"}
+            if ids - answered:
+                del messages[i:]
+                return m
+            return None
+        if m.get("role") == "user":
+            return None
+    return None
+
+
+def card_details(ctx: RunContext) -> dict:
+    """「详情」: actual usage only, one plain line each. Never a limit / cap ("/300") and no bars."""
+    ctx.budget.tick()
+    u = ctx.budget.used
+    secs = int(round(u.wall_s))
+    vals = (str(u.steps), _fmt_tokens(u.tokens), str(int(round(u.credits * 100))), f"{secs // 60}:{secs % 60:02d}")
+    return {lk: [f"{lab} {v}" for lab, v in zip(_DETAIL_LABEL[lk], vals)] for lk in ("zh", "en")}
+
+
+def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: int = 0) -> dict:
+    """Both languages, so the card follows a UI language switch. tone: neutral|warn|error|ok."""
+    key = stop.code if stop.code in CARD_COPY else stop.reason.value
+    goal = check.goal
+    n = check.placed if goal else len(ctx.artifacts)
+    m = goal.count if goal else max(n, 1)
+    est = ctx.budget.projection(remaining) if remaining else {}
+    x = max(1, round(float(est.get("credits") or 0) * 100)) if est else 1  # 1 credit = $0.01
+    out: dict = {"key": key, "action": _PRIMARY_ACTION.get(stop.reason.value, "continue"),
+                 "tone": ("ok" if stop.reason == StopReason.DONE else "error" if stop.reason == StopReason.ERROR
+                          else "neutral" if stop.reason == StopReason.USER_STOP else "warn")}
+    for lk in ("zh", "en"):
+        title, body, primary, secondary = CARD_COPY[key][lk]
+        last = ctx.done[-1] if ctx.done else ""
+        step = last or _STALL_LABEL[lk].get(stop.sub, stop.sub)
+        miss = (f"{check.missing} {sc_mod._KIND_LABEL[lk][goal.kind]}" if lk == "en" else
+                f"{check.missing} 张{sc_mod._KIND_LABEL[lk][goal.kind]}") if goal else ""
+        reason = (stop.detail or _STALL_LABEL[lk].get(stop.sub, "") or stop.code).strip().splitlines()
+        out[lk] = {"title": title,
+                   "body": body.format(n=n, m=m, x=x, step=step, miss=miss, reason=(reason[0] if reason else "")[:160]),
+                   "primary": primary, "secondary": secondary}
+    return out
+
+
 def _summary_card(ctx: RunContext, stop: Stop, remaining: int = 0,
                   check: Optional[sc_mod.SelfCheck] = None) -> dict:
     goal = sc_mod.parse_goal(ctx.goal)
@@ -254,20 +392,21 @@ def _summary_card(ctx: RunContext, stop: Stop, remaining: int = 0,
         "remaining": ({"deliverables": check.missing, "kind": goal.kind, "steps": remaining} if goal
                       else {"deliverables": 0, "kind": "", "steps": remaining}),
         "estimate": ctx.budget.projection(remaining) if remaining else {},
-        "budget": ctx.budget.ui(),
+        "details": card_details(ctx),   # no limits / cap numbers on the card
         "self_check": check.to_dict(),
-        "can_continue": stop.reason in (StopReason.BUDGET, StopReason.HARD_CAP, StopReason.STALLED)
-                        or stop.sub == "paused",
+        "can_continue": stop.reason != StopReason.DONE,
+        "copy": card_copy(ctx, stop, check, remaining),
     }
 
 
 def stop_text(stop: Stop, lang: str, done: list[str], hard_cap: int = 0, check: Optional[sc_mod.SelfCheck] = None) -> str:
-    from .local_llm import _step_limit_summary, _with_done
+    from .local_llm import _with_done
     lk = "zh" if lang == "zh" else "en"
     if stop.reason == StopReason.HARD_CAP:
-        text = _step_limit_summary(done, hard_cap, lang)
-    elif stop.reason == StopReason.STALLED:
-        text = _with_done(_STOP_TEXT["stalled"][lk].format(sub=_STALL_LABEL[lk].get(stop.sub, stop.sub),
+        # Same user copy as budget; the cap number is never shown to users.
+        text = _with_done(_STOP_TEXT["hard_cap"][lk], done, lang)
+    elif stop.reason == StopReason.STUCK:
+        text = _with_done(_STOP_TEXT["stuck"][lk].format(sub=_STALL_LABEL[lk].get(stop.sub, stop.sub),
                                                            step=stop.step), done, lang)
     elif stop.code in _STOP_TEXT:
         tmpl = _STOP_TEXT[stop.code][lk]
@@ -277,7 +416,7 @@ def stop_text(stop: Stop, lang: str, done: list[str], hard_cap: int = 0, check: 
     else:
         text = stop.detail or stop.code
     if check is not None and check.applies and not check.passed:
-        if stop.detail == "self_check_failed":
+        if stop.sub == "self_check_failed":
             text = ""
         text = sc_mod.scrub_done_claims((text + " " + sc_mod.missing_note(check, lang)).strip())
     return text
@@ -317,7 +456,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             budget.extend()
         elif prev == "hard_cap":
             budget.limits.hard_steps += policy["hard_cap_steps"]
-        elif prev == "stalled":         # a fresh progress window (and one more nudge) for the user's retry
+        elif prev == "stuck":         # a fresh progress window (and one more nudge) for the user's retry
             tracker = ProgressTracker(policy["stall_steps"], policy["readonly_max"], policy["tool_fail_max"],
                                       policy["repeat_max"], seen_artifacts=tracker.seen_artifacts)
         ctx = RunContext(run_id=resumed["id"], store=store, lease_owner=lease_owner, policy=policy, budget=budget,
@@ -328,9 +467,11 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                          blocks=st.get("blocks") or [], done=st.get("done") or [],
                          compressions=st.get("compressions") or 0, selfcheck_nudged=bool(st.get("selfcheck_nudged")))
         messages = list(st.get("messages_compact") or messages)
+        replay = _dangling_tool_calls(messages)
         if turn.user_text.strip():
             messages.append({"role": "user", "content": turn.user_text})
     else:
+        replay = None
         from .self_check import parse_goal
         goal = parse_goal(turn.goal_text or turn.user_text)
         tier = "chat" if goal is None else ("batch_or_long" if goal.count > 1 else "single_gen")
@@ -355,6 +496,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
     ctx.confirmer = getattr(provider, "_confirm_paid_over_quote", None)
     t_start = clock()
     first_step = ctx.budget.used.steps
+    first_tokens = ctx.budget.used.tokens
 
     async def rec_emit(ev: BotEvent) -> None:
         if ev.t == "tool_use":
@@ -391,9 +533,8 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
 
     async def finish(stop: Stop, *, remaining: int = 0, extra_error: str = "") -> TurnResult:
         check = await goal_check()
-        status = {"done": "done", "user_stop": "stopped", "error": "stopped"}.get(stop.reason.value, "paused")
-        if stop.reason == StopReason.STALLED and stop.sub == "no_progress" and stop.detail == "self_check_failed":
-            status = "paused"
+        # Every stop except done can be continued / retried from its checkpoint.
+        status = "done" if stop.reason == StopReason.DONE else "paused"
         detail = stop.sub or stop.reason.value
         card = _summary_card(ctx, stop, remaining, check)
         try:
@@ -413,10 +554,11 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         if ctx.store:
             ctx.store.add_run_log(run_id=ctx.run_id, record=record, owner_id=ctx.owner_id,
                                   workspace_id=ctx.workspace_id, project_id=ctx.project_id)
-            ctx.usage_event(kind="llm_tokens", tokens=ctx.budget.used.tokens, reason=f"run {stop.code}")
+            ctx.usage_event(kind="llm_tokens", tokens=ctx.budget.used.tokens - first_tokens,
+                            reason=f"turn {stop.code} (tokens of this turn)")
             ctx.store.release_lease(ctx.run_id, ctx.lease_owner)
         await emit(BotEvent(t="run_stop", input=card))
-        if stop.reason in (StopReason.BUDGET,) and ctx.mode == "unattended":
+        if ctx.mode == "unattended":  # nobody is watching: every stop reason notifies
             await emit(BotEvent(t="notify", text=stop_text(stop, ctx.lang, ctx.done), input={"run_id": ctx.run_id}))
         run_info = {"run_id": ctx.run_id, "status": status, "stop": stop.to_dict(), "self_check": check.to_dict(),
                     "log": record}
@@ -460,7 +602,12 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 await emit(BotEvent(t="run_compress", input={"run_id": ctx.run_id, "count": ctx.compressions}))
             request_messages = prune_images(messages, policy["keep_screenshots"])
             try:
-                data = await provider._llm_request(session, f"{base}/chat/completions", {
+                if replay is not None:
+                    # Crash mid-step: re-dispatch the exact same tool calls (same step + tool_call_id), so the
+                    # paid gate reuses a done call or refuses a pending one instead of asking the model again.
+                    data, replay, request_messages = {"choices": [{"message": replay}]}, None, []
+                else:
+                    data = await provider._llm_request(session, f"{base}/chat/completions", {
                     "model": model, "messages": request_messages,
                     **({"tools": tools, "tool_choice": "auto"} if tools else {}), "temperature": 0.2,
                 }, emit, handle)
@@ -487,7 +634,9 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             rep = ((data.get("usage") or {}).get("completion_tokens_details") or {}).get("reasoning_tokens")
             if isinstance(rep, int) and rep > text_tokens(reasoning):
                 out_tokens += rep - text_tokens(reasoning)
-            ctx.budget.charge_tokens(out_tokens)
+            ctx.budget.charge_request(usage=data.get("usage"), output_tokens=out_tokens,
+                                      request_tokens=messages_tokens(request_messages, policy["image_tokens"])
+                                      if request_messages else 0)
             if reasoning.strip():
                 await emit(BotEvent(t="thinking", text=reasoning.strip()))
             if content:
@@ -506,8 +655,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                         ctx.checkpoint(messages)
                         await emit_budget()
                         continue
-                    return await finish(Stop(StopReason.STALLED, "no_progress", step=ctx.budget.used.steps,
-                                             detail="self_check_failed"))
+                    return await finish(Stop(StopReason.STUCK, "self_check_failed", step=ctx.budget.used.steps))
                 ctx.budget.end_step()
                 return await finish(Stop(StopReason.DONE, step=ctx.budget.used.steps))
 
@@ -518,7 +666,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 tool_calls, session=session, turn=turn, emit=rec_emit, handle=handle,
                 messages=messages, done=ctx.done, lang=ctx.lang, skill_cache=skill_cache,
                 loop=loop, gate=gate, usage=usage, llm_model=model)
-            ctx.budget.charge_tokens(messages_tokens(messages[n_before:], policy["image_tokens"]))
+            # Tool results are charged as input of the next request (they are re-sent with it).
             ctx.budget.end_step()
             if ctx.pending_stop is not None:
                 return await finish(ctx.pending_stop)
@@ -552,15 +700,20 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     lk = "zh" if ctx.lang == "zh" else "en"
                     messages.append({"role": "user", "content": TRY_ANOTHER_APPROACH[lk].format(
                         why=_STALL_LABEL[lk][stall])})
-                    _log.info("[ComfyArt/agent] run %s stalled:%s at step %d -> try another approach (once)",
+                    _log.info("[ComfyArt/agent] run %s stuck:%s at step %d -> try another approach (once)",
                               ctx.run_id, stall, ctx.budget.used.steps)
                 else:
-                    return await finish(Stop(StopReason.STALLED, stall, step=ctx.budget.used.steps))
+                    return await finish(Stop(StopReason.STUCK, stall, step=ctx.budget.used.steps))
             ctx.checkpoint(messages)
             await emit_budget()
     except LeaseLost:
         return TurnResult(usage=usage, error="this run was taken over by another continue request",
                           run={"run_id": ctx.run_id, "status": "lease_lost"})
+    except (aiohttp.ClientError, ConnectionError, OSError) as e:
+        # network drop: keep the run resumable (paused at its last checkpoint) instead of leaving it "running"
+        _log.warning("[ComfyArt/agent] network error in %s: %s", ctx.run_id, e)
+        msg = ("网络中断，进度已保存，可以重试。" if ctx.lang == "zh" else "Network dropped; progress saved, you can retry.")
+        return await finish(Stop(StopReason.ERROR, "network", step=ctx.budget.used.steps, detail=msg), extra_error=msg)
 
 
 # ---------------------------------------------------------------------------
@@ -568,10 +721,18 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
 # ---------------------------------------------------------------------------
 
 
-async def paid_gate(ctx: RunContext, name: str, args: dict, emit_confirm) -> tuple[str, Optional[str], float]:
+def paid_key(ctx: RunContext, name: str, args: dict, call_id: str = "") -> str:
+    """Per-call idempotency id: the step plus the model's tool_call id. Two calls with identical
+    params are two calls (4 images = 4 calls); only the SAME call replayed after a checkpoint is
+    deduped. Without a call id the params are the fallback."""
+    return f"s{ctx.budget.used.steps}:{call_id or _key_str(name, args)}"
+
+
+async def paid_gate(ctx: RunContext, name: str, args: dict, emit_confirm,
+                    call_id: str = "") -> tuple[str, Optional[str], float]:
     """Decide one paid call. Returns (action, text, price): action 'call' (run it, charge `price`),
     'reuse' (idempotent resume: `text` is the stored result), 'skip' (nothing called, `text` explains)."""
-    key = _key_str(name, args)
+    key = paid_key(ctx, name, args, call_id)
     lk = "zh" if ctx.lang == "zh" else "en"
     prev = ctx.paid.get(key)
     if prev and prev.get("status") == "done":
@@ -587,32 +748,42 @@ async def paid_gate(ctx: RunContext, name: str, args: dict, emit_confirm) -> tup
             _log.exception("[ComfyArt/agent] pricing %s failed", name)
     if not ctx.budget.can_afford(price):
         if confirm_policy(ctx.mode, "paid_confirm") == "skip":
-            ctx.pending_stop = Stop(StopReason.BUDGET, "paid_confirm_unattended_skipped", dimension="credits",
+            ctx.pending_stop = Stop(StopReason.BUDGET, "unattended_skipped", dimension="credits",
                                     step=ctx.budget.used.steps)
-            return "skip", _STOP_TEXT["budget:paid_confirm_unattended_skipped"][lk], 0.0
+            return "skip", _STOP_TEXT["budget:unattended_skipped"][lk].format(dim=_DIM[lk]["credits"]), 0.0
         agreed = await emit_confirm(name, args, price, ctx.budget.credits_left()) if emit_confirm else False
         if not agreed:
-            ctx.pending_stop = Stop(StopReason.BUDGET, "paid_confirm_declined", dimension="credits",
-                                    step=ctx.budget.used.steps)
-            return "skip", _STOP_TEXT["budget:paid_confirm_declined"][lk], 0.0
+            ctx.pending_stop = Stop(StopReason.USER_STOP, "quote_declined", step=ctx.budget.used.steps)
+            return "skip", _STOP_TEXT["user_stop:quote_declined"][lk], 0.0
         # Confirmed: raise the ceiling by exactly this quote, never more (no auto-continue).
         ctx.budget.limits.credits = round(ctx.budget.used.credits + price, 6)
     ctx.paid[key] = {"status": "pending", "price": price}
-    ctx.checkpoint()  # the pending marker is durable before the paid call goes out (crash = no re-call)
+    # The pending marker AND its pending usage event are durable (one transaction) before the paid
+    # call goes out: a crash never re-calls, and money never moves without a metering row.
+    eid = ctx.pending_paid(key, {"kind": "paid_call", "tool": name, "amount_usd": price,
+                                 "reason": f"{name} at step {ctx.budget.used.steps + 1} (pending)"})
+    if eid is not None:
+        ctx.paid[key]["event_id"] = eid
+        ctx.checkpoint()
     return "call", None, price
 
 
 def paid_done(ctx: RunContext, name: str, args: dict, text: str, price: float, failed: bool,
-              messages_ref: Optional[list] = None) -> None:
+              messages_ref: Optional[list] = None, call_id: str = "") -> None:
     from .run_budget import artifact_ids
-    key = _key_str(name, args)
+    key = paid_key(ctx, name, args, call_id)
     ids = sorted(artifact_ids(text))
+    eid = (ctx.paid.get(key) or {}).get("event_id")
     if failed:
         ctx.paid.pop(key, None)
     else:
         ctx.paid[key] = {"status": "done", "price": price, "result": text[:_BLOCK_TEXT_CAP], "artifacts": ids}
         ctx.budget.charge_credits(price)
     ctx.paid_calls += 1
-    ctx.usage_event(kind="paid_call", tool=name, amount_usd=0.0 if failed else price,
-                    reason=f"{name} at step {ctx.budget.used.steps + 1}" + (" (failed, not charged)" if failed else ""),
-                    artifact_ids=ids)
+    reason = f"{name} at step {ctx.budget.used.steps + 1}" + (" (failed, not charged)" if failed else "")
+    if eid is not None and ctx.store:
+        ctx.store.finish_usage_event(eid, status="failed" if failed else "done",
+                                     amount_usd=0.0 if failed else price, artifact_ids=ids, reason=reason)
+    else:
+        ctx.usage_event(kind="paid_call", tool=name, amount_usd=0.0 if failed else price, reason=reason,
+                        artifact_ids=ids, status="failed" if failed else "done", call_id=key)

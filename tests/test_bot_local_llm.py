@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import json
 
 from ComfyArt.bot import lms
@@ -495,7 +496,11 @@ class TestStepLimit232:
         monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
         result = await provider.send(TurnRequest(chat_id="c", user_text="x", lang="en", mcp_endpoint="http://x/mcp",
                                                  model="m"), _collect([]), TurnHandle())
-        assert result.error == "Reached the 3-step limit and stopped; no further charges. Done so far: View canvas ×3."
+        if os.environ.get("COMFYART_AGENT_BUDGET_LOOP") == "0":   # legacy loop
+            assert result.error == "Reached the 3-step limit and stopped; no further charges. Done so far: View canvas ×3."
+        else:   # #391: no cap number shown to the user
+            assert result.error == ("Paused here for now; progress is saved. Press Continue to keep going. "
+                                    "Done so far: View canvas ×3.")
 
 
 def test_system_prompt_says_wavespeed_not_local():

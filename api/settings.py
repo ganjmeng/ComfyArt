@@ -25,6 +25,7 @@ SETTINGS_SPEC: dict[str, object] = {
     "agent-budget-loop": True,
     "agent-wall-time-min": 15,
     "agent-credits-usd": 5.0,
+    "agent-token-window-multiple": 40,
     "bot-enable-comfy-mcp": False,
     "bot-comfy-mcp-command": "",
     "ocr-engine": "local",

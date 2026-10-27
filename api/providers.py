@@ -100,15 +100,14 @@ register_provider(QwenCodeProvider(home_dir=app_path("bot-home-qwen")))
 register_provider(DeepSeekHarnessProvider(home_dir=app_path("bot-home-deepseek-harness")))
 
 
-_LEGACY_DEFAULT_STEPS = 80  # #391: the old default saved by the settings UI means "not chosen"
-
-
 def user_policy_layer() -> dict:
     steps = get_setting("bot-max-steps")
     return {
-        "hard_cap_steps": None if steps == _LEGACY_DEFAULT_STEPS else steps,
+        # The setting's default is 300 now, so a saved 80 is a real choice and is honored.
+        "hard_cap_steps": steps,
         "wall_time_s": int(get_setting("agent-wall-time-min")) * 60,
         "credits_usd": get_setting("agent-credits-usd"),
+        "token_window_multiple": get_setting("agent-token-window-multiple"),
         "agent.budget_loop": get_setting("agent-budget-loop"),
     }
 

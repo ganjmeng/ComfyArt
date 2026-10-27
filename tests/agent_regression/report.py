@@ -3,9 +3,12 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 from pathlib import Path
 
-OUT = Path(os.environ.get("AGENT_REGRESSION_OUT") or Path(__file__).resolve().parent / "report")
+# Plain pytest runs write the report to a temp dir so they never dirty the tree; run.py points
+# AGENT_REGRESSION_OUT at tests/agent_regression/report on purpose.
+OUT = Path(os.environ.get("AGENT_REGRESSION_OUT") or Path(tempfile.gettempdir()) / "comfyart-agent-regression")
 
 
 def write(results: dict[str, dict]) -> Path:

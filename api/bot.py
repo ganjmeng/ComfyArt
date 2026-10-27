@@ -338,11 +338,18 @@ def reap_stale_messages() -> None:
 _CONTINUE_TEXT = {"zh": "继续", "en": "Continue"}
 
 
+def request_owner_id(request: web.Request) -> str:
+    """Who is asking. The local build has one owner ("local"); a hosted build resolves it from its
+    auth layer here. Kept as the single place so /continue never hard-codes the owner."""
+    from ..bot.run_budget import LOCAL_OWNER_ID
+    return str(request.get("comfyart_owner_id") or LOCAL_OWNER_ID)
+
+
 @routes.post("/comfyart/bot/runs/{rid}/continue")
 async def bot_run_continue(request: web.Request) -> web.Response:
     import uuid
 
-    from ..bot.run_budget import LOCAL_OWNER_ID, resolve_policy
+    from ..bot.run_budget import resolve_policy
     from .bot_turns import begin_turn
     from .providers import ensure_run_store, user_policy_layer
 
@@ -352,7 +359,7 @@ async def bot_run_continue(request: web.Request) -> web.Response:
     lang = str(body.get("lang") or "")
     lang = lang if lang in ("zh", "en") else "zh"
     store = ensure_run_store()
-    run = store.get_run(request.match_info["rid"], owner_id=LOCAL_OWNER_ID)
+    run = store.get_run(request.match_info["rid"], owner_id=request_owner_id(request))
     if run is None:
         return error("run not found", 404)
     if run["status"] != "paused":

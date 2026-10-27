@@ -1298,7 +1298,7 @@ class LocalLlmProvider(AgentProvider):
 
             async def ask(n, a, p, left):
                 return await self._confirm_over_quote(turn, handle, lang, n, p, left)
-            action, text, price = await agent_loop.paid_gate(run, name, args, ask)
+            action, text, price = await agent_loop.paid_gate(run, name, args, ask, call_id=tc_id or "")
             if action != "call":
                 await emit(BotEvent(t="tool_use", name=name, input=args, id=tc_id))
                 await emit(BotEvent(t="tool_result", name=name, text=text or "", id=tc_id,
@@ -1307,15 +1307,17 @@ class LocalLlmProvider(AgentProvider):
         await emit(BotEvent(t="tool_use", name=name, input=args, id=tc_id))
         tool_failed = False
         images: list[str] = []
+        from .agent_loop import lease_heartbeat
         try:
-            if cached:
-                result_text = skill_cache[skill_key]
-            elif name == "wait_generation":
-                result_text = await self._wait_stage_done(
-                    session, turn.mcp_endpoint, args, llm_model, handle)
-            else:
-                result_text, images = await self._mcp_call_tool(
-                    session, turn.mcp_endpoint, name, args)
+            async with lease_heartbeat(run if (run is not None and not cached) else None):
+                if cached:
+                    result_text = skill_cache[skill_key]
+                elif name == "wait_generation":
+                    result_text = await self._wait_stage_done(
+                        session, turn.mcp_endpoint, args, llm_model, handle)
+                else:
+                    result_text, images = await self._mcp_call_tool(
+                        session, turn.mcp_endpoint, name, args)
         except _NET_ERRORS as e:
             result_text = f"[error] {type(e).__name__}: {e}"
             tool_failed = True
@@ -1329,7 +1331,7 @@ class LocalLlmProvider(AgentProvider):
         if run is not None and name in PAID_TOOLS:
             from . import agent_loop
             agent_loop.paid_done(run, name, args, result_text, price,
-                                 tool_failed or bool(model_call_failed(name, args, result_text)))
+                                 tool_failed or bool(model_call_failed(name, args, result_text)), call_id=tc_id or "")
         await emit(BotEvent(
             t="tool_result", name=name, text=result_text, id=tc_id, is_error=tool_failed,
             detail="cancelled" if _CANCEL_RE.search(result_text) else ""))
