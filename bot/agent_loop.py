@@ -370,20 +370,6 @@ def _card_body(key: str, lk: str, *, n: int, m: Optional[int], x: Optional[int],
             return CARD_COPY[key][lk][1].format(n=n)
         return f["free"] + (sep + f["kept"].format(n=n, u=u) if n > 0 else "")
     return CARD_COPY[key][lk][1].format(n=n, m=m, x=x, **kw)
-    u = _UNIT[lk].get(kind, _UNIT[lk][""])
-    sep = "，" if lk == "zh" else "; "
-    if key in ("budget", "hard_cap"):
-        head = f["progress"].format(n=n, m=m) if m is not None else f["progress_free"]
-        return head + (f["est"].format(x=x) if x is not None else "")
-    if key == "done":
-        return f["done"].format(n=n, u=u) if n > 0 else f["done_none"]
-    if key == "stuck:self_check_failed":
-        return f["self_check"].format(n=n, u=u, **kw)
-    if key == "user_stop":
-        return f["kept"].format(n=n, u=u) if n > 0 else f["kept_none"]
-    if key == "user_stop:quote_declined":
-        return f["free"] + (sep + f["kept"].format(n=n, u=u) if n > 0 else "")
-    return CARD_COPY[key][lk][1].format(n=n, m=m, x=x, **kw)
 
 
 def _fmt_tokens(n: int) -> str:
@@ -435,8 +421,6 @@ def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: i
         miss = (f"{check.missing} {sc_mod._KIND_LABEL[lk][goal.kind]}" if lk == "en" else
                 f"{check.missing} {dict(image='张', video='段', text='条')[goal.kind]}{sc_mod._KIND_LABEL[lk][goal.kind]}") if goal else ""
         reason = (stop.detail or _STALL_LABEL[lk].get(stop.sub, "") or stop.code).strip().splitlines()
-        if key in ("budget", "hard_cap") and x is None:
-            secondary = None                                   # no estimate: just 「继续」
         out[lk] = {"title": title,
                    "body": _card_body(key, lk, n=n, m=m, x=x, kind=kind, step=step, miss=miss,
                                       reason=(reason[0] if reason else "")[:160]),

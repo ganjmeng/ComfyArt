@@ -209,7 +209,7 @@ async def test_card_has_collapsed_plain_details_without_caps(monkeypatch, store)
             store=store)
     res, ev = await r.send("画 4 张猫")
     c = card(ev)
-    assert c["copy"]["zh"]["title"] == "先停在这里了" and c["copy"]["zh"]["secondary"] is None  # free steps: no estimate
+    assert c["copy"]["zh"]["title"] == "先停在这里了" and c["copy"]["zh"]["secondary"] == "先到这里"  # no estimate: sentence hidden, buttons kept
     assert c["copy"]["zh"]["body"] == c["copy"]["zh"]["body"].replace("上限", "") and "4 步" not in c["copy"]["zh"]["body"]
     zh = c["details"]["zh"]
     assert [x.split(" ")[0] for x in zh] == ["步数", agent_loop.DETAIL_TOKEN_LABEL["zh"], "积分", "用时"]
@@ -265,13 +265,14 @@ def test_detail_lines_are_the_locked_copy():
     assert agent_loop._DETAIL_LABEL["zh"][1] is agent_loop.DETAIL_TOKEN_LABEL["zh"]   # one key, one-line swap
 
 
-async def test_no_estimate_means_no_credits_sentence_and_only_continue(monkeypatch, store):
+async def test_no_estimate_means_no_credits_sentence_and_keeps_both_buttons(monkeypatch, store):
     r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})), policy={"hard_cap_steps": 3},
             store=store)
     res, ev = await r.send("画 4 张猫")
     c = card(ev)["copy"]
     assert c["zh"]["body"] == "已完成 0/4" and "积分" not in c["zh"]["body"] and "credits" not in c["en"]["body"]
-    assert (c["zh"]["primary"], c["zh"]["secondary"]) == ("继续", None)
+    assert (c["zh"]["primary"], c["zh"]["secondary"]) == ("继续", "先到这里")
+    assert (c["en"]["primary"], c["en"]["secondary"]) == ("Continue", "Stop here")
 
 
 async def test_real_estimate_keeps_the_locked_sentence(monkeypatch, store):
@@ -289,13 +290,15 @@ async def test_no_image_target_budget_card_asks(monkeypatch, store):
     res, ev = await r.send("加字", goal="")
     zh = card(ev)["copy"]["zh"]["body"]
     assert zh == "预算到了，要继续吗？" and "/" not in zh
+    c = card(ev)["copy"]["zh"]
+    assert (c["primary"], c["secondary"]) == ("继续", "先到这里")
 
 
 async def test_chat_done_body_is_neutral(monkeypatch, store):
     r = Rig(monkeypatch, [reply("你好，有什么可以帮你？")], store=store)
     res, ev = await r.send("你好", goal="")
-    if any(e.t == "run_stop" for e in ev):
-        assert card(ev)["copy"]["zh"]["body"] == "已完成"
+    assert any(e.t == "run_stop" for e in ev), "chat turn must still emit its done card"
+    assert card(ev)["copy"]["zh"]["body"] == "已完成"
 
 
 @pytest.mark.parametrize("kind", ["video", "text", ""])
