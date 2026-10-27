@@ -65,12 +65,14 @@ def test_notice_copy_unchanged():
 
 
 @node
-def test_threshold_shows_two_decimals(tmp_path):
+def test_threshold_shows_integer_credits(tmp_path):
+    """#397: confirm line is integer credits, not two-decimal USD."""
     out = tmp_path / "u.mjs"
     subprocess.run([str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/rolldown.config.mjs"], cwd=ROOT, check=True,
-                   capture_output=True, env={**os.environ, "OUT": str(out), "ENTRY": "threshold_usd.ts"})
+                   capture_output=True, env={**os.environ, "OUT": str(out), "ENTRY": "threshold_credits.ts"})
     got = json.loads(subprocess.run(["node", str(out)], check=True, capture_output=True, text=True).stdout)
-    assert got == ["0.50", "0.00", "1.00", "2.25", "10.00", "0.13", "0.00"]
+    assert got == ["50", "0", "1", "2", "10", "0", "0"]
     ks = (ROOT / "src/ui/KeySettings.tsx").read_text()
-    assert "setUsd(thresholdUsd(v))" in ks and "setUsd(thresholdUsd(x))" in ks and "String(v)" not in ks
-    assert "t('wsKey.confirmUsd', usd.trim() && Number.isFinite(Number(usd)) ? thresholdUsd(Number(usd)) : 'X')" in ks  # label reads $0.50
+    assert "setCredits(thresholdCredits(v))" in ks and "setCredits(thresholdCredits(x))" in ks
+    assert "thresholdUsd" not in ks and "getConfirmCredits" in ks
+    assert "t('wsKey.confirmUsd', credits.trim() && Number.isFinite(Number(credits)) ? thresholdCredits(Number(credits)) : 'X')" in ks

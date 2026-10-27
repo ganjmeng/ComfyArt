@@ -55,13 +55,16 @@ export async function estimateCost(inputs: Record<string, unknown>): Promise<Est
   return res.ok ? res.json() : null
 }
 
-export async function getConfirmUsd(): Promise<number> {
+/** #397: confirm line in integer UI credits (default 50 = former $0.50). */
+export async function getConfirmCredits(): Promise<number> {
   const res = await fetch('/comfyart/wavespeed/confirm')
-  return res.ok ? (await res.json()).confirm_usd : 0.5
+  return res.ok ? (await res.json()).confirm_credits : 50
 }
 
-export async function setConfirmUsd(usd: number): Promise<number> {
-  const res = await fetch('/comfyart/wavespeed/confirm', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm_usd: usd }) })
+export async function setConfirmCredits(credits: number): Promise<number> {
+  const res = await fetch('/comfyart/wavespeed/confirm', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm_credits: credits }) })
   if (!res.ok) throw new Error((await res.json().catch(() => null))?.error?.message || String(res.status))
-  return (await res.json()).confirm_usd
+  return (await res.json()).confirm_credits
 }
+
+

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useValue } from 'tldraw'
 
 import { t } from '../i18n'
-import { thresholdUsd } from '../usd'
-import { deleteKey, getConfirmUsd, setConfirmUsd, KeyError, keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus, saveKey, WAVESPEED_KEYS_URL } from '../wavespeedKey'
+import { thresholdCredits } from '../usd'
+import { deleteKey, getConfirmCredits, setConfirmCredits, KeyError, keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus, saveKey, WAVESPEED_KEYS_URL } from '../wavespeedKey'
 import { Modal } from './Modal'
 
 const money = (n: number) => `$${n.toFixed(2)}`
@@ -25,14 +25,14 @@ export function KeySettings() {
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  const [usd, setUsd] = useState('')
-  const [usdErr, setUsdErr] = useState('')
+  const [credits, setCredits] = useState('')
+  const [creditsErr, setCreditsErr] = useState('')
 
   useEffect(() => {
     if (!open) return
-    setDraft(''); setErr(''); setUsdErr('')
+    setDraft(''); setErr(''); setCreditsErr('')
     void refreshKeyStatus()
-    getConfirmUsd().then((v) => setUsd(thresholdUsd(v))).catch(() => {})
+    getConfirmCredits().then((v) => setCredits(thresholdCredits(v))).catch(() => {})
   }, [open])
 
   if (!open) return null
@@ -46,11 +46,14 @@ export function KeySettings() {
     }).finally(() => setBusy(false))
   }
   const ok = status?.configured && !status.error
-  const saveUsd = () => {
-    const v = Number(usd)
-    if (usd.trim() === '' || !Number.isFinite(v) || v < 0 || v > 1000) { setUsdErr(t('wsKey.confirmBad')); return }
-    setUsdErr('')
-    setConfirmUsd(v).then((x) => setUsd(thresholdUsd(x))).catch(() => setUsdErr(t('wsKey.confirmBad')))
+  const saveCredits = () => {
+    const v = Number(credits)
+    // #397: integer credits 0..100000 (same ceiling as the old $0–$1000 range)
+    if (credits.trim() === '' || !Number.isFinite(v) || v < 0 || v > 100000 || !Number.isInteger(v)) {
+      setCreditsErr(t('wsKey.confirmBad')); return
+    }
+    setCreditsErr('')
+    setConfirmCredits(v).then((x) => setCredits(thresholdCredits(x))).catch(() => setCreditsErr(t('wsKey.confirmBad')))
   }
 
   return (
@@ -82,10 +85,10 @@ export function KeySettings() {
           </>
         )}
         <label className="ca-rename__field ca-rename__field--key">
-          <span>{t('wsKey.confirmUsd', usd.trim() && Number.isFinite(Number(usd)) ? thresholdUsd(Number(usd)) : 'X')}</span>
-          <input className="ca-panel__input" data-testid="ws-confirm-usd" inputMode="decimal" value={usd} onChange={(e) => setUsd(e.target.value)} onBlur={saveUsd} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') saveUsd() }} />
+          <span>{t('wsKey.confirmUsd', credits.trim() && Number.isFinite(Number(credits)) ? thresholdCredits(Number(credits)) : 'X')}</span>
+          <input className="ca-panel__input" data-testid="ws-confirm-credits" inputMode="numeric" value={credits} onChange={(e) => setCredits(e.target.value)} onBlur={saveCredits} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') saveCredits() }} />
         </label>
-        {usdErr && <div className="ca-chat__hint" role="alert" style={{ color: 'var(--ca-error-text)' }}>{usdErr}</div>}
+        {creditsErr && <div className="ca-chat__hint" role="alert" style={{ color: 'var(--ca-error-text)' }}>{creditsErr}</div>}
         <div className="ca-panel__foot">
           {status?.source === 'settings' && <button type="button" className="ca-panel__secondary" onClick={() => void deleteKey()}>{t('common.delete')}</button>}
           <button type="button" className="ca-panel__secondary" onClick={close}>{t('common.close')}</button>

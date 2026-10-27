@@ -28,8 +28,9 @@ START_LABEL = {"zh": "开始", "en": "Start"}
 CANCEL_LABEL = {"zh": "取消", "en": "Cancel"}
 AUTO_LABEL = {"zh": "自动", "en": "Auto"}
 _PROMPT = {
-    "zh": "这个任务共 {n} 步，预计约 ${total}，超过了你设置的 ${threshold} 确认线。确定开始吗？",
-    "en": "This task has {n} steps and will cost about ${total}, above your ${threshold} confirm limit. Start?",
+    # #397: credits only in the UI (1 credit = $0.01 via ui_credits); no $ sign.
+    "zh": "这个任务共 {n} 步，预计约 {total} 积分，超过了你设置的 {threshold} 积分确认线。确定开始吗？",
+    "en": "This task has {n} steps and will cost about {total} credits, above your {threshold} credits confirm limit. Start?",
 }
 _PRICE_KEYS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "quality")
 _DROP_ARG = ("fallback", "fallback_model", "model")
@@ -40,7 +41,8 @@ _features: Optional[dict] = None
 
 
 def usd(n: float) -> str:
-    """Same money text as src/usd.ts: at most 4 decimals, trailing zeros trimmed, at least 2 kept."""
+    """Same money text as src/usd.ts: at most 4 decimals, trailing zeros trimmed, at least 2 kept.
+    Backend / logs only after #397 — the plan-quote UI uses credits_label."""
     v = float(n) if isinstance(n, (int, float)) and not isinstance(n, bool) and math.isfinite(n) else 0.0
     text = f"{v:.4f}".rstrip("0")
     if "." not in text:
@@ -50,9 +52,21 @@ def usd(n: float) -> str:
 
 
 def threshold_text(n: float) -> str:
-    """Key-settings style: the confirm line always shows two decimals (0.5 -> 0.50)."""
+    """Legacy two-decimal USD (0.5 -> 0.50). Prefer credits_label for UI after #397."""
     v = float(n) if isinstance(n, (int, float)) and not isinstance(n, bool) and math.isfinite(n) else 0.0
     return f"{v:.2f}"
+
+
+def credits_label(amount_usd: float, lang: str, *, approx: bool = False) -> str:
+    """#397: line / total price as UI credits. Spend 0 → 「积分 0」 / "0 credits"; no $."""
+    from .run_budget import ui_credits
+    n = ui_credits(amount_usd)
+    lang = _lang(lang)
+    if lang == "zh":
+        body = f"积分 {n}" if n == 0 else f"{n} 积分"
+        return f"约 {body}" if approx else body
+    body = f"{n} credits"
+    return f"about {body}" if approx else body
 
 
 def _tool_features() -> dict:
@@ -255,8 +269,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
             price = ABOUT[lang]
             amount_n = 0.0
         else:
-            money = f"${usd(amount or 0)}"
-            price = f"{ABOUT[lang]} {money}" if approx else money
+            price = credits_label(amount or 0, lang, approx=approx)
             amount_n = float(amount or 0)
         lines.append(Line(
             text=text, price=price, amount=amount_n, approx=approx or unpriced,
@@ -264,12 +277,14 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         ))
     total = round(sum(ln.amount for ln in lines), 4)
     ask = _needs_ask(total, threshold, any(ln.unpriced for ln in lines))
-    # One estimated line makes the sum an estimate too: 「约 $0.64」 / "about $0.64".
-    money = f"${usd(total)}"
-    total_text = f"{ABOUT[lang]} {money}" if any(ln.approx for ln in lines) else money
+    # One estimated line makes the sum an estimate too: 「约 64 积分」 / "about 64 credits".
+    from .run_budget import ui_credits
+    total_text = credits_label(total, lang, approx=any(ln.approx for ln in lines))
     return Quote(
         lines=lines, total=total, n=len(lines), ask=ask, lang=lang,
-        prompt=_PROMPT[lang].format(n=len(lines), total=usd(total), threshold=threshold_text(threshold)),
+        prompt=_PROMPT[lang].format(
+            n=len(lines), total=ui_credits(total), threshold=ui_credits(threshold),
+        ),
         total_label=TOTAL_LABEL[lang], total_text=total_text,
         keys=[ln.key for ln in lines], cancel_text=CANCEL_TEXT[lang],
     )
