@@ -315,8 +315,8 @@ CARD_COPY = {
                                        "Continue", None)},
     "user_stop": {"zh": ("已停止", "已保留生成的 {n} 张", "继续", None),
                   "en": ("Stopped", "Kept the {n} already generated", "Continue", None)},
-    "user_stop:quote_declined": {"zh": ("已取消", "未扣费，已保留生成的 {n} 张", "继续", None),
-                                 "en": ("Cancelled", "Nothing charged; kept the {n} already generated",
+    "user_stop:quote_declined": {"zh": ("已取消", "报价没有确认，不会扣费；已保留之前生成的 {n} 张", "继续", None),
+                                 "en": ("Cancelled", "Quote not confirmed, so no charge; kept the {n} images generated earlier",
                                         "Continue", None)},
     "error:network": {"zh": ("网络断开了", "已保留生成的 {n} 张", "重试", None),
                       "en": ("Network disconnected", "Kept the {n} already generated", "Retry", None)},
@@ -338,11 +338,11 @@ _UNIT = {"zh": {"image": "张", "video": "段视频", "text": "条文案", "": "
          "en": {"image": "images", "video": "videos", "text": "texts", "": "results"}}
 _FRAG = {
     "zh": {"progress": "已完成 {n}/{m}", "ask": "预算到了，要继续吗？", "est": "，继续大约需要 {x} 积分",
-           "done": "已完成", "kept": "已保留生成的 {n} {u}", "kept_none": "进度已保存", "free": "未扣费",
+           "done": "已完成", "kept": "已保留生成的 {n} {u}", "kept_none": "进度已保存", "free": "未扣费", "declined": "报价没有确认，不会扣费",
            "self_check": "已交付 {n} {u}，还差：{miss}"},
     "en": {"progress": "{n}/{m} done", "ask": "Budget reached. Continue?", "est": "; continuing needs about {x} credits",
            "done": "Done", "kept": "Kept the {n} {u} already generated", "kept_none": "Progress saved",
-           "free": "Nothing charged", "self_check": "Delivered {n} {u}; still missing: {miss}"},
+           "free": "Nothing charged", "declined": "Quote not confirmed, so no charge", "self_check": "Delivered {n} {u}; still missing: {miss}"},
 }
 
 
@@ -367,8 +367,8 @@ def _card_body(key: str, lk: str, *, n: int, m: Optional[int], x: Optional[int],
         return f["kept"].format(n=n, u=u) if n > 0 else f["kept_none"]
     if key == "user_stop:quote_declined":
         if kind == "image":
-            return CARD_COPY[key][lk][1].format(n=n)
-        return f["free"] + (sep + f["kept"].format(n=n, u=u) if n > 0 else "")
+            return CARD_COPY[key][lk][1].format(n=n) if n > 0 else f["declined"]
+        return f["declined"] + (("；" if lk == "zh" else sep) + f["kept"].format(n=n, u=u) if n > 0 else "")
     return CARD_COPY[key][lk][1].format(n=n, m=m, x=x, **kw)
 
 

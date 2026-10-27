@@ -191,7 +191,7 @@ LOCKED = {
     "stuck": ("卡住了", "卡在：{step}", "换个说法再试", None),
     "stuck:self_check_failed": ("结果未通过自检", "已交付 {n} 张，还差：{miss}", "继续", None),
     "user_stop": ("已停止", "已保留生成的 {n} 张", "继续", None),
-    "user_stop:quote_declined": ("已取消", "未扣费，已保留生成的 {n} 张", "继续", None),
+    "user_stop:quote_declined": ("已取消", "报价没有确认，不会扣费；已保留之前生成的 {n} 张", "继续", None),
     "error:network": ("网络断开了", "已保留生成的 {n} 张", "重试", None),
     "error": ("出错了", "{reason}", "重试", None),
 }
@@ -236,7 +236,7 @@ async def test_quote_declined_card_is_neutral_and_free(monkeypatch, store):
     assert (s["reason"], s["sub"]) == ("user_stop", "quote_declined") and not res.error
     c = card(ev)
     assert c["copy"]["tone"] == "neutral" and c["copy"]["zh"]["title"] == "已取消"
-    assert c["copy"]["zh"]["body"].startswith("未扣费") and r.paid_mcp() == []
+    assert c["copy"]["zh"]["body"].startswith("报价没有确认，不会扣费") and r.paid_mcp() == []
 
 
 # refresh / network drop: the run is resumable from its checkpoint -----------------------------------------------
@@ -465,3 +465,15 @@ async def test_unattended_every_reason_one_notify_zero_paid(monkeypatch, store, 
     assert len([e for e in ev if e.t == "notify"]) == 1
     assert r.paid_mcp() == [] and res.run["log"]["paid_calls"] == 0 and r.confirms == []
     assert [e for e in store.list_usage_events(run_id=res.run["run_id"]) if e["kind"] == "paid_call"] == []
+
+
+# EL: cancelled body count is the real number generated this run; 0 -> no "kept" clause --------------------------
+@pytest.mark.parametrize("n,zh,en", [
+    (0, "报价没有确认，不会扣费", "Quote not confirmed, so no charge"),
+    (3, "报价没有确认，不会扣费；已保留之前生成的 3 张", "Quote not confirmed, so no charge; kept the 3 images generated earlier"),
+    (5, "报价没有确认，不会扣费；已保留之前生成的 5 张", "Quote not confirmed, so no charge; kept the 5 images generated earlier"),
+])
+def test_quote_declined_body_count_is_actual_and_zero_omits_clause(n, zh, en):
+    from ComfyArt.bot.agent_loop import _card_body
+    for lk, want in (("zh", zh), ("en", en)):
+        assert _card_body("user_stop:quote_declined", lk, n=n, m=4, x=None, kind="image") == want
