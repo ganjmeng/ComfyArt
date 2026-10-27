@@ -151,8 +151,14 @@ class FakePage:
         if action == "brand_kits":
             return {"kits": [self.brand_kit] if self.brand_kit else [], "linked": (self.brand_kit or {}).get("name")}
         if action == "wait_generation":
-            return {"status": "done", "results": [{"id": i, "status": "done", "shapes": self.jobs.get(i, [])}
-                                                  for i in args.get("ids") or []]}
+            return {"status": "done", "results": [
+                {"id": i, "status": "error", "error": "mock: content filter rejected the prompt"}
+                if self.jobs.get(i) is None and i in self.jobs else
+                {"id": i, "status": "done", "shapes": self.jobs.get(i, [])} for i in args.get("ids") or []]}
+        if action == "delete_shapes":  # #383: a reported result that is no longer on the canvas
+            for i in args.get("ids") or []:
+                self.shapes.pop(i, None)
+            return {"ok": True}
         if action == "update_shapes":
             for u in args.get("updates") or []:
                 s = self.shapes[u["id"]]
@@ -199,6 +205,8 @@ class FakePage:
                 title = self._new("text", text="SUMMER", parent=frame.id, props={"name": "title"})
                 sub = self._new("text", text="50% OFF", parent=frame.id)
                 self.jobs[job] = [bg.id, title.id, sub.id]
+            elif "FAIL" in str(args.get("prompt") or ""):  # #383: every unit of this job fails
+                self.jobs[job] = None
             else:
                 extra = {"source": args["id"]} if action == "edit_image" else {}
                 self.jobs[job] = [self._new(KINDS[action], props=dict(extra)).id for _ in range(units)]

@@ -248,7 +248,8 @@ class TestAgentLoop:
 
 def _collect(events: list[BotEvent]):
     async def emit(ev: BotEvent) -> None:
-        events.append(ev)
+        if not ev.t.startswith("run_"):  # #391 run_budget / run_stop / run_compress: covered in test_agent_budget_391
+            events.append(ev)
     return emit
 
 
@@ -259,6 +260,8 @@ def _tc(i, name, args):
 
 class TestLoopGuard:
     async def _run(self, monkeypatch, steps, user_text="做一张海报", lang=""):
+        # #391: these pin the legacy loop guard; agent.budget_loop off is the fallback path
+        monkeypatch.setenv("COMFYART_AGENT_BUDGET_LOOP", "0")
         provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
         responses = [{"choices": [{"message": {"content": "", "tool_calls": [
             _tc(i, n, a)]}}]} for i, (n, a) in enumerate(steps)]
@@ -470,7 +473,7 @@ class TestRetry232:
 class TestStepLimit232:
     def test_max_steps_clamped(self, monkeypatch):
         from ComfyArt.bot.local_llm import max_steps_from
-        assert max_steps_from("30") == 30 and max_steps_from(0) == 80 and max_steps_from("x") == 80
+        assert max_steps_from("30") == 30 and max_steps_from(0) == 300 and max_steps_from("x") == 300
         assert max_steps_from(9999) == 500
         monkeypatch.setenv("COMFYART_AGENT_MAX_STEPS", "5")
         assert LocalLlmProvider(base_url=lambda: "")._max_steps() == 5

@@ -217,7 +217,8 @@ async def _run(monkeypatch, responses, *, lang="zh", quote=None, confirm="start"
     events = []
 
     async def emit(ev: BotEvent):
-        events.append(ev)
+        if not ev.t.startswith("run_"):  # #391 run_budget / run_stop cards are not part of this contract
+            events.append(ev)
 
     result = await provider.send(
         TurnRequest(chat_id="c", user_text=user_text, lang=lang, mcp_endpoint="http://x/mcp", model="m"),

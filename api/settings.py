@@ -19,8 +19,12 @@ SETTINGS_SPEC: dict[str, object] = {
     "bot-model-local-llm": "deepseek/deepseek-v4.1-flash-1017",
     # #219: key for a custom endpoint; empty = WaveSpeed key, but only on WaveSpeed URLs. Never returned in clear.
     "bot-local-llm-key": "",
-    # #232: step limit of one built-in agent turn (clamped to 1..500)
-    "bot-max-steps": 80,
+    # #232/#391: hard step cap of one agent run (clamped to 1..500); budgets + progress stop runs first
+    "bot-max-steps": 300,
+    # #391: budget + progress loop (off = legacy fixed-step loop); per-run wall time and credit quote
+    "agent-budget-loop": True,
+    "agent-wall-time-min": 15,
+    "agent-credits-usd": 5.0,
     "bot-enable-comfy-mcp": False,
     "bot-comfy-mcp-command": "",
     "ocr-engine": "local",

@@ -70,6 +70,15 @@ class AgentLlmProvider(LocalLlmProvider):
             return super()._max_steps()
         return max_steps_from(get_setting("bot-max-steps"))
 
+    def _run_policy(self):
+        """#391: user layer from Agent settings over system defaults (workspace / plan layers are
+        reserved and empty locally); COMFYART_AGENT_MAX_STEPS still wins (deprecated)."""
+        from ..bot.run_budget import resolve_policy
+        return resolve_policy(workspace=None, user=user_policy_layer(), plan=None)
+
+    def _run_store(self):
+        return ensure_run_store()
+
     async def list_models(self) -> list[str]:
         models = await super().list_models()
         model = str(get_setting("bot-model-local-llm") or "").strip()
@@ -89,3 +98,29 @@ register_provider(ClaudeCodeProvider(home_dir=app_path("bot-home")))
 register_provider(CodexCodeProvider(home_dir=app_path("bot-home-codex")))
 register_provider(QwenCodeProvider(home_dir=app_path("bot-home-qwen")))
 register_provider(DeepSeekHarnessProvider(home_dir=app_path("bot-home-deepseek-harness")))
+
+
+_LEGACY_DEFAULT_STEPS = 80  # #391: the old default saved by the settings UI means "not chosen"
+
+
+def user_policy_layer() -> dict:
+    steps = get_setting("bot-max-steps")
+    return {
+        "hard_cap_steps": None if steps == _LEGACY_DEFAULT_STEPS else steps,
+        "wall_time_s": int(get_setting("agent-wall-time-min")) * 60,
+        "credits_usd": get_setting("agent-credits-usd"),
+        "agent.budget_loop": get_setting("agent-budget-loop"),
+    }
+
+
+def ensure_run_store():
+    """#391: one SqliteRunStore per process. Creating it marks runs left 'running' by a previous
+    process as paused(interrupted), so they can be continued from their last checkpoint."""
+    from ..bot.run_store import get_run_store, set_run_store
+    store = get_run_store()
+    if store is None:
+        from .run_store_sqlite import SqliteRunStore
+        store = SqliteRunStore()
+        store.mark_interrupted()
+        set_run_store(store)
+    return store

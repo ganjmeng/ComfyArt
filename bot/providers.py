@@ -30,6 +30,14 @@ class TurnRequest:
     model: str = ""
     comfy_mcp_argv: list[str] = field(default_factory=list)
     lang: str = ""  # UI language of the sender ("zh" / "en"), "" if unknown
+    # #391: run identity / mode. Ownership defaults to the local single user.
+    goal_text: str = ""                # #383: the user's own words (user_text may carry memory/context)
+    run_mode: str = "interactive"      # interactive | unattended (schedules, patrols: #388)
+    resume_run_id: str = ""            # continue a paused run from its server-side checkpoint
+    lease_owner: str = ""              # DB lease already taken by the API for this resume
+    owner_id: str = "local"
+    workspace_id: str = "local"
+    project_id: str = "local"   # #391: on agent_runs + run logs (locked naming)
 
 
 @dataclass
@@ -49,6 +57,7 @@ class TurnResult:
     error: str = ""
     aborted: bool = False
     usage: Optional[dict] = None
+    run: Optional[dict] = None  # #391: {"run_id", "status", "stop": {...}, "self_check": {...}}
 
 
 class TurnHandle:
