@@ -2,14 +2,14 @@
 
 Mocks only (no paid calls). After shots are HTML harness screenshots of the process-rail row 「记忆已更新 ›」 between 思考完成 and the reply, matching CN `memory-updated-row-in-chat-light`. Dark has no CN reference — token check only.
 
-Tip SHA: `TIP_PLACEHOLDER`
+Tip SHA: `bf0d775b1d3b54d87e1acd355fc7c7b09e3c6ba2`
 
 Raw (must HTTP 200):
-- after light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_PLACEHOLDER/docs/design/382/78/after/memory-updated-row-light.png
-- after dark: https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_PLACEHOLDER/docs/design/382/78/after/memory-updated-row-dark.png
-- before light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_PLACEHOLDER/docs/design/382/78/before/memory-updated-row-light.png
-- before dark: https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_PLACEHOLDER/docs/design/382/78/before/memory-updated-row-dark.png
-- CN light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_PLACEHOLDER/docs/design/382/78/lovart/memory-updated-row-in-chat-light.png
+- after light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/bf0d775b1d3b54d87e1acd355fc7c7b09e3c6ba2/docs/design/382/78/after/memory-updated-row-light.png
+- after dark: https://raw.githubusercontent.com/ganjmeng/ComfyArt/bf0d775b1d3b54d87e1acd355fc7c7b09e3c6ba2/docs/design/382/78/after/memory-updated-row-dark.png
+- before light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/bf0d775b1d3b54d87e1acd355fc7c7b09e3c6ba2/docs/design/382/78/before/memory-updated-row-light.png
+- before dark: https://raw.githubusercontent.com/ganjmeng/ComfyArt/bf0d775b1d3b54d87e1acd355fc7c7b09e3c6ba2/docs/design/382/78/before/memory-updated-row-dark.png
+- CN light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/bf0d775b1d3b54d87e1acd355fc7c7b09e3c6ba2/docs/design/382/78/lovart/memory-updated-row-in-chat-light.png
 
 | Lovart CN reference | before (main, no row) | after (this PR) |
 |---|---|---|
