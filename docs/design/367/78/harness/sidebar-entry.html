@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh" data-theme="light" class="ca-root">
+<meta charset="utf-8"/>
+<title>#367 sidebar-entry</title>
+<link rel="stylesheet" href="tip.css"/>
+<body>
+<div class="shot-tag">#367 after · sidebar siblings 设计委托 + Arti(Beta), Arti highlighted</div>
+<div class="ca-home" id="shot" style="min-height:420px;width:720px;margin:12px;border:1px solid #ddd;border-radius:12px;overflow:hidden">
+  <nav class="ca-rail" data-testid="account-rail">
+    <span class="ca-rail__logo"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19m-3 7.2a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8m6 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8M8.2 15h7.6a4.2 4.2 0 0 1-7.6 0"/></svg></span></span>
+    <button type="button" class="ca-rail__btn" title="新建项目"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg></span></button>
+    <button type="button" class="ca-rail__btn" title="首页" data-testid="rail-home"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-3.5v-5.5h-6v5.5H5.5A1.5 1.5 0 0 1 4 19z"/></svg></span></button>
+    <button type="button" class="ca-rail__btn" title="项目库" data-testid="rail-projects"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M3.5 10h17"/></svg></span></button>
+    <button type="button" class="ca-rail__btn" title="设计委托" data-testid="rail-schedules"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg></span></button>
+    <button type="button" class="ca-rail__btn" title="Arti Beta" data-on data-testid="rail-arti">
+      <span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/></svg></span>
+      <span class="ca-rail__badge" data-testid="rail-arti-beta">Beta</span>
+    </button>
+    <div class="ca-rail__spacer"></div>
+    <button type="button" class="ca-rail__btn" title="设置"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span></button>
+  </nav>
+  <main class="ca-home__main" style="padding:24px;color:var(--ca-muted)">账户级侧栏 · 设计委托 + Arti Beta 两兄弟（≠ 画布 Agent）</main>
+</div>
+</body></html>

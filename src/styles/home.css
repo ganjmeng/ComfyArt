@@ -102,3 +102,78 @@ body { background: var(--ca-float); }
 .ca-landing__add { flex: none; }
 .ca-landing__foot > .ca-pop-anchor { display: inline-flex; align-items: center; }
 .ca-landing__foot .ca-bar__btn--icon { width: 32px; height: 32px; }
+
+/* #367 Arti P0-1 — account rail siblings + /arti + /schedules shells */
+.ca-rail__btn { position: relative; }
+.ca-rail__badge {
+  position: absolute; top: -2px; right: -4px;
+  padding: 0 4px; height: 14px; line-height: 14px;
+  border-radius: 7px; background: #3b82f6; color: #fff;
+  font: 600 9px/14px var(--ca-font); pointer-events: none;
+}
+.ca-switch:disabled { opacity: .45; cursor: not-allowed; }
+
+.ca-arti { max-width: 960px; margin: 0 auto; padding: 40px 48px 96px; box-sizing: border-box; }
+.ca-arti__pagehead { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 28px; }
+.ca-arti__pageicon { display: inline-flex; width: 36px; height: 36px; flex: none; color: var(--ca-strong); }
+.ca-arti__pagetitle { margin: 0; font: 500 24px/32px var(--ca-font); }
+.ca-arti__pagelead { margin: 6px 0 0; color: var(--ca-muted); font: 400 14px/22px var(--ca-font); }
+
+.ca-arti__level {
+  display: flex; gap: 20px; align-items: center;
+  padding: 20px; border: var(--ca-border-w) solid var(--ca-border);
+  border-radius: 16px; background: var(--ca-field); margin-bottom: 32px;
+}
+.ca-arti__avatar {
+  width: 96px; height: 120px; flex: none; border-radius: 12px;
+  background: var(--ca-float); border: var(--ca-border-w) solid var(--ca-border);
+  display: flex; align-items: center; justify-content: center; color: var(--ca-muted);
+}
+.ca-arti__avatar .ca-icon { width: 36px; height: 36px; }
+.ca-arti__levelbody { min-width: 0; }
+.ca-arti__levelrow { display: flex; align-items: baseline; gap: 10px; }
+.ca-arti__status { font: 600 18px/28px var(--ca-font); color: var(--ca-strong); }
+.ca-arti__lv { font: 500 14px/22px var(--ca-font); color: var(--ca-muted); }
+.ca-arti__levelhint { margin: 8px 0 0; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
+
+.ca-arti__section { margin-bottom: 32px; }
+.ca-arti__sectiontitle { margin: 0 0 14px; font: 500 16px/24px var(--ca-font); }
+
+.ca-arti__caps { display: flex; flex-direction: column; gap: 10px; }
+.ca-arti__cap {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; border: var(--ca-border-w) solid var(--ca-border);
+  border-radius: 12px; background: var(--ca-float);
+}
+.ca-arti__cap[data-grey] { opacity: .72; }
+.ca-arti__capbody { flex: 1; min-width: 0; }
+.ca-arti__captitle { font: 500 14px/22px var(--ca-font); }
+.ca-arti__capdesc { margin-top: 2px; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
+.ca-arti__capnote { margin-top: 6px; color: var(--ca-muted); font: 400 12px/18px var(--ca-font); }
+
+.ca-arti__tabs { display: flex; gap: 4px; border-bottom: var(--ca-border-w) solid var(--ca-border); margin-bottom: 16px; }
+.ca-arti__tab {
+  height: 36px; padding: 0 14px; border: none; border-bottom: 2px solid transparent;
+  background: transparent; color: var(--ca-muted); font: 400 14px/22px var(--ca-font); cursor: pointer;
+  margin-bottom: -1px;
+}
+.ca-arti__tab:hover { color: var(--ca-text); }
+.ca-arti__tab[data-on] { color: var(--ca-strong); border-bottom-color: var(--ca-strong); font-weight: 500; }
+.ca-arti__tabbody { min-height: 120px; }
+.ca-arti__placeholder {
+  padding: 24px; border: var(--ca-border-w) dashed var(--ca-border); border-radius: 12px;
+  color: var(--ca-muted); font: 400 13px/20px var(--ca-font);
+}
+.ca-arti__skeletons { display: flex; flex-direction: column; gap: 10px; }
+.ca-arti__skel {
+  height: 56px; border-radius: 12px;
+  background: linear-gradient(90deg, var(--ca-field), var(--ca-hover), var(--ca-field));
+  background-size: 200% 100%; animation: ca-arti-shimmer 1.2s ease-in-out infinite;
+}
+@keyframes ca-arti-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+@media (max-width: 640px) {
+  .ca-arti { padding: 24px 16px 96px; }
+  .ca-arti__level { flex-direction: column; align-items: flex-start; }
+  .ca-rail__badge { top: 0; right: 0; }
+}

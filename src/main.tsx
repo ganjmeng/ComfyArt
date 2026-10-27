@@ -19,5 +19,7 @@ if (project && (params.has(NEW_PARAM) || await projectExists(project))) {
   root.render(<StrictMode><App id={project} /></StrictMode>)
 } else {
   const { HomeApp } = await import('./home/HomeApp')
-  root.render(<StrictMode><HomeApp view={project ? { missing: project } : params.get('view') === 'projects' ? 'projects' : 'home'} /></StrictMode>)
+  const viewParam = params.get('view')
+  const homeView = viewParam === 'projects' || viewParam === 'schedules' || viewParam === 'arti' ? viewParam : 'home'
+  root.render(<StrictMode><HomeApp view={project ? { missing: project } : homeView} /></StrictMode>)
 }

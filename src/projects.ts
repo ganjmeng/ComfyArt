@@ -93,8 +93,11 @@ export async function projectExists(id: string) {
   return (await loadProject(id)) !== null
 }
 
-export function openView(view: 'home' | 'projects') {
+export type HomeView = 'home' | 'projects' | 'schedules' | 'arti'
+
+/** #367: account-level views include schedules + arti siblings beside home/projects. */
+export function openView(view: HomeView) {
   const url = new URL(location.pathname, location.origin)
-  if (view === 'projects') url.searchParams.set('view', 'projects')
+  if (view !== 'home') url.searchParams.set('view', view)
   location.assign(url)
 }
