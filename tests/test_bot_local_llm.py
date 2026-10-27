@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import json
 
 from ComfyArt.bot import lms
@@ -248,7 +249,8 @@ class TestAgentLoop:
 
 def _collect(events: list[BotEvent]):
     async def emit(ev: BotEvent) -> None:
-        events.append(ev)
+        if not ev.t.startswith("run_"):  # #391 run_budget / run_stop / run_compress: covered in test_agent_budget_391
+            events.append(ev)
     return emit
 
 
@@ -259,6 +261,8 @@ def _tc(i, name, args):
 
 class TestLoopGuard:
     async def _run(self, monkeypatch, steps, user_text="做一张海报", lang=""):
+        # #391: these pin the legacy loop guard; agent.budget_loop off is the fallback path
+        monkeypatch.setenv("COMFYART_AGENT_BUDGET_LOOP", "0")
         provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
         responses = [{"choices": [{"message": {"content": "", "tool_calls": [
             _tc(i, n, a)]}}]} for i, (n, a) in enumerate(steps)]
@@ -470,7 +474,7 @@ class TestRetry232:
 class TestStepLimit232:
     def test_max_steps_clamped(self, monkeypatch):
         from ComfyArt.bot.local_llm import max_steps_from
-        assert max_steps_from("30") == 30 and max_steps_from(0) == 80 and max_steps_from("x") == 80
+        assert max_steps_from("30") == 30 and max_steps_from(0) == 300 and max_steps_from("x") == 300
         assert max_steps_from(9999) == 500
         monkeypatch.setenv("COMFYART_AGENT_MAX_STEPS", "5")
         assert LocalLlmProvider(base_url=lambda: "")._max_steps() == 5
@@ -492,7 +496,11 @@ class TestStepLimit232:
         monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
         result = await provider.send(TurnRequest(chat_id="c", user_text="x", lang="en", mcp_endpoint="http://x/mcp",
                                                  model="m"), _collect([]), TurnHandle())
-        assert result.error == "Reached the 3-step limit and stopped; no further charges. Done so far: View canvas ×3."
+        if os.environ.get("COMFYART_AGENT_BUDGET_LOOP") == "0":   # legacy loop
+            assert result.error == "Reached the 3-step limit and stopped; no further charges. Done so far: View canvas ×3."
+        else:   # #391: no cap number shown to the user
+            assert result.error == ("Paused here for now; progress is saved. Press Continue to keep going. "
+                                    "Done so far: View canvas ×3.")
 
 
 def test_system_prompt_says_wavespeed_not_local():

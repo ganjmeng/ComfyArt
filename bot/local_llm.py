@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import time
+from pathlib import Path
 from typing import Callable, Optional
 
 import aiohttp
@@ -31,7 +32,7 @@ _log = logging.getLogger(__name__)
 _NET_ERRORS = (aiohttp.ClientError, asyncio.TimeoutError, OSError, RuntimeError, ValueError)
 
 _API_KEY_ENV = "COMFYART_LOCAL_LLM_API_KEY"
-_MAX_ITERATIONS = 80
+_MAX_ITERATIONS = 300  # #391: hard cap only; budget + progress end a run long before
 _MAX_WAIT_SLICES = 12
 _LLM_TIMEOUT_S = 300
 # #234: input is counted in tokens against the model's context window (32k when the
@@ -73,6 +74,20 @@ _CANCEL_RE = re.compile(
     r'"cancelled"\s*:\s*true|"status"\s*:\s*"declined"|已取消该生成，未扣费|'
     r"Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed|"
     r"已取消，没有扣费。|Cancelled\. Nothing was charged\.")
+# #393: shared over-quote card schema (also imported by src/ui/ChatMessage.tsx). One definition.
+OVER_QUOTE = json.loads((Path(__file__).with_name("over_quote.json")).read_text(encoding="utf-8"))
+
+
+def over_quote_spec(lang: str, price: float) -> dict:
+    from .run_budget import ui_credits
+    c = OVER_QUOTE["copy"]["zh" if lang == "zh" else "en"]
+    credits = ui_credits(price)
+    return {"kind": OVER_QUOTE["kind"], "prompt": c["body"].format(credits=credits), "credits": credits,
+            "options": [{"id": OVER_QUOTE["decline"], "label": c["decline"]},
+                        {"id": OVER_QUOTE["confirm"], "label": c["confirm"]}],
+            "min_selections": 1, "max_selections": 1, "allow_other": False}
+
+
 # #236: image tools covered by the #133 table. Video is outside that table.
 _FALLBACK_TOOLS = frozenset({"generate_image", "edit_image", "edit_region"})
 _GUARD_RE = re.compile(
@@ -1169,6 +1184,24 @@ class LocalLlmProvider(AgentProvider):
         """#232: the step limit is configurable (env here; the built-in agent also reads its setting)."""
         return max_steps_from(os.environ.get(_MAX_STEPS_ENV), _MAX_ITERATIONS)
 
+    def _run_policy(self):
+        """#391: the single policy entry (system -> workspace -> user -> plan); env here."""
+        from .run_budget import resolve_policy
+        return resolve_policy()
+
+    _run_clock = staticmethod(time.monotonic)  # #391 wall-time source (tests swap it)
+
+    def _run_store(self):
+        from .run_store import get_run_store
+        return get_run_store()
+
+    async def _price_call(self, name: str, args: dict):
+        """#391: price of one paid call (the quote it is capped by). None when unknown."""
+        model = str(args.get("model") or "")
+        if not model:
+            return None
+        return await self._price_one(model, args)
+
     async def _llm_request(self, session: aiohttp.ClientSession, url: str,
                            body: dict, emit: EmitFn, handle: TurnHandle) -> dict:
         """POST to the LLM; a timeout, 429 or 5xx is retried _LLM_RETRIES times. Each wait shows as a
@@ -1256,23 +1289,56 @@ class LocalLlmProvider(AgentProvider):
             "arguments": args,
         }
 
+    async def _confirm_over_quote(self, turn, handle, lang: str, name: str, price: float, left: float) -> bool:
+        """#391: a paid call over the run's remaining quote needs an explicit yes; never auto-continue.
+        #393: a dedicated card (not QuestionCard) built from the shared bot/over_quote.json schema; the
+        answer is selected [confirm] | [decline]. Anything else (dismiss, timeout, no live turn) declines."""
+        if handle is not None and handle.stop_requested:
+            return False
+        from ComfyArt.api.bot_turns import ACTIVE_TURNS
+        from ComfyArt.api.mcp_tools.bot_tools import _await_ask
+        state = ACTIVE_TURNS.get(turn.chat_id) if turn is not None else None
+        if state is None:
+            return False
+        try:
+            outcome = await _await_ask(turn.chat_id, state, over_quote_spec(lang, price))
+        except Exception:
+            _log.exception("[ComfyArt/local-llm] over-quote confirm failed")
+            return False
+        return outcome.get("status") == "answered" and OVER_QUOTE["confirm"] in (outcome.get("selected") or [])
+
     async def _emit_mcp(self, item: dict, *, session, turn, emit, handle,
-                        done: list, lang: str, skill_cache: dict, llm_model: str) -> list[dict]:
+                        done: list, lang: str, skill_cache: dict, llm_model: str,
+                        run=None) -> list[dict]:
         """Run one real MCP tool and return the chat messages for it. Emits the tool row."""
         name, args, tc_id = item["name"], item["args"], item["id"]
         skill_key, cached = item["skill_key"], item["cached"]
+        price = 0.0
+        if run is not None and name in PAID_TOOLS:
+            from . import agent_loop
+
+            async def ask(n, a, p, left):
+                return await self._confirm_over_quote(turn, handle, lang, n, p, left)
+            action, text, price = await agent_loop.paid_gate(run, name, args, ask, call_id=tc_id or "")
+            if action != "call":
+                await emit(BotEvent(t="tool_use", name=name, input=args, id=tc_id))
+                await emit(BotEvent(t="tool_result", name=name, text=text or "", id=tc_id,
+                                    detail="cancelled" if action == "skip" else ""))
+                return [{"role": "tool", "tool_call_id": tc_id or name, "content": text or ""}]
         await emit(BotEvent(t="tool_use", name=name, input=args, id=tc_id))
         tool_failed = False
         images: list[str] = []
+        from .agent_loop import lease_heartbeat
         try:
-            if cached:
-                result_text = skill_cache[skill_key]
-            elif name == "wait_generation":
-                result_text = await self._wait_stage_done(
-                    session, turn.mcp_endpoint, args, llm_model, handle)
-            else:
-                result_text, images = await self._mcp_call_tool(
-                    session, turn.mcp_endpoint, name, args)
+            async with lease_heartbeat(run if (run is not None and not cached) else None):
+                if cached:
+                    result_text = skill_cache[skill_key]
+                elif name == "wait_generation":
+                    result_text = await self._wait_stage_done(
+                        session, turn.mcp_endpoint, args, llm_model, handle)
+                else:
+                    result_text, images = await self._mcp_call_tool(
+                        session, turn.mcp_endpoint, name, args)
         except _NET_ERRORS as e:
             result_text = f"[error] {type(e).__name__}: {e}"
             tool_failed = True
@@ -1283,6 +1349,10 @@ class LocalLlmProvider(AgentProvider):
         if len(result_text) > TOOL_RESULT_CAP:
             result_text = (result_text[:TOOL_RESULT_CAP]
                            + f"\n…[truncated {len(result_text) - TOOL_RESULT_CAP} chars]")
+        if run is not None and name in PAID_TOOLS:
+            from . import agent_loop
+            agent_loop.paid_done(run, name, args, result_text, price,
+                                 tool_failed or bool(model_call_failed(name, args, result_text)), call_id=tc_id or "")
         await emit(BotEvent(
             t="tool_result", name=name, text=result_text, id=tc_id, is_error=tool_failed,
             detail="cancelled" if _CANCEL_RE.search(result_text) else ""))
@@ -1330,7 +1400,9 @@ class LocalLlmProvider(AgentProvider):
             cached = bool(skill_key) and skill_key in skill_cache
             if cached:
                 loop["cache_hits"] += 1
-            if loop["repeat"] >= _REPEAT_STOP or loop["cache_hits"] >= _CACHED_SKILL_STOP:
+            if loop.get("budget_loop"):
+                pass  # #391: the ProgressTracker owns repeat / stall detection
+            elif loop["repeat"] >= _REPEAT_STOP or loop["cache_hits"] >= _CACHED_SKILL_STOP:
                 _log.warning("[ComfyArt/local-llm] loop guard: %s repeat=%d cached_skill_reads=%d, stopping",
                              name, loop["repeat"], loop["cache_hits"])
                 tripped = True
@@ -1348,7 +1420,8 @@ class LocalLlmProvider(AgentProvider):
             ran.append(i)
             chunks[i] = await self._emit_mcp(
                 parsed[i], session=session, turn=turn, emit=emit, handle=handle,
-                done=done, lang=lang, skill_cache=skill_cache, llm_model=llm_model)
+                done=done, lang=lang, skill_cache=skill_cache, llm_model=llm_model,
+                run=loop.get("run"))
 
         # Checklist (and any other free tool) lands before the confirm card.
         for i, it in enumerate(parsed):
@@ -1373,6 +1446,12 @@ class LocalLlmProvider(AgentProvider):
                 elif not quote.ask:
                     gate.allow(quote, False)
                     decision = "start"
+                elif loop.get("run") is not None and loop["run"].mode == "unattended":
+                    # #391/#388: unattended runs never wait for a confirm: skip, charge nothing
+                    from .run_budget import Stop, StopReason
+                    loop["run"].pending_stop = Stop(StopReason.BUDGET, "paid_confirm_unattended_skipped",
+                                                    dimension="credits", step=loop["run"].budget.used.steps)
+                    decision = "cancel"
                 else:
                     choice = await self._confirm_plan(quote.ask_spec(), turn, handle)
                     if handle.stop_requested:
@@ -1413,12 +1492,15 @@ class LocalLlmProvider(AgentProvider):
                 messages.extend(ch)
         for i in ran:  # #236: one fallback per failed model call, after its result is in the transcript
             it, ch = parsed[i], chunks[i]
+            run = loop.get("run")
+            if run is not None and run.pending_stop is not None:
+                break  # #393: a declined quote (or any run stop) ends the run here: no fallback, no new quote
             if handle.stop_requested or not ch or it["cached"] or it["args"].get("fallback_for"):
                 continue
             await self._maybe_model_fallback(
                 session, turn.mcp_endpoint, handle, emit, lang, messages, done,
                 turn.chat_id, it["name"], it["args"], str(ch[0].get("content") or ""),
-                loop["gens"])
+                loop["gens"], run=run, turn=turn)
         if decision == "cancel":
             text = quote.cancel_text if quote else CANCEL_TEXT[lang_key]
             await emit(BotEvent(t="delta", text=text))
@@ -1485,8 +1567,10 @@ class LocalLlmProvider(AgentProvider):
                                     handle: TurnHandle, emit: EmitFn, lang: str,
                                     messages: list[dict], done: list[str], chat_id: str,
                                     name: str, args: dict, result_text: str,
-                                    gens: dict) -> None:
-        """#236: on a model failure, switch once to the #133 backup. Never the same paid model."""
+                                    gens: dict, run=None, turn=None) -> None:
+        """#236: on a model failure, switch once to the #133 backup. Never the same paid model.
+        #393: a paid fallback goes through the same paid_gate as any paid call (never around it). The
+        post-step `break` on pending_stop is what stops the fallback loop after 先到这里 / Esc."""
         if handle.stop_requested or not endpoint or (args or {}).get("fallback_for"):
             return
         _remember_generation(gens, name, args, result_text)
@@ -1533,10 +1617,25 @@ class LocalLlmProvider(AgentProvider):
                 if not handle.stop_requested:
                     await self._speak(messages, emit, _no_switch_note(failed, target, lang))
                 return
+        fb_args = {**call_args, "fallback_for": failed}
+        price = 0.0
+        gated = run is not None and tool in PAID_TOOLS
+        cid = f"fb-{failed}-{len(messages)}"
+        if gated:
+            from . import agent_loop
+
+            async def ask(n, a, p, left):
+                return await self._confirm_over_quote(turn, handle, lang, n, p, left)
+            action, _txt, price = await agent_loop.paid_gate(run, tool, fb_args, ask,
+                                                             call_id=cid)
+            if action != "call":
+                return  # declined / stopping / pending: the fallback does not run and spends nothing
         text = await self._run_fallback_tool(
-            session, endpoint, emit, lang, messages, done, tool,
-            {**call_args, "fallback_for": failed})
-        _remember_generation(gens, tool, {**call_args, "fallback_for": failed}, text)
+            session, endpoint, emit, lang, messages, done, tool, fb_args)
+        if gated:
+            agent_loop.paid_done(run, tool, fb_args, text, price, bool(model_call_failed(tool, fb_args, text)),
+                                 call_id=cid)
+        _remember_generation(gens, tool, fb_args, text)
 
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
@@ -1575,6 +1674,13 @@ class LocalLlmProvider(AgentProvider):
                 done: list[str] = []
                 lang = (turn.lang if turn.lang in ("zh", "en")
                         else _reply_lang(turn.user_text))
+                policy = self._run_policy()
+                if policy.enabled:  # #391 budget loop; flag agent.budget_loop off = legacy loop below
+                    from . import agent_loop
+                    return await agent_loop.run(
+                        self, session=session, turn=turn, emit=emit, handle=handle, base=base,
+                        model=model, tools=tools, messages=messages, window=window, lang=lang,
+                        policy=policy, store=self._run_store(), clock=self._run_clock)
                 skill_cache: dict[str, str] = {}
                 gens: dict[str, dict] = {}
                 loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens}

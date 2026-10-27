@@ -1,0 +1,10 @@
+{
+  "_doc": "#393 over-quote confirm card: the ONE schema shared by bot/local_llm.py (spec) and src/ui/ChatMessage.tsx (OverQuote card). Answer = selected [confirm] or [decline]; no questions[].",
+  "kind": "paid_over_quote",
+  "confirm": "confirm",
+  "decline": "decline",
+  "copy": {
+    "zh": {"body": "这一步大约需要 {credits} 积分，要继续吗？", "confirm": "确认", "decline": "先到这里"},
+    "en": {"body": "This step needs about {credits} credits. Continue?", "confirm": "Confirm", "decline": "Stop here"}
+  }
+}

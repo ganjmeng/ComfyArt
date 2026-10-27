@@ -28,6 +28,7 @@ class _TurnState:
         self.blocks: list[dict] = []
         self.last_persist = 0.0
         self.tool_started: dict[str, float] = {}
+        self.run_budget: dict = {}
 
 
 ACTIVE_TURNS: dict[str, _TurnState] = {}
@@ -163,6 +164,17 @@ def _apply_event(state: _TurnState, ev: BotEvent) -> Optional[dict]:
                 block["duration_ms"] = payload["duration_ms"] = duration_ms
         state.blocks.append(block)
         return payload
+    if ev.t == "run_budget":  # #391: live budget bar (not persisted; the stop card keeps the final numbers)
+        state.run_budget = dict(ev.input or {})
+        return {"event": "turn_run_budget", "budget": state.run_budget}
+    if ev.t == "run_stop":  # #391: stop reason + done / remaining / estimate (+ Continue when allowed)
+        block = {"type": "run_stop", **(ev.input or {})}
+        state.blocks.append(block)
+        return {"event": "turn_run_stop", "block": block}
+    if ev.t == "notify":  # #391/#388: unattended runs notify instead of waiting
+        block = {"type": "notice", "level": "warn", "text": ev.text, "notify": True, **(ev.input or {})}
+        state.blocks.append(block)
+        return {"event": "turn_notify", "block": block}
     if ev.t == "retry":  # #232: LLM timeout / 429 / 5xx retry row (429 shows a countdown)
         block = {"type": "retry", "kind": ev.name, **(ev.input or {})}
         state.blocks.append(block)
@@ -173,7 +185,8 @@ def _apply_event(state: _TurnState, ev: BotEvent) -> Optional[dict]:
 async def _run_turn(chat: dict, text: str, state: _TurnState, *,
                     provider_text: str | None = None,
                     attachments: list[dict] | None = None,
-                    lang: str = "") -> None:
+                    lang: str = "", resume_run_id: str = "", lease_owner: str = "",
+                    run_mode: str = "interactive") -> None:
     chat_id = chat["id"]
     provider = get_provider(chat["provider"])
     await asyncio.sleep(0.1)
@@ -193,7 +206,7 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
         payload.update({"chat_id": chat_id, "message_id": state.message_id})
         broadcast(payload.pop("event"), payload)
         now = time.monotonic()
-        if ev.t in ("tool_use", "tool_result", "retry") or now - state.last_persist > _PERSIST_INTERVAL_S:
+        if ev.t in ("tool_use", "tool_result", "retry", "run_stop", "notify") or now - state.last_persist > _PERSIST_INTERVAL_S:
             state.last_persist = now
             chat_store.update_message(chat_id, state.message_id, blocks=state.blocks)
 
@@ -218,6 +231,11 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
                 model=provider_model(chat["provider"]),
                 comfy_mcp_argv=comfy_mcp_argv,
                 lang=lang,
+                goal_text=text,
+                run_mode=run_mode,
+                resume_run_id=resume_run_id,
+                lease_owner=lease_owner,
+                project_id=str(chat.get("project") or "local"),
             ),
             emit,
             state.handle,
@@ -238,8 +256,26 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
     bot_asks.cancel_chat_asks(chat_id)
     token = result.resume_token if result else None
     usage = result.usage if result else None
+    run = result.run if result else None
+    # #383: goal self-check for every provider. Never report "done" over missing deliverables.
+    self_check_info: dict = {"self_check": "skip"}
+    if status in ("done", "error"):
+        from ..bot import self_check as _sc
+        goal_text = text if not resume_run_id else ""
+        if run and run.get("self_check"):
+            # the budget loop already ran the check (with a live canvas read): trust it, scrub on fail
+            self_check_info = run["self_check"]
+            if goal_text and self_check_info.get("self_check") == "fail":
+                state.blocks = [({**b, "text": _sc.scrub_done_claims(str(b.get("text") or ""))}
+                                 if b.get("type") == "text" else b) for b in state.blocks]
+        elif goal_text:
+            already = bool(error) and any(k in error for k in ("目标核对未通过", "Goal check failed"))
+            state.blocks, self_check_info = _sc.apply_to_blocks(goal_text, state.blocks, lang, note=not already)
+        if self_check_info.get("self_check") == "fail" and error:
+            error = _sc.scrub_done_claims(error)
     if error:
-        state.blocks.append({"type": "notice", "level": "error", "text": error})
+        state.blocks.append({"type": "notice", "level": "error", "text": error,
+                             **({"self_check": self_check_info} if self_check_info.get("self_check") == "fail" else {})})
     elif status == "done":
         notice = unverified_write_notice(state.blocks)
         if notice:
@@ -259,12 +295,15 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
         "error": error,
         "title": updates.get("title"),
         "usage": usage,
+        "self_check": self_check_info,
+        "run": ({k: run.get(k) for k in ("run_id", "status", "stop")} if run else None),
     })
     _drain_queue(chat_id)
 
 
 def begin_turn(chat: dict, *, text: str, provider_text: str,
-               attachments: list[dict], user_msg: dict, lang: str = "") -> dict:
+               attachments: list[dict], user_msg: dict, lang: str = "",
+               resume_run_id: str = "", lease_owner: str = "") -> dict:
     assistant_msg = chat_store.create_message(
         chat_id=chat["id"], role="assistant", blocks=[], status="streaming",
         parent_id=user_msg["id"],
@@ -278,7 +317,8 @@ def begin_turn(chat: dict, *, text: str, provider_text: str,
     })
     asyncio.create_task(
         _run_turn(chat, text, state, provider_text=provider_text,
-                  attachments=attachments, lang=lang),
+                  attachments=attachments, lang=lang, resume_run_id=resume_run_id,
+                  lease_owner=lease_owner),
         name=f"comfyart-bot-{chat['id'][:8]}",
     )
     return assistant_msg

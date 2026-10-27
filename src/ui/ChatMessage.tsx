@@ -1,17 +1,18 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
-import { answerAsk, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
+import { answerAsk, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
 import { setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
 import { errorText } from '../jobs'
 import { confirmAtom } from './Confirm'
+import OVER_QUOTE from '../../bot/over_quote.json'
 import { schedulesOpenAtom } from '../schedules'
 import { Icons } from './icons'
 import { Markdown } from './Markdown'
 import { Thumb } from './TaskDetails'
 import { CopyButton } from './CopyButton'
-import { t } from '../i18n'
+import { lang, t } from '../i18n'
 import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
 
@@ -199,6 +200,46 @@ function Retry({ b: block, live }: { b: BotBlock; live: boolean }) {
         <span className="ca-chat__arg">{reason}</span>
         <span className="ca-chat__status">{waiting ? t('chatMessage.retryIn', left) : live ? t('chatMessage.inProgress') : t('chatMessage.retried')}</span>
       </div>
+    </div>
+  )
+}
+
+/** #391 stop card (locked copy): one sentence + buttons; 「详情」 fold with actual usage only (no caps, no bars). */
+export function RunStop({ b, latest }: { b: BotBlock; latest: boolean }) {
+  const [busy, setBusy] = useState(false)
+  const [closed, setClosed] = useState(false)
+  const [error, setError] = useState('')
+  const reason = b.stop?.reason ?? 'error'
+  const lk = lang === 'zh' ? 'zh' : 'en'
+  const copy = b.copy?.[lk]
+  const title = copy?.title ?? t(`runStop.reason.${reason}`)
+  const body = copy?.body ?? ''
+  const details = b.details?.[lk] ?? []
+  const go = () => {
+    if (!b.run_id) return
+    setBusy(true)
+    continueRun(b.run_id, lang).catch((e) => { setError(errorText(e)); setBusy(false) })
+  }
+  return (
+    <div className="ca-run" data-reason={reason} data-key={b.copy?.key} data-tone={b.copy?.tone}>
+      <div className="ca-run__head">
+        <span className="ca-icon">{Icons.agent}</span>
+        <span className="ca-run__title">{title}</span>
+      </div>
+      {body && <div className="ca-run__body">{body}</div>}
+      {details.length > 0 && (
+        <details className="ca-run__details">
+          <summary>{t('runStop.details')}</summary>
+          {details.map((line) => <div key={line}>{line}</div>)}
+        </details>
+      )}
+      {error && <div className="ca-chat__hint">{error}</div>}
+      {b.can_continue && latest && !closed && copy?.primary && (
+        <div className="ca-panel__foot">
+          {copy.secondary && <button type="button" className="ca-panel__secondary" disabled={busy} onClick={() => setClosed(true)}>{copy.secondary}</button>}
+          <button type="button" className="ca-panel__primary" data-action={b.copy?.action} disabled={busy} onClick={go}>{copy.primary}</button>
+        </div>
+      )}
     </div>
   )
 }
@@ -499,13 +540,55 @@ function Ask({ b }: { b: BotBlock }) {
   )
 }
 
-function renderAsk(b: BotBlock, key: string | number) {
+export function renderAsk(b: BotBlock, key: string | number) {
   if (b.kind === 'plan_quote') return <PlanQuote key={key} b={b} />
   if (b.kind === 'run_approval') return <Ask key={key} b={b} />
+  if (b.kind === OVER_QUOTE.kind) return <OverQuote key={key} b={b} />
   // New question cards (kind=question) and in-flight pending without kind use QuestionCard.
   // Historical answered chips without kind keep the memo path.
   if (b.status !== 'pending' && b.kind !== 'question') return <AskMemo key={key} b={b} />
   return <QuestionCard key={key} b={b} />
+}
+
+/** #393: over-quote confirm. A dedicated card (never QuestionCard): the same cost-confirm card as a plan quote,
+ * built from the shared bot/over_quote.json schema. 确认 answers [confirm], 先到这里 / dismiss answers [decline]. */
+export function OverQuote({ b }: { b: BotBlock }) {
+  const [error, setError] = useState('')
+  const askId = b.ask_id
+  const pending = b.status === 'pending'
+  const copy = OVER_QUOTE.copy[lang === 'zh' ? 'zh' : 'en']
+  const credits = (b as BotBlock & { credits?: number }).credits
+  const body = credits != null ? copy.body.replace('{credits}', String(credits)) : (b.prompt ?? '')
+  useEffect(() => {
+    if (!pending || !askId) return
+    let live = true
+    const answer = (id: string) => void answerAsk(askId, [id], '').catch((e) => { if (live) setError(errorText(e)) })
+    confirmAtom.set({
+      title: t('jobs.confirmTitle'),
+      desc: body,
+      ok: copy.confirm,
+      cancelLabel: copy.decline,
+      // #393: no ✕, the backdrop does nothing; Esc = 先到这里 (cancel → decline)
+      closable: false,
+      backdropClose: false,
+      className: 'ca-overquote',
+      run: () => { if (live) answer(OVER_QUOTE.confirm) },
+      cancel: () => { if (live) answer(OVER_QUOTE.decline) },
+    })
+    return () => {
+      live = false
+      const cur = confirmAtom.get()
+      if (cur && cur.desc === body) confirmAtom.set(null)
+    }
+  }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
+  if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
+  const ok = b.status === 'answered' && (b.selected ?? []).includes(OVER_QUOTE.confirm)
+  return (
+    <div className="ca-chat__memo" data-kind={OVER_QUOTE.kind}>
+      <span className="ca-icon">{ok ? Icons.check : Icons.close}</span>
+      {body} → {ok ? copy.confirm : b.status === 'expired' ? t('chatMessage.timedOut') : copy.decline}
+    </div>
+  )
 }
 
 /** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles. */
@@ -807,11 +890,14 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
         proc.push({
           key: `p${i}`,
           kind: kindResolved,
-          label: processLabel(kindResolved, stepLive, {
-            fallback: b.type === 'tool_use' ? toolLabel(b.name) : b.label,
-            model,
-            pages,
-          }),
+          // #393 nit: a declined / refused paid step never reads 「已生成图片」
+          label: (kindResolved === 'image' || kindResolved === 'video') && b.type === 'tool_use' && result && stepState(result) === 'cancelled'
+            ? `${toolLabel(b.name)} · ${t('chatMessage.cancelled')}`
+            : processLabel(kindResolved, stepLive, {
+              fallback: b.type === 'tool_use' ? toolLabel(b.name) : b.label,
+              model,
+              pages,
+            }),
           live: stepLive,
           text: b.type === 'thinking' ? b.text : undefined,
           aspectRatio,
@@ -843,6 +929,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       if (b.type === 'retry') items.push(<Retry key={i} b={b} live={!done && !m.blocks.slice(i + 1).some((x) => x.type === 'retry')} />)
       if (b.type === 'ask') items.push(renderAsk(b, b.ask_id ?? i))
       if (b.type === 'task') items.push(<Task key={i} editor={editor} b={b} />)
+      if (b.type === 'run_stop') items.push(<RunStop key={i} b={b} latest={!m.blocks.slice(i + 1).some((x) => x.type === 'run_stop')} />)
       if (b.type === 'notice') items.push(<div key={i} className="ca-chat__notice" data-level={b.level}>{b.text}</div>)
     }
   })

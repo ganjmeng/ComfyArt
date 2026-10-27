@@ -57,11 +57,15 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
         monkeypatch.setenv("WAVESPEED_API_KEY", WS_KEY)
         monkeypatch.setenv("COMFYART_LOCAL_LLM_API_KEY", LLM_KEY)
         llm_url = base + "/mockllm/v1"
-    write_settings(**{"enable-bot": True, "bot-local-llm-url": llm_url, "bot-model-local-llm": "mock-agent-model"})
+    write_settings(**{"enable-bot": True, "bot-local-llm-url": llm_url, "bot-model-local-llm": "mock-agent-model",
+                      **case.settings})
     page = FakePage(ws_url=base + "/mockws", decline=case.decline, shapes=[*map(_copy, case.shapes_initial)],
                     selection=list(case.selection), brand_kit=case.brand_kit)
     monkeypatch.setattr(canvas, "submit_command", page)
-    monkeypatch.setattr(local_llm, "_LLM_TIMEOUT_S", 0.3)  # the timeout fault sleeps 1 s
+    # the timeout fault sleeps 1 s; other cases get a roomy timeout so a slow mock answer on a long
+    # (300-step) run is not mistaken for a timeout and retried (the 15-hardcap-en flake)
+    faulty = any(getattr(st, "fault", None) == "timeout" for st in case.script)
+    monkeypatch.setattr(local_llm, "_LLM_TIMEOUT_S", 0.3 if faulty else 30)
     monkeypatch.setattr(local_llm, "_RETRY_BACKOFF_S", (0.01, 0.01))  # #232 retry waits, shortened
     monkeypatch.setattr(local_llm, "_RATE_LIMIT_WAIT_S", (0.01, 0.01))
     caplog.set_level(logging.DEBUG)
@@ -73,7 +77,8 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
             for turn in case.turns:
                 r = await client.post(f"/comfyart/bot/chats/{chat['id']}/send", json={"text": turn[lang], "lang": lang})
                 assert r.status == 200, await r.text()
-                messages = (await wait_bot_done(client, chat["id"], timeout=30))["messages"]
+                # long (120/300-step) cases need more than 30 s on a loaded box (was the 15-hardcap-en flake)
+                messages = (await wait_bot_done(client, chat["id"], timeout=180 if case.limit >= 120 else 30))["messages"]
     finally:
         await client.close()
     out, err = capfd.readouterr()
@@ -93,6 +98,7 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
         "status": last["status"], "reply": "".join(b.get("text", "") for b in last["blocks"] if b["type"] == "text").strip(),
         "notices": [b["text"] for b in last["blocks"] if b["type"] == "notice"],
         "retries": [b for b in blocks if b["type"] == "retry"],
+        "last_blocks": last["blocks"],
         "logs": caplog.text + out + err + json.dumps(messages, ensure_ascii=False), "usage": usage,
         "messages": len(llm.requests[-1]["messages"]) if llm.requests else 0,
     }
@@ -222,6 +228,71 @@ def _x_retry_rows(r):
 def _x_fail_done(r):
     _x_retry_rows(r)
     assert ("已完成：生成图像" if r["lang"] == "zh" else "Done so far: Generate image.") in r["notices"][-1]
+
+
+_DONE_WORDS = ("完成", "已完成", "Done", "done")
+
+
+def _run_stop(r):
+    cards = [b for b in r["last_blocks"] if b["type"] == "run_stop"]
+    assert cards, "#391: every budget-loop run ends with a run_stop card"
+    return cards[-1]
+
+
+def _sc(r):
+    """The structured #383 result: on the run_stop card, and on the failure notice when it failed."""
+    return _run_stop(r)["self_check"]
+
+
+def _visible(r):
+    return r["reply"] + " ".join(r["notices"])
+
+
+def _x_run_done(r):
+    assert _run_stop(r)["stop"]["reason"] == "done"
+
+
+def _x_hard_cap(r):
+    card = _run_stop(r)
+    assert card["stop"]["reason"] == "hard_cap" and card["can_continue"] is True
+
+
+def _x_stuck(r):
+    card = _run_stop(r)
+    assert card["stop"]["reason"] == "stuck" and card["stop"]["sub"] == "readonly_limit"
+
+
+def _x_sc_pass(r):
+    sc = _sc(r)
+    assert sc["self_check"] == "pass" and sc["expected"] == sc["placed"] == 4
+    assert _run_stop(r)["stop"]["reason"] == "done"
+
+
+def _x_sc_missing2(r):
+    sc = _sc(r)
+    assert (sc["self_check"], sc["expected"], sc["generated"], sc["placed"], sc["missing"]) == ("fail", 4, 4, 2, 2)
+    assert not any(w in _visible(r) for w in _DONE_WORDS), _visible(r)
+    assert ("缺 2 张" if r["lang"] == "zh" else "2 missing") in _visible(r)
+    note = next(b for b in r["last_blocks"] if b["type"] == "notice" and b.get("self_check"))
+    assert note["self_check"]["missing"] == 2
+
+
+def _x_sc_allfail(r):
+    sc = _sc(r)
+    assert sc["self_check"] == "fail" and sc["generated"] == 0 and sc["missing"] == 4
+    assert not any(w in _visible(r) for w in _DONE_WORDS), _visible(r)
+    assert "content filter" in _visible(r)  # the failure reason reaches the user
+
+
+def _x_sc_claim(r):
+    sc = _sc(r)
+    assert sc["self_check"] == "fail" and sc["missing"] == 4
+    assert not any(w in _visible(r) for w in _DONE_WORDS), _visible(r)  # "已完成 4 张" was rewritten
+
+
+def _x_sc_skip(r):
+    assert _sc(r)["self_check"] == "skip"
+    assert not any(b.get("self_check") for b in r["last_blocks"] if b["type"] == "notice")
 
 
 EXTRA = {k[3:]: v for k, v in globals().items() if k.startswith("_x_")}

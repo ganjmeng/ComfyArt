@@ -54,7 +54,23 @@ export interface BotBlock {
   srcs?: string[]
   error?: string
   detail?: Record<string, any>
+  // #391 run_stop card
+  run_id?: string
+  stop?: { reason: string; sub?: string; dimension?: string; detail?: string; step?: number }
+  done?: string[]
+  remaining?: { deliverables: number; kind: string; steps: number }
+  details?: { zh: string[]; en: string[] }
+  copy?: RunStopCopy
+  self_check?: Record<string, any>
+  can_continue?: boolean
+  notify?: boolean
 }
+export interface RunStopText { title: string; body: string; primary: string | null; secondary: string | null }
+export interface RunStopCopy { key: string; action: 'continue' | 'rephrase' | 'retry'; tone: 'ok' | 'warn' | 'error' | 'neutral'; zh: RunStopText; en: RunStopText }
+export interface RunBudgetMeter { used: number; limit: number; pct: number }
+export interface RunBudgetView { run_id?: string; step: number; hard_cap: number; tokens: RunBudgetMeter; credits: RunBudgetMeter; time: RunBudgetMeter; soft: boolean }
+/** #391: live budget bar of the running turn, per chat (not persisted; the stop card keeps the final numbers). */
+export const runBudgetAtom = atom<Record<string, RunBudgetView>>('bot run budget', {})
 export interface BotUsage { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number; cost_usd?: number }
 export interface BotMessage { id: string; chat_id: string; parent_id: string | null; role: 'user' | 'assistant'; blocks: BotBlock[]; status: string; usage: BotUsage | null; created_at: number }
 export interface BotChat { id: string; user: string; project: string; title: string; provider: string; run_mode: 'auto' | 'ask'; pinned: boolean; archived: boolean; busy?: boolean; created_at: number; updated_at: number }
@@ -250,6 +266,11 @@ export async function stopTurn() {
   if (chat?.busy) await json(`/comfyart/bot/chats/${chat.id}/stop`, { method: 'POST' })
 }
 
+/** #391: resume a paused run from its server-side checkpoint (409 when another Continue won). */
+export async function continueRun(runId: string, lang: string) {
+  await json(`/comfyart/bot/runs/${runId}/continue`, send({ lang }))
+}
+
 export async function answerAsk(askId: string, selected: string[], other: string, answers?: AskAnswers) {
   const chat = currentChat()
   if (!chat) return
@@ -326,6 +347,12 @@ const reducers: Record<string, (e: any) => void> = {
   turn_tool_use: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, { type: 'tool_use', name: e.name, input: e.input, id: e.id })),
   turn_tool_result: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, { type: 'tool_result', name: e.name, text: e.text, status: e.status, id: e.id, duration_ms: e.duration_ms })),
   turn_retry: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block)),
+  turn_run_budget: (e) => runBudgetAtom.set({ ...runBudgetAtom.get(), [e.chat_id]: e.budget }),
+  turn_run_stop: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block)),
+  turn_notify: (e) => {
+    patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block))
+    if (chatsAtom.get().some((c) => c.id === e.chat_id)) void notify({ kind: 'suggestion', title: t('bot.runNeedsYou'), body: e.block?.text ?? '', chat: e.chat_id })
+  },
   turn_ask: (e) => {
     patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, { type: 'ask', status: 'pending', ...e }))
     if (chatsAtom.get().some((c) => c.id === e.chat_id)) void notify({ kind: 'suggestion', title: t('bot.agentIsWaitingForYour'), body: e.prompt, chat: e.chat_id })
@@ -335,6 +362,7 @@ const reducers: Record<string, (e: any) => void> = {
   })),
   turn_done: (e) => {
     setAgentPlanConfirmed(false)
+    if (runBudgetAtom.get()[e.chat_id]) { const { [e.chat_id]: _gone, ...rest } = runBudgetAtom.get(); runBudgetAtom.set(rest) }
     const chat = chatsAtom.get().find((c) => c.id === e.chat_id)
     chatsAtom.set(chatsAtom.get().map((c) => (c.id === e.chat_id ? { ...c, busy: false, ...(e.title ? { title: e.title } : {}) } : c)))
     if (chatIdAtom.get() === e.chat_id) void openChat(e.chat_id)

@@ -331,3 +331,50 @@ async def bot_test_local_llm(request: web.Request) -> web.Response:
 
 def reap_stale_messages() -> None:
     chat_store.abort_unfinished()
+
+
+# #391: continue a paused run from its server-side checkpoint. The DB lease makes it idempotent:
+# of two concurrent "Continue" presses exactly one starts a turn, the other gets 409.
+_CONTINUE_TEXT = {"zh": "继续", "en": "Continue"}
+
+
+def request_owner_id(request: web.Request) -> str:
+    """Who is asking. The local build has one owner ("local"); a hosted build resolves it from its
+    auth layer here. Kept as the single place so /continue never hard-codes the owner."""
+    from ..bot.run_budget import LOCAL_OWNER_ID
+    return str(request.get("comfyart_owner_id") or LOCAL_OWNER_ID)
+
+
+@routes.post("/comfyart/bot/runs/{rid}/continue")
+async def bot_run_continue(request: web.Request) -> web.Response:
+    import uuid
+
+    from ..bot.run_budget import resolve_policy
+    from .bot_turns import begin_turn
+    from .providers import ensure_run_store, user_policy_layer
+
+    if not bot_enabled():
+        return bot_disabled()
+    body = await json_body(request)
+    lang = str(body.get("lang") or "")
+    lang = lang if lang in ("zh", "en") else "zh"
+    store = ensure_run_store()
+    run = store.get_run(request.match_info["rid"], owner_id=request_owner_id(request))
+    if run is None:
+        return error("run not found", 404)
+    if run["status"] != "paused":
+        return error(f"run is {run['status']}, not paused", 409)
+    chat = chat_store.get_chat(run["chat_id"])
+    if chat is None:
+        return error("chat not found", 404)
+    if chat["id"] in ACTIVE_TURNS:
+        return error("this chat is busy", 409)
+    lease_owner = f"lease-{uuid.uuid4().hex}"
+    ttl = resolve_policy(user=user_policy_layer())["lease_s"]
+    if not store.acquire_lease(run["id"], lease_owner, ttl):
+        return error("this run is already being continued", 409)
+    user_msg = chat_store.create_message(chat_id=chat["id"], role="user",
+                                         blocks=[{"type": "text", "text": _CONTINUE_TEXT[lang]}])
+    assistant_msg = begin_turn(chat, text="", provider_text="", attachments=[], user_msg=user_msg,
+                               lang=lang, resume_run_id=run["id"], lease_owner=lease_owner)
+    return web.json_response({"run_id": run["id"], "user_message": user_msg, "assistant_message": assistant_msg})
