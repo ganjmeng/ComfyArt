@@ -192,6 +192,7 @@ LOCKED = {
     "stuck:self_check_failed": ("结果未通过自检", "已交付 {n} 张，还差：{miss}", "继续", None),
     "user_stop": ("已停止", "已保留生成的 {n} 张", "继续", None),
     "user_stop:quote_declined": ("已取消", "未扣费，已保留生成的 {n} 张", "继续", None),
+    "error:network": ("网络断开了", "已保留生成的 {n} 张", "重试", None),
     "error": ("出错了", "{reason}", "重试", None),
 }
 
@@ -208,10 +209,11 @@ async def test_card_has_collapsed_plain_details_without_caps(monkeypatch, store)
             store=store)
     res, ev = await r.send("画 4 张猫")
     c = card(ev)
-    assert c["copy"]["zh"]["title"] == "先停在这里了" and c["copy"]["zh"]["secondary"] == "先到这里"
+    assert c["copy"]["zh"]["title"] == "先停在这里了" and c["copy"]["zh"]["secondary"] is None  # free steps: no estimate
     assert c["copy"]["zh"]["body"] == c["copy"]["zh"]["body"].replace("上限", "") and "4 步" not in c["copy"]["zh"]["body"]
     zh = c["details"]["zh"]
-    assert [x.split(" ")[0] for x in zh] == ["步数", "token", "积分", "用时"]
+    assert [x.split(" ")[0] for x in zh] == ["步数", agent_loop.DETAIL_TOKEN_LABEL["zh"], "积分", "用时"]
+    assert not any(re.search(r"[A-Za-z]", x.split(" ")[0]) for x in zh)   # no English label on the zh card
     assert zh[0] == "步数 4" and not any("/" in x for x in zh)
     assert "budget" not in c and "hard_cap" not in json.dumps(c["details"])
 
@@ -253,3 +255,67 @@ async def test_network_drop_then_refresh_resumes_from_checkpoint(monkeypatch, st
     res2, _ = await r2.send("", resume=rid)
     assert stop_of(res2)["reason"] == "done"
     assert [a["text"] for _, a in r2.mcp] == ["x2"] and res2.run["log"]["steps"] >= 3
+
+
+# EL 6441143985: the card never shows an estimate / ratio / unit it does not have ---------------------------------
+
+def test_detail_lines_are_the_locked_copy():
+    assert agent_loop.DETAIL_TOKEN_LABEL["zh"] == "模型用量"
+    assert agent_loop._DETAIL_LABEL["zh"] == ("步数", "模型用量", "积分", "用时")
+    assert agent_loop._DETAIL_LABEL["zh"][1] is agent_loop.DETAIL_TOKEN_LABEL["zh"]   # one key, one-line swap
+
+
+async def test_no_estimate_means_no_credits_sentence_and_only_continue(monkeypatch, store):
+    r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})), policy={"hard_cap_steps": 3},
+            store=store)
+    res, ev = await r.send("画 4 张猫")
+    c = card(ev)["copy"]
+    assert c["zh"]["body"] == "已完成 0/4" and "积分" not in c["zh"]["body"] and "credits" not in c["en"]["body"]
+    assert (c["zh"]["primary"], c["zh"]["secondary"]) == ("继续", None)
+
+
+async def test_real_estimate_keeps_the_locked_sentence(monkeypatch, store):
+    r = Rig(monkeypatch, lambda m, n: calls(GEN), policy={"hard_cap_steps": 2}, store=store,
+            prices={"generate_image": 0.1}, mcp=lambda name, a, i: json.dumps({"id": f"shape:g{i}"}))
+    res, ev = await r.send("画 4 张猫")
+    c = card(ev)["copy"]["zh"]
+    assert re.fullmatch(r"已完成 \d/4，继续大约需要 [1-9]\d* 积分", c["body"]), c["body"]
+    assert (c["primary"], c["secondary"]) == ("继续", "先到这里")
+
+
+async def test_no_image_target_budget_card_asks(monkeypatch, store):
+    r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})), policy={"hard_cap_steps": 3},
+            store=store)
+    res, ev = await r.send("加字", goal="")
+    zh = card(ev)["copy"]["zh"]["body"]
+    assert zh == "预算到了，要继续吗？" and "/" not in zh
+
+
+async def test_chat_done_body_is_neutral(monkeypatch, store):
+    r = Rig(monkeypatch, [reply("你好，有什么可以帮你？")], store=store)
+    res, ev = await r.send("你好", goal="")
+    if any(e.t == "run_stop" for e in ev):
+        assert card(ev)["copy"]["zh"]["body"] == "已完成"
+
+
+@pytest.mark.parametrize("kind", ["video", "text", ""])
+def test_done_never_says_images_without_an_image_target(kind):
+    for lk, want in (("zh", "已完成"), ("en", "Done")):
+        got = agent_loop._card_body("done", lk, n=2, m=2 if kind else None, x=None, kind=kind,
+                                    step="", miss="", reason="")
+        assert got == want
+    assert agent_loop._card_body("done", "zh", n=2, m=2, x=None, kind="image", step="", miss="",
+                                 reason="") == "生成了 2 张，已放到画布上"
+
+
+async def test_network_card_copy(monkeypatch, store):
+    def s(m, n):
+        if n < 1:
+            return calls(GEN)
+        raise aiohttp.ClientConnectionError("reset")
+    r = Rig(monkeypatch, s, store=store, prices={"generate_image": 0.1},
+            mcp=lambda name, a, i: json.dumps({"id": f"shape:g{i}"}))
+    res, ev = await r.send("画 2 张猫")
+    c = card(ev)["copy"]
+    assert (c["key"], c["zh"]["title"], c["zh"]["primary"]) == ("error:network", "网络断开了", "重试")
+    assert re.fullmatch(r"已保留生成的 \d+ 张", c["zh"]["body"]) and c["action"] == "retry"

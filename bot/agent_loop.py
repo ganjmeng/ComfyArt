@@ -317,6 +317,8 @@ CARD_COPY = {
     "user_stop:quote_declined": {"zh": ("已取消", "未扣费，已保留生成的 {n} 张", "继续", None),
                                  "en": ("Cancelled", "Nothing charged; kept the {n} already generated",
                                         "Continue", None)},
+    "error:network": {"zh": ("网络断开了", "已保留生成的 {n} 张", "重试", None),
+                      "en": ("Network disconnected", "Kept the {n} already generated", "Retry", None)},
     "error": {"zh": ("出错了", "{reason}", "重试", None),
               "en": ("Something went wrong", "{reason}", "Retry", None)},
 }
@@ -324,7 +326,63 @@ CARD_COPY = {
 _PRIMARY_ACTION = {"stuck": "rephrase", "error": "retry"}
 
 
-_DETAIL_LABEL = {"zh": ("步数", "token", "积分", "用时"), "en": ("steps", "tokens", "credits", "time")}
+# 「详情」 token line label: ONE copy key, design picks the final Chinese word (placeholder 用量).
+DETAIL_TOKEN_LABEL = {"zh": "模型用量", "en": "model usage"}
+_DETAIL_LABEL = {"zh": ("步数", DETAIL_TOKEN_LABEL["zh"], "积分", "用时"),
+                 "en": ("steps", DETAIL_TOKEN_LABEL["en"], "credits", "time")}
+
+# Body fragments used when the locked template would mislead (EL 6441143985): no estimate -> no
+# credits clause; no parsable goal -> no "n/m"; non-image or no output -> no "张".
+_UNIT = {"zh": {"image": "张", "video": "段视频", "text": "条文案", "": "个结果"},
+         "en": {"image": "images", "video": "videos", "text": "texts", "": "results"}}
+_FRAG = {
+    "zh": {"progress": "已完成 {n}/{m}", "ask": "预算到了，要继续吗？", "est": "，继续大约需要 {x} 积分",
+           "done": "已完成", "kept": "已保留生成的 {n} {u}", "kept_none": "进度已保存", "free": "未扣费",
+           "self_check": "已交付 {n} {u}，还差：{miss}"},
+    "en": {"progress": "{n}/{m} done", "ask": "Budget reached. Continue?", "est": "; continuing needs about {x} credits",
+           "done": "Done", "kept": "Kept the {n} {u} already generated", "kept_none": "Progress saved",
+           "free": "Nothing charged", "self_check": "Delivered {n} {u}; still missing: {miss}"},
+}
+
+
+def _card_body(key: str, lk: str, *, n: int, m: Optional[int], x: Optional[int], kind: str, **kw) -> str:
+    """Locked copy (#393 product+design): only an image target gets N/M and 「N 张」; the credits sentence
+    only when there is a real estimate."""
+    f = _FRAG[lk]
+    image = kind == "image" and m is not None
+    u = _UNIT[lk].get(kind, _UNIT[lk][""])
+    sep = "，" if lk == "zh" else "; "
+    if key in ("budget", "hard_cap"):
+        if not image:
+            return f["ask"]
+        return f["progress"].format(n=n, m=m) + (f["est"].format(x=x) if x is not None else "")
+    if key == "done":
+        return CARD_COPY[key][lk][1].format(n=n) if image and n > 0 else f["done"]
+    if key == "stuck:self_check_failed":
+        return CARD_COPY[key][lk][1].format(n=n, **kw) if kind == "image" else f["self_check"].format(n=n, u=u, **kw)
+    if key in ("user_stop", "error:network"):
+        if kind == "image":
+            return CARD_COPY[key][lk][1].format(n=n)
+        return f["kept"].format(n=n, u=u) if n > 0 else f["kept_none"]
+    if key == "user_stop:quote_declined":
+        if kind == "image":
+            return CARD_COPY[key][lk][1].format(n=n)
+        return f["free"] + (sep + f["kept"].format(n=n, u=u) if n > 0 else "")
+    return CARD_COPY[key][lk][1].format(n=n, m=m, x=x, **kw)
+    u = _UNIT[lk].get(kind, _UNIT[lk][""])
+    sep = "，" if lk == "zh" else "; "
+    if key in ("budget", "hard_cap"):
+        head = f["progress"].format(n=n, m=m) if m is not None else f["progress_free"]
+        return head + (f["est"].format(x=x) if x is not None else "")
+    if key == "done":
+        return f["done"].format(n=n, u=u) if n > 0 else f["done_none"]
+    if key == "stuck:self_check_failed":
+        return f["self_check"].format(n=n, u=u, **kw)
+    if key == "user_stop":
+        return f["kept"].format(n=n, u=u) if n > 0 else f["kept_none"]
+    if key == "user_stop:quote_declined":
+        return f["free"] + (sep + f["kept"].format(n=n, u=u) if n > 0 else "")
+    return CARD_COPY[key][lk][1].format(n=n, m=m, x=x, **kw)
 
 
 def _fmt_tokens(n: int) -> str:
@@ -352,7 +410,7 @@ def card_details(ctx: RunContext) -> dict:
     ctx.budget.tick()
     u = ctx.budget.used
     secs = int(round(u.wall_s))
-    vals = (str(u.steps), _fmt_tokens(u.tokens), str(int(round(u.credits * 100))), f"{secs // 60}:{secs % 60:02d}")
+    vals = (str(u.steps), _fmt_tokens(u.tokens), f"{u.credits * 100:.2f}", f"{secs // 60}:{secs % 60:02d}")
     return {lk: [f"{lab} {v}" for lab, v in zip(_DETAIL_LABEL[lk], vals)] for lk in ("zh", "en")}
 
 
@@ -361,9 +419,11 @@ def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: i
     key = stop.code if stop.code in CARD_COPY else stop.reason.value
     goal = check.goal
     n = check.placed if goal else len(ctx.artifacts)
-    m = goal.count if goal else max(n, 1)
+    m = goal.count if goal else None                       # no parsable goal: no "n/m"
     est = ctx.budget.projection(remaining) if remaining else {}
-    x = max(1, round(float(est.get("credits") or 0) * 100)) if est else 1  # 1 credit = $0.01
+    cr = float(est.get("credits") or 0) if est else 0.0
+    x = max(1, round(cr * 100)) if cr > 0 else None        # no estimate: no credits clause; 1 credit = $0.01
+    kind = goal.kind if goal else ""
     out: dict = {"key": key, "action": _PRIMARY_ACTION.get(stop.reason.value, "continue"),
                  "tone": ("ok" if stop.reason == StopReason.DONE else "error" if stop.reason == StopReason.ERROR
                           else "neutral" if stop.reason == StopReason.USER_STOP else "warn")}
@@ -372,10 +432,13 @@ def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: i
         last = ctx.done[-1] if ctx.done else ""
         step = last or _STALL_LABEL[lk].get(stop.sub, stop.sub)
         miss = (f"{check.missing} {sc_mod._KIND_LABEL[lk][goal.kind]}" if lk == "en" else
-                f"{check.missing} 张{sc_mod._KIND_LABEL[lk][goal.kind]}") if goal else ""
+                f"{check.missing} {dict(image='张', video='段', text='条')[goal.kind]}{sc_mod._KIND_LABEL[lk][goal.kind]}") if goal else ""
         reason = (stop.detail or _STALL_LABEL[lk].get(stop.sub, "") or stop.code).strip().splitlines()
+        if key in ("budget", "hard_cap") and x is None:
+            secondary = None                                   # no estimate: just 「继续」
         out[lk] = {"title": title,
-                   "body": body.format(n=n, m=m, x=x, step=step, miss=miss, reason=(reason[0] if reason else "")[:160]),
+                   "body": _card_body(key, lk, n=n, m=m, x=x, kind=kind, step=step, miss=miss,
+                                      reason=(reason[0] if reason else "")[:160]),
                    "primary": primary, "secondary": secondary}
     return out
 
@@ -580,7 +643,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             if handle.stop_requested:
                 return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
             if ctx.budget.used.steps >= ctx.budget.limits.hard_steps:
-                return await finish(Stop(StopReason.HARD_CAP, step=ctx.budget.used.steps))
+                return await finish(Stop(StopReason.HARD_CAP, step=ctx.budget.used.steps), remaining=_remaining_steps(ctx))
             dim = ctx.budget.exhausted()
             if dim:
                 sub = "unattended_skipped" if confirm_policy(ctx.mode, "exhausted") == "skip" else "exhausted"
