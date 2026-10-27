@@ -97,8 +97,9 @@ async def ui(bundle, bot_client):
 class Run:
     """A real chat on the real routes, driven by a mocked local-llm (Rig without its _confirm_over_quote stub)."""
 
-    def __init__(self, monkeypatch, client, store, prices, script=None, usd=1.0):
+    def __init__(self, monkeypatch, client, store, prices, script=None, usd=1.0, mcp=None):
         self.prices = list(prices)
+        self._mcp = mcp
         self.r = Rig(monkeypatch, script or (lambda m, n: calls(gen(n))), store=store, policy={"credits_usd": usd},
                      mcp=self.mcp)
         monkeypatch.delattr(self.r.p, "_confirm_over_quote")  # the real ask path
@@ -117,8 +118,9 @@ class Run:
             return a
         monkeypatch.setattr(bot_asks, "create_ask", spy)
 
-    @staticmethod
-    def mcp(name, args, i):  # the real async generate_image shape: a queued job id, nothing on the canvas yet
+    def mcp(self, name, args, i):  # the real async generate_image shape: a queued job id, nothing on the canvas yet
+        if self._mcp is not None:
+            return self._mcp(name, args, i)
         if name == "generate_image":
             return json.dumps({"ids": [f"job-{i}"], "status": "queued"})
         if name == "get_canvas":
@@ -306,3 +308,110 @@ async def test_body_left_edge_equals_title(monkeypatch, bot_client, store, ui, l
     title = await modal.locator(".ca-side__head > span").first.bounding_box()
     body = await modal.locator(".ca-rename__body > div").first.bounding_box()
     assert abs(body["x"] - title["x"]) < 0.5, (title, body)
+
+
+# --- EL guard: the #393 opt-in props must not change ordinary dialogs (values measured on origin/main eca71bc) ---
+# main: Confirm renders <Modal closable={false}> → an ordinary confirm has NO ✕; backdrop click cancels and closes;
+# body text sits 20px from the card edge (.ca-rename__body padding 0 20px), the title 16px (.ca-side__head).
+# A plain <Modal> keeps its ✕ (closable defaults true) and its backdrop closes.
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("theme", ["light", "dark"])
+async def test_ordinary_confirm_unchanged(ui, lang, theme):
+    await ui.evaluate("([l, t]) => window.__confirm(l, t)", [lang, theme])
+    modal = ui.locator(".ca-modal")
+    await modal.wait_for()
+    card = ui.locator(".ca-modal__card")
+    assert "ca-overquote" not in (await card.get_attribute("class"))
+    assert await card.locator(".ca-side__head button").count() == 0, "main: ordinary confirms have no ✕"
+    c = await card.bounding_box()
+    title = await card.locator(".ca-side__head > span").first.bounding_box()
+    body = await card.locator(".ca-rename__body > div").first.bounding_box()
+    assert abs(body["x"] - c["x"] - 20) < 0.5, (c, body)  # main's body indent: 20px
+    assert abs(title["x"] - c["x"] - 16) < 0.5, (c, title)
+    await ui.mouse.click(6, 6)  # backdrop
+    await modal.wait_for(state="detached")
+    assert await ui.evaluate("window.__log") == ["cancel"]
+
+
+async def test_plain_modal_keeps_close_x_and_backdrop(ui):
+    await ui.evaluate("window.__modal()")
+    modal = ui.locator(".ca-modal")
+    await modal.wait_for()
+    assert await modal.locator(".ca-side__head button").count() == 1, "Modal default closable=true shows ✕"
+    await ui.mouse.click(6, 6)
+    await ui.wait_for_function("window.__log.length === 1")
+    assert await ui.evaluate("window.__log") == ["close"]
+
+
+# Seedream → flare is the #133 table; a failed A then a declined B must not fall back (#393 P0).
+_FAIL = ("generate_image", {"prompt": "cat fail", "model": "bytedance/seedream-v5.0-pro"})
+_SEEDREAM_FAIL = json.dumps({"status": "failed", "error": "WaveSpeed task failed",
+                             "model": "bytedance/seedream-v5.0-pro"})
+
+
+def _fail_then_queue():
+    state = {"n": 0}
+
+    def mcp(name, args, i):
+        if name == "ask_user":
+            # would agree to a #236 switch if asked — the break→pass mutant would then spend
+            return json.dumps({"status": "answered", "selected": ["yes"]})
+        if name != "generate_image":
+            return json.dumps({"ok": True})
+        if args.get("fallback_for"):
+            return json.dumps({"ids": ["fb"], "status": "queued"})
+        state["n"] += 1
+        if state["n"] == 1:
+            return _SEEDREAM_FAIL
+        return json.dumps({"ids": [f"job-{i}"], "status": "queued"})
+    return mcp
+
+
+@pytest.mark.parametrize("how", ["click", "esc"])
+async def test_decline_after_failed_call_blocks_fallback(monkeypatch, bot_client, store, ui, how):
+    """Call A model-fails (fallback-eligible); call B is over-quote; decline by 先到这里 click or Esc.
+    Assert: no #236 fallback ask, no paid fallback MCP call, run ends quote_declined."""
+    run = Run(monkeypatch, bot_client, store, prices=[0.3, 9.0],
+              script=lambda m, n: calls(_FAIL, gen(1)) if n == 0 else reply("done"),
+              mcp=_fail_then_queue())
+    await run.start()
+    b = await run.pending(1)
+    assert b["kind"] == OVER_QUOTE["kind"]
+    n_asks = len(run.asks)
+    if how == "click":
+        await click(ui, b, run.chat, "先到这里")
+    else:
+        await show(ui, b, run.chat)
+        n = len(ui.hits)
+        await ui.keyboard.press("Escape")
+        hit = await wait_hit(ui, n)
+        assert hit["body"]["selected"] == [OVER_QUOTE["decline"]]
+    blocks, stops = await run.done()
+    assert stops[-1]["copy"]["key"] == "user_stop:quote_declined"
+    assert len(run.asks) == n_asks, "no second over-quote and no fallback ask_user card"
+    assert not any(c[0] == "ask_user" for c in run.r.mcp), run.r.mcp
+    assert not any(c[1].get("fallback_for") for c in run.r.mcp if c[0] == "generate_image"), run.r.mcp
+
+
+async def test_overquote_body_indent_16_ordinary_stays_20(monkeypatch, bot_client, store, ui):
+    """EL: on main eca71bc ordinary Confirm body indent is 20px; over-quote card is 16px."""
+    await ui.evaluate("([l, t]) => window.__confirm(l, t)", ["zh", "light"])
+    card = ui.locator(".ca-modal__card")
+    await card.wait_for()
+    c = await card.bounding_box()
+    body = await card.locator(".ca-rename__body > div").first.bounding_box()
+    assert abs(body["x"] - c["x"] - 20) < 0.5, (c, body)
+    await ui.mouse.click(6, 6)
+    await ui.locator(".ca-modal").wait_for(state="detached")
+    run = Run(monkeypatch, bot_client, store, prices=[9.0],
+              script=lambda m, n: calls(GEN) if n == 0 else reply("done"))
+    await run.start()
+    b = await run.pending(1)
+    modal = await show(ui, b, run.chat)
+    card = modal.locator(".ca-modal__card")
+    c = await card.bounding_box()
+    body = await card.locator(".ca-rename__body > div").first.bounding_box()
+    assert abs(body["x"] - c["x"] - 16) < 0.5, (c, body)
+    await click(ui, b, run.chat, "先到这里")
+    await run.done()

@@ -1500,7 +1500,7 @@ class LocalLlmProvider(AgentProvider):
             await self._maybe_model_fallback(
                 session, turn.mcp_endpoint, handle, emit, lang, messages, done,
                 turn.chat_id, it["name"], it["args"], str(ch[0].get("content") or ""),
-                loop["gens"])
+                loop["gens"], run=run, turn=turn)
         if decision == "cancel":
             text = quote.cancel_text if quote else CANCEL_TEXT[lang_key]
             await emit(BotEvent(t="delta", text=text))
@@ -1567,8 +1567,10 @@ class LocalLlmProvider(AgentProvider):
                                     handle: TurnHandle, emit: EmitFn, lang: str,
                                     messages: list[dict], done: list[str], chat_id: str,
                                     name: str, args: dict, result_text: str,
-                                    gens: dict) -> None:
-        """#236: on a model failure, switch once to the #133 backup. Never the same paid model."""
+                                    gens: dict, run=None, turn=None) -> None:
+        """#236: on a model failure, switch once to the #133 backup. Never the same paid model.
+        #393: a paid fallback goes through the same paid_gate as any paid call (never around it). The
+        post-step `break` on pending_stop is what stops the fallback loop after 先到这里 / Esc."""
         if handle.stop_requested or not endpoint or (args or {}).get("fallback_for"):
             return
         _remember_generation(gens, name, args, result_text)
@@ -1615,10 +1617,25 @@ class LocalLlmProvider(AgentProvider):
                 if not handle.stop_requested:
                     await self._speak(messages, emit, _no_switch_note(failed, target, lang))
                 return
+        fb_args = {**call_args, "fallback_for": failed}
+        price = 0.0
+        gated = run is not None and tool in PAID_TOOLS
+        cid = f"fb-{failed}-{len(messages)}"
+        if gated:
+            from . import agent_loop
+
+            async def ask(n, a, p, left):
+                return await self._confirm_over_quote(turn, handle, lang, n, p, left)
+            action, _txt, price = await agent_loop.paid_gate(run, tool, fb_args, ask,
+                                                             call_id=cid)
+            if action != "call":
+                return  # declined / stopping / pending: the fallback does not run and spends nothing
         text = await self._run_fallback_tool(
-            session, endpoint, emit, lang, messages, done, tool,
-            {**call_args, "fallback_for": failed})
-        _remember_generation(gens, tool, {**call_args, "fallback_for": failed}, text)
+            session, endpoint, emit, lang, messages, done, tool, fb_args)
+        if gated:
+            agent_loop.paid_done(run, tool, fb_args, text, price, bool(model_call_failed(tool, fb_args, text)),
+                                 call_id=cid)
+        _remember_generation(gens, tool, fb_args, text)
 
     async def send(self, turn: TurnRequest, emit: EmitFn,
                    handle: TurnHandle) -> TurnResult:
