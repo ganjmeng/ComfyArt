@@ -1331,5 +1331,7 @@
   "composer.atGroupProject": "This project",
   "composer.atGroupAssets": "Assets",
   "composer.atMore": "More",
-  "composer.selectedCount": "{0} selected"
+  "composer.selectedCount": "{0} selected",
+  "botSettings.review": "Review",
+  "botSettings.reviewDesc": "After an image or video is delivered, think once more to review it before the Done summary."
 }

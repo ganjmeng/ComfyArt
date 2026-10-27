@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh" data-theme="light" class="ca-root">
+<meta charset="utf-8"/>
+<title>#364 agent-settings-review-on</title>
+<link rel="stylesheet" href="tip.css"/>
+<style>html,body{margin:0;background:#ececec;min-height:100%}.ca-root{position:static;display:block;background:transparent}</style>
+<body>
+<div class="ca-modal" id="shot">
+  <div class="ca-modal__card ca-botsettings ca-rename">
+    <div class="ca-side__head"><div class="ca-side__title">Agent 设置</div>
+      <button type="button" class="ca-side__close" aria-label="Close"><span class="ca-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span></button>
+    </div>
+    <div class="ca-rename__body">
+      <section class="ca-botsettings__section" data-testid="botsettings-builtin">
+        <div class="ca-botsettings__sectiontitle">内置 Agent</div>
+        <div class="ca-chat__hint">端点、模型与密钥</div>
+        <label class="ca-rename__field"><span>本地 LLM URL</span><input class="ca-panel__input" value="https://llm.wavespeed.ai/v1" readonly/></label>
+      </section>
+      <section class="ca-botsettings__section" data-testid="botsettings-review">
+        <label class="ca-notice__push" data-testid="bot-enable-review">
+          <input type="checkbox" checked/>
+          <span>审核</span>
+        </label>
+        <div class="ca-chat__hint">出图后先审图思考，再写摘要与下一步建议。</div>
+      </section>
+      <div class="ca-panel__foot">
+        <button type="button" class="ca-panel__secondary">取消</button>
+        <button type="button" class="ca-panel__primary">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

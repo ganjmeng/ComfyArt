@@ -106,7 +106,7 @@ async def prepare_attachments(refs: list[dict], kits: list[dict], docs: list[dic
 
 
 def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
-                          lines: list[str] = ()) -> str:
+                          lines: list[str] = (), review: bool | None = None) -> str:
     provider_text = text or "Look at the attached images and tell me what you see."
     if skill_name:
         provider_text = (
@@ -118,6 +118,9 @@ def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
         provider_text += "\n\n" + "\n".join(lines)
     if memory:
         provider_text = memory + "\n\n" + provider_text
+    # #364: Agent Review (审核) — ON inserts post-image 审图思考; OFF skips it
+    if review is not None:
+        provider_text = f"[Review: {'ON' if review else 'OFF'}]\n\n" + provider_text
     return provider_text
 
 

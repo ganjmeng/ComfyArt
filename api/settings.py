@@ -25,6 +25,8 @@ SETTINGS_SPEC: dict[str, object] = {
     "bot-comfy-mcp-command": "",
     "ocr-engine": "local",
     "memory-enabled": True,
+    # #364: Agent「审核」— post-image review thought on Done (default ON = Lovart)
+    "bot-enable-review": True,
     "proactive-memory": False,
     "proactive-skills": False,
     "proactive-review": False,

@@ -6,7 +6,7 @@ from . import bot_asks, chat_store
 from . import bot_send as send_core
 from ._common import error, json_body, request_user, routes
 from .bot_turns import ACTIVE_TURNS, QUEUED, broadcast
-from .settings import bot_disabled, bot_enabled, mcp_enabled
+from .settings import bot_disabled, bot_enabled, get_setting, mcp_enabled
 
 EXTERNAL_NEEDS_MCP = "external agents need MCP: turn on MCP in Agent settings"
 
@@ -173,8 +173,11 @@ async def bot_send(request: web.Request) -> web.Response:
     if text:
         display_blocks.append({"type": "text", "text": text})
     context = str(body.get("context") or "").strip()
+    # #364: Review default ON — flag steers Done post-image 审图思考 in AGENT_GUIDE
+    review_on = get_setting("bot-enable-review") is not False
     provider_text = send_core.compose_provider_text(
-        text, skill_name=skill_name, memory=str(body.get("memory") or ""), lines=[*lines, *([context] if context else [])])
+        text, skill_name=skill_name, memory=str(body.get("memory") or ""),
+        lines=[*lines, *([context] if context else [])], review=review_on)
     lang = str(body.get("lang") or "")
     user_msg, assistant_msg = send_core.queue_or_begin(
         chat, text=text, provider_text=provider_text,
