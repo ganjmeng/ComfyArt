@@ -15,3 +15,6 @@ Result: after — mouth visible above composer edge in all 30 frames. before —
 - `side-by-side-lovart-{dark,light}.png`: Lovart CN (left) vs after (right), Lv.1-3 × idle/hover.
 - `after/composer-lv1-panelopen-{dark,light}.png`: notify panel open → corner mascot `visibility:hidden; opacity:0`, top element at its spot is `.arti-notify`.
 - Re-verified (headless Chrome, all Lv × theme): idle — mascot top hits mascot, its bottom hits `.ca-composer__input` (behind surface, head only peeks); hover lifts −11px.
+
+## #380 frame alignment
+`@keyframes arti-mascot-play` now ends at `-850px 0` (17 × 50px) with `steps(17)`: each step moves exactly 50px (0, −50 … −800). `after/mascot-lv1-hover-t2500-frame10-dark.png` = mid-play frame 10 (−500px). `after/mascot-lv1-hover-t4600-end-dark.png` = after the 4250ms run, fill `both` holds −850px, so the badge is **blank** while hover/typing/play persists (open question for product).

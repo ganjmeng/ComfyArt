@@ -15,6 +15,7 @@ from test_e2e_default_agent import pytestmark  # noqa: E402,F401
 
 FRAMES, FRAME_MS = 17, 250
 DURATION_MS = FRAMES * FRAME_MS  # 4250
+FRAME_W = 50  # px per sprite frame
 M = "[data-testid=arti-mascot]"
 
 READ = """(cls) => {
@@ -28,10 +29,10 @@ READ = """(cls) => {
     a.pause();
     a.currentTime = FRAME_MS + 1; out.pos1 = getComputedStyle(m).backgroundPosition;
     a.currentTime = DURATION; out.endPos = getComputedStyle(m).backgroundPosition;
-    const t = a.effect.getComputedTiming(); out.animDuration = t.duration;
+    const t = a.effect.getComputedTiming(); out.animDuration = t.duration; out.steps = []; for (let k = 0; k <= FRAMES; k++) { a.currentTime = Math.min(k * FRAME_MS + 1, DURATION); out.steps.push(getComputedStyle(m).backgroundPosition); }
   }
   return out;
-}""".replace("FRAME_MS", str(FRAME_MS)).replace("DURATION", str(DURATION_MS))
+}""".replace("FRAMES", str(FRAMES)).replace("FRAME_MS", str(FRAME_MS)).replace("DURATION", str(DURATION_MS))
 
 
 async def _open(p, url, level=1, theme="dark"):
@@ -56,10 +57,13 @@ def _assert_play(st, label):
     assert st["durations"].split(", ")[0] == "4.25s", f"{label}: duration {st['durations']}"
     assert st["animDuration"] == DURATION_MS, f"{label}: {st['animDuration']}"
     assert st["timing"].split(", ")[0] in ("steps(17)", "steps(17, end)"), f"{label}: {st['timing']}"
-    # full strip: end on last frame (100% of travel == -(17-1)*w px) or the full strip (-17*w)
+    # full strip end only: -(17 x 50px) = -850px, so every step is exactly one 50px frame
     w = st["width"]
-    end = st["endPos"].split()[0]
-    assert end in ("100%", f"-{int((FRAMES - 1) * w)}px", f"-{int(FRAMES * w)}px"), f"{label}: end {st['endPos']}"
+    assert w == 50, f"{label}: width {w}"
+    assert st["endPos"].split()[0] == "-850px", f"{label}: end {st['endPos']}"
+    xs = [_px(p) for p in st["steps"]]
+    assert xs == [-FRAME_W * k for k in range(FRAMES)] + [-FRAME_W * FRAMES], f"{label}: steps {st['steps']}"
+    assert all(xs[k] - xs[k + 1] == FRAME_W for k in range(FRAMES)), f"{label}: step sizes {xs}"
     assert st["pos1"].split()[0] not in ("0%", "0px"), f"{label}: frame 1 did not advance ({st['pos1']})"
 
 

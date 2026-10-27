@@ -517,7 +517,7 @@ span.arti-mascot { cursor: default; pointer-events: none; }
 
 @keyframes arti-mascot-play {
   from { background-position: 0 0; }
-  to { background-position: 100% 0; }
+  to { background-position: -850px 0; }
 }
 
 .arti-mascot--play,
