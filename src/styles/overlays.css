@@ -348,6 +348,17 @@
 .ca-slideshow__prev { transform: rotate(180deg); }
 .ca-memory__q { font-weight: 600; font-size: 15px; }
 .ca-chat__acts { display: none; gap: 2px; }
+/* #360 Done feedback thumbs — quiet outline under summary; never suggestion chips */
+.ca-chat__feedback { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.ca-chat__fb {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; border: none; border-radius: 8px;
+  background: transparent; color: var(--ca-muted); cursor: pointer;
+}
+.ca-chat__fb .ca-icon { width: 16px; height: 16px; }
+.ca-chat__fb:hover { background: var(--ca-hover); color: var(--ca-text); }
+.ca-chat__fb[data-on] { color: var(--ca-text); background: var(--ca-active); }
+
 .ca-chat__user:hover .ca-chat__acts, .ca-chat__bot:hover .ca-chat__acts { display: flex; }
 .ca-chat__thinking { display: flex; align-items: center; gap: 8px; }
 .ca-comment__dot { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border: 2px solid #fff; border-radius: 50%; background: var(--ca-blue); box-shadow: 0 1px 4px rgba(0,0,0,.3); }

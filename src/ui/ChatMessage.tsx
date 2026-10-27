@@ -13,6 +13,7 @@ import { Thumb } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { t } from '../i18n'
 import { stepState } from './stepState'
+import { readLocal, writeLocal } from '../localPrefs'
 
 const GEN_TOOLS = new Set(['generate_image', 'generate_video', 'edit_image', 'animate_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers', 'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer', 'extend_video', 'upscale_video', 'remove_video_background', 'generate_music', 'generate_sound_effect', 'text_to_speech', 'image_to_3d', 'edit_elements', 'create_mockup', 'create_slides'])
 
@@ -685,6 +686,62 @@ function StepGroup({ editor, steps, stopped }: { editor: Editor; steps: Pair[]; 
   )
 }
 
+
+/** Image/video gen tools that mark a Done turn for #360 feedback. */
+const MEDIA_DONE_TOOLS = new Set([...IMAGE_PROCESS_TOOLS, ...VIDEO_TOOLS])
+
+function isMediaDoneMessage(m: BotMessage): boolean {
+  return m.blocks.some((b) => {
+    if (b.type === 'tool_use') return MEDIA_DONE_TOOLS.has(toolName(b.name))
+    if (b.type === 'task') {
+      const tool = String((b as any).detail?.tool ?? (b as any).tool ?? '')
+      return MEDIA_DONE_TOOLS.has(tool) || tool.includes('image') || tool.includes('video') || tool.includes('animate')
+    }
+    return false
+  })
+}
+
+type MsgFeedback = 'up' | 'down' | null
+
+function readMsgFeedback(messageId: string): MsgFeedback {
+  const v = readLocal(`comfyart.msgFeedback.${messageId}`)
+  return v === 'up' || v === 'down' ? v : null
+}
+
+/** #360: quiet outline 👍/👎 under Done summary — never suggestion chips. */
+function DoneFeedback({ messageId }: { messageId: string }) {
+  const [value, setValue] = useState<MsgFeedback>(() => readMsgFeedback(messageId))
+  const pick = (v: 'up' | 'down') => {
+    const next: MsgFeedback = value === v ? null : v
+    setValue(next)
+    writeLocal(`comfyart.msgFeedback.${messageId}`, next ?? '')
+  }
+  return (
+    <div className="ca-chat__feedback" data-value={value || undefined} data-testid="chat-done-feedback">
+      <button
+        type="button"
+        className="ca-chat__fb"
+        data-on={value === 'up' || undefined}
+        aria-label={t('chatMessage.thumbsUp')}
+        aria-pressed={value === 'up'}
+        onClick={() => pick('up')}
+      >
+        <span className="ca-icon">{Icons.thumbsUp}</span>
+      </button>
+      <button
+        type="button"
+        className="ca-chat__fb"
+        data-on={value === 'down' || undefined}
+        aria-label={t('chatMessage.thumbsDown')}
+        aria-pressed={value === 'down'}
+        onClick={() => pick('down')}
+      >
+        <span className="ca-icon">{Icons.thumbsDown}</span>
+      </button>
+    </div>
+  )
+}
+
 export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }) {
   const results = new Map(m.blocks.filter((b) => b.type === 'tool_result' && b.id).map((b) => [b.id, b]))
   const resultOf = (b: BotBlock, i: number) => (b.id ? results.get(b.id) : m.blocks[i + 1]?.type === 'tool_result' ? m.blocks[i + 1] : undefined)
@@ -799,6 +856,10 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   flushProc()
   flush()
   if (outputs.length) items.push(<div key="results" className="ca-chat__thumbs ca-chat__results">{outputs.map((s) => <Thumb key={s} editor={editor} src={s} />)}</div>)
+  // #360: under Done summary — thumbs only; NEVER a suggestion chip/pill row on media Done
+  if (m.status === 'done' && isMediaDoneMessage(m)) {
+    items.push(<DoneFeedback key="feedback" messageId={m.id} />)
+  }
   return <>{items}</>
 }
 

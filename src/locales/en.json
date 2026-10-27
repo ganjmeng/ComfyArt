@@ -242,6 +242,8 @@
   "chatMessage.submit": "Submit",
   "chatMessage.thinking": "Thinking…",
   "chatMessage.thought": "Thought",
+  "chatMessage.thumbsUp": "Thumbs up",
+  "chatMessage.thumbsDown": "Thumbs down",
   "chatMessage.skillReady": "Skill ready",
   "chatMessage.skillFileReadLive": "Reading skill file…",
   "chatMessage.skillFileRead": "Skill file read",
