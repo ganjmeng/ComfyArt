@@ -9,6 +9,7 @@ MASCOT = (ROOT / "src/ui/ArtiMascot.tsx").read_text()
 LEVEL = (ROOT / "src/artiLevel.ts").read_text()
 ARTI = (ROOT / "src/home/Arti.tsx").read_text()
 SHELL = (ROOT / "src/styles/shell.css").read_text()
+BASE = (ROOT / "src/styles/base.css").read_text()
 HOME = (ROOT / "src/styles/home.css").read_text()
 ASSETS = ROOT / "src/assets/arti"
 ZH = (ROOT / "src/locales/zh.json").read_text()
@@ -228,4 +229,68 @@ def test_376_close_bare_icon_with_hover_highlight() -> None:
     assert "border-radius: 6px" in base
     i = SHELL.index(".arti-notify__close:hover {")
     hov = SHELL[i:SHELL.index("}", i)]
-    assert "background: var(--ca-hover" in hov
+    assert "background: var(--ca-notify-close-hover" in hov
+
+
+def test_376_mascot_hidden_while_notify_open_restored_on_close() -> None:
+    """#376: panel open → mascot fully hidden (nothing in the 8px gap); close → idle peek again."""
+    # wrap carries the open flag only while open (undefined → attribute removed on close)
+    assert 'data-testid="arti-mascot-wrap" data-notify-open={notifyOpen || undefined}' in MASCOT
+    i = SHELL.index(".arti-mascot-wrap[data-notify-open] {")
+    hid = SHELL[i:SHELL.index("}", i)]
+    assert "visibility: hidden" in hid and "opacity: 0" in hid and "pointer-events: none" in hid
+    # restore: hiding must be gated on the open flag only, never on the base wrap/mascot rules
+    for sel in (".arti-mascot-wrap", ".arti-mascot"):
+        r = _rule(sel)
+        assert "visibility: hidden" not in r and "opacity: 0" not in r and "display: none" not in r, sel
+    assert "data-notify-open={notifyOpen || undefined}" in MASCOT
+    assert "data-notify-open={true}" not in MASCOT and "data-notify-open=\"\"" not in MASCOT
+
+
+def test_376_notify_width_auto_no_max_or_fixed_px() -> None:
+    """#376: panel width tracks composer — width:auto + left/right -1px only; no max-width / fixed px width."""
+    import re
+    rule = _rule(".ca-composer > .arti-notify,\n.arti-notify")
+    assert "width: auto" in rule and "left: -1px" in rule and "right: -1px" in rule
+    assert "max-width" not in rule and "min-width" not in rule
+    assert not re.search(r"(?<![-\w])width:\s*\d+(\.\d+)?px", rule)
+
+
+def _theme_block(dark: bool) -> str:
+    key = ':root[data-theme="dark"] {' if dark else ":root {"
+    i = BASE.index(key)
+    return BASE[i:BASE.index("}", i)]
+
+
+def test_376_close_hover_lovart_colours_and_box() -> None:
+    """Lovart CN hover ×: 24px rounded square (r 6–8), dark rgb(52,52,52) / light rgb(242,242,242)."""
+    import re
+    base = _rule(".arti-notify__close")
+    assert "width: 24px" in base and "height: 24px" in base
+    m = re.search(r"border-radius:\s*(\d+)px", base)
+    assert m and 6 <= int(m.group(1)) <= 8
+    i = SHELL.index(".arti-notify__close:hover {")
+    hov = SHELL[i:SHELL.index("}", i)]
+    assert "background: var(--ca-notify-close-hover" in hov
+    assert "--ca-notify-close-hover: rgb(242,242,242);" in _theme_block(False)
+    assert "--ca-notify-close-hover: rgb(52,52,52);" in _theme_block(True)
+
+
+def test_376_notify_designer_sizes() -> None:
+    """Designer MUST (visual CSS px, Lovart CN): top 16 / bottom 37 / title→icon 43 / icon ~34 visible / text 14 / height ~198.
+    Visual = CSS value + 1px border + glyph half-leading (top 13+1+2, bottom 33+1+3) / sprite inset (40+3); measured 201px in Chrome."""
+    rule = _rule(".ca-composer > .arti-notify,\n.arti-notify")
+    assert "padding: 13px 16px 33px;" in rule
+    assert "border-radius: 12px" in rule and "border: 1px solid" in rule
+    assert "margin-top: 40px;" in _rule(".arti-notify__empty")
+    icon = _rule(".arti-notify__icon")
+    # figure is ~60% of the 56px frame → ~34px visible
+    assert "width: 56px;" in icon and "height: 56px;" in icon
+    assert "margin-bottom: -4px;" in icon
+    assert "font: 500 14px/20px" in _rule(".arti-notify__empty-title")
+    hint = _rule(".arti-notify__empty-hint")
+    assert "font: 400 14px/20px" in hint and "margin-top: 1px;" in hint
+    # second line = secondary text token, not tertiary muted
+    assert "color: var(--ca-text-2" in hint and "--ca-muted" not in hint
+    assert "--ca-text-2: rgba(0,0,0,.6);" in _theme_block(False)
+    assert "--ca-text-2: rgba(255,255,255,.6);" in _theme_block(True)

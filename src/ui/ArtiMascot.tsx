@@ -100,7 +100,7 @@ export function ArtiMascot({
 
   return (
     <>
-    <span className="arti-mascot-wrap" ref={wrapRef} data-testid="arti-mascot-wrap">
+    <span className="arti-mascot-wrap" ref={wrapRef} data-testid="arti-mascot-wrap" data-notify-open={notifyOpen || undefined} aria-hidden={notifyOpen || undefined}>
       <button
         type="button"
         className={`arti-mascot ${animClass}`.trim()}
@@ -114,6 +114,7 @@ export function ArtiMascot({
         aria-label={t('arti.notify.title')}
         aria-expanded={notifyOpen}
         aria-haspopup="dialog"
+        tabIndex={notifyOpen ? -1 : undefined}
         style={{
           backgroundImage: `url(${SHEETS[level]})`,
           ['--mascot-frames' as string]: MASCOT_FRAMES,
