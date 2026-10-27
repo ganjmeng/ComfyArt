@@ -59,7 +59,7 @@ def test_reduced_motion_stays_frame0() -> None:
 
 def test_placement_attrs_left_top_peek() -> None:
     assert "left: 12px" in SHELL
-    assert "top: -22px" in SHELL or "bottom: -22px" in SHELL
+    assert "top: -29px" in _rule(".arti-mascot-wrap")
     assert "width: 50px" in SHELL
     assert "height: 50px" in SHELL
     assert "image-rendering: pixelated" in SHELL
@@ -172,11 +172,11 @@ def test_371fix_mascot_behind_composer_surface() -> None:
     assert "pointer-events: none" in surf  # surface never eats mascot clicks
     wrap = _rule(".arti-mascot-wrap")
     assert "z-index: 2" not in wrap and "z-index: auto" in wrap
-    assert "top: -22px" in wrap and "left: 12px" in wrap
+    assert "top: -29px" in wrap and "top: -22px" not in wrap and "left: 12px" in wrap
     m = _rule(".arti-mascot")
     assert "z-index: 0" in m and "pointer-events: auto" in m
     assert ".ca-composer > :not(.arti-mascot-wrap) { position: relative; z-index: 2; }" in SHELL
-    # 50px tall at top -22 → 28px below rim hidden by the surface, 22px head peeks (more on 11px hover lift)
+    # v6: 50px tall at top -29 → 21px below rim hidden by the surface, 29px head (mouth) peeks (more on 11px hover lift)
     assert "translateY(-11px)" in SHELL
     assert "z-index: 5" in _rule(".arti-notify")  # popover stays above surface
 
@@ -188,7 +188,7 @@ def test_375_notify_popover_opens_above_composer() -> None:
     assert "top: auto" in rule
     assert "top: calc(100%" not in rule
     assert "z-index: 5" in rule
-    # wrap peeks above rim (top -22px), so wrap-top - 8px is strictly above the composer top edge
+    # wrap peeks above rim (top -29px), so wrap-top - 8px is strictly above the composer top edge
     import re
     m = re.search(r"top:\s*(-\d+)px", _rule(".arti-mascot-wrap"))
     assert m and int(m.group(1)) <= 0
@@ -294,3 +294,33 @@ def test_376_notify_designer_sizes() -> None:
     assert "color: var(--ca-text-2" in hint and "--ca-muted" not in hint
     assert "--ca-text-2: rgba(0,0,0,.6);" in _theme_block(False)
     assert "--ca-text-2: rgba(255,255,255,.6);" in _theme_block(True)
+
+
+V6_SHEETS = Path("/workspace/ComfyArt-review-assets/arti-final-v6/sheets")
+V6_MD5 = {
+    "mascot-lv1-dna-a.png": "705725406be5563c90f0d5da528d8b40",
+    "mascot-lv2-dna-a.png": "70bfd29d3730462983f2b8484fce7dcd",
+    "mascot-lv3-dna-a.png": "70a0ab279367408f99adf0f41bd701a5",
+}
+
+
+def test_v6_sheets_dims_2176x128() -> None:
+    from PIL import Image
+    for name in V6_MD5:
+        im = Image.open(ASSETS / name)
+        assert im.size == (2176, 128), (name, im.size)  # 17 frames x 128
+
+
+def test_v6_sheets_byte_match_sources() -> None:
+    import hashlib
+    for name, md5 in V6_MD5.items():
+        data = (ASSETS / name).read_bytes()
+        assert hashlib.md5(data).hexdigest() == md5, name
+        src = V6_SHEETS / name
+        if src.is_file():  # review-assets checkout present on the box
+            assert data == src.read_bytes(), name
+
+
+def test_v6_peek_top_29px() -> None:
+    wrap = _rule(".arti-mascot-wrap")
+    assert "top: -29px" in wrap and "top: -22px" not in wrap
