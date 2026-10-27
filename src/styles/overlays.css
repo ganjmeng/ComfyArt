@@ -593,13 +593,12 @@
 :root[data-theme="dark"] .ca-run__check { color: #fbbf24; }
 :root[data-theme="dark"] .ca-run__check[data-ok] { color: #4ade80; }
 .ca-run__body { color: var(--ca-text, inherit); }
-.ca-run__details { font-size: 12px; color: var(--ca-muted); }
+.ca-run__details { font-size: 12px; color: var(--ca-text-2); }  /* #393 design: >= 4.5:1 in light and dark */
 .ca-run__details > summary { cursor: pointer; list-style: none; }
 .ca-run__details > summary::-webkit-details-marker { display: none; }
 .ca-run__details > div { line-height: 18px; }
-.ca-run[data-tone="error"] .ca-run__title { color: #dc2626; }
-:root[data-theme="dark"] .ca-run[data-tone="error"] .ca-run__title { color: #f87171; }
-.ca-run[data-tone="neutral"] .ca-run__title { color: var(--ca-muted); }
+.ca-run[data-tone="error"] .ca-run__title { color: var(--ca-danger); }
+.ca-run[data-tone="neutral"] .ca-run__title { color: var(--ca-text-2); }  /* 已停止 / 已取消: --ca-muted failed contrast */
 .ca-run__line { color: var(--ca-muted); }
 .ca-chat__user[data-queued] .ca-chat__bubble { opacity: .6; }
 .ca-agentpick { width: 300px; }

@@ -8,7 +8,6 @@ ProgressTracker.
 from __future__ import annotations
 
 import hashlib
-import math
 import json
 import logging
 import os
@@ -28,8 +27,10 @@ _log = logging.getLogger(__name__)
 def ui_credits(usd: float) -> int:
     """#393 product rule: the UI only ever shows credits. 1 credit = $0.01, integer, rounded UP; any
     nonzero spend under 1 credit shows 1, zero shows 0. Dollars stay in backend usage logs only."""
-    cents = round(max(0.0, float(usd or 0)) * 100, 6)   # kill float noise (0.07*100 = 7.000000000000001)
-    return int(math.ceil(cents))
+    # #393 product ruling: round USD to the nearest micro-dollar (integer), then ceil to credits with
+    # integer math only (1 credit = 10_000 micro-dollars). $0.30000001 -> 30, $0.300001 -> 31.
+    micro = int(round(max(0.0, float(usd or 0)) * 1_000_000))
+    return -(-micro // 10_000)
 
 
 class StopReason(str, Enum):
@@ -217,8 +218,8 @@ def content_tokens(content: Any, image_tokens: int = SYSTEM_DEFAULTS["image_toke
                 continue
             if part.get("type") == "image_url":
                 total += image_tokens
-            else:
-                total += text_tokens(str(part.get("text") or ""))
+            else:  # a text part can embed data-URL images too (#393 tester): same rule as a plain string
+                total += content_tokens(str(part.get("text") or ""), image_tokens)
         return total
     return text_tokens(str(content))
 

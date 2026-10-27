@@ -38,6 +38,7 @@
   --ca-border-w: 1px;
   --ca-error-bg: #fee2e2;
   --ca-error-text: #991b1b;
+  --ca-danger: #c81e1e; /* #393: danger text, >= 4.5:1 on --ca-field over --ca-float */
   --ca-dim: rgba(255,255,255,.7);
   /* #356/#358 media hero + canvas Generating frame — hero left = icon rail (not past rail / label column) */
   --ca-media-hero-bg: #E7E7E7;
@@ -86,6 +87,7 @@
   --ca-border-w: .5px;
   --ca-error-bg: #4a1d1d;
   --ca-error-text: #fca5a5;
+  --ca-danger: #f87171;
   --ca-dim: rgba(0,0,0,.6);
   /* #356/#358 media hero + canvas Generating frame (dark) */
   --ca-media-hero-bg: #2C2C2C;

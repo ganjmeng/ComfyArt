@@ -327,7 +327,10 @@ async def test_network_card_copy(monkeypatch, store):
 # #393 product ruling: the UI only shows integer credits, ceil, one shared formatter ------------------------------
 
 @pytest.mark.parametrize("usd,want", [(0, 0), (0.0, 0), (0.0001, 1), (0.009, 1), (0.01, 1), (0.011, 2),
-                                      (0.07, 7), (0.32, 32), (0.321, 33), (1.0, 100), (2.345, 235)])
+                                      (0.07, 7), (0.32, 32), (0.321, 33), (1.0, 100), (2.345, 235),
+                                      (0.004, 1), (0.29999, 30),
+                                      # product ruling: round to micro-dollars first, then integer ceil
+                                      (0.30000001, 30), (0.300001, 31)])
 def test_ui_credits_is_integer_ceil(usd, want):
     from ComfyArt.bot.run_budget import ui_credits
     got = ui_credits(usd)
@@ -370,3 +373,95 @@ async def test_quote_card_shows_credits_not_dollars():
     for lang, unit in (("zh", "积分"), ("en", "credits")):
         assert await LocalLlmProvider._confirm_over_quote(Fake(), None, None, lang, "生成图片", 0.321, 0.004)
         assert "$" not in seen["prompt"] and f"33 {unit}" in seen["prompt"] and f"1 {unit}" in seen["prompt"]
+
+
+# #393 product ruling: 已取消 → 继续 shows the quote card again; nothing is charged before the confirm ------------
+
+def _paid_events(store, rid):
+    return [e for e in store.list_usage_events(run_id=rid) if e["kind"] == "paid_call"]
+
+
+@pytest.mark.parametrize("agree", [True, False])
+async def test_cancelled_continue_requotes_before_any_charge(monkeypatch, store, agree):
+    r = Rig(monkeypatch, [calls(GEN), reply("好")], store=store, prices={"generate_image": 9.0},
+            policy={"credits_usd": 1.0}, confirm=False)
+    res, ev = await r.send("画一张猫")
+    rid = res.run["run_id"]
+    c = card(ev)
+    assert c["copy"]["key"] == "user_stop:quote_declined" and c["can_continue"]
+    assert (c["copy"]["zh"]["primary"], c["copy"]["zh"]["secondary"]) == ("继续", None)   # only 继续
+    assert store.get_run(rid)["status"] == "paused" and _paid_events(store, rid) == []
+    r2 = Rig(monkeypatch, [calls(GEN), reply("好了")], store=store, prices={"generate_image": 9.0},
+             policy={"credits_usd": 1.0})
+    seen: list = []
+
+    async def quote(turn, handle, lang, name, p, left):
+        # the quote card is up: no paid call went out, no usage event, nothing charged yet
+        st = store.get_run(rid)["state"]["budget"]
+        seen.append((name, p, list(r2.paid_mcp()), _paid_events(store, rid), st["used"]["credits"]))
+        return agree
+    monkeypatch.setattr(r2.p, "_confirm_over_quote", quote)
+    res2, ev2 = await r2.send("继续", resume=rid)
+    assert len(seen) == 1, "继续 must show the quote card first"
+    name, price, paid, events, used = seen[0]
+    assert (name, price) == ("generate_image", 9.0) and paid == [] and events == [] and used == 0
+    if agree:
+        assert len(r2.paid_mcp()) == 1 and [e["amount_usd"] for e in _paid_events(store, rid)] == [9.0]
+    else:
+        assert r2.paid_mcp() == [] and _paid_events(store, rid) == [] and res2.run["log"]["credits_usd"] == 0
+        assert card(ev2)["copy"]["key"] == "user_stop:quote_declined"
+
+
+async def test_details_sub_cent_spend_shows_one_credit_never_lt1(monkeypatch, store):
+    r = Rig(monkeypatch, lambda m, n: calls(GEN) if n == 0 else reply("好了"), store=store,
+            prices={"generate_image": 0.004}, mcp=lambda name, a, i: json.dumps({"id": f"shape:g{i}"}))
+    res, ev = await r.send("画 1 张猫")
+    d = card(ev)["details"]
+    assert "积分 1" in d["zh"] and "credits 1" in d["en"], d
+    assert not any("<" in x for x in d["zh"] + d["en"]), d
+
+
+# #393 tester: data-URL images inside strings count as image tokens on every path -------------------------------
+
+def test_data_url_in_string_counts_as_image():
+    from ComfyArt.bot.run_budget import content_tokens
+    img = "data:image/png;base64," + "A" * 400
+    assert content_tokens(f"hi {img}", 1500) - content_tokens("hi", 1500) >= 1500
+    assert content_tokens(f"a {img} b {img}", 1500) - content_tokens("a b", 1500) >= 3000
+
+
+def test_data_url_in_list_text_part_counts_as_image():
+    from ComfyArt.bot.run_budget import content_tokens, messages_tokens
+    img = "data:image/png;base64," + "A" * 400
+    plain = content_tokens([{"type": "text", "text": "hi"}], 1500)
+    assert content_tokens([{"type": "text", "text": f"hi {img}"}], 1500) - plain >= 1500
+    assert messages_tokens([{"role": "tool", "content": f"shot {img}"}], 1500) >= 1500
+
+
+# #393 tester: unattended — every stop reason notifies exactly once and makes 0 paid calls -------------------------
+
+def _unattended_cases():
+    add = lambda m, n: calls(("add_text", {"text": f"x{n}"}))  # noqa: E731
+    big = "x" * 8000
+    return {
+        "done": dict(script=[calls(("add_text", {"text": "a"})), reply("好了")]),
+        "hard_cap": dict(script=add, policy={"hard_cap_steps": 3}),
+        "stuck": dict(script=lambda m, n: calls(("add_text", {"text": "same"}))),
+        "error": dict(script=lambda m, n: __import__("ComfyArt.bot.local_llm", fromlist=["x"]).LlmHttpError(500, "boom")),
+        "budget:tokens": dict(script=add, window=2000, policy={"token_window_multiple": 2},
+                              mcp=lambda name, a, i: json.dumps({"id": f"s{i}", "t": big})),
+        "budget:paid_quote": dict(script=[calls(GEN), reply("好")], policy={"credits_usd": 1.0},
+                                  prices={"generate_image": 1.5}),
+    }
+
+
+@pytest.mark.parametrize("case", list(_unattended_cases()))
+async def test_unattended_every_reason_one_notify_zero_paid(monkeypatch, store, case):
+    kw = dict(_unattended_cases()[case])
+    script = kw.pop("script")
+    r = Rig(monkeypatch, script, store=store, **kw)
+    res, ev = await r.send("加字", mode="unattended")
+    assert stop_of(res)["reason"] == case.split(":")[0], stop_of(res)
+    assert len([e for e in ev if e.t == "notify"]) == 1
+    assert r.paid_mcp() == [] and res.run["log"]["paid_calls"] == 0 and r.confirms == []
+    assert [e for e in store.list_usage_events(run_id=res.run["run_id"]) if e["kind"] == "paid_call"] == []
