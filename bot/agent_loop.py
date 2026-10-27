@@ -20,6 +20,7 @@ from typing import Any, Optional
 from . import self_check as sc_mod
 from .guide import PAID_TOOLS
 from .plan_quote import canon_key
+from .run_budget import ui_credits
 from .providers import BotEvent, TurnResult
 from .run_budget import (
     BudgetLimits,
@@ -410,7 +411,7 @@ def card_details(ctx: RunContext) -> dict:
     ctx.budget.tick()
     u = ctx.budget.used
     secs = int(round(u.wall_s))
-    vals = (str(u.steps), _fmt_tokens(u.tokens), f"{u.credits * 100:.2f}", f"{secs // 60}:{secs % 60:02d}")
+    vals = (str(u.steps), _fmt_tokens(u.tokens), str(ui_credits(u.credits)), f"{secs // 60}:{secs % 60:02d}")
     return {lk: [f"{lab} {v}" for lab, v in zip(_DETAIL_LABEL[lk], vals)] for lk in ("zh", "en")}
 
 
@@ -422,7 +423,7 @@ def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: i
     m = goal.count if goal else None                       # no parsable goal: no "n/m"
     est = ctx.budget.projection(remaining) if remaining else {}
     cr = float(est.get("credits") or 0) if est else 0.0
-    x = max(1, round(cr * 100)) if cr > 0 else None        # no estimate: no credits clause; 1 credit = $0.01
+    x = ui_credits(cr) if cr > 0 else None                 # no estimate: no credits clause
     kind = goal.kind if goal else ""
     out: dict = {"key": key, "action": _PRIMARY_ACTION.get(stop.reason.value, "continue"),
                  "tone": ("ok" if stop.reason == StopReason.DONE else "error" if stop.reason == StopReason.ERROR

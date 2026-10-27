@@ -319,3 +319,51 @@ async def test_network_card_copy(monkeypatch, store):
     c = card(ev)["copy"]
     assert (c["key"], c["zh"]["title"], c["zh"]["primary"]) == ("error:network", "网络断开了", "重试")
     assert re.fullmatch(r"已保留生成的 \d+ 张", c["zh"]["body"]) and c["action"] == "retry"
+
+
+# #393 product ruling: the UI only shows integer credits, ceil, one shared formatter ------------------------------
+
+@pytest.mark.parametrize("usd,want", [(0, 0), (0.0, 0), (0.0001, 1), (0.009, 1), (0.01, 1), (0.011, 2),
+                                      (0.07, 7), (0.32, 32), (0.321, 33), (1.0, 100), (2.345, 235)])
+def test_ui_credits_is_integer_ceil(usd, want):
+    from ComfyArt.bot.run_budget import ui_credits
+    got = ui_credits(usd)
+    assert got == want and isinstance(got, int)
+
+
+async def test_details_credits_are_integer_ceil_not_dollars(monkeypatch, store):
+    r = Rig(monkeypatch, lambda m, n: calls(GEN) if n == 0 else reply("好了"), store=store,
+            prices={"generate_image": 0.321}, mcp=lambda name, a, i: json.dumps({"id": f"shape:g{i}"}))
+    res, ev = await r.send("画 1 张猫")
+    zh = card(ev)["details"]["zh"]
+    assert "积分 33" in zh, zh
+    assert not any("$" in x or "." in x.split(" ")[1] for x in zh if x.startswith("积分"))
+
+
+async def test_details_zero_spend_shows_zero(monkeypatch, store):
+    r = Rig(monkeypatch, [calls(("add_text", {"text": "x"})), reply("好了")], store=store)
+    res, ev = await r.send("加字", goal="")
+    assert "积分 0" in card(ev)["details"]["zh"]
+
+
+async def test_budget_card_estimate_is_integer_ceil_credits(monkeypatch, store):
+    from ComfyArt.bot.run_budget import ui_credits
+    r = Rig(monkeypatch, lambda m, n: calls(GEN), policy={"hard_cap_steps": 2}, store=store,
+            prices={"generate_image": 0.0333}, mcp=lambda name, a, i: json.dumps({"id": f"shape:g{i}"}))
+    res, ev = await r.send("画 4 张猫")
+    c = card(ev)
+    m = re.search(r"继续大约需要 (\d+) 积分$", c["copy"]["zh"]["body"])
+    assert m and int(m.group(1)) == ui_credits(c["estimate"]["credits"]) and "$" not in c["copy"]["zh"]["body"]
+
+
+async def test_quote_card_shows_credits_not_dollars():
+    from ComfyArt.bot.local_llm import LocalLlmProvider
+    seen = {}
+
+    class Fake:
+        async def _confirm_plan(self, spec, turn, handle):
+            seen.update(spec)
+            return "start"
+    for lang, unit in (("zh", "积分"), ("en", "credits")):
+        assert await LocalLlmProvider._confirm_over_quote(Fake(), None, None, lang, "生成图片", 0.321, 0.004)
+        assert "$" not in seen["prompt"] and f"33 {unit}" in seen["prompt"] and f"1 {unit}" in seen["prompt"]

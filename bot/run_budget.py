@@ -8,6 +8,7 @@ ProgressTracker.
 from __future__ import annotations
 
 import hashlib
+import math
 import json
 import logging
 import os
@@ -22,6 +23,13 @@ _log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Stop reasons: one fixed enum for UI, logs and tests.
 # ---------------------------------------------------------------------------
+
+
+def ui_credits(usd: float) -> int:
+    """#393 product rule: the UI only ever shows credits. 1 credit = $0.01, integer, rounded UP; any
+    nonzero spend under 1 credit shows 1, zero shows 0. Dollars stay in backend usage logs only."""
+    cents = round(max(0.0, float(usd or 0)) * 100, 6)   # kill float noise (0.07*100 = 7.000000000000001)
+    return int(math.ceil(cents))
 
 
 class StopReason(str, Enum):

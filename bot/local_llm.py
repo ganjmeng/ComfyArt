@@ -1275,11 +1275,14 @@ class LocalLlmProvider(AgentProvider):
         }
 
     async def _confirm_over_quote(self, turn, handle, lang: str, name: str, price: float, left: float) -> bool:
-        """#391: a paid call over the run's remaining quote needs an explicit yes; never auto-continue."""
+        """#391: a paid call over the run's remaining quote needs an explicit yes; never auto-continue.
+        #393: shown in credits (shared ui_credits formatter), never dollars."""
+        from .run_budget import ui_credits
         zh = lang == "zh"
         spec = {
-            "prompt": (f"「{name}」预计 ${price:.2f}，超出本次运行剩余额度 ${left:.2f}。继续吗？" if zh else
-                       f"{name} costs about ${price:.2f}, over this run's remaining quote ${left:.2f}. Continue?"),
+            "prompt": (f"「{name}」预计 {ui_credits(price)} 积分，超出本次运行剩余额度 {ui_credits(left)} 积分。继续吗？" if zh else
+                       f"{name} costs about {ui_credits(price)} credits, over this run's remaining quote "
+                       f"{ui_credits(left)} credits. Continue?"),
             "options": [{"id": "start", "label": "继续" if zh else "Continue"},
                         {"id": "cancel", "label": "停止" if zh else "Stop"}],
             "min_selections": 1, "max_selections": 1, "allow_other": False, "kind": "paid_over_quote",
