@@ -1325,5 +1325,11 @@
   "botSettings.testAuthFailed": "Authentication failed. Check that the API key is correct.",
   "botSettings.testModelMissing": "Model \"{0}\" was not found. Check the name or pick a loaded model.",
   "botSettings.testTimeout": "Timed out. Try again later or check the network.",
-  "botSettings.testFailed": "Test failed. Try again later."
+  "botSettings.testFailed": "Test failed. Try again later.",
+  "composer.atFilterPlaceholder": "@ Type to match reference resources",
+  "composer.atGroupReference": "Reference",
+  "composer.atGroupProject": "This project",
+  "composer.atGroupAssets": "Assets",
+  "composer.atMore": "More",
+  "composer.selectedCount": "{0} selected"
 }

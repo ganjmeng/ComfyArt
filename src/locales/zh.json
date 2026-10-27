@@ -1325,5 +1325,11 @@
   "botSettings.testAuthFailed": "鉴权失败，请检查 API Key 是否正确",
   "botSettings.testModelMissing": "模型「{0}」不存在，请核对模型名或换一个已加载的模型",
   "botSettings.testTimeout": "连接超时，请稍后重试或检查网络",
-  "botSettings.testFailed": "测试失败，请稍后重试"
+  "botSettings.testFailed": "测试失败，请稍后重试",
+  "composer.atFilterPlaceholder": "@ 输入关键词匹配参考资源",
+  "composer.atGroupReference": "参考",
+  "composer.atGroupProject": "本项目",
+  "composer.atGroupAssets": "素材",
+  "composer.atMore": "More",
+  "composer.selectedCount": "已选 {0} 个"
 }
