@@ -28,8 +28,8 @@ export function Confirm() {
   // #145: portal to <body> like Popover, so the existing .ca-modal z-index (2000) is compared with .ca-pop (1000)
   // instead of being trapped in .ca-root's stacking context, where any open popover covered it
   return createPortal(
-    <Modal title={ask.title} onClose={dismiss}>
-      <div className="ca-rename__body">
+    <Modal title={ask.title} className="ca-rename ca-confirm" closable={false} onClose={dismiss}>
+      <div className="ca-rename__body" data-testid="confirm-dialog">
         {ask.note ? <div>{ask.note}</div> : null}
         <div>{ask.desc}</div>
         {ask.lines?.length ? ask.lines.map((line, i) => (

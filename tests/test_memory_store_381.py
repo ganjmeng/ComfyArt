@@ -16,16 +16,17 @@ async def _post(c, state, base):
     return res.status, await res.json()
 
 
-async def test_never_written_reads_null_so_client_may_fall_back(bot_client, fresh_user_dir):
-    assert await _get(bot_client) == {"memory": None, "log": None, "meta": None, "rev": 0}
+async def test_never_written_is_a_real_empty_store(bot_client, fresh_user_dir):
+    # the server is the only truth: no null "fall back to your local copy" signal any more
+    assert await _get(bot_client) == {"memory": [], "log": [], "meta": {}, "rev": 0}
 
 
 async def test_write_stamps_owner_and_workspace_defaults_and_bumps_rev(bot_client, fresh_user_dir):
     status, st = await _post(bot_client, {"memory": [{"id": "a", "text": "x", "time": 1}]}, 0)
     assert status == 200 and st["rev"] == 1
     assert st["memory"] == [{"id": "a", "text": "x", "time": 1, "owner_id": "local", "workspace_id": "local"}]
-    on_disk = json.loads((fresh_user_dir / "user/default/comfyart/memory.json").read_text())
-    assert on_disk[0]["owner_id"] == "local" and on_disk[0]["workspace_id"] == "local"
+    on_disk = json.loads((fresh_user_dir / "user/default/comfyart/memory-store.json").read_text())
+    assert on_disk["rev"] == 1 and on_disk["memory"][0]["owner_id"] == "local" and on_disk["memory"][0]["workspace_id"] == "local"
     # explicit values are kept (not overwritten by the default)
     _, st = await _post(bot_client, {"memory": [{"id": "b", "text": "y", "time": 1, "owner_id": "u7", "workspace_id": "p3"}]}, 1)
     assert st["memory"][0]["owner_id"] == "u7" and st["memory"][0]["workspace_id"] == "p3"
@@ -61,3 +62,87 @@ async def test_concurrent_read_modify_write_loses_nothing(bot_client, fresh_user
 async def test_bad_body_and_unknown_user(bot_client, fresh_user_dir):
     assert (await bot_client.post("/comfyart/memory", json={"memory": "x", "base_rev": 0})).status == 400
     assert (await bot_client.get("/comfyart/memory", headers={"Comfy-User": "mallory"})).status == 403
+
+
+def _store_dir(fresh_user_dir):
+    return fresh_user_dir / "user/default/comfyart"
+
+
+async def test_single_file_holds_memory_log_meta_rev_together(bot_client, fresh_user_dir):
+    await _post(bot_client, {"memory": [{"id": "a", "text": "x", "time": 1}], "log": [{"id": "l1"}], "meta": {"demoCleanup381": True}}, 0)
+    d = _store_dir(fresh_user_dir)
+    on_disk = json.loads((d / "memory-store.json").read_text())
+    assert on_disk["rev"] == 1 and on_disk["log"] == [{"id": "l1"}] and on_disk["meta"] == {"demoCleanup381": True}
+    assert not list(d.glob("*.tmp"))  # temp file renamed away, nothing left behind
+
+
+async def test_crash_mid_write_keeps_previous_state(bot_client, fresh_user_dir, monkeypatch):
+    """EL MUST 4: a crash after the bytes are written but before the commit must not tear memory/log/meta/rev."""
+    from ComfyArt.api import memory as mem
+    await _post(bot_client, {"memory": [{"id": "a", "text": "x", "time": 1}], "log": [{"id": "l1"}]}, 0)
+    before = (_store_dir(fresh_user_dir) / "memory-store.json").read_text()
+
+    def boom(_fd):
+        raise OSError("disk died")
+    monkeypatch.setattr(mem.os, "fsync", boom)
+    res = await bot_client.post("/comfyart/memory", json={"memory": [], "log": [], "meta": {}, "base_rev": 1})
+    assert res.status == 500
+    monkeypatch.undo()
+    assert (_store_dir(fresh_user_dir) / "memory-store.json").read_text() == before
+    st = await _get(bot_client)
+    assert st["rev"] == 1 and [m["id"] for m in st["memory"]] == ["a"] and st["log"] == [{"id": "l1"}]
+    assert not list(_store_dir(fresh_user_dir).glob("*.tmp"))
+
+
+async def test_temp_file_name_is_random(bot_client, fresh_user_dir, monkeypatch):
+    from ComfyArt.api import memory as mem
+    seen = []
+    real = mem.os.replace
+    monkeypatch.setattr(mem.os, "replace", lambda a, b: (seen.append(a), real(a, b)))
+    await _post(bot_client, {"memory": []}, 0)
+    await _post(bot_client, {"memory": []}, 1)
+    assert len(seen) == 2 and seen[0] != seen[1] and all(s.endswith(".tmp") for s in seen)
+
+
+async def test_op_id_retry_is_applied_once(bot_client, fresh_user_dir):
+    """EL MUST 1/3: a write resent after a network error (same op_id) must not apply twice or 409."""
+    body = {"memory": [{"id": "a", "text": "x", "time": 1}], "log": [], "meta": {}, "base_rev": 0, "op_id": "op-1"}
+    first = await bot_client.post("/comfyart/memory", json=body)
+    again = await bot_client.post("/comfyart/memory", json=body)
+    assert first.status == 200 and again.status == 200
+    st = await again.json()
+    assert st["rev"] == 1 and st.get("replayed") is True and len(st["memory"]) == 1
+    assert (await _get(bot_client))["rev"] == 1
+
+
+async def test_meta_schema_is_validated(bot_client, fresh_user_dir):
+    async def post_meta(meta):
+        return (await bot_client.post("/comfyart/memory", json={"memory": [], "log": [], "meta": meta, "base_rev": 0})).status
+    assert await post_meta({"evil": 1}) == 400
+    assert await post_meta({"demoCleanup381": "yes"}) == 400
+    assert (await _get(bot_client))["rev"] == 0
+    assert await post_meta({"demoCleanup381": True, "rev": 99}) == 200  # echoed rev is ignored, server owns it
+    st = await _get(bot_client)
+    assert st["rev"] == 1 and st["meta"] == {"demoCleanup381": True}
+
+
+async def test_legacy_three_files_are_read_until_first_write(bot_client, fresh_user_dir):
+    d = _store_dir(fresh_user_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "memory.json").write_text(json.dumps([{"id": "old", "text": "legacy", "time": 1}]))
+    (d / "memory-meta.json").write_text(json.dumps({"rev": 3, "demoCleanup381": True}))
+    st = await _get(bot_client)
+    assert [m["id"] for m in st["memory"]] == ["old"] and st["rev"] == 3 and st["meta"] == {"demoCleanup381": True}
+    status, st = await _post(bot_client, {"memory": st["memory"], "meta": st["meta"]}, 3)
+    assert status == 200 and st["rev"] == 4 and (d / "memory-store.json").exists()
+    assert json.loads((d / "memory.json").read_text())[0]["id"] == "old"  # legacy file untouched
+
+
+def test_policy_is_shared_with_client():
+    from ComfyArt.api import memory as mem
+    import pathlib
+    policy = json.loads((pathlib.Path(mem.__file__).parent / "memory_policy.json").read_text())
+    assert mem.OWNER_DEFAULT == policy["owner_default"] == "local" and policy["max_retries"] == 5
+    src = (pathlib.Path(mem.__file__).parent.parent / "src/memoryStore.ts").read_text()
+    assert "memory_policy.json" in src
+    assert "TODO(#381)" in (pathlib.Path(mem.__file__)).read_text() and "lease" in pathlib.Path(mem.__file__).read_text()

@@ -2,9 +2,9 @@ import { atom } from 'tldraw'
 
 import { t } from './i18n'
 import { uuid } from './id'
-import { MemoryConflict, memoryStore, OWNER_DEFAULT, WORKSPACE_DEFAULT, type MemoryMeta } from './memoryStore'
+import { backoff, MEMORY_POLICY, MemoryConflict, MemoryReadError, memoryStore, MemoryWriteError, newOpId, OWNER_DEFAULT, WORKSPACE_DEFAULT, type MemoryMeta } from './memoryStore'
 
-export { MemoryConflict, setMemoryStore } from './memoryStore'
+export { MemoryConflict, MemoryReadError, MemoryWriteError, setMemoryStore } from './memoryStore'
 
 /** owner_id (= user_id) and workspace_id (= project_id) carry fixed local defaults (#381); nothing filters on them yet. */
 export interface Memory { id: string; text: string; time: number; category?: string; label?: string; owner_id?: string; workspace_id?: string }
@@ -41,7 +41,18 @@ export const memoryLogAtom = atom<MemoryLog[]>('memory log', [])
 export interface MemoryChoice { action: 'forget' | 'correct'; text: string; next?: string; candidates: Memory[]; source: string }
 export const memoryChoiceAtom = atom<MemoryChoice | null>('memory choice', null)
 
-const MAX_LOG = 500
+const MAX_LOG = MEMORY_POLICY.max_log
+/** #381: the server could not be read. The list is cleared (never a stale/local copy) and the UI shows an error state. */
+export const memoryErrorAtom = atom<boolean>('memory error', false)
+/** #381: one transient toast (delete done / save failed). */
+export interface MemoryToastState { text: string; kind: 'deleted' | 'error'; key: number }
+export const memoryToastAtom = atom<MemoryToastState | null>('memory toast', null)
+let toastTimer: ReturnType<typeof setTimeout> | undefined
+export function showMemoryToast(text: string, kind: MemoryToastState['kind'] = 'deleted') {
+  clearTimeout(toastTimer)
+  memoryToastAtom.set({ text, kind, key: Date.now() })
+  toastTimer = setTimeout(() => memoryToastAtom.set(null), 2400)
+}
 
 /** #381: the five memories the old empty-state demo seeded (by text; their ids were random). Cleanup only, never written. */
 export const DEMO_SEED_TEXTS: readonly string[] = [
@@ -58,10 +69,15 @@ export const DEMO_SEED_IDS: readonly string[] = []
  * the agent. A stale write (MemoryConflict) re-runs the whole step on fresh data. */
 let queue: Promise<unknown> = Promise.resolve()
 function serial<T>(fn: () => Promise<T>): Promise<T> {
-  const attempt = async (left: number): Promise<T> => {
-    try { return await fn() } catch (e) { if (e instanceof MemoryConflict && left > 0) return attempt(left - 1); throw e }
+  const attempt = async (n: number): Promise<T> => {
+    try { return await fn() } catch (e) {
+      if (e instanceof MemoryConflict && n < MEMORY_POLICY.max_retries) { await new Promise((r) => setTimeout(r, backoff(n))); return attempt(n + 1) }
+      // never look saved: a write that did not land (offline / server error / conflicts exhausted) is reported
+      if (e instanceof MemoryWriteError || e instanceof MemoryConflict || e instanceof MemoryReadError) showMemoryToast(t('memory.saveFailed'), 'error')
+      throw e
+    }
   }
-  const run = queue.then(() => attempt(5), () => attempt(5))
+  const run = queue.then(() => attempt(0), () => attempt(0))
   queue = run.catch(() => undefined)
   return run
 }
@@ -70,8 +86,9 @@ type Meta = MemoryMeta
 let rev = 0
 let meta: Meta = {}
 
+/** Only ever called inside serial() right after loadUnlocked(), so list/log/rev are this attempt's fresh read. */
 async function writeStore(list: Memory[], log: MemoryLog[], nextMeta?: Meta) {
-  const saved = await memoryStore().write({ memory: list, log, meta: nextMeta ?? meta }, rev)
+  const saved = await memoryStore().write({ memory: list, log, meta: nextMeta ?? meta }, rev, newOpId())
   rev = saved.rev
   meta = saved.meta
   memoryAtom.set(saved.memory)
@@ -84,7 +101,16 @@ const withLog = (log: MemoryLog[], add: MemoryLog[]) => [...add.reverse(), ...lo
 
 /** Load, and once per store drop the old demo seeds (#381). Must run inside serial(). */
 async function loadUnlocked(): Promise<Memory[]> {
-  const state = await memoryStore().read()
+  let state
+  try {
+    state = await memoryStore().read()
+  } catch (e) {
+    memoryErrorAtom.set(true)
+    memoryAtom.set([])
+    memoryLogAtom.set([])
+    throw e
+  }
+  memoryErrorAtom.set(false)
   const { memory: list, log } = state
   rev = state.rev
   meta = state.meta
@@ -100,8 +126,14 @@ async function loadUnlocked(): Promise<Memory[]> {
   return list
 }
 
+/** Load for display. A read failure resolves to [] with memoryErrorAtom set (error state, no toast). */
 export function loadMemory(): Promise<Memory[]> {
-  return serial(loadUnlocked)
+  const run = queue.then(() => loadUnlocked(), () => loadUnlocked())
+  queue = run.catch(() => undefined)
+  return run.catch(async (e) => {
+    if (!(e instanceof MemoryReadError)) throw e
+    return []
+  })
 }
 
 export function logMemory(entries: Omit<MemoryLog, 'time'>[]) {
@@ -165,10 +197,6 @@ export function correct(items: (Correction & { id?: string })[], source: string)
   })
 }
 
-export function saveMemory(list: Memory[]) {
-  return serial(() => writeStore(list, memoryLogAtom.get()))
-}
-
 /** Update one memory by id (inline edit). */
 export async function updateMemory(id: string, text: string, source: string): Promise<boolean> {
   return (await correct([{ id, old: '', new: text }], source)).changed.length > 0
@@ -189,3 +217,6 @@ export function remember(items: MemoryInput[], source = t('botCommands.chat')) {
       withLog(memoryLogAtom.get(), fresh.map((m) => entry('add', m.text, source))))
   })
 }
+
+// e2e seam for the chooser interaction test (tests/test_e2e_memory_381.py); inert unless localStorage['comfyart.e2e'] === '1'
+try { if (globalThis.localStorage?.getItem('comfyart.e2e') === '1') (globalThis as { __comfyartMemory?: unknown }).__comfyartMemory = { forget, correct } } catch { /* no storage */ }

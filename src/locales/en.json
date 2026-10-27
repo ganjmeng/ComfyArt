@@ -120,7 +120,9 @@
   "arti.level": "Lv.{0}",
   "arti.levelHint": "Arti is still getting to know you. Every creation makes this card a little clearer.",
   "arti.levelStatus": "Developing",
-  "arti.memory.addAssets": "+ Add common assets",
+  "arti.memory.addAssets": "Add common assets",
+  "arti.memory.loadFailed": "Couldn’t load memories. Please retry.",
+  "arti.memory.retry": "Retry",
   "arti.memory.append": "Append",
   "arti.memory.assetDefaultLabel": "Common asset",
   "arti.memory.assetsNamePlaceholder": "Asset name (optional)",
@@ -1449,7 +1451,8 @@
   "memory.demoCleanup": "Removed {0} demo memories",
   "arti.memory.emptyGuide": "No memories yet. Create with Arti and it will get to know you over time.",
   "arti.cap.soon": "Coming soon",
-  "memory.choose.title": "Found {0} similar memories — which one?",
+  "memory.saveFailed": "Save failed. Please retry.",
+  "memory.choose.title": "Found {0} identical memories — which one?",
   "memory.choose.correct": "Correct",
   "arti.memory.deletedToast": "Memory deleted"
 }

@@ -1,71 +1,63 @@
 /** #381: the one memory store interface. All memory reads/writes go through `memoryStore()`; nothing else touches the
- * memory files. The server (`api/memory.py`) closes read-modify-write: a write carries the `rev` it was based on and is
- * checked + written under a server lock, so a stale write gets `MemoryConflict` and the caller re-reads and re-applies.
- * localStorage is only a mirror for home / mock runs where the server route is unreachable. */
+ * memory file. The server (`api/memory.py`) is the only truth:
+ * - read: any failure throws `MemoryReadError` (no local copy is ever shown, so a deleted memory cannot come back);
+ * - write: carries the `rev` it was based on (stale → `MemoryConflict`, the caller re-reads and re-applies its edit) and
+ *   an `op_id` idempotency key, so a POST that timed out after the server committed can be resent safely. A write that
+ *   still fails throws `MemoryWriteError`; nothing is shown as saved. */
+import policy from '../api/memory_policy.json'
 import { api } from './comfy'
-import { readLocal, writeLocal } from './localPrefs'
 import type { Memory, MemoryLog } from './memory'
+import { uuid } from './id'
 
 /** Fixed local defaults (no tenancy / auth yet). owner_id = user_id, workspace_id = project_id; nothing filters on them today. */
-export const OWNER_DEFAULT = 'local'
-export const WORKSPACE_DEFAULT = 'local'
+export const OWNER_DEFAULT: string = policy.owner_default
+export const WORKSPACE_DEFAULT: string = policy.workspace_default
+export const MEMORY_POLICY = policy
 
-export interface MemoryMeta { demoCleanup381?: boolean; rev?: number }
+export interface MemoryMeta { demoCleanup381?: boolean }
 export interface MemoryState { memory: Memory[]; log: MemoryLog[]; meta: MemoryMeta; rev: number }
 export type MemoryWrite = Omit<MemoryState, 'rev'>
 export interface MemoryStore {
+  /** Throws MemoryReadError when the server cannot answer. */
   read(): Promise<MemoryState>
-  /** Throws MemoryConflict when the store moved past `baseRev`. */
-  write(next: MemoryWrite, baseRev: number): Promise<MemoryState>
+  /** Throws MemoryConflict when the store moved past `baseRev`, MemoryWriteError when the write did not land. */
+  write(next: MemoryWrite, baseRev: number, opId: string): Promise<MemoryState>
 }
 export class MemoryConflict extends Error {}
+export class MemoryReadError extends Error {}
+export class MemoryWriteError extends Error {}
 
 export const stampRecord = (m: Memory): Memory => ({ ...m, owner_id: m.owner_id || OWNER_DEFAULT, workspace_id: m.workspace_id || WORKSPACE_DEFAULT })
+export const newOpId = () => `${Date.now().toString(36)}-${uuid()}`
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+/** Exponential backoff with full jitter. */
+export const backoff = (attempt: number) => Math.random() * Math.min(policy.backoff_max_ms, policy.backoff_base_ms * 2 ** attempt)
 
-const LOCAL = { memory: 'comfyart.memory.local', log: 'comfyart.memory-log.local', meta: 'comfyart.memory-meta.local' }
-function local<T>(key: string, fallback: T): T {
-  const raw = readLocal(key)
-  if (!raw) return fallback
-  try { return JSON.parse(raw) as T } catch { return fallback }
-}
-const localState = (rev = 0): MemoryState => ({ memory: local<Memory[]>(LOCAL.memory, []), log: local<MemoryLog[]>(LOCAL.log, []), meta: local<MemoryMeta>(LOCAL.meta, {}), rev })
-function mirror(s: MemoryWrite) {
-  writeLocal(LOCAL.memory, JSON.stringify(s.memory))
-  writeLocal(LOCAL.log, JSON.stringify(s.log))
-  writeLocal(LOCAL.meta, JSON.stringify(s.meta))
-}
-
-interface Wire { memory: Memory[] | null; log: MemoryLog[] | null; meta: MemoryMeta | null; rev: number }
-/** null = never written on the server → the local mirror decides; [] is a real "0 memories" (no resurrection). */
-const fromWire = (w: Wire): MemoryState => {
-  const l = localState(w.rev)
-  return { memory: w.memory ?? l.memory, log: w.log ?? l.log, meta: w.meta ?? l.meta, rev: w.rev }
-}
+interface Wire { memory: Memory[]; log: MemoryLog[]; meta: MemoryMeta; rev: number }
+const fromWire = (w: Wire): MemoryState => ({ memory: w.memory ?? [], log: w.log ?? [], meta: w.meta ?? {}, rev: w.rev ?? 0 })
 
 export const serverMemoryStore: MemoryStore = {
   async read() {
-    try {
-      const res = await api('/comfyart/memory')
-      if (!res.ok) return localState()
-      return fromWire(await res.json())
-    } catch {
-      return localState()
-    }
-  },
-  async write(next, baseRev) {
-    const body = { ...next, memory: next.memory.map(stampRecord) }
     let res: Response
-    try {
-      res = await api('/comfyart/memory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, base_rev: baseRev }) })
-    } catch {
-      mirror(body)  // server unreachable (home / mock): local only
-      return { ...body, rev: baseRev }
+    try { res = await api('/comfyart/memory') } catch (e) { throw new MemoryReadError(String(e)) }
+    if (!res.ok) throw new MemoryReadError(`memory read failed: ${res.status}`)
+    return fromWire(await res.json())
+  },
+  async write(next, baseRev, opId) {
+    const body = JSON.stringify({ memory: next.memory.map(stampRecord), log: next.log, meta: next.meta, base_rev: baseRev, op_id: opId })
+    for (let attempt = 0; ; attempt++) {
+      let res: Response
+      try {
+        res = await api('/comfyart/memory', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })
+      } catch (e) {
+        // offline or timed out: the server may or may not have committed. Same op_id → a resend is idempotent.
+        if (attempt < policy.network_retries) { await sleep(backoff(attempt)); continue }
+        throw new MemoryWriteError(String(e))
+      }
+      if (res.status === 409) throw new MemoryConflict('memory changed since it was read')
+      if (!res.ok) throw new MemoryWriteError(`memory write failed: ${res.status}`)
+      return fromWire(await res.json())
     }
-    if (res.status === 409) throw new MemoryConflict('memory changed since it was read')
-    if (!res.ok) throw new Error(`memory write failed: ${res.status}`)
-    const saved = fromWire(await res.json())
-    mirror(saved)
-    return saved
   },
 }
 

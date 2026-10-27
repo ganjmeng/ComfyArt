@@ -1,5 +1,6 @@
 // #381 behavior harness for src/memory.ts: real calls against in-memory userdata + localStorage stubs.
-import { files } from './comfy_stub'
+import { files, g } from './comfy_stub'
+import { serverMemoryStore } from '../../src/memoryStore'
 import * as M from '../../src/memory'
 import { artiCapOn } from '../../src/home/artiCaps'
 
@@ -19,34 +20,41 @@ const reset = (mem?: any[], extra: Record<string, string> = {}) => {
   restart()
 }
 /** a page reload: in-memory atoms are gone, persisted files stay */
-const restart = () => { M.memoryAtom.set([]); M.memoryLogAtom.set([]); (M as any).memoryChoiceAtom?.set(null) }
+const restart = () => { M.memoryAtom.set([]); M.memoryLogAtom.set([]); (M as any).memoryChoiceAtom?.set(null); failRead = false; failWrite = false; (M as any).memoryToastAtom?.set(null) }
 const mem = (id: string, text: string, category = 'about') => ({ id, text, time: 1, category })
-// Store stand-in with the server's contract (api/memory.py): null when never written, rev-checked writes, local defaults
-// stamped on records. `beforeWrite` lets a case slip in another writer (other tab / the agent) between read and write.
+// Store stand-in with the server's contract (api/memory.py): [] when never written, rev-checked writes, local defaults
+// stamped on records, op_id dedupe; `failRead` / `failWrite` simulate a 500 / an offline POST. `beforeWrite` lets a case slip in another writer (other tab / the agent) between read and write.
 class Conflict extends Error {}
 let beforeWrite: (() => void) | null = null
+let failRead = false
+let failWrite = false
+const opsSeen: string[] = []
+let conflicts = 0
 const META = 'comfyart/memory-meta.json'
 const fileRev = () => (META in files ? JSON.parse(files[META]).rev ?? 0 : 0)
 const stampFake = (m: any) => ({ ...m, owner_id: m.owner_id || 'local', workspace_id: m.workspace_id || 'local' })
+const externalDelete = (id: string) => { files[MEM] = JSON.stringify(stored().filter((m: any) => m.id !== id)); files[META] = JSON.stringify({ ...(META in files ? JSON.parse(files[META]) : {}), rev: fileRev() + 1 }) }
 const external = (add: any) => { files[MEM] = JSON.stringify([...stored(), stampFake(add)]); files[META] = JSON.stringify({ ...(META in files ? JSON.parse(files[META]) : {}), rev: fileRev() + 1 }) }
 const fakeStore = {
   read: async () => {
-    const st = { memory: MEM in files ? JSON.parse(files[MEM]).map(stampFake) : null, log: LOG in files ? JSON.parse(files[LOG]) : null, meta: META in files ? JSON.parse(files[META]) : null }
-    const loc = (k: string, d: any) => (ls[k] ? JSON.parse(ls[k]) : d)
-    return { memory: st.memory ?? loc('comfyart.memory.local', []), log: st.log ?? loc('comfyart.memory-log.local', []), meta: st.meta ?? loc('comfyart.memory-meta.local', {}), rev: fileRev() }
+    if (failRead) throw new M.MemoryReadError('500')
+    const { rev: _r, ...meta } = META in files ? JSON.parse(files[META]) : {}
+    return { memory: MEM in files ? JSON.parse(files[MEM]).map(stampFake) : [], log: LOG in files ? JSON.parse(files[LOG]) : [], meta, rev: fileRev() }
   },
-  write: async (next: any, base: number) => {
+  write: async (next: any, base: number, opId: string) => {
     await Promise.resolve()
+    if (failWrite) throw new M.MemoryWriteError('offline')
+    opsSeen.push(opId)
     if (beforeWrite) { const f = beforeWrite; beforeWrite = null; f() }
-    if (base !== fileRev()) { const C = (M as any).MemoryConflict ?? Conflict; throw new C('stale') }
+    if (base !== fileRev()) { conflicts++; const C = (M as any).MemoryConflict ?? Conflict; throw new C('stale') }
     const rev = base + 1
     files[MEM] = JSON.stringify(next.memory.map(stampFake)); files[LOG] = JSON.stringify(next.log); files[META] = JSON.stringify({ ...next.meta, rev })
-    ls['comfyart.memory.local'] = files[MEM]
     return { memory: JSON.parse(files[MEM]), log: next.log, meta: { ...next.meta, rev }, rev }
   },
 }
 ;(M as any).setMemoryStore?.(fakeStore)
 const out: Record<string, unknown> = {}
+const kind = (e: unknown) => (e instanceof M.MemoryWriteError ? 'MemoryWriteError' : e instanceof M.MemoryReadError ? 'MemoryReadError' : e instanceof M.MemoryConflict ? 'MemoryConflict' : `other:${(e as Error)?.message}`)
 const T = async (name: string, fn: () => Promise<unknown>) => { try { out[name] = await fn() } catch (e) { out[name] = `THROW ${(e as Error).message}` } }
 
 async function main() {
@@ -66,7 +74,7 @@ async function main() {
       await M.loadMemory()
       for (const m of [...M.memoryAtom.get()]) await M.removeMemory(m.id, 'ui')
       const r = []
-      for (let i = 0; i < 3; i++) { restart(); await M.loadMemory(); if (has('ensureArtiDemoMemories')) await (M as any).ensureArtiDemoMemories(); r.push([M.memoryAtom.get().length, stored().length, JSON.parse(ls['comfyart.memory.local'] ?? '[]').length]) }
+      for (let i = 0; i < 3; i++) { restart(); await M.loadMemory(); if (has('ensureArtiDemoMemories')) await (M as any).ensureArtiDemoMemories(); r.push([M.memoryAtom.get().length, stored().length, (M as any).memoryErrorAtom?.get() ? 1 : 0]) }
       return r
     })
     await T('no_local_resurrection', async () => {
@@ -146,6 +154,114 @@ async function main() {
       await M.removeMemory('a', 'ui')
       return stored().map((m: any) => m.text).sort()
     })
+    // EL MUST 1: offline write → explicit failure + 保存失败 toast; nothing looks saved (atom and store unchanged)
+    await T('offline_write', async () => {
+      reset([mem('a', 'A')])
+      await M.loadMemory()
+      failWrite = true
+      const results: string[] = []
+      for (const op of [() => M.remember([{ text: 'new', category: 'taste' }], 'ui'), () => M.removeMemory('a', 'ui'), () => M.updateMemory('a', 'A2', 'ui')]) {
+        try { await op(); results.push('resolved') } catch (e) { results.push(kind(e)) }
+      }
+      const toast = (M as any).memoryToastAtom?.get()
+      failWrite = false
+      return { results, atom: M.memoryAtom.get().map((m: any) => m.text), file: stored().map((m: any) => m.text), toast: toast?.text ?? null, kind: toast?.kind ?? null }
+    })
+    // the real HTTP store: offline POST is resent once with the SAME op_id (idempotent), then fails loudly
+    await T('server_offline', async () => {
+      const bodies: any[] = []
+      g.__check = (b: any) => { bodies.push(b); throw new TypeError('Failed to fetch') }
+      let err = ''
+      try { await serverMemoryStore.write({ memory: [], log: [], meta: {} }, 0, 'op-x') } catch (e) { err = kind(e) }
+      g.__check = (b: any) => { bodies.push(b); return { ok: true, status: 200, json: async () => ({ memory: [], log: [], meta: {}, rev: 1 }) } }
+      let n = 0
+      g.__check = (b: any) => { bodies.push(b); if (n++ === 0) throw new TypeError('timeout after commit'); return { ok: true, status: 200, json: async () => ({ memory: [], log: [], meta: {}, rev: 1, replayed: true }) } }
+      const ok = await serverMemoryStore.write({ memory: [], log: [], meta: {} }, 0, 'op-y')
+      g.__check = undefined
+      return { err, attempts: bodies.filter((b) => b.op_id === 'op-x').length, sameOp: bodies.every((b) => b.op_id === 'op-x' || b.op_id === 'op-y'), retriedRev: ok.rev }
+    })
+    // EL MUST 2: read error → server is truth: error state, nothing shown, deleted memory never comes back
+    await T('read_error', async () => {
+      reset([mem('a', 'A'), mem('b', 'B')])
+      await M.loadMemory()
+      await M.removeMemory('a', 'ui')
+      ls['comfyart.memory.local'] = JSON.stringify([mem('a', 'A'), mem('b', 'B')])  // an old local copy must be ignored
+      restart(); failRead = true
+      const got = await M.loadMemory()
+      const during = { atom: M.memoryAtom.get().length, error: (M as any).memoryErrorAtom?.get() ?? null, returned: got.length }
+      failRead = false
+      await M.loadMemory()
+      return { during, after: M.memoryAtom.get().map((m: any) => m.id), errorAfter: (M as any).memoryErrorAtom?.get() ?? null }
+    })
+    await T('server_read_500', async () => {
+      try { await serverMemoryStore.read(); return 'resolved' } catch (e) { return kind(e) }
+    })
+    // EL MUST 3: conflict → the edit is re-applied on the fresh read, never the stale snapshot resent
+    await T('conflict_replay', async () => {
+      reset([mem('a', 'A'), mem('b', 'B')])
+      await M.loadMemory()
+      beforeWrite = () => externalDelete('b')  // another tab deletes b between our read and write
+      await M.updateMemory('a', 'A-edit', 'ui')
+      const ops = new Set(opsSeen.slice(-2)).size
+      return { file: stored().map((m: any) => m.text), atom: M.memoryAtom.get().map((m: any) => m.text), distinctOps: ops }
+    })
+    // ---- the REAL client store (serverMemoryStore → api()) against a fake HTTP server with api/memory.py's contract ----
+    const srv = { memory: [] as any[], log: [] as any[], meta: {} as any, rev: 0, ops: [] as string[], posts: [] as any[], gets: 0, offline: false, readFail: false, before: null as null | (() => void) }
+    const resp = (status: number, body: any) => ({ ok: status < 400, status, json: async () => body })
+    const state = () => ({ memory: srv.memory, log: srv.log, meta: srv.meta, rev: srv.rev })
+    g.__server = async (_url: string, init?: { body: string }) => {
+      if (!init) { srv.gets++; return srv.readFail ? resp(500, {}) : resp(200, state()) }
+      const b = JSON.parse(init.body); srv.posts.push(b)
+      if (srv.offline) throw new TypeError('Failed to fetch')
+      if (srv.before) { const f = srv.before; srv.before = null; f() }
+      if (srv.ops.includes(b.op_id)) return resp(200, { ...state(), replayed: true })
+      if (b.base_rev !== srv.rev) return resp(409, { error: 'conflict' })
+      Object.assign(srv, { memory: b.memory, log: b.log, meta: b.meta, rev: srv.rev + 1 }); srv.ops.push(b.op_id)
+      return resp(200, state())
+    }
+    const real = async (seed: any[], fn: () => Promise<unknown>) => {
+      Object.assign(srv, { memory: seed, log: [], meta: { demoCleanup381: true }, rev: 7, ops: [], posts: [], gets: 0, offline: false, readFail: false, before: null })
+      for (const k of Object.keys(ls)) delete ls[k]
+      restart(); ;(M as any).setMemoryStore?.(serverMemoryStore)
+      try { return await fn() } finally { ;(M as any).setMemoryStore?.(fakeStore) }
+    }
+    // EL#1 (real store): offline write must fail loudly; it must not look saved and must not vanish later
+    await T('real_offline', () => real([mem('a', 'A')], async () => {
+      await M.loadMemory()
+      srv.offline = true  // POSTs throw like a dropped connection
+      let res = 'resolved'
+      try { await M.remember([{ text: 'new', category: 'taste' }], 'ui') } catch (e) { res = kind(e) }
+      const atomDuring = M.memoryAtom.get().map((m: any) => m.text)
+      const toast = (M as any).memoryToastAtom?.get()?.text ?? null
+      srv.offline = false
+      restart(); await M.loadMemory()
+      return { res, atomDuring, toast, server: srv.memory.map((m: any) => m.text), posts: srv.posts.length }
+    }))
+    // EL#2 (real store): read error → no local mirror, no resurrection; after recovery writes succeed (no 409 loop)
+    await T('real_read_error', () => real([mem('b', 'B')], async () => {
+      ls['comfyart.memory.local'] = JSON.stringify([mem('a', 'deleted-elsewhere'), mem('b', 'B')])
+      ls['comfyart.memory-meta.local'] = JSON.stringify({ demoCleanup381: true })  // 83393be's mirror keys
+      srv.readFail = true
+      await M.loadMemory().catch(() => null)
+      const during = { atom: M.memoryAtom.get().map((m: any) => m.text), error: !!(M as any).memoryErrorAtom?.get() }
+      srv.readFail = false
+      await M.loadMemory()
+      let w = 'ok'
+      try { await M.remember([{ text: 'C', category: 'taste' }], 'ui') } catch (e) { w = kind(e) }
+      return { during, after: M.memoryAtom.get().map((m: any) => m.text).sort(), write: w, server: srv.memory.map((m: any) => m.text).sort(), conflicts409: srv.posts.length - srv.ops.length }
+    }))
+    // EL#3 (real store): after a 409 the client re-reads and re-applies the edit; it never resends the stale body
+    await T('real_conflict', () => real([mem('a', 'A'), mem('b', 'B')], async () => {
+      await M.loadMemory()
+      srv.before = () => { srv.memory = srv.memory.filter((m: any) => m.id !== 'b'); srv.rev++ }  // another tab deletes b
+      let w = 'ok'
+      // saveMemory (83393be's whole-list write) was the stale-resend path; it is gone now, updateMemory is the edit API
+      const edit = has('saveMemory') ? () => (M as any).saveMemory(M.memoryAtom.get().map((m: any) => (m.id === 'a' ? { ...m, text: 'A-edit' } : m))) : () => M.updateMemory('a', 'A-edit', 'ui')
+      try { await edit() } catch (e) { w = kind(e) }
+      const bodies = srv.posts.map((p: any) => JSON.stringify({ m: p.memory, r: p.base_rev }))
+      return { write: w, server: srv.memory.map((m: any) => m.text), posts: srv.posts.length, distinctBodies: new Set(bodies).size, revs: srv.posts.map((p: any) => p.base_rev), getsAfterConflict: srv.gets }
+    }))
+    g.__server = undefined
     // /arti switches mirror api/settings
     await T('arti_caps', async () => {
       const s = JSON.parse(process.env.SETTINGS || '{}')
@@ -165,9 +281,10 @@ async function main() {
     for (const op of ops()) await op()
     const serial = snap()
     reset(base); await M.loadMemory()
+    conflicts = 0
     await Promise.all(ops().map((op) => op()))
     const conc = snap()
-    return { equal: JSON.stringify(serial) === JSON.stringify(conc), serial: serial.length, concurrent: conc.length, lost: serial.filter((x) => !conc.includes(x)).length }
+    return { equal: JSON.stringify(serial) === JSON.stringify(conc), serial: serial.length, concurrent: conc.length, lost: serial.filter((x) => !conc.includes(x)).length, selfConflicts: conflicts }
   })
   console.log(JSON.stringify(out))
 }

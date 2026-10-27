@@ -120,7 +120,9 @@
   "arti.level": "Lv.{0}",
   "arti.levelHint": "Arti 还在了解你。你的每一次创作，都会让这张卡清晰一点。",
   "arti.levelStatus": "显影中",
-  "arti.memory.addAssets": "+ 添加常用资产",
+  "arti.memory.addAssets": "添加常用资产",
+  "arti.memory.loadFailed": "记忆加载失败，请重试。",
+  "arti.memory.retry": "重试",
   "arti.memory.append": "增补",
   "arti.memory.assetDefaultLabel": "常用资产",
   "arti.memory.assetsNamePlaceholder": "资产名称（可选）",
@@ -1449,7 +1451,8 @@
   "memory.demoCleanup": "已清理 {0} 条示例记忆",
   "arti.memory.emptyGuide": "还没有记忆。和 Arti 一起创作，它会慢慢了解你。",
   "arti.cap.soon": "即将开放",
-  "memory.choose.title": "找到 {0} 条相似记忆，要改哪一条？",
+  "memory.saveFailed": "保存失败，请重试",
+  "memory.choose.title": "找到 {0} 条相同记忆，要改哪一条？",
   "memory.choose.correct": "更正",
   "arti.memory.deletedToast": "记忆已删除"
 }

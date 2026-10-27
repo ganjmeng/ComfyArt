@@ -86,8 +86,8 @@ def test_persists_via_memory_apis_without_demo_seed() -> None:
     assert "ensureArtiDemoMemories" not in MEMORY_TS
     assert "updateMemory" in MEMORY_TS
     assert "removeMemory" in MEMORY_TS
-    assert "memoryStore()" in MEMORY_TS  # #381: one store interface (server + local mirror in src/memoryStore.ts)
-    assert "saveMemory" in MEMORY_TS
+    assert "memoryStore()" in MEMORY_TS  # #381: one store interface (server only, src/memoryStore.ts)
+    assert "saveMemory" not in MEMORY_TS  # #381: removed — it resent stale state after a conflict
     # ArtiMemory loads + seeds through real APIs
     assert "loadMemory" in MEM
     assert "ensureArtiDemoMemories" not in MEM
