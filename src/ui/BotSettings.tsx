@@ -117,6 +117,19 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
           </div>
         </section>
 
+        {/* #364 Agent「审核」— post-image review thought on Done (default ON) */}
+        <section className="ca-botsettings__section" data-testid="botsettings-review">
+          <label className="ca-notice__push" data-testid="bot-enable-review">
+            <input
+              type="checkbox"
+              checked={draft['bot-enable-review'] !== false}
+              onChange={(e) => setDraft({ ...draft, 'bot-enable-review': e.target.checked })}
+            />
+            <span>{t('botSettings.review')}</span>
+          </label>
+          <div className="ca-chat__hint">{t('botSettings.reviewDesc')}</div>
+        </section>
+
         {/* #345 ② Local third-party agents — switches + AgentSetup; dependency logic unchanged */}
         <AgentSetup providers={providers} enabled={enabled} onError={onError}>
           {SWITCHES.map(([key, label]) => (
