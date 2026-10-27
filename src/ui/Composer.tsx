@@ -6,10 +6,10 @@ import { agentModeAtom, DOC_ACCEPT, docsAtom, draftAtom, eachLine, eachRuns, ext
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, refreshKeyStatus } from '../wavespeedKey'
 import { EachButton, EachRole, useEach } from './EachToggle'
 import { RefFrameButton } from './RefFrameButton'
-import { placeAsset } from '../assets'
+import { listAssets, placeAsset, type AssetItem } from '../assets'
 import { botEnabledAtom, loadProviders, loadSettings, messagesAtom, providerLabel, providersStateAtom } from '../bot'
 import { errorText } from '../jobs'
-import { KIND_LABELS, libraryAtom } from '../library'
+import { libraryAtom } from '../library'
 import type { AudioShape } from '../shapes/EmbedShapes'
 import { loadSkills, saveSkill, skillAtom, type Skill } from '../skills'
 import { AssetGrid } from './AssetPicker'
@@ -32,11 +32,22 @@ const SKILL_PROMPT = t('composer.turnTheApproachCompletedIn')
 
 export const FILE_ACCEPT = `image/*,video/*,audio/*,${DOC_ACCEPT}`
 
+/** #362: @ menu shows ≤N rows per group before … More (Lovart density). */
+const AT_GROUP_LIMIT = 5
+/** #362 SHOULD: collapse individual capsules when selection exceeds this. */
+const CAPSULE_SUMMARY_AT = 10
+
+
 function imageName(editor: Editor, s: RefShape) {
   if (refKindOf(s) === 'audio') return (s as AudioShape).props.name || t('composer.audio')
   const v = s as Exclude<RefShape, AudioShape>
   const asset = v.props.assetId ? editor.getAsset(v.props.assetId) : null
   return (asset?.type === v.type && asset.props.name) || (v.type === 'video' ? t('common.video') : t('common.image'))
+}
+
+function truncateLabel(name: string, max = 8) {
+  const chars = [...name]
+  return chars.length > max ? `${chars.slice(0, max).join('')}…` : name
 }
 
 function RefThumb({ editor, s }: { editor: Editor; s: RefShape }) {
@@ -84,6 +95,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const images = useValue('canvas media', () => editor.getCurrentPageShapes().filter(isRefShape), [editor])
   const [menu, setMenu] = useState<'plus' | 'skills' | 'assets' | 'mode' | 'create' | null>(null)
   const [skills, setSkills] = useState<Skill[]>([])
+  const [atAssets, setAtAssets] = useState<AssetItem[]>([])
   const file = useRef<HTMLInputElement>(null)
   const [hidden, setHidden] = useState<TLShapeId[]>([])
   const [drop, setDrop] = useState(false)
@@ -102,6 +114,16 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   useEffect(() => {
     if (menu === 'skills' || slash) void loadSkills().then(setSkills)
   }, [menu, !!slash])
+
+  // #362: load 素材 for @ menu (no model group). Fail soft → empty 素材 group.
+  useEffect(() => {
+    if (!at) { setAtAssets([]); return }
+    let alive = true
+    void listAssets('input,output', at[1] || '')
+      .then((page) => { if (alive) setAtAssets(page.items) })
+      .catch(() => { if (alive) setAtAssets([]) })
+    return () => { alive = false }
+  }, [!!at, at?.[1]])
 
   useEffect(() => {
     setHidden((h) => h.filter((id) => selected.some((s) => s.id === id)))
@@ -164,9 +186,17 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   }
 
   const filtered = slash ? skills.filter((s) => s.name.includes(slash[1])) : skills
-  const mentions = at ? images.filter((s) => imageName(editor, s).toLowerCase().includes(at[1].toLowerCase())).slice(0, 8) : []
-  const kitMentions = at ? library.filter((k) => k.name.toLowerCase().includes(at[1].toLowerCase()) && !kits.some((x) => x.id === k.id)).slice(0, 8) : []
+  // #362 @ menu: exactly 参考 → 本项目 → 素材. NO model group (voids old Assets/Model fake-align).
+  const atQ = (at?.[1] ?? '').toLowerCase()
+  const atRefs = at ? library.filter((k) => k.name.toLowerCase().includes(atQ) && !kits.some((x) => x.id === k.id)) : []
+  const atProject = at ? images.filter((s) => imageName(editor, s).toLowerCase().includes(atQ)) : []
+  const atMats = at ? atAssets.filter((a) => a.name.toLowerCase().includes(atQ)) : []
+  const atOpen = !!at
   const clearAt = () => draftAtom.set(draft.slice(0, at!.index) + (at!.index ? ' ' : ''))
+  const clearAllCapsules = () => {
+    extraRefsAtom.set([])
+    setHidden(selected.map((s) => s.id))
+  }
   const modeInfo = modeOf(mode)
   const agent = useCurrentAgent()
 
@@ -187,19 +217,67 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           ))}
         </div>
       )}
-      {(mentions.length > 0 || kitMentions.length > 0) && (
-        <div className="ca-menu ca-composer__suggest">
-          {kitMentions.map((k) => (
-            <button key={k.id} type="button" className="ca-menu__item" onClick={() => { kitsAtom.set([...kits, k]); clearAt() }}>
-              {k.images[0] ? <img className="ca-composer__mini" src={k.images[0]} alt="" /> : <span className="ca-icon">{Icons.assets}</span>}
-              <span className="ca-menu__grow">{k.name}</span><span className="ca-menu__key">{KIND_LABELS[k.kind]}</span>
-            </button>
-          ))}
-          {mentions.map((s) => (
-            <button key={s.id} type="button" className="ca-menu__item" onClick={() => { addRef(s.id); clearAt() }}>
-              {s.type === 'image' ? <img className="ca-composer__mini" src={srcOf(editor, s) ?? ''} alt="" /> : <span className="ca-icon">{s.type === 'video' ? Icons.video : Icons.music}</span>}<span className="ca-menu__grow">{imageName(editor, s)}</span>
-            </button>
-          ))}
+      {/* #362: @ popup — groups 参考 → 本项目 → 素材 only; never a model group */}
+      {atOpen && (
+        <div className="ca-menu ca-composer__suggest ca-at-menu" data-testid="at-menu" data-at-capsule="362">
+          <div className="ca-at-menu__filter" data-testid="at-menu-filter">
+            {atQ ? `@${at![1]}` : t('composer.atFilterPlaceholder')}
+          </div>
+          <div className="ca-at-menu__group" data-at-group="reference">
+            <div className="ca-at-menu__title">{t('composer.atGroupReference')}</div>
+            {atRefs.slice(0, AT_GROUP_LIMIT).map((k) => (
+              <button key={k.id} type="button" className="ca-menu__item ca-at-menu__row" onClick={() => { kitsAtom.set([...kits, k]); clearAt() }}>
+                {k.images[0]
+                  ? <img className="ca-at-menu__thumb" src={k.images[0]} alt="" />
+                  : <span className="ca-at-menu__thumb ca-at-menu__thumb--empty"><span className="ca-icon">{Icons.assets}</span></span>}
+                <span className="ca-menu__grow">{k.name}</span>
+              </button>
+            ))}
+            {atRefs.length > AT_GROUP_LIMIT && (
+              <button type="button" className="ca-menu__item ca-at-menu__more" onClick={() => setMenu('assets')}>
+                <span className="ca-at-menu__more-mark">…</span><span className="ca-menu__grow">{t('composer.atMore')}</span>
+              </button>
+            )}
+          </div>
+          <div className="ca-at-menu__group" data-at-group="project">
+            <div className="ca-at-menu__title">{t('composer.atGroupProject')}</div>
+            {atProject.slice(0, AT_GROUP_LIMIT).map((s) => (
+              <button key={s.id} type="button" className="ca-menu__item ca-at-menu__row" onClick={() => { addRef(s.id); clearAt() }}>
+                <span className="ca-at-menu__thumb">
+                  {s.type === 'image' || s.type === 'video'
+                    ? (s.type === 'video'
+                      ? <><video src={srcOf(editor, s) ?? ''} muted preload="metadata" /><span className="ca-at-menu__play">{Icons.play}</span></>
+                      : <img src={srcOf(editor, s) ?? ''} alt="" />)
+                    : <span className="ca-icon">{Icons.music}</span>}
+                </span>
+                <span className="ca-menu__grow">{imageName(editor, s)}</span>
+              </button>
+            ))}
+            {atProject.length > AT_GROUP_LIMIT && (
+              <div className="ca-menu__item ca-at-menu__more"><span className="ca-at-menu__more-mark">…</span><span className="ca-menu__grow">{t('composer.atMore')}</span></div>
+            )}
+          </div>
+          <div className="ca-at-menu__group" data-at-group="assets">
+            <div className="ca-at-menu__title">{t('composer.atGroupAssets')}</div>
+            {atMats.slice(0, AT_GROUP_LIMIT).map((a) => (
+              <button key={a.id} type="button" className="ca-menu__item ca-at-menu__row" onClick={() => {
+                clearAt()
+                void placeAsset(editor, a).then((id) => id && addRef(id)).catch(fail)
+              }}>
+                <span className="ca-at-menu__thumb">
+                  {a.kind === 'video'
+                    ? <><img src={a.src} alt="" /><span className="ca-at-menu__play">{Icons.play}</span></>
+                    : <img src={a.src} alt="" />}
+                </span>
+                <span className="ca-menu__grow">{a.name || t('common.image')}</span>
+              </button>
+            ))}
+            {atMats.length > AT_GROUP_LIMIT && (
+              <button type="button" className="ca-menu__item ca-at-menu__more" onClick={() => setMenu('assets')}>
+                <span className="ca-at-menu__more-mark">…</span><span className="ca-menu__grow">{t('composer.atMore')}</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
       {(refs.length > 0 || skill || kits.length > 0 || (mode === 'agent' && docs.length > 0)) && (
@@ -222,9 +300,22 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
               <button type="button" title={t('common.remove')} onClick={() => docsAtom.set(docs.filter((x) => x.src !== d.src))}>{Icons.close}</button>
             </span>
           ))}
-          {refs.map((r) => (
-            <span key={r.id} className="ca-chip ca-chip--image" data-audio={refKindOf(r) === 'audio' || undefined} title={imageName(editor, r)}>
-              <RefThumb editor={editor} s={r} />
+          {/* #362: canvas multi-select → composer capsules (thumb + truncated label); removable; no auto-send */}
+          {refs.length > CAPSULE_SUMMARY_AT ? (
+            <span className="ca-chip ca-chip--capsule ca-chip--summary" data-testid="capsule-summary" title={t('composer.selectedCount', refs.length)}>
+              <span className="ca-chip__name">{t('composer.selectedCount', refs.length)}</span>
+              <button type="button" title={t('common.remove')} onClick={clearAllCapsules}>{Icons.close}</button>
+            </span>
+          ) : refs.map((r) => (
+            <span
+              key={r.id}
+              className="ca-chip ca-chip--capsule"
+              data-testid="composer-capsule"
+              data-audio={refKindOf(r) === 'audio' || undefined}
+              title={imageName(editor, r)}
+            >
+              <span className="ca-chip__thumb"><RefThumb editor={editor} s={r} /></span>
+              <span className="ca-chip__name">{truncateLabel(imageName(editor, r))}</span>
               <button type="button" title={t('common.remove')} onClick={() => removeRef(r.id)}>{Icons.close}</button>
               {each.on && refs.length > 1 && <EachRole shared={each.isShared(r.id)} onToggle={() => each.toggleShared(r.id)} />}
             </span>
@@ -241,7 +332,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
         onPaste={(e) => { const files = imageFiles(e.clipboardData); if (!files.length) return; e.preventDefault(); e.stopPropagation(); void uploadRefs(editor, files).catch(fail) }}
         onKeyDown={(e) => {
           e.stopPropagation()
-          if (isEnter(e) && !e.shiftKey && !slash && !mentions.length && !kitMentions.length) {
+          if (isEnter(e) && !e.shiftKey && !slash && !atOpen) {
             e.preventDefault()
             send()
           }
