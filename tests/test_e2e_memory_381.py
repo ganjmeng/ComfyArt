@@ -18,6 +18,10 @@ MEM = [
     {"id": "u4", "text": "我偏好极简、几何化与克制用色的视觉取向。", "time": 4, "category": "taste", "label": "视觉风格"},
 ]
 DUP = "我偏好暖色调视觉风格（海报）。"
+# record times (Asia/Shanghai): d0 oldest … d5 = 2026-10-27 18:20, newest
+_T0 = 1793096400000  # 2026-10-27 18:20:00 +08:00
+DUP_TIMES = [_T0 - m * 60_000 for m in (3 * 1440 + 125, 1440 + 7, 1440, 95, 12, 0)]
+DUP_LABELS = ["10月27日 18:20", "10月27日 18:08", "10月27日 16:45", "10月26日 18:20", "10月26日 18:13", "10月24日 16:15"]
 SEED_JS = """async (m) => { const cur = await (await fetch('/api/comfyart/memory')).json();
   const r = await fetch('/api/comfyart/memory', {method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({memory: m, log: [], meta: {demoCleanup381: true}, base_rev: cur.rev})});
@@ -38,16 +42,28 @@ async def shot(pg, name, theme, **kw):
 async def test_memory_ui_381(app_url, fake_tools, theme):  # noqa: F811
     async with pw.async_playwright() as p:
         b = await p.chromium.launch()
-        pg = await (await b.new_context(viewport={"width": 1440, "height": 900}, device_scale_factor=1)).new_page()
+        pg = await (await b.new_context(viewport={"width": 1440, "height": 900}, device_scale_factor=1, timezone_id="Asia/Shanghai")).new_page()
         await pg.add_init_script(f"localStorage.setItem('comfyart.lang','zh');localStorage.setItem('comfyart.theme','{theme}');localStorage.setItem('comfyart.e2e','1')")
         await pg.goto(app_url.rstrip("/") + "/?view=arti")
         await pg.locator("[data-testid=arti-memory-center]").wait_for(timeout=15000)
         await pg.wait_for_timeout(600)
 
-        # MUST 2: 即将开放 uses --ca-text-2 straight, not under any opacity
-        cap = pg.locator("[data-testid=arti-cap-memory-soon]")
-        assert await cap.evaluate("e => getComputedStyle(e).color") == await pg.evaluate(TOKEN_JS, "--ca-text-2")
-        assert await cap.evaluate(OPACITY_JS) == 1
+        # product MUST 1: all four disabled switch cards: caption exactly 即将开放 in --ca-text-2 (no opacity chain), no other
+        # note, title/desc never faded; only the switch control itself may look disabled
+        text2 = await pg.evaluate(TOKEN_JS, "--ca-text-2")
+        for cid in ("review", "research", "memory", "skills"):
+            card = pg.locator(f"[data-testid=arti-cap-{cid}]")
+            soon = card.locator(f"[data-testid=arti-cap-{cid}-soon]")
+            assert (await soon.inner_text()).strip() == "即将开放", cid
+            assert await soon.evaluate("e => getComputedStyle(e).color") == text2, cid
+            assert await soon.evaluate(OPACITY_JS) == 1, cid
+            assert "后端就绪前暂不可用" not in await card.inner_text(), cid
+            assert await card.locator(".ca-arti__capbody").evaluate("e => e.innerText.split('\\n').filter(Boolean).length") == 3, cid  # title, desc, 即将开放
+            for part in (".ca-arti__captitle", ".ca-arti__capdesc"):
+                assert await card.locator(part).evaluate(OPACITY_JS) == 1, (cid, part)
+            assert float(await card.evaluate("e => getComputedStyle(e).opacity")) == 1, cid
+        assert "后端就绪前暂不可用" not in await pg.locator("body").inner_text()  # page-wide
+        assert await pg.locator("[data-testid=arti-cap-feedback-soon]").count() == 0  # 反馈改稿 has no switch, no caption
         # criterion 6, RENDERED: memory/skills switches mirror api/settings (both off by default), are disabled, say 即将开放
         from ComfyArt.api import settings as _st
         cur = _st.all_settings()
@@ -102,7 +118,8 @@ async def test_memory_ui_381(app_url, fake_tools, theme):  # noqa: F811
         await shot(pg, "after-delete", theme)
 
         # multi-match chooser: 6 exact matches → nothing written, user picks; list scrolls with a visible cue
-        await pg.evaluate(SEED_JS, [{"id": f"d{i}", "text": DUP, "time": 10 + i, "category": "taste"} for i in range(6)])
+        # 6 identical rows, distinct record times, seeded out of order (d0 oldest … d5 newest)
+        await pg.evaluate(SEED_JS, [{"id": f"d{i}", "text": DUP, "time": DUP_TIMES[i], "category": "taste"} for i in (3, 0, 5, 1, 4, 2)])
         await pg.reload()
         await pg.locator("[data-testid=arti-memory-row]").first.wait_for(timeout=15000)
         await pg.evaluate("t => window.__comfyartMemory.forget([t], 'agent')", DUP)
@@ -114,9 +131,22 @@ async def test_memory_ui_381(app_url, fake_tools, theme):  # noqa: F811
         lst = pg.locator("[data-testid=memory-chooser-list]")
         assert await pg.locator("[data-testid=memory-chooser-row]").count() == 6
         # matching is exact full text, so every candidate carries the same text → the title says 相同, and N = rows rendered
-        texts = await pg.locator("[data-testid=memory-chooser-row]").all_inner_texts()
+        texts = await pg.locator("[data-testid=memory-chooser-row] .ca-mem-choose__text").all_inner_texts()
         assert len({x.strip() for x in texts}) == 1, texts
-        assert "找到 6 条相同记忆，要改哪一条？" in await modal.inner_text()
+        assert (await modal.locator(".ca-side__head").inner_text()).strip().startswith("找到 6 条相同记忆，要删除哪一条？")  # delete flow
+        assert "要改哪一条" not in await modal.inner_text()
+        n_rows6 = await pg.locator("[data-testid=memory-chooser-row]").count()
+        assert f"找到 {n_rows6} 条相同记忆，要删除哪一条？" in await modal.inner_text()  # N = rendered rows
+        # product MUST 3: record time on the right, secondary color, 「10月27日 18:20」, newest first
+        ids = [await r.get_attribute("data-id") for r in await pg.locator("[data-testid=memory-chooser-row]").all()]
+        assert ids == ["d5", "d4", "d3", "d2", "d1", "d0"], ids
+        times = [x.strip() for x in await pg.locator("[data-testid=memory-chooser-time]").all_inner_texts()]
+        assert times == DUP_LABELS, times
+        t0 = pg.locator("[data-testid=memory-chooser-time]").first
+        assert await t0.evaluate("e => getComputedStyle(e).color") == text2
+        tb, xb = await t0.bounding_box(), await pg.locator("[data-testid=memory-chooser-row] .ca-mem-choose__text").first.bounding_box()
+        rb = await pg.locator("[data-testid=memory-chooser-row]").first.bounding_box()
+        assert tb["x"] > xb["x"] + xb["width"] - 1 and rb["x"] + rb["width"] - (tb["x"] + tb["width"]) < 16  # right-aligned
         assert await lst.evaluate("e => getComputedStyle(e).overflowY") == "auto"
         assert await lst.evaluate("e => e.scrollHeight > e.clientHeight")
         scroll = pg.locator("[data-testid=memory-chooser-scroll]")
@@ -141,11 +171,12 @@ async def test_memory_ui_381(app_url, fake_tools, theme):  # noqa: F811
         await pg.locator("[data-testid=memory-chooser-ok]").click()
         await toast.wait_for(timeout=5000)
         remaining = await pg.evaluate("async () => (await (await fetch('/api/comfyart/memory')).json()).memory.map(m => m.id)")
-        assert sorted(remaining) == ["d0", "d1", "d2", "d3", "d4"]
+        assert sorted(remaining) == ["d1", "d2", "d3", "d4", "d5"]  # row 6 = oldest (d0) was the one deleted
 
         # correct chooser (non-danger primary)
         await pg.evaluate("t => window.__comfyartMemory.correct([{ old: t, new: '我偏好冷色调视觉风格。' }], 'agent')", DUP)
         await chooser.wait_for(timeout=5000)
+        assert (await modal.locator(".ca-side__head").inner_text()).strip().startswith("找到 5 条相同记忆，要改哪一条？")  # correct flow
         await pg.locator("[data-testid=memory-chooser-row]").nth(1).click()
         ok = pg.locator("[data-testid=memory-chooser-ok]")
         assert await ok.evaluate("e => getComputedStyle(e).backgroundColor") == await pg.evaluate("n => { const p = document.createElement('span'); p.style.backgroundColor = `var(${n})`; document.body.appendChild(p); const c = getComputedStyle(p).backgroundColor; p.remove(); return c }", "--ca-strong")

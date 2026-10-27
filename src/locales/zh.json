@@ -1453,6 +1453,7 @@
   "arti.cap.soon": "即将开放",
   "memory.saveFailed": "保存失败，请重试",
   "memory.choose.title": "找到 {0} 条相同记忆，要改哪一条？",
+  "memory.choose.titleForget": "找到 {0} 条相同记忆，要删除哪一条？",
   "memory.choose.correct": "更正",
   "arti.memory.deletedToast": "记忆已删除"
 }

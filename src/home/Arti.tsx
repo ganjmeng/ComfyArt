@@ -48,19 +48,18 @@ function Switch({ on, disabled }: { on: boolean; disabled?: boolean }) {
 }
 
 function CapCard({ cap }: { cap: Cap }) {
-  const grey = cap.disabled && (cap.id === 'review' || cap.id === 'research')
+  // #381 product: every disabled switch card says exactly 「即将开放」; text stays full strength, only the switch looks disabled
+  const soon = cap.disabled && !cap.noSwitch
   return (
     <div
       className="ca-arti__cap"
       data-testid={`arti-cap-${cap.id}`}
       data-disabled={cap.disabled || undefined}
-      data-grey={grey || undefined}
     >
       <div className="ca-arti__capbody">
         <div className="ca-arti__captitle">{cap.title}</div>
         <div className="ca-arti__capdesc">{cap.desc}</div>
-        {cap.id in ARTI_CAP_SETTINGS ? <div className="ca-arti__capsoon" data-testid={`arti-cap-${cap.id}-soon`}>{t('arti.cap.soon')}</div> : null}
-        {grey ? <div className="ca-arti__capnote" data-testid={`arti-cap-${cap.id}-note`}>{t('arti.cap.comingSoon')}</div> : null}
+        {soon ? <div className="ca-arti__capsoon" data-testid={`arti-cap-${cap.id}-soon`}>{t('arti.cap.soon')}</div> : null}
       </div>
       {!cap.noSwitch ? <Switch on={cap.on} disabled={cap.disabled} /> : null}
     </div>

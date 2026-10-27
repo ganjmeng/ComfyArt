@@ -146,7 +146,7 @@ body { background: var(--ca-float); }
   border-radius: 12px; background: var(--ca-float);
 }
 /* #381: dim the parts, not the card, so the 即将开放 caption keeps its own token contrast */
-.ca-arti__cap[data-grey] :is(.ca-arti__captitle, .ca-arti__capdesc, .ca-arti__capnote, .ca-switch) { opacity: .72; }
+.ca-arti__cap[data-disabled] .ca-switch { opacity: .72; }
 .ca-arti__capbody { flex: 1; min-width: 0; }
 .ca-arti__captitle { font: 500 14px/22px var(--ca-font); }
 .ca-arti__capdesc { margin-top: 2px; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
@@ -311,7 +311,8 @@ body { background: var(--ca-float); }
 .ca-mem-choose__row { display: flex; flex: none; align-items: flex-start; gap: 8px; box-sizing: border-box; min-height: 36px; margin: 0; padding: 8px; border-radius: 8px; cursor: pointer; font: 400 13px/20px var(--ca-font); }
 .ca-mem-choose__row:hover { background: var(--ca-hover); }
 .ca-mem-choose__row input { flex: none; width: 14px; height: 14px; margin: 3px 0 0; padding: 0; accent-color: var(--ca-strong); }
-.ca-mem-choose__text { flex: 1; }
+.ca-mem-choose__text { flex: 1; min-width: 0; }
+.ca-mem-choose__time { flex: none; margin-left: 12px; color: var(--ca-text-2); font: 400 12px/20px var(--ca-font); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ca-confirm .ca-panel__primary:not(.ca-panel__danger) { background: var(--ca-strong); color: var(--ca-float); }
 /* toast: Lovart size (≈120×48, 14px text, 16px icon) */
 .ca-mem-toast { position: fixed; top: 16px; left: 72px; display: flex; align-items: center; gap: 8px; z-index: 3000; box-sizing: border-box; min-height: 48px; padding: 12px 20px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 14px; background: var(--ca-float); color: var(--ca-text); font: 500 14px/24px var(--ca-font); box-shadow: 0 8px 24px rgba(0,0,0,.12); }

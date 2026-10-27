@@ -2,12 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useValue } from 'tldraw'
 
-import { t } from '../i18n'
+import { lang, t } from '../i18n'
 import { correct, forget, memoryChoiceAtom, memoryToastAtom, showMemoryToast } from '../memory'
 
 export { showMemoryToast } from '../memory'
 import { Icons } from './icons'
 import { Modal } from './Modal'
+
+/** 「10月27日 18:20」 (zh) / "Oct 27 18:20" (en), local time. */
+export function chooserTime(time: number): string {
+  const d = new Date(time)
+  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return lang === 'zh' ? `${d.getMonth() + 1}月${d.getDate()}日 ${hm}` : `${d.toLocaleString('en-US', { month: 'short' })} ${d.getDate()} ${hm}`
+}
 
 /** #381: a text edit matched several memories — nothing was written; the user picks one (delete-confirm style). */
 export function MemoryChooser() {
@@ -35,15 +42,17 @@ export function MemoryChooser() {
     } catch { /* the store already showed 保存失败，请重试 */ }
   }
   const danger = choice.action === 'forget'
+  const rows = [...choice.candidates].sort((a, b) => b.time - a.time)  // newest first
   return createPortal(
-    <Modal title={t('memory.choose.title', choice.candidates.length)} className="ca-rename ca-confirm" closable={false} onClose={close}>
+    <Modal title={t(danger ? 'memory.choose.titleForget' : 'memory.choose.title', rows.length)} className="ca-rename ca-confirm" closable={false} onClose={close}>
       <div className="ca-rename__body" data-testid="memory-chooser">
         <div className="ca-mem-choose__scroll" data-more={more || undefined} data-testid="memory-chooser-scroll">
         <div className="ca-mem-choose__list" role="radiogroup" ref={listRef} onScroll={measure} data-testid="memory-chooser-list">
-          {choice.candidates.map((m) => (
+          {rows.map((m) => (
             <label key={m.id} className="ca-mem-choose__row" data-testid="memory-chooser-row" data-id={m.id}>
               <input type="radio" name="ca-mem-choose" checked={picked === m.id} onChange={() => setPicked(m.id)} />
               <span className="ca-mem-choose__text">{m.text}</span>
+              <span className="ca-mem-choose__time" data-testid="memory-chooser-time">{chooserTime(m.time)}</span>
             </label>
           ))}
         </div>

@@ -1452,7 +1452,8 @@
   "arti.memory.emptyGuide": "No memories yet. Create with Arti and it will get to know you over time.",
   "arti.cap.soon": "Coming soon",
   "memory.saveFailed": "Save failed. Please retry.",
-  "memory.choose.title": "Found {0} identical memories — which one?",
+  "memory.choose.title": "Found {0} identical memories — which one to edit?",
+  "memory.choose.titleForget": "Found {0} identical memories — which one to delete?",
   "memory.choose.correct": "Correct",
   "arti.memory.deletedToast": "Memory deleted"
 }
