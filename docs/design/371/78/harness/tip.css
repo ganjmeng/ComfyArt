@@ -1,0 +1,99 @@
+/* #371 tip harness — composer Arti DNA A mascot peek + hover/notify */
+:root {
+  --ca-blue: #3b82f6;
+  --ca-font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ca-float: #ffffff;
+  --ca-border: rgba(0,0,0,.07);
+  --ca-text: rgba(0,0,0,.9);
+  --ca-muted: rgba(0,0,0,.3);
+  --ca-field: rgba(0,0,0,.04);
+  --ca-shadow: 0 16px 24px -8px rgba(0,0,0,.06), 0 4px 8px -4px rgba(0,0,0,.04);
+  --ca-border-w: 1px;
+  --mascot-frames: 17;
+  --mascot-frame-ms: 250ms;
+  --mascot-duration: 4250ms;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 400 14px/22px var(--ca-font); background: #ececec; color: var(--ca-text); }
+body[data-theme="dark"] {
+  --ca-float: #1f1f1f;
+  --ca-border: rgba(255,255,255,.1);
+  --ca-text: rgba(255,255,255,.9);
+  --ca-muted: rgba(255,255,255,.4);
+  --ca-field: rgba(255,255,255,.06);
+  background: #111;
+  color: var(--ca-text);
+}
+.shot-tag { margin: 8px 12px; font: 600 11px/16px var(--ca-font); color: #666; }
+body[data-theme="dark"] .shot-tag { color: #999; }
+.stage { padding: 48px 24px 80px; width: 440px; }
+.ca-composer {
+  position: relative; overflow: visible;
+  margin: 0; padding: 12px; width: 383px;
+  border: var(--ca-border-w) solid var(--ca-border);
+  border-radius: 18px; box-shadow: var(--ca-shadow);
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--ca-float); color: var(--ca-text);
+  min-height: 120px;
+}
+.ca-composer > :not(.arti-mascot-wrap) { position: relative; z-index: 1; }
+.ca-composer__input {
+  min-height: 72px; border: none; outline: none; background: transparent;
+  font: inherit; color: inherit; resize: none;
+}
+.ca-composer__input::placeholder { color: var(--ca-muted); }
+.ca-composer__foot { display: flex; align-items: center; gap: 8px; color: var(--ca-muted); font-size: 13px; }
+.arti-mascot-wrap {
+  position: absolute; left: 12px; top: -22px;
+  width: 50px; height: 50px; z-index: 2;
+}
+.arti-mascot {
+  position: absolute; left: 0; top: 0;
+  width: 50px; height: 50px; z-index: 0;
+  padding: 0; border: none; background-color: transparent;
+  cursor: pointer; pointer-events: auto;
+  background-repeat: no-repeat;
+  background-size: calc(var(--mascot-frames) * 100%) 100%;
+  background-position: 0 0;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+  transition: transform 160ms ease;
+}
+@keyframes arti-mascot-play {
+  from { background-position: 0 0; }
+  to { background-position: 100% 0; }
+}
+.arti-mascot--play, .arti-mascot--typing, .arti-mascot--hover {
+  animation: arti-mascot-play var(--mascot-duration) steps(var(--mascot-frames)) 1 both;
+}
+.arti-mascot--hover { transform: translateY(-11px); }
+.arti-mascot--typing { opacity: 1; }
+.arti-notify {
+  position: absolute; left: 0; top: calc(100% + 18px);
+  width: 280px; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid var(--ca-border); background: var(--ca-float);
+  box-shadow: 0 12px 28px -8px rgba(0,0,0,.18);
+  color: var(--ca-text); z-index: 5;
+}
+.arti-notify__title { font: 600 13px/20px var(--ca-font); margin-bottom: 8px; }
+.arti-notify__empty-title { font: 600 13px/20px var(--ca-font); }
+.arti-notify__empty-hint { margin-top: 4px; font: 400 12px/18px var(--ca-font); color: var(--ca-muted); }
+@media (prefers-reduced-motion: reduce) {
+  .arti-mascot { transition: none !important; }
+  .arti-mascot--play, .arti-mascot--typing, .arti-mascot--hover {
+    animation: none !important; background-position: 0 0 !important;
+    transform: none !important;
+  }
+}
+.sheet-view { padding: 16px; background: #1f1f1f; }
+.sheet-view img { image-rendering: pixelated; display: block; max-width: 100%; height: auto; }
+.ladder { display: flex; gap: 24px; padding: 24px; background: #1f1f1f; align-items: end; }
+.ladder figure { margin: 0; text-align: center; color: #ccc; font: 600 12px/18px var(--ca-font); }
+.ladder .peek {
+  position: relative; width: 80px; height: 60px;
+  background: #2a2a2a; border-radius: 14px 14px 0 0; overflow: hidden;
+}
+.ladder .arti-mascot { left: 15px; top: 8px; }
+.dna { display: flex; gap: 24px; padding: 24px; align-items: center; background: #1f1f1f; color: #ccc; }
+.dna img { image-rendering: pixelated; width: 128px; height: 128px; background: #111; }
+.dna figcaption { font: 600 12px/18px var(--ca-font); margin-top: 8px; text-align: center; }
+.note { margin: 12px; font: 400 12px/18px var(--ca-font); color: #666; max-width: 640px; }

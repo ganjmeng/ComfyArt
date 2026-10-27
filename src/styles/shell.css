@@ -453,3 +453,109 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 [data-theme=dark] .ca-modelbtn, .dark .ca-modelbtn { color: rgba(255,255,255,.9); }
 [data-theme=dark] .ca-modelbtn:hover, [data-theme=dark] .ca-modelbtn[data-open], .dark .ca-modelbtn:hover { background: rgba(255,255,255,.06); }
 [data-theme=dark] .ca-modelbtn:active, .dark .ca-modelbtn:active { background: rgba(255,255,255,.08); }
+
+
+/* #371 P1-mascot — composer left-top pixel Arti badge (DNA A) */
+.ca-composer { overflow: visible; background: var(--ca-float); }
+.arti-mascot-wrap {
+  position: absolute;
+  left: 12px;
+  top: -22px;
+  width: 50px;
+  height: 50px;
+  z-index: 2;
+}
+.arti-mascot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 50px;
+  height: 50px;
+  z-index: 0;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  background-repeat: no-repeat;
+  background-size: calc(var(--mascot-frames, 17) * 100%) 100%;
+  background-position: 0 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transition: transform 160ms ease;
+}
+/* avatar variant keeps span layout */
+span.arti-mascot { cursor: default; pointer-events: none; }
+/* content above the peek so body is half-hidden behind rounded top */
+.ca-composer > :not(.arti-mascot-wrap) { position: relative; z-index: 1; }
+
+@keyframes arti-mascot-play {
+  from { background-position: 0 0; }
+  to { background-position: 100% 0; }
+}
+
+.arti-mascot--play,
+.arti-mascot--typing,
+.arti-mascot--hover {
+  animation: arti-mascot-play var(--mascot-duration, 4250ms) steps(var(--mascot-frames, 17)) 1 both;
+}
+
+.arti-mascot--hover {
+  transform: translateY(-11px);
+}
+
+.arti-mascot--typing {
+  /* CN typing also fades in */
+  animation-name: arti-mascot-play, arti-mascot-fade;
+  animation-duration: var(--mascot-duration, 4250ms), 200ms;
+  animation-timing-function: steps(var(--mascot-frames, 17)), ease-out;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: both, both;
+}
+
+@keyframes arti-mascot-fade {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+/* In-canvas Arti notifications popover (click badge; NOT /arti) */
+.arti-notify {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 18px);
+  width: 280px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--ca-border, rgba(0,0,0,.08));
+  background: var(--ca-float, #fff);
+  box-shadow: 0 12px 28px -8px rgba(0,0,0,.18), 0 4px 10px -4px rgba(0,0,0,.08);
+  color: var(--ca-text, rgba(0,0,0,.9));
+  z-index: 5;
+  pointer-events: auto;
+}
+.arti-notify__title {
+  font: 600 13px/20px Inter, system-ui, sans-serif;
+  margin-bottom: 8px;
+}
+.arti-notify__empty-title {
+  font: 600 13px/20px Inter, system-ui, sans-serif;
+}
+.arti-notify__empty-hint {
+  margin-top: 4px;
+  font: 400 12px/18px Inter, system-ui, sans-serif;
+  color: var(--ca-muted, rgba(0,0,0,.45));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arti-mascot {
+    transition: none !important;
+  }
+  .arti-mascot--play,
+  .arti-mascot--typing,
+  .arti-mascot--hover {
+    animation: none !important;
+    background-position: 0 0 !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

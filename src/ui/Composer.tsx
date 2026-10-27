@@ -20,6 +20,7 @@ import { Icons } from './icons'
 import { ModelPrefs } from './ModelPrefs'
 import { DirectPills } from './DirectPills'
 import { ComposerSlot, useSlot } from './ComposerSlot'
+import { ArtiMascot } from './ArtiMascot'
 import { SkillForm, skillsOpenAtom } from './SkillsDialog'
 import { MODE_OPTIONS, modeOf } from './modeOptions'
 import { Popover } from './Popover'
@@ -200,6 +201,9 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const modeInfo = modeOf(mode)
   const agent = useCurrentAgent()
 
+  // #371: typing = non-empty draft (CN --typing); play = busy after send
+  const typing = content
+
   return (
     <div
       className="ca-composer"
@@ -208,6 +212,8 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       onDragLeave={() => setDrop(false)}
       onDrop={(e) => { setDrop(false); const files = imageFiles(e.dataTransfer); if (files.length) { e.preventDefault(); void uploadRefs(editor, files).catch(fail) } }}
     >
+      {/* #371 P1-mascot: left-top peek; idle static frame 0; --play/--typing animate */}
+      <ArtiMascot busy={busy} typing={typing} />
       {(slash && filtered.length > 0) && (
         <div className="ca-menu ca-composer__suggest">
           {filtered.slice(0, 8).map((s) => (
