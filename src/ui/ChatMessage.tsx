@@ -6,6 +6,7 @@ import { setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
 import { errorText } from '../jobs'
 import { confirmAtom } from './Confirm'
+import OVER_QUOTE from '../../bot/over_quote.json'
 import { schedulesOpenAtom } from '../schedules'
 import { Icons } from './icons'
 import { Markdown } from './Markdown'
@@ -539,13 +540,51 @@ function Ask({ b }: { b: BotBlock }) {
   )
 }
 
-function renderAsk(b: BotBlock, key: string | number) {
+export function renderAsk(b: BotBlock, key: string | number) {
   if (b.kind === 'plan_quote') return <PlanQuote key={key} b={b} />
   if (b.kind === 'run_approval') return <Ask key={key} b={b} />
+  if (b.kind === OVER_QUOTE.kind) return <OverQuote key={key} b={b} />
   // New question cards (kind=question) and in-flight pending without kind use QuestionCard.
   // Historical answered chips without kind keep the memo path.
   if (b.status !== 'pending' && b.kind !== 'question') return <AskMemo key={key} b={b} />
   return <QuestionCard key={key} b={b} />
+}
+
+/** #393: over-quote confirm. A dedicated card (never QuestionCard): the same cost-confirm card as a plan quote,
+ * built from the shared bot/over_quote.json schema. 确认 answers [confirm], 先到这里 / dismiss answers [decline]. */
+export function OverQuote({ b }: { b: BotBlock }) {
+  const [error, setError] = useState('')
+  const askId = b.ask_id
+  const pending = b.status === 'pending'
+  const copy = OVER_QUOTE.copy[lang === 'zh' ? 'zh' : 'en']
+  const credits = (b as BotBlock & { credits?: number }).credits
+  const body = credits != null ? copy.body.replace('{credits}', String(credits)) : (b.prompt ?? '')
+  useEffect(() => {
+    if (!pending || !askId) return
+    let live = true
+    const answer = (id: string) => void answerAsk(askId, [id], '').catch((e) => { if (live) setError(errorText(e)) })
+    confirmAtom.set({
+      title: t('jobs.confirmTitle'),
+      desc: body,
+      ok: copy.confirm,
+      cancelLabel: copy.decline,
+      run: () => { if (live) answer(OVER_QUOTE.confirm) },
+      cancel: () => { if (live) answer(OVER_QUOTE.decline) },
+    })
+    return () => {
+      live = false
+      const cur = confirmAtom.get()
+      if (cur && cur.desc === body) confirmAtom.set(null)
+    }
+  }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
+  if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
+  const ok = b.status === 'answered' && (b.selected ?? []).includes(OVER_QUOTE.confirm)
+  return (
+    <div className="ca-chat__memo" data-kind={OVER_QUOTE.kind}>
+      <span className="ca-icon">{ok ? Icons.check : Icons.close}</span>
+      {body} → {ok ? copy.confirm : b.status === 'expired' ? t('chatMessage.timedOut') : copy.decline}
+    </div>
+  )
 }
 
 /** #235: the plan total uses the same cost-confirm card as a single job. No second card, no new styles. */
@@ -847,11 +886,14 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
         proc.push({
           key: `p${i}`,
           kind: kindResolved,
-          label: processLabel(kindResolved, stepLive, {
-            fallback: b.type === 'tool_use' ? toolLabel(b.name) : b.label,
-            model,
-            pages,
-          }),
+          // #393 nit: a declined / refused paid step never reads 「已生成图片」
+          label: (kindResolved === 'image' || kindResolved === 'video') && b.type === 'tool_use' && result && stepState(result) === 'cancelled'
+            ? `${toolLabel(b.name)} · ${t('chatMessage.cancelled')}`
+            : processLabel(kindResolved, stepLive, {
+              fallback: b.type === 'tool_use' ? toolLabel(b.name) : b.label,
+              model,
+              pages,
+            }),
           live: stepLive,
           text: b.type === 'thinking' ? b.text : undefined,
           aspectRatio,

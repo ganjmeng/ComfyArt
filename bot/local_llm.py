@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import time
+from pathlib import Path
 from typing import Callable, Optional
 
 import aiohttp
@@ -73,6 +74,20 @@ _CANCEL_RE = re.compile(
     r'"cancelled"\s*:\s*true|"status"\s*:\s*"declined"|已取消该生成，未扣费|'
     r"Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed|"
     r"已取消，没有扣费。|Cancelled\. Nothing was charged\.")
+# #393: shared over-quote card schema (also imported by src/ui/ChatMessage.tsx). One definition.
+OVER_QUOTE = json.loads((Path(__file__).with_name("over_quote.json")).read_text(encoding="utf-8"))
+
+
+def over_quote_spec(lang: str, price: float) -> dict:
+    from .run_budget import ui_credits
+    c = OVER_QUOTE["copy"]["zh" if lang == "zh" else "en"]
+    credits = ui_credits(price)
+    return {"kind": OVER_QUOTE["kind"], "prompt": c["body"].format(credits=credits), "credits": credits,
+            "options": [{"id": OVER_QUOTE["decline"], "label": c["decline"]},
+                        {"id": OVER_QUOTE["confirm"], "label": c["confirm"]}],
+            "min_selections": 1, "max_selections": 1, "allow_other": False}
+
+
 # #236: image tools covered by the #133 table. Video is outside that table.
 _FALLBACK_TOOLS = frozenset({"generate_image", "edit_image", "edit_region"})
 _GUARD_RE = re.compile(
@@ -1276,18 +1291,21 @@ class LocalLlmProvider(AgentProvider):
 
     async def _confirm_over_quote(self, turn, handle, lang: str, name: str, price: float, left: float) -> bool:
         """#391: a paid call over the run's remaining quote needs an explicit yes; never auto-continue.
-        #393: shown in credits (shared ui_credits formatter), never dollars."""
-        from .run_budget import ui_credits
-        zh = lang == "zh"
-        spec = {
-            "prompt": (f"「{name}」预计 {ui_credits(price)} 积分，超出本次运行剩余额度 {ui_credits(left)} 积分。继续吗？" if zh else
-                       f"{name} costs about {ui_credits(price)} credits, over this run's remaining quote "
-                       f"{ui_credits(left)} credits. Continue?"),
-            "options": [{"id": "start", "label": "继续" if zh else "Continue"},
-                        {"id": "cancel", "label": "停止" if zh else "Stop"}],
-            "min_selections": 1, "max_selections": 1, "allow_other": False, "kind": "paid_over_quote",
-        }
-        return await self._confirm_plan(spec, turn, handle) == "start"
+        #393: a dedicated card (not QuestionCard) built from the shared bot/over_quote.json schema; the
+        answer is selected [confirm] | [decline]. Anything else (dismiss, timeout, no live turn) declines."""
+        if handle is not None and handle.stop_requested:
+            return False
+        from ComfyArt.api.bot_turns import ACTIVE_TURNS
+        from ComfyArt.api.mcp_tools.bot_tools import _await_ask
+        state = ACTIVE_TURNS.get(turn.chat_id) if turn is not None else None
+        if state is None:
+            return False
+        try:
+            outcome = await _await_ask(turn.chat_id, state, over_quote_spec(lang, price))
+        except Exception:
+            _log.exception("[ComfyArt/local-llm] over-quote confirm failed")
+            return False
+        return outcome.get("status") == "answered" and OVER_QUOTE["confirm"] in (outcome.get("selected") or [])
 
     async def _emit_mcp(self, item: dict, *, session, turn, emit, handle,
                         done: list, lang: str, skill_cache: dict, llm_model: str,
@@ -1474,6 +1492,9 @@ class LocalLlmProvider(AgentProvider):
                 messages.extend(ch)
         for i in ran:  # #236: one fallback per failed model call, after its result is in the transcript
             it, ch = parsed[i], chunks[i]
+            run = loop.get("run")
+            if run is not None and run.pending_stop is not None:
+                break  # #393: a declined quote (or any run stop) ends the run here: no fallback, no new quote
             if handle.stop_requested or not ch or it["cached"] or it["args"].get("fallback_for"):
                 continue
             await self._maybe_model_fallback(

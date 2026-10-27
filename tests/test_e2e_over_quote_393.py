@@ -1,0 +1,230 @@
+"""#393 end-to-end: over-quote confirm from a real click to the real API.
+
+The local-llm provider runs a whole run through the real HTTP routes (/chats, /send, /asks/{aid}/answer); only the
+LLM, MCP and price lookups are mocked (no keys, no paid calls). The pending over-quote ask block the backend wrote is
+rendered in Chromium by the real chat router (renderAsk → OverQuote) + the real <Confirm/> modal; the test clicks
+「先到这里」/「确认」 and the page's own fetch is routed to the aiohttp app. Card copy comes from the one shared
+schema bot/over_quote.json. SHOT_DIR=<dir> also writes the four #78 shots of the card (zh/en × light/dark)."""
+import asyncio
+import json
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+import pytest
+
+import ComfyArt.api.bot  # noqa: F401  (registers the /comfyart/bot routes)
+from ComfyArt.api import bot_asks, chat_store
+from ComfyArt.bot import providers
+from ComfyArt.bot.local_llm import OVER_QUOTE
+from conftest import wait_bot_done
+from test_agent_budget_391 import Rig, calls, reply, store  # noqa: F401  (store is a fixture)
+
+ROOT = Path(__file__).resolve().parent.parent
+apw = pytest.importorskip("playwright.async_api")
+pytestmark = pytest.mark.skipif(not (ROOT / "node_modules" / ".bin" / "rolldown").exists() or not shutil.which("node"),
+                                reason="needs node + npm install")
+GEN = ("generate_image", {"prompt": "cat", "model": "m"})
+
+
+def gen(n):  # a fresh prompt each step, so the repeat guard never fires
+    return ("generate_image", {"prompt": f"cat {n}", "model": "m"})
+
+
+# one model step with two paid calls; the model then just replies
+TWO = lambda m, n: calls(gen(0), gen(1)) if n == 0 else reply("好")  # noqa: E731
+ORIGIN = "http://comfyart.test"
+SHOT = os.environ.get("SHOT_DIR")
+
+
+@pytest.fixture(scope="module")
+def bundle(tmp_path_factory):
+    d = tmp_path_factory.mktemp("overquote")
+    subprocess.run([str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/overquote/rolldown.config.mjs"], cwd=ROOT,
+                   check=True, capture_output=True, env={**os.environ, "OUT": str(d / "app.js")})
+    css = "\n".join((ROOT / "src/styles" / f).read_text() for f in ("base.css", "canvas.css", "shell.css", "overlays.css"))
+    html = (f"<!doctype html><meta charset=utf-8><style>{css}</style><div id=root></div>"
+            "<script>window.WebSocket = class { constructor() {} send() {} close() {} addEventListener() {} }</script>"
+            "<script src=/app.js></script>")
+    return html, (d / "app.js").read_text()
+
+
+@pytest.fixture()
+async def ui(bundle, bot_client):
+    html, js = bundle
+    hits: list = []
+    async with apw.async_playwright() as p:
+        try:
+            b = await p.chromium.launch()
+        except Exception as e:  # browsers not installed
+            pytest.skip(f"no chromium: {e}")
+        pg = await b.new_page(viewport={"width": 412, "height": 420}, device_scale_factor=2)
+
+        async def route(r):
+            url = r.request.url[len(ORIGIN):]
+            if url.startswith("/api/"):  # the page's real fetch → the real aiohttp route
+                body = r.request.post_data
+                hits.append({"path": url[4:], "method": r.request.method, "body": json.loads(body) if body else None})
+                res = await bot_client.request(r.request.method, url[4:], data=body,
+                                               headers={"content-type": "application/json"})
+                hits[-1]["status"] = res.status
+                return await r.fulfill(status=res.status, body=await res.read(), content_type="application/json")
+            if url == "/app.js":
+                return await r.fulfill(body=js, content_type="text/javascript")
+            return await r.fulfill(body=html, content_type="text/html")
+        await pg.route(f"{ORIGIN}/**", route)
+        await pg.goto(ORIGIN + "/")
+        await pg.wait_for_function("window.__ready === true")
+        pg.hits = hits
+        yield pg
+        await b.close()
+
+
+class Run:
+    """A real chat on the real routes, driven by a mocked local-llm (Rig without its _confirm_over_quote stub)."""
+
+    def __init__(self, monkeypatch, client, store, prices, script=None, usd=1.0):
+        self.prices = list(prices)
+        self.r = Rig(monkeypatch, script or (lambda m, n: calls(gen(n))), store=store, policy={"credits_usd": usd},
+                     mcp=self.mcp)
+        monkeypatch.delattr(self.r.p, "_confirm_over_quote")  # the real ask path
+
+        async def price(name, args):
+            return self.prices[min(len(self.r.paid_mcp()), len(self.prices) - 1)] if name == "generate_image" else None
+        monkeypatch.setattr(self.r.p, "_price_call", price)
+        monkeypatch.setitem(providers._REGISTRY, self.r.p.id, self.r.p)
+        self.client = client
+        self.asks: list = []
+        real = bot_asks.create_ask
+
+        def spy(chat_id, message_id, spec):
+            a = real(chat_id, message_id, spec)
+            self.asks.append(a)
+            return a
+        monkeypatch.setattr(bot_asks, "create_ask", spy)
+
+    @staticmethod
+    def mcp(name, args, i):  # the real async generate_image shape: a queued job id, nothing on the canvas yet
+        if name == "generate_image":
+            return json.dumps({"ids": [f"job-{i}"], "status": "queued"})
+        if name == "get_canvas":
+            return json.dumps({"shapes": []})
+        return json.dumps({"ok": True})
+
+    async def start(self, text="画 3 张猫", lang="zh"):
+        c = await self.client.post("/comfyart/bot/chats", json={"provider": "local-llm", "project": "p393"})
+        self.chat = (await c.json())["chat"]["id"]
+        res = await self.client.post(f"/comfyart/bot/chats/{self.chat}/send", json={"text": text, "lang": lang})
+        assert res.status < 300, await res.text()
+
+    async def pending(self, k, timeout=10.0):
+        """The k-th over-quote ask, as the block the backend stored on the message (what the UI renders)."""
+        for _ in range(int(timeout / 0.02)):
+            if len(self.asks) >= k and self.asks[k - 1].id in bot_asks.PENDING:
+                aid = self.asks[k - 1].id
+                for m in chat_store.list_messages(self.chat):
+                    for b in m.get("blocks") or []:
+                        if b.get("type") == "ask" and b.get("ask_id") == aid:
+                            return b
+            await asyncio.sleep(0.02)
+        tail = [b for m in chat_store.list_messages(self.chat) for b in (m.get("blocks") or [])][-4:]
+        raise AssertionError(f"no over-quote ask #{k}; asks={len(self.asks)} paid={self.r.paid_mcp()} tail={tail}")
+
+    async def done(self):
+        data = await wait_bot_done(self.client, self.chat, timeout=10.0)
+        blocks = [b for m in data["messages"] for b in (m.get("blocks") or [])]
+        return blocks, [b for b in blocks if b.get("type") == "run_stop"]
+
+
+async def click(ui, block, chat, label, lang="zh", theme="light", shot=None):
+    await ui.evaluate("([b, c, l, t]) => window.__render(b, c, l, t)", [block, chat, lang, theme])
+    modal = ui.locator(".ca-modal")
+    await modal.wait_for()
+    copy = OVER_QUOTE["copy"][lang]
+    assert await modal.locator(".ca-rename__body > div").first.inner_text() == copy["body"].format(credits=block["credits"])
+    assert await ui.locator(".ca-panel__secondary").inner_text() == copy["decline"]
+    assert await ui.locator(".ca-panel__primary").inner_text() == copy["confirm"]
+    if shot:
+        Path(SHOT).mkdir(parents=True, exist_ok=True)
+        await modal.screenshot(path=str(Path(SHOT) / shot))
+    n = len(ui.hits)
+    await ui.get_by_role("button", name=label, exact=True).click()
+    for _ in range(250):
+        if len(ui.hits) > n:
+            break
+        await asyncio.sleep(0.02)
+    hit = ui.hits[-1]
+    assert hit["path"] == f"/comfyart/bot/chats/{chat}/asks/{block['ask_id']}/answer" and hit["status"] == 202, hit
+    return hit
+
+
+async def test_decline_first_stops_with_one_quote_and_no_paid_call(monkeypatch, bot_client, store, ui):
+    # every model step asks for two paid calls: a decline must stop the second one AND the next step
+    run = Run(monkeypatch, bot_client, store, prices=[9.0], script=lambda m, n: calls(gen(2 * n), gen(2 * n + 1)))
+    await run.start()
+    b = await run.pending(1)
+    assert b["kind"] == OVER_QUOTE["kind"] and "questions" not in b and b["credits"] == 900
+    llm_before = run.r.n
+    hit = await click(ui, b, run.chat, "先到这里")
+    assert hit["body"]["selected"] == [OVER_QUOTE["decline"]] and "answers" not in hit["body"]
+    blocks, stops = await run.done()
+    assert len(run.asks) == 1, "a decline must not raise a second quote"
+    assert run.r.paid_mcp() == []
+    assert run.r.n == llm_before, "the decline is not handed back to the model"
+    assert stops and stops[-1]["copy"]["key"] == "user_stop:quote_declined"
+    assert [x for x in blocks if x.get("ask_id") == b["ask_id"]][0]["selected"] == [OVER_QUOTE["decline"]]
+
+
+async def test_decline_after_one_image_keeps_count_from_delivery_records(monkeypatch, bot_client, store, ui):
+    run = Run(monkeypatch, bot_client, store, prices=[0.3, 0.9], script=TWO)
+    await run.start()
+    b = await run.pending(1)
+    assert len(run.r.paid_mcp()) == 1  # the cheap one ran (queued job, nothing on the canvas)
+    await click(ui, b, run.chat, "先到这里")
+    blocks, stops = await run.done()
+    card = stops[-1]["copy"]
+    assert card["key"] == "user_stop:quote_declined" and len(run.asks) == 1 and len(run.r.paid_mcp()) == 1
+    assert "已保留之前生成的 1 张" in card["zh"]["body"], card["zh"]["body"]
+    assert "1 image" in card["en"]["body"], card["en"]["body"]
+
+
+async def test_confirm_pays_this_call_only_then_requotes(monkeypatch, bot_client, store, ui):
+    run = Run(monkeypatch, bot_client, store, prices=[9.0, 9.0], script=TWO)
+    await run.start()
+    b1 = await run.pending(1)
+    hit = await click(ui, b1, run.chat, "确认")
+    assert hit["body"]["selected"] == [OVER_QUOTE["confirm"]]
+    b2 = await run.pending(2)  # the next over-quote call (same step) asks again: 确认 covered one call only
+    assert len(run.r.paid_mcp()) == 1, "确认 pays exactly the confirmed call"
+    await click(ui, b2, run.chat, "先到这里")
+    blocks, stops = await run.done()
+    assert len(run.asks) == 2 and len(run.r.paid_mcp()) == 1
+    assert stops[-1]["copy"]["key"] == "user_stop:quote_declined"
+    assert "已保留之前生成的 1 张" in stops[-1]["copy"]["zh"]["body"]
+
+
+@pytest.mark.parametrize("label", ["Stop here", "Confirm"])
+async def test_en_buttons_answer_through_the_api(monkeypatch, bot_client, store, ui, label):
+    run = Run(monkeypatch, bot_client, store, prices=[9.0], script=lambda m, n: calls(GEN) if n == 0 else reply("done"))
+    await run.start("draw a cat", lang="en")
+    b = await run.pending(1)
+    hit = await click(ui, b, run.chat, label, lang="en")
+    ok = label == "Confirm"
+    assert hit["body"]["selected"] == [OVER_QUOTE["confirm" if ok else "decline"]]
+    blocks, stops = await run.done()
+    assert len(run.asks) == 1 and len(run.r.paid_mcp()) == (1 if ok else 0)
+    if not ok:
+        assert stops[-1]["copy"]["key"] == "user_stop:quote_declined"
+
+
+@pytest.mark.skipif(not SHOT, reason="SHOT_DIR not set")
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("theme", ["light", "dark"])
+async def test_shots(monkeypatch, bot_client, store, ui, lang, theme):
+    run = Run(monkeypatch, bot_client, store, prices=[0.33], usd=0.1)
+    await run.start("画一张猫" if lang == "zh" else "draw a cat", lang=lang)
+    b = await run.pending(1)
+    await click(ui, b, run.chat, OVER_QUOTE["copy"][lang]["decline"], lang=lang, theme=theme,
+                shot=f"over-quote-{lang}-{theme}.png")
+    await run.done()

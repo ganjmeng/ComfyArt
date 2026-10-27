@@ -10,6 +10,8 @@ interface Ask {
   note?: string
   desc: string
   ok: string
+  /** secondary button label; default 「取消」 */
+  cancelLabel?: string
   danger?: boolean
   run: () => void
   cancel?: () => void
@@ -45,7 +47,7 @@ export function Confirm() {
           </div>
         ) : null}
         <div className="ca-panel__foot">
-          <button type="button" className="ca-panel__secondary" onClick={dismiss}>{t('common.cancel')}</button>
+          <button type="button" className="ca-panel__secondary" onClick={dismiss}>{ask.cancelLabel ?? t('common.cancel')}</button>
           <button type="button" className={ask.danger ? 'ca-panel__primary ca-panel__danger' : 'ca-panel__primary'} onClick={() => { close(); ask.run() }}>{ask.ok}</button>
         </div>
       </div>

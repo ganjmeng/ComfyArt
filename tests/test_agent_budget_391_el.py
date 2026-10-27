@@ -362,17 +362,25 @@ async def test_budget_card_estimate_is_integer_ceil_credits(monkeypatch, store):
     assert m and int(m.group(1)) == ui_credits(c["estimate"]["credits"]) and "$" not in c["copy"]["zh"]["body"]
 
 
-async def test_quote_card_shows_credits_not_dollars():
-    from ComfyArt.bot.local_llm import LocalLlmProvider
+async def test_quote_card_shows_credits_not_dollars(monkeypatch):
+    """#393: the over-quote ask is the shared bot/over_quote.json card: integer credits, no $, flat options."""
+    from types import SimpleNamespace
+    from ComfyArt.bot import local_llm
+    from ComfyArt.api import bot_turns
+    from ComfyArt.api.mcp_tools import bot_tools
     seen = {}
 
-    class Fake:
-        async def _confirm_plan(self, spec, turn, handle):
-            seen.update(spec)
-            return "start"
+    async def fake_ask(chat_id, state, spec, **kw):
+        seen.update(spec)
+        return {"status": "answered", "selected": [local_llm.OVER_QUOTE["confirm"]]}
+    monkeypatch.setattr(bot_tools, "_await_ask", fake_ask)
+    monkeypatch.setitem(bot_turns.ACTIVE_TURNS, "c1", SimpleNamespace())
+    turn = SimpleNamespace(chat_id="c1")
     for lang, unit in (("zh", "积分"), ("en", "credits")):
-        assert await LocalLlmProvider._confirm_over_quote(Fake(), None, None, lang, "生成图片", 0.321, 0.004)
-        assert "$" not in seen["prompt"] and f"33 {unit}" in seen["prompt"] and f"1 {unit}" in seen["prompt"]
+        assert await local_llm.LocalLlmProvider._confirm_over_quote(None, turn, None, lang, "生成图片", 0.321, 0.004)
+        assert "$" not in seen["prompt"] and f"33 {unit}" in seen["prompt"] and seen["credits"] == 33
+        assert seen["kind"] == "paid_over_quote" and "questions" not in seen
+        assert [o["id"] for o in seen["options"]] == ["decline", "confirm"]
 
 
 # #393 product ruling: 已取消 → 继续 shows the quote card again; nothing is charged before the confirm ------------
@@ -512,3 +520,14 @@ def test_quote_declined_non_image_body(kind, n, zh, en):
     from ComfyArt.bot.agent_loop import _card_body
     assert _card_body("user_stop:quote_declined", "zh", n=n, m=None, x=None, kind=kind) == zh
     assert _card_body("user_stop:quote_declined", "en", n=n, m=None, x=None, kind=kind) == en
+
+
+def test_user_stop_with_nothing_delivered_hides_kept_clause():
+    """#393 nit (d): a user stop / network error with 0 images says 进度已保存, never 「已保留生成的 0 张」."""
+    from ComfyArt.bot import agent_loop as al
+    for key in ("user_stop", "error:network"):
+        for lk in ("zh", "en"):
+            for kind in ("image", ""):
+                body = al._card_body(key, lk, n=0, m=None, x=None, kind=kind)
+                assert " 0 " not in f" {body} " and "0 张" not in body and "0 image" not in body, (key, lk, body)
+        assert "已保留生成的 2 张" in al._card_body(key, "zh", n=2, m=4, x=None, kind="image")

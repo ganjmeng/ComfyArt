@@ -362,7 +362,7 @@ def _card_body(key: str, lk: str, *, n: int, m: Optional[int], x: Optional[int],
     if key == "stuck:self_check_failed":
         return CARD_COPY[key][lk][1].format(n=n, **kw) if kind == "image" else f["self_check"].format(n=n, u=u, **kw)
     if key in ("user_stop", "error:network"):
-        if kind == "image":
+        if kind == "image" and n > 0:
             return CARD_COPY[key][lk][1].format(n=n)
         return f["kept"].format(n=n, u=u) if n > 0 else f["kept_none"]
     if key == "user_stop:quote_declined":
@@ -401,11 +401,33 @@ def card_details(ctx: RunContext) -> dict:
     return {lk: [f"{lab} {v}" for lab, v in zip(_DETAIL_LABEL[lk], vals)] for lk in ("zh", "en")}
 
 
+# Cards whose body says what this run kept: the count comes ONLY from the run's paid delivery records.
+_KEPT_KEYS = frozenset({"user_stop", "user_stop:quote_declined", "error:network"})
+
+
+def delivered(ctx: RunContext, kind: str = "") -> int:
+    """#393: outputs delivered in THIS run, from its paid-call ledger (ctx.paid, checkpointed with the run):
+    every done call counts its delivered ids (a job id or shape ids), at least 1. `kind` filters by output
+    kind (image/video/...); empty counts every delivery."""
+    from .local_llm import _SHAPE_TYPE, _tool_base
+    n = 0
+    for rec in (ctx.paid or {}).values():
+        if not isinstance(rec, dict) or rec.get("status") != "done":
+            continue
+        tool = _tool_base(str(rec.get("tool") or ""))
+        if kind and _SHAPE_TYPE.get(tool) != kind:
+            continue
+        n += max(1, len(rec.get("artifacts") or []))
+    return n
+
+
 def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: int = 0) -> dict:
     """Both languages, so the card follows a UI language switch. tone: neutral|warn|error|ok."""
     key = stop.code if stop.code in CARD_COPY else stop.reason.value
     goal = check.goal
     n = check.placed if goal else len(ctx.artifacts)
+    if key in _KEPT_KEYS:
+        n = delivered(ctx, goal.kind if goal else "")   # #393: single source = this run's delivery records
     m = goal.count if goal else None                       # no parsable goal: no "n/m"
     est = ctx.budget.projection(remaining) if remaining else {}
     cr = float(est.get("credits") or 0) if est else 0.0
@@ -787,6 +809,11 @@ async def paid_gate(ctx: RunContext, name: str, args: dict, emit_confirm,
         return "reuse", f"{prev.get('result') or ''}\n{_PAID_DEDUPE_NOTE[lk]}", 0.0
     if prev and prev.get("status") == "pending":
         return "skip", _PAID_PENDING_NOTE[lk], 0.0
+    if ctx.pending_stop is not None:
+        # #393: the run is already stopping (e.g. a declined quote): later paid calls of the same step are
+        # neither asked about nor called. Exactly one quote per decline.
+        why = f"{ctx.pending_stop.reason.value}:{ctx.pending_stop.sub}"
+        return "skip", (_STOP_TEXT.get(why) or {}).get(lk, ""), 0.0
     price = 0.0
     if ctx.pricer is not None:
         try:
@@ -825,7 +852,8 @@ def paid_done(ctx: RunContext, name: str, args: dict, text: str, price: float, f
     if failed:
         ctx.paid.pop(key, None)
     else:
-        ctx.paid[key] = {"status": "done", "price": price, "result": text[:_BLOCK_TEXT_CAP], "artifacts": ids}
+        ctx.paid[key] = {"status": "done", "price": price, "result": text[:_BLOCK_TEXT_CAP], "artifacts": ids,
+                         "tool": name}
         ctx.budget.charge_credits(price)
     ctx.paid_calls += 1
     reason = f"{name} at step {ctx.budget.used.steps + 1}" + (" (failed, not charged)" if failed else "")
