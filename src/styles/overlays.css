@@ -348,6 +348,8 @@
 .ca-slideshow__prev { transform: rotate(180deg); }
 .ca-memory__q { font-weight: 600; font-size: 15px; }
 .ca-chat__acts { display: none; gap: 2px; }
+/* #361 Content refusal alternatives — plain .ca-md ul bullets in chat stream;
+   NEVER pill/chip rows or red toast as the primary refuse path (voids old M2-60 chips). */
 /* #360 Done feedback thumbs — quiet outline under summary; never suggestion chips */
 .ca-chat__feedback { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
 .ca-chat__fb {

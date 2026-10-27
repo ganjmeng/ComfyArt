@@ -836,6 +836,8 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       }
       flushProc()
       flush(b.type === 'notice' && b.level === 'error') // turn ended in error / loop-guard stop: reuse the failed icon
+      // #361: content refusal alternatives = plain Markdown <ul> in this text path —
+      // NEVER suggestion chips / pill buttons / red toast as the primary refuse UI.
       if (b.type === 'text') items.push(<Markdown key={i} text={b.text ?? ''} />)
       if (b.type === 'tool_use') items.push(<Step key={i} editor={editor} use={b} result={resultOf(b, i)} />)
       if (b.type === 'retry') items.push(<Retry key={i} b={b} live={!done && !m.blocks.slice(i + 1).some((x) => x.type === 'retry')} />)
