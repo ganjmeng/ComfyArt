@@ -59,11 +59,14 @@ export interface BotBlock {
   stop?: { reason: string; sub?: string; dimension?: string; detail?: string; step?: number }
   done?: string[]
   remaining?: { deliverables: number; kind: string; steps: number }
-  budget?: RunBudgetView
+  details?: { zh: string[]; en: string[] }
+  copy?: RunStopCopy
   self_check?: Record<string, any>
   can_continue?: boolean
   notify?: boolean
 }
+export interface RunStopText { title: string; body: string; primary: string | null; secondary: string | null }
+export interface RunStopCopy { key: string; action: 'continue' | 'rephrase' | 'retry'; tone: 'ok' | 'warn' | 'error' | 'neutral'; zh: RunStopText; en: RunStopText }
 export interface RunBudgetMeter { used: number; limit: number; pct: number }
 export interface RunBudgetView { run_id?: string; step: number; hard_cap: number; tokens: RunBudgetMeter; credits: RunBudgetMeter; time: RunBudgetMeter; soft: boolean }
 /** #391: live budget bar of the running turn, per chat (not persisted; the stop card keeps the final numbers). */

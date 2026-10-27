@@ -203,60 +203,40 @@ function Retry({ b: block, live }: { b: BotBlock; live: boolean }) {
   )
 }
 
-/** #391: one meter of the run budget (tokens / credits / time). */
-function Meter({ label, m, fmt }: { label: string; m?: { used: number; limit: number; pct: number }; fmt: (n: number) => string }) {
-  if (!m || !m.limit) return null
-  return (
-    <div className="ca-run__meter" data-soft={m.pct >= 0.8 || undefined}>
-      <span>{label}</span>
-      <span className="ca-run__bar"><span style={{ width: `${Math.round(m.pct * 100)}%` }} /></span>
-      <span className="ca-run__num">{fmt(m.used)} / {fmt(m.limit)}</span>
-    </div>
-  )
-}
-
-const fmtTokens = (n: number) => (n >= 1000 ? `${Math.round(n / 100) / 10}k` : String(n))
-const fmtCredits = (n: number) => `$${n.toFixed(2)}`
-const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
-
-/** #391: stop reason + what was done / what is missing + budget used, and Continue when the run can resume. */
+/** #391 stop card (locked copy): one sentence + buttons; 「详情」 fold with actual usage only (no caps, no bars). */
 export function RunStop({ b, latest }: { b: BotBlock; latest: boolean }) {
   const [busy, setBusy] = useState(false)
+  const [closed, setClosed] = useState(false)
   const [error, setError] = useState('')
   const reason = b.stop?.reason ?? 'error'
-  const sub = b.stop?.sub ?? ''
-  const sc = b.self_check ?? {}
-  const missing = b.remaining?.deliverables ?? 0
-  const title = t(`runStop.reason.${reason}`) + (sub && sub !== reason ? ` · ${t(`runStop.sub.${sub}`)}` : '')
+  const lk = lang === 'zh' ? 'zh' : 'en'
+  const copy = b.copy?.[lk]
+  const title = copy?.title ?? t(`runStop.reason.${reason}`)
+  const body = copy?.body ?? ''
+  const details = b.details?.[lk] ?? []
   const go = () => {
     if (!b.run_id) return
     setBusy(true)
     continueRun(b.run_id, lang).catch((e) => { setError(errorText(e)); setBusy(false) })
   }
   return (
-    <div className="ca-run" data-reason={reason}>
+    <div className="ca-run" data-reason={reason} data-key={b.copy?.key} data-tone={b.copy?.tone}>
       <div className="ca-run__head">
         <span className="ca-icon">{Icons.agent}</span>
         <span className="ca-run__title">{title}</span>
-        {sc.self_check && sc.self_check !== 'skip' && (
-          <span className="ca-run__check" data-ok={sc.self_check === 'pass' || undefined}>
-            {sc.self_check === 'pass' ? t('runStop.checkPass') : t('runStop.checkMissing', sc.missing ?? missing)}
-          </span>
-        )}
       </div>
-      {b.budget && (
-        <div className="ca-run__meters">
-          <Meter label={t('runStop.steps')} m={{ used: b.budget.step, limit: b.budget.hard_cap, pct: b.budget.hard_cap ? b.budget.step / b.budget.hard_cap : 0 }} fmt={String} />
-          <Meter label={t('runStop.tokens')} m={b.budget.tokens} fmt={fmtTokens} />
-          <Meter label={t('runStop.credits')} m={b.budget.credits} fmt={fmtCredits} />
-          <Meter label={t('runStop.time')} m={b.budget.time} fmt={fmtTime} />
-        </div>
+      {body && <div className="ca-run__body">{body}</div>}
+      {details.length > 0 && (
+        <details className="ca-run__details">
+          <summary>{t('runStop.details')}</summary>
+          {details.map((line) => <div key={line}>{line}</div>)}
+        </details>
       )}
-      {reason !== 'done' && missing > 0 && <div className="ca-run__line">{t('runStop.remaining', missing)}</div>}
       {error && <div className="ca-chat__hint">{error}</div>}
-      {b.can_continue && latest && (
+      {b.can_continue && latest && !closed && copy?.primary && (
         <div className="ca-panel__foot">
-          <button type="button" className="ca-panel__primary" disabled={busy} onClick={go}>{t('runStop.continue')}</button>
+          {copy.secondary && <button type="button" className="ca-panel__secondary" disabled={busy} onClick={() => setClosed(true)}>{copy.secondary}</button>}
+          <button type="button" className="ca-panel__primary" data-action={b.copy?.action} disabled={busy} onClick={go}>{copy.primary}</button>
         </div>
       )}
     </div>
