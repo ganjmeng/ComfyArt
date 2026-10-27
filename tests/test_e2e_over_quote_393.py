@@ -415,3 +415,39 @@ async def test_overquote_body_indent_16_ordinary_stays_20(monkeypatch, bot_clien
     assert abs(body["x"] - c["x"] - 16) < 0.5, (c, body)
     await click(ui, b, run.chat, "先到这里")
     await run.done()
+
+
+async def test_fallback_over_quote_decline_blocks_paid_fallback(monkeypatch, bot_client, store, ui):
+    """#393: a paid call fails; the #236 fallback would exceed the remaining quote → over-quote card
+    from paid_gate inside `_maybe_model_fallback` (not the pending_stop/break path). Declining it must
+    produce zero fallback MCP calls. Deleting that paid_gate block makes this red; the break-path tests stay green."""
+    state = {"n": 0}
+
+    def mcp(name, args, i):
+        if name == "ask_user":
+            # agree to the #236 switch so we reach paid_gate for the fallback submit
+            return json.dumps({"status": "answered", "selected": ["yes"]})
+        if name != "generate_image":
+            return json.dumps({"ok": True})
+        if args.get("fallback_for"):
+            return json.dumps({"ids": ["fb"], "status": "queued"})
+        state["n"] += 1
+        # the only primary call fails (Seedream → Flare is the #133 backup)
+        return json.dumps({"status": "failed", "error": "WaveSpeed task failed",
+                           "model": "bytedance/seedream-v5.0-pro"})
+
+    # credits 1.0; primary costs 0.3 (affordable, fails); fallback priced 9.0 → over-quote via paid_gate
+    run = Run(monkeypatch, bot_client, store, prices=[0.3, 9.0], usd=1.0,
+              script=lambda m, n: calls(_FAIL) if n == 0 else reply("done"),
+              mcp=mcp)
+    await run.start()
+    b = await run.pending(1)
+    assert b["kind"] == OVER_QUOTE["kind"] and b.get("credits") == 900, b
+    # primary ran and failed; no fallback submit yet; the ask is the fallback's over-quote (paid_gate)
+    assert state["n"] == 1 and not any(c[1].get("fallback_for") for c in run.r.mcp if c[0] == "generate_image")
+    assert any(c[0] == "ask_user" for c in run.r.mcp), "must have agreed to the #236 switch before paid_gate"
+    await click(ui, b, run.chat, "先到这里")
+    blocks, stops = await run.done()
+    assert stops[-1]["copy"]["key"] == "user_stop:quote_declined"
+    assert not any(c[1].get("fallback_for") for c in run.r.mcp if c[0] == "generate_image"), run.r.mcp
+    assert len([c for c in run.r.mcp if c[0] == "generate_image"]) == 1  # primary only

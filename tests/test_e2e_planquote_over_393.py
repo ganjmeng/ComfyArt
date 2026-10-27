@@ -13,8 +13,13 @@ def quiet(n):
 
 
 def setup(monkeypatch, run, n):
+    """Mock `_quote_steps` so a quiet plan quote succeeds; asserts live inside the mock so dropping
+    the outer `assert seen` / kind checks still fails if the mock is unused or fed the wrong steps."""
     seen = []
+
     async def q(steps, lang):
+        assert len(steps) == n, steps
+        assert all(s.get("tool") == "generate_image" for s in steps), steps
         seen.append(steps)
         return quiet(n)
     monkeypatch.setattr(run.r.p, "_quote_steps", q)
@@ -27,8 +32,8 @@ async def test_plan_ok_then_over_quote_decline(monkeypatch, bot_client, store, u
     seen = setup(monkeypatch, run, 2)
     await run.start()
     b = await run.pending(1)
-    assert seen, "plan quote must have run"
-    assert b["kind"] == OVER_QUOTE["kind"] and "questions" not in b
+    assert seen, "plan quote must have run (_quote_steps mock)"
+    assert b["kind"] == OVER_QUOTE["kind"] and "questions" not in b and b.get("credits") == 900
     assert len(run.r.paid_mcp()) == 1
     llm = run.r.n
     await click(ui, b, run.chat, "先到这里")
@@ -44,7 +49,8 @@ async def test_plan_ok_then_over_quote_confirm_once_then_requote(monkeypatch, bo
     seen = setup(monkeypatch, run, 3)
     await run.start()
     b1 = await run.pending(1)
-    assert seen and b1["kind"] == OVER_QUOTE["kind"]
+    assert seen, "plan quote must have run (_quote_steps mock)"
+    assert b1["kind"] == OVER_QUOTE["kind"] and b1.get("credits") == 900
     await click(ui, b1, run.chat, "确认")
     b2 = await run.pending(2)
     assert len(run.r.paid_mcp()) == 2, "确认 pays exactly the confirmed call"
