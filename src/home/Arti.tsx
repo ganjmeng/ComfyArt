@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { t } from '../i18n'
 import { Icons } from '../ui/icons'
+import { ArtiMemory } from './ArtiMemory'
 
 type LearnedTab = 'memory' | 'skills' | 'evolution'
 
@@ -71,11 +72,8 @@ function TabBtn({ id, label, on, onClick }: { id: LearnedTab; label: string; on:
 
 function LearnedBody({ tab }: { tab: LearnedTab }) {
   if (tab === 'memory') {
-    return (
-      <div className="ca-arti__placeholder" data-testid="arti-memory-placeholder">
-        {t('arti.memoryPlaceholder')}
-      </div>
-    )
+    // #368: full memory center (replaces P0-1 placeholder)
+    return <ArtiMemory />
   }
   if (tab === 'skills') {
     return (

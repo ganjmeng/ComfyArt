@@ -86,9 +86,9 @@ def test_learned_tabs_shell() -> None:
     assert "arti.tabMemory" in ARTI
     assert "arti.tabSkills" in ARTI
     assert "arti.tabEvolution" in ARTI
-    # memory = P0-2 placeholder
-    assert 'data-testid="arti-memory-placeholder"' in ARTI
-    assert "arti.memoryPlaceholder" in ARTI
+    # memory = #368 memory center (was P0-2 placeholder)
+    assert "ArtiMemory" in ARTI
+    assert "arti-memory-placeholder" not in ARTI
     # skills skeleton / empty
     assert 'data-testid="arti-skills-skeleton"' in ARTI
     # evolution = SHOULD thin placeholder, not full P0-3
