@@ -4,6 +4,13 @@ body { background: var(--ca-float); }
 .ca-rail { width: 60px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 0; border-right: var(--ca-border-w) solid var(--ca-border); box-sizing: border-box; }
 .ca-rail__logo { display: inline-flex; width: 30px; height: 30px; margin-bottom: 12px; color: var(--ca-strong); }
 .ca-rail__logo svg { width: 100%; height: 100%; }
+.ca-brand-mark { display: inline-flex; width: 100%; height: 100%; color: inherit; }
+.ca-brand-mark svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.ca-brand-mark .lm-body { fill: currentColor; }
+.ca-brand-mark .lm-cut { fill: var(--ca-float); stroke: var(--ca-float); }
+.ca-brand-mark .lm-star .lm-cut { stroke: none; }
+.ca-brand-mark .lm-smile { fill: none; stroke-dasharray: none; stroke-dashoffset: 0; opacity: 1; }
+
 .ca-rail__btn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: none; border-radius: 10px; background: transparent; color: var(--ca-text); cursor: pointer; }
 .ca-rail__btn:hover, .ca-rail__btn[data-open] { background: var(--ca-hover); }
 .ca-rail__btn[data-on] { background: var(--ca-active); }

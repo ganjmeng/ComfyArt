@@ -7,6 +7,7 @@ import { saveNow, saveStateAtom } from '../autosave'
 import { duplicateProject, newProject, openProject, openView, UNTITLED } from '../projects'
 import { importFiles } from './DropHandlers'
 import { historyAtom } from './HistoryDialog'
+import { BrandMark } from './BrandMark'
 import { Icons } from './icons'
 import { memoryOpenAtom } from './MemoryDialog'
 import { workflowsOpenAtom } from './WorkflowsDialog'
@@ -42,7 +43,7 @@ export function ProjectHeader({ editor, projectId, children }: { editor: Editor;
         open={open}
         onOpenChange={setOpen}
         trigger={({ open: o, toggle: flip }) => (
-          <button type="button" className="ca-head__logo" title={t('projectHeader.projects')} data-open={o || undefined} onClick={flip}>{Icons.agent}</button>
+          <button type="button" className="ca-head__logo" title={t('projectHeader.projects')} data-open={o || undefined} onClick={flip}><BrandMark /></button>
         )}
       >
         <div className="ca-menu ca-head__list">

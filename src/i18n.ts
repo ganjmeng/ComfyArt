@@ -1,5 +1,6 @@
 import en from './locales/en.json'
 import zh from './locales/zh.json'
+import { BRAND } from './brand'
 import { readLocal, writeLocal } from './localPrefs'
 
 export type Lang = 'zh' | 'en'
@@ -24,6 +25,7 @@ export async function initLocale() {
     lang = String(value || navigator.language).toLowerCase().startsWith('zh') ? 'zh' : 'en'
   }
   document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
+  document.title = BRAND.pageTitle
 }
 
 export function setLang(next: Lang) {
@@ -31,15 +33,21 @@ export function setLang(next: Lang) {
   location.reload()
 }
 
+function fill(text: string, args: (string | number)[]): string {
+  return text
+    .replace(/\{brand\}/g, BRAND.name)
+    .replace(/\{(\d+)\}/g, (m, i) => (Number(i) < args.length ? String(args[Number(i)]) : m))
+}
+
 export function t(key: string, ...args: (string | number)[]): string {
   const text = MESSAGES[lang][key] ?? MESSAGES.en[key] ?? key
-  return args.length ? text.replace(/\{(\d+)\}/g, (m, i) => (i < args.length ? String(args[i]) : m)) : text
+  return fill(text, args)
 }
 
 /** t() in a fixed language (#128: tool results carry both zh and en for the agent's reply). */
 export function tl(to: Lang, key: string, ...args: (string | number)[]): string {
   const text = MESSAGES[to][key] ?? MESSAGES.en[key] ?? key
-  return args.length ? text.replace(/\{(\d+)\}/g, (m, i) => (i < args.length ? String(args[i]) : m)) : text
+  return fill(text, args)
 }
 
 export function timeAgo(time: number): string {

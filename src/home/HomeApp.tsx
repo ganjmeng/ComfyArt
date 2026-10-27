@@ -4,6 +4,7 @@ import { t } from '../i18n'
 import { newProject, openView, type HomeView } from '../projects'
 import { MemoryChooser, MemoryToast } from '../ui/MemoryChooser'
 import { Confirm } from '../ui/Confirm'
+import { BrandMark } from '../ui/BrandMark'
 import { Icons } from '../ui/icons'
 import { KeySettings } from '../ui/KeySettings'
 import { SettingsMenu } from '../ui/SettingsMenu'
@@ -54,7 +55,7 @@ export function HomeApp({ view }: { view: View }) {
   return (
     <div className="ca-home" data-testid="home-shell">
       <nav className="ca-rail" data-testid="account-rail">
-        <span className="ca-rail__logo">{Icons.agent}</span>
+        <span className="ca-rail__logo"><BrandMark /></span>
         <RailBtn icon={Icons.plus} label={t('projectHeader.newProject')} onClick={() => newProject()} />
         <RailBtn icon={Icons.home} label={t('home.home')} on={view === 'home'} onClick={() => openView('home')} testId="rail-home" />
         <RailBtn icon={Icons.folder} label={t('home.projectLibrary')} on={view === 'projects'} onClick={() => openView('projects')} testId="rail-projects" />

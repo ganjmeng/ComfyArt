@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>ComfyArt</title>
+<style>
+  :root { --ca-float:#fff; --ca-strong:rgba(0,0,0,.9); --ca-text:rgba(0,0,0,.9); --ca-border:rgba(0,0,0,.07); --ca-font: Inter, system-ui, sans-serif; }
+  :root[data-theme=dark] { --ca-float:#161616; --ca-strong:rgba(255,255,255,.92); --ca-text:rgba(255,255,255,.9); --ca-border:rgba(255,255,255,.1); color-scheme:dark; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--ca-float); color:var(--ca-text); font:400 14px/22px var(--ca-font); }
+  .shell { display:flex; height:100%; }
+  .rail { width:56px; padding:12px 10px; border-right:1px solid var(--ca-border); }
+  .logo { width:30px; height:30px; color:var(--ca-strong); margin-bottom:12px; }
+  .logo svg { width:100%; height:100%; }
+  .head { display:flex; align-items:center; gap:8px; height:40px; padding:0 12px; border-bottom:1px solid var(--ca-border); }
+  .head .logo { width:24px; height:24px; margin:0; }
+  .main { padding:48px 32px; }
+  .title { font:600 28px/36px Inter, system-ui, sans-serif; margin:0 0 8px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="rail">
+    <div class="logo" aria-label="ComfyArt"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19m-3 7.2a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8m6 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8M8.2 15h7.6a4.2 4.2 0 0 1-7.6 0"/></svg></div>
+  </nav>
+  <div style="flex:1">
+    <div class="head">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19m-3 7.2a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8m6 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8M8.2 15h7.6a4.2 4.2 0 0 1-7.6 0"/></svg></div>
+      <span>Untitled</span>
+    </div>
+    <main class="main">
+      <h1 class="title">ComfyArt</h1>
+      <p>#399 before — Icons.agent brand mark + ComfyArt title</p>
+    </main>
+  </div>
+</div>
+<script>
+  const theme = new URLSearchParams(location.search).get('theme') || 'light';
+  document.documentElement.dataset.theme = theme;
+</script>
+</body>
+</html>
