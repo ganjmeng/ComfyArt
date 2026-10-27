@@ -178,3 +178,16 @@ def test_371fix_mascot_behind_composer_surface() -> None:
     # 50px tall at top -22 → 28px below rim hidden by the surface, 22px head peeks (more on 11px hover lift)
     assert "translateY(-11px)" in SHELL
     assert "z-index: 5" in _rule(".arti-notify")  # popover stays above surface
+
+
+def test_375_notify_popover_opens_above_composer() -> None:
+    """Popover bottom must be <= composer top: anchored by bottom above the mascot wrap (which peeks above the rim)."""
+    rule = _rule(".arti-notify")
+    assert "bottom: calc(100% + 8px)" in rule
+    assert "top: auto" in rule
+    assert "top: calc(100%" not in rule
+    assert "z-index: 5" in rule
+    # wrap peeks above rim (top -22px), so wrap-top - 8px is strictly above the composer top edge
+    import re
+    m = re.search(r"top:\s*(-\d+)px", _rule(".arti-mascot-wrap"))
+    assert m and int(m.group(1)) <= 0
