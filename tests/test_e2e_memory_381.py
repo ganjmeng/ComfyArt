@@ -2,6 +2,7 @@
 bold title), Lovart-size toast, multi-match chooser (scroll affordance, row 6 reachable, primary-token radios), read-error state.
 
 Set SHOT_OUT=<dir> to also save the #78 design screenshots (light + dark)."""
+import json
 import os
 
 import pytest
@@ -17,6 +18,10 @@ MEM = [
     {"id": "u3", "text": "我偏好暖色调视觉风格。", "time": 3, "category": "taste", "label": "色彩偏好"},
     {"id": "u4", "text": "我偏好极简、几何化与克制用色的视觉取向。", "time": 4, "category": "taste", "label": "视觉风格"},
 ]
+CAP_TEXT = [("review", "画布巡检", "Arti 会定期翻看你的画布，发现问题提前告诉你。"),
+            ("research", "设计调研", "新项目？我帮你全网找参考。竞品、配色、案例，整理成报告，齐活。"),
+            ("memory", "自动更新记忆", "说过的偏好、传过的作品集，Arti 都记着，不用再交代。"),
+            ("skills", "自进化技能", "你做顺手的流程，Arti 会存成技能，用得上时主动提给你。")]
 DUP = "我偏好暖色调视觉风格（海报）。"
 # record times (Asia/Shanghai): d0 oldest … d5 = 2026-10-27 18:20, newest
 _T0 = 1793096400000  # 2026-10-27 18:20:00 +08:00
@@ -26,6 +31,19 @@ SEED_JS = """async (m) => { const cur = await (await fetch('/api/comfyart/memory
   const r = await fetch('/api/comfyart/memory', {method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({memory: m, log: [], meta: {demoCleanup381: true}, base_rev: cur.rev})});
   if (!r.ok) throw new Error('seed ' + r.status) }"""
+
+
+def seed_store(records, log=()):
+    """Mock-only: record times are server-authoritative (a POST re-stamps them), so the chooser fixtures with known
+    record times are written straight into the store file, as if the server had stamped them at those times."""
+    import folder_paths
+    f = folder_paths.STATE["base"] / "user/default/comfyart/memory-store.json"
+    cur = json.loads(f.read_text()) if f.is_file() else {}
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps({"memory": [{**r, "owner_id": "local", "workspace_id": "local"} for r in records], "log": list(log),
+                             "meta": {"demoCleanup381": True}, "rev": int(cur.get("rev", 0)) + 1, "ops": []}, ensure_ascii=False))
+
+
 # effective opacity = product over the ancestor chain; colour of a token resolved through a probe element
 OPACITY_JS = "(el) => { let o = 1; for (let n = el; n; n = n.parentElement) o *= +getComputedStyle(n).opacity; return o }"
 TOKEN_JS = """(name) => { const p = document.createElement('span'); p.style.color = `var(${name})`; document.querySelector('.ca-root, body').appendChild(p);
@@ -51,12 +69,16 @@ async def test_memory_ui_381(app_url, fake_tools, theme):  # noqa: F811
         # product MUST 1: all four disabled switch cards: caption exactly 即将开放 in --ca-text-2 (no opacity chain), no other
         # note, title/desc never faded; only the switch control itself may look disabled
         text2 = await pg.evaluate(TOKEN_JS, "--ca-text-2")
-        for cid in ("review", "research", "memory", "skills"):
+        for cid, title, desc in CAP_TEXT:
             card = pg.locator(f"[data-testid=arti-cap-{cid}]")
+            # product ruling: structure kept — original title + original description + a separate 「即将开放」 line
+            assert (await card.locator(".ca-arti__captitle").inner_text()).strip() == title, cid
+            assert (await card.locator(".ca-arti__capdesc").inner_text()).strip() == desc, cid
             soon = card.locator(f"[data-testid=arti-cap-{cid}-soon]")
             assert (await soon.inner_text()).strip() == "即将开放", cid
             assert await soon.evaluate("e => getComputedStyle(e).color") == text2, cid
             assert await soon.evaluate(OPACITY_JS) == 1, cid
+            assert await soon.evaluate("e => getComputedStyle(e).fontSize") == "12px", cid  # design: 12px
             assert "后端就绪前暂不可用" not in await card.inner_text(), cid
             assert await card.locator(".ca-arti__capbody").evaluate("e => e.innerText.split('\\n').filter(Boolean).length") == 3, cid  # title, desc, 即将开放
             for part in (".ca-arti__captitle", ".ca-arti__capdesc"):
@@ -119,7 +141,7 @@ async def test_memory_ui_381(app_url, fake_tools, theme):  # noqa: F811
 
         # multi-match chooser: 6 exact matches → nothing written, user picks; list scrolls with a visible cue
         # 6 identical rows, distinct record times, seeded out of order (d0 oldest … d5 newest)
-        await pg.evaluate(SEED_JS, [{"id": f"d{i}", "text": DUP, "time": DUP_TIMES[i], "category": "taste"} for i in (3, 0, 5, 1, 4, 2)])
+        seed_store([{"id": f"d{i}", "text": DUP, "time": DUP_TIMES[i], "category": "taste"} for i in (3, 0, 5, 1, 4, 2)])
         await pg.reload()
         await pg.locator("[data-testid=arti-memory-row]").first.wait_for(timeout=15000)
         await pg.evaluate("t => window.__comfyartMemory.forget([t], 'agent')", DUP)
@@ -184,6 +206,34 @@ async def test_memory_ui_381(app_url, fake_tools, theme):  # noqa: F811
         await pg.wait_for_timeout(200)
         await shot(pg, "chooser-correct-selected", theme)
         await pg.locator("[data-testid=memory-chooser-cancel]").click()
+
+        # EL: legacy records without a (valid) time render no time and sort last — never 'NaN月NaN日 NaN:NaN'
+        seed_store([{"id": "L1", "text": DUP, "category": "taste"}, {"id": "T1", "text": DUP, "time": DUP_TIMES[5], "category": "taste"},
+                    {"id": "L2", "text": DUP, "time": "x", "category": "taste"}, {"id": "T0", "text": DUP, "time": DUP_TIMES[0], "category": "taste"}],
+                   log=[{"time": DUP_TIMES[0], "action": "add", "text": DUP, "source": "seed"}])
+        await pg.reload()
+        await pg.locator("[data-testid=arti-memory-row]").first.wait_for(timeout=15000)
+        await pg.evaluate("t => window.__comfyartMemory.forget([t], 'agent')", DUP)
+        await chooser.wait_for(timeout=5000)
+        assert "NaN" not in await modal.inner_text()
+        ids = [await r.get_attribute("data-id") for r in await pg.locator("[data-testid=memory-chooser-row]").all()]
+        assert ids[:2] == ["T1", "T0"] and sorted(ids[2:]) == ["L1", "L2"], ids
+        times = [x.strip() for x in await pg.locator("[data-testid=memory-chooser-row]").all_inner_texts()]
+        assert times[0].endswith(DUP_LABELS[0]) and times[1].endswith(DUP_LABELS[5]) and times[2] == times[3] == DUP, times
+        assert await pg.locator("[data-testid=memory-chooser-time]").count() == 2
+        await pg.locator("[data-testid=memory-chooser-cancel]").click()
+
+        # tester: a read failure AFTER a loaded list (no page reload) clears the in-memory list + log and every row
+        assert await pg.locator("[data-testid=arti-memory-row]").count() > 0
+        assert len(await pg.evaluate("() => window.__comfyartMemory.list()")) > 0
+        assert len(await pg.evaluate("() => window.__comfyartMemory.log()")) > 0
+        await pg.route("**/api/comfyart/memory", lambda r: r.fulfill(status=500, body="boom") if r.request.method == "GET" else r.continue_())
+        assert await pg.evaluate("async () => (await window.__comfyartMemory.load()).length") == 0
+        await pg.locator("[data-testid=arti-memory-error]").wait_for(timeout=5000)
+        assert await pg.evaluate("() => window.__comfyartMemory.list()") == []
+        assert await pg.evaluate("() => window.__comfyartMemory.log()") == []
+        assert await pg.locator("[data-testid=arti-memory-row]").count() == 0
+        await pg.unroute("**/api/comfyart/memory")
 
         # EL MUST 2 in the UI: read error → error state, no list (the server is the only truth)
         await pg.route("**/api/comfyart/memory", lambda r: r.fulfill(status=500, body="boom") if r.request.method == "GET" else r.continue_())

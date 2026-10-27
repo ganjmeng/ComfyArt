@@ -115,7 +115,7 @@ def test_i18n_keys_zh_en() -> None:
         assert '"arti.learnedTitle"' in blob
         assert '"arti.cap.review.title"' in blob
         assert '"arti.cap.research.title"' in blob
-        assert '"arti.cap.comingSoon"' in blob
+        assert '"arti.cap.comingSoon"' not in blob  # unused since the #381 product COMMENT
         assert '"arti.memoryPlaceholder"' in blob
     assert '"设计委托"' in ZH
     assert '"Arti"' in ZH

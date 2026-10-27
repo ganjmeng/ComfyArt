@@ -104,7 +104,6 @@
   "app.refresh": "刷新",
   "app.yourFileVersionIsOut": "您的文件版本已落后，您可能在其他浏览器标签页中打开了同一项目。请刷新获取最新版本。",
   "arti.canDoTitle": "我能主动做的",
-  "arti.cap.comingSoon": "后端就绪前暂不可用",
   "arti.cap.feedback.desc": "同事、甲方在画布上留的意见，一键发给 Arti，它直接改。",
   "arti.cap.feedback.title": "反馈改稿",
   "arti.cap.memory.desc": "说过的偏好、传过的作品集，Arti 都记着，不用再交代。",

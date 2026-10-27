@@ -7,7 +7,7 @@ import { backoff, MEMORY_POLICY, MemoryConflict, MemoryReadError, memoryStore, M
 export { MemoryConflict, MemoryReadError, MemoryWriteError, setMemoryStore } from './memoryStore'
 
 /** owner_id (= user_id) and workspace_id (= project_id) carry fixed local defaults (#381); nothing filters on them yet. */
-export interface Memory { id: string; text: string; time: number; category?: string; label?: string; owner_id?: string; workspace_id?: string }
+export interface Memory { id: string; text: string; /** ms, stamped by the server on create/update; absent on legacy records */ time?: number; category?: string; label?: string; owner_id?: string; workspace_id?: string }
 export interface MemoryInput { text: string; category?: string; label?: string }
 export interface MemoryLog { time: number; action: 'add' | 'update' | 'forget' | 'skill'; text: string; source: string }
 export interface Correction { old: string; new: string }
@@ -191,7 +191,7 @@ export function correct(items: (Correction & { id?: string })[], source: string)
     }
     if (!plan.length) return { changed: [] }
     const done = plan.map(([m, n]) => `${m.text} → ${n}`)
-    await writeStore(list.map((m) => { const p = plan.find(([x]) => x === m); return p ? { ...m, text: p[1], time: Date.now() } : m }),
+    await writeStore(list.map((m) => { const p = plan.find(([x]) => x === m); return p ? { ...m, text: p[1] } : m }),
       withLog(memoryLogAtom.get(), done.map((d) => entry('update', d, source))))
     return { changed: done }
   })
@@ -213,10 +213,10 @@ export function remember(items: MemoryInput[], source = t('botCommands.chat')) {
     const known = new Set(list.map((m) => m.text))
     const fresh = items.filter((m) => !known.has(m.text) && (known.add(m.text), true))
     if (!fresh.length) return
-    await writeStore([...list, ...fresh.map((m) => ({ id: uuid().slice(0, 8), text: m.text, time: Date.now(), owner_id: OWNER_DEFAULT, workspace_id: WORKSPACE_DEFAULT, ...(m.category ? { category: m.category } : {}), ...(m.label ? { label: m.label } : {}) }))],
+    await writeStore([...list, ...fresh.map((m) => ({ id: uuid().slice(0, 8), text: m.text, owner_id: OWNER_DEFAULT, workspace_id: WORKSPACE_DEFAULT, ...(m.category ? { category: m.category } : {}), ...(m.label ? { label: m.label } : {}) }))],
       withLog(memoryLogAtom.get(), fresh.map((m) => entry('add', m.text, source))))
   })
 }
 
 // e2e seam for the chooser interaction test (tests/test_e2e_memory_381.py); inert unless localStorage['comfyart.e2e'] === '1'
-try { if (globalThis.localStorage?.getItem('comfyart.e2e') === '1') (globalThis as { __comfyartMemory?: unknown }).__comfyartMemory = { forget, correct } } catch { /* no storage */ }
+try { if (globalThis.localStorage?.getItem('comfyart.e2e') === '1') (globalThis as { __comfyartMemory?: unknown }).__comfyartMemory = { forget, correct, load: loadMemory, list: () => memoryAtom.get(), log: () => memoryLogAtom.get() } } catch { /* no storage */ }

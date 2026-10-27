@@ -9,8 +9,11 @@ export { showMemoryToast } from '../memory'
 import { Icons } from './icons'
 import { Modal } from './Modal'
 
-/** 「10月27日 18:20」 (zh) / "Oct 27 18:20" (en), local time. */
-export function chooserTime(time: number): string {
+const validTime = (time: unknown): time is number => typeof time === 'number' && Number.isFinite(time) && time > 0
+
+/** 「10月27日 18:20」 (zh) / "Oct 27 18:20" (en), local time; '' for a legacy record without a valid time. */
+export function chooserTime(time: unknown): string {
+  if (!validTime(time)) return ''
   const d = new Date(time)
   const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   return lang === 'zh' ? `${d.getMonth() + 1}月${d.getDate()}日 ${hm}` : `${d.toLocaleString('en-US', { month: 'short' })} ${d.getDate()} ${hm}`
@@ -42,7 +45,7 @@ export function MemoryChooser() {
     } catch { /* the store already showed 保存失败，请重试 */ }
   }
   const danger = choice.action === 'forget'
-  const rows = [...choice.candidates].sort((a, b) => b.time - a.time)  // newest first
+  const rows = [...choice.candidates].sort((a, b) => (validTime(b.time) ? b.time : -Infinity) - (validTime(a.time) ? a.time : -Infinity) || 0)  // newest first, untimed last
   return createPortal(
     <Modal title={t(danger ? 'memory.choose.titleForget' : 'memory.choose.title', rows.length)} className="ca-rename ca-confirm" closable={false} onClose={close}>
       <div className="ca-rename__body" data-testid="memory-chooser">
@@ -52,7 +55,7 @@ export function MemoryChooser() {
             <label key={m.id} className="ca-mem-choose__row" data-testid="memory-chooser-row" data-id={m.id}>
               <input type="radio" name="ca-mem-choose" checked={picked === m.id} onChange={() => setPicked(m.id)} />
               <span className="ca-mem-choose__text">{m.text}</span>
-              <span className="ca-mem-choose__time" data-testid="memory-chooser-time">{chooserTime(m.time)}</span>
+              {chooserTime(m.time) ? <span className="ca-mem-choose__time" data-testid="memory-chooser-time">{chooserTime(m.time)}</span> : null}
             </label>
           ))}
         </div>

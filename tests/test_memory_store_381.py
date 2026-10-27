@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from pathlib import Path
 
 
 async def _get(c):
@@ -24,7 +25,8 @@ async def test_never_written_is_a_real_empty_store(bot_client, fresh_user_dir):
 async def test_write_stamps_owner_and_workspace_defaults_and_bumps_rev(bot_client, fresh_user_dir):
     status, st = await _post(bot_client, {"memory": [{"id": "a", "text": "x", "time": 1}]}, 0)
     assert status == 200 and st["rev"] == 1
-    assert st["memory"] == [{"id": "a", "text": "x", "time": 1, "owner_id": "local", "workspace_id": "local"}]
+    t = st["memory"][0].pop("time")
+    assert st["memory"] == [{"id": "a", "text": "x", "owner_id": "local", "workspace_id": "local"}] and t > 1_700_000_000_000  # server time, not the client's 1
     on_disk = json.loads((fresh_user_dir / "user/default/comfyart/memory-store.json").read_text())
     assert on_disk["rev"] == 1 and on_disk["memory"][0]["owner_id"] == "local" and on_disk["memory"][0]["workspace_id"] == "local"
     # explicit values are kept (not overwritten by the default)
@@ -146,3 +148,33 @@ def test_policy_is_shared_with_client():
     src = (pathlib.Path(mem.__file__).parent.parent / "src/memoryStore.ts").read_text()
     assert "memory_policy.json" in src
     assert "TODO(#381)" in (pathlib.Path(mem.__file__)).read_text() and "lease" in pathlib.Path(mem.__file__).read_text()
+
+
+async def test_record_time_is_server_authoritative(bot_client, fresh_user_dir, monkeypatch):
+    """#381 EL: create/update get the server clock (ms); any client-sent time is ignored; unchanged records keep theirs."""
+    from ComfyArt.api import memory as mem
+    clock = [1_793_096_400.0]
+    monkeypatch.setattr(mem.time, "time", lambda: clock[0])
+    _, st = await _post(bot_client, {"memory": [{"id": "a", "text": "x", "time": 5}, {"id": "b", "text": "y", "time": 9_999_999_999_999}]}, 0)  # past and future client times
+    assert [m["time"] for m in st["memory"]] == [1_793_096_400_000] * 2  # create: server time, client 5 dropped
+    clock[0] += 60
+    _, st = await _post(bot_client, {"memory": [{"id": "a", "text": "x2", "time": 9_999_999_999_999}, {"id": "b", "text": "y", "time": 1}]}, 1)
+    assert [m["time"] for m in st["memory"]] == [1_793_096_460_000, 1_793_096_400_000]  # update → now; unchanged keeps stored, ignores client
+    on_disk = json.loads((_store_dir(fresh_user_dir) / "memory-store.json").read_text())
+    assert [m["time"] for m in on_disk["memory"]] == [1_793_096_460_000, 1_793_096_400_000]
+    assert [m["time"] for m in (await _get(bot_client))["memory"]] == [1_793_096_460_000, 1_793_096_400_000]
+
+
+async def test_legacy_record_without_time_stays_untimed_until_edited(bot_client, fresh_user_dir):
+    d = _store_dir(fresh_user_dir); d.mkdir(parents=True, exist_ok=True)
+    (d / "memory-store.json").write_text(json.dumps({"memory": [{"id": "old", "text": "z"}], "log": [], "meta": {}, "rev": 3, "ops": []}))
+    _, st = await _post(bot_client, {"memory": [{"id": "old", "text": "z", "time": 42}]}, 3)
+    assert "time" not in st["memory"][0]  # client cannot backfill a time
+    _, st = await _post(bot_client, {"memory": [{"id": "old", "text": "z!"}]}, 4)
+    assert st["memory"][0]["time"] > 1_700_000_000_000
+
+
+def test_client_never_sends_record_time():
+    src = (Path(__file__).resolve().parents[1] / "src/memory.ts").read_text()
+    # Date.now() only stamps log entries; memory records get their time from the server
+    assert [l.strip().split(' =')[0] for l in src.splitlines() if "Date.now()" in l and "memoryToastAtom" not in l] == ["const entry"]

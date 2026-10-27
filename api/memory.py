@@ -18,6 +18,7 @@ import asyncio
 import json
 import os
 import secrets
+import time
 
 from aiohttp import web
 from server import PromptServer
@@ -48,8 +49,23 @@ def _paths(request: web.Request) -> dict[str, str]:
     return paths
 
 
-def stamp(record: dict) -> dict:
-    return {**record, "owner_id": record.get("owner_id") or OWNER_DEFAULT, "workspace_id": record.get("workspace_id") or WORKSPACE_DEFAULT}
+def _valid_time(v) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0
+
+
+def stamp(record: dict, prior: dict | None = None, now: int | None = None) -> dict:
+    """Owner/workspace defaults. On a write (`now` given) the record time is server-authoritative: any client-sent `time`
+    is dropped; a new record or a changed text gets `now` (ms); an unchanged record keeps its stored time (or none, for a
+    legacy record that never had one)."""
+    out = {**record, "owner_id": record.get("owner_id") or OWNER_DEFAULT, "workspace_id": record.get("workspace_id") or WORKSPACE_DEFAULT}
+    if now is None:
+        return out
+    out.pop("time", None)
+    if prior is None or prior.get("text") != record.get("text"):
+        out["time"] = now
+    elif _valid_time(prior.get("time")):
+        out["time"] = prior["time"]
+    return out
 
 
 def _load(paths: dict[str, str]) -> dict:
@@ -138,7 +154,8 @@ async def write_memory(request: web.Request) -> web.Response:
             return web.json_response({**_public(current), "replayed": True})
         if current["rev"] != base:
             return web.json_response({"error": "stale memory write", "state": _public(current)}, status=409)
-        nxt = {"memory": [stamp(m) for m in memory if isinstance(m, dict)], "log": log,
+        prior, now = {m.get("id"): m for m in current["memory"]}, int(time.time() * 1000)
+        nxt = {"memory": [stamp(m, prior.get(m.get("id")), now) for m in memory if isinstance(m, dict)], "log": log,
                "meta": {k: v for k, v in meta.items() if k != "rev"}, "rev": base + 1,
                "ops": ([*current["ops"], op] if op else current["ops"])[-OPS_KEPT:]}
         await asyncio.to_thread(atomic_write_json, paths["store"], nxt)
