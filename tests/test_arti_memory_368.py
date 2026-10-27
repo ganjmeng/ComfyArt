@@ -81,16 +81,16 @@ def test_assets_empty_add_flow() -> None:
     assert 'data-testid="arti-memory-assets-cancel"' in MEM
 
 
-def test_persists_via_memory_apis_and_local_demo() -> None:
-    assert "ensureArtiDemoMemories" in MEMORY_TS
+def test_persists_via_memory_apis_without_demo_seed() -> None:
+    # #381: demo seeding is gone; empty store shows guidance only (behavior: tests/test_memory_safety_381.py)
+    assert "ensureArtiDemoMemories" not in MEMORY_TS
     assert "updateMemory" in MEMORY_TS
     assert "removeMemory" in MEMORY_TS
-    assert "writeLocal" in MEMORY_TS
-    assert "LOCAL_FILE" in MEMORY_TS or "comfyart.memory.local" in MEMORY_TS
-    assert "saveMemory" in MEMORY_TS
+    assert "memoryStore()" in MEMORY_TS  # #381: one store interface (server only, src/memoryStore.ts)
+    assert "saveMemory" not in MEMORY_TS  # #381: removed — it resent stale state after a conflict
     # ArtiMemory loads + seeds through real APIs
     assert "loadMemory" in MEM
-    assert "ensureArtiDemoMemories" in MEM
+    assert "ensureArtiDemoMemories" not in MEM
     assert "updateMemory" in MEM
     assert "removeMemory" in MEM
 

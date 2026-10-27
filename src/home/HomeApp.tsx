@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import { t } from '../i18n'
 import { newProject, openView, type HomeView } from '../projects'
+import { MemoryChooser, MemoryToast } from '../ui/MemoryChooser'
 import { Confirm } from '../ui/Confirm'
 import { Icons } from '../ui/icons'
 import { KeySettings } from '../ui/KeySettings'
@@ -72,6 +73,8 @@ export function HomeApp({ view }: { view: View }) {
       </nav>
       <main className="ca-home__main">{main(view)}</main>
       <Confirm />
+      <MemoryChooser />
+      <MemoryToast />
       <KeySettings />
     </div>
   )

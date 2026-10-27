@@ -66,11 +66,10 @@ def test_capabilities_five_cards_honest_grey() -> None:
     assert "arti-cap-${cap.id}" in ARTI
     for cap in ("review", "research", "memory", "skills", "feedback"):
         assert f"id: '{cap}'" in ARTI
-    # 巡检 / 调研 honest grey + note — do not fake-enable
-    assert "arti-cap-${cap.id}-note" in ARTI
-    assert "arti.cap.comingSoon" in ARTI
+    # disabled caps: honest 「即将开放」 caption (#381 product), never fake-enabled
+    assert "arti-cap-${cap.id}-soon" in ARTI
+    assert "arti.cap.soon" in ARTI
     assert "disabled: true" in ARTI
-    assert "id === 'review'" in ARTI and "id === 'research'" in ARTI
     # feedback has no switch (CN)
     assert "noSwitch" in ARTI
     # switches for grey caps are disabled (no fake interactivity)
@@ -116,7 +115,7 @@ def test_i18n_keys_zh_en() -> None:
         assert '"arti.learnedTitle"' in blob
         assert '"arti.cap.review.title"' in blob
         assert '"arti.cap.research.title"' in blob
-        assert '"arti.cap.comingSoon"' in blob
+        assert '"arti.cap.comingSoon"' not in blob  # unused since the #381 product COMMENT
         assert '"arti.memoryPlaceholder"' in blob
     assert '"设计委托"' in ZH
     assert '"Arti"' in ZH

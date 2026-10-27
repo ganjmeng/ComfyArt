@@ -1,0 +1,10 @@
+{
+  "owner_default": "local",
+  "workspace_default": "local",
+  "max_retries": 5,
+  "backoff_base_ms": 20,
+  "backoff_max_ms": 400,
+  "network_retries": 1,
+  "op_ids_kept": 50,
+  "max_log": 500
+}

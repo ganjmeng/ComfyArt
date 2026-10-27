@@ -1,6 +1,9 @@
 import { useState } from 'react'
+import { useValue } from 'tldraw'
 
+import { settingsAtom } from '../bot'
 import { t } from '../i18n'
+import { ARTI_CAP_SETTINGS, artiCapOn } from './artiCaps'
 import { ArtiMemory } from './ArtiMemory'
 import { ArtiLevelAvatar } from '../ui/ArtiMascot'
 import { resolveArtiLevel } from '../artiLevel'
@@ -22,8 +25,8 @@ type Cap = {
 const CAPS: Cap[] = [
   { id: 'review', title: t('arti.cap.review.title'), desc: t('arti.cap.review.desc'), disabled: true, on: false },
   { id: 'research', title: t('arti.cap.research.title'), desc: t('arti.cap.research.desc'), disabled: true, on: false },
-  { id: 'memory', title: t('arti.cap.memory.title'), desc: t('arti.cap.memory.desc'), disabled: true, on: true },
-  { id: 'skills', title: t('arti.cap.skills.title'), desc: t('arti.cap.skills.desc'), disabled: true, on: true },
+  { id: 'memory', title: t('arti.cap.memory.title'), desc: t('arti.cap.memory.desc'), disabled: true, on: false },
+  { id: 'skills', title: t('arti.cap.skills.title'), desc: t('arti.cap.skills.desc'), disabled: true, on: false },
   { id: 'feedback', title: t('arti.cap.feedback.title'), desc: t('arti.cap.feedback.desc'), disabled: true, on: false, noSwitch: true },
 ]
 
@@ -45,18 +48,18 @@ function Switch({ on, disabled }: { on: boolean; disabled?: boolean }) {
 }
 
 function CapCard({ cap }: { cap: Cap }) {
-  const grey = cap.disabled && (cap.id === 'review' || cap.id === 'research')
+  // #381 product: every disabled switch card says exactly 「即将开放」; text stays full strength, only the switch looks disabled
+  const soon = cap.disabled && !cap.noSwitch
   return (
     <div
       className="ca-arti__cap"
       data-testid={`arti-cap-${cap.id}`}
       data-disabled={cap.disabled || undefined}
-      data-grey={grey || undefined}
     >
       <div className="ca-arti__capbody">
         <div className="ca-arti__captitle">{cap.title}</div>
         <div className="ca-arti__capdesc">{cap.desc}</div>
-        {grey ? <div className="ca-arti__capnote" data-testid={`arti-cap-${cap.id}-note`}>{t('arti.cap.comingSoon')}</div> : null}
+        {soon ? <div className="ca-arti__capsoon" data-testid={`arti-cap-${cap.id}-soon`}>{t('arti.cap.soon')}</div> : null}
       </div>
       {!cap.noSwitch ? <Switch on={cap.on} disabled={cap.disabled} /> : null}
     </div>
@@ -96,6 +99,7 @@ function LearnedBody({ tab }: { tab: LearnedTab }) {
 /** #367: account-level /arti home shell — level card + capabilities + learned tabs. */
 export function Arti() {
   const [tab, setTab] = useState<LearnedTab>('memory')
+  const settings = useValue(settingsAtom)
   return (
     <div className="ca-arti" data-testid="arti-page">
       <section className="ca-arti__level" data-testid="arti-level-card">
@@ -115,7 +119,7 @@ export function Arti() {
       <section className="ca-arti__section" data-testid="arti-capabilities">
         <h2 className="ca-arti__sectiontitle">{t('arti.canDoTitle')}</h2>
         <div className="ca-arti__caps">
-          {CAPS.map((c) => <CapCard key={c.id} cap={c} />)}
+          {CAPS.map((c) => <CapCard key={c.id} cap={c.id in ARTI_CAP_SETTINGS ? { ...c, on: artiCapOn(c.id, settings) } : c} />)}
         </div>
       </section>
 

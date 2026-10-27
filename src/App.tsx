@@ -35,6 +35,7 @@ import { BatchRename } from './ui/BatchRename'
 import { CanvasMenu } from './ui/CanvasMenu'
 import { CanvasTools } from './ui/CanvasTools'
 import { CommentPanel } from './ui/CommentPanel'
+import { MemoryChooser, MemoryToast } from './ui/MemoryChooser'
 import { Confirm } from './ui/Confirm'
 import { Dock } from './ui/Dock'
 import { DropHandlers } from './ui/DropHandlers'
@@ -313,6 +314,8 @@ export function App({ id }: { id: string }) {
       <Shortcuts />
       <KitEditor onError={setError} />
       <Confirm />
+      <MemoryChooser />
+      <MemoryToast />
       {editor && <BatchRename editor={editor} />}
       {editor && <Lightbox editor={editor} />}
       {editor && <Slideshow editor={editor} />}

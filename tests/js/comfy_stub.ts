@@ -6,7 +6,7 @@ export const readUserJson = async (p: string, d: unknown) => (p in files ? JSON.
 export const writeUserText = async (p: string, s: string) => { files[p] = s }
 export const writeUserJson = async (p: string, v: unknown) => { files[p] = JSON.stringify(v) }
 export const setWsHook = () => {}
-export const api = async (_url: string, init?: { body: string }) => (init ? g.__check(JSON.parse(init.body)) : { ok: false })
+export const api = async (url: string, init?: { body: string }) => (g.__server ? g.__server(url, init) : init ? g.__check(JSON.parse(init.body)) : { ok: false })
 export const loadModelPaths = async () => ({})
 // #130: render-path stand-ins; every call is recorded so a test can prove nothing was queued or uploaded.
 export const calls: string[] = []

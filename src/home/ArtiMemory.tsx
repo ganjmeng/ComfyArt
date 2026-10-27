@@ -4,15 +4,16 @@ import { useValue } from 'tldraw'
 import { t } from '../i18n'
 import {
   MEMORY_CATEGORIES,
-  ensureArtiDemoMemories,
   loadMemory,
   memoryAtom,
+  memoryErrorAtom,
   remember,
   removeMemory,
   updateMemory,
   type Memory,
 } from '../memory'
 import { confirmAtom } from '../ui/Confirm'
+import { showMemoryToast } from '../memory'
 import { Icons } from '../ui/icons'
 import { isEnter } from '../ui/keys'
 
@@ -45,10 +46,10 @@ function MemoryRow({
     setMenuId(null)
     confirmAtom.set({
       title: t('arti.memory.deleteTitle'),
-      desc: t('arti.memory.deleteDesc', item.text.slice(0, 80)),
+      desc: t('arti.memory.deleteDesc', item.text),
       ok: t('common.delete'),
       danger: true,
-      run: () => { void removeMemory(item.id, t('arti.memory.sourceManual')) },
+      run: () => { void removeMemory(item.id, t('arti.memory.sourceManual')).then((ok) => { if (ok) showMemoryToast(t('arti.memory.deletedToast')) }, () => undefined) },
     })
   }
   return (
@@ -258,6 +259,7 @@ function MemoryGroup({
   setMenuId,
   addingAssets,
   setAddingAssets,
+  allEmpty,
 }: {
   cat: CatId
   items: Memory[]
@@ -267,6 +269,7 @@ function MemoryGroup({
   setMenuId: (id: string | null) => void
   addingAssets: boolean
   setAddingAssets: (v: boolean) => void
+  allEmpty: boolean
 }) {
   return (
     <section className="ca-arti-mem__group" data-testid={`arti-memory-group-${cat}`}>
@@ -294,7 +297,7 @@ function MemoryGroup({
             {t('arti.memory.addAssets')}
           </button>
         ) : null}
-        {cat !== 'assets' && items.length === 0 ? (
+        {cat !== 'assets' && items.length === 0 && !allEmpty ? (
           <div className="ca-arti-mem__empty" data-testid={`arti-memory-empty-${cat}`}>{t('arti.memory.groupEmpty')}</div>
         ) : null}
       </div>
@@ -305,6 +308,7 @@ function MemoryGroup({
 /** #368: Arti memory center — four groups + inline edit + chat-to-edit (mock-first). */
 export function ArtiMemory() {
   const memory = useValue(memoryAtom)
+  const loadError = useValue(memoryErrorAtom)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [menuId, setMenuId] = useState<string | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
@@ -312,9 +316,8 @@ export function ArtiMemory() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    void loadMemory()
-      .then(() => ensureArtiDemoMemories())
-      .finally(() => setReady(true))
+    // #381: an empty store stays empty — guidance copy only, nothing is seeded
+    void loadMemory().finally(() => setReady(true))
   }, [])
 
   useEffect(() => {
@@ -333,7 +336,14 @@ export function ArtiMemory() {
   return (
     <div className="ca-arti-mem" data-testid="arti-memory-center">
       {!ready ? <div className="ca-chat__hint">{t('arti.memory.loading')}</div> : null}
-      <div className="ca-arti-mem__groups" data-testid="arti-memory-groups">
+      {/* #381: the server is the only truth; when it can't be read we show an error, never a stale/local list */}
+      {loadError ? (
+        <div className="ca-arti-mem__guide" role="alert" data-testid="arti-memory-error">
+          {t('arti.memory.loadFailed')}{' '}
+          <button type="button" className="ca-arti-mem__retry" data-testid="arti-memory-retry" onClick={() => void loadMemory()}>{t('arti.memory.retry')}</button>
+        </div>
+      ) : null}
+      {!loadError ? <div className="ca-arti-mem__groups" data-testid="arti-memory-groups">
         {(['about', 'work', 'taste', 'assets'] as CatId[]).map((cat) => (
           <MemoryGroup
             key={cat}
@@ -345,9 +355,14 @@ export function ArtiMemory() {
             setMenuId={setMenuId}
             addingAssets={addingAssets}
             setAddingAssets={setAddingAssets}
+            allEmpty={ready && memory.length === 0}
           />
         ))}
-      </div>
+      </div> : null}
+
+      {ready && !loadError && memory.length === 0 ? (
+        <div className="ca-arti-mem__guide" data-testid="arti-memory-empty-guide">{t('arti.memory.emptyGuide')}</div>
+      ) : null}
 
       <div className="ca-arti-mem__sticky" data-testid="arti-memory-chat-cta">
         {chatOpen ? (

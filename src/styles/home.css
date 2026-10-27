@@ -145,7 +145,8 @@ body { background: var(--ca-float); }
   padding: 14px 16px; border: var(--ca-border-w) solid var(--ca-border);
   border-radius: 12px; background: var(--ca-float);
 }
-.ca-arti__cap[data-grey] { opacity: .72; }
+/* #381: dim the parts, not the card, so the 即将开放 caption keeps its own token contrast */
+.ca-arti__cap[data-disabled] .ca-switch { opacity: .72; }
 .ca-arti__capbody { flex: 1; min-width: 0; }
 .ca-arti__captitle { font: 500 14px/22px var(--ca-font); }
 .ca-arti__capdesc { margin-top: 2px; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
@@ -295,3 +296,28 @@ body { background: var(--ca-float); }
   image-rendering: crisp-edges;
   border-radius: 10px;
 }
+/* #381: empty-state line, multi-match chooser (delete-confirm style), top-left toast, /arti 即将开放 */
+.ca-arti-mem__guide { margin: 8px 0 12px; text-align: center; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
+.ca-arti-mem__retry { padding: 0; border: none; background: none; color: var(--ca-text); font: inherit; text-decoration: underline; cursor: pointer; }
+/* confirm-style dialogs (Confirm, memory chooser): bold title like Lovart, no ✕ (product: only 取消 + 删除) */
+.ca-confirm > .ca-side__head { font-weight: 600; }
+/* chooser: 5 rows visible; a visible scrollbar + bottom fade tell the user more rows are below */
+.ca-mem-choose__scroll { position: relative; flex: none; }
+.ca-mem-choose__scroll[data-more]::after { content: ""; position: absolute; right: 10px; bottom: 0; left: 0; height: 28px; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--ca-float)); }
+.ca-mem-choose__list { display: flex; flex: none; flex-direction: column; gap: 4px; max-height: calc(5 * 36px + 4 * 4px); overflow-y: auto; padding-right: 10px; scrollbar-width: none; }
+.ca-mem-choose__list::-webkit-scrollbar { display: none; }
+.ca-mem-choose__bar { position: absolute; top: 0; right: 0; bottom: 0; width: 4px; border-radius: 2px; background: var(--ca-scroll-track); pointer-events: none; }
+.ca-mem-choose__bar > i { position: absolute; right: 0; left: 0; border-radius: 2px; background: var(--ca-scroll-thumb); }
+.ca-mem-choose__row { display: flex; flex: none; align-items: flex-start; gap: 8px; box-sizing: border-box; min-height: 36px; margin: 0; padding: 8px; border-radius: 8px; cursor: pointer; font: 400 13px/20px var(--ca-font); }
+.ca-mem-choose__row:hover { background: var(--ca-hover); }
+.ca-mem-choose__row input { flex: none; width: 14px; height: 14px; margin: 3px 0 0; padding: 0; accent-color: var(--ca-strong); }
+.ca-mem-choose__text { flex: 1; min-width: 0; }
+.ca-mem-choose__time { flex: none; margin-left: 12px; color: var(--ca-text-2); font: 400 12px/20px var(--ca-font); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ca-confirm .ca-panel__primary:not(.ca-panel__danger) { background: var(--ca-strong); color: var(--ca-float); }
+/* toast: Lovart size (≈120×48, 14px text, 16px icon) */
+.ca-mem-toast { position: fixed; top: 16px; left: 72px; display: flex; align-items: center; gap: 8px; z-index: 3000; box-sizing: border-box; min-height: 48px; padding: 12px 20px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 14px; background: var(--ca-float); color: var(--ca-text); font: 500 14px/24px var(--ca-font); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.ca-mem-toast__icon { color: #e53935; width: 16px; height: 16px; }
+.ca-mem-toast__icon svg { width: 16px; height: 16px; }
+/* '即将开放': secondary text token straight, never under the disabled switch's opacity */
+.ca-arti__capsoon { margin-top: 4px; color: var(--ca-text-2); opacity: 1; font: 400 12px/18px var(--ca-font); }
+:root:not([data-theme="dark"]) .ca-switch:disabled { box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); background: rgba(0,0,0,.08); opacity: .7; }
