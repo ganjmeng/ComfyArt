@@ -523,7 +523,7 @@ span.arti-mascot { cursor: default; pointer-events: none; }
 .arti-mascot--play,
 .arti-mascot--typing,
 .arti-mascot--hover {
-  animation: arti-mascot-play var(--mascot-duration, 4250ms) steps(var(--mascot-frames, 17)) 1 both;
+  animation: arti-mascot-play var(--mascot-duration, 4250ms) steps(var(--mascot-frames, 17)) 1 none;
 }
 
 .arti-mascot--hover {
@@ -536,7 +536,7 @@ span.arti-mascot { cursor: default; pointer-events: none; }
   animation-duration: var(--mascot-duration, 4250ms), 200ms;
   animation-timing-function: steps(var(--mascot-frames, 17)), ease-out;
   animation-iteration-count: 1, 1;
-  animation-fill-mode: both, both;
+  animation-fill-mode: none, both;
 }
 
 @keyframes arti-mascot-fade {

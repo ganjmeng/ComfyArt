@@ -7,6 +7,8 @@ Lv.1/2/3 -> sheet mapping swaps, hover lift and top:-29px peek.
 """
 from __future__ import annotations
 
+import os
+
 import pytest
 
 pw = pytest.importorskip("playwright.async_api")
@@ -16,20 +18,27 @@ from test_e2e_default_agent import pytestmark  # noqa: E402,F401
 FRAMES, FRAME_MS = 17, 250
 DURATION_MS = FRAMES * FRAME_MS  # 4250
 FRAME_W = 50  # px per sprite frame
+VALID = {float(-FRAME_W * k) for k in range(FRAMES)} | {0.0}
 M = "[data-testid=arti-mascot]"
+SHOT_DIR = os.environ.get("AGENT_SHOTS")
 
 READ = """(cls) => {
   const m = document.querySelector('[data-testid=arti-mascot]');
-  if (cls) { m.classList.remove('arti-mascot--hover','arti-mascot--typing','arti-mascot--play'); m.classList.add(cls); }
+  if (cls) { m.classList.remove('arti-mascot--hover','arti-mascot--typing','arti-mascot--play'); void getComputedStyle(m).animationName; if (cls) m.classList.add(cls); }
   const cs = getComputedStyle(m);
   const a = m.getAnimations().find(x => x.animationName === 'arti-mascot-play');
   const out = { names: cs.animationName, durations: cs.animationDuration, timing: cs.animationTimingFunction,
                 bgSize: cs.backgroundSize, width: m.getBoundingClientRect().width, anim: !!a };
   if (a) {
     a.pause();
+    const t = a.effect.getComputedTiming(); out.animDuration = t.duration; out.fill = t.fill;
     a.currentTime = FRAME_MS + 1; out.pos1 = getComputedStyle(m).backgroundPosition;
-    a.currentTime = DURATION; out.endPos = getComputedStyle(m).backgroundPosition;
-    const t = a.effect.getComputedTiming(); out.animDuration = t.duration; out.steps = []; for (let k = 0; k <= FRAMES; k++) { a.currentTime = Math.min(k * FRAME_MS + 1, DURATION); out.steps.push(getComputedStyle(m).backgroundPosition); }
+    out.steps = []; for (let k = 0; k < FRAMES; k++) { a.currentTime = k * FRAME_MS + 1; out.steps.push(getComputedStyle(m).backgroundPosition); }
+    out.grid = []; for (let ms = 0; ms <= DURATION + 400; ms += 10) { a.currentTime = ms; out.grid.push(getComputedStyle(m).backgroundPosition); }
+    a.currentTime = DURATION + 350; out.afterEnd = getComputedStyle(m).backgroundPosition;
+    // keyframes end value (resolved): temporarily hold the end state, then restore
+    a.effect.updateTiming({ fill: 'forwards' }); a.currentTime = DURATION; out.endPos = getComputedStyle(m).backgroundPosition;
+    a.effect.updateTiming({ fill: t.fill });
   }
   return out;
 }""".replace("FRAMES", str(FRAMES)).replace("FRAME_MS", str(FRAME_MS)).replace("DURATION", str(DURATION_MS))
@@ -48,7 +57,15 @@ async def _open(p, url, level=1, theme="dark"):
 
 
 def _px(s: str) -> float:
-    return float(s.split()[0].replace("px", ""))
+    x = s.split()[0]
+    if x.endswith("%"):
+        assert float(x[:-1]) == 0, f"unexpected % position {s}"
+        return 0.0
+    return float(x.replace("px", ""))
+
+
+def _zero(s: str) -> bool:
+    return all(v in ("0", "0px", "0%") for v in s.split())
 
 
 def _assert_play(st, label):
@@ -57,13 +74,17 @@ def _assert_play(st, label):
     assert st["durations"].split(", ")[0] == "4.25s", f"{label}: duration {st['durations']}"
     assert st["animDuration"] == DURATION_MS, f"{label}: {st['animDuration']}"
     assert st["timing"].split(", ")[0] in ("steps(17)", "steps(17, end)"), f"{label}: {st['timing']}"
-    # full strip end only: -(17 x 50px) = -850px, so every step is exactly one 50px frame
+    # keyframes end at the full strip (-(17 x 50px) = -850px) so every step is exactly one 50px frame
     w = st["width"]
     assert w == 50, f"{label}: width {w}"
-    assert st["endPos"].split()[0] == "-850px", f"{label}: end {st['endPos']}"
+    assert st["endPos"].split()[0] == "-850px", f"{label}: keyframes end {st['endPos']}"
     xs = [_px(p) for p in st["steps"]]
-    assert xs == [-FRAME_W * k for k in range(FRAMES)] + [-FRAME_W * FRAMES], f"{label}: steps {st['steps']}"
-    assert all(xs[k] - xs[k + 1] == FRAME_W for k in range(FRAMES)), f"{label}: step sizes {xs}"
+    assert xs == [-FRAME_W * k for k in range(FRAMES)], f"{label}: steps {st['steps']}"
+    # never blank: no fill hold; after play ends it is frame 0; no sampled time shows -850px
+    assert st["fill"] in ("none", "auto"), f"{label}: fill {st['fill']}"
+    assert _zero(st["afterEnd"]), f"{label}: after end {st['afterEnd']}"
+    bad = sorted({p for p in st["grid"] if _px(p) not in VALID})
+    assert not bad, f"{label}: positions outside frames 0..16: {bad}"
     assert st["pos1"].split()[0] not in ("0%", "0px"), f"{label}: frame 1 did not advance ({st['pos1']})"
 
 
@@ -137,5 +158,39 @@ async def test_371_peek_top_29_and_hover_lift(app_url):  # noqa: F811
             h = await pg.evaluate(geo)
             assert h["tf"] == "matrix(1, 0, 0, 1, 0, -11)", h
             assert round(h["dm"]) == -40, h  # -29 - 11 lift (relative to composer padding edge)
+        finally:
+            await browser.close()
+
+
+@pytest.mark.parametrize("theme", ["dark", "light"])
+async def test_371_realtime_play_never_blank_back_to_frame0(app_url, theme):  # noqa: F811
+    async with pw.async_playwright() as p:
+        try:
+            browser, pg = await _open(p, app_url, theme=theme)
+        except Exception as e:
+            pytest.skip(f"chromium: {e}")
+        try:
+            await pg.hover(M)
+            samples = await pg.evaluate("""() => new Promise(res => {
+              const m = document.querySelector('[data-testid=arti-mascot]'); const out = []; const t0 = performance.now();
+              const tick = () => { out.push(getComputedStyle(m).backgroundPosition);
+                if (performance.now() - t0 < 4600) requestAnimationFrame(tick); else res(out); };
+              requestAnimationFrame(tick); })""")
+            assert len(samples) > 50, len(samples)
+            bad = sorted({s for s in samples if _px(s) not in VALID})
+            assert not bad, f"positions outside frames 0..16 during real hover play: {bad}"
+            assert len({_px(s) for s in samples}) >= 10, "animation did not advance through frames"
+            end = await pg.evaluate("getComputedStyle(document.querySelector('[data-testid=arti-mascot]')).backgroundPosition")
+            assert await pg.locator(M).get_attribute("data-trigger") == "hover"
+            assert _zero(end), f"after play ends (t~4600ms) must be frame 0, got {end}"
+            # pixels: the badge must not be blank after play ends (mascot body drawn, not just background)
+            from io import BytesIO
+            from PIL import Image
+            png = await pg.locator(M).screenshot(path=os.path.join(SHOT_DIR, f"mascot-lv1-hover-t4600-frame0-{theme}.png") if SHOT_DIR else None)
+            im = Image.open(BytesIO(png)).convert("RGB")
+            bg = im.getpixel((1, 1))
+            raw = im.tobytes()
+            diff = sum(1 for i in range(0, len(raw), 3) if sum(abs(raw[i + j] - bg[j]) for j in range(3)) > 60)
+            assert diff > im.width * im.height * 0.15, f"{theme}: mascot blank after play end ({diff} non-bg px of {im.width * im.height})"
         finally:
             await browser.close()
