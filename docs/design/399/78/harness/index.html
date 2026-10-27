@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Loomi #399 harness</title>
+<style>
+  :root { --ca-float:#fff; --ca-strong:rgba(0,0,0,.9); --ca-text:rgba(0,0,0,.9); --ca-border:rgba(0,0,0,.07); --ca-hover:rgba(0,0,0,.06); --ca-font: Inter, system-ui, sans-serif; }
+  :root[data-theme=dark] { --ca-float:#161616; --ca-strong:rgba(255,255,255,.92); --ca-text:rgba(255,255,255,.9); --ca-border:rgba(255,255,255,.1); --ca-hover:rgba(255,255,255,.08); color-scheme:dark; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--ca-float); color:var(--ca-text); font:400 14px/22px var(--ca-font); }
+  .shell { display:flex; height:100%; }
+  .rail { width:56px; padding:12px 10px; border-right:1px solid var(--ca-border); display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .ca-rail__logo { display:inline-flex; width:30px; height:30px; margin-bottom:12px; color:var(--ca-strong); }
+  .ca-brand-mark { display:inline-flex; width:100%; height:100%; color:inherit; }
+  .ca-brand-mark svg { width:100%; height:100%; display:block; overflow:visible; }
+  .ca-brand-mark .lm-body { fill:currentColor; }
+  .ca-brand-mark .lm-cut { fill:var(--ca-float); stroke:var(--ca-float); }
+  .ca-brand-mark .lm-star .lm-cut { stroke:none; }
+  .ca-brand-mark .lm-smile { fill:none; stroke-dasharray:none; stroke-dashoffset:0; opacity:1; }
+  .main { flex:1; padding:48px 32px; }
+  .title { font:600 28px/36px Geist, Inter, system-ui, sans-serif; margin:0 0 8px; }
+  .meta { color:rgba(127,127,127,.9); }
+  .head { display:flex; align-items:center; gap:8px; height:40px; padding:0 12px; border-bottom:1px solid var(--ca-border); }
+  .ca-head__logo { display:inline-flex; width:24px; height:24px; color:var(--ca-strong); }
+  .name { font:500 13px/20px var(--ca-font); }
+  .row { display:flex; gap:24px; margin-top:32px; flex-wrap:wrap; }
+  .card { width:280px; padding:16px; border:1px solid var(--ca-border); border-radius:12px; }
+  .card img { width:64px; height:64px; }
+</style>
+</head>
+<body>
+<div class="shell" data-testid="harness">
+  <nav class="rail">
+    <span class="ca-rail__logo" id="rail-mark"></span>
+  </nav>
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+    <div class="head">
+      <span class="ca-head__logo" id="head-mark"></span>
+      <span class="name" id="brand-name">…</span>
+    </div>
+    <main class="main">
+      <h1 class="title" id="page-title">…</h1>
+      <p class="meta">#399 Loomi rebrand harness — brand mark + title from brand.config.js</p>
+      <div class="row">
+        <div class="card"><div>favicon</div><img id="fav" alt="" /></div>
+        <div class="card"><div>apple-touch</div><img id="apple" alt="" style="width:80px;height:80px;border-radius:16px" /></div>
+        <div class="card"><div>og light</div><img id="og" alt="" style="width:200px;height:auto" /></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="/public/brand/brand.config.js"></script>
+<script>
+  const B = window.BRAND_CONFIG;
+  // Harness serves repo root; rewrite /comfyart/brand → /public/brand for icons
+  const icon = (p) => p.replace('/comfyart/brand/', '/public/brand/');
+  document.title = B.pageTitle;
+  document.getElementById('brand-name').textContent = B.name;
+  document.getElementById('page-title').textContent = B.pageTitle;
+  document.getElementById('rail-mark').innerHTML = '<span class="ca-brand-mark" aria-label="'+B.name+'">'+B.logoSvg+'</span>';
+  document.getElementById('head-mark').innerHTML = '<span class="ca-brand-mark" aria-label="'+B.name+'">'+B.logoSvg+'</span>';
+  document.getElementById('fav').src = icon(B.icons.svg);
+  document.getElementById('apple').src = icon(B.icons.appleTouch);
+  document.getElementById('og').src = icon(B.icons.ogLight);
+  const theme = new URLSearchParams(location.search).get('theme') || 'light';
+  document.documentElement.dataset.theme = theme;
+</script>
+</body>
+</html>

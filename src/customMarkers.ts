@@ -1,3 +1,4 @@
+import { BRAND } from './brand'
 import { api } from './comfy'
 import { lang, t } from './i18n'
 
@@ -9,11 +10,11 @@ export type CustomGroup = 'image' | 'edit' | 'tools' | 'video'
 interface ActionSpec { id: CustomAction; group: CustomGroup; required: Marker[]; optional: Marker[]; feature: string; note: string }
 
 // Cloud version of upstream's custom workflows: a "workflow" is a WaveSpeed model id plus a mapping of
-// ComfyArt's values (the same @markers) onto that model's request fields.
+// ComfyArt values (the same @markers) onto that model's request fields.
 export const CUSTOM_ACTIONS: ActionSpec[] = [
   { id: 'generate', group: 'image', required: ['prompt', 'size'], optional: ['count'], feature: 'text_to_image', note: 'Text to image. Shows up as an extra model in the image generator. Reference and base images are not passed.' },
   { id: 'edit', group: 'edit', required: ['image', 'prompt'], optional: [], feature: 'image_edit', note: 'Instruction edit: quick edit, edit text, compose and mockup blending. @prompt receives the edit instruction.' },
-  { id: 'style', group: 'edit', required: ['image', 'prompt'], optional: ['image2'], feature: 'image_edit', note: 'Style transfer. @image2 is the style reference; without one ComfyArt passes the source image again.' },
+  { id: 'style', group: 'edit', required: ['image', 'prompt'], optional: ['image2'], feature: 'image_edit', note: 'Style transfer. @image2 is the style reference; without one ' + BRAND.name + ' passes the source image again.' },
   { id: 'inpaint', group: 'edit', required: ['image', 'prompt'], optional: [], feature: 'image_edit', note: 'Edit a region: @prompt names the area to change and what to do there.' },
   { id: 'expand', group: 'edit', required: ['image', 'prompt'], optional: ['size'], feature: 'expand_image', note: 'Outpaint. @size receives the new canvas size.' },
   { id: 'angles', group: 'edit', required: ['image'], optional: ['prompt'], feature: 'change_angle', note: 'horizontal_angle is sent in 0..359 (360 becomes 0; a non-finite value becomes 0), plus vertical_angle and distance. The panel sentence is a caption only; cloud calls do not send it as prompt.' },
@@ -99,10 +100,10 @@ export function rulesText(): string {
   const markers = MARKERS.map((m) => `- @${m.id}: ${m.fill}`).join('\n')
   const actions = CUSTOM_ACTIONS.map((a) => `- ${a.id}: needs ${a.required.map((m) => `@${m}`).join(', ')}${a.optional.length ? `; optional ${a.optional.map((m) => `@${m}`).join(', ')}` : ''}. ${a.note}`).join('\n')
   return [
-    'Connect a WaveSpeed model of the user\'s choice to a ComfyArt feature. ComfyArt runs every feature on WaveSpeed; a custom workflow swaps the built-in model for another one and says which request field gets each value.',
-    'Steps:\n1. A workflow is a JSON object: {"model": "owner/model-name", "fields": {"@prompt": "prompt", "@image": "image"}, "params": {"num_inference_steps": 30}}. model is a WaveSpeed model id (wavespeed.ai/models). fields maps ComfyArt markers to the model\'s request field names; common names (prompt, image, images, mask_image, size, aspect_ratio, duration, last_image) are filled automatically, so fields is only needed for other names. params are fixed values sent on every run. Do not invent fields the model does not have.\n2. Pick the feature (action) below.\n3. Call custom_workflow with action check, the workflow and the feature; fix every error it reports (unknown model, field the model does not accept, required field left empty).\n4. Call custom_workflow with action install, a short name, the workflow and the feature. It saves the file to comfyart/workflows/<feature>/ in the ComfyUI user folder and assigns it to that feature. There is no delete: to remove a workflow, the user deletes its file there.\n5. Tell the user which feature now uses it; assign with file "" switches back to built in.',
-    `Markers (ComfyArt values a field can receive):\n${markers}`,
+    `Connect a WaveSpeed model of the user's choice to a ${BRAND.name} feature. ${BRAND.name} runs every feature on WaveSpeed; a custom workflow swaps the built-in model for another one and says which request field gets each value.`,
+    `Steps:\n1. A workflow is a JSON object: {"model": "owner/model-name", "fields": {"@prompt": "prompt", "@image": "image"}, "params": {"num_inference_steps": 30}}. model is a WaveSpeed model id (wavespeed.ai/models). fields maps ${BRAND.name} markers to the model's request field names; common names (prompt, image, images, mask_image, size, aspect_ratio, duration, last_image) are filled automatically, so fields is only needed for other names. params are fixed values sent on every run. Do not invent fields the model does not have.\n2. Pick the feature (action) below.\n3. Call custom_workflow with action check, the workflow and the feature; fix every error it reports (unknown model, field the model does not accept, required field left empty).\n4. Call custom_workflow with action install, a short name, the workflow and the feature. It saves the file to comfyart/workflows/<feature>/ in the ComfyUI user folder and assigns it to that feature. There is no delete: to remove a workflow, the user deletes its file there.\n5. Tell the user which feature now uses it; assign with file "" switches back to built in.`,
+    `Markers (${BRAND.name} values a field can receive):\n${markers}`,
     `Features:\n${actions}`,
-    'Runs are billed by WaveSpeed at the chosen model\'s price; jobs of $0.50 or more ask the user first. Features not listed above (storyboard, video extend, creative upscale, move object, video upscale) always use the built-in models.',
+    `Runs are billed by WaveSpeed at the chosen model's price; jobs of $0.50 or more ask the user first. Features not listed above (storyboard, video extend, creative upscale, move object, video upscale) always use the built-in models.`,
   ].join('\n\n')
 }

@@ -10,7 +10,7 @@ Repository = "https://github.com/jtydhr88/ComfyArt"
 
 [tool.comfy]
 PublisherId = "jtydhr88"
-DisplayName = "ComfyArt"
+DisplayName = "Loomi"
 Icon = ""
 includes = ["dist"]
 

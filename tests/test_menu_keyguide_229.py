@@ -60,7 +60,7 @@ def test_home_shows_existing_no_key_notice_on_open():
 def test_notice_copy_unchanged():
     zh = json.loads((ROOT / "src/locales/zh.json").read_text())
     en = json.loads((ROOT / "src/locales/en.json").read_text())
-    assert zh["agentPanel.noWavespeedKey"] == "还没有设置 WaveSpeed Key，ComfyArt Agent 暂时不能用。"
+    assert zh["agentPanel.noWavespeedKey"] == "还没有设置 WaveSpeed Key，{brand} Agent 暂时不能用。"
     assert zh["agentPanel.setWavespeedKey"] == "去设置 Key" and en["agentPanel.setWavespeedKey"] == "Set key"
 
 

@@ -1,4 +1,4 @@
-"""#219: a new user's left Agent panel defaults to ComfyArt Agent (built-in) even with claude/codex detected;
+"""#219: a new user's left Agent panel defaults to Loomi Agent (built-in) even with claude/codex detected;
 undetected tools are greyed with 未检测到 / Not detected; no WaveSpeed key shows a clear notice linking to key
 settings. Provider probes are mocked; nothing paid is called ($0)."""
 from __future__ import annotations
@@ -86,7 +86,7 @@ BAR_FITS = """() => {
 NAME_CLIPPED: dict = {}  # agent short name -> truncated with an ellipsis at the default width (reported, not failed)
 
 
-async def _bar_fits(pg, agent="ComfyArt"):
+async def _bar_fits(pg, agent="Loomi"):
     bar = await pg.evaluate(BAR_FITS)
     assert bar["modes"] == [agent], bar  # #246: one mode button, logo + short agent name + chevron
     assert not bar["overlap"] and not bar["overflow"], bar
@@ -109,7 +109,7 @@ def _shot(name):
 @pytest.mark.parametrize("lang", ["zh", "en"])
 async def test_new_user_defaults_to_builtin_and_can_switch(app_url, fake_tools, monkeypatch, lang):  # noqa: F811
     monkeypatch.setenv("WAVESPEED_API_KEY", "mock-key-not-real")
-    builtin = "ComfyArt Agent（内置）" if lang == "zh" else "ComfyArt Agent (built-in)"
+    builtin = "Loomi Agent（内置）" if lang == "zh" else "Loomi Agent (built-in)"
     nd = "未检测到" if lang == "zh" else "Not detected"
     async with pw.async_playwright() as p:
         try:
@@ -123,7 +123,7 @@ async def test_new_user_defaults_to_builtin_and_can_switch(app_url, fake_tools, 
         assert await pg.get_by_text("还没有开启" if lang == "zh" else "not enabled yet").count() == 0
         trigger = pg.locator(".ca-composer__mode").first
         await trigger.wait_for()
-        assert (await trigger.inner_text()).strip() == "ComfyArt"
+        assert (await trigger.inner_text()).strip() == "Loomi"
         assert await trigger.get_attribute("title") == builtin  # hover: the agent's full name
         await _bar_fits(pg)  # default panel width: 'Agent ⌄ ComfyArt ⌄' both in full
         if SHOTS:
@@ -218,7 +218,7 @@ async def test_external_tool_confirm_cancel_keeps_builtin(app_url, fake_tools, m
         await dialog.locator(".ca-panel__secondary").click()  # cancel
         await pg.wait_for_timeout(800)
         assert await pg.locator(".ca-modal").count() == 0
-        assert (await trigger.inner_text()).strip() == "ComfyArt"
+        assert (await trigger.inner_text()).strip() == "Loomi"
         assert _s.get_setting("enable-mcp") is False
         assert _s.get_setting("bot-provider") == "local-llm"
         await browser.close()

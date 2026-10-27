@@ -133,7 +133,7 @@ const assets: TLAssetStore = {
   },
 }
 
-export function App({ id }: { id: string }) {
+export function App({ id, onCanvasReady }: { id: string; onCanvasReady?: () => void }) {
   const [editor, setEditor] = useState<Editor | null>(null)
   const setError = reportError
   const chat = useValue(chatViewAtom)
@@ -196,6 +196,7 @@ export function App({ id }: { id: string }) {
         const content = editor.getCurrentPageBounds()
         if (content) editor.zoomToBounds(content, { targetZoom: 1 })
         editor.clearHistory()
+        onCanvasReady?.()
         stopJobs = resumeJobs(editor, setError)
         stopScheduler = startScheduler(editor, setError)
         stopProactive = startProactive(editor, setError)
@@ -218,6 +219,7 @@ export function App({ id }: { id: string }) {
       })
       .catch((e) => {
         if (!alive) return
+        onCanvasReady?.()
         if (new URL(location.href).searchParams.has('ask')) restoreHandoff(setError, [t('app.createFailed'), String(e)].join(' '))
         else setError(String(e))
       })
@@ -238,7 +240,7 @@ export function App({ id }: { id: string }) {
       channel.close()
       stopAutosave()
     }
-  }, [editor, id])
+  }, [editor, id, onCanvasReady])
 
   return (
     <div className="ca-root" data-chat={chat} data-dock={dock}>
