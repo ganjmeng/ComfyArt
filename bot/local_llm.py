@@ -1189,6 +1189,29 @@ class LocalLlmProvider(AgentProvider):
         from .run_budget import resolve_policy
         return resolve_policy()
 
+    def _paid_run_context(self, turn: TurnRequest, *, window: int, lang: str, policy):
+        """#400: legacy fixed-step loop still needs a RunContext so paid tools hit the same
+        paid_gate as agent-loop (over-quote confirm / unattended skip / pending marker).
+        store=None keeps legacy non-resumable (no run_ events); gating does not need the store."""
+        import uuid
+        from . import agent_loop
+        from .run_budget import BudgetLimits, ProgressTracker, RunBudget
+        limits = BudgetLimits.from_policy(policy, window=window, tier="single_gen")
+        budget = RunBudget(limits, k=policy["projection_window"], soft_fraction=policy["soft_fraction"],
+                           clock=self._run_clock)
+        tracker = ProgressTracker(policy["stall_steps"], policy["readonly_max"],
+                                  policy["tool_fail_max"], policy["repeat_max"])
+        ctx = agent_loop.RunContext(
+            run_id=f"legacy-{uuid.uuid4().hex[:12]}", store=None,
+            lease_owner=turn.lease_owner or f"legacy-{uuid.uuid4().hex[:8]}",
+            policy=policy, budget=budget, tracker=tracker,
+            mode=turn.run_mode or "interactive",
+            goal=turn.goal_text or turn.user_text, lang=lang,
+            owner_id=turn.owner_id, workspace_id=turn.workspace_id,
+            project_id=turn.project_id or "local", window=window)
+        ctx.pricer = self._price_call
+        return ctx
+
     _run_clock = staticmethod(time.monotonic)  # #391 wall-time source (tests swap it)
 
     def _run_store(self):
@@ -1681,9 +1704,13 @@ class LocalLlmProvider(AgentProvider):
                         self, session=session, turn=turn, emit=emit, handle=handle, base=base,
                         model=model, tools=tools, messages=messages, window=window, lang=lang,
                         policy=policy, store=self._run_store(), clock=self._run_clock)
+                # #400: legacy path is still reachable (settings agent-budget-loop / env
+                # COMFYART_AGENT_BUDGET_LOOP=0). Attach a RunContext so paid tools and paid
+                # fallbacks hit the same paid_gate as agent-loop (decline / unattended = 0 charge).
                 skill_cache: dict[str, str] = {}
                 gens: dict[str, dict] = {}
-                loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens}
+                run_ctx = self._paid_run_context(turn, window=window, lang=lang, policy=policy)
+                loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens, "run": run_ctx}
                 gate = _PlanGate()
                 limit = self._max_steps()
                 for _ in range(limit):
@@ -1731,6 +1758,14 @@ class LocalLlmProvider(AgentProvider):
                         loop=loop, gate=gate, usage=usage, llm_model=model)
                     if stopped is not None:
                         return stopped
+                    # #400: paid_gate decline / unattended skip sets pending_stop; do not keep looping
+                    if run_ctx.pending_stop is not None:
+                        from .run_budget import StopReason
+                        stop = run_ctx.pending_stop
+                        if stop.reason == StopReason.USER_STOP:
+                            return TurnResult(aborted=True, usage=usage)
+                        from .agent_loop import stop_text
+                        return TurnResult(usage=usage, error=stop_text(stop, lang, done))
                 return TurnResult(error=_step_limit_summary(done, limit, lang),
                                   usage=usage)
         except asyncio.CancelledError:
