@@ -3,9 +3,10 @@ import { atom } from 'tldraw'
 import { readUserJson, writeUserJson } from './comfy'
 import { t } from './i18n'
 import { uuid } from './id'
+import { readLocal, writeLocal } from './localPrefs'
 
-export interface Memory { id: string; text: string; time: number; category?: string }
-export interface MemoryInput { text: string; category?: string }
+export interface Memory { id: string; text: string; time: number; category?: string; label?: string }
+export interface MemoryInput { text: string; category?: string; label?: string }
 export interface MemoryLog { time: number; action: 'add' | 'update' | 'forget' | 'skill'; text: string; source: string }
 export interface Correction { old: string; new: string }
 
@@ -19,7 +20,8 @@ export function toInputs(value: unknown): MemoryInput[] {
   return value.flatMap((v) => {
     const text = typeof v === 'string' ? v : typeof v?.text === 'string' ? v.text : ''
     const category = CATEGORY_IDS.includes(v?.category) ? v.category : undefined
-    return text.trim() ? [{ text: text.trim(), category }] : []
+    const label = typeof v?.label === 'string' && v.label.trim() ? v.label.trim() : undefined
+    return text.trim() ? [{ text: text.trim(), category, ...(label ? { label } : {}) }] : []
   })
 }
 
@@ -36,18 +38,51 @@ const LOG_FILE = 'comfyart/memory-log.json'
 export const memoryAtom = atom<Memory[]>('memory', [])
 export const memoryLogAtom = atom<MemoryLog[]>('memory log', [])
 
+const LOCAL_FILE = 'comfyart.memory.local'
+const LOCAL_LOG = 'comfyart.memory-log.local'
+
+function readLocalJson<T>(key: string, fallback: T): T {
+  const raw = readLocal(key)
+  if (!raw) return fallback
+  try { return JSON.parse(raw) as T } catch { return fallback }
+}
+
+async function readMemoryStore(): Promise<[Memory[], MemoryLog[]]> {
+  try {
+    return await Promise.all([readUserJson<Memory[]>(FILE, []), readUserJson<MemoryLog[]>(LOG_FILE, [])])
+  } catch {
+    return [readLocalJson<Memory[]>(LOCAL_FILE, []), readLocalJson<MemoryLog[]>(LOCAL_LOG, [])]
+  }
+}
+
+async function writeMemoryStore(list: Memory[], log?: MemoryLog[]) {
+  writeLocal(LOCAL_FILE, JSON.stringify(list))
+  if (log) writeLocal(LOCAL_LOG, JSON.stringify(log))
+  try {
+    await writeUserJson(FILE, list)
+    if (log) await writeUserJson(LOG_FILE, log)
+  } catch {
+    /* home / mock: localStorage is the demo persistence layer */
+  }
+}
+
 export async function loadMemory(): Promise<Memory[]> {
-  const [list, log] = await Promise.all([readUserJson<Memory[]>(FILE, []), readUserJson<MemoryLog[]>(LOG_FILE, [])])
-  memoryAtom.set(list)
-  memoryLogAtom.set(log)
-  return list
+  const [list, log] = await readMemoryStore()
+  // Prefer userdata; if empty, fall back to local demo layer
+  const localList = readLocalJson<Memory[]>(LOCAL_FILE, [])
+  const localLog = readLocalJson<MemoryLog[]>(LOCAL_LOG, [])
+  const merged = list.length ? list : localList
+  const mergedLog = log.length ? log : localLog
+  memoryAtom.set(merged)
+  memoryLogAtom.set(mergedLog)
+  return merged
 }
 
 export async function logMemory(entries: Omit<MemoryLog, 'time'>[]) {
   if (!entries.length) return
   const next = [...entries.map((e) => ({ ...e, time: Date.now() })), ...memoryLogAtom.get()]
   memoryLogAtom.set(next)
-  await writeUserJson(LOG_FILE, next)
+  await writeMemoryStore(memoryAtom.get(), next)
 }
 
 const same = (a: string, b: string) => a === b || a.includes(b) || b.includes(a)
@@ -78,13 +113,49 @@ export async function correct(items: Correction[], source: string): Promise<stri
 
 export async function saveMemory(list: Memory[]) {
   memoryAtom.set(list)
-  await writeUserJson(FILE, list)
+  await writeMemoryStore(list, memoryLogAtom.get())
+}
+
+/** Update one memory by id (inline edit). Persists via saveMemory. */
+export async function updateMemory(id: string, text: string, source: string): Promise<boolean> {
+  const list = await loadMemory()
+  const prev = list.find((m) => m.id === id)
+  if (!prev || prev.text === text) return false
+  const next = list.map((m) => (m.id === id ? { ...m, text, time: Date.now() } : m))
+  await saveMemory(next)
+  await logMemory([{ action: 'update', text: `${prev.text} → ${text}`, source }])
+  return true
+}
+
+/** Delete one memory by id with persistence. */
+export async function removeMemory(id: string, source: string): Promise<boolean> {
+  const list = await loadMemory()
+  const gone = list.find((m) => m.id === id)
+  if (!gone) return false
+  await saveMemory(list.filter((m) => m.id !== id))
+  await logMemory([{ action: 'forget', text: gone.text, source }])
+  return true
+}
+
+/** Seed CN-aligned demo memories when the store is empty (mock-first demo layer). */
+export async function ensureArtiDemoMemories(): Promise<Memory[]> {
+  const list = await loadMemory()
+  if (list.length) return list
+  const demo: MemoryInput[] = [
+    { category: 'about', label: '创作领域', text: '你长期从事咖啡与茶饮品牌的视觉内容创作，常涉及品牌识别、海报、包装及周边视觉。' },
+    { category: 'work', label: '指令风格', text: '你习惯用简短直接的方式下达任务，不附加长篇背景，中英文交流都是如此。' },
+    { category: 'work', label: '输出形式', text: '信息类任务里，你只要文字输出，不自动生成图片。' },
+    { category: 'work', label: '确认方式', text: '关键步骤希望先出方案再动手；不确定时先问你。' },
+    { category: 'taste', label: '视觉风格', text: '偏好极简、几何构成与克莱因蓝方向，少装饰、强留白。' },
+  ]
+  await remember(demo, 'arti-demo')
+  return memoryAtom.get()
 }
 
 export async function remember(items: MemoryInput[], source = t('botCommands.chat')) {
   const known = new Set((await loadMemory()).map((m) => m.text))
   const fresh = items.filter((m) => !known.has(m.text))
   if (!fresh.length) return
-  await saveMemory([...memoryAtom.get(), ...fresh.map((m) => ({ id: uuid().slice(0, 8), text: m.text, time: Date.now(), ...(m.category ? { category: m.category } : {}) }))])
+  await saveMemory([...memoryAtom.get(), ...fresh.map((m) => ({ id: uuid().slice(0, 8), text: m.text, time: Date.now(), ...(m.category ? { category: m.category } : {}), ...(m.label ? { label: m.label } : {}) }))])
   await logMemory(fresh.map((m) => ({ action: 'add' as const, text: m.text, source })))
 }
