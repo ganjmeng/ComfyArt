@@ -295,3 +295,13 @@ body { background: var(--ca-float); }
   image-rendering: crisp-edges;
   border-radius: 10px;
 }
+/* #381: empty-state line, multi-match chooser (delete-confirm style), top-left toast, /arti 即将开放 */
+.ca-arti-mem__guide { margin: 8px 0 12px; text-align: center; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
+.ca-mem-choose__list { display: flex; flex: none; flex-direction: column; gap: 4px; max-height: calc(5 * 36px + 4 * 4px); overflow-y: auto; }
+.ca-mem-choose__row { display: flex; flex: none; align-items: flex-start; gap: 8px; box-sizing: border-box; min-height: 36px; margin: 0; padding: 8px; border-radius: 8px; cursor: pointer; font: 400 13px/20px var(--ca-font); }
+.ca-mem-choose__row:hover { background: var(--ca-hover); }
+.ca-mem-choose__row input { flex: none; width: 14px; height: 14px; margin: 3px 0 0; padding: 0; }
+.ca-mem-choose__text { flex: 1; }
+.ca-mem-toast { position: fixed; top: 16px; left: 72px; display: flex; align-items: center; gap: 6px; z-index: 3000; padding: 8px 14px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 10px; background: var(--ca-float); color: var(--ca-text); font: 500 13px/20px var(--ca-font); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+.ca-arti__capsoon { margin-top: 4px; color: var(--ca-muted); font: 400 12px/18px var(--ca-font); }
+.ca-mem-toast__icon { color: #e53935; width: 14px; height: 14px; }

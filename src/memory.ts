@@ -1,11 +1,13 @@
 import { atom } from 'tldraw'
 
-import { readUserJson, writeUserJson } from './comfy'
 import { t } from './i18n'
 import { uuid } from './id'
-import { readLocal, writeLocal } from './localPrefs'
+import { MemoryConflict, memoryStore, OWNER_DEFAULT, WORKSPACE_DEFAULT, type MemoryMeta } from './memoryStore'
 
-export interface Memory { id: string; text: string; time: number; category?: string; label?: string }
+export { MemoryConflict, setMemoryStore } from './memoryStore'
+
+/** owner_id (= user_id) and workspace_id (= project_id) carry fixed local defaults (#381); nothing filters on them yet. */
+export interface Memory { id: string; text: string; time: number; category?: string; label?: string; owner_id?: string; workspace_id?: string }
 export interface MemoryInput { text: string; category?: string; label?: string }
 export interface MemoryLog { time: number; action: 'add' | 'update' | 'forget' | 'skill'; text: string; source: string }
 export interface Correction { old: string; new: string }
@@ -32,130 +34,158 @@ export function memoryPrompt(): string {
   return `Remembered about the user (respect these):\n${groups.filter(([, list]) => list.length).map(([en, list]) => `${en}:\n${list.map((m) => `- ${m.text}`).join('\n')}`).join('\n')}`
 }
 
-const FILE = 'comfyart/memory.json'
-const LOG_FILE = 'comfyart/memory-log.json'
 
 export const memoryAtom = atom<Memory[]>('memory', [])
 export const memoryLogAtom = atom<MemoryLog[]>('memory log', [])
+/** #381: a text edit that matched several memories waits here for the user to pick one (nothing is written). */
+export interface MemoryChoice { action: 'forget' | 'correct'; text: string; next?: string; candidates: Memory[]; source: string }
+export const memoryChoiceAtom = atom<MemoryChoice | null>('memory choice', null)
 
-const LOCAL_FILE = 'comfyart.memory.local'
-const LOCAL_LOG = 'comfyart.memory-log.local'
+const MAX_LOG = 500
 
-function readLocalJson<T>(key: string, fallback: T): T {
-  const raw = readLocal(key)
-  if (!raw) return fallback
-  try { return JSON.parse(raw) as T } catch { return fallback }
-}
+/** #381: the five memories the old empty-state demo seeded (by text; their ids were random). Cleanup only, never written. */
+export const DEMO_SEED_TEXTS: readonly string[] = [
+  '你长期从事咖啡与茶饮品牌的视觉内容创作，常涉及品牌识别、海报、包装及周边视觉。',
+  '你习惯用简短直接的方式下达任务，不附加长篇背景，中英文交流都是如此。',
+  '信息类任务里，你只要文字输出，不自动生成图片。',
+  '关键步骤希望先出方案再动手；不确定时先问你。',
+  '偏好极简、几何构成与克莱因蓝方向，少装饰、强留白。',
+]
+/** Seed ids, when known. The old seeding used random ids, so this stays empty and text decides. */
+export const DEMO_SEED_IDS: readonly string[] = []
 
-async function readMemoryStore(): Promise<[Memory[], MemoryLog[]]> {
-  try {
-    return await Promise.all([readUserJson<Memory[]>(FILE, []), readUserJson<MemoryLog[]>(LOG_FILE, [])])
-  } catch {
-    return [readLocalJson<Memory[]>(LOCAL_FILE, []), readLocalJson<MemoryLog[]>(LOCAL_LOG, [])]
+/** #381: one in-tab queue for every read-modify-write; the server's rev check (api/memory.py) covers other tabs and
+ * the agent. A stale write (MemoryConflict) re-runs the whole step on fresh data. */
+let queue: Promise<unknown> = Promise.resolve()
+function serial<T>(fn: () => Promise<T>): Promise<T> {
+  const attempt = async (left: number): Promise<T> => {
+    try { return await fn() } catch (e) { if (e instanceof MemoryConflict && left > 0) return attempt(left - 1); throw e }
   }
+  const run = queue.then(() => attempt(5), () => attempt(5))
+  queue = run.catch(() => undefined)
+  return run
 }
 
-async function writeMemoryStore(list: Memory[], log?: MemoryLog[]) {
-  writeLocal(LOCAL_FILE, JSON.stringify(list))
-  if (log) writeLocal(LOCAL_LOG, JSON.stringify(log))
-  try {
-    await writeUserJson(FILE, list)
-    if (log) await writeUserJson(LOG_FILE, log)
-  } catch {
-    /* home / mock: localStorage is the demo persistence layer */
+type Meta = MemoryMeta
+let rev = 0
+let meta: Meta = {}
+
+async function writeStore(list: Memory[], log: MemoryLog[], nextMeta?: Meta) {
+  const saved = await memoryStore().write({ memory: list, log, meta: nextMeta ?? meta }, rev)
+  rev = saved.rev
+  meta = saved.meta
+  memoryAtom.set(saved.memory)
+  memoryLogAtom.set(saved.log)
+}
+
+const isSeed = (m: Memory) => DEMO_SEED_IDS.includes(m.id) || DEMO_SEED_TEXTS.includes(m.text)
+const entry = (action: MemoryLog['action'], text: string, source: string): MemoryLog => ({ action, text, source, time: Date.now() })
+const withLog = (log: MemoryLog[], add: MemoryLog[]) => [...add.reverse(), ...log].slice(0, MAX_LOG)
+
+/** Load, and once per store drop the old demo seeds (#381). Must run inside serial(). */
+async function loadUnlocked(): Promise<Memory[]> {
+  const state = await memoryStore().read()
+  const { memory: list, log } = state
+  rev = state.rev
+  meta = state.meta
+  if (!meta.demoCleanup381) {
+    const kept = list.filter((m) => !isSeed(m))
+    const removed = list.length - kept.length
+    const nextLog = removed ? withLog(log, [entry('forget', t('memory.demoCleanup', removed), 'demo-cleanup-381')]) : log
+    await writeStore(kept, nextLog, { ...meta, demoCleanup381: true })
+    return kept
   }
-}
-
-export async function loadMemory(): Promise<Memory[]> {
-  const [list, log] = await readMemoryStore()
-  // Prefer userdata; if empty, fall back to local demo layer
-  const localList = readLocalJson<Memory[]>(LOCAL_FILE, [])
-  const localLog = readLocalJson<MemoryLog[]>(LOCAL_LOG, [])
-  const merged = list.length ? list : localList
-  const mergedLog = log.length ? log : localLog
-  memoryAtom.set(merged)
-  memoryLogAtom.set(mergedLog)
-  return merged
-}
-
-export async function logMemory(entries: Omit<MemoryLog, 'time'>[]) {
-  if (!entries.length) return
-  const next = [...entries.map((e) => ({ ...e, time: Date.now() })), ...memoryLogAtom.get()]
-  memoryLogAtom.set(next)
-  await writeMemoryStore(memoryAtom.get(), next)
-}
-
-const same = (a: string, b: string) => a === b || a.includes(b) || b.includes(a)
-
-export async function forget(texts: string[], source: string): Promise<string[]> {
-  const list = await loadMemory()
-  const gone = list.filter((m) => texts.some((t) => t.trim() && same(m.text, t.trim())))
-  if (!gone.length) return []
-  await saveMemory(list.filter((m) => !gone.includes(m)))
-  await logMemory(gone.map((m) => ({ action: 'forget' as const, text: m.text, source })))
-  return gone.map((m) => m.text)
-}
-
-export async function correct(items: Correction[], source: string): Promise<string[]> {
-  const list = await loadMemory()
-  const done: string[] = []
-  const next = list.map((m) => {
-    const c = items.find((x) => same(m.text, x.old))
-    if (!c) return m
-    done.push(`${m.text} → ${c.new}`)
-    return { ...m, text: c.new, time: Date.now() }
-  })
-  if (!done.length) return []
-  await saveMemory(next)
-  await logMemory(done.map((text) => ({ action: 'update' as const, text, source })))
-  return done
-}
-
-export async function saveMemory(list: Memory[]) {
   memoryAtom.set(list)
-  await writeMemoryStore(list, memoryLogAtom.get())
+  memoryLogAtom.set(log)
+  return list
 }
 
-/** Update one memory by id (inline edit). Persists via saveMemory. */
+export function loadMemory(): Promise<Memory[]> {
+  return serial(loadUnlocked)
+}
+
+export function logMemory(entries: Omit<MemoryLog, 'time'>[]) {
+  if (!entries.length) return Promise.resolve()
+  return serial(async () => {
+    const list = await loadUnlocked()
+    await writeStore(list, withLog(memoryLogAtom.get(), entries.map((e) => entry(e.action, e.text, e.source))))
+  })
+}
+
+/** Result of a text/id edit. `candidates` is set (and nothing written) when the text matched several memories. */
+export interface EditResult { changed: string[]; candidates?: Memory[]; rejected?: string }
+
+function pick(list: Memory[], key: { id?: string; text?: string }): Memory[] {
+  if (key.id) return list.filter((m) => m.id === key.id)
+  const text = key.text?.trim() ?? ''
+  return text ? list.filter((m) => m.text === text) : []
+}
+
+/** Forget by id or exact text. Several exact matches: no write, candidates returned so the user picks. */
+export function forget(texts: (string | { id?: string; text?: string })[], source: string): Promise<EditResult> {
+  return serial(async () => {
+    const list = await loadUnlocked()
+    const gone: Memory[] = []
+    for (const raw of texts) {
+      const key = typeof raw === 'string' ? { text: raw } : raw
+      if (!key.id && !key.text?.trim()) return { changed: [], rejected: 'empty text' }
+      const hit = pick(list, key)
+      if (hit.length > 1) {
+        memoryChoiceAtom.set({ action: 'forget', text: key.text ?? '', candidates: hit, source })
+        return { changed: [], candidates: hit }
+      }
+      gone.push(...hit)
+    }
+    if (!gone.length) return { changed: [] }
+    await writeStore(list.filter((m) => !gone.includes(m)), withLog(memoryLogAtom.get(), gone.map((m) => entry('forget', m.text, source))))
+    return { changed: gone.map((m) => m.text) }
+  })
+}
+
+/** Correct by id or exact old text. Empty old/new is rejected; several matches: no write, candidates returned. */
+export function correct(items: (Correction & { id?: string })[], source: string): Promise<EditResult> {
+  return serial(async () => {
+    const list = await loadUnlocked()
+    const plan: [Memory, string][] = []
+    for (const c of items) {
+      const next = String(c.new ?? '').trim()
+      if ((!c.id && !String(c.old ?? '').trim()) || !next) return { changed: [], rejected: 'old and new must be non-empty' }
+      const hit = pick(list, { id: c.id, text: c.old })
+      if (hit.length > 1) {
+        memoryChoiceAtom.set({ action: 'correct', text: c.old, next, candidates: hit, source })
+        return { changed: [], candidates: hit }
+      }
+      if (hit[0] && hit[0].text !== next) plan.push([hit[0], next])
+    }
+    if (!plan.length) return { changed: [] }
+    const done = plan.map(([m, n]) => `${m.text} → ${n}`)
+    await writeStore(list.map((m) => { const p = plan.find(([x]) => x === m); return p ? { ...m, text: p[1], time: Date.now() } : m }),
+      withLog(memoryLogAtom.get(), done.map((d) => entry('update', d, source))))
+    return { changed: done }
+  })
+}
+
+export function saveMemory(list: Memory[]) {
+  return serial(() => writeStore(list, memoryLogAtom.get()))
+}
+
+/** Update one memory by id (inline edit). */
 export async function updateMemory(id: string, text: string, source: string): Promise<boolean> {
-  const list = await loadMemory()
-  const prev = list.find((m) => m.id === id)
-  if (!prev || prev.text === text) return false
-  const next = list.map((m) => (m.id === id ? { ...m, text, time: Date.now() } : m))
-  await saveMemory(next)
-  await logMemory([{ action: 'update', text: `${prev.text} → ${text}`, source }])
-  return true
+  return (await correct([{ id, old: '', new: text }], source)).changed.length > 0
 }
 
 /** Delete one memory by id with persistence. */
 export async function removeMemory(id: string, source: string): Promise<boolean> {
-  const list = await loadMemory()
-  const gone = list.find((m) => m.id === id)
-  if (!gone) return false
-  await saveMemory(list.filter((m) => m.id !== id))
-  await logMemory([{ action: 'forget', text: gone.text, source }])
-  return true
+  return (await forget([{ id }], source)).changed.length > 0
 }
 
-/** Seed CN-aligned demo memories when the store is empty (mock-first demo layer). */
-export async function ensureArtiDemoMemories(): Promise<Memory[]> {
-  const list = await loadMemory()
-  if (list.length) return list
-  const demo: MemoryInput[] = [
-    { category: 'about', label: '创作领域', text: '你长期从事咖啡与茶饮品牌的视觉内容创作，常涉及品牌识别、海报、包装及周边视觉。' },
-    { category: 'work', label: '指令风格', text: '你习惯用简短直接的方式下达任务，不附加长篇背景，中英文交流都是如此。' },
-    { category: 'work', label: '输出形式', text: '信息类任务里，你只要文字输出，不自动生成图片。' },
-    { category: 'work', label: '确认方式', text: '关键步骤希望先出方案再动手；不确定时先问你。' },
-    { category: 'taste', label: '视觉风格', text: '偏好极简、几何构成与克莱因蓝方向，少装饰、强留白。' },
-  ]
-  await remember(demo, 'arti-demo')
-  return memoryAtom.get()
-}
-
-export async function remember(items: MemoryInput[], source = t('botCommands.chat')) {
-  const known = new Set((await loadMemory()).map((m) => m.text))
-  const fresh = items.filter((m) => !known.has(m.text))
-  if (!fresh.length) return
-  await saveMemory([...memoryAtom.get(), ...fresh.map((m) => ({ id: uuid().slice(0, 8), text: m.text, time: Date.now(), ...(m.category ? { category: m.category } : {}), ...(m.label ? { label: m.label } : {}) }))])
-  await logMemory(fresh.map((m) => ({ action: 'add' as const, text: m.text, source })))
+export function remember(items: MemoryInput[], source = t('botCommands.chat')) {
+  return serial(async () => {
+    const list = await loadUnlocked()
+    const known = new Set(list.map((m) => m.text))
+    const fresh = items.filter((m) => !known.has(m.text) && (known.add(m.text), true))
+    if (!fresh.length) return
+    await writeStore([...list, ...fresh.map((m) => ({ id: uuid().slice(0, 8), text: m.text, time: Date.now(), owner_id: OWNER_DEFAULT, workspace_id: WORKSPACE_DEFAULT, ...(m.category ? { category: m.category } : {}), ...(m.label ? { label: m.label } : {}) }))],
+      withLog(memoryLogAtom.get(), fresh.map((m) => entry('add', m.text, source))))
+  })
 }

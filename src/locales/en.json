@@ -128,8 +128,8 @@
   "arti.memory.chatCta": "Edit memory via chat",
   "arti.memory.chatHelper": "Tell Arti what to remember, change, or forget",
   "arti.memory.chatPlaceholder": "Share design preferences, or update an existing memory",
-  "arti.memory.deleteDesc": "Delete this memory?\n“{0}”",
-  "arti.memory.deleteTitle": "Delete memory",
+  "arti.memory.deleteDesc": "“{0}” will be deleted, and Arti will no longer remember it.",
+  "arti.memory.deleteTitle": "Delete this memory?",
   "arti.memory.groupEmpty": "No memories yet",
   "arti.memory.libraryAsset": "Reference asset picked from the library for future alignment.",
   "arti.memory.libraryAssetLabel": "Library reference",
@@ -1445,5 +1445,11 @@
   "composer.atMore": "More",
   "composer.selectedCount": "{0} selected",
   "botSettings.review": "Review",
-  "botSettings.reviewDesc": "After an image or video is delivered, think once more to review it before the Done summary."
+  "botSettings.reviewDesc": "After an image or video is delivered, think once more to review it before the Done summary.",
+  "memory.demoCleanup": "Removed {0} demo memories",
+  "arti.memory.emptyGuide": "No memories yet. Create with Arti and it will get to know you over time.",
+  "arti.cap.soon": "Coming soon",
+  "memory.choose.title": "Found {0} similar memories — which one?",
+  "memory.choose.correct": "Correct",
+  "arti.memory.deletedToast": "Memory deleted"
 }

@@ -222,8 +222,9 @@ export const LAYOUT_HANDLERS: Record<string, Handler> = {
       await remember([{ text: String(args.text), category: args.category }], t('botCommands.chat'))
       return { added: args.text }
     }
-    if (args.action === 'correct') return { corrected: await correct([{ old: String(args.old), new: String(args.new) }], t('botCommands.chat')) }
-    if (args.action === 'forget') return { forgotten: await forget([String(args.text)], t('botCommands.chat')) }
+    // #381: exact text only; several matches write nothing and come back as candidates for the user to pick
+    if (args.action === 'correct') { const r = await correct([{ old: String(args.old ?? ''), new: String(args.new ?? '') }], t('botCommands.chat')); return { corrected: r.changed, ...(r.candidates ? { ambiguous: r.candidates.map((m) => m.text), note: 'several memories match; the user is choosing one, nothing was changed' } : {}), ...(r.rejected ? { rejected: r.rejected } : {}) } }
+    if (args.action === 'forget') { const r = await forget([String(args.text ?? '')], t('botCommands.chat')); return { forgotten: r.changed, ...(r.candidates ? { ambiguous: r.candidates.map((m) => m.text), note: 'several memories match; the user is choosing one, nothing was changed' } : {}), ...(r.rejected ? { rejected: r.rejected } : {}) } }
     throw new Error('action must be list, add, correct or forget')
   },
   skill: async (_editor, args) => {

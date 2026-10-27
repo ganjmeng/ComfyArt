@@ -5,13 +5,15 @@ import { uploadImage, viewUrl } from '../comfy'
 import { errorText } from '../jobs'
 import { libraryAtom } from '../library'
 import { ask, parseJson } from '../llm'
-import { correct, forget, MEMORY_CATEGORIES, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
+import { MEMORY_CATEGORIES, removeMemory, updateMemory, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
 import { isPdf, uploadPdf } from '../pdf'
 import { AbilitiesPanel } from './AbilitiesPanel'
 import { Icons } from './icons'
 import { t } from '../i18n'
 import { isEnter } from './keys'
 import { Modal } from './Modal'
+import { confirmAtom } from './Confirm'
+import { showMemoryToast } from './MemoryChooser'
 
 export const memoryOpenAtom = atom('memory open', false)
 
@@ -142,14 +144,14 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
                   autoFocus
                   className="ca-panel__input"
                   defaultValue={m.text}
-                  onBlur={(e) => { setEditing(null); const v = e.target.value.trim(); if (v && v !== m.text) void correct([{ old: m.text, new: v }], t('frameToolbar.manual')).catch(fail) }}
+                  onBlur={(e) => { setEditing(null); const v = e.target.value.trim(); if (v && v !== m.text) void updateMemory(m.id, v, t('frameToolbar.manual')).catch(fail) }}
                   onKeyDown={(e) => { e.stopPropagation(); if (isEnter(e)) e.currentTarget.blur() }}
                 />
               ) : (
                 <span className="ca-menu__grow" onDoubleClick={() => setEditing(m.id)}>{m.text}</span>
               )}
               <button type="button" className="ca-history__del" title={t('memoryDialog.correctMemory')} onClick={() => setEditing(m.id)}>{Icons.textTool}</button>
-              <button type="button" className="ca-history__del" title={t('common.delete')} onClick={() => void forget([m.text], t('frameToolbar.manual')).catch(fail)}>{Icons.trash}</button>
+              <button type="button" className="ca-history__del" title={t('common.delete')} onClick={() => confirmAtom.set({ title: t('arti.memory.deleteTitle'), desc: t('arti.memory.deleteDesc', m.text), ok: t('common.delete'), danger: true, run: () => { void removeMemory(m.id, t('frameToolbar.manual')).then((ok) => { if (ok) showMemoryToast(t('arti.memory.deletedToast')) }).catch(fail) } })}>{Icons.trash}</button>
             </div>
           ))}
           {categoryTab && <div className="ca-style__row">

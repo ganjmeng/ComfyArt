@@ -128,8 +128,8 @@
   "arti.memory.chatCta": "通过对话修改记忆",
   "arti.memory.chatHelper": "告诉 Arti 你想记住、修改或忘记什么",
   "arti.memory.chatPlaceholder": "聊聊你的设计偏好，或更新已有记忆",
-  "arti.memory.deleteDesc": "确定删除这条记忆？\n「{0}」",
-  "arti.memory.deleteTitle": "删除记忆",
+  "arti.memory.deleteDesc": "“{0}”该条记录将被删除，日后 Arti 将不会记住这个信息。",
+  "arti.memory.deleteTitle": "删除此记忆？",
   "arti.memory.groupEmpty": "暂无记忆",
   "arti.memory.libraryAsset": "从资产库选入的参考资产，用于后续创作对齐。",
   "arti.memory.libraryAssetLabel": "资产库参考",
@@ -1445,5 +1445,11 @@
   "composer.atMore": "More",
   "composer.selectedCount": "已选 {0} 个",
   "botSettings.review": "审核",
-  "botSettings.reviewDesc": "出图后先审图思考，再写摘要与下一步建议。"
+  "botSettings.reviewDesc": "出图后先审图思考，再写摘要与下一步建议。",
+  "memory.demoCleanup": "已清理 {0} 条示例记忆",
+  "arti.memory.emptyGuide": "还没有记忆。和 Arti 一起创作，它会慢慢了解你。",
+  "arti.cap.soon": "即将开放",
+  "memory.choose.title": "找到 {0} 条相似记忆，要改哪一条？",
+  "memory.choose.correct": "更正",
+  "arti.memory.deletedToast": "记忆已删除"
 }

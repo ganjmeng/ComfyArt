@@ -4,7 +4,6 @@ import { useValue } from 'tldraw'
 import { t } from '../i18n'
 import {
   MEMORY_CATEGORIES,
-  ensureArtiDemoMemories,
   loadMemory,
   memoryAtom,
   remember,
@@ -13,6 +12,7 @@ import {
   type Memory,
 } from '../memory'
 import { confirmAtom } from '../ui/Confirm'
+import { showMemoryToast } from '../ui/MemoryChooser'
 import { Icons } from '../ui/icons'
 import { isEnter } from '../ui/keys'
 
@@ -45,10 +45,10 @@ function MemoryRow({
     setMenuId(null)
     confirmAtom.set({
       title: t('arti.memory.deleteTitle'),
-      desc: t('arti.memory.deleteDesc', item.text.slice(0, 80)),
+      desc: t('arti.memory.deleteDesc', item.text),
       ok: t('common.delete'),
       danger: true,
-      run: () => { void removeMemory(item.id, t('arti.memory.sourceManual')) },
+      run: () => { void removeMemory(item.id, t('arti.memory.sourceManual')).then((ok) => { if (ok) showMemoryToast(t('arti.memory.deletedToast')) }) },
     })
   }
   return (
@@ -258,6 +258,7 @@ function MemoryGroup({
   setMenuId,
   addingAssets,
   setAddingAssets,
+  allEmpty,
 }: {
   cat: CatId
   items: Memory[]
@@ -267,6 +268,7 @@ function MemoryGroup({
   setMenuId: (id: string | null) => void
   addingAssets: boolean
   setAddingAssets: (v: boolean) => void
+  allEmpty: boolean
 }) {
   return (
     <section className="ca-arti-mem__group" data-testid={`arti-memory-group-${cat}`}>
@@ -294,7 +296,7 @@ function MemoryGroup({
             {t('arti.memory.addAssets')}
           </button>
         ) : null}
-        {cat !== 'assets' && items.length === 0 ? (
+        {cat !== 'assets' && items.length === 0 && !allEmpty ? (
           <div className="ca-arti-mem__empty" data-testid={`arti-memory-empty-${cat}`}>{t('arti.memory.groupEmpty')}</div>
         ) : null}
       </div>
@@ -312,9 +314,8 @@ export function ArtiMemory() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    void loadMemory()
-      .then(() => ensureArtiDemoMemories())
-      .finally(() => setReady(true))
+    // #381: an empty store stays empty — guidance copy only, nothing is seeded
+    void loadMemory().finally(() => setReady(true))
   }, [])
 
   useEffect(() => {
@@ -345,9 +346,14 @@ export function ArtiMemory() {
             setMenuId={setMenuId}
             addingAssets={addingAssets}
             setAddingAssets={setAddingAssets}
+            allEmpty={ready && memory.length === 0}
           />
         ))}
       </div>
+
+      {ready && memory.length === 0 ? (
+        <div className="ca-arti-mem__guide" data-testid="arti-memory-empty-guide">{t('arti.memory.emptyGuide')}</div>
+      ) : null}
 
       <div className="ca-arti-mem__sticky" data-testid="arti-memory-chat-cta">
         {chatOpen ? (
