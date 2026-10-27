@@ -183,7 +183,7 @@ def test_371fix_mascot_behind_composer_surface() -> None:
 def test_375_notify_popover_opens_above_composer() -> None:
     """Popover bottom must be <= composer top: anchored by bottom above the mascot wrap (which peeks above the rim)."""
     rule = _rule(".arti-notify")
-    assert "bottom: calc(100% + 8px)" in rule
+    assert "bottom: calc(100% + 1px + 8px)" in rule
     assert "top: auto" in rule
     assert "top: calc(100%" not in rule
     assert "z-index: 5" in rule
@@ -191,3 +191,31 @@ def test_375_notify_popover_opens_above_composer() -> None:
     import re
     m = re.search(r"top:\s*(-\d+)px", _rule(".arti-mascot-wrap"))
     assert m and int(m.group(1)) <= 0
+
+
+def test_376_notify_panel_lovart_1to1() -> None:
+    """#376: panel is a composer child spanning full composer width, 8px above top, z5, title ⚡, close ×, centered icon + 2 lines."""
+    rule = _rule(".ca-composer > .arti-notify,\n.arti-notify")
+    # width == composer width: absolute in composer, left 0 / right 0, border-box, auto width
+    for decl in ("position: absolute", "left: -1px", "right: -1px", "width: auto", "box-sizing: border-box"):
+        assert decl in rule, decl
+    # bottom above composer top (8px gap), never top-anchored
+    assert "bottom: calc(100% + 1px + 8px)" in rule and "top: auto" in rule
+    assert "z-index: 5" in rule
+    # panel rendered OUTSIDE the 50px mascot wrap (sibling in composer), so containing block is the composer
+    wrap_close = MASCOT.index("</span>\n    {/* #376")
+    assert MASCOT.index('data-testid="arti-notify"') > wrap_close
+    # title / close / centered icon + two lines via locale keys
+    assert "t('arti.notify.heading')" in MASCOT
+    assert 'data-testid="arti-notify-close"' in MASCOT
+    assert "onClick={() => setNotifyOpen(false)}" in MASCOT
+    assert "t('arti.notify.close')" in MASCOT
+    assert 'data-testid="arti-notify-icon"' in MASCOT
+    assert "t('arti.notify.empty')" in MASCOT and "t('arti.notify.emptyHint')" in MASCOT
+    assert '"arti.notify.heading": "Arti 通知 ⚡"' in ZH
+    assert '"arti.notify.close": "关闭"' in ZH
+    assert '"arti.notify.heading"' in EN and '"arti.notify.close"' in EN
+    empty = _rule(".arti-notify__empty")
+    assert "align-items: center" in empty and "text-align: center" in empty
+    # outside-click must not treat clicks inside the panel as outside
+    assert "panel.contains(tgt)" in MASCOT

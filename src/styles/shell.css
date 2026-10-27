@@ -530,15 +530,19 @@ span.arti-mascot { cursor: default; pointer-events: none; }
   to { opacity: 1; }
 }
 
-/* In-canvas Arti notifications popover (click badge; NOT /arti) */
+/* In-canvas Arti notifications panel (click badge; NOT /arti).
+   #376 Lovart CN 1:1: composer child → same width as composer; bottom 8px above composer top; z5 topmost. */
+.ca-composer > .arti-notify,
 .arti-notify {
   position: absolute;
-  left: 0;
-  /* #375: open ABOVE the composer (Lovart parity) — popover bottom sits above composer top edge */
+  /* abs box is the composer padding box; -1px = composer 1px border → panel outer width == composer outer width */
+  left: -1px;
+  right: -1px;
+  width: auto;
   top: auto;
-  bottom: calc(100% + 8px);
-  width: 280px;
-  padding: 12px 14px;
+  bottom: calc(100% + 1px + 8px); /* 8px gap above composer outer top edge */
+  box-sizing: border-box;
+  padding: 14px 16px 22px;
   border-radius: 12px;
   border: 1px solid var(--ca-border, rgba(0,0,0,.08));
   background: var(--ca-float, #fff);
@@ -547,16 +551,52 @@ span.arti-mascot { cursor: default; pointer-events: none; }
   z-index: 5;
   pointer-events: auto;
 }
+.arti-notify__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .arti-notify__title {
-  font: 600 13px/20px Inter, system-ui, sans-serif;
+  font: 500 13px/20px Inter, system-ui, sans-serif;
+}
+.arti-notify__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: -4px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ca-muted, rgba(0,0,0,.55));
+  cursor: pointer;
+}
+.arti-notify__close:hover { background: var(--ca-hover, rgba(127,127,127,.14)); color: var(--ca-text, rgba(0,0,0,.9)); }
+.arti-notify__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 18px;
+}
+.arti-notify__icon {
+  display: block;
+  width: 40px;
+  height: 40px;
   margin-bottom: 8px;
+  background-repeat: no-repeat;
+  background-size: calc(var(--mascot-frames, 17) * 100%) 100%;
+  background-position: 0 0;
+  image-rendering: pixelated;
 }
 .arti-notify__empty-title {
-  font: 600 13px/20px Inter, system-ui, sans-serif;
+  font: 500 13px/20px Inter, system-ui, sans-serif;
 }
 .arti-notify__empty-hint {
-  margin-top: 4px;
-  font: 400 12px/18px Inter, system-ui, sans-serif;
+  margin-top: 8px;
+  font: 400 13px/20px Inter, system-ui, sans-serif;
   color: var(--ca-muted, rgba(0,0,0,.45));
 }
 
