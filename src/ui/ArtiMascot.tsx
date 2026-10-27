@@ -57,6 +57,7 @@ export function ArtiMascot({
   const [hover, setHover] = useState(false)
   const [notifyOpen, setNotifyOpen] = useState(false)
   const wrapRef = useRef<HTMLSpanElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const reduce = useReducedMotion()
 
   useEffect(() => {
@@ -70,7 +71,9 @@ export function ArtiMascot({
     if (!notifyOpen) return
     const onPointer = (e: MouseEvent) => {
       const el = wrapRef.current
-      if (el && !el.contains(e.target as Node)) setNotifyOpen(false)
+      const panel = panelRef.current
+      const tgt = e.target as Node
+      if (el && !el.contains(tgt) && !(panel && panel.contains(tgt))) setNotifyOpen(false)
     }
     document.addEventListener('mousedown', onPointer, true)
     return () => document.removeEventListener('mousedown', onPointer, true)
@@ -96,7 +99,8 @@ export function ArtiMascot({
           : ''
 
   return (
-    <span className="arti-mascot-wrap" ref={wrapRef} data-testid="arti-mascot-wrap">
+    <>
+    <span className="arti-mascot-wrap" ref={wrapRef} data-testid="arti-mascot-wrap" data-notify-open={notifyOpen || undefined} aria-hidden={notifyOpen || undefined}>
       <button
         type="button"
         className={`arti-mascot ${animClass}`.trim()}
@@ -110,6 +114,7 @@ export function ArtiMascot({
         aria-label={t('arti.notify.title')}
         aria-expanded={notifyOpen}
         aria-haspopup="dialog"
+        tabIndex={notifyOpen ? -1 : undefined}
         style={{
           backgroundImage: `url(${SHEETS[level]})`,
           ['--mascot-frames' as string]: MASCOT_FRAMES,
@@ -122,21 +127,41 @@ export function ArtiMascot({
         onBlur={() => setHover(false)}
         onClick={() => setNotifyOpen((o) => !o)}
       />
-      {notifyOpen && (
-        <div
-          className="arti-notify"
-          role="dialog"
-          aria-label={t('arti.notify.title')}
-          data-testid="arti-notify"
-        >
-          <div className="arti-notify__title">{t('arti.notify.title')}</div>
-          <div className="arti-notify__empty" data-testid="arti-notify-empty">
-            <div className="arti-notify__empty-title">{t('arti.notify.empty')}</div>
-            <div className="arti-notify__empty-hint">{t('arti.notify.emptyHint')}</div>
-          </div>
-        </div>
-      )}
     </span>
+    {/* #376: Lovart CN 1:1 — panel is a composer child (same width), anchored 8px above composer top, z5 */}
+    {notifyOpen && (
+      <div
+        ref={panelRef}
+        className="arti-notify"
+        role="dialog"
+        aria-label={t('arti.notify.title')}
+        data-testid="arti-notify"
+      >
+        <div className="arti-notify__head">
+          <div className="arti-notify__title" data-testid="arti-notify-title">{t('arti.notify.heading')}</div>
+          <button
+            type="button"
+            className="arti-notify__close"
+            data-testid="arti-notify-close"
+            aria-label={t('arti.notify.close')}
+            onClick={() => setNotifyOpen(false)}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+        <div className="arti-notify__empty" data-testid="arti-notify-empty">
+          <span
+            className="arti-notify__icon"
+            data-testid="arti-notify-icon"
+            aria-hidden="true"
+            style={{ backgroundImage: `url(${SHEETS[level]})`, ['--mascot-frames' as string]: MASCOT_FRAMES }}
+          />
+          <div className="arti-notify__empty-title">{t('arti.notify.empty')}</div>
+          <div className="arti-notify__empty-hint">{t('arti.notify.emptyHint')}</div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 

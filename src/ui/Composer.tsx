@@ -33,7 +33,7 @@ const SKILL_PROMPT = t('composer.turnTheApproachCompletedIn')
 
 export const FILE_ACCEPT = `image/*,video/*,audio/*,${DOC_ACCEPT}`
 
-/** #362: @ menu shows ≤N rows per group before … More (Lovart density). */
+/** #362: @ menu shows ≤N rows per group before … More (reference density). */
 const AT_GROUP_LIMIT = 5
 /** #362 SHOULD: collapse individual capsules when selection exceeds this. */
 const CAPSULE_SUMMARY_AT = 10

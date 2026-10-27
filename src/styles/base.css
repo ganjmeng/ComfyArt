@@ -5,6 +5,8 @@
   --ca-border: rgba(0,0,0,.07);
   --ca-text: rgba(0,0,0,.9);
   --ca-muted: rgba(0,0,0,.3);
+  --ca-text-2: rgba(0,0,0,.6); /* secondary text (Lovart CN secondary level) */
+  --ca-notify-close-hover: rgb(242,242,242);
   --ca-hover: rgba(0,0,0,.06);
   --ca-active: rgba(0,0,0,.08);
   --ca-field: rgba(0,0,0,.04);
@@ -59,6 +61,8 @@
   --ca-border: rgba(255,255,255,.1);
   --ca-text: rgba(255,255,255,.9);
   --ca-muted: rgba(255,255,255,.4);
+  --ca-text-2: rgba(255,255,255,.6);
+  --ca-notify-close-hover: rgb(52,52,52);
   --ca-hover: rgba(255,255,255,.08);
   --ca-active: rgba(255,255,255,.12);
   --ca-field: rgba(255,255,255,.06);

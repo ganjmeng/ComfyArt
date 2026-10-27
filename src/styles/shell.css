@@ -500,6 +500,13 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 span.arti-mascot { cursor: default; pointer-events: none; }
 /* content above the peek so body is half-hidden behind rounded top */
 .ca-composer > :not(.arti-mascot-wrap) { position: relative; z-index: 2; }
+/* #376: while the Arti notify panel is open the mascot is fully hidden (nothing peeks into the 8px gap); close → idle peek returns */
+.arti-mascot-wrap[data-notify-open] {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.arti-mascot-wrap[data-notify-open] .arti-mascot { pointer-events: none; }
 
 @keyframes arti-mascot-play {
   from { background-position: 0 0; }
@@ -530,15 +537,21 @@ span.arti-mascot { cursor: default; pointer-events: none; }
   to { opacity: 1; }
 }
 
-/* In-canvas Arti notifications popover (click badge; NOT /arti) */
+/* In-canvas Arti notifications panel (click badge; NOT /arti).
+   #376 Lovart CN 1:1: composer child → same width as composer; bottom 8px above composer top; z5 topmost. */
+.ca-composer > .arti-notify,
 .arti-notify {
   position: absolute;
-  left: 0;
-  /* #375: open ABOVE the composer (Lovart parity) — popover bottom sits above composer top edge */
+  /* abs box is the composer padding box; -1px = composer 1px border → panel outer width == composer outer width */
+  left: -1px;
+  right: -1px;
+  width: auto;
   top: auto;
-  bottom: calc(100% + 8px);
-  width: 280px;
-  padding: 12px 14px;
+  bottom: calc(100% + 1px + 8px); /* 8px gap above composer outer top edge */
+  box-sizing: border-box;
+  /* #376 designer (visual, Lovart CN): title glyph 16px below panel top, hint glyph 37px above bottom, height ~198.
+     1px border + 3px/4px half-leading → padding 13 / 33. */
+  padding: 13px 16px 33px;
   border-radius: 12px;
   border: 1px solid var(--ca-border, rgba(0,0,0,.08));
   background: var(--ca-float, #fff);
@@ -547,17 +560,54 @@ span.arti-mascot { cursor: default; pointer-events: none; }
   z-index: 5;
   pointer-events: auto;
 }
+.arti-notify__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .arti-notify__title {
-  font: 600 13px/20px Inter, system-ui, sans-serif;
-  margin-bottom: 8px;
+  font: 500 13px/20px Inter, system-ui, sans-serif;
+}
+.arti-notify__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: -2px -4px -2px 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ca-muted, rgba(0,0,0,.55));
+  cursor: pointer;
+}
+.arti-notify__close:hover { background: var(--ca-notify-close-hover, rgb(242,242,242)); color: var(--ca-text, rgba(0,0,0,.9)); }
+.arti-notify__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 40px; /* #376 designer: visual title → icon gap 43 (40 + glyph/sprite inset) */
+}
+.arti-notify__icon {
+  display: block;
+  /* #376 designer: visible figure ~34px wide (sprite figure ≈ 60% of frame) → 56px frame box */
+  width: 56px;
+  height: 56px;
+  margin-bottom: -4px; /* sprite frame has transparent bottom rows */
+  background-repeat: no-repeat;
+  background-size: calc(var(--mascot-frames, 17) * 100%) 100%;
+  background-position: 0 0;
+  image-rendering: pixelated;
 }
 .arti-notify__empty-title {
-  font: 600 13px/20px Inter, system-ui, sans-serif;
+  font: 500 14px/20px Inter, system-ui, sans-serif;
 }
 .arti-notify__empty-hint {
-  margin-top: 4px;
-  font: 400 12px/18px Inter, system-ui, sans-serif;
-  color: var(--ca-muted, rgba(0,0,0,.45));
+  margin-top: 1px;
+  font: 400 14px/20px Inter, system-ui, sans-serif;
+  color: var(--ca-text-2, rgba(0,0,0,.6)); /* secondary, not tertiary muted */
 }
 
 @media (prefers-reduced-motion: reduce) {
