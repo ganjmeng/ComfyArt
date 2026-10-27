@@ -43,7 +43,7 @@ def bundle(tmp_path_factory):
     d = tmp_path_factory.mktemp("overquote")
     subprocess.run([str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/overquote/rolldown.config.mjs"], cwd=ROOT,
                    check=True, capture_output=True, env={**os.environ, "OUT": str(d / "app.js")})
-    css = "\n".join((ROOT / "src/styles" / f).read_text() for f in ("base.css", "canvas.css", "shell.css", "overlays.css"))
+    css = "\n".join((ROOT / "src/styles" / f).read_text() for f in ("base.css", "canvas.css", "shell.css", "overlays.css", "home.css"))
     html = (f"<!doctype html><meta charset=utf-8><style>{css}</style><div id=root></div>"
             "<script>window.WebSocket = class { constructor() {} send() {} close() {} addEventListener() {} }</script>"
             "<script src=/app.js></script>")
@@ -54,6 +54,7 @@ def bundle(tmp_path_factory):
 async def ui(bundle, bot_client):
     html, js = bundle
     hits: list = []
+    done = asyncio.Event()  # set each time a routed /api request has its response recorded
     async with apw.async_playwright() as p:
         try:
             b = await p.chromium.launch()
@@ -65,10 +66,12 @@ async def ui(bundle, bot_client):
             url = r.request.url[len(ORIGIN):]
             if url.startswith("/api/"):  # the page's real fetch → the real aiohttp route
                 body = r.request.post_data
-                hits.append({"path": url[4:], "method": r.request.method, "body": json.loads(body) if body else None})
+                hit = {"path": url[4:], "method": r.request.method, "body": json.loads(body) if body else None}
+                hits.append(hit)
                 res = await bot_client.request(r.request.method, url[4:], data=body,
                                                headers={"content-type": "application/json"})
-                hits[-1]["status"] = res.status
+                hit["status"] = res.status
+                done.set()
                 return await r.fulfill(status=res.status, body=await res.read(), content_type="application/json")
             if url == "/app.js":
                 return await r.fulfill(body=js, content_type="text/javascript")
@@ -77,6 +80,16 @@ async def ui(bundle, bot_client):
         await pg.goto(ORIGIN + "/")
         await pg.wait_for_function("window.__ready === true")
         pg.hits = hits
+
+        async def hits_event(n, timeout=5.0):  # until request n has its response (event-driven, no polling)
+            async def ready():
+                while not (len(hits) > n and "status" in hits[n]):
+                    done.clear()
+                    if len(hits) > n and "status" in hits[n]:
+                        break
+                    await done.wait()
+            await asyncio.wait_for(ready(), timeout)
+        pg.hits_event = hits_event
         yield pg
         await b.close()
 
@@ -137,6 +150,20 @@ class Run:
         return blocks, [b for b in blocks if b.get("type") == "run_stop"]
 
 
+async def show(ui, block, chat, lang="zh", theme="light"):
+    await ui.evaluate("([b, c, l, t]) => window.__render(b, c, l, t)", [block, chat, lang, theme])
+    modal = ui.locator(".ca-modal")
+    await modal.wait_for()
+    return modal
+
+
+async def wait_hit(ui, n):
+    """The first request after index n, once its response is in. The route handler records the request before it
+    awaits the backend, so the hit exists without a status for a moment: reading it then was the #393 flake."""
+    await ui.hits_event(n)
+    return ui.hits[n]
+
+
 async def click(ui, block, chat, label, lang="zh", theme="light", shot=None):
     await ui.evaluate("([b, c, l, t]) => window.__render(b, c, l, t)", [block, chat, lang, theme])
     modal = ui.locator(".ca-modal")
@@ -150,11 +177,7 @@ async def click(ui, block, chat, label, lang="zh", theme="light", shot=None):
         await modal.screenshot(path=str(Path(SHOT) / shot))
     n = len(ui.hits)
     await ui.get_by_role("button", name=label, exact=True).click()
-    for _ in range(250):
-        if len(ui.hits) > n:
-            break
-        await asyncio.sleep(0.02)
-    hit = ui.hits[-1]
+    hit = await wait_hit(ui, n)
     assert hit["path"] == f"/comfyart/bot/chats/{chat}/asks/{block['ask_id']}/answer" and hit["status"] == 202, hit
     return hit
 
@@ -228,3 +251,58 @@ async def test_shots(monkeypatch, bot_client, store, ui, lang, theme):
     await click(ui, b, run.chat, OVER_QUOTE["copy"][lang]["decline"], lang=lang, theme=theme,
                 shot=f"over-quote-{lang}-{theme}.png")
     await run.done()
+
+
+# --- #393 card chrome: no ✕, Esc = 先到这里, backdrop inert, body aligned with the title ---
+
+async def test_card_has_no_close_x(monkeypatch, bot_client, store, ui):
+    run = Run(monkeypatch, bot_client, store, prices=[9.0], script=lambda m, n: calls(GEN) if n == 0 else reply("done"))
+    await run.start()
+    modal = await show(ui, await run.pending(1), run.chat)
+    head = modal.locator(".ca-side__head")
+    assert await head.locator("button").count() == 0
+    assert await modal.locator(".ca-panel__icon").count() == 0
+    assert await modal.locator("button").count() == 2  # only 先到这里 / 确认
+
+
+async def test_esc_declines_one_quote_no_paid(monkeypatch, bot_client, store, ui):
+    run = Run(monkeypatch, bot_client, store, prices=[9.0], script=lambda m, n: calls(gen(2 * n), gen(2 * n + 1)))
+    await run.start()
+    b = await run.pending(1)
+    await show(ui, b, run.chat)
+    n = len(ui.hits)
+    await ui.keyboard.press("Escape")
+    hit = await wait_hit(ui, n)
+    assert hit["path"] == f"/comfyart/bot/chats/{run.chat}/asks/{b['ask_id']}/answer" and hit["status"] == 202, hit
+    assert hit["body"]["selected"] == [OVER_QUOTE["decline"]]
+    blocks, stops = await run.done()
+    assert len(run.asks) == 1 and run.r.paid_mcp() == []
+    assert stops[-1]["copy"]["key"] == "user_stop:quote_declined"
+
+
+async def test_backdrop_click_does_nothing(monkeypatch, bot_client, store, ui):
+    run = Run(monkeypatch, bot_client, store, prices=[9.0], script=lambda m, n: calls(GEN) if n == 0 else reply("done"))
+    await run.start()
+    b = await run.pending(1)
+    modal = await show(ui, b, run.chat)
+    n = len(ui.hits)
+    await ui.mouse.click(6, 6)  # the .ca-modal backdrop, outside the card
+    await ui.mouse.click(406, 414)
+    assert await modal.locator(".ca-modal__card").is_visible()
+    assert b["ask_id"] in bot_asks.PENDING and run.r.paid_mcp() == [] and len(run.asks) == 1
+    # no fixed wait: the very next request after the backdrop clicks must be this 先到这里, so the clicks posted nothing
+    hit = await click(ui, b, run.chat, "先到这里")
+    assert ui.hits.index(hit) == n and len(ui.hits) == n + 1, ui.hits[n:]
+    assert hit["body"]["selected"] == [OVER_QUOTE["decline"]]
+    await run.done()
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("theme", ["light", "dark"])
+async def test_body_left_edge_equals_title(monkeypatch, bot_client, store, ui, lang, theme):
+    run = Run(monkeypatch, bot_client, store, prices=[9.0], script=lambda m, n: calls(GEN) if n == 0 else reply("done"))
+    await run.start("画一张猫" if lang == "zh" else "draw a cat", lang=lang)
+    modal = await show(ui, await run.pending(1), run.chat, lang=lang, theme=theme)
+    title = await modal.locator(".ca-side__head > span").first.bounding_box()
+    body = await modal.locator(".ca-rename__body > div").first.bounding_box()
+    assert abs(body["x"] - title["x"]) < 0.5, (title, body)

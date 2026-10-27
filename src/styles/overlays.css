@@ -7,6 +7,8 @@
 .ca-rename { width: min(420px, calc(100vw - 32px)); }
 .ca-rename__field--batch > .ca-panel__input { flex: none; }
 .ca-rename__body { display: flex; flex-direction: column; gap: 12px; min-height: 0; padding: 0 20px 20px; overflow-y: auto; }
+/* #393: over-quote body starts at the title's left edge (head padding-left 16px) */
+.ca-overquote > .ca-rename__body { padding-left: 16px; }
 .ca-rename__field { display: flex; flex-direction: column; gap: 6px; }
 .ca-rename__field--key > .ca-panel__input { flex: none; }
 .ca-modal__card.ca-rename--key { border-radius: 20px; box-shadow: inset 0 0 0 var(--ca-border-w) var(--ca-border), var(--ca-shadow-float); }

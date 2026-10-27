@@ -568,6 +568,10 @@ export function OverQuote({ b }: { b: BotBlock }) {
       desc: body,
       ok: copy.confirm,
       cancelLabel: copy.decline,
+      // #393: no ✕, the backdrop does nothing; Esc = 先到这里 (cancel → decline)
+      closable: false,
+      backdropClose: false,
+      className: 'ca-overquote',
       run: () => { if (live) answer(OVER_QUOTE.confirm) },
       cancel: () => { if (live) answer(OVER_QUOTE.decline) },
     })

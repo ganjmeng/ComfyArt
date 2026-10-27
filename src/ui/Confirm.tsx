@@ -13,6 +13,12 @@ interface Ask {
   /** secondary button label; default 「取消」 */
   cancelLabel?: string
   danger?: boolean
+  /** show the header ✕; default false (confirm dialogs have none) */
+  closable?: boolean
+  /** backdrop click dismisses (= cancel); default true. #393 over-quote: false, the backdrop does nothing */
+  backdropClose?: boolean
+  /** extra class on the card */
+  className?: string
   run: () => void
   cancel?: () => void
   lines?: PlanLine[]
@@ -30,7 +36,7 @@ export function Confirm() {
   // #145: portal to <body> like Popover, so the existing .ca-modal z-index (2000) is compared with .ca-pop (1000)
   // instead of being trapped in .ca-root's stacking context, where any open popover covered it
   return createPortal(
-    <Modal title={ask.title} className="ca-rename ca-confirm" closable={false} onClose={dismiss}>
+    <Modal title={ask.title} className={['ca-rename ca-confirm', ask.className].filter(Boolean).join(' ')} closable={ask.closable ?? false} backdropClose={ask.backdropClose ?? true} onClose={dismiss}>
       <div className="ca-rename__body" data-testid="confirm-dialog">
         {ask.note ? <div>{ask.note}</div> : null}
         <div>{ask.desc}</div>
