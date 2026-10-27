@@ -281,9 +281,13 @@ body { background: var(--ca-float); }
 /* #371: /arti level-card avatar shares mascot sheet */
 .ca-arti__avatar .arti-mascot--avatar {
   position: static;
+  left: auto;
+  top: auto;
   display: block;
   width: 100%;
   height: 100%;
+  cursor: default;
+  pointer-events: none;
   background-repeat: no-repeat;
   background-size: calc(var(--mascot-frames, 17) * 100%) 100%;
   background-position: 0 0;
