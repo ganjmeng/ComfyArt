@@ -456,14 +456,26 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 
 
 /* #371 P1-mascot — composer left-top pixel Arti badge (DNA A) */
-.ca-composer { overflow: visible; background: var(--ca-float); }
+.ca-composer { overflow: visible; background: var(--ca-float); isolation: isolate; }
+/* #371fix: opaque composer surface painted ABOVE the mascot (Lovart: only the head peeks over the rim) */
+.ca-composer::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--ca-border-w, 1px));
+  border: inherit;
+  border-radius: inherit;
+  background: var(--ca-float);
+  box-sizing: border-box;
+  z-index: 1;
+  pointer-events: none;
+}
 .arti-mascot-wrap {
   position: absolute;
   left: 12px;
   top: -22px;
   width: 50px;
   height: 50px;
-  z-index: 2;
+  z-index: auto; /* no own stacking context: mascot z0 < surface z1 < content z2 < popover z5 */
 }
 .arti-mascot {
   position: absolute;
@@ -487,7 +499,7 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 /* avatar variant keeps span layout */
 span.arti-mascot { cursor: default; pointer-events: none; }
 /* content above the peek so body is half-hidden behind rounded top */
-.ca-composer > :not(.arti-mascot-wrap) { position: relative; z-index: 1; }
+.ca-composer > :not(.arti-mascot-wrap) { position: relative; z-index: 2; }
 
 @keyframes arti-mascot-play {
   from { background-position: 0 0; }
@@ -522,7 +534,9 @@ span.arti-mascot { cursor: default; pointer-events: none; }
 .arti-notify {
   position: absolute;
   left: 0;
-  top: calc(100% + 18px);
+  /* #375: open ABOVE the composer (Lovart parity) — popover bottom sits above composer top edge */
+  top: auto;
+  bottom: calc(100% + 8px);
   width: 280px;
   padding: 12px 14px;
   border-radius: 12px;

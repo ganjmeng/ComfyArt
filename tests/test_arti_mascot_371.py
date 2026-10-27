@@ -156,3 +156,38 @@ def test_no_white_ghost_claimed_as_gold() -> None:
     # mutation: ghost filenames must not reappear under assets
     ghosts = list(ASSETS.glob("*developing*")) + list(ASSETS.glob("*beret*")) + list(ASSETS.glob("*brush*"))
     assert ghosts == [], ghosts
+
+
+def _rule(sel: str) -> str:
+    i = SHELL.index(sel + " {")
+    return SHELL[i:SHELL.index("}", i)]
+
+
+def test_371fix_mascot_behind_composer_surface() -> None:
+    """Lovart parity: composer opaque surface (z1) covers mascot lower body (z0); head peeks above rim."""
+    assert "isolation: isolate" in SHELL[SHELL.index(".ca-composer { overflow: visible"):][:120]
+    surf = _rule(".ca-composer::before")
+    assert "background: var(--ca-float)" in surf and "z-index: 1" in surf
+    assert "pointer-events: none" in surf  # surface never eats mascot clicks
+    wrap = _rule(".arti-mascot-wrap")
+    assert "z-index: 2" not in wrap and "z-index: auto" in wrap
+    assert "top: -22px" in wrap and "left: 12px" in wrap
+    m = _rule(".arti-mascot")
+    assert "z-index: 0" in m and "pointer-events: auto" in m
+    assert ".ca-composer > :not(.arti-mascot-wrap) { position: relative; z-index: 2; }" in SHELL
+    # 50px tall at top -22 → 28px below rim hidden by the surface, 22px head peeks (more on 11px hover lift)
+    assert "translateY(-11px)" in SHELL
+    assert "z-index: 5" in _rule(".arti-notify")  # popover stays above surface
+
+
+def test_375_notify_popover_opens_above_composer() -> None:
+    """Popover bottom must be <= composer top: anchored by bottom above the mascot wrap (which peeks above the rim)."""
+    rule = _rule(".arti-notify")
+    assert "bottom: calc(100% + 8px)" in rule
+    assert "top: auto" in rule
+    assert "top: calc(100%" not in rule
+    assert "z-index: 5" in rule
+    # wrap peeks above rim (top -22px), so wrap-top - 8px is strictly above the composer top edge
+    import re
+    m = re.search(r"top:\s*(-\d+)px", _rule(".arti-mascot-wrap"))
+    assert m and int(m.group(1)) <= 0
