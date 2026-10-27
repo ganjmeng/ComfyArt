@@ -1,11 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { atom, useValue } from 'tldraw'
 
 import { uploadImage, viewUrl } from '../comfy'
 import { errorText } from '../jobs'
 import { libraryAtom } from '../library'
 import { ask, parseJson } from '../llm'
-import { loadMemory, MEMORY_CATEGORIES, MemoryConflict, memoryErrorAtom, MemoryReadError, MemoryWriteError, removeMemory, updateMemory, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
+import { loadMemory, MEMORY_CATEGORIES, MemoryConflict, memoryErrorAtom, memoryFocusAtom, MemoryReadError, MemoryWriteError, removeMemory, undoMemoryUpdated, updateMemory, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
 import { isPdf, uploadPdf } from '../pdf'
 import { AbilitiesPanel } from './AbilitiesPanel'
 import { Icons } from './icons'
@@ -73,14 +73,24 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
   const memory = useValue(memoryAtom)
   const log = useValue(memoryLogAtom)
   const loadError = useValue(memoryErrorAtom)
+  const focus = useValue(memoryFocusAtom)
   const [tab, setTab] = useState('about')
   const [text, setText] = useState('')
   const [editing, setEditing] = useState<string | null>(null)
   const [onboarding, setOnboarding] = useState(false)
   const [busy, setBusy] = useState('')
   const file = useRef<HTMLInputElement>(null)
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  // #382: when opened from 「记忆已更新 ›」, switch to that item's category and scroll it into view.
+  useEffect(() => {
+    if (!open || !focus) return
+    const m = memoryAtom.get().find((x) => x.id === focus.id)
+    if (m) setTab(m.category ?? 'about')
+    const t = window.setTimeout(() => rowRefs.current[focus.id]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 50)
+    return () => clearTimeout(t)
+  }, [open, focus?.id])
   if (!open) return null
-  const close = () => { memoryOpenAtom.set(false); setEditing(null); setOnboarding(false) }
+  const close = () => { memoryOpenAtom.set(false); setEditing(null); setOnboarding(false); memoryFocusAtom.set(null) }
   // store failures already showed 保存失败，请重试 (#381); only other errors go to the panel
   const fail = (e: unknown) => { if (!(e instanceof MemoryWriteError || e instanceof MemoryConflict || e instanceof MemoryReadError)) onError(errorText(e)) }
   const add = () => {
@@ -141,7 +151,13 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
             )))}
           {categoryTab && shown.length === 0 && <div className="ca-side__empty">{t('memoryDialog.noMemoriesYet')}</div>}
           {shown.map((m) => (
-            <div key={m.id} className="ca-memory__row">
+            <div
+              key={m.id}
+              className="ca-memory__row"
+              data-focus={focus?.id === m.id || undefined}
+              data-testid={focus?.id === m.id ? 'memory-focus-row' : undefined}
+              ref={(el) => { rowRefs.current[m.id] = el }}
+            >
               {editing === m.id ? (
                 <input
                   autoFocus
@@ -153,6 +169,18 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
               ) : (
                 <span className="ca-menu__grow" onDoubleClick={() => setEditing(m.id)}>{m.text}</span>
               )}
+              {focus?.id === m.id && focus.undoable ? (
+                <button
+                  type="button"
+                  className="ca-panel__secondary"
+                  data-testid="memory-updated-undo"
+                  onClick={() => {
+                    void undoMemoryUpdated(m.id).then((ok) => {
+                      if (ok) { showMemoryToast(t('arti.memory.deletedToast')); memoryFocusAtom.set(null) }
+                    }).catch(fail)
+                  }}
+                >{t('memoryDialog.undoUpdated')}</button>
+              ) : null}
               <button type="button" className="ca-history__del" title={t('memoryDialog.correctMemory')} onClick={() => setEditing(m.id)}>{Icons.textTool}</button>
               <button type="button" className="ca-history__del" title={t('common.delete')} onClick={() => confirmAtom.set({ title: t('arti.memory.deleteTitle'), desc: t('arti.memory.deleteDesc', m.text), ok: t('common.delete'), danger: true, run: () => { void removeMemory(m.id, t('frameToolbar.manual')).then((ok) => { if (ok) showMemoryToast(t('arti.memory.deletedToast')) }).catch(fail) } })}>{Icons.trash}</button>
             </div>

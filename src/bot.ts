@@ -54,6 +54,9 @@ export interface BotBlock {
   srcs?: string[]
   error?: string
   detail?: Record<string, any>
+  // #382 memory-updated row
+  memory_ids?: string[]
+  texts?: string[]
   // #391 run_stop card
   run_id?: string
   stop?: { reason: string; sub?: string; dimension?: string; detail?: string; step?: number }
@@ -301,6 +304,25 @@ export async function branchFrom(messageId: string) {
 function patchMessages(chatId: string, messageId: string, fn: (m: BotMessage) => BotMessage) {
   if (chatIdAtom.get() !== chatId) return
   messagesAtom.set(messagesAtom.get().map((m) => (m.id === messageId ? fn(m) : m)))
+}
+
+/** #382: insert 「记忆已更新 ›」 between thinking and reply; persist via PATCH. */
+export async function announceMemoryUpdated(chatId: string, messageId: string, memories: { id: string; text: string }[]) {
+  if (!memories.length) return
+  const { insertMemoryUpdatedBlock } = await import('./memoryBudget')
+  const apply = (m: BotMessage): BotMessage => ({
+    ...m,
+    blocks: insertMemoryUpdatedBlock(m.blocks as any, {
+      memory_ids: memories.map((x) => x.id),
+      texts: memories.map((x) => x.text),
+    }) as BotBlock[],
+  })
+  patchMessages(chatId, messageId, apply)
+  const local = messagesAtom.get().find((m) => m.id === messageId)
+  if (!local) return
+  try {
+    await api(`/comfyart/bot/chats/${chatId}/messages/${messageId}`, send({ blocks: local.blocks }, 'PATCH'))
+  } catch { /* offline: local row still shows for this session */ }
 }
 
 function appendBlock(m: BotMessage, block: BotBlock): BotMessage {

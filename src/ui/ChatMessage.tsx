@@ -13,6 +13,8 @@ import { Markdown } from './Markdown'
 import { Thumb } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { lang, t } from '../i18n'
+import { memoryFocusAtom } from '../memory'
+import { memoryOpenAtom } from './MemoryDialog'
 import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
 
@@ -23,6 +25,7 @@ type ProcessKind =
   | 'thought' | 'outputting' | 'skill' | 'skill_file_read' | 'search' | 'search_pages'
   | 'image' | 'video'
   | 'code' | 'code_generated' | 'code_updated' | 'design_validated' | 'preview_artifact'
+  | 'memory_updated'
   | 'tool'
 
 const VIDEO_TOOLS = new Set(['generate_video', 'animate_image', 'extend_video', 'upscale_video', 'remove_video_background'])
@@ -53,6 +56,7 @@ const PROCESS_ICONS: Record<ProcessKind, ReactNode> = {
   code_updated: Icons.filePenLine,
   design_validated: Icons.listChecks,
   preview_artifact: Icons.sparkles,
+  memory_updated: Icons.clock,
   tool: Icons.agent,
 }
 
@@ -90,6 +94,7 @@ function searchResultCount(use: BotBlock, result?: BotBlock): number | undefined
 
 function processKindOf(b: BotBlock, opts?: { result?: BotBlock; live?: boolean }): ProcessKind | null {
   if (b.type === 'thinking') return 'thought'
+  if (b.type === 'memory_updated') return 'memory_updated'
   if (b.type !== 'tool_use') return null
   const n = toolName(b.name)
   if (n === 'skill' || n === 'Skill') return skillActionIsFileRead(b.input) ? 'skill_file_read' : 'skill'
@@ -141,6 +146,7 @@ function processLabel(
   if (kind === 'code_updated') return t('chatMessage.codeUpdated')
   if (kind === 'design_validated') return t('chatMessage.designValidated')
   if (kind === 'preview_artifact') return t('chatMessage.previewArtifact')
+  if (kind === 'memory_updated') return t('chatMessage.memoryUpdated')
   return opts?.fallback || t('chatMessage.inProgress')
 }
 
@@ -677,6 +683,8 @@ type ProcessStep = {
   text?: string
   /** CSS aspect-ratio when known from tool/job; chat hero defaults via tokens otherwise. */
   aspectRatio?: string
+  /** #382: memory ids for the memory_updated row. */
+  memoryIds?: string[]
 }
 
 /** #326: Lovart-style multi-step process rail (solid spine · status card outside). */
@@ -692,6 +700,7 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
         <div className="ca-process__spine" aria-hidden="true" />
         {steps.map((s) => {
           const canOpen = s.kind === 'thought' && !!s.text?.trim()
+          const isMemory = s.kind === 'memory_updated'
           const open = openKey === s.key
           const row = (
             <>
@@ -701,8 +710,14 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
               <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>{s.label}</span>
             </>
           )
+          const onMemory = () => {
+            const id = s.memoryIds?.[0]
+            if (!id) return
+            memoryFocusAtom.set({ id, undoable: true })
+            memoryOpenAtom.set(true)
+          }
           return (
-            <div key={s.key} className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind}>
+            <div key={s.key} className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-testid={isMemory ? 'memory-updated-row' : undefined}>
               {canOpen ? (
                 <button
                   type="button"
@@ -710,6 +725,10 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
                   onClick={() => setOpenKey(open ? null : s.key)}
                   aria-expanded={open}
                 >
+                  {row}
+                </button>
+              ) : isMemory ? (
+                <button type="button" className="ca-process__rowbtn ca-process__rowbtn--memory" onClick={onMemory} data-testid="memory-updated-open">
                   {row}
                 </button>
               ) : row}
@@ -872,7 +891,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     const kindResolved = processKindOf(b, { result, live: stepLiveProbe })
     if (kindResolved && (b.type === 'thinking' ? !!b.text?.trim() : true) && b.type !== 'tool_result') {
       // When done, process tool_use still rails (muted); do not also fold into StepGroup
-      if (b.type === 'tool_use' || b.type === 'thinking') {
+      if (b.type === 'tool_use' || b.type === 'thinking' || b.type === 'memory_updated') {
         flush() // non-process tool run ends before process rail
         const stepLive = stepLiveProbe
         // Writing-code sub-steps: ensure a muted `code` header row precedes the first sub-kind
@@ -901,6 +920,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
           live: stepLive,
           text: b.type === 'thinking' ? b.text : undefined,
           aspectRatio,
+          memoryIds: b.type === 'memory_updated' ? (b.memory_ids ?? []) : undefined,
         })
         return
       }

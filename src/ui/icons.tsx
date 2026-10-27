@@ -48,6 +48,8 @@ export const Icons = {
   panelRight: <Svg><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" /><path d="M14.5 4.5v15" /></Svg>,
   agent: <Svg fill><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19m-3 7.2a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8m6 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8M8.2 15h7.6a4.2 4.2 0 0 1-7.6 0" /></Svg>,
   think: <Svg strokeWidth={2}><path d="M12 18V5" /><path d="M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4" /><path d="M17.707 6.294A3 3 0 1012 5a3 3 0 10-5.707 1.294" /><path d="M17.996 5.125a4 4 0 012.526 5.77" /><path d="M18 18a4 4 0 002-7.465" /><path d="M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517" /><path d="M6 18a4 4 0 01-2-7.465" /><path d="M6.004 5.125a4 4 0 00-2.526 5.77" /></Svg>,
+  /** #382: clock for 「记忆已更新 ›」 row (CN memory-updated-row-in-chat-light). */
+  clock: <Svg><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v5l3.5 2" /></Svg>,
   /* #326 Lucide AI Elements · stroke 2 · process timeline */
   scrollText: <Svg strokeWidth={2}><path d="M15 12h-5" /><path d="M15 8h-5" /><path d="M19 17V5a2 2 0 0 0-2-2H4" /><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></Svg>,
   globe: <Svg strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></Svg>,

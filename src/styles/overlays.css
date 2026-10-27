@@ -784,3 +784,14 @@
 .ca-toolbar .ca-bar__label { padding: 0 6px; }
 /* frame bar clamped inside the viewport (FrameToolbar.tsx); if still wider, it scrolls instead of being cut */
 .ca-toolbar--frame { overflow-x: auto; scrollbar-width: none; }
+
+/* #382: memory-updated row + focused memory in dialog */
+.ca-process__row[data-kind="memory_updated"] .ca-process__label {
+  color: var(--ca-muted);
+}
+.ca-process__rowbtn--memory { cursor: pointer; }
+.ca-memory__row[data-focus="true"] {
+  outline: 1px solid color-mix(in srgb, var(--ca-accent, var(--ca-strong)) 55%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ca-accent, var(--ca-strong)) 8%, transparent);
+}

@@ -6,5 +6,10 @@
   "backoff_max_ms": 400,
   "network_retries": 1,
   "op_ids_kept": 50,
-  "max_log": 500
+  "max_log": 500,
+  "max_inject": 40,
+  "max_inject_tokens": 1500,
+  "image_tokens": 1500,
+  "input_budget_percent": 70,
+  "fallback_context_window": 32000
 }

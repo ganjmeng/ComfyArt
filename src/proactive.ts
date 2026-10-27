@@ -4,6 +4,7 @@ import { api, readUserJson, uploadImage, viewUrl, writeUserJson } from './comfy'
 import { botEnabledAtom, settingsAtom, type BotMessage } from './bot'
 import { errorText, type ErrorSink } from './jobs'
 import { ask, parseJson } from './llm'
+import { announceMemoryUpdated } from './bot'
 import { logMemory, memoryAtom, remember, toInputs } from './memory'
 import { currentProject, notify } from './notices'
 import { exportImage } from './shapes/ArtboardShape'
@@ -60,10 +61,11 @@ async function exchange(chatId: string, messageId: string) {
   return reply && user ? { user: text(user), reply: text(reply) } : null
 }
 
-async function learnMemory(ex: { user: string; reply: string }) {
+async function learnMemory(ex: { user: string; reply: string }, chatId: string, messageId: string) {
   const known = memoryAtom.get().map((m) => `- ${m.text}`).join('\n')
   const raw = await ask(`Already remembered:\n${known || '(nothing)'}\n\nUser: ${ex.user}\n\nAgent: ${ex.reply.slice(0, 2000)}`, MEMORY_SYSTEM, [])
-  await remember(toInputs(parseJson(raw)?.memories), t('proactive.source'))
+  const added = await remember(toInputs(parseJson(raw)?.memories), t('proactive.source'))
+  if (added.length) await announceMemoryUpdated(chatId, messageId, added)
 }
 
 async function evolveSkill(prompts: string[]) {
@@ -91,7 +93,7 @@ async function onTurnDone(e: { chat_id: string; message_id: string; status: stri
     if (skills) s.skillMark = s.prompts.length
     return { memory, skills }
   })
-  if (plan?.memory) await learnMemory(ex)
+  if (plan?.memory) await learnMemory(ex, e.chat_id, e.message_id)
   if (plan?.skills) await evolveSkill(plan.skills)
 }
 

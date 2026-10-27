@@ -30,6 +30,7 @@ POLICY = read_json(os.path.join(os.path.dirname(__file__), "memory_policy.json")
 OWNER_DEFAULT = POLICY.get("owner_default", "local")  # owner_id (= user_id); single local user
 WORKSPACE_DEFAULT = POLICY.get("workspace_default", "local")  # workspace_id (= project_id); one local workspace
 OPS_KEPT = int(POLICY.get("op_ids_kept", 50))
+MAX_LOG = int(POLICY.get("max_log", 500))
 STORE = "comfyart/memory-store.json"
 LEGACY = {"memory": "comfyart/memory.json", "log": "comfyart/memory-log.json", "meta": "comfyart/memory-meta.json"}
 META_SCHEMA = {"demoCleanup381": bool}  # every meta key the client may write today, with its type
@@ -155,7 +156,7 @@ async def write_memory(request: web.Request) -> web.Response:
         if current["rev"] != base:
             return web.json_response({"error": "stale memory write", "state": _public(current)}, status=409)
         prior, now = {m.get("id"): m for m in current["memory"]}, int(time.time() * 1000)
-        nxt = {"memory": [stamp(m, prior.get(m.get("id")), now) for m in memory if isinstance(m, dict)], "log": log,
+        nxt = {"memory": [stamp(m, prior.get(m.get("id")), now) for m in memory if isinstance(m, dict)], "log": (log if isinstance(log, list) else [])[:MAX_LOG],
                "meta": {k: v for k, v in meta.items() if k != "rev"}, "rev": base + 1,
                "ops": ([*current["ops"], op] if op else current["ops"])[-OPS_KEPT:]}
         await asyncio.to_thread(atomic_write_json, paths["store"], nxt)
