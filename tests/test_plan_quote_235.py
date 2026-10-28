@@ -61,12 +61,13 @@ async def test_wording_zh_and_en_and_buttons():
     zh, seen = await _quote(steps, threshold=0.5)
     en, _ = await _quote(steps, threshold=0.5, lang="en")
     assert zh is not None and en is not None
-    assert zh.prompt == "这个任务共 2 步，预计约 $0.64，超过了你设置的 $0.50 确认线。确定开始吗？"
-    assert en.prompt == "This task has 2 steps and will cost about $0.64, above your $0.50 confirm limit. Start?"
+    assert zh.prompt == "这个任务共 2 步，预计约 64 积分，超过了你设置的 50 积分确认线。确定开始吗？"
+    assert en.prompt == "This task has 2 steps and will cost about 64 credits, above your 50 credits confirm limit. Start?"
+    assert "$" not in zh.prompt and "$" not in en.prompt
     assert zh.ask and en.ask
     assert [(ln.text, ln.price) for ln in zh.lines] == [
-        ("生成海报 · poster-xl", "$0.04"), ("生成视频 · clip-hd", "$0.60")]
-    assert zh.total_label == "总价" and zh.total_text == "$0.64"
+        ("生成海报 · poster-xl", "4 积分"), ("生成视频 · clip-hd", "60 积分")]
+    assert zh.total_label == "总价" and zh.total_text == "64 积分"
     assert en.total_label == "Total"
     spec = zh.ask_spec()
     assert spec["kind"] == "plan_quote"
@@ -107,12 +108,13 @@ async def test_unknown_price_uses_the_dearest_model_and_marks_approx():
 
     quote = await build_quote(steps, "zh", threshold=0.5, pricer=pricer, models_for=models_for)
     assert quote is not None and quote.ask
-    assert quote.lines[0].price == "约 $0.24" and "mystery" in quote.lines[0].text
-    assert quote.lines[1].price == "约 $0.90" and "dearest-video" in quote.lines[1].text
-    assert quote.total == 1.14 and quote.total_text == "约 $1.14"
+    assert quote.lines[0].price == "约 24 积分" and "mystery" in quote.lines[0].text
+    assert quote.lines[1].price == "约 90 积分" and "dearest-video" in quote.lines[1].text
+    assert quote.total == 1.14 and quote.total_text == "约 114 积分"
+    assert "$" not in quote.total_text and "$" not in quote.prompt
     assert called == ["acme/mystery"]  # a named model is quoted; an empty one is not
     en = await build_quote(steps, "en", threshold=0.5, pricer=pricer, models_for=models_for)
-    assert en is not None and en.lines[0].price == "about $0.24" and en.total_text == "about $1.14"
+    assert en is not None and en.lines[0].price == "about 24 credits" and en.total_text == "about 114 credits"
 
 
 async def test_fully_unpriced_step_still_asks_without_a_fake_zero():
@@ -128,13 +130,13 @@ async def test_fully_unpriced_step_still_asks_without_a_fake_zero():
     quote = await build_quote(steps, "zh", threshold=100, pricer=pricer, models_for=models_for)
     assert quote is not None and quote.ask  # one step has no price at all, so ask even under the line
     assert quote.lines[0].price == "约"
-    assert "$0.00" not in quote.lines[0].price
-    assert quote.lines[1].price == "$0.10"
-    assert quote.total_text == "约 $0.10"  # the unpriced line makes the sum an estimate too
+    assert "$" not in quote.lines[0].price and "积分 0" not in quote.lines[0].price
+    assert quote.lines[1].price == "10 积分"
+    assert quote.total_text == "约 10 积分"  # the unpriced line makes the sum an estimate too
 
 
 async def test_an_estimate_line_prefixes_the_total():
-    """One 「约」 line makes the total 「约 $0.64」 / "about $0.64". Exact lines leave the total bare."""
+    """One 「约」 line makes the total 「约 64 积分」 / "about 64 credits". Exact lines leave the total bare."""
     steps = [_step("海报", "generate_image", POSTER, prompt="p"),
              _step("视频", "generate_video", "acme/mystery", prompt="v")]
 
@@ -147,14 +149,14 @@ async def test_an_estimate_line_prefixes_the_total():
     zh = await build_quote(steps, "zh", threshold=0.5, pricer=pricer, models_for=models_for)
     en = await build_quote(steps, "en", threshold=0.5, pricer=pricer, models_for=models_for)
     assert zh is not None and en is not None
-    assert zh.lines[0].price == "$0.40" and zh.lines[1].price == "约 $0.24"
-    assert zh.total_text == "约 $0.64" and en.total_text == "about $0.64"
-    assert en.lines[1].price == "about $0.24"
+    assert zh.lines[0].price == "40 积分" and zh.lines[1].price == "约 24 积分"
+    assert zh.total_text == "约 64 积分" and en.total_text == "about 64 credits"
+    assert en.lines[1].price == "about 24 credits"
     exact, _ = await _quote(
         [_step("a", "generate_image", POSTER, prompt="p"),
          _step("b", "generate_image", POSTER, prompt="q")],
         threshold=0.5, prices={POSTER: 0.32})
-    assert exact is not None and exact.total_text == "$0.64"
+    assert exact is not None and exact.total_text == "64 积分"
 
 
 async def test_fallback_is_not_priced_and_count_is_multiplied():
@@ -167,8 +169,8 @@ async def test_fallback_is_not_priced_and_count_is_multiplied():
     ]
     quote, seen = await _quote(steps, threshold=0.5, prices={POSTER: 0.04, VIDEO: 0.10, "acme/backup": 9})
     assert quote is not None and quote.n == 2
-    assert quote.lines[0].price == "$0.16"  # 0.04 x 4, the amount that is summed
-    assert quote.lines[1].price == "$0.10"
+    assert quote.lines[0].price == "16 积分"  # 0.04 x 4, the amount that is summed
+    assert quote.lines[1].price == "10 积分"
     assert quote.total == 0.26 and quote.ask is False
     assert [m for m, _ in seen] == [POSTER, VIDEO]
     assert len(quote.keys) == 2
@@ -228,12 +230,12 @@ async def _run(monkeypatch, responses, *, lang="zh", quote=None, confirm="start"
 
 def _over():
     from ComfyArt.bot.plan_quote import Line, Quote
-    line = Line("生成海报 · poster-xl", "$0.40", 0.40, False, False, canon_key("generate_image", {"prompt": "a"}, POSTER))
-    line2 = Line("生成视频 · clip-hd", "$0.60", 0.60, False, False, canon_key("generate_video", {"prompt": "b", "duration": 5}, VIDEO))
+    line = Line("生成海报 · poster-xl", "40 积分", 0.40, False, False, canon_key("generate_image", {"prompt": "a"}, POSTER))
+    line2 = Line("生成视频 · clip-hd", "60 积分", 0.60, False, False, canon_key("generate_video", {"prompt": "b", "duration": 5}, VIDEO))
     return Quote(
         lines=[line, line2], total=1.0, n=2, ask=True, lang="zh",
         prompt="这个任务共 2 步，预计约 $1.00，超过了你设置的 $0.50 确认线。确定开始吗？",
-        total_label="总价", total_text="$1.00", keys=[line.key, line2.key], cancel_text=CANCEL_TEXT["zh"],
+        total_label="总价", total_text="100 积分", keys=[line.key, line2.key], cancel_text=CANCEL_TEXT["zh"],
     )
 
 
@@ -281,10 +283,10 @@ async def test_start_runs_the_quoted_calls_and_skips_a_second_ask(monkeypatch):
 
 async def test_under_threshold_does_not_ask_and_hides_prices(monkeypatch):
     from ComfyArt.bot.plan_quote import Line, Quote
-    a = Line("a", "$0.04", 0.04, False, False, canon_key("generate_image", {"prompt": "a"}, ""))
-    b = Line("b", "$0.04", 0.04, False, False, canon_key("generate_image", {"prompt": "b"}, ""))
+    a = Line("a", "4 积分", 0.04, False, False, canon_key("generate_image", {"prompt": "a"}, ""))
+    b = Line("b", "4 积分", 0.04, False, False, canon_key("generate_image", {"prompt": "b"}, ""))
     quiet = Quote(lines=[a, b], total=0.08, n=2, ask=False, lang="zh", prompt="unused",
-                  total_label="总价", total_text="$0.08", keys=[a.key, b.key], cancel_text=CANCEL_TEXT["zh"])
+                  total_label="总价", total_text="8 积分", keys=[a.key, b.key], cancel_text=CANCEL_TEXT["zh"])
     responses = [
         {"choices": [{"message": {"content": "", "tool_calls": [
             _tc(1, "generate_image", {"prompt": "a"}),

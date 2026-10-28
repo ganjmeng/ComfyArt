@@ -1004,19 +1004,56 @@ _quotes: dict[str, tuple[float, float]] = {}
 _PRICE_FIELDS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "num_images", "quality")
 
 
-def confirm_usd() -> float:
-    """Cost at or above which a job needs a second confirmation; 0 means always confirm."""
-    try:
-        v = json.loads(open(app_path(PREFS_FILE)).read()).get("confirm_usd")
-        if valid_confirm_usd(v):
-            return float(v)
-    except (OSError, ValueError, AttributeError):
-        pass
-    return float(limits()["confirm_usd"])
+# #397: confirm line is stored as integer UI credits (1 credit = $0.01). Legacy confirm_usd
+# prefs migrate via ui_credits without loss. Backend comparison still uses USD (= credits/100).
+CONFIRM_CREDITS_MAX = 100_000  # same ceiling as the old $0–$1000 range
+DEFAULT_CONFIRM_CREDITS = 50   # was limits()["confirm_usd"] = 0.5
 
 
 def valid_confirm_usd(v) -> bool:
+    """Legacy USD confirm-line validator (migration only)."""
     return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and 0 <= v <= 1000
+
+
+def valid_confirm_credits(v) -> bool:
+    """Integer credit count in [0, CONFIRM_CREDITS_MAX]. Floats that equal an int are accepted."""
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+        return False
+    if v < 0 or v > CONFIRM_CREDITS_MAX:
+        return False
+    return float(v) == int(v)
+
+
+def migrate_confirm_prefs(data: dict) -> tuple[int, bool]:
+    """Return (credits, dirty). dirty=True when a legacy confirm_usd value must be rewritten."""
+    from ComfyArt.bot.run_budget import ui_credits
+    if not isinstance(data, dict):
+        return DEFAULT_CONFIRM_CREDITS, False
+    if "confirm_credits" in data and valid_confirm_credits(data["confirm_credits"]):
+        return int(data["confirm_credits"]), False
+    if "confirm_usd" in data and valid_confirm_usd(data["confirm_usd"]):
+        return ui_credits(float(data["confirm_usd"])), True
+    return DEFAULT_CONFIRM_CREDITS, False
+
+
+def confirm_credits() -> int:
+    """User's confirm line in UI credits. Migrates legacy confirm_usd prefs once, without loss."""
+    path = app_path(PREFS_FILE)
+    try:
+        raw = json.loads(open(path).read())
+        credits, dirty = migrate_confirm_prefs(raw if isinstance(raw, dict) else {})
+        if dirty:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as f:
+                json.dump({"confirm_credits": credits}, f)
+        return credits
+    except (OSError, ValueError, AttributeError, TypeError):
+        return DEFAULT_CONFIRM_CREDITS
+
+
+def confirm_usd() -> float:
+    """USD threshold for backend comparison / estimate payloads. Derived from confirm_credits."""
+    return confirm_credits() / 100.0
 
 
 def needs_confirm(price: float) -> bool:
@@ -2223,19 +2260,38 @@ async def wavespeed_estimate(request: web.Request) -> web.Response:
 
 @routes.get("/comfyart/wavespeed/confirm")
 async def wavespeed_confirm_get(_request: web.Request) -> web.Response:
-    return web.json_response({"confirm_usd": confirm_usd()})
+    # #397: settings + clients read integer credits; USD stays in backend logs / estimate.price only.
+    return web.json_response({"confirm_credits": confirm_credits()})
 
 
 @routes.put("/comfyart/wavespeed/confirm")
 async def wavespeed_confirm_put(request: web.Request) -> web.Response:
-    v = (await json_body(request)).get("confirm_usd")
-    if not valid_confirm_usd(v):
-        return error("confirm_usd must be a number from 0 to 1000 (0 = always confirm)", 400)
+    body = await json_body(request)
+    if "confirm_credits" in body:
+        v = body.get("confirm_credits")
+        if not valid_confirm_credits(v):
+            return error(
+                f"confirm_credits must be an integer from 0 to {CONFIRM_CREDITS_MAX} (0 = always confirm)",
+                400,
+            )
+        credits = int(v)
+    elif "confirm_usd" in body:
+        # brief back-compat: accept legacy USD writes and store as credits
+        v = body.get("confirm_usd")
+        if not valid_confirm_usd(v):
+            return error("confirm_usd must be a number from 0 to 1000 (0 = always confirm)", 400)
+        from ComfyArt.bot.run_budget import ui_credits
+        credits = ui_credits(float(v))
+    else:
+        return error(
+            f"confirm_credits must be an integer from 0 to {CONFIRM_CREDITS_MAX} (0 = always confirm)",
+            400,
+        )
     path = app_path(PREFS_FILE)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
-        json.dump({"confirm_usd": float(v)}, f)
-    return web.json_response({"confirm_usd": float(v)})
+        json.dump({"confirm_credits": credits}, f)
+    return web.json_response({"confirm_credits": credits})
 
 
 @routes.get("/comfyart/wavespeed/history/{task}")

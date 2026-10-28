@@ -39,8 +39,9 @@ def test_send_uses_turn_lang(monkeypatch):
 def test_key_dialog_copy():
     assert ZH["wsKey.placeholder"] == "粘贴 WaveSpeed Key"
     assert EN["wsKey.placeholder"] == "Paste your WaveSpeed key"
-    assert ZH["wsKey.confirmUsd"].replace("{0}", "X") == "单次费用达到 $X 时先确认（0 = 每次都确认）"
-    assert EN["wsKey.confirmUsd"].replace("{0}", "X") == "Ask before jobs costing $X or more (0 = always)"
+    assert ZH["wsKey.confirmUsd"].replace("{0}", "X") == "单次费用达到 X 积分时先确认（0 = 每次都确认）"
+    assert EN["wsKey.confirmUsd"].replace("{0}", "X") == "Ask before jobs costing X credits or more (0 = always)"
+    assert "$" not in ZH["wsKey.confirmUsd"] and "$" not in EN["wsKey.confirmUsd"]
     src = (ROOT / "src/ui/KeySettings.tsx").read_text()
     assert 'placeholder="ws-' not in src and "t('wsKey.placeholder')" in src
     assert "setDraft(''); close()" in src  # closes only in the success branch of saveKey

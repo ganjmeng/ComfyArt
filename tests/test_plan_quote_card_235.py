@@ -61,14 +61,16 @@ def test_plan_card_reuses_confirm_styles(browser, bundle, lang, theme):
     assert "ca-panel__primary" in (primary.get_attribute("class") or "")
     if lang == "zh":
         assert secondary.inner_text() == "取消" and primary.inner_text() == "开始"
-        assert "这个任务共 2 步，预计约 $0.64，超过了你设置的 $0.50 确认线。确定开始吗？" in card.inner_text()
-        assert "约 $0.24" in card.inner_text() and "总价" in card.inner_text()
-        assert page.locator(".ca-panel__val").nth(2).inner_text() == "约 $0.64"
+        assert "这个任务共 2 步，预计约 64 积分，超过了你设置的 50 积分确认线。确定开始吗？" in card.inner_text()
+        assert "约 24 积分" in card.inner_text() and "总价" in card.inner_text()
+        assert "$" not in card.inner_text()
+        assert page.locator(".ca-panel__val").nth(2).inner_text() == "约 64 积分"
     else:
         assert secondary.inner_text() == "Cancel" and primary.inner_text() == "Start"
-        assert "This task has 2 steps and will cost about $0.64, above your $0.50 confirm limit. Start?" in card.inner_text()
-        assert "about $0.24" in card.inner_text() and "Total" in card.inner_text()
-        assert page.locator(".ca-panel__val").nth(2).inner_text() == "about $0.64"
+        assert "This task has 2 steps and will cost about 64 credits, above your 50 credits confirm limit. Start?" in card.inner_text()
+        assert "about 24 credits" in card.inner_text() and "Total" in card.inner_text()
+        assert "$" not in card.inner_text()
+        assert page.locator(".ca-panel__val").nth(2).inner_text() == "about 64 credits"
     metrics = page.evaluate("""() => {
       const card = document.querySelector('.ca-modal__card')
       const btn = document.querySelector('.ca-panel__primary')

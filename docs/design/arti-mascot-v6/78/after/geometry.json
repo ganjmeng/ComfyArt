@@ -1,0 +1,302 @@
+[
+ {
+  "name": "composer-lv1-idle-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "1",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv1-hover-dark.png",
+  "wt": 712,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "1",
+  "th": "dark",
+  "peekPx": 39
+ },
+ {
+  "name": "composer-lv1-f12-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "1",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv1-f13-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "1",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv1-f14-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "1",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv2-idle-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "2",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv2-hover-dark.png",
+  "wt": 712,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "2",
+  "th": "dark",
+  "peekPx": 39
+ },
+ {
+  "name": "composer-lv2-f12-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "2",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv2-f13-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "2",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv2-f14-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "2",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv3-idle-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "3",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv3-hover-dark.png",
+  "wt": 712,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "3",
+  "th": "dark",
+  "peekPx": 39
+ },
+ {
+  "name": "composer-lv3-f12-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "3",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv3-f13-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "3",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv3-f14-dark.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "3",
+  "th": "dark",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv1-idle-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "1",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv1-hover-light.png",
+  "wt": 712,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "1",
+  "th": "light",
+  "peekPx": 39
+ },
+ {
+  "name": "composer-lv1-f12-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "1",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv1-f13-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "1",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv1-f14-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "1",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv2-idle-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "2",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv2-hover-light.png",
+  "wt": 712,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "2",
+  "th": "light",
+  "peekPx": 39
+ },
+ {
+  "name": "composer-lv2-f12-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "2",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv2-f13-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "2",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv2-f14-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "2",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv3-idle-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "3",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv3-hover-light.png",
+  "wt": 712,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "3",
+  "th": "light",
+  "peekPx": 39
+ },
+ {
+  "name": "composer-lv3-f12-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "3",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv3-f13-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "3",
+  "th": "light",
+  "peekPx": 28
+ },
+ {
+  "name": "composer-lv3-f14-light.png",
+  "wt": 723,
+  "wl": 25,
+  "ct": 751,
+  "cl": 12,
+  "lvl": "3",
+  "th": "light",
+  "peekPx": 28
+ }
+]
