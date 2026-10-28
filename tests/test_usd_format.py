@@ -21,9 +21,10 @@ def test_usd_format(tmp_path):
     assert got == ["0.039", "0.0893", "0.04", "0.10", "1.00", "0.0035", "0.069", "0.24", "12.50", "0.00"]
 
 
-def test_confirm_and_estimate_share_the_format():
+def test_confirm_uses_ui_credits_not_dollars():
+    """#397: cloud confirm dialog shows credits; GenPanel estimate next to Send stays USD (#192) for now."""
     comfy = (ROOT / "src/comfy.ts").read_text()
     ask = comfy[comfy.index("export function askCost"):comfy.index("export async function queuePrompt")]
-    assert "usd(price ?? 0)" in ask and "toFixed(2)" not in ask
+    assert "uiCredits(price ?? 0)" in ask and "usd(price" not in ask
     gen = (ROOT / "src/ui/GenPanel.tsx").read_text()
     assert "≈$${usd(estimate)}" in gen and "estimate.toFixed(2)" not in gen

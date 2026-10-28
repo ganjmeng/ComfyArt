@@ -881,21 +881,22 @@ async def test_storyboard_estimate_is_the_total(ws):
 
 
 async def test_confirm_threshold_setting(ws):
+    """#397: confirm API is integer credits; confirm_usd() is credits/100 for backend comparison."""
     import server
     app = web.Application()
     app.router.add_routes(server.PromptServer.instance.routes)
     client = TestClient(TestServer(app))
     await client.start_server()
     try:
-        assert (await (await client.get("/comfyart/wavespeed/confirm")).json()) == {"confirm_usd": 0.5}
-        for bad in (-1, "1", True, None, 1e9):
-            assert (await client.put("/comfyart/wavespeed/confirm", json={"confirm_usd": bad})).status == 400
-        assert (await client.put("/comfyart/wavespeed/confirm", json={"confirm_usd": 1})).status == 200
-        assert wavespeed.confirm_usd() == 1.0
+        assert (await (await client.get("/comfyart/wavespeed/confirm")).json()) == {"confirm_credits": 50}
+        for bad in (-1, "1", True, None, 1e9, 0.5, 1.5):
+            assert (await client.put("/comfyart/wavespeed/confirm", json={"confirm_credits": bad})).status == 400
+        assert (await client.put("/comfyart/wavespeed/confirm", json={"confirm_credits": 100})).status == 200
+        assert wavespeed.confirm_credits() == 100 and wavespeed.confirm_usd() == 1.0
         job = {"feature": "music", "model": "elevenlabs/music-v2", "prompt": "epic", "duration": 30}
-        await wavespeed.submit(job)  # $0.75 is under the new $1 threshold
+        await wavespeed.submit(job)  # $0.75 is under the new $1 (=100 credits) threshold
         assert len(ws["submits"]) == 1
-        await client.put("/comfyart/wavespeed/confirm", json={"confirm_usd": 0})
+        await client.put("/comfyart/wavespeed/confirm", json={"confirm_credits": 0})
         res = await client.post("/comfyart/wavespeed/estimate", json={"inputs": {"feature": "text_to_speech", "text": "hi"}})
         assert (await res.json())["confirm"] is True  # 0 = always confirm
         with pytest.raises(wavespeed.WaveSpeedError) as e:
