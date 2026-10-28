@@ -2,14 +2,14 @@
 
 Mocks only (no paid calls). After shots are HTML harness screenshots of the process-rail row 「记忆已更新 ›」 between 思考完成 and the reply, matching CN `memory-updated-row-in-chat-light`. Dark has no CN reference — token check only.
 
-Tip SHA: `bf0d775b1d3b54d87e1acd355fc7c7b09e3c6ba2`
+Tip SHA: `41ada743b4fcf289a848dc815d3d3d9d5a971c11`
 
 Raw (must HTTP 200):
-- after light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/4df85f7bfc09570dcea42db9f5b38b5e9e813985/docs/design/382/78/after/memory-updated-row-light.png
-- after dark: https://raw.githubusercontent.com/ganjmeng/ComfyArt/4df85f7bfc09570dcea42db9f5b38b5e9e813985/docs/design/382/78/after/memory-updated-row-dark.png
-- before light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/4df85f7bfc09570dcea42db9f5b38b5e9e813985/docs/design/382/78/before/memory-updated-row-light.png
-- before dark: https://raw.githubusercontent.com/ganjmeng/ComfyArt/4df85f7bfc09570dcea42db9f5b38b5e9e813985/docs/design/382/78/before/memory-updated-row-dark.png
-- CN light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/4df85f7bfc09570dcea42db9f5b38b5e9e813985/docs/design/382/78/lovart/memory-updated-row-in-chat-light.png
+- after light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/41ada743b4fcf289a848dc815d3d3d9d5a971c11/docs/design/382/78/after/memory-updated-row-light.png
+- after dark: https://raw.githubusercontent.com/ganjmeng/ComfyArt/41ada743b4fcf289a848dc815d3d3d9d5a971c11/docs/design/382/78/after/memory-updated-row-dark.png
+- before light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/41ada743b4fcf289a848dc815d3d3d9d5a971c11/docs/design/382/78/before/memory-updated-row-light.png
+- before dark: https://raw.githubusercontent.com/ganjmeng/ComfyArt/41ada743b4fcf289a848dc815d3d3d9d5a971c11/docs/design/382/78/before/memory-updated-row-dark.png
+- CN light: https://raw.githubusercontent.com/ganjmeng/ComfyArt/41ada743b4fcf289a848dc815d3d3d9d5a971c11/docs/design/382/78/lovart/memory-updated-row-in-chat-light.png
 
 | Lovart CN reference | before (main, no row) | after (this PR) |
 |---|---|---|
