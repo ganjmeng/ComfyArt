@@ -1421,5 +1421,9 @@
   "runStop.sub.quote_declined": "已取消，未扣费",
   "runStop.sub.network": "网络中断",
   "runStop.details": "详情",
-  "runStop.continue": "继续"
+  "runStop.continue": "继续",
+  "arti.evolutionEmpty": "暂无进化日志",
+  "arti.evolutionTime": "时间",
+  "arti.evolutionAction": "操作",
+  "arti.memory.chatIntentFail": "没听懂要对记忆做什么，请再说一次（记住 / 改成 / 忘记）。"
 }

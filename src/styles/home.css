@@ -328,3 +328,23 @@ body { background: var(--ca-float); }
 /* '即将开放': secondary text token straight, never under the disabled switch's opacity */
 .ca-arti__capsoon { margin-top: 4px; color: var(--ca-text-2); opacity: 1; font: 400 12px/18px var(--ca-font); }
 :root:not([data-theme="dark"]) .ca-switch:disabled { box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); background: rgba(0,0,0,.08); opacity: .7; }
+
+/* #385: /arti evolution log (时间 | 操作) + chat intent hint */
+.ca-arti-evo { display: flex; flex-direction: column; gap: 0; }
+.ca-arti-evo__head, .ca-arti-evo__row {
+  display: grid; grid-template-columns: 168px 1fr; gap: 12px;
+  align-items: start; padding: 10px 12px;
+}
+.ca-arti-evo__head {
+  font: 500 12px/18px var(--ca-font); color: var(--ca-muted);
+  border-bottom: var(--ca-border-w) solid var(--ca-border);
+}
+.ca-arti-evo__row {
+  border-bottom: var(--ca-border-w) solid var(--ca-border);
+  font: 400 13px/20px var(--ca-font); color: var(--ca-text);
+}
+.ca-arti-evo__row:last-child { border-bottom: none; }
+.ca-arti-evo__col-time { font-variant-numeric: tabular-nums; color: var(--ca-text-2); white-space: nowrap; }
+.ca-arti-evo__col-action { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; min-width: 0; }
+.ca-arti-evo__text { min-width: 0; word-break: break-word; }
+.ca-arti-mem__chathint { margin-top: 6px; color: #dc2626; font: 400 12px/18px var(--ca-font); }

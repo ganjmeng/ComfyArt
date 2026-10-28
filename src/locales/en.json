@@ -1421,5 +1421,9 @@
   "runStop.sub.quote_declined": "cancelled, nothing charged",
   "runStop.sub.network": "network dropped",
   "runStop.details": "Details",
-  "runStop.continue": "Continue"
+  "runStop.continue": "Continue",
+  "arti.evolutionEmpty": "No evolution log yet",
+  "arti.evolutionTime": "Time",
+  "arti.evolutionAction": "Action",
+  "arti.memory.chatIntentFail": "Couldn’t tell what to do with memory — try again (remember / change to / forget)."
 }
