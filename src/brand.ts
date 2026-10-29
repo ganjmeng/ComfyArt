@@ -17,7 +17,7 @@ export const BRAND = {
   },
   /**
    * Inline copy of loomi-mark.svg so loader parts can animate.
-   * Keep in sync with public/brand/loomi-mark.svg (and loomic-mark.svg).
+   * Keep in sync with public/brand/loomi-mark.svg.
    */
   logoSvg:
     '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
