@@ -175,6 +175,20 @@ async function main() {
     }
   })
 
+  // #382 fix: turn thinks again after the memory write → 思考完成 → 记忆已更新 → 思考完成 → reply
+  await T('ac5_row_two_thoughts', async () => {
+    const base = [
+      { type: 'thinking', text: 'a' },
+      { type: 'tool_use', name: 'generate_image', id: 't1', input: {} },
+      { type: 'tool_result', tool_use_id: 't1', text: 'ok' },
+      { type: 'thinking', text: 'b' },
+      { type: 'text', text: 'done' },
+    ]
+    const twoThought = insertMemoryUpdatedBlock([base[0], base[3], base[4]], { memory_ids: ['m1'] }).map((b) => b.type)
+    const withTools = insertMemoryUpdatedBlock(base, { memory_ids: ['m1'] }).map((b) => b.type)
+    return { twoThought, withTools }
+  })
+
   // AC6: undo via removeMemory → list -1, log +1 forget, refresh absent
   await T('ac6_undo', async () => {
     reset([mem('m1', '喜欢暖色调', 'taste'), mem('m2', '其它', 'about')])

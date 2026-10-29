@@ -130,6 +130,14 @@ export function insertMemoryUpdatedBlock(
   let thinkEnd = -1
   for (let i = 0; i < cleaned.length; i++) if (cleaned[i].type === 'thinking') thinkEnd = i
   const textStart = cleaned.findIndex((b) => b.type === 'text')
+  // #382 fix: when the turn thinks again after the memory write (CN reference:
+  // 思考完成 → 记忆已更新 → 思考完成 → reply), sit right after the first thinking so the
+  // follow-up thought row stays below the memory row on the same rail.
+  const thinkFirst = cleaned.findIndex((b) => b.type === 'thinking')
+  const replyAt = textStart >= 0 ? textStart : cleaned.length
+  if (thinkFirst >= 0 && thinkEnd > thinkFirst && thinkEnd < replyAt) {
+    return [...cleaned.slice(0, thinkFirst + 1), block, ...cleaned.slice(thinkFirst + 1)]
+  }
   if (thinkEnd >= 0) {
     const after = thinkEnd + 1
     // Prefer sitting right before the first text that follows thinking.

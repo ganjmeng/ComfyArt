@@ -105,6 +105,25 @@ def test_ac5_memory_updated_between_thought_and_reply(got):
     assert o["noLearnRows"] is False
 
 
+def test_ac5_memory_row_before_second_thought(got):
+    """#382 fix: reference order 思考完成 → 记忆已更新 → 思考完成 → reply."""
+    o = got["ac5_row_two_thoughts"]
+    assert o["twoThought"] == ["thinking", "memory_updated", "thinking", "text"]
+    assert o["withTools"][:2] == ["thinking", "memory_updated"]
+    assert o["withTools"].count("memory_updated") == 1
+
+
+def test_memory_row_same_rail_structure():
+    """#382 fix: history icon, no separate --memory button/label override."""
+    src = (ROOT / "src/ui/ChatMessage.tsx").read_text()
+    css = (ROOT / "src/styles/overlays.css").read_text()
+    icons = (ROOT / "src/ui/icons.tsx").read_text()
+    assert "memory_updated: Icons.history" in src
+    assert "rowbtn--memory" not in src and "rowbtn--memory" not in css
+    assert 'data-kind="memory_updated"] .ca-process__label' not in css
+    assert "history: <Svg strokeWidth={2}>" in icons
+
+
 def test_mut_ac5_after_reply_fails_placement(got):
     """Mutation: row after reply → placement check fails (AC5 red)."""
     o = got["ac5_row_placement"]
