@@ -5,16 +5,22 @@ import { uploadImage, viewUrl } from '../comfy'
 import { errorText } from '../jobs'
 import { libraryAtom } from '../library'
 import { ask, parseJson } from '../llm'
-import { loadMemory, MEMORY_CATEGORIES, MemoryConflict, memoryErrorAtom, memoryFocusAtom, MemoryReadError, MemoryWriteError, removeMemory, updateMemory, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
+import { loadMemory, MEMORY_CATEGORIES, MemoryConflict, memoryErrorAtom, memoryFocusAtom, MemoryReadError, MemoryWriteError, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
 import { isPdf, uploadPdf } from '../pdf'
 import { AbilitiesPanel } from './AbilitiesPanel'
-import { ChatComposer, GROUP_ICONS, GROUP_ORDER, MemoryEmpty } from '../home/ArtiMemory'
+import { ChatComposer, EditRow, MemoryRow, GROUP_ICONS, GROUP_ORDER, MemoryEmpty } from '../home/ArtiMemory'
 import { Icons } from './icons'
 import { t } from '../i18n'
 import { isEnter } from './keys'
 import { Modal } from './Modal'
-import { confirmAtom } from './Confirm'
-import { showMemoryToast } from '../memory'
+
+function ago(time: number) {
+  const min = Math.floor((Date.now() - time) / 60000)
+  if (min < 1) return t('memoryDialog.justNow')
+  if (min < 60) return t('memoryDialog.minutesAgo', min)
+  const h = Math.floor(min / 60)
+  return h < 24 ? t('memoryDialog.hoursAgo', h) : t('memoryDialog.daysAgo', Math.floor(h / 24))
+}
 
 export const memoryOpenAtom = atom('memory open', false)
 
@@ -79,12 +85,13 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
   const [adding, setAdding] = useState<string | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
+  const [menuId, setMenuId] = useState<string | null>(null)
   const [onboarding, setOnboarding] = useState(false)
   const [busy, setBusy] = useState('')
   const file = useRef<HTMLInputElement>(null)
   if (!open) return null
   // #433: opening from 「记忆已更新 ›」 highlights nothing and offers no undo; removal is delete + confirm only
-  const close = () => { memoryOpenAtom.set(false); setEditing(null); setAdding(null); setChatOpen(false); setOnboarding(false); memoryFocusAtom.set(null) }
+  const close = () => { memoryOpenAtom.set(false); setEditing(null); setMenuId(null); setAdding(null); setChatOpen(false); setOnboarding(false); memoryFocusAtom.set(null) }
   // store failures already showed 保存失败，请重试 (#381); only other errors go to the panel
   const fail = (e: unknown) => { if (!(e instanceof MemoryWriteError || e instanceof MemoryConflict || e instanceof MemoryReadError)) onError(errorText(e)) }
   const add = (category: string) => {
@@ -109,15 +116,21 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
     if (!found.length) throw new Error(t('memoryDialog.couldntExtractAnyLong'))
     await remember(found, t('memoryDialog.import'))
   }
+  const latest = memory.reduce((n, m) => Math.max(n, m.time ?? 0), 0)
   const label = (id: string) => MEMORY_CATEGORIES.find(([c]) => c === id)?.[1] ?? id
 
   return (
-    <Modal title={onboarding ? t('memoryDialog.tellTheAgentAboutYourself') : t('common.memory')} className="ca-rename ca-memory" onClose={close}>
+    <Modal title={onboarding ? t('memoryDialog.tellTheAgentAboutYourself') : (
+      <span className="ca-memory__head" data-testid="memory-dialog-head">
+        {t('common.memory')}
+        <span className="ca-icon ca-memory__info" title={t('memoryDialog.theAgentFollowsTheseMemories')} data-testid="memory-dialog-info">{Icons.info}</span>
+        {latest ? <span className="ca-memory__updated" data-testid="memory-dialog-updated">{t('memoryDialog.updatedAt', ago(latest))}</span> : null}
+      </span>
+    )} className="ca-rename ca-memory" onClose={close}>
       {onboarding ? (
         <Onboarding onDone={(items) => { setOnboarding(false); if (items?.length) void remember(items, t('memoryDialog.qa')).catch(fail) }} />
       ) : (
         <div className="ca-rename__body">
-          <div className="ca-chat__hint">{t('memoryDialog.theAgentFollowsTheseMemories')}</div>
           {loadError ? <div className="ca-arti-mem__guide" role="alert" data-testid="memory-dialog-error">{t('arti.memory.loadFailed')}{' '}<button type="button" className="ca-arti-mem__retry" onClick={() => void loadMemory()}>{t('arti.memory.retry')}</button></div> : null}
           <div className="ca-style__row">
             <button type="button" className="ca-lib__new" onClick={() => setOnboarding(true)}><span className="ca-icon">{Icons.agent}</span>{t('memoryDialog.tellMeAboutYourself')}</button>
@@ -149,24 +162,9 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
                     <h3 className="ca-arti-mem__grouptitle"><span className="ca-icon">{GROUP_ICONS[cat]}</span>{label(cat)}</h3>
                     <div className="ca-arti-mem__list">
                       {items.map((m) => (
-                        <div key={m.id} className="ca-arti-mem__row ca-memory__card" data-testid="memory-dialog-card">
-                          <div className="ca-arti-mem__rowbody">
-                            {m.label ? <div className="ca-memory__title">{m.label}</div> : null}
-                            {editing === m.id ? (
-                              <input
-                                autoFocus
-                                className="ca-panel__input"
-                                defaultValue={m.text}
-                                onBlur={(e) => { setEditing(null); const v = e.target.value.trim(); if (v && v !== m.text) void updateMemory(m.id, v, t('frameToolbar.manual')).catch(fail) }}
-                                onKeyDown={(e) => { e.stopPropagation(); if (isEnter(e)) e.currentTarget.blur() }}
-                              />
-                            ) : (
-                              <div className="ca-arti-mem__text" onDoubleClick={() => setEditing(m.id)}>{m.text}</div>
-                            )}
-                          </div>
-                          <button type="button" className="ca-history__del" title={t('memoryDialog.correctMemory')} onClick={() => setEditing(m.id)}>{Icons.textTool}</button>
-                          <button type="button" className="ca-history__del" title={t('common.delete')} data-testid="memory-dialog-delete" onClick={() => confirmAtom.set({ title: t('arti.memory.deleteTitle'), desc: t('arti.memory.deleteDesc', m.text), ok: t('common.delete'), danger: true, run: () => { void removeMemory(m.id, t('frameToolbar.manual')).then((ok) => { if (ok) showMemoryToast(t('arti.memory.deletedToast')) }).catch(fail) } })}>{Icons.trash}</button>
-                        </div>
+                        editing === m.id
+                        ? <EditRow key={m.id} item={m} onDone={() => setEditing(null)} />
+                        : <MemoryRow key={m.id} item={m} menuId={menuId} setMenuId={setMenuId} onEdit={setEditing} testid="memory-dialog-card" />
                       ))}
                       {adding === cat ? (
                         <div className="ca-style__row">

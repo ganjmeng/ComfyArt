@@ -797,6 +797,8 @@
 /* #433: memory dialog in the reference layout — four vertical groups of title + body cards,
    bottom 「通过对话修改记忆」 pill, measured empty state. Card/group rules mirror the Home memory
    centre (#368, home.css is not loaded in the canvas app); sizes reuse existing tokens. */
+/* #433/#434 estimated values — pending designer measurements on #430/#439 */
+:root { --ca-mem-empty-pad: 96px; --ca-mem-addrow-min: 40px; --ca-mem-title-weight: 600; }
 .ca-memory { width: min(720px, calc(100vw - 32px)); }
 .ca-memory .ca-rename__body { max-height: min(698px, calc(100vh - 120px)); overflow-y: auto; }
 .ca-memory .ca-arti-mem__groups { display: flex; flex-direction: column; gap: 22px; }
@@ -897,10 +899,14 @@
 .ca-memory .ca-memory__groups { margin-top: 4px; }
 .ca-memory .ca-memory__card { align-items: center; }
 .ca-memory .ca-memory__card .ca-history__del { display: inline-flex; }
-.ca-memory__title { font: 600 13px/20px var(--ca-font); color: var(--ca-strong); }
-.ca-memory .ca-memory__addrow { justify-content: flex-start; min-height: 40px; padding: 8px 12px; }
+.ca-memory__title, .ca-memory .ca-arti-mem__row .ca-arti-mem__label, .ca-memory .ca-arti-mem__edit .ca-arti-mem__label { font: var(--ca-mem-title-weight) 13px/20px var(--ca-font); color: var(--ca-strong); margin-bottom: 2px; }
+.ca-memory .ca-arti-mem__row { border: 1px solid var(--ca-border); }
+.ca-memory__head { display: inline-flex; align-items: center; gap: 6px; }
+.ca-memory__info { width: 14px; height: 14px; color: var(--ca-muted); cursor: help; }
+.ca-memory__updated { font: 400 12px/18px var(--ca-font); color: var(--ca-muted); margin-left: 4px; }
+.ca-memory .ca-memory__addrow { justify-content: flex-start; min-height: var(--ca-mem-addrow-min); padding: 8px 12px; }
 .ca-memory .ca-memory__sticky { bottom: 0; padding-bottom: 4px; }
-.ca-mem-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 96px 16px; text-align: center; }
+.ca-mem-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: var(--ca-mem-empty-pad) 16px; text-align: center; }
 .ca-mem-empty__badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--ca-hover); color: var(--ca-muted); font: 500 16px/24px var(--ca-font); }
 .ca-mem-empty__badge .ca-icon { width: 18px; height: 18px; }
 .ca-mem-empty__title { font: 600 13px/20px var(--ca-font); color: var(--ca-strong); }

@@ -33,16 +33,18 @@ function groupLabel(id: string) {
   return MEMORY_CATEGORIES.find(([cid]) => cid === id)?.[1] ?? id
 }
 
-function MemoryRow({
+export function MemoryRow({
   item,
   menuId,
   setMenuId,
   onEdit,
+  testid = 'arti-memory-row',
 }: {
   item: Memory
   menuId: string | null
   setMenuId: (id: string | null) => void
   onEdit: (id: string) => void
+  testid?: string
 }) {
   const open = menuId === item.id
   const askDelete = () => {
@@ -56,7 +58,7 @@ function MemoryRow({
     })
   }
   return (
-    <div className="ca-arti-mem__row" data-testid="arti-memory-row" data-id={item.id}>
+    <div className="ca-arti-mem__row" data-testid={testid} data-id={item.id}>
       <div className="ca-arti-mem__rowbody">
         {item.label ? <div className="ca-arti-mem__label">{item.label}</div> : null}
         <div className="ca-arti-mem__text">{item.text}</div>
@@ -98,7 +100,7 @@ function MemoryRow({
   )
 }
 
-function EditRow({
+export function EditRow({
   item,
   onDone,
 }: {

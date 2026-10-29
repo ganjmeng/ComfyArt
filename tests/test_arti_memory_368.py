@@ -35,7 +35,7 @@ def test_four_memory_groups() -> None:
 
 
 def test_inline_edit_crud_ui() -> None:
-    assert 'data-testid="arti-memory-row"' in MEM
+    assert "testid = 'arti-memory-row'" in MEM and 'data-testid={testid}' in MEM
     assert 'data-testid="arti-memory-edit-btn"' in MEM
     assert 'data-testid="arti-memory-menu-btn"' in MEM
     assert 'data-testid="arti-memory-row-menu"' in MEM

@@ -30,10 +30,9 @@ def test_categories_are_groups_not_tabs() -> None:
 
 
 def test_title_body_cards_and_empty_group_rows() -> None:
-    assert 'data-testid="memory-dialog-card"' in DLG
-    assert 'className="ca-memory__title"' in DLG and "m.label" in DLG
-    assert 'ca-arti-mem__text' in DLG
-    assert ".ca-memory__title { font: 600" in CSS
+    assert 'testid="memory-dialog-card"' in DLG
+    assert "<MemoryRow key={m.id} item={m}" in DLG and "item.label" in MEM and "ca-arti-mem__text" in MEM
+    assert ".ca-memory .ca-arti-mem__row .ca-arti-mem__label" in CSS and "--ca-mem-title-weight: 600" in CSS
     assert "memory-dialog-add-${cat}" in DLG
     for cat in ("taste", "about", "work", "assets"):
         assert ZH[f"memoryDialog.addYour.{cat}"].startswith("添加你的")
@@ -72,14 +71,29 @@ def test_no_focus_highlight_and_no_undo() -> None:
 
 
 def test_delete_goes_through_confirm_only() -> None:
-    btn = re.search(r'data-testid="memory-dialog-delete" onClick=\{\(\) => (\w+)\.set\(', DLG)
-    assert btn and btn.group(1) == "confirmAtom"
-    assert "danger: true" in DLG and "t('arti.memory.deleteTitle')" in DLG
-    # removeMemory is only reachable from inside the confirm's run()
-    assert DLG.count("removeMemory(") == 1
-    assert "run: () => { void removeMemory(" in DLG
+    # #434: dialog reuses the hover row; 删除 lives in the ··· menu and only opens the confirm
+    assert "removeMemory(" not in DLG
+    row = MEM[MEM.index("export function MemoryRow("):MEM.index("export function EditRow(")]
+    assert row.count("removeMemory(") == 1 and "run: () => { void removeMemory(" in row
+    assert "danger: true" in row and "t('arti.memory.deleteTitle')" in row
+    assert "onClick={askDelete}" in row and "data-danger" in row
+
+
+def test_hover_edit_and_delete_kept_434() -> None:
+    row = MEM[MEM.index("export function MemoryRow("):MEM.index("export function EditRow(")]
+    assert "t('memoryDialog.correctMemory')" in row and "arti-memory-menu-btn" in row
+    edit = MEM[MEM.index("export function EditRow("):]
+    assert "updateMemory(" in edit and "disabled={!dirty" in edit
+    assert "<EditRow key={m.id}" in DLG and "onEdit={setEditing}" in DLG
+    assert ".ca-memory .ca-arti-mem__row:hover .ca-arti-mem__actions" in CSS
+    assert ZH["memoryDialog.correctMemory"] == "更正记忆"
+
+
+def test_header_info_and_updated() -> None:
+    assert 'data-testid="memory-dialog-info"' in DLG and 'data-testid="memory-dialog-updated"' in DLG
+    assert ZH["memoryDialog.updatedAt"] == "更新于{0}" and ZH["memoryDialog.justNow"] == "此刻"
 
 
 def test_existing_features_kept() -> None:
-    for s in ("setOnboarding(true)", "importFiles", "updateMemory(", "remember(", "loadMemory()", "memory-dialog-error"):
+    for s in ("setOnboarding(true)", "importFiles", "<EditRow", "remember(", "loadMemory()", "memory-dialog-error"):
         assert s in DLG
