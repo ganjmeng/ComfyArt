@@ -79,23 +79,55 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         card = dlg.locator("[data-testid=memory-dialog-card]").first
         assert int(await card.locator(".ca-arti-mem__label").evaluate("e => getComputedStyle(e).fontWeight")) == 500
         assert await card.evaluate("e => getComputedStyle(e).borderTopStyle") == "solid"
-        # measured type: dialog title 18px/600, card title 500
+        # #439 reference DOM values, checked with getComputedStyle
+        CS = """(e, props) => { const c = getComputedStyle(e); return props.map(p => c.getPropertyValue(p)) }"""
+        light = theme == "light"
+        async def cs(loc, props):
+            return await loc.evaluate(CS, props)
         head = pg.locator("[data-testid=memory-dialog-head]")
-        assert await head.evaluate("e => [getComputedStyle(e).fontSize, getComputedStyle(e).fontWeight]") == ["18px", "600"]
-        assert await card.locator(".ca-arti-mem__label").evaluate("e => getComputedStyle(e).fontSize + '/' + getComputedStyle(e).lineHeight") == "13px/22px"
-        # group title icons styled like the reference: 16px, 6px gap, 13px/400
+        assert await cs(head, ["font-size", "line-height", "font-weight"]) == ["18px", "26px", "600"]
+        if light:
+            assert (await cs(head, ["color"]))[0] == "rgba(0, 0, 0, 0.9)"
+        upd = dlg.locator("[data-testid=memory-dialog-updated]")
+        assert await cs(upd, ["font-size", "line-height"]) == ["13px", "20px"]
+        if light:
+            assert (await cs(upd, ["color"]))[0] == "rgba(0, 0, 0, 0.55)"
+        close = dlg.locator(".ca-side__head > .ca-panel__icon")
+        cb = await close.bounding_box()
+        assert (round(cb["width"]), round(cb["height"])) == (26, 26) and (await cs(close, ["border-top-left-radius"]))[0] == "8px"
+        assert round((await close.locator("svg").bounding_box())["width"]) == 16
         gt = dlg.locator("[data-testid=memory-dialog-grouptitle]").first
-        assert await gt.evaluate("e => [getComputedStyle(e).fontSize, getComputedStyle(e).fontWeight, getComputedStyle(e).columnGap]") == ["13px", "400", "6px"]
-        assert (await gt.locator(".ca-icon").bounding_box())["width"] == 16
-        # add row 48px tall from padding; pill 144x48 (zh) and 32px from the dialog bottom
-        addb = await dlg.locator("[data-testid=memory-dialog-add-about]").bounding_box()
-        assert abs(addb["height"] - 48) < 0.6
-        pill = await dlg.locator("[data-testid=memory-dialog-chat-open]").bounding_box()
-        assert abs(pill["height"] - 48) < 0.6
+        assert await cs(gt, ["font-size", "line-height", "font-weight", "column-gap", "padding-left", "padding-right"]) == ["13px", "22px", "400", "6px", "8px", "8px"]
+        gi = gt.locator(".ca-icon svg")
+        assert round((await gi.bounding_box())["width"]) == 16 and (await cs(gi, ["stroke"]))[0] == "none" and (await cs(gi, ["fill"]))[0] != "none"
+        if light:
+            assert (await cs(gt, ["color"]))[0] == "rgba(0, 0, 0, 0.55)"
+        lab, body = card.locator(".ca-arti-mem__label"), card.locator(".ca-arti-mem__text")
+        assert await cs(lab, ["font-size", "line-height", "font-weight"]) == ["13px", "22px", "500"]
+        assert await cs(body, ["font-size", "line-height", "font-weight"]) == ["13px", "22px", "400"]
+        assert await cs(card, ["padding-top", "padding-left", "border-top-left-radius"]) == ["12px", "16px", "16px"]
+        if light:
+            assert await cs(lab, ["color"]) == await cs(body, ["color"]) == ["rgba(0, 0, 0, 0.9)"]
+        addl = dlg.locator("[data-testid=memory-dialog-add-about]")
+        assert abs((await addl.bounding_box())["height"] - 48) < 0.6
+        assert await cs(addl, ["border-top-width", "border-top-style", "border-top-left-radius", "padding-top", "padding-left", "font-size", "line-height"]) == ["1px", "dashed", "16px", "12px", "16px", "13px", "22px"]
+        if light:
+            assert await cs(addl, ["border-top-color", "color"]) == ["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.3)"]
+        pill = dlg.locator("[data-testid=memory-dialog-chat-open]")
+        pb = await pill.bounding_box()
+        assert abs(pb["height"] - 48) < 0.6
+        assert await cs(pill, ["background-color", "color", "font-size", "line-height"]) == ["rgb(44, 44, 44)", "rgb(255, 255, 255)", "14px", "22px"]
+        assert float((await cs(pill, ["border-top-left-radius"]))[0][:-2]) >= 24
         if lang == "zh":
-            assert abs(pill["width"] - 144) < 0.6
-        body = await dlg.locator(".ca-rename__body").bounding_box()
-        assert abs((body["y"] + body["height"]) - (pill["y"] + pill["height"]) - 32) < 1.5
+            assert abs(pb["width"] - 144) < 1
+        else:
+            assert abs(pb["width"] - 225.5) < 12  # width follows the text
+        dcard = pg.locator(".ca-modal__card.ca-memory")
+        db_ = await dcard.bounding_box()
+        assert round(db_["width"]) == 720 and round(db_["height"]) == min(698, 640 - 64)
+        assert (await cs(dcard, ["border-top-left-radius", "border-top-width"])) == ["16px", "1px"]
+        if light:
+            assert await cs(dcard, ["border-top-color", "box-shadow"]) == ["rgba(0, 0, 0, 0.07)", "rgba(0, 0, 0, 0.06) 0px 16px 24px -8px, rgba(0, 0, 0, 0.04) 0px 4px 8px -4px, rgba(0, 0, 0, 0.02) 0px 1px 1px 0px"]
         assert tx["add"] in await dlg.locator("[data-testid=memory-dialog-add-about]").inner_text()
         assert await dlg.locator("[data-testid=memory-dialog-add-about]").evaluate("e => getComputedStyle(e).borderTopStyle") == "dashed"
         # product ruling: nothing highlighted, no undo
@@ -104,7 +136,7 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         await pg.wait_for_timeout(200)
         await shot(pg, "433-loaded", tag)
         if OUT:  # dialog-only crop at 2x for the measurement comparison
-            c2 = await b.new_context(viewport={"width": 1024, "height": 640}, device_scale_factor=2, timezone_id="Asia/Shanghai")
+            c2 = await b.new_context(viewport={"width": 1280, "height": 800}, device_scale_factor=2, timezone_id="Asia/Shanghai")
             await c2.add_cookies(await pg.context.cookies())
             p2 = await c2.new_page()
             await p2.add_init_script(f"localStorage.setItem('comfyart.lang','{lang}');localStorage.setItem('comfyart.theme','{theme}');localStorage.setItem('comfyart.e2e','1')")
