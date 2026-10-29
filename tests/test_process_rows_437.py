@@ -93,7 +93,8 @@ def test_rail_is_per_group_segment():
     import pathlib
     root = pathlib.Path(__file__).resolve().parents[1]
     css = (root / "src/styles/overlays.css").read_text()
+    base = (root / "src/styles/base.css").read_text()
     chat = (root / "src/ui/ChatMessage.tsx").read_text()
     assert "s.kind !== 'image' && <span className=\"ca-process__spine\" data-testid=\"process-rail\"" in chat
-    assert "top: 20px; bottom: 0; width: 1px;" in css and "background: var(--ca-border);" in css
+    assert "top: 20px; bottom: 0; width: 1px;" in css and "background: var(--ca-rail);" in css and "--ca-rail: rgba(0,0,0,.1);" in base and "--ca-rail: rgba(255,255,255,.12);" in base
     assert "margin: calc(12px - var(--ca-process-row-gap)) 0 0;" in css

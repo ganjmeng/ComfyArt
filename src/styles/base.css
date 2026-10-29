@@ -3,6 +3,7 @@
   --ca-font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --ca-float: #ffffff;
   --ca-border: rgba(0,0,0,.07);
+  --ca-rail: rgba(0,0,0,.1); /* #441/#442: shared process rail + stub colour (reference measured) */
   --ca-text: rgba(0,0,0,.9);
   --ca-muted: rgba(0,0,0,.3);
   --ca-text-2: rgba(0,0,0,.6); /* secondary text (Lovart CN secondary level) */
@@ -60,6 +61,7 @@
   color-scheme: dark;
   --ca-float: #161616;
   --ca-border: rgba(255,255,255,.1);
+  --ca-rail: rgba(255,255,255,.12);
   --ca-text: rgba(255,255,255,.9);
   --ca-muted: rgba(255,255,255,.4);
   --ca-text-2: rgba(255,255,255,.6);

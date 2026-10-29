@@ -118,7 +118,7 @@ def test_memory_row_same_rail_structure():
     src = (ROOT / "src/ui/ChatMessage.tsx").read_text()
     css = (ROOT / "src/styles/overlays.css").read_text()
     icons = (ROOT / "src/ui/icons.tsx").read_text()
-    assert "memory_updated: Icons.history" in src
+    assert "memory_updated: Icons.memoryHead" in src  # #435: reference icon
     assert "rowbtn--memory" not in src and "rowbtn--memory" not in css
     assert 'data-kind="memory_updated"] .ca-process__label' not in css
     assert "history: <Svg strokeWidth={2}>" in icons

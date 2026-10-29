@@ -145,6 +145,8 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         assert (await cs(dcard, ["border-top-left-radius", "border-top-width"])) == ["16px", "1px"]
         if light:
             assert await cs(dcard, ["border-top-color", "box-shadow"]) == ["rgba(0, 0, 0, 0.07)", "rgba(0, 0, 0, 0.06) 0px 16px 24px -8px, rgba(0, 0, 0, 0.04) 0px 4px 8px -4px, rgba(0, 0, 0, 0.02) 0px 1px 1px 0px"]
+        # #441: --ca-border stays the dialog border (light .07, dark .1); the shared --ca-rail (.1/.12) must not leak in
+        assert (await cs(dcard, ["border-top-color"]))[0] == ("rgba(0, 0, 0, 0.07)" if light else "rgba(255, 255, 255, 0.1)")
         assert tx["add"] in await dlg.locator("[data-testid=memory-dialog-add-about]").inner_text()
         assert await dlg.locator("[data-testid=memory-dialog-add-about]").evaluate("e => getComputedStyle(e).borderTopStyle") == "dashed"
         # product ruling: nothing highlighted, no undo

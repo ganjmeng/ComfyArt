@@ -25,7 +25,7 @@ type ProcessKind =
   | 'thought' | 'outputting' | 'skill' | 'skill_file_read' | 'search' | 'search_pages'
   | 'image' | 'video'
   | 'code' | 'code_generated' | 'code_updated' | 'design_validated' | 'preview_artifact'
-  | 'memory_updated'
+  | 'memory_retrieved' | 'memory_updated'
   | 'tool'
 
 const VIDEO_TOOLS = new Set(['generate_video', 'animate_image', 'extend_video', 'upscale_video', 'remove_video_background'])
@@ -56,7 +56,9 @@ const PROCESS_ICONS: Record<ProcessKind, ReactNode> = {
   code_updated: Icons.filePenLine,
   design_validated: Icons.listChecks,
   preview_artifact: Icons.sparkles,
-  memory_updated: Icons.history,
+  // #435: both memory rows share the in-house memoryHead icon
+  memory_retrieved: Icons.memoryHead,
+  memory_updated: Icons.memoryHead,
   tool: Icons.agent,
 }
 
@@ -163,6 +165,7 @@ function processLabel(
   if (kind === 'code_updated') return t('chatMessage.codeUpdated')
   if (kind === 'design_validated') return t('chatMessage.designValidated')
   if (kind === 'preview_artifact') return t('chatMessage.previewArtifact')
+  if (kind === 'memory_retrieved') return t('chatMessage.memoryRetrieved')
   if (kind === 'memory_updated') return t('chatMessage.memoryUpdated')
   return opts?.fallback || t('chatMessage.inProgress')
 }
@@ -741,6 +744,7 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
                 <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>
                   {s.favicon && <Favicon src={s.favicon} />}
                   {s.label}
+                  {isMemory && <span className="ca-process__memchev ca-icon" data-testid="memory-updated-chev">{Icons.memoryChev}</span>}
                 </span>
               )}
             </>
@@ -760,7 +764,7 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
           // #442 v6: a display:contents group so the card is a sibling of its 24px row, at the icon x
           return (
             <div key={s.key} className="ca-process__group">
-            <div className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-testid={isMemory ? 'memory-updated-row' : undefined}>
+            <div className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-testid={isMemory ? 'memory-updated-row' : s.kind === 'memory_retrieved' ? 'memory-retrieved-row' : undefined}>
               {canOpen ? (
                 <button
                   type="button"
@@ -919,14 +923,21 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     proc = []
   }
   // #413: an in-loop memory add shows as the 记忆已更新 › row, not as a tool row
-  const memCalls = new Set(m.blocks.filter((b) => b.type === 'memory_updated' && b.tool_id).map((b) => b.tool_id))
+  const memBlocks = m.blocks.filter((b) => b.type === 'memory_updated')
+  const memCalls = new Set(memBlocks.flatMap((b) => [b.tool_id, ...(b.tool_ids ?? [])]).filter(Boolean))
+  // #423: at most one 记忆已更新 › row per turn; older saved turns with several blocks fold into the first
+  const firstMem = memBlocks[0]
+  const memIdsAll = [...new Set(memBlocks.flatMap((b) => b.memory_ids ?? []))]
+  // #423: memory add never shows a raw tool row, incl. a no-op identical repeat (no 记忆已更新 › row either)
+  const memAddIds = new Set(m.blocks.filter((b) => b.type === 'tool_use' && toolName(b.name) === 'memory' && (b.input as { action?: string } | undefined)?.action === 'add').map((b) => b.id))
   const hideMemCall = (b: BotBlock) => (b.type === 'tool_use' || b.type === 'tool_result') && toolName(b.name) === 'memory' && !!b.id
-    && (memCalls.has(b.id) || (b.type === 'tool_use' && !done && !results.has(b.id) && (b.input as { action?: string } | undefined)?.action === 'add'))
+    && (memCalls.has(b.id) || memAddIds.has(b.id))
   let planShown = false
   m.blocks.forEach((b, i) => {
     if (hideMemCall(b)) return
     // #437: a finished turn has no 等待结果 row; model-name row → result images → text
     if (done && b.type === 'tool_use' && toolName(b.name) === 'wait_generation') return
+    if (b.type === 'memory_updated' && b !== firstMem) return
     if (isPlan(b)) {
       if (planShown) return
       planShown = true
@@ -960,6 +971,10 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
         const pages = kindResolved === 'search_pages' ? searchResultCount(b, result) : undefined
         const model = (kindResolved === 'image' || kindResolved === 'video') ? processModelName(b.input) : undefined
         const aspectRatio = (kindResolved === 'image' || kindResolved === 'video') ? processAspectRatio(b.input) : undefined
+        // #430: updating an existing entry shows 记忆已读取 (not clickable) right before 记忆已更新 ›
+        if (b.type === 'memory_updated' && memBlocks.some((x) => (x.updated_ids ?? []).length > 0)) {
+          proc.push({ key: `p${i}-read`, kind: 'memory_retrieved', label: processLabel('memory_retrieved', false), live: false })
+        }
         proc.push({
           key: `p${i}`,
           kind: kindResolved,
@@ -974,7 +989,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
           live: stepLive,
           text: b.type === 'thinking' ? b.text : undefined,
           aspectRatio,
-          memoryIds: b.type === 'memory_updated' ? (b.memory_ids ?? []) : undefined,
+          memoryIds: b.type === 'memory_updated' ? memIdsAll : undefined,
           favicon: kindResolved === 'search_pages' ? searchFavicon(result) : undefined,
         })
         return
