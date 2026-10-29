@@ -513,6 +513,9 @@
 /* Optical ink-bias nudges only (±1px) — boxes stay on axis */
 .ca-process__icon--scroll .ca-icon svg,
 .ca-process__icon--video .ca-icon svg { transform: translateX(0.5px); }
+.ca-process__inline { grid-column: 3; height: var(--ca-process-ico); display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ca-process__inline .ca-process__label { flex: none; }
+.ca-process__arg { font-size: 13px; line-height: 1; }
 .ca-process__label {
   grid-column: 3;
   height: var(--ca-process-ico);
