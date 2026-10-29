@@ -59,7 +59,7 @@ def test_search_row_count_plural_favicon_and_card():
     # real favicon of the search source, not a drawn glyph; the globe icon stays
     assert "s2/favicons?domain=" in src and "ca-process__favicon" in src
     assert "search_pages: Icons.globe" in src
-    assert 'data-testid="web-search-card">{t(\'chatMessage.webSearchDone\')}' in src
+    assert '<span className="ca-process__cardtitle">{t(\'chatMessage.webSearchDone\')}</span>' in src
     assert en["chatMessage.webSearchDone"] == "Web search results" and zh["chatMessage.webSearchDone"] == "联网搜索结果"
 
 
@@ -89,8 +89,11 @@ def test_favicon_failure_falls_back_to_globe_only():
     assert "search_pages: Icons.globe" in src
 
 
-def test_rail_stops_at_search_card_bottom():
+def test_rail_is_per_group_segment():
     import pathlib
-    css = (pathlib.Path(__file__).resolve().parents[1] / "src/styles/overlays.css").read_text()
-    assert ".ca-process__steps:has(> .ca-process__row:last-child .ca-process__card) > .ca-process__spine { bottom: var(--ca-process-card-gap); }" in css
-    assert "margin: 8px 0 var(--ca-process-card-gap);" in css
+    root = pathlib.Path(__file__).resolve().parents[1]
+    css = (root / "src/styles/overlays.css").read_text()
+    chat = (root / "src/ui/ChatMessage.tsx").read_text()
+    assert "s.kind !== 'image' && <span className=\"ca-process__spine\" data-testid=\"process-rail\"" in chat
+    assert "top: 20px; bottom: 0; width: 1px;" in css and "background: var(--ca-border);" in css
+    assert "margin: 12px 0 0;" in css

@@ -49,7 +49,7 @@ const PROCESS_ICONS: Record<ProcessKind, ReactNode> = {
   skill_file_read: Icons.fileSearch,
   search: Icons.globe,
   search_pages: Icons.globe,
-  image: Icons.imageLine,
+  image: Icons.sparkleImage,
   video: Icons.videoLine,
   code: Icons.squareCode,
   code_generated: Icons.fileCode,
@@ -721,7 +721,6 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
   return (
     <div className="ca-process" data-live={live ? true : undefined}>
       <div className="ca-process__steps">
-        <div className="ca-process__spine" aria-hidden="true" />
         {steps.map((s) => {
           const isMemory = s.kind === 'memory_updated'
           // #382 fix: memory row uses the same row structure as the thought row (one rowbtn, same classes)
@@ -765,7 +764,14 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
                   {row}
                 </button>
               ) : row}
-              {s.kind === 'search_pages' && <div className="ca-process__card" data-testid="web-search-card">{t('chatMessage.webSearchDone')}</div>}
+              {/* #442: each step group owns its rail segment (icon column centre, below its icon); none beside the model row */}
+              {s.kind !== 'image' && <span className="ca-process__spine" data-testid="process-rail" aria-hidden="true" />}
+              {s.kind === 'search_pages' && (
+                <div className="ca-process__card" data-testid="web-search-card">
+                  <span className="ca-process__cardtitle">{t('chatMessage.webSearchDone')}</span>
+                  <span className="ca-process__cardart">{Icons.searchFolder}</span>
+                </div>
+              )}
             </div>
           )
         })}

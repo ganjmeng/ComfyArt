@@ -28,6 +28,18 @@ export function LoomiMono() {
 }
 
 export const Icons = {
+  // #437: in-house filled sparkle-image mark for the model-name (generation) row
+  sparkleImage: <Svg fill><path fillRule="evenodd" d="M5 4h8.5a5 5 0 0 0-.4 2H5a1 1 0 0 0-1 1v10.6l3.8-3.8a1.5 1.5 0 0 1 2.1 0l2.1 2.1 3.6-3.6a1.5 1.5 0 0 1 2.1 0L20 14.6V12a5 5 0 0 0 2-.9V19a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z" /><circle cx="8.5" cy="9.5" r="1.8" /><path d="M18 1.5l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1Z" /></Svg>,
+  // #437: in-house 56×56 search-results art: grey folder + paper pages under a white folder (.5px hairline)
+  searchFolder: (
+    <svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true">
+      <path d="M8 16a4 4 0 0 1 4-4h10l4 4h18a4 4 0 0 1 4 4v24H8Z" fill="#d4d4d8" />
+      <rect x="15" y="14" width="24" height="26" rx="2" fill="#fafafa" stroke="rgba(0,0,0,.08)" strokeWidth=".5" transform="rotate(-6 27 27)" />
+      <rect x="18" y="16" width="24" height="26" rx="2" fill="#fff" stroke="rgba(0,0,0,.08)" strokeWidth=".5" />
+      <path d="M22 22h14M22 26h14M22 30h9" stroke="#d4d4d8" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M6 26a3 3 0 0 1 3-3h38a3 3 0 0 1 3 3l-2 18a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3Z" fill="#fff" stroke="rgba(0,0,0,.1)" strokeWidth=".5" />
+    </svg>
+  ),
   sun: <Svg><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></Svg>,
   moon: <Svg><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5" /></Svg>,
   image: <Svg fill><path d="M18 3a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zm-8.78 9.16a1.75 1.75 0 0 0-2.44-.04l-1.23 1.3A2 2 0 0 0 5 14.8V18a1 1 0 0 0 1 1h12.29a.71.71 0 0 0 .5-1.2l-3.55-3.62a1.75 1.75 0 0 0-2.48 0L12 14.94zM15.5 6a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5" /></Svg>,
