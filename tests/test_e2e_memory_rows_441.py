@@ -70,7 +70,7 @@ async def test_memory_rows_computed_441(app_url, fake_tools, lang, theme, ink): 
         w, h, gap, *paint = m["rows"][1]["chev"]
         assert (w, h) == (16, 16) and abs(gap - 6) <= 1  # 16px ›, 6px gap
         assert paint == ["none", ink, "1.5px", "round", "round"]  # same outline weight, no fill
-        assert abs(m["rows"][1]["top"] - m["rows"][0]["bottom"] + 8) <= 1   # 8px between rows
+        assert abs(m["rows"][1]["top"] - m["rows"][0]["bottom"] - 8) <= 1  # 8px between rows
         st = m["stub"]
         assert st["content"] == '""' and st["w"] == 1 and st["h"] == 8  # fixed 8px x 1px stub
         assert abs(st["cx"] - st["icoCx"]) <= 0.5  # centred on the icon column
