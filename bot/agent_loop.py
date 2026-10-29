@@ -429,6 +429,12 @@ def delivered(ctx: RunContext, kind: str = "") -> int:
     return n
 
 
+def submitted_count(ctx: RunContext, before: set) -> int:
+    """#419: paid generation calls this turn actually submitted (pending or done; failed ones are popped)."""
+    return sum(1 for k, rec in (ctx.paid or {}).items()
+               if k not in before and isinstance(rec, dict) and rec.get("status") in ("pending", "done"))
+
+
 def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: int = 0) -> dict:
     """Both languages, so the card follows a UI language switch. tone: neutral|warn|error|ok."""
     key = stop.code if stop.code in CARD_COPY else stop.reason.value
@@ -574,6 +580,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
     ctx.confirmer = getattr(provider, "_confirm_paid_over_quote", None)
     t_start = clock()
     first_step = ctx.budget.used.steps
+    paid_before = set(ctx.paid or {})  # #419: paid calls submitted before this turn are not "submitted" by it
     first_tokens = ctx.budget.used.tokens
 
     async def rec_emit(ev: BotEvent) -> None:
@@ -615,6 +622,10 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         status = "done" if stop.reason == StopReason.DONE else "paused"
         detail = stop.sub or stop.reason.value
         card = _summary_card(ctx, stop, remaining, check)
+        if stop.reason == StopReason.USER_STOP and not stop.sub:
+            # #419: jobs already submitted to WaveSpeed cannot be cancelled: they finish, fill their
+            # placeholders, are charged. The UI shows the 「已停止」 row and the charge note only when n > 0.
+            card["submitted"] = submitted_count(ctx, paid_before)
         try:
             ctx.checkpoint(messages, status=status, detail=detail, stop=stop)
         except LeaseLost:

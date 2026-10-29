@@ -68,6 +68,8 @@ export interface BotBlock {
   copy?: RunStopCopy
   self_check?: Record<string, any>
   can_continue?: boolean
+  /** #419: user stop only: paid jobs this turn had already submitted (they still finish and are charged) */
+  submitted?: number
   notify?: boolean
 }
 export interface RunStopText { title: string; body: string; primary: string | null; secondary: string | null }

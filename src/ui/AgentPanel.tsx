@@ -189,7 +189,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
                 <div className="ca-chat__thinking">
                   <span className="ca-chat__thinkicon"><span className="ca-icon">{Icons.think}</span></span>
                   <span className="ca-chat__thinklabel">{m.blocks.length ? t('agentPanel.working') : t('agentPanel.thinking')}</span>
-                  <button type="button" className="ca-panel__chip" onClick={() => void stopTurn().catch(fail)}>{t('agentPanel.stop')}</button>
+                  <button type="button" className="ca-panel__chip" title={t('agentPanel.stopTooltip')} onClick={() => void stopTurn().catch(fail)}>{t('agentPanel.stop')}</button>
                 </div>
               )}
               {m.status === 'aborted' && <div className="ca-chat__hint">{t('agentPanel.stopped')}</div>}
