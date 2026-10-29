@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 function Svg({ children, fill, strokeWidth = 1.6 }: { children: ReactNode; fill?: boolean; strokeWidth?: number }) {
   return fill ? (
@@ -6,6 +6,23 @@ function Svg({ children, fill, strokeWidth = 1.6 }: { children: ReactNode; fill?
   ) : (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
       {children}
+    </svg>
+  )
+}
+
+/** Loomi mark, mono: currentColor on a 24 canvas; mask id from useId so several copies never collide. */
+export function LoomiMono() {
+  const id = `loomi-${useId().replace(/:/g, '')}`
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" data-loomi="mono" aria-hidden="true">
+      <mask id={id}>
+        <g transform="translate(1.2 1.2) scale(.216)">
+          <path fill="#fff" d="M50 4 C56 4, 64 8, 68 16 C74 10, 84 10, 90 18 C96 26, 96 36, 90 42 C98 48, 100 58, 96 66 C92 74, 84 78, 76 76 C72 84, 62 92, 50 92 C38 92, 28 84, 24 76 C16 78, 8 74, 4 66 C0 58, 2 48, 10 42 C4 36, 4 26, 10 18 C16 10, 26 10, 32 16 C36 8, 44 4, 50 4 Z" />
+          <path fill="#000" d="M31 46 L35.5 34 L40 46 L51 50.5 L40 55 L35.5 67 L31 55 L20 50.5 Z" />
+          <path d="M56 42 Q65 54, 74 42" fill="none" stroke="#000" strokeWidth="5" strokeLinecap="round" />
+        </g>
+      </mask>
+      <rect width="24" height="24" mask={`url(#${id})`} />
     </svg>
   )
 }
@@ -46,7 +63,7 @@ export const Icons = {
   sound: <Svg><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" /><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /></Svg>,
   soundOff: <Svg><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" /><path d="m16 9.5 5 5M21 9.5l-5 5" /></Svg>,
   panelRight: <Svg><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" /><path d="M14.5 4.5v15" /></Svg>,
-  agent: <Svg fill><path d="M12 2.5a9.5 9.5 0 1 0 0 19 9.5 9.5 0 0 0 0-19m-3 7.2a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8m6 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8M8.2 15h7.6a4.2 4.2 0 0 1-7.6 0" /></Svg>,
+  agent: <LoomiMono />,
   think: <Svg strokeWidth={2}><path d="M12 18V5" /><path d="M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4" /><path d="M17.707 6.294A3 3 0 1012 5a3 3 0 10-5.707 1.294" /><path d="M17.996 5.125a4 4 0 012.526 5.77" /><path d="M18 18a4 4 0 002-7.465" /><path d="M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517" /><path d="M6 18a4 4 0 01-2-7.465" /><path d="M6.004 5.125a4 4 0 00-2.526 5.77" /></Svg>,
   /** #382: Lucide `history` for 「记忆已更新 ›」 row (process rail, stroke 2 like other #326 icons). */
   history: <Svg strokeWidth={2}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></Svg>,

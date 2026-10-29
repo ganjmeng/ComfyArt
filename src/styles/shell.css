@@ -630,3 +630,4 @@ span.arti-mascot { cursor: default; pointer-events: none; }
     transform: none !important;
   }
 }
+.ca-agentlogo--loomi { color: var(--ca-strong); }

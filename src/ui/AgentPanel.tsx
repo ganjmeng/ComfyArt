@@ -13,7 +13,7 @@ import { libraryTabAtom } from './LibraryPanel'
 import { sideAtom } from './SidePanel'
 import { AssistantBlocks, textOf, UserMessage } from './ChatMessage'
 import { Composer, FILE_ACCEPT } from './Composer'
-import { Icons } from './icons'
+import { Icons, LoomiMono } from './icons'
 import { NoticeCenter } from './NoticeCenter'
 import { Popover } from './Popover'
 import { ProjectHeader } from './ProjectHeader'
@@ -155,7 +155,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
       <div ref={list} className="ca-chat" onScroll={onScroll}>
         {enabled === false && (
           <div className="ca-chat__empty">
-            <span className="ca-chat__hello">{Icons.agent}</span>
+            <span className="ca-chat__hello"><LoomiMono /></span>
             <div>{t('agentPanel.agentIsNotEnabledYet')}</div>
             <div className="ca-chat__hint">{t('agentPanel.enableMcpAndAgentIn')}</div>
             <button type="button" className="ca-panel__primary" onClick={() => botSettingsOpenAtom.set(true)}>{t('agentPanel.openAgentSettings')}</button>
@@ -170,7 +170,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
         )}
         {enabled !== false && messages.length === 0 && (
           <div className="ca-chat__empty">
-            <span className="ca-chat__hello">{Icons.agent}</span>
+            <span className="ca-chat__hello"><LoomiMono /></span>
             <div>{t('agentPanel.describeWhatYouWantTo')}</div>
             <div className="ca-chat__hint">{t('agentPanel.selectImagesOnTheCanvas')}</div>
             <div className="ca-chat__starts">

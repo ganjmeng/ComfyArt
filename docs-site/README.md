@@ -1,6 +1,6 @@
-# ComfyArt Docs Site
+# Loomi Docs Site
 
-The documentation for ComfyArt, built with [Mintlify](https://mintlify.com) for **comfyart.org**. English pages live at the root (`index.mdx`, `guides/`), Chinese pages under `zh/`. Navigation, theme and languages are in `docs.json`. Screenshots are in `images/`.
+The documentation for Loomi, built with [Mintlify](https://mintlify.com) for **comfyart.org**. English pages live at the root (`index.mdx`, `guides/`), Chinese pages under `zh/`. Navigation, theme and languages are in `docs.json`. Screenshots are in `images/`.
 
 ## Local preview
 

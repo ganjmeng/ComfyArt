@@ -3,7 +3,7 @@ title: "MCP 服务器"
 description: "让内置 Agent，或 Claude Code、Codex、Gemini CLI、Cursor 等任何 MCP 客户端查看并编辑画布。"
 ---
 
-ComfyArt 通过 HTTP 提供一个 [MCP](https://modelcontextprotocol.io) 服务器。内置 [Agent](/zh/guides/agent) 用的就是它，其他支持 MCP 的 agent 也能用同一套工具：查看画布，生成和编辑图片、视频、音频和 3D 模型，放置文字、形状、画板和幻灯片。
+Loomi 通过 HTTP 提供一个 [MCP](https://modelcontextprotocol.io) 服务器。内置 [Agent](/zh/guides/agent) 用的就是它，其他支持 MCP 的 agent 也能用同一套工具：查看画布，生成和编辑图片、视频、音频和 3D 模型，放置文字、形状、画板和幻灯片。
 
 <Tip>
 **WaveSpeed Key 与费用**
@@ -18,13 +18,13 @@ ComfyArt 通过 HTTP 提供一个 [MCP](https://modelcontextprotocol.io) 服务�
 http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>
 ```
 
-项目 id 就是 ComfyArt 网址里的 `project` 参数。画布工具由该项目打开着的 ComfyArt 标签页执行，agent 工作时请保持它开着。不带 `?project` 时，命令发给唯一打开的项目；同时开着多个项目会直接报错，要求指定项目。
+项目 id 就是 Loomi 网址里的 `project` 参数。画布工具由该项目打开着的 Loomi 标签页执行，agent 工作时请保持它开着。不带 `?project` 时，命令发给唯一打开的项目；同时开着多个项目会直接报错，要求指定项目。
 
 服务器使用 streamable HTTP 传输，响应是普通 JSON（不提供 SSE 流）。ComfyUI 不在 `127.0.0.1:8188` 时换成实际地址。
 
 ## 接入 agent
 
-可以从模式菜单启动的 Agent（Claude Code、Codex、Qwen Code、DeepSeek Harness）的分步配置见 [外部 Agent](/zh/guides/external-agents)。ComfyArt 会自动把 MCP 配置传给它们；下面的命令用于单独运行这些工具。
+可以从模式菜单启动的 Agent（Claude Code、Codex、Qwen Code、DeepSeek Harness）的分步配置见 [外部 Agent](/zh/guides/external-agents)。Loomi 会自动把 MCP 配置传给它们；下面的命令用于单独运行这些工具。
 
 任务运行时 `wait_generation` 最长会等三分钟左右，所以客户端的工具超时要设成几分钟。下面的例子都用 10 分钟。
 
@@ -154,4 +154,4 @@ curl -X POST "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>" \
 
 ## 安全
 
-生成和编辑类的 MCP 工具会花 ComfyArt 里配置的 WaveSpeed Key 的余额，每次付费调用都会返回费用。能访问你 ComfyUI 端口的人都能用这个服务，开启 MCP 时请把 ComfyUI 限制在本机或可信网络。
+生成和编辑类的 MCP 工具会花 Loomi 里配置的 WaveSpeed Key 的余额，每次付费调用都会返回费用。能访问你 ComfyUI 端口的人都能用这个服务，开启 MCP 时请把 ComfyUI 限制在本机或可信网络。

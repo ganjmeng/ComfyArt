@@ -1,0 +1,1 @@
+export{i as insertMemoryUpdatedBlock}from"./memoryBudget-BLkuNDR4.js";
