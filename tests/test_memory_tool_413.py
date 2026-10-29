@@ -99,14 +99,21 @@ def test_fallback_skips_when_turn_wrote_memory():
     layout = (ROOT / "src/botLayout.ts").read_text()
     assert "memory_ids: written.map((m) => m.id)" in layout  # #423: added + updated
     ui = (ROOT / "src/ui/ChatMessage.tsx").read_text()
-    assert "hideMemCall(b)) return" in ui
+    # #413/#423 guard: memory tool_use/tool_result never render as raw tool rows when tied to an add / memory_updated
+    assert "const hideMemCall = (b: BotBlock) =>" in ui
+    assert "(memCalls.has(b.id) || memAddIds.has(b.id))" in ui
+    # #437: hideMemCall opens a block — in-flight add → memory_updating process row, then return (still no tool row)
+    hide = ui.split("if (hideMemCall(b))")[1].split("// #437: a finished turn")[0]
+    assert "kind: 'memory_updating'" in hide
+    assert "return" in hide
+    assert "memCalls.has(b.id)" in hide  # only while write not yet landed as memory_updated
     assert "at < 0 ? appendBlock(next, e.memory_updated)" in (ROOT / "src/bot.ts").read_text()  # #423: append once, then replace
 
 
 def test_live_second_thought_renders_like_first_live_thought():
     """#413 design: no status box repeating 思考中… under a live thought on the rail; latest line inline."""
     ui = (ROOT / "src/ui/ChatMessage.tsx").read_text()
-    assert "live && !mediaHero && live.kind !== 'thought' && <div className=\"ca-process__status\">" in ui
+    assert "live && !mediaHero && live.kind !== 'thought' && !live.kind.startsWith('memory_') && <div className=\"ca-process__status\">" in ui
     assert "s.live && s.kind === 'thought' && !open && s.text?.trim() ?" in ui
     assert '<span className="ca-process__inline">' in ui
     css = (ROOT / "src/styles/overlays.css").read_text()

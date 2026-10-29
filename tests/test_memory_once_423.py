@@ -133,17 +133,20 @@ def test_dialog_and_click_entry_identical_to_main():
 
 
 def test_locales_only_add_memory_retrieved_430():
-    """#430 A: locales differ from main only by the Memory retrieved key (+ #441 memoryUpdated without ›)."""
+    """#430 A: locales differ from main only by memory retrieved/updated (+ #437 memoryUpdating)."""
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)
         if m is None:
             pytest.skip("origin/main not available")
         cur, base = json.loads(_src(p)), json.loads(m)
-        assert cur.pop("chatMessage.memoryRetrieved") == v
+        assert cur.pop("chatMessage.memoryRetrieved") == v; base.pop("chatMessage.memoryRetrieved", None)
         cur.pop("chatMessage.memoryUpdated"); base.pop("chatMessage.memoryUpdated")  # #441: › moved to an svg
+        cur.pop("chatMessage.memoryUpdating", None)
+        base.pop("chatMessage.memoryUpdating", None)
         assert cur == base
-    assert json.loads(_src("src/locales/zh.json"))["chatMessage.memoryUpdated"] == "记忆已更新"
-    assert json.loads(_src("src/locales/en.json"))["chatMessage.memoryUpdated"] == "Memory updated"
+    zh, en = json.loads(_src("src/locales/zh.json")), json.loads(_src("src/locales/en.json"))
+    assert zh["chatMessage.memoryUpdated"] == "记忆已更新" and en["chatMessage.memoryUpdated"] == "Memory updated"
+    assert zh["chatMessage.memoryUpdating"] == "记忆更新中" and en["chatMessage.memoryUpdating"] == "Updating memory"
 
 
 def test_retrieved_row_before_updated_only_on_update_430():
@@ -152,7 +155,9 @@ def test_retrieved_row_before_updated_only_on_update_430():
     assert i < cm.index("kind: kindResolved", i)  # pushed right before the 记忆已更新 › step
     assert "memBlocks.some((x) => (x.updated_ids ?? []).length > 0)" in cm
     assert "const isMemory = s.kind === 'memory_updated'" in cm  # only 记忆已更新 › is clickable
-    assert "memory_retrieved: Icons.memoryHead" in cm and "memory_updated: Icons.memoryHead" in cm  # #435 in-house icon
+    assert "memory_retrieved: Icons.memoryHead" in cm and "memory_updating: Icons.memoryHead" in cm and "memory_updated: Icons.memoryHead" in cm
+    assert "kind: 'memory_updating'" in cm and "memory-updating-row" in cm
+    assert "isMemory && <span className=\"ca-process__memchev" in cm  # › only on 记忆已更新
 
 
 def test_update_block_flags_retrieved_add_does_not_430():
@@ -180,3 +185,26 @@ def test_memory_row_measured_css_441() -> None:
     assert "{isMemory && <span className=\"ca-process__memchev ca-icon\"" in cm
 
     assert "memory_']:last-child) { margin-bottom" not in css  # #441 v5: no extra gap before the reply (main pitch)
+
+def test_memory_updating_row_437() -> None:
+    """#437: in-flight memory add shows 记忆更新中 (no ›); same icon; dialog pill key stays separate."""
+    cm = _src("src/ui/ChatMessage.tsx")
+    assert "memory_updating" in cm and "chatMessage.memoryUpdating" in cm
+    assert "memory-updating-row" in cm
+    assert "orderMemorySteps" in cm  # retrieved → updating → updated
+    assert "MEM_STEP_ORDER" in cm
+    # process row only — no ca-process__status bubble for memory_* live
+    assert "!live.kind.startsWith('memory_') && <div className=\"ca-process__status\">" in cm
+    # › only when isMemory (memory_updated)
+    assert cm.count("memory-updated-chev") == 1
+    assert "memoryDialog.saving" not in cm  # dialog pill copy is not the process-row key
+    zh = json.loads(_src("src/locales/zh.json"))
+    assert zh["chatMessage.memoryUpdating"] == zh["memoryDialog.saving"] == "记忆更新中"
+    # EN: same words as dialog for now; process-row EN awaits design's next reference frame
+    assert json.loads(_src("src/locales/en.json"))["chatMessage.memoryUpdating"] == "Updating memory"
+    assert json.loads(_src("src/locales/en.json"))["memoryDialog.saving"] == "Updating memory"
+    css = _src("src/styles/overlays.css")
+    assert "width: 18px; height: 18px" in css.split(".ca-memory__spin")[1].split("}")[0]
+    assert "gap: 6px" in css.split(".ca-memory__saving")[1].split("}")[0]
+    assert "ca-mem-body-shimmer 1.6s" in css
+    assert ".ca-arti-mem__row[data-saving] .ca-arti-mem__actions { display: none; }" in css

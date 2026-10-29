@@ -397,7 +397,18 @@
 .ca-htmlpreview iframe { width: 100%; height: 100%; border: 0; border-radius: 12px; background: #fff; }
 .ca-htmlpreview__close { position: absolute; top: 40px; right: 40px; background: var(--ca-float); border-radius: 50%; }
 .ca-refmodes { width: 260px; max-height: 460px; overflow-y: auto; }
-.ca-md { display: flex; flex-direction: column; gap: 6px; word-break: break-word; }
+/* #437: Inter subset lacks U+2460–U+2473; scoped face so ①②③… match 13px/1.6 CJK, not oversized system fallback */
+@font-face {
+  font-family: "CA Enclosed";
+  src: url("../fonts/ca-enclosed.woff2") format("woff2");
+  unicode-range: U+2460-2473;
+  font-weight: 100 900;
+  font-display: swap;
+}
+.ca-md {
+  display: flex; flex-direction: column; gap: 6px; word-break: break-word;
+  font: 400 13px/1.6 "CA Enclosed", var(--ca-font);
+}
 .ca-md p, .ca-md ul, .ca-md ol { margin: 0; }
 .ca-md ul, .ca-md ol { padding-left: 20px; }
 .ca-md .ca-md__h { font-weight: 600; }
@@ -901,9 +912,23 @@
 .ca-memory .ca-memory__card .ca-history__del { display: inline-flex; }
 .ca-memory__title, .ca-memory .ca-arti-mem__row .ca-arti-mem__label, .ca-memory .ca-arti-mem__edit .ca-arti-mem__label { font: var(--ca-mem-title-weight) 13px/22px var(--ca-font); color: var(--ca-strong); margin-bottom: 2px; }
 .ca-memory .ca-arti-mem__row { border: 1px solid var(--ca-border); }
-.ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__text, .ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__label { color: var(--ca-muted); opacity: .6; }
-.ca-memory__saving { display: inline-flex; align-items: center; gap: 8px; cursor: default; }
-.ca-memory__spin { width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: ca-spin .8s linear infinite; }
+/* #437 designer DOM: list entry body shimmer while saving; title unchanged; edit/more hidden */
+.ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__actions { display: none; }
+.ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__label { color: var(--ca-mem-c90); opacity: 1; }
+.ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__text {
+  color: transparent; border-radius: 4px;
+  background: linear-gradient(90deg, var(--ca-field) 0%, var(--ca-hover) 40%, var(--ca-shine) 50%, var(--ca-hover) 60%, var(--ca-field) 100%);
+  background-size: 200% 100%;
+  animation: ca-mem-body-shimmer 1.6s linear infinite;
+}
+@keyframes ca-mem-body-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+/* #437 designer DOM: bottom black pill — 48× hug, pad 16, gap 6, spin 18×18 @ 1s, fill = text @ .9 */
+.ca-memory__saving { display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+.ca-memory__spin {
+  width: 18px; height: 18px; flex: none; box-sizing: border-box;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  opacity: .9; animation: ca-spin 1s linear infinite;
+}
 .ca-memory__skeleton { display: flex; flex-direction: column; gap: 22px; }
 .ca-memory__skgroup { display: flex; flex-direction: column; gap: 8px; }
 .ca-memory__skcard { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--ca-border); border-radius: 12px; }
@@ -944,8 +969,9 @@
 .ca-memory .ca-memory__addrow { min-height: 0; height: 48px; padding: 12px 16px; border: 1px dashed var(--ca-mem-dash); border-radius: 16px; font: 400 13px/22px var(--ca-font); color: var(--ca-mem-c30); gap: 2px; }
 .ca-memory .ca-memory__addrow .ca-icon { width: 16px; height: 16px; }
 .ca-memory .ca-memory__sticky { margin-top: auto; }
-.ca-memory .ca-arti-mem__cta { min-width: 0; width: auto; height: 48px; padding: 0 16px; border-radius: 999px; background: rgb(44, 44, 44); color: #fff; font: 400 14px/22px var(--ca-font); }
-.ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__text, .ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__label { color: var(--ca-muted); opacity: .6; } /* saving dim: unmeasured, unchanged */
+.ca-memory .ca-arti-mem__cta { min-width: 0; width: auto; height: 48px; padding: 0 16px; border-radius: 999px; background: #2c2c2c; color: #fff; font: 400 14px/22px var(--ca-font); }
+:root[data-theme="dark"] .ca-memory .ca-arti-mem__cta,
+.ca-root[data-theme="dark"] .ca-memory .ca-arti-mem__cta { background: #fff; color: #000; }
 /* #437: web-search row — source favicon before the count, results card under the row */
 .ca-process { --ca-process-card-gap: 10px; }
 .ca-process__favicon { width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
@@ -998,7 +1024,7 @@
   display: block; top: calc(var(--ca-process-ico) + 8px); bottom: auto; height: 8px;
 }
 
-/* #435/#441: memory rows (记忆已读取 / 记忆已更新 ›) per the reference DOM values (#430), on #442's flex rows:
+/* #435/#441/#437: memory rows (记忆已读取 / 记忆更新中 / 记忆已更新 ›) per the reference DOM values (#430), on #442's flex rows:
    16px thin-outline icon in the text colour, 6px icon-to-text and text-to-› gap, 14px/400 on a 20px line,
    rgba(0,0,0,.55) (dark: white .55), default text colour on hover; 20px rows + the 8px steps gap;
    8px down to the reply from the parent gap (no margin on the rows). The #442 group stub (--ca-rail, 8px)
