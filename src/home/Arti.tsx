@@ -6,6 +6,9 @@ import { t } from '../i18n'
 import { loadMemory, memoryLogAtom, type MemoryLog } from '../memory'
 import { ARTI_CAP_SETTINGS, artiCapOn } from './artiCaps'
 import { ArtiMemory } from './ArtiMemory'
+import { openMemoryDialog } from '../ui/MemoryDialog'
+import { listProjects } from '../projects'
+import { Icons } from '../ui/icons'
 import { ArtiLevelAvatar } from '../ui/ArtiMascot'
 import { resolveArtiLevel } from '../artiLevel'
 
@@ -145,6 +148,45 @@ function LearnedBody({ tab }: { tab: LearnedTab }) {
   return <ArtiEvolution />
 }
 
+function ArtiIntroActions() {
+  const [projectCount, setProjectCount] = useState<number | null>(null)
+  useEffect(() => {
+    void listProjects().then((list) => setProjectCount(list.length)).catch(() => setProjectCount(0))
+  }, [])
+  return (
+    <section className="ca-arti__actions" data-testid="arti-intro-actions">
+      <button
+        type="button"
+        className="ca-arti__action"
+        data-testid="arti-tell-yourself"
+        onClick={() => openMemoryDialog({ onboard: true })}
+      >
+        <span className="ca-arti__actionicon ca-icon">{Icons.agent}</span>
+        <span className="ca-arti__actionbody">
+          <span className="ca-arti__actiontitle">{t('arti.tellYourself')}</span>
+          <span className="ca-arti__actiondesc">{t('arti.tellYourselfDesc')}</span>
+        </span>
+        <span className="ca-arti__actionchev ca-icon">{Icons.memoryChev}</span>
+      </button>
+      <button
+        type="button"
+        className="ca-arti__action"
+        data-testid="arti-learn-past"
+        title={t('arti.learnPastSoon')}
+        disabled
+        aria-disabled="true"
+      >
+        <span className="ca-arti__actionicon ca-icon">{Icons.folder}</span>
+        <span className="ca-arti__actionbody">
+          <span className="ca-arti__actiontitle">{t('arti.learnPast')}</span>
+          <span className="ca-arti__actiondesc">{t('arti.learnPastDesc', projectCount ?? 0)}</span>
+        </span>
+        <span className="ca-arti__actionsoon">{t('arti.cap.soon')}</span>
+      </button>
+    </section>
+  )
+}
+
 /** #367: account-level /arti home shell — level card + capabilities + learned tabs. */
 export function Arti() {
   const [tab, setTab] = useState<LearnedTab>('memory')
@@ -170,6 +212,8 @@ export function Arti() {
           <p className="ca-arti__levelhint">{t('arti.levelHint')}</p>
         </div>
       </section>
+
+      <ArtiIntroActions />
 
       <section className="ca-arti__section" data-testid="arti-capabilities">
         <h2 className="ca-arti__sectiontitle">{t('arti.canDoTitle')}</h2>

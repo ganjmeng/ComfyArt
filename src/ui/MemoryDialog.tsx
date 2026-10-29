@@ -43,6 +43,15 @@ function MemorySkeleton() {
 }
 
 export const memoryOpenAtom = atom('memory open', false)
+/** When true, the next open starts the 「说说你自己」 onboarding flow. */
+export const memoryOnboardAtom = atom('memory onboard', false)
+
+/** Open the shared memory dialog. Chat 「记忆已更新 ›」 must not highlight an entry (#436). */
+export function openMemoryDialog(opts?: { onboard?: boolean }) {
+  memoryFocusAtom.set(null)
+  memoryOnboardAtom.set(!!opts?.onboard)
+  memoryOpenAtom.set(true)
+}
 
 const MAX_TEXT = 12000
 const PDF_PAGES = 30
@@ -114,11 +123,19 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
   const loading = useValue(memoryLoadingAtom)
   const savingNow = useValue(memorySavingAtom)
   const file = useRef<HTMLInputElement>(null)
-  // #433: the reference re-reads memory each time the dialog opens and shows a skeleton meanwhile
-  useEffect(() => { if (open) void loadMemory() }, [open])
+  const wantOnboard = useValue(memoryOnboardAtom)
+  // #433: re-read memory each open (skeleton meanwhile). #436: 「说说你自己」/「去完善」 start onboarding.
+  useEffect(() => {
+    if (!open) return
+    void loadMemory()
+    if (wantOnboard) {
+      setOnboarding(true)
+      memoryOnboardAtom.set(false)
+    }
+  }, [open, wantOnboard])
   if (!open) return null
   // #433: opening from 「记忆已更新 ›」 highlights nothing and offers no undo; removal is delete + confirm only
-  const close = () => { memoryOpenAtom.set(false); setEditing(null); setMenuId(null); setAdding(null); setChatOpen(false); setOnboarding(false); memoryFocusAtom.set(null) }
+  const close = () => { memoryOpenAtom.set(false); memoryOnboardAtom.set(false); setEditing(null); setMenuId(null); setAdding(null); setChatOpen(false); setOnboarding(false); memoryFocusAtom.set(null) }
   // store failures already showed 保存失败，请重试 (#381); only other errors go to the panel
   const fail = (e: unknown) => { if (!(e instanceof MemoryWriteError || e instanceof MemoryConflict || e instanceof MemoryReadError)) onError(errorText(e)) }
   const add = (category: string) => {

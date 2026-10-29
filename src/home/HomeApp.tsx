@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import { t } from '../i18n'
 import { newProject, openView, type HomeView } from '../projects'
 import { MemoryChooser, MemoryToast } from '../ui/MemoryChooser'
+import { MemoryDialog } from '../ui/MemoryDialog'
+import { showMemoryToast } from '../memory'
 import { Confirm } from '../ui/Confirm'
 import { BrandMark } from '../ui/BrandMark'
 import { Icons } from '../ui/icons'
@@ -76,6 +78,7 @@ export function HomeApp({ view }: { view: View }) {
       <Confirm />
       <MemoryChooser />
       <MemoryToast />
+      <MemoryDialog onError={(msg) => showMemoryToast(msg)} />
       <KeySettings />
     </div>
   )

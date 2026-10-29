@@ -51,7 +51,7 @@ def test_bottom_chat_pill() -> None:
 def test_measured_empty_state() -> None:
     assert "export function MemoryEmpty()" in MEM
     assert "Oops." in MEM
-    assert "<MemoryEmpty />" in DLG and "<MemoryEmpty />" in MEM
+    assert "<MemoryEmpty />" in DLG  # #436: Arti tab uses 暂无记忆+去完善; dialog keeps Oops
     assert ZH["memoryDialog.emptyTitle"] == "Arti 还不认识你"
     assert ZH["memoryDialog.emptyDesc"] == "在对话中告诉 Arti 你的偏好，它就会记住来"
     assert EN["memoryDialog.emptyTitle"] == "Arti doesn't know you yet"

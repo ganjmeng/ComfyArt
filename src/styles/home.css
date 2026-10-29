@@ -143,6 +143,36 @@ body { background: var(--ca-float); }
 .ca-arti__lv { font: 500 14px/22px var(--ca-font); color: var(--ca-muted); }
 .ca-arti__levelhint { margin: 8px 0 0; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
 
+/* #436: Arti intro actions + empty memory tab */
+.ca-arti__actions { display: flex; flex-direction: column; gap: 10px; margin: 0 0 28px; }
+.ca-arti__action {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 14px 16px; text-align: left;
+  border: var(--ca-border-w) solid var(--ca-border); border-radius: 12px;
+  background: var(--ca-surface, var(--ca-bg)); color: inherit; cursor: pointer;
+}
+.ca-arti__action:hover:not(:disabled) { border-color: var(--ca-text-2); }
+.ca-arti__action:disabled { opacity: .72; cursor: not-allowed; }
+.ca-arti__actionicon { flex: none; width: 20px; height: 20px; color: var(--ca-strong); }
+.ca-arti__actionbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ca-arti__actiontitle { font: 500 14px/22px var(--ca-font); color: var(--ca-strong); }
+.ca-arti__actiondesc { font: 400 13px/20px var(--ca-font); color: var(--ca-muted); }
+.ca-arti__actionchev { flex: none; width: 16px; height: 16px; color: var(--ca-muted); }
+.ca-arti__actionsoon { flex: none; font: 400 12px/18px var(--ca-font); color: var(--ca-text-2); }
+
+.ca-arti-mem__tabempty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; min-height: 160px; padding: 32px 16px;
+}
+.ca-arti-mem__tabempty-title { font: 400 14px/22px var(--ca-font); color: var(--ca-muted); }
+.ca-arti-mem__gocomplete {
+  padding: 8px 16px; border-radius: 8px;
+  border: var(--ca-border-w) solid var(--ca-border);
+  background: var(--ca-surface, var(--ca-bg)); color: var(--ca-strong);
+  font: 500 13px/20px var(--ca-font); cursor: pointer;
+}
+.ca-arti-mem__gocomplete:hover { border-color: var(--ca-text-2); }
+
 .ca-arti__section { margin-bottom: 32px; }
 .ca-arti__sectiontitle { margin: 0 0 14px; font: 500 16px/24px var(--ca-font); }
 

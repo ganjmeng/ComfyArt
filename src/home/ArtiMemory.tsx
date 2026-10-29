@@ -17,6 +17,7 @@ import { confirmAtom } from '../ui/Confirm'
 import { showMemoryToast } from '../memory'
 import { Icons } from '../ui/icons'
 import { isEnter } from '../ui/keys'
+import { openMemoryDialog } from '../ui/MemoryDialog'
 
 export type CatId = 'about' | 'work' | 'taste' | 'assets'
 // #433: measured reference order — 审美偏好 / 基础信息 / 协作方式 / 常用资产
@@ -381,7 +382,7 @@ export function ArtiMemory() {
           <button type="button" className="ca-arti-mem__retry" data-testid="arti-memory-retry" onClick={() => void loadMemory()}>{t('arti.memory.retry')}</button>
         </div>
       ) : null}
-      {!loadError ? <div className="ca-arti-mem__groups" data-testid="arti-memory-groups">
+      {!loadError && !(ready && memory.length === 0) ? <div className="ca-arti-mem__groups" data-testid="arti-memory-groups">
         {GROUP_ORDER.map((cat) => (
           <MemoryGroup
             key={cat}
@@ -393,24 +394,37 @@ export function ArtiMemory() {
             setMenuId={setMenuId}
             addingAssets={addingAssets}
             setAddingAssets={setAddingAssets}
-            allEmpty={ready && memory.length === 0}
+            allEmpty={false}
           />
         ))}
       </div> : null}
 
+      {/* #436: empty memory tab = 「暂无记忆」+「去完善」 (dialog keeps MemoryEmpty / Oops) */}
       {ready && !loadError && memory.length === 0 ? (
-        <div className="ca-arti-mem__guide" data-testid="arti-memory-empty-guide"><MemoryEmpty /></div>
+        <div className="ca-arti-mem__tabempty" data-testid="arti-memory-tab-empty">
+          <div className="ca-arti-mem__tabempty-title">{t('arti.memory.tabEmpty')}</div>
+          <button
+            type="button"
+            className="ca-arti-mem__gocomplete"
+            data-testid="arti-memory-go-complete"
+            onClick={() => openMemoryDialog({ onboard: true })}
+          >
+            {t('arti.memory.goComplete')}
+          </button>
+        </div>
       ) : null}
 
-      <div className="ca-arti-mem__sticky" data-testid="arti-memory-chat-cta">
-        {chatOpen ? (
-          <ChatComposer onClose={() => setChatOpen(false)} />
-        ) : (
-          <button type="button" className="ca-arti-mem__cta" data-testid="arti-memory-chat-open" onClick={() => setChatOpen(true)}>
-            {t('arti.memory.chatCta')}
-          </button>
-        )}
-      </div>
+      {ready && !loadError && memory.length > 0 ? (
+        <div className="ca-arti-mem__sticky" data-testid="arti-memory-chat-cta">
+          {chatOpen ? (
+            <ChatComposer onClose={() => setChatOpen(false)} />
+          ) : (
+            <button type="button" className="ca-arti-mem__cta" data-testid="arti-memory-chat-open" onClick={() => setChatOpen(true)}>
+              {t('arti.memory.chatCta')}
+            </button>
+          )}
+        </div>
+      ) : null}
     </div>
   )
 }
