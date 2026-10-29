@@ -8,7 +8,7 @@ import { ask, parseJson } from '../llm'
 import { loadMemory, MEMORY_CATEGORIES, MemoryConflict, memoryErrorAtom, memoryFocusAtom, memoryLoadingAtom, memorySavingAtom, MemoryReadError, MemoryWriteError, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
 import { isPdf, uploadPdf } from '../pdf'
 import { AbilitiesPanel } from './AbilitiesPanel'
-import { ChatComposer, EditRow, MemoryRow, GROUP_ICONS, GROUP_ORDER, MemoryEmpty } from '../home/ArtiMemory'
+import { ChatComposer, EditRow, MemoryRow, GROUP_ORDER, MemoryEmpty } from '../home/ArtiMemory'
 import { Icons } from './icons'
 import { t } from '../i18n'
 import { isEnter } from './keys'
@@ -94,6 +94,9 @@ function Onboarding({ onDone }: { onDone: (items: MemoryInput[] | null) => void 
     </div>
   )
 }
+
+/** filled group-title icons (dialog only; the Arti page keeps its own) */
+const DIALOG_GROUP_ICONS: Record<string, typeof Icons.info> = { taste: Icons.memPalette, about: Icons.memBook, work: Icons.memWrench, assets: Icons.memAssets }
 
 export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
   const open = useValue(memoryOpenAtom)
@@ -184,7 +187,7 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
                 const items = memory.filter((m) => (m.category ?? 'about') === cat)
                 return (
                   <section key={cat} className="ca-arti-mem__group" data-testid={`memory-dialog-group-${cat}`}>
-                    <h3 className="ca-arti-mem__grouptitle" data-testid="memory-dialog-grouptitle"><span className="ca-icon">{GROUP_ICONS[cat]}</span>{t(`memoryDialog.group.${cat}`)}</h3>
+                    <h3 className="ca-arti-mem__grouptitle" data-testid="memory-dialog-grouptitle"><span className="ca-icon">{DIALOG_GROUP_ICONS[cat]}</span>{t(`memoryDialog.group.${cat}`)}</h3>
                     <div className="ca-arti-mem__list">
                       {items.map((m) => (
                         editing === m.id

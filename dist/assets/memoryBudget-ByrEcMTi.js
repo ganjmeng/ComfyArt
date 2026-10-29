@@ -1,0 +1,1 @@
+export{i as insertMemoryUpdatedBlock}from"./memoryBudget-ceNfTB_X.js";

@@ -938,7 +938,6 @@
 .ca-memory .ca-memory__head .ca-memory__updated { margin-left: 0; font: 400 13px/20px var(--ca-font); color: var(--ca-mem-c55); }
 .ca-memory .ca-arti-mem__grouptitle { padding: 0 8px; font: 400 13px/22px var(--ca-font); color: var(--ca-mem-c55); gap: 6px; }
 .ca-memory .ca-arti-mem__grouptitle .ca-icon { width: 16px; height: 16px; color: var(--ca-mem-c55); }
-.ca-memory .ca-arti-mem__grouptitle .ca-icon svg { fill: currentColor; stroke: none; }
 .ca-memory .ca-arti-mem__row { padding: 12px 16px; border: 1px solid var(--ca-mem-line); border-radius: 16px; background: transparent; }
 .ca-memory .ca-arti-mem__row .ca-arti-mem__label, .ca-memory .ca-arti-mem__edit .ca-arti-mem__label { font: 500 13px/22px var(--ca-font); color: var(--ca-mem-c90); }
 .ca-memory .ca-arti-mem__row .ca-arti-mem__text { font: 400 13px/22px var(--ca-font); color: var(--ca-mem-c90); }

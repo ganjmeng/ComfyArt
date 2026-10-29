@@ -98,8 +98,21 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         assert round((await close.locator("svg").bounding_box())["width"]) == 16
         gt = dlg.locator("[data-testid=memory-dialog-grouptitle]").first
         assert await cs(gt, ["font-size", "line-height", "font-weight", "column-gap", "padding-left", "padding-right"]) == ["13px", "22px", "400", "6px", "8px", "8px"]
-        gi = gt.locator(".ca-icon svg")
-        assert round((await gi.bounding_box())["width"]) == 16 and (await cs(gi, ["stroke"]))[0] == "none" and (await cs(gi, ["fill"]))[0] != "none"
+        for gsvg in await dlg.locator("[data-testid=memory-dialog-grouptitle] .ca-icon svg").all():
+            # true filled icons: fill on the svg, no stroke, 16px, .55 like the title
+            assert await gsvg.get_attribute("fill") == "currentColor" and await gsvg.get_attribute("stroke") is None
+            assert round((await gsvg.bounding_box())["width"]) == 16 and (await cs(gsvg, ["stroke"]))[0] == "none"
+            if light:
+                assert (await cs(gsvg, ["color"]))[0] == "rgba(0, 0, 0, 0.55)"
+        if OUT and light:
+            await dlg.locator("[data-testid=memory-dialog-grouptitle]").first.wait_for()
+            c4 = await b.new_context(viewport={"width": 320, "height": 80}, device_scale_factor=4)
+            p4 = await c4.new_page()
+            svgs = await dlg.locator("[data-testid=memory-dialog-grouptitle] .ca-icon").evaluate_all("els => els.map(e => e.innerHTML)")
+            cells = "".join(f'<span style="display:inline-flex;width:16px;height:16px;margin:12px;color:rgba(0,0,0,.55)">{h}</span>' for h in svgs)
+            await p4.set_content(f'<body style="margin:0;background:#fff"><div id=r style="display:inline-flex;padding:4px">{cells}</div><style>svg{{width:16px;height:16px}}</style></body>')
+            await p4.locator("#r").screenshot(path=f"{OUT}/433-icons4x.png")
+            await c4.close()
         if light:
             assert (await cs(gt, ["color"]))[0] == "rgba(0, 0, 0, 0.55)"
         lab, body = card.locator(".ca-arti-mem__label"), card.locator(".ca-arti-mem__text")
