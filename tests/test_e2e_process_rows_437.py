@@ -94,8 +94,10 @@ def test_rows_and_rail_stubs(browser, bundle, lang, theme):
         st = r["rail"]
         assert st is not None and st["w"] == 1
         assert abs((st["l"] + 0.5) - (r["il"] + r["iw"] / 2)) < 0.01 and r["iw"] == 16
-        assert abs(st["t"] - (r["top"] + 20)) < 0.5 and st["t"] >= r["ib"] - 0.5  # starts below its icon
-        assert abs(st["b"] - nxt["top"]) < 0.5  # stops at the next group's top
+        assert st["b"] - st["t"] == 8  # fixed 8px stub
+        assert abs(st["t"] - (r["ib"] + 4)) < 0.01  # 4px below this icon's bottom
+        assert abs(nxt["it"] - st["b"] - 4) < 0.01  # 4px above the next icon's top
+        assert abs((st["t"] + st["b"]) / 2 - (r["ib"] + nxt["it"]) / 2) < 0.01  # centred in the 16px gap
         assert r["railBg"] == ("rgba(0, 0, 0, 0.07)" if theme == "light" else "rgba(255, 255, 255, 0.1)")
     page.close()
 

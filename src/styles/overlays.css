@@ -994,5 +994,6 @@
 /* #442 v6 (product): single-row groups draw a short stub from below the icon to the next group's top;
    never beside the search card, never after the last group, none on the model row */
 .ca-process__group:not(:last-child):not(:has(.ca-process__card)) > .ca-process__row > .ca-process__spine {
-  display: block; top: 20px; bottom: calc(-1 * var(--ca-process-row-gap));
+  /* fixed 8px, centred between the icons: 4px below this icon's bottom (20px) to 4px above the next icon's top */
+  display: block; top: calc(var(--ca-process-ico) + 8px); bottom: auto; height: 8px;
 }
