@@ -716,8 +716,31 @@ type ProcessStep = {
   memoryIds?: string[]
 }
 
+/** #437: canonical visual order for consecutive memory rows (retrieved → updating → updated). */
+const MEM_STEP_ORDER: Record<string, number> = {
+  memory_retrieved: 0,
+  memory_updating: 1,
+  memory_updated: 2,
+}
+function orderMemorySteps(steps: ProcessStep[]): ProcessStep[] {
+  const out: ProcessStep[] = []
+  let i = 0
+  while (i < steps.length) {
+    if (!steps[i].kind.startsWith('memory_')) {
+      out.push(steps[i++])
+      continue
+    }
+    const run: ProcessStep[] = []
+    while (i < steps.length && steps[i].kind.startsWith('memory_')) run.push(steps[i++])
+    run.sort((a, b) => (MEM_STEP_ORDER[a.kind] ?? 9) - (MEM_STEP_ORDER[b.kind] ?? 9))
+    out.push(...run)
+  }
+  return out
+}
+
 /** #326: Lovart-style multi-step process rail (solid spine · status card outside). */
-function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
+function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
+  const steps = orderMemorySteps(rawSteps)
   const [openKey, setOpenKey] = useState<string | null>(null)
   const live = steps.find((s) => s.live)
   // #356/#358: flat grey media hero under live image/video only (sibling — not a new kind);
@@ -788,8 +811,9 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
           )
         })}
       </div>
-      {/* #356/#358 Lovart: image/video live → title then hero (icon-column left); no bordered status between */}
-      {live && !mediaHero && live.kind !== 'thought' && <div className="ca-process__status">{live.label}</div>}
+      {/* #356/#358: image/video live → title then hero; no bordered status between.
+          #437: memory_* live is process-row only — never a ca-process__status bubble (would hijack 输出中…). */}
+      {live && !mediaHero && live.kind !== 'thought' && !live.kind.startsWith('memory_') && <div className="ca-process__status">{live.label}</div>}
       {mediaHero && (
         <div
           className="ca-media-hero"

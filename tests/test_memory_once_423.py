@@ -191,9 +191,19 @@ def test_memory_updating_row_437() -> None:
     cm = _src("src/ui/ChatMessage.tsx")
     assert "memory_updating" in cm and "chatMessage.memoryUpdating" in cm
     assert "memory-updating-row" in cm
+    assert "orderMemorySteps" in cm  # retrieved → updating → updated
+    assert "MEM_STEP_ORDER" in cm
+    # process row only — no ca-process__status bubble for memory_* live
+    assert "!live.kind.startsWith('memory_') && <div className=\"ca-process__status\">" in cm
     # › only when isMemory (memory_updated)
     assert cm.count("memory-updated-chev") == 1
     assert "memoryDialog.saving" not in cm  # dialog pill copy is not the process-row key
     zh = json.loads(_src("src/locales/zh.json"))
     assert zh["chatMessage.memoryUpdating"] == zh["memoryDialog.saving"] == "记忆更新中"
+    # EN placeholder — design to confirm vs dialog "Updating memory"
     assert json.loads(_src("src/locales/en.json"))["chatMessage.memoryUpdating"] == "Memory updating"
+    css = _src("src/styles/overlays.css")
+    assert "width: 18px; height: 18px" in css.split(".ca-memory__spin")[1].split("}")[0]
+    assert "gap: 6px" in css.split(".ca-memory__saving")[1].split("}")[0]
+    assert "ca-mem-body-shimmer 1.6s" in css
+    assert ".ca-arti-mem__row[data-saving] .ca-arti-mem__actions { display: none; }" in css

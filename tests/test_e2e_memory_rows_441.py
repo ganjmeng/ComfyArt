@@ -87,8 +87,8 @@ async def test_memory_rows_computed_441(app_url, fake_tools, lang, theme, ink): 
 
 
 @pytest.mark.parametrize("lang,theme,ink,labels", [
-    ("zh", "light", "rgba(0, 0, 0, 0.55)", ("记忆已读取", "记忆已更新", "记忆更新中")),
-    ("en", "dark", "rgba(255, 255, 255, 0.55)", ("Memory retrieved", "Memory updated", "Memory updating")),
+    ("zh", "light", "rgba(0, 0, 0, 0.55)", ("记忆已读取", "记忆更新中", "记忆已更新")),
+    ("en", "dark", "rgba(255, 255, 255, 0.55)", ("Memory retrieved", "Memory updating", "Memory updated")),
 ])
 async def test_memory_updating_and_three_rows_437(app_url, fake_tools, lang, theme, ink, labels):  # noqa: F811
     """#437: live memory add → 记忆更新中 (no ›); with a prior update in the turn, three memory rows + stubs/`--ca-rail`."""
@@ -100,7 +100,7 @@ async def test_memory_updating_and_three_rows_437(app_url, fake_tools, lang, the
         assert proj
         c = chat_store.create_chat(user=user, project=proj, provider="local-llm", title="m437")
         um = chat_store.create_message(chat_id=c["id"], role="user", blocks=[{"type": "text", "text": "remember"}])
-        # streaming: prior update done + second add in flight → retrieved, updated, updating
+        # streaming: prior update done + second add in flight → retrieved → updating → updated
         chat_store.create_message(
             chat_id=c["id"], role="assistant", parent_id=um["id"], status="streaming",
             blocks=[
@@ -121,18 +121,20 @@ async def test_memory_updating_and_three_rows_437(app_url, fake_tools, lang, the
         texts = await pg.locator(".ca-process__row[data-kind^='memory_'] .ca-process__label").evaluate_all(
             "els => els.map(e => e.childNodes[0] && e.childNodes[0].textContent ? e.childNodes[0].textContent.trim() : e.textContent.trim())"
         )
-        assert kinds == ["memory_retrieved", "memory_updated", "memory_updating"]
+        assert kinds == ["memory_retrieved", "memory_updating", "memory_updated"]
         assert texts == list(labels)
         assert await pg.locator("[data-testid=memory-updated-chev]").count() == 1  # › only on updated
         assert await pg.locator("[data-testid=memory-updating-row] .ca-process__memchev").count() == 0
+        # #437: process row only — no gray ca-process__status bubble hijacking 输出中
+        assert await pg.locator(".ca-process__status").count() == 0
         m = await pg.evaluate(_MEASURE)
         assert len(m["rows"]) == 3
         for r in m["rows"]:
             assert r["ico"] == [16, 16, "none", ink, "1.5px", "round", "round", ink]
             assert r["font"] == ["14px", "20px", "400", ink]
             assert r["mt"] == "0px" and r["mb"] == "0px"
-        assert m["rows"][0]["chev"] is None and m["rows"][2]["chev"] is None
-        assert m["rows"][1]["chev"] is not None and m["rows"][1]["chev"][:2] == [16, 16]
+        assert m["rows"][0]["chev"] is None and m["rows"][1]["chev"] is None
+        assert m["rows"][2]["chev"] is not None and m["rows"][2]["chev"][:2] == [16, 16]
         # stubs between consecutive memory icons (12px gap, 8px stub, --ca-rail)
         for i in range(2):
             a = await pg.locator(".ca-process__row[data-kind^='memory_']").nth(i).locator(".ca-process__icon svg").bounding_box()
