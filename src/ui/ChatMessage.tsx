@@ -211,6 +211,11 @@ function Retry({ b: block, live }: { b: BotBlock; live: boolean }) {
 }
 
 /** #391 stop card (locked copy): one sentence + buttons; 「详情」 fold with actual usage only (no caps, no bars). */
+/** #419: paid jobs this turn had already sent when the user stopped (they still finish and are charged). */
+export function stoppedSubmitted(m: BotMessage): number {
+  return m.blocks.reduce((n, b) => (b.type === 'run_stop' ? Math.max(n, b.submitted ?? 0) : n), 0)
+}
+
 export function RunStop({ b, latest }: { b: BotBlock; latest: boolean }) {
   const [busy, setBusy] = useState(false)
   const [closed, setClosed] = useState(false)

@@ -116,6 +116,7 @@ class RunContext:
     pending_stop: Optional[Stop] = None
     compressions: int = 0
     paid_calls: int = 0
+    paid_sent: set = field(default_factory=set)     # #419: keys whose paid request went out (kept even if it fails)
     selfcheck_nudged: bool = False
     messages: list = field(default_factory=list)  # live transcript (same list the loop appends to)
     pricer: Any = None
@@ -429,6 +430,12 @@ def delivered(ctx: RunContext, kind: str = "") -> int:
     return n
 
 
+def submitted_count(ctx: RunContext, before: set) -> int:
+    """#419: paid calls this turn whose request was SENT (not only acknowledged): a stop that lands while the
+    request is in flight may still be charged, so it counts and the charge note shows (over-warn, never under)."""
+    return len({k for k in (ctx.paid_sent or set()) if k not in before})
+
+
 def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: int = 0) -> dict:
     """Both languages, so the card follows a UI language switch. tone: neutral|warn|error|ok."""
     key = stop.code if stop.code in CARD_COPY else stop.reason.value
@@ -574,6 +581,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
     ctx.confirmer = getattr(provider, "_confirm_paid_over_quote", None)
     t_start = clock()
     first_step = ctx.budget.used.steps
+    paid_before = set(ctx.paid or {})  # #419: paid calls submitted before this turn are not "submitted" by it
     first_tokens = ctx.budget.used.tokens
 
     async def rec_emit(ev: BotEvent) -> None:
@@ -615,6 +623,10 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         status = "done" if stop.reason == StopReason.DONE else "paused"
         detail = stop.sub or stop.reason.value
         card = _summary_card(ctx, stop, remaining, check)
+        if stop.reason == StopReason.USER_STOP and not stop.sub:
+            # #419: jobs already submitted to WaveSpeed cannot be cancelled: they finish, fill their
+            # placeholders, are charged. The UI shows only the charge note, and only when n > 0 (no stop label).
+            card["submitted"] = submitted_count(ctx, paid_before)
         try:
             ctx.checkpoint(messages, status=status, detail=detail, stop=stop)
         except LeaseLost:
@@ -802,6 +814,10 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         return TurnResult(usage=usage, error="this run was taken over by another continue request",
                           run={"run_id": ctx.run_id, "status": "lease_lost"})
     except (aiohttp.ClientError, ConnectionError, OSError) as e:
+        if handle.stop_requested:
+            # #419: stop() closes the session, so the in-flight call dies with ServerDisconnectedError;
+            # that is the user's stop (#391 card + charge note), not a network drop
+            return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
         # network drop: keep the run resumable (paused at its last checkpoint) instead of leaving it "running"
         _log.warning("[ComfyArt/agent] network error in %s: %s", ctx.run_id, e)
         msg = ("网络中断，进度已保存，可以重试。" if ctx.lang == "zh" else "Network dropped; progress saved, you can retry.")
@@ -855,6 +871,7 @@ async def paid_gate(ctx: RunContext, name: str, args: dict, emit_confirm,
         # Confirmed: raise the ceiling by exactly this quote, never more (no auto-continue).
         ctx.budget.limits.credits = round(ctx.budget.used.credits + price, 6)
     ctx.paid[key] = {"status": "pending", "price": price}
+    ctx.paid_sent.add(key)
     # The pending marker AND its pending usage event are durable (one transaction) before the paid
     # call goes out: a crash never re-calls, and money never moves without a metering row.
     eid = ctx.pending_paid(key, {"kind": "paid_call", "tool": name, "amount_usd": price,

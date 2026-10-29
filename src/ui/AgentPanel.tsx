@@ -11,7 +11,7 @@ import { botSettingsOpenAtom } from './AgentPicker'
 import { dockAtom } from './chatDock'
 import { libraryTabAtom } from './LibraryPanel'
 import { sideAtom } from './SidePanel'
-import { AssistantBlocks, textOf, UserMessage } from './ChatMessage'
+import { AssistantBlocks, stoppedSubmitted, textOf, UserMessage } from './ChatMessage'
 import { Composer, FILE_ACCEPT } from './Composer'
 import { Icons, LoomiMono } from './icons'
 import { NoticeCenter } from './NoticeCenter'
@@ -88,6 +88,23 @@ async function resend(editor: Editor, m: BotMessage) {
   await sendToAgent(editor, textOf(m), refsOf(editor, m), skill, kits, docs)
 }
 
+/** #419: right after a user stop the partial output turns grey for ~1.5s, then returns to normal; no label. */
+const STOP_FADE_MS = 1500
+function useStopFade(messages: BotMessage[]): Set<string> {
+  const prev = useRef(new Map<string, string>())
+  const [fading, setFading] = useState<Set<string>>(() => new Set())
+  useEffect(() => {
+    for (const m of messages) {
+      if (prev.current.get(m.id) === 'streaming' && m.status === 'aborted') {
+        setFading((s) => new Set(s).add(m.id))
+        setTimeout(() => setFading((s) => { const n = new Set(s); n.delete(m.id); return n }), STOP_FADE_MS)
+      }
+      prev.current.set(m.id, m.status)
+    }
+  }, [messages])
+  return fading
+}
+
 export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError }: {
   editor: Editor
   projectId: string
@@ -108,6 +125,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
   const canBranch = providers.find((p) => p.id === chat?.provider)?.branch ?? false
   const fail = (e: unknown) => onError(errorText(e))
 
+  const fading = useStopFade(messages)
   const [away, setAway] = useState(false)
   const count = useRef(0)
   const toBottom = () => list.current?.scrollTo({ top: list.current.scrollHeight })
@@ -183,7 +201,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
         {messages.map((m, i) => (m.role === 'user'
           ? <UserMessage key={m.id} editor={editor} m={m} onBranch={canBranch && !busy ? () => void branchFrom(m.id).catch(fail) : undefined} />
           : (
-            <div key={m.id} className="ca-chat__bot">
+            <div key={m.id} className={fading.has(m.id) ? 'ca-chat__bot ca-chat__bot--stopping' : 'ca-chat__bot'}>
               <AssistantBlocks editor={editor} m={m} />
               {m.status === 'streaming' && (
                 <div className="ca-chat__thinking">
@@ -192,7 +210,9 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
                   <button type="button" className="ca-panel__chip" onClick={() => void stopTurn().catch(fail)}>{t('agentPanel.stop')}</button>
                 </div>
               )}
-              {m.status === 'aborted' && <div className="ca-chat__hint">{t('agentPanel.stopped')}</div>}
+              {m.status === 'aborted' && stoppedSubmitted(m) > 0 && (
+                <div className="ca-chat__hint" data-stopped="submitted">{t('chatMessage.stoppedSubmittedNote')}</div>
+              )}
               {m.status !== 'streaming' && (
                 <div className="ca-chat__acts ca-chat__acts--bot">
                   {!busy && i === messages.length - 1 && lastUser === i - 1 && (

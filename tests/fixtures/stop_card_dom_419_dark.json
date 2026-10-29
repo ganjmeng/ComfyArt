@@ -1,0 +1,36 @@
+{
+ "html": {
+  "lang": "zh-CN",
+  "data-theme": "dark"
+ },
+ "body": {},
+ "anc": [
+  [
+   "div",
+   {
+    "id": "root"
+   }
+  ],
+  [
+   "div",
+   {
+    "class": "ca-root",
+    "data-chat": "open",
+    "data-dock": "left"
+   }
+  ],
+  [
+   "aside",
+   {
+    "class": "ca-agent"
+   }
+  ],
+  [
+   "div",
+   {
+    "class": "ca-chat"
+   }
+  ]
+ ],
+ "bot": "<div class=\"ca-chat__bot\"><div class=\"ca-process\"><div class=\"ca-process__steps\"><div class=\"ca-process__spine\" aria-hidden=\"true\"></div><div class=\"ca-process__row\" data-kind=\"image\"><span class=\"ca-process__icon ca-process__icon--image\" data-kind=\"image\"><span class=\"ca-icon\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\"></rect><circle cx=\"9\" cy=\"9\" r=\"2\"></circle><path d=\"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21\"></path></svg></span></span><span class=\"ca-process__label\">已生成图片</span></div></div></div><div class=\"ca-run\" data-reason=\"user_stop\" data-key=\"user_stop\" data-tone=\"neutral\"><div class=\"ca-run__head\"><span class=\"ca-icon\"><svg viewBox=\"0 0 24 24\" fill=\"currentColor\" data-loomi=\"mono\" aria-hidden=\"true\"><mask id=\"loomi-_r_4_\"><g transform=\"translate(1.2 1.2) scale(.216)\"><path fill=\"#fff\" d=\"M50 4 C56 4, 64 8, 68 16 C74 10, 84 10, 90 18 C96 26, 96 36, 90 42 C98 48, 100 58, 96 66 C92 74, 84 78, 76 76 C72 84, 62 92, 50 92 C38 92, 28 84, 24 76 C16 78, 8 74, 4 66 C0 58, 2 48, 10 42 C4 36, 4 26, 10 18 C16 10, 26 10, 32 16 C36 8, 44 4, 50 4 Z\"></path><path fill=\"#000\" d=\"M31 46 L35.5 34 L40 46 L51 50.5 L40 55 L35.5 67 L31 55 L20 50.5 Z\"></path><path d=\"M56 42 Q65 54, 74 42\" fill=\"none\" stroke=\"#000\" stroke-width=\"5\" stroke-linecap=\"round\"></path></g></mask><rect width=\"24\" height=\"24\" mask=\"url(#loomi-_r_4_)\"></rect></svg></span><span class=\"ca-run__title\">已停止</span></div><div class=\"ca-run__body\">已保留生成的 1 张</div><details class=\"ca-run__details\"><summary>详情</summary><div>步数 2</div><div>模型用量 261</div><div>积分 1</div><div>用时 0:03</div></details><div class=\"ca-panel__foot\"><button type=\"button\" class=\"ca-panel__primary\" data-action=\"continue\">继续</button></div></div><div class=\"ca-chat__hint\">已终止</div><div class=\"ca-chat__acts ca-chat__acts--bot\"><button type=\"button\" class=\"ca-history__del\" title=\"重新生成\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4.5 12a7.5 7.5 0 1 0 2.2-5.3\"></path><path d=\"M6.7 2.8v3.9h3.9\"></path></svg></button><button type=\"button\" class=\"ca-history__del\" title=\"复制\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"3\"></rect><path d=\"M12 8.5v7M8.5 12h7\"></path></svg></button><button type=\"button\" class=\"ca-history__del\" title=\"任务详情\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z\"></path><path d=\"M14 3.5v5h5\"></path><circle cx=\"11.5\" cy=\"14\" r=\"2.3\"></circle><path d=\"m13.2 15.7 2.3 2.3\"></path></svg></button></div></div>"
+}

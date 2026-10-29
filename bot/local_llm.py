@@ -1525,6 +1525,8 @@ class LocalLlmProvider(AgentProvider):
                 continue
             if name in PAID_TOOLS and decision == "cancel":
                 continue  # do not emit a paid row: the user stopped before anything ran
+            if name in PAID_TOOLS and handle.stop_requested:
+                continue  # #419: stopped before this step was submitted: skip it, no row, no charge, no placeholder
             if name in PAID_TOOLS and gate.blocks(name, it["args"]):
                 chunks[i] = await self._emit_result(
                     it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
