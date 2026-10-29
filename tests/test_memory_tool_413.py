@@ -31,6 +31,13 @@ def _rig(monkeypatch, script, mcp):
             return await orig(session, method, url, headers=headers, json_body=json_body, timeout=timeout)
         return {"result": {"tools": [{"name": t} for t in ("memory", "generate_image", "get_canvas")]}}
     monkeypatch.setattr(rig.p, "_request_json", with_memory_tool)
+    rig.bodies = []
+
+    async def capture(session, method, url, *, headers, json_body=None, timeout=120):
+        if url.endswith("/chat/completions"):
+            rig.bodies.append(dict(json_body))
+        return await with_memory_tool(session, method, url, headers=headers, json_body=json_body, timeout=timeout)
+    monkeypatch.setattr(rig.p, "_request_json", capture)
     return rig
 
 
@@ -119,3 +126,82 @@ def test_prompts_say_call_memory_first_then_reply():
         assert "preference, brand, requirement, or makes a choice" in flat
         assert "FIRST" in flat and "then reply" in flat
         assert "do not rely on a later fallback" in flat.lower()
+
+
+# --- #413 go-ahead: low reasoning only on the call right after a successful memory add ---
+
+from ComfyArt.bot import reasoning_boost  # noqa: E402
+from ComfyArt.bot.local_llm import LlmHttpError  # noqa: E402
+
+_REASON_KEYS = ("reasoning_effort", "reasoning", "thinking")
+
+
+def _plain_call(name, args, cid):
+    return {"choices": [{"message": {"content": "", "tool_calls": [
+        {"id": cid, "function": {"name": name, "arguments": json.dumps(args, ensure_ascii=False)}}]}}]}
+
+
+def _mem_ok(name, args, n):
+    if name == "memory":
+        return json.dumps({"added": args.get("text"), "memory_ids": ["m1"]}, ensure_ascii=False)
+    return json.dumps({"shapes": []})
+
+
+def _boosted(body):
+    return {k: body[k] for k in _REASON_KEYS if k in body}
+
+
+def test_low_reasoning_only_on_call_after_memory_add(monkeypatch):
+    script = [_think_call("先记下来。", "memory", {"action": "add", "text": "喜欢暖色调", "category": "taste"}),
+              _plain_call("get_canvas", {}, "c2"),
+              _think_reply("组织回答。", "已记住。")]
+    rig = _rig(monkeypatch, script, _mem_ok)
+    res, _ = asyncio.run(rig.send("记住我喜欢暖色调"))
+    assert not res.error and rig.n == 3
+    assert [_boosted(b) for b in rig.bodies] == [{}, {"reasoning_effort": "low"}, {}]
+    assert all(b["temperature"] == 0.2 and b["tool_choice"] == "auto" for b in rig.bodies)  # rest unchanged
+
+
+def test_no_boost_when_memory_add_failed_or_not_add(monkeypatch):
+    for mcp, args in (
+        (lambda n, a, k: json.dumps({"error": "nope"}), {"action": "add", "text": "x", "category": "taste"}),
+        (_mem_ok, {"action": "list"}),
+    ):
+        script = [_think_call("t", "memory", args), _think_reply("t2", "ok")]
+        rig = _rig(monkeypatch, script, mcp)
+        asyncio.run(rig.send("hi"))
+        assert [_boosted(b) for b in rig.bodies] == [{}, {}]
+
+
+def test_no_boost_on_turn_without_memory(monkeypatch):
+    script = [_plain_call("get_canvas", {}, "c1"), _think_reply("t", "ok")]
+    rig = _rig(monkeypatch, script, _mem_ok)
+    asyncio.run(rig.send("hi"))
+    assert [_boosted(b) for b in rig.bodies] == [{}, {}]
+
+
+def test_model_rejecting_reasoning_replies_plain_without_fake_thought(monkeypatch):
+    def script(messages, n):
+        if n == 0:
+            return _plain_call("memory", {"action": "add", "text": "喜欢暖色调", "category": "taste"}, "mem1")
+        if n == 1:
+            return LlmHttpError(400, "unsupported parameter: reasoning_effort")
+        return {"choices": [{"message": {"content": "已记住。", "tool_calls": []}}]}
+    rig = _rig(monkeypatch, script, _mem_ok)
+    res, events = asyncio.run(rig.send("记住我喜欢暖色调"))
+    assert not res.error and rig.n == 3
+    assert [_boosted(b) for b in rig.bodies] == [{}, {"reasoning_effort": "low"}, {}]  # retried once, plain
+    assert not [e for e in events if e.t == "thinking"]  # no thought synthesized
+
+
+def test_reasoning_params_per_provider():
+    from ComfyArt.api import settings
+    default_url = settings.SETTINGS_SPEC["bot-local-llm-url"]
+    assert default_url == "https://llm.wavespeed.ai/v1"
+    assert settings.SETTINGS_SPEC["bot-model-local-llm"] == "deepseek/deepseek-v4.1-flash-1017"
+    rp = reasoning_boost.reasoning_params
+    assert rp(default_url, "deepseek/deepseek-v4.1-flash-1017") == {"reasoning_effort": "low"}
+    assert rp("https://openrouter.ai/api/v1", "x/y") == {"reasoning": {"effort": "low"}}
+    assert rp("https://api.anthropic.com/v1", "claude-x") == {"thinking": {"type": "enabled", "budget_tokens": 1024}}
+    assert rp("https://api.deepseek.com/v1", "deepseek-flash") == {"reasoning_effort": "low", "thinking": {"type": "enabled"}}
+    assert rp("https://api.openai.com/v1", "o4") == {"reasoning_effort": "low"}

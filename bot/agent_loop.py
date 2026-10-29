@@ -20,6 +20,7 @@ from typing import Any, Optional
 from . import self_check as sc_mod
 from .guide import PAID_TOOLS
 from .plan_quote import canon_key
+from . import reasoning_boost
 from .run_budget import ui_credits
 from .providers import BotEvent, TurnResult
 from .run_budget import (
@@ -645,6 +646,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
     gens: dict[str, dict] = {}
     loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens, "budget_loop": True, "run": ctx}
     gate = _PlanGate()
+    reason_next = False  # #413: set after a step that wrote memory; consumed by the next request
     try:
         while True:
             if handle.stop_requested:
@@ -677,10 +679,20 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     # paid gate reuses a done call or refuses a pending one instead of asking the model again.
                     data, replay, request_messages = {"choices": [{"message": replay}]}, None, []
                 else:
-                    data = await provider._llm_request(session, f"{base}/chat/completions", {
-                    "model": model, "messages": request_messages,
-                    **({"tools": tools, "tool_choice": "auto"} if tools else {}), "temperature": 0.2,
-                }, emit, handle)
+                    body = {
+                        "model": model, "messages": request_messages,
+                        **({"tools": tools, "tool_choice": "auto"} if tools else {}), "temperature": 0.2,
+                    }
+                    # #413: only the call right after a successful memory add asks for low reasoning
+                    boost = reasoning_boost.reasoning_params(base, model) if reason_next else {}
+                    reason_next = False
+                    try:
+                        data = await provider._llm_request(session, f"{base}/chat/completions", {**body, **boost}, emit, handle)
+                    except LlmHttpError as e:
+                        if not boost or e.status != 400:
+                            raise
+                        # Endpoint/model without that reasoning setting: same request, plain.
+                        data = await provider._llm_request(session, f"{base}/chat/completions", body, emit, handle)
             except (asyncio.TimeoutError, LlmHttpError) as e:
                 if handle.stop_requested:
                     return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
@@ -736,6 +748,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 tool_calls, session=session, turn=turn, emit=rec_emit, handle=handle,
                 messages=messages, done=ctx.done, lang=ctx.lang, skill_cache=skill_cache,
                 loop=loop, gate=gate, usage=usage, llm_model=model)
+            reason_next = reasoning_boost.wrote_memory(ctx.blocks[b_before:])
             # Tool results are charged as input of the next request (they are re-sent with it).
             ctx.budget.end_step()
             if ctx.pending_stop is not None:
