@@ -1427,5 +1427,11 @@
   "arti.evolutionEmpty": "No evolution log yet",
   "arti.evolutionTime": "Time",
   "arti.evolutionAction": "Action",
-  "arti.memory.chatIntentFail": "Couldn’t tell what to do with memory — try again (remember / change to / forget)."
+  "arti.memory.chatIntentFail": "Couldn’t tell what to do with memory — try again (remember / change to / forget).",
+  "memoryDialog.emptyTitle": "Arti doesn't know you yet",
+  "memoryDialog.emptyDesc": "Tell Arti your preferences while you chat and it will remember them",
+  "memoryDialog.addYour.taste": "Add your aesthetic preferences",
+  "memoryDialog.addYour.about": "Add your basic info",
+  "memoryDialog.addYour.work": "Add your collaboration style",
+  "memoryDialog.addYour.assets": "Add your assets"
 }

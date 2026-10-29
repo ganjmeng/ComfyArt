@@ -265,7 +265,6 @@
   .ca-q__opt { min-height: var(--ca-opt-h, 28px); }
 }
 
-.ca-memory { width: min(480px, calc(100vw - 32px)); }
 .ca-memory__row { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 4px; border-bottom: var(--ca-border-w) solid var(--ca-border); }
 .ca-memory__row .ca-history__del { display: inline-flex; }
 .ca-memory__add { height: 36px; padding: 0 14px; border-radius: 8px; font: inherit; cursor: pointer; }
@@ -794,3 +793,115 @@
   border-radius: 8px;
   background: color-mix(in srgb, var(--ca-accent, var(--ca-strong)) 8%, transparent);
 }
+
+/* #433: memory dialog in the reference layout — four vertical groups of title + body cards,
+   bottom 「通过对话修改记忆」 pill, measured empty state. Card/group rules mirror the Home memory
+   centre (#368, home.css is not loaded in the canvas app); sizes reuse existing tokens. */
+.ca-memory { width: min(720px, calc(100vw - 32px)); }
+.ca-memory .ca-rename__body { max-height: min(698px, calc(100vh - 120px)); overflow-y: auto; }
+.ca-memory .ca-arti-mem__groups { display: flex; flex-direction: column; gap: 22px; }
+.ca-memory .ca-arti-mem__grouptitle {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 10px;
+  font: 500 14px/22px var(--ca-font); color: var(--ca-strong);
+}
+.ca-memory .ca-arti-mem__grouptitle .ca-icon { width: 18px; height: 18px; color: var(--ca-muted); }
+.ca-memory .ca-arti-mem__list { display: flex; flex-direction: column; gap: 8px; }
+.ca-memory .ca-arti-mem__row {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 12px 14px; border: var(--ca-border-w) solid var(--ca-border);
+  border-radius: 12px; background: var(--ca-float);
+}
+.ca-memory .ca-arti-mem__row:hover { background: var(--ca-hover); }
+.ca-memory .ca-arti-mem__rowbody { flex: 1; min-width: 0; }
+.ca-memory .ca-arti-mem__label { font: 500 12px/18px var(--ca-font); color: var(--ca-muted); margin-bottom: 4px; }
+.ca-memory .ca-arti-mem__text { font: 400 13px/20px var(--ca-font); color: var(--ca-text); white-space: pre-wrap; }
+.ca-memory .ca-arti-mem__actions {
+  display: flex; gap: 2px; flex: none; opacity: 0; transition: opacity .12s;
+}
+.ca-memory .ca-arti-mem__row:hover .ca-arti-mem__actions, .ca-memory .ca-arti-mem__row:focus-within .ca-arti-mem__actions { opacity: 1; }
+.ca-memory .ca-arti-mem__iconbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; border: none; border-radius: 8px;
+  background: transparent; color: var(--ca-muted); cursor: pointer;
+}
+.ca-memory .ca-arti-mem__iconbtn:hover { background: var(--ca-active); color: var(--ca-text); }
+.ca-memory .ca-arti-mem__iconbtn .ca-icon { width: 16px; height: 16px; }
+.ca-memory .ca-arti-mem__menwrap { position: relative; }
+.ca-memory .ca-arti-mem__menu {
+  position: absolute; right: 0; top: 100%; z-index: 20; min-width: 140px;
+  padding: 6px; border-radius: 10px; border: var(--ca-border-w) solid var(--ca-border);
+  background: var(--ca-float); box-shadow: var(--ca-shadow);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.ca-memory .ca-arti-mem__menu--up { top: auto; bottom: 100%; }
+.ca-memory .ca-arti-mem__menu button {
+  display: block; width: 100%; text-align: left; padding: 8px 10px;
+  border: none; border-radius: 8px; background: transparent;
+  font: 400 13px/20px var(--ca-font); color: var(--ca-text); cursor: pointer;
+}
+.ca-memory .ca-arti-mem__menu button:hover { background: var(--ca-hover); }
+.ca-memory .ca-arti-mem__menu button[data-danger] { color: #dc2626; }
+.ca-memory .ca-arti-mem__edit, .ca-memory .ca-arti-mem__assetadd {
+  padding: 12px 14px; border: var(--ca-border-w) solid var(--ca-accent);
+  border-radius: 12px; background: var(--ca-float);
+}
+.ca-memory .ca-arti-mem__textarea, .ca-memory .ca-arti-mem__composerinput {
+  width: 100%; box-sizing: border-box; resize: vertical; min-height: 64px;
+  padding: 10px 12px; border: var(--ca-border-w) solid var(--ca-border);
+  border-radius: 10px; background: var(--ca-field); color: var(--ca-text);
+  font: 400 13px/20px var(--ca-font);
+}
+.ca-memory .ca-arti-mem__editfoot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-top: 10px;
+}
+.ca-memory .ca-arti-mem__editactions { display: flex; gap: 8px; }
+.ca-memory .ca-arti-mem__addasset {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; min-height: 48px; padding: 12px;
+  border: var(--ca-border-w) dashed var(--ca-border); border-radius: 12px;
+  background: transparent; color: var(--ca-muted); font: 400 13px/20px var(--ca-font);
+  cursor: pointer;
+}
+.ca-memory .ca-arti-mem__addasset:hover { color: var(--ca-text); background: var(--ca-hover); }
+.ca-memory .ca-arti-mem__empty { padding: 12px; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
+.ca-memory .ca-arti-mem__sticky {
+  position: sticky; bottom: 16px; z-index: 5;
+  display: flex; justify-content: center; margin-top: 24px; pointer-events: none;
+}
+.ca-memory .ca-arti-mem__sticky > * { pointer-events: auto; }
+.ca-memory .ca-arti-mem__cta {
+  min-width: 220px; height: 44px; padding: 0 22px; border: none; border-radius: 999px;
+  background: var(--ca-strong); color: var(--ca-float);
+  font: 500 14px/22px var(--ca-font); cursor: pointer;
+  box-shadow: var(--ca-shadow);
+}
+.ca-memory .ca-arti-mem__cta:hover { filter: brightness(1.05); }
+.ca-memory .ca-arti-mem__composer {
+  width: min(560px, 100%); padding: 14px; border-radius: 16px;
+  border: var(--ca-border-w) solid var(--ca-border); background: var(--ca-float);
+  box-shadow: var(--ca-shadow);
+}
+.ca-memory .ca-arti-mem__composerbox { display: flex; align-items: flex-end; gap: 8px; margin-top: 8px; }
+.ca-memory .ca-arti-mem__composerinput { flex: 1; min-height: 44px; }
+.ca-memory .ca-arti-mem__pluswrap { position: relative; flex: none; padding-bottom: 6px; }
+.ca-memory .ca-arti-mem__send {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex: none; margin-bottom: 4px;
+  border: none; border-radius: 10px; background: var(--ca-accent); color: #fff; cursor: pointer;
+}
+.ca-memory .ca-arti-mem__send:disabled { opacity: .4; cursor: not-allowed; }
+.ca-memory .ca-arti-mem__composerclose { margin-top: 10px; }
+.ca-memory .ca-arti-mem__assetadd .ca-panel__input { margin-bottom: 8px; }
+.ca-memory .ca-arti-mem__guide { margin: 8px 0 12px; text-align: center; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
+.ca-memory .ca-memory__groups { margin-top: 4px; }
+.ca-memory .ca-memory__card { align-items: center; }
+.ca-memory .ca-memory__card .ca-history__del { display: inline-flex; }
+.ca-memory__title { font: 600 13px/20px var(--ca-font); color: var(--ca-strong); }
+.ca-memory .ca-memory__addrow { justify-content: flex-start; min-height: 40px; padding: 8px 12px; }
+.ca-memory .ca-memory__sticky { bottom: 0; padding-bottom: 4px; }
+.ca-mem-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 96px 16px; text-align: center; }
+.ca-mem-empty__badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--ca-hover); color: var(--ca-muted); font: 500 16px/24px var(--ca-font); }
+.ca-mem-empty__badge .ca-icon { width: 18px; height: 18px; }
+.ca-mem-empty__title { font: 600 13px/20px var(--ca-font); color: var(--ca-strong); }
+.ca-mem-empty__desc { max-width: 260px; font: 400 13px/20px var(--ca-font); color: var(--ca-muted); }

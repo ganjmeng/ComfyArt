@@ -1427,5 +1427,11 @@
   "arti.evolutionEmpty": "暂无进化日志",
   "arti.evolutionTime": "时间",
   "arti.evolutionAction": "操作",
-  "arti.memory.chatIntentFail": "没听懂要对记忆做什么，请再说一次（记住 / 改成 / 忘记）。"
+  "arti.memory.chatIntentFail": "没听懂要对记忆做什么，请再说一次（记住 / 改成 / 忘记）。",
+  "memoryDialog.emptyTitle": "Arti 还不认识你",
+  "memoryDialog.emptyDesc": "在对话中告诉 Arti 你的偏好，它就会记住来",
+  "memoryDialog.addYour.taste": "添加你的审美偏好",
+  "memoryDialog.addYour.about": "添加你的基础信息",
+  "memoryDialog.addYour.work": "添加你的协作方式",
+  "memoryDialog.addYour.assets": "添加你的资产"
 }

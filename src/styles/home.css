@@ -348,3 +348,10 @@ body { background: var(--ca-float); }
 .ca-arti-evo__col-action { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; min-width: 0; }
 .ca-arti-evo__text { min-width: 0; word-break: break-word; }
 .ca-arti-mem__chathint { margin-top: 6px; color: #dc2626; font: 400 12px/18px var(--ca-font); }
+
+/* #433: measured empty state (shared with the memory dialog) */
+.ca-mem-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px 16px; text-align: center; }
+.ca-mem-empty__badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--ca-hover); color: var(--ca-muted); font: 500 16px/24px var(--ca-font); }
+.ca-mem-empty__badge .ca-icon { width: 18px; height: 18px; }
+.ca-mem-empty__title { font: 600 13px/20px var(--ca-font); color: var(--ca-strong); }
+.ca-mem-empty__desc { max-width: 260px; font: 400 13px/20px var(--ca-font); color: var(--ca-muted); }
