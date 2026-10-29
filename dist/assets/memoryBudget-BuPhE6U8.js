@@ -1,0 +1,1 @@
+export{i as insertMemoryUpdatedBlock}from"./memoryBudget-W8P8E5_V.js";

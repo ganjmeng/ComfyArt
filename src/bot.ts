@@ -58,6 +58,11 @@ export interface BotBlock {
   memory_ids?: string[]
   /** #413: id of the memory tool call that wrote it (in-loop write) */
   tool_id?: string
+  /** #423: every memory call merged into this turn's one row */
+  tool_ids?: string[]
+  /** #423: ids in memory_ids that were updates of an existing memory */
+  updated_ids?: string[]
+  count?: number
   texts?: string[]
   // #391 run_stop card
   run_id?: string
@@ -371,7 +376,10 @@ const reducers: Record<string, (e: any) => void> = {
   turn_tool_use: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, { type: 'tool_use', name: e.name, input: e.input, id: e.id })),
   turn_tool_result: (e) => patchMessages(e.chat_id, e.message_id, (m) => {
     const next = appendBlock(m, { type: 'tool_result', name: e.name, text: e.text, status: e.status, id: e.id, duration_ms: e.duration_ms })
-    return e.memory_updated ? appendBlock(next, e.memory_updated) : next  // #413: in-loop memory write
+    if (!e.memory_updated) return next
+    // #423: one 记忆已更新 › row per turn — a merged add replaces the row in place
+    const at = next.blocks.findIndex((b) => b.type === 'memory_updated')
+    return at < 0 ? appendBlock(next, e.memory_updated) : { ...next, blocks: next.blocks.map((b, i) => (i === at ? e.memory_updated! : b)) }
   }),
   turn_retry: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block)),
   turn_run_budget: (e) => runBudgetAtom.set({ ...runBudgetAtom.get(), [e.chat_id]: e.budget }),

@@ -6,7 +6,7 @@ import { placeHtml } from './embeds'
 import { genInfoOf } from './generate'
 import { type ErrorSink, fileSrc, GAP, jobOf, mediaAsset } from './jobs'
 import { describeItem, itemImages, libraryAtom, linkedKit } from './library'
-import { correct, forget, memoryAtom, remember } from './memory'
+import { correct, forget, MEMORY_SAVED_NOTE, memoryAtom, upsertMemory } from './memory'
 import { buildSlides } from './slides'
 import { exportImage } from './shapes/ArtboardShape'
 import { COMMENT } from './shapes/CommentShape'
@@ -219,8 +219,15 @@ export const LAYOUT_HANDLERS: Record<string, Handler> = {
     if (settingsAtom.get()['memory-enabled'] === false && args.action !== 'forget') throw new Error('the user turned memory off; do not read or save memories')
     if (args.action === 'list') return { memories: memoryAtom.get().map((m) => ({ text: m.text, category: m.category ?? 'about' })) }
     if (args.action === 'add') {
-      const added = await remember([{ text: String(args.text), category: args.category }], t('botCommands.chat'))
-      return { added: args.text, memory_ids: added.map((m) => m.id) }  // #413: ids -> 记忆已更新 › row
+      // #423: dedupe before write (same fact → skip, changed fact → update); one row per turn is merged server-side
+      const r = await upsertMemory([{ text: String(args.text ?? ''), category: args.category }], t('botCommands.chat'))
+      const written = [...r.added, ...r.updated.map((u) => u.memory)]
+      return {
+        saved: true, added: args.text, memory_ids: written.map((m) => m.id), updated_ids: r.updated.map((u) => u.memory.id), texts: written.map((m) => m.text),
+        ...(r.updated.length ? { updated: r.updated.map((u) => `${u.old} → ${u.memory.text}`) } : {}),
+        ...(r.unchanged.length ? { unchanged: r.unchanged.map((m) => m.text) } : {}),
+        note: MEMORY_SAVED_NOTE,
+      }
     }
     // #381: exact text only; several matches write nothing and come back as candidates for the user to pick
     if (args.action === 'correct') { const r = await correct([{ old: String(args.old ?? ''), new: String(args.new ?? '') }], t('botCommands.chat')); return { corrected: r.changed, ...(r.candidates ? { ambiguous: r.candidates.map((m) => m.text), note: 'several memories match; the user is choosing one, nothing was changed' } : {}), ...(r.rejected ? { rejected: r.rejected } : {}) } }
