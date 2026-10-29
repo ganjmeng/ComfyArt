@@ -66,34 +66,42 @@ async def test_memory_ui_381(app_url, fake_tools, theme):  # noqa: F811
         await pg.locator("[data-testid=arti-memory-center]").wait_for(timeout=15000)
         await pg.wait_for_timeout(600)
 
-        # product MUST 1: all four disabled switch cards: caption exactly 即将开放 in --ca-text-2 (no opacity chain), no other
-        # note, title/desc never faded; only the switch control itself may look disabled
+        # product MUST 1: grey cards (review/research) say 即将开放; #385 memory/skills are switchable (no soon)
         text2 = await pg.evaluate(TOKEN_JS, "--ca-text-2")
+        GREY = {"review", "research"}
         for cid, title, desc in CAP_TEXT:
             card = pg.locator(f"[data-testid=arti-cap-{cid}]")
-            # product ruling: structure kept — original title + original description + a separate 「即将开放」 line
             assert (await card.locator(".ca-arti__captitle").inner_text()).strip() == title, cid
             assert (await card.locator(".ca-arti__capdesc").inner_text()).strip() == desc, cid
             soon = card.locator(f"[data-testid=arti-cap-{cid}-soon]")
-            assert (await soon.inner_text()).strip() == "即将开放", cid
-            assert await soon.evaluate("e => getComputedStyle(e).color") == text2, cid
-            assert await soon.evaluate(OPACITY_JS) == 1, cid
-            assert await soon.evaluate("e => getComputedStyle(e).fontSize") == "12px", cid  # design: 12px
+            if cid in GREY:
+                assert (await soon.inner_text()).strip() == "即将开放", cid
+                assert await soon.evaluate("e => getComputedStyle(e).color") == text2, cid
+                assert await soon.evaluate(OPACITY_JS) == 1, cid
+                assert await soon.evaluate("e => getComputedStyle(e).fontSize") == "12px", cid
+                assert await card.locator(".ca-arti__capbody").evaluate("e => e.innerText.split('\\n').filter(Boolean).length") == 3, cid
+            else:
+                assert await soon.count() == 0, cid
+                assert await card.locator(".ca-arti__capbody").evaluate("e => e.innerText.split('\\n').filter(Boolean).length") == 2, cid
             assert "后端就绪前暂不可用" not in await card.inner_text(), cid
-            assert await card.locator(".ca-arti__capbody").evaluate("e => e.innerText.split('\\n').filter(Boolean).length") == 3, cid  # title, desc, 即将开放
             for part in (".ca-arti__captitle", ".ca-arti__capdesc"):
                 assert await card.locator(part).evaluate(OPACITY_JS) == 1, (cid, part)
             assert float(await card.evaluate("e => getComputedStyle(e).opacity")) == 1, cid
         assert "后端就绪前暂不可用" not in await pg.locator("body").inner_text()  # page-wide
         assert await pg.locator("[data-testid=arti-cap-feedback-soon]").count() == 0  # 反馈改稿 has no switch, no caption
-        # criterion 6, RENDERED: memory/skills switches mirror api/settings (both off by default), are disabled, say 即将开放
+        # #385: memory/skills switches mirror api/settings (off by default) and are ENABLED (switchable); no 即将开放
         from ComfyArt.api import settings as _st
         cur = _st.all_settings()
         for cid, key in (("memory", "proactive-memory"), ("skills", "proactive-skills")):
             sw = pg.locator(f"[data-testid=arti-cap-{cid}] [role=switch]")
             assert await sw.get_attribute("aria-checked") == ("true" if cur.get(key) else "false"), (cid, cur.get(key))
             assert cur.get(key) is False  # shipped default
-            assert await sw.evaluate("e => e.disabled === true") and await sw.get_attribute("aria-disabled") == "true"  # native disabled, not just aria
+            assert await sw.evaluate("e => e.disabled === false")
+            assert await pg.locator(f"[data-testid=arti-cap-{cid}-soon]").count() == 0
+        # review/research stay grey + 即将开放
+        for cid in ("review", "research"):
+            sw = pg.locator(f"[data-testid=arti-cap-{cid}] [role=switch]")
+            assert await sw.evaluate("e => e.disabled === true")
             assert (await pg.locator(f"[data-testid=arti-cap-{cid}-soon]").inner_text()).strip() == "即将开放"
         # whole 我能主动做的 section: heading + every capability card with its toggle
         boxes = [await c.bounding_box() for c in await pg.locator(".ca-arti__cap").all()]

@@ -12,6 +12,7 @@ import {
   updateMemory,
   type Memory,
 } from '../memory'
+import { runChatMemoryEdit } from './artiChatMemory'
 import { confirmAtom } from '../ui/Confirm'
 import { showMemoryToast } from '../memory'
 import { Icons } from '../ui/icons'
@@ -183,16 +184,30 @@ function AssetsAdd({ onClose }: { onClose: () => void }) {
 }
 
 function ChatComposer({ onClose }: { onClose: () => void }) {
+  const memory = useValue(memoryAtom)
   const [text, setText] = useState('')
   const [plusOpen, setPlusOpen] = useState(false)
+  const [hint, setHint] = useState('')
+  const [busy, setBusy] = useState(false)
   const file = useRef<HTMLInputElement>(null)
   const send = () => {
     const v = text.trim()
-    if (!v) return
-    // mock rewrite path — no paid model; persist via remember
-    void remember([{ text: v, category: 'taste' }], t('arti.memory.sourceChat')).then(() => {
+    if (!v || busy) return
+    setBusy(true)
+    setHint('')
+    // #385: distinguish add / correct / forget via mockable LLM intent (not hardcoded taste/add)
+    void runChatMemoryEdit(v, memory, t('arti.memory.sourceChat')).then((r) => {
+      setBusy(false)
+      if (r.changed === 0) {
+        setHint(t('arti.memory.chatIntentFail'))
+        return
+      }
       setText('')
+      setHint('')
       onClose()
+    }, () => {
+      setBusy(false)
+      setHint(t('arti.memory.chatIntentFail'))
     })
   }
   const fromUpload = (files: FileList | null) => {
@@ -212,6 +227,7 @@ function ChatComposer({ onClose }: { onClose: () => void }) {
   return (
     <div className="ca-arti-mem__composer" data-testid="arti-memory-composer">
       <div className="ca-chat__hint">{t('arti.memory.chatHelper')}</div>
+      {hint ? <div className="ca-arti-mem__chathint" role="status" data-testid="arti-memory-chat-hint">{hint}</div> : null}
       <div className="ca-arti-mem__composerbox">
         <div className="ca-arti-mem__pluswrap">
           <button type="button" className="ca-arti-mem__iconbtn" data-testid="arti-memory-composer-plus" aria-expanded={plusOpen} onClick={() => setPlusOpen((v) => !v)}>
@@ -241,7 +257,7 @@ function ChatComposer({ onClose }: { onClose: () => void }) {
             if (isEnter(e) && !e.shiftKey) { e.preventDefault(); send() }
           }}
         />
-        <button type="button" className="ca-arti-mem__send" data-testid="arti-memory-composer-send" disabled={!text.trim()} onClick={send} title={t('arti.memory.send')}>
+        <button type="button" className="ca-arti-mem__send" data-testid="arti-memory-composer-send" disabled={!text.trim() || busy} onClick={send} title={t('arti.memory.send')}>
           <span className="ca-icon">{Icons.send}</span>
         </button>
       </div>

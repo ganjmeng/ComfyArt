@@ -1,6 +1,6 @@
 import path from 'node:path'
 const here = path.dirname(new URL(import.meta.url).pathname)
-const stubs = { comfy: 'comfy_stub.ts', i18n: 'i18n_stub.ts', tldraw: 'tldraw_stub.ts' }
+const stubs = { comfy: 'comfy_stub.ts', i18n: 'i18n_stub.ts', tldraw: 'tldraw_stub.ts', llm: 'llm_stub.ts' }
 export default {
   input: path.join(here, process.env.ENTRY || 'workflow_install.ts'),
   platform: 'node',

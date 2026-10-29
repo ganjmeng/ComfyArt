@@ -66,8 +66,8 @@ def test_chat_to_edit_cta_and_composer() -> None:
     assert 'data-testid="arti-memory-pick-library"' in MEM
     assert "arti.memory.uploadLocal" in MEM
     assert "arti.memory.pickLibrary" in MEM
-    # mock rewrite path persists via remember
-    assert "remember(" in MEM
+    # #385: chat path uses intent parser (add/correct/forget), not hardcoded taste remember
+    assert "runChatMemoryEdit" in MEM or "remember(" in MEM
     assert "arti.memory.sourceChat" in MEM
 
 

@@ -69,7 +69,12 @@ def test_capabilities_five_cards_honest_grey() -> None:
     # disabled caps: honest 「即将开放」 caption (#381 product), never fake-enabled
     assert "arti-cap-${cap.id}-soon" in ARTI
     assert "arti.cap.soon" in ARTI
-    assert "disabled: true" in ARTI
+    assert "disabled: true" in ARTI  # review / research / feedback stay grey
+    # #385: memory + skills are switchable (disabled: false) and write settings
+    assert "id: 'memory'" in ARTI and "disabled: false" in ARTI
+    assert "id: 'skills'" in ARTI
+    assert "saveSettings" in ARTI
+    assert "ARTI_CAP_SETTINGS" in ARTI
     # feedback has no switch (CN)
     assert "noSwitch" in ARTI
     # switches for grey caps are disabled (no fake interactivity)
@@ -90,8 +95,11 @@ def test_learned_tabs_shell() -> None:
     assert "arti-memory-placeholder" not in ARTI
     # skills skeleton / empty
     assert 'data-testid="arti-skills-skeleton"' in ARTI
-    # evolution = SHOULD thin placeholder, not full P0-3
-    assert 'data-testid="arti-evolution-placeholder"' in ARTI
+    # #385: evolution log replaces the thin placeholder
+    assert 'data-testid="arti-evolution-placeholder"' not in ARTI
+    assert 'data-testid="arti-evolution-log"' in ARTI or 'arti-evolution-log' in ARTI
+    assert 'data-testid="arti-evolution-empty"' in ARTI or 'arti-evolution-empty' in ARTI
+    assert 'memoryLogAtom' in ARTI
 
 
 def test_schedules_entry_only_no_crud() -> None:
