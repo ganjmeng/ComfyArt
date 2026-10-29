@@ -708,7 +708,15 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
               <span className={`ca-process__icon ca-process__icon--${s.kind}`} data-kind={s.kind}>
                 <span className="ca-icon">{PROCESS_ICONS[s.kind]}</span>
               </span>
-              <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>{s.label}</span>
+              {/* #413: a live thought on the rail shows its latest line inline, like the lone Thought tip */}
+              {s.live && s.kind === 'thought' && !open && s.text?.trim() ? (
+                <span className="ca-process__inline">
+                  <span className="ca-process__label ca-process__label--active">{s.label}</span>
+                  <span className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline">{s.text.trim().split('\n').at(-1)}</span>
+                </span>
+              ) : (
+                <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>{s.label}</span>
+              )}
             </>
           )
           const onMemory = () => {
@@ -735,7 +743,7 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
         })}
       </div>
       {/* #356/#358 Lovart: image/video live → title then hero (icon-column left); no bordered status between */}
-      {live && !mediaHero && <div className="ca-process__status">{live.label}</div>}
+      {live && !mediaHero && live.kind !== 'thought' && <div className="ca-process__status">{live.label}</div>}
       {mediaHero && (
         <div
           className="ca-media-hero"

@@ -94,3 +94,15 @@ def test_fallback_skips_when_turn_wrote_memory():
     ui = (ROOT / "src/ui/ChatMessage.tsx").read_text()
     assert "hideMemCall(b)) return" in ui
     assert "e.memory_updated ? appendBlock(next, e.memory_updated)" in (ROOT / "src/bot.ts").read_text()
+
+
+def test_live_second_thought_renders_like_first_live_thought():
+    """#413 design: no status box repeating 思考中… under a live thought on the rail; latest line inline."""
+    ui = (ROOT / "src/ui/ChatMessage.tsx").read_text()
+    assert "live && !mediaHero && live.kind !== 'thought' && <div className=\"ca-process__status\">" in ui
+    assert "s.live && s.kind === 'thought' && !open && s.text?.trim() ?" in ui
+    assert '<span className="ca-process__inline">' in ui
+    css = (ROOT / "src/styles/overlays.css").read_text()
+    inline = css.split(".ca-process__inline {")[1].split("}")[0]
+    assert "grid-column: 3" in inline and "display: flex" in inline
+    assert 'className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline"' in ui
