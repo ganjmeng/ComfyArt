@@ -132,9 +132,11 @@ body { background: var(--ca-float); }
   border-radius: 16px; background: var(--ca-field); margin-bottom: 32px;
 }
 .ca-arti__avatar {
-  width: 96px; height: 120px; flex: none; border-radius: 12px;
-  background: var(--ca-float); border: var(--ca-border-w) solid var(--ca-border);
+  /* reference level-card: 75×89, r8, mint fill; sprite contain (square) centered */
+  width: 75px; height: 89px; flex: none; border-radius: 8px;
+  background: #D9F7EF; border: none;
   display: flex; align-items: center; justify-content: center; color: var(--ca-muted);
+  overflow: hidden;
 }
 .ca-arti__avatar .ca-icon { width: 36px; height: 36px; }
 .ca-arti__levelbody { min-width: 0; }
@@ -322,8 +324,9 @@ body { background: var(--ca-float); }
   left: auto;
   top: auto;
   display: block;
-  width: 100%;
-  height: 100%;
+  /* square frame box = container width → contain in 75×89, no non-uniform stretch */
+  width: 75px;
+  height: 75px;
   cursor: default;
   pointer-events: none;
   background-repeat: no-repeat;
@@ -331,7 +334,7 @@ body { background: var(--ca-float); }
   background-position: 0 0;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  border-radius: 10px;
+  border-radius: 0;
 }
 /* #381: empty-state line, multi-match chooser (delete-confirm style), top-left toast, /arti 即将开放 */
 .ca-arti-mem__guide { margin: 8px 0 12px; text-align: center; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }

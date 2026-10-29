@@ -49,6 +49,17 @@ def test_arti_not_only_inside_canvas_agent() -> None:
         assert "openView('arti')" not in surface
 
 
+def test_arti_avatar_box_matches_reference() -> None:
+    """Level-card avatar: reference 75×89 mint box; sprite uses square contain, not 100% stretch."""
+    block = HOME_CSS.split('.ca-arti__avatar {', 1)[1].split('.ca-arti__avatar .ca-icon', 1)[0]
+    assert 'width: 75px; height: 89px;' in block
+    assert 'border-radius: 8px;' in block
+    assert '#D9F7EF' in block
+    mascot = HOME_CSS.split('.ca-arti__avatar .arti-mascot--avatar {', 1)[1].split('}', 1)[0]
+    assert 'width: 75px;' in mascot and 'height: 75px;' in mascot
+    assert 'width: 100%' not in mascot and 'height: 100%' not in mascot
+
+
 def test_arti_home_shell_three_sections() -> None:
     assert 'data-testid="arti-page"' in ARTI
     assert 'data-testid="arti-level-card"' in ARTI
