@@ -147,7 +147,34 @@ def memory_updated_block(blocks: list[dict], call_id: str, name: str, text: str,
     ids = [str(i) for i in (data.get("memory_ids") or []) if i] if isinstance(data, dict) else []
     if not ids:
         return None
-    return {"type": "memory_updated", "memory_ids": ids, "texts": [str(data.get("added") or "")], "tool_id": call_id}
+    texts = [str(x) for x in (data.get("texts") or []) if x] or [str(data.get("added") or "")]
+    upd = [str(i) for i in (data.get("updated_ids") or []) if i]
+    # #423: one 记忆已更新 › row per turn. Later adds merge into the first block (ids / texts deduped).
+    prev = next((b for b in blocks if b.get("type") == "memory_updated"), None)
+    if prev is not None:
+        for i in ids:
+            if i not in prev.setdefault("memory_ids", []):
+                prev["memory_ids"].append(i)
+                if i in upd:  # first written this turn as an update; an entry added earlier this turn stays "new"
+                    prev.setdefault("updated_ids", []).append(i)
+        for x in texts:
+            if x and x not in prev.setdefault("texts", []):
+                prev["texts"].append(x)
+        if call_id and call_id not in prev.setdefault("tool_ids", [t for t in [prev.get("tool_id")] if t]):
+            prev["tool_ids"].append(call_id)
+        _counts(prev)
+        return prev
+    return _counts({"type": "memory_updated", "memory_ids": ids, "texts": texts, "tool_id": call_id,
+                    "tool_ids": [call_id], "updated_ids": [i for i in ids if i in upd]})
+
+
+def _counts(b: dict) -> dict:
+    """#423: N = new + updated; both count toward the row appearing."""
+    b["updated_ids"] = [i for i in b.get("updated_ids", []) if i in b["memory_ids"]]
+    b["count"] = len(b["memory_ids"])
+    b["updated"] = len(b["updated_ids"])
+    b["added_count"] = b["count"] - b["updated"]
+    return b
 
 
 def _apply_event(state: _TurnState, ev: BotEvent) -> Optional[dict]:
@@ -188,8 +215,9 @@ def _apply_event(state: _TurnState, ev: BotEvent) -> Optional[dict]:
         state.blocks.append(block)
         mem = memory_updated_block(state.blocks, ev.id, ev.name, ev.text, tool_status)
         if mem:  # #413: the agent saved memory in-loop -> 记忆已更新 › row right after the call
-            state.blocks.append(mem)
-            payload["memory_updated"] = mem
+            if not any(b is mem for b in state.blocks):  # #423: a merged add updates the turn's one row
+                state.blocks.append(mem)
+            payload["memory_updated"] = dict(mem)
         return payload
     if ev.t == "run_budget":  # #391: live budget bar (not persisted; the stop card keeps the final numbers)
         state.run_budget = dict(ev.input or {})

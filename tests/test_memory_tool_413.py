@@ -97,10 +97,10 @@ def test_fallback_skips_when_turn_wrote_memory():
     assert "wrote: turnWroteMemory(reply.blocks)" in pro
     assert "if (plan?.memory && !ex.wrote) await learnMemory(" in pro
     layout = (ROOT / "src/botLayout.ts").read_text()
-    assert "memory_ids: added.map((m) => m.id)" in layout
+    assert "memory_ids: written.map((m) => m.id)" in layout  # #423: added + updated
     ui = (ROOT / "src/ui/ChatMessage.tsx").read_text()
     assert "hideMemCall(b)) return" in ui
-    assert "e.memory_updated ? appendBlock(next, e.memory_updated)" in (ROOT / "src/bot.ts").read_text()
+    assert "at < 0 ? appendBlock(next, e.memory_updated)" in (ROOT / "src/bot.ts").read_text()  # #423: append once, then replace
 
 
 def test_live_second_thought_renders_like_first_live_thought():

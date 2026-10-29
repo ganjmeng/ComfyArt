@@ -98,7 +98,7 @@ def test_rows_and_rail_stubs(browser, bundle, lang, theme):
         assert abs(st["t"] - (r["ib"] + 4)) < 0.01  # 4px below this icon's bottom
         assert abs(nxt["it"] - st["b"] - 4) < 0.01  # 4px above the next icon's top
         assert abs((st["t"] + st["b"]) / 2 - (r["ib"] + nxt["it"]) / 2) < 0.01  # centred in the 16px gap
-        assert r["railBg"] == ("rgba(0, 0, 0, 0.07)" if theme == "light" else "rgba(255, 255, 255, 0.1)")
+        assert r["railBg"] == ("rgba(0, 0, 0, 0.1)" if theme == "light" else "rgba(255, 255, 255, 0.12)")  # shared --ca-rail
     page.close()
 
 
