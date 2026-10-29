@@ -82,7 +82,7 @@ def test_rules_in_tool_description_and_fallback():
     for src in (canvas, pro):
         assert "confirmed or chose" in src and "trace back to one user" in src
         assert "generated content itself" in src and "one-off task details" in src
-    assert "before you reply" in canvas
+    assert "call add FIRST, then reply" in canvas
 
 
 def test_fallback_skips_when_turn_wrote_memory():
@@ -106,3 +106,16 @@ def test_live_second_thought_renders_like_first_live_thought():
     inline = css.split(".ca-process__inline {")[1].split("}")[0]
     assert "grid-column: 3" in inline and "display: flex" in inline
     assert 'className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline"' in ui
+
+
+def test_prompts_say_call_memory_first_then_reply():
+    """#415 product: tool description and agent system prompt both say memory FIRST, then reply; no fallback."""
+    import re
+    from ComfyArt.bot.guide import AGENT_GUIDE
+    src = (ROOT / "api/mcp_tools/canvas.py").read_text()
+    desc = re.sub(r'"\s*\n\s*"', "", src.split('"memory": _tool(')[1].split("_schema(")[0])
+    for text in (desc, AGENT_GUIDE):
+        flat = " ".join(text.split())
+        assert "preference, brand, requirement, or makes a choice" in flat
+        assert "FIRST" in flat and "then reply" in flat
+        assert "do not rely on a later fallback" in flat.lower()
