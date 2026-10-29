@@ -74,3 +74,23 @@ def test_results_follow_generation_row():
     src = (pathlib.Path(__file__).resolve().parents[1] / "src/ui/ChatMessage.tsx").read_text()
     assert "genAt = items.length" in src
     assert "items.splice(genAt < 0 ? items.length : genAt, 0," in src
+
+
+def test_favicon_failure_falls_back_to_globe_only():
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = (root / "src/ui/ChatMessage.tsx").read_text()
+    fav = src.split("function Favicon(")[1].split("\n}\n")[0]
+    # onError unmounts the <img>: no empty slot, no broken-image glyph; the globe icon is untouched
+    assert "onError={() => setFailed(true)}" in fav
+    assert "if (failed) return null" in fav
+    assert "{s.favicon && <Favicon src={s.favicon} />}" in src
+    assert "<img className=\"ca-process__favicon\"" not in src.replace(fav, "")
+    assert "search_pages: Icons.globe" in src
+
+
+def test_rail_stops_at_search_card_bottom():
+    import pathlib
+    css = (pathlib.Path(__file__).resolve().parents[1] / "src/styles/overlays.css").read_text()
+    assert ".ca-process__steps:has(> .ca-process__row:last-child .ca-process__card) > .ca-process__spine { bottom: var(--ca-process-card-gap); }" in css
+    assert "margin: 8px 0 var(--ca-process-card-gap);" in css

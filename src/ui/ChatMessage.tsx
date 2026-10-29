@@ -82,6 +82,13 @@ function processAspectRatio(input?: Record<string, any>): string | undefined {
   return undefined
 }
 
+/** #437: the source favicon; on error (offline / blocked) it unmounts, leaving only the globe icon. */
+function Favicon({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return null
+  return <img className="ca-process__favicon" src={src} alt="" aria-hidden="true" data-testid="search-favicon" onError={() => setFailed(true)} />
+}
+
 /** #437: favicon of the search source (first result's site), else the engine's own mark. */
 function searchFavicon(result?: BotBlock): string {
   const host = (result?.text ?? '').match(/https?:\/\/([^/"\s\\]+)/)?.[1] ?? 'www.google.com'
@@ -733,7 +740,7 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
                 </span>
               ) : (
                 <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>
-                  {s.favicon && <img className="ca-process__favicon" src={s.favicon} alt="" aria-hidden="true" />}
+                  {s.favicon && <Favicon src={s.favicon} />}
                   {s.label}
                 </span>
               )}
