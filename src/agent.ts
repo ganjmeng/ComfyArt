@@ -96,7 +96,7 @@ export async function sendToAgent(editor: Editor, text: string, refs: RefShape[]
     docs,
     kits: kits.map((k) => ({ name: k.name, description: describeItem(k), images: itemImages(k) })),
     ...(skill ? { skill: skill.name } : {}),
-    memory: settingsAtom.get()['memory-enabled'] === false ? '' : memoryPrompt(),
+    memory: settingsAtom.get()['memory-enabled'] === false ? '' : memoryPrompt(text),
     ...(context ? { context } : {}),
   })
 }

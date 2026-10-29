@@ -9,7 +9,7 @@ Real composer (canvas Agent panel, `?project=v6shot&new=1&artiLevel=N`), built `
 
 Result: after — mouth visible above composer edge in all 30 frames. before — mouth hidden in idle and f12-14 (eyes also hidden in bob frames).
 
-## Lovart CN reference + panel-open (#378)
+## Reference (CN) + panel-open (#378)
 - `lovart/` = Lovart CN refs (Lv.1 only, 1x CSS) `composer-pixel-corner-{idle,hover}-{dark,light}.png`.
 - `side-by-side-{dark,light}.png` now: Lovart CN same-theme | before | after (Lovart column only for idle/hover; upscaled 2x nearest, composer-top aligned; Lv.1 ref used for all levels).
 - `side-by-side-lovart-{dark,light}.png`: Lovart CN (left) vs after (right), Lv.1-3 × idle/hover.

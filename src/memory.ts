@@ -3,6 +3,8 @@ import { atom } from 'tldraw'
 import { t } from './i18n'
 import { uuid } from './id'
 import { backoff, MEMORY_POLICY, MemoryConflict, MemoryReadError, memoryStore, MemoryWriteError, newOpId, OWNER_DEFAULT, WORKSPACE_DEFAULT, type MemoryMeta } from './memoryStore'
+import { MAX_INJECT, MAX_INJECT_TOKENS, selectMemoriesForInject } from './memoryBudget'
+export { countTokens, estimateImageTokens, IMAGE_TOKENS, inputTokenBudget, insertMemoryUpdatedBlock, MAX_INJECT, MAX_INJECT_TOKENS, MAX_LOG, memoryUpdatedPlacementOk, selectMemoriesForInject, unifiedBudget } from './memoryBudget'
 
 export { MemoryConflict, MemoryReadError, MemoryWriteError, setMemoryStore } from './memoryStore'
 
@@ -27,10 +29,16 @@ export function toInputs(value: unknown): MemoryInput[] {
   })
 }
 
-export function memoryPrompt(): string {
-  const memory = memoryAtom.get()
-  if (!memory.length) return ''
-  const groups = [...MEMORY_CATEGORIES.map(([id, , en]) => [en, memory.filter((m) => m.category === id)] as const), ['Other', memory.filter((m) => !m.category || !CATEGORY_IDS.includes(m.category))] as const]
+/** #382: inject only the top-N relevant memories, capped by max_inject_tokens.
+ * Empty query → recency-ordered cap (still budgeted). No relevant hits → '' (no header). */
+export function memoryPrompt(query = ''): string {
+  const selected = selectMemoriesForInject(memoryAtom.get(), query, { maxItems: MAX_INJECT, maxTokens: MAX_INJECT_TOKENS })
+  return formatMemoryPrompt(selected)
+}
+
+export function formatMemoryPrompt(selected: Memory[]): string {
+  if (!selected.length) return ''
+  const groups = [...MEMORY_CATEGORIES.map(([id, , en]) => [en, selected.filter((m) => m.category === id)] as const), ['Other', selected.filter((m) => !m.category || !CATEGORY_IDS.includes(m.category))] as const]
   return `Remembered about the user (respect these):\n${groups.filter(([, list]) => list.length).map(([en, list]) => `${en}:\n${list.map((m) => `- ${m.text}`).join('\n')}`).join('\n')}`
 }
 
@@ -53,6 +61,11 @@ export function showMemoryToast(text: string, kind: MemoryToastState['kind'] = '
   memoryToastAtom.set({ text, kind, key: Date.now() })
   toastTimer = setTimeout(() => memoryToastAtom.set(null), 2400)
 }
+
+/** #382: open the memory dialog focused on one id (from 「记忆已更新 ›」). undoable → show revoke. */
+export interface MemoryFocus { id: string; undoable?: boolean }
+export const memoryFocusAtom = atom<MemoryFocus | null>('memory focus', null)
+
 
 /** #381: the five memories the old empty-state demo seeded (by text; their ids were random). Cleanup only, never written. */
 export const DEMO_SEED_TEXTS: readonly string[] = [
@@ -207,15 +220,21 @@ export async function removeMemory(id: string, source: string): Promise<boolean>
   return (await forget([{ id }], source)).changed.length > 0
 }
 
-export function remember(items: MemoryInput[], source = t('botCommands.chat')) {
+export function remember(items: MemoryInput[], source = t('botCommands.chat')): Promise<Memory[]> {
   return serial(async () => {
     const list = await loadUnlocked()
     const known = new Set(list.map((m) => m.text))
     const fresh = items.filter((m) => !known.has(m.text) && (known.add(m.text), true))
-    if (!fresh.length) return
-    await writeStore([...list, ...fresh.map((m) => ({ id: uuid().slice(0, 8), text: m.text, owner_id: OWNER_DEFAULT, workspace_id: WORKSPACE_DEFAULT, ...(m.category ? { category: m.category } : {}), ...(m.label ? { label: m.label } : {}) }))],
-      withLog(memoryLogAtom.get(), fresh.map((m) => entry('add', m.text, source))))
+    if (!fresh.length) return []
+    const added: Memory[] = fresh.map((m) => ({ id: uuid().slice(0, 8), text: m.text, owner_id: OWNER_DEFAULT, workspace_id: WORKSPACE_DEFAULT, ...(m.category ? { category: m.category } : {}), ...(m.label ? { label: m.label } : {}) }))
+    await writeStore([...list, ...added], withLog(memoryLogAtom.get(), added.map((m) => entry('add', m.text, source))))
+    return added
   })
+}
+
+/** #382: revoke a memory learned from the chat row. Logs forget with source memory-updated-undo. */
+export function undoMemoryUpdated(id: string): Promise<boolean> {
+  return removeMemory(id, 'memory-updated-undo')
 }
 
 // e2e seam for the chooser interaction test (tests/test_e2e_memory_381.py); inert unless localStorage['comfyart.e2e'] === '1'

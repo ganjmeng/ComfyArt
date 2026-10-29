@@ -2,7 +2,7 @@
 
 All "after" shots are real-app screenshots taken by `tests/test_e2e_memory_381.py` (built `dist`, home Arti page `?view=arti`, 1440×900, mock server, no paid calls). The same test asserts the visual rules, so the shots and the assertions come from one run. Set `SHOT_OUT=<dir>` to regenerate them.
 
-| Lovart CN reference | before (main 3eddf03) | after (this PR) |
+| Reference (CN) | before (main 3eddf03) | after (this PR) |
 |---|---|---|
 | lovart/arti-page-top-toggles-dark.png | before/arti-toggles-dark.png | after/arti-toggles-dark.png |
 | CN 无浅色 | before/arti-toggles-light.png | after/arti-toggles-light.png |
