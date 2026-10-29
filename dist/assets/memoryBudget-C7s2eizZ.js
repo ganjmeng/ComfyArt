@@ -1,0 +1,1 @@
+export{i as insertMemoryUpdatedBlock}from"./memoryBudget-CnFYadxf.js";
