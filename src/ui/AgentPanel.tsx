@@ -88,6 +88,23 @@ async function resend(editor: Editor, m: BotMessage) {
   await sendToAgent(editor, textOf(m), refsOf(editor, m), skill, kits, docs)
 }
 
+/** #419: right after a user stop the partial output turns grey for ~1.5s, then returns to normal; no label. */
+const STOP_FADE_MS = 1500
+function useStopFade(messages: BotMessage[]): Set<string> {
+  const prev = useRef(new Map<string, string>())
+  const [fading, setFading] = useState<Set<string>>(() => new Set())
+  useEffect(() => {
+    for (const m of messages) {
+      if (prev.current.get(m.id) === 'streaming' && m.status === 'aborted') {
+        setFading((s) => new Set(s).add(m.id))
+        setTimeout(() => setFading((s) => { const n = new Set(s); n.delete(m.id); return n }), STOP_FADE_MS)
+      }
+      prev.current.set(m.id, m.status)
+    }
+  }, [messages])
+  return fading
+}
+
 export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError }: {
   editor: Editor
   projectId: string
@@ -108,6 +125,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
   const canBranch = providers.find((p) => p.id === chat?.provider)?.branch ?? false
   const fail = (e: unknown) => onError(errorText(e))
 
+  const fading = useStopFade(messages)
   const [away, setAway] = useState(false)
   const count = useRef(0)
   const toBottom = () => list.current?.scrollTo({ top: list.current.scrollHeight })
@@ -183,19 +201,17 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
         {messages.map((m, i) => (m.role === 'user'
           ? <UserMessage key={m.id} editor={editor} m={m} onBranch={canBranch && !busy ? () => void branchFrom(m.id).catch(fail) : undefined} />
           : (
-            <div key={m.id} className="ca-chat__bot">
+            <div key={m.id} className={fading.has(m.id) ? 'ca-chat__bot ca-chat__bot--stopping' : 'ca-chat__bot'}>
               <AssistantBlocks editor={editor} m={m} />
               {m.status === 'streaming' && (
                 <div className="ca-chat__thinking">
                   <span className="ca-chat__thinkicon"><span className="ca-icon">{Icons.think}</span></span>
                   <span className="ca-chat__thinklabel">{m.blocks.length ? t('agentPanel.working') : t('agentPanel.thinking')}</span>
-                  <button type="button" className="ca-panel__chip" title={t('agentPanel.stopTooltip')} onClick={() => void stopTurn().catch(fail)}>{t('agentPanel.stop')}</button>
+                  <button type="button" className="ca-panel__chip" onClick={() => void stopTurn().catch(fail)}>{t('agentPanel.stop')}</button>
                 </div>
               )}
-              {m.status === 'aborted' && (
-                <div className="ca-chat__hint" data-stopped={stoppedSubmitted(m) > 0 ? 'submitted' : 'none'}>
-                  {t('agentPanel.stopped')}{stoppedSubmitted(m) > 0 && <>{t('chatMessage.colon')}{t('chatMessage.stoppedSubmittedNote')}</>}
-                </div>
+              {m.status === 'aborted' && stoppedSubmitted(m) > 0 && (
+                <div className="ca-chat__hint" data-stopped="submitted">{t('chatMessage.stoppedSubmittedNote')}</div>
               )}
               {m.status !== 'streaming' && (
                 <div className="ca-chat__acts ca-chat__acts--bot">

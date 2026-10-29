@@ -67,8 +67,6 @@
   "agentPanel.setWavespeedKey": "Set key",
   "agentPanel.startFromSkill": "Start from a skill",
   "agentPanel.stop": "Stop",
-  "agentPanel.stopped": "Stopped",
-  "agentPanel.stopTooltip": "Stopping won't refund jobs already submitted",
   "agentPanel.taskDetails": "Task Details",
   "agentPanel.thinking": "Thinking…",
   "agentPanel.uploadReference": "Upload a reference",

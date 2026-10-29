@@ -1,6 +1,6 @@
 """#419 stop during generation ($0: scripted LLM + MCP, nothing leaves the process).
 Product ruling: stop skips unsubmitted steps (no charge, no new placeholder); already-submitted jobs finish,
-fill their placeholders and are charged; the 「已终止」 notice carries the charge note only when a paid request was sent."""
+fill their placeholders and are charged; no stop label; the charge note shows only when a paid request was sent."""
 from __future__ import annotations
 
 import json
@@ -55,7 +55,7 @@ async def test_stop_without_submitted_jobs(monkeypatch, store):
     r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})), store=store, mcp=mcp)
     res, ev = await r.send("加字", handle=h)
     assert stop_of(res)["reason"] == "user_stop"
-    assert card(ev)["submitted"] == 0 and not r.paid_mcp()   # 已终止 only, no charge note
+    assert card(ev)["submitted"] == 0 and not r.paid_mcp()   # no label, no charge note
 
 
 async def test_submitted_only_on_plain_user_stop(monkeypatch, store):
@@ -79,3 +79,17 @@ async def test_stop_in_race_window_counts_sent_request(monkeypatch, store):
     res, ev = await r.send("画一张猫", handle=h)
     assert stop_of(res)["reason"] == "user_stop" and res.aborted
     assert card(ev)["submitted"] == 1
+
+
+def test_panel_stop_ui_has_no_label_or_tooltip_and_fades():
+    """Final ruling: no 已停止/已终止 label, no tooltip on the stop chip; partial output greys ~1.5s then returns."""
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent
+    panel = (root / "src/ui/AgentPanel.tsx").read_text()
+    assert "agentPanel.stopped" not in panel and "stopTooltip" not in panel
+    assert "ca-chat__bot--stopping" in panel and "STOP_FADE_MS = 1500" in panel
+    assert "stoppedSubmitted(m) > 0" in panel                     # charge note only when submitted > 0
+    for loc in ("en", "zh"):
+        text = (root / f"src/locales/{loc}.json").read_text()
+        assert "agentPanel.stopTooltip" not in text and "chatMessage.stoppedStep" not in text
+        assert "chatMessage.stoppedSubmittedNote" in text

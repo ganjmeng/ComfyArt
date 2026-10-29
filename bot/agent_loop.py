@@ -625,7 +625,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         card = _summary_card(ctx, stop, remaining, check)
         if stop.reason == StopReason.USER_STOP and not stop.sub:
             # #419: jobs already submitted to WaveSpeed cannot be cancelled: they finish, fill their
-            # placeholders, are charged. The 「已终止」 notice adds the charge note only when n > 0.
+            # placeholders, are charged. The UI shows only the charge note, and only when n > 0 (no stop label).
             card["submitted"] = submitted_count(ctx, paid_before)
         try:
             ctx.checkpoint(messages, status=status, detail=detail, stop=stop)
