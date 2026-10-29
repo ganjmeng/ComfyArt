@@ -303,7 +303,6 @@
   "chatFrame.untitled": "Agent chat",
   "chatMessage.canceled": "Canceled",
   "chatMessage.cancelled": "Cancelled",
-  "chatMessage.stoppedStep": "Stopped",
   "chatMessage.stoppedSubmittedNote": "Submitted generations will still finish and be charged",
   "chatMessage.codeGenerated": "Code generated",
   "chatMessage.codeUpdated": "Code updated",

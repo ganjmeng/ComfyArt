@@ -116,6 +116,7 @@ class RunContext:
     pending_stop: Optional[Stop] = None
     compressions: int = 0
     paid_calls: int = 0
+    paid_sent: set = field(default_factory=set)     # #419: keys whose paid request went out (kept even if it fails)
     selfcheck_nudged: bool = False
     messages: list = field(default_factory=list)  # live transcript (same list the loop appends to)
     pricer: Any = None
@@ -430,9 +431,9 @@ def delivered(ctx: RunContext, kind: str = "") -> int:
 
 
 def submitted_count(ctx: RunContext, before: set) -> int:
-    """#419: paid generation calls this turn actually submitted (pending or done; failed ones are popped)."""
-    return sum(1 for k, rec in (ctx.paid or {}).items()
-               if k not in before and isinstance(rec, dict) and rec.get("status") in ("pending", "done"))
+    """#419: paid calls this turn whose request was SENT (not only acknowledged): a stop that lands while the
+    request is in flight may still be charged, so it counts and the charge note shows (over-warn, never under)."""
+    return len({k for k in (ctx.paid_sent or set()) if k not in before})
 
 
 def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: int = 0) -> dict:
@@ -624,7 +625,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         card = _summary_card(ctx, stop, remaining, check)
         if stop.reason == StopReason.USER_STOP and not stop.sub:
             # #419: jobs already submitted to WaveSpeed cannot be cancelled: they finish, fill their
-            # placeholders, are charged. The UI shows the 「已停止」 row and the charge note only when n > 0.
+            # placeholders, are charged. The 「已终止」 notice adds the charge note only when n > 0.
             card["submitted"] = submitted_count(ctx, paid_before)
         try:
             ctx.checkpoint(messages, status=status, detail=detail, stop=stop)
@@ -866,6 +867,7 @@ async def paid_gate(ctx: RunContext, name: str, args: dict, emit_confirm,
         # Confirmed: raise the ceiling by exactly this quote, never more (no auto-continue).
         ctx.budget.limits.credits = round(ctx.budget.used.credits + price, 6)
     ctx.paid[key] = {"status": "pending", "price": price}
+    ctx.paid_sent.add(key)
     # The pending marker AND its pending usage event are durable (one transaction) before the paid
     # call goes out: a crash never re-calls, and money never moves without a metering row.
     eid = ctx.pending_paid(key, {"kind": "paid_call", "tool": name, "amount_usd": price,

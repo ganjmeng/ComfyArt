@@ -1,6 +1,6 @@
 """#419 stop during generation ($0: scripted LLM + MCP, nothing leaves the process).
 Product ruling: stop skips unsubmitted steps (no charge, no new placeholder); already-submitted jobs finish,
-fill their placeholders and are charged; the 「已停止」 row's charge note shows only when jobs were submitted."""
+fill their placeholders and are charged; the 「已终止」 notice carries the charge note only when a paid request was sent."""
 from __future__ import annotations
 
 import json
@@ -55,7 +55,7 @@ async def test_stop_without_submitted_jobs(monkeypatch, store):
     r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})), store=store, mcp=mcp)
     res, ev = await r.send("加字", handle=h)
     assert stop_of(res)["reason"] == "user_stop"
-    assert card(ev)["submitted"] == 0 and not r.paid_mcp()   # row shows, no charge note
+    assert card(ev)["submitted"] == 0 and not r.paid_mcp()   # 已终止 only, no charge note
 
 
 async def test_submitted_only_on_plain_user_stop(monkeypatch, store):
@@ -63,3 +63,19 @@ async def test_submitted_only_on_plain_user_stop(monkeypatch, store):
             store=store)
     res, ev = await r.send("加字")
     assert stop_of(res)["reason"] == "done" and "submitted" not in card(ev)
+
+
+async def test_stop_in_race_window_counts_sent_request(monkeypatch, store):
+    """The stop lands while the paid request is in flight and the call fails/aborts unacknowledged:
+    the request was sent (may be charged), so it still counts and the charge note shows."""
+    h = TurnHandle()
+
+    def mcp(name, a, i):
+        if name == "generate_image":
+            h.stop_requested = True
+            raise ConnectionError("stopped before the job id came back")
+        return json.dumps({"ok": True})
+    r = Rig(monkeypatch, lambda m, n: calls(_gen(n)), store=store, mcp=mcp, prices={"generate_image": 0.01})
+    res, ev = await r.send("画一张猫", handle=h)
+    assert stop_of(res)["reason"] == "user_stop" and res.aborted
+    assert card(ev)["submitted"] == 1

@@ -211,18 +211,9 @@ function Retry({ b: block, live }: { b: BotBlock; live: boolean }) {
 }
 
 /** #391 stop card (locked copy): one sentence + buttons; 「详情」 fold with actual usage only (no caps, no bars). */
-/** #419: grey 「已停止」 step row after a user stop; the charge note only when this turn submitted jobs. */
-export function StoppedRow({ b }: { b: BotBlock }) {
-  const n = b.submitted ?? 0
-  return (
-    <div className="ca-chat__tool" data-stopped={n > 0 ? 'submitted' : 'none'}>
-      <div className="ca-chat__step ca-chat__step--stopped" style={{ cursor: 'default' }}>
-        <span className="ca-icon">{Icons.pause}</span>
-        <span>{t('chatMessage.stoppedStep')}</span>
-      </div>
-      {n > 0 && <div className="ca-chat__stopnote">{t('chatMessage.stoppedSubmittedNote')}</div>}
-    </div>
-  )
+/** #419: paid jobs this turn had already sent when the user stopped (they still finish and are charged). */
+export function stoppedSubmitted(m: BotMessage): number {
+  return m.blocks.reduce((n, b) => (b.type === 'run_stop' ? Math.max(n, b.submitted ?? 0) : n), 0)
 }
 
 export function RunStop({ b, latest }: { b: BotBlock; latest: boolean }) {
@@ -974,7 +965,6 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       if (b.type === 'retry') items.push(<Retry key={i} b={b} live={!done && !m.blocks.slice(i + 1).some((x) => x.type === 'retry')} />)
       if (b.type === 'ask') items.push(renderAsk(b, b.ask_id ?? i))
       if (b.type === 'task') items.push(<Task key={i} editor={editor} b={b} />)
-      if (b.type === 'run_stop' && b.submitted !== undefined) items.push(<StoppedRow key={`stopped-${i}`} b={b} />)
       if (b.type === 'run_stop') items.push(<RunStop key={i} b={b} latest={!m.blocks.slice(i + 1).some((x) => x.type === 'run_stop')} />)
       if (b.type === 'notice') items.push(<div key={i} className="ca-chat__notice" data-level={b.level}>{b.text}</div>)
     }

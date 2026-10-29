@@ -11,7 +11,7 @@ import { botSettingsOpenAtom } from './AgentPicker'
 import { dockAtom } from './chatDock'
 import { libraryTabAtom } from './LibraryPanel'
 import { sideAtom } from './SidePanel'
-import { AssistantBlocks, textOf, UserMessage } from './ChatMessage'
+import { AssistantBlocks, stoppedSubmitted, textOf, UserMessage } from './ChatMessage'
 import { Composer, FILE_ACCEPT } from './Composer'
 import { Icons, LoomiMono } from './icons'
 import { NoticeCenter } from './NoticeCenter'
@@ -192,7 +192,11 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
                   <button type="button" className="ca-panel__chip" title={t('agentPanel.stopTooltip')} onClick={() => void stopTurn().catch(fail)}>{t('agentPanel.stop')}</button>
                 </div>
               )}
-              {m.status === 'aborted' && <div className="ca-chat__hint">{t('agentPanel.stopped')}</div>}
+              {m.status === 'aborted' && (
+                <div className="ca-chat__hint" data-stopped={stoppedSubmitted(m) > 0 ? 'submitted' : 'none'}>
+                  {t('agentPanel.stopped')}{stoppedSubmitted(m) > 0 && <>{t('chatMessage.colon')}{t('chatMessage.stoppedSubmittedNote')}</>}
+                </div>
+              )}
               {m.status !== 'streaming' && (
                 <div className="ca-chat__acts ca-chat__acts--bot">
                   {!busy && i === messages.length - 1 && lastUser === i - 1 && (
