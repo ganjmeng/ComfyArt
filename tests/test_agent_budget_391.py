@@ -156,7 +156,8 @@ def test_policy_layers_defaults_and_legacy_env(caplog):
 
 
 def test_stop_reasons_and_sub_reasons_are_fixed():
-    assert {r.value for r in StopReason} == {"done", "budget", "stuck", "hard_cap", "user_stop", "error"}
+    assert {r.value for r in StopReason} == {"done", "budget", "stuck", "hard_cap", "user_stop", "error", "awaiting_confirm"}
+    assert set(SUB_REASONS[StopReason.AWAITING_CONFIRM]) == {"not_approved"}
     assert set(SUB_REASONS[StopReason.STUCK]) >= {"no_progress", "repeat", "tool_error", "readonly_limit"}
     assert set(SUB_REASONS[StopReason.BUDGET]) == {"paused", "exhausted", "unattended_skipped"}
     assert "self_check_failed" in SUB_REASONS[StopReason.STUCK]
@@ -546,3 +547,20 @@ async def test_flag_off_uses_legacy_loop(monkeypatch, store):
     res, ev = await r.send("加字")
     assert res.run is None and not [e for e in ev if e.t.startswith("run_")]
     assert store.list_runs(chat_id="c") == []
+
+
+@pytest.fixture(autouse=True)
+def _known_low_price(monkeypatch):
+    """#418: these cases are about caps / guards, not the confirm card. Pin every WaveSpeed price to a
+    known low quote (1 credit, under the default 50-credit line) so no test reaches the real price API
+    and an offline run is not 'unpriced' (which, by rule, always asks)."""
+    from ComfyArt.api import wavespeed as _ws
+
+    async def _low(model, inputs):
+        return 0.01, "quote"
+    monkeypatch.setattr(_ws, "_quote", _low)
+
+    async def _cheap_models(self, feature):
+        return [("known-low/model", 0.01)]
+    from ComfyArt.bot.local_llm import LocalLlmProvider as _P
+    monkeypatch.setattr(_P, "_models_for", _cheap_models)

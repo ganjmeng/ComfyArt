@@ -62,6 +62,18 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
     page = FakePage(ws_url=base + "/mockws", decline=case.decline, shapes=[*map(_copy, case.shapes_initial)],
                     selection=list(case.selection), brand_kit=case.brand_kit)
     monkeypatch.setattr(canvas, "submit_command", page)
+    # #418: the mock WaveSpeed has no price API, so every quote would be 'unpriced' (which, by rule, always
+    # asks) and nobody answers the card in this harness. Pin a known low price (1 credit, under the
+    # default 50-credit line) so the scenarios exercise the agent, not the confirm card.
+    from ComfyArt.api import wavespeed as _ws
+
+    async def _low_quote(model, inputs):
+        return 0.01, "quote"
+
+    async def _low_models(self, feature):
+        return [("known-low/model", 0.01)]
+    monkeypatch.setattr(_ws, "_quote", _low_quote)
+    monkeypatch.setattr(local_llm.LocalLlmProvider, "_models_for", _low_models)
     # the timeout fault sleeps 1 s; other cases get a roomy timeout so a slow mock answer on a long
     # (300-step) run is not mistaken for a timeout and retried (the 15-hardcap-en flake)
     faulty = any(getattr(st, "fault", None) == "timeout" for st in case.script)
