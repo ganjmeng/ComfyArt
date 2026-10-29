@@ -206,7 +206,8 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
               {m.status === 'streaming' && (
                 <div className="ca-chat__thinking">
                   <span className="ca-chat__thinkicon"><span className="ca-icon">{Icons.think}</span></span>
-                  <span className="ca-chat__thinklabel">{m.blocks.length ? t('agentPanel.working') : t('agentPanel.thinking')}</span>
+                  <span className="ca-chat__thinklabel">{/* #437: a plain-text reply in progress only reads 输出中…; a reasoning turn's own Thought row carries the live label */}
+                  {m.blocks.some((b) => b.type !== 'text' && b.type !== 'thinking') ? t('agentPanel.working') : m.blocks.some((b) => b.type === 'thinking') ? '' : t('chatMessage.outputting')}</span>
                   <button type="button" className="ca-panel__chip" onClick={() => void stopTurn().catch(fail)}>{t('agentPanel.stop')}</button>
                 </div>
               )}

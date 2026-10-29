@@ -45,7 +45,7 @@ def test_process_timeline_component() -> None:
     assert "PROCESS_ICONS" in CHAT
     assert "Icons.scrollText" in CHAT
     assert "Icons.globe" in CHAT
-    assert "Icons.imageLine" in CHAT
+    assert "Icons.sparkleImage" in CHAT  # #437/#442: model-name row icon (designer v5)
     assert "Icons.videoLine" in CHAT
     # no Vercel Trace spinner / check on timeline
     proc = CHAT.split("function ProcessTimeline")[1].split("\nfunction ")[0]

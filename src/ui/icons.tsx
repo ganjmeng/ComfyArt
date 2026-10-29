@@ -28,6 +28,26 @@ export function LoomiMono() {
 }
 
 export const Icons = {
+  // #437: in-house filled sparkle-image mark for the model-name (generation) row
+  // #442 v6: in-house outline — rounded frame open at the top right, mountain inside, solid 4-point star in the gap
+  sparkleImage: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-6" />
+      <path d="m4.5 16.5 4-4a1.5 1.5 0 0 1 2.1 0l4.9 4.9" />
+      <path d="m13.5 15.4 1.4-1.4a1.5 1.5 0 0 1 2.1 0l2.9 2.9" />
+      <path data-solid="star" fill="currentColor" stroke="none" d="M18 1.6c.35 2 1.35 3.05 3.4 3.4-2.05.35-3.05 1.4-3.4 3.4-.35-2-1.35-3.05-3.4-3.4 2.05-.35 3.05-1.4 3.4-3.4Z" />
+    </svg>
+  ),
+  // #437: in-house 56×56 search-results art: grey folder + paper pages under a white folder (.5px hairline)
+  searchFolder: (
+    <svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true">
+      <path d="M8 16a4 4 0 0 1 4-4h10l4 4h18a4 4 0 0 1 4 4v24H8Z" fill="#d4d4d8" />
+      <rect x="15" y="14" width="24" height="26" rx="2" fill="#fafafa" stroke="rgba(0,0,0,.08)" strokeWidth=".5" transform="rotate(-6 27 27)" />
+      <rect x="18" y="16" width="24" height="26" rx="2" fill="#fff" stroke="rgba(0,0,0,.08)" strokeWidth=".5" />
+      <path d="M22 22h14M22 26h14M22 30h9" stroke="#d4d4d8" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M6 26a3 3 0 0 1 3-3h38a3 3 0 0 1 3 3l-2 18a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3Z" fill="#fff" stroke="rgba(0,0,0,.1)" strokeWidth=".5" />
+    </svg>
+  ),
   sun: <Svg><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></Svg>,
   moon: <Svg><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5" /></Svg>,
   image: <Svg fill><path d="M18 3a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zm-8.78 9.16a1.75 1.75 0 0 0-2.44-.04l-1.23 1.3A2 2 0 0 0 5 14.8V18a1 1 0 0 0 1 1h12.29a.71.71 0 0 0 .5-1.2l-3.55-3.62a1.75 1.75 0 0 0-2.48 0L12 14.94zM15.5 6a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5" /></Svg>,
