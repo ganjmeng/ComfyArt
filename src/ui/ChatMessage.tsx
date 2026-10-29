@@ -49,7 +49,7 @@ const PROCESS_ICONS: Record<ProcessKind, ReactNode> = {
   skill_file_read: Icons.fileSearch,
   search: Icons.globe,
   search_pages: Icons.globe,
-  image: Icons.imageLine,
+  image: Icons.sparkleImage,
   video: Icons.videoLine,
   code: Icons.squareCode,
   code_generated: Icons.fileCode,
@@ -80,6 +80,19 @@ function processAspectRatio(input?: Record<string, any>): string | undefined {
   const h = Number(input?.height ?? input?.h)
   if (w > 0 && h > 0) return `${w} / ${h}`
   return undefined
+}
+
+/** #437: the source favicon; on error (offline / blocked) it unmounts, leaving only the globe icon. */
+function Favicon({ src }: { src: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return null
+  return <img className="ca-process__favicon" src={src} alt="" aria-hidden="true" data-testid="search-favicon" onError={() => setFailed(true)} />
+}
+
+/** #437: favicon of the search source (first result's site), else the engine's own mark. */
+function searchFavicon(result?: BotBlock): string {
+  const host = (result?.text ?? '').match(/https?:\/\/([^/"\s\\]+)/)?.[1] ?? 'www.google.com'
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=32`
 }
 
 function searchResultCount(use: BotBlock, result?: BotBlock): number | undefined {
@@ -117,9 +130,14 @@ function processKindOf(b: BotBlock, opts?: { result?: BotBlock; live?: boolean }
   return null
 }
 
-function withModelSuffix(label: string, live: boolean, model?: string): string {
-  if (!live || !model) return label
-  return `${label} ${t('chatMessage.usingModel', model)}`
+/**
+ * #437: a reasoning turn in progress reads 思考中 (one key, chatMessage.thinking) until the reference is
+ * measured on a memory-writing, tool-calling turn. Set to false to drop it: the row then reads 输出中….
+ */
+export const SHOW_THINKING_ROW = true
+
+function liveThoughtLabel(): string {
+  return SHOW_THINKING_ROW ? t('chatMessage.thinking') : t('chatMessage.outputting')
 }
 
 function processLabel(
@@ -127,19 +145,18 @@ function processLabel(
   live: boolean,
   opts?: { fallback?: string; model?: string; pages?: number },
 ): string {
-  if (kind === 'thought') return live ? t('chatMessage.thinking') : t('chatMessage.thought')
+  if (kind === 'thought') return live ? liveThoughtLabel() : t('chatMessage.thought')
   if (kind === 'outputting') return live ? t('chatMessage.outputting') : t('chatMessage.thought')
   if (kind === 'skill') return t('chatMessage.skillReady')
   if (kind === 'skill_file_read') return live ? t('chatMessage.skillFileReadLive') : t('chatMessage.skillFileRead')
   if (kind === 'search') return live ? t('chatMessage.searchingWeb') : t('chatMessage.webSearchDone')
-  if (kind === 'search_pages') return t('chatMessage.webPages', opts?.pages ?? 0)
-  if (kind === 'image') {
-    const base = live ? t('chatMessage.generatingImages') : t('chatMessage.imagesGenerated')
-    return withModelSuffix(base, live, opts?.model)
-  }
-  if (kind === 'video') {
-    const base = live ? t('chatMessage.generatingVideo') : t('chatMessage.videoGenerated')
-    return withModelSuffix(base, live, opts?.model)
+  // #437: the done search row keeps the page count (1 web page / N web pages); the card below it carries 联网搜索结果
+  if (kind === 'search_pages') return t((opts?.pages ?? 0) === 1 ? 'chatMessage.webPage' : 'chatMessage.webPages', opts?.pages ?? 0)
+  // #437: the generation row reads the model name itself (no 已生成图片/已生成视频 copy, #432 folded in)
+  if (kind === 'image' || kind === 'video') {
+    if (opts?.model) return opts.model
+    if (live) return t(kind === 'image' ? 'chatMessage.generatingImages' : 'chatMessage.generatingVideo')
+    return opts?.fallback || t('chatMessage.inProgress')
   }
   if (kind === 'code') return live ? t('chatMessage.writingCodeLive') : t('chatMessage.writingCode')
   if (kind === 'code_generated') return t('chatMessage.codeGenerated')
@@ -685,6 +702,8 @@ type ProcessStep = {
   kind: ProcessKind
   label: string
   live: boolean
+  /** #437: the search source's real favicon, shown before the page count. */
+  favicon?: string
   text?: string
   /** CSS aspect-ratio when known from tool/job; chat hero defaults via tokens otherwise. */
   aspectRatio?: string
@@ -702,7 +721,6 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
   return (
     <div className="ca-process" data-live={live ? true : undefined}>
       <div className="ca-process__steps">
-        <div className="ca-process__spine" aria-hidden="true" />
         {steps.map((s) => {
           const isMemory = s.kind === 'memory_updated'
           // #382 fix: memory row uses the same row structure as the thought row (one rowbtn, same classes)
@@ -720,7 +738,10 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
                   <span className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline">{s.text.trim().split('\n').at(-1)}</span>
                 </span>
               ) : (
-                <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>{s.label}</span>
+                <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>
+                  {s.favicon && <Favicon src={s.favicon} />}
+                  {s.label}
+                </span>
               )}
             </>
           )
@@ -730,8 +751,16 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
             memoryFocusAtom.set({ id, undoable: true })
             memoryOpenAtom.set(true)
           }
+          const card = s.kind === 'search_pages' && (
+            <div key={`${s.key}-card`} className="ca-process__card" data-testid="web-search-card">
+              <span className="ca-process__cardtitle">{t('chatMessage.webSearchDone')}</span>
+              <span className="ca-process__cardart">{Icons.searchFolder}</span>
+            </div>
+          )
+          // #442 v6: a display:contents group so the card is a sibling of its 24px row, at the icon x
           return (
-            <div key={s.key} className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-testid={isMemory ? 'memory-updated-row' : undefined}>
+            <div key={s.key} className="ca-process__group">
+            <div className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-testid={isMemory ? 'memory-updated-row' : undefined}>
               {canOpen ? (
                 <button
                   type="button"
@@ -743,6 +772,10 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
                   {row}
                 </button>
               ) : row}
+              {/* #442: each step group owns its rail segment (icon column centre, below its icon); none beside the model row */}
+              {s.kind !== 'image' && <span className="ca-process__spine" data-testid="process-rail" aria-hidden="true" />}
+            </div>
+            {card}
             </div>
           )
         })}
@@ -772,7 +805,7 @@ function Thought({ text, live }: { text: string; live: boolean }) {
     <div className="ca-chat__tool ca-chat__thought" data-live={live || undefined} data-open={open || undefined}>
       <button type="button" className="ca-chat__step" onClick={() => setOpen(!open)}>
         <span className="ca-chat__thinkicon"><span className="ca-icon">{Icons.think}</span></span>
-        <span className="ca-chat__thinklabel">{live ? t('chatMessage.thinking') : t('chatMessage.thought')}</span>
+        <span className="ca-chat__thinklabel">{live ? liveThoughtLabel() : t('chatMessage.thought')}</span>
         {!open && <span className="ca-chat__arg">{text.trim().split('\n').at(-1)}</span>}
         <span className="ca-chat__chev ca-icon">{Icons.chevron}</span>
       </button>
@@ -870,6 +903,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     else if (run.length) items.push(<Step key={run[0].i} editor={editor} use={run[0].use} result={run[0].result} thumbs={false} />)
     run = []
   }
+  let genAt = -1
   const flushProc = () => {
     if (!proc.length) return
     const onlyThought = proc.every((s) => s.kind === 'thought')
@@ -880,6 +914,8 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     } else {
       items.push(<ProcessTimeline key={`pt${proc[0].key}`} steps={proc} />)
     }
+    // #437: result images sit right under the rail that holds the generation (model-name) row
+    if (genAt < 0 && proc.some((s) => s.kind === 'image' || s.kind === 'video')) genAt = items.length
     proc = []
   }
   // #413: an in-loop memory add shows as the 记忆已更新 › row, not as a tool row
@@ -889,6 +925,8 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   let planShown = false
   m.blocks.forEach((b, i) => {
     if (hideMemCall(b)) return
+    // #437: a finished turn has no 等待结果 row; model-name row → result images → text
+    if (done && b.type === 'tool_use' && toolName(b.name) === 'wait_generation') return
     if (isPlan(b)) {
       if (planShown) return
       planShown = true
@@ -925,7 +963,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
         proc.push({
           key: `p${i}`,
           kind: kindResolved,
-          // #393 nit: a declined / refused paid step never reads 「已生成图片」
+          // #393 nit: a declined / refused paid step never reads as done
           label: (kindResolved === 'image' || kindResolved === 'video') && b.type === 'tool_use' && result && stepState(result) === 'cancelled'
             ? `${toolLabel(b.name)} · ${t('chatMessage.cancelled')}`
             : processLabel(kindResolved, stepLive, {
@@ -937,6 +975,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
           text: b.type === 'thinking' ? b.text : undefined,
           aspectRatio,
           memoryIds: b.type === 'memory_updated' ? (b.memory_ids ?? []) : undefined,
+          favicon: kindResolved === 'search_pages' ? searchFavicon(result) : undefined,
         })
         return
       }
@@ -980,7 +1019,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   }
   flushProc()
   flush()
-  if (outputs.length) items.push(<div key="results" className="ca-chat__thumbs ca-chat__results">{outputs.map((s) => <Thumb key={s} editor={editor} src={s} />)}</div>)
+  if (outputs.length) items.splice(genAt < 0 ? items.length : genAt, 0, <div key="results" className="ca-chat__thumbs ca-chat__results">{outputs.map((s) => <Thumb key={s} editor={editor} src={s} />)}</div>)
   // #360: under Done summary — thumbs only; NEVER a suggestion chip/pill row on media Done
   if (m.status === 'done' && isMediaDoneMessage(m)) {
     items.push(<DoneFeedback key="feedback" messageId={m.id} />)

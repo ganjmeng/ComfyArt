@@ -946,3 +946,54 @@
 .ca-memory .ca-memory__sticky { margin-top: auto; }
 .ca-memory .ca-arti-mem__cta { min-width: 0; width: auto; height: 48px; padding: 0 16px; border-radius: 999px; background: rgb(44, 44, 44); color: #fff; font: 400 14px/22px var(--ca-font); }
 .ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__text, .ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__label { color: var(--ca-muted); opacity: .6; } /* saving dim: unmeasured, unchanged */
+/* #437: web-search row — source favicon before the count, results card under the row */
+.ca-process { --ca-process-card-gap: 10px; }
+.ca-process__favicon { width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+.ca-process__row:has(.ca-process__card) { height: auto; }
+.ca-process__card {
+  /* reference DOM values (designer, #442) */
+  box-sizing: border-box; width: 349px; max-width: 100%; align-self: flex-start;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  height: 58px; min-height: 56px; margin: calc(12px - var(--ca-process-row-gap)) 0 0; padding: 0 0 0 12px;
+  border: 1px solid rgba(0, 0, 0, .1); border-radius: 12px; background: transparent; overflow: hidden;
+  position: relative; z-index: 1;
+}
+:root[data-theme="dark"] .ca-process__card { border-color: rgba(255, 255, 255, .1); }
+.ca-process__cardtitle {
+  /* the rail inherits --ca-muted (rgba(0,0,0,.3)); ×.9 opacity rendered ≈.27. Solid ink so .9 is the only alpha */
+  color: var(--ca-process-card-ink); font-size: 12px; line-height: 18px; font-weight: 400; opacity: .9; margin: 10px 0;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; min-width: 0;
+}
+.ca-process__cardart { flex: none; width: 56px; height: 56px; display: block; }
+.ca-process__cardart svg { display: block; }
+/* model-name row: 16px filled sparkle-image at .55, 6px to the 13px/400 model name */
+.ca-process__row[data-kind="image"] { grid-template-columns: var(--ca-process-col) 6px minmax(0, 1fr); }
+.ca-process__icon--image .ca-icon { width: 16px; height: 16px; opacity: .55; }
+.ca-process__row[data-kind="image"] .ca-process__label { font-size: 13px; font-weight: 400; }
+
+/* #442 v6 (designer): 24px flex rows, gap 6, column gap 8 → icon-to-icon 32; card is a sibling at the icon x */
+.ca-process { --ca-process-row-gap: 8px; --ca-process-gutter: 6px; --ca-process-card-ink: #000; }
+:root[data-theme="dark"] .ca-process { --ca-process-card-ink: #fff; }
+.ca-process__steps { padding-top: 8px; gap: var(--ca-process-row-gap); }
+.ca-process__row, .ca-process__row:last-child, .ca-process__row[data-kind="image"] {
+  display: flex; align-items: center; gap: 6px; height: 24px;
+}
+.ca-process__row > .ca-process__icon { flex: none; }
+/* per-group rail element kept; single-row groups and the search group draw none (product to rule on the 8px stub) */
+.ca-process__row > .ca-process__spine {
+  position: absolute; left: calc(var(--ca-process-col) / 2 - 0.5px); top: 20px; bottom: 0; width: 1px;
+  background: var(--ca-border); pointer-events: none; display: none;
+}
+/* dark folder art: our dark grey scale in place of the light fills (paths untouched) */
+:root[data-theme="dark"] .ca-process__cardart svg > :nth-child(1) { fill: var(--ca-empty); }
+:root[data-theme="dark"] .ca-process__cardart svg > :nth-child(2) { fill: var(--ca-shine); stroke: var(--ca-border); }
+:root[data-theme="dark"] .ca-process__cardart svg > :nth-child(3) { fill: var(--ca-gen-pill-bg); stroke: var(--ca-border); }
+:root[data-theme="dark"] .ca-process__cardart svg > :nth-child(4) { stroke: var(--ca-letter-on); }
+:root[data-theme="dark"] .ca-process__cardart svg > :nth-child(5) { fill: var(--ca-media-hero-bg); stroke: var(--ca-border); }
+.ca-process__group { display: contents; }
+/* #442 v6 (product): single-row groups draw a short stub from below the icon to the next group's top;
+   never beside the search card, never after the last group, none on the model row */
+.ca-process__group:not(:last-child):not(:has(.ca-process__card)) > .ca-process__row > .ca-process__spine {
+  /* fixed 8px, centred between the icons: 4px below this icon's bottom (20px) to 4px above the next icon's top */
+  display: block; top: calc(var(--ca-process-ico) + 8px); bottom: auto; height: 8px;
+}
