@@ -232,48 +232,6 @@ export function remember(items: MemoryInput[], source = t('botCommands.chat')): 
   })
 }
 
-/** #423: memory add result text for the model: saved, answer now (no second add / no extra step). */
-export const MEMORY_SAVED_NOTE = '已保存，请直接回复用户。Saved. Reply to the user now; do not call memory add again for this.'
-
-/** #423: normalized form for "same fact" checks (case, spaces, trailing punctuation). */
-export const normFact = (s: string) => s.trim().replace(/\s+/g, ' ').replace(/[。.!！;；,，]+$/u, '').toLowerCase()
-/** #423: the subject of a "key：value" fact (品牌色：橙色 → 品牌色), or '' when there is none. */
-export const factKey = (s: string) => { const m = /^([^:：]{1,24})[:：]/u.exec(s.trim()); return m ? normFact(m[1]) : '' }
-
-export interface UpsertResult { added: Memory[]; updated: { memory: Memory; old: string }[]; unchanged: Memory[] }
-
-/** #423: write-side dedupe for the agent's memory add. Identical fact → skip; same subject
- * (key before ：) with a new value in the same category → update that memory; else add. */
-export function upsertMemory(items: MemoryInput[], source = t('botCommands.chat')): Promise<UpsertResult> {
-  return serial(async () => {
-    const list = await loadUnlocked()
-    const next = [...list]
-    const res: UpsertResult = { added: [], updated: [], unchanged: [] }
-    const logs: ReturnType<typeof entry>[] = []
-    for (const it of items) {
-      const text = it.text.trim()
-      if (!text) continue
-      const same = next.find((m) => normFact(m.text) === normFact(text))
-      if (same) { if (!res.unchanged.includes(same) && !res.added.includes(same)) res.unchanged.push(same); continue }
-      const key = factKey(text)
-      const cat = it.category ?? 'about'
-      const idx = key ? next.findIndex((m) => factKey(m.text) === key && (m.category ?? 'about') === cat) : -1
-      if (idx >= 0) {
-        const old = next[idx].text
-        next[idx] = { ...next[idx], text }
-        const prev = res.updated.find((u) => u.memory.id === next[idx].id)
-        if (prev) prev.memory = next[idx]; else res.updated.push({ memory: next[idx], old })
-        logs.push(entry('update', `${old} → ${text}`, source))
-        continue
-      }
-      const m: Memory = { id: uuid().slice(0, 8), text, owner_id: OWNER_DEFAULT, workspace_id: WORKSPACE_DEFAULT, ...(it.category ? { category: it.category } : {}), ...(it.label ? { label: it.label } : {}) }
-      next.push(m); res.added.push(m); logs.push(entry('add', text, source))
-    }
-    if (logs.length) await writeStore(next, withLog(memoryLogAtom.get(), logs))
-    return res
-  })
-}
-
 /** #382: revoke a memory learned from the chat row. Logs forget with source memory-updated-undo. */
 export function undoMemoryUpdated(id: string): Promise<boolean> {
   return removeMemory(id, 'memory-updated-undo')
