@@ -99,9 +99,13 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         gt = dlg.locator("[data-testid=memory-dialog-grouptitle]").first
         assert await cs(gt, ["font-size", "line-height", "font-weight", "column-gap", "padding-left", "padding-right"]) == ["13px", "22px", "400", "6px", "8px", "8px"]
         for gsvg in await dlg.locator("[data-testid=memory-dialog-grouptitle] .ca-icon svg").all():
-            # true filled icons: fill on the svg, no stroke, 16px, .55 like the title
-            assert await gsvg.get_attribute("fill") == "currentColor" and await gsvg.get_attribute("stroke") is None
-            assert round((await gsvg.bounding_box())["width"]) == 16 and (await cs(gsvg, ["stroke"]))[0] == "none"
+            # outline icons: no solid fill, currentColor stroke 1.5 @24, round caps/joins, 16px, .55 like the title
+            assert await gsvg.get_attribute("fill") == "none" and await gsvg.get_attribute("stroke") == "currentColor"
+            fill, sw, cap, join = await cs(gsvg, ["fill", "stroke-width", "stroke-linecap", "stroke-linejoin"])
+            assert fill == "none" and sw == "1.5px" and cap == "round" and join == "round"
+            for shape in await gsvg.locator("path, circle, rect").all():
+                assert (await cs(shape, ["fill"]))[0] == "none"
+            assert round((await gsvg.bounding_box())["width"]) == 16
             if light:
                 assert (await cs(gsvg, ["color"]))[0] == "rgba(0, 0, 0, 0.55)"
         if OUT and light:

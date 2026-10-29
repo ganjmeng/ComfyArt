@@ -95,7 +95,7 @@ function Onboarding({ onDone }: { onDone: (items: MemoryInput[] | null) => void 
   )
 }
 
-/** filled group-title icons (dialog only; the Arti page keeps its own) */
+/** outline group-title icons (dialog only; the Arti page keeps its own) */
 const DIALOG_GROUP_ICONS: Record<string, typeof Icons.info> = { taste: Icons.memPalette, about: Icons.memBook, work: Icons.memWrench, assets: Icons.memAssets }
 
 export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
