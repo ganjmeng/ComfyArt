@@ -54,9 +54,9 @@ const MAX_LOG = MEMORY_POLICY.max_log
 /** #433: a display load is in flight (memory dialog skeleton). */
 export const memoryLoadingAtom = atom<boolean>('memory loading', false)
 /** #433: a manual save is in flight — pill shows 「记忆更新中」; the id (if any) is the entry being saved (dimmed). */
-export const memorySavingAtom = atom<{ id?: string } | null>('memory saving', null)
-function saving<T>(id: string | undefined, p: Promise<T>): Promise<T> {
-  memorySavingAtom.set({ id })
+export const memorySavingAtom = atom<{ id?: string; text?: string } | null>('memory saving', null)
+function saving<T>(id: string | undefined, p: Promise<T>, text?: string): Promise<T> {
+  memorySavingAtom.set({ id, text })
   return p.finally(() => memorySavingAtom.set(null))
 }
 export const memoryErrorAtom = atom<boolean>('memory error', false)
@@ -222,7 +222,7 @@ export function correct(items: (Correction & { id?: string })[], source: string)
 
 /** Update one memory by id (inline edit). */
 export async function updateMemory(id: string, text: string, source: string): Promise<boolean> {
-  return (await saving(id, correct([{ id, old: '', new: text }], source))).changed.length > 0
+  return (await saving(id, correct([{ id, old: '', new: text }], source), text)).changed.length > 0
 }
 
 /** Delete one memory by id with persistence. */

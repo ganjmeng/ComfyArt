@@ -197,11 +197,53 @@ async def test_memory_dialog_skeleton_and_saving_433(app_url, fake_tools, lang, 
         assert saving_txt in await pill.inner_text()
         assert await pill.locator(".ca-memory__spin").count() == 1
         assert await dlg.locator("[data-testid=memory-dialog-chat-open]").count() == 0
-        assert await dlg.locator("[data-testid=memory-dialog-card][data-saving]").count() == 1  # entry dimmed
+        dim = dlg.locator("[data-testid=memory-dialog-card][data-saving]")
+        assert await dim.count() == 1  # entry dimmed
+        assert tx["edited"] in await dim.inner_text()  # new text shown while saving
         await pg.mouse.move(1000, 620)
         await shot(pg, "433-saving", tag)
         gate["post"].set(); gate["post"] = None
         await pill.wait_for(state="detached", timeout=5000)
         await dlg.locator("[data-testid=memory-dialog-chat-open]").wait_for(timeout=5000)
         await dlg.locator("[data-testid=memory-dialog-card]", has_text=tx["edited"]).wait_for(timeout=5000)
+        await b.close()
+
+
+async def test_memory_dialog_save_failure_reverts_433(app_url, fake_tools):  # noqa: F811
+    """A failed save drops the pending text: the entry goes back to the old text, undimmed."""
+    import asyncio
+    async with pw.async_playwright() as p:
+        b = await p.chromium.launch()
+        pg = await (await b.new_context(viewport={"width": 1024, "height": 640})).new_page()
+        await pg.add_init_script("localStorage.setItem('comfyart.lang','zh');localStorage.setItem('comfyart.e2e','1')")
+        await pg.goto(app_url.rstrip("/") + "/?project=e433f&new=1")
+        await pg.locator(".ca-composer__mode").wait_for(timeout=15000)
+        await pg.evaluate(SEED_JS, MEM)
+        await pg.reload()
+        await pg.locator(".ca-composer__mode").wait_for(timeout=15000)
+        await pg.wait_for_timeout(800)
+        dlg = await open_dialog(pg, "记忆")
+        card = dlg.locator("[data-testid=memory-dialog-card]").first
+        await card.wait_for(timeout=5000)
+        release = asyncio.Event()
+
+        async def fail(route):
+            if route.request.method == "POST":
+                await release.wait()
+                await route.fulfill(status=500, body="boom")
+            else:
+                await route.continue_()
+        await pg.route("**/api/comfyart/memory", fail)
+        await card.hover()
+        await card.locator("[data-testid=arti-memory-edit-btn]").click()
+        edit = dlg.locator("[data-testid=arti-memory-edit-row]")
+        await edit.locator("textarea").fill(TEXT["zh"]["edited"])
+        await edit.locator("[data-testid=arti-memory-edit-save]").click()
+        dim = dlg.locator("[data-testid=memory-dialog-card][data-saving]")
+        await dim.wait_for(timeout=5000)
+        assert TEXT["zh"]["edited"] in await dim.inner_text()
+        release.set()
+        await dim.wait_for(state="detached", timeout=5000)
+        txt = await dlg.locator("[data-testid=memory-dialog-card]").first.inner_text()
+        assert MEM[0]["text"] in txt and TEXT["zh"]["edited"] not in txt
         await b.close()

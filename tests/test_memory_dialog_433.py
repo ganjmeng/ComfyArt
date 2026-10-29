@@ -104,4 +104,4 @@ def test_skeleton_and_saving_state() -> None:
     assert 'data-testid="memory-dialog-saving"' in DLG and "t('memoryDialog.saving')" in DLG
     assert ZH["memoryDialog.saving"] == "记忆更新中"
     src = (ROOT / "src/memory.ts").read_text()
-    assert "memorySavingAtom.set({ id })" in src and "saving(id, correct(" in src and "saving(id, forget(" in src
+    assert "memorySavingAtom.set({ id, text })" in src and "saving(id, correct(" in src and "saving(id, forget(" in src

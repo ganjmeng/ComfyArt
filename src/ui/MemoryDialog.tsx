@@ -189,7 +189,7 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
                       {items.map((m) => (
                         editing === m.id
                         ? <EditRow key={m.id} item={m} onDone={() => setEditing(null)} />
-                        : <MemoryRow key={m.id} item={m} dimmed={savingNow?.id === m.id} menuId={menuId} setMenuId={setMenuId} onEdit={setEditing} testid="memory-dialog-card" />
+                        : <MemoryRow key={m.id} item={m} dimmed={savingNow?.id === m.id} pendingText={savingNow?.id === m.id ? savingNow.text : undefined} menuId={menuId} setMenuId={setMenuId} onEdit={setEditing} testid="memory-dialog-card" />
                       ))}
                       {adding === cat ? (
                         <div className="ca-style__row">

@@ -40,6 +40,7 @@ export function MemoryRow({
   onEdit,
   testid = 'arti-memory-row',
   dimmed,
+  pendingText,
 }: {
   item: Memory
   menuId: string | null
@@ -47,6 +48,8 @@ export function MemoryRow({
   onEdit: (id: string) => void
   testid?: string
   dimmed?: boolean
+  /** text being saved: shown dimmed until the save lands; on failure the row falls back to item.text */
+  pendingText?: string
 }) {
   const open = menuId === item.id
   const askDelete = () => {
@@ -63,7 +66,7 @@ export function MemoryRow({
     <div className="ca-arti-mem__row" data-testid={testid} data-id={item.id} data-saving={dimmed || undefined}>
       <div className="ca-arti-mem__rowbody">
         {item.label ? <div className="ca-arti-mem__label">{item.label}</div> : null}
-        <div className="ca-arti-mem__text">{item.text}</div>
+        <div className="ca-arti-mem__text">{dimmed && pendingText ? pendingText : item.text}</div>
       </div>
       <div className="ca-arti-mem__actions">
         <button
