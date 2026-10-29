@@ -13,8 +13,7 @@ import { Markdown } from './Markdown'
 import { Thumb } from './TaskDetails'
 import { CopyButton } from './CopyButton'
 import { lang, t } from '../i18n'
-import { memoryFocusAtom } from '../memory'
-import { memoryOpenAtom } from './MemoryDialog'
+import { openMemoryDialog } from './MemoryDialog'
 import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
 
@@ -754,7 +753,7 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
           const memKind = s.kind === 'memory_retrieved' || s.kind === 'memory_updating' || s.kind === 'memory_updated'
           const shine = s.live && !memKind
           // #382 fix: memory row uses the same row structure as the thought row (one rowbtn, same classes)
-          const canOpen = (s.kind === 'thought' && !!s.text?.trim()) || (isMemory && !!s.memoryIds?.length)
+          const canOpen = (s.kind === 'thought' && !!s.text?.trim()) || isMemory
           const open = openKey === s.key
           const row = (
             <>
@@ -777,10 +776,8 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
             </>
           )
           const onMemory = () => {
-            const id = s.memoryIds?.[0]
-            if (!id) return
-            memoryFocusAtom.set({ id, undoable: true })
-            memoryOpenAtom.set(true)
+            // #436: open the same memory dialog; do not highlight the just-written entry
+            openMemoryDialog()
           }
           const card = s.kind === 'search_pages' && (
             <div key={`${s.key}-card`} className="ca-process__card" data-testid="web-search-card">

@@ -43,60 +43,198 @@ function MemorySkeleton() {
 }
 
 export const memoryOpenAtom = atom('memory open', false)
+/** When true, the next open starts the 「说说你自己」 onboarding flow. */
+export const memoryOnboardAtom = atom('memory onboard', false)
+
+/** Open the shared memory dialog. Chat 「记忆已更新 ›」 must not highlight an entry (#436). */
+export function openMemoryDialog(opts?: { onboard?: boolean }) {
+  memoryFocusAtom.set(null)
+  memoryOnboardAtom.set(!!opts?.onboard)
+  memoryOpenAtom.set(true)
+}
 
 const MAX_TEXT = 12000
 const PDF_PAGES = 30
 const PDF_IMAGES = 6
 const EXTRACT_SYSTEM = 'You build a long-term memory of a designer. From the material, keep only lasting facts and preferences that help future design work. Reply with ONE JSON object and nothing else: {"memories": [{"text": "<one fact or preference in Chinese>", "category": "about|taste|work|assets"}]}'
 
-interface Step { category: string; question: string; options: string[]; multi: boolean; free: string; name?: boolean }
+/** outline group-title icons (dialog only; the Arti page keeps its own) */
+const DIALOG_GROUP_ICONS: Record<string, typeof Icons.info> = { taste: Icons.memPalette, about: Icons.memBook, work: Icons.memWrench, assets: Icons.memAssets }
+
+interface Step {
+  category: string
+  question: string
+  /** lettered option cards; last may be 「其他…」 */
+  options: string[]
+  multi: boolean
+  free: string
+  name?: boolean
+  other?: boolean
+}
 
 const LOG_LABELS = { add: t('memoryDialog.remember'), update: t('memoryDialog.correct'), forget: t('memoryDialog.forget'), skill: t('memoryDialog.learnedSkill') }
 
+const PART_TITLE: Record<string, string> = {
+  about: 'memoryDialog.partTitle.about',
+  work: 'memoryDialog.partTitle.work',
+  taste: 'memoryDialog.partTitle.taste',
+  assets: 'memoryDialog.partTitle.assets',
+}
+
 function steps(kits: string[]): Step[] {
+  const other = t('memoryDialog.other')
   return [
-    { category: 'about', question: t('memoryDialog.letsGetToKnow'), options: [], multi: false, free: t('memoryDialog.yourNameOrNickname'), name: true },
-    { category: 'about', question: t('memoryDialog.whatKindOfCreativeWork'), options: [t('memoryDialog.eCommerce'), t('memoryDialog.brandMarketing'), t('memoryDialog.contentCreation'), t('memoryDialog.illustrationArt')], multi: true, free: t('memoryDialog.aboutPlaceholder') },
-    { category: 'work', question: t('memoryDialog.howDoYouPreferTo'), options: [t('memoryDialog.checkTheDirectionWithMe'), t('memoryDialog.giveMeThreeDifferentDirections'), t('memoryDialog.useMyCopyLeaveLayout'), t('memoryDialog.tellMeDirectlyIfYou')], multi: true, free: t('memoryDialog.describeHowYoudLike') },
-    { category: 'taste', question: t('memoryDialog.whatVisualStyleDoYou'), options: [t('memoryDialog.iLikeMinimalDesignsWith'), t('memoryDialog.iPreferMutedColorsAvoid'), t('memoryDialog.iPreferAHandDrawn')], multi: true, free: t('memoryDialog.whatYouDislikeMattersMore') },
-    { category: 'assets', question: t('memoryDialog.whatAreYourLongTerm'), options: kits.map((k) => t('memoryDialog.useTheBrandKitBy', k)), multi: true, free: t('memoryDialog.explainHowTheseAssetsShould') },
+    {
+      category: 'about', question: t('memoryDialog.letsGetToKnow'),
+      options: [t('memoryDialog.nickBoss'), t('memoryDialog.nickArtist'), t('memoryDialog.nickCaptain'), other],
+      multi: false, free: t('memoryDialog.yourNameOrNickname'), name: true, other: true,
+    },
+    {
+      category: 'about', question: t('memoryDialog.whatKindOfCreativeWork'),
+      options: [t('memoryDialog.eCommerce'), t('memoryDialog.brandMarketing'), t('memoryDialog.contentCreation'), other],
+      multi: true, free: t('memoryDialog.aboutPlaceholder'), other: true,
+    },
+    {
+      category: 'work', question: t('memoryDialog.howDoYouPreferTo'),
+      options: [t('memoryDialog.checkTheDirectionWithMe'), t('memoryDialog.giveMeThreeDifferentDirections'), t('memoryDialog.useMyCopyLeaveLayout'), other],
+      multi: true, free: t('memoryDialog.describeHowYoudLike'), other: true,
+    },
+    {
+      category: 'taste', question: t('memoryDialog.whatVisualStyleDoYou'),
+      options: [t('memoryDialog.iLikeMinimalDesignsWith'), t('memoryDialog.iPreferMutedColorsAvoid'), t('memoryDialog.iPreferAHandDrawn'), other],
+      multi: true, free: t('memoryDialog.whatYouDislikeMattersMore'), other: true,
+    },
+    {
+      category: 'assets', question: t('memoryDialog.whatAreYourLongTerm'),
+      options: [...kits.map((k) => t('memoryDialog.useTheBrandKitBy', k)), other].filter(Boolean),
+      multi: true, free: t('memoryDialog.explainHowTheseAssetsShould'), other: true,
+    },
   ]
 }
 
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+/** #436: option cards + 跳过 / 确认 (reference onboard), welcome gate first. */
 function Onboarding({ onDone }: { onDone: (items: MemoryInput[] | null) => void }) {
   const kits = useValue('kit names', () => libraryAtom.get().filter((x) => x.kind === 'brand').map((x) => x.name), [])
   const list = steps(kits)
+  const [welcome, setWelcome] = useState(true)
   const [index, setIndex] = useState(0)
   const [picked, setPicked] = useState<string[][]>(list.map(() => []))
   const [texts, setTexts] = useState<string[]>(list.map(() => ''))
   const step = list[index]
-  const toggle = (o: string) => setPicked((all) => all.map((p, i) => (i !== index ? p : p.includes(o) ? p.filter((x) => x !== o) : [...p, o])))
-  const finish = () => onDone(list.flatMap((s, i) => {
-    if (s.name) return texts[i].trim() ? [{ text: t('memoryDialog.callMe', texts[i].trim()), category: s.category }] : []
-    const chosen = s.category === 'about' && picked[i].length ? [t('memoryDialog.iMainlyDo', picked[i].join(t('common.listSep')))] : picked[i]
-    return [...chosen, texts[i].trim()].filter(Boolean).map((text) => ({ text, category: s.category }))
+  const otherLabel = t('memoryDialog.other')
+  const inPart = list.map((s, i) => s.category === step.category ? i : -1).filter((i) => i >= 0)
+  const partPos = inPart.indexOf(index) + 1
+  const partTotal = inPart.length
+  const selected = picked[index]
+  const free = texts[index].trim()
+  const otherOn = !!(step.other && selected.includes(otherLabel))
+  const picksOnly = selected.filter((x) => x !== otherLabel)
+  const canConfirm = otherOn ? !!free : (picksOnly.length > 0 || !!free)
+  const toggle = (o: string) => setPicked((all) => all.map((p, i) => {
+    if (i !== index) return p
+    if (step.multi) return p.includes(o) ? p.filter((x) => x !== o) : [...p, o]
+    return p.includes(o) ? [] : [o]
   }))
+  const collect = () => list.flatMap((s, i) => {
+    const other = t('memoryDialog.other')
+    const picks = picked[i].filter((x) => x !== other)
+    const extra = texts[i].trim()
+    if (s.name) {
+      const nick = picks[0] || extra
+      return nick ? [{ text: t('memoryDialog.callMe', nick), category: s.category }] : []
+    }
+    const chosen = s.category === 'about' && picks.length ? [t('memoryDialog.iMainlyDo', picks.join(t('common.listSep')))] : picks
+    return [...chosen, extra].filter(Boolean).map((text) => ({ text, category: s.category }))
+  })
+  const advance = () => {
+    if (index < list.length - 1) setIndex(index + 1)
+    else onDone(collect())
+  }
+  const skip = () => {
+    setPicked((all) => all.map((p, i) => (i === index ? [] : p)))
+    setTexts((all) => all.map((x, i) => (i === index ? '' : x)))
+    advance()
+  }
+  const confirm = () => {
+    if (!canConfirm) return
+    advance()
+  }
+
+  if (welcome) {
+    return (
+      <div className="ca-rename__body">
+      <div className="ca-memory-onboard ca-memory-onboard--welcome" data-testid="memory-onboard-welcome">
+        <div className="ca-memory-onboard__hero" aria-hidden="true" />
+        <div className="ca-memory-onboard__hi">{t('memoryDialog.welcomeHi')}</div>
+        <p className="ca-memory-onboard__body">{t('memoryDialog.welcomeBody')}</p>
+        <button type="button" className="ca-memory-onboard__ready" data-testid="memory-onboard-ready" onClick={() => setWelcome(false)}>
+          {t('memoryDialog.ready')}
+        </button>
+      </div>
+      </div>
+    )
+  }
 
   return (
     <div className="ca-rename__body">
-      <div className="ca-chat__hint">{t('memoryDialog.part', index + 1, list.length, MEMORY_CATEGORIES.find(([id]) => id === step.category)![1])}</div>
-      <div className="ca-memory__q">{step.question}</div>
-      <div className="ca-panel__chips">
-        {step.options.map((o) => <button key={o} type="button" className="ca-panel__chip" data-on={picked[index].includes(o) || undefined} onClick={() => toggle(o)}>{o}</button>)}
+    <div className="ca-memory-onboard" data-testid="memory-onboard">
+      <div className="ca-memory-onboard__part">{t(PART_TITLE[step.category] ?? 'memoryDialog.partTitle.about')}</div>
+      <div className="ca-memory-onboard__meta">
+        <span className="ca-memory-onboard__cat">
+          <span className="ca-icon">{DIALOG_GROUP_ICONS[step.category] ?? Icons.memBook}</span>
+          {MEMORY_CATEGORIES.find(([id]) => id === step.category)?.[1]}
+        </span>
+        <span className="ca-memory-onboard__pager" data-testid="memory-onboard-pager">{t('memoryDialog.stepOf', partPos, partTotal)}</span>
       </div>
-      <textarea className="ca-panel__prompt ca-panel__prompt--boxed" value={texts[index]} placeholder={step.free} onChange={(e) => setTexts(texts.map((t, i) => (i === index ? e.target.value : t)))} onKeyDown={(e) => e.stopPropagation()} />
-      <div className="ca-panel__foot">
-        <button type="button" className="ca-panel__secondary" onClick={() => (index ? setIndex(index - 1) : onDone(null))}>{index ? t('memoryDialog.back') : t('common.cancel')}</button>
-        {index < list.length - 1
-          ? <button type="button" className="ca-panel__primary" onClick={() => setIndex(index + 1)}>{t('memoryDialog.next')}</button>
-          : <button type="button" className="ca-panel__primary" onClick={finish}>{t('common.done')}</button>}
+      <div className="ca-memory__q ca-memory-onboard__q">{step.question}</div>
+      <div className="ca-memory-onboard__opts" role="listbox" aria-multiselectable={step.multi || undefined} data-testid="memory-onboard-options">
+        {step.options.map((o, i) => (
+          <button
+            key={o}
+            type="button"
+            role="option"
+            className="ca-memory-onboard__opt"
+            data-on={selected.includes(o) || undefined}
+            data-testid={`memory-onboard-opt-${LETTERS[i]}`}
+            aria-selected={selected.includes(o)}
+            onClick={() => toggle(o)}
+          >
+            <span className="ca-memory-onboard__letter">{LETTERS[i]}</span>
+            <span className="ca-memory-onboard__optlabel">{o}</span>
+          </button>
+        ))}
       </div>
+      <div className="ca-memory-onboard__actions">
+        <button type="button" className="ca-memory-onboard__skip" data-testid="memory-onboard-skip" onClick={skip}>{t('memoryDialog.skip')}</button>
+        <button
+          type="button"
+          className="ca-memory-onboard__confirm"
+          data-testid="memory-onboard-confirm"
+          disabled={!canConfirm}
+          onClick={confirm}
+        >
+          {t('memoryDialog.confirm')}
+          <span className="ca-icon ca-memory-onboard__enter">{Icons.keyReturn}</span>
+        </button>
+      </div>
+      {(otherOn || !step.options.length) ? (
+        <textarea
+          className="ca-panel__prompt ca-panel__prompt--boxed ca-memory-onboard__free"
+          data-testid="memory-onboard-free"
+          value={texts[index]}
+          placeholder={step.free || t('memoryDialog.freeHint')}
+          onChange={(e) => setTexts(texts.map((x, i) => (i === index ? e.target.value : x)))}
+          onKeyDown={(e) => { e.stopPropagation(); if (isEnter(e) && !e.shiftKey && canConfirm) { e.preventDefault(); confirm() } }}
+        />
+      ) : (
+        <div className="ca-memory-onboard__freehint">{t('memoryDialog.freeHint')}</div>
+      )}
+    </div>
     </div>
   )
 }
-
-/** outline group-title icons (dialog only; the Arti page keeps its own) */
-const DIALOG_GROUP_ICONS: Record<string, typeof Icons.info> = { taste: Icons.memPalette, about: Icons.memBook, work: Icons.memWrench, assets: Icons.memAssets }
 
 export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
   const open = useValue(memoryOpenAtom)
@@ -114,11 +252,19 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
   const loading = useValue(memoryLoadingAtom)
   const savingNow = useValue(memorySavingAtom)
   const file = useRef<HTMLInputElement>(null)
-  // #433: the reference re-reads memory each time the dialog opens and shows a skeleton meanwhile
-  useEffect(() => { if (open) void loadMemory() }, [open])
+  const wantOnboard = useValue(memoryOnboardAtom)
+  // #433: re-read memory each open (skeleton meanwhile). #436: 「说说你自己」/「去完善」 start onboarding.
+  useEffect(() => {
+    if (!open) return
+    void loadMemory()
+    if (wantOnboard) {
+      setOnboarding(true)
+      memoryOnboardAtom.set(false)
+    }
+  }, [open, wantOnboard])
   if (!open) return null
   // #433: opening from 「记忆已更新 ›」 highlights nothing and offers no undo; removal is delete + confirm only
-  const close = () => { memoryOpenAtom.set(false); setEditing(null); setMenuId(null); setAdding(null); setChatOpen(false); setOnboarding(false); memoryFocusAtom.set(null) }
+  const close = () => { memoryOpenAtom.set(false); memoryOnboardAtom.set(false); setEditing(null); setMenuId(null); setAdding(null); setChatOpen(false); setOnboarding(false); memoryFocusAtom.set(null) }
   // store failures already showed 保存失败，请重试 (#381); only other errors go to the panel
   const fail = (e: unknown) => { if (!(e instanceof MemoryWriteError || e instanceof MemoryConflict || e instanceof MemoryReadError)) onError(errorText(e)) }
   const add = (category: string) => {
@@ -147,7 +293,7 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
   const label = (id: string) => MEMORY_CATEGORIES.find(([c]) => c === id)?.[1] ?? id
 
   return (
-    <Modal title={onboarding ? t('memoryDialog.tellTheAgentAboutYourself') : (
+    <Modal title={onboarding ? null : (
       <span className="ca-memory__head" data-testid="memory-dialog-head">
         {t('common.memory')}
         <span className="ca-icon ca-memory__info" title={t('memoryDialog.theAgentFollowsTheseMemories')} data-testid="memory-dialog-info">{Icons.info}</span>

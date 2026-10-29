@@ -120,20 +120,33 @@ def _git_main(p):
 
 
 def test_dialog_and_click_entry_identical_to_main():
-    """#423 narrowed scope: the memory dialog, its click entry, locales and undo API are main's."""
-    for p in ("src/ui/MemoryDialog.tsx",):
-        m = _git_main(p)
-        if m is None:
-            pytest.skip("origin/main not available")
-        assert _src(p) == m, p
-    assert "memoryFocusAtom.set({ id, undoable: true })" in _src("src/ui/ChatMessage.tsx")
+    """#423 undo API + #436 shared dialog open without highlight."""
+    dlg = _src("src/ui/MemoryDialog.tsx")
+    assert "export function openMemoryDialog" in dlg
+    assert "memoryOnboardAtom" in dlg
+    assert "memoryFocusAtom.set(null)" in dlg
+    assert "openMemoryDialog()" in _src("src/ui/ChatMessage.tsx")  # #436: no focus highlight
     mem = _src("src/memory.ts")
     assert "export interface MemoryFocus { id: string; undoable?: boolean }" in mem
     assert "export function undoMemoryUpdated(id: string): Promise<boolean> {\n  return removeMemory(id, 'memory-updated-undo')" in mem
 
 
 def test_locales_only_add_memory_retrieved_430():
-    """#430 A: locales differ from main only by memory retrieved/updated (+ #437 memoryUpdating)."""
+    """#430 A + #436 Arti memory entry copy; chat memory strings stay."""
+    # keys #436 intentionally changes / adds on Arti page
+    allow = {
+        "arti.levelStatus", "arti.levelHint",
+        "arti.tellYourself", "arti.tellYourselfDesc",
+        "arti.learnPast", "arti.learnPastDesc", "arti.learnPastSoon",
+        "arti.memory.tabEmpty", "arti.memory.goComplete",
+        # #436 onboard welcome / Q1 copy
+        "memoryDialog.welcomeHi", "memoryDialog.welcomeBody", "memoryDialog.ready",
+        "memoryDialog.skip", "memoryDialog.confirm", "memoryDialog.other",
+        "memoryDialog.nickArtist", "memoryDialog.nickBoss", "memoryDialog.nickCaptain",
+        "memoryDialog.partTitle.about", "memoryDialog.partTitle.work",
+        "memoryDialog.partTitle.taste", "memoryDialog.partTitle.assets",
+        "memoryDialog.stepOf", "memoryDialog.freeHint",
+    }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)
         if m is None:
@@ -143,6 +156,9 @@ def test_locales_only_add_memory_retrieved_430():
         cur.pop("chatMessage.memoryUpdated"); base.pop("chatMessage.memoryUpdated")  # #441: › moved to an svg
         cur.pop("chatMessage.memoryUpdating", None)
         base.pop("chatMessage.memoryUpdating", None)
+        for k in allow:
+            cur.pop(k, None)
+            base.pop(k, None)
         assert cur == base
     zh, en = json.loads(_src("src/locales/zh.json")), json.loads(_src("src/locales/en.json"))
     assert zh["chatMessage.memoryUpdated"] == "记忆已更新" and en["chatMessage.memoryUpdated"] == "Memory updated"
