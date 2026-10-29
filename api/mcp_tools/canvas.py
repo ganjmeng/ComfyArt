@@ -394,7 +394,8 @@ SPECS: dict[str, dict] = {
     "memory": _tool(
         "The user's long-term memory across projects. action list; add with text and category (about, "
         "taste, work, assets); correct with old (copied exactly) and new; forget with text (copied "
-        "exactly). Save only lasting preferences the user states, not one-off requests.",
+        "exactly). When the user states something worth remembering, call add in the same turn before you reply; "
+        "then think again and reply. Save only what the user told us: preferences, brands, requirements and facts they stated, and conclusions the user confirmed or chose in this turn (e.g. picked palette 2, always 16:9). Never save your own guesses, plans the user has not confirmed, generated content itself, or one-off task details. Every memory must trace back to one user sentence or choice.",
         {"action": {"type": "string", "enum": ["list", "add", "correct", "forget"]},
          "text": {"type": "string"}, "category": {"type": "string"},
          "old": {"type": "string"}, "new": {"type": "string"}},

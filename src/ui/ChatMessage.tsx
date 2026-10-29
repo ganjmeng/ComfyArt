@@ -869,8 +869,13 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     }
     proc = []
   }
+  // #413: an in-loop memory add shows as the 记忆已更新 › row, not as a tool row
+  const memCalls = new Set(m.blocks.filter((b) => b.type === 'memory_updated' && b.tool_id).map((b) => b.tool_id))
+  const hideMemCall = (b: BotBlock) => (b.type === 'tool_use' || b.type === 'tool_result') && toolName(b.name) === 'memory' && !!b.id
+    && (memCalls.has(b.id) || (b.type === 'tool_use' && !done && !results.has(b.id) && (b.input as { action?: string } | undefined)?.action === 'add'))
   let planShown = false
   m.blocks.forEach((b, i) => {
+    if (hideMemCall(b)) return
     if (isPlan(b)) {
       if (planShown) return
       planShown = true

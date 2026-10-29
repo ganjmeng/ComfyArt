@@ -25,7 +25,7 @@ const REVIEW_DELAY = 60000
 const REVIEW_MIN_SHAPES = 3
 const REVIEW_PX = 1024
 
-const MEMORY_SYSTEM = 'You keep a long-term memory of a designer. From one exchange with their design agent, pull out only lasting preferences or facts the user stated about themselves, their taste or how they like to work. Ignore one-off requests and anything already remembered. Reply with ONE JSON object and nothing else: {"memories": [{"text": "<one short statement about the user, e.g. \\"Freelance illustrator based in Shanghai\\", in the user\'s language>", "category": "about|taste|work|assets"}]} (an empty list when there is nothing lasting).'
+const MEMORY_SYSTEM = 'You keep a long-term memory of a designer. From one exchange with their design agent, save only what the user told us: preferences, brands, requirements and facts they stated, and conclusions the user confirmed or chose in this exchange (e.g. picked palette 2, always 16:9). Never save the agent\'s guesses, plans the user has not confirmed, generated content itself, or one-off task details; every memory must trace back to one user sentence or choice. Ignore anything already remembered. Reply with ONE JSON object and nothing else: {"memories": [{"text": "<one short statement about the user, e.g. \\"Freelance illustrator based in Shanghai\\", in the user\'s language>", "category": "about|taste|work|assets"}]} (an empty list when there is nothing lasting).'
 const SKILL_SYSTEM = 'You turn a designer\'s repeated way of working into a reusable skill for their design agent. You get their latest requests, numbered. If at least three of them follow the same workflow (same kind of deliverable, steps, format or style rules), write a skill for it; otherwise return null. Do not repeat an existing skill. Reply with ONE JSON object and nothing else: {"skill": null} or {"skill": {"name": "<short name in the user\'s language>", "instructions": "<step-by-step instructions for the agent, in English>", "samples": [<numbers of the requests it was learned from>]}}'
 const REVIEW_SYSTEM = `You review a design canvas for a designer. The picture is cropped tightly around the content, so elements touching its edges are fine. Look for concrete problems: typos or garbled text in images, inconsistent colors or styles across a set, cut-off subjects inside an image, broken layouts, wrong aspect ratios, low-quality or deformed generations. Reply with ONE JSON object and nothing else: {"issues": ["<one problem and a fix, written in ${lang === 'zh' ? 'Simplified Chinese' : 'English'}>"]} (empty when nothing is wrong). At most 5 issues.`
 
@@ -58,8 +58,11 @@ async function exchange(chatId: string, messageId: string) {
   const reply = messages.find((m) => m.id === messageId)
   const user = messages.find((m) => m.id === reply?.parent_id)
   const text = (m?: BotMessage) => m?.blocks.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('').trim() ?? ''
-  return reply && user ? { user: text(user), reply: text(reply) } : null
+  return reply && user ? { user: text(user), reply: text(reply), wrote: turnWroteMemory(reply.blocks) } : null
 }
+
+/** #413: the turn already saved memory in-loop (memory tool -> memory_updated block). */
+export const turnWroteMemory = (blocks: { type: string }[]) => blocks.some((b) => b.type === 'memory_updated')
 
 async function learnMemory(ex: { user: string; reply: string }, chatId: string, messageId: string) {
   const known = memoryAtom.get().map((m) => `- ${m.text}`).join('\n')
@@ -93,7 +96,8 @@ async function onTurnDone(e: { chat_id: string; message_id: string; status: stri
     if (skills) s.skillMark = s.prompts.length
     return { memory, skills }
   })
-  if (plan?.memory) await learnMemory(ex, e.chat_id, e.message_id)
+  // #413: fallback only; skip when the agent already wrote memory with its tool this turn
+  if (plan?.memory && !ex.wrote) await learnMemory(ex, e.chat_id, e.message_id)
   if (plan?.skills) await evolveSkill(plan.skills)
 }
 

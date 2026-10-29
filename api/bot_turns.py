@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import re
 import time
@@ -127,6 +128,27 @@ def _derive_title(text: str) -> str:
     return line[:_TITLE_MAX]
 
 
+def memory_updated_block(blocks: list[dict], call_id: str, name: str, text: str, status: str) -> Optional[dict]:
+    """#413: a successful memory add from the agent loop becomes one memory_updated block."""
+    if status != "success" or str(name or "").split("__")[-1] != "memory":
+        return None
+    use = next((b for b in reversed(blocks) if b.get("type") == "tool_use" and call_id and b.get("id") == call_id), None)
+    if use is None or str((use.get("input") or {}).get("action") or "") != "add":
+        return None
+    try:
+        data = json.loads(text)
+    except (TypeError, ValueError):
+        m = re.search(r"\{.*\}", str(text or ""), re.S)
+        try:
+            data = json.loads(m.group(0)) if m else {}
+        except ValueError:
+            data = {}
+    ids = [str(i) for i in (data.get("memory_ids") or []) if i] if isinstance(data, dict) else []
+    if not ids:
+        return None
+    return {"type": "memory_updated", "memory_ids": ids, "texts": [str(data.get("added") or "")], "tool_id": call_id}
+
+
 def _apply_event(state: _TurnState, ev: BotEvent) -> Optional[dict]:
     if ev.t == "delta":
         if state.blocks and state.blocks[-1].get("type") == "text":
@@ -163,6 +185,10 @@ def _apply_event(state: _TurnState, ev: BotEvent) -> Optional[dict]:
                 duration_ms = int((time.monotonic() - started) * 1000)
                 block["duration_ms"] = payload["duration_ms"] = duration_ms
         state.blocks.append(block)
+        mem = memory_updated_block(state.blocks, ev.id, ev.name, ev.text, tool_status)
+        if mem:  # #413: the agent saved memory in-loop -> 记忆已更新 › row right after the call
+            state.blocks.append(mem)
+            payload["memory_updated"] = mem
         return payload
     if ev.t == "run_budget":  # #391: live budget bar (not persisted; the stop card keeps the final numbers)
         state.run_budget = dict(ev.input or {})

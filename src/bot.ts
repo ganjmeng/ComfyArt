@@ -56,6 +56,8 @@ export interface BotBlock {
   detail?: Record<string, any>
   // #382 memory-updated row
   memory_ids?: string[]
+  /** #413: id of the memory tool call that wrote it (in-loop write) */
+  tool_id?: string
   texts?: string[]
   // #391 run_stop card
   run_id?: string
@@ -367,7 +369,10 @@ const reducers: Record<string, (e: any) => void> = {
     return last?.type === 'thinking' ? { ...m, blocks: [...m.blocks.slice(0, -1), { ...last, text: (last.text ?? '') + e.text }] } : appendBlock(m, { type: 'thinking', text: e.text })
   }),
   turn_tool_use: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, { type: 'tool_use', name: e.name, input: e.input, id: e.id })),
-  turn_tool_result: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, { type: 'tool_result', name: e.name, text: e.text, status: e.status, id: e.id, duration_ms: e.duration_ms })),
+  turn_tool_result: (e) => patchMessages(e.chat_id, e.message_id, (m) => {
+    const next = appendBlock(m, { type: 'tool_result', name: e.name, text: e.text, status: e.status, id: e.id, duration_ms: e.duration_ms })
+    return e.memory_updated ? appendBlock(next, e.memory_updated) : next  // #413: in-loop memory write
+  }),
   turn_retry: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block)),
   turn_run_budget: (e) => runBudgetAtom.set({ ...runBudgetAtom.get(), [e.chat_id]: e.budget }),
   turn_run_stop: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block)),
