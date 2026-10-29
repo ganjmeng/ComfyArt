@@ -42,9 +42,16 @@ async def test_arti_empty_tab_and_go_complete(app_url, fake_tools):  # noqa: F81
         await pg.locator("[data-testid=arti-memory-go-complete]").click()
         dlg = pg.locator(".ca-memory")
         await dlg.wait_for(timeout=5000)
-        # onboard title
-        assert "聊聊" in await dlg.inner_text() or "自己" in await dlg.inner_text()
+        # #436 option-card onboard: welcome gate first
+        await pg.locator("[data-testid=memory-onboard-welcome]").wait_for(timeout=5000)
+        assert "准备好了" in await dlg.inner_text()
         await shot(pg, "436-arti-go-complete-onboard")
+        await pg.locator("[data-testid=memory-onboard-ready]").click()
+        await pg.locator("[data-testid=memory-onboard]").wait_for(timeout=5000)
+        assert await pg.locator("[data-testid=memory-onboard-skip]").count() == 1
+        assert await pg.locator("[data-testid=memory-onboard-confirm]").count() == 1
+        assert await pg.locator("[data-testid=memory-onboard-options] .ca-memory-onboard__opt").count() >= 3
+        await shot(pg, "436-arti-onboard-q1")
         await b.close()
 
 

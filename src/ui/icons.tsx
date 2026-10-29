@@ -90,6 +90,7 @@ export const Icons = {
   memoryHead: <Svg strokeWidth={1.5}><path d="M7 22v-4.4a8 8 0 1 1 12.4-7.4l1.9 3.4a1 1 0 0 1-.9 1.4H19v2a2.5 2.5 0 0 1-2.5 2.5H15V22a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1Z" /><path d="M12.6 6.2 10 10.6h3.2L11 14.8" /></Svg>,
   /** #441: 16px › after 记忆已更新 (follows the text colour). */
   memoryChev: <Svg strokeWidth={1.5}><path d="m9.5 7 5 5-5 5" /></Svg>,
+  keyReturn: <Svg strokeWidth={1.5}><path d="M19 7v5a4 4 0 0 1-4 4H7" /><path d="m10 12-3 4 3 4" /></Svg>,
   history: <Svg strokeWidth={2}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></Svg>,
   /* #326 Lucide AI Elements · stroke 2 · process timeline */
   scrollText: <Svg strokeWidth={2}><path d="M15 12h-5" /><path d="M15 8h-5" /><path d="M19 17V5a2 2 0 0 0-2-2H4" /><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></Svg>,

@@ -78,3 +78,21 @@ def test_level_copy_matches_measured() -> None:
     assert ZH["arti.levelStatus"] == "Arti"
     assert ZH["arti.levelHint"] == "从零开始。越用，越像你"
     assert "Starting from zero" in EN["arti.levelHint"]
+
+
+def test_onboard_option_cards_skip_confirm() -> None:
+    assert 'data-testid="memory-onboard-welcome"' in DLG
+    assert 'data-testid="memory-onboard-skip"' in DLG
+    assert 'data-testid="memory-onboard-confirm"' in DLG
+    assert 'data-testid="memory-onboard-options"' in DLG
+    assert "ca-memory-onboard__opt" in DLG
+    assert ZH["memoryDialog.skip"] == "跳过"
+    assert ZH["memoryDialog.confirm"] == "确认"
+    assert ZH["memoryDialog.ready"] == "准备好了"
+    assert ZH["memoryDialog.nickBoss"] == "Boss"
+    assert EN["memoryDialog.skip"] == "Skip"
+    assert EN["memoryDialog.confirm"] == "Confirm"
+    # no product-brand string in onboard copy
+    assert "Lovart" not in DLG
+    assert "Lovart" not in ZH["memoryDialog.welcomeBody"]
+    assert "Lovart" not in ZH["memoryDialog.whatKindOfCreativeWork"]

@@ -1451,5 +1451,20 @@
   "memoryDialog.group.taste": "审美偏好",
   "memoryDialog.group.work": "协作方式",
   "memoryDialog.group.assets": "常用资产",
-  "memoryDialog.chatCta": "通过对话修改记忆"
+  "memoryDialog.chatCta": "通过对话修改记忆",
+  "memoryDialog.welcomeHi": "Hi，终于等到你 :)",
+  "memoryDialog.welcomeBody": "接下来我会问你一些问题，让我们以后的设计协作更加完美，你准备好了吗？",
+  "memoryDialog.ready": "准备好了",
+  "memoryDialog.skip": "跳过",
+  "memoryDialog.confirm": "确认",
+  "memoryDialog.other": "其他…",
+  "memoryDialog.nickBoss": "Boss",
+  "memoryDialog.nickArtist": "Artist",
+  "memoryDialog.nickCaptain": "Captain",
+  "memoryDialog.partTitle.about": "第一部分，我想先了解你是谁？",
+  "memoryDialog.partTitle.work": "接下来，我想了解我们怎么一起工作",
+  "memoryDialog.partTitle.taste": "再聊聊你的审美偏好",
+  "memoryDialog.partTitle.assets": "最后，你的常用资产",
+  "memoryDialog.stepOf": "{0} / {1}",
+  "memoryDialog.freeHint": "也可以直接告诉我…"
 }
