@@ -139,6 +139,13 @@ def test_locales_only_add_memory_retrieved_430():
         "arti.tellYourself", "arti.tellYourselfDesc",
         "arti.learnPast", "arti.learnPastDesc", "arti.learnPastSoon",
         "arti.memory.tabEmpty", "arti.memory.goComplete",
+        # #436 onboard welcome / Q1 copy
+        "memoryDialog.welcomeHi", "memoryDialog.welcomeBody", "memoryDialog.ready",
+        "memoryDialog.skip", "memoryDialog.confirm", "memoryDialog.other",
+        "memoryDialog.nickArtist", "memoryDialog.nickBoss", "memoryDialog.nickCaptain",
+        "memoryDialog.partTitle.about", "memoryDialog.partTitle.work",
+        "memoryDialog.partTitle.taste", "memoryDialog.partTitle.assets",
+        "memoryDialog.stepOf", "memoryDialog.freeHint",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)
