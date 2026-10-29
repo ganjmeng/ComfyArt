@@ -154,4 +154,10 @@ export const Icons = {
   refs: <Svg><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><circle cx="15.5" cy="9.5" r="1.8" /><path d="m4 17 4.5-4.5a1.6 1.6 0 0 1 2.2 0L16 18" /></Svg>,
   thumbsUp: <Svg><path d="M7 11v9H4.5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 4.5 11H7z" /><path d="M7 11V9.2A3.2 3.2 0 0 1 10.2 6h.3l.8-2.2A1.8 1.8 0 0 1 13 2.5h.2A1.8 1.8 0 0 1 15 4.3V7h3.2a1.8 1.8 0 0 1 1.75 2.22l-1.2 5.1A2.5 2.5 0 0 1 16.3 16.5H7" /></Svg>,
   thumbsDown: <Svg><path d="M17 13V4h2.5A1.5 1.5 0 0 1 21 5.5v6A1.5 1.5 0 0 1 19.5 13H17z" /><path d="M17 13v1.8A3.2 3.2 0 0 1 13.8 18h-.3l-.8 2.2A1.8 1.8 0 0 1 11 21.5h-.2A1.8 1.8 0 0 1 9 19.7V17H5.8a1.8 1.8 0 0 1-1.75-2.22l1.2-5.1A2.5 2.5 0 0 1 7.7 7.5H17" /></Svg>,
+  // #439 memory dialog group titles: in-house outline icons (stroke 1.5 @24)
+  memPalette: <Svg strokeWidth={1.5}><path d="M12 3a9 9 0 1 0 0 18c1 0 1.7-.8 1.7-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7H16a5 5 0 0 0 5-5C21 6.2 17 3 12 3z" /><circle cx="7.5" cy="11.5" r="1.1" /><circle cx="9.5" cy="7.5" r="1.1" /><circle cx="14.5" cy="7.5" r="1.1" /></Svg>,
+  memBook: <Svg strokeWidth={1.5}><path d="M2.5 5.5C5 4.5 8.5 4.5 12 6.5v13c-3.5-2-7-2-9.5-1z" /><path d="M21.5 5.5c-2.5-1-6-1-9.5 1v13c3.5-2 7-2 9.5-1z" /></Svg>,
+  memWrench: <Svg strokeWidth={1.5}><path d="M20.8 6.3a5.2 5.2 0 0 1-6.9 6.1l-7.2 7.2a2.1 2.1 0 0 1-3-3l7.2-7.2a5.2 5.2 0 0 1 6.1-6.9l-3.2 3.2.4 2.6 2.6.4 3.2-3.2c.1.3.1.5.1.8z" /></Svg>,
+  memAssets: <Svg strokeWidth={1.5}><path d="M7 3.5l3.5 6h-7z" /><circle cx="16.5" cy="7" r="3" /><rect x="9" y="13.5" width="6" height="6" rx=".6" transform="rotate(15 12 16.5)" /></Svg>,
+  info: <Svg><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></Svg>,
 }

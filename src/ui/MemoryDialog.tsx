@@ -5,15 +5,42 @@ import { uploadImage, viewUrl } from '../comfy'
 import { errorText } from '../jobs'
 import { libraryAtom } from '../library'
 import { ask, parseJson } from '../llm'
-import { loadMemory, MEMORY_CATEGORIES, MemoryConflict, memoryErrorAtom, memoryFocusAtom, MemoryReadError, MemoryWriteError, removeMemory, undoMemoryUpdated, updateMemory, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
+import { loadMemory, MEMORY_CATEGORIES, MemoryConflict, memoryErrorAtom, memoryFocusAtom, memoryLoadingAtom, memorySavingAtom, MemoryReadError, MemoryWriteError, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
 import { isPdf, uploadPdf } from '../pdf'
 import { AbilitiesPanel } from './AbilitiesPanel'
+import { ChatComposer, EditRow, MemoryRow, GROUP_ORDER, MemoryEmpty } from '../home/ArtiMemory'
 import { Icons } from './icons'
 import { t } from '../i18n'
 import { isEnter } from './keys'
 import { Modal } from './Modal'
-import { confirmAtom } from './Confirm'
-import { showMemoryToast } from '../memory'
+
+function ago(time: number) {
+  const min = Math.floor((Date.now() - time) / 60000)
+  if (min < 1) return t('memoryDialog.justNow')
+  if (min < 60) return t('memoryDialog.minutesAgo', min)
+  const h = Math.floor(min / 60)
+  return h < 24 ? t('memoryDialog.hoursAgo', h) : t('memoryDialog.daysAgo', Math.floor(h / 24))
+}
+
+/** Skeleton while the dialog's memory read is in flight: group title bars + card bars, as in the reference. */
+function MemorySkeleton() {
+  return (
+    <div className="ca-memory__skeleton" data-testid="memory-dialog-skeleton" aria-busy="true">
+      {[3, 1, 1, 1].map((n, g) => (
+        <div key={g} className="ca-memory__skgroup">
+          <span className="ca-memory__skbar ca-memory__skbar--title" />
+          {Array.from({ length: n }, (_, i) => (
+            <div key={i} className="ca-memory__skcard">
+              <span className="ca-memory__skbar ca-memory__skbar--label" />
+              {g === 0 && i === 1 ? <span className="ca-memory__skbar ca-memory__skbar--full" /> : null}
+              <span className="ca-memory__skbar ca-memory__skbar--line" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export const memoryOpenAtom = atom('memory open', false)
 
@@ -68,35 +95,37 @@ function Onboarding({ onDone }: { onDone: (items: MemoryInput[] | null) => void 
   )
 }
 
+/** outline group-title icons (dialog only; the Arti page keeps its own) */
+const DIALOG_GROUP_ICONS: Record<string, typeof Icons.info> = { taste: Icons.memPalette, about: Icons.memBook, work: Icons.memWrench, assets: Icons.memAssets }
+
 export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
   const open = useValue(memoryOpenAtom)
   const memory = useValue(memoryAtom)
   const log = useValue(memoryLogAtom)
   const loadError = useValue(memoryErrorAtom)
-  const focus = useValue(memoryFocusAtom)
-  const [tab, setTab] = useState('about')
+  const [tab, setTab] = useState('memory')
   const [text, setText] = useState('')
+  const [adding, setAdding] = useState<string | null>(null)
+  const [chatOpen, setChatOpen] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
+  const [menuId, setMenuId] = useState<string | null>(null)
   const [onboarding, setOnboarding] = useState(false)
   const [busy, setBusy] = useState('')
+  const loading = useValue(memoryLoadingAtom)
+  const savingNow = useValue(memorySavingAtom)
   const file = useRef<HTMLInputElement>(null)
-  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({})
-  // #382: when opened from 「记忆已更新 ›」, switch to that item's category and scroll it into view.
-  useEffect(() => {
-    if (!open || !focus) return
-    const m = memoryAtom.get().find((x) => x.id === focus.id)
-    if (m) setTab(m.category ?? 'about')
-    const t = window.setTimeout(() => rowRefs.current[focus.id]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 50)
-    return () => clearTimeout(t)
-  }, [open, focus?.id])
+  // #433: the reference re-reads memory each time the dialog opens and shows a skeleton meanwhile
+  useEffect(() => { if (open) void loadMemory() }, [open])
   if (!open) return null
-  const close = () => { memoryOpenAtom.set(false); setEditing(null); setOnboarding(false); memoryFocusAtom.set(null) }
+  // #433: opening from 「记忆已更新 ›」 highlights nothing and offers no undo; removal is delete + confirm only
+  const close = () => { memoryOpenAtom.set(false); setEditing(null); setMenuId(null); setAdding(null); setChatOpen(false); setOnboarding(false); memoryFocusAtom.set(null) }
   // store failures already showed 保存失败，请重试 (#381); only other errors go to the panel
   const fail = (e: unknown) => { if (!(e instanceof MemoryWriteError || e instanceof MemoryConflict || e instanceof MemoryReadError)) onError(errorText(e)) }
-  const add = () => {
+  const add = (category: string) => {
     if (!text.trim()) return
-    void remember([{ text: text.trim(), category: tab }], t('frameToolbar.manual')).catch(fail)
+    void remember([{ text: text.trim(), category }], t('frameToolbar.manual')).catch(fail)
     setText('')
+    setAdding(null)
   }
   const importFiles = async (files: FileList | null) => {
     const found: MemoryInput[] = []
@@ -114,16 +143,21 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
     if (!found.length) throw new Error(t('memoryDialog.couldntExtractAnyLong'))
     await remember(found, t('memoryDialog.import'))
   }
-  const categoryTab = tab !== 'log' && tab !== 'abilities'
-  const shown = categoryTab ? memory.filter((m) => (m.category ?? 'about') === tab) : []
+  const latest = memory.reduce((n, m) => Math.max(n, m.time ?? 0), 0)
+  const label = (id: string) => MEMORY_CATEGORIES.find(([c]) => c === id)?.[1] ?? id
 
   return (
-    <Modal title={onboarding ? t('memoryDialog.tellTheAgentAboutYourself') : t('common.memory')} className="ca-rename ca-memory" onClose={close}>
+    <Modal title={onboarding ? t('memoryDialog.tellTheAgentAboutYourself') : (
+      <span className="ca-memory__head" data-testid="memory-dialog-head">
+        {t('common.memory')}
+        <span className="ca-icon ca-memory__info" title={t('memoryDialog.theAgentFollowsTheseMemories')} data-testid="memory-dialog-info">{Icons.info}</span>
+        {latest && !loading ? <span className="ca-memory__updated" data-testid="memory-dialog-updated">{t('memoryDialog.updatedAt', ago(latest))}</span> : null}
+      </span>
+    )} className="ca-rename ca-memory" onClose={close}>
       {onboarding ? (
         <Onboarding onDone={(items) => { setOnboarding(false); if (items?.length) void remember(items, t('memoryDialog.qa')).catch(fail) }} />
       ) : (
         <div className="ca-rename__body">
-          <div className="ca-chat__hint">{t('memoryDialog.theAgentFollowsTheseMemories')}</div>
           {loadError ? <div className="ca-arti-mem__guide" role="alert" data-testid="memory-dialog-error">{t('arti.memory.loadFailed')}{' '}<button type="button" className="ca-arti-mem__retry" onClick={() => void loadMemory()}>{t('arti.memory.retry')}</button></div> : null}
           <div className="ca-style__row">
             <button type="button" className="ca-lib__new" onClick={() => setOnboarding(true)}><span className="ca-icon">{Icons.agent}</span>{t('memoryDialog.tellMeAboutYourself')}</button>
@@ -131,11 +165,7 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
             <input ref={file} type="file" multiple hidden accept="image/*,.pdf,.txt,.md,.json,.csv" onChange={(e) => { const list = e.target.files; void importFiles(list).catch(fail).finally(() => setBusy('')); e.target.value = '' }} />
           </div>
           <div className="ca-panel__chips">
-            {MEMORY_CATEGORIES.map(([id, label]) => (
-              <button key={id} type="button" className="ca-panel__chip" data-on={tab === id || undefined} onClick={() => setTab(id)}>
-                {label} {memory.filter((m) => (m.category ?? 'about') === id).length || ''}
-              </button>
-            ))}
+            <button type="button" className="ca-panel__chip" data-on={tab === 'memory' || undefined} onClick={() => setTab('memory')}>{t('common.memory')}</button>
             <button type="button" className="ca-panel__chip" data-on={tab === 'log' || undefined} onClick={() => setTab('log')}>{t('memoryDialog.evolutionLog')}</button>
             <button type="button" className="ca-panel__chip" data-on={tab === 'abilities' || undefined} onClick={() => setTab('abilities')}>{t('abilities.title')}</button>
           </div>
@@ -149,46 +179,47 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
                 <span className="ca-chat__hint">{l.source} · {new Date(l.time).toLocaleString()}</span>
               </div>
             )))}
-          {categoryTab && shown.length === 0 && <div className="ca-side__empty">{t('memoryDialog.noMemoriesYet')}</div>}
-          {shown.map((m) => (
-            <div
-              key={m.id}
-              className="ca-memory__row"
-              data-focus={focus?.id === m.id || undefined}
-              data-testid={focus?.id === m.id ? 'memory-focus-row' : undefined}
-              ref={(el) => { rowRefs.current[m.id] = el }}
-            >
-              {editing === m.id ? (
-                <input
-                  autoFocus
-                  className="ca-panel__input"
-                  defaultValue={m.text}
-                  onBlur={(e) => { setEditing(null); const v = e.target.value.trim(); if (v && v !== m.text) void updateMemory(m.id, v, t('frameToolbar.manual')).catch(fail) }}
-                  onKeyDown={(e) => { e.stopPropagation(); if (isEnter(e)) e.currentTarget.blur() }}
-                />
-              ) : (
-                <span className="ca-menu__grow" onDoubleClick={() => setEditing(m.id)}>{m.text}</span>
-              )}
-              {focus?.id === m.id && focus.undoable ? (
-                <button
-                  type="button"
-                  className="ca-panel__secondary"
-                  data-testid="memory-updated-undo"
-                  onClick={() => {
-                    void undoMemoryUpdated(m.id).then((ok) => {
-                      if (ok) { showMemoryToast(t('arti.memory.deletedToast')); memoryFocusAtom.set(null) }
-                    }).catch(fail)
-                  }}
-                >{t('memoryDialog.undoUpdated')}</button>
-              ) : null}
-              <button type="button" className="ca-history__del" title={t('memoryDialog.correctMemory')} onClick={() => setEditing(m.id)}>{Icons.textTool}</button>
-              <button type="button" className="ca-history__del" title={t('common.delete')} onClick={() => confirmAtom.set({ title: t('arti.memory.deleteTitle'), desc: t('arti.memory.deleteDesc', m.text), ok: t('common.delete'), danger: true, run: () => { void removeMemory(m.id, t('frameToolbar.manual')).then((ok) => { if (ok) showMemoryToast(t('arti.memory.deletedToast')) }).catch(fail) } })}>{Icons.trash}</button>
+          {tab === 'memory' && loading && <MemorySkeleton />}
+          {tab === 'memory' && !loading && !loadError && memory.length === 0 && adding === null && <MemoryEmpty />}
+          {tab === 'memory' && !loading && !loadError && (memory.length > 0 || adding !== null) && (
+            <div className="ca-arti-mem__groups ca-memory__groups" data-testid="memory-dialog-groups">
+              {GROUP_ORDER.map((cat) => {
+                const items = memory.filter((m) => (m.category ?? 'about') === cat)
+                return (
+                  <section key={cat} className="ca-arti-mem__group" data-testid={`memory-dialog-group-${cat}`}>
+                    <h3 className="ca-arti-mem__grouptitle" data-testid="memory-dialog-grouptitle"><span className="ca-icon">{DIALOG_GROUP_ICONS[cat]}</span>{t(`memoryDialog.group.${cat}`)}</h3>
+                    <div className="ca-arti-mem__list">
+                      {items.map((m) => (
+                        editing === m.id
+                        ? <EditRow key={m.id} item={m} onDone={() => setEditing(null)} />
+                        : <MemoryRow key={m.id} item={m} dimmed={savingNow?.id === m.id} pendingText={savingNow?.id === m.id ? savingNow.text : undefined} menuId={menuId} setMenuId={setMenuId} onEdit={setEditing} testid="memory-dialog-card" />
+                      ))}
+                      {adding === cat ? (
+                        <div className="ca-style__row">
+                          <input autoFocus className="ca-panel__input" value={text} placeholder={t('memoryDialog.add', label(cat))} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { e.stopPropagation(); if (isEnter(e)) add(cat) }} />
+                          <button type="button" className="ca-panel__secondary" onClick={() => { setAdding(null); setText('') }}>{t('common.cancel')}</button>
+                          <button type="button" className="ca-panel__primary ca-memory__add" disabled={!text.trim()} onClick={() => add(cat)}>{t('common.add')}</button>
+                        </div>
+                      ) : items.length === 0 ? (
+                        <button type="button" className="ca-arti-mem__addasset ca-memory__addrow" data-testid={`memory-dialog-add-${cat}`} onClick={() => { setAdding(cat); setText('') }}>
+                          <span className="ca-icon">{Icons.plus}</span>{t(`memoryDialog.addYour.${cat}`)}
+                        </button>
+                      ) : null}
+                    </div>
+                  </section>
+                )
+              })}
             </div>
-          ))}
-          {categoryTab && <div className="ca-style__row">
-            <input className="ca-panel__input" value={text} placeholder={t('memoryDialog.add', MEMORY_CATEGORIES.find(([id]) => id === tab)![1])} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { e.stopPropagation(); if (isEnter(e)) add() }} />
-            <button type="button" className="ca-panel__primary ca-memory__add" disabled={!text.trim()} onClick={add}>{t('common.add')}</button>
-          </div>}
+          )}
+          {tab === 'memory' && (
+            <div className="ca-arti-mem__sticky ca-memory__sticky" data-testid="memory-dialog-chat-cta">
+              {chatOpen
+                ? <ChatComposer onClose={() => setChatOpen(false)} />
+                : savingNow
+                ? <div className="ca-arti-mem__cta ca-memory__saving" role="status" data-testid="memory-dialog-saving"><span className="ca-memory__spin" />{t('memoryDialog.saving')}</div>
+                : <button type="button" className="ca-arti-mem__cta" data-testid="memory-dialog-chat-open" onClick={() => setChatOpen(true)}>{t('memoryDialog.chatCta')}</button>}
+            </div>
+          )}
         </div>
       )}
     </Modal>

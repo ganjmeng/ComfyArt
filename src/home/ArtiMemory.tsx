@@ -18,9 +18,11 @@ import { showMemoryToast } from '../memory'
 import { Icons } from '../ui/icons'
 import { isEnter } from '../ui/keys'
 
-type CatId = 'about' | 'work' | 'taste' | 'assets'
+export type CatId = 'about' | 'work' | 'taste' | 'assets'
+// #433: measured reference order — 审美偏好 / 基础信息 / 协作方式 / 常用资产
+export const GROUP_ORDER: CatId[] = ['taste', 'about', 'work', 'assets']
 
-const GROUP_ICONS: Record<CatId, typeof Icons.memory> = {
+export const GROUP_ICONS: Record<CatId, typeof Icons.memory> = {
   about: Icons.memory,
   work: Icons.agent,
   taste: Icons.palette,
@@ -31,16 +33,23 @@ function groupLabel(id: string) {
   return MEMORY_CATEGORIES.find(([cid]) => cid === id)?.[1] ?? id
 }
 
-function MemoryRow({
+export function MemoryRow({
   item,
   menuId,
   setMenuId,
   onEdit,
+  testid = 'arti-memory-row',
+  dimmed,
+  pendingText,
 }: {
   item: Memory
   menuId: string | null
   setMenuId: (id: string | null) => void
   onEdit: (id: string) => void
+  testid?: string
+  dimmed?: boolean
+  /** text being saved: shown dimmed until the save lands; on failure the row falls back to item.text */
+  pendingText?: string
 }) {
   const open = menuId === item.id
   const askDelete = () => {
@@ -54,10 +63,10 @@ function MemoryRow({
     })
   }
   return (
-    <div className="ca-arti-mem__row" data-testid="arti-memory-row" data-id={item.id}>
+    <div className="ca-arti-mem__row" data-testid={testid} data-id={item.id} data-saving={dimmed || undefined}>
       <div className="ca-arti-mem__rowbody">
         {item.label ? <div className="ca-arti-mem__label">{item.label}</div> : null}
-        <div className="ca-arti-mem__text">{item.text}</div>
+        <div className="ca-arti-mem__text">{dimmed && pendingText ? pendingText : item.text}</div>
       </div>
       <div className="ca-arti-mem__actions">
         <button
@@ -96,7 +105,7 @@ function MemoryRow({
   )
 }
 
-function EditRow({
+export function EditRow({
   item,
   onDone,
 }: {
@@ -107,7 +116,9 @@ function EditRow({
   const dirty = draft.trim() !== item.text
   const save = () => {
     if (!dirty || !draft.trim()) return
-    void updateMemory(item.id, draft.trim(), t('arti.memory.sourceManual')).then(onDone)
+    // reference: the card leaves edit mode at once and stays dimmed until the save lands
+    onDone()
+    void updateMemory(item.id, draft.trim(), t('arti.memory.sourceManual')).catch(() => undefined)
   }
   const addSibling = () => {
     void remember(
@@ -183,7 +194,7 @@ function AssetsAdd({ onClose }: { onClose: () => void }) {
   )
 }
 
-function ChatComposer({ onClose }: { onClose: () => void }) {
+export function ChatComposer({ onClose }: { onClose: () => void }) {
   const memory = useValue(memoryAtom)
   const [text, setText] = useState('')
   const [plusOpen, setPlusOpen] = useState(false)
@@ -321,6 +332,17 @@ function MemoryGroup({
   )
 }
 
+/** #433: whole-memory empty state as measured — 「Oops.」 badge + title + hint. */
+export function MemoryEmpty() {
+  return (
+    <div className="ca-mem-empty" data-testid="memory-empty-state">
+      <div className="ca-mem-empty__badge"><span className="ca-icon">{Icons.agent}</span>Oops.</div>
+      <div className="ca-mem-empty__title">{t('memoryDialog.emptyTitle')}</div>
+      <div className="ca-mem-empty__desc">{t('memoryDialog.emptyDesc')}</div>
+    </div>
+  )
+}
+
 /** #368: Arti memory center — four groups + inline edit + chat-to-edit (mock-first). */
 export function ArtiMemory() {
   const memory = useValue(memoryAtom)
@@ -360,7 +382,7 @@ export function ArtiMemory() {
         </div>
       ) : null}
       {!loadError ? <div className="ca-arti-mem__groups" data-testid="arti-memory-groups">
-        {(['about', 'work', 'taste', 'assets'] as CatId[]).map((cat) => (
+        {GROUP_ORDER.map((cat) => (
           <MemoryGroup
             key={cat}
             cat={cat}
@@ -377,7 +399,7 @@ export function ArtiMemory() {
       </div> : null}
 
       {ready && !loadError && memory.length === 0 ? (
-        <div className="ca-arti-mem__guide" data-testid="arti-memory-empty-guide">{t('arti.memory.emptyGuide')}</div>
+        <div className="ca-arti-mem__guide" data-testid="arti-memory-empty-guide"><MemoryEmpty /></div>
       ) : null}
 
       <div className="ca-arti-mem__sticky" data-testid="arti-memory-chat-cta">

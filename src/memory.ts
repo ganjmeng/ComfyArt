@@ -51,6 +51,14 @@ export const memoryChoiceAtom = atom<MemoryChoice | null>('memory choice', null)
 
 const MAX_LOG = MEMORY_POLICY.max_log
 /** #381: the server could not be read. The list is cleared (never a stale/local copy) and the UI shows an error state. */
+/** #433: a display load is in flight (memory dialog skeleton). */
+export const memoryLoadingAtom = atom<boolean>('memory loading', false)
+/** #433: a manual save is in flight — pill shows 「记忆更新中」; the id (if any) is the entry being saved (dimmed). */
+export const memorySavingAtom = atom<{ id?: string; text?: string } | null>('memory saving', null)
+function saving<T>(id: string | undefined, p: Promise<T>, text?: string): Promise<T> {
+  memorySavingAtom.set({ id, text })
+  return p.finally(() => memorySavingAtom.set(null))
+}
 export const memoryErrorAtom = atom<boolean>('memory error', false)
 /** #381: one transient toast (delete done / save failed). */
 export interface MemoryToastState { text: string; kind: 'deleted' | 'error'; key: number }
@@ -143,6 +151,8 @@ async function loadUnlocked(): Promise<Memory[]> {
 export function loadMemory(): Promise<Memory[]> {
   const run = queue.then(() => loadUnlocked(), () => loadUnlocked())
   queue = run.catch(() => undefined)
+  memoryLoadingAtom.set(true)
+  void run.finally(() => memoryLoadingAtom.set(false)).catch(() => undefined)
   return run.catch(async (e) => {
     if (!(e instanceof MemoryReadError)) throw e
     return []
@@ -212,12 +222,12 @@ export function correct(items: (Correction & { id?: string })[], source: string)
 
 /** Update one memory by id (inline edit). */
 export async function updateMemory(id: string, text: string, source: string): Promise<boolean> {
-  return (await correct([{ id, old: '', new: text }], source)).changed.length > 0
+  return (await saving(id, correct([{ id, old: '', new: text }], source), text)).changed.length > 0
 }
 
 /** Delete one memory by id with persistence. */
 export async function removeMemory(id: string, source: string): Promise<boolean> {
-  return (await forget([{ id }], source)).changed.length > 0
+  return (await saving(id, forget([{ id }], source))).changed.length > 0
 }
 
 export function remember(items: MemoryInput[], source = t('botCommands.chat')): Promise<Memory[]> {
