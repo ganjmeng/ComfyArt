@@ -751,8 +751,16 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
             memoryFocusAtom.set({ id, undoable: true })
             memoryOpenAtom.set(true)
           }
+          const card = s.kind === 'search_pages' && (
+            <div key={`${s.key}-card`} className="ca-process__card" data-testid="web-search-card">
+              <span className="ca-process__cardtitle">{t('chatMessage.webSearchDone')}</span>
+              <span className="ca-process__cardart">{Icons.searchFolder}</span>
+            </div>
+          )
+          // #442 v6: a display:contents group so the card is a sibling of its 24px row, at the icon x
           return (
-            <div key={s.key} className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-testid={isMemory ? 'memory-updated-row' : undefined}>
+            <div key={s.key} className="ca-process__group">
+            <div className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-testid={isMemory ? 'memory-updated-row' : undefined}>
               {canOpen ? (
                 <button
                   type="button"
@@ -766,12 +774,8 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
               ) : row}
               {/* #442: each step group owns its rail segment (icon column centre, below its icon); none beside the model row */}
               {s.kind !== 'image' && <span className="ca-process__spine" data-testid="process-rail" aria-hidden="true" />}
-              {s.kind === 'search_pages' && (
-                <div className="ca-process__card" data-testid="web-search-card">
-                  <span className="ca-process__cardtitle">{t('chatMessage.webSearchDone')}</span>
-                  <span className="ca-process__cardart">{Icons.searchFolder}</span>
-                </div>
-              )}
+            </div>
+            {card}
             </div>
           )
         })}

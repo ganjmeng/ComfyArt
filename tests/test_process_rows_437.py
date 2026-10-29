@@ -96,4 +96,4 @@ def test_rail_is_per_group_segment():
     chat = (root / "src/ui/ChatMessage.tsx").read_text()
     assert "s.kind !== 'image' && <span className=\"ca-process__spine\" data-testid=\"process-rail\"" in chat
     assert "top: 20px; bottom: 0; width: 1px;" in css and "background: var(--ca-border);" in css
-    assert "margin: 12px 0 0;" in css
+    assert "margin: calc(12px - var(--ca-process-row-gap)) 0 0;" in css

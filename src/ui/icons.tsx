@@ -29,7 +29,15 @@ export function LoomiMono() {
 
 export const Icons = {
   // #437: in-house filled sparkle-image mark for the model-name (generation) row
-  sparkleImage: <Svg fill><path fillRule="evenodd" d="M5 4h8.5a5 5 0 0 0-.4 2H5a1 1 0 0 0-1 1v10.6l3.8-3.8a1.5 1.5 0 0 1 2.1 0l2.1 2.1 3.6-3.6a1.5 1.5 0 0 1 2.1 0L20 14.6V12a5 5 0 0 0 2-.9V19a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z" /><circle cx="8.5" cy="9.5" r="1.8" /><path d="M18 1.5l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1Z" /></Svg>,
+  // #442 v6: in-house outline — rounded frame open at the top right, mountain inside, solid 4-point star in the gap
+  sparkleImage: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-6" />
+      <path d="m4.5 16.5 4-4a1.5 1.5 0 0 1 2.1 0l4.9 4.9" />
+      <path d="m13.5 15.4 1.4-1.4a1.5 1.5 0 0 1 2.1 0l2.9 2.9" />
+      <path data-solid="star" fill="currentColor" stroke="none" d="M18 1.6c.35 2 1.35 3.05 3.4 3.4-2.05.35-3.05 1.4-3.4 3.4-.35-2-1.35-3.05-3.4-3.4 2.05-.35 3.05-1.4 3.4-3.4Z" />
+    </svg>
+  ),
   // #437: in-house 56×56 search-results art: grey folder + paper pages under a white folder (.5px hairline)
   searchFolder: (
     <svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true">
