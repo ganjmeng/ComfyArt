@@ -97,3 +97,11 @@ def test_header_info_and_updated() -> None:
 def test_existing_features_kept() -> None:
     for s in ("setOnboarding(true)", "importFiles", "<EditRow", "remember(", "loadMemory()", "memory-dialog-error"):
         assert s in DLG
+
+
+def test_skeleton_and_saving_state() -> None:
+    assert 'data-testid="memory-dialog-skeleton"' in DLG and "useValue(memoryLoadingAtom)" in DLG
+    assert 'data-testid="memory-dialog-saving"' in DLG and "t('memoryDialog.saving')" in DLG
+    assert ZH["memoryDialog.saving"] == "记忆更新中"
+    src = (ROOT / "src/memory.ts").read_text()
+    assert "memorySavingAtom.set({ id })" in src and "saving(id, correct(" in src and "saving(id, forget(" in src

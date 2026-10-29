@@ -39,12 +39,14 @@ export function MemoryRow({
   setMenuId,
   onEdit,
   testid = 'arti-memory-row',
+  dimmed,
 }: {
   item: Memory
   menuId: string | null
   setMenuId: (id: string | null) => void
   onEdit: (id: string) => void
   testid?: string
+  dimmed?: boolean
 }) {
   const open = menuId === item.id
   const askDelete = () => {
@@ -58,7 +60,7 @@ export function MemoryRow({
     })
   }
   return (
-    <div className="ca-arti-mem__row" data-testid={testid} data-id={item.id}>
+    <div className="ca-arti-mem__row" data-testid={testid} data-id={item.id} data-saving={dimmed || undefined}>
       <div className="ca-arti-mem__rowbody">
         {item.label ? <div className="ca-arti-mem__label">{item.label}</div> : null}
         <div className="ca-arti-mem__text">{item.text}</div>
@@ -111,7 +113,9 @@ export function EditRow({
   const dirty = draft.trim() !== item.text
   const save = () => {
     if (!dirty || !draft.trim()) return
-    void updateMemory(item.id, draft.trim(), t('arti.memory.sourceManual')).then(onDone)
+    // reference: the card leaves edit mode at once and stays dimmed until the save lands
+    onDone()
+    void updateMemory(item.id, draft.trim(), t('arti.memory.sourceManual')).catch(() => undefined)
   }
   const addSibling = () => {
     void remember(

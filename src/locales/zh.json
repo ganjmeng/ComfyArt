@@ -1438,5 +1438,6 @@
   "memoryDialog.justNow": "此刻",
   "memoryDialog.minutesAgo": "{0}分钟前",
   "memoryDialog.hoursAgo": "{0}小时前",
-  "memoryDialog.daysAgo": "{0}天前"
+  "memoryDialog.daysAgo": "{0}天前",
+  "memoryDialog.saving": "记忆更新中"
 }

@@ -901,6 +901,18 @@
 .ca-memory .ca-memory__card .ca-history__del { display: inline-flex; }
 .ca-memory__title, .ca-memory .ca-arti-mem__row .ca-arti-mem__label, .ca-memory .ca-arti-mem__edit .ca-arti-mem__label { font: var(--ca-mem-title-weight) 13px/20px var(--ca-font); color: var(--ca-strong); margin-bottom: 2px; }
 .ca-memory .ca-arti-mem__row { border: 1px solid var(--ca-border); }
+.ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__text, .ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__label { color: var(--ca-muted); opacity: .6; }
+.ca-memory__saving { display: inline-flex; align-items: center; gap: 8px; cursor: default; }
+.ca-memory__spin { width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: ca-spin .8s linear infinite; }
+.ca-memory__skeleton { display: flex; flex-direction: column; gap: 22px; }
+.ca-memory__skgroup { display: flex; flex-direction: column; gap: 8px; }
+.ca-memory__skcard { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--ca-border); border-radius: 12px; }
+.ca-memory__skbar { display: block; height: 8px; border-radius: 4px; background: var(--ca-hover); animation: ca-mem-pulse 1.4s ease-in-out infinite; }
+.ca-memory__skbar--title { width: 48px; }
+.ca-memory__skbar--label { width: 64px; }
+.ca-memory__skbar--line { width: 60%; }
+.ca-memory__skbar--full { width: 100%; }
+@keyframes ca-mem-pulse { 50% { opacity: .5; } }
 .ca-memory__head { display: inline-flex; align-items: center; gap: 6px; }
 .ca-memory__info { width: 14px; height: 14px; color: var(--ca-muted); cursor: help; }
 .ca-memory__updated { font: 400 12px/18px var(--ca-font); color: var(--ca-muted); margin-left: 4px; }

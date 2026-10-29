@@ -110,6 +110,7 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         await shot(pg, "434-edit", tag)
         await save.click()
         await edit.wait_for(state="detached", timeout=5000)
+        await dlg.locator("[data-testid=memory-dialog-saving]").wait_for(state="detached", timeout=5000)
         await dlg.locator("[data-testid=memory-dialog-card]", has_text=tx["edited"]).wait_for(timeout=5000)
         await pg.keyboard.press("Escape")
         await pg.reload()
@@ -138,4 +139,69 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         await pg.wait_for_timeout(800)
         dlg = await open_dialog(pg, tx["menu"])
         await dlg.locator("[data-testid=memory-empty-state]").wait_for(timeout=5000)  # persisted
+        await b.close()
+
+
+@pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
+async def test_memory_dialog_skeleton_and_saving_433(app_url, fake_tools, lang, theme):  # noqa: F811
+    """Reference states: skeleton while the dialog's read is in flight; pill turns into 「记忆更新中」 + spinner and the
+    entry dims while a manual save is in flight. Requests are held with page.route (mock host, $0)."""
+    import asyncio
+    tx = TEXT[lang]
+    tag = f"{lang}-{theme}"
+    saving_txt = {"zh": "记忆更新中", "en": "Updating memory"}[lang]
+    async with pw.async_playwright() as p:
+        b = await p.chromium.launch()
+        pg = await (await b.new_context(viewport={"width": 1024, "height": 640}, device_scale_factor=1, timezone_id="Asia/Shanghai")).new_page()
+        await pg.add_init_script(f"localStorage.setItem('comfyart.lang','{lang}');localStorage.setItem('comfyart.theme','{theme}');localStorage.setItem('comfyart.e2e','1')")
+        await pg.goto(app_url.rstrip("/") + "/?project=e433s&new=1")
+        await pg.locator(".ca-composer__mode").wait_for(timeout=15000)
+        await pg.evaluate(SEED_JS, MEM if lang == "zh" else MEM_EN)
+        await pg.reload()
+        await pg.locator(".ca-composer__mode").wait_for(timeout=15000)
+        await pg.wait_for_timeout(800)
+
+        gate = {"get": None, "post": None}
+
+        async def hold(route):
+            kind = "post" if route.request.method == "POST" else "get"
+            ev = gate[kind]
+            if ev is not None:
+                await ev.wait()
+            await route.continue_()
+        await pg.route("**/api/comfyart/memory", hold)
+
+        # skeleton while the open-time read is held
+        gate["get"] = asyncio.Event()
+        dlg = await open_dialog(pg, tx["menu"])
+        sk = dlg.locator("[data-testid=memory-dialog-skeleton]")
+        await sk.wait_for(timeout=5000)
+        assert await dlg.locator("[data-testid=memory-dialog-card]").count() == 0
+        assert await sk.locator(".ca-memory__skcard").count() >= 4
+        await pg.mouse.move(1000, 620)
+        await shot(pg, "433-skeleton", tag)
+        gate["get"].set(); gate["get"] = None
+        await sk.wait_for(state="detached", timeout=5000)
+        card = dlg.locator("[data-testid=memory-dialog-card]").first
+        await card.wait_for(timeout=5000)
+
+        # saving state while the write is held
+        await card.hover()
+        await card.locator("[data-testid=arti-memory-edit-btn]").click()
+        edit = dlg.locator("[data-testid=arti-memory-edit-row]")
+        await edit.locator("textarea").fill(tx["edited"])
+        gate["post"] = asyncio.Event()
+        await edit.locator("[data-testid=arti-memory-edit-save]").click()
+        pill = dlg.locator("[data-testid=memory-dialog-saving]")
+        await pill.wait_for(timeout=5000)
+        assert saving_txt in await pill.inner_text()
+        assert await pill.locator(".ca-memory__spin").count() == 1
+        assert await dlg.locator("[data-testid=memory-dialog-chat-open]").count() == 0
+        assert await dlg.locator("[data-testid=memory-dialog-card][data-saving]").count() == 1  # entry dimmed
+        await pg.mouse.move(1000, 620)
+        await shot(pg, "433-saving", tag)
+        gate["post"].set(); gate["post"] = None
+        await pill.wait_for(state="detached", timeout=5000)
+        await dlg.locator("[data-testid=memory-dialog-chat-open]").wait_for(timeout=5000)
+        await dlg.locator("[data-testid=memory-dialog-card]", has_text=tx["edited"]).wait_for(timeout=5000)
         await b.close()

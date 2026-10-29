@@ -1438,5 +1438,6 @@
   "memoryDialog.justNow": "just now",
   "memoryDialog.minutesAgo": "{0} min ago",
   "memoryDialog.hoursAgo": "{0} h ago",
-  "memoryDialog.daysAgo": "{0} d ago"
+  "memoryDialog.daysAgo": "{0} d ago",
+  "memoryDialog.saving": "Updating memory"
 }

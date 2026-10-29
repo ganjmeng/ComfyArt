@@ -1,11 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { atom, useValue } from 'tldraw'
 
 import { uploadImage, viewUrl } from '../comfy'
 import { errorText } from '../jobs'
 import { libraryAtom } from '../library'
 import { ask, parseJson } from '../llm'
-import { loadMemory, MEMORY_CATEGORIES, MemoryConflict, memoryErrorAtom, memoryFocusAtom, MemoryReadError, MemoryWriteError, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
+import { loadMemory, MEMORY_CATEGORIES, MemoryConflict, memoryErrorAtom, memoryFocusAtom, memoryLoadingAtom, memorySavingAtom, MemoryReadError, MemoryWriteError, memoryAtom, memoryLogAtom, remember, toInputs, type MemoryInput } from '../memory'
 import { isPdf, uploadPdf } from '../pdf'
 import { AbilitiesPanel } from './AbilitiesPanel'
 import { ChatComposer, EditRow, MemoryRow, GROUP_ICONS, GROUP_ORDER, MemoryEmpty } from '../home/ArtiMemory'
@@ -20,6 +20,26 @@ function ago(time: number) {
   if (min < 60) return t('memoryDialog.minutesAgo', min)
   const h = Math.floor(min / 60)
   return h < 24 ? t('memoryDialog.hoursAgo', h) : t('memoryDialog.daysAgo', Math.floor(h / 24))
+}
+
+/** Skeleton while the dialog's memory read is in flight: group title bars + card bars, as in the reference. */
+function MemorySkeleton() {
+  return (
+    <div className="ca-memory__skeleton" data-testid="memory-dialog-skeleton" aria-busy="true">
+      {[3, 1, 1, 1].map((n, g) => (
+        <div key={g} className="ca-memory__skgroup">
+          <span className="ca-memory__skbar ca-memory__skbar--title" />
+          {Array.from({ length: n }, (_, i) => (
+            <div key={i} className="ca-memory__skcard">
+              <span className="ca-memory__skbar ca-memory__skbar--label" />
+              {g === 0 && i === 1 ? <span className="ca-memory__skbar ca-memory__skbar--full" /> : null}
+              <span className="ca-memory__skbar ca-memory__skbar--line" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export const memoryOpenAtom = atom('memory open', false)
@@ -88,7 +108,11 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
   const [menuId, setMenuId] = useState<string | null>(null)
   const [onboarding, setOnboarding] = useState(false)
   const [busy, setBusy] = useState('')
+  const loading = useValue(memoryLoadingAtom)
+  const savingNow = useValue(memorySavingAtom)
   const file = useRef<HTMLInputElement>(null)
+  // #433: the reference re-reads memory each time the dialog opens and shows a skeleton meanwhile
+  useEffect(() => { if (open) void loadMemory() }, [open])
   if (!open) return null
   // #433: opening from 「记忆已更新 ›」 highlights nothing and offers no undo; removal is delete + confirm only
   const close = () => { memoryOpenAtom.set(false); setEditing(null); setMenuId(null); setAdding(null); setChatOpen(false); setOnboarding(false); memoryFocusAtom.set(null) }
@@ -124,7 +148,7 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
       <span className="ca-memory__head" data-testid="memory-dialog-head">
         {t('common.memory')}
         <span className="ca-icon ca-memory__info" title={t('memoryDialog.theAgentFollowsTheseMemories')} data-testid="memory-dialog-info">{Icons.info}</span>
-        {latest ? <span className="ca-memory__updated" data-testid="memory-dialog-updated">{t('memoryDialog.updatedAt', ago(latest))}</span> : null}
+        {latest && !loading ? <span className="ca-memory__updated" data-testid="memory-dialog-updated">{t('memoryDialog.updatedAt', ago(latest))}</span> : null}
       </span>
     )} className="ca-rename ca-memory" onClose={close}>
       {onboarding ? (
@@ -152,8 +176,9 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
                 <span className="ca-chat__hint">{l.source} · {new Date(l.time).toLocaleString()}</span>
               </div>
             )))}
-          {tab === 'memory' && !loadError && memory.length === 0 && adding === null && <MemoryEmpty />}
-          {tab === 'memory' && !loadError && (memory.length > 0 || adding !== null) && (
+          {tab === 'memory' && loading && <MemorySkeleton />}
+          {tab === 'memory' && !loading && !loadError && memory.length === 0 && adding === null && <MemoryEmpty />}
+          {tab === 'memory' && !loading && !loadError && (memory.length > 0 || adding !== null) && (
             <div className="ca-arti-mem__groups ca-memory__groups" data-testid="memory-dialog-groups">
               {GROUP_ORDER.map((cat) => {
                 const items = memory.filter((m) => (m.category ?? 'about') === cat)
@@ -164,7 +189,7 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
                       {items.map((m) => (
                         editing === m.id
                         ? <EditRow key={m.id} item={m} onDone={() => setEditing(null)} />
-                        : <MemoryRow key={m.id} item={m} menuId={menuId} setMenuId={setMenuId} onEdit={setEditing} testid="memory-dialog-card" />
+                        : <MemoryRow key={m.id} item={m} dimmed={savingNow?.id === m.id} menuId={menuId} setMenuId={setMenuId} onEdit={setEditing} testid="memory-dialog-card" />
                       ))}
                       {adding === cat ? (
                         <div className="ca-style__row">
@@ -187,6 +212,8 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
             <div className="ca-arti-mem__sticky ca-memory__sticky" data-testid="memory-dialog-chat-cta">
               {chatOpen
                 ? <ChatComposer onClose={() => setChatOpen(false)} />
+                : savingNow
+                ? <div className="ca-arti-mem__cta ca-memory__saving" role="status" data-testid="memory-dialog-saving"><span className="ca-memory__spin" />{t('memoryDialog.saving')}</div>
                 : <button type="button" className="ca-arti-mem__cta" data-testid="memory-dialog-chat-open" onClick={() => setChatOpen(true)}>{t('arti.memory.chatCta')}</button>}
             </div>
           )}
