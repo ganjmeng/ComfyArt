@@ -46,6 +46,29 @@
 }
 .ca-gen-card[data-running] .ca-gen-ring,
 .ca-gen-frame[data-running] .ca-gen-ring { display: none !important; }
+.ca-gen-card__stop {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 10px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ca-float);
+  color: var(--ca-text);
+  box-shadow: var(--ca-shadow);
+  cursor: pointer;
+  pointer-events: all;
+  z-index: 2;
+}
+.ca-gen-card__stop:hover { color: var(--ca-error-text); }
+.ca-gen-card__stop:disabled { opacity: .5; cursor: default; color: var(--ca-text); }
+.ca-gen-card__stop svg { width: 100%; height: 100%; }
 /* #356: while generating — no selection border chrome (handles hidden in GeneratorShapeUtil) */
 @property --ca-p { syntax: '<number>'; inherits: false; initial-value: 0; }
 @property --ca-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }

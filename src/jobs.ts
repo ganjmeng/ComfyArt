@@ -4,6 +4,7 @@ import { cancelPrompt, CostDeclined, NeedKeyError, mediaMeta, planBypassNow, pro
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Built } from './workflows'
 import { t } from './i18n'
+import { uiCredits } from './usd'
 import { takePendingModel, withModel } from './wavespeed'
 
 export type MediaKind = 'image' | 'video' | 'audio' | 'model'
@@ -16,6 +17,9 @@ export interface Job {
   placer?: string
   extra?: Record<string, unknown>
   partial?: string[]
+  stopping?: boolean
+  /** Quoted USD stashed by stopJob for the 「已停止」 fee line. */
+  stoppedCharged?: number
 }
 
 export interface Media { ref: ImageRef; src: string; w: number; h: number; kind: MediaKind }
@@ -29,6 +33,9 @@ export function localizeError(msg: string): string {
   if (/Select or describe the object to segment first/.test(msg)) return t('jobs.needSegTarget')
   if (/No segmentable objects found/.test(msg)) return t('jobs.segNone')
   if (/Only classes with the same color as the background/.test(msg)) return t('jobs.segAllBlack')
+  const stoppedCharged = /WaveSpeed task stopped, may have been charged about \(quoted price\) \$([\d.]+)/.exec(msg)
+  if (stoppedCharged) return t('jobs.stoppedCharged', String(uiCredits(Number(stoppedCharged[1]))))
+  if (/^WaveSpeed task stopped$/.test(msg)) return t('jobs.stopped')
   const charged = /WaveSpeed task timed out, may have been charged about \(quoted price\) \$([\d.]+)/.exec(msg)
   if (charged) return t('jobs.wsTimeoutCharged', charged[1])
   const timeout = /WaveSpeed task timed out after (\d+)s/.exec(msg)
@@ -43,10 +50,14 @@ export type Placer = (editor: Editor, holder: TLShape, media: Media[], job: Job,
 export const GAP = 40
 const active = new Set<string>()
 const settled = new Set<string>()
+/** Reject waiters when the user stops a job that WaveSpeed cannot truly cancel mid-flight. */
+const dropped = new Map<string, (err: Error) => void>()
 const placers: Record<string, Placer> = {}
 
 export interface JobResult { srcs: string[]; error?: string }
 export const resultsAtom = atom<Record<string, JobResult>>('job results', {})
+// #282/#408: e2e tip shoots set the card banner without a live waiter
+if (typeof window !== 'undefined') (window as unknown as { __caResultsAtom?: typeof resultsAtom }).__caResultsAtom = resultsAtom
 
 /** Resolves when queuePrompt has passed (or the user declined) the cost confirm. #127 */
 type SubmitOutcome = 'ok' | 'declined' | 'error'
@@ -210,7 +221,10 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
   if (active.has(job.id)) return
   active.add(job.id)
   try {
-    const refs = await waitForImages(job.id, job.node)
+    const refs = await Promise.race([
+      waitForImages(job.id, job.node),
+      new Promise<never>((_, reject) => dropped.set(job.id, reject)),
+    ])
     settled.add(job.id)
     const media = await Promise.all(refs.map((r) => toMedia(r, refKind(viewUrl(r)) === 'video' ? 'video' : job.kind)))
     const holder = editor.getShape(holderId)
@@ -219,11 +233,26 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
     report(holderId, { srcs: media.map((m) => m.src) })
   } catch (e) {
     const holder = editor.getShape(holderId)
+    const live = holder ? jobOf(holder) : null
+    const stopped = !!(live?.stopping || job.stopping)
     const kept = holder ? await keepPartial(editor, holder, job).catch(() => 0) : 0
-    const msg = errorText(e) + (kept ? ` ${t('jobs.partialKept', kept)}` : '')
+    // User stop: prefer fee line from cancel (stoppedCharged / reject message); else 「已停止」.
+    let msg: string
+    if (stopped) {
+      const charged = typeof live?.stoppedCharged === 'number' ? live.stoppedCharged
+        : typeof job.stoppedCharged === 'number' ? job.stoppedCharged : undefined
+      if (typeof charged === 'number') msg = t('jobs.stoppedCharged', String(uiCredits(charged)))
+      else {
+        const localized = errorText(e)
+        msg = localized === t('jobs.stopped') || localized.startsWith(t('jobs.stopped')) ? localized : t('jobs.stopped')
+      }
+    } else {
+      msg = errorText(e)
+    }
+    if (kept) msg += ` ${t('jobs.partialKept', kept)}`
     // #307: abort/stop must not leave an empty content frame — drop temp/quiet posters;
     // keep compose cards (prompt) with clear error copy, or last partial results.
-    const interrupted = /interrupt/i.test(msg) || msg === t('jobs.interrupted')
+    const interrupted = stopped || /interrupt/i.test(msg) || msg === t('jobs.interrupted') || msg === t('jobs.stopped') || msg.startsWith(t('jobs.stopped'))
     const composePrompt = holder?.type === GENERATOR && !!(holder as GeneratorShape).props.prompt?.trim()
     if (holder && kept === 0 && (holder.meta.temp || holder.meta.quiet || (interrupted && !composePrompt))) {
       editor.deleteShape(holderId)
@@ -231,10 +260,39 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
       editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: null, quiet: false } })
     }
     report(holderId, { srcs: [], error: msg })
-    if (holder) onError(msg)
+    // User-initiated stop: card banner is enough; no stacked toast.
+    if (holder && !stopped) onError(msg)
   } finally {
     active.delete(job.id)
     settled.delete(job.id)
+    dropped.delete(job.id)
+  }
+}
+
+/** #408: stop a running generator card — cancel WaveSpeed tracking and settle the waiter. */
+export async function stopJob(editor: Editor, holderId: TLShapeId) {
+  const holder = editor.getShape(holderId)
+  const job = holder && jobOf(holder)
+  if (!job || job.stopping) return
+  const mark = (patch: Partial<Job>) => {
+    const h = editor.getShape(holderId)
+    if (!h) return
+    const cur = jobOf(h) ?? job
+    editor.updateShape({ id: holderId, type: h.type, meta: { ...h.meta, job: { ...cur, ...patch } as any } })
+  }
+  mark({ stopping: true })
+  try {
+    const result = await cancelPrompt(job.id)
+    if (typeof result.charged_usd === 'number') mark({ stopping: true, stoppedCharged: result.charged_usd })
+    if (result.dropped) {
+      const errMsg = typeof result.charged_usd === 'number'
+        ? `WaveSpeed task stopped, may have been charged about (quoted price) $${result.charged_usd}`
+        : 'WaveSpeed task stopped'
+      dropped.get(job.id)?.(new Error(errMsg))
+    }
+  } catch (e) {
+    if (editor.getShape(holderId)) mark({ stopping: false, stoppedCharged: undefined })
+    throw e
   }
 }
 

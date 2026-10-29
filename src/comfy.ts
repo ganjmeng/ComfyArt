@@ -220,15 +220,29 @@ async function inQueue(promptId: string): Promise<boolean> {
   return queued(q.queue_running, promptId) || queued(q.queue_pending, promptId)
 }
 
-export async function cancelPrompt(promptId: string) {
+export type CancelResult = { dropped: boolean; charged_usd?: number }
+
+/** Cancel a running/queued prompt. `dropped: true` means the client can settle the waiter immediately
+ * (WaveSpeed has no real mid-flight cancel — we stop tracking and free the slot). */
+export async function cancelPrompt(promptId: string): Promise<CancelResult> {
   if (promptId.startsWith(WS_ID)) {
-    await api(`/comfyart/wavespeed/cancel/${promptId.slice(WS_ID.length)}`, { method: 'POST' })
-    return
+    const res = await api(`/comfyart/wavespeed/cancel/${promptId.slice(WS_ID.length)}`, { method: 'POST' })
+    const body = await res.json().catch(() => ({}))
+    const charged_usd = typeof body?.charged_usd === 'number' && Number.isFinite(body.charged_usd) ? body.charged_usd : undefined
+    // Always drop the waiter: WaveSpeed cannot interrupt a submitted prediction.
+    return charged_usd === undefined ? { dropped: true } : { dropped: true, charged_usd }
   }
   const q = await (await api('/queue')).json()
   const post = (path: string, body: unknown) => api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-  if (queued(q.queue_pending, promptId)) await post('/queue', { delete: [promptId] })
-  else if (queued(q.queue_running, promptId)) await post('/interrupt', { prompt_id: promptId })
+  if (queued(q.queue_pending, promptId)) {
+    await post('/queue', { delete: [promptId] })
+    return { dropped: true }
+  }
+  if (queued(q.queue_running, promptId)) {
+    await post('/interrupt', { prompt_id: promptId })
+    return { dropped: false }
+  }
+  return { dropped: false }
 }
 
 const wakers = new Map<string, Set<() => void>>()
@@ -268,7 +282,14 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
       const messages: [string, any][] = hist.status?.messages ?? []
       const err = messages.find((m) => m[0] === 'execution_error')
       if (err) throw new Error(wsErrorText(err[1]?.ws_kind, err[1]?.ws_charged) ?? String(err[1]?.exception_message ?? 'execution failed'))
-      if (messages.some((m) => m[0] === 'execution_interrupted')) throw new Error(t('jobs.interrupted'))
+      const interrupted = messages.find((m) => m[0] === 'execution_interrupted')
+      if (interrupted) {
+        const charged = interrupted[1]?.ws_charged
+        if (typeof charged === 'number' && Number.isFinite(charged)) {
+          throw new Error(`WaveSpeed task stopped, may have been charged about (quoted price) $${charged}`)
+        }
+        throw new Error(t('jobs.interrupted'))
+      }
       const value = hist.outputs?.[node] ? pick(hist.outputs[node]) : null
       if (value) {
         if (promptId.startsWith(WS_ID)) void refreshKeyStatus()

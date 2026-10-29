@@ -7,11 +7,12 @@ import {
   T,
   type RecordProps,
   type TLShape,
+  useEditor,
   useValue,
 } from 'tldraw'
 
 import { isVideo } from '../models'
-import { resultsAtom } from '../jobs'
+import { errorText, resultsAtom, stopJob } from '../jobs'
 import { Icons } from '../ui/icons'
 import { t } from '../i18n'
 
@@ -114,7 +115,8 @@ export class GeneratorShapeUtil extends BaseBoxShapeUtil<GeneratorShape> {
 }
 
 function GeneratorCard({ shape }: { shape: GeneratorShape }) {
-  const job = shape.meta.job as { id: string } | undefined
+  const editor = useEditor()
+  const job = shape.meta.job as { id: string; stopping?: boolean } | undefined
   const error = useValue('generator error', () => (job ? undefined : resultsAtom.get()[shape.id]?.error), [job?.id, shape.id])
   return (
     <HTMLContainer
@@ -124,6 +126,20 @@ function GeneratorCard({ shape }: { shape: GeneratorShape }) {
     >
       <span className="ca-gen-card__icon">{isVideo(shape.props.workflow) ? Icons.video : Icons.image}</span>
       {error && <div className="ca-gen-card__error" role="alert">{withTopUpLink(error)}</div>}
+      {job && (
+        <button
+          type="button"
+          className="ca-gen-card__stop"
+          title={t('jobs.stop')}
+          aria-label={t('jobs.stop')}
+          disabled={job.stopping}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => void stopJob(editor, shape.id).catch((e) => {
+            // stop failure only — success settles via finish without a toast
+            resultsAtom.update((r) => ({ ...r, [shape.id]: { srcs: r[shape.id]?.srcs ?? [], error: errorText(e) } }))
+          })}
+        >{Icons.stop}</button>
+      )}
       {job && <div className="ca-gen-frame__pill">{t('taskDetails.generating')}</div>}
     </HTMLContainer>
   )
