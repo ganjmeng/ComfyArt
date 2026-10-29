@@ -1,8 +1,12 @@
 // #155: WaveSpeed failures are shown as readable zh/en messages, never the raw WaveSpeed error text.
 import { t } from './i18n'
+import { uiCredits } from './usd'
 
 export const TOP_UP_URL = 'https://wavespeed.ai/top-up'
-const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany'] as const
+/** #408: upstream's 「Back to ComfyUI」 now opens the WaveSpeed console task history (we have no ComfyUI host). */
+export const WS_HISTORY_URL = 'https://wavespeed.ai/predictions'
+export const openWsHistory = () => void window.open(WS_HISTORY_URL, '_blank', 'noopener,noreferrer')
+const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany', 'stopped'] as const
 export type WsErrorKind = typeof KINDS[number]
 
 /** The readable message for a backend error kind, or null when the error is not a tagged WaveSpeed failure. */
@@ -10,6 +14,8 @@ export function wsErrorText(kind: unknown, charged?: unknown): string | null {
   if (typeof kind !== 'string' || !(KINDS as readonly string[]).includes(kind)) return null
   // #174: a timed-out task may still be billed; show the quoted amount when known, never auto-retry
   if (kind === 'timeout') return typeof charged === 'number' && Number.isFinite(charged) ? t('wsErr.timeout', fmtUsd(charged)) : t('wsErr.timeoutNoAmount')
+  // #408: a stopped task was already submitted, so WaveSpeed may have billed it; say the quoted amount (credits), never 0
+  if (kind === 'stopped') return typeof charged === 'number' && Number.isFinite(charged) ? t('wsErr.stopped', uiCredits(charged)) : t('wsErr.stoppedNoAmount')
   return kind === 'insufficientCredit' ? t('wsErr.insufficientCredit', TOP_UP_URL) : t(`wsErr.${kind}`)
 }
 

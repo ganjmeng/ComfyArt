@@ -5,6 +5,7 @@ import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Built } from './workflows'
 import { t } from './i18n'
 import { takePendingModel, withModel } from './wavespeed'
+import { wsErrorText } from './wsErrors'
 
 export type MediaKind = 'image' | 'video' | 'audio' | 'model'
 
@@ -16,6 +17,8 @@ export interface Job {
   placer?: string
   extra?: Record<string, unknown>
   partial?: string[]
+  /** #408: Stop was clicked; the card settles as 「已停止」 instead of an error toast. */
+  stopping?: boolean
 }
 
 export interface Media { ref: ImageRef; src: string; w: number; h: number; kind: MediaKind }
@@ -43,9 +46,10 @@ export type Placer = (editor: Editor, holder: TLShape, media: Media[], job: Job,
 export const GAP = 40
 const active = new Set<string>()
 const settled = new Set<string>()
+const dropped = new Map<string, (e: Error) => void>()
 const placers: Record<string, Placer> = {}
 
-export interface JobResult { srcs: string[]; error?: string }
+export interface JobResult { srcs: string[]; error?: string; stopped?: boolean }
 export const resultsAtom = atom<Record<string, JobResult>>('job results', {})
 
 /** Resolves when queuePrompt has passed (or the user declined) the cost confirm. #127 */
@@ -210,7 +214,10 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
   if (active.has(job.id)) return
   active.add(job.id)
   try {
-    const refs = await waitForImages(job.id, job.node)
+    const refs = await Promise.race([
+      waitForImages(job.id, job.node),
+      new Promise<never>((_, reject) => dropped.set(job.id, reject)),
+    ])
     settled.add(job.id)
     const media = await Promise.all(refs.map((r) => toMedia(r, refKind(viewUrl(r)) === 'video' ? 'video' : job.kind)))
     const holder = editor.getShape(holderId)
@@ -219,22 +226,51 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
     report(holderId, { srcs: media.map((m) => m.src) })
   } catch (e) {
     const holder = editor.getShape(holderId)
+    // #408: a stopped card stays on the canvas as 「已停止」 (with any charge already taken), never a red error toast
+    const stopped = !!(holder && (jobOf(holder) as Job | undefined)?.stopping)
     const kept = holder ? await keepPartial(editor, holder, job).catch(() => 0) : 0
     const msg = errorText(e) + (kept ? ` ${t('jobs.partialKept', kept)}` : '')
     // #307: abort/stop must not leave an empty content frame — drop temp/quiet posters;
     // keep compose cards (prompt) with clear error copy, or last partial results.
     const interrupted = /interrupt/i.test(msg) || msg === t('jobs.interrupted')
     const composePrompt = holder?.type === GENERATOR && !!(holder as GeneratorShape).props.prompt?.trim()
-    if (holder && kept === 0 && (holder.meta.temp || holder.meta.quiet || (interrupted && !composePrompt))) {
+    if (stopped && holder) {
+      editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: null, quiet: false, temp: false } })
+    } else if (holder && kept === 0 && (holder.meta.temp || holder.meta.quiet || (interrupted && !composePrompt))) {
       editor.deleteShape(holderId)
     } else if (holder) {
       editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: null, quiet: false } })
     }
-    report(holderId, { srcs: [], error: msg })
-    if (holder) onError(msg)
+    report(holderId, { srcs: [], error: msg, ...(stopped ? { stopped: true } : {}) })
+    if (holder && !stopped) onError(msg)
   } finally {
     active.delete(job.id)
     settled.delete(job.id)
+    dropped.delete(job.id)
+  }
+}
+
+/** #408 (upstream 285fd93): Stop on a running generator card. WaveSpeed: the backend drops the task and answers with
+ * the quoted charge, which the card then shows; ComfyUI queue: deletes a pending prompt / interrupts a running one. */
+export async function stopJob(editor: Editor, holderId: TLShapeId) {
+  const holder = editor.getShape(holderId)
+  const job = holder && (jobOf(holder) as Job | undefined)
+  if (!holder || !job || job.stopping) return
+  const mark = (stopping: boolean) => {
+    const h = editor.getShape(holderId)
+    if (h) editor.updateShape({ id: holderId, type: h.type, meta: { ...h.meta, job: { ...job, stopping } as unknown as JsonValue } })
+  }
+  mark(true)
+  try {
+    if (await cancelPrompt(job.id)) {
+      // settle now from the backend's stopped record (it carries the charge), instead of waiting for the next poll
+      const hist = await promptHistory(job.id).catch(() => null)
+      const err = (hist?.status?.messages ?? []).find((m: [string, any]) => m[0] === 'execution_error')
+      dropped.get(job.id)?.(new Error(wsErrorText(err?.[1]?.ws_kind, err?.[1]?.ws_charged) ?? t('wsErr.stoppedNoAmount')))
+    }
+  } catch (e) {
+    mark(false)
+    throw e
   }
 }
 

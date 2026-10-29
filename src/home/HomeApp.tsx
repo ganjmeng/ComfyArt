@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { t } from '../i18n'
+import { openWsHistory } from '../wsErrors'
 import { newProject, openView, type HomeView } from '../projects'
 import { MemoryChooser, MemoryToast } from '../ui/MemoryChooser'
 import { Confirm } from '../ui/Confirm'
@@ -18,7 +19,7 @@ import { Schedules } from './Schedules'
 type View = HomeView | { missing: string }
 
 function RailBtn({
-  icon, label, on, onClick, testId, badge,
+  icon, label, on, onClick, testId, badge, tip,
 }: {
   icon: ReactNode
   label: string
@@ -26,12 +27,14 @@ function RailBtn({
   onClick: () => void
   testId?: string
   badge?: string
+  /** #408: tooltip when it should say more than the label (where a link goes) */
+  tip?: string
 }) {
   return (
     <button
       type="button"
       className="ca-rail__btn"
-      title={label}
+      title={tip ?? label}
       aria-label={label}
       data-on={on || undefined}
       data-testid={testId}
@@ -70,6 +73,7 @@ export function HomeApp({ view }: { view: View }) {
           badge={t('home.artiBeta')}
         />
         <div className="ca-rail__spacer" />
+        <RailBtn icon={Icons.exit} label={t('home.backToComfyUI')} tip={t('home.backToComfyUITip')} testId="rail-ws-history" onClick={openWsHistory} />
         <SettingsMenu trigger={({ open, toggle }) => <RailBtn icon={Icons.settings} label={t('settings.settings')} on={open} onClick={toggle} />} />
       </nav>
       <main className="ca-home__main">{main(view)}</main>

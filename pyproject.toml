@@ -1,7 +1,7 @@
 [project]
 name = "ComfyArt"
 description = "A free, open-source AI design canvas that runs fully on your own ComfyUI"
-version = "1.0.1"
+version = "1.1.0"
 license = {text = "MIT"}
 dependencies = ["pypdfium2"]
 

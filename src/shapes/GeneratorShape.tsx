@@ -7,11 +7,13 @@ import {
   T,
   type RecordProps,
   type TLShape,
+  useEditor,
   useValue,
 } from 'tldraw'
 
 import { isVideo } from '../models'
-import { resultsAtom } from '../jobs'
+import { errorText, resultsAtom, stopJob } from '../jobs'
+import { reportError } from '../ui/ErrorToasts'
 import { Icons } from '../ui/icons'
 import { t } from '../i18n'
 
@@ -114,17 +116,34 @@ export class GeneratorShapeUtil extends BaseBoxShapeUtil<GeneratorShape> {
 }
 
 function GeneratorCard({ shape }: { shape: GeneratorShape }) {
-  const job = shape.meta.job as { id: string } | undefined
-  const error = useValue('generator error', () => (job ? undefined : resultsAtom.get()[shape.id]?.error), [job?.id, shape.id])
+  const editor = useEditor()
+  const job = shape.meta.job as { id: string; stopping?: boolean } | undefined
+  const result = useValue('generator result', () => (job ? undefined : resultsAtom.get()[shape.id]), [job?.id, shape.id])
+  const error = result?.error
   return (
     <HTMLContainer
       className={job ? 'ca-gen-card ca-gen-frame' : 'ca-gen-card'}
       data-running={job ? true : undefined}
+      data-stopped={result?.stopped ? true : undefined}
       style={{ width: '100%', height: '100%' }}
     >
       <span className="ca-gen-card__icon">{isVideo(shape.props.workflow) ? Icons.video : Icons.image}</span>
-      {error && <div className="ca-gen-card__error" role="alert">{withTopUpLink(error)}</div>}
-      {job && <div className="ca-gen-frame__pill">{t('taskDetails.generating')}</div>}
+      {error && !result?.stopped && <div className="ca-gen-card__error" role="alert">{withTopUpLink(error)}</div>}
+      {error && result?.stopped && <div className="ca-gen-card__error" role="status" data-testid="gen-stopped">{error}</div>}
+      {job && <div className="ca-gen-frame__pill">{job.stopping ? t('jobs.stopping') : t('taskDetails.generating')}</div>}
+      {job && (
+        // #408 (upstream 285fd93): stop a running generation
+        <button
+          type="button"
+          className="ca-gen-card__stop"
+          data-testid="gen-stop"
+          title={t('jobs.stop')}
+          aria-label={t('jobs.stop')}
+          disabled={job.stopping}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => void stopJob(editor, shape.id).catch((e) => reportError(errorText(e)))}
+        >{Icons.stop}</button>
+      )}
     </HTMLContainer>
   )
 }

@@ -429,3 +429,8 @@ html[lang="en"] .ca-angle__chip { font-size: 11px; letter-spacing: -0.04em; }
 .ca-trim__handle { position: absolute; top: 0; bottom: 0; width: 12px; margin-left: -2px; border-radius: 8px 0 0 8px; background: var(--ca-strong); cursor: ew-resize; touch-action: none; }
 .ca-trim__handle[data-end] { margin-left: -10px; border-radius: 0 8px 8px 0; }
 .ca-trim__handle::after { content: ""; position: absolute; left: 5px; top: 16px; bottom: 16px; width: 2px; border-radius: 1px; background: var(--ca-float); }
+/* #408: ported from upstream 285fd93 */
+.ca-gen-card__stop { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 10px; border: 0; border-radius: 50%; background: var(--ca-float); color: var(--ca-text); box-shadow: var(--ca-shadow); cursor: pointer; pointer-events: all; }
+.ca-gen-card__stop:hover { color: var(--ca-error-text); }
+.ca-gen-card__stop:disabled { opacity: .5; cursor: default; color: var(--ca-text); }
+.ca-gen-card__stop svg { width: 100%; height: 100%; }

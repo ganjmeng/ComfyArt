@@ -1,11 +1,19 @@
 import { useState, type ReactNode } from 'react'
 import { useValue, type Editor } from 'tldraw'
 
+import { clearCache, unloadModels } from '../comfy'
 import { DOCS_SITE } from '../docsConfig'
+import { errorText } from '../jobs'
+import { loadCloudModels } from '../wavespeed'
 import { lang, setLang, t, type Lang } from '../i18n'
 import { pushEnabled, setPush } from '../notices'
 import { saveTheme, setTheme, themeAtom, THEMES } from '../theme'
 import { dockAtom, setDock } from './chatDock'
+import { reportError, reportSuccess } from './ErrorToasts'
+import { showMemoryToast } from '../memory'
+
+// #408: canvas -> tldraw success toast; home has no tldraw toast host, so use the existing home toast (ca-mem-toast).
+const done = (text: string, onCanvas: boolean) => (onCanvas ? reportSuccess(text) : showMemoryToast(text))
 import { Icons } from './icons'
 import { Popover } from './Popover'
 import { shortcutsAtom } from './Shortcuts'
@@ -45,6 +53,13 @@ export function SettingsMenu({ editor, trigger }: { editor?: Editor; trigger: (p
           <div className="ca-menu__sep" />
           <button type="button" className="ca-menu__item" onClick={() => { setOpen(false); keySettingsOpenAtom.set(true) }}>
             <span className="ca-icon">{Icons.settings}</span><span className="ca-menu__grow">{t('wsKey.menu')}</span>
+          </button>
+          {/* #408 (upstream 515d36e): both entries kept; no local models, so they act on the WaveSpeed lists and local caches */}
+          <button type="button" className="ca-menu__item" data-testid="settings-unload" onClick={() => { setOpen(false); void unloadModels().then((r) => { done(t('settings.unloadModelsDone', r.models, r.prices), !!editor); void loadCloudModels() }, (e) => reportError(errorText(e))) }}>
+            <span className="ca-icon">{Icons.erase}</span><span className="ca-menu__grow">{t('settings.unloadModels')}</span>
+          </button>
+          <button type="button" className="ca-menu__item" data-testid="settings-clear-cache" onClick={() => { setOpen(false); void clearCache().then((r) => done(t('settings.clearCacheDone', r.entries, r.thumbs), !!editor), (e) => reportError(errorText(e))) }}>
+            <span className="ca-icon">{Icons.trash}</span><span className="ca-menu__grow">{t('settings.clearCache')}</span>
           </button>
           {editor && (
             <>

@@ -220,15 +220,36 @@ async function inQueue(promptId: string): Promise<boolean> {
   return queued(q.queue_running, promptId) || queued(q.queue_pending, promptId)
 }
 
-export async function cancelPrompt(promptId: string) {
+/** #408 (upstream 285fd93): true when the job was stopped here (the card then settles as 「已停止」 right away). */
+export async function cancelPrompt(promptId: string): Promise<boolean> {
   if (promptId.startsWith(WS_ID)) {
-    await api(`/comfyart/wavespeed/cancel/${promptId.slice(WS_ID.length)}`, { method: 'POST' })
-    return
+    const res = await api(`/comfyart/wavespeed/cancel/${promptId.slice(WS_ID.length)}`, { method: 'POST' })
+    if (!res.ok) throw new Error(`cancel failed: ${res.status}`)
+    const body = await res.json().catch(() => ({}))
+    return !!body?.stopped
   }
   const q = await (await api('/queue')).json()
   const post = (path: string, body: unknown) => api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-  if (queued(q.queue_pending, promptId)) await post('/queue', { delete: [promptId] })
-  else if (queued(q.queue_running, promptId)) await post('/interrupt', { prompt_id: promptId })
+  if (queued(q.queue_pending, promptId)) {
+    await post('/queue', { delete: [promptId] })
+    return true
+  }
+  if (queued(q.queue_running, promptId)) await post('/interrupt', { prompt_id: promptId })
+  return false
+}
+
+/** #408 (upstream 515d36e 「卸载模型」): no local models; drops the loaded WaveSpeed model list and price table. */
+export async function unloadModels(): Promise<{ models: number; prices: number }> {
+  const res = await api('/comfyart/wavespeed/unload', { method: 'POST' })
+  if (!res.ok) throw new Error(`unload failed: ${res.status}`)
+  return res.json()
+}
+
+/** #408 (upstream 515d36e 「清缓存」): local generation cache and thumbnails. */
+export async function clearCache(): Promise<{ entries: number; thumbs: number }> {
+  const res = await api('/comfyart/cache/clear', { method: 'POST' })
+  if (!res.ok) throw new Error(`clear cache failed: ${res.status}`)
+  return res.json()
 }
 
 const wakers = new Map<string, Set<() => void>>()
