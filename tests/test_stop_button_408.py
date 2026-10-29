@@ -28,6 +28,8 @@ def test_stop_ui_and_locales_present():
     assert "dropped: true" in comfy  # WaveSpeed cancel always drops the waiter
     css = (ROOT / "src/styles/canvas.css").read_text()
     assert ".ca-gen-card__stop" in css
+    assert "color: var(--ca-text)" in css.split(".ca-gen-card__stop")[1].split(".ca-gen-card__stop svg")[0]
+    assert "var(--ca-danger)" not in css.split(".ca-gen-card__stop")[1].split(".ca-gen-card__stop svg")[0]
     icons = (ROOT / "src/ui/icons.tsx").read_text()
     assert "stop:" in icons
     zh = json.loads((ROOT / "src/locales/zh.json").read_text())

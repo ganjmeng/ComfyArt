@@ -56,6 +56,8 @@ const placers: Record<string, Placer> = {}
 
 export interface JobResult { srcs: string[]; error?: string }
 export const resultsAtom = atom<Record<string, JobResult>>('job results', {})
+// #282/#408: e2e tip shoots set the card banner without a live waiter
+if (typeof window !== 'undefined') (window as unknown as { __caResultsAtom?: typeof resultsAtom }).__caResultsAtom = resultsAtom
 
 /** Resolves when queuePrompt has passed (or the user declined) the cost confirm. #127 */
 type SubmitOutcome = 'ok' | 'declined' | 'error'
