@@ -344,6 +344,7 @@
   "chatMessage.thinking": "思考中…",
   "chatMessage.thought": "思考完成",
   "chatMessage.memoryUpdated": "记忆已更新",
+  "chatMessage.memoryUpdating": "记忆更新中",
   "chatMessage.memoryRetrieved": "记忆已读取",
   "chatMessage.thumbsDown": "点踩",
   "chatMessage.thumbsUp": "点赞",

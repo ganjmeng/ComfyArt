@@ -903,6 +903,7 @@
 .ca-memory .ca-arti-mem__row { border: 1px solid var(--ca-border); }
 .ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__text, .ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__label { color: var(--ca-muted); opacity: .6; }
 .ca-memory__saving { display: inline-flex; align-items: center; gap: 8px; cursor: default; }
+/* #437: dialog bottom pill saving state (spinner + 记忆更新中). Size/type pending designer measure; keep hook. */
 .ca-memory__spin { width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: ca-spin .8s linear infinite; }
 .ca-memory__skeleton { display: flex; flex-direction: column; gap: 22px; }
 .ca-memory__skgroup { display: flex; flex-direction: column; gap: 8px; }
@@ -998,7 +999,7 @@
   display: block; top: calc(var(--ca-process-ico) + 8px); bottom: auto; height: 8px;
 }
 
-/* #435/#441: memory rows (记忆已读取 / 记忆已更新 ›) per the reference DOM values (#430), on #442's flex rows:
+/* #435/#441/#437: memory rows (记忆已读取 / 记忆更新中 / 记忆已更新 ›) per the reference DOM values (#430), on #442's flex rows:
    16px thin-outline icon in the text colour, 6px icon-to-text and text-to-› gap, 14px/400 on a 20px line,
    rgba(0,0,0,.55) (dark: white .55), default text colour on hover; 20px rows + the 8px steps gap;
    8px down to the reply from the parent gap (no margin on the rows). The #442 group stub (--ca-rail, 8px)

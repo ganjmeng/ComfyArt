@@ -84,3 +84,111 @@ async def test_memory_rows_computed_441(app_url, fake_tools, lang, theme, ink): 
         hov = await pg.locator(".ca-process__row[data-kind='memory_updated'] .ca-process__label").last.evaluate("e=>getComputedStyle(e).color")
         assert hov != ink  # default text colour on hover
         await browser.close()
+
+
+@pytest.mark.parametrize("lang,theme,ink,labels", [
+    ("zh", "light", "rgba(0, 0, 0, 0.55)", ("记忆已读取", "记忆已更新", "记忆更新中")),
+    ("en", "dark", "rgba(255, 255, 255, 0.55)", ("Memory retrieved", "Memory updated", "Memory updating")),
+])
+async def test_memory_updating_and_three_rows_437(app_url, fake_tools, lang, theme, ink, labels):  # noqa: F811
+    """#437: live memory add → 记忆更新中 (no ›); with a prior update in the turn, three memory rows + stubs/`--ca-rail`."""
+    from ComfyArt.api import chat_store
+    async with pw.async_playwright() as p:
+        browser, pg = await _page(p, app_url, lang, theme)
+        user = await pg.evaluate("async()=>(await (await fetch('/api/comfyart/bot/status')).json()).user")
+        proj = await pg.evaluate("()=>{for (const e of performance.getEntriesByType('resource')){const m=e.name.match(/bot\\/chats\\?project=([^&]+)/); if(m) return decodeURIComponent(m[1])} return null}")
+        assert proj
+        c = chat_store.create_chat(user=user, project=proj, provider="local-llm", title="m437")
+        um = chat_store.create_message(chat_id=c["id"], role="user", blocks=[{"type": "text", "text": "remember"}])
+        # streaming: prior update done + second add in flight → retrieved, updated, updating
+        chat_store.create_message(
+            chat_id=c["id"], role="assistant", parent_id=um["id"], status="streaming",
+            blocks=[
+                {"type": "text", "text": "ok"},
+                _use("c1"), _res("c1"),
+                {"type": "memory_updated", "memory_ids": ["m1"], "texts": ["A"],
+                 "tool_id": "c1", "tool_ids": ["c1"], "updated_ids": ["m1"], "count": 1},
+                _use("c2"),  # in flight — no result yet
+            ],
+        )
+        await pg.reload()
+        await pg.locator(".ca-split__chev").first.click(timeout=8000)
+        await pg.locator(".ca-history__item").first.click(timeout=8000)
+        await pg.locator("[data-testid=memory-updating-row]").wait_for(timeout=10000)
+        await pg.mouse.move(5, 790)
+        await pg.wait_for_timeout(300)
+        kinds = await pg.locator(".ca-process__row[data-kind^='memory_']").evaluate_all("els => els.map(e => e.dataset.kind)")
+        texts = await pg.locator(".ca-process__row[data-kind^='memory_'] .ca-process__label").evaluate_all(
+            "els => els.map(e => e.childNodes[0] && e.childNodes[0].textContent ? e.childNodes[0].textContent.trim() : e.textContent.trim())"
+        )
+        assert kinds == ["memory_retrieved", "memory_updated", "memory_updating"]
+        assert texts == list(labels)
+        assert await pg.locator("[data-testid=memory-updated-chev]").count() == 1  # › only on updated
+        assert await pg.locator("[data-testid=memory-updating-row] .ca-process__memchev").count() == 0
+        m = await pg.evaluate(_MEASURE)
+        assert len(m["rows"]) == 3
+        for r in m["rows"]:
+            assert r["ico"] == [16, 16, "none", ink, "1.5px", "round", "round", ink]
+            assert r["font"] == ["14px", "20px", "400", ink]
+            assert r["mt"] == "0px" and r["mb"] == "0px"
+        assert m["rows"][0]["chev"] is None and m["rows"][2]["chev"] is None
+        assert m["rows"][1]["chev"] is not None and m["rows"][1]["chev"][:2] == [16, 16]
+        # stubs between consecutive memory icons (12px gap, 8px stub, --ca-rail)
+        for i in range(2):
+            a = await pg.locator(".ca-process__row[data-kind^='memory_']").nth(i).locator(".ca-process__icon svg").bounding_box()
+            b = await pg.locator(".ca-process__row[data-kind^='memory_']").nth(i + 1).locator(".ca-process__icon svg").bounding_box()
+            st = await pg.locator(".ca-process__row[data-kind^='memory_']").nth(i).locator("[data-testid=process-rail]").evaluate(
+                "e => { const c = getComputedStyle(e), r = e.getBoundingClientRect(); return { d: c.display, h: r.height, w: r.width, bg: c.backgroundColor, t: r.top, b: r.bottom } }"
+            )
+            assert st["d"] == "block" and st["w"] == 1 and st["h"] == 8
+            assert st["bg"] == ("rgba(0, 0, 0, 0.1)" if theme == "light" else "rgba(255, 255, 255, 0.12)")
+            assert abs((b["y"] - (a["y"] + a["height"])) - 12) <= 1
+            assert abs(st["t"] - (a["y"] + a["height"]) - 2) <= 1
+            assert abs(b["y"] - st["b"] - 2) <= 1
+        assert m["lastRail"] == "none"
+
+        await browser.close()
+
+
+@pytest.mark.parametrize("lang,label", [("zh", "记忆更新中"), ("en", "Memory updating")])
+async def test_memory_updating_becomes_updated_437(app_url, fake_tools, lang, label):  # noqa: F811
+    """#437: while the write runs → 记忆更新中; after memory_updated lands → 记忆已读取 + 记忆已更新 › (no updating)."""
+    from ComfyArt.api import chat_store
+    async with pw.async_playwright() as p:
+        browser, pg = await _page(p, app_url, lang, "light")
+        user = await pg.evaluate("async()=>(await (await fetch('/api/comfyart/bot/status')).json()).user")
+        proj = await pg.evaluate(r"()=>{for (const e of performance.getEntriesByType('resource')){const m=e.name.match(/bot\/chats\?project=([^&]+)/); if(m) return decodeURIComponent(m[1])} return null}")
+        assert proj
+        c = chat_store.create_chat(user=user, project=proj, provider="local-llm", title="m437t")
+        um = chat_store.create_message(chat_id=c["id"], role="user", blocks=[{"type": "text", "text": "x"}])
+        am = chat_store.create_message(
+            chat_id=c["id"], role="assistant", parent_id=um["id"], status="streaming",
+            blocks=[{"type": "text", "text": "…"}, _use("c1")],
+        )
+        await pg.reload()
+        await pg.locator(".ca-split__chev").first.click(timeout=8000)
+        await pg.locator(".ca-history__item").first.click(timeout=8000)
+        row = pg.locator("[data-testid=memory-updating-row]")
+        await row.wait_for(timeout=10000)
+        assert (await row.locator(".ca-process__label").inner_text()).strip() == label
+        assert await row.locator(".ca-process__memchev").count() == 0
+        assert await pg.locator("[data-testid=memory-updated-row]").count() == 0
+
+        chat_store.update_message(
+            c["id"], am["id"], status="done",
+            blocks=[
+                {"type": "text", "text": "…"}, _use("c1"), _res("c1"),
+                {"type": "memory_updated", "memory_ids": ["m1"], "texts": ["A"],
+                 "tool_id": "c1", "tool_ids": ["c1"], "updated_ids": ["m1"], "count": 1},
+                {"type": "text", "text": "done"},
+            ],
+        )
+        await pg.reload()
+        await pg.locator(".ca-split__chev").first.click(timeout=8000)
+        await pg.locator(".ca-history__item").first.click(timeout=8000)
+        await pg.locator("[data-testid=memory-updated-row]").wait_for(timeout=10000)
+        assert await pg.locator("[data-testid=memory-updating-row]").count() == 0
+        kinds = await pg.locator(".ca-process__row[data-kind^='memory_']").evaluate_all("els => els.map(e => e.dataset.kind)")
+        assert kinds == ["memory_retrieved", "memory_updated"]
+        assert await pg.locator("[data-testid=memory-updated-chev]").count() == 1
+        await browser.close()

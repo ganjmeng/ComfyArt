@@ -25,7 +25,7 @@ type ProcessKind =
   | 'thought' | 'outputting' | 'skill' | 'skill_file_read' | 'search' | 'search_pages'
   | 'image' | 'video'
   | 'code' | 'code_generated' | 'code_updated' | 'design_validated' | 'preview_artifact'
-  | 'memory_retrieved' | 'memory_updated'
+  | 'memory_retrieved' | 'memory_updating' | 'memory_updated'
   | 'tool'
 
 const VIDEO_TOOLS = new Set(['generate_video', 'animate_image', 'extend_video', 'upscale_video', 'remove_video_background'])
@@ -56,8 +56,9 @@ const PROCESS_ICONS: Record<ProcessKind, ReactNode> = {
   code_updated: Icons.filePenLine,
   design_validated: Icons.listChecks,
   preview_artifact: Icons.sparkles,
-  // #435: both memory rows share the in-house memoryHead icon
+  // #435/#437: memory rows share the in-house memoryHead icon
   memory_retrieved: Icons.memoryHead,
+  memory_updating: Icons.memoryHead,
   memory_updated: Icons.memoryHead,
   tool: Icons.agent,
 }
@@ -166,6 +167,7 @@ function processLabel(
   if (kind === 'design_validated') return t('chatMessage.designValidated')
   if (kind === 'preview_artifact') return t('chatMessage.previewArtifact')
   if (kind === 'memory_retrieved') return t('chatMessage.memoryRetrieved')
+  if (kind === 'memory_updating') return t('chatMessage.memoryUpdating')
   if (kind === 'memory_updated') return t('chatMessage.memoryUpdated')
   return opts?.fallback || t('chatMessage.inProgress')
 }
@@ -726,6 +728,8 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
       <div className="ca-process__steps">
         {steps.map((s) => {
           const isMemory = s.kind === 'memory_updated'
+          const memKind = s.kind === 'memory_retrieved' || s.kind === 'memory_updating' || s.kind === 'memory_updated'
+          const shine = s.live && !memKind
           // #382 fix: memory row uses the same row structure as the thought row (one rowbtn, same classes)
           const canOpen = (s.kind === 'thought' && !!s.text?.trim()) || (isMemory && !!s.memoryIds?.length)
           const open = openKey === s.key
@@ -741,7 +745,7 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
                   <span className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline">{s.text.trim().split('\n').at(-1)}</span>
                 </span>
               ) : (
-                <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>
+                <span className={shine ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>
                   {s.favicon && <Favicon src={s.favicon} />}
                   {s.label}
                   {isMemory && <span className="ca-process__memchev ca-icon" data-testid="memory-updated-chev">{Icons.memoryChev}</span>}
@@ -764,7 +768,7 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
           // #442 v6: a display:contents group so the card is a sibling of its 24px row, at the icon x
           return (
             <div key={s.key} className="ca-process__group">
-            <div className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-testid={isMemory ? 'memory-updated-row' : s.kind === 'memory_retrieved' ? 'memory-retrieved-row' : undefined}>
+            <div className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-testid={isMemory ? 'memory-updated-row' : s.kind === 'memory_retrieved' ? 'memory-retrieved-row' : s.kind === 'memory_updating' ? 'memory-updating-row' : undefined}>
               {canOpen ? (
                 <button
                   type="button"
@@ -934,7 +938,26 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     && (memCalls.has(b.id) || memAddIds.has(b.id))
   let planShown = false
   m.blocks.forEach((b, i) => {
-    if (hideMemCall(b)) return
+    if (hideMemCall(b)) {
+      // #437: memory write in flight → 记忆更新中 (no ›); becomes 记忆已更新 › when memory_updated lands
+      if (
+        !done
+        && b.type === 'tool_use'
+        && (b.input as { action?: string } | undefined)?.action === 'add'
+        && !!b.id
+        && !memCalls.has(b.id)
+        && !resultOf(b, i)
+      ) {
+        flush()
+        proc.push({
+          key: `p${i}-updating`,
+          kind: 'memory_updating',
+          label: processLabel('memory_updating', true),
+          live: true,
+        })
+      }
+      return
+    }
     // #437: a finished turn has no 等待结果 row; model-name row → result images → text
     if (done && b.type === 'tool_use' && toolName(b.name) === 'wait_generation') return
     if (b.type === 'memory_updated' && b !== firstMem) return
