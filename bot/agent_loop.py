@@ -321,13 +321,16 @@ CARD_COPY = {
     "user_stop:quote_declined": {"zh": ("已取消", "报价没有确认，不会扣费；已保留之前生成的 {n} 张", "继续", None),
                                  "en": ("Cancelled", "Quote not confirmed, so no charge; kept the {n} images generated earlier",
                                         "Continue", None)},
-    "awaiting_confirm:not_approved": {"zh": ("等待确认", "需要确认才能开始，未扣费", "继续", None),
-                                      "en": ("Awaiting confirmation", "Needs your OK to start; nothing charged", "Continue", None)},
+    "awaiting_confirm:not_approved": {"zh": ("等待确认未通过", "需要确认才能开始，未扣费", "继续", None),
+                                      "en": ("Confirmation not approved", "Needs your OK to start; nothing charged", "Continue", None)},
     "error:network": {"zh": ("网络断开了", "已保留生成的 {n} 张", "重试", None),
                       "en": ("Network disconnected", "Kept the {n} already generated", "Retry", None)},
     "error": {"zh": ("出错了", "{reason}", "重试", None),
               "en": ("Something went wrong", "{reason}", "Retry", None)},
 }
+# #418: label for a card still WAITING on the user (pending, not a stop). Must differ from the
+# awaiting_confirm:not_approved stop title so a pending card and an unapproved one never read the same.
+PENDING_CONFIRM_LABEL = {"zh": "等待确认", "en": "Awaiting confirmation"}
 # primary button action: continue the run from its checkpoint | rephrase (focus the composer) | retry
 _PRIMARY_ACTION = {"stuck": "rephrase", "error": "retry"}
 

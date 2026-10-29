@@ -124,3 +124,12 @@ def test_await_ask_wait_forever_has_no_timeout():
     import inspect
     src = inspect.getsource(bot_tools._await_ask)
     assert "wait_forever" in src
+
+
+def test_not_approved_label_distinct_from_pending():
+    from ComfyArt.bot.agent_loop import CARD_COPY, PENDING_CONFIRM_LABEL
+    na = CARD_COPY["awaiting_confirm:not_approved"]
+    assert na["zh"][0] == "等待确认未通过" and na["en"][0] == "Confirmation not approved"
+    assert PENDING_CONFIRM_LABEL == {"zh": "等待确认", "en": "Awaiting confirmation"}
+    for lang in ("zh", "en"):
+        assert na[lang][0] != PENDING_CONFIRM_LABEL[lang]
