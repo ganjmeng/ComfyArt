@@ -81,6 +81,23 @@ async def test_stop_in_race_window_counts_sent_request(monkeypatch, store):
     assert card(ev)["submitted"] == 1
 
 
+async def test_stop_during_llm_call_is_user_stop_not_network_drop(monkeypatch, store):
+    """stop() closes the session; the in-flight LLM call then dies with ServerDisconnectedError (what aiohttp really
+    raises). That must end as the user's stop (#391 card + charge note), not the 网络断开了/Retry card."""
+    import aiohttp
+    h = TurnHandle()
+
+    def script(m, n):
+        if n == 0:
+            return calls(_gen(0))
+        h.stop_requested = True
+        return aiohttp.ServerDisconnectedError()
+    r = Rig(monkeypatch, script, store=store, prices={"generate_image": 0.01})
+    res, ev = await r.send("画一张猫", handle=h)
+    assert res.aborted and stop_of(res)["reason"] == "user_stop"
+    assert card(ev)["submitted"] == 1
+
+
 def test_panel_stop_ui_has_no_label_or_tooltip_and_fades():
     """Final ruling: no 已停止/已终止 label, no tooltip on the stop chip; partial output greys ~1.5s then returns."""
     from pathlib import Path

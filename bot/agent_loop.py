@@ -814,6 +814,10 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         return TurnResult(usage=usage, error="this run was taken over by another continue request",
                           run={"run_id": ctx.run_id, "status": "lease_lost"})
     except (aiohttp.ClientError, ConnectionError, OSError) as e:
+        if handle.stop_requested:
+            # #419: stop() closes the session, so the in-flight call dies with ServerDisconnectedError;
+            # that is the user's stop (#391 card + charge note), not a network drop
+            return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
         # network drop: keep the run resumable (paused at its last checkpoint) instead of leaving it "running"
         _log.warning("[ComfyArt/agent] network error in %s: %s", ctx.run_id, e)
         msg = ("网络中断，进度已保存，可以重试。" if ctx.lang == "zh" else "Network dropped; progress saved, you can retry.")
