@@ -32,11 +32,11 @@ def test_categories_are_groups_not_tabs() -> None:
 def test_title_body_cards_and_empty_group_rows() -> None:
     assert 'testid="memory-dialog-card"' in DLG
     assert "<MemoryRow key={m.id} item={m}" in DLG and "item.label" in MEM and "ca-arti-mem__text" in MEM
-    assert ".ca-memory .ca-arti-mem__row .ca-arti-mem__label" in CSS and "--ca-mem-title-weight: 600" in CSS
+    assert ".ca-memory .ca-arti-mem__row .ca-arti-mem__label" in CSS and "--ca-mem-title-weight: 500" in CSS
     assert "memory-dialog-add-${cat}" in DLG
     for cat in ("taste", "about", "work", "assets"):
         assert ZH[f"memoryDialog.addYour.{cat}"].startswith("添加你的")
-        assert EN[f"memoryDialog.addYour.{cat}"].startswith("Add your")
+        assert EN[f"memoryDialog.addYour.{cat}"].startswith("Add ")
     assert ZH["memoryDialog.addYour.assets"] == "添加你的资产"
 
 

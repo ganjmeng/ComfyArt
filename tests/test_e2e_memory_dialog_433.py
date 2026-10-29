@@ -19,7 +19,7 @@ TEXT = {
     "zh": {"menu": "记忆", "groups": ["审美偏好", "基础信息", "协作方式", "常用资产"], "pill": "通过对话修改记忆",
            "empty": ["Oops.", "Arti 还不认识你"], "add": "添加你的基础信息", "del": "删除此记忆？", "menuitems": ["更正记忆", "删除"], "edited": "你偏好冷色调，品牌主色改为蓝色。"},
     "en": {"menu": "Memory", "groups": None, "pill": "Edit memory via chat",
-           "empty": ["Oops.", "Arti doesn't know you yet"], "add": "Add your basic info", "del": "Delete this memory?", "menuitems": None, "edited": "You prefer cool tones; the brand colour is now blue."},
+           "empty": ["Oops.", "Arti doesn't know you yet"], "add": "Add your background", "del": "Delete this memory?", "menuitems": None, "edited": "You prefer cool tones; the brand colour is now blue."},
 }
 
 
@@ -77,7 +77,7 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         assert ys == sorted(ys) and len(set(ys)) == 4  # stacked vertically
         # title + body card
         card = dlg.locator("[data-testid=memory-dialog-card]").first
-        assert int(await card.locator(".ca-arti-mem__label").evaluate("e => getComputedStyle(e).fontWeight")) >= 600
+        assert int(await card.locator(".ca-arti-mem__label").evaluate("e => getComputedStyle(e).fontWeight")) == 500
         assert await card.evaluate("e => getComputedStyle(e).borderTopStyle") == "solid"
         assert tx["add"] in await dlg.locator("[data-testid=memory-dialog-add-about]").inner_text()
         assert await dlg.locator("[data-testid=memory-dialog-add-about]").evaluate("e => getComputedStyle(e).borderTopStyle") == "dashed"
