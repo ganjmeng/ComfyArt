@@ -208,7 +208,7 @@ async def _run(monkeypatch, responses, *, lang="zh", quote=None, confirm="start"
         quoted.append(steps)
         return quote
 
-    async def fake_confirm(spec, turn, handle):
+    async def fake_confirm(spec, turn, handle, **_kw):
         confirms.append(spec)
         return confirm
 

@@ -30,6 +30,7 @@ class _TurnState:
         self.last_persist = 0.0
         self.tool_started: dict[str, float] = {}
         self.run_budget: dict = {}
+        self.awaiting = ""  # #418: "confirm" while a quote card waits for the user
 
 
 ACTIVE_TURNS: dict[str, _TurnState] = {}

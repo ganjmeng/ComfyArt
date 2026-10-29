@@ -39,6 +39,7 @@ class StopReason(str, Enum):
     STUCK = "stuck"
     HARD_CAP = "hard_cap"
     USER_STOP = "user_stop"
+    AWAITING_CONFIRM = "awaiting_confirm"  # #418: a confirm card nobody approved (unattended)
     ERROR = "error"
 
 
@@ -48,6 +49,7 @@ SUB_REASONS: dict[StopReason, frozenset[str]] = {
     StopReason.STUCK: frozenset({"no_progress", "repeat", "tool_error", "readonly_limit", "self_check_failed"}),
     StopReason.HARD_CAP: frozenset({""}),
     StopReason.USER_STOP: frozenset({"", "quote_declined"}),
+    StopReason.AWAITING_CONFIRM: frozenset({"not_approved"}),
     StopReason.ERROR: frozenset({"llm_retry_exhausted", "tool", "network"}),
 }
 BUDGET_DIMENSIONS = ("tokens", "credits", "time")

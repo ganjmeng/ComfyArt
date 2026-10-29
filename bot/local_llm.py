@@ -1284,20 +1284,31 @@ class LocalLlmProvider(AgentProvider):
         return await build_quote(steps, lang, threshold=self._threshold(),
                                  pricer=self._price_one, models_for=self._models_for)
 
-    async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle) -> str:
-        """'start' or 'cancel'. No live turn to ask, or a dismiss, cancels (nothing is charged)."""
+    async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle, *,
+                            run=None, messages: Optional[list] = None) -> str:
+        """'start', 'cancel' (the user's Cancel / dismiss) or 'unattended' (no live turn to ask: nothing
+        is charged and it is not a user stop). #418: an interactive card waits indefinitely, and the run
+        is checkpointed as 'awaiting_confirm' while it does."""
         if handle.stop_requested:
             return "cancel"
         from ComfyArt.api.bot_turns import ACTIVE_TURNS
         from ComfyArt.api.mcp_tools.bot_tools import _await_ask
         state = ACTIVE_TURNS.get(turn.chat_id)
         if state is None:
-            return "cancel"
+            return "unattended"
+        state.awaiting = "confirm"
+        if run is not None:
+            try:
+                run.checkpoint(messages, status="awaiting_confirm", detail="plan_quote")
+            except Exception:
+                _log.warning("[ComfyArt/local-llm] awaiting_confirm checkpoint failed", exc_info=True)
         try:
-            outcome = await _await_ask(turn.chat_id, state, spec)
+            outcome = await _await_ask(turn.chat_id, state, spec, wait_forever=True)
         except Exception:
             _log.exception("[ComfyArt/local-llm] plan confirm failed")
             return "cancel"
+        finally:
+            state.awaiting = ""
         selected = outcome.get("selected") or []
         if outcome.get("status") == "answered" and "start" in selected:
             return "start"
@@ -1472,14 +1483,14 @@ class LocalLlmProvider(AgentProvider):
                 elif not quote.ask:
                     gate.allow(quote, False)
                     decision = "start"
-                elif loop.get("run") is not None and loop["run"].mode == "unattended":
-                    # #391/#388: unattended runs never wait for a confirm: skip, charge nothing
-                    from .run_budget import Stop, StopReason
-                    loop["run"].pending_stop = Stop(StopReason.BUDGET, "paid_confirm_unattended_skipped",
-                                                    dimension="credits", step=loop["run"].budget.used.steps)
-                    decision = "cancel"
                 else:
-                    choice = await self._confirm_plan(quote.ask_spec(), turn, handle)
+                    from .run_budget import Stop, StopReason
+                    run = loop.get("run")
+                    unattended = run is not None and run.mode == "unattended"
+                    # #418 ruling: unattended (routine / headless / no live client) never waits: the
+                    # card is not approved -> zero paid calls, turn ends normally as awaiting_confirm:not_approved.
+                    choice = "unattended" if unattended else await self._confirm_plan(
+                        quote.ask_spec(), turn, handle, run=run, messages=messages)
                     if handle.stop_requested:
                         return TurnResult(aborted=True, usage=usage)
                     if choice == "start":
@@ -1488,6 +1499,12 @@ class LocalLlmProvider(AgentProvider):
                         decision = "start"
                     else:
                         decision = "cancel"
+                        if run is not None:
+                            step = run.budget.used.steps
+                            # only the user's own Cancel is a user stop
+                            run.pending_stop = (Stop(StopReason.USER_STOP, "quote_declined", step=step)
+                                                if choice == "cancel" else
+                                                Stop(StopReason.AWAITING_CONFIRM, "not_approved", step=step))
 
         lang_key = "zh" if lang == "zh" else "en"
         for i, it in enumerate(parsed):
@@ -1530,6 +1547,10 @@ class LocalLlmProvider(AgentProvider):
                 loop["gens"], run=run, turn=turn)
         if decision == "cancel":
             text = quote.cancel_text if quote else CANCEL_TEXT[lang_key]
+            run = loop.get("run")
+            if run is not None and run.pending_stop is not None and run.pending_stop.code == "awaiting_confirm:not_approved":
+                from .agent_loop import stop_text
+                text = stop_text(run.pending_stop, lang, done)  # not a cancel: nobody was there to confirm
             await emit(BotEvent(t="delta", text=text))
             return TurnResult(usage=usage)
         if tripped:
@@ -1768,6 +1789,8 @@ class LocalLlmProvider(AgentProvider):
                         stop = run_ctx.pending_stop
                         if stop.reason == StopReason.USER_STOP:
                             return TurnResult(aborted=True, usage=usage)
+                        if stop.reason == StopReason.AWAITING_CONFIRM:
+                            return TurnResult(usage=usage)  # #418: not approved ends normally
                         from .agent_loop import stop_text
                         return TurnResult(usage=usage, error=stop_text(stop, lang, done))
                 return TurnResult(error=_step_limit_summary(done, limit, lang),

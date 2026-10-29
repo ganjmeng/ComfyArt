@@ -14,7 +14,7 @@ def bot_turn_state():
 
 async def _await_ask(chat_id: str, state, spec: dict, *,
                      timeout: float | None = None,
-                     keep_pending_on_timeout: bool = False) -> dict:
+                     keep_pending_on_timeout: bool = False, wait_forever: bool = False) -> dict:
     ask = bot_asks.create_ask(chat_id, state.message_id, spec)
     block = {"type": "ask", "ask_id": ask.id, "status": "pending", **spec}
     state.blocks.append(block)
@@ -26,7 +26,7 @@ async def _await_ask(chat_id: str, state, spec: dict, *,
     try:
         outcome = await asyncio.wait_for(
             asyncio.shield(ask.future),
-            timeout=bot_asks.ASK_TIMEOUT_S if timeout is None else timeout)
+            timeout=None if wait_forever else bot_asks.ASK_TIMEOUT_S if timeout is None else timeout)
     except asyncio.TimeoutError:
         if keep_pending_on_timeout:
             bot_asks.abandon_ask(ask.id)

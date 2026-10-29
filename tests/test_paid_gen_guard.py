@@ -369,3 +369,20 @@ async def test_list_models_unknown_type_lists_valid_names(mock_catalog):
     for name in ("video", "image_to_video", "text_to_image", "animate_image", "generate_image"):
         assert name in msg
 
+
+
+@pytest.fixture(autouse=True)
+def _known_low_price(monkeypatch):
+    """#418: these cases are about caps / guards, not the confirm card. Pin every WaveSpeed price to a
+    known low quote (1 credit, under the default 50-credit line) so no test reaches the real price API
+    and an offline run is not 'unpriced' (which, by rule, always asks)."""
+    from ComfyArt.api import wavespeed as _ws
+
+    async def _low(model, inputs):
+        return 0.01, "quote"
+    monkeypatch.setattr(_ws, "_quote", _low)
+
+    async def _cheap_models(self, feature):
+        return [("known-low/model", 0.01)]
+    from ComfyArt.bot.local_llm import LocalLlmProvider as _P
+    monkeypatch.setattr(_P, "_models_for", _cheap_models)

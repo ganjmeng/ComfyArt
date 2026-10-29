@@ -55,6 +55,8 @@ _STOP_TEXT = {
                                         "nothing charged."},
     "user_stop:quote_declined": {"zh": "已取消：超出报价的付费调用未确认，未扣费。",
                                  "en": "Cancelled: the paid call over the quote was not confirmed; nothing charged."},
+    "awaiting_confirm:not_approved": {"zh": "这次生成需要确认，但没有人确认，未开始，未扣费。",
+                                      "en": "This generation needs a confirmation and none came, so it did not start; nothing charged."},
     "stuck": {"zh": "任务卡住了（{sub}），停在第 {step} 步，换思路重试后仍无进展，已停止，未继续扣费。",
                 "en": "The task is stuck ({sub}) at step {step}; still no progress after trying another "
                       "approach, so it stopped with no further charges."},
@@ -319,6 +321,8 @@ CARD_COPY = {
     "user_stop:quote_declined": {"zh": ("已取消", "报价没有确认，不会扣费；已保留之前生成的 {n} 张", "继续", None),
                                  "en": ("Cancelled", "Quote not confirmed, so no charge; kept the {n} images generated earlier",
                                         "Continue", None)},
+    "awaiting_confirm:not_approved": {"zh": ("等待确认", "需要确认才能开始，未扣费", "继续", None),
+                                      "en": ("Awaiting confirmation", "Needs your OK to start; nothing charged", "Continue", None)},
     "error:network": {"zh": ("网络断开了", "已保留生成的 {n} 张", "重试", None),
                       "en": ("Network disconnected", "Kept the {n} already generated", "Retry", None)},
     "error": {"zh": ("出错了", "{reason}", "重试", None),
@@ -637,6 +641,8 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             return TurnResult(usage=usage, run=run_info)
         if stop.reason == StopReason.USER_STOP:
             return TurnResult(usage=usage, aborted=True, run=run_info)
+        if stop.reason == StopReason.AWAITING_CONFIRM:  # #418: not approved ends normally, never a user stop
+            return TurnResult(usage=usage, run=run_info)
         if stop.code == "budget:paused":
             return TurnResult(usage=usage, run=run_info)
         text = extra_error or stop_text(stop, ctx.lang, ctx.done, ctx.budget.limits.hard_steps, check)
