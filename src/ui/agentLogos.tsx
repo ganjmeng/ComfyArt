@@ -14,7 +14,7 @@ import { Icons } from './icons'
 const LOGOS: Record<string, [string, string?]> = { 'claude-code': [claude], 'qwen-code': [qwen, qwenDark], opencode: [opencode, opencodeDark], codex: [codex], 'gemini-cli': [gemini], 'deepseek-harness': [deepseek] }
 
 export function AgentLogo({ id }: { id: string }) {
-  if (id === BUILTIN_AGENT) return <span className="ca-icon">{Icons.agent}</span>
+  if (id === BUILTIN_AGENT) return <span className="ca-icon ca-agentlogo--loomi">{Icons.agent}</span>
   const l = LOGOS[id]
   if (!l) return <span className="ca-icon ca-agentlogo--generic">{Icons.cube}</span>
   return (
