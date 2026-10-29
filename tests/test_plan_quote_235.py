@@ -307,7 +307,7 @@ async def test_one_paid_call_is_unchanged(monkeypatch):
         {"choices": [{"message": {"content": "done", "tool_calls": []}}]},
     ]
     result, events, mcp, quoted, confirms = await _run(monkeypatch, responses, quote=None)
-    assert quoted == [] and confirms == []
+    assert len(quoted) == 1 and confirms == []  # #418: quoted, but under the line -> no card
     assert mcp == [("generate_image", {"prompt": "a"})]
     assert result.error == "" and events[-1].text == "done"
 
@@ -321,7 +321,7 @@ async def test_a_plan_without_quote_plan_still_runs_each_step(monkeypatch):
         {"choices": [{"message": {"content": "done", "tool_calls": []}}]},
     ]
     result, events, mcp, quoted, confirms = await _run(monkeypatch, responses, quote=None)
-    assert quoted == [] and confirms == []
+    assert len(quoted) == 1 and confirms == []  # #418: quoted, under the line -> no card
     assert [n for n, _ in mcp] == ["update_plan", "generate_image"]
     assert result.error == "" and events[-1].text == "done"
 

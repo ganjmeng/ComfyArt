@@ -1454,7 +1454,10 @@ class LocalLlmProvider(AgentProvider):
         decision = ""
         quote = None
         quote_error = ""
-        if quote_item is not None or len(paid) >= 2:
+        # #418: a single paid call is quoted too (build_quote returns None under the confirm line,
+        # so cheap calls run as before). Not after a strict 开始: there the gate refuses unquoted calls.
+        single = quote_item is None and len(paid) == 1
+        if quote_item is not None or len(paid) >= 2 or (single and not gate.strict):
             steps = (quote_item["args"].get("steps") if quote_item is not None
                      else [self._implicit_step(it, lang) for it in paid])
             try:
@@ -1480,7 +1483,8 @@ class LocalLlmProvider(AgentProvider):
                     if handle.stop_requested:
                         return TurnResult(aborted=True, usage=usage)
                     if choice == "start":
-                        gate.allow(quote, True)
+                        if not single:  # #418: one OK covers this call only; don't arm the plan gate
+                            gate.allow(quote, True)
                         decision = "start"
                     else:
                         decision = "cancel"

@@ -32,6 +32,11 @@ _PROMPT = {
     "zh": "这个任务共 {n} 步，预计约 {total} 积分，超过了你设置的 {threshold} 积分确认线。确定开始吗？",
     "en": "This task has {n} steps and will cost about {total} credits, above your {threshold} credits confirm limit. Start?",
 }
+# #418: a single generation at/over the confirm line gets the same card, worded for one step.
+_PROMPT_ONE = {
+    "zh": "这次生成预计约 {total} 积分，达到了你设置的 {threshold} 积分确认线。确定开始吗？",
+    "en": "This generation will cost about {total} credits, at or above your {threshold} credits confirm limit. Start?",
+}
 _PRICE_KEYS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "quality")
 _DROP_ARG = ("fallback", "fallback_model", "model")
 _GENERIC = {"text-to-image", "image-to-image", "edit", "image-edit", "text-to-video", "image-to-video"}
@@ -253,10 +258,11 @@ def _needs_ask(total: float, threshold: float, force: bool) -> bool:
 
 async def build_quote(steps: object, lang: str, *, threshold: float,
                       pricer: Pricer, models_for: ModelsFor) -> Optional[Quote]:
-    """A quote for 2+ priced steps, or None when this is not a multi-step paid task."""
+    """A quote for 2+ priced steps. #418: a single step gets a quote only when it needs asking
+    (estimate >= threshold, threshold 0, or unpriced); otherwise None (no card, run as before)."""
     lang = _lang(lang)
     prepared = normalize_steps(steps)
-    if len(prepared) < 2:
+    if not prepared:
         return None
     lines: list[Line] = []
     for step in prepared:
@@ -277,12 +283,14 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         ))
     total = round(sum(ln.amount for ln in lines), 4)
     ask = _needs_ask(total, threshold, any(ln.unpriced for ln in lines))
+    if len(lines) == 1 and not ask:
+        return None
     # One estimated line makes the sum an estimate too: 「约 64 积分」 / "about 64 credits".
     from .run_budget import ui_credits
     total_text = credits_label(total, lang, approx=any(ln.approx for ln in lines))
     return Quote(
         lines=lines, total=total, n=len(lines), ask=ask, lang=lang,
-        prompt=_PROMPT[lang].format(
+        prompt=(_PROMPT_ONE if len(lines) == 1 else _PROMPT)[lang].format(
             n=len(lines), total=ui_credits(total), threshold=ui_credits(threshold),
         ),
         total_label=TOTAL_LABEL[lang], total_text=total_text,
