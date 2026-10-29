@@ -349,7 +349,6 @@
   "chatMessage.timedOut": "Timed out",
   "chatMessage.usedTools": "Ran {0} steps",
   "chatMessage.usingModel": "using {0}",
-  "chatMessage.webPages": "{0} web pages",
   "chatMessage.webSearchDone": "Web search results",
   "chatMessage.writeYourIdea": "Write your idea",
   "chatMessage.writingCode": "Writing code",

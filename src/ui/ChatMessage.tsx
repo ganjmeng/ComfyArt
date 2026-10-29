@@ -137,7 +137,8 @@ function processLabel(
   if (kind === 'skill') return t('chatMessage.skillReady')
   if (kind === 'skill_file_read') return live ? t('chatMessage.skillFileReadLive') : t('chatMessage.skillFileRead')
   if (kind === 'search') return live ? t('chatMessage.searchingWeb') : t('chatMessage.webSearchDone')
-  if (kind === 'search_pages') return t('chatMessage.webPages', opts?.pages ?? 0)
+  // #437: the done search row always reads 联网搜索结果 / Web search results, even when a page count exists
+  if (kind === 'search_pages') return t('chatMessage.webSearchDone')
   // #437: the generation row reads the model name itself (no 已生成图片/已生成视频 copy, #432 folded in)
   if (kind === 'image' || kind === 'video') {
     if (opts?.model) return opts.model
@@ -873,6 +874,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     else if (run.length) items.push(<Step key={run[0].i} editor={editor} use={run[0].use} result={run[0].result} thumbs={false} />)
     run = []
   }
+  let genAt = -1
   const flushProc = () => {
     if (!proc.length) return
     const onlyThought = proc.every((s) => s.kind === 'thought')
@@ -883,6 +885,8 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     } else {
       items.push(<ProcessTimeline key={`pt${proc[0].key}`} steps={proc} />)
     }
+    // #437: result images sit right under the rail that holds the generation (model-name) row
+    if (genAt < 0 && proc.some((s) => s.kind === 'image' || s.kind === 'video')) genAt = items.length
     proc = []
   }
   // #413: an in-loop memory add shows as the 记忆已更新 › row, not as a tool row
@@ -983,7 +987,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   }
   flushProc()
   flush()
-  if (outputs.length) items.push(<div key="results" className="ca-chat__thumbs ca-chat__results">{outputs.map((s) => <Thumb key={s} editor={editor} src={s} />)}</div>)
+  if (outputs.length) items.splice(genAt < 0 ? items.length : genAt, 0, <div key="results" className="ca-chat__thumbs ca-chat__results">{outputs.map((s) => <Thumb key={s} editor={editor} src={s} />)}</div>)
   // #360: under Done summary — thumbs only; NEVER a suggestion chip/pill row on media Done
   if (m.status === 'done' && isMediaDoneMessage(m)) {
     items.push(<DoneFeedback key="feedback" messageId={m.id} />)

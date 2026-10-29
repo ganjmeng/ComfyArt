@@ -45,3 +45,17 @@ def test_skill_and_search_rows() -> None:
 
 def test_no_tidy_memory_row() -> None:
     assert "整理记忆" not in json.dumps(ZH, ensure_ascii=False)
+
+
+def test_search_row_never_shows_count():
+    import pathlib
+    src = (pathlib.Path(__file__).resolve().parents[1] / "src/ui/ChatMessage.tsx").read_text()
+    assert "if (kind === 'search_pages') return t('chatMessage.webSearchDone')" in src
+    assert "t('chatMessage.webPages'" not in src
+
+
+def test_results_follow_generation_row():
+    import pathlib
+    src = (pathlib.Path(__file__).resolve().parents[1] / "src/ui/ChatMessage.tsx").read_text()
+    assert "genAt = items.length" in src
+    assert "items.splice(genAt < 0 ? items.length : genAt, 0," in src

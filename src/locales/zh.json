@@ -349,7 +349,6 @@
   "chatMessage.timedOut": "已超时",
   "chatMessage.usedTools": "执行了 {0} 个步骤",
   "chatMessage.usingModel": "using {0}",
-  "chatMessage.webPages": "{0} 个网页",
   "chatMessage.webSearchDone": "联网搜索结果",
   "chatMessage.writeYourIdea": "写下你的想法",
   "chatMessage.writingCode": "Writing code",
