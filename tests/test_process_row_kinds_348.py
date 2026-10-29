@@ -90,7 +90,7 @@ def test_outputting_wait_row() -> None:
 def test_search_pages_count() -> None:
     assert "searchResultCount" in CHAT
     assert "search_pages" in CHAT
-    assert "webPages" not in CHAT  # #437: search row always reads webSearchDone
+    assert "webPages" in CHAT
 
 
 def test_no_thought_collapse_rebuild() -> None:
@@ -110,6 +110,7 @@ def test_css_v34_lock_intact() -> None:
 def test_locale_must_keys_en_zh() -> None:
     for blob in (EN, ZH):
         assert "chatMessage.outputting" in blob
+        assert "chatMessage.webPages" in blob
         assert "chatMessage.skillFileRead" in blob
         assert "chatMessage.skillFileReadLive" in blob
         assert "chatMessage.writingCode" in blob
@@ -123,5 +124,5 @@ def test_locale_must_keys_en_zh() -> None:
     assert "输出中…" in ZH
     assert "Reading skill file…" in EN
     assert "正在读取技能文件…" in ZH
-    assert "Web search results" in EN
-    assert "联网搜索结果" in ZH
+    assert "{0} web pages" in EN
+    assert "{0} 个网页" in ZH

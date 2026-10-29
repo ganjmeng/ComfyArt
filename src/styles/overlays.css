@@ -946,3 +946,11 @@
 .ca-memory .ca-memory__sticky { margin-top: auto; }
 .ca-memory .ca-arti-mem__cta { min-width: 0; width: auto; height: 48px; padding: 0 16px; border-radius: 999px; background: rgb(44, 44, 44); color: #fff; font: 400 14px/22px var(--ca-font); }
 .ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__text, .ca-memory .ca-arti-mem__row[data-saving] .ca-arti-mem__label { color: var(--ca-muted); opacity: .6; } /* saving dim: unmeasured, unchanged */
+/* #437: web-search row — source favicon before the count, results card under the row */
+.ca-process__favicon { width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+.ca-process__row:has(.ca-process__card) { height: auto; }
+.ca-process__card {
+  margin: 8px 0 10px; padding: 12px 14px; border: 1px solid var(--ca-line, rgba(127,127,127,.25));
+  border-radius: 12px; font-size: 12px; color: var(--ca-text, inherit); background: var(--ca-float);
+  position: relative; z-index: 1; grid-column: 1 / -1; box-sizing: border-box;
+}

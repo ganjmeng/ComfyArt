@@ -82,6 +82,12 @@ function processAspectRatio(input?: Record<string, any>): string | undefined {
   return undefined
 }
 
+/** #437: favicon of the search source (first result's site), else the engine's own mark. */
+function searchFavicon(result?: BotBlock): string {
+  const host = (result?.text ?? '').match(/https?:\/\/([^/"\s\\]+)/)?.[1] ?? 'www.google.com'
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=32`
+}
+
 function searchResultCount(use: BotBlock, result?: BotBlock): number | undefined {
   const raw = use.input?.num_results ?? use.input?.count ?? use.input?.n ?? result?.detail?.count ?? result?.detail?.num_results
   if (typeof raw === 'number' && raw > 0) return raw
@@ -137,8 +143,8 @@ function processLabel(
   if (kind === 'skill') return t('chatMessage.skillReady')
   if (kind === 'skill_file_read') return live ? t('chatMessage.skillFileReadLive') : t('chatMessage.skillFileRead')
   if (kind === 'search') return live ? t('chatMessage.searchingWeb') : t('chatMessage.webSearchDone')
-  // #437: the done search row always reads 联网搜索结果 / Web search results, even when a page count exists
-  if (kind === 'search_pages') return t('chatMessage.webSearchDone')
+  // #437: the done search row keeps the page count (1 web page / N web pages); the card below it carries 联网搜索结果
+  if (kind === 'search_pages') return t((opts?.pages ?? 0) === 1 ? 'chatMessage.webPage' : 'chatMessage.webPages', opts?.pages ?? 0)
   // #437: the generation row reads the model name itself (no 已生成图片/已生成视频 copy, #432 folded in)
   if (kind === 'image' || kind === 'video') {
     if (opts?.model) return opts.model
@@ -689,6 +695,8 @@ type ProcessStep = {
   kind: ProcessKind
   label: string
   live: boolean
+  /** #437: the search source's real favicon, shown before the page count. */
+  favicon?: string
   text?: string
   /** CSS aspect-ratio when known from tool/job; chat hero defaults via tokens otherwise. */
   aspectRatio?: string
@@ -724,7 +732,10 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
                   <span className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline">{s.text.trim().split('\n').at(-1)}</span>
                 </span>
               ) : (
-                <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>{s.label}</span>
+                <span className={s.live ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>
+                  {s.favicon && <img className="ca-process__favicon" src={s.favicon} alt="" aria-hidden="true" />}
+                  {s.label}
+                </span>
               )}
             </>
           )
@@ -747,6 +758,7 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
                   {row}
                 </button>
               ) : row}
+              {s.kind === 'search_pages' && <div className="ca-process__card" data-testid="web-search-card">{t('chatMessage.webSearchDone')}</div>}
             </div>
           )
         })}
@@ -896,6 +908,8 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   let planShown = false
   m.blocks.forEach((b, i) => {
     if (hideMemCall(b)) return
+    // #437: a finished turn has no 等待结果 row; model-name row → result images → text
+    if (done && b.type === 'tool_use' && toolName(b.name) === 'wait_generation') return
     if (isPlan(b)) {
       if (planShown) return
       planShown = true
@@ -944,6 +958,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
           text: b.type === 'thinking' ? b.text : undefined,
           aspectRatio,
           memoryIds: b.type === 'memory_updated' ? (b.memory_ids ?? []) : undefined,
+          favicon: kindResolved === 'search_pages' ? searchFavicon(result) : undefined,
         })
         return
       }

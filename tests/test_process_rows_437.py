@@ -47,11 +47,26 @@ def test_no_tidy_memory_row() -> None:
     assert "整理记忆" not in json.dumps(ZH, ensure_ascii=False)
 
 
-def test_search_row_never_shows_count():
+def test_search_row_count_plural_favicon_and_card():
+    import json, pathlib
+    root = pathlib.Path(__file__).resolve().parents[1]
+    src = (root / "src/ui/ChatMessage.tsx").read_text()
+    en = json.loads((root / "src/locales/en.json").read_text())
+    zh = json.loads((root / "src/locales/zh.json").read_text())
+    assert "=== 1 ? 'chatMessage.webPage' : 'chatMessage.webPages'" in src
+    assert en["chatMessage.webPage"] == "{0} web page" and en["chatMessage.webPages"] == "{0} web pages"
+    assert zh["chatMessage.webPage"] == "{0} 个网页" == zh["chatMessage.webPages"]
+    # real favicon of the search source, not a drawn glyph; the globe icon stays
+    assert "s2/favicons?domain=" in src and "ca-process__favicon" in src
+    assert "search_pages: Icons.globe" in src
+    assert 'data-testid="web-search-card">{t(\'chatMessage.webSearchDone\')}' in src
+    assert en["chatMessage.webSearchDone"] == "Web search results" and zh["chatMessage.webSearchDone"] == "联网搜索结果"
+
+
+def test_no_wait_for_results_row_when_done():
     import pathlib
     src = (pathlib.Path(__file__).resolve().parents[1] / "src/ui/ChatMessage.tsx").read_text()
-    assert "if (kind === 'search_pages') return t('chatMessage.webSearchDone')" in src
-    assert "t('chatMessage.webPages'" not in src
+    assert "if (done && b.type === 'tool_use' && toolName(b.name) === 'wait_generation') return" in src
 
 
 def test_results_follow_generation_row():
