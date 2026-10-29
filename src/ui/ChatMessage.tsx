@@ -56,7 +56,7 @@ const PROCESS_ICONS: Record<ProcessKind, ReactNode> = {
   code_updated: Icons.filePenLine,
   design_validated: Icons.listChecks,
   preview_artifact: Icons.sparkles,
-  memory_updated: Icons.clock,
+  memory_updated: Icons.history,
   tool: Icons.agent,
 }
 
@@ -699,8 +699,9 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
       <div className="ca-process__steps">
         <div className="ca-process__spine" aria-hidden="true" />
         {steps.map((s) => {
-          const canOpen = s.kind === 'thought' && !!s.text?.trim()
           const isMemory = s.kind === 'memory_updated'
+          // #382 fix: memory row uses the same row structure as the thought row (one rowbtn, same classes)
+          const canOpen = (s.kind === 'thought' && !!s.text?.trim()) || (isMemory && !!s.memoryIds?.length)
           const open = openKey === s.key
           const row = (
             <>
@@ -722,13 +723,10 @@ function ProcessTimeline({ steps }: { steps: ProcessStep[] }) {
                 <button
                   type="button"
                   className="ca-process__rowbtn"
-                  onClick={() => setOpenKey(open ? null : s.key)}
-                  aria-expanded={open}
+                  onClick={isMemory ? onMemory : () => setOpenKey(open ? null : s.key)}
+                  aria-expanded={isMemory ? undefined : open}
+                  data-testid={isMemory ? 'memory-updated-open' : undefined}
                 >
-                  {row}
-                </button>
-              ) : isMemory ? (
-                <button type="button" className="ca-process__rowbtn ca-process__rowbtn--memory" onClick={onMemory} data-testid="memory-updated-open">
                   {row}
                 </button>
               ) : row}
