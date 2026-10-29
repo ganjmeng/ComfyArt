@@ -1439,5 +1439,10 @@
   "memoryDialog.minutesAgo": "{0} minutes ago",
   "memoryDialog.hoursAgo": "{0} h ago",
   "memoryDialog.daysAgo": "{0} d ago",
-  "memoryDialog.saving": "Updating memory"
+  "memoryDialog.saving": "Updating memory",
+  "memoryDialog.group.about": "About you",
+  "memoryDialog.group.taste": "Visual taste",
+  "memoryDialog.group.work": "How we work",
+  "memoryDialog.group.assets": "Reused assets",
+  "memoryDialog.chatCta": "Chat with Arti to edit memory"
 }

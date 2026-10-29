@@ -184,7 +184,7 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
                 const items = memory.filter((m) => (m.category ?? 'about') === cat)
                 return (
                   <section key={cat} className="ca-arti-mem__group" data-testid={`memory-dialog-group-${cat}`}>
-                    <h3 className="ca-arti-mem__grouptitle"><span className="ca-icon">{GROUP_ICONS[cat]}</span>{label(cat)}</h3>
+                    <h3 className="ca-arti-mem__grouptitle" data-testid="memory-dialog-grouptitle"><span className="ca-icon">{GROUP_ICONS[cat]}</span>{t(`memoryDialog.group.${cat}`)}</h3>
                     <div className="ca-arti-mem__list">
                       {items.map((m) => (
                         editing === m.id
@@ -214,7 +214,7 @@ export function MemoryDialog({ onError }: { onError: (msg: string) => void }) {
                 ? <ChatComposer onClose={() => setChatOpen(false)} />
                 : savingNow
                 ? <div className="ca-arti-mem__cta ca-memory__saving" role="status" data-testid="memory-dialog-saving"><span className="ca-memory__spin" />{t('memoryDialog.saving')}</div>
-                : <button type="button" className="ca-arti-mem__cta" data-testid="memory-dialog-chat-open" onClick={() => setChatOpen(true)}>{t('arti.memory.chatCta')}</button>}
+                : <button type="button" className="ca-arti-mem__cta" data-testid="memory-dialog-chat-open" onClick={() => setChatOpen(true)}>{t('memoryDialog.chatCta')}</button>}
             </div>
           )}
         </div>

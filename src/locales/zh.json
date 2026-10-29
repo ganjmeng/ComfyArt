@@ -1439,5 +1439,10 @@
   "memoryDialog.minutesAgo": "{0}分钟前",
   "memoryDialog.hoursAgo": "{0}小时前",
   "memoryDialog.daysAgo": "{0}天前",
-  "memoryDialog.saving": "记忆更新中"
+  "memoryDialog.saving": "记忆更新中",
+  "memoryDialog.group.about": "基础信息",
+  "memoryDialog.group.taste": "审美偏好",
+  "memoryDialog.group.work": "协作方式",
+  "memoryDialog.group.assets": "常用资产",
+  "memoryDialog.chatCta": "通过对话修改记忆"
 }

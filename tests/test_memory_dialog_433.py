@@ -42,8 +42,9 @@ def test_title_body_cards_and_empty_group_rows() -> None:
 
 def test_bottom_chat_pill() -> None:
     assert 'data-testid="memory-dialog-chat-open"' in DLG
-    assert "t('arti.memory.chatCta')" in DLG and "<ChatComposer" in DLG
-    assert ZH["arti.memory.chatCta"] == "通过对话修改记忆"
+    assert "t('memoryDialog.chatCta')" in DLG and "<ChatComposer" in DLG
+    assert ZH["memoryDialog.chatCta"] == "通过对话修改记忆" and EN["memoryDialog.chatCta"] == "Chat with Arti to edit memory"
+    assert [EN[f"memoryDialog.group.{c}"] for c in ("taste", "about", "work", "assets")] == ["Visual taste", "About you", "How we work", "Reused assets"]
     assert "export function ChatComposer(" in MEM
 
 

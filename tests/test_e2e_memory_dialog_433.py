@@ -18,7 +18,7 @@ MEM_EN = [{"id": "c1", "text": "You prefer warm tones; the brand colour is orang
 TEXT = {
     "zh": {"menu": "记忆", "groups": ["审美偏好", "基础信息", "协作方式", "常用资产"], "pill": "通过对话修改记忆",
            "empty": ["Oops.", "Arti 还不认识你"], "add": "添加你的基础信息", "del": "删除此记忆？", "menuitems": ["更正记忆", "删除"], "edited": "你偏好冷色调，品牌主色改为蓝色。"},
-    "en": {"menu": "Memory", "groups": None, "pill": "Edit memory via chat",
+    "en": {"menu": "Memory", "groups": ["Visual taste", "About you", "How we work", "Reused assets"], "pill": "Chat with Arti to edit memory",
            "empty": ["Oops.", "Arti doesn't know you yet"], "add": "Add your background", "del": "Delete this memory?", "menuitems": None, "edited": "You prefer cool tones; the brand colour is now blue."},
 }
 
@@ -79,6 +79,23 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         card = dlg.locator("[data-testid=memory-dialog-card]").first
         assert int(await card.locator(".ca-arti-mem__label").evaluate("e => getComputedStyle(e).fontWeight")) == 500
         assert await card.evaluate("e => getComputedStyle(e).borderTopStyle") == "solid"
+        # measured type: dialog title 18px/600, card title 500
+        head = pg.locator("[data-testid=memory-dialog-head]")
+        assert await head.evaluate("e => [getComputedStyle(e).fontSize, getComputedStyle(e).fontWeight]") == ["18px", "600"]
+        assert await card.locator(".ca-arti-mem__label").evaluate("e => getComputedStyle(e).fontSize + '/' + getComputedStyle(e).lineHeight") == "13px/22px"
+        # group title icons styled like the reference: 16px, 6px gap, 13px/400
+        gt = dlg.locator("[data-testid=memory-dialog-grouptitle]").first
+        assert await gt.evaluate("e => [getComputedStyle(e).fontSize, getComputedStyle(e).fontWeight, getComputedStyle(e).columnGap]") == ["13px", "400", "6px"]
+        assert (await gt.locator(".ca-icon").bounding_box())["width"] == 16
+        # add row 48px tall from padding; pill 144x48 (zh) and 32px from the dialog bottom
+        addb = await dlg.locator("[data-testid=memory-dialog-add-about]").bounding_box()
+        assert abs(addb["height"] - 48) < 0.6
+        pill = await dlg.locator("[data-testid=memory-dialog-chat-open]").bounding_box()
+        assert abs(pill["height"] - 48) < 0.6
+        if lang == "zh":
+            assert abs(pill["width"] - 144) < 0.6
+        body = await dlg.locator(".ca-rename__body").bounding_box()
+        assert abs((body["y"] + body["height"]) - (pill["y"] + pill["height"]) - 32) < 1.5
         assert tx["add"] in await dlg.locator("[data-testid=memory-dialog-add-about]").inner_text()
         assert await dlg.locator("[data-testid=memory-dialog-add-about]").evaluate("e => getComputedStyle(e).borderTopStyle") == "dashed"
         # product ruling: nothing highlighted, no undo
@@ -86,6 +103,23 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         await pg.mouse.move(1000, 620)
         await pg.wait_for_timeout(200)
         await shot(pg, "433-loaded", tag)
+        if OUT:  # dialog-only crop at 2x for the measurement comparison
+            c2 = await b.new_context(viewport={"width": 1024, "height": 640}, device_scale_factor=2, timezone_id="Asia/Shanghai")
+            await c2.add_cookies(await pg.context.cookies())
+            p2 = await c2.new_page()
+            await p2.add_init_script(f"localStorage.setItem('comfyart.lang','{lang}');localStorage.setItem('comfyart.theme','{theme}');localStorage.setItem('comfyart.e2e','1')")
+            await p2.goto(pg.url)
+            await p2.locator(".ca-composer__mode").wait_for(timeout=15000)
+            await p2.evaluate(SEED_JS, MEM if lang == "zh" else MEM_EN)
+            await p2.reload()
+            await p2.locator(".ca-composer__mode").wait_for(timeout=15000)
+            await p2.wait_for_timeout(800)
+            d2 = await open_dialog(p2, tx["menu"])
+            await d2.locator("[data-testid=memory-dialog-card]").first.wait_for(timeout=5000)
+            await p2.mouse.move(1000, 620)
+            await p2.wait_for_timeout(200)
+            await d2.screenshot(path=f"{OUT}/433-dialog2x-{tag}.png")
+            await c2.close()
 
         # #434: hover reveals edit + ··· menu (更正记忆 / 删除)
         acts = card.locator(".ca-arti-mem__actions")
