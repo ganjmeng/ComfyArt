@@ -117,9 +117,14 @@ function processKindOf(b: BotBlock, opts?: { result?: BotBlock; live?: boolean }
   return null
 }
 
-function withModelSuffix(label: string, live: boolean, model?: string): string {
-  if (!live || !model) return label
-  return `${label} ${t('chatMessage.usingModel', model)}`
+/**
+ * #437: a reasoning turn in progress reads 思考中 (one key, chatMessage.thinking) until the reference is
+ * measured on a memory-writing, tool-calling turn. Set to false to drop it: the row then reads 输出中….
+ */
+export const SHOW_THINKING_ROW = true
+
+function liveThoughtLabel(): string {
+  return SHOW_THINKING_ROW ? t('chatMessage.thinking') : t('chatMessage.outputting')
 }
 
 function processLabel(
@@ -127,19 +132,17 @@ function processLabel(
   live: boolean,
   opts?: { fallback?: string; model?: string; pages?: number },
 ): string {
-  if (kind === 'thought') return live ? t('chatMessage.thinking') : t('chatMessage.thought')
+  if (kind === 'thought') return live ? liveThoughtLabel() : t('chatMessage.thought')
   if (kind === 'outputting') return live ? t('chatMessage.outputting') : t('chatMessage.thought')
   if (kind === 'skill') return t('chatMessage.skillReady')
   if (kind === 'skill_file_read') return live ? t('chatMessage.skillFileReadLive') : t('chatMessage.skillFileRead')
   if (kind === 'search') return live ? t('chatMessage.searchingWeb') : t('chatMessage.webSearchDone')
   if (kind === 'search_pages') return t('chatMessage.webPages', opts?.pages ?? 0)
-  if (kind === 'image') {
-    const base = live ? t('chatMessage.generatingImages') : t('chatMessage.imagesGenerated')
-    return withModelSuffix(base, live, opts?.model)
-  }
-  if (kind === 'video') {
-    const base = live ? t('chatMessage.generatingVideo') : t('chatMessage.videoGenerated')
-    return withModelSuffix(base, live, opts?.model)
+  // #437: the generation row reads the model name itself (no 已生成图片/已生成视频 copy, #432 folded in)
+  if (kind === 'image' || kind === 'video') {
+    if (opts?.model) return opts.model
+    if (live) return t(kind === 'image' ? 'chatMessage.generatingImages' : 'chatMessage.generatingVideo')
+    return opts?.fallback || t('chatMessage.inProgress')
   }
   if (kind === 'code') return live ? t('chatMessage.writingCodeLive') : t('chatMessage.writingCode')
   if (kind === 'code_generated') return t('chatMessage.codeGenerated')
@@ -772,7 +775,7 @@ function Thought({ text, live }: { text: string; live: boolean }) {
     <div className="ca-chat__tool ca-chat__thought" data-live={live || undefined} data-open={open || undefined}>
       <button type="button" className="ca-chat__step" onClick={() => setOpen(!open)}>
         <span className="ca-chat__thinkicon"><span className="ca-icon">{Icons.think}</span></span>
-        <span className="ca-chat__thinklabel">{live ? t('chatMessage.thinking') : t('chatMessage.thought')}</span>
+        <span className="ca-chat__thinklabel">{live ? liveThoughtLabel() : t('chatMessage.thought')}</span>
         {!open && <span className="ca-chat__arg">{text.trim().split('\n').at(-1)}</span>}
         <span className="ca-chat__chev ca-icon">{Icons.chevron}</span>
       </button>
@@ -925,7 +928,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
         proc.push({
           key: `p${i}`,
           kind: kindResolved,
-          // #393 nit: a declined / refused paid step never reads 「已生成图片」
+          // #393 nit: a declined / refused paid step never reads as done
           label: (kindResolved === 'image' || kindResolved === 'video') && b.type === 'tool_use' && result && stepState(result) === 'cancelled'
             ? `${toolLabel(b.name)} · ${t('chatMessage.cancelled')}`
             : processLabel(kindResolved, stepLive, {

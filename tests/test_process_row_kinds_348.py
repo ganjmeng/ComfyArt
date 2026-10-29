@@ -67,8 +67,7 @@ def test_skill_live_status_shimmer_parity() -> None:
 
 def test_image_video_model_suffix_optional() -> None:
     assert "processModelName" in CHAT
-    assert "usingModel" in CHAT
-    assert "withModelSuffix" in CHAT
+    assert "opts?.model" in CHAT  # #437: model name is the row label
 
 
 def test_writing_code_family_mapping() -> None:
@@ -121,8 +120,6 @@ def test_locale_must_keys_en_zh() -> None:
         assert "chatMessage.designValidated" in blob
         assert "chatMessage.previewArtifact" in blob
         assert "chatMessage.usingModel" in blob
-        assert "chatMessage.imagesGenerated" in blob
-        assert "chatMessage.videoGenerated" in blob
     assert "Outputting…" in EN
     assert "输出中…" in ZH
     assert "Reading skill file…" in EN
