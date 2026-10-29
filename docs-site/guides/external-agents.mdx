@@ -3,7 +3,7 @@ title: "External agents"
 description: "Use Claude Code, Codex, Qwen Code or DeepSeek Harness installed on your computer to work on the canvas."
 ---
 
-Besides the built-in ComfyArt Agent, ComfyArt can drive an agent you have already installed on your computer. The same steps appear in **Agent Settings → External agents**, one card per tool.
+Besides the built-in Loomi Agent, Loomi can drive an agent you have already installed on your computer. The same steps appear in **Agent Settings → External agents**, one card per tool.
 
 <img src="/images/ours/en/external-agents-settings.webp" alt="External agents section in Agent Settings" />
 
@@ -18,20 +18,20 @@ Besides the built-in ComfyArt Agent, ComfyArt can drive an agent you have alread
 
 ## What the status means
 
-- **Connected**: ComfyArt found the tool's command on this computer and can start it.
-- **Not detected**: ComfyArt cannot find the command. Install it (step 1), then click **Check again**.
+- **Connected**: Loomi found the tool's command on this computer and can start it.
+- **Not detected**: Loomi cannot find the command. Install it (step 1), then click **Check again**.
 
 ## Step 1: Install
 
 Open the tool's official docs from the card and follow its install and sign-in steps. Sign in once in a terminal (for example run `claude` or `codex`) so the tool is ready to use.
 
-## Step 2: Connect to ComfyArt
+## Step 2: Connect to Loomi
 
 Click **Copy** on the card to copy the MCP config and add it to the tool's MCP settings. The address on the card is the one you are using right now, so it is always correct. Per-tool commands are in [MCP server](/guides/mcp).
 
-When ComfyArt starts the agent from the mode menu, it passes this config automatically. You only need to add it yourself when you run the tool on its own in a terminal.
+When Loomi starts the agent from the mode menu, it passes this config automatically. You only need to add it yourself when you run the tool on its own in a terminal.
 
-The address depends on how you run ComfyArt:
+The address depends on how you run Loomi:
 
 | How you run it | MCP address |
 | --- | --- |
@@ -51,7 +51,7 @@ Open the mode menu below the chat box. Connected tools can be picked directly. A
 
 ## FAQ
 
-**It says Not detected after installing.** Make sure the command runs in a new terminal (`claude --version`, `codex --version`, `qwen --version`, `dsh --version`). If you installed it after starting ComfyArt, restart ComfyArt so it sees the updated PATH, then click **Check again**.
+**It says Not detected after installing.** Make sure the command runs in a new terminal (`claude --version`, `codex --version`, `qwen --version`, `dsh --version`). If you installed it after starting Loomi, restart Loomi so it sees the updated PATH, then click **Check again**.
 
 **The agent says I'm not logged in.** Run the tool once in a terminal and finish its sign-in, then send your message again.
 

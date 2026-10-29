@@ -4,7 +4,7 @@ Each file is the vendor's own asset, unmodified (no recolor, no reshaping). It i
 
 | Tool | File | Source |
 |---|---|---|
-| ComfyArt (built-in) | — (our own `Icons.agent`) | this repo |
+| Loomi (built-in) | — (our own Loomi mark: `public/brand/loomi-mark.svg`, mono `LoomiMono` in `src/ui/icons.tsx`) | this repo |
 | Claude Code | claude-code.svg | https://claude.ai/favicon.svg (Anthropic, served by claude.ai) |
 | Qwen Code | qwen-code.svg | https://github.com/QwenLM/qwen-code/blob/main/packages/desktop/bootstrap/qwen-code-logo.svg |
 | OpenCode | opencode.svg / opencode-dark.svg | https://github.com/sst/opencode/tree/dev/packages/console/app/src/asset/brand (opencode-logo-light-square.svg / opencode-logo-dark-square.svg) |

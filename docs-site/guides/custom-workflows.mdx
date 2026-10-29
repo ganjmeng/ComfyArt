@@ -1,6 +1,6 @@
 ---
 title: "Custom workflows"
-description: "Run your own WaveSpeed model for ComfyArt's features."
+description: "Run your own WaveSpeed model for Loomi's features."
 ---
 
 Every canvas action runs a model on WaveSpeed. Most features can run a model of your choice instead of the built-in one, for example a different image model or edit model.
@@ -14,12 +14,12 @@ A custom workflow is a small JSON file: the WaveSpeed model id, and optionally w
 
 ## Let an agent do it
 
-Ask the [ComfyArt agent](/guides/agent), or any agent connected over [MCP](/guides/mcp), something like "connect this model to quick edit" and give it the model id. It reads the rules with the `custom_workflow` tool, writes the file, checks it and installs it. The rules are also a built-in skill, **Connect a custom workflow**.
+Ask the [Loomi agent](/guides/agent), or any agent connected over [MCP](/guides/mcp), something like "connect this model to quick edit" and give it the model id. It reads the rules with the `custom_workflow` tool, writes the file, checks it and installs it. The rules are also a built-in skill, **Connect a custom workflow**.
 
 The `custom_workflow` tool has five actions: `rules` (the file format), `list` (installed workflows), `check` (validate a file), `install` (save it) and `assign` (bind it to a feature). Custom workflows always run through these actions on WaveSpeed; you do not submit anything to ComfyUI yourself.
 
 
-For an agent that is not connected to ComfyArt, open **Custom workflows** in the project menu and copy the rules with the button next to the agent hint.
+For an agent that is not connected to Loomi, open **Custom workflows** in the project menu and copy the rules with the button next to the agent hint.
 
 ## Do it by hand
 
@@ -34,10 +34,10 @@ For an agent that is not connected to ComfyArt, open **Custom workflows** in the
 ```
 
 - `model`: a WaveSpeed model id from [wavespeed.ai/models](https://wavespeed.ai/models), in `owner/model-name` form.
-- `fields` (optional): maps a ComfyArt marker to the model's request field. Common field names (`prompt`, `image`, `images`, `mask_image`, `size`, `aspect_ratio`, `resolution`, `duration`, `last_image`, `num_layers`) are filled automatically, so `fields` is only needed when the model uses other names.
+- `fields` (optional): maps a Loomi marker to the model's request field. Common field names (`prompt`, `image`, `images`, `mask_image`, `size`, `aspect_ratio`, `resolution`, `duration`, `last_image`, `num_layers`) are filled automatically, so `fields` is only needed when the model uses other names.
 - `params` (optional): fixed values sent on every run. Use it for required fields that no marker fills.
 
-| Marker | ComfyArt fills |
+| Marker | Loomi fills |
 |---|---|
 | `@image` | the selected image (uploaded to WaveSpeed, sent as a URL) |
 | `@image2` | a second image, e.g. the style reference (URL) |
@@ -53,7 +53,7 @@ Markers are case-insensitive. A marker the feature does not use is ignored with 
 
 ### 2. Upload and assign
 
-Open the project menu (top-left icon) → **Custom workflows**. Features are grouped into image generation, image editing, image tools and video. Click the upload button next to a feature: ComfyArt checks the file against the model's request schema on WaveSpeed (a free lookup) and says what is wrong: an unknown model, a field the model does not accept, a required field left empty. Once it passes, that feature uses it. Each feature keeps its files in its own folder, `comfyart/workflows/<feature>/` in your user folder (`edit`, `upscale`, `video`...), and its menu lists only those. Pick **Built in** to switch back. ComfyArt never deletes your files; to remove one, delete it in that folder; a feature whose file is gone goes back to built in.
+Open the project menu (top-left icon) → **Custom workflows**. Features are grouped into image generation, image editing, image tools and video. Click the upload button next to a feature: Loomi checks the file against the model's request schema on WaveSpeed (a free lookup) and says what is wrong: an unknown model, a field the model does not accept, a required field left empty. Once it passes, that feature uses it. Each feature keeps its files in its own folder, `comfyart/workflows/<feature>/` in your user folder (`edit`, `upscale`, `video`...), and its menu lists only those. Pick **Built in** to switch back. Loomi never deletes your files; to remove one, delete it in that folder; a feature whose file is gone goes back to built in.
 
 Runs are billed by WaveSpeed at the chosen model's price. Jobs at or above the confirmation limit ($0.50 by default) ask you first.
 

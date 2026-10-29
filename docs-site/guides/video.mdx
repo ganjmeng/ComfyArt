@@ -26,7 +26,7 @@ Switch the generator, or the chat mode, to **Video** and pick a mode:
 |---|---|
 | **First/last frame** | Text only, or start from a first frame and optionally end on a last frame. |
 | **References** | Up to 9 images, 3 videos and 3 audio clips: characters, products and scenes, a camera move or action to copy, a voice or sound. In the prompt they are `<Picture 1>`, `<Video 1>`, `<Audio 1>` and so on, numbered per type in the order they were added; say what each one should do. The clip follows those references instead of starting from a fixed frame. |
-| **Motion control** | A **Character** image and a **Motion video**. ComfyArt extracts the body pose from every frame of the motion video and the character performs exactly that motion. Picking the motion video sets the ratio and the longest duration that fits it. |
+| **Motion control** | A **Character** image and a **Motion video**. Loomi extracts the body pose from every frame of the motion video and the character performs exactly that motion. Picking the motion video sets the ratio and the longest duration that fits it. |
 | **Lip sync** | A **Portrait** and a **Speech** clip. The speech becomes the video's soundtrack and the person's lips follow it; the video is as long as the clip. Make the speech with [Voiceover](/guides/audio-3d) or upload a recording. |
 | **Storyboard** | Splits one idea into scenes with consistent characters and style, and generates them in order. With the Agent enabled, smart storyboard writes the scenes for you. |
 
@@ -64,7 +64,7 @@ Videos can also be dropped into the chat as references for the Agent. The previe
 
 - **Clips**: **Add Clip** appends any video on the current page. Drag a clip's edges to trim it, and use **Split** to cut it at the playhead. Select a clip to set its speed (0.5x to 2x) and volume, mute it, **Move Left** or **Move Right**, or delete it.
 - **Transitions**: click the point between two clips to pick a hard cut, **Fade**, **Fade to Black** or **Fade to White** and set its length. **Apply to All Transitions** copies it to every cut.
-- **Music**: **Add Music** puts an audio element from the page under the whole edit, for example a song made with [audio generation](/guides/audio-3d). Select it to set its volume and **Start at**, the second of the song that plays on the first frame. ComfyArt detects the song's beats and shows the BPM.
+- **Music**: **Add Music** puts an audio element from the page under the whole edit, for example a song made with [audio generation](/guides/audio-3d). Select it to set its volume and **Start at**, the second of the song that plays on the first frame. Loomi detects the song's beats and shows the BPM.
 - **Snap to Beats**: on by default. Beats show as marks on the timeline, and clicking the timeline moves the playhead to the nearest beat or clip edge, so **Split** cuts land on the beat.
 - **Captions**: **Add Caption** places text at the playhead. Set its start, end, font size and color.
 

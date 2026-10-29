@@ -1,8 +1,10 @@
-# ComfyArt
+# Loomi
+
+> Formerly ComfyArt. The repository, Python package, routes and `COMFYART_*` settings keep the ComfyArt name.
 
 English | [中文](README.zh.md)
 
-[![ComfyArt promo](docs/media/preview-en.gif)](docs/media/promo-en.mp4)
+[![Loomi promo](docs/media/preview-en.gif)](docs/media/promo-en.mp4)
 
 [Watch the full promo (38s)](docs/media/promo-en.mp4)
 
@@ -31,11 +33,11 @@ Documentation with screenshots for every feature: **[comfyart.org](https://comfy
 
 Into an existing ComfyUI: put this folder in `ComfyUI/custom_nodes/`, install the Python requirements into ComfyUI's environment (`pip install -r requirements.txt`: `pypdfium2` for PDF uploads; Edit Elements reads text with WaveSpeed's `paddle-ocr` model, so it needs no local OCR package), restart ComfyUI and open `http://127.0.0.1:8188/comfyart/`. The built page is in `dist/`; after changing `src/`, rebuild with `npm install && npm run build`.
 
-Projects, their snapshot history and agent chats are saved in a SQLite database, `user/__comfyart/data.db`. Projects from older versions (JSON files under `comfyart/projects/`) are imported automatically the first time you open ComfyArt; the files are left in place. The interface starts in ComfyUI's language and can be switched from the settings menu.
+Projects, their snapshot history and agent chats are saved in a SQLite database, `user/__comfyart/data.db`. Projects from older versions (JSON files under `comfyart/projects/`) are imported automatically the first time you open Loomi; the files are left in place. The interface starts in ComfyUI's language and can be switched from the settings menu.
 
 ## WaveSpeed cloud models
 
-WaveSpeed is the only generation provider. Create an API key at [wavespeed.ai](https://wavespeed.ai), set it as `WAVESPEED_API_KEY` in the environment before starting ComfyUI, and every canvas action and agent tool sends its job to WaveSpeed. The key is read on the server only and never stored by ComfyArt. Results are downloaded into `output/comfyart/`, so the canvas, history and agent see them like any other image. Jobs estimated at $0.50 or more ask for confirmation first.
+WaveSpeed is the only generation provider. Create an API key at [wavespeed.ai](https://wavespeed.ai), set it as `WAVESPEED_API_KEY` in the environment before starting ComfyUI, and every canvas action and agent tool sends its job to WaveSpeed. The key is read on the server only and never stored by Loomi. Results are downloaded into `output/comfyart/`, so the canvas, history and agent see them like any other image. Jobs estimated at $0.50 or more ask for confirmation first.
 
 Each feature has a default model and a curated list in `api/wavespeed_models.json`; pick another model in the generator, or let the agent pass `model`.
 
@@ -77,11 +79,11 @@ The Agent panel runs a real tool-using agent on the backend, ported from [ComfyT
 | Codex | `codex` on PATH, logged in |
 | Qwen Code | `qwen` on PATH with a model configured in `~/.qwen/settings.json` |
 | DeepSeek Harness | `dsh` on PATH, signed in through the DeepSeek Harness app |
-| ComfyArt Agent (built-in, default) | DeepSeek v4.1 flash on WaveSpeed with your WaveSpeed key; or any OpenAI-compatible endpoint with tool calling (Agent Settings → model URL, model name, API key; `COMFYART_LOCAL_LLM_API_KEY` also works) |
+| Loomi Agent (built-in, default) | DeepSeek v4.1 flash on WaveSpeed with your WaveSpeed key; or any OpenAI-compatible endpoint with tool calling (Agent Settings → model URL, model name, API key; `COMFYART_LOCAL_LLM_API_KEY` also works) |
 
-Storyboard split, OCR, brand and memory extraction, reference notes and the Ideogram caption are single calls to the default Agent (`POST /comfyart/bot/complete`, no tools). ComfyArt never stores credentials. The agent works through the ComfyArt MCP server at `POST /comfyart/mcp` (look at the canvas, generate and edit images, videos, audio and 3D models, Edit Elements and mockups, place text, shapes, frames, web pages and slides, memory, skills, ask the user). Canvas tools are executed by the open ComfyArt tab of the project, so keep it open while the agent works. Chats are saved in a SQLite database at `user/__comfyart/data.db` and keep running when the panel is closed.
+Storyboard split, OCR, brand and memory extraction, reference notes and the Ideogram caption are single calls to the default Agent (`POST /comfyart/bot/complete`, no tools). Loomi never stores credentials. The agent works through the Loomi MCP server at `POST /comfyart/mcp` (look at the canvas, generate and edit images, videos, audio and 3D models, Edit Elements and mockups, place text, shapes, frames, web pages and slides, memory, skills, ask the user). Canvas tools are executed by the open Loomi tab of the project, so keep it open while the agent works. Chats are saved in a SQLite database at `user/__comfyart/data.db` and keep running when the panel is closed.
 
-### Use ComfyArt from other agents
+### Use Loomi from other agents
 
 Turn on MCP in Agent Settings and add `http://127.0.0.1:8188/comfyart/mcp?project=<project-id>` to any MCP client, for example:
 

@@ -1,3 +1,4 @@
+import { BRAND } from '../brand'
 import { useEffect, useRef, useState } from 'react'
 import { atom, useValue, type Editor, type TLShapeId } from 'tldraw'
 
@@ -155,7 +156,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
       <div ref={list} className="ca-chat" onScroll={onScroll}>
         {enabled === false && (
           <div className="ca-chat__empty">
-            <span className="ca-chat__hello">{Icons.agent}</span>
+            <span className="ca-chat__hello"><img src={BRAND.logoPath} alt={BRAND.name} data-loomi="mark" /></span>
             <div>{t('agentPanel.agentIsNotEnabledYet')}</div>
             <div className="ca-chat__hint">{t('agentPanel.enableMcpAndAgentIn')}</div>
             <button type="button" className="ca-panel__primary" onClick={() => botSettingsOpenAtom.set(true)}>{t('agentPanel.openAgentSettings')}</button>
@@ -170,7 +171,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
         )}
         {enabled !== false && messages.length === 0 && (
           <div className="ca-chat__empty">
-            <span className="ca-chat__hello">{Icons.agent}</span>
+            <span className="ca-chat__hello"><img src={BRAND.logoPath} alt={BRAND.name} data-loomi="mark" /></span>
             <div>{t('agentPanel.describeWhatYouWantTo')}</div>
             <div className="ca-chat__hint">{t('agentPanel.selectImagesOnTheCanvas')}</div>
             <div className="ca-chat__starts">

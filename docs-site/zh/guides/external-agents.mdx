@@ -3,7 +3,7 @@ title: "外部 Agent"
 description: "用你电脑上已安装的 Claude Code、Codex、Qwen Code 或 DeepSeek Harness 来操作画布。"
 ---
 
-除了内置的 ComfyArt Agent，ComfyArt 也可以调用你电脑上已安装的 Agent。**Agent 设置 → 外部 Agent** 里每个工具一张卡片，步骤和本页一致。
+除了内置的 Loomi Agent，Loomi 也可以调用你电脑上已安装的 Agent。**Agent 设置 → 外部 Agent** 里每个工具一张卡片，步骤和本页一致。
 
 <img src="/images/ours/zh/external-agents-settings.webp" alt="Agent 设置中的外部 Agent 区域" />
 
@@ -18,18 +18,18 @@ description: "用你电脑上已安装的 Claude Code、Codex、Qwen Code 或 De
 
 ## 状态是什么意思
 
-- **已连接**：ComfyArt 在这台电脑上找到了这个工具，可以直接启动。
-- **未检测到**：ComfyArt 找不到这个工具。先安装（第 1 步），再点 **重新检测**。
+- **已连接**：Loomi 在这台电脑上找到了这个工具，可以直接启动。
+- **未检测到**：Loomi 找不到这个工具。先安装（第 1 步），再点 **重新检测**。
 
 ## 第 1 步：安装
 
 在卡片上打开官方文档，按说明安装并登录。先在终端里运行一次（例如 `claude` 或 `codex`）完成登录。
 
-## 第 2 步：连接 ComfyArt
+## 第 2 步：连接 Loomi
 
 点卡片上的 **复制**，把 MCP 配置加到工具的 MCP 设置里。卡片上显示的就是你当前使用的地址，不用自己改。各工具的命令见 [MCP 服务](/zh/guides/mcp)。
 
-从模式菜单启动 Agent 时，ComfyArt 会自动传入这份配置。只有你在终端里单独运行该工具时，才需要自己添加。
+从模式菜单启动 Agent 时，Loomi 会自动传入这份配置。只有你在终端里单独运行该工具时，才需要自己添加。
 
 地址取决于你的运行方式：
 
@@ -51,7 +51,7 @@ description: "用你电脑上已安装的 Claude Code、Codex、Qwen Code 或 De
 
 ## 常见问题
 
-**安装后仍显示未检测到。** 在新终端里确认命令能运行（`claude --version`、`codex --version`、`qwen --version`、`dsh --version`）。如果是在 ComfyArt 启动后才安装的，重启 ComfyArt 让它读到新的 PATH，再点 **重新检测**。
+**安装后仍显示未检测到。** 在新终端里确认命令能运行（`claude --version`、`codex --version`、`qwen --version`、`dsh --version`）。如果是在 Loomi 启动后才安装的，重启 Loomi 让它读到新的 PATH，再点 **重新检测**。
 
 **Agent 提示未登录。** 在终端里运行一次该工具并完成登录，然后重新发送消息。
 
