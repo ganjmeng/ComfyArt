@@ -147,6 +147,7 @@ export const Icons = {
   export: <Svg><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14" /></Svg>,
   play: <Svg fill><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5" /></Svg>,
   pause: <Svg fill><rect x="6.5" y="5" width="4" height="14" rx="1" /><rect x="13.5" y="5" width="4" height="14" rx="1" /></Svg>,
+  stop: <Svg fill><rect x="6.5" y="6.5" width="11" height="11" rx="2" /></Svg>,
   bell: <Svg><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" /></Svg>,
   memory: <Svg><path d="M12 4.5a5.5 5.5 0 0 0-5.5 5.5c0 2 1 3.4 2.3 4.4.5.4.7 1 .7 1.6v1.5h5v-1.5c0-.6.2-1.2.7-1.6 1.3-1 2.3-2.4 2.3-4.4A5.5 5.5 0 0 0 12 4.5zM9.5 20h5" /></Svg>,
   pinOutline: <Svg><path d="M14.5 3.5 20.5 9.5 18 10.5 14.8 13.7 14.6 17.4 12.8 19.2 4.8 11.2 6.6 9.4 10.3 9.2 13.5 6z" /><path d="M8.6 15.4 3.8 20.2" /></Svg>,

@@ -2306,11 +2306,35 @@ async def wavespeed_history(request: web.Request) -> web.Response:
 
 @routes.post("/comfyart/wavespeed/cancel/{task}")
 async def wavespeed_cancel(request: web.Request) -> web.Response:
-    # WaveSpeed has no cancel endpoint; stop tracking so the slot frees up
-    job = _jobs.get(request.match_info["task"])
-    if job:
+    """#408: WaveSpeed has no cancel API — stop tracking so the slot frees, record an interrupted
+    history (with quoted fee when known) so resume/wait settle as 「已停止」 instead of hanging."""
+    task = request.match_info["task"]
+    job = _jobs.get(task)
+    charged = None
+    if job and not job.get("result"):
+        if job.get("model"):
+            try:
+                price, _ = await quote(job["model"], dict(job.get("inputs") or {}))
+                if price is not None:
+                    charged = round(float(price), 6)
+            except Exception:  # noqa: BLE001 — fee line is best-effort; stop must still settle
+                charged = None
+        info: dict = {
+            "exception_message": (
+                f"WaveSpeed task stopped, may have been charged about (quoted price) ${charged:g}"
+                if charged is not None else "WaveSpeed task stopped"
+            ),
+        }
+        if charged is not None:
+            info["ws_charged"] = charged
         job["done"] = True
-    return web.json_response({})
+        job["result"] = _history(task, "failed", [["execution_interrupted", info]], {})
+    elif job:
+        job["done"] = True
+    body: dict = {}
+    if charged is not None:
+        body["charged_usd"] = charged
+    return web.json_response(body)
 
 
 @routes.post("/comfyart/wavespeed/transcribe")
