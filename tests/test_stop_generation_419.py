@@ -89,6 +89,8 @@ def test_panel_stop_ui_has_no_label_or_tooltip_and_fades():
     assert "agentPanel.stopped" not in panel and "stopTooltip" not in panel
     assert "ca-chat__bot--stopping" in panel and "STOP_FADE_MS = 1500" in panel
     assert "stoppedSubmitted(m) > 0" in panel                     # charge note only when submitted > 0
+    css = (root / "src/styles/shell.css").read_text()
+    assert ".ca-chat__bot--stopping .ca-md" in css and ".ca-chat__bot--stopping *" not in css  # grey only the text
     for loc in ("en", "zh"):
         text = (root / f"src/locales/{loc}.json").read_text()
         assert "agentPanel.stopTooltip" not in text and "chatMessage.stoppedStep" not in text
