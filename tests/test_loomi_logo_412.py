@@ -15,7 +15,9 @@ def test_icons_agent_is_loomi_mono():
 def test_welcome_uses_full_mark():
     src = (ROOT / 'src/ui/AgentPanel.tsx').read_text()
     assert '<span className="ca-chat__hello">{Icons.agent}</span>' not in src
-    assert src.count('src={BRAND.logoPath}') == 2
+    assert src.count('<span className="ca-chat__hello"><LoomiMono /></span>') == 2
+    css = (ROOT / 'src/styles/shell.css').read_text()
+    assert 'invert(1)' not in css.split('.ca-chat__hello')[1][:200]  # follows --ca-strong
 
 
 def test_docs_logos_are_loomi():
