@@ -2,7 +2,7 @@
 
 All "after" shots are real-app screenshots taken by `tests/test_e2e_arti_385.py` (built `dist`, home Arti page `?view=arti`, 1440×900, mock server, LLM `/comfyart/llm/complete` stubbed, no paid calls). The same test asserts toggle persistence, chat composer open, and evolution log columns. Set `SHOT_OUT=<dir>` to regenerate them.
 
-| Lovart CN reference | before | after (this PR) |
+| Reference (CN) | before | after (this PR) |
 |---|---|---|
 | lovart/arti-page-top-toggles-dark.png | before/arti-toggles-dark.png (#381: state shown, switches disabled) | after/arti-toggles-dark.png (memory/skills switchable + persist) |
 | CN 无浅色 | before/arti-toggles-light.png | after/arti-toggles-light.png |
