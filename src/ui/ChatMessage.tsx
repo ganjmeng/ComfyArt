@@ -878,19 +878,12 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     proc = []
   }
   // #413: an in-loop memory add shows as the 记忆已更新 › row, not as a tool row
-  const memBlocks = m.blocks.filter((b) => b.type === 'memory_updated')
-  const memCalls = new Set(memBlocks.flatMap((b) => [b.tool_id, ...(b.tool_ids ?? [])]).filter(Boolean))
-  // #423: at most one 记忆已更新 › row per turn; older saved turns with several blocks fold into the first
-  const firstMem = memBlocks[0]
-  const memIdsAll = [...new Set(memBlocks.flatMap((b) => b.memory_ids ?? []))]
-  // #423: memory add never shows a raw tool row, incl. a no-op identical repeat (no 记忆已更新 › row either)
-  const memAddIds = new Set(m.blocks.filter((b) => b.type === 'tool_use' && toolName(b.name) === 'memory' && (b.input as { action?: string } | undefined)?.action === 'add').map((b) => b.id))
+  const memCalls = new Set(m.blocks.filter((b) => b.type === 'memory_updated' && b.tool_id).map((b) => b.tool_id))
   const hideMemCall = (b: BotBlock) => (b.type === 'tool_use' || b.type === 'tool_result') && toolName(b.name) === 'memory' && !!b.id
-    && (memCalls.has(b.id) || memAddIds.has(b.id))
+    && (memCalls.has(b.id) || (b.type === 'tool_use' && !done && !results.has(b.id) && (b.input as { action?: string } | undefined)?.action === 'add'))
   let planShown = false
   m.blocks.forEach((b, i) => {
     if (hideMemCall(b)) return
-    if (b.type === 'memory_updated' && b !== firstMem) return
     if (isPlan(b)) {
       if (planShown) return
       planShown = true
@@ -938,7 +931,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
           live: stepLive,
           text: b.type === 'thinking' ? b.text : undefined,
           aspectRatio,
-          memoryIds: b.type === 'memory_updated' ? memIdsAll : undefined,
+          memoryIds: b.type === 'memory_updated' ? (b.memory_ids ?? []) : undefined,
         })
         return
       }

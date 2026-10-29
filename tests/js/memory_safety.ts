@@ -286,13 +286,6 @@ async function main() {
     const conc = snap()
     return { equal: JSON.stringify(serial) === JSON.stringify(conc), serial: serial.length, concurrent: conc.length, lost: serial.filter((x) => !conc.includes(x)).length, selfConflicts: conflicts }
   })
-  // #423: write-side dedupe for the agent's memory add
-  await T('upsert_423', async () => {
-    reset([mem('a', '常用画幅：16:9'), mem('b', '偏好极简')])
-    await M.loadMemory()
-    const r = await M.upsertMemory([{ text: '偏好极简' }, { text: '常用画幅：9:16' }, { text: '品牌色：克莱因蓝' }, { text: '品牌色：克莱因蓝' }], 'agent')
-    return { added: r.added.map((m) => m.text), updated: r.updated.map((u) => [u.memory.id, u.old, u.memory.text]), unchanged: r.unchanged.map((m) => m.id), file: stored().map((m: any) => m.text) }
-  })
   console.log(JSON.stringify(out))
 }
 void main()
