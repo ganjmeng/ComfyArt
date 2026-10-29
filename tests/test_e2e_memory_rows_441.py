@@ -88,7 +88,7 @@ async def test_memory_rows_computed_441(app_url, fake_tools, lang, theme, ink): 
 
 @pytest.mark.parametrize("lang,theme,ink,labels", [
     ("zh", "light", "rgba(0, 0, 0, 0.55)", ("记忆已读取", "记忆更新中", "记忆已更新")),
-    ("en", "dark", "rgba(255, 255, 255, 0.55)", ("Memory retrieved", "Memory updating", "Memory updated")),
+    ("en", "dark", "rgba(255, 255, 255, 0.55)", ("Memory retrieved", "Updating memory", "Memory updated")),
 ])
 async def test_memory_updating_and_three_rows_437(app_url, fake_tools, lang, theme, ink, labels):  # noqa: F811
     """#437: live memory add → 记忆更新中 (no ›); with a prior update in the turn, three memory rows + stubs/`--ca-rail`."""
@@ -152,7 +152,7 @@ async def test_memory_updating_and_three_rows_437(app_url, fake_tools, lang, the
         await browser.close()
 
 
-@pytest.mark.parametrize("lang,label", [("zh", "记忆更新中"), ("en", "Memory updating")])
+@pytest.mark.parametrize("lang,label", [("zh", "记忆更新中"), ("en", "Updating memory")])
 async def test_memory_updating_becomes_updated_437(app_url, fake_tools, lang, label):  # noqa: F811
     """#437: while the write runs → 记忆更新中; after memory_updated lands → 记忆已读取 + 记忆已更新 › (no updating)."""
     from ComfyArt.api import chat_store

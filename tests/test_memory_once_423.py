@@ -146,7 +146,7 @@ def test_locales_only_add_memory_retrieved_430():
         assert cur == base
     zh, en = json.loads(_src("src/locales/zh.json")), json.loads(_src("src/locales/en.json"))
     assert zh["chatMessage.memoryUpdated"] == "记忆已更新" and en["chatMessage.memoryUpdated"] == "Memory updated"
-    assert zh["chatMessage.memoryUpdating"] == "记忆更新中" and en["chatMessage.memoryUpdating"] == "Memory updating"
+    assert zh["chatMessage.memoryUpdating"] == "记忆更新中" and en["chatMessage.memoryUpdating"] == "Updating memory"
 
 
 def test_retrieved_row_before_updated_only_on_update_430():
@@ -200,8 +200,9 @@ def test_memory_updating_row_437() -> None:
     assert "memoryDialog.saving" not in cm  # dialog pill copy is not the process-row key
     zh = json.loads(_src("src/locales/zh.json"))
     assert zh["chatMessage.memoryUpdating"] == zh["memoryDialog.saving"] == "记忆更新中"
-    # EN placeholder — design to confirm vs dialog "Updating memory"
-    assert json.loads(_src("src/locales/en.json"))["chatMessage.memoryUpdating"] == "Memory updating"
+    # EN: same words as dialog for now; process-row EN awaits design's next reference frame
+    assert json.loads(_src("src/locales/en.json"))["chatMessage.memoryUpdating"] == "Updating memory"
+    assert json.loads(_src("src/locales/en.json"))["memoryDialog.saving"] == "Updating memory"
     css = _src("src/styles/overlays.css")
     assert "width: 18px; height: 18px" in css.split(".ca-memory__spin")[1].split("}")[0]
     assert "gap: 6px" in css.split(".ca-memory__saving")[1].split("}")[0]

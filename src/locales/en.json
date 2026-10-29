@@ -344,7 +344,7 @@
   "chatMessage.thinking": "Thinking…",
   "chatMessage.thought": "Thought",
   "chatMessage.memoryUpdated": "Memory updated",
-  "chatMessage.memoryUpdating": "Memory updating",
+  "chatMessage.memoryUpdating": "Updating memory",
   "chatMessage.memoryRetrieved": "Memory retrieved",
   "chatMessage.thumbsDown": "Thumbs down",
   "chatMessage.thumbsUp": "Thumbs up",
