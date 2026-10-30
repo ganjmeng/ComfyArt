@@ -36,16 +36,22 @@ _API_KEY_ENV = "COMFYART_LOCAL_LLM_API_KEY"
 _MAX_ITERATIONS = 300  # #391: hard cap only; budget + progress end a run long before
 _MAX_WAIT_SLICES = 12
 _LLM_TIMEOUT_S = 300
-# #234: input is counted in tokens against the model's context window (32k when the
-# endpoint does not say). 70% of that window is the input budget; the rest is left
-# for the reply and tool calls. Past the budget, the latest 6 turns stay verbatim
-# and older turns become one summary of at most 2000 tokens.
-_FALLBACK_CONTEXT_WINDOW = 32_000
+# #234: input is counted in tokens against the model's context window. #493: the window is
+# the endpoint's declared one, else the known-model table, else _FALLBACK_CONTEXT_WINDOW.
+# 70% of that window is the input budget; the rest is left for the reply and tool calls.
+# Past the budget, the latest 6 turns stay verbatim and older turns become one summary
+# capped by summary_token_cap(window).
+_FALLBACK_CONTEXT_WINDOW = 270_000
 # #493: windows of known models, used only when the endpoint's /models does not declare
-# one. Matched by lowercase substring of the model id; first hit wins. Data only.
-# TODO(#493): confirm the exact DeepSeek id from QA's /models dump; "deepseek" is provisional.
+# one. Matched by lowercase PREFIX of the model id; first hit wins. Data only: add a row
+# only for a model whose window is verified from its vendor docs.
+# Source: https://api-docs.deepseek.com/ and the DeepSeek V4 release notes:
+#   deepseek-flash = DeepSeek-V4.1-Flash-1017 (old name deepseek-v4-flash aliases to it),
+#   deepseek-v4-pro; 1M context, max output 384K.
+#   deepseek-chat / deepseek-reasoner were retired 2026-07-24 and are deliberately absent.
 _KNOWN_MODEL_WINDOWS: tuple[tuple[str, int], ...] = (
-    ("deepseek", 1_000_000),
+    ("deepseek-flash", 1_000_000),
+    ("deepseek-v4-", 1_000_000),
 )
 
 
@@ -54,21 +60,62 @@ def known_model_window(model: str) -> int:
     mid = (model or "").strip().lower()
     if not mid:
         return 0
-    for needle, window in _KNOWN_MODEL_WINDOWS:
-        if needle in mid:
+    for prefix, window in _KNOWN_MODEL_WINDOWS:
+        if mid.startswith(prefix):
             return window
     return 0
 
 
 def resolve_context_window(model: str, declared: int = 0) -> int:
     """#493: one rule for every caller. Endpoint-declared window wins, then the
-    known-model table, then 32k."""
+    known-model table, then _FALLBACK_CONTEXT_WINDOW (270k)."""
     if isinstance(declared, int) and declared > 0:
         return declared
     return known_model_window(model) or _FALLBACK_CONTEXT_WINDOW
+
+
+# #493 overflow guard: a context-exceeded answer is re-fitted and resent exactly once.
+# TODO(#493): product to confirm the ratio used when the error states no window.
+OVERFLOW_SHRINK = 0.5
+_OVERFLOW_RE = re.compile(
+    r"context[_ ]length[_ ]exceeded|maximum context|context (?:length|window|size)|"
+    r"prompt is too long|too many (?:input )?tokens|input (?:is )?too long|exceeds? the (?:model'?s? )?"
+    r"(?:context|max)", re.I)
+_OVERFLOW_WINDOW_RE = re.compile(
+    r"(?:maximum context length|context (?:length|window|size)|max(?:imum)? (?:input|prompt) tokens?|"
+    r"limit)\D{0,30}?(\d[\d,_]{2,})", re.I)
+
+
+def is_context_overflow(exc: BaseException) -> bool:
+    """#493: the model refused the request because the prompt is over its window."""
+    if not isinstance(exc, LlmHttpError) or exc.status not in (400, 413, 422):
+        return False
+    return bool(_OVERFLOW_RE.search(exc.body or ""))
+
+
+def parse_overflow_window(text: str) -> int:
+    """#493: the real window stated in a context-exceeded error, 0 if none is given."""
+    m = _OVERFLOW_WINDOW_RE.search(text or "")
+    if not m:
+        return 0
+    try:
+        return int(re.sub(r"[,_]", "", m.group(1)))
+    except ValueError:
+        return 0
+
+
+def summary_token_cap(window: object = None) -> int:
+    """#493: the rolling-summary cap, 5% of the model window clamped to [1000, 16000].
+    A missing/invalid window uses the 270k fallback (13500)."""
+    size = window if isinstance(window, int) and window > 0 else _FALLBACK_CONTEXT_WINDOW
+    return max(_SUMMARY_CAP_MIN, min(_SUMMARY_CAP_MAX, round(size * _SUMMARY_CAP_RATIO)))
+
+
 _INPUT_BUDGET_PERCENT = 70
 _VERBATIM_TURNS = 6
-_SUMMARY_TOKEN_CAP = 2_000
+_SUMMARY_CAP_RATIO = 0.05   # #493: summary cap = 5% of the window ...
+_SUMMARY_CAP_MIN = 1_000    # ... never below 1000 tokens ...
+_SUMMARY_CAP_MAX = 16_000   # ... and never above 16000.
 _SUMMARY_HEADER = "Earlier conversation summary:"
 _REPEAT_STOP = 3
 _CACHED_SKILL_STOP = 3  # cumulative cached skill re-reads per turn (A/B/A/B...)
@@ -220,6 +267,7 @@ class LlmHttpError(RuntimeError):
     def __init__(self, status: int, text: str, retry_after: Optional[float] = None) -> None:
         super().__init__(f"HTTP {status}: {text[:300]}")
         self.status = status
+        self.body = text or ""  # #493: full text, the overflow guard reads the window from it
         self.retry_after = retry_after
 
 
@@ -520,13 +568,13 @@ def explicit_context_window(model_info: object) -> int:
 
 
 def context_window_tokens(model_info: object) -> int:
-    """#234: tokens in this model's window. Unknown (or a missing payload) is 32k."""
+    """#234: tokens in this model's window. Unknown (or a missing payload) is the 270k fallback."""
     found = explicit_context_window(model_info)
     return found if found else _FALLBACK_CONTEXT_WINDOW
 
 
 def input_token_budget(window: object) -> int:
-    """70% of the model window. A missing/invalid window uses the 32k fallback."""
+    """70% of the model window. A missing/invalid window uses the 270k fallback."""
     size = window if isinstance(window, int) and window > 0 else _FALLBACK_CONTEXT_WINDOW
     return size * _INPUT_BUDGET_PERCENT // 100
 
@@ -897,7 +945,7 @@ def _summarize_turns(turns: list[list[dict]]) -> str:
             if src:
                 bit += f" src={src}"
             lines.append(bit)
-    # Failures stay ahead of the shape list so the 2000-token cap drops extra
+    # Failures stay ahead of the shape list so the summary_token_cap() limit drops extra
     # shapes before it drops a failed attempt.
     if failures:
         lines.append("Failures:")
@@ -912,6 +960,19 @@ def _summarize_turns(turns: list[list[dict]]) -> str:
     if len(lines) == 1:
         lines.append("Earlier turns were compressed.")
     return "\n".join(lines)
+
+
+def refit_messages(messages: list[dict], window: int) -> list[dict]:
+    """#493: drop the oldest non-system messages until the rest fit 70% of `window`. The last
+    user message and the latest steps are kept; a tool result never starts the kept tail."""
+    budget = input_token_budget(window)
+    system = [m for m in messages if m.get("role") == "system"]
+    rest = [m for m in messages if m.get("role") != "system"]
+    while len(rest) > 1 and _message_tokens(system + rest) > budget:
+        rest = rest[1:]
+        while len(rest) > 1 and rest[0].get("role") == "tool":
+            rest = rest[1:]
+    return system + rest
 
 
 def _message_tokens(messages: list[dict]) -> int:
@@ -929,7 +990,7 @@ def _owner_kw(turn) -> dict:
 def fit_history(history: Optional[list[dict]], *, context_window: Optional[int] = None,
                 reserved_tokens: int = 0) -> list[dict]:
     """History that fits the input budget. Over the budget, the last 6 turns stay
-    verbatim and earlier turns are one summary of at most 2000 tokens."""
+    verbatim and earlier turns are one summary of at most summary_token_cap(window) tokens."""
     budget = max(0, input_token_budget(context_window) - max(0, int(reserved_tokens or 0)))
     turns = _group_turns(history)
     verbatim = _render_turns(turns)
@@ -937,7 +998,7 @@ def fit_history(history: Optional[list[dict]], *, context_window: Optional[int] 
         return verbatim
     head, tail = turns[:-_VERBATIM_TURNS], turns[-_VERBATIM_TURNS:]
     tail_msgs = _render_turns(tail)
-    room = min(_SUMMARY_TOKEN_CAP, max(0, budget - _message_tokens(tail_msgs)))
+    room = min(summary_token_cap(context_window), max(0, budget - _message_tokens(tail_msgs)))
     summary = truncate_to_tokens(_summarize_turns(head), room) if head and room else ""
     out: list[dict] = []
     if summary.strip():
@@ -1208,14 +1269,15 @@ class LocalLlmProvider(AgentProvider):
     def _history_messages(history: Optional[list[dict]], *,
                           context_window: Optional[int] = None,
                           reserved_tokens: int = 0) -> list[dict]:
-        """#234: keep history inside 70% of the model window. Unknown window = 32k."""
+        """#234: keep history inside 70% of the model window. Unknown window = 270k fallback."""
         return fit_history(history, context_window=context_window,
                            reserved_tokens=reserved_tokens)
 
     async def _context_window(self, session: aiohttp.ClientSession, model: str) -> int:
         """Tokens in `model`'s window, from the endpoint's /models payload. If it does
         not say, the model is missing, or the request fails: #493 known-model table,
-        then 32k.
+        then the 270k fallback. A window learnt from an overflow error (#493) is cached
+        here too.
 
         #390-2: cached per (endpoint, model). The same model id on another endpoint
         (e.g. a local 8k quant vs. a hosted 128k one) is looked up again."""
@@ -1239,7 +1301,7 @@ class LocalLlmProvider(AgentProvider):
                 window = explicit_context_window(entry)
                 if window:
                     cache[(base, str(entry["id"]))] = window
-        # Remember a miss too (as the table / 32k value), so a model that never
+        # Remember a miss too (as the table / fallback value), so a model that never
         # advertises a window does not refetch /models on every turn. A failed
         # request is not cached.
         if model and key not in cache:
@@ -1349,6 +1411,37 @@ class LocalLlmProvider(AgentProvider):
                 if handle.stop_requested:
                     raise e
 
+    def remember_window(self, model: str, window: int) -> None:
+        """#493: store a window for (current endpoint, model), e.g. one learnt from an overflow."""
+        if not model or not isinstance(window, int) or window <= 0:
+            return
+        cache: dict = getattr(self, "_model_windows", None) or {}
+        self._model_windows = cache
+        cache[(self._base_url(), model)] = window
+
+    async def _llm_request_fit(self, session: aiohttp.ClientSession, url: str, body: dict,
+                               emit: EmitFn, handle: TurnHandle, *, model: str, window: int,
+                               refit) -> tuple[dict, int]:
+        """#493 overflow guard around _llm_request. On a context-exceeded error: read the real
+        window from the error (else window * OVERFLOW_SHRINK), cache it for (endpoint, model),
+        re-fit the messages with `refit(messages, new_window)` and resend exactly once. A second
+        overflow (or any other error) is raised. Returns (data, window used).
+
+        Loop guard / billing: the failed request returned no message, so it reaches neither the
+        tool-call repeat detector nor charge_request; the caller sees one response for one step."""
+        try:
+            return await self._llm_request(session, url, body, emit, handle), window
+        except LlmHttpError as e:
+            if not is_context_overflow(e) or handle.stop_requested:
+                raise
+            stated = parse_overflow_window(e.body)
+            new_window = stated if 0 < stated < window else max(1, int(window * OVERFLOW_SHRINK))
+            _log.warning("[ComfyArt/local-llm] context overflow for %s: window %d -> %d, resend once",
+                         model, window, new_window)
+            self.remember_window(model, new_window)
+            resent = {**body, "messages": refit(list(body.get("messages") or []), new_window)}
+        return await self._llm_request(session, url, resent, emit, handle), new_window
+
     async def _summarize_llm(self, session, base: str, model: str, previous: str, new_turns: str) -> str:
         """One model call: previous summary + newly pushed-out turns -> updated summary. No retries."""
         data = await self._request_json(
@@ -1364,7 +1457,7 @@ class LocalLlmProvider(AgentProvider):
     async def _history_with_model_summary(self, session, base: str, model: str, turn, window: int,
                                           *, reserved: int) -> list[dict]:
         """#390-1: the rule fit decides what stays verbatim (last 6 turns at most, 70% of the window);
-        the turns it pushed out get a rolling model summary (<= 2000 tokens, cut to the room left)."""
+        the turns it pushed out get a rolling model summary (<= summary_token_cap(window), cut to the room left)."""
         msgs = self._history_messages(turn.history, context_window=window, reserved_tokens=reserved)
         if not msgs or msgs[0].get("role") != "system":
             return msgs  # fits verbatim (or nothing fits): no model call
@@ -1384,7 +1477,7 @@ class LocalLlmProvider(AgentProvider):
         if source == "rule":
             return msgs
         budget = max(0, input_token_budget(window) - reserved - _message_tokens(msgs[1:]))
-        text = truncate_to_tokens(f"{_SUMMARY_HEADER}\n{text}", min(_SUMMARY_TOKEN_CAP, budget))
+        text = truncate_to_tokens(f"{_SUMMARY_HEADER}\n{text}", min(summary_token_cap(window), budget))
         return [{"role": "system", "content": text}, *msgs[1:]] if text else msgs[1:]
 
     def _threshold(self) -> float:
@@ -1878,13 +1971,16 @@ class LocalLlmProvider(AgentProvider):
                     if handle.stop_requested:
                         return TurnResult(aborted=True, usage=usage)
                     try:
-                        data = await self._llm_request(
+                        data, fitted = await self._llm_request_fit(
                             session, f"{base}/chat/completions", {
                                 "model": model,
                                 "messages": _prune_screenshots(messages),
                                 **({"tools": tools, "tool_choice": "auto"} if tools else {}),
                                 "temperature": 0.2,
-                            }, emit, handle)
+                            }, emit, handle, model=model, window=window, refit=refit_messages)
+                        if fitted != window:  # #493: later steps of this turn use the real window
+                            window = fitted
+                            messages[:] = refit_messages(messages, window)
                     except (asyncio.TimeoutError, LlmHttpError) as e:
                         if handle.stop_requested:
                             return TurnResult(aborted=True, usage=usage)

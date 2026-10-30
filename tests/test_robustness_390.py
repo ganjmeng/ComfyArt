@@ -138,7 +138,7 @@ async def test_summary_cut_to_remaining_budget_and_prompt_fits_window(monkeypatc
     reserved = 900
     msgs = await _hist(p, _turn(), reserved=reserved)
     summary_tokens = local_llm.count_tokens(msgs[0]["content"])
-    assert summary_tokens <= local_llm._SUMMARY_TOKEN_CAP
+    assert summary_tokens <= local_llm.summary_token_cap(WINDOW)
     assert local_llm._message_tokens(msgs) + reserved <= local_llm.input_token_budget(WINDOW)
 
 
@@ -225,14 +225,14 @@ def _models_stub(p, payloads, calls):
     p._request_json = fake
 
 
-async def test_ac2_window_uses_declared_128k_else_32k():
+async def test_ac2_window_uses_declared_128k_else_270k():
     p = LocalLlmProvider(base_url=lambda: "http://x/v1")
     calls: list = []
     _models_stub(p, {"http://x/v1": {"data": [{"id": "big", "context_length": 128_000},
                                               {"id": "anon"}]}}, calls)
     assert await p._context_window(None, "big") == 128_000
     assert local_llm.input_token_budget(128_000) == 128_000 * 70 // 100
-    assert await p._context_window(None, "anon") == 32_000
+    assert await p._context_window(None, "anon") == 270_000
     assert len(calls) == 1  # both answered from one /models fetch
 
 
@@ -242,7 +242,7 @@ async def test_ac2_window_uses_declared_128k_else_32k():
     {"id": "m", "model_info": {"llama.context_length": 128_000}},       # GGUF-style
 ], ids=["litellm", "openrouter-top-provider", "gguf-prefixed"])
 async def test_ac2_window_read_from_gateway_shapes(entry):
-    """Red on main: these shapes were missed and fell back to 32k."""
+    """Red on main: these shapes were missed and fell back to the default window."""
     p = LocalLlmProvider(base_url=lambda: "http://x/v1")
     _models_stub(p, {"http://x/v1": {"data": [entry]}}, [])
     assert await p._context_window(None, "m") == 128_000
@@ -267,7 +267,7 @@ async def test_ac2_window_cache_is_per_endpoint():
 
 
 async def test_ac2_declared_window_reaches_history_budget():
-    """The declared window, not 32k, sizes the history kept in the prompt."""
+    """The declared window, not a fixed default, sizes the history kept in the prompt."""
     p = LocalLlmProvider(base_url=lambda: "http://x/v1")
     _models_stub(p, {"http://x/v1": {"data": [{"id": "big", "context_length": 128_000}]}}, [])
     window = await p._context_window(None, "big")

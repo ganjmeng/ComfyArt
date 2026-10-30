@@ -699,6 +699,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     # Crash mid-step: re-dispatch the exact same tool calls (same step + tool_call_id), so the
                     # paid gate reuses a done call or refuses a pending one instead of asking the model again.
                     data, replay, request_messages = {"choices": [{"message": replay}]}, None, []
+                    fitted = window
                 else:
                     body = {
                         "model": model, "messages": request_messages,
@@ -708,12 +709,18 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     boost = reasoning_boost.reasoning_params(base, model) if reason_next else {}
                     reason_next = False
                     try:
-                        data = await provider._llm_request(session, f"{base}/chat/completions", {**body, **boost}, emit, handle)
+                        data, fitted = await provider._llm_request_fit(
+                            session, f"{base}/chat/completions", {**body, **boost}, emit, handle, model=model, window=window,
+                            refit=lambda m, w: prune_images(compress(m, window=w, policy=policy)[0],
+                                                            policy["keep_screenshots"]))
                     except LlmHttpError as e:
                         if not boost or e.status != 400:
                             raise
                         # Endpoint/model without that reasoning setting: same request, plain.
-                        data = await provider._llm_request(session, f"{base}/chat/completions", body, emit, handle)
+                        data, fitted = await provider._llm_request_fit(
+                            session, f"{base}/chat/completions", body, emit, handle, model=model, window=window,
+                            refit=lambda m, w: prune_images(compress(m, window=w, policy=policy)[0],
+                                                            policy["keep_screenshots"]))
             except (asyncio.TimeoutError, LlmHttpError) as e:
                 if handle.stop_requested:
                     return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
@@ -723,6 +730,11 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 msg = _llm_fail_summary(kind, e, ctx.done, ctx.lang)
                 return await finish(Stop(StopReason.ERROR, "llm_retry_exhausted", step=ctx.budget.used.steps,
                                          detail=msg), extra_error=msg)
+            if replay is None and fitted != window:
+                # #493: the model stated a smaller window; later steps compress against it. The failed
+                # request is not charged and adds no step (only this one response is counted below).
+                window = ctx.window = fitted
+                messages[:] = compress(messages, window=window, policy=policy)[0]
             usage = merge_usage(usage, data.get("usage"))
             message = (data.get("choices") or [{}])[0].get("message") or {}
             content = provider._extract_text(message.get("content") or "")

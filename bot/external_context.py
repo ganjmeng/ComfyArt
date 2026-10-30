@@ -1,8 +1,9 @@
 """#238: P1 context rules for external agents (Claude Code, Codex, Qwen Code, DeepSeek Harness).
 
 A cold start (no resume token) fits prior chat history into 70% of the model window — these CLIs
-do not report one, so #493's known-model table applies, then the 32k fallback. The last 6 turns stay verbatim
-and older turns become one summary of at most 2000 tokens. A resumed session is left as the
+do not report one, so #493's known-model table applies, then the 270k fallback (also when the
+model id is empty). The last 6 turns stay verbatim and older turns become one summary of at
+most summary_token_cap(window) tokens. A resumed session is left as the
 CLI stored it.
 
 Screenshot data URLs inside that fitted text keep the latest 2; older ones become the same
