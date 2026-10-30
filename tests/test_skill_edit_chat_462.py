@@ -15,6 +15,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 CHAT = (ROOT / "src/ui/ChatMessage.tsx").read_text()
 BOT = (ROOT / "src/botLayout.ts").read_text()
+CHIP = (ROOT / "src/ui/SkillChip.tsx").read_text()
 CSS = (ROOT / "src/styles/shell.css").read_text()
 ZH = json.loads((ROOT / "src/locales/zh.json").read_text())
 
@@ -58,12 +59,15 @@ def _bubble() -> str:
 def test_chip_is_name_only_icon_left_truncated_no_close() -> None:
     bubble = _bubble()
     # chip is a child of the bubble, not a sibling box above it; it comes before the text on the same line
-    assert CHAT.count('data-testid="user-skill-chip"') == 1 and 'data-testid="user-skill-chip"' in bubble
-    assert bubble.index('data-testid="user-skill-chip"') < bubble.index("{text}")
-    chip = bubble[bubble.index("<span"):bubble.index("</span>)}") + 9]
-    # icon left, then name only; no × and no 编辑 · / Edit · prefix
-    assert '<span className="ca-icon">{PROCESS_ICONS.skill}</span><span className="ca-chip__name">{b.name}</span>' in chip
-    assert "<button" not in chip and "t(" not in chip
+    # #491 moved the chip markup into the shared src/ui/SkillChip.tsx (reused by the home input); same checks there
+    assert CHAT.count('testId="user-skill-chip"') == 1 and 'testId="user-skill-chip"' in bubble
+    assert bubble.index('testId="user-skill-chip"') < bubble.index("{text}")
+    use = bubble[bubble.index("<SkillChip"):bubble.index("/>", bubble.index("<SkillChip"))]
+    assert "onRemove" not in use  # chat bubble chip has no ×
+    # icon left (the process-line skill icon), then name only; no 编辑 · / Edit · prefix
+    assert "  skill: Icons.scrollText," in CHAT[CHAT.index("const PROCESS_ICONS"):]
+    assert '<span className="ca-icon">{Icons.scrollText}</span><span className="ca-chip__name">{name}</span>' in CHIP
+    assert "{onRemove && <button" in CHIP and CHIP.count("<button") == 1
     assert "text-overflow: ellipsis" in CSS[CSS.index(".ca-chip__name"):]
     # chip gives way first: it shrinks (huge flex-shrink, min-width) and truncates; the text keeps its line
     assert re.search(r"\.ca-chat__bubble--skill \{[^}]*display: flex", CSS)
