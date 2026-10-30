@@ -512,6 +512,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
               store: Optional[RunStore], clock=time.monotonic) -> TurnResult:
     from .local_llm import (
         LlmHttpError,
+        is_context_overflow,
         _THINK_RE,
         _llm_fail_summary,
         _retry_kind,
@@ -715,6 +716,9 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                                                             policy["keep_screenshots"]))
                     except LlmHttpError as e:
                         if not boost or e.status != 400:
+                            raise
+                        if is_context_overflow(e):
+                            # #493 B1: overflow again after the one resend; never a "no boost" retry.
                             raise
                         # Endpoint/model without that reasoning setting: same request, plain.
                         data, fitted = await provider._llm_request_fit(

@@ -342,3 +342,86 @@ async def test_493_no_key_models_fails_falls_back(monkeypatch):
     assert await p._context_window(None, "mystery-7b") == 270_000
     assert await p._context_window(None, "deepseek/deepseek-v4.1-flash-1017") == 1_000_000
     assert len(calls) == 2  # a failed /models is not cached
+
+
+# ------------------------------------------------------------- QA B1 / B2 on 9b0c6f8
+
+def test_493_b1_boost_overflow_twice_sends_exactly_two_then_raises(monkeypatch):
+    """B1: reasoning boost on + overflow, resend, overflow again -> raise. No plain 'no boost'
+    retry with the old window: exactly 2 requests after the memory-add step, never 4."""
+    import asyncio
+    from test_memory_tool_413 import _boosted, _mem_ok, _plain_call, _rig
+
+    def script(messages, n):
+        if n == 0:
+            return _plain_call("memory", {"action": "add", "text": "喜欢暖色调", "category": "taste"}, "mem1")
+        if n in (1, 2):
+            return LlmHttpError(400, OVERFLOW_8K)
+        return {"choices": [{"message": {"content": "不该走到这里", "tool_calls": []}}]}
+    rig = _rig(monkeypatch, script, _mem_ok)
+    try:
+        res, _ = asyncio.run(rig.send("记住我喜欢暖色调"))
+        assert res.error
+    except LlmHttpError:
+        pass
+    assert rig.n == 3                                  # 1 memory step + exactly 2 overflow requests
+    assert [_boosted(b) for b in rig.bodies][1:] == [{"reasoning_effort": "low"}] * 2
+
+
+async def test_493_b2_resend_refit_capped_by_max_input():
+    """B2: the overflow resend is re-fitted to min(70% of the new window, max_input_tokens)."""
+    p = LocalLlmProvider(base_url=lambda: BASE)
+    p._max_inputs = {(BASE, "m"): 20_000}
+    seen: list = []
+
+    def refit(m, w):
+        seen.append(w)
+        return local_llm.refit_messages(m, w)
+    seq = _Seq(p, [LlmHttpError(400, "context_length_exceeded: maximum context length is 100000 tokens"), OK])
+    _, used = await p._llm_request_fit(None, URL, {"model": "m", "messages": _big_messages(n=60, size=8_000)},
+                                       _noop, TurnHandle(), model="m", window=270_000, refit=refit)
+    assert len(seq.sent) == 2
+    resent = seq.sent[1]["messages"]
+    assert local_llm._message_tokens(resent) <= 20_000          # 70% of 100k would allow 70k
+    assert used == 100_000 and seen == [20_000 * 100 // 70]
+
+
+def test_493_p1_refit_messages_caps_at_max_input():
+    """P1: the resend re-fit uses min(70% of window, max_input_tokens), same rule as fit_history."""
+    msgs = [{"role": "system", "content": "sys"},
+            *[{"role": "user" if i % 2 == 0 else "assistant", "content": "字" * 35_000} for i in range(20)],
+            {"role": "user", "content": "LAST"}]
+    wide = local_llm.refit_messages(msgs, 1_048_576)
+    capped = local_llm.refit_messages(msgs, 1_048_576, 655_360)
+    assert local_llm._message_tokens(wide) > 655_360            # 70% alone (734k) keeps more
+    assert local_llm._message_tokens(capped) <= 655_360
+    assert capped[-1]["content"] == "LAST"
+
+
+async def test_493_p1_builtin_resend_passes_declared_max_input(monkeypatch):
+    """P1: the built-in path's refit lambda hands the declared max_input to refit_messages."""
+    import inspect
+    src = inspect.getsource(LocalLlmProvider)
+    assert "refit_messages(m, w, self._declared_max_input(model))" in src
+    assert "refit_messages(messages, window, self._declared_max_input(model))" in src
+
+
+async def test_493_p2_no_number_below_floor_raises_without_resend():
+    """P2: no number in the error and the original window is already <= 32k: raise, no resend."""
+    p = LocalLlmProvider(base_url=lambda: BASE)
+    seq = _Seq(p, [LlmHttpError(400, OVERFLOW_NO_NUMBER), OK])
+    with pytest.raises(LlmHttpError):
+        await p._llm_request_fit(None, URL, {"model": "m", "messages": _big_messages()},
+                                 _noop, TurnHandle(), model="m", window=20_000, refit=_refit)
+    assert len(seq.sent) == 1
+    assert (BASE, "m") not in (getattr(p, "_model_windows", None) or {})
+
+
+async def test_493_p2_no_number_new_window_below_original():
+    """P2: just above the floor, the new window is min(window - 1, max(32k, window // 2)) < original."""
+    p = LocalLlmProvider(base_url=lambda: BASE)
+    seq = _Seq(p, [LlmHttpError(400, OVERFLOW_NO_NUMBER), OK])
+    _, used = await p._llm_request_fit(None, URL, {"model": "m", "messages": _big_messages()},
+                                       _noop, TurnHandle(), model="m", window=32_500, refit=_refit)
+    assert used == 32_000 and used < 32_500
+    assert len(seq.sent) == 2

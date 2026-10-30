@@ -985,10 +985,11 @@ def _summarize_turns(turns: list[list[dict]]) -> str:
     return "\n".join(lines)
 
 
-def refit_messages(messages: list[dict], window: int) -> list[dict]:
-    """#493: drop the oldest non-system messages until the rest fit 70% of `window`. The last
-    user message and the latest steps are kept; a tool result never starts the kept tail."""
-    budget = input_token_budget(window)
+def refit_messages(messages: list[dict], window: int, max_input: int = 0) -> list[dict]:
+    """#493: drop the oldest non-system messages until the rest fit min(70% of `window`,
+    `max_input`) (P1). The last user message and the latest steps are kept; a tool result never
+    starts the kept tail."""
+    budget = input_token_budget(window, max_input)
     system = [m for m in messages if m.get("role") == "system"]
     rest = [m for m in messages if m.get("role") != "system"]
     while len(rest) > 1 and _message_tokens(system + rest) > budget:
@@ -1472,11 +1473,19 @@ class LocalLlmProvider(AgentProvider):
             if not is_context_overflow(e) or handle.stop_requested:
                 raise
             stated = parse_overflow_window(e.body)
-            new_window = stated if 0 < stated < window else max(OVERFLOW_FLOOR, int(window * OVERFLOW_SHRINK))
+            if not 0 < stated < window and window <= OVERFLOW_FLOOR:
+                raise  # #493 P2: no number and already at/below the floor: nothing smaller to try
+            new_window = stated if 0 < stated < window else min(
+                window - 1, max(OVERFLOW_FLOOR, int(window * OVERFLOW_SHRINK)))  # P2: never >= original
             _log.warning("[ComfyArt/local-llm] context overflow for %s: window %d -> %d, resend once",
                          model, window, new_window)
             self.remember_window(model, new_window)
-            resent = {**body, "messages": refit(list(body.get("messages") or []), new_window)}
+            # #493 B2: re-fit to min(70% of the new window, declared max_input_tokens).
+            fit_window = new_window
+            max_input = self._declared_max_input(model)
+            if max_input:
+                fit_window = min(new_window, max_input * 100 // _INPUT_BUDGET_PERCENT)
+            resent = {**body, "messages": refit(list(body.get("messages") or []), fit_window)}
         return await self._llm_request(session, url, resent, emit, handle), new_window
 
     async def _summarize_llm(self, session, base: str, model: str, previous: str, new_turns: str) -> str:
@@ -2016,10 +2025,11 @@ class LocalLlmProvider(AgentProvider):
                                 "messages": _prune_screenshots(messages),
                                 **({"tools": tools, "tool_choice": "auto"} if tools else {}),
                                 "temperature": 0.2,
-                            }, emit, handle, model=model, window=window, refit=refit_messages)
+                            }, emit, handle, model=model, window=window,
+                            refit=lambda m, w: refit_messages(m, w, self._declared_max_input(model)))
                         if fitted != window:  # #493: later steps of this turn use the real window
                             window = fitted
-                            messages[:] = refit_messages(messages, window)
+                            messages[:] = refit_messages(messages, window, self._declared_max_input(model))
                     except (asyncio.TimeoutError, LlmHttpError) as e:
                         if handle.stop_requested:
                             return TurnResult(aborted=True, usage=usage)
