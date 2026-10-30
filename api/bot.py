@@ -174,7 +174,6 @@ async def bot_send(request: web.Request) -> web.Response:
         display_blocks.append({"type": "skill", "name": skill_name})
     elif chip_name:
         display_blocks.append({"type": "skill", "name": chip_name})
-        display_blocks[-1]["creator"] = True  # #491: Skill Creator chip renders in full (no shrink / ellipsis)
     if text:
         display_blocks.append({"type": "text", "text": text})
     context = str(body.get("context") or "").strip()

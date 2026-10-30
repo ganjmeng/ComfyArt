@@ -309,7 +309,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
             <SkillChip name={skill.name} testId="composer-skill-chip" />
           )}
           {skillCreator.on && (
-            <SkillChip name={t(skillCreator.chip ?? 'composer.skillCreator')} testId="skill-creator-chip" creator />
+            <SkillChip name={t(skillCreator.chip ?? 'composer.skillCreator')} testId="skill-creator-chip" />
           )}
           {mode === 'agent' && docs.map((d) => (
             <span key={d.src} className="ca-chip" title={d.name}>

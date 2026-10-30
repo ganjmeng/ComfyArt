@@ -4,10 +4,9 @@ import { Icons } from './icons'
 /** #462/#484 skill chip (max-width + ellipsis in shell.css `.ca-chip--skill`, full name on hover).
  *  #491: one component for every skill chip — home, in-project composer, chat bubbles, and the Skill Creator chip.
  *  No ×: in an input it is removed with Backspace (see chipBackspace). */
-export function SkillChip({ name, testId, creator }: { name: string; testId?: string; creator?: boolean }) {
-  // #491 design: the Skill Creator chip never shrinks or truncates (data-creator → shell.css); user skill chips keep the ellipsis
+export function SkillChip({ name, testId }: { name: string; testId?: string }) {
   return (
-    <span className="ca-chip ca-chip--skill" data-creator={creator ? '' : undefined} data-testid={testId} title={name}>
+    <span className="ca-chip ca-chip--skill" data-testid={testId} title={name}>
       <span className="ca-icon">{Icons.scrollText}</span><span className="ca-chip__name">{name}</span>
     </span>
   )

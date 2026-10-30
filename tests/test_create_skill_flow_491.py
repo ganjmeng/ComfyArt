@@ -325,26 +325,42 @@ def test_r2_a3_bubble_text_is_exactly_user_text() -> None:
     assert "await sendToAgent(editor, text, keptRefs," in COMPOSER
 
 
+CREATOR_SEL = '.ca-chip--skill:is([title="技能创建器"], [title="Skill Creator"])'
+
+
+def _rule(css: str, selector: str) -> str | None:
+    m = re.search(re.escape(selector) + r" \{([^}]*)\}", css)
+    return m.group(1) if m else None
+
+
 def test_r3_creator_chip_not_truncated() -> None:
-    """Design HOLD: the 技能创建器 / Skill Creator chip never shrinks (full text, no ellipsis); user skill chips keep the ellipsis."""
-    chip = (ROOT / "src/ui/SkillChip.tsx").read_text()
+    """Design HOLD: the 技能创建器 / Skill Creator chip never shrinks (full text, no ellipsis). CSS-only, keyed on the chip title."""
     shell = (ROOT / "src/styles/shell.css").read_text()
-    assert "data-creator={creator ? '' : undefined}" in chip
-    rule = re.search(r"\.ca-chip--skill\[data-creator\] \{([^}]*)\}", shell)
-    assert rule and "flex-shrink: 0" in rule.group(1) and "max-width: none" in rule.group(1)
-    bub = re.search(r"\.ca-chat__bubble--skill > \.ca-chip--skill\[data-creator\] \{([^}]*)\}", shell)
-    assert bub and "flex: 0 0 auto" in bub.group(1)
-    name = re.search(r"\.ca-chip--skill\[data-creator\] \.ca-chip__name \{([^}]*)\}", shell)
-    assert name and "text-overflow: clip" in name.group(1) and "overflow: visible" in name.group(1)
-    # every creator entry renders with `creator`; user skill chips do not
-    assert 'testId="home-skill-creator-chip" creator />' in HOME
-    assert 'testId="skill-creator-chip" creator />' in COMPOSER
+    # selector labels are exactly the composer.skillCreator labels every creator entry renders (home, canvas, stored bubble)
+    assert json.loads(ZH)["composer.skillCreator"] == "技能创建器"
+    assert json.loads((ROOT / "src/locales/en.json").read_text())["composer.skillCreator"] == "Skill Creator"
+    assert "export const HOME_CREATOR_CHIP_KEY = 'composer.skillCreator'" in (ROOT / "src/skills.ts").read_text()
+    assert "title={name}" in (ROOT / "src/ui/SkillChip.tsx").read_text()
+    r = _rule(shell, CREATOR_SEL)
+    assert r and "flex-shrink: 0" in r and "max-width: none" in r
+    r = _rule(shell, ".ca-chat__bubble--skill > " + CREATOR_SEL)
+    assert r and "flex: 0 0 auto" in r and "overflow: visible" in r
+    r = _rule(shell, CREATOR_SEL + " .ca-chip__name")
+    assert r and "overflow: visible" in r and "text-overflow: clip" in r
+
+
+def test_r3_user_skill_chips_keep_ellipsis() -> None:
+    """User skill chips keep 160px + single-line ellipsis: no no-shrink / no-clip rule may reach a non-creator chip."""
+    shell = (ROOT / "src/styles/shell.css").read_text()
+    assert _rule(shell, ".ca-chip--skill") is not None and "max-width: 160px" in _rule(shell, ".ca-chip--skill")
+    assert re.search(r"\.ca-chip__name \{[^}]*text-overflow: ellipsis", shell)
+    assert _rule(shell, ".ca-chat__bubble--skill > .ca-chip--skill") is not None and "flex: 0 999 auto" in _rule(shell, ".ca-chat__bubble--skill > .ca-chip--skill")
+    for sel, body in re.findall(r"([^{}]+)\{([^}]*)\}", re.sub(r"/\*.*?\*/", "", shell, flags=re.S)):
+        if "ca-chip" not in sel:
+            continue
+        risky = any(k in body for k in ("flex-shrink: 0", "max-width: none", "text-overflow: clip", "flex: 0 0 auto"))
+        if risky and ("ca-chip--skill" in sel or "ca-chip__name" in sel):
+            assert CREATOR_SEL in sel, ("no-shrink/no-ellipsis must be scoped to the creator chip", sel.strip())
+    # user chips never carry a creator label
     assert '<SkillChip name={picked.name} testId="home-skill-chip" />' in HOME
     assert '<SkillChip name={skill.name} testId="composer-skill-chip" />' in COMPOSER
-    assert 'skills.filter((b) => b.creator).map((b) => <SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" creator />)' in BUBBLE
-    # server marks only the display-only creator chip
-    seg = BOT_PY.split("elif chip_name:", 1)[1].split("provider_text", 1)[0]
-    assert 'display_blocks[-1]["creator"] = True' in seg
-    # user-chip ellipsis untouched
-    assert ".ca-chip--skill { max-width: 160px;" in shell
-    assert re.search(r"\.ca-chip__name \{[^}]*text-overflow: ellipsis", shell)

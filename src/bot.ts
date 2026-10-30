@@ -25,8 +25,6 @@ export interface BotBlock {
   type: string
   text?: string
   name?: string
-  /** #491: display-only Skill Creator chip (never truncated) */
-  creator?: boolean
   input?: Record<string, any>
   id?: string
   status?: string

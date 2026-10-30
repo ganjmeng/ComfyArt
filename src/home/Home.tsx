@@ -142,7 +142,7 @@ export function Home() {
       >
         {creator && (
           <div className="ca-landing__refs">
-            <SkillChip name={t(HOME_CREATOR_CHIP_KEY)} testId="home-skill-creator-chip" creator />
+            <SkillChip name={t(HOME_CREATOR_CHIP_KEY)} testId="home-skill-creator-chip" />
           </div>
         )}
         {picked && (
