@@ -196,6 +196,9 @@ async def bot_client():
     ACTIVE_TURNS.clear()
     QUEUED.clear()
     bot_asks.PENDING.clear()
+    bot_asks.ANSWERED_RUN_APPROVALS.clear()
+    from ComfyArt.api.ask_store import set_store
+    set_store(None)  # fresh JsonAskStore under tmp user dir
     app = web.Application()
     app.router.add_routes(server.PromptServer.instance.routes)
     client = TestClient(TestServer(app))
@@ -204,6 +207,9 @@ async def bot_client():
     ACTIVE_TURNS.clear()
     QUEUED.clear()
     bot_asks.PENDING.clear()
+    bot_asks.ANSWERED_RUN_APPROVALS.clear()
+    from ComfyArt.api.ask_store import set_store
+    set_store(None)
     await client.close()
 
 

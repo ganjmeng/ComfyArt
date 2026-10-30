@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh" data-theme="light" class="ca-root">
+<meta charset="utf-8"/>
+<title>#387 ask persist before — lost on refresh</title>
+<link rel="stylesheet" href="tip.css"/>
+<style>
+  html,body{margin:0;background:#e8e8e8;}
+  .frame{width:360px;margin:16px;padding:12px;border-radius:16px;
+    background:var(--ca-float);color:var(--ca-text);box-shadow:var(--ca-shadow);}
+  .tag{font:500 11px/14px var(--ca-font);color:var(--ca-muted);margin-bottom:10px;}
+  .bubble{font:400 13px/18px var(--ca-font);margin-bottom:10px;color:var(--ca-text);}
+  .gone{font:400 12px/16px var(--ca-font);color:var(--ca-muted);padding:16px;border:1px dashed var(--ca-border);border-radius:12px;text-align:center;}
+</style>
+<body>
+<div class="frame" id="shot">
+  <div class="tag">#387 before · 刷新后待答卡丢失（PENDING 纯内存）</div>
+  <div class="bubble">帮我做一张品牌海报——先确认几点偏好。</div>
+  <div class="gone">（刷新后问题卡消失）</div>
+</div>
+<script>
+  const t = new URLSearchParams(location.search).get('theme') || 'light';
+  document.documentElement.dataset.theme = t;
+  document.documentElement.className = 'ca-root';
+</script>
+</body></html>
