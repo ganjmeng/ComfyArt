@@ -478,7 +478,7 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
   )
 }
 
-/** #328/#330: Lovart-style Question card — multi-q + in-card paging. */
+/** #328/#330: reference-style Question card — multi-q + in-card paging. */
 function QuestionCard({ b }: { b: BotBlock }) {
   const questions = askQuestions(b)
   const pageCount = askPageCount(b, questions)
@@ -717,6 +717,8 @@ type ProcessStep = {
   aspectRatio?: string
   /** #382: memory ids for the memory_updated row. */
   memoryIds?: string[]
+  /** #423: texts written this turn — shown as 「已保存 N 条」 detail under the row. */
+  memoryTexts?: string[]
 }
 
 /** #437: canonical visual order for consecutive memory rows (retrieved → updating → updated). */
@@ -747,7 +749,7 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
   const [openKey, setOpenKey] = useState<string | null>(null)
   const live = steps.find((s) => s.live)
   // #356/#358: flat grey media hero under live image/video only (sibling — not a new kind);
-  // left edge = icon column (Lovart), not indented to label column
+  // left edge = icon column (reference), not indented to label column
   const mediaHero = live && (live.kind === 'image' || live.kind === 'video') ? live : undefined
   return (
     <div className="ca-process" data-live={live ? true : undefined}>
@@ -790,6 +792,16 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
             </div>
           )
           // #442 v6: a display:contents group so the card is a sibling of its 24px row, at the icon x
+          // #423: always-visible 「已保存 N 条」 + entry list under the memory row; click still opens dialog (#436)
+          const memTexts = isMemory ? (s.memoryTexts ?? []).filter(Boolean) : []
+          const memDetail = memTexts.length > 0 && (
+            <div className="ca-process__memdetail" data-testid="memory-saved-detail">
+              <div className="ca-process__memcount">{t('chatMessage.memorySavedCount', memTexts.length)}</div>
+              <ul className="ca-process__memlist">
+                {memTexts.map((tx, i) => <li key={i}>{tx}</li>)}
+              </ul>
+            </div>
+          )
           return (
             <div key={s.key} className="ca-process__group">
             <div className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-error={s.error || undefined} data-testid={isMemory ? 'memory-updated-row' : s.kind === 'memory_retrieved' ? 'memory-retrieved-row' : s.kind === 'memory_updating' ? 'memory-updating-row' : s.error ? 'process-row-failed' : undefined}>
@@ -808,6 +820,7 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
               {s.kind !== 'image' && <span className="ca-process__spine" data-testid="process-rail" aria-hidden="true" />}
             </div>
             {card}
+            {memDetail}
             </div>
           )
         })}
@@ -957,6 +970,8 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   // #423: at most one 记忆已更新 › row per turn; older saved turns with several blocks fold into the first
   const firstMem = memBlocks[0]
   const memIdsAll = [...new Set(memBlocks.flatMap((b) => b.memory_ids ?? []))]
+  // #423: texts for 「已保存 N 条」 detail (deduped, order preserved)
+  const memTextsAll = [...new Set(memBlocks.flatMap((b) => b.texts ?? []).filter(Boolean))]
   // #423: memory add never shows a raw tool row, incl. a no-op identical repeat (no 记忆已更新 › row either)
   const memAddIds = new Set(m.blocks.filter((b) => b.type === 'tool_use' && toolName(b.name) === 'memory' && (b.input as { action?: string } | undefined)?.action === 'add').map((b) => b.id))
   const hideMemCall = (b: BotBlock) => (b.type === 'tool_use' || b.type === 'tool_result') && toolName(b.name) === 'memory' && !!b.id
@@ -1060,6 +1075,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
           text: b.type === 'thinking' ? b.text : undefined,
           aspectRatio,
           memoryIds: b.type === 'memory_updated' ? memIdsAll : undefined,
+          memoryTexts: b.type === 'memory_updated' ? memTextsAll : undefined,
           favicon: kindResolved === 'search_pages' ? searchFavicon(result) : undefined,
         })
         return

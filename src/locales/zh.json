@@ -352,6 +352,7 @@
   "chatMessage.thought": "思考完成",
   "chatMessage.memoryUpdated": "记忆已更新",
   "chatMessage.memoryUpdating": "记忆更新中",
+  "chatMessage.memorySavedCount": "已保存 {0} 条",
   "chatMessage.memoryRetrieved": "记忆已读取",
   "chatMessage.memorySavedCount": "已保存 {0} 条",
   "chatMessage.thumbsDown": "点踩",
