@@ -43,21 +43,24 @@ _LLM_TIMEOUT_S = 300
 # capped by summary_token_cap(window).
 _FALLBACK_CONTEXT_WINDOW = 270_000
 # #493: windows of known models, used only when the endpoint's /models does not declare
-# one. Matched by lowercase PREFIX of the model id; first hit wins. Data only: add a row
-# only for a model whose window is verified from its vendor docs.
+# one. Matched by lowercase PREFIX of the model id's last path segment (endpoints prefix ids
+# with a provider: "deepseek/deepseek-v4.1-flash-1017", "openrouter/deepseek/deepseek-v4-pro");
+# first hit wins. Data only: add a row only for a model whose window is verified from its vendor docs.
 # Source: https://api-docs.deepseek.com/ and the DeepSeek V4 release notes:
-#   deepseek-flash = DeepSeek-V4.1-Flash-1017 (old name deepseek-v4-flash aliases to it),
-#   deepseek-v4-pro; 1M context, max output 384K.
+#   deepseek-flash = DeepSeek-V4.1-Flash-1017 (the model behind deepseek-flash; the old name
+#   deepseek-v4-flash aliases to it), deepseek-v4-pro; 1M context, max output 384K.
+#   "deepseek-v4" covers deepseek-v4-* and deepseek-v4.1-*.
 #   deepseek-chat / deepseek-reasoner were retired 2026-07-24 and are deliberately absent.
 _KNOWN_MODEL_WINDOWS: tuple[tuple[str, int], ...] = (
     ("deepseek-flash", 1_000_000),
-    ("deepseek-v4-", 1_000_000),
+    ("deepseek-v4", 1_000_000),
 )
 
 
 def known_model_window(model: str) -> int:
-    """#493: window from the known-model table, 0 if the model is not listed."""
-    mid = (model or "").strip().lower()
+    """#493: window from the known-model table, 0 if the model is not listed. Only the part
+    after the last '/' is matched, so provider prefixes do not hide a known model."""
+    mid = (model or "").strip().rsplit("/", 1)[-1].lower()
     if not mid:
         return 0
     for prefix, window in _KNOWN_MODEL_WINDOWS:
@@ -574,10 +577,29 @@ def context_window_tokens(model_info: object) -> int:
     return found if found else _FALLBACK_CONTEXT_WINDOW
 
 
-def input_token_budget(window: object) -> int:
-    """70% of the model window. A missing/invalid window uses the 270k fallback."""
+def input_token_budget(window: object, max_input: object = 0) -> int:
+    """70% of the model window, capped by the endpoint's declared max_input_tokens when it
+    states one (#493). A missing/invalid window uses the 270k fallback."""
     size = window if isinstance(window, int) and window > 0 else _FALLBACK_CONTEXT_WINDOW
-    return size * _INPUT_BUDGET_PERCENT // 100
+    budget = size * _INPUT_BUDGET_PERCENT // 100
+    cap = _positive_int(max_input)
+    return min(budget, cap) if cap else budget
+
+
+def declared_max_input(model_info: object) -> int:
+    """#493: max_input_tokens a /models entry states (top level or nested), 0 when absent."""
+    if not isinstance(model_info, dict):
+        return 0
+    n = _positive_int(model_info.get("max_input_tokens"))
+    if n:
+        return n
+    for nest in _WINDOW_NESTED:
+        inner = model_info.get(nest)
+        if isinstance(inner, dict):
+            n = _positive_int(inner.get("max_input_tokens"))
+            if n:
+                return n
+    return 0
 
 
 def count_tokens(text: str) -> int:
@@ -989,10 +1011,10 @@ def _owner_kw(turn) -> dict:
 
 
 def fit_history(history: Optional[list[dict]], *, context_window: Optional[int] = None,
-                reserved_tokens: int = 0) -> list[dict]:
+                reserved_tokens: int = 0, max_input_tokens: int = 0) -> list[dict]:
     """History that fits the input budget. Over the budget, the last 6 turns stay
     verbatim and earlier turns are one summary of at most summary_token_cap(window) tokens."""
-    budget = max(0, input_token_budget(context_window) - max(0, int(reserved_tokens or 0)))
+    budget = max(0, input_token_budget(context_window, max_input_tokens) - max(0, int(reserved_tokens or 0)))
     turns = _group_turns(history)
     verbatim = _render_turns(turns)
     if _message_tokens(verbatim) <= budget:
@@ -1269,10 +1291,10 @@ class LocalLlmProvider(AgentProvider):
     @staticmethod
     def _history_messages(history: Optional[list[dict]], *,
                           context_window: Optional[int] = None,
-                          reserved_tokens: int = 0) -> list[dict]:
+                          reserved_tokens: int = 0, max_input_tokens: int = 0) -> list[dict]:
         """#234: keep history inside 70% of the model window. Unknown window = 270k fallback."""
         return fit_history(history, context_window=context_window,
-                           reserved_tokens=reserved_tokens)
+                           reserved_tokens=reserved_tokens, max_input_tokens=max_input_tokens)
 
     async def _context_window(self, session: aiohttp.ClientSession, model: str) -> int:
         """Tokens in `model`'s window, from the endpoint's /models payload. If it does
@@ -1284,6 +1306,8 @@ class LocalLlmProvider(AgentProvider):
         (e.g. a local 8k quant vs. a hosted 128k one) is looked up again."""
         cache: dict = getattr(self, "_model_windows", None) or {}
         self._model_windows = cache
+        if getattr(self, "_max_inputs", None) is None:
+            self._max_inputs: dict = {}
         base = self._base_url()
         if not base:
             return resolve_context_window(model)
@@ -1302,12 +1326,23 @@ class LocalLlmProvider(AgentProvider):
                 window = explicit_context_window(entry)
                 if window:
                     cache[(base, str(entry["id"]))] = window
+                max_input = declared_max_input(entry)
+                if max_input:
+                    self._max_inputs[(base, str(entry["id"]))] = max_input
         # Remember a miss too (as the table / fallback value), so a model that never
         # advertises a window does not refetch /models on every turn. A failed
         # request is not cached.
         if model and key not in cache:
             cache[key] = resolve_context_window(model)
         return cache.get(key) or resolve_context_window(model)
+
+    def _declared_max_input(self, model: str) -> int:
+        """#493: max_input_tokens the endpoint's /models declared for `model`, 0 when unknown."""
+        return (getattr(self, "_max_inputs", None) or {}).get((self._base_url(), model), 0)
+
+    def _input_budget(self, model: str, window: int) -> int:
+        """#493: input budget for this endpoint + model = min(70% of window, declared max_input_tokens)."""
+        return input_token_budget(window, self._declared_max_input(model))
 
     async def _wait_stage_done(self, session: aiohttp.ClientSession,
                                endpoint: str, args: dict, model: str,
@@ -1459,7 +1494,9 @@ class LocalLlmProvider(AgentProvider):
                                           *, reserved: int) -> list[dict]:
         """#390-1: the rule fit decides what stays verbatim (last 6 turns at most, 70% of the window);
         the turns it pushed out get a rolling model summary (<= summary_token_cap(window), cut to the room left)."""
-        msgs = self._history_messages(turn.history, context_window=window, reserved_tokens=reserved)
+        max_input = self._declared_max_input(model)
+        msgs = self._history_messages(turn.history, context_window=window, reserved_tokens=reserved,
+                                      max_input_tokens=max_input)
         if not msgs or msgs[0].get("role") != "system":
             return msgs  # fits verbatim (or nothing fits): no model call
         turns = _group_turns(turn.history)
@@ -1477,7 +1514,7 @@ class LocalLlmProvider(AgentProvider):
                                                      **_owner_kw(turn))
         if source == "rule":
             return msgs
-        budget = max(0, input_token_budget(window) - reserved - _message_tokens(msgs[1:]))
+        budget = max(0, input_token_budget(window, max_input) - reserved - _message_tokens(msgs[1:]))
         text = truncate_to_tokens(f"{_SUMMARY_HEADER}\n{text}", min(summary_token_cap(window), budget))
         return [{"role": "system", "content": text}, *msgs[1:]] if text else msgs[1:]
 

@@ -32,7 +32,9 @@ async def test_493_endpoint_field_wins_over_table():
     assert await p._context_window(None, "deepseek-flash") == 64_000
 
 
-@pytest.mark.parametrize("model", ["deepseek-flash", "deepseek-v4-pro", "DeepSeek-V4-Flash"])
+@pytest.mark.parametrize("model", ["deepseek-flash", "deepseek-v4-pro", "DeepSeek-V4-Flash",
+                                   "deepseek/deepseek-v4.1-flash-1017",
+                                   "openrouter/deepseek/deepseek-v4-pro"])
 async def test_493_table_prefix_hit_gives_1m(model):
     p = LocalLlmProvider(base_url=lambda: BASE)
     _stub(p, {"data": [{"id": model}]})
@@ -243,3 +245,71 @@ async def test_493_resend_is_not_a_duplicate_or_extra_charge(monkeypatch, store)
     assert over_res.run["log"]["tokens"] == base_res.run["log"]["tokens"]
     assert over_res.run["log"]["steps"] == base_res.run["log"]["steps"]
     assert over_rig.mcp == base_rig.mcp          # tool calls not repeated
+
+
+# ------------------------------------------------------------- QA /models dump (provider prefix, max_input)
+
+@pytest.mark.parametrize("model", ["deepseek/deepseek-v4.1-flash-1017", "openrouter/deepseek/deepseek-v4-pro",
+                                   "deepseek/deepseek-flash"])
+def test_493_provider_prefixed_ids_hit_table(model):
+    assert local_llm.known_model_window(model) == 1_000_000
+    assert local_llm.resolve_context_window(model) == 1_000_000
+
+
+def test_493_prefix_strip_still_misses_distill():
+    assert local_llm.known_model_window("someone/my-deepseek-distill") == 0
+
+
+QA_DUMP = {"data": [{"id": "deepseek/deepseek-v4.1-flash-1017",
+                     "max_context_tokens": 1_048_576, "max_input_tokens": 655_360}]}
+
+
+async def test_493_max_context_tokens_is_window_and_max_input_caps_budget():
+    p = LocalLlmProvider(base_url=lambda: BASE)
+    _stub(p, QA_DUMP)
+    model = "deepseek/deepseek-v4.1-flash-1017"
+    window = await p._context_window(None, model)
+    assert window == 1_048_576
+    assert local_llm.input_token_budget(window) == 734_003       # 70% alone
+    assert p._input_budget(model, window) == 655_360             # min(70%, max_input_tokens)
+
+
+def test_493_input_budget_min_rule():
+    assert local_llm.input_token_budget(1_048_576, 655_360) == 655_360
+    assert local_llm.input_token_budget(100_000, 655_360) == 70_000
+    assert local_llm.input_token_budget(100_000, 0) == 70_000
+
+
+def test_493_history_fit_uses_max_input_cap():
+    # ~700k tokens of history: under 70% of 1048576 (734k) but over max_input_tokens (655k)
+    history = [{"role": r, "text": "字" * 35_000} for _ in range(10) for r in ("user", "assistant")]
+    wide = local_llm.fit_history(history, context_window=1_048_576)
+    capped = local_llm.fit_history(history, context_window=1_048_576, max_input_tokens=655_360)
+    assert wide[0]["role"] != "system"
+    assert capped[0]["role"] == "system"
+    assert local_llm._message_tokens(capped) <= 655_360
+
+
+async def test_493_default_config_models_request_carries_auth(monkeypatch):
+    """Default config (WaveSpeed endpoint, no LLM key env, WaveSpeed key in settings): /models is sent
+    with the same key as the chat request, so the endpoint's 1048576 window is read, not the table's 1M."""
+    from ComfyArt.api import settings, wavespeed
+    from ComfyArt.api.providers import AgentLlmProvider
+    monkeypatch.delenv("COMFYART_LOCAL_LLM_API_KEY", raising=False)
+    monkeypatch.setattr(settings, "read_json", lambda *_a, **_k: {})
+    monkeypatch.setattr(wavespeed, "key_source", lambda: ("ws-test-key", "settings"))
+    base = settings.get_setting("bot-local-llm-url")
+    assert base == "https://llm.wavespeed.ai/v1"
+    p = AgentLlmProvider(base_url=lambda: base)
+    seen: list = []
+
+    async def models(session, method, url, *, headers, json_body=None, timeout=120):
+        seen.append(headers.get("Authorization"))
+        if headers.get("Authorization") != "Bearer ws-test-key":
+            raise LlmHttpError(401, "missing auth")
+        return QA_DUMP
+    p._request_json = models
+    window = await p._context_window(None, "deepseek/deepseek-v4.1-flash-1017")
+    assert seen == ["Bearer ws-test-key"]
+    assert seen[0] == p._api_headers()["Authorization"]   # same key as the chat request
+    assert window == 1_048_576
