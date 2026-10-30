@@ -171,6 +171,13 @@ button.ca-head__logo:hover, button.ca-head__logo[data-open] { background: var(--
 .ca-chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border-radius: 8px; background: var(--ca-field); font-size: 13px; color: var(--ca-text); }
 .ca-chip .ca-icon { width: 16px; height: 16px; }
 .ca-chip button { display: inline-flex; width: 16px; height: 16px; padding: 0; border: none; background: none; color: var(--ca-muted); cursor: pointer; }
+.ca-chip--skill { max-width: 160px; background: var(--ca-float); border: 1px solid var(--ca-rail); }
+.ca-chip--skill .ca-icon { flex: none; }
+/* #462: chip + text on one row; the chip gives way first (truncates with …), the text wraps only when even it cannot fit */
+.ca-chat__bubble--skill { display: flex; align-items: center; gap: 6px; }
+.ca-chat__bubble--skill > .ca-chip--skill { flex: 0 999 auto; min-width: 48px; overflow: hidden; white-space: nowrap; }
+.ca-chat__bubble--skill > .ca-chat__text { flex: 0 0 auto; min-width: 0; max-width: calc(100% - 54px); } /* never shrinks while the chip can; caps at bubble − chip min − gap, then wraps */
+.ca-chip__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ca-chip button svg { width: 100%; height: 100%; }
 .ca-chip--image { position: relative; width: 40px; height: 40px; padding: 0; overflow: visible; }
 .ca-chip--image img, .ca-chip--image video { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; }

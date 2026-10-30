@@ -48,7 +48,7 @@ SCENES = [
     "no-tool-live", "no-tool-done",
     "thought-live", "thought-done",
     "skill-live", "skill-done",
-    "skill-file-live", "skill-file-done",
+    "skill-file-live", "skill-file-done", "skill-read-done",
     "search-live", "search-done",
     "image-live", "image-done",
     "video-live", "video-done",
@@ -151,6 +151,54 @@ def test_harness_renders_chain_done(browser, bundle):
     assert any("思考完成" in x for x in labels)
     assert any("技能" in x for x in labels)
     page.close()
+
+
+@pytest.mark.parametrize("lang,want_path,want_load", [("zh", "技能文件已读", "技能加载完成"), ("en", "Skill file read", "Skill ready")])
+def test_harness_skill_read_path_vs_load(browser, bundle, lang, want_path, want_load):
+    """#462: read WITH a path still renders the file-read row; read WITHOUT a path renders the skill-load row."""
+    page = _open(browser, bundle, "skill-file-done", lang, "light")
+    labels = page.locator(".ca-process__label").all_text_contents()
+    assert any(want_path in x for x in labels) and not any(want_load in x for x in labels), labels
+    page.close()
+    page = _open(browser, bundle, "skill-read-done", lang, "light")
+    labels = page.locator(".ca-process__label").all_text_contents()
+    assert any(want_load in x for x in labels) and not any(want_path in x for x in labels), labels
+    page.close()
+
+
+def _user_skill(browser, bundle, lang, name, text=""):
+    from urllib.parse import quote
+    page = browser.new_page(viewport={"width": 420, "height": 720}, device_scale_factor=2)
+    page.route("**/*", lambda r: r.continue_() if r.request.url.startswith(bundle) else r.abort())
+    page.goto(f"{bundle}/index.html?lang={lang}&theme=light&scene=user-skill&name={quote(name)}&text={quote(text)}")
+    page.wait_for_function("window.__ready")
+    page.wait_for_timeout(200)
+    m = page.evaluate("""() => {
+      const bub = document.querySelector('[data-testid=user-bubble]')
+      const chip = bub.querySelector('[data-testid=user-skill-chip]')
+      const nm = chip.querySelector('.ca-chip__name')
+      const tx = bub.querySelector('[data-testid=user-bubble-text]')
+      const lh = parseFloat(getComputedStyle(tx).lineHeight) || 20
+      const c = chip.getBoundingClientRect(), t = tx.getBoundingClientRect()
+      return { inBubble: chip.parentElement === bub, chipLeft: c.right <= t.left + 1, sameRow: Math.abs((c.top + c.bottom) - (t.top + t.bottom)) < 4,
+               textLines: t.height < lh * 1.5 ? 1 : Math.round(t.height / lh), truncated: nm.scrollWidth > nm.clientWidth, chipW: c.width,
+               ellipsis: getComputedStyle(nm).textOverflow, chipMin: parseFloat(getComputedStyle(chip).minWidth) }
+    }""")
+    page.close()
+    return m
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_harness_user_skill_chip_shrinks_first_text_one_line(browser, bundle, lang):
+    """#462: chip inside the bubble, left of the text, same row; a long name truncates with … and the text stays on one line."""
+    short = _user_skill(browser, bundle, lang, "早安咖啡店海报生成器")
+    assert short["inBubble"] and short["chipLeft"] and short["sameRow"] and short["textLines"] == 1, short
+    long = _user_skill(browser, bundle, lang, "早安咖啡店海报生成器·门店社媒竖版暖色调超长名称版本二")
+    assert long["inBubble"] and long["sameRow"] and long["textLines"] == 1, long
+    assert long["truncated"] and long["ellipsis"] == "ellipsis" and long["chipW"] <= 160, long
+    # a prompt too long for one line may wrap, but the chip keeps its minimum (icon + …) instead of vanishing
+    para = _user_skill(browser, bundle, lang, "早安咖啡店海报生成器", "把标题改成「周末早安」，画幅改为 9:16，并在底部加上门店地址与营业时间，配色更暖一些")
+    assert para["inBubble"] and para["textLines"] >= 2 and para["chipW"] >= para["chipMin"] - 0.5, para
 
 
 def test_harness_renders_memory_done(browser, bundle):

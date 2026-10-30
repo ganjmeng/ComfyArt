@@ -4,6 +4,7 @@ import { t } from '../i18n'
 import { newProject, openView, type HomeView } from '../projects'
 import { MemoryChooser, MemoryToast } from '../ui/MemoryChooser'
 import { MemoryDialog } from '../ui/MemoryDialog'
+import { SkillsDialog } from '../ui/SkillsDialog'
 import { showMemoryToast } from '../memory'
 import { Confirm } from '../ui/Confirm'
 import { BrandMark } from '../ui/BrandMark'
@@ -89,6 +90,7 @@ export function HomeApp({ view }: { view: View }) {
       <MemoryChooser />
       <MemoryToast />
       <MemoryDialog onError={(msg) => showMemoryToast(msg)} />
+      <SkillsDialog home onError={(msg) => showMemoryToast(msg, 'error')} />
       <KeySettings />
     </div>
   )

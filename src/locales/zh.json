@@ -1524,5 +1524,16 @@
   "skills.desc.product": "白底主图、场景与细节特写",
   "skills.desc.motion": "静帧海报再做成微动循环",
   "skills.desc.interior": "室内与建筑写实渲染",
-  "skills.desc.custom-workflow": "按自定义工作流规则逐步执行"
+  "skills.desc.custom-workflow": "按自定义工作流规则逐步执行",
+  "skillsDialog.name": "名称",
+  "skillsDialog.description": "描述",
+  "skillsDialog.descriptionPlaceholder": "一句话说明这个技能产出什么、何时使用",
+  "skillsDialog.instructions": "说明",
+  "skillsDialog.preview": "预览",
+  "skillsDialog.code": "代码",
+  "skillsDialog.nFiles": "{0} 个文件",
+  "skillsDialog.editInChat": "在对话中编辑",
+  "skillsDialog.notFound": "未找到技能：{0}",
+  "skillEdit.projectTitle": "修改{0} Skill",
+  "skillEdit.ask": "我想修改这个 Skill"
 }

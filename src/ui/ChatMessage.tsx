@@ -64,7 +64,8 @@ const PROCESS_ICONS: Record<ProcessKind, ReactNode> = {
 
 function skillActionIsFileRead(input?: Record<string, any>): boolean {
   const action = String(input?.action ?? '').toLowerCase()
-  return action === 'read' || action === 'file' || action === 'read_file' || action === 'file_read'
+  // #462: read without a path loads the whole skill (技能加载完成); read with a path reads one of its files
+  return (action === 'read' && !!input?.path) || action === 'file' || action === 'read_file' || action === 'file_read'
 }
 
 function processModelName(input?: Record<string, any>): string | undefined {
@@ -1131,6 +1132,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
 export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMessage; onBranch?: () => void }) {
   const text = textOf(m)
   const media = m.blocks.filter((b) => b.type === 'image' || b.type === 'video' || b.type === 'audio')
+  const skills = m.blocks.filter((b) => b.type === 'skill')
   return (
     <div className="ca-chat__user" data-queued={m.status === 'queued' || undefined}>
       <div className="ca-chat__acts">
@@ -1140,10 +1142,15 @@ export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMes
         {onBranch && <button type="button" className="ca-history__del" title={t('chatMessage.forkNewChatFromHere')} onClick={onBranch}>{Icons.merge}</button>}
       </div>
       {media.length > 0 && <div className="ca-chat__thumbs">{media.map((b) => <Thumb key={b.url} editor={editor} src={b.url!} />)}</div>}
-      {m.blocks.filter((b) => b.type === 'skill').map((b) => <span key={b.name} className="ca-chip"><span className="ca-icon">{Icons.skill}</span>{b.name}</span>)}
       {m.blocks.filter((b) => b.type === 'kit').map((b) => <span key={b.name} className="ca-chip"><span className="ca-icon">{Icons.assets}</span>{b.name}</span>)}
       {m.blocks.filter((b) => b.type === 'file').map((b) => <a key={b.url} className="ca-chip" href={b.url} target="_blank" rel="noreferrer"><span className="ca-icon">{Icons.page}</span>{b.name}</a>)}
-      {text && <div className="ca-chat__bubble">{text}</div>}
+      {/* #462: the skill chip sits inside the bubble, inline before the text, with the process-line skill icon */}
+      {(text || skills.length > 0) && (
+        <div className={skills.length > 0 ? 'ca-chat__bubble ca-chat__bubble--skill' : 'ca-chat__bubble'} data-testid="user-bubble">
+          {skills.map((b) => <span key={b.name} className="ca-chip ca-chip--skill" data-testid="user-skill-chip" title={b.name}><span className="ca-icon">{PROCESS_ICONS.skill}</span><span className="ca-chip__name">{b.name}</span></span>)}
+          {skills.length > 0 ? <span className="ca-chat__text" data-testid="user-bubble-text">{text}</span> : text}
+        </div>
+      )}
       {m.status === 'queued' && <span className="ca-chat__hint">{t('chatMessage.queuedSendsAfterTheCurrent')}</span>}
     </div>
   )

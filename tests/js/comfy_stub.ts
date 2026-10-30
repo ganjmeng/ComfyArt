@@ -15,3 +15,6 @@ export const viewUrl = (r: ImageRef) => `/view?filename=${r.filename}`
 export const uploadImage = async (_b: unknown, name: string) => { calls.push(`upload:${name}`); return { filename: name, subfolder: '', type: 'input' } }
 export const queuePrompt = async (_g: unknown, runOn?: string) => { calls.push(`queue:${runOn}`); return 'p1' }
 export const waitForImages = async () => { calls.push('wait'); return [] }
+// #462: skill save/load round-trip needs text read + delete.
+export const readUserText = async (p: string) => (p in files ? files[p] : null)
+export const deleteUserFile = async (p: string) => { delete files[p] }

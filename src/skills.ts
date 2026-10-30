@@ -5,7 +5,7 @@ import { rulesText } from './customMarkers'
 import { t } from './i18n'
 import { uuid } from './id'
 
-export interface Skill { id: string; name: string; instructions: string; files?: Record<string, string>; images?: Record<string, string>; custom?: boolean; learned?: string[] }
+export interface Skill { id: string; name: string; description?: string; instructions: string; files?: Record<string, string>; images?: Record<string, string>; custom?: boolean; learned?: string[] }
 export interface SkillVersion { time: number; skill: Skill }
 
 const ROOT = 'comfyart/skills'
@@ -34,24 +34,32 @@ const write = (path: string, body: string) => writeUserText(`${ROOT}/${path}`, b
 const remove = (path: string) => deleteUserFile(`${ROOT}/${path}`)
 
 export function toMarkdown(skill: Skill): string {
-  return `---\nname: ${skill.name}\n---\n\n${skill.instructions}\n`
+  const desc = skill.description?.replace(/\s+/g, ' ').trim()
+  // #462: JSON-quoted (valid YAML) so colons and surrounding quotes survive the round trip.
+  return `---\nname: ${skill.name}\n${desc ? `description: ${JSON.stringify(desc)}\n` : ''}---\n\n${skill.instructions}\n`
 }
 
-export function parseMarkdown(text: string): { name: string; instructions: string } {
+function unquote(v: string): string {
+  if (v.startsWith('"')) { try { return String(JSON.parse(v)) } catch { /* fall through */ } }
+  return v.replace(/^'(.*)'$/, '$1')
+}
+
+export function parseMarkdown(text: string): { name: string; description: string; instructions: string } {
   const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(text)
   const name = m ? /^name:\s*(.+)$/m.exec(m[1])?.[1].trim() ?? '' : ''
-  return { name, instructions: (m ? m[2] : text).trim() }
+  const description = m ? unquote(/^description:\s*(.+)$/m.exec(m[1])?.[1].trim() ?? '') : ''
+  return { name, description, instructions: (m ? m[2] : text).trim() }
 }
 
 async function readSkill(id: string, paths: string[]): Promise<Skill | null> {
   const md = await read(`${id}/SKILL.md`)
   if (md === null) return null
-  const { name, instructions } = parseMarkdown(md)
+  const { name, description, instructions } = parseMarkdown(md)
   const files: Record<string, string> = {}
   for (const p of paths.filter((p) => p.startsWith('files/'))) files[p.slice(6)] = (await read(`${id}/${p}`)) ?? ''
   const images = paths.includes('images.json') ? JSON.parse((await read(`${id}/images.json`)) ?? '{}') as Record<string, string> : {}
   const learned = paths.includes('learned.json') ? JSON.parse((await read(`${id}/learned.json`)) ?? '[]') as string[] : undefined
-  return { id, name: name || id, instructions, files, images, custom: true, ...(learned ? { learned } : {}) }
+  return { id, name: name || id, ...(description ? { description } : {}), instructions, files, images, custom: true, ...(learned ? { learned } : {}) }
 }
 
 export async function loadSkills(): Promise<Skill[]> {
@@ -115,7 +123,7 @@ export async function importFolder(list: FileList): Promise<{ skill: Skill; skip
     else if (IMAGE_FILE.test(path)) images[path] = await uploadSkillImage(f, id)
     else skipped.push(path)
   }
-  const skill: Skill = { id, name: parsed.name || folder, instructions: parsed.instructions, files: extra, images, custom: true }
+  const skill: Skill = { id, name: parsed.name || folder, ...(parsed.description ? { description: parsed.description } : {}), instructions: parsed.instructions, files: extra, images, custom: true }
   await saveSkill(skill)
   return { skill, skipped }
 }
@@ -123,6 +131,7 @@ export async function importFolder(list: FileList): Promise<{ skill: Skill; skip
 /** #460/#461 — Explore wall + conversational creator (form kept as fallback). */
 const FAV_KEY = 'comfyart.skillFavourites'
 
+/** #462: `edit` set = Edit in Chat for an existing personal skill (same Composer chip path). */
 export const skillCreatorAtom = atom<{ on: boolean }>('skillCreator', { on: false })
 
 export function loadFavourites(): string[] {
@@ -166,6 +175,7 @@ export function skillChip(id: string): SkillChipId {
 }
 
 export function skillDescription(skill: Skill): string {
+  if (skill.description?.trim()) return skill.description.trim()
   const key = `skills.desc.${skill.id}`
   const localized = t(key)
   if (localized !== key) return localized

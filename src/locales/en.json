@@ -1524,5 +1524,16 @@
   "skills.desc.product": "White-bg hero, lifestyle and detail shots",
   "skills.desc.motion": "Still poster then subtle looping motion",
   "skills.desc.interior": "Photoreal interior and architecture renders",
-  "skills.desc.custom-workflow": "Follow custom workflow action rules step by step"
+  "skills.desc.custom-workflow": "Follow custom workflow action rules step by step",
+  "skillsDialog.name": "Name",
+  "skillsDialog.description": "Description",
+  "skillsDialog.descriptionPlaceholder": "One line on what this skill makes and when to use it",
+  "skillsDialog.instructions": "Instructions",
+  "skillsDialog.preview": "Preview",
+  "skillsDialog.code": "Code",
+  "skillsDialog.nFiles": "{0} files",
+  "skillsDialog.editInChat": "Edit in Chat",
+  "skillsDialog.notFound": "Skill not found: {0}",
+  "skillEdit.projectTitle": "Edit {0} Skill",
+  "skillEdit.ask": "I want to edit this Skill"
 }
