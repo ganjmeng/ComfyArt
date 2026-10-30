@@ -56,6 +56,8 @@ def test_conversational_creator_chip_and_form_fallback() -> None:
 
 def test_create_handoff() -> None:
     assert "createSkill" in HANDOFF
+    # #491: the create handoff lands in chat-only full screen
+    assert "chatViewAtom.set('max')" in HANDOFF
     assert "createSkill: '1'" in SKILLS or 'createSkill: "1"' in SKILLS
 
 

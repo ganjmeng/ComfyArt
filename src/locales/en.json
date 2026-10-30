@@ -1546,5 +1546,11 @@
   "skillsImport.error.unreadable": "Couldn't read this file",
   "skillsImport.error.tooLarge": "File is larger than 20 MB",
   "skillsImport.uploading": "Uploading...{0}%",
-  "skillsImport.extracting": "Extracting..."
+  "skillsImport.extracting": "Extracting...",
+  "home.plusMenu": "Add",
+  "home.skillsMenu": "Skills",
+  "home.skillsMenuMore": "Create or import",
+  "home.createSkill": "Create skill",
+  "home.createSkillFromChat": "Create from chat",
+  "home.importSkill": "Import skill"
 }

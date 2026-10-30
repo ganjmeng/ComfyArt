@@ -6,7 +6,8 @@ import { thumbUrl, uploadImage, viewUrl } from '../comfy'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
 import { newProject, openView, startProject, type ProjectEntry } from '../projects'
-import { loadSkills, type Skill } from '../skills'
+import { HOME_CREATOR_CHIP_KEY, loadSkills, type Skill } from '../skills'
+import { skillsOpenAtom } from '../ui/SkillsDialog'
 import { Icons } from '../ui/icons'
 import { NoKeyNotice } from '../ui/NoKeyNotice'
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, refreshKeyStatus } from '../wavespeedKey'
@@ -46,6 +47,9 @@ export function Home() {
   const [drop, setDrop] = useState(false)
   const [composing, setComposing] = useState(false)
   const [sending, setSending] = useState(false)
+  // #491: home + menu (+ → 技能 → 创建技能); the creator chip stays on the home box until send
+  const [plus, setPlus] = useState<null | 'plus' | 'skills' | 'skillsMore'>(null)
+  const [creator, setCreator] = useState(false)
   const current = useCurrentAgent()  // #278: same agent the canvas mode button shows
   const hasContent = !!text.trim() || refs.length > 0  // #276: an image with no text counts as content
   const { showSend, setVoice } = useSlot(hasContent, composing)
@@ -72,6 +76,7 @@ export function Home() {
   // #278: keep the draft until the new project is created; on failure it stays and an error shows
   const send = async () => {
     if (!hasContent || uploading || sending) return
+    if (creator && !text.trim()) { input.current?.focus(); return }
     // #305: guide once; keep the ask in the box when Key is missing
     let key = keyStatusAtom.get()
     if (!key) key = await refreshKeyStatus()
@@ -79,9 +84,12 @@ export function Home() {
     setSending(true)
     setError('')
     try {
-      await startProject({ ask: text.trim(), mode, ref: refs })  // #287: model / settings live in the shared saved store
+      // #491 entry A: only the send leaves home; the new project opens in full-screen chat with the creator prefill
+      if (creator) await startProject({ createSkill: '1', ask: text.trim(), ref: refs })
+      else await startProject({ ask: text.trim(), mode, ref: refs })  // #287: model / settings live in the shared saved store
       setText('')
       setRefs([])
+      setCreator(false)
     } catch (e) {
       setError(errorText(e))
     } finally {
@@ -124,6 +132,14 @@ export function Home() {
         onDragLeave={() => setDrop(false)}
         onDrop={(e) => { e.preventDefault(); setDrop(false); void upload(e.dataTransfer.files) }}
       >
+        {creator && (
+          <div className="ca-landing__refs">
+            <span className="ca-chip ca-chip--creator" data-testid="home-skill-creator-chip">
+              <span className="ca-icon">{Icons.sparkles}</span>{t(HOME_CREATOR_CHIP_KEY)}
+              <button type="button" title={t('common.remove')} onClick={() => setCreator(false)}>{Icons.close}</button>
+            </span>
+          </div>
+        )}
         {refs.length > 0 && (
           <div className="ca-landing__refs">
             {refs.map((src) => (
@@ -138,7 +154,7 @@ export function Home() {
           ref={input}
           className="ca-landing__input"
           value={text}
-          placeholder={EXAMPLES[example]}
+          placeholder={creator ? t('composer.skillCreatorHint') : EXAMPLES[example]}
           onChange={(e) => setText(e.target.value)}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}
@@ -148,7 +164,59 @@ export function Home() {
           }}
         />
         <div className="ca-landing__foot">
-          <button type="button" className="ca-bar__btn ca-bar__btn--icon ca-landing__add" title={t('home.addImage')} onClick={() => file.current?.click()}><span className="ca-icon">{Icons.plus}</span></button>
+          <Popover
+            open={plus !== null}
+            onOpenChange={(o) => setPlus(o ? 'plus' : null)}
+            side="bottom"
+            align="start"
+            within=".ca-landing__box"
+            viewportCap
+            contentKey={plus ?? ''}
+            trigger={({ open, toggle }) => (
+              <button type="button" className="ca-bar__btn ca-bar__btn--icon ca-landing__add" data-testid="home-plus" title={t('home.plusMenu')} data-open={open || undefined} onClick={toggle}><span className="ca-icon">{Icons.plus}</span></button>
+            )}
+          >
+            {plus === 'plus' && (
+              <div className="ca-menu" data-testid="home-plus-menu">
+                <button type="button" className="ca-menu__item" onClick={() => { setPlus(null); file.current?.click() }}>
+                  <span className="ca-icon">{Icons.upload}</span><span className="ca-menu__grow">{t('home.addImage')}</span>
+                </button>
+                <button type="button" className="ca-menu__item" data-testid="home-plus-skills" onClick={() => setPlus('skills')}>
+                  <span className="ca-icon">{Icons.skill}</span><span className="ca-menu__grow">{t('home.skillsMenu')}</span><span className="ca-icon">{Icons.next}</span>
+                </button>
+              </div>
+            )}
+            {plus === 'skills' && (
+              <div className="ca-menu ca-skills" data-testid="home-skills-menu">
+                <div className="ca-menu__head">
+                  <span className="ca-menu__grow">{t('home.skillsMenu')}</span>
+                  <button type="button" className="ca-bar__btn ca-bar__btn--icon" data-testid="home-skills-more" title={t('home.skillsMenuMore')} onClick={() => setPlus('skillsMore')}>
+                    <span className="ca-icon">{Icons.plus}</span>
+                  </button>
+                </div>
+                {skills.map((s) => (
+                  <button key={s.id} type="button" className="ca-menu__item" title={s.instructions} onClick={() => { setPlus(null); newProject({ skill: s.id }) }}>
+                    <span className="ca-menu__grow">{s.name}</span>
+                    {s.custom && <span className="ca-menu__key">{t('composer.personal')}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+            {plus === 'skillsMore' && (
+              <div className="ca-menu" data-testid="home-skills-more-menu">
+                {/* #491: stays on home — only the chip is added; nothing navigates or sends here */}
+                <button type="button" className="ca-menu__item" data-testid="home-create-skill" onClick={() => { setPlus(null); setCreator(true); setMode('agent'); input.current?.focus() }}>
+                  <span className="ca-icon">{Icons.plus}</span><span className="ca-menu__grow">{t('home.createSkill')}</span>
+                </button>
+                <button type="button" className="ca-menu__item" disabled>
+                  <span className="ca-icon">{Icons.agent}</span><span className="ca-menu__grow">{t('home.createSkillFromChat')}</span>
+                </button>
+                <button type="button" className="ca-menu__item" onClick={() => { setPlus(null); skillsOpenAtom.set(true) }}>
+                  <span className="ca-icon">{Icons.files}</span><span className="ca-menu__grow">{t('home.importSkill')}</span>
+                </button>
+              </div>
+            )}
+          </Popover>
           <Popover
             open={modeMenu}
             onOpenChange={(o) => { setModeMenu(o); if (o) void Promise.all([loadProviders(), loadSettings()]).catch((e) => setError(errorText(e))) }}
