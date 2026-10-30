@@ -28,7 +28,7 @@ def _turns(n: int, body: str) -> list[dict]:
 def test_input_cap_is_70_percent_of_the_model_window():
     assert input_token_budget(10_000) == 7_000
     assert input_token_budget(32_000) == 22_400
-    assert input_token_budget(None) == 22_400
+    assert input_token_budget(None) == 189_000  # #493: unknown window falls back to 270k
 
     short = [{"role": "user", "text": f"turn {i} hello"} for i in range(3)]
     kept = LocalLlmProvider._history_messages(short, context_window=32_000)
@@ -74,10 +74,12 @@ def test_summary_is_at_most_2000_tokens_and_keeps_the_record():
         {"role": "user", "text": "z" * 400_000},
         *[{"role": "user", "text": f"RECENT{i}"} for i in range(6)],
     ]
-    msgs = LocalLlmProvider._history_messages(history, context_window=100_000)
+    # #493: the summary cap scales with the window; 40k -> round(40k*5%) = 2000 tokens.
+    assert summary_token_cap(40_000) == 2_000
+    msgs = LocalLlmProvider._history_messages(history, context_window=40_000)
     summary = msgs[0]["content"]
     assert summary.startswith("Earlier conversation summary:")
-    assert count_tokens(summary) <= summary_token_cap(100_000)
+    assert count_tokens(summary) <= summary_token_cap(40_000)
     assert count_tokens(summary) > 1_500
     assert "GOAL_KEEP" in summary
     assert "数量 4 张" in summary and "3:4" in summary
