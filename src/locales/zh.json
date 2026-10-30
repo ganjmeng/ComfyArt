@@ -1542,7 +1542,7 @@
   "skillsImport.importing": "正在导入…",
   "skillsImport.done": "已导入「{0}」",
   "skillsImport.menu": "导入技能",
-  "skillsImport.note.formats": "支持 Claude Code、Codex 及其他标准 Skill 格式",
+  "skillsImport.note.formats": "支持 Claude Code、Codex 及其他标准技能格式",
   "skillsImport.note.skillMd": "必须包含 SKILL.md",
   "skillsImport.error.noSkillMd": "未找到 SKILL.md",
   "skillsImport.error.unreadable": "无法读取这个文件",

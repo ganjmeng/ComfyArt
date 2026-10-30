@@ -1144,19 +1144,20 @@
 .ca-skimport { width: 520px; }
 .ca-skimport__drop {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  width: 100%; min-height: 200px; padding: 24px; box-sizing: border-box;
+  width: 100%; min-height: 100px; padding: 14px 24px; box-sizing: border-box;
   border: 1.5px dashed var(--ca-border); border-radius: 12px; background: var(--ca-hover);
   color: var(--ca-text); font: 400 13px/20px var(--ca-font); cursor: pointer; transition: border-color .15s, background .15s;
 }
 .ca-skimport__drop:hover, .ca-skimport__drop[data-over] { border-color: var(--ca-strong); }
 .ca-skimport__drop[data-over] { background: var(--ca-float); }
 .ca-skimport__drop[data-busy] { cursor: progress; opacity: .7; }
-.ca-skimport__icon { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--ca-float); border: var(--ca-border-w) solid var(--ca-border); }
+.ca-skimport__icon { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; color: var(--ca-text-2); }
 .ca-skimport__icon svg { width: 20px; height: 20px; }
-.ca-skimport__title { font-weight: 500; font-size: 14px; }
+.ca-skimport__title { font-weight: 400; font-size: 14px; color: var(--ca-text-2); }
+.ca-skimport .ca-side__head { font-weight: 600; font-size: 16px; }
 .ca-skimport__error { color: #e74c3c; font: 400 12px/18px var(--ca-font); }
 .ca-skimport__drop[data-error] { border-color: #e74c3c; border-style: solid; }
-.ca-skimport__notes { margin: 12px 0 0; padding-left: 18px; color: var(--ca-muted); font: 400 12px/20px var(--ca-font); }
+.ca-skimport__notes { margin: 12px 0 0; padding-left: 18px; color: var(--ca-text-2); font: 400 12px/20px var(--ca-font); }
 
 /* #463 — Create split menu (Create · ▾ → Import a Skill) */
 .ca-skills__createwrap { position: relative; display: inline-flex; }

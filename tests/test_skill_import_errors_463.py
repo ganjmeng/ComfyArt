@@ -108,8 +108,8 @@ def test_folder_import_unchanged(lang: str) -> None:
 def test_dialog_copy_and_error_in_drop_zone() -> None:
     assert ZH["skillsImport.title"] == "导入技能" and EN["skillsImport.title"] == "Import a skill"
     assert EN["skillsImport.drop"] == "Drop a Skill folder or ZIP file here" and ZH["skillsImport.drop"] == "将技能文件夹或 ZIP 文件拖到此处"
-    assert ZH["skillsImport.note.formats"] == "支持 Claude Code、Codex 及其他标准 Skill 格式"
-    assert EN["skillsImport.note.formats"] == "Supports Claude Code, Codex, and other standard Skill formats"
+    assert ZH["skillsImport.note.formats"] == "支持 Claude Code、Codex 及其他标准技能格式"
+    assert EN["skillsImport.note.formats"] == "Supports Claude Code, Codex, and other standard skill formats"
     assert ZH["skillsImport.note.skillMd"] == "必须包含 SKILL.md" and EN["skillsImport.note.skillMd"] == "Must include SKILL.md"
     for lang, d in (("zh", ZH), ("en", EN)):
         for code, text in ERR[lang].items():
@@ -119,6 +119,8 @@ def test_dialog_copy_and_error_in_drop_zone() -> None:
     assert 'data-testid="skill-import-error"' in drop  # error rendered inside the drop zone
     assert "data-error=" in drop and "zip.current?.click()" in drop
     assert ".ca-skimport__drop[data-error]" in CSS and "#e74c3c" in CSS
+    assert "common.cancel" not in DIALOG and "ca-panel__foot" not in DIALOG  # only the top-right ×
+    assert "Icons.uploadArrow" in DIALOG
     assert "skillsImport.note.formats" in DIALOG and "skillsImport.note.skillMd" in DIALOG
     # no conflict dialog / prompt: duplicates import silently as a new skill
     assert "onConflict" not in DIALOG and "skill-import-conflict" not in DIALOG and "keepBoth" not in DIALOG

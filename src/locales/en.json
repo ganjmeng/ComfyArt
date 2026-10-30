@@ -1543,7 +1543,7 @@
   "skillsImport.importing": "Importing…",
   "skillsImport.done": "Imported “{0}”",
   "skillsImport.menu": "Import a Skill",
-  "skillsImport.note.formats": "Supports Claude Code, Codex, and other standard Skill formats",
+  "skillsImport.note.formats": "Supports Claude Code, Codex, and other standard skill formats",
   "skillsImport.note.skillMd": "Must include SKILL.md",
   "skillsImport.error.noSkillMd": "No SKILL.md found",
   "skillsImport.error.unreadable": "Couldn't read this file",

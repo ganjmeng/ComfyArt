@@ -75,7 +75,7 @@ export function SkillImportDialog({ onClose, onImported }: { onClose: () => void
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false) }}
           onDrop={onDrop}
         >
-          <span className="ca-skimport__icon ca-icon">{Icons.upload}</span>
+          <span className="ca-skimport__icon ca-icon">{Icons.uploadArrow}</span>
           <span className="ca-skimport__title">{busy ? t('skillsImport.importing') : over ? t('skillsImport.release') : t('skillsImport.drop')}</span>
           {error && !over && <span className="ca-skimport__error" role="alert" data-testid="skill-import-error">{error}</span>}
         </button>
@@ -84,9 +84,6 @@ export function SkillImportDialog({ onClose, onImported }: { onClose: () => void
           <li>{t('skillsImport.note.skillMd')}</li>
         </ul>
         <input ref={zip} type="file" accept=".zip,application/zip" hidden data-testid="skill-import-zip-input" onChange={(e) => { takeZip(e.target.files?.[0]); e.target.value = '' }} />
-        <div className="ca-panel__foot">
-          <button type="button" className="ca-panel__secondary" onClick={onClose}>{t('common.cancel')}</button>
-        </div>
       </div>
     </Modal>
   )
