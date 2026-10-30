@@ -289,10 +289,10 @@ const FAV_KEY = 'comfyart.skillFavourites'
 /** #491: `chip` = i18n key of the chip label; unset falls back to composer.skillCreatorChip. */
 export const skillCreatorAtom = atom<{ on: boolean; chip?: string }>('skillCreator', { on: false })
 
-/** #491 entry B (Skills page 「创建」) chip copy — pending product; change this one line to switch. */
-export const CREATE_ENTRY_CHIP_KEY = 'composer.skillCreatorChip'
-/** #491 entry A (home + → 技能 → 创建技能) chip copy: 技能创建器 / Skill Creator. */
+/** #491 product: both create entries share one chip copy — zh 技能创建器 / en Skill Creator. */
 export const HOME_CREATOR_CHIP_KEY = 'composer.skillCreator'
+/** #491 entry B (Skills page 「创建」) uses the same key as home. */
+export const CREATE_ENTRY_CHIP_KEY = HOME_CREATOR_CHIP_KEY
 
 export function loadFavourites(): string[] {
   try {

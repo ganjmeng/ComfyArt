@@ -54,8 +54,11 @@ def test_b_entry_still_hands_off_create_skill() -> None:
     assert 'data-testid="skills-create"' in SKILLS_PAGE
 
 
-def test_b_chip_copy_isolated_one_line() -> None:
-    assert SKILLS_TS.count("export const CREATE_ENTRY_CHIP_KEY = ") == 1
+def test_both_entries_share_chip_key() -> None:
+    assert "export const HOME_CREATOR_CHIP_KEY = 'composer.skillCreator'" in SKILLS_TS
+    assert "export const CREATE_ENTRY_CHIP_KEY = HOME_CREATOR_CHIP_KEY" in SKILLS_TS
+    assert '"composer.skillCreator": "技能创建器"' in ZH
+    assert '"composer.skillCreator": "Skill Creator"' in EN
     assert "t(skillCreator.chip ?? 'composer.skillCreatorChip')" in COMPOSER
 
 
