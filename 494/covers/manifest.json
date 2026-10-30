@@ -2,15 +2,16 @@
  "model": "bytedance/seedream-v4",
  "count": 30,
  "failures": [],
- "this_run_cost_usd": 0.81,
- "task_cumulative_usd": 1.647,
+ "this_run_cost_usd": 0.891,
+ "task_cumulative_usd": 1.728,
  "task_cumulative_breakdown": {
   "run1_cdn_undownloadable": 0.81,
   "run2_canary_truncated": 0.027,
-  "run3": 0.81
+  "run3": 0.81,
+  "run4_text_fix": 0.081
  },
  "balance_before_usd": 8.160744,
- "balance_after_usd": 7.350744,
+ "balance_after_usd": 7.269744,
  "images": [
   {
    "skill_id": "poster",
@@ -267,14 +268,16 @@
     "en": "Playful illustration"
    },
    "file": "packaging/3.png",
-   "prompt": "playful snack packaging bags and cans covered in colorful cartoon character illustrations, on a table, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "prompt": "playful plain unbranded snack packaging: bags and cans in bright solid colours, no labels, no text, no logos, no brand names, on a table, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
    "model": "bytedance/seedream-v4",
    "gen_size": "1024*768",
    "gen_format": "jpeg (base64)",
    "file_format": "png 1024x768",
-   "cost_usd": 0.027,
-   "prediction_id": "9bb21762f601426698b7139e2f6ab23f",
-   "sha256": "1142af001f420d3d8e173ed8fba67dbfdaa5616ecd52f5f1ef15fe7df05f57d0"
+   "cost_usd": 0.054,
+   "prediction_id": "188b2d6391654c0e8911e9cdd800aeed",
+   "sha256": "2d1901bee5af202ff7b16604bd8f0779cd66e08f0695fc27328eeff4113a4eaa",
+   "regenerated": "text-free rerun; total cost includes first attempt",
+   "superseded_prediction_id": "9bb21762f601426698b7139e2f6ab23f"
   },
   {
    "skill_id": "thumbnail",
@@ -377,14 +380,16 @@
     "en": "Brand image"
    },
    "file": "banner/2.png",
-   "prompt": "a wide elegant brand hero banner displayed on a desktop monitor, minimal product still life with soft shadows in calm tones, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "prompt": "a wide elegant desktop monitor whose screen shows only a soft calm-toned abstract gradient with a few minimal geometric shapes and soft shadows, screen shows only abstract shapes, absolutely no text, no letters, no UI, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
    "model": "bytedance/seedream-v4",
    "gen_size": "1024*768",
    "gen_format": "jpeg (base64)",
    "file_format": "png 1024x768",
-   "cost_usd": 0.027,
-   "prediction_id": "75e7ae5657194736b8953113b079c348",
-   "sha256": "e3dfd226b0347be1312ba9dad78056179c76ee58944481ffeb0ddc6a1d2746e7"
+   "cost_usd": 0.054,
+   "prediction_id": "f743e9025ffc4e4db4d5065437ba1f40",
+   "sha256": "77efb0ae87ffaae76dc290df4a1b470a7686144930a0f34731df47f024e12bc4",
+   "regenerated": "text-free rerun; total cost includes first attempt",
+   "superseded_prediction_id": "75e7ae5657194736b8953113b079c348"
   },
   {
    "skill_id": "banner",
@@ -399,14 +404,16 @@
     "en": "Event teaser"
    },
    "file": "banner/3.png",
-   "prompt": "a wide event teaser banner on a desktop monitor with dramatic stage lights, spotlights and abstract light beams, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "prompt": "a desktop monitor on a stage with dramatic stage lights, spotlights and abstract light beams, its screen shows only an abstract glowing gradient of light beams, screen shows only abstract shapes, absolutely no text, no letters, no UI, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
    "model": "bytedance/seedream-v4",
    "gen_size": "1024*768",
    "gen_format": "jpeg (base64)",
    "file_format": "png 1024x768",
-   "cost_usd": 0.027,
-   "prediction_id": "4a342b060ff04997af18bdc6b6d48a68",
-   "sha256": "345f223c5e27686667b1bc7443c9aead28e29122669a37263a6aec1d7e340c8f"
+   "cost_usd": 0.054,
+   "prediction_id": "1510a4e6d5344597b34979ee426389d8",
+   "sha256": "6054b0a7bd0853280d27a755eaec8f4973adedfc56080d07b19fc2f12f97ce0e",
+   "regenerated": "text-free rerun; total cost includes first attempt",
+   "superseded_prediction_id": "4a342b060ff04997af18bdc6b6d48a68"
   },
   {
    "skill_id": "character",
