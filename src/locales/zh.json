@@ -354,7 +354,6 @@
   "chatMessage.memoryUpdating": "记忆更新中",
   "chatMessage.memorySavedCount": "已保存 {0} 条",
   "chatMessage.memoryRetrieved": "记忆已读取",
-  "chatMessage.memorySavedCount": "已保存 {0} 条",
   "chatMessage.thumbsDown": "点踩",
   "chatMessage.thumbsUp": "点赞",
   "chatMessage.timedOut": "已超时",
