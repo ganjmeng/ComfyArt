@@ -109,26 +109,82 @@ export async function uploadSkillImage(file: File, id: string): Promise<string> 
 /** One file of an imported skill: its path inside the folder / ZIP and its content. */
 export interface SkillEntry { path: string; file: Blob }
 
-/** Shared by folder import and ZIP import (#463): finds the shallowest SKILL.md and imports its siblings. */
-export async function importEntries(all: SkillEntry[], fallbackName = ''): Promise<{ skill: Skill; skipped: string[] }> {
+/** #463 — size limit for one import (no earlier limit existed, so the product default of 20 MB applies). */
+export const SKILL_IMPORT_MAX_BYTES = 20 * 1024 * 1024
+
+/** #463 — the only three import errors the drop dialog shows. */
+export type SkillImportErrorCode = 'noSkillMd' | 'unreadable' | 'tooLarge'
+export class SkillImportError extends Error {
+  constructor(readonly code: SkillImportErrorCode) {
+    super(t(`skillsImport.error.${code}`))
+    this.name = 'SkillImportError'
+  }
+}
+
+/** #463 — what to do when a skill with the same id already exists. Never overwritten silently. */
+export type SkillConflictChoice = 'replace' | 'keepBoth' | 'cancel'
+export class SkillImportCancelled extends Error {
+  constructor() { super('cancelled'); this.name = 'SkillImportCancelled' }
+}
+
+/** Zip-slip / unsafe entry path: absolute, drive letter, backslash, `..`, or NUL. */
+export function unsafeEntryPath(path: string): boolean {
+  if (!path || path.includes('\\') || path.includes('\0')) return true
+  if (path.startsWith('/') || /^[a-zA-Z]:/.test(path)) return true
+  return path.split('/').some((part) => part === '..')
+}
+
+export interface ImportOptions {
+  /** ZIP / drop dialog: enforce path safety + size limit. Folder import in the manage dialog keeps its old behaviour. */
+  strict?: boolean
+  /** Called when a skill with the same id exists; without it the old folder-import behaviour (save a version, then update) is kept. */
+  onConflict?: (existing: Skill) => Promise<SkillConflictChoice>
+}
+
+/** Shared by folder import and ZIP import (#463): finds the shallowest SKILL.md and imports its siblings.
+ *  Everything is validated and read before the first write, so a failed import writes nothing. */
+export async function importEntries(all: SkillEntry[], fallbackName = '', opts: ImportOptions = {}): Promise<{ skill: Skill; skipped: string[] }> {
+  if (opts.strict) {
+    if (all.some((e) => unsafeEntryPath(e.path))) throw new SkillImportError('unreadable')
+    if (all.reduce((n, e) => n + e.file.size, 0) > SKILL_IMPORT_MAX_BYTES) throw new SkillImportError('tooLarge')
+  }
   const entries = all.filter((e) => e.path && !/(^|\/)(__MACOSX|\.DS_Store)(\/|$)/.test(e.path))
   const md = entries.filter((e) => /(^|\/)SKILL\.md$/i.test(e.path)).sort((a, b) => a.path.split('/').length - b.path.split('/').length)[0]
-  if (!md) throw new Error(t('skills.noSkillMdInFolder'))
+  if (!md) throw opts.strict ? new SkillImportError('noSkillMd') : new Error(t('skills.noSkillMdInFolder'))
   const root = md.path.replace(/SKILL\.md$/i, '')
-  const parsed = parseMarkdown(await md.file.text())
+  let parsed: { name: string; instructions: string }
+  try { parsed = parseMarkdown(await md.file.text()) } catch { throw opts.strict ? new SkillImportError('unreadable') : new Error(t('skills.noSkillMdInFolder')) }
   const folder = root.replace(/\/$/, '').split('/').pop() || fallbackName
-  const id = slug(folder || parsed.name)
+  let id = slug(folder || parsed.name)
   const extra: Record<string, string> = {}
-  const images: Record<string, string> = {}
+  const imageEntries: [string, SkillEntry][] = []
   const skipped: string[] = []
   for (const e of entries) {
     if (e === md || !e.path.startsWith(root)) continue
     const path = e.path.slice(root.length)
     if (!path) continue
-    const name = path.split('/').pop() ?? path
     if (TEXT_FILE.test(path)) extra[path] = await e.file.text()
-    else if (IMAGE_FILE.test(path)) images[path] = await uploadSkillImage(e.file instanceof File ? e.file : new File([e.file], name), id)
+    else if (IMAGE_FILE.test(path)) imageEntries.push([path, e])
     else skipped.push(path)
+  }
+  if (opts.onConflict) {
+    const paths = await listFiles(id)
+    const existing = paths.includes('SKILL.md') ? await readSkill(id, paths) : null
+    if (existing) {
+      const choice = await opts.onConflict(existing)
+      if (choice === 'cancel') throw new SkillImportCancelled()
+      if (choice === 'keepBoth') {
+        const taken = new Set((await listFiles('')).map((f) => f.split('/')[0]))
+        let n = 2
+        while (taken.has(`${id}-${n}`)) n++
+        id = `${id}-${n}`
+      }
+    }
+  }
+  const images: Record<string, string> = {}
+  for (const [path, e] of imageEntries) {
+    const name = path.split('/').pop() ?? path
+    images[path] = await uploadSkillImage(e.file instanceof File ? e.file : new File([e.file], name), id)
   }
   const skill: Skill = { id, name: parsed.name || folder, ...(parsed.description ? { description: parsed.description } : {}), instructions: parsed.instructions, files: extra, images, custom: true }
   await saveSkill(skill)
@@ -147,11 +203,12 @@ export function zipEntries(bytes: Uint8Array): SkillEntry[] {
 
 export const isZip = (f: File) => /\.zip$/i.test(f.name) || /zip/.test(f.type)
 
-export async function importZip(file: File): Promise<{ skill: Skill; skipped: string[] }> {
-  if (!isZip(file)) throw new Error(t('skillsImport.notZip'))
+export async function importZip(file: File, opts: Omit<ImportOptions, 'strict'> = {}): Promise<{ skill: Skill; skipped: string[] }> {
+  if (file.size > SKILL_IMPORT_MAX_BYTES) throw new SkillImportError('tooLarge')
+  if (!isZip(file)) throw new SkillImportError('unreadable')
   let entries: SkillEntry[]
-  try { entries = zipEntries(new Uint8Array(await file.arrayBuffer())) } catch { throw new Error(t('skillsImport.badZip')) }
-  return importEntries(entries, file.name.replace(/\.zip$/i, ''))
+  try { entries = zipEntries(new Uint8Array(await file.arrayBuffer())) } catch { throw new SkillImportError('unreadable') }
+  return importEntries(entries, file.name.replace(/\.zip$/i, ''), { ...opts, strict: true })
 }
 
 /** #460/#461 — Explore wall + conversational creator (form kept as fallback). */

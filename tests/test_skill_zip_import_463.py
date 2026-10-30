@@ -48,7 +48,7 @@ def test_product_copy() -> None:
     assert EN["skillsImport.drop"] == "Drop a Skill folder or ZIP file here"
     assert ZH["skillsImport.drop"] == "将技能文件夹或 ZIP 文件拖到这里"
     assert "skillsImport.hint" not in EN and "skillsImport.hint" not in ZH
-    assert EN["skills.noSkillMdInFolder"]  # missing-SKILL.md error kept
+    assert EN["skills.noSkillMdInFolder"]  # folder import error kept
 
 
 def test_shared_import_path() -> None:

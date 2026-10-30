@@ -1537,11 +1537,18 @@
   "skillEdit.projectTitle": "Edit {0} Skill",
   "skillEdit.ask": "I want to edit this Skill",
   "skillsImport.title": "Import a Skill",
+  "skillsImport.title": "Import a skill",
   "skillsImport.drop": "Drop a Skill folder or ZIP file here",
   "skillsImport.release": "Release to import",
   "skillsImport.importing": "Importing…",
-  "skillsImport.notZip": "Please choose a .zip file",
-  "skillsImport.badZip": "Couldn't read this ZIP file",
   "skillsImport.done": "Imported “{0}”",
-  "skillsImport.menu": "Import"
+  "skillsImport.menu": "Import",
+  "skillsImport.note.formats": "Supports Claude Code, Codex, and other standard Skill formats",
+  "skillsImport.note.skillMd": "Must include SKILL.md",
+  "skillsImport.error.noSkillMd": "No SKILL.md found",
+  "skillsImport.error.unreadable": "Couldn't read this file",
+  "skillsImport.error.tooLarge": "File is larger than 20 MB",
+  "skillsImport.conflict": "A skill named “{0}” already exists",
+  "skillsImport.conflict.replace": "Replace",
+  "skillsImport.conflict.keepBoth": "Keep both"
 }

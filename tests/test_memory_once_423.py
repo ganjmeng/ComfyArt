@@ -161,6 +161,9 @@ def test_locales_only_add_memory_retrieved_430():
         for k in allow:
             cur.pop(k, None)
             base.pop(k, None)
+        for d in (cur, base):  # #463 skill import copy is its own namespace, not memory copy
+            for k in [k for k in d if k.startswith("skillsImport.")]:
+                d.pop(k)
         assert cur == base
     zh, en = json.loads(_src("src/locales/zh.json")), json.loads(_src("src/locales/en.json"))
     assert zh["chatMessage.memoryUpdated"] == "记忆已更新" and en["chatMessage.memoryUpdated"] == "Memory updated"
