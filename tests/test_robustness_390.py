@@ -164,3 +164,53 @@ def test_store_is_scoped_and_locked():
     assert s.get("summary", "k", workspace_id="w", owner_id="o", project_id="p") == "v"
     assert s.get("summary", "k", workspace_id="w", owner_id="o", project_id="other") is None
     assert hasattr(s, "_lock")
+
+
+def test_store_survives_concurrent_readers_and_writers():
+    """Threads hammering one small store: no exception, never over capacity, last write wins."""
+    import sys
+    import threading
+    s = rb.MemoryKeyValueStore(max_items=8)
+    ids = dict(workspace_id="w", owner_id="o", project_id="p")
+    errors: list = []
+    old = sys.getswitchinterval()
+    sys.setswitchinterval(1e-6)
+    try:
+        def writer(n):
+            try:
+                for i in range(3000):
+                    s.put("summary", f"{n}-{i}", str(i), **ids)
+                    assert len(s._data) <= 8
+            except BaseException as e:  # noqa: BLE001
+                errors.append(e)
+
+        def reader():
+            try:
+                for i in range(3000):
+                    s.get("summary", f"0-{i}", **ids)
+            except BaseException as e:  # noqa: BLE001
+                errors.append(e)
+        ts = [threading.Thread(target=writer, args=(n,)) for n in range(8)]
+        ts += [threading.Thread(target=reader) for _ in range(4)]
+        for t in ts:
+            t.start()
+        for t in ts:
+            t.join()
+    finally:
+        sys.setswitchinterval(old)
+    assert not errors, errors[:3]
+    assert len(s._data) <= 8
+
+
+def test_store_evicts_oldest_entry_first_at_512():
+    s = rb.MemoryKeyValueStore()
+    ids = dict(workspace_id="w", owner_id="o", project_id="p")
+    for i in range(512):
+        s.put("summary", f"k{i}", str(i), **ids)
+    s.put("summary", "k0", "again", **ids)  # overwriting an existing key never evicts
+    assert len(s._data) == 512 and s.get("summary", "k0", **ids) == "again"
+    s.put("summary", "k512", "512", **ids)  # entry 513 evicts the oldest (k0 kept its slot)
+    assert len(s._data) == 512
+    assert s.get("summary", "k0", **ids) is None
+    assert s.get("summary", "k1", **ids) == "1"
+    assert s.get("summary", "k512", **ids) == "512"
