@@ -201,6 +201,39 @@ export async function importZip(file: File): Promise<{ skill: Skill; skipped: st
   return importEntries(entries, file.name.replace(/\.zip$/i, ''), { strict: true })
 }
 
+/** The agent `skill` tool (#463). Skills are addressed by `id` when given: "Edit in chat" passes the id and a save with
+ *  an id updates exactly that skill. A save by name updates the one custom skill with that name; when the name is
+ *  ambiguous (duplicates from import) or new, a new skill is created and no existing one is touched. */
+export async function skillTool(args: Record<string, unknown>): Promise<unknown> {
+  const skills = await loadSkills()
+  if (args.action === 'list') return { skills: skills.map((s) => ({ id: s.id, name: s.name, description: s.instructions.slice(0, 200), custom: !!s.custom })) }
+  const id = args.id ? String(args.id) : ''
+  if (args.action === 'save') {
+    if (!args.instructions || (!args.name && !id)) throw new Error('save needs instructions and a name or id')
+    let existing: Skill | undefined
+    if (id) {
+      existing = skills.find((s) => s.custom && s.id === id)
+      if (!existing) throw new Error(`no custom skill with id ${JSON.stringify(id)}`)
+    } else {
+      const named = skills.filter((s) => s.custom && s.name === args.name)
+      existing = named.length === 1 ? named[0] : undefined
+    }
+    const name = args.name ? String(args.name) : existing!.name
+    const skill: Skill = { ...existing, id: existing?.id ?? await freeSkillId(slug(name)), name, instructions: String(args.instructions), custom: true }
+    await saveSkill(skill)
+    return { saved: name, id: skill.id }
+  }
+  if (args.action !== 'read') throw new Error('action must be list, read or save')
+  const skill = id ? skills.find((s) => s.id === id) : skills.find((s) => s.name === args.name)
+  if (!skill) throw new Error(`unknown skill ${JSON.stringify(id || args.name)} — available: ${skills.map((s) => `${s.name} (${s.id})`).join(', ')}`)
+  if (args.path) {
+    const content = skill.files?.[String(args.path)]
+    if (content == null) throw new Error(`skill ${skill.name} has no file ${args.path}; files: ${Object.keys(skill.files ?? {}).join(', ') || '(none)'}`)
+    return { id: skill.id, name: skill.name, path: args.path, content }
+  }
+  return { id: skill.id, name: skill.name, instructions: skill.instructions, files: Object.keys(skill.files ?? {}), images: Object.values(skill.images ?? {}) }
+}
+
 /** #460/#461 — Explore wall + conversational creator (form kept as fallback). */
 const FAV_KEY = 'comfyart.skillFavourites'
 

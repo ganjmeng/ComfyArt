@@ -70,6 +70,33 @@ def test_duplicate_name_saves_new_skill_and_keeps_original(lang: str) -> None:
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_same_zip_three_times_and_old_sha256_unchanged(lang: str) -> None:
+    r = report()[lang]["same3"]
+    assert r["ids"] == ["poster", "poster-2", "poster-3"]
+    assert r["names"] == ["Poster", "Poster", "Poster"]
+    assert r["dirs"] == ["poster", "poster-2", "poster-3"]
+    assert r["shaBefore"] and r["shaAfter"] == r["shaBefore"]
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_skill_tool_edits_by_id_and_never_overwrites_ambiguous_name(lang: str) -> None:
+    r = report()[lang]["tool"]
+    assert r["list"] == ["poster", "poster-2"]  # list returns ids
+    assert r["byId"] == {"saved": "Poster", "id": "poster-2"} and r["editedInstr"] == "EDITED"
+    assert r["otherSame"] is True  # the other same-name skill is byte-identical
+    assert r["byName"] == {"saved": "Poster", "id": "poster-3"}  # two match -> new skill
+    assert r["bothSame"] is True
+
+
+def test_skill_tool_wired_with_id() -> None:
+    bl = (ROOT / "src/botLayout.ts").read_text()
+    assert "skill: async (_editor, args) => skillTool(args)" in bl and "s.name === args.name" not in bl
+    canvas = (ROOT / "api/mcp_tools/canvas.py").read_text()
+    seg = canvas[canvas.index('"skill": _tool('):canvas.index('"custom_workflow"')]
+    assert '"id": {"type": "string"}' in seg
+
+
 def test_folder_import_unchanged(lang: str) -> None:
     r = report()[lang]["folder"]
     assert r["id"] == "poster" and r["skillMds"] == ["comfyart/skills/poster/SKILL.md"]
@@ -77,6 +104,7 @@ def test_folder_import_unchanged(lang: str) -> None:
 
 def test_dialog_copy_and_error_in_drop_zone() -> None:
     assert ZH["skillsImport.title"] == "导入技能" and EN["skillsImport.title"] == "Import a skill"
+    assert EN["skillsImport.drop"] == "Drop a Skill folder or ZIP file here" and ZH["skillsImport.drop"] == "将技能文件夹或 ZIP 文件拖到此处"
         assert ZH["skillsImport.note.formats"] == "支持 Claude Code、Codex 及其他标准 Skill 格式"
     assert EN["skillsImport.note.formats"] == "Supports Claude Code, Codex, and other standard Skill formats"
     assert ZH["skillsImport.note.skillMd"] == "必须包含 SKILL.md" and EN["skillsImport.note.skillMd"] == "Must include SKILL.md"

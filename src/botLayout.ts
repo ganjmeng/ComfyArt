@@ -14,9 +14,8 @@ import { HTML, type HtmlShape } from './shapes/EmbedShapes'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import { TEXT, type TextShape } from './shapes/TextShape'
 import { VECTOR, type VectorShape } from './shapes/VectorShape'
-import { loadSkills, saveSkill } from './skills'
+import { skillTool } from './skills'
 import { t } from './i18n'
-import { uuid } from './id'
 
 export type Args = Record<string, any>
 export type Handler = (editor: Editor, args: Args, onError: ErrorSink, chat: string) => unknown
@@ -234,23 +233,5 @@ export const LAYOUT_HANDLERS: Record<string, Handler> = {
     if (args.action === 'forget') { const r = await forget([String(args.text ?? '')], t('botCommands.chat')); return { forgotten: r.changed, ...(r.candidates ? { ambiguous: r.candidates.map((m) => m.text), note: 'several memories match; the user is choosing one, nothing was changed' } : {}), ...(r.rejected ? { rejected: r.rejected } : {}) } }
     throw new Error('action must be list, add, correct or forget')
   },
-  skill: async (_editor, args) => {
-    const skills = await loadSkills()
-    if (args.action === 'list') return { skills: skills.map((s) => ({ name: s.name, description: s.instructions.slice(0, 200), custom: !!s.custom })) }
-    if (args.action === 'save') {
-      if (!args.name || !args.instructions) throw new Error('save needs name and instructions')
-      const existing = skills.find((s) => s.custom && s.name === args.name)
-      await saveSkill({ ...existing, id: existing?.id ?? uuid().slice(0, 8), name: String(args.name), instructions: String(args.instructions), custom: true })
-      return { saved: args.name }
-    }
-    if (args.action !== 'read') throw new Error('action must be list, read or save')
-    const skill = skills.find((s) => s.name === args.name)
-    if (!skill) throw new Error(`unknown skill ${JSON.stringify(args.name)} — available: ${skills.map((s) => s.name).join(', ')}`)
-    if (args.path) {
-      const content = skill.files?.[args.path]
-      if (content == null) throw new Error(`skill ${skill.name} has no file ${args.path}; files: ${Object.keys(skill.files ?? {}).join(', ') || '(none)'}`)
-      return { name: skill.name, path: args.path, content }
-    }
-    return { name: skill.name, instructions: skill.instructions, files: Object.keys(skill.files ?? {}), images: Object.values(skill.images ?? {}) }
-  },
+  skill: async (_editor, args) => skillTool(args),
 }

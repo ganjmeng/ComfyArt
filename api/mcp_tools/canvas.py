@@ -401,10 +401,11 @@ SPECS: dict[str, dict] = {
          "old": {"type": "string"}, "new": {"type": "string"}},
         ["action"]),
     "skill": _tool(
-        "Installed skills (instruction packs). action list; read with name (and optional path for a "
-        "bundled file); save with name and instructions to store a reusable workflow the user wants "
-        "to keep. When a task matches a skill, read it first and follow it.",
-        {"action": {"type": "string", "enum": ["list", "read", "save"]}, "name": {"type": "string"},
+        "Installed skills (instruction packs). action list (returns id and name); read with id or name (and "
+        "optional path for a bundled file); save with name and instructions to store a reusable workflow the "
+        "user wants to keep. To edit an existing skill, save with its id (several skills can share a name). "
+        "When a task matches a skill, read it first and follow it.",
+        {"action": {"type": "string", "enum": ["list", "read", "save"]}, "id": {"type": "string"}, "name": {"type": "string"},
          "path": {"type": "string"}, "instructions": {"type": "string"}},
         ["action"]),
     "custom_workflow": _tool(
