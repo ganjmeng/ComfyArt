@@ -228,13 +228,58 @@ export async function loadChats() {
   chatsAtom.set((await json<{ chats: BotChat[] }>(`/comfyart/bot/chats?project=${encodeURIComponent(project)}`)).chats)
 }
 
+/** #387: merge server pending asks into messages after refresh/reconnect. */
+function mergePendingAsks(messages: BotMessage[], asks: Array<BotBlock & { message_id?: string }>): BotMessage[] {
+  if (!asks.length) return messages
+  const byId = new Map(asks.filter((a) => a.ask_id).map((a) => [a.ask_id!, a]))
+  const seen = new Set<string>()
+  const out = messages.map((m) => {
+    let changed = false
+    const blocks = m.blocks.map((b) => {
+      if (b.type !== 'ask' || !b.ask_id || !byId.has(b.ask_id)) return b
+      seen.add(b.ask_id)
+      if (b.status === 'pending') return b
+      changed = true
+      const a = byId.get(b.ask_id)!
+      const { message_id: _mid, ...rest } = a as BotBlock & { message_id?: string }
+      return { ...rest, type: 'ask' as const, status: 'pending' as const }
+    })
+    return changed ? { ...m, blocks } : m
+  })
+  const missing = asks.filter((a) => a.ask_id && !seen.has(a.ask_id))
+  if (!missing.length) return out
+  const byMsg = new Map<string, typeof missing>()
+  for (const a of missing) {
+    const mid = a.message_id || ''
+    if (!byMsg.has(mid)) byMsg.set(mid, [])
+    byMsg.get(mid)!.push(a)
+  }
+  return out.map((m) => {
+    const extra = byMsg.get(m.id)
+    if (!extra?.length) return m
+    const blocks = extra.map((a) => {
+      const { message_id: _mid, ...rest } = a
+      return { ...rest, type: 'ask' as const, status: 'pending' as const }
+    })
+    return { ...m, blocks: [...m.blocks, ...blocks] }
+  })
+}
+
 export async function openChat(id: string | null) {
   chatIdAtom.set(id)
   if (!id) return messagesAtom.set([])
   const { chat, messages } = await json<{ chat: BotChat; messages: BotMessage[] }>(`/comfyart/bot/chats/${id}`)
   if (chatIdAtom.get() !== id) return
   upsertChat(chat)
-  messagesAtom.set(messages)
+  let merged = messages
+  try {
+    const { asks } = await json<{ asks: BotBlock[] }>(`/comfyart/bot/chats/${id}/asks`)
+    if (asks?.length) merged = mergePendingAsks(messages, asks)
+  } catch {
+    /* list is best-effort; messages alone usually already hold pending blocks */
+  }
+  if (chatIdAtom.get() !== id) return
+  messagesAtom.set(merged)
 }
 
 function upsertChat(chat: BotChat) {

@@ -255,6 +255,17 @@ async def bot_branch_chat(request: web.Request) -> web.Response:
     return web.json_response({"chat": branch, "messages": chat_store.list_messages(branch["id"])})
 
 
+
+@routes.get("/comfyart/bot/chats/{cid}/asks")
+async def bot_list_asks(request: web.Request) -> web.Response:
+    """#387: pending asks for a chat (survives process restart via AskStore)."""
+    if not bot_enabled():
+        return bot_disabled()
+    chat = _owned_chat(request)
+    asks = [bot_asks.pending_ask_to_block(a) for a in bot_asks.list_pending_for_chat(chat["id"])]
+    return web.json_response({"asks": asks})
+
+
 @routes.post("/comfyart/bot/chats/{cid}/asks/{aid}/answer")
 async def bot_answer_ask(request: web.Request) -> web.Response:
     if not bot_enabled():
@@ -296,8 +307,37 @@ async def bot_answer_ask(request: web.Request) -> web.Response:
         bot_asks.validate_answer(ask.spec, selected, other_text, answers)
     except ValueError as e:
         return error(str(e), 422)
+    # Snapshot before resolve pops PENDING — abandoned/restored asks have no live
+    # _await_ask waiter, so this handler must update the message + broadcast.
+    needs_persist = ask.abandoned or ask.future_done()
+    msg_id = ask.message_id
+    ask_id = ask.id
     if bot_asks.resolve_ask(ask.id, "answered", selected, other_text or None, answers) is None:
         return error("ask not found or already resolved", 409)
+    if needs_persist and msg_id:
+        msgs = chat_store.list_messages(chat["id"])
+        target = next((m for m in msgs if m["id"] == msg_id), None)
+        if target is not None:
+            blocks = []
+            for b in (target.get("blocks") or []):
+                if isinstance(b, dict) and b.get("type") == "ask" and b.get("ask_id") == ask_id:
+                    nb = {**b, "status": "answered", "selected": selected}
+                    if other_text:
+                        nb["other_text"] = other_text
+                    if answers is not None:
+                        nb["answers"] = answers
+                    blocks.append(nb)
+                else:
+                    blocks.append(b)
+            chat_store.update_message(chat["id"], msg_id, blocks=blocks)
+            payload = {
+                "chat_id": chat["id"], "message_id": msg_id,
+                "ask_id": ask_id, "status": "answered",
+                "selected": selected, "other_text": other_text or None,
+            }
+            if answers is not None:
+                payload["answers"] = answers
+            broadcast("turn_ask_resolved", payload)
     return web.json_response({"ok": True}, status=202)
 
 

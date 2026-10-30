@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<title>#387 pending ask card · tip CSS/DOM</title>
+<link rel="stylesheet" href="../../../../../src/styles/base.css"/>
+<link rel="stylesheet" href="../../../../../src/styles/overlays.css"/>
+<style>
+  html, body { margin: 0; min-height: 100%; background: #e8e8e6; }
+  :root[data-theme="dark"] body, body[data-theme="dark"] { background: #0e0e0e; }
+  .stage {
+    box-sizing: border-box;
+    width: 420px;
+    margin: 0 auto;
+    padding: 28px 24px 36px;
+  }
+  .ca-chat__msg {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 360px;
+  }
+  .ca-chat__bubble {
+    font: 400 13px/18px var(--ca-font);
+    color: var(--ca-text);
+  }
+</style>
+</head>
+<body>
+<script>
+  const theme = new URLSearchParams(location.search).get('theme') || 'light';
+  document.documentElement.dataset.theme = theme;
+  document.body.dataset.theme = theme;
+  document.documentElement.classList.add('ca-root');
+</script>
+<div class="stage" id="shot">
+  <div class="ca-chat__msg" data-testid="ask-persist-msg">
+    <div class="ca-chat__bubble">帮我做一张品牌海报——先确认几点偏好。</div>
+    <!-- Mirrors src/ui/ChatMessage.tsx QuestionCard DOM + tip overlays.css / base.css -->
+    <div class="ca-q" data-testid="pending-ask-card">
+      <div class="ca-q__head">
+        <div class="ca-q__label">
+          <span class="ca-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>
+            </svg>
+          </span>
+          问题
+        </div>
+        <div class="ca-q__page">
+          <button type="button" class="ca-q__chev" disabled aria-label="上一页">
+            <span class="ca-icon ca-q__chev-icon ca-q__chev-icon--left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m10 7 5 5-5 5"/></svg>
+            </span>
+          </button>
+          <span>1 of 2</span>
+          <button type="button" class="ca-q__chev" aria-label="下一页">
+            <span class="ca-icon ca-q__chev-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m10 7 5 5-5 5"/></svg>
+            </span>
+          </button>
+        </div>
+      </div>
+      <div class="ca-q__body">
+        <div class="ca-q__block">
+          <div class="ca-q__prompt">品牌名？</div>
+          <div class="ca-q__opts">
+            <button type="button" class="ca-q__opt" data-on="true">
+              <span class="ca-q__letter">A</span>
+              <span class="ca-q__text">Aurora</span>
+              <span class="ca-q__rec">推荐</span>
+            </button>
+            <button type="button" class="ca-q__opt">
+              <span class="ca-q__letter">B</span>
+              <span class="ca-q__text">Nova</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="ca-q__foot">
+        <button type="button" class="ca-q__skip">跳过</button>
+        <button type="button" class="ca-q__submit">下一步 <span class="ca-q__key">→</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,6 +1,11 @@
 import asyncio
+import logging
+import time
 import uuid
 from typing import Optional
+
+from ..bot.run_budget import LOCAL_OWNER_ID, LOCAL_PROJECT_ID, LOCAL_WORKSPACE_ID
+from .ask_store import get_store, stamp_ownership
 
 ASK_TIMEOUT_S = 540.0
 RUN_APPROVAL_WAIT_S = 45.0
@@ -14,18 +19,92 @@ _SKIP_NOTE = (
 )
 
 
+log = logging.getLogger("comfyart.bot_asks")
+
+
 class PendingAsk:
-    def __init__(self, chat_id: str, message_id: str, spec: dict) -> None:
-        self.id = uuid.uuid4().hex
+    def __init__(
+        self,
+        chat_id: str,
+        message_id: str,
+        spec: dict,
+        *,
+        ask_id: Optional[str] = None,
+        abandoned: bool = False,
+        owner_id: Optional[str] = None,
+        workspace_id: Optional[str] = None,
+        project_id: Optional[str] = None,
+        created_at: Optional[float] = None,
+    ) -> None:
+        self.id = ask_id or uuid.uuid4().hex
         self.chat_id = chat_id
         self.message_id = message_id
         self.spec = spec
-        self.abandoned = False
-        self.future: asyncio.Future = asyncio.get_event_loop().create_future()
+        self.abandoned = abandoned
+        self.owner_id = owner_id or LOCAL_OWNER_ID
+        self.workspace_id = workspace_id or LOCAL_WORKSPACE_ID
+        self.project_id = project_id or LOCAL_PROJECT_ID
+        self.created_at = created_at if created_at is not None else time.time()
+        self._future: Optional[asyncio.Future] = None
+
+    @property
+    def future(self) -> asyncio.Future:
+        # Lazy: reload-at-import must not require a running event loop.
+        if self._future is None:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = asyncio.get_event_loop()
+            self._future = loop.create_future()
+        return self._future
+
+    def future_done(self) -> bool:
+        return self._future is not None and self._future.done()
+
+    def to_record(self) -> dict:
+        return stamp_ownership({
+            "id": self.id,
+            "chat_id": self.chat_id,
+            "message_id": self.message_id,
+            "spec": self.spec,
+            "owner_id": self.owner_id,
+            "workspace_id": self.workspace_id,
+            "project_id": self.project_id,
+            "created_at": self.created_at,
+        })
+
+    @classmethod
+    def from_record(cls, rec: dict, *, abandoned: bool = True) -> "PendingAsk":
+        stamped = stamp_ownership(rec)
+        return cls(
+            chat_id=str(stamped["chat_id"]),
+            message_id=str(stamped.get("message_id") or ""),
+            spec=dict(stamped.get("spec") or {}),
+            ask_id=str(stamped["id"]),
+            abandoned=abandoned,
+            owner_id=stamped.get("owner_id"),
+            workspace_id=stamped.get("workspace_id"),
+            project_id=stamped.get("project_id"),
+            created_at=stamped.get("created_at"),
+        )
 
 
 PENDING: dict[str, PendingAsk] = {}
 ANSWERED_RUN_APPROVALS: dict[tuple[str, str], dict] = {}
+
+
+def _store_put(ask: PendingAsk) -> None:
+    try:
+        get_store().put(ask.to_record())
+    except OSError as e:
+        log.warning("ask store put failed for %s: %s", ask.id, e)
+
+
+def _store_delete(ask_id: str) -> None:
+    try:
+        get_store().delete(ask_id)
+    except OSError as e:
+        log.warning("ask store delete failed for %s: %s", ask_id, e)
 
 
 def _parse_option(raw: dict, i: int, seen_ids: set[str]) -> dict:
@@ -224,6 +303,7 @@ def create_ask(chat_id: str, message_id: str, spec: dict) -> PendingAsk:
             resolve_ask(stale.id, "cancelled")
     ask = PendingAsk(chat_id, message_id, spec)
     PENDING[ask.id] = ask
+    _store_put(ask)
     return ask
 
 
@@ -235,6 +315,9 @@ def abandon_ask(ask_id: str) -> None:
     ask = PENDING.get(ask_id)
     if ask is not None:
         ask.abandoned = True
+    # AC4: abandoned asks must not resurrect after restart — delete store row,
+    # keep PENDING so an in-process answer (e.g. late run_approval) still works.
+    _store_delete(ask_id)
 
 
 def resolve_ask(ask_id: str, status: str,
@@ -244,6 +327,7 @@ def resolve_ask(ask_id: str, status: str,
     ask = PENDING.pop(ask_id, None)
     if ask is None:
         return None
+    _store_delete(ask_id)
     outcome: dict = {"status": status}
     if selected is not None:
         outcome["selected"] = selected
@@ -251,11 +335,18 @@ def resolve_ask(ask_id: str, status: str,
         outcome["other_text"] = other_text
     if answers is not None:
         outcome["answers"] = answers
-    nobody_waiting = ask.future.done() or ask.abandoned
+    nobody_waiting = ask.future_done() or ask.abandoned
     if nobody_waiting and status == "answered" and is_run_approval(ask.spec):
         ANSWERED_RUN_APPROVALS[(ask.chat_id, str(ask.spec.get("prompt") or ""))] = outcome
-    if not ask.future.done():
-        ask.future.set_result(outcome)
+    # Complete an existing waiter; do not create a Future just to mark done
+    # (sync callers / abandoned reloads have no event loop).
+    if ask._future is not None and not ask._future.done():
+        ask._future.set_result(outcome)
+    elif ask._future is None and not ask.abandoned:
+        try:
+            ask.future.set_result(outcome)
+        except RuntimeError:
+            pass
     return ask
 
 
@@ -346,4 +437,38 @@ def validate_answer(spec: dict, selected: list[str],
 
 def skip_note() -> str:
     return _SKIP_NOTE
+
+
+def list_pending_for_chat(chat_id: str) -> list[PendingAsk]:
+    return [a for a in PENDING.values() if a.chat_id == chat_id]
+
+
+def pending_ask_to_block(ask: PendingAsk) -> dict:
+    """Serialize a live/restored ask as a chat `ask` block for the frontend."""
+    return {
+        "type": "ask",
+        "ask_id": ask.id,
+        "message_id": ask.message_id,
+        "status": "pending",
+        **ask.spec,
+    }
+
+
+def reload_pending_from_store() -> int:
+    """Rehydrate PENDING from disk. Restored rows are abandoned (no live agent waiter).
+
+    Clears the in-memory table first so a second call (tests / mid-run) does not
+    duplicate. Returns how many asks were loaded.
+    """
+    PENDING.clear()
+    n = 0
+    for rec in get_store().list_all():
+        try:
+            ask = PendingAsk.from_record(rec, abandoned=True)
+        except (KeyError, TypeError, ValueError) as e:
+            log.warning("skip corrupt ask record: %s", e)
+            continue
+        PENDING[ask.id] = ask
+        n += 1
+    return n
 
