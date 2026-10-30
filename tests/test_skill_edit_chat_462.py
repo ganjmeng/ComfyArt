@@ -67,7 +67,7 @@ def test_chip_is_name_only_icon_left_truncated_no_close() -> None:
     # icon left (the process-line skill icon), then name only; no 编辑 · / Edit · prefix
     assert "  skill: Icons.scrollText," in CHAT[CHAT.index("const PROCESS_ICONS"):]
     assert '<span className="ca-icon">{Icons.scrollText}</span><span className="ca-chip__name">{name}</span>' in CHIP
-    assert "{onRemove && <button" in CHIP and CHIP.count("<button") == 1
+    assert "<button" not in CHIP and "Icons.close" not in CHIP  # #502 product: chips have no × anywhere (Backspace removes)
     assert "text-overflow: ellipsis" in CSS[CSS.index(".ca-chip__name"):]
     # chip gives way first: it shrinks (huge flex-shrink, min-width) and truncates; the text keeps its line
     assert re.search(r"\.ca-chat__bubble--skill \{[^}]*display: flex", CSS)
