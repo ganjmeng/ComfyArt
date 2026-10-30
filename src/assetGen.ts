@@ -10,13 +10,12 @@ import { musicInputs } from './music'
 
 const QWEN_VOICES = ['Serena', 'Vivian', 'Uncle_fu', 'Dylan', 'Eric', 'Ryan', 'Aiden', 'Ono_anna', 'Sohee']
 export const voices = () => QWEN_VOICES // WaveSpeed qwen3-tts voices
-export const MUSIC_SECONDS = [15, 30, 60, 120]
-export { MUSIC_MODELS } from './music'
+export { MUSIC_MODELS, musicModels } from './music'
 export const SFX_SECONDS = [3, 5, 8, 15]
 const MODEL_SIZE = 480
 
 export type AudioSpec =
-  | { kind: 'music'; model: string; prompt: string; lyrics: string; seconds: number; bpm?: number; language?: string; key?: string }
+  | { kind: 'music'; model: string; prompt: string; lyrics: string; seconds: number; bpm?: number; language?: string; key?: string; seed?: number }
   | { kind: 'speech'; text: string; voice: string }
   | { kind: 'clone'; text: string; reference: string }
   | { kind: 'sfx'; prompt: string; seconds: number }

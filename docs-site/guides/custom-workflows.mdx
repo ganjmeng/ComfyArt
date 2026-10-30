@@ -47,13 +47,14 @@ For an agent that is not connected to Loomi, open **Custom workflows** in the pr
 | `@size` | the output size as `width*height` |
 | `@width`, `@height` | width and height in pixels, when the model takes them separately |
 | `@count` | how many results / layers |
-| `@seconds` | video length in **seconds** |
+| `@lyrics` | song lyrics |
+| `@seconds` | video or music length in **seconds** |
 
 Markers are case-insensitive. A marker the feature does not use is ignored with a warning. Do not map a marker to a field the model does not have: the check rejects it.
 
 ### 2. Upload and assign
 
-Open the project menu (top-left icon) → **Custom workflows**. Features are grouped into image generation, image editing, image tools and video. Click the upload button next to a feature: Loomi checks the file against the model's request schema on WaveSpeed (a free lookup) and says what is wrong: an unknown model, a field the model does not accept, a required field left empty. Once it passes, that feature uses it. Each feature keeps its files in its own folder, `comfyart/workflows/<feature>/` in your user folder (`edit`, `upscale`, `video`...), and its menu lists only those. Pick **Built in** to switch back. Loomi never deletes your files; to remove one, delete it in that folder; a feature whose file is gone goes back to built in.
+Open the project menu (top-left icon) → **Custom workflows**. Features are grouped into image generation, image editing, image tools, video and audio. Click the upload button next to a feature: Loomi checks the file against the model's request schema on WaveSpeed (a free lookup) and says what is wrong: an unknown model, a field the model does not accept, a required field left empty. Once it passes, that feature uses it. Each feature keeps its files in its own folder, `comfyart/workflows/<feature>/` in your user folder (`edit`, `upscale`, `video`...), and its menu lists only those. Pick **Built in** to switch back. Loomi never deletes your files; to remove one, delete it in that folder; a feature whose file is gone goes back to built in.
 
 Runs are billed by WaveSpeed at the chosen model's price. Jobs at or above the confirmation limit ($0.50 by default) ask you first.
 
@@ -73,6 +74,7 @@ Runs are billed by WaveSpeed at the chosen model's price. Jobs at or above the c
 | Split layers | `@image` | `@prompt`, `@count` | `@count` is the number of layers. The result is several RGBA images. |
 | Video generation | `@prompt` | `@image`, `@last`, `@size`, `@seconds` | Used by the first/last frame mode. Reference, motion control, lip sync and storyboard keep the built-in model. |
 | Animate image | `@image`, `@prompt` | `@size`, `@seconds`, `@last` | With loop on, `@last` gets the source image again. |
+| Music | `@prompt` | `@lyrics`, `@seconds` | Appears as an extra model in the audio dialog. `@prompt` gets the style, `@lyrics` the lyrics (empty lyrics are sent as `[instrumental]`), `@seconds` the length, clamped to the model's duration range. A model without a duration field gets no length. |
 
 If a feature needs an input image and none is given, the run fails with a message instead of running without it.
 

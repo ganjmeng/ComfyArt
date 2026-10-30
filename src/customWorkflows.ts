@@ -8,13 +8,25 @@ const DIR = 'comfyart/workflows'
 const CONFIG = 'comfyart/workflow-config.json'
 
 export const CUSTOM_GENERATE = 'custom:generate'
+export const CUSTOM_MUSIC = 'custom:music'
 export const workflowConfigAtom = atom<Partial<Record<CustomAction, string>>>('workflow config', {})
+/** #509: WaveSpeed model id of each assigned file, so the audio dialog can read its duration range synchronously. */
+export const customModelsAtom = atom<Partial<Record<CustomAction, string>>>('custom models', {})
+
+async function refreshCustomModels(config: Partial<Record<CustomAction, string>>) {
+  const entries = await Promise.all(Object.entries(config).map(async ([action, file]) => {
+    const spec = await readCustomWorkflow(action as CustomAction, file!).catch(() => null)
+    return spec ? [action, spec.model] : null
+  }))
+  customModelsAtom.set(Object.fromEntries(entries.filter((e) => !!e) as [string, string][]))
+}
 
 export async function loadWorkflowConfig() {
   setWsHook(withCustomModel)
   const config = await readUserJson<Partial<Record<CustomAction, string>>>(CONFIG, {})
   const present = await Promise.all(Object.entries(config).map(async ([action, file]) => (await listCustomWorkflows(action as CustomAction)).includes(file!) && [action, file]))
   workflowConfigAtom.set(Object.fromEntries(present.filter((e) => !!e)))
+  await refreshCustomModels(workflowConfigAtom.get())
 }
 
 export async function setCustomWorkflow(action: CustomAction, file: string | null) {
@@ -23,6 +35,7 @@ export async function setCustomWorkflow(action: CustomAction, file: string | nul
   else delete next[action]
   workflowConfigAtom.set(next)
   await writeUserJson(CONFIG, next)
+  await refreshCustomModels(next)
 }
 
 export const listCustomWorkflows = async (action: CustomAction) => (await listUserFiles(`${DIR}/${action}`)).filter((f) => f.endsWith('.json')).sort()
@@ -46,11 +59,13 @@ export async function withCustomModel(inputs: Record<string, unknown>): Promise<
   const file = workflowConfigAtom.get()[action as CustomAction]
   if (!file) {
     if (action === 'generate' && rest.model === CUSTOM_GENERATE) throw new Error(t('customWorkflows.generateGone', CUSTOM_GENERATE))
+    if (action === 'music' && rest.model === CUSTOM_MUSIC) throw new Error(t('customWorkflows.musicGone'))
     return rest
   }
   const spec = await readCustomWorkflow(action as CustomAction, file)
   if (!spec) {
     if (action === 'generate') throw new Error(t('customWorkflows.generateGone', file.replace(/\.json$/, '')))
+    if (action === 'music') throw new Error(t('customWorkflows.musicGone'))
     return rest
   }
   if (specOf(action as CustomAction).required.includes('image') && !rest.image && !(rest.images as unknown[] | undefined)?.length) throw new Error(t('customWorkflows.needsImage', file))

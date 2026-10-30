@@ -294,10 +294,26 @@ def _caps(schema: dict) -> dict:
         out["max_images"] = props["images"].get("maxItems")
     if "loras" in props:
         out["max_loras"] = (props["loras"] or {}).get("maxItems")  # #202
+    if (rng := duration_range(props)):
+        out["duration_range"] = rng
     defaults = {k: props[k]["default"] for k in ("aspect_ratio", "resolution", "duration", "quality") if "default" in (props.get(k) or {})}
     if defaults:
         out["defaults"] = defaults
     return out
+
+
+def duration_range(props: dict) -> dict | None:
+    """#509: the length slider's min/max/step in seconds from a free numeric duration (or music_length_ms) field.
+    None when the model has no such field (YuE2, MiniMax music-3.0: length follows the lyrics) or only an enum."""
+    key, scale = ("duration", 1) if "duration" in props else ("music_length_ms", 1000) if "music_length_ms" in props else (None, 1)
+    spec = props.get(key) or {}
+    if not key or spec.get("enum") or spec.get("minimum") is None or spec.get("maximum") is None:
+        return None
+    step = spec.get("step") or spec.get("multipleOf") or (spec.get("x-step") if isinstance(spec.get("x-step"), (int, float)) else None) or scale
+    out = {"min": spec["minimum"] / scale, "max": spec["maximum"] / scale, "step": max(step / scale, 1)}
+    if isinstance(spec.get("default"), (int, float)):
+        out["default"] = spec["default"] / scale
+    return {k: int(v) if float(v).is_integer() else v for k, v in out.items()}
 
 
 _GENERIC = {"text-to-image", "image-to-image", "edit", "image-edit", "text-to-video", "image-to-video"}
@@ -505,6 +521,8 @@ def model_details(grouped: dict, model_id: str) -> dict:
     for k in ("inputs", "durations", "aspect_ratios", "resolutions", "max_images"):
         if m.get(k):
             out[k] = _compact_choices(m[k])
+    if m.get("duration_range"):
+        out["duration_range"] = m["duration_range"]  # #509: generate_music clamps duration into it
     if m.get("qualities"):
         out["tiers"] = m["qualities"]
     return out
@@ -525,10 +543,10 @@ def resolve_model(feature: str, model: str | None) -> str:
 
 # custom_workflow (cloud): a feature can run any WaveSpeed model; "fields" maps ComfyArt's values
 # (the upstream @markers) onto that model's request fields.
-MARKER_INPUTS = {"image", "image2", "mask", "last", "prompt", "size", "width", "height", "count", "seconds"}
+MARKER_INPUTS = {"image", "image2", "mask", "last", "prompt", "lyrics", "size", "width", "height", "count", "seconds"}
 MEDIA_MARKERS = {"image", "image2", "mask", "last"}
 AUTO_FIELDS = {"image", "images", "mask_image", "prompt", "tags", "size", "aspect_ratio", "resolution", "duration",
-               "music_length_ms", "last_image", "num_layers", "seed", "output_format", "text", "lyrics", "voice", "voice_id", "language"}
+               "music_length_ms", "last_image", "num_layers", "seed", "output_format", "text", "lyrics", "style", "voice", "voice_id", "language"}
 
 
 def custom_model(model: str | None, meta: dict) -> str:
@@ -568,7 +586,7 @@ def check_custom(spec: dict, required: list[str], optional: list[str], meta: dic
             errors.append(f"param {k!r} is not accepted by {model}.")
             codes.append({"code": "badParam", "model": model, "param": str(k)})
     auto = {"image": "image" in props or "images" in props, "image2": "images" in props, "mask": "mask_image" in props,
-            "last": "last_image" in props, "prompt": "prompt" in props or "tags" in props,
+            "last": "last_image" in props, "prompt": bool({"prompt", "tags", "style"} & set(props)), "lyrics": "lyrics" in props,
             "size": bool({"size", "aspect_ratio", "resolution"} & set(props)), "count": "num_layers" in props or "prompt" in props,
             "seconds": "duration" in props or "music_length_ms" in props}
     missing = [m for m in required if m not in fields and not auto.get(m) and not (m == "size" and "width" in fields and "height" in fields)]
@@ -586,7 +604,7 @@ def check_custom(spec: dict, required: list[str], optional: list[str], meta: dic
 async def _custom_fields(session: aiohttp.ClientSession, inputs: dict, payload: dict) -> None:
     images = list(inputs.get("images") or [])
     values = {"image": inputs.get("image"), "image2": images[0] if images else None, "mask": inputs.get("mask"),
-              "last": inputs.get("last_image"), "prompt": inputs.get("prompt"), "width": inputs.get("width"),
+              "last": inputs.get("last_image"), "prompt": inputs.get("prompt"), "lyrics": inputs.get("lyrics"), "width": inputs.get("width"),
               "height": inputs.get("height"), "count": inputs.get("layers"), "seconds": inputs.get("duration")}
     if inputs.get("width") and inputs.get("height"):
         values["size"] = f"{int(inputs['width'])}*{int(inputs['height'])}"
@@ -824,7 +842,7 @@ def _av_fields(props: dict, required: set, inputs: dict, payload: dict) -> None:
             enum = spec.get("enum")
             payload["duration"] = fit_duration(enum, seconds) if enum else _clamp(spec, seconds)
         elif "music_length_ms" in props:
-            payload["music_length_ms"] = int(float(seconds) * 1000)
+            payload["music_length_ms"] = int(float(_clamp(props["music_length_ms"], float(seconds) * 1000)))
     if inputs.get("resolution") and props.get("resolution", {}).get("enum"):
         payload["resolution"] = _pick(props["resolution"]["enum"], inputs["resolution"], props["resolution"].get("default"))
     if inputs.get("text") and "text" in props:
@@ -985,6 +1003,8 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
     if prompt and "prompt" not in props and "tags" in props:
         payload["tags"] = prompt  # ACE-Step names its style prompt "tags"
         _ace_music_fields(props, inputs.get("music"), payload)
+    if prompt and "prompt" not in props and "tags" not in props and "style" in props:
+        payload["style"] = prompt  # #509: YuE2 names its style prompt "style"
     if prompt and "prompt" in props:
         payload["prompt"] = prompt
     if inputs.get("seed") is not None and "seed" in props:

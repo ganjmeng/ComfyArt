@@ -2,7 +2,8 @@ import { agentError, agentErrorText } from './wsErrors'
 import { react, type Editor, type TLImageShape, type TLShapeId, type TLVideoShape } from 'tldraw'
 
 import * as actions from './actions'
-import { generateAudio, imageTo3d, MUSIC_MODELS, viewsTo3d, voices } from './assetGen'
+import { generateAudio, imageTo3d, musicModels, viewsTo3d, voices } from './assetGen'
+import { clampMusicSeconds } from './music'
 import { editElements } from './elements'
 import { bakeToImage, createMockup } from './mockup'
 import { api, popAgentCommand, pushAgentCommand } from './comfy'
@@ -265,10 +266,10 @@ const HANDLERS: Record<string, Handler> = {
   },
   remove_video_background: (editor, args, onError) => started(editor, actions.cutoutVideo(editor, videoOf(editor, args.id), onError)),
   generate_music: (editor, args, onError, chat) => {
-    const model = args.model ? MUSIC_MODELS.find((m) => m.id === args.model) : MUSIC_MODELS[0]
+    const model = args.model ? musicModels().find((m) => m.id === args.model) : musicModels()[0]
     if (!model) throw new Error(`unknown music model ${JSON.stringify(args.model)} — see list_models`)
     return toChat(editor, chat, generateAudio(editor, {
-      kind: 'music', model: model.id, prompt: String(args.prompt), lyrics: String(args.lyrics ?? ''), seconds: Math.min(AUDIO_MAX_SECONDS, Math.max(1, Number(args.duration) || 30)),
+      kind: 'music', model: model.id, prompt: String(args.prompt), lyrics: String(args.lyrics ?? ''), seconds: clampMusicSeconds(model.id, Math.max(1, Number(args.duration) || 30)), ...(args.seed != null && Number.isFinite(Number(args.seed)) ? { seed: Number(args.seed) } : {}),
       ...(args.bpm ? { bpm: Number(args.bpm) } : {}), ...(args.language ? { language: String(args.language) } : {}), ...(args.key ? { key: String(args.key) } : {}),
     }, onError, true))
   },
