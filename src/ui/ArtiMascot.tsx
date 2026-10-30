@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useValue } from 'tldraw'
 
 import sheetLv1 from '../assets/arti/mascot-lv1-dna-a.png'
 import sheetLv2 from '../assets/arti/mascot-lv2-dna-a.png'
@@ -14,6 +15,7 @@ import {
   type ArtiLevel,
 } from '../artiLevel'
 import { t } from '../i18n'
+import { dismissReviewCard, reviewFeedAtom, type ReviewCard } from '../reviewFeed'
 import { useEscape } from './escape'
 
 const SHEETS: Record<ArtiLevel, string> = {
@@ -69,6 +71,7 @@ export function ArtiMascot({
   const wrapRef = useRef<HTMLSpanElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const reduce = useReducedMotion()
+  const cards = useValue(reviewFeedAtom)
 
   useEffect(() => {
     if (levelProp != null) { setLevel(levelProp); return }
@@ -138,7 +141,7 @@ export function ArtiMascot({
         onClick={() => setNotifyOpen((o) => !o)}
       />
     </span>
-    {/* #376: Lovart CN 1:1 — panel is a composer child (same width), anchored 8px above composer top, z5 */}
+    {/* #376: reference CN 1:1 — panel is a composer child (same width), anchored 8px above composer top, z5 */}
     {notifyOpen && (
       <div
         ref={panelRef}
@@ -159,16 +162,42 @@ export function ArtiMascot({
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
           </button>
         </div>
-        <div className="arti-notify__empty" data-testid="arti-notify-empty">
-          <span
-            className="arti-notify__icon"
-            data-testid="arti-notify-icon"
-            aria-hidden="true"
-            style={{ backgroundImage: `url(${SHEETS[level]})`, ['--mascot-frames' as string]: MASCOT_FRAMES }}
-          />
-          <div className="arti-notify__empty-title">{t('arti.notify.empty')}</div>
-          <div className="arti-notify__empty-hint">{t('arti.notify.emptyHint')}</div>
-        </div>
+        {cards.length === 0 ? (
+          <div className="arti-notify__empty" data-testid="arti-notify-empty">
+            <span
+              className="arti-notify__icon"
+              data-testid="arti-notify-icon"
+              aria-hidden="true"
+              style={{ backgroundImage: `url(${SHEETS[level]})`, ['--mascot-frames' as string]: MASCOT_FRAMES }}
+            />
+            <div className="arti-notify__empty-title">{t('arti.notify.empty')}</div>
+            <div className="arti-notify__empty-hint">{t('arti.notify.emptyHint')}</div>
+          </div>
+        ) : (
+          <ul className="arti-notify__list" data-testid="arti-notify-list">
+            {cards.map((card: ReviewCard) => (
+              <li key={card.id} className="arti-notify__card" data-testid="arti-review-card" data-card-id={card.id}>
+                <div className="arti-notify__card-head">
+                  <div className="arti-notify__card-title">{card.title}</div>
+                  <button
+                    type="button"
+                    className="arti-notify__card-dismiss"
+                    data-testid="arti-review-dismiss"
+                    aria-label={t('arti.notify.dismiss')}
+                    onClick={() => void dismissReviewCard(card.id)}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+                  </button>
+                </div>
+                <ul className="arti-notify__issues">
+                  {card.issues.map((issue, i) => (
+                    <li key={i} className="arti-notify__issue">{issue}</li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     )}
     </>

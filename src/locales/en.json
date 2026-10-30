@@ -156,6 +156,7 @@
   "arti.notify.empty": "No new notifications",
   "arti.notify.emptyHint": "Create with Agent to unlock canvas review and research",
   "arti.notify.title": "Arti notifications",
+  "arti.notify.dismiss": "Dismiss",
   "arti.notify.heading": "Arti notifications ⚡",
   "arti.skillsEmpty": "No evolved skills yet",
   "arti.tabEvolution": "Evolution log",
