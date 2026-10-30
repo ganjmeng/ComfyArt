@@ -2,7 +2,7 @@ import { atom, createShapeId, type Editor, type TLImageShape, type TLShape, type
 
 import { commentTarget } from './actions'
 import { botEnabledAtom, logDirect, sendMessage, settingsAtom, type BotBlock } from './bot'
-import { capRefs, createGenerator, generate, nearestRatio } from './generate'
+import { capRefs, createGenerator, generate, genInfoOf, nearestRatio } from './generate'
 import { DURATIONS, VIDEO_RATIOS } from './genOptions'
 import { uploadImage, viewUrl, type RefKind } from './comfy'
 import { fileSrc, placeMedia, toMedia, type ErrorSink } from './jobs'
@@ -11,8 +11,10 @@ import { ask, ocrLines, parseJson, transcribeFile } from './llm'
 import { AUDIO, AUDIO_SIZE, type AudioShape } from './shapes/EmbedShapes'
 import { refFrameContents, refFrameOf, refLinkedOf } from './chatFrame'
 import { memoryPrompt } from './memory'
+import { formatCanvasSnapshot, packUnifiedContext, type SnapshotNode } from './canvasSnapshot'
+import { OWNER_DEFAULT, WORKSPACE_DEFAULT } from './memoryStore'
 import { directSettings, modelOf } from './models'
-import type { CommentShape } from './shapes/CommentShape'
+import { COMMENT, type CommentShape } from './shapes/CommentShape'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Skill } from './skills'
 import { t } from './i18n'
@@ -69,6 +71,29 @@ export async function uploadRefs(editor: Editor, files: File[]) {
   }
 }
 
+
+/** #384: compact per-turn canvas snapshot for the agent request body (shares #382 budget). */
+export function canvasNodesFromEditor(editor: Editor): { nodes: SnapshotNode[]; selection: string[] } {
+  const ids = [...editor.getCurrentPageShapeIds()]
+  const selection = [...editor.getSelectedShapeIds()].map(String)
+  const nodes: SnapshotNode[] = []
+  for (const id of ids) {
+    const shape = editor.getShape(id)
+    if (!shape || shape.type === COMMENT) continue
+    const gen = genInfoOf(shape)
+    const workflow = gen?.workflow
+      || (shape.type === GENERATOR ? (shape as GeneratorShape).props.workflow : undefined)
+    const model = workflow ? (modelOf(workflow)?.label || workflow) : undefined
+    let name: string | undefined
+    if (shape.type === 'frame') name = (shape as { props: { name?: string } }).props.name
+    else if ('props' in shape && typeof (shape as { props: { text?: string } }).props.text === 'string') {
+      name = (shape as { props: { text: string } }).props.text.slice(0, 80)
+    }
+    nodes.push({ id: String(shape.id), type: String(shape.type), ...(name ? { name } : {}), ...(model ? { model } : {}) })
+  }
+  return { nodes, selection }
+}
+
 export async function sendToAgent(editor: Editor, text: string, refs: RefShape[], skill: Skill | null, kits: LibraryItem[] = [], docs: ChatDoc[] = [], context = '') {
   const linked = linkedKit(editor.getDocumentSettings().meta.brandKit)
   if (linked && !kits.some((k) => k.id === linked.id)) kits = [...kits, linked]
@@ -90,14 +115,31 @@ export async function sendToAgent(editor: Editor, text: string, refs: RefShape[]
     const transcript = kind === 'audio' ? await transcribeFile(src).catch(() => '') : ''
     return [{ id: r.id, src, name: mediaName(editor, r), kind, ...(transcript ? { transcript } : {}) }]
   }))
+  const mem = settingsAtom.get()['memory-enabled'] === false ? '' : memoryPrompt(text)
+  // #384: every turn attaches a fresh canvas snapshot; pack against the shared #382 window budget.
+  const { nodes, selection } = canvasNodesFromEditor(editor)
+  const snap = formatCanvasSnapshot({
+    nodes,
+    selection,
+    owner_id: OWNER_DEFAULT,
+    workspace_id: WORKSPACE_DEFAULT,
+    project_id: String(editor.getDocumentSettings().meta?.projectId || 'local'),
+  })
+  const packed = packUnifiedContext({
+    memoryPrompt: mem,
+    snapshot: snap.text,
+    text,
+    imageCount: refs.length,
+  })
+  const ctx = [packed.snapshot, context].filter(Boolean).join('\n')
   await sendMessage({
     text,
     refs: sent.flat(),
     docs,
     kits: kits.map((k) => ({ name: k.name, description: describeItem(k), images: itemImages(k) })),
     ...(skill ? { skill: skill.name } : {}),
-    memory: settingsAtom.get()['memory-enabled'] === false ? '' : memoryPrompt(text),
-    ...(context ? { context } : {}),
+    memory: packed.memoryPrompt,
+    ...(ctx ? { context: ctx } : {}),
   })
 }
 

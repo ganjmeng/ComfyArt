@@ -11,5 +11,7 @@
   "max_inject_tokens": 1500,
   "image_tokens": 1500,
   "input_budget_percent": 70,
-  "fallback_context_window": 32000
+  "fallback_context_window": 32000,
+  "max_snapshot_nodes": 40,
+  "max_snapshot_tokens": 1500
 }
