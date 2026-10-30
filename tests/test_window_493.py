@@ -33,6 +33,7 @@ async def test_493_endpoint_field_wins_over_table():
 
 
 @pytest.mark.parametrize("model", ["deepseek-flash", "deepseek-v4-pro", "DeepSeek-V4-Flash",
+                                   "deepseek-v4.1-flash-1017",
                                    "deepseek/deepseek-v4.1-flash-1017",
                                    "openrouter/deepseek/deepseek-v4-pro"])
 async def test_493_table_prefix_hit_gives_1m(model):
@@ -74,7 +75,7 @@ def test_493_non_table_fallback_paths_are_270k():
 
 def _long_history():
     # ~250k tokens: over 270k*70% (189k), well under 1M*70%.
-    return [{"role": r, "content": "字" * 12_500}
+    return [{"role": r, "text": "字" * 12_500}
             for _ in range(10) for r in ("user", "assistant")]
 
 
@@ -313,3 +314,31 @@ async def test_493_default_config_models_request_carries_auth(monkeypatch):
     assert seen == ["Bearer ws-test-key"]
     assert seen[0] == p._api_headers()["Authorization"]   # same key as the chat request
     assert window == 1_048_576
+
+
+def test_493_unprefixed_v4_dot_id_hits_table():
+    # product AC lists "deepseek-v4." as a prefix; "deepseek-v4" covers it
+    assert local_llm.known_model_window("deepseek-v4.1-flash-1017") == 1_000_000
+
+
+async def test_493_no_key_models_fails_falls_back(monkeypatch):
+    """Key cannot be resolved (custom-less default endpoint, no env, no saved key, no WaveSpeed key):
+    /models answers 401, an unknown model lands on 270k and a deepseek id still gets the table's 1M."""
+    from ComfyArt.api import settings, wavespeed
+    from ComfyArt.api.providers import AgentLlmProvider
+    monkeypatch.delenv("COMFYART_LOCAL_LLM_API_KEY", raising=False)
+    monkeypatch.setattr(settings, "read_json", lambda *_a, **_k: {})
+    monkeypatch.setattr(wavespeed, "key_source", lambda: ("", "none"))
+    p = AgentLlmProvider(base_url=lambda: "https://llm.wavespeed.ai/v1")
+    assert "Authorization" not in p._api_headers()
+    calls: list = []
+
+    async def models(session, method, url, *, headers, json_body=None, timeout=120):
+        calls.append(url)
+        if "Authorization" not in headers:
+            raise LlmHttpError(401, "missing auth")
+        return QA_DUMP
+    p._request_json = models
+    assert await p._context_window(None, "mystery-7b") == 270_000
+    assert await p._context_window(None, "deepseek/deepseek-v4.1-flash-1017") == 1_000_000
+    assert len(calls) == 2  # a failed /models is not cached
