@@ -1,0 +1,62 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.1.1, pluggy-1.7.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /workspace/work416/ComfyArt
+configfile: pyproject.toml
+plugins: asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collecting ... collected 51 items
+
+tests/test_bot_api.py::test_send_streams_blocks_and_titles_the_chat PASSED [  1%]
+tests/test_e2e_over_quote_393.py::test_decline_first_stops_with_one_quote_and_no_paid_call PASSED [  3%]
+tests/test_e2e_over_quote_393.py::test_decline_after_one_image_keeps_count_from_delivery_records PASSED [  5%]
+tests/test_e2e_over_quote_393.py::test_confirm_pays_this_call_only_then_requotes PASSED [  7%]
+tests/test_e2e_over_quote_393.py::test_en_buttons_answer_through_the_api[Stop here] PASSED [  9%]
+tests/test_e2e_over_quote_393.py::test_en_buttons_answer_through_the_api[Confirm] PASSED [ 11%]
+tests/test_e2e_over_quote_393.py::test_shots[light-zh] SKIPPED (SHOT...) [ 13%]
+tests/test_e2e_over_quote_393.py::test_shots[light-en] SKIPPED (SHOT...) [ 15%]
+tests/test_e2e_over_quote_393.py::test_shots[dark-zh] SKIPPED (SHOT_...) [ 17%]
+tests/test_e2e_over_quote_393.py::test_shots[dark-en] SKIPPED (SHOT_...) [ 19%]
+tests/test_e2e_over_quote_393.py::test_card_has_no_close_x PASSED        [ 21%]
+tests/test_e2e_over_quote_393.py::test_esc_declines_one_quote_no_paid PASSED [ 23%]
+tests/test_e2e_over_quote_393.py::test_backdrop_click_does_nothing PASSED [ 25%]
+tests/test_e2e_over_quote_393.py::test_body_left_edge_equals_title[light-zh] PASSED [ 27%]
+tests/test_e2e_over_quote_393.py::test_body_left_edge_equals_title[light-en] PASSED [ 29%]
+tests/test_e2e_over_quote_393.py::test_body_left_edge_equals_title[dark-zh] PASSED [ 31%]
+tests/test_e2e_over_quote_393.py::test_body_left_edge_equals_title[dark-en] PASSED [ 33%]
+tests/test_e2e_over_quote_393.py::test_ordinary_confirm_unchanged[light-zh] PASSED [ 35%]
+tests/test_e2e_over_quote_393.py::test_ordinary_confirm_unchanged[light-en] PASSED [ 37%]
+tests/test_e2e_over_quote_393.py::test_ordinary_confirm_unchanged[dark-zh] PASSED [ 39%]
+tests/test_e2e_over_quote_393.py::test_ordinary_confirm_unchanged[dark-en] PASSED [ 41%]
+tests/test_e2e_over_quote_393.py::test_plain_modal_keeps_close_x_and_backdrop PASSED [ 43%]
+tests/test_e2e_over_quote_393.py::test_decline_after_failed_call_blocks_fallback[click] PASSED [ 45%]
+tests/test_e2e_over_quote_393.py::test_decline_after_failed_call_blocks_fallback[esc] PASSED [ 47%]
+tests/test_e2e_over_quote_393.py::test_overquote_body_indent_16_ordinary_stays_20 PASSED [ 49%]
+tests/test_e2e_over_quote_393.py::test_fallback_over_quote_decline_blocks_paid_fallback PASSED [ 50%]
+tests/test_e2e_planquote_over_393.py::test_plan_ok_then_over_quote_decline PASSED [ 52%]
+tests/test_e2e_planquote_over_393.py::test_plan_ok_then_over_quote_confirm_once_then_requote PASSED [ 54%]
+tests/test_run_stop_render_393.py::test_details_collapsed_by_default[zh] PASSED [ 56%]
+tests/test_run_stop_render_393.py::test_details_collapsed_by_default[en] PASSED [ 58%]
+tests/test_run_stop_render_393.py::test_no_progress_bar_or_meter PASSED  [ 60%]
+tests/test_run_stop_render_393.py::test_no_cap_numbers[zh] PASSED        [ 62%]
+tests/test_run_stop_render_393.py::test_no_cap_numbers[en] PASSED        [ 64%]
+tests/test_run_stop_render_393.py::test_zh_has_no_english_labels PASSED  [ 66%]
+tests/test_run_stop_render_393.py::test_hard_cap_title_has_no_step_count[zh] PASSED [ 68%]
+tests/test_run_stop_render_393.py::test_hard_cap_title_has_no_step_count[en] PASSED [ 70%]
+tests/test_run_stop_render_393.py::test_cancelled_is_not_error_styled[light] PASSED [ 72%]
+tests/test_run_stop_render_393.py::test_cancelled_is_not_error_styled[dark] PASSED [ 74%]
+tests/test_run_stop_render_393.py::test_contrast_neutral_titles_details_and_danger[light] PASSED [ 76%]
+tests/test_run_stop_render_393.py::test_contrast_neutral_titles_details_and_danger[dark] PASSED [ 78%]
+tests/test_run_stop_render_393.py::test_buttons[zh-budget-2] PASSED      [ 80%]
+tests/test_run_stop_render_393.py::test_buttons[zh-hard_cap-2] PASSED    [ 82%]
+tests/test_run_stop_render_393.py::test_buttons[zh-user_stop:quote_declined-1] PASSED [ 84%]
+tests/test_run_stop_render_393.py::test_buttons[en-budget-2] PASSED      [ 86%]
+tests/test_run_stop_render_393.py::test_buttons[en-hard_cap-2] PASSED    [ 88%]
+tests/test_run_stop_render_393.py::test_buttons[en-user_stop:quote_declined-1] PASSED [ 90%]
+tests/test_run_stop_render_393.py::test_cancelled_continue_only_asks_the_server_to_resume PASSED [ 92%]
+tests/test_run_stop_render_393.py::test_shots_78[zh-light] SKIPPED (...) [ 94%]
+tests/test_run_stop_render_393.py::test_shots_78[zh-dark] SKIPPED (S...) [ 96%]
+tests/test_run_stop_render_393.py::test_shots_78[en-light] SKIPPED (...) [ 98%]
+tests/test_run_stop_render_393.py::test_shots_78[en-dark] SKIPPED (S...) [100%]
+
+=================== 43 passed, 8 skipped in 64.27s (0:01:04) ===================
