@@ -364,3 +364,38 @@ def test_r3_user_skill_chips_keep_ellipsis() -> None:
     # user chips never carry a creator label
     assert '<SkillChip name={picked.name} testId="home-skill-chip" />' in HOME
     assert '<SkillChip name={skill.name} testId="composer-skill-chip" />' in COMPOSER
+
+
+def test_r4_plus_menu_skills_item_opens_panel() -> None:
+    """QA gap m7: the '技能' item in the '+' menu must open the skills panel (not close the menu / do nothing)."""
+    item = re.search(r'<button[^>]*data-testid="home-plus-skills"[^>]*onClick=\{\(\) => ([^}]*)\}>', HOME)
+    assert item and item.group(1).strip() == "setPlus('skills')", item and item.group(1)
+    assert "{plus === 'skills' && (" in HOME and 'data-testid="home-skills-more"' in HOME.split("{plus === 'skills' && (", 1)[1]
+
+
+def test_r4_both_create_entries_go_full_screen() -> None:
+    """QA gap xe: entry A (home send) and entry B (skills page) both land in chatView 'max'."""
+    branch = HANDOFF.split("if (createSkill) {", 1)[1]
+    head, rest = branch.split("if (text) {", 1)
+    assert "chatViewAtom.set('max')" in head, "max must be set before the A/B split so it covers entry A"
+    entry_a = rest.split("// #491 entry B", 1)[0]
+    assert "return sendToAgent(" in entry_a  # entry A returns inside its branch, so a B-only max would miss it
+
+
+def test_r4_create_drops_picked_skill_chip() -> None:
+    """QA gap xf: choosing 创建技能 after picking a skill leaves only the creator chip (picked is cleared, else the send would silently drop the creator)."""
+    m = re.search(r'data-testid="home-create-skill" onClick=\{\(\) => \{([^}]*)\}\}', HOME)
+    assert m, "create-skill handler"
+    body = m.group(1)
+    assert "setPicked(null)" in body and "setCreator(true)" in body
+    # the send prefers `picked`, so both chips together would send a plain skill turn
+    assert re.search(r"if \(picked\) await startProject\(\{ skill: picked\.id.*?\n\s*else if \(creator\) await startProject\(\{ createSkill: '1'", HOME, re.S)
+
+
+def test_r4_entry_b_focuses_input() -> None:
+    """(c) after entry B the caret is in the composer input, not on the full-screen toggle."""
+    entry_b = HANDOFF.split("// #491 entry B", 1)[1].split("return", 1)[0]
+    assert "focusComposer()" in entry_b
+    fc = HANDOFF.split("function focusComposer() {", 1)[1].split("\n}\n", 1)[0]
+    assert "querySelector<HTMLTextAreaElement>('.ca-composer__input')" in fc
+    assert "document.activeElement !== el" in fc and "requestAnimationFrame(go)" in fc

@@ -29,7 +29,15 @@ async function placeRefs(editor: Editor, srcs: string[]): Promise<TLImageShape[]
 }
 
 function focusComposer() {
-  requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('.ca-composer__input')?.focus())
+  // #491 (c): the full-screen switch re-mounts the layout and can leave focus on the view toggle; retry for a few frames
+  let tries = 0
+  const go = () => {
+    document.querySelector<HTMLTextAreaElement>('.ca-composer__input')?.focus()
+    const el = document.querySelector<HTMLTextAreaElement>('.ca-composer__input')
+    if ((!el || document.activeElement !== el) && ++tries < 30) requestAnimationFrame(go)
+    else if (tries < 30) setTimeout(() => { if (document.activeElement !== el) el?.focus() }, 150)
+  }
+  requestAnimationFrame(go)
 }
 
 export async function takeHandoff(editor: Editor, onError: ErrorSink) {
