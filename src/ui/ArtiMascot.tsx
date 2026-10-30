@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import sheetLv1 from '../assets/arti/mascot-lv1-dna-a.png'
 import sheetLv2 from '../assets/arti/mascot-lv2-dna-a.png'
 import sheetLv3 from '../assets/arti/mascot-lv3-dna-a.png'
+import avatarLv1 from '../assets/arti/mascot-lv1-avatar.png'
+import avatarLv2 from '../assets/arti/mascot-lv2-avatar.png'
+import avatarLv3 from '../assets/arti/mascot-lv3-avatar.png'
 import {
   MASCOT_DURATION_MS,
   MASCOT_FRAME_MS,
@@ -17,6 +20,13 @@ const SHEETS: Record<ArtiLevel, string> = {
   1: sheetLv1,
   2: sheetLv2,
   3: sheetLv3,
+}
+
+/** Content-centered frame-0 stills (ink center = frame center) for level-card — not peek frame0. */
+const AVATARS: Record<ArtiLevel, string> = {
+  1: avatarLv1,
+  2: avatarLv2,
+  3: avatarLv3,
 }
 
 export type MascotTrigger = 'idle' | 'play' | 'typing' | 'hover'
@@ -165,7 +175,7 @@ export function ArtiMascot({
   )
 }
 
-/** Static portrait for /arti level-card avatar — shares same sheet/level as composer badge. */
+/** Static portrait for /arti level-card — content-centered DNA sheet frame 0 (opaque eyes). */
 export function ArtiLevelAvatar(props: { level?: ArtiLevel } = {}) {
   const levelProp = props.level
   const [level, setLevel] = useState<ArtiLevel>(() => levelProp ?? resolveArtiLevel())
@@ -179,10 +189,7 @@ export function ArtiLevelAvatar(props: { level?: ArtiLevel } = {}) {
       data-testid="arti-avatar-mascot"
       data-level={level}
       aria-hidden="true"
-      style={{
-        backgroundImage: `url(${SHEETS[level]})`,
-        ['--mascot-frames' as string]: MASCOT_FRAMES,
-      }}
+      style={{ backgroundImage: `url(${AVATARS[level]})` }}
     />
   )
 }

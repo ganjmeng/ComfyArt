@@ -318,20 +318,20 @@ body { background: var(--ca-float); }
 .ca-arti-mem__assetadd .ca-panel__input { margin-bottom: 8px; }
 
 
-/* #371: /arti level-card avatar shares mascot sheet */
+/* #446: /arti level-card avatar — content-centered still, contain in 75×89 mint */
 .ca-arti__avatar .arti-mascot--avatar {
   position: static;
   left: auto;
   top: auto;
   display: block;
-  /* square frame box = container width → contain in 75×89, no non-uniform stretch */
+  /* square still contained in mint 75×89 — no non-uniform stretch */
   width: 75px;
   height: 75px;
   cursor: default;
   pointer-events: none;
   background-repeat: no-repeat;
-  background-size: calc(var(--mascot-frames, 17) * 100%) 100%;
-  background-position: 0 0;
+  background-size: contain;
+  background-position: center center;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   border-radius: 0;

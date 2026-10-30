@@ -50,14 +50,25 @@ def test_arti_not_only_inside_canvas_agent() -> None:
 
 
 def test_arti_avatar_box_matches_reference() -> None:
-    """Level-card avatar: reference 75×89 mint box; sprite uses square contain, not 100% stretch."""
+    """Level-card avatar: reference 75×89 mint box; content-centered still contain, not sheet/peek."""
     block = HOME_CSS.split('.ca-arti__avatar {', 1)[1].split('.ca-arti__avatar .ca-icon', 1)[0]
     assert 'width: 75px; height: 89px;' in block
     assert 'border-radius: 8px;' in block
     assert '#D9F7EF' in block
     mascot = HOME_CSS.split('.ca-arti__avatar .arti-mascot--avatar {', 1)[1].split('}', 1)[0]
     assert 'width: 75px;' in mascot and 'height: 75px;' in mascot
+    assert 'background-size: contain;' in mascot
+    assert 'background-position: center' in mascot
     assert 'width: 100%' not in mascot and 'height: 100%' not in mascot
+    assert '--mascot-frames' not in mascot
+    mascot_src = (ROOT / 'src/ui/ArtiMascot.tsx').read_text()
+    assert 'mascot-lv1-avatar.png' in mascot_src
+    assert 'mascot-lv2-avatar.png' in mascot_src
+    assert 'mascot-lv3-avatar.png' in mascot_src
+    # level card uses AVATARS stills, not DNA sheets / peek frame0
+    assert 'AVATARS[level]' in mascot_src
+    for lv in (1, 2, 3):
+        assert (ROOT / f'src/assets/arti/mascot-lv{lv}-avatar.png').is_file()
 
 
 def test_arti_home_shell_three_sections() -> None:
