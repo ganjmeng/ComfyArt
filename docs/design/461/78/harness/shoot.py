@@ -1,3 +1,4 @@
+"""Prefer shoot-live.py (real app). This harness shoot is VOID for product review after Agent/发送 HOLD."""
 """#461 tip CSS/DOM conversational Skill Creator — zh light/dark."""
 from __future__ import annotations
 import http.server, socketserver, threading
