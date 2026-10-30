@@ -19,10 +19,11 @@ LINKS = (
 
 
 def test_copy_zh_en():
+    # #399 (PR #401): brand is the {brand} placeholder (rendered as BRAND.name = Loomi), not hard-coded ComfyArt
     # #345: section retitled 本机第三方 Agent / Local third-party agents; desc expands install+login+detect+no-keys
     assert ZH["agentSetup.title"] == "本机第三方 Agent" and EN["agentSetup.title"] == "Local third-party agents"
-    assert ZH["agentSetup.desc"] == "用你电脑上已安装并登录的 Claude Code、Codex 等。检测到才会出现在列表里；ComfyArt 不保存它们的密钥。"
-    assert EN["agentSetup.desc"] == "Use Claude Code, Codex, and similar tools already installed and signed in on this computer. They only appear in the list when detected; ComfyArt never stores their keys."
+    assert ZH["agentSetup.desc"] == "用你电脑上已安装并登录的 Claude Code、Codex 等。检测到才会出现在列表里；{brand} 不保存它们的密钥。"
+    assert EN["agentSetup.desc"] == "Use Claude Code, Codex, and similar tools already installed and signed in on this computer. They only appear in the list when detected; {brand} never stores their keys."
     assert (ZH["agentSetup.setUp"], EN["agentSetup.setUp"]) == ("去配置", "Set up")
     assert (ZH["agentSetup.connected"], EN["agentSetup.connected"]) == ("已连接", "Connected")
     assert (ZH["agentSetup.copy"], EN["agentSetup.copy"]) == ("复制", "Copy")

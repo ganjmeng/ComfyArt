@@ -80,7 +80,8 @@ def test_canvas_select_two_capsules_path() -> None:
     assert "ca-chip__name" in COMPOSER
     assert "truncateLabel" in COMPOSER
     # selection → refs (shown from selected) still drives chips — no auto send on select
-    assert "const shown = selected.filter" in COMPOSER
+    # #389 (0676aed): `shown = selected.filter(...)` became mergeRefIds(selected ids, hidden, extra) — still selection-driven
+    assert "mergeRefIds(selected.map((s) => s.id), hidden, extra)" in COMPOSER
     assert "removeRef" in COMPOSER
     # send only via send() / Enter — select alone does not call sendToAgent
     send_fn = COMPOSER.split("const send = () => {")[1].split("\n  const filtered")[0]

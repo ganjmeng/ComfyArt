@@ -341,7 +341,12 @@ async def test_builtin_agent_one_sentence_image(ws):
     assert [m for m, _ in ws["submits"]] == [T2I]
     assert ws["submits"][0][1]["prompt"] == "a cat astronaut"
     assert [e.name for e in events if e.t == "tool_use"] == ["list_models", "generate_image", "wait_generation"]
-    assert events[-1].text.startswith("Done")
+    # #391 (PR #393) appends a run_stop card after the final reply; the final assistant text is now the
+    # delta stream after the last tool event.
+    assert events[-1].t == "run_stop"
+    last_tool = max(i for i, e in enumerate(events) if e.t in ("tool_use", "tool_result"))
+    final_text = "".join(e.text or "" for e in events[last_tool + 1:] if e.t == "delta")
+    assert final_text.startswith("Done")
     assert len(llm_calls) == 4
 
 

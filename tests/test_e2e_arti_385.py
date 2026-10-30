@@ -99,6 +99,13 @@ async def test_arti_toggles_chat_evolution_385(app_url, fake_tools, theme):  # n
         y0, y1 = boxes[0]["y"] - 56, boxes[-1]["y"] + boxes[-1]["height"] + 16
         await shot(pg, "arti-toggles", theme, full_page=True, clip={"x": 160, "y": y0, "width": 1120, "height": y1 - y0})
 
+        # #436 (PR #445): an empty memory tab shows 「暂无记忆」+「去完善」 and no chat CTA;
+        # the chat CTA only appears once there is at least one memory, so seed one first
+        assert await pg.locator("[data-testid=arti-memory-tab-empty]").count() == 1
+        assert await pg.locator("[data-testid=arti-memory-chat-open]").count() == 0
+        seed_store(records=[{"id": "m385", "text": "我喜欢蓝色", "time": 1, "category": "taste", "label": "色彩偏好"}])
+        await pg.reload()
+        await pg.locator("[data-testid=arti-page]").wait_for(timeout=15000)
         # chat composer open
         await pg.locator("[data-testid=arti-memory-chat-open]").scroll_into_view_if_needed()
         await pg.locator("[data-testid=arti-memory-chat-open]").click()

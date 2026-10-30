@@ -56,7 +56,9 @@ async def test_home_right_group(app_url, fake_tools, monkeypatch, lang, image, v
             xs = [await foot.locator(s).first.evaluate("e => e.getBoundingClientRect().left")
                   for s in ("[data-pill=model]", "[data-pill=settings]", ".ca-composer__slotwrap")]
             assert xs == sorted(xs), xs
-            assert await foot.locator(".ca-bar__btn--icon:not([data-pill=model])").count() == 0  # prefs is agent-only
+            # #306 (PR #313): the + (.ca-landing__add) is also ca-bar__btn--icon in every mode; prefs is still agent-only
+            assert await foot.locator(".ca-landing__add").count() == 1
+            assert await foot.locator(".ca-bar__btn--icon:not([data-pill=model]):not(.ca-landing__add)").count() == 0  # prefs is agent-only
             assert await pg.evaluate(FITS), "a button spills out of the bar"
             # same popovers as the canvas
             await foot.locator("[data-pill=model]").click()

@@ -21,7 +21,7 @@ async def test_pop(app_url, fake_tools, monkeypatch, width, mode, name, sel):  #
                 await pg.keyboard.press("Escape"); await pg.wait_for_timeout(300)
         await pg.locator(".ca-composer__mode").click(); await pg.wait_for_timeout(300)
         if mode == "agent":
-            await pg.locator(".ca-agentpick .ca-menu__item").filter(has_text="ComfyArt Agent").first.click()
+            await pg.locator(".ca-agentpick .ca-menu__item").filter(has_text="Loomi Agent").first.click()  # #399 (PR #401): built-in row is "{brand} Agent"
         else:
             await pg.locator(".ca-agentpick .ca-menu__item:not(.ca-agentpick__row)").filter(has_text={"image": "图像", "video": "视频"}[mode]).first.click()
         await pg.wait_for_timeout(400)

@@ -324,7 +324,8 @@ async def test_cost_dialog_decline_sends_nothing_accept_submits(page, mock_ws):
     await panel.get_by_role("button", name=ZH["common.generate"]).click()
     dialog = pg.locator(".ca-modal")
     await dialog.wait_for()
-    assert "0.62" in await dialog.inner_text() and ZH["jobs.confirmTitle"] in await dialog.inner_text()
+    # #397 (PR #405): the confirm shows UI credits, not $ — $0.62 → uiCredits = 62
+    assert ZH["jobs.confirmCost"].replace("{0}", "62") in await dialog.inner_text() and ZH["jobs.confirmTitle"] in await dialog.inner_text()
     await pg.screenshot(path=str(SHOTS / "e2e-04-cost-zh.png"))
     await dialog.get_by_role("button", name=ZH["common.cancel"]).click()
     await pg.wait_for_timeout(800)

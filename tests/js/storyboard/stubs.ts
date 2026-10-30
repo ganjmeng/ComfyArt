@@ -12,6 +12,8 @@ export const readLocal = () => null
 export const onComfyEvent = () => () => {}
 export const keySettingsOpenAtom = atom('k', false)
 export const keyStatusAtom = atom('s', null)
+// #305 (PR #308): comfy.ts gates submit on keyMissing(status); same logic as src/wavespeedKey.ts (null = unknown, not missing).
+export const keyMissing = (s: { configured?: boolean } | null) => !!s && !s.configured
 export const outOfCredit = () => false
 export const refreshKeyStatus = async () => {}
 export const GENERATOR = 'generator'

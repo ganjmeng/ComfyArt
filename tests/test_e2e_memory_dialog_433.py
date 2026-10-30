@@ -133,7 +133,9 @@ async def test_memory_dialog_433(app_url, fake_tools, lang, theme):  # noqa: F81
         pill = dlg.locator("[data-testid=memory-dialog-chat-open]")
         pb = await pill.bounding_box()
         assert abs(pb["height"] - 48) < 0.6
-        assert await cs(pill, ["background-color", "color", "font-size", "line-height"]) == ["rgb(44, 44, 44)", "rgb(255, 255, 255)", "14px", "22px"]
+        # #437 (PR #443): dark theme inverts the CTA (white pill, black text); light keeps #2c2c2c / white
+        pill_bg_fg = ["rgb(44, 44, 44)", "rgb(255, 255, 255)"] if light else ["rgb(255, 255, 255)", "rgb(0, 0, 0)"]
+        assert await cs(pill, ["background-color", "color", "font-size", "line-height"]) == [*pill_bg_fg, "14px", "22px"]
         assert float((await cs(pill, ["border-top-left-radius"]))[0][:-2]) >= 24
         if lang == "zh":
             assert abs(pb["width"] - 144) < 1

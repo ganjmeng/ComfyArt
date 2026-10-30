@@ -74,6 +74,10 @@ async def test_unload_clears_model_list_and_price_table(ws):
 
 @pytest.mark.asyncio
 async def test_clear_cache_clears_local_caches_and_thumbs_keeps_outputs(ws):
+    # #499: these are module-level caches; earlier tests in a full run leave entries behind (seen: 94 != 4).
+    # Start from empty so the count checks exactly the 4 seeded below.
+    for c in (wavespeed._map_cache, wavespeed._seg_cats, wavespeed._seg_masks, wavespeed._uploaded):
+        c.clear()
     wavespeed._map_cache[("x", "depth", 1)] = b"1"
     wavespeed._seg_cats["img"] = ["a"]
     wavespeed._seg_masks[("img", "a")] = b"m"

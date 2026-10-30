@@ -59,7 +59,7 @@ async def test_send_stays_in_bar(app_url, fake_tools, monkeypatch, width, lang, 
                 await pg.wait_for_timeout(300)
         await pg.locator(".ca-composer__mode").click()
         if mode == "agent":  # the built-in agent row
-            await pg.locator(".ca-agentpick .ca-menu__item").filter(has_text="ComfyArt Agent").first.click()
+            await pg.locator(".ca-agentpick .ca-menu__item").filter(has_text="Loomi Agent").first.click()  # #399 (PR #401): built-in row is "{brand} Agent"
         else:
             await pg.locator(".ca-agentpick .ca-menu__item:not(.ca-agentpick__row)").filter(has_text=LABEL[mode][lang]).first.click()
         await pg.wait_for_timeout(300)
@@ -75,7 +75,7 @@ async def test_send_stays_in_bar(app_url, fake_tools, monkeypatch, width, lang, 
         assert bar["modeChev"], bar
         assert bar["chevSame"], bar  # mode arrow same colour and 16x16 size as settings / model arrows
         if mode == "agent":
-            assert bar["agentFull"], bar  # "ComfyArt" shows in full when the bar has room (incl. 360)
+            assert bar["agentFull"], bar  # "Loomi" (#399) shows in full when the bar has room (incl. 360)
             await browser.close()
             return
         assert [x["pill"] for x in bar["pills"]] == ["mode", "model", "settings"], bar  # #268 final: mode left; model, settings right
