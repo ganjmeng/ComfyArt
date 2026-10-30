@@ -59,7 +59,7 @@ def test_both_entries_share_chip_key() -> None:
     assert "export const CREATE_ENTRY_CHIP_KEY = HOME_CREATOR_CHIP_KEY" in SKILLS_TS
     assert '"composer.skillCreator": "技能创建器"' in ZH
     assert '"composer.skillCreator": "Skill Creator"' in EN
-    assert "t(skillCreator.chip ?? 'composer.skillCreatorChip')" in COMPOSER
+    assert "t(skillCreator.chip ?? 'composer.skillCreator')" in COMPOSER
 
 
 def test_a_home_menu_path() -> None:
@@ -146,3 +146,17 @@ def test_a_import_opens_new_dialog() -> None:
     assert m and "setImporting(true)" in m.group(1)
     assert "skillsOpenAtom" not in HOME
     assert "<SkillImportDialog" in HOME
+
+
+def test_canvas_plus_entry_chip_uses_same_key() -> None:
+    """EL review #502：画布对话框 + 菜单入口不传 chip，回落值必须是同一个 key，中文显示「技能创建器」。"""
+    import json
+    m = re.search(r"t\(skillCreator\.chip \?\? '([\w.]+)'\)", COMPOSER)
+    assert m, "chip fallback missing in Composer.tsx"
+    key = m.group(1)
+    assert key == "composer.skillCreator"
+    assert json.loads(ZH)[key] == "技能创建器"
+    assert json.loads(EN)[key] == "Skill Creator"
+    # 画布 + 菜单入口本身不带 chip，走的就是这个回落值
+    assert "skillCreatorAtom.set({ on: true })" in COMPOSER
+    assert "skillCreatorChip" not in COMPOSER

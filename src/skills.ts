@@ -286,7 +286,7 @@ export async function skillTool(args: Record<string, unknown>): Promise<unknown>
 const FAV_KEY = 'comfyart.skillFavourites'
 
 /** #462: `edit` set = Edit in Chat for an existing personal skill (same Composer chip path). */
-/** #491: `chip` = i18n key of the chip label; unset falls back to composer.skillCreatorChip. */
+/** #491: `chip` = i18n key of the chip label; unset falls back to composer.skillCreator (zh 技能创建器), same key as both create entries. */
 export const skillCreatorAtom = atom<{ on: boolean; chip?: string }>('skillCreator', { on: false })
 
 /** #491 product: both create entries share one chip copy — zh 技能创建器 / en Skill Creator. */

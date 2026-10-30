@@ -310,7 +310,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           )}
           {skillCreator.on && (
             <span className="ca-chip ca-chip--creator" data-testid="skill-creator-chip">
-              <span className="ca-icon">{Icons.sparkles}</span>{t(skillCreator.chip ?? 'composer.skillCreatorChip')}
+              <span className="ca-icon">{Icons.sparkles}</span>{t(skillCreator.chip ?? 'composer.skillCreator')}
               <button type="button" title={t('common.remove')} onClick={() => skillCreatorAtom.set({ on: false })}>{Icons.close}</button>
             </span>
           )}
