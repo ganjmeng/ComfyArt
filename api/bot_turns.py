@@ -69,18 +69,72 @@ def provider_model(provider_id: str) -> str:
     return str(get_setting(key) or "").strip() if key in SETTINGS_SPEC else ""
 
 
+def refs_from_blocks(blocks: list[dict]) -> list[dict]:
+    """#422: image/video/audio refs (shape id + src) from a stored message.
+
+    Thinking blocks are ignored — only media the user attached (or that was
+    saved on the message) become refs for later turns.
+    """
+    out: list[dict] = []
+    for b in blocks or []:
+        kind = b.get("type")
+        if kind not in ("image", "video", "audio"):
+            continue
+        out.append({
+            "id": str(b.get("shape") or ""),
+            "src": str(b.get("url") or ""),
+            "name": str(b.get("name") or ""),
+            "kind": kind,
+            "transcript": str(b.get("transcript") or ""),
+        })
+    return out
+
+
+def format_ref_lines(refs: list[dict], *, sheet_frames: int = 4) -> list[str]:
+    """Canonical Attached-lines with shape ids — same form as the current turn.
+
+    History used to emit `[attached image: url]` without the shape id, so a
+    follow-up turn could not pass previous images as generation refs. #422.
+    """
+    lines: list[str] = []
+    for i, r in enumerate(refs or []):
+        if not isinstance(r, dict):
+            continue
+        kind = r.get("kind") if r.get("kind") in ("image", "video", "audio") else "image"
+        label = f' "{r["name"]}"' if r.get("name") else ""
+        target = f"shape id {r['id']}" if r.get("id") else "not on the canvas"
+        src = r.get("src") or ""
+        if kind == "audio":
+            heard = (f' Transcript: "{r["transcript"]}"' if r.get("transcript")
+                     else " No speech was recognised in it.")
+            lines.append(
+                f"[Attached audio {i + 1}{label}: {target} — {src}. "
+                f"Use the shape id as reference_audios, speech_audio or a voice "
+                f"reference.{heard}]")
+            continue
+        frames = (f" Its picture shows {sheet_frames} frames across the video; "
+                  f"call view_video for more.") if kind == "video" else ""
+        lines.append(
+            f"[Attached {kind} {i + 1}{label}: {target} — {src}. "
+            f"Use the shape id with edit tools or as a generation ref.{frames}]")
+    return lines
+
+
 def blocks_text(blocks: list[dict]) -> str:
+    """Plain text + #422 canonical image-ref lines. Thinking is never included."""
     parts = []
     for b in blocks:
         kind = b.get("type")
         if kind == "text":
             parts.append(str(b.get("text") or ""))
         elif kind in ("image", "video", "audio"):
-            parts.append(f"[attached {kind}: {b.get('url') or ''}]")
+            continue  # #422: emitted via format_ref_lines below (with shape id)
         elif kind == "file":
             parts.append(f"[attached document {b.get('name') or ''}: {b.get('url') or ''}]")
         elif kind == "notice" and b.get("text"):
             parts.append(f"[notice: {b.get('text')}]")
+        # thinking / tool_use / tool_result / kit / skill: omitted on purpose
+    parts.extend(format_ref_lines(refs_from_blocks(blocks)))
     return "\n".join(p for p in parts if p.strip()).strip()
 
 
@@ -112,14 +166,17 @@ def _replay_history(chat_id: str, current_message_id: str) -> list[dict]:
         if row["id"] in skip or row["role"] not in ("user", "assistant"):
             continue
         text = blocks_text(row["blocks"])
+        refs = refs_from_blocks(row["blocks"])
         item = {"role": row["role"], "text": text}
+        if refs:
+            item["refs"] = refs  # #422: previous-turn image refs for fit_history
         # #234: each assistant turn records the shapes it placed and the failures,
         # so later context can keep id / type / model / prompt without the raw tool output.
         if row["role"] == "assistant":
             recorded = turn_result_from_blocks(row["blocks"])
             if recorded:
                 item["result"] = recorded
-        if text or item.get("result"):
+        if text or item.get("result") or refs:
             history.append(item)
     return history
 

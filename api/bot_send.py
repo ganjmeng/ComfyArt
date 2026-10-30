@@ -4,7 +4,8 @@ from typing import Optional
 from . import chat_store
 from .bot_docs import DOC_ERRORS, document_line, read_document
 from .bot_media import ATTACH_MAX_COUNT, MEDIA_ERRORS, SHEET_FRAMES, render_attachment
-from .bot_turns import ACTIVE_TURNS, QUEUED, begin_turn, broadcast
+from .bot_turns import (ACTIVE_TURNS, QUEUED, begin_turn, broadcast,
+                        format_ref_lines)
 
 
 def _strings(raw, name: str) -> list[str]:
@@ -84,16 +85,8 @@ async def prepare_attachments(refs: list[dict], kits: list[dict], docs: list[dic
             attachments.append(await asyncio.to_thread(render_attachment, src))
         except MEDIA_ERRORS:
             skipped.append(src)
-    lines = []
-    for i, r in enumerate(refs):
-        label = f' "{r["name"]}"' if r["name"] else ""
-        target = f"shape id {r['id']}" if r["id"] else "not on the canvas"
-        if r["kind"] == "audio":
-            heard = f' Transcript: "{r["transcript"]}"' if r["transcript"] else " No speech was recognised in it."
-            lines.append(f"[Attached audio {i + 1}{label}: {target} — {r['src']}. Use the shape id as reference_audios, speech_audio or a voice reference.{heard}]")
-            continue
-        frames = f" Its picture shows {SHEET_FRAMES} frames across the video; call view_video for more." if r["kind"] == "video" else ""
-        lines.append(f"[Attached {r['kind']} {i + 1}{label}: {target} — {r['src']}. Use the shape id with edit tools or as a generation ref.{frames}]")
+    # #422: same Attached-lines (shape id) that history replay emits via format_ref_lines
+    lines = format_ref_lines(refs, sheet_frames=SHEET_FRAMES)
     lines += doc_lines
     for k in kits:
         lines.append(f"[Referenced asset: {k['description'] or k['name']}. Its {len(k['images'])} image(s) are attached after the canvas images; pass their URLs as refs to follow them.]"

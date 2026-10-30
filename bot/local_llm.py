@@ -762,15 +762,32 @@ def _group_turns(history: Optional[list[dict]]) -> list[list[dict]]:
             continue
         text = str(msg.get("text") or "").strip()
         result = msg.get("result") if isinstance(msg.get("result"), dict) else None
-        if not text and not result:
+        refs = msg.get("refs") if isinstance(msg.get("refs"), list) else None
+        if not text and not result and not refs:
             continue
         if role == "user" and current:
             turns.append(current)
             current = []
-        current.append({"role": role, "text": text, "result": result})
+        current.append({"role": role, "text": text, "result": result, "refs": refs})
     if current:
         turns.append(current)
     return turns
+
+
+def _ref_lines_for(msg: dict) -> str:
+    """#422: ensure previous-turn image refs appear even if text omitted them."""
+    refs = msg.get("refs") or []
+    if not refs:
+        return ""
+    text = msg.get("text") or ""
+    # blocks_text already embeds Attached-lines; don't duplicate
+    if "[Attached " in text or "shape id " in text:
+        return ""
+    try:
+        from ..api.bot_turns import format_ref_lines
+    except ImportError:
+        from ComfyArt.api.bot_turns import format_ref_lines  # type: ignore
+    return "\n".join(format_ref_lines(refs))
 
 
 def _render_turns(turns: list[list[dict]]) -> list[dict]:
@@ -779,6 +796,9 @@ def _render_turns(turns: list[list[dict]]) -> list[dict]:
         for msg in turn:
             suffix = _result_suffix(msg.get("result")) if msg["role"] == "assistant" else ""
             text = msg["text"]
+            refs = _ref_lines_for(msg)
+            if refs:
+                text = f"{text}\n{refs}" if text else refs
             content = f"{text}\n{suffix}" if text and suffix else (text or suffix)
             if content:
                 out.append({"role": msg["role"], "content": content})
@@ -786,13 +806,15 @@ def _render_turns(turns: list[list[dict]]) -> list[dict]:
 
 
 def _summarize_turns(turns: list[list[dict]]) -> str:
-    """Goals, explicit requirements, decisions, shapes and failures. Nothing else."""
+    """Goals, requirements, decisions, image refs, shapes and failures. Nothing else."""
     goals: list[str] = []
     reqs: list[str] = []
     decisions: list[str] = []
     shapes: list[dict] = []
     failures: list[dict] = []
+    image_refs: list[dict] = []
     seen: set[str] = set()
+    seen_refs: set[str] = set()
     for turn in turns:
         for msg in turn:
             result = msg.get("result") if isinstance(msg.get("result"), dict) else {}
@@ -803,6 +825,14 @@ def _summarize_turns(turns: list[list[dict]]) -> str:
             for fail in result.get("failures") or []:
                 if isinstance(fail, dict):
                     failures.append(fail)
+            # #422: keep previous-turn image refs when compressing
+            for r in msg.get("refs") or []:
+                if not isinstance(r, dict):
+                    continue
+                key = str(r.get("id") or r.get("src") or "")
+                if key and key not in seen_refs:
+                    seen_refs.add(key)
+                    image_refs.append(r)
             text = _plain(msg.get("text") or "")
             if not text:
                 continue
@@ -821,6 +851,18 @@ def _summarize_turns(turns: list[list[dict]]) -> str:
         lines.append("Requirements: " + "; ".join(_uniq(reqs)))
     if decisions:
         lines.append("Decisions: " + "; ".join(_uniq(decisions)))
+    if image_refs:
+        lines.append("Image refs:")
+        for r in image_refs:
+            kind = r.get("kind") or "image"
+            sid = r.get("id") or ""
+            src = r.get("src") or ""
+            bit = f"- {kind}"
+            if sid:
+                bit += f" id={sid}"
+            if src:
+                bit += f" src={src}"
+            lines.append(bit)
     # Failures stay ahead of the shape list so the 2000-token cap drops extra
     # shapes before it drops a failed attempt.
     if failures:
