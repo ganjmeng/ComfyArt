@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.1.1, pluggy-1.7.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /workspace/ComfyArt
+configfile: pyproject.toml
+plugins: asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+tests/test_proactive_quota_424.py::test_fallback_default_off PASSED      [ 14%]
+tests/test_proactive_quota_424.py::test_already_wrote_memory_does_not_charge PASSED [ 28%]
+tests/test_proactive_quota_424.py::test_fallback_write_charges_once PASSED [ 42%]
+tests/test_proactive_quota_424.py::test_fallback_empty_learn_does_not_charge PASSED [ 57%]
+tests/test_proactive_quota_424.py::test_disabled_or_at_limit_skips PASSED [ 71%]
+tests/test_proactive_quota_424.py::test_wiring_charges_after_learnMemory PASSED [ 85%]
+tests/test_memory_tool_413.py::test_fallback_skips_when_turn_wrote_memory PASSED [100%]
+
+============================== 7 passed in 0.24s ===============================
