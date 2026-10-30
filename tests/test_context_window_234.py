@@ -1,8 +1,8 @@
 """#234: context is counted in tokens against the model window.
 
-Input may use 70% of that window (32k when the endpoint does not say). Over the
-budget, the last 6 turns stay verbatim and earlier turns become one summary of
-at most 2000 tokens. The summary keeps goals, requirements, decisions, shapes
+Input may use 70% of that window (#493: 270k when neither the endpoint nor the
+known-model table says). Over the budget, the last 6 turns stay verbatim and
+earlier turns become one summary of at most summary_token_cap(window) tokens. The summary keeps goals, requirements, decisions, shapes
 and failures — not raw tool output or screenshots. Mocks only.
 """
 from __future__ import annotations
@@ -11,7 +11,7 @@ import json
 
 from ComfyArt.bot.local_llm import (
     LocalLlmProvider,
-    _SUMMARY_TOKEN_CAP,
+    summary_token_cap,
     _VERBATIM_TURNS,
     context_window_tokens,
     count_tokens,
@@ -28,7 +28,7 @@ def _turns(n: int, body: str) -> list[dict]:
 def test_input_cap_is_70_percent_of_the_model_window():
     assert input_token_budget(10_000) == 7_000
     assert input_token_budget(32_000) == 22_400
-    assert input_token_budget(None) == 22_400
+    assert input_token_budget(None) == 189_000  # #493: unknown window falls back to 270k
 
     short = [{"role": "user", "text": f"turn {i} hello"} for i in range(3)]
     kept = LocalLlmProvider._history_messages(short, context_window=32_000)
@@ -74,10 +74,12 @@ def test_summary_is_at_most_2000_tokens_and_keeps_the_record():
         {"role": "user", "text": "z" * 400_000},
         *[{"role": "user", "text": f"RECENT{i}"} for i in range(6)],
     ]
-    msgs = LocalLlmProvider._history_messages(history, context_window=100_000)
+    # #493: the summary cap scales with the window; 40k -> round(40k*5%) = 2000 tokens.
+    assert summary_token_cap(40_000) == 2_000
+    msgs = LocalLlmProvider._history_messages(history, context_window=40_000)
     summary = msgs[0]["content"]
     assert summary.startswith("Earlier conversation summary:")
-    assert count_tokens(summary) <= _SUMMARY_TOKEN_CAP
+    assert count_tokens(summary) <= summary_token_cap(40_000)
     assert count_tokens(summary) > 1_500
     assert "GOAL_KEEP" in summary
     assert "数量 4 张" in summary and "3:4" in summary
@@ -93,10 +95,10 @@ def test_summary_is_at_most_2000_tokens_and_keeps_the_record():
     assert verbatim == [f"RECENT{i}" for i in range(6)]
 
 
-def test_unknown_window_falls_back_to_32k():
-    assert context_window_tokens(None) == 32_000
-    assert context_window_tokens({}) == 32_000
-    assert context_window_tokens({"id": "m", "max_tokens": 4096}) == 32_000
+def test_unknown_window_falls_back_to_270k():
+    assert context_window_tokens(None) == 270_000
+    assert context_window_tokens({}) == 270_000
+    assert context_window_tokens({"id": "m", "max_tokens": 4096}) == 270_000
     assert context_window_tokens({"context_length": "128000"}) == 128_000
     assert context_window_tokens({"meta": {"n_ctx": 8192}}) == 8192
     assert context_window_tokens({"architecture": {"max_context_length": 16384}}) == 16_384
@@ -107,7 +109,7 @@ def test_unknown_window_falls_back_to_32k():
     assert count_tokens(history[0]["text"]) * 10 <= input_token_budget(None)
     assert count_tokens(history[0]["text"]) * 10 > input_token_budget(10_000)
 
-    plain = LocalLlmProvider._history_messages(history)  # window unknown -> 32k
+    plain = LocalLlmProvider._history_messages(history)  # window unknown -> 270k
     assert len(plain) == 10
     assert all(not m["content"].startswith("Earlier") for m in plain)
     assert plain[0]["content"] == history[0]["text"]
@@ -184,7 +186,7 @@ def test_replay_attaches_the_turn_result():
 
 async def test_send_counts_tokens_against_the_model_window(monkeypatch):
     """The window comes from /models for the selected model; a payload with no
-    window uses 32k, so the same history is not compressed."""
+    window uses the 270k fallback, so the same history is not compressed."""
     body = "y" * 3196
     history = _turns(10, body)
 

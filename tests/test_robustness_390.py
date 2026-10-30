@@ -138,7 +138,7 @@ async def test_summary_cut_to_remaining_budget_and_prompt_fits_window(monkeypatc
     reserved = 900
     msgs = await _hist(p, _turn(), reserved=reserved)
     summary_tokens = local_llm.count_tokens(msgs[0]["content"])
-    assert summary_tokens <= local_llm._SUMMARY_TOKEN_CAP
+    assert summary_tokens <= local_llm.summary_token_cap(WINDOW)
     assert local_llm._message_tokens(msgs) + reserved <= local_llm.input_token_budget(WINDOW)
 
 
@@ -214,3 +214,67 @@ def test_store_evicts_oldest_entry_first_at_512():
     assert s.get("summary", "k0", **ids) is None
     assert s.get("summary", "k1", **ids) == "1"
     assert s.get("summary", "k512", **ids) == "512"
+
+
+# ------------------------------------------------------------- AC2 real window (#390-2)
+def _models_stub(p, payloads, calls):
+    """`payloads` maps base URL -> /models body; `calls` records every fetched URL."""
+    async def fake(session, method, url, *, headers, json_body=None, timeout=120):
+        calls.append(url)
+        return payloads[url.rsplit("/models", 1)[0]]
+    p._request_json = fake
+
+
+async def test_ac2_window_uses_declared_128k_else_270k():
+    p = LocalLlmProvider(base_url=lambda: "http://x/v1")
+    calls: list = []
+    _models_stub(p, {"http://x/v1": {"data": [{"id": "big", "context_length": 128_000},
+                                              {"id": "anon"}]}}, calls)
+    assert await p._context_window(None, "big") == 128_000
+    assert local_llm.input_token_budget(128_000) == 128_000 * 70 // 100
+    assert await p._context_window(None, "anon") == 270_000
+    assert len(calls) == 1  # both answered from one /models fetch
+
+
+@pytest.mark.parametrize("entry", [
+    {"id": "m", "model_info": {"max_input_tokens": 128_000}},           # LiteLLM
+    {"id": "m", "top_provider": {"context_length": 128_000}},           # OpenRouter
+    {"id": "m", "model_info": {"llama.context_length": 128_000}},       # GGUF-style
+], ids=["litellm", "openrouter-top-provider", "gguf-prefixed"])
+async def test_ac2_window_read_from_gateway_shapes(entry):
+    """Red on main: these shapes were missed and fell back to the default window."""
+    p = LocalLlmProvider(base_url=lambda: "http://x/v1")
+    _models_stub(p, {"http://x/v1": {"data": [entry]}}, [])
+    assert await p._context_window(None, "m") == 128_000
+
+
+async def test_ac2_window_cache_is_per_endpoint():
+    """Red on main: the cache was keyed by model id only, so switching endpoints kept
+    the old endpoint's window for a model with the same id."""
+    base = {"url": "http://small/v1"}
+    p = LocalLlmProvider(base_url=lambda: base["url"])
+    calls: list = []
+    _models_stub(p, {
+        "http://small/v1": {"data": [{"id": "qwen", "context_length": 8_192}]},
+        "http://big/v1": {"data": [{"id": "qwen", "context_length": 128_000}]},
+    }, calls)
+    assert await p._context_window(None, "qwen") == 8_192
+    base["url"] = "http://big/v1"
+    assert await p._context_window(None, "qwen") == 128_000
+    base["url"] = "http://small/v1"
+    assert await p._context_window(None, "qwen") == 8_192
+    assert calls == ["http://small/v1/models", "http://big/v1/models"]
+
+
+async def test_ac2_declared_window_reaches_history_budget():
+    """The declared window, not a fixed default, sizes the history kept in the prompt."""
+    p = LocalLlmProvider(base_url=lambda: "http://x/v1")
+    _models_stub(p, {"http://x/v1": {"data": [{"id": "big", "context_length": 128_000}]}}, [])
+    window = await p._context_window(None, "big")
+    history = [{"role": r, "text": "字" * 3_000}
+               for _ in range(10) for r in ("user", "assistant")]
+    # 60k tokens: over 32k*70% (22.4k), under 128k*70% (89.6k)
+    wide = LocalLlmProvider._history_messages(history, context_window=window)
+    narrow = LocalLlmProvider._history_messages(history, context_window=32_000)
+    assert [m["content"] for m in wide] == [m["text"] for m in history]
+    assert len(narrow) < len(history)

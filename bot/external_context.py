@@ -1,8 +1,9 @@
 """#238: P1 context rules for external agents (Claude Code, Codex, Qwen Code, DeepSeek Harness).
 
-A cold start (no resume token) fits prior chat history into 70% of a 32k window — these CLIs
-do not report a context window, so the #234 fallback applies. The last 6 turns stay verbatim
-and older turns become one summary of at most 2000 tokens. A resumed session is left as the
+A cold start (no resume token) fits prior chat history into 70% of the model window — these CLIs
+do not report one, so #493's known-model table applies, then the 270k fallback (also when the
+model id is empty). The last 6 turns stay verbatim and older turns become one summary of at
+most summary_token_cap(window) tokens. A resumed session is left as the
 CLI stored it.
 
 Screenshot data URLs inside that fitted text keep the latest 2; older ones become the same
@@ -22,9 +23,9 @@ from .guide import AGENT_GUIDE
 from .local_llm import (
     KEEP_SCREENSHOTS,
     _DATA_URL_RE,
-    _FALLBACK_CONTEXT_WINDOW,
     count_tokens,
     fit_history,
+    resolve_context_window,
 )
 from .providers import TurnRequest
 
@@ -48,10 +49,10 @@ def prune_screenshot_urls(text: str, keep: int = KEEP_SCREENSHOTS) -> str:
     return "".join(pieces)
 
 
-def _fitted_preamble(history, *, reserved_tokens: int) -> str:
+def _fitted_preamble(history, *, reserved_tokens: int, model: str = "") -> str:
     messages = fit_history(
         history,
-        context_window=_FALLBACK_CONTEXT_WINDOW,
+        context_window=resolve_context_window(model),  # #493: same rule as the built-in agent
         reserved_tokens=reserved_tokens,
     )
     chunks: list[str] = []
@@ -77,7 +78,8 @@ def apply_cold_start(turn: TurnRequest, *, prepend_guide: bool = False) -> TurnR
         return turn
     guide = AGENT_GUIDE if prepend_guide else ""
     reserved = count_tokens(AGENT_GUIDE) + count_tokens(turn.user_text or "") + _LABEL_RESERVE
-    preamble = _fitted_preamble(turn.history, reserved_tokens=reserved)
+    preamble = _fitted_preamble(turn.history, reserved_tokens=reserved,
+                                model=turn.model or "")
     parts = [part for part in (guide, preamble, turn.user_text or "") if part]
     text = "\n\n".join(parts)
     if text == (turn.user_text or ""):

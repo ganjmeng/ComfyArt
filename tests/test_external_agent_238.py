@@ -18,7 +18,7 @@ from ComfyArt.bot.external_context import (
     clip_image_blocks,
 )
 from ComfyArt.bot.guide import AGENT_GUIDE
-from ComfyArt.bot.local_llm import count_tokens, input_token_budget
+from ComfyArt.bot.local_llm import count_tokens, input_token_budget, summary_token_cap
 from ComfyArt.bot.providers import TurnHandle, TurnRequest, TurnResult
 
 
@@ -59,8 +59,9 @@ def test_claude_codex_and_qwen_already_load_the_guide(monkeypatch, tmp_path):
 
 
 def test_cold_start_fits_history_and_leaves_attachments():
-    early = [{"role": "user", "text": "E" + "x" * 20_000} for _ in range(8)]
-    early[0] = {"role": "user", "text": "GOAL_KEEP paint a poster. 数量 4 张 " + "x" * 20_000}
+    # #493: no model id -> 270k fallback, so the history must exceed 70% of 270k to be fitted.
+    early = [{"role": "user", "text": "E" + "x" * 200_000} for _ in range(8)]
+    early[0] = {"role": "user", "text": "GOAL_KEEP paint a poster. 数量 4 张 " + "x" * 200_000}
     recent = [{"role": "user", "text": f"RECENT{i}"} for i in range(6)]
     attachments = [{"data": "QUJD", "media_type": "image/png"}]
     turn = apply_cold_start(TurnRequest(
@@ -78,8 +79,8 @@ def test_cold_start_fits_history_and_leaves_attachments():
     for i in range(6):
         assert f"User: RECENT{i}" in preamble
     summary = preamble.split("\n\nUser: RECENT0", 1)[0]
-    assert count_tokens(summary) <= 2000
-    assert count_tokens(AGENT_GUIDE) + count_tokens(turn.user_text) <= input_token_budget(32_000)
+    assert count_tokens(summary) <= summary_token_cap(270_000)
+    assert count_tokens(AGENT_GUIDE) + count_tokens(turn.user_text) <= input_token_budget(270_000)
 
 
 def test_cold_start_keeps_the_latest_two_screenshot_urls():

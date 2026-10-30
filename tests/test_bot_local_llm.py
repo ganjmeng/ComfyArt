@@ -67,7 +67,7 @@ class TestHistory:
 
     def test_under_default_window_keeps_every_turn(self):
         # #234: the fixed 16_000-character chop is gone. Four ~9k-token messages
-        # still fit in 70% of the 32k fallback, so the recent ones are not dropped.
+        # still fit in 70% of the 270k fallback, so the recent ones are not dropped.
         history = [{"role": "user", "text": f"m{i}" + "x" * 9000}
                    for i in range(4)]
         msgs = LocalLlmProvider._history_messages(history)
