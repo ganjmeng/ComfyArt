@@ -342,8 +342,12 @@ async def test_builtin_agent_one_sentence_image(ws):
     assert ws["submits"][0][1]["prompt"] == "a cat astronaut"
     assert [e.name for e in events if e.t == "tool_use"] == ["list_models", "generate_image", "wait_generation"]
     # #391 (PR #393) appends a run_stop card after the final reply; the final assistant text is now the
-    # delta stream after the last tool event.
+    # delta stream after the last tool event. Product ruling (#499): assert main's card as-is — it carries
+    # no final reply text (text == "", the card dict has no reply field); a separate card tracks that.
     assert events[-1].t == "run_stop"
+    assert events[-1].text == ""
+    assert "Done: your cat astronaut" not in json.dumps(events[-1].input, ensure_ascii=False)
+    assert events[-1].input["can_continue"] is False
     last_tool = max(i for i, e in enumerate(events) if e.t in ("tool_use", "tool_result"))
     final_text = "".join(e.text or "" for e in events[last_tool + 1:] if e.t == "delta")
     assert final_text.startswith("Done")
