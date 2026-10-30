@@ -6,6 +6,7 @@ import { notify } from './notices'
 import { onComfyEvent, onReconnect } from './ws'
 import { lang, t } from './i18n'
 import { wsBodyError } from './wsErrors'
+import { handleScheduleTurnDone, isSchedulePending, noteScheduleNotify } from './schedulePending'
 
 export interface AskOption { id: string; label: string; description?: string; recommended?: boolean }
 export interface AskQuestion {
@@ -306,7 +307,7 @@ async function ensureChat(): Promise<BotChat> {
   return chat
 }
 
-export interface SendInput { text: string; refs: { id: string; src: string; name: string; kind: 'image' | 'video' | 'audio'; transcript?: string }[]; docs: { src: string; name: string }[]; kits: { name: string; description: string; images: string[] }[]; skill?: string; memory?: string; context?: string }
+export interface SendInput { text: string; refs: { id: string; src: string; name: string; kind: 'image' | 'video' | 'audio'; transcript?: string }[]; docs: { src: string; name: string }[]; kits: { name: string; description: string; images: string[] }[]; skill?: string; memory?: string; context?: string; /** #388 turn mode (interactive|unattended); not chat auto|ask */ run_mode?: 'interactive' | 'unattended' }
 
 export async function sendMessage(input: SendInput) {
   const chat = await ensureChat()
@@ -433,6 +434,11 @@ const reducers: Record<string, (e: any) => void> = {
   turn_run_stop: (e) => patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block)),
   turn_notify: (e) => {
     patchMessages(e.chat_id, e.message_id, (m) => appendBlock(m, e.block))
+    // #388: schedule unattended turns own the notice (已跳过 / started) — suppress suggestion
+    if (isSchedulePending(e.chat_id)) {
+      noteScheduleNotify(e.chat_id, e.block?.text ?? '')
+      return
+    }
     if (chatsAtom.get().some((c) => c.id === e.chat_id)) void notify({ kind: 'suggestion', title: t('bot.runNeedsYou'), body: e.block?.text ?? '', chat: e.chat_id })
   },
   turn_ask: (e) => {
@@ -448,6 +454,8 @@ const reducers: Record<string, (e: any) => void> = {
     const chat = chatsAtom.get().find((c) => c.id === e.chat_id)
     chatsAtom.set(chatsAtom.get().map((c) => (c.id === e.chat_id ? { ...c, busy: false, ...(e.title ? { title: e.title } : {}) } : c)))
     if (chatIdAtom.get() === e.chat_id) void openChat(e.chat_id)
+    // #388: schedule turns emit exactly one kind=schedule notice (skip or started)
+    if (handleScheduleTurnDone(e)) return
     if (!chat || e.status === 'aborted') return
     const message = messagesAtom.get().find((m) => m.id === e.message_id)
     const text = message?.blocks.filter((b) => b.type === 'text').map((b) => b.text).join('').trim()

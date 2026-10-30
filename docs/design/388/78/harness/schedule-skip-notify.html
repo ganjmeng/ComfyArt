@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<title>#388 ArtiMascot notify · schedule skip card (real CSS/DOM)</title>
+<link rel="stylesheet" href="../../../../../src/styles/base.css"/>
+<link rel="stylesheet" href="../../../../../src/styles/shell.css"/>
+<style>
+  html, body { margin: 0; min-height: 100%; background: #e8e8e6; }
+  :root[data-theme="dark"] body, body[data-theme="dark"] { background: #0e0e0e; }
+  .stage {
+    box-sizing: border-box;
+    width: 440px;
+    margin: 0 auto;
+    padding: 210px 28px 36px;
+  }
+  .ca-composer {
+    width: 383px;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  .ca-composer__foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ca-muted);
+    font-size: 13px;
+  }
+  .ca-composer__foot .grow { margin-left: auto; display: inline-flex; gap: 8px; align-items: center; }
+  .ca-composer__mode { display: inline-flex; align-items: center; gap: 4px; color: var(--ca-text); }
+</style>
+</head>
+<body>
+<script>
+  const theme = new URLSearchParams(location.search).get('theme') || 'light';
+  document.documentElement.dataset.theme = theme;
+  document.body.dataset.theme = theme;
+</script>
+<div class="stage" id="shot">
+  <div class="ca-composer" data-testid="composer">
+    <span class="arti-mascot-wrap" data-testid="arti-mascot-wrap" data-notify-open aria-hidden="true">
+      <button
+        type="button"
+        class="arti-mascot"
+        data-testid="arti-mascot"
+        data-level="1"
+        data-trigger="idle"
+        data-frames="17"
+        data-frame-ms="250"
+        data-duration-ms="4250"
+        data-notify-open
+        aria-label="Arti 通知"
+        aria-expanded="true"
+        aria-haspopup="dialog"
+        tabindex="-1"
+        style="background-image:url('../../../../../src/assets/arti/mascot-lv1-dna-a.png');--mascot-frames:17;--mascot-frame-ms:250ms;--mascot-duration:4250ms"
+      ></button>
+    </span>
+
+    <div class="arti-notify" role="dialog" aria-label="Arti 通知" data-testid="arti-notify">
+      <div class="arti-notify__head">
+        <div class="arti-notify__title" data-testid="arti-notify-title">Arti 通知 ⚡</div>
+        <button type="button" class="arti-notify__close" data-testid="arti-notify-close" aria-label="关闭">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+        </button>
+      </div>
+      <ul class="arti-notify__list" data-testid="arti-notify-list">
+        <li class="arti-notify__card" data-testid="arti-schedule-card" data-notice-id="mock-skip-1">
+          <div class="arti-notify__card-head">
+            <div class="arti-notify__card-title">定时任务「早间海报」已跳过</div>
+            <button type="button" class="arti-notify__card-dismiss" data-testid="arti-schedule-dismiss" aria-label="关闭">
+              <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            </button>
+          </div>
+          <div class="arti-notify__card-body">需要报价确认（无人值守），未开始，未扣费。</div>
+        </li>
+      </ul>
+    </div>
+
+    <textarea class="ca-composer__input" placeholder="请描述你的设计需求，'/'使用技能，'@'引用参考" readonly></textarea>
+    <div class="ca-composer__foot">
+      <span class="ca-composer__mode">Agent ▾</span>
+      <span class="grow"><span># 参考</span><span>↑</span></span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

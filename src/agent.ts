@@ -94,7 +94,7 @@ export function canvasNodesFromEditor(editor: Editor): { nodes: SnapshotNode[]; 
   return { nodes, selection }
 }
 
-export async function sendToAgent(editor: Editor, text: string, refs: RefShape[], skill: Skill | null, kits: LibraryItem[] = [], docs: ChatDoc[] = [], context = '') {
+export async function sendToAgent(editor: Editor, text: string, refs: RefShape[], skill: Skill | null, kits: LibraryItem[] = [], docs: ChatDoc[] = [], context = '', opts?: { runMode?: 'interactive' | 'unattended' }) {
   const linked = linkedKit(editor.getDocumentSettings().meta.brandKit)
   if (linked && !kits.some((k) => k.id === linked.id)) kits = [...kits, linked]
   const frame = refLinkedOf(editor) ? refFrameOf(editor) : null
@@ -140,6 +140,7 @@ export async function sendToAgent(editor: Editor, text: string, refs: RefShape[]
     ...(skill ? { skill: skill.name } : {}),
     memory: packed.memoryPrompt,
     ...(ctx ? { context: ctx } : {}),
+    ...(opts?.runMode ? { run_mode: opts.runMode } : {}),
   })
 }
 

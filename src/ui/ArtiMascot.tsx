@@ -15,6 +15,7 @@ import {
   type ArtiLevel,
 } from '../artiLevel'
 import { t } from '../i18n'
+import { markRead, noticesAtom } from '../notices'
 import { dismissReviewCard, reviewFeedAtom, type ReviewCard } from '../reviewFeed'
 import { useEscape } from './escape'
 
@@ -72,6 +73,11 @@ export function ArtiMascot({
   const panelRef = useRef<HTMLDivElement>(null)
   const reduce = useReducedMotion()
   const cards = useValue(reviewFeedAtom)
+  // #388: unread schedule skip/started notices also surface here
+  const scheduleCards = useValue('arti schedule notices', () =>
+    noticesAtom.get().filter((n) => n.kind === 'schedule' && !n.read).slice(0, 8),
+  [])
+  const hasCards = cards.length > 0 || scheduleCards.length > 0
 
   useEffect(() => {
     if (levelProp != null) { setLevel(levelProp); return }
@@ -162,7 +168,7 @@ export function ArtiMascot({
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
           </button>
         </div>
-        {cards.length === 0 ? (
+        {!hasCards ? (
           <div className="arti-notify__empty" data-testid="arti-notify-empty">
             <span
               className="arti-notify__icon"
@@ -194,6 +200,23 @@ export function ArtiMascot({
                     <li key={i} className="arti-notify__issue">{issue}</li>
                   ))}
                 </ul>
+              </li>
+            ))}
+            {scheduleCards.map((n) => (
+              <li key={n.id} className="arti-notify__card" data-testid="arti-schedule-card" data-notice-id={n.id}>
+                <div className="arti-notify__card-head">
+                  <div className="arti-notify__card-title">{n.title}</div>
+                  <button
+                    type="button"
+                    className="arti-notify__card-dismiss"
+                    data-testid="arti-schedule-dismiss"
+                    aria-label={t('arti.notify.dismiss')}
+                    onClick={() => void markRead([n.id])}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+                  </button>
+                </div>
+                {n.body ? <div className="arti-notify__card-body">{n.body}</div> : null}
               </li>
             ))}
           </ul>
