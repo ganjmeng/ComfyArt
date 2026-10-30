@@ -10,6 +10,7 @@ import { BrandMark } from '../ui/BrandMark'
 import { Icons } from '../ui/icons'
 import { KeySettings } from '../ui/KeySettings'
 import { SettingsMenu } from '../ui/SettingsMenu'
+import { WAVESPEED_HISTORY_URL } from '../wavespeedKey'
 import '../styles/home.css'
 import { Arti } from './Arti'
 import { Home } from './Home'
@@ -72,6 +73,12 @@ export function HomeApp({ view }: { view: View }) {
           badge={t('home.artiBeta')}
         />
         <div className="ca-rail__spacer" />
+        <RailBtn
+          icon={Icons.exit}
+          label={t('home.waveSpeedTaskHistory')}
+          onClick={() => { window.open(WAVESPEED_HISTORY_URL, '_blank', 'noopener,noreferrer') }}
+          testId="rail-ws-history"
+        />
         <SettingsMenu trigger={({ open, toggle }) => <RailBtn icon={Icons.settings} label={t('settings.settings')} on={open} onClick={toggle} />} />
       </nav>
       <main className="ca-home__main">{main(view)}</main>
