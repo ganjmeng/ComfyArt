@@ -16,19 +16,30 @@ ROOT = Path(__file__).resolve().parent.parent
 pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("*")), reason="needs built dist/")
 SHOTS = os.environ.get("SKILL_CARDS_SHOTS")
 OLD_MD = "---\nname: 旧技能\ndescription: 老的个人技能\n---\nDo things.\n"
+IMG_MD = "---\nname: 有图技能\ndescription: 图片可加载\n---\nDo things.\n"
+GOOD_WEBP = (Path(__file__).resolve().parents[1] / "public/skills/poster/cover.webp").read_bytes()
 
 
 async def _seed_personal(pg):
     async def handle(route):
         url = route.request.url
         if "userdata?dir=comfyart%2Fskills" in url:
-            return await route.fulfill(json=["old-skill/SKILL.md", "old-skill/images.json"])
+            return await route.fulfill(json=["old-skill/SKILL.md", "old-skill/images.json",
+                                             "img-skill/SKILL.md", "img-skill/images.json"])
         if "SKILL.md" in url:
-            return await route.fulfill(body=OLD_MD)
+            return await route.fulfill(body=IMG_MD if "img-skill" in url else OLD_MD)
         if "images.json" in url:
-            return await route.fulfill(body=json.dumps({"ref.png": "input/ref.png"}))
+            # old-skill: images[0] points at a file that does not exist (broken image → placeholder)
+            return await route.fulfill(body=json.dumps({"good.png": "input/good.png"} if "img-skill" in url
+                                                       else {"ref.png": "input/missing-494/ref.png"}))
         return await route.fallback()
     await pg.route(re.compile(r"/userdata"), handle)  # glob `*` stops at `?`; match the query too
+
+    async def thumb(route):
+        if "good.png" in route.request.url:
+            return await route.fulfill(body=GOOD_WEBP, content_type="image/webp")
+        return await route.fulfill(status=404, body="")
+    await pg.route(re.compile(r"/comfyart/thumb\?"), thumb)
 
 
 async def _open(p, app_url, lang, theme="light"):
@@ -101,9 +112,23 @@ async def test_old_personal_skill_renders(app_url, lang, theme):  # noqa: F811
         card = pg.locator('[data-skill="old-skill"]')
         await card.wait_for()
         assert await card.get_by_test_id("skills-card-author").inner_text() == ("个人" if lang == "zh" else "Personal")
+        # images[0] fails to load → same placeholder as a card without image; no broken img / alt text
+        await card.get_by_test_id("skills-card-placeholder").wait_for(state="visible")
+        assert await card.get_by_test_id("skills-card-cover").count() == 0
+        assert await card.locator("img").count() == 0
+        assert await card.get_by_test_id("skills-card-placeholder").locator("svg").count() == 1
+        assert await card.get_by_test_id("skills-card-kind").is_visible()
+        assert await card.locator(".ca-swall__cover").evaluate("e => getComputedStyle(e).backgroundColor") == \
+            await pg.evaluate("() => { const p = document.createElement('i'); p.style.background = 'var(--ca-hover)';"
+                              " document.body.append(p); const c = getComputedStyle(p).backgroundColor; p.remove(); return c }")
         await _shot(pg, f"personal-old-{lang}-{theme}")
-        # old import with images.json → its own images[0] via /view thumb (AC 5), no migration
-        assert "ref.png" in (await card.get_by_test_id("skills-card-cover").get_attribute("src"))
+        # old import with a loadable images.json entry → its own images[0] via thumb (AC 5), no migration
+        ok = pg.locator('[data-skill="img-skill"]')
+        img = ok.get_by_test_id("skills-card-cover")
+        await img.wait_for(state="visible")
+        assert "good.png" in (await img.get_attribute("src"))
+        await pg.wait_for_function("e => e.complete && e.naturalWidth > 0", arg=await img.element_handle())
+        assert await ok.get_by_test_id("skills-card-placeholder").count() == 0
         await card.get_by_test_id("skills-card-bookmark").click()
         assert "old-skill" in await pg.evaluate("localStorage.getItem('comfyart.skillFavourites')")
         assert "社" + "区" not in await card.inner_text()

@@ -48,12 +48,15 @@ function SkillWallCard({
   const author = skillAuthor(skill)
   const src = cover && (cover.own === 'bundled' ? cover.src : thumbUrl(cover.src, 512))
   const desc = skillDescription(skill)
+  // #494 — a cover that fails to load falls back to the same placeholder; keyed by src so a new src retries.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const showImg = !!src && failedSrc !== src
   return (
     <article className="ca-swall__card" data-testid="skills-wall-card" data-skill={skill.id} data-custom={skill.custom || undefined}>
       <div className="ca-swall__cover" role="button" tabIndex={0} aria-label={skill.name} onClick={onTry}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTry() } }}>
-        {src
-          ? <img src={src} alt={skill.name} loading="lazy" data-testid="skills-card-cover" />
+        {showImg
+          ? <img src={src} alt={skill.name} loading="lazy" data-testid="skills-card-cover" onError={() => setFailedSrc(src)} />
           : <span className="ca-swall__placeholder" data-testid="skills-card-placeholder"><span className="ca-icon">{skill.id === 'custom-workflow' ? Icons.workflow : Icons.skill}</span></span>}
         <span className="ca-swall__badge" data-testid="skills-card-kind" data-kind="image" aria-hidden="true"><span className="ca-icon">{Icons.imageLine}</span></span>
         <button

@@ -151,3 +151,12 @@ def test_builtin_author_is_brand_name_494():
     assert "{ kind: 'builtin', label: BRAND.name }" in body
     assert not re.search(r"label: ['\"]", body.replace("t('home.skillsAuthorPersonal')", ""))
     assert re.search(r"^import \{ BRAND \} from './brand'$", SKILLS_TS, re.M)
+
+
+def test_broken_cover_falls_back_to_placeholder_494():
+    """图片加载失败（onError）与无图走同一个占位；按 src 记录失败，src 变化后重试。"""
+    card = SKILLS.split("const cover = skillCover(skill)", 1)[1].split("ca-swall__badge", 1)[0]
+    assert "const [failedSrc, setFailedSrc] = useState<string | null>(null)" in card
+    assert "const showImg = !!src && failedSrc !== src" in card
+    assert "{showImg\n" in card and "onError={() => setFailedSrc(src)}" in card
+    assert card.count("ca-swall__placeholder") == 1 and card.count("<img") == 1
