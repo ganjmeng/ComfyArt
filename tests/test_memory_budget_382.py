@@ -36,6 +36,8 @@ def test_constants_match_policy(got):
     assert c["MAX_INJECT_TOKENS"] == policy["max_inject_tokens"] == 1500
     assert c["IMAGE_TOKENS"] == policy["image_tokens"] == 1500
     assert c["MAX_LOG"] == policy["max_log"] == 500
+    # #493: FE fallback window matches bot/local_llm._FALLBACK_CONTEXT_WINDOW
+    assert policy["fallback_context_window"] == 270_000
 
 
 def test_ac1_topn_and_token_cap(got):
