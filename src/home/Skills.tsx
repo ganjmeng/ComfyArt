@@ -18,7 +18,7 @@ import {
 } from '../skills'
 import { Icons } from '../ui/icons'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
-import { SkillsDialog, skillsOpenAtom, skillsOpenIdAtom } from '../ui/SkillsDialog'
+import { openImportedSkill, skillsOpenAtom } from '../ui/SkillsDialog'
 
 type Tab = 'explore' | 'favourites' | 'personal'
 const CHIPS: { id: SkillChipId; labelKey: string }[] = [
@@ -224,17 +224,15 @@ export function Skills() {
       {importing && (
         <SkillImportDialog
           onClose={() => setImporting(false)}
-          onImported={(skill) => {
+          onImported={(skill, skipped) => {
             // #463 product ruling: go straight to the new skill's detail (duplicates land on -2/-3) with the guide toast.
             setImporting(false)
             setTab('personal')
-            skillsOpenIdAtom.set(importLanding(skill))
-            skillsOpenAtom.set(true)
+            openImportedSkill(importLanding(skill, skipped))
             void loadSkills().then(setSkills)
           }}
         />
       )}
-      <SkillsDialog onError={(msg) => console.error(msg)} />
     </div>
   )
 }

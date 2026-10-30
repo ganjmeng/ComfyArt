@@ -178,6 +178,24 @@ def make_zip() -> bytes:
     return b.getvalue()
 
 
+ERRS = {
+    "zh": {"noSkillMd": "未找到 SKILL.md", "unreadable": "无法读取这个文件", "tooLarge": "文件超过 20MB"},
+    "en": {"noSkillMd": "No SKILL.md found", "unreadable": "Couldn't read this file", "tooLarge": "File is larger than 20 MB"},
+}
+GUIDE = {"zh": "Skill 创建成功，先试试效果吧", "en": "Skill created. Give it a try"}
+
+
+def make_error_files(d: Path) -> dict:
+    b = io.BytesIO()
+    with zipfile.ZipFile(b, "w") as z:
+        z.writestr("notes/readme.md", "# no skill here\n")
+    (d / "no-skill.zip").write_bytes(b.getvalue())
+    (d / "broken.zip").write_bytes(b"not a zip at all")
+    with open(d / "huge.zip", "wb") as f:  # sparse, > 20 MB
+        f.truncate(20 * 1024 * 1024 + 1)
+    return {"noSkillMd": d / "no-skill.zip", "unreadable": d / "broken.zip", "tooLarge": d / "huge.zip"}
+
+
 def seed(tmp: Path):
     ca = tmp / "user/default/comfyart"
     ca.mkdir(parents=True, exist_ok=True)
@@ -205,6 +223,7 @@ async def main():
     _patch_providers()
     zp = Path(tempfile.mkdtemp()) / "coffee-poster.zip"
     zp.write_bytes(make_zip())
+    errs = make_error_files(zp.parent)
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         for lang in ("zh", "en"):
@@ -239,25 +258,38 @@ async def main():
                 assert drop in await dlg.inner_text()
                 await page.wait_for_timeout(300)
                 await shot("import-dialog")
+                drop_zone = page.locator('[data-testid="skill-import-drop"]')
+                await drop_zone.dispatch_event("dragenter", {"dataTransfer": await page.evaluate_handle("new DataTransfer()")})
+                await page.wait_for_timeout(200)
+                assert ("松开以导入" if lang == "zh" else "Release to import") in await dlg.inner_text()
+                await shot("import-dragover")
+                await drop_zone.dispatch_event("dragleave", {"dataTransfer": await page.evaluate_handle("new DataTransfer()")})
+                for code, path in errs.items():
+                    await page.locator('[data-testid="skill-import-zip-input"]').set_input_files(str(path))
+                    err = page.locator('[data-testid="skill-import-error"]')
+                    await err.wait_for(timeout=15000)
+                    assert (await err.inner_text()).strip() == ERRS[lang][code], (code, await err.inner_text())
+                    await shot(f"import-error-{code}")
+                assert not (tmp / "user/default/comfyart/skills").exists() or not any((tmp / "user/default/comfyart/skills").iterdir())
+                guide = page.locator('[data-testid="skill-import-guide"]')
                 for i in range(3):
                     if i:
+                        await page.keyboard.press("Escape")
+                        await page.wait_for_timeout(300)
                         await page.locator('[data-testid="skills-create-menu"]').click()
                         await page.locator('[data-testid="skills-import"]').click()
                         await dlg.wait_for()
                     await page.locator('[data-testid="skill-import-zip-input"]').set_input_files(str(zp))
                     await dlg.wait_for(state="detached", timeout=15000)
-                    await page.wait_for_timeout(500)
+                    await guide.wait_for(timeout=5000)  # lands on the new skill's #484 page with the guide toast
+                    assert (await guide.inner_text()).strip() == GUIDE[lang]
+                    if i == 1:
+                        await shot("import-landing-guide")
+                    await page.wait_for_timeout(2600)
                 dirs = sorted(d.name for d in (tmp / "user/default/comfyart/skills").iterdir())
                 assert dirs == ["coffee-poster", "coffee-poster-2", "coffee-poster-3"], dirs
-                await page.locator('[data-testid="skills-tab-personal"]').click()
-                await page.wait_for_timeout(600)
-                cards = page.locator('[data-testid="skills-wall-card"]')
-                ids = sorted([await cards.nth(k).get_attribute("data-skill") for k in range(await cards.count())])
-                assert ids == dirs, ids
-                for k in range(3):
-                    assert "Coffee Poster" in await cards.nth(k).inner_text()
-                await page.locator('[data-testid="skills-import-note"]').count()
-                await shot("import-3x")
+                ids = dirs
+                assert await page.locator('[data-testid="skills-import-note"]').count() == 0  # list notice removed
                 print("wrote", tag, ids)
                 await ctx.close()
                 await server.close()

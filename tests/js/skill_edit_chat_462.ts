@@ -2,7 +2,7 @@
 // skill tool's by-name save overwriting the original in place. In-memory user files, no network, no paid API.
 import { setLang } from '../../src/i18n'
 import { editSkillInChat, startSkillEdit } from '../../src/skillEdit'
-import { loadSkills, saveSkill } from '../../src/skills'
+import { loadSkills, saveSkill, skillTool } from '../../src/skills'
 const assigned: string[] = []
 ;(globalThis as any).location = { pathname: '/', origin: 'http://ca.test', href: 'http://ca.test/', assign: (u: string) => assigned.push(u) }
 const r: Record<string, unknown> = {}
@@ -24,22 +24,20 @@ for (const lang of ['zh', 'en'] as const) {
 // Mock agent turn (no LLM): follow the context's directive — read the skill with the real tool, list it, ask.
 setLang('zh')
 const turn = (r.zh as any).sends[0]
-const readName = /action="read", name="([^"]+)"/.exec(turn.context)?.[1]
-const found = (await loadSkills()).find((s) => s.name === readName)!  // what the agent skill tool's read returns
-const read = { name: found.name, instructions: found.instructions, files: Object.keys(found.files ?? {}) }
+const readId = /action="read", id="([^"]+)"/.exec(turn.context)?.[1]
+const saveId = /action="save" with id="([^"]+)"/.exec(turn.context)?.[1]
+r.contextIds = { readId, saveId, hasNameAddr: /action="(read|save)"[^\]]*name="/.test(turn.context) }
+const read = await skillTool({ action: 'read', id: readId }) as { name: string; instructions: string; files: string[] }
 r.mockReply = [
   { type: 'thinking', text: '…' },
-  { type: 'tool_use', name: 'skill', input: { action: 'read', name: readName } },
+  { type: 'tool_use', name: 'skill', input: { action: 'read', id: readId } },
   { type: 'tool_result', text: JSON.stringify(read) },
   { type: 'text', text: `已加载这个 Skill，它目前包含：\n- ${read.instructions}\n- 文件：${read.files.join('、')}\n你想修改哪些方面？` },
 ]
 const before = (await loadSkills()).filter((s) => s.custom).length
-// The agent skill tool's save (src/botLayout.ts, unchanged from main): find the custom skill by name, then
-// saveSkill({ ...existing, id: existing?.id ?? new, ... }). Same loadSkills → saveSkill path, same arguments.
-const args = { action: 'save', name, instructions: 'new rules 9:16' }
-const existing = (await loadSkills()).find((s) => s.custom && s.name === args.name)
-await saveSkill({ ...existing, id: existing?.id ?? 'fresh', name: String(args.name), instructions: String(args.instructions), custom: true })
-r.reusedId = existing?.id
+// #463: the agent saves through the real skill tool by the id the context gave it.
+const saved = await skillTool({ action: 'save', id: saveId, instructions: 'new rules 9:16' }) as { id: string }
+r.reusedId = saved.id
 const after = (await loadSkills()).filter((s) => s.custom)
 r.countBefore = before
 r.countAfter = after.length

@@ -195,23 +195,44 @@ export function zipEntries(bytes: Uint8Array): SkillEntry[] {
 
 export const isZip = (f: File) => /\.zip$/i.test(f.name) || /zip/.test(f.type)
 
-export async function importZip(file: File): Promise<{ skill: Skill; skipped: string[] }> {
+/** #463 import progress shown in the dialog: 上传中...N% while the file is read, then 解析中... while it is unpacked/saved. */
+export type ImportProgress = { phase: 'upload'; pct: number } | { phase: 'extract' }
+
+async function readWithProgress(file: File, onProgress?: (p: ImportProgress) => void): Promise<Uint8Array> {
+  if (!onProgress || typeof file.stream !== 'function') return new Uint8Array(await file.arrayBuffer())
+  const out = new Uint8Array(file.size)
+  const reader = file.stream().getReader()
+  let loaded = 0
+  onProgress({ phase: 'upload', pct: 0 })
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    out.set(value, loaded)
+    loaded += value.length
+    onProgress({ phase: 'upload', pct: file.size ? Math.min(100, Math.round((loaded / file.size) * 100)) : 100 })
+  }
+  return out.subarray(0, loaded)
+}
+
+export async function importZip(file: File, onProgress?: (p: ImportProgress) => void): Promise<{ skill: Skill; skipped: string[] }> {
   if (file.size > SKILL_IMPORT_MAX_BYTES) throw new SkillImportError('tooLarge')
   if (!isZip(file)) throw new SkillImportError('unreadable')
   let entries: SkillEntry[]
-  try { entries = zipEntries(new Uint8Array(await file.arrayBuffer())) } catch { throw new SkillImportError('unreadable') }
+  const bytes = await readWithProgress(file, onProgress).catch(() => { throw new SkillImportError('unreadable') })
+  onProgress?.({ phase: 'extract' })
+  try { entries = zipEntries(bytes) } catch { throw new SkillImportError('unreadable') }
   return importEntries(entries, file.name.replace(/\.zip$/i, ''), { strict: true })
 }
 
-/** #463 — after a successful import: open the NEW skill's detail (a duplicate lands on its -2/-3 id) with the guide toast. */
-export function importLanding(skill: Pick<Skill, 'id'>): { id: string; guide: string } {
-  return { id: skill.id, guide: t('skillsImport.created') }
+/** #463 — after a successful import: open the NEW skill's page (a duplicate lands on its -2/-3 id) with the guide toast;
+ *  skipped (unsupported) files are appended to the guide so that info is not lost. */
+export function importLanding(skill: Pick<Skill, 'id'>, skipped: string[] = []): { id: string; guide: string } {
+  const guide = t('skillsImport.created')
+  return { id: skill.id, guide: skipped.length ? `${guide} · ${t('skillsImport.skipped', skipped.join(t('common.listSep')))}` : guide }
 }
 
 /** #463 — what "Edit in chat" tells the agent, so it reads and saves the skill by id (names can repeat: x, x-2).
- *  DEPENDS ON #484: PR #484's `skillEditTurn` (src/skillEdit.ts, branch feat/462-skills-g3) still builds its hidden
- *  instruction with `name="…"`; when #484 lands, its `context` must use `skillEditToolHint(skill)` (or the same
- *  `id="…"` wording) instead. Until then the test exercises this hint + skillTool directly. */
+ *  Used by #484's `skillEditTurn` (src/skillEdit.ts). */
 export function skillEditToolHint(skill: Pick<Skill, 'id' | 'name'>): string {
   return `Read it with the skill tool (action="read", id="${skill.id}"). When saving, use action="save" with id="${skill.id}" `
     + `(not the name "${skill.name}": several skills can share it), keeping everything not mentioned; pass description to change its description.`

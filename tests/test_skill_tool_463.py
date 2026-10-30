@@ -81,8 +81,7 @@ def test_mcp_schema_has_description_and_id() -> None:
 
 
 def test_edit_chat_entry_uses_id_when_484_present() -> None:
-    # Depends on PR #484 (src/skillEdit.ts). Until it merges this skips; after rebase it must pass.
-    p = ROOT / "src/skillEdit.ts"
-    if not p.exists():
-        pytest.skip("src/skillEdit.ts comes from PR #484")
-    assert "skillEditToolHint" in p.read_text()
+    # #484 is on main: its Edit-in-chat context must be built from skillEditToolHint (id="<id>"), never name="…".
+    src = (ROOT / "src/skillEdit.ts").read_text()
+    assert "${skillEditToolHint(skill)}" in src
+    assert 'name="${skill.name}"' not in src and "exact same name" not in src

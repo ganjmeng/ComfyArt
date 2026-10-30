@@ -92,26 +92,49 @@ def test_skill_tool_edits_by_id_and_never_overwrites_ambiguous_name(lang: str) -
 
 
 GUIDE = {"zh": "Skill 创建成功，先试试效果吧", "en": "Skill created. Give it a try"}
+SKIPPED = {"zh": "不支持的文件已跳过：tool.exe", "en": "Unsupported files skipped: tool.exe"}
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
 def test_import_lands_on_new_skill_detail_with_guide(lang: str) -> None:
     r = report()[lang]["landing"]
     assert "error" not in r, r
-    assert r["ids"] == ["poster", "poster-2", "poster-3"]  # duplicate lands on the new -2/-3 id
+    # Mutation m8 (land on the old id) trips this ids assertion.
+    assert r["ids"] == ["poster", "poster-2", "poster-3"]  # duplicate lands on the new -2/-3 id, never the old one
     assert r["guides"] == [GUIDE[lang]] * 3
-    assert r["origSame"] is True  # landing touches nothing
+    assert r["origSame"] is True  # original byte-identical after the duplicate imports
+    assert r["skipped"] == ["tool.exe"] and r["skipId"] == "poster-4"
+    assert r["skipGuide"] == f"{GUIDE[lang]} · {SKIPPED[lang]}"  # skipped info kept, appended to the guide
 
 
 def test_import_navigation_wiring_and_old_notice_removed() -> None:
     page = (ROOT / "src/home/Skills.tsx").read_text()
     dlg = (ROOT / "src/ui/SkillsDialog.tsx").read_text()
-    assert "skillsOpenIdAtom.set(importLanding(skill))" in page and "skillsOpenAtom.set(true)" in page
+    assert "openImportedSkill(importLanding(skill, skipped))" in page
+    assert "<SkillsDialog" not in page  # HomeApp already mounts the dialog
+    assert "openSkillEditor(landing.id)" in dlg and "skillImportGuideAtom.set(landing.guide)" in dlg
     assert "skills-import-note" not in page and "skillsImport.done" not in page
     assert "skillsImport.done" not in EN and "skillsImport.done" not in ZH
-    assert "setView({ kind: 'edit', skill: s })" in dlg and 'data-testid="skill-import-guide"' in dlg
+    assert "setView({ kind: 'edit', skill: s })" in dlg and 'data-testid="skill-import-guide"' in dlg  # #484 skill page (Preview/Code)
     assert EN["skillsImport.created"] == GUIDE["en"] and ZH["skillsImport.created"] == GUIDE["zh"]
-    assert EN["skillsImport.release"] == "Release to import" and EN["skillsImport.importing"] == "Importing…"  # drag-over/importing copy unchanged
+    assert EN["skillsImport.release"] == "Release to import" and ZH["skillsImport.release"] == "松开以导入"  # drag-over copy unchanged
+
+
+def test_progress_copy_upload_then_extract() -> None:
+    assert "skillsImport.importing" not in EN and "skillsImport.importing" not in ZH
+    assert ZH["skillsImport.uploading"] == "上传中...{0}%" and ZH["skillsImport.extracting"] == "解析中..."
+    assert EN["skillsImport.uploading"] == "Uploading...{0}%" and EN["skillsImport.extracting"] == "Extracting..."
+    assert "t('skillsImport.uploading', progress.pct)" in DIALOG and "t('skillsImport.extracting')" in DIALOG
+    assert "importZip(f, setProgress)" in DIALOG
+
+
+def test_close_x_writes_nothing() -> None:
+    # Only the top-right × closes; it just unmounts the dialog (no import, no write). Behavioural check is Playwright.
+    page = (ROOT / "src/home/Skills.tsx").read_text()
+    assert "onClose={() => setImporting(false)}" in page
+    assert "onClose={onClose}" in DIALOG and "common.cancel" not in DIALOG
+    run = DIALOG[DIALOG.index("const run ="):DIALOG.index("const takeZip")]
+    assert "onClose" not in run  # closing never goes through the import path
 
 
 def test_skill_tool_wired_with_id() -> None:

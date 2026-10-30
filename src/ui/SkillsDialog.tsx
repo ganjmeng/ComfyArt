@@ -20,8 +20,14 @@ export function openSkillEditor(id: string) {
   skillEditIdAtom.set(id)
   skillsOpenAtom.set(true)
 }
-/** #463: open the dialog directly on this skill's detail (edit view), optionally with a one-off guide toast. */
-export const skillsOpenIdAtom = atom<{ id: string; guide?: string } | null>('skills open id', null)
+/** #463: one-off guide toast shown when the Edit dialog opens on a just-imported skill. */
+export const skillImportGuideAtom = atom<string>('skill import guide', '')
+
+/** #463: after a successful import, open the NEW skill (a duplicate's -2/-3 id) via the shared entry, with the guide. */
+export function openImportedSkill(landing: { id: string; guide: string }) {
+  skillImportGuideAtom.set(landing.guide)
+  openSkillEditor(landing.id)
+}
 
 type View = { kind: 'list' } | { kind: 'edit'; skill: Skill } | { kind: 'history'; skill: Skill; versions: SkillVersion[] | null }
 
@@ -113,7 +119,7 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
   const [view, setView] = useState<View>({ kind: 'list' })
   const [note, setNote] = useState('')
   const [guide, setGuide] = useState('')
-  const target = useValue(skillsOpenIdAtom)
+  const importGuide = useValue(skillImportGuideAtom)
   const folder = useRef<HTMLInputElement>(null)
   const refresh = () => loadSkills().then((all) => setSkills(all.filter((s) => s.custom))).catch((e) => onError(String(e)))
 
@@ -131,15 +137,12 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
   }, [open, editId])
 
   useEffect(() => {
-    if (!open || !target) return
-    skillsOpenIdAtom.set(null)
-    void loadSkills().then((all) => {
-      const s = all.find((x) => x.custom && x.id === target.id)
-      if (!s) return
-      setView({ kind: 'edit', skill: s })
-      if (target.guide) { setGuide(target.guide); setTimeout(() => setGuide(''), 2400) }
-    }).catch((e) => onError(String(e)))
-  }, [open, target])
+    if (!open || !importGuide || view.kind !== 'edit') return
+    setGuide(importGuide)
+    skillImportGuideAtom.set('')
+    const timer = setTimeout(() => setGuide(''), 2400)
+    return () => clearTimeout(timer)
+  }, [open, importGuide, view.kind])
 
   useEffect(() => {
     if (view.kind === 'history' && !view.versions) void listVersions(view.skill.id).then((versions) => setView({ ...view, versions })).catch((e) => onError(String(e)))

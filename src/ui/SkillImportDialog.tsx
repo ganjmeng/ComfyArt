@@ -2,7 +2,7 @@
 import { useState, useRef, type DragEvent } from 'react'
 
 import { t } from '../i18n'
-import { importEntries, importZip, SkillImportError, type Skill, type SkillEntry } from '../skills'
+import { importEntries, importZip, SkillImportError, type ImportProgress, type Skill, type SkillEntry } from '../skills'
 import { Icons } from './icons'
 import { Modal } from './Modal'
 
@@ -31,10 +31,12 @@ export function SkillImportDialog({ onClose, onImported }: { onClose: () => void
   const [over, setOver] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [progress, setProgress] = useState<ImportProgress>({ phase: 'upload', pct: 0 })
 
   const run = (fn: () => Promise<{ skill: Skill; skipped: string[] }>) => {
     setBusy(true)
     setError('')
+    setProgress({ phase: 'upload', pct: 0 })
     void fn()
       .then(({ skill, skipped }) => onImported(skill, skipped))
       .catch((e) => {
@@ -44,7 +46,7 @@ export function SkillImportDialog({ onClose, onImported }: { onClose: () => void
   }
   const takeZip = (f: File | undefined) => {
     if (!f) return
-    run(() => importZip(f))
+    run(() => importZip(f, setProgress))
   }
   const onDrop = (e: DragEvent) => {
     e.preventDefault()
@@ -52,7 +54,7 @@ export function SkillImportDialog({ onClose, onImported }: { onClose: () => void
     if (busy) return
     const entry = Array.from(e.dataTransfer.items ?? []).map((i) => (i as DataTransferItem & { webkitGetAsEntry?: () => Entry | null }).webkitGetAsEntry?.()).find(Boolean)
     if (entry?.isDirectory) {
-      run(async () => { const out: SkillEntry[] = []; await walk(entry, out); return importEntries(out, entry.name, { strict: true }) })
+      run(async () => { setProgress({ phase: 'extract' }); const out: SkillEntry[] = []; await walk(entry, out); return importEntries(out, entry.name, { strict: true }) })
       return
     }
     takeZip(Array.from(e.dataTransfer.files)[0])
@@ -76,7 +78,7 @@ export function SkillImportDialog({ onClose, onImported }: { onClose: () => void
           onDrop={onDrop}
         >
           <span className="ca-skimport__icon ca-icon">{Icons.uploadArrow}</span>
-          <span className="ca-skimport__title">{busy ? t('skillsImport.importing') : over ? t('skillsImport.release') : t('skillsImport.drop')}</span>
+          <span className="ca-skimport__title">{busy ? (progress.phase === 'upload' ? t('skillsImport.uploading', progress.pct) : t('skillsImport.extracting')) : over ? t('skillsImport.release') : t('skillsImport.drop')}</span>
           {error && !over && <span className="ca-skimport__error" role="alert" data-testid="skill-import-error">{error}</span>}
         </button>
         <ul className="ca-skimport__notes" data-testid="skill-import-notes">

@@ -80,7 +80,8 @@ def test_chip_icon_is_the_process_line_skill_icon() -> None:
 def test_mock_agent_flow_reads_lists_then_asks(got: dict) -> None:
     kinds = [b["type"] for b in got["mockReply"]]
     assert kinds == ["thinking", "tool_use", "tool_result", "text"]
-    assert got["mockReply"][1] == {"type": "tool_use", "name": "skill", "input": {"action": "read", "name": "早安咖啡店海报生成器"}}
+    assert got["mockReply"][1] == {"type": "tool_use", "name": "skill", "input": {"action": "read", "id": "cafe1"}}
+    assert got["contextIds"] == {"readId": "cafe1", "saveId": "cafe1", "hasNameAddr": False}
     reply = got["mockReply"][3]["text"]
     assert "old rules" in reply and "notes.md" in reply and reply.rstrip().endswith("？")
     # process line: thinking → 思考完成, skill read → 技能加载完成
@@ -91,10 +92,9 @@ def test_mock_agent_flow_reads_lists_then_asks(got: dict) -> None:
     assert ZH["chatMessage.thought"] == "思考完成" and ZH["chatMessage.skillReady"] == "技能加载完成"
 
 
-def test_save_by_unique_name_overwrites_original(got: dict) -> None:
-    # the harness mirrors the tool's two save lines; pin them so a change in botLayout fails here
-    assert "const existing = skills.find((s) => s.custom && s.name === args.name)" in BOT
-    assert "await saveSkill({ ...existing, id: existing?.id ?? uuid().slice(0, 8)" in BOT
+def test_save_by_id_overwrites_original(got: dict) -> None:
+    # #463: the agent skill tool (src/skills.ts skillTool, wired in botLayout) saves by the id from the context
+    assert "skill: async (_editor, args) => skillTool(args)" in BOT
     assert got["reusedId"] == "cafe1"
     assert got["countBefore"] == got["countAfter"] == 2
     assert got["ids"] == ["cafe1", "other"]

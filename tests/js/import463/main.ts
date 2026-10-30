@@ -77,8 +77,11 @@ async function main() {
       reset()
       const runs = [await S.importZip(zipFile(GOOD)), await S.importZip(zipFile(GOOD)), await S.importZip(zipFile(GOOD))]
       const before = sha('comfyart/skills/poster/')
-      const lands = runs.map((x) => S.importLanding(x.skill))
-      return { ids: lands.map((l) => l.id), guides: lands.map((l) => l.guide), origSame: JSON.stringify(before) === JSON.stringify(sha('comfyart/skills/poster/')) }
+      const lands = runs.map((x) => S.importLanding(x.skill, x.skipped))
+      const withSkip = await S.importZip(zipFile({ ...GOOD, 'poster/tool.exe': 'bin' }))
+      const skipLand = S.importLanding(withSkip.skill, withSkip.skipped)
+      return { ids: lands.map((l) => l.id), guides: lands.map((l) => l.guide), origSame: JSON.stringify(before) === JSON.stringify(sha('comfyart/skills/poster/')),
+        skipId: skipLand.id, skipGuide: skipLand.guide, skipped: withSkip.skipped }
     })
     // "Import folder" in My Skills keeps main's direct overwrite.
     r.folder = await safe(async () => {
