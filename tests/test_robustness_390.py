@@ -271,10 +271,10 @@ async def test_ac2_declared_window_reaches_history_budget():
     p = LocalLlmProvider(base_url=lambda: "http://x/v1")
     _models_stub(p, {"http://x/v1": {"data": [{"id": "big", "context_length": 128_000}]}}, [])
     window = await p._context_window(None, "big")
-    history = [{"role": r, "content": "字" * 3_000}
+    history = [{"role": r, "text": "字" * 3_000}
                for _ in range(10) for r in ("user", "assistant")]
     # 60k tokens: over 32k*70% (22.4k), under 128k*70% (89.6k)
     wide = LocalLlmProvider._history_messages(history, context_window=window)
     narrow = LocalLlmProvider._history_messages(history, context_window=32_000)
-    assert [m["content"] for m in wide] == [m["content"] for m in history]
+    assert [m["content"] for m in wide] == [m["text"] for m in history]
     assert len(narrow) < len(history)

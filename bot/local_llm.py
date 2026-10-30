@@ -1323,9 +1323,10 @@ class LocalLlmProvider(AgentProvider):
             for entry in data.get("data") or []:
                 if not isinstance(entry, dict) or not entry.get("id"):
                     continue
-                window = explicit_context_window(entry)
-                if window:
-                    cache[(base, str(entry["id"]))] = window
+                # Every listed id is cached from this one fetch (declared window, else
+                # table / fallback), so a model without a window does not refetch.
+                cache[(base, str(entry["id"]))] = (explicit_context_window(entry)
+                                                   or resolve_context_window(str(entry["id"])))
                 max_input = declared_max_input(entry)
                 if max_input:
                     self._max_inputs[(base, str(entry["id"]))] = max_input
