@@ -10,6 +10,7 @@ SKILLS_TS = (ROOT / "src/skills.ts").read_text()
 COMPOSER = (ROOT / "src/ui/Composer.tsx").read_text()
 BOT = (ROOT / "src/botLayout.ts").read_text()
 TOOLS = (ROOT / "api/mcp_tools/canvas.py").read_text()
+SKILLS = (ROOT / "src/skills.ts").read_text()
 EN = json.loads((ROOT / "src/locales/en.json").read_text())
 ZH = json.loads((ROOT / "src/locales/zh.json").read_text())
 KEYS = ["skillsDialog.name", "skillsDialog.description", "skillsDialog.instructions", "skillsDialog.preview",
@@ -52,10 +53,21 @@ def test_edit_in_chat_opens_new_project_and_leaves_composer_plain() -> None:
 
 
 def test_agent_skill_tool_left_as_on_main() -> None:
-    # #462 does not touch the agent skill tool (#463 owns it); an agent save keeps the stored description via ...existing
-    assert "args.description" not in BOT
-    assert "await saveSkill({ ...existing, id: existing?.id ?? uuid().slice(0, 8)" in BOT
-    assert '"description": {"type": "string"}' not in TOOLS[TOOLS.index('"skill": _tool('):TOOLS.index('"custom_workflow"')]
+    # #462 does not touch the agent skill tool (#463 owns it); an agent save keeps the stored description via ...existing.
+    # #463 (PR #487: 4b33ed5 moved the tool body to skills.ts skillTool; 99f2d9f added an optional `description`
+    # arg). Intent kept: a save that leaves description out keeps the stored one, via the existing object.
+    assert "args.description" not in BOT  # botLayout only wires the tool
+    assert "skill: async (_editor, args) => skillTool(args)" in BOT
+    tool = SKILLS[SKILLS.index("export async function skillTool"):]
+    tool = tool[:tool.index("\n}\n")]
+    assert "const description = args.description != null ? String(args.description).replace(/\\s+/g, ' ').trim() : existing?.description" in tool
+    assert "const skill: Skill = { ...existing, id: existing?.id ?? await freeSkillId(slug(name))" in tool
+    assert "if (description) skill.description = description; else delete skill.description" in tool
+    assert "await saveSkill(skill)" in tool
+    schema = TOOLS[TOOLS.index('"skill": _tool('):TOOLS.index('"custom_workflow"')]
+    assert '"description": {"type": "string"}' in schema  # optional (#463), never required
+    assert '["action"]),' in schema
+    assert "instructions and description you leave out are kept" in schema
 
 
 def test_locales() -> None:

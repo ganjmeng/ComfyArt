@@ -64,7 +64,10 @@ SURFACES = [
     ("home start-from-skill", HOME, "startFromSkill"),
     ("arti skills tab", ARTI, "arti-skills-skeleton"),
     ("evolveSkill", PROACTIVE, "evolveSkill"),
-    ("agent skill tool", BOT, "action === 'save'"),
+    # #463 (PR #487, 4b33ed5): the agent `skill` tool is still registered in botLayout.ts but its
+    # list/read/save body moved to skills.ts (skillTool) — lock both the registration and the save branch.
+    ("agent skill tool", BOT, "skill: async (_editor, args) => skillTool(args)"),
+    ("agent skill tool save", SKILLS, "if (args.action === 'save')"),
     ("saveSkill storage", SKILLS, "async function saveSkill"),
     ("importFolder", SKILLS, "async function importFolder"),
 ]

@@ -3,7 +3,7 @@ import { writeFileSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom'
 import { ExportDialog, exportAtom } from '../../../src/ui/ExportDialog'
-import { resetHooks } from './react'
+import { resetHooks, sets } from './react'
 import { downloads } from './psd'
 
 const out = process.env.OUT_DIR!
@@ -80,7 +80,15 @@ async function exportAs(format: string | null, ids: string[], scale: number) {
   const click = findPrimary(tree)
   if (!click) throw new Error('no export button')
   await click()
-  await new Promise((r) => setTimeout(r, 50))
+  // #505: wait for this export to settle (busy set true then false in run()'s finally) rather than a fixed 50 ms —
+  // under load pptxgenjs took longer, so the pptx download landed in the next format's slice (pptx [] / pptx-text x2).
+  const BUSY = 3  // useState order in ExportDialog: format, scale, background, busy
+  const settled = () => { const b = sets.filter(([k]) => k === BUSY).map(([, v]) => v); return b.length >= 2 && b[b.length - 1] === false }
+  const deadline = Date.now() + 60_000  // hang guard only; normal settle is well under a second
+  while (!settled()) {
+    if (Date.now() > deadline) throw new Error(`export ${format} never settled`)
+    await new Promise((r) => setTimeout(r, 5))
+  }
   return { errors, closed: exportAtom.get() === null }
 }
 
