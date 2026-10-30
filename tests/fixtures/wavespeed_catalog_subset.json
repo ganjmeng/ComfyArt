@@ -5077,7 +5077,7 @@
 }
 ]
 },
-"base_price": 0.003,
+"base_price": 0.015,
 "description": "Pruna p-image Ideogram model running on RunPod.",
 "model_id": "pruna-ai/p-image/ideogram",
 "name": "pruna-ai/p-image/ideogram"
