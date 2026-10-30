@@ -148,6 +148,10 @@ def test_locales_only_add_memory_retrieved_430():
         "memoryDialog.stepOf", "memoryDialog.freeHint",
         # #423: 「已保存 N 条」 under the memory row
         "chatMessage.memorySavedCount",
+        # #494: 技能页标签中文化、作者行「个人」，移除旧作者与浏览量文案
+        "home.skillsFavourites", "home.skillsExplore", "home.skillsPersonal",
+        "home.skillsAuthorPersonal", "home.skillsCommunity", "home.skillsViews",
+        "home.skills", "home.skillsCreate",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)

@@ -1,0 +1,76 @@
+{
+  "source_commit": "3c3edaaf21991b0c9c0caf2366a4e47d6139efc1",
+  "encoder": "Pillow==13.0.0",
+  "size": [
+    462,
+    346
+  ],
+  "params": {
+    "format": "WEBP",
+    "quality": 82,
+    "method": 6,
+    "exact": false
+  },
+  "covers": {
+    "poster": {
+      "file": "skills/poster/cover.webp",
+      "source": "494/covers/poster/1.png",
+      "source_sha256": "e2b6d288b20c7b96e64f642911a2d9c08f3e85cc503428f42f116e4ce26ef918",
+      "sha256": "3a8630012a1612a230b3c18e8d19e5f0a3b86068bebde31e7b6f4068561bc1bb"
+    },
+    "social": {
+      "file": "skills/social/cover.webp",
+      "source": "494/covers/social/1.png",
+      "source_sha256": "502516b7f27ec39a7fce483b65f263e56feb07f6993a9caf09c71321292f4460",
+      "sha256": "d15459efa5db9a919301278290bf3ca5d3d94ad0aec5885594d72a332b8561b6"
+    },
+    "brand": {
+      "file": "skills/brand/cover.webp",
+      "source": "494/covers/brand/1.png",
+      "source_sha256": "daab38e3e6e6d677c436bcfb89fd5aa546da7e4f9d8900021e72e3fed3916a20",
+      "sha256": "190e4bc977ced3f22ceacfdb8de157376e2d8b1f7c5d3ddc97fd912f529f0974"
+    },
+    "packaging": {
+      "file": "skills/packaging/cover.webp",
+      "source": "494/covers/packaging/1.png",
+      "source_sha256": "a9a029a74787c5825a0edcaaf1772b6668a4c1960d2bcac758755eacba927f90",
+      "sha256": "657d4dcfe0947e403df191824edab3f763157b65709a025486702211743d2e03"
+    },
+    "thumbnail": {
+      "file": "skills/thumbnail/cover.webp",
+      "source": "494/covers/thumbnail/1.png",
+      "source_sha256": "19642a61f0dfaba4a398e946320c031ac6faa36019f78ab6f5e09f3103e00d1c",
+      "sha256": "1d9f73bcd68a78dd9c621e1496fdc781d4878bb758f34525f9dbcc0c4e8b4401"
+    },
+    "banner": {
+      "file": "skills/banner/cover.webp",
+      "source": "494/covers/banner/1.png",
+      "source_sha256": "9aae887c2b33dc98a58d9fc20036127dccc036e1d7b0ee4e5b639d47ef9e1e04",
+      "sha256": "5d5b1455e7b07e882b0dab830761002f905356b5429293537a939a59b8fe98a8"
+    },
+    "character": {
+      "file": "skills/character/cover.webp",
+      "source": "494/covers/character/1.png",
+      "source_sha256": "88524247fa032ad91a50396f2088d04d4b188f32be3e0bba269b6766d14c3bb1",
+      "sha256": "812a1f32bca65734213c71574560b0e18e9786e125236146139ae39f38789380"
+    },
+    "product": {
+      "file": "skills/product/cover.webp",
+      "source": "494/covers/product/1.png",
+      "source_sha256": "0146b6fcff2411ab9466b06772e8dd955196761e2a6e3e50a7bea7dc3ae4b8f5",
+      "sha256": "e115f0bc20fda3af584ab9be820f0c1d0d80354cefd6984655a44338b0661c6b"
+    },
+    "motion": {
+      "file": "skills/motion/cover.webp",
+      "source": "494/covers/motion/1.png",
+      "source_sha256": "e6393448b5675409ac77e7fa5ec38a8c66d58b2c241b1bf301554fb28feac69a",
+      "sha256": "50151c2629e73b0dd7a99d9dba1d05870f197f783f353cdad170b375e13b6161"
+    },
+    "interior": {
+      "file": "skills/interior/cover.webp",
+      "source": "494/covers/interior/1.png",
+      "source_sha256": "64d0be569562e0a68188696ae2d2fdccc37ca93887f72a2a9c4990fee5102ca4",
+      "sha256": "b7df83ba9902009f0f7730575ed1825956cf006f330ddc37dfd5e63272316e87"
+    }
+  }
+}

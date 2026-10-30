@@ -1,0 +1,162 @@
+"""#494-1 skill data schema + Explore cards: real built-ins only, data-driven categories, one cover per skill, no counts."""
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SKILLS_TS = (ROOT / "src/skills.ts").read_text()
+SKILLS = (ROOT / "src/home/Skills.tsx").read_text()
+HOME_CSS = (ROOT / "src/styles/home.css").read_text()
+ICONS = (ROOT / "src/ui/icons.tsx").read_text()
+ZH = json.loads((ROOT / "src/locales/zh.json").read_text())
+EN = json.loads((ROOT / "src/locales/en.json").read_text())
+COVERS = ROOT / "public/skills"
+REAL = ["poster", "social", "brand", "packaging", "thumbnail", "banner", "character", "product", "motion", "interior", "custom-workflow"]
+# Product ruling (#494 18:26 + AC comment 23:15): 3 skills have no category and appear only under 为你推荐.
+CATEGORY = {"poster": "ads", "social": "social", "brand": "branding", "packaging": "ecommerce", "thumbnail": "social",
+            "banner": "ads", "character": None, "product": "ecommerce", "motion": "ads", "interior": None, "custom-workflow": None}
+
+
+def _builtin_block() -> str:
+    a = SKILLS_TS.index("export const BUILTIN_SKILLS")
+    return SKILLS_TS[a:SKILLS_TS.index("\n]\n", a)]
+
+
+def _entries() -> dict[str, str]:
+    block = _builtin_block()
+    parts = re.split(r"\n  \{ id: '", block)[1:]
+    return {p.split("'", 1)[0]: p for p in parts}
+
+
+def test_builtins_are_exactly_the_11_real_skills():
+    assert list(_entries()) == REAL
+
+
+def test_categories_live_in_data():
+    for sid, entry in _entries().items():
+        m = re.search(r"category: '(\w+)'", entry)
+        assert (m.group(1) if m else None) == CATEGORY[sid], sid
+    assert not re.search(r"\bcategory\s*[:=]|\.category\b|'poster'|'product'", SKILLS)  # components never map ids → categories
+    assert "skillChips(explore)" in SKILLS and "matchesSkillChip" in SKILLS
+
+
+def test_empty_categories_hidden():
+    assert "SKILL_CATEGORY_ORDER.filter((c) => used.has(c))" in SKILLS_TS
+    assert "chips.map" in SKILLS
+    assert "category: 'website'" not in SKILLS_TS  # so 网站 has no chip today
+    assert "CHIPS.map" not in SKILLS
+
+
+def test_fake_wall_meta_gone():
+    # Banned tokens are split so this file itself keeps the repo-wide counts at 0 (QA greps added lines).
+    for bad in ("WALL" + "_META", "CHIP_BY" + "_SKILL", "skillWall" + "Meta", "skillChip(", "skillsViews", "views:", "likes", "Icons.eye", "Icons.heart", "社" + "区"):
+        assert bad not in SKILLS_TS + SKILLS, bad
+    assert "home.skillsCommunity" not in ZH and "home.skillsViews" not in ZH
+
+
+def test_presets_and_inputs_schema():
+    for sid, e in _entries().items():
+        assert len(re.findall(r"\bP\('", e)) == (0 if sid == "custom-workflow" else 3), sid
+        assert "inputs: [" in e and ", true)" in e, f"{sid} needs one required input"
+    # AC 11: preset prompts and input en copy are step 2 — no placeholder text now.
+    assert "prompt:" not in _builtin_block() and "prompt?: string" in SKILLS_TS
+    assert "SkillPreset => ({ id, name: { zh, en } })" in SKILLS_TS
+    assert "label: { zh }," in SKILLS_TS
+    # names/descriptions keep coming from locale keys (AC 1)
+    for e in _entries().values():
+        assert re.match(r"[\w-]+', name: t\('skills\.\w+'\)", e)
+
+
+def test_covers_ten_webps_with_source_manifest():
+    man = json.loads((COVERS / "covers.json").read_text())
+    files = sorted(p.relative_to(COVERS).as_posix() for p in COVERS.rglob("*") if p.is_file())
+    assert files == sorted(["covers.json"] + [f"{s}/cover.webp" for s in REAL if s != "custom-workflow"])
+    assert man["encoder"] == "Pillow==13.0.0" and man["size"] == [462, 346]
+    assert set(man["covers"]) == {s for s in REAL if s != "custom-workflow"}
+    for sid, c in man["covers"].items():
+        assert hashlib.sha256((COVERS / sid / "cover.webp").read_bytes()).hexdigest() == c["sha256"], sid
+        assert re.fullmatch(r"[0-9a-f]{64}", c["source_sha256"]) and c["source"] == f"494/covers/{sid}/1.png"
+        assert (COVERS / sid / "cover.webp").read_bytes()[8:12] == b"WEBP"
+    assert "PILLOW = \"13.0.0\"" in (ROOT / "scripts/skill_covers_494.py").read_text()
+    for sid, e in _entries().items():
+        assert (f"cover: cover('{sid}')" in e) == (sid != "custom-workflow"), sid
+
+
+def test_cover_fallback_single_place():
+    body = SKILLS_TS.split("export function skillCover", 1)[1].split("\n}\n", 1)[0]
+    assert "skill.cover" in body and "Object.values(skill.images ?? {})[0]" in body  # own image first (AC 5)
+    assert "pool" not in SKILLS_TS.lower() and "hash" not in SKILLS_TS.lower()  # 23:20 ruling: no image pool
+    assert "gradient" not in HOME_CSS.split(".ca-swall {", 1)[1].split("@media", 1)[0]
+    assert "data-tone" not in SKILLS
+    assert "Icons.workflow" in SKILLS and "workflow:" in ICONS
+    assert "alt={skill.name}" in SKILLS
+
+
+def test_badge_position_and_placeholder_colour():
+    # 23:27 ruling: badge bottom-left inside the cover on every card; placeholder icon uses the secondary text var
+    css = HOME_CSS
+    badge = css[css.index(".ca-swall__badge {"):].split("}", 1)[0]
+    assert "position: absolute; left: 8px; bottom: 8px;" in badge and "top:" not in badge
+    ph = css[css.index(".ca-swall__placeholder {"):].split("}", 1)[0]
+    assert "color: var(--ca-text-2);" in ph and "#" not in ph.split("*/")[-1] and "rgb" not in ph
+    assert "background: var(--ca-hover);" in css[css.index(".ca-swall__cover {"):].split("}", 1)[0]
+    tsx = (ROOT / "src/home/Skills.tsx").read_text()
+    cover = tsx[tsx.index('className="ca-swall__cover"'):tsx.index('className="ca-swall__title"')]
+    assert 'data-testid="skills-card-kind"' in cover and "{src" in cover  # badge outside the src ternary → every card
+    assert "imageLine: <Svg strokeWidth={2}>" in (ROOT / "src/ui/icons.tsx").read_text()
+
+
+def test_card_author_badge_bookmark():
+    assert 'data-testid="skills-card-author"' in SKILLS and "skillAuthor(skill)" in SKILLS
+    assert ZH["home.skillsAuthorPersonal"] == "个人" and EN["home.skillsAuthorPersonal"] == "Personal"
+    assert 'data-testid="skills-card-kind" data-kind="image"' in SKILLS
+    assert "e.stopPropagation(); onFav()" in SKILLS and "Icons.bookmark" in SKILLS
+    assert "onClick={onTry}" in SKILLS and "newProject({ skill: s.id })" in SKILLS  # AC 3: main's click kept
+    assert "skills-card-try" not in SKILLS and "home.skillsTryThis" not in ZH  # 试用 is step 2
+
+
+def test_tab_labels_zh_488():
+    assert (ZH["home.skillsExplore"], ZH["home.skillsFavourites"], ZH["home.skillsPersonal"]) == ("探索", "收藏", "个人")
+
+
+def test_title_and_create_zh_494():
+    # 「+」由图标渲染，文案里不带「+」，避免重复
+    assert (ZH["home.skills"], ZH["home.skillsCreate"]) == ("技能", "创建")
+    assert (EN["home.skills"], EN["home.skillsCreate"]) == ("Skills", "Create")
+    assert "{t('home.skillsCreate')}<span className=\"ca-icon\">{Icons.plus}</span>" in SKILLS
+
+
+def test_card_layout_css():
+    assert "grid-template-columns: repeat(5, minmax(0, 1fr));\n  gap: 16px 24px;" in HOME_CSS
+    assert "aspect-ratio: 231 / 173" in HOME_CSS and "border-radius: 12px" in HOME_CSS
+    assert "inset: -4px -4px -8px -4px; border-radius: 16px" in HOME_CSS
+    for cls in (".ca-swall__title", ".ca-swall__desc"):
+        rule = HOME_CSS.split(cls + " {", 1)[1].split("}", 1)[0]
+        assert "white-space: nowrap" in rule and "text-overflow: ellipsis" in rule
+
+
+def test_no_banned_strings():
+    for f in ("src/skills.ts", "src/home/Skills.tsx", "src/styles/home.css", "public/skills/covers.json"):
+        txt = (ROOT / f).read_text().lower()
+        # the repo-wide gate is the domain + font; pre-existing prose comments in home.css on main are out of scope
+        assert "lov" + "art.ai" not in txt and "gt-" + "standard" not in txt
+
+
+def test_builtin_author_is_brand_name_494():
+    """作者行取 BRAND.name，不得写死品牌字符串。"""
+    body = SKILLS_TS.split("export function skillAuthor", 1)[1].split("\n}", 1)[0]
+    assert "{ kind: 'builtin', label: BRAND.name }" in body
+    assert not re.search(r"label: ['\"]", body.replace("t('home.skillsAuthorPersonal')", ""))
+    assert re.search(r"^import \{ BRAND \} from './brand'$", SKILLS_TS, re.M)
+
+
+def test_broken_cover_falls_back_to_placeholder_494():
+    """图片加载失败（onError）与无图走同一个占位；按 src 记录失败，src 变化后重试。"""
+    card = SKILLS.split("const cover = skillCover(skill)", 1)[1].split("ca-swall__badge", 1)[0]
+    assert "const [failedSrc, setFailedSrc] = useState<string | null>(null)" in card
+    assert "const showImg = !!src && failedSrc !== src" in card
+    assert "{showImg\n" in card and "onError={() => setFailedSrc(src)}" in card
+    assert card.count("ca-swall__placeholder") == 1 and card.count("<img") == 1

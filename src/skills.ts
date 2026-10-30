@@ -3,28 +3,73 @@ import { unzipSync } from 'fflate'
 
 import { deleteUserFile, listUserFiles, readUserText, uploadImage, viewUrl, writeUserText } from './comfy'
 import { rulesText } from './customMarkers'
-import { t } from './i18n'
+import { lang, t } from './i18n'
 import { uuid } from './id'
+import { BRAND } from './brand'
 
-export interface Skill { id: string; name: string; description?: string; instructions: string; files?: Record<string, string>; images?: Record<string, string>; custom?: boolean; learned?: string[] }
+/** #494 — zh/en copy carried by the skill data itself (not locales), so adding a skill never touches UI code. */
+export interface LocText { zh: string; en: string }
+/** #494 — Explore category (data only, never hardcoded in components). Unset = only under 「为你推荐」. A category with no skill gets no chip. */
+export type SkillCategory = 'ecommerce' | 'branding' | 'social' | 'website' | 'ads'
+/** #494 — one preset (template): `prompt` is the style text appended after the skill's instructions. */
+/** Step 1 carries preset names only; preset images and `prompt` arrive with the step-2 dialog. */
+export interface SkillPreset { id: string; name: LocText; prompt?: string }
+/** #494 — one field of the skill's input dialog (rendered in step 2; data lives here). */
+/** `label.en` / `placeholder` are filled in step 2 (not rendered in step 1). */
+export interface SkillInput {
+  key: string; label: { zh: string; en?: string }; type: 'text' | 'textarea' | 'select' | 'image'; required?: boolean
+  options?: { value: string; label: { zh: string; en?: string } }[]; default?: string; placeholder?: LocText
+}
+export interface Skill {
+  id: string; name: string; description?: string; instructions: string; files?: Record<string, string>; images?: Record<string, string>; custom?: boolean; learned?: string[]
+  /** #494 built-in metadata. Imported / personal skills have none of these and need no migration. */
+  category?: SkillCategory; cover?: string; presets?: SkillPreset[]; inputs?: SkillInput[]
+}
 export interface SkillVersion { time: number; skill: Skill }
 
 const ROOT = 'comfyart/skills'
 const TEXT_FILE = /\.(md|txt|json|csv|ya?ml|html?|css|js|ts|svg)$/i
 const IMAGE_FILE = /\.(png|jpe?g|webp|gif)$/i
 
+/** #494 — one list cover per skill: the `cover: true` image from review-assets 3c3edaa 494/covers, converted to a
+ *  462x346 webp by scripts/skill_covers_494.py (pinned Pillow; source sha256 in public/skills/covers.json). */
+export const SKILL_ASSET_BASE = '/comfyart/skills'
+const cover = (id: string) => `${SKILL_ASSET_BASE}/${id}/cover.webp`
+const P = (id: string, zh: string, en: string): SkillPreset => ({ id, name: { zh, en } })
+function I(key: string, zh: string, type: SkillInput['type'], required = false): SkillInput {
+  return { key, label: { zh }, type, ...(required ? { required } : {}) }
+}
+const SEL = (key: string, zh: string, values: string[], def?: string): SkillInput =>
+  ({ key, label: { zh }, type: 'select', options: values.map((v) => ({ value: v, label: { zh: v, en: v } })), default: def ?? values[0] })
+const SELL = (key: string, zh: string, opts: [string, string][], required = false): SkillInput =>
+  ({ key, label: { zh }, type: 'select', ...(required ? { required } : {}), options: opts.map(([value, z]) => ({ value, label: { zh: z } })), default: opts[0][0] })
+
+/** #494 — pick the current UI language from data-carried copy. */
+export const loc = (text: { zh: string; en?: string }) => (lang === 'en' && text.en) || text.zh
+
 export const BUILTIN_SKILLS: Skill[] = [
-  { id: 'poster', name: t('skills.posterDesign'), instructions: 'Design posters: strong headline typography in quotes, clear visual hierarchy, one hero subject, generous margins. Default ratio 3:4. Offer 2 distinct directions when the brief is open.' },
-  { id: 'social', name: t('skills.socialMediaSet'), instructions: 'Create a consistent social media set: one 1:1 feed post, one 4:5 post and one 9:16 story sharing palette, typography and motif. Keep text short and legible on mobile.' },
-  { id: 'brand', name: t('skills.brandIdentity'), instructions: 'Build a brand identity: a logo mark on plain background (1:1), a color palette board, and a stationery/mockup scene applying the logo. Describe shapes, colors (hex) and type style precisely.' },
-  { id: 'packaging', name: t('skills.packagingDesign'), instructions: 'Design product packaging: a front view of the package on a clean studio background, then a 3/4 angle mockup in a lifestyle scene. Mention material, finish and label layout.' },
-  { id: 'thumbnail', name: t('skills.youtubeThumbnail'), instructions: 'Design 16:9 video thumbnails: big expressive subject, 2-4 word bold title in quotes, high contrast, readable at small size. Offer 2 variations.' },
-  { id: 'banner', name: t('skills.bannerDesign'), instructions: 'Design wide banners (21:9 or 16:9): headline on one side, visual on the other, safe margins for cropping, clear call to action text in quotes.' },
-  { id: 'character', name: t('skills.characterSheet'), instructions: 'Create a character sheet: full body front, side and back views on white background in one 16:9 image, plus a close-up expression sheet. Keep outfit and colors identical across views.' },
-  { id: 'product', name: t('skills.eCommerceProductImages'), instructions: 'Create e-commerce product imagery: a clean white-background hero shot (1:1), a lifestyle scene, and a detail close-up. Keep the product identical. When the user gives a product image, pass its shape id in refs (ref_modes content) on every generate_image call; describing it in the prompt does not send the image.' },
-  { id: 'motion', name: t('skills.motionPoster'), instructions: 'Make a poster first (3:4) with generate_image, wait for it, then animate that image shape with animate_image using subtle motion (loop on) so the text stays readable.' },
-  { id: 'interior', name: t('skills.interiorArchitecturalVisualization'), instructions: 'Produce photoreal interior or architecture renders: eye-level wide shot, natural light, accurate materials, 16:9. Add a detail vignette at 4:3.' },
-  { id: 'custom-workflow', name: t('skills.customWorkflow'), instructions: `${rulesText()}\n\nUse the custom_workflow tool for every step; action rules returns these same rules.` },
+  { id: 'poster', name: t('skills.posterDesign'), instructions: 'Design posters: strong headline typography in quotes, clear visual hierarchy, one hero subject, generous margins. Default ratio 3:4. Offer 2 distinct directions when the brief is open.',
+    category: 'ads', cover: cover('poster'), presets: [P('minimal', '极简排版', 'Minimal layout'), P('retro', '复古印刷', 'Retro print'), P('neon', '霓虹潮流', 'Neon trend')], inputs: [I('topic', '主题', 'text', true), I('headline', '标题文字', 'text'), SEL('ratio', '比例', ['3:4','2:3','9:16'],'3:4'), I('reference', '参考图', 'image')] },
+  { id: 'social', name: t('skills.socialMediaSet'), instructions: 'Create a consistent social media set: one 1:1 feed post, one 4:5 post and one 9:16 story sharing palette, typography and motif. Keep text short and legible on mobile.',
+    category: 'social', cover: cover('social'), presets: [P('fresh', '清新生活', 'Fresh lifestyle'), P('grey', '高级灰调', 'Premium grey'), P('clash', '撞色活力', 'Bold color clash')], inputs: [I('topic', '主题', 'text', true), I('account', '品牌或账号名', 'text'), I('copy', '文案', 'textarea'), I('reference', '参考图', 'image')] },
+  { id: 'brand', name: t('skills.brandIdentity'), instructions: 'Build a brand identity: a logo mark on plain background (1:1), a color palette board, and a stationery/mockup scene applying the logo. Describe shapes, colors (hex) and type style precisely.',
+    category: 'branding', cover: cover('brand'), presets: [P('geometric', '极简几何', 'Minimal geometric'), P('handmade', '手作温暖', 'Handmade warmth'), P('tech', '科技未来', 'Tech future')], inputs: [I('brandName', '品牌名', 'text', true), I('industry', '行业', 'text'), I('tone', '调性关键词', 'text'), I('color', '主色', 'text')] },
+  { id: 'packaging', name: t('skills.packagingDesign'), instructions: 'Design product packaging: a front view of the package on a clean studio background, then a 3/4 angle mockup in a lifestyle scene. Mention material, finish and label layout.',
+    category: 'ecommerce', cover: cover('packaging'), presets: [P('eco', '自然环保', 'Natural eco'), P('gold', '奢华烫金', 'Luxury gold foil'), P('playful', '潮玩插画', 'Playful illustration')], inputs: [I('productName', '产品名', 'text', true), I('kind', '品类', 'text'), SELL('form', '包装形式', [['box', '盒'],['bottle', '瓶'],['bag', '袋'],['can', '罐']]), I('reference', '参考图', 'image')] },
+  { id: 'thumbnail', name: t('skills.youtubeThumbnail'), instructions: 'Design 16:9 video thumbnails: big expressive subject, 2-4 word bold title in quotes, high contrast, readable at small size. Offer 2 variations.',
+    category: 'social', cover: cover('thumbnail'), presets: [P('expression', '夸张表情', 'Exaggerated expression'), P('tech', '科技评测', 'Tech review'), P('vlog', 'Vlog 清新', 'Fresh vlog')], inputs: [I('topic', '视频主题', 'text', true), I('title', '标题（2–4 个词）', 'text'), I('photo', '人物照片', 'image')] },
+  { id: 'banner', name: t('skills.bannerDesign'), instructions: 'Design wide banners (21:9 or 16:9): headline on one side, visual on the other, safe margins for cropping, clear call to action text in quotes.',
+    category: 'ads', cover: cover('banner'), presets: [P('sale', '大促促销', 'Big sale'), P('brand', '品牌形象', 'Brand image'), P('event', '活动预告', 'Event teaser')], inputs: [I('headline', '标题', 'text', true), I('cta', '行动号召文案', 'text'), SEL('ratio', '比例', ['21:9','16:9'],'21:9'), I('reference', '参考图', 'image')] },
+  { id: 'character', name: t('skills.characterSheet'), instructions: 'Create a character sheet: full body front, side and back views on white background in one 16:9 image, plus a close-up expression sheet. Keep outfit and colors identical across views.',
+    cover: cover('character'), presets: [P('anime', '日系动漫', 'Anime style'), P('cartoon3d', '3D 卡通', '3D cartoon'), P('concept', '写实概念', 'Realistic concept')], inputs: [I('character', '角色描述', 'textarea', true), I('outfit', '服装', 'text'), I('reference', '参考图', 'image')] },
+  { id: 'product', name: t('skills.eCommerceProductImages'), instructions: 'Create e-commerce product imagery: a clean white-background hero shot (1:1), a lifestyle scene, and a detail close-up. Keep the product identical. When the user gives a product image, pass its shape id in refs (ref_modes content) on every generate_image call; describing it in the prompt does not send the image.',
+    category: 'ecommerce', cover: cover('product'), presets: [P('white', '白底主图', 'White background hero'), P('lifestyle', '生活场景', 'Lifestyle scene'), P('detail', '细节特写', 'Detail close-up')], inputs: [I('productImage', '产品图', 'image', true), I('productName', '产品名', 'text'), I('points', '卖点', 'textarea')] },
+  { id: 'motion', name: t('skills.motionPoster'), instructions: 'Make a poster first (3:4) with generate_image, wait for it, then animate that image shape with animate_image using subtle motion (loop on) so the text stays readable.',
+    category: 'ads', cover: cover('motion'), presets: [P('loop', '微动循环', 'Subtle loop'), P('light', '光影流动', 'Flowing light'), P('push', '镜头推拉', 'Camera push-pull')], inputs: [I('topic', '主题', 'text', true), I('headline', '标题文字', 'text'), SEL('ratio', '比例', ['3:4','9:16'],'3:4')] },
+  { id: 'interior', name: t('skills.interiorArchitecturalVisualization'), instructions: 'Produce photoreal interior or architecture renders: eye-level wide shot, natural light, accurate materials, 16:9. Add a detail vignette at 4:3.',
+    cover: cover('interior'), presets: [P('nordic', '北欧自然光', 'Nordic daylight'), P('minimal', '现代极简', 'Modern minimal'), P('industrial', '工业风', 'Industrial')], inputs: [SELL('space', '空间类型', [['living', '客厅'],['bedroom', '卧室'],['office', '办公'],['exterior', '建筑外观']], true), I('style', '风格描述', 'textarea'), I('reference', '参考图或平面图', 'image')] },
+  { id: 'custom-workflow', name: t('skills.customWorkflow'), instructions: `${rulesText()}\n\nUse the custom_workflow tool for every step; action rules returns these same rules.`,
+    inputs: [I('brief', '需求描述', 'textarea', true)] },
 ]
 
 export const skillAtom = atom<Skill | null>('skill', null)
@@ -313,25 +358,19 @@ export function toggleFavourite(id: string): string[] {
   return next
 }
 
-/** Chip ids for Explore wall filters (EN keys; UI labels via locales). */
-export type SkillChipId = 'forYou' | 'ecommerce' | 'branding' | 'social' | 'website' | 'ads'
+/** Chip ids for Explore filters: 「为你推荐」 plus the categories (#494: read from each skill's `category`). */
+export type SkillChipId = 'forYou' | SkillCategory
+/** Display order of category chips; a category no skill uses is dropped by `skillChips` (so 「网站」 is hidden today). */
+export const SKILL_CATEGORY_ORDER: SkillCategory[] = ['ecommerce', 'branding', 'social', 'website', 'ads']
 
-const CHIP_BY_SKILL: Record<string, SkillChipId> = {
-  poster: 'ads',
-  social: 'social',
-  brand: 'branding',
-  packaging: 'ecommerce',
-  thumbnail: 'social',
-  banner: 'ads',
-  character: 'forYou',
-  product: 'ecommerce',
-  motion: 'ads',
-  interior: 'website',
-  'custom-workflow': 'forYou',
+/** #494 — chips shown on Explore: 「为你推荐」 + every category that has at least one of `skills`. */
+export function skillChips(skills: Skill[]): SkillChipId[] {
+  const used = new Set(skills.map((s) => s.category).filter(Boolean))
+  return ['forYou', ...SKILL_CATEGORY_ORDER.filter((c) => used.has(c))]
 }
 
-export function skillChip(id: string): SkillChipId {
-  return CHIP_BY_SKILL[id] ?? 'forYou'
+export function matchesSkillChip(skill: Skill, chip: SkillChipId): boolean {
+  return chip === 'forYou' || skill.category === chip
 }
 
 export function skillDescription(skill: Skill): string {
@@ -343,21 +382,15 @@ export function skillDescription(skill: Skill): string {
   return line.slice(0, 72) + (line.length > 72 ? '…' : '')
 }
 
-const WALL_META: Record<string, { author: string; views: string; likes: string; tone: string }> = {
-  poster: { author: '社区', views: '12.4k', likes: '860', tone: 'warm' },
-  social: { author: '社区', views: '9.1k', likes: '640', tone: 'cool' },
-  brand: { author: '社区', views: '7.8k', likes: '520', tone: 'mint' },
-  packaging: { author: '社区', views: '11.2k', likes: '910', tone: 'sand' },
-  thumbnail: { author: '社区', views: '15.6k', likes: '1.2k', tone: 'pop' },
-  banner: { author: '社区', views: '6.4k', likes: '410', tone: 'sky' },
-  character: { author: '社区', views: '18.3k', likes: '1.5k', tone: 'lilac' },
-  product: { author: '社区', views: '14.0k', likes: '980', tone: 'steel' },
-  motion: { author: '社区', views: '8.7k', likes: '700', tone: 'rose' },
-  interior: { author: '社区', views: '5.2k', likes: '360', tone: 'sage' },
-  'custom-workflow': { author: '社区', views: '3.1k', likes: '210', tone: 'ink' },
+/** #494 product rule (23:20) — the ONE place that decides a card's image: `cover`, else the skill's own `images[0]`
+ *  (old personal skills, no migration), else `null` → light grey background + Lucide icon (no image, no gradient). */
+export function skillCover(skill: Skill): { src: string; own: 'bundled' | 'userdata' } | null {
+  if (skill.cover) return { src: skill.cover, own: 'bundled' }
+  const first = Object.values(skill.images ?? {})[0]
+  return first ? { src: first, own: 'userdata' } : null
 }
 
-export function skillWallMeta(id: string): { author: string; views: string; likes: string; tone: string } {
-  const base = WALL_META[id] ?? { author: '', views: '—', likes: '—', tone: 'ink' }
-  return { ...base, author: t('home.skillsCommunity') }
+/** #494/#489 — author line: built-ins show BRAND.name (logo); personal / imported skills say 个人. No counts. */
+export function skillAuthor(skill: Skill): { kind: 'builtin' | 'personal'; label: string } {
+  return skill.custom ? { kind: 'personal', label: t('home.skillsAuthorPersonal') } : { kind: 'builtin', label: BRAND.name }
 }

@@ -1493,12 +1493,10 @@
   "home.skillsEmptyExplore": "No skills here yet",
   "home.skillsEmptyFavourites": "No favourites yet",
   "home.skillsEmptyPersonal": "No personal skills yet",
-  "home.skillsViews": "{0} views",
   "home.skillsLikes": "{0}",
   "home.skillsFavourite": "Favourite",
   "home.skillsUnfavourite": "Unfavourite",
   "home.skillsTry": "Try",
-  "home.skillsCommunity": "Community",
   "composer.skillCreatorForm": "Form editor (fallback)",
   "composer.skillCreatorPrefill": "Create a reusable Skill from this brief. Write clear deliverables, ratios, style rules and prompt notes (instructions in English), then save with the skill tool action=\"save\". Brief:\n{0}",
   "composer.skillCreatorChip": "Skill Creator",
@@ -1552,5 +1550,6 @@
   "home.skillsMenuMore": "Create or import",
   "home.createSkill": "Create skill",
   "home.createSkillFromChat": "Create from chat",
-  "home.importSkill": "Import skill"
+  "home.importSkill": "Import skill",
+  "home.skillsAuthorPersonal": "Personal"
 }

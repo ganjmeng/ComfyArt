@@ -32,4 +32,8 @@ if (DIST / "assets").is_dir():
 if (DIST / "brand").is_dir():
     routes.static("/comfyart/brand", DIST / "brand")
 
+# #494 skill list covers (vite public/skills → dist/skills)
+if (DIST / "skills").is_dir():
+    routes.static("/comfyart/skills", DIST / "skills")
+
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
