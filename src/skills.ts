@@ -5,6 +5,7 @@ import { deleteUserFile, listUserFiles, readUserText, uploadImage, viewUrl, writ
 import { rulesText } from './customMarkers'
 import { lang, t } from './i18n'
 import { uuid } from './id'
+import { BRAND } from './brand'
 
 /** #494 — zh/en copy carried by the skill data itself (not locales), so adding a skill never touches UI code. */
 export interface LocText { zh: string; en: string }
@@ -389,7 +390,7 @@ export function skillCover(skill: Skill): { src: string; own: 'bundled' | 'userd
   return first ? { src: first, own: 'userdata' } : null
 }
 
-/** #494/#489 — author line: built-ins are ComfyArt (logo); personal / imported skills say 个人. No counts. */
+/** #494/#489 — author line: built-ins show BRAND.name (logo); personal / imported skills say 个人. No counts. */
 export function skillAuthor(skill: Skill): { kind: 'builtin' | 'personal'; label: string } {
-  return skill.custom ? { kind: 'personal', label: t('home.skillsAuthorPersonal') } : { kind: 'builtin', label: 'ComfyArt' }
+  return skill.custom ? { kind: 'personal', label: t('home.skillsAuthorPersonal') } : { kind: 'builtin', label: BRAND.name }
 }

@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401  (fixtures)
+BRAND_NAME = re.search(r"name: '([^']+)'", (Path(__file__).resolve().parents[1] / "src/brand.ts").read_text()).group(1)
 
 pw = pytest.importorskip("playwright.async_api")
 ROOT = Path(__file__).resolve().parent.parent
@@ -77,7 +78,7 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
         assert src.endswith("/skills/poster/cover.webp")
         assert await pg.evaluate("s => fetch(s).then(r => r.status)", src) == 200
         assert await poster.get_by_test_id("skills-card-cover").get_attribute("alt") == await poster.locator("h3").inner_text()
-        assert await poster.get_by_test_id("skills-card-author").inner_text() == "ComfyArt"
+        assert await poster.get_by_test_id("skills-card-author").inner_text() == BRAND_NAME
         assert await poster.get_by_test_id("skills-card-kind").count() == 1
         await poster.hover()
         assert await poster.get_by_test_id("skills-card-bookmark").is_visible()

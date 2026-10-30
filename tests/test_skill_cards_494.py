@@ -122,6 +122,13 @@ def test_tab_labels_zh_488():
     assert (ZH["home.skillsExplore"], ZH["home.skillsFavourites"], ZH["home.skillsPersonal"]) == ("探索", "收藏", "个人")
 
 
+def test_title_and_create_zh_494():
+    # 「+」由图标渲染，文案里不带「+」，避免重复
+    assert (ZH["home.skills"], ZH["home.skillsCreate"]) == ("技能", "创建")
+    assert (EN["home.skills"], EN["home.skillsCreate"]) == ("Skills", "Create")
+    assert "{t('home.skillsCreate')}<span className=\"ca-icon\">{Icons.plus}</span>" in SKILLS
+
+
 def test_card_layout_css():
     assert "grid-template-columns: repeat(5, minmax(0, 1fr));\n  gap: 16px 24px;" in HOME_CSS
     assert "aspect-ratio: 231 / 173" in HOME_CSS and "border-radius: 12px" in HOME_CSS
@@ -136,3 +143,11 @@ def test_no_banned_strings():
         txt = (ROOT / f).read_text().lower()
         # the repo-wide gate is the domain + font; pre-existing prose comments in home.css on main are out of scope
         assert "lov" + "art.ai" not in txt and "gt-" + "standard" not in txt
+
+
+def test_builtin_author_is_brand_name_494():
+    """作者行取 BRAND.name，不得写死品牌字符串。"""
+    body = SKILLS_TS.split("export function skillAuthor", 1)[1].split("\n}", 1)[0]
+    assert "{ kind: 'builtin', label: BRAND.name }" in body
+    assert not re.search(r"label: ['\"]", body.replace("t('home.skillsAuthorPersonal')", ""))
+    assert re.search(r"^import \{ BRAND \} from './brand'$", SKILLS_TS, re.M)
