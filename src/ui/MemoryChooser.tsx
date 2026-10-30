@@ -77,5 +77,5 @@ export function MemoryChooser() {
 export function MemoryToast() {
   const toast = useValue(memoryToastAtom)
   if (!toast) return null
-  return createPortal(<div key={toast.key} className="ca-mem-toast" data-kind={toast.kind} role={toast.kind === 'error' ? 'alert' : 'status'} data-testid="memory-toast"><span className="ca-icon ca-mem-toast__icon">{toast.kind === 'error' ? Icons.question : Icons.trash}</span>{toast.text}</div>, document.body)
+  return createPortal(<div key={toast.key} className="ca-mem-toast" data-kind={toast.kind} role={toast.kind === 'error' ? 'alert' : 'status'} data-testid="memory-toast">{toast.kind !== 'info' && <span className="ca-icon ca-mem-toast__icon">{toast.kind === 'error' ? Icons.question : Icons.trash}</span>}{toast.text}</div>, document.body)
 }

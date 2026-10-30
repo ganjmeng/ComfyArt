@@ -61,7 +61,7 @@ function saving<T>(id: string | undefined, p: Promise<T>, text?: string): Promis
 }
 export const memoryErrorAtom = atom<boolean>('memory error', false)
 /** #381: one transient toast (delete done / save failed). */
-export interface MemoryToastState { text: string; kind: 'deleted' | 'error'; key: number }
+export interface MemoryToastState { text: string; kind: 'deleted' | 'error' | 'info'; key: number }
 export const memoryToastAtom = atom<MemoryToastState | null>('memory toast', null)
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 export function showMemoryToast(text: string, kind: MemoryToastState['kind'] = 'deleted') {

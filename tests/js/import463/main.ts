@@ -81,7 +81,7 @@ async function main() {
       const withSkip = await S.importZip(zipFile({ ...GOOD, 'poster/tool.exe': 'bin' }))
       const skipLand = S.importLanding(withSkip.skill, withSkip.skipped)
       return { ids: lands.map((l) => l.id), guides: lands.map((l) => l.guide), origSame: JSON.stringify(before) === JSON.stringify(sha('comfyart/skills/poster/')),
-        skipId: skipLand.id, skipGuide: skipLand.guide, skipped: withSkip.skipped }
+        skipId: skipLand.id, skipGuide: skipLand.guide, skipToast: skipLand.skipped, noSkipToasts: lands.map((l) => l.skipped), skipped: withSkip.skipped }
     })
     // "Import folder" in My Skills keeps main's direct overwrite.
     r.folder = await safe(async () => {
@@ -91,6 +91,17 @@ async function main() {
     })
     out[lang] = r
   }
+  // #463 progress: a large ZIP read in chunks reports 上传中...N% with N non-decreasing to 100, then 解析中...
+  out.progress = await safe(async () => {
+    reset()
+    const pad = new Uint8Array(6 * 1024 * 1024); for (let i = 0; i < pad.length; i++) pad[i] = (i * 2654435761) >>> 24
+    const z = zipSync({ 'poster/SKILL.md': strToU8('---\nname: Poster\n---\nDo posters'), 'poster/files/big.bin': [pad, { level: 0 }] })
+    const seen: S.ImportProgress[] = []
+    const parts: Uint8Array[] = []; for (let o = 0; o < z.length; o += 256 * 1024) parts.push(z.subarray(o, o + 256 * 1024))  // multi-part blob -> streamed in chunks
+    await S.importZip(new File(parts, 'big.zip', { type: 'application/zip' }), (p) => seen.push(p))
+    const pcts = seen.filter((p) => p.phase === 'upload').map((p) => (p as { pct: number }).pct)
+    return { pcts, phases: seen.map((p) => p.phase), size: z.length }
+  })
   // #463 (1) Edit in chat by id. The entry text is skillEditToolHint(); PR #484's skillEditTurn must embed it
   // (depends on #484's src/skillEdit.ts). Here the "agent" follows the hint: it pulls the id out of it and saves.
   out.editChat = await safe(async () => {

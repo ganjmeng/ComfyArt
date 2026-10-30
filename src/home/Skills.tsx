@@ -1,3 +1,4 @@
+import { showMemoryToast } from '../memory'
 /** #460 G1 — Skills Explore / Favourites / Personal shell (mock community wall; Home grid kept). */
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -228,7 +229,9 @@ export function Skills() {
             // #463 product ruling: go straight to the new skill's detail (duplicates land on -2/-3) with the guide toast.
             setImporting(false)
             setTab('personal')
-            openImportedSkill(importLanding(skill, skipped))
+            const landing = importLanding(skill, skipped)
+            openImportedSkill(landing)
+            if (landing.skipped) showMemoryToast(landing.skipped, 'info')
             void loadSkills().then(setSkills)
           }}
         />

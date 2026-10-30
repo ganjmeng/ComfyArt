@@ -92,7 +92,7 @@ def test_skill_tool_edits_by_id_and_never_overwrites_ambiguous_name(lang: str) -
 
 
 GUIDE = {"zh": "Skill 创建成功，先试试效果吧", "en": "Skill created. Give it a try"}
-SKIPPED = {"zh": "不支持的文件已跳过：tool.exe", "en": "Unsupported files skipped: tool.exe"}
+SKIPPED = {"zh": "不支持的文件已跳过：tool.exe", "en": "Unsupported files were skipped: tool.exe"}
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
@@ -104,13 +104,16 @@ def test_import_lands_on_new_skill_detail_with_guide(lang: str) -> None:
     assert r["guides"] == [GUIDE[lang]] * 3
     assert r["origSame"] is True  # original byte-identical after the duplicate imports
     assert r["skipped"] == ["tool.exe"] and r["skipId"] == "poster-4"
-    assert r["skipGuide"] == f"{GUIDE[lang]} · {SKIPPED[lang]}"  # skipped info kept, appended to the guide
+    assert r["skipGuide"] == GUIDE[lang]  # skipped info is NOT in the guide
+    assert r["skipToast"] == SKIPPED[lang]  # second half of main's skillsDialog.importedSkipped, shown once via main's toast
+    assert r["noSkipToasts"] == ["", "", ""]  # nothing skipped -> no toast
 
 
 def test_import_navigation_wiring_and_old_notice_removed() -> None:
     page = (ROOT / "src/home/Skills.tsx").read_text()
     dlg = (ROOT / "src/ui/SkillsDialog.tsx").read_text()
-    assert "openImportedSkill(importLanding(skill, skipped))" in page
+    assert "openImportedSkill(landing)" in page and "if (landing.skipped) showMemoryToast(landing.skipped, 'info')" in page
+    assert "skillsImport.skipped" not in EN and "skillsImport.skipped" not in ZH
     assert "<SkillsDialog" not in page  # HomeApp already mounts the dialog
     assert "openSkillEditor(landing.id)" in dlg and "skillImportGuideAtom.set(landing.guide)" in dlg
     assert "skills-import-note" not in page and "skillsImport.done" not in page
@@ -173,3 +176,32 @@ def test_dialog_copy_and_error_in_drop_zone() -> None:
     assert not any(k.startswith("skillsImport.conflict") for d in (ZH, EN) for k in d)
     assert ZH["skillsImport.menu"] == "导入技能" and EN["skillsImport.menu"] == "Import a Skill"
     assert ZH["skillsImport.drop"].endswith("拖到此处") and "拖到这里" not in ZH["skillsImport.drop"]
+
+
+def test_guide_is_coachmark_on_primary_action() -> None:
+    dlg = (ROOT / "src/ui/SkillsDialog.tsx").read_text()
+    css = (ROOT / "src/styles/overlays.css").read_text()
+    assert 'className="ca-mem-toast" data-kind="guide"' not in dlg and "setTimeout(() => setGuide('')" not in dlg  # not a toast
+    prim = dlg[dlg.index('<span className="ca-skillform__primary">'):]
+    assert prim.index('data-testid="skill-form-primary"') < prim.index('data-testid="skill-import-guide"')  # bubble anchored on the primary button
+    assert "onClick={onCoachDone}>{t('skillsImport.skip')}" in prim and "onClick={onCoachDone}>{t('skillsImport.next')}" in prim  # both only close
+    assert (ZH["skillsImport.skip"], ZH["skillsImport.next"], EN["skillsImport.skip"], EN["skillsImport.next"]) == ("跳过", "下一步", "Skip", "Next")
+    assert ".ca-coach::after" in css and "border-top-color: #1f1f1f" in css  # arrow points down at the button
+
+
+def test_progress_real_bytes_monotonic_to_100() -> None:
+    # Mutation m9 (hardcoded N) trips this.
+    r = report()["progress"]
+    p = r.get("pcts")
+    assert p and len(p) >= 3, r  # read in several chunks
+    assert all(a <= b for a, b in zip(p, p[1:])), p
+    assert p[-1] == 100 and len(set(p)) >= 3, p
+    assert r["phases"][-1] == "extract" and "extract" not in r["phases"][:-1]
+
+
+def test_folder_drop_shows_only_extracting() -> None:
+    # No real byte progress for a dropped folder: phase goes straight to extract, so only 解析中.../Extracting... shows.
+    walk = DIALOG[DIALOG.index("run(async () => { setProgress({ phase: 'extract' })"):]
+    assert walk.index("setProgress({ phase: 'extract' })") < walk.index("await walk(entry, out)")
+    assert "importEntries(out, entry.name" in walk and "setProgress" not in walk[walk.index("await walk"):walk.index("importEntries(out")]
+    assert "progress.phase === 'upload' ? t('skillsImport.uploading', progress.pct) : t('skillsImport.extracting')" in DIALOG

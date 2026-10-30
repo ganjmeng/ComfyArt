@@ -1548,5 +1548,6 @@
   "skillsImport.error.tooLarge": "File is larger than 20 MB",
   "skillsImport.uploading": "Uploading...{0}%",
   "skillsImport.extracting": "Extracting...",
-  "skillsImport.skipped": "Unsupported files skipped: {0}"
+  "skillsImport.skip": "Skip",
+  "skillsImport.next": "Next"
 }

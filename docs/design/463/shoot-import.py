@@ -1,4 +1,4 @@
-"""#463 live shots: Import a Skill menu, drop dialog, same ZIP imported 3x (x, x-2, x-3).
+"""#463 live shots: Import a Skill menu, dialog, drag-over, 3 errors, x-close zero writes, landing + coachmark (x, x-2, x-3).
 
 (base: #462: real Edit Skill dialog (Name/Description/Instructions Preview·Code, Edit in Chat) + real Composer chip.
 
@@ -258,6 +258,18 @@ async def main():
                 assert drop in await dlg.inner_text()
                 await page.wait_for_timeout(300)
                 await shot("import-dialog")
+                # × closes and writes nothing: snapshot the user tree before/after.
+                def snap():
+                    return sorted((str(q.relative_to(tmp)), q.stat().st_size, q.stat().st_mtime_ns) for q in tmp.rglob("*") if q.is_file())
+                before = snap()
+                await page.locator('.ca-skimport').locator('xpath=ancestor-or-self::*[.//button[@title]][1]').locator('button.ca-panel__icon').first.click()
+                await dlg.wait_for(state="detached", timeout=5000)
+                await page.wait_for_timeout(800)
+                assert snap() == before, "x close wrote files"
+                print("x-close zero writes", tag)
+                await page.locator('[data-testid="skills-create-menu"]').click()
+                await page.locator('[data-testid="skills-import"]').click()
+                await dlg.wait_for()
                 drop_zone = page.locator('[data-testid="skill-import-drop"]')
                 await drop_zone.dispatch_event("dragenter", {"dataTransfer": await page.evaluate_handle("new DataTransfer()")})
                 await page.wait_for_timeout(200)
@@ -274,18 +286,20 @@ async def main():
                 guide = page.locator('[data-testid="skill-import-guide"]')
                 for i in range(3):
                     if i:
-                        await page.keyboard.press("Escape")
-                        await page.wait_for_timeout(300)
                         await page.locator('[data-testid="skills-create-menu"]').click()
                         await page.locator('[data-testid="skills-import"]').click()
                         await dlg.wait_for()
                     await page.locator('[data-testid="skill-import-zip-input"]').set_input_files(str(zp))
                     await dlg.wait_for(state="detached", timeout=15000)
                     await guide.wait_for(timeout=5000)  # lands on the new skill's #484 page with the guide toast
-                    assert (await guide.inner_text()).strip() == GUIDE[lang]
+                    assert (await guide.locator(".ca-coach__text").inner_text()).strip() == GUIDE[lang]
+                    assert await page.locator('[data-testid="memory-toast"]').count() == 0  # nothing skipped -> no toast
                     if i == 1:
-                        await shot("import-landing-guide")
-                    await page.wait_for_timeout(2600)
+                        await shot("import-landing-coachmark")
+                    await page.locator('[data-testid="skill-import-guide-next" if i % 2 else "skill-import-guide-skip"]').click()
+                    await guide.wait_for(state="detached", timeout=3000)  # Skip / Next only close it
+                    await page.keyboard.press("Escape")
+                    await page.wait_for_timeout(300)
                 dirs = sorted(d.name for d in (tmp / "user/default/comfyart/skills").iterdir())
                 assert dirs == ["coffee-poster", "coffee-poster-2", "coffee-poster-3"], dirs
                 ids = dirs

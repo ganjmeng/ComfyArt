@@ -224,11 +224,17 @@ export async function importZip(file: File, onProgress?: (p: ImportProgress) => 
   return importEntries(entries, file.name.replace(/\.zip$/i, ''), { strict: true })
 }
 
-/** #463 — after a successful import: open the NEW skill's page (a duplicate lands on its -2/-3 id) with the guide toast;
- *  skipped (unsupported) files are appended to the guide so that info is not lost. */
-export function importLanding(skill: Pick<Skill, 'id'>, skipped: string[] = []): { id: string; guide: string } {
-  const guide = t('skillsImport.created')
-  return { id: skill.id, guide: skipped.length ? `${guide} · ${t('skillsImport.skipped', skipped.join(t('common.listSep')))}` : guide }
+/** #463 — after a successful import: open the NEW skill's page (a duplicate lands on its -2/-3 id) with the guide coachmark.
+ *  `skipped` is the one-off toast text, only when unsupported files were actually skipped: the second half of main's
+ *  `skillsDialog.importedSkipped` copy (「不支持的文件已跳过：{0}」), no new copy. */
+export function importLanding(skill: Pick<Skill, 'id'>, skipped: string[] = []): { id: string; guide: string; skipped: string } {
+  return { id: skill.id, guide: t('skillsImport.created'), skipped: skipped.length ? skippedNotice(skipped) : '' }
+}
+
+export function skippedNotice(skipped: string[]): string {
+  const full = t('skillsDialog.importedSkipped', skipped.join(t('common.listSep')))
+  const cut = full.search(/[。.]\s*/)
+  return cut < 0 ? full : full.slice(cut + 1).trim()
 }
 
 /** #463 — what "Edit in chat" tells the agent, so it reads and saves the skill by id (names can repeat: x, x-2).

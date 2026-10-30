@@ -1548,5 +1548,6 @@
   "skillsImport.error.tooLarge": "文件超过 20MB",
   "skillsImport.uploading": "上传中...{0}%",
   "skillsImport.extracting": "解析中...",
-  "skillsImport.skipped": "不支持的文件已跳过：{0}"
+  "skillsImport.skip": "跳过",
+  "skillsImport.next": "下一步"
 }
