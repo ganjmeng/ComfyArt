@@ -70,7 +70,6 @@ def test_duplicate_name_saves_new_skill_and_keeps_original(lang: str) -> None:
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
-@pytest.mark.parametrize("lang", ["zh", "en"])
 def test_same_zip_three_times_and_old_sha256_unchanged(lang: str) -> None:
     r = report()[lang]["same3"]
     assert r["ids"] == ["poster", "poster-2", "poster-3"]
@@ -97,6 +96,7 @@ def test_skill_tool_wired_with_id() -> None:
     assert '"id": {"type": "string"}' in seg
 
 
+@pytest.mark.parametrize("lang", ["zh", "en"])
 def test_folder_import_unchanged(lang: str) -> None:
     r = report()[lang]["folder"]
     assert r["id"] == "poster" and r["skillMds"] == ["comfyart/skills/poster/SKILL.md"]
@@ -105,7 +105,7 @@ def test_folder_import_unchanged(lang: str) -> None:
 def test_dialog_copy_and_error_in_drop_zone() -> None:
     assert ZH["skillsImport.title"] == "导入技能" and EN["skillsImport.title"] == "Import a skill"
     assert EN["skillsImport.drop"] == "Drop a Skill folder or ZIP file here" and ZH["skillsImport.drop"] == "将技能文件夹或 ZIP 文件拖到此处"
-        assert ZH["skillsImport.note.formats"] == "支持 Claude Code、Codex 及其他标准 Skill 格式"
+    assert ZH["skillsImport.note.formats"] == "支持 Claude Code、Codex 及其他标准 Skill 格式"
     assert EN["skillsImport.note.formats"] == "Supports Claude Code, Codex, and other standard Skill formats"
     assert ZH["skillsImport.note.skillMd"] == "必须包含 SKILL.md" and EN["skillsImport.note.skillMd"] == "Must include SKILL.md"
     for lang, d in (("zh", ZH), ("en", EN)):
