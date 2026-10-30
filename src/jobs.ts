@@ -84,6 +84,16 @@ export function whenSubmitted(holderId: string): Promise<SubmitOutcome> | null {
 
 function report(holderId: TLShapeId, result: JobResult) {
   resultsAtom.update((r) => ({ ...r, [holderId]: result }))
+  // #386: canvas-review listens for successful placements (srcs) as "出图完成"
+  if (result.srcs.length) for (const cb of imagePlacedListeners) cb(holderId, result)
+}
+
+/** #386: subscribe to successful image/video placements (generation done). */
+type ImagePlacedFn = (holderId: TLShapeId, result: JobResult) => void
+const imagePlacedListeners = new Set<ImagePlacedFn>()
+export function onImagePlaced(cb: ImagePlacedFn): () => void {
+  imagePlacedListeners.add(cb)
+  return () => { imagePlacedListeners.delete(cb) }
 }
 
 export function registerPlacer(name: string, placer: Placer) {

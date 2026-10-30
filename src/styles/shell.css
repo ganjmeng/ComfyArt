@@ -619,6 +619,72 @@ span.arti-mascot { cursor: default; pointer-events: none; }
   color: var(--ca-text-2, rgba(0,0,0,.6)); /* secondary, not tertiary muted */
 }
 
+/* #386: canvas-review result card in Arti notify panel (design tokens only). */
+.arti-notify__list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ca-block-gap, 8px);
+  max-height: 280px;
+  overflow-y: auto;
+}
+.arti-notify__card {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ca-border, rgba(0,0,0,.08));
+  background: var(--ca-field, rgba(0,0,0,.04));
+}
+.arti-notify__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.arti-notify__card-title {
+  font: 500 13px/20px Inter, system-ui, sans-serif;
+  color: var(--ca-text, rgba(0,0,0,.9));
+}
+.arti-notify__card-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin: -2px -4px -2px 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ca-muted, rgba(0,0,0,.55));
+  cursor: pointer;
+}
+.arti-notify__card-dismiss:hover {
+  background: var(--ca-notify-close-hover, rgb(242,242,242));
+  color: var(--ca-text, rgba(0,0,0,.9));
+}
+.arti-notify__issues {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.arti-notify__issue {
+  font: 400 12px/18px Inter, system-ui, sans-serif;
+  color: var(--ca-text-2, rgba(0,0,0,.6));
+  padding-left: 12px;
+  position: relative;
+}
+.arti-notify__issue::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--ca-muted, rgba(0,0,0,.3));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .arti-mascot {
     transition: none !important;

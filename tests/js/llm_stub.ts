@@ -16,6 +16,8 @@ export function parseJson(raw: string): Record<string, unknown> | null {
     return JSON.parse(t.slice(i))
   } catch { return null }
 }
-export async function ask(): Promise<string> {
+const g = globalThis as any
+export async function ask(prompt?: string, system?: string, images?: string[]): Promise<string> {
+  if (typeof g.__askImpl === 'function') return g.__askImpl(prompt, system, images)
   throw new Error('llm_stub.ask: inject AskFn in tests — no paid calls')
 }
