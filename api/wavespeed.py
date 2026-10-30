@@ -2337,6 +2337,40 @@ async def wavespeed_cancel(request: web.Request) -> web.Response:
     return web.json_response(body)
 
 
+@routes.post("/comfyart/wavespeed/unload")
+async def wavespeed_unload(request: web.Request) -> web.Response:
+    """#408 (upstream 515d36e 「卸载模型」): no local models to unload; drop the loaded model list and the price
+    table so both are fetched again on next use. Free: nothing is sent to WaveSpeed here."""
+    models = len(_catalog.get("models") or {})
+    prices = len(_quotes)
+    _catalog["models"] = {}
+    _catalog["at"] = 0.0
+    _catalog.pop("stale", None)
+    _quotes.clear()
+    return web.json_response({"models": models, "prices": prices})
+
+
+@routes.post("/comfyart/cache/clear")
+async def clear_cache(request: web.Request) -> web.Response:
+    """#408 (upstream 515d36e 「清缓存」): local generation cache (reference maps, seg masks, upload URLs) and the
+    thumbnail files. Generated images and videos are never touched."""
+    entries = len(_map_cache) + len(_seg_cats) + len(_seg_masks) + len(_uploaded)
+    for c in (_map_cache, _seg_cats, _seg_masks, _uploaded):
+        c.clear()
+    thumbs = 0
+    folder = app_path("thumbs")
+    if os.path.isdir(folder):
+        for name in os.listdir(folder):
+            path = os.path.join(folder, name)
+            if os.path.isfile(path):
+                try:
+                    os.remove(path)
+                    thumbs += 1
+                except OSError:
+                    pass
+    return web.json_response({"entries": entries, "thumbs": thumbs})
+
+
 @routes.post("/comfyart/wavespeed/transcribe")
 async def wavespeed_transcribe(request: web.Request) -> web.Response:
     body = await json_body(request)
