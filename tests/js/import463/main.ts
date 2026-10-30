@@ -74,6 +74,34 @@ async function main() {
     })()
     out[lang] = r
   }
+  // #463 (1) Edit in chat by id. The entry text is skillEditToolHint(); PR #484's skillEditTurn must embed it
+  // (depends on #484's src/skillEdit.ts). Here the "agent" follows the hint: it pulls the id out of it and saves.
+  out.editChat = await (async () => {
+    reset()
+    await S.importZip(zipFile(GOOD)); const dup = await S.importZip(zipFile(GOOD))
+    const hint = S.skillEditToolHint(dup.skill)
+    const ids = [...hint.matchAll(/id="([^"]+)"/g)].map((m) => m[1])
+    const before = sha('comfyart/skills/poster/')
+    const read = await S.skillTool({ action: 'read', id: ids[0] }) as { id: string }
+    const saved = await S.skillTool({ action: 'save', id: ids[1], name: dup.skill.name, instructions: 'EDITED IN CHAT' })
+    const after = sha('comfyart/skills/poster/')
+    return { ids, hintHasName: hint.includes('name="'), readId: read.id, saved, xSame: JSON.stringify(before) === JSON.stringify(after) && Object.keys(before).length > 0,
+      x2: files['comfyart/skills/poster-2/SKILL.md'], dirs: [...new Set(Object.keys(files).map((k) => k.split('/')[2]))].sort() }
+  })()
+  // #463 (2) description: set, list, change alone, round trip through SKILL.md with colons / quotes / newlines.
+  out.desc = await (async () => {
+    reset()
+    const tricky = 'Posters: "bold" titles\nsecond line: \'x\''
+    const created = await S.skillTool({ action: 'save', name: 'Desc', instructions: 'Body', description: tricky })
+    const md1 = files['comfyart/skills/desc/SKILL.md']
+    const list1 = (await S.skillTool({ action: 'list' }) as { skills: { id: string; description: string }[] }).skills.find((x) => x.id === 'desc')
+    const changed = await S.skillTool({ action: 'save', id: 'desc', description: 'New: "two"' })
+    const read2 = await S.skillTool({ action: 'read', id: 'desc' }) as { description: string; instructions: string }
+    const parsed = S.parseMarkdown(files['comfyart/skills/desc/SKILL.md'])
+    const kept = await S.skillTool({ action: 'save', id: 'desc', instructions: 'Body 2' })
+    const read3 = await S.skillTool({ action: 'read', id: 'desc' }) as { description: string; instructions: string }
+    return { created, md1, list1: list1?.description, changed, read2, parsed, kept, read3 }
+  })()
   out.maxBytes = S.SKILL_IMPORT_MAX_BYTES
   console.log(JSON.stringify(out))
 }

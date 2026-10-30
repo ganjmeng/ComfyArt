@@ -401,12 +401,13 @@ SPECS: dict[str, dict] = {
          "old": {"type": "string"}, "new": {"type": "string"}},
         ["action"]),
     "skill": _tool(
-        "Installed skills (instruction packs). action list (returns id and name); read with id or name (and "
-        "optional path for a bundled file); save with name and instructions to store a reusable workflow the "
-        "user wants to keep. To edit an existing skill, save with its id (several skills can share a name). "
+        "Installed skills (instruction packs). action list (returns id, name and description); read with id or name "
+        "(and optional path for a bundled file); save with name and instructions to store a reusable workflow the "
+        "user wants to keep, plus an optional one-line description. To edit an existing skill, save with its id "
+        "(several skills can share a name); instructions and description you leave out are kept. "
         "When a task matches a skill, read it first and follow it.",
         {"action": {"type": "string", "enum": ["list", "read", "save"]}, "id": {"type": "string"}, "name": {"type": "string"},
-         "path": {"type": "string"}, "instructions": {"type": "string"}},
+         "path": {"type": "string"}, "instructions": {"type": "string"}, "description": {"type": "string"}},
         ["action"]),
     "custom_workflow": _tool(
         "Connect the user's own WaveSpeed model to a ComfyArt feature (image generation, edit, inpaint, "

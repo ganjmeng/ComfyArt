@@ -34,9 +34,11 @@ const read = (path: string) => readUserText(`${ROOT}/${path}`)
 const write = (path: string, body: string) => writeUserText(`${ROOT}/${path}`, body)
 const remove = (path: string) => deleteUserFile(`${ROOT}/${path}`)
 
+// Description quoting mirrors #462 (PR #484, src/skills.ts) exactly so the two branches agree on rebase:
+// whitespace (incl. newlines) collapses to one space, then the value is JSON-quoted (valid YAML), so colons and
+// quotes survive the round trip and a newline can never end the frontmatter early.
 export function toMarkdown(skill: Skill): string {
   const desc = skill.description?.replace(/\s+/g, ' ').trim()
-  // #462: JSON-quoted (valid YAML) so colons and surrounding quotes survive the round trip.
   return `---\nname: ${skill.name}\n${desc ? `description: ${JSON.stringify(desc)}\n` : ''}---\n\n${skill.instructions}\n`
 }
 
@@ -153,7 +155,7 @@ export async function importEntries(all: SkillEntry[], fallbackName = '', opts: 
   const md = entries.filter((e) => /(^|\/)SKILL\.md$/i.test(e.path)).sort((a, b) => a.path.split('/').length - b.path.split('/').length)[0]
   if (!md) throw opts.strict ? new SkillImportError('noSkillMd') : new Error(t('skills.noSkillMdInFolder'))
   const root = md.path.replace(/SKILL\.md$/i, '')
-  let parsed: { name: string; instructions: string }
+  let parsed: { name: string; description: string; instructions: string }
   try { parsed = parseMarkdown(await md.file.text()) } catch { throw opts.strict ? new SkillImportError('unreadable') : new Error(t('skills.noSkillMdInFolder')) }
   const folder = root.replace(/\/$/, '').split('/').pop() || fallbackName
   let id = slug(folder || parsed.name)
@@ -201,15 +203,24 @@ export async function importZip(file: File): Promise<{ skill: Skill; skipped: st
   return importEntries(entries, file.name.replace(/\.zip$/i, ''), { strict: true })
 }
 
+/** #463 — what "Edit in chat" tells the agent, so it reads and saves the skill by id (names can repeat: x, x-2).
+ *  DEPENDS ON #484: PR #484's `skillEditTurn` (src/skillEdit.ts, branch feat/462-skills-g3) still builds its hidden
+ *  instruction with `name="…"`; when #484 lands, its `context` must use `skillEditToolHint(skill)` (or the same
+ *  `id="…"` wording) instead. Until then the test exercises this hint + skillTool directly. */
+export function skillEditToolHint(skill: Pick<Skill, 'id' | 'name'>): string {
+  return `Read it with the skill tool (action="read", id="${skill.id}"). When saving, use action="save" with id="${skill.id}" `
+    + `(not the name "${skill.name}": several skills can share it), keeping everything not mentioned; pass description to change its description.`
+}
+
 /** The agent `skill` tool (#463). Skills are addressed by `id` when given: "Edit in chat" passes the id and a save with
  *  an id updates exactly that skill. A save by name updates the one custom skill with that name; when the name is
  *  ambiguous (duplicates from import) or new, a new skill is created and no existing one is touched. */
 export async function skillTool(args: Record<string, unknown>): Promise<unknown> {
   const skills = await loadSkills()
-  if (args.action === 'list') return { skills: skills.map((s) => ({ id: s.id, name: s.name, description: s.instructions.slice(0, 200), custom: !!s.custom })) }
+  if (args.action === 'list') return { skills: skills.map((s) => ({ id: s.id, name: s.name, description: s.description ?? '', custom: !!s.custom })) }
   const id = args.id ? String(args.id) : ''
   if (args.action === 'save') {
-    if (!args.instructions || (!args.name && !id)) throw new Error('save needs instructions and a name or id')
+    if (!args.name && !id) throw new Error('save needs a name or id')
     let existing: Skill | undefined
     if (id) {
       existing = skills.find((s) => s.custom && s.id === id)
@@ -218,10 +229,15 @@ export async function skillTool(args: Record<string, unknown>): Promise<unknown>
       const named = skills.filter((s) => s.custom && s.name === args.name)
       existing = named.length === 1 ? named[0] : undefined
     }
+    // instructions/description are optional on an update (keep the stored value); a new skill needs instructions.
+    if (args.instructions == null && !existing) throw new Error('save needs instructions for a new skill')
     const name = args.name ? String(args.name) : existing!.name
-    const skill: Skill = { ...existing, id: existing?.id ?? await freeSkillId(slug(name)), name, instructions: String(args.instructions), custom: true }
+    const instructions = args.instructions != null ? String(args.instructions) : existing!.instructions
+    const description = args.description != null ? String(args.description).replace(/\s+/g, ' ').trim() : existing?.description
+    const skill: Skill = { ...existing, id: existing?.id ?? await freeSkillId(slug(name)), name, instructions, custom: true }
+    if (description) skill.description = description; else delete skill.description
     await saveSkill(skill)
-    return { saved: name, id: skill.id }
+    return { saved: name, id: skill.id, description: description ?? '' }
   }
   if (args.action !== 'read') throw new Error('action must be list, read or save')
   const skill = id ? skills.find((s) => s.id === id) : skills.find((s) => s.name === args.name)
@@ -231,7 +247,7 @@ export async function skillTool(args: Record<string, unknown>): Promise<unknown>
     if (content == null) throw new Error(`skill ${skill.name} has no file ${args.path}; files: ${Object.keys(skill.files ?? {}).join(', ') || '(none)'}`)
     return { id: skill.id, name: skill.name, path: args.path, content }
   }
-  return { id: skill.id, name: skill.name, instructions: skill.instructions, files: Object.keys(skill.files ?? {}), images: Object.values(skill.images ?? {}) }
+  return { id: skill.id, name: skill.name, description: skill.description ?? '', instructions: skill.instructions, files: Object.keys(skill.files ?? {}), images: Object.values(skill.images ?? {}) }
 }
 
 /** #460/#461 — Explore wall + conversational creator (form kept as fallback). */

@@ -83,9 +83,9 @@ def test_same_zip_three_times_and_old_sha256_unchanged(lang: str) -> None:
 def test_skill_tool_edits_by_id_and_never_overwrites_ambiguous_name(lang: str) -> None:
     r = report()[lang]["tool"]
     assert r["list"] == ["poster", "poster-2"]  # list returns ids
-    assert r["byId"] == {"saved": "Poster", "id": "poster-2"} and r["editedInstr"] == "EDITED"
+    assert r["byId"] == {"saved": "Poster", "id": "poster-2", "description": ""} and r["editedInstr"] == "EDITED"
     assert r["otherSame"] is True  # the other same-name skill is byte-identical
-    assert r["byName"] == {"saved": "Poster", "id": "poster-3"}  # two match -> new skill
+    assert r["byName"] == {"saved": "Poster", "id": "poster-3", "description": ""}  # two match -> new skill
     assert r["bothSame"] is True
 
 
