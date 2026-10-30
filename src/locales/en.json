@@ -1535,5 +1535,13 @@
   "skillsDialog.editInChat": "Edit in Chat",
   "skillsDialog.notFound": "Skill not found: {0}",
   "skillEdit.projectTitle": "Edit {0} Skill",
-  "skillEdit.ask": "I want to edit this Skill"
+  "skillEdit.ask": "I want to edit this Skill",
+  "skillsImport.title": "Import a Skill",
+  "skillsImport.drop": "Drop a Skill folder or ZIP file here",
+  "skillsImport.release": "Release to import",
+  "skillsImport.importing": "Importing…",
+  "skillsImport.notZip": "Please choose a .zip file",
+  "skillsImport.badZip": "Couldn't read this ZIP file",
+  "skillsImport.done": "Imported “{0}”",
+  "skillsImport.menu": "Import"
 }

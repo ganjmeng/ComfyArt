@@ -1139,3 +1139,25 @@
 .ca-memory-onboard__free { margin-top: 4px; min-height: 72px; }
 .ca-memory-onboard__freehint { margin-top: 4px; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
 .ca-memory .ca-rename__body:has(.ca-memory-onboard) { padding-top: 8px; }
+
+/* #463 G4 — Import a Skill drop dialog (folder or ZIP drag & drop). Lucide stroke 2 via .ca-icon. */
+.ca-skimport { width: 520px; }
+.ca-skimport__drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; min-height: 200px; padding: 24px; box-sizing: border-box;
+  border: 1.5px dashed var(--ca-border); border-radius: 12px; background: var(--ca-hover);
+  color: var(--ca-text); font: 400 13px/20px var(--ca-font); cursor: pointer; transition: border-color .15s, background .15s;
+}
+.ca-skimport__drop:hover, .ca-skimport__drop[data-over] { border-color: var(--ca-strong); }
+.ca-skimport__drop[data-over] { background: var(--ca-float); }
+.ca-skimport__drop[data-busy] { cursor: progress; opacity: .7; }
+.ca-skimport__icon { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--ca-float); border: var(--ca-border-w) solid var(--ca-border); }
+.ca-skimport__icon svg { width: 20px; height: 20px; }
+.ca-skimport__title { font-weight: 500; font-size: 14px; }
+.ca-skimport__error { color: #e74c3c; font: 400 12px/18px var(--ca-font); }
+
+/* #463 — Create split menu (Create · ▾ → Import a Skill) */
+.ca-skills__createwrap { position: relative; display: inline-flex; }
+.ca-skills__createwrap .ca-skills__create { border-radius: 999px 0 0 999px; padding-right: 10px; }
+.ca-skills__createmore { border-radius: 0 999px 999px 0 !important; padding: 0 10px 0 6px !important; border-left: 1px solid color-mix(in srgb, var(--ca-float) 25%, transparent) !important; }
+.ca-skills__createmenu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 50; }

@@ -1,4 +1,5 @@
 import { atom } from 'tldraw'
+import { unzipSync } from 'fflate'
 
 import { deleteUserFile, listUserFiles, readUserText, uploadImage, viewUrl, writeUserText } from './comfy'
 import { rulesText } from './customMarkers'
@@ -105,27 +106,52 @@ export async function uploadSkillImage(file: File, id: string): Promise<string> 
 }
 
 
-export async function importFolder(list: FileList): Promise<{ skill: Skill; skipped: string[] }> {
-  const files = Array.from(list)
-  const md = files.find((f) => /(^|\/)SKILL\.md$/i.test(f.webkitRelativePath || f.name))
+/** One file of an imported skill: its path inside the folder / ZIP and its content. */
+export interface SkillEntry { path: string; file: Blob }
+
+/** Shared by folder import and ZIP import (#463): finds the shallowest SKILL.md and imports its siblings. */
+export async function importEntries(all: SkillEntry[], fallbackName = ''): Promise<{ skill: Skill; skipped: string[] }> {
+  const entries = all.filter((e) => e.path && !/(^|\/)(__MACOSX|\.DS_Store)(\/|$)/.test(e.path))
+  const md = entries.filter((e) => /(^|\/)SKILL\.md$/i.test(e.path)).sort((a, b) => a.path.split('/').length - b.path.split('/').length)[0]
   if (!md) throw new Error(t('skills.noSkillMdInFolder'))
-  const root = (md.webkitRelativePath || md.name).replace(/SKILL\.md$/i, '')
-  const parsed = parseMarkdown(await md.text())
-  const folder = root.replace(/\/$/, '').split('/').pop() ?? ''
+  const root = md.path.replace(/SKILL\.md$/i, '')
+  const parsed = parseMarkdown(await md.file.text())
+  const folder = root.replace(/\/$/, '').split('/').pop() || fallbackName
   const id = slug(folder || parsed.name)
   const extra: Record<string, string> = {}
   const images: Record<string, string> = {}
   const skipped: string[] = []
-  for (const f of files) {
-    const path = (f.webkitRelativePath || f.name).slice(root.length)
-    if (f === md || !path) continue
-    if (TEXT_FILE.test(path)) extra[path] = await f.text()
-    else if (IMAGE_FILE.test(path)) images[path] = await uploadSkillImage(f, id)
+  for (const e of entries) {
+    if (e === md || !e.path.startsWith(root)) continue
+    const path = e.path.slice(root.length)
+    if (!path) continue
+    const name = path.split('/').pop() ?? path
+    if (TEXT_FILE.test(path)) extra[path] = await e.file.text()
+    else if (IMAGE_FILE.test(path)) images[path] = await uploadSkillImage(e.file instanceof File ? e.file : new File([e.file], name), id)
     else skipped.push(path)
   }
   const skill: Skill = { id, name: parsed.name || folder, ...(parsed.description ? { description: parsed.description } : {}), instructions: parsed.instructions, files: extra, images, custom: true }
   await saveSkill(skill)
   return { skill, skipped }
+}
+
+export async function importFolder(list: FileList | File[]): Promise<{ skill: Skill; skipped: string[] }> {
+  return importEntries(Array.from(list).map((f) => ({ path: f.webkitRelativePath || f.name, file: f })))
+}
+
+/** #463 — list the files of a skill ZIP (directories dropped). Pure: used by tests too. */
+export function zipEntries(bytes: Uint8Array): SkillEntry[] {
+  const out = unzipSync(bytes)
+  return Object.entries(out).filter(([path]) => !path.endsWith('/')).map(([path, data]) => ({ path, file: new Blob([data as BlobPart]) }))
+}
+
+export const isZip = (f: File) => /\.zip$/i.test(f.name) || /zip/.test(f.type)
+
+export async function importZip(file: File): Promise<{ skill: Skill; skipped: string[] }> {
+  if (!isZip(file)) throw new Error(t('skillsImport.notZip'))
+  let entries: SkillEntry[]
+  try { entries = zipEntries(new Uint8Array(await file.arrayBuffer())) } catch { throw new Error(t('skillsImport.badZip')) }
+  return importEntries(entries, file.name.replace(/\.zip$/i, ''))
 }
 
 /** #460/#461 — Explore wall + conversational creator (form kept as fallback). */

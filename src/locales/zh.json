@@ -1535,5 +1535,13 @@
   "skillsDialog.editInChat": "在对话中编辑",
   "skillsDialog.notFound": "未找到技能：{0}",
   "skillEdit.projectTitle": "修改{0} Skill",
-  "skillEdit.ask": "我想修改这个 Skill"
+  "skillEdit.ask": "我想修改这个 Skill",
+  "skillsImport.title": "导入技能",
+  "skillsImport.drop": "将技能文件夹或 ZIP 文件拖到这里",
+  "skillsImport.release": "松开以导入",
+  "skillsImport.importing": "正在导入…",
+  "skillsImport.notZip": "请选择 .zip 文件",
+  "skillsImport.badZip": "无法读取该 ZIP 文件",
+  "skillsImport.done": "已导入「{0}」",
+  "skillsImport.menu": "导入"
 }
