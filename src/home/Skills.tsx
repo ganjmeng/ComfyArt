@@ -1,5 +1,5 @@
 import { showMemoryToast } from '../memory'
-/** #460 G1 — Skills Explore / Favourites / Personal shell (mock community wall; Home grid kept). */
+/** #460 G1 — Skills Explore / Favourites / Personal shell (#494: cards driven by the built-in skill data). */
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { thumbUrl } from '../comfy'
@@ -9,37 +9,33 @@ import {
   importLanding,
   loadFavourites,
   loadSkills,
-  skillChip,
   skillCreatorAtom,
   skillDescription,
-  skillWallMeta,
+  skillAuthor,
+  skillChips,
+  skillCover,
+  matchesSkillChip,
   toggleFavourite,
   type Skill,
   type SkillChipId,
 } from '../skills'
+import { BRAND } from '../brand'
 import { Icons } from '../ui/icons'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
 import { openSkillEditor, skillsOpenAtom } from '../ui/SkillsDialog'
 
 type Tab = 'explore' | 'favourites' | 'personal'
-const CHIPS: { id: SkillChipId; labelKey: string }[] = [
-  { id: 'forYou', labelKey: 'home.skillsForYou' },
-  { id: 'ecommerce', labelKey: 'home.skillsChipEcommerce' },
-  { id: 'branding', labelKey: 'home.skillsChipBranding' },
-  { id: 'social', labelKey: 'home.skillsChipSocial' },
-  { id: 'website', labelKey: 'home.skillsChipWebsite' },
-  { id: 'ads', labelKey: 'home.skillsChipAds' },
-]
-
-function matchesChip(s: Skill, chip: SkillChipId): boolean {
-  return chip === 'forYou' || skillChip(s.id) === chip
+const CHIP_LABEL: Record<SkillChipId, string> = {
+  forYou: 'home.skillsForYou',
+  ecommerce: 'home.skillsChipEcommerce',
+  branding: 'home.skillsChipBranding',
+  social: 'home.skillsChipSocial',
+  website: 'home.skillsChipWebsite',
+  ads: 'home.skillsChipAds',
 }
 
-function coverOf(s: Skill): string | null {
-  const imgs = Object.values(s.images ?? {})
-  return imgs[0] ?? null
-}
-
+/** #494 — Explore card: 231:173 cover (skillCover, else neutral grey + Lucide icon), image badge, one-line title and
+ *  description, real author (ComfyArt / 个人), no counts. Hover: bookmark only (试用 arrives with the step-2 dialog). */
 function SkillWallCard({
   skill, fav, onFav, onTry,
 }: {
@@ -48,37 +44,37 @@ function SkillWallCard({
   onFav: () => void
   onTry: () => void
 }) {
-  const cover = coverOf(skill)
-  const meta = skillWallMeta(skill.id)
+  const cover = skillCover(skill)
+  const author = skillAuthor(skill)
+  const src = cover && (cover.own === 'bundled' ? cover.src : thumbUrl(cover.src, 512))
   const desc = skillDescription(skill)
   return (
-    <article className="ca-swall__card" data-testid="skills-wall-card" data-skill={skill.id}>
-      <button type="button" className="ca-swall__cover" data-tone={meta.tone} onClick={onTry} aria-label={skill.name}>
-        {cover
-          ? <img src={thumbUrl(cover, 512)} alt="" loading="lazy" />
-          : <span className="ca-swall__placeholder"><span className="ca-icon">{Icons.skill}</span></span>}
-      </button>
-      <div className="ca-swall__body">
-        <h3 className="ca-swall__title">{skill.name}</h3>
-        <p className="ca-swall__desc">{desc}</p>
-        <div className="ca-swall__meta">
-          <span className="ca-swall__author">
-            <span className="ca-swall__avatar" aria-hidden="true">{meta.author.slice(0, 1)}</span>
-            {meta.author}
-          </span>
-          <span className="ca-swall__stat" title={t('home.skillsViews', meta.views)}>
-            <span className="ca-icon">{Icons.eye}</span>{meta.views}
-          </span>
-          <button
+    <article className="ca-swall__card" data-testid="skills-wall-card" data-skill={skill.id} data-custom={skill.custom || undefined}>
+      <div className="ca-swall__cover" role="button" tabIndex={0} aria-label={skill.name} onClick={onTry}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTry() } }}>
+        {src
+          ? <img src={src} alt={skill.name} loading="lazy" data-testid="skills-card-cover" />
+          : <span className="ca-swall__placeholder" data-testid="skills-card-placeholder"><span className="ca-icon">{skill.id === 'custom-workflow' ? Icons.workflow : Icons.skill}</span></span>}
+        <span className="ca-swall__badge" data-testid="skills-card-kind" data-kind="image" aria-hidden="true"><span className="ca-icon">{Icons.imageLine}</span></span>
+        <button
             type="button"
-            className="ca-swall__stat ca-swall__heart"
+            className="ca-swall__bookmark"
+            data-testid="skills-card-bookmark"
             data-on={fav || undefined}
+            aria-pressed={fav}
             title={fav ? t('home.skillsUnfavourite') : t('home.skillsFavourite')}
-            onClick={onFav}
+            onClick={(e) => { e.stopPropagation(); onFav() }}
           >
-            <span className="ca-icon">{Icons.heart}</span>{meta.likes}
+            <span className="ca-icon">{fav ? Icons.bookmarkFilled : Icons.bookmark}</span>
           </button>
-        </div>
+      </div>
+      <h3 className="ca-swall__title">{skill.name}</h3>
+      <p className="ca-swall__desc">{desc}</p>
+      <div className="ca-swall__author" data-testid="skills-card-author" data-kind={author.kind}>
+        {author.kind === 'builtin'
+          ? <img className="ca-swall__avatar" src={BRAND.logoPath} alt="" aria-hidden="true" />
+          : <span className="ca-swall__avatar" aria-hidden="true"><span className="ca-icon">{Icons.user}</span></span>}
+        {author.label}
       </div>
     </article>
   )
@@ -104,12 +100,14 @@ export function Skills() {
 
   const personal = useMemo(() => skills.filter((s) => s.custom), [skills])
   const explore = useMemo(() => skills.filter((s) => !s.custom), [skills])
+  /** #494 — chips come from data; a category with no skill (today: 网站) is not shown. */
+  const chips = useMemo(() => skillChips(explore), [explore])
   const favouriteSkills = useMemo(() => skills.filter((s) => favs.includes(s.id)), [skills, favs])
 
   const wall = useMemo(() => {
     if (tab === 'favourites') return favouriteSkills
     if (tab === 'personal') return personal
-    return explore.filter((s) => matchesChip(s, chip))
+    return explore.filter((s) => matchesSkillChip(s, chip))
   }, [tab, chip, explore, personal, favouriteSkills])
 
   const emptyKey = tab === 'favourites'
@@ -187,15 +185,16 @@ export function Skills() {
 
       {tab === 'explore' && (
         <div className="ca-skills__chips" data-testid="skills-chips">
-          {CHIPS.map((c) => (
+          {chips.map((c) => (
             <button
-              key={c.id}
+              key={c}
               type="button"
               className="ca-skills__chip"
-              data-on={chip === c.id || undefined}
-              onClick={() => setChip(c.id)}
+              data-on={chip === c || undefined}
+              data-testid={`skills-chip-${c}`}
+              onClick={() => setChip(c)}
             >
-              {t(c.labelKey)}
+              {t(CHIP_LABEL[c])}
             </button>
           ))}
         </div>

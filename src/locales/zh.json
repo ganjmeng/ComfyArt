@@ -1480,9 +1480,9 @@
   "schedules.skippedOverQuote": "定时任务「{0}」已跳过",
   "schedules.skippedOverQuoteReason": "需要报价确认（无人值守），未开始，未扣费。",
   "home.skills": "Skills",
-  "home.skillsExplore": "Explore",
-  "home.skillsFavourites": "Favourites",
-  "home.skillsPersonal": "Personal",
+  "home.skillsExplore": "探索",
+  "home.skillsFavourites": "收藏",
+  "home.skillsPersonal": "个人",
   "home.skillsCreate": "Create",
   "home.skillsForYou": "为你推荐",
   "home.skillsChipEcommerce": "电商",
@@ -1493,12 +1493,10 @@
   "home.skillsEmptyExplore": "暂无技能，稍后再来看看",
   "home.skillsEmptyFavourites": "还没有收藏的技能",
   "home.skillsEmptyPersonal": "还没有个人技能",
-  "home.skillsViews": "{0} 次浏览",
   "home.skillsLikes": "{0}",
   "home.skillsFavourite": "收藏",
   "home.skillsUnfavourite": "取消收藏",
   "home.skillsTry": "试用",
-  "home.skillsCommunity": "社区",
   "composer.skillCreatorForm": "表单编辑（备用）",
   "composer.skillCreatorPrefill": "按这个想法创建一个可复用 Skill：写清交付物、比例、风格规则和提示词要点（instructions 用英文），然后用 skill 工具 action=\"save\" 保存。想法：\n{0}",
   "composer.skillCreatorChip": "Skill Creator",
@@ -1552,5 +1550,6 @@
   "home.skillsMenuMore": "创建或导入",
   "home.createSkill": "创建技能",
   "home.createSkillFromChat": "从对话创建",
-  "home.importSkill": "导入技能"
+  "home.importSkill": "导入技能",
+  "home.skillsAuthorPersonal": "个人"
 }

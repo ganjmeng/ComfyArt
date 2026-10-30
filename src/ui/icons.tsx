@@ -63,6 +63,12 @@ export const Icons = {
   box: <Svg><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" /></Svg>,
   close: <Svg><path d="M6 6l12 12M18 6 6 18" /></Svg>,
   trash: <Svg><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5" /></Svg>,
+  /** #494 — Lucide-style bookmark (stroke 2); filled variant = saved. */
+  bookmark: <Svg strokeWidth={2}><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></Svg>,
+  bookmarkFilled: <Svg strokeWidth={2}><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="currentColor" /></Svg>,
+  user: <Svg strokeWidth={2}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></Svg>,
+  /** #494 — Lucide `workflow`: custom-workflow card fallback. */
+  workflow: <Svg strokeWidth={2}><rect width="8" height="8" x="3" y="3" rx="2" /><path d="M7 11v4a2 2 0 0 0 2 2h4" /><rect width="8" height="8" x="13" y="13" rx="2" /></Svg>,
   heart: <Svg strokeWidth={2}><path d="M19.5 12.5c1.8-1.8 1.8-4.7 0-6.5s-4.7-1.8-6.5 0L12 7.5l-1-1c-1.8-1.8-4.7-1.8-6.5 0s-1.8 4.7 0 6.5L12 20.5z" /></Svg>,
   eye: <Svg><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="2.8" /></Svg>,
   eyeOff: <Svg><path d="M4 4l16 16M9.9 6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.7 3.4M6.4 7.6A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9 9 0 0 0 3.7-.8" /></Svg>,
