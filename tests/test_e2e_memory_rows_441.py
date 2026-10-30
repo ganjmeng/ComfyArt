@@ -31,6 +31,8 @@ _MEASURE = """()=>{
     lastRail: (()=>{const sp=rows[rows.length-1].querySelector('.ca-process__spine'); return sp ? getComputedStyle(sp).display : 'none'})(),
     parentGap: getComputedStyle(bot).rowGap,
     toReply: next.getBoundingClientRect().top - rows[rows.length-1].getBoundingClientRect().bottom,
+    detail: (()=>{const d=pr.querySelector('[data-testid=memory-saved-detail]'); if(!d) return null; const b=d.getBoundingClientRect();
+      return {rowToTop: b.top - rows[rows.length-1].getBoundingClientRect().bottom, bottomToReply: next.getBoundingClientRect().top - b.bottom};})(),
     stepsMB: getComputedStyle(pr.querySelector('.ca-process__steps')).marginBottom,
     procMB: getComputedStyle(pr).marginBottom,
   };
@@ -78,11 +80,45 @@ async def test_memory_rows_computed_441(app_url, fake_tools, lang, theme, ink): 
         assert st["bg"] == ("rgba(0, 0, 0, 0.1)" if theme == "light" else "rgba(255, 255, 255, 0.12)")  # shared --ca-rail (base.css), same as #442's rail
         assert m["lastRail"] == "none"  # nothing after the last row; no full-length connector
         assert m["parentGap"] == "8px" and m["stepsMB"] == "0px" and m["procMB"] == "0px"
-        assert abs(m["toReply"] - 8) <= 1  # 8px to the reply, from the parent gap
+        # #479: the 「已保存 N 条」 detail sits between the last memory row and the reply; measure the real gaps.
+        # 10 = 8px .ca-process__steps gap + 2px .ca-process__memdetail top margin
+        # 16 = 8px .ca-process__memdetail bottom margin + 8px .ca-chat__bot gap
+        d = m["detail"]
+        assert d is not None
+        assert abs(d["rowToTop"] - 10) <= 1, d
+        assert abs(d["bottomToReply"] - 16) <= 1, d
         await pg.locator(".ca-process__row[data-kind='memory_updated']").last.hover()
         await pg.wait_for_timeout(300)
         hov = await pg.locator(".ca-process__row[data-kind='memory_updated'] .ca-process__label").last.evaluate("e=>getComputedStyle(e).color")
         assert hov != ink  # default text colour on hover
+        await browser.close()
+
+
+@pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
+async def test_memory_rows_no_detail_to_reply_479(app_url, fake_tools, lang, theme):  # noqa: F811
+    """#479: without the 「已保存 N 条」 detail (no texts), the last memory row is 8px from the reply (.ca-chat__bot gap)."""
+    from ComfyArt.api import chat_store
+    async with pw.async_playwright() as p:
+        browser, pg = await _page(p, app_url, lang, theme)
+        user = await pg.evaluate("async()=>(await (await fetch('/api/comfyart/bot/status')).json()).user")
+        proj = await pg.evaluate("()=>{for (const e of performance.getEntriesByType('resource')){const m=e.name.match(/bot\\/chats\\?project=([^&]+)/); if(m) return decodeURIComponent(m[1])} return null}")
+        assert proj
+        c = chat_store.create_chat(user=user, project=proj, provider="local-llm", title="m479n")
+        um = chat_store.create_message(chat_id=c["id"], role="user", blocks=[{"type": "text", "text": "remember"}])
+        chat_store.create_message(chat_id=c["id"], role="assistant", parent_id=um["id"], blocks=[
+            {"type": "text", "text": "ok"}, _use("c1"), _res("c1"),
+            {"type": "memory_updated", "memory_ids": ["m1"], "texts": [],
+             "tool_id": "c1", "tool_ids": ["c1"], "updated_ids": ["m1"], "count": 1},
+            {"type": "text", "text": "Got it."}])
+        await pg.reload()
+        await pg.locator(".ca-split__chev").first.click(timeout=8000)
+        await pg.locator(".ca-history__item").first.click(timeout=8000)
+        await pg.locator(".ca-process__row[data-kind='memory_updated']").last.wait_for(timeout=10000)
+        await pg.mouse.move(5, 790)
+        await pg.wait_for_timeout(300)
+        m = await pg.evaluate(_MEASURE)
+        assert m["detail"] is None
+        assert abs(m["toReply"] - 8) <= 1, m  # 8px .ca-chat__bot gap; no detail in between
         await browser.close()
 
 
