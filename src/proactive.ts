@@ -11,6 +11,7 @@ import { exportImage } from './shapes/ArtboardShape'
 import { loadSkills, saveSkill, slug } from './skills'
 import { onComfyEvent } from './ws'
 import { lang, t } from './i18n'
+import { memoryFallbackAllowed } from './proactiveQuota'
 
 export type Ability = 'memory' | 'skills' | 'review'
 interface State { day: string; runs: Partial<Record<Ability, number>>; prompts: string[]; skillMark: number; reviewed: Record<string, string>; seen: string[] }
@@ -64,11 +65,12 @@ async function exchange(chatId: string, messageId: string) {
 /** #413: the turn already saved memory in-loop (memory tool -> memory_updated block). */
 export const turnWroteMemory = (blocks: { type: string }[]) => blocks.some((b) => b.type === 'memory_updated')
 
-async function learnMemory(ex: { user: string; reply: string }, chatId: string, messageId: string) {
+async function learnMemory(ex: { user: string; reply: string }, chatId: string, messageId: string): Promise<number> {
   const known = memoryAtom.get().map((m) => `- ${m.text}`).join('\n')
   const raw = await ask(`Already remembered:\n${known || '(nothing)'}\n\nUser: ${ex.user}\n\nAgent: ${ex.reply.slice(0, 2000)}`, MEMORY_SYSTEM, [])
   const added = await remember(toInputs(parseJson(raw)?.memories), t('proactive.source'))
   if (added.length) await announceMemoryUpdated(chatId, messageId, added)
+  return added.length
 }
 
 async function evolveSkill(prompts: string[]) {
@@ -90,14 +92,19 @@ async function onTurnDone(e: { chat_id: string; message_id: string; status: stri
     if (s.seen.includes(e.message_id)) return null
     s.seen = [e.message_id, ...s.seen].slice(0, MAX_SEEN)
     s.prompts = [...s.prompts, ex.user].slice(-MAX_PROMPTS)
-    const memory = take(s, 'memory')
+    // #424: do not take memory quota here — only after a real fallback write
+    const memory = memoryFallbackAllowed(ex.wrote, s.runs.memory ?? 0, dailyLimit(), enabled('memory'))
     const due = s.prompts.length - Math.min(s.skillMark, s.prompts.length) >= SKILL_EVERY
     const skills = due && take(s, 'skills') ? s.prompts.slice(-SKILL_EVERY * 2) : null
     if (skills) s.skillMark = s.prompts.length
     return { memory, skills }
   })
-  // #413: fallback only; skip when the agent already wrote memory with its tool this turn
-  if (plan?.memory && !ex.wrote) await learnMemory(ex, e.chat_id, e.message_id)
+  // #413: fallback only when the agent did not write memory with its tool this turn
+  // #424: charge daily quota only after a real write (already-wrote → no charge; empty learn → no charge)
+  if (plan?.memory) {
+    const n = await learnMemory(ex, e.chat_id, e.message_id)
+    if (n > 0) await withState((s) => { take(s, 'memory') })
+  }
   if (plan?.skills) await evolveSkill(plan.skills)
 }
 
