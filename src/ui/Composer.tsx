@@ -17,6 +17,7 @@ import { schedulesOpenAtom } from '../schedules'
 import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPicker'
 import { AgentLogo } from './agentLogos'
 import { Icons } from './icons'
+import { SkillChip, chipBackspace } from './SkillChip'
 import { ModelPrefs } from './ModelPrefs'
 import { DirectPills } from './DirectPills'
 import { ComposerSlot, useSlot } from './ComposerSlot'
@@ -303,16 +304,10 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
             </span>
           ))}
           {skill && (
-            <span className="ca-chip">
-              <span className="ca-icon">{Icons.skill}</span>{skill.name}
-              <button type="button" title={t('common.remove')} onClick={() => skillAtom.set(null)}>{Icons.close}</button>
-            </span>
+            <SkillChip name={skill.name} testId="composer-skill-chip" />
           )}
           {skillCreator.on && (
-            <span className="ca-chip ca-chip--creator" data-testid="skill-creator-chip">
-              <span className="ca-icon">{Icons.sparkles}</span>{t(skillCreator.chip ?? 'composer.skillCreator')}
-              <button type="button" title={t('common.remove')} onClick={() => skillCreatorAtom.set({ on: false })}>{Icons.close}</button>
-            </span>
+            <SkillChip name={t(skillCreator.chip ?? 'composer.skillCreator')} testId="skill-creator-chip" />
           )}
           {mode === 'agent' && docs.map((d) => (
             <span key={d.src} className="ca-chip" title={d.name}>
@@ -352,6 +347,13 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
         onPaste={(e) => { const files = imageFiles(e.clipboardData); if (!files.length) return; e.preventDefault(); e.stopPropagation(); void uploadRefs(editor, files).catch(fail) }}
         onKeyDown={(e) => {
           e.stopPropagation()
+          // #491: chips have no ×; Backspace at the start of the input removes them (Skill Creator first, then the skill)
+          if ((skillCreator.on || skill) && chipBackspace(e)) {
+            e.preventDefault()
+            if (skillCreator.on) skillCreatorAtom.set({ on: false })
+            else skillAtom.set(null)
+            return
+          }
           if (isEnter(e) && !e.shiftKey && !slash && !atOpen) {
             e.preventDefault()
             send()

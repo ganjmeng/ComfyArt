@@ -77,7 +77,7 @@ def test_a_click_adds_chip_without_navigating() -> None:
     assert "setCreator(true)" in click
     for bad in ("newProject", "startProject", "location", "send(", "openView"):
         assert bad not in click, bad
-    assert 'data-testid="home-skill-creator-chip"' in HOME
+    assert 'testId="home-skill-creator-chip"' in HOME  # #502 D3: rendered via SkillChip
     assert "t(HOME_CREATOR_CHIP_KEY)" in HOME
     assert '"composer.skillCreator": "技能创建器"' in ZH
 
@@ -146,6 +146,7 @@ def test_a_import_opens_new_dialog() -> None:
     assert m and "setImporting(true)" in m.group(1)
     assert "skillsOpenAtom" not in HOME
     assert "<SkillImportDialog" in HOME
+    assert "import { SkillImportDialog } from '../ui/SkillImportDialog'" in HOME
 
 
 def test_canvas_plus_entry_chip_uses_same_key() -> None:
@@ -160,3 +161,66 @@ def test_canvas_plus_entry_chip_uses_same_key() -> None:
     # 画布 + 菜单入口本身不带 chip，走的就是这个回落值
     assert "skillCreatorAtom.set({ on: true })" in COMPOSER
     assert "skillCreatorChip" not in COMPOSER
+
+
+# ---- #502 review round: design D1–D3, product D4, QA Q1/Q2 ----
+CHIP = (ROOT / "src/ui/SkillChip.tsx").read_text()
+
+
+def _skills_panel() -> str:
+    m = re.search(r'data-testid="home-skills-menu">(.*?)\{skills\.map', HOME, re.S)
+    assert m, "skills panel missing"
+    return m.group(1)
+
+
+def test_d1_dropdown_anchors_on_square_plus_and_panel_stays_open() -> None:
+    head = _skills_panel()
+    # the dropdown is its own Popover inside the panel head, triggered by home-skills-more
+    assert "<Popover" in head and 'data-testid="home-skills-more"' in head
+    assert 'data-testid="home-skills-more-menu"' in head
+    assert 'align="end"' in head
+    # the panel is not swapped out: no 'skillsMore' state of the outer popover
+    assert "setPlus('skillsMore')" not in HOME and "plus === 'skillsMore'" not in HOME
+    assert "useState<null | 'plus' | 'skills'>(null)" in HOME
+
+
+def test_d2_dropdown_icons() -> None:
+    menu = HOME.split('data-testid="home-skills-more-menu"', 1)[1].split("</Popover>", 1)[0]
+    icons = re.findall(r"\{Icons\.(\w+)\}</span><span className=\"ca-menu__grow\">\{t\('home\.(\w+)'\)\}", menu)
+    assert icons == [("circlePlus", "createSkill"), ("messageSquare", "createSkillFromChat"), ("uploadArrow", "importSkill")]
+    assert re.search(r'<button type="button" className="ca-menu__item" disabled>\s*<span className="ca-icon">\{Icons\.messageSquare\}', menu)
+    assert 'circlePlus: <Svg strokeWidth={2}><circle cx="12" cy="12" r="10" />' in ICONS
+    assert "messageSquare: <Svg strokeWidth={2}>" in ICONS
+
+
+def test_d3_creator_chip_is_skill_chip_everywhere() -> None:
+    assert '<SkillChip name={t(HOME_CREATOR_CHIP_KEY)} testId="home-skill-creator-chip" />' in HOME
+    assert "<SkillChip name={t(skillCreator.chip ?? 'composer.skillCreator')} testId=\"skill-creator-chip\" />" in COMPOSER
+    for src in (HOME, COMPOSER):
+        assert "ca-chip--creator" not in src
+        assert "Icons.sparkles}</span>{t(" not in src
+    assert "{Icons.scrollText}" in CHIP
+
+
+def test_d4_chips_have_no_remove_button() -> None:
+    assert "Icons.close" not in CHIP and "<button" not in CHIP and "onRemove" not in CHIP
+    assert "onRemove" not in HOME.split("<textarea", 1)[0].split("ca-landing__refs", 1)[1].split("refs.map", 1)[0]
+    assert '<SkillChip name={skill.name} testId="composer-skill-chip" />' in COMPOSER
+    assert "onClick={() => skillAtom.set(null)}" not in COMPOSER
+
+
+def test_d4_backspace_rule() -> None:
+    assert "el.value === '' || (el.selectionStart === 0 && el.selectionEnd === 0)" in CHIP
+    assert "if ((picked || creator) && chipBackspace(e)) { e.preventDefault(); setPicked(null); setCreator(false); return }" in HOME
+    assert "if ((skillCreator.on || skill) && chipBackspace(e)) {" in COMPOSER
+
+
+def test_q1_skill_row_click_opens_no_dialog() -> None:
+    click = _home_skill_row_click()
+    assert "setPicked(s)" in click
+    for bad in ("setImporting", "openSkillEditor", "skillsOpenAtom", "Modal", "Dialog", "setMore(true)", "setPlus('"):
+        assert bad not in click, bad
+
+
+def test_q2_import_dialog_module() -> None:
+    assert "import { SkillImportDialog } from '../ui/SkillImportDialog'" in HOME

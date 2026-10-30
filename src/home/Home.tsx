@@ -8,7 +8,7 @@ import { errorText } from '../jobs'
 import { newProject, openView, startProject, type ProjectEntry } from '../projects'
 import { showMemoryToast } from '../memory'
 import { HOME_CREATOR_CHIP_KEY, importLanding, loadSkills, type Skill } from '../skills'
-import { SkillChip } from '../ui/SkillChip'
+import { SkillChip, chipBackspace } from '../ui/SkillChip'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
 import { openSkillEditor } from '../ui/SkillsDialog'
 import { Icons } from '../ui/icons'
@@ -51,7 +51,8 @@ export function Home() {
   const [composing, setComposing] = useState(false)
   const [sending, setSending] = useState(false)
   // #491: home + menu (+ → 技能 → 创建技能); the creator chip stays on the home box until send
-  const [plus, setPlus] = useState<null | 'plus' | 'skills' | 'skillsMore'>(null)
+  const [plus, setPlus] = useState<null | 'plus' | 'skills'>(null)
+  const [more, setMore] = useState(false)  // #491 design: 创建技能 dropdown anchored under the panel's square-plus; panel stays open
   const [creator, setCreator] = useState(false)
   const [picked, setPicked] = useState<Skill | null>(null)  // #491: skill chip from the + → 技能 panel; only send leaves home
   const [importing, setImporting] = useState(false)
@@ -141,15 +142,12 @@ export function Home() {
       >
         {creator && (
           <div className="ca-landing__refs">
-            <span className="ca-chip ca-chip--creator" data-testid="home-skill-creator-chip">
-              <span className="ca-icon">{Icons.sparkles}</span>{t(HOME_CREATOR_CHIP_KEY)}
-              <button type="button" title={t('common.remove')} onClick={() => setCreator(false)}>{Icons.close}</button>
-            </span>
+            <SkillChip name={t(HOME_CREATOR_CHIP_KEY)} testId="home-skill-creator-chip" />
           </div>
         )}
         {picked && (
           <div className="ca-landing__refs">
-            <SkillChip name={picked.name} testId="home-skill-chip" onRemove={() => setPicked(null)} />
+            <SkillChip name={picked.name} testId="home-skill-chip" />
           </div>
         )}
         {refs.length > 0 && (
@@ -171,6 +169,7 @@ export function Home() {
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}
           onKeyDown={(e) => {
+            if ((picked || creator) && chipBackspace(e)) { e.preventDefault(); setPicked(null); setCreator(false); return }
             if (e.key === 'Tab' && !text) { e.preventDefault(); setText(EXAMPLES[example]) }
             if (isEnter(e) && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send() }
           }}
@@ -178,7 +177,7 @@ export function Home() {
         <div className="ca-landing__foot">
           <Popover
             open={plus !== null}
-            onOpenChange={(o) => setPlus(o ? 'plus' : null)}
+            onOpenChange={(o) => { setPlus(o ? 'plus' : null); if (!o) setMore(false) }}
             side="bottom"
             align="start"
             within=".ca-landing__box"
@@ -202,9 +201,31 @@ export function Home() {
               <div className="ca-menu ca-skills" data-testid="home-skills-menu">
                 <div className="ca-menu__head">
                   <span className="ca-menu__grow">{t('home.skillsMenu')}</span>
-                  <button type="button" className="ca-bar__btn ca-bar__btn--icon" data-testid="home-skills-more" title={t('home.skillsMenuMore')} onClick={() => setPlus('skillsMore')}>
-                    <span className="ca-icon">{Icons.squarePlus}</span>
-                  </button>
+                  <Popover
+                    open={more}
+                    onOpenChange={setMore}
+                    side="bottom"
+                    align="end"
+                    contentKey="skillsMore"
+                    trigger={({ open, toggle }) => (
+                      <button type="button" className="ca-bar__btn ca-bar__btn--icon" data-testid="home-skills-more" title={t('home.skillsMenuMore')} data-open={open || undefined} onClick={toggle}>
+                        <span className="ca-icon">{Icons.squarePlus}</span>
+                      </button>
+                    )}
+                  >
+                    <div className="ca-menu" data-testid="home-skills-more-menu">
+                      {/* #491: stays on home — only the chip is added; nothing navigates or sends here */}
+                      <button type="button" className="ca-menu__item" data-testid="home-create-skill" onClick={() => { setMore(false); setPlus(null); setPicked(null); setCreator(true); setMode('agent'); input.current?.focus() }}>
+                        <span className="ca-icon">{Icons.circlePlus}</span><span className="ca-menu__grow">{t('home.createSkill')}</span>
+                      </button>
+                      <button type="button" className="ca-menu__item" disabled>
+                        <span className="ca-icon">{Icons.messageSquare}</span><span className="ca-menu__grow">{t('home.createSkillFromChat')}</span>
+                      </button>
+                      <button type="button" className="ca-menu__item" data-testid="home-import-skill" onClick={() => { setMore(false); setPlus(null); setImporting(true) }}>
+                        <span className="ca-icon">{Icons.uploadArrow}</span><span className="ca-menu__grow">{t('home.importSkill')}</span>
+                      </button>
+                    </div>
+                  </Popover>
                 </div>
                 {skills.map((s) => (
                   <button key={s.id} type="button" className="ca-menu__item" title={s.instructions} data-testid="home-skill-row" onClick={() => { setPlus(null); setCreator(false); setPicked(s); input.current?.focus() }}>
@@ -212,20 +233,6 @@ export function Home() {
                     {s.custom && <span className="ca-menu__key">{t('composer.personal')}</span>}
                   </button>
                 ))}
-              </div>
-            )}
-            {plus === 'skillsMore' && (
-              <div className="ca-menu" data-testid="home-skills-more-menu">
-                {/* #491: stays on home — only the chip is added; nothing navigates or sends here */}
-                <button type="button" className="ca-menu__item" data-testid="home-create-skill" onClick={() => { setPlus(null); setPicked(null); setCreator(true); setMode('agent'); input.current?.focus() }}>
-                  <span className="ca-icon">{Icons.plus}</span><span className="ca-menu__grow">{t('home.createSkill')}</span>
-                </button>
-                <button type="button" className="ca-menu__item" disabled>
-                  <span className="ca-icon">{Icons.agent}</span><span className="ca-menu__grow">{t('home.createSkillFromChat')}</span>
-                </button>
-                <button type="button" className="ca-menu__item" data-testid="home-import-skill" onClick={() => { setPlus(null); setImporting(true) }}>
-                  <span className="ca-icon">{Icons.files}</span><span className="ca-menu__grow">{t('home.importSkill')}</span>
-                </button>
               </div>
             )}
           </Popover>
