@@ -1,0 +1,64 @@
+{
+ "model": "bytedance/seedream-v4",
+ "cap_usd": 0.162,
+ "spent_usd": 0.162,
+ "balance_before_usd": 7.269744,
+ "balance_after_usd": 7.107744,
+ "balance_delta_usd": 0.162,
+ "images": [
+  {
+   "n": 1,
+   "file": "pool/1.png",
+   "prompt": "soft abstract sculptural paper curves in pale sand and off-white tones layered like gentle waves, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "cost_usd": 0.027,
+   "prediction_id": "a920c72742834b46ae3edac147b2f0ed",
+   "sha256": "7982a5f026b5268a821cdbccf6847dee7806ff3ca0e72a7fe92e14681cd109ea"
+  },
+  {
+   "n": 2,
+   "file": "pool/2.png",
+   "prompt": "three smooth matte geometric solids, a sphere a cube and a cylinder, in muted terracotta sage and cream, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "cost_usd": 0.027,
+   "prediction_id": "debea874c8bb47d2b752352003e34220",
+   "sha256": "11fdeaa72f09dc4adb62d4c84e19fa8f86e113999e4a0906894c0ceea8d7e19c"
+  },
+  {
+   "n": 3,
+   "file": "pool/3.png",
+   "prompt": "a translucent frosted glass prism casting a soft pastel rainbow refraction across the surface, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "cost_usd": 0.027,
+   "prediction_id": "97075f5af971447186110abc4e82e308",
+   "sha256": "64782655549ed0cd0b124078fa1ecc254b7017d3c2428c52946eaf296d84d9d1"
+  },
+  {
+   "n": 4,
+   "file": "pool/4.png",
+   "prompt": "an abstract arrangement of overlapping rounded paper cutout shapes in muted blue peach and beige, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "cost_usd": 0.027,
+   "prediction_id": "d74e890cfd3745bca5ad5283b9c771d5",
+   "sha256": "ffc5f036c75c95a4c9e1e368573a22133eba3130215874b1973b107fc2f5e8c4"
+  },
+  {
+   "n": 5,
+   "file": "pool/5.png",
+   "prompt": "a minimal still life of a single folded sheet of thick cotton paper forming an elegant arch, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "cost_usd": 0.027,
+   "prediction_id": "5820189a30ae4387b2b4cd47b13583de",
+   "sha256": "57bf1af94e91c8a7e342db32a34ca3fd7e57146242b7e269a9c6e93903419a5a"
+  },
+  {
+   "n": 6,
+   "file": "pool/6.png",
+   "prompt": "abstract flowing silk fabric folds in warm champagne and soft grey tones, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "cost_usd": 0.027,
+   "prediction_id": "9dde268a1d2449db9cfe6d76de5289a7",
+   "sha256": "817ea25d1dada0778b167dfb9e7efdd9aa3f3513ee818aff1738f21b44c09fad"
+  }
+ ]
+}
