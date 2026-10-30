@@ -61,7 +61,9 @@ def test_valid_zip_imports(lang: str) -> None:
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
 def test_duplicate_name_saves_new_skill_and_keeps_original(lang: str) -> None:
+    # Mutation m1 (freeSkillId dropped -> overwrite) trips the ids / origSame asserts here.
     r = report()[lang]["dup"]
+    assert "error" not in r, r
     assert r["ids"] == ["poster-2", "poster-3"]  # 2nd import -> -2, 3rd -> -3
     assert r["names"] == ["Poster", "Poster"]  # display name unchanged
     assert r["skillMds"] == ["comfyart/skills/poster-2/SKILL.md", "comfyart/skills/poster-3/SKILL.md", "comfyart/skills/poster/SKILL.md"]
@@ -72,6 +74,7 @@ def test_duplicate_name_saves_new_skill_and_keeps_original(lang: str) -> None:
 @pytest.mark.parametrize("lang", ["zh", "en"])
 def test_same_zip_three_times_and_old_sha256_unchanged(lang: str) -> None:
     r = report()[lang]["same3"]
+    assert "error" not in r, r
     assert r["ids"] == ["poster", "poster-2", "poster-3"]
     assert r["names"] == ["Poster", "Poster", "Poster"]
     assert r["dirs"] == ["poster", "poster-2", "poster-3"]

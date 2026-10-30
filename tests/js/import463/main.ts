@@ -15,6 +15,12 @@ async function attempt(fn: () => Promise<unknown>) {
   try { await fn(); return { ok: true, writes: writes.length } } catch (e) { return { ok: false, message: (e as Error).message, writes: writes.length } }
 }
 
+// Per-case guard: an exception in one case (e.g. under a mutation) becomes { error } in that case's JSON field,
+// so the pytest side fails on a specific assertion instead of the whole harness crashing.
+async function safe<T>(fn: () => Promise<T> | T): Promise<T | { error: string }> {
+  try { return await fn() } catch (e) { return { error: String((e as Error)?.message ?? e) } }
+}
+
 async function main() {
   const out: Record<string, unknown> = {}
   for (const lang of ['zh', 'en'] as const) {
@@ -31,7 +37,7 @@ async function main() {
     r.ok = await attempt(() => S.importZip(zipFile(GOOD)))
     r.okFiles = Object.keys(files).sort()
     // duplicate name: 2nd import -> poster-2, 3rd -> poster-3; same display name; original bytes untouched; no prompt, no error.
-    r.dup = await (async () => {
+    r.dup = await safe(async () => {
       reset(); await S.importZip(zipFile(GOOD))
       const orig = Object.fromEntries(Object.entries(files).filter(([k]) => k.startsWith('comfyart/skills/poster/')))
       const NEW = { ...GOOD, 'poster/SKILL.md': '---\nname: Poster\n---\nNEW' }
@@ -40,9 +46,9 @@ async function main() {
       const now = Object.fromEntries(Object.entries(files).filter(([k]) => k.startsWith('comfyart/skills/poster/')))
       return { ids: [second.skill.id, third.skill.id], names: [second.skill.name, third.skill.name], origSame: JSON.stringify(orig) === JSON.stringify(now),
         skillMds: Object.keys(files).filter((k) => k.endsWith('/SKILL.md')).sort(), secondMd: files['comfyart/skills/poster-2/SKILL.md'] ?? null }
-    })()
+    })
     // QA: the same ZIP three times -> poster, poster-2, poster-3, same display name; old files keep their sha256.
-    r.same3 = await (async () => {
+    r.same3 = await safe(async () => {
       reset()
       const first = await S.importZip(zipFile(GOOD))
       const before = sha('comfyart/skills/poster/')
@@ -50,9 +56,9 @@ async function main() {
       const ids = [first, ...rest].map((x) => x.skill.id)
       const names = [first, ...rest].map((x) => x.skill.name)
       return { ids, names, shaBefore: before, shaAfter: sha('comfyart/skills/poster/'), dirs: [...new Set(Object.keys(files).map((k) => k.split('/')[2]))].sort() }
-    })()
+    })
     // Agent skill tool: two skills share a name; edit by id touches only that one; ambiguous save by name creates a new one.
-    r.tool = await (async () => {
+    r.tool = await safe(async () => {
       reset()
       await S.importZip(zipFile(GOOD)); await S.importZip(zipFile(GOOD))
       const list = await S.skillTool({ action: 'list' }) as { skills: { id: string; name: string }[] }
@@ -65,18 +71,18 @@ async function main() {
       const bothAfter = { ...sha('comfyart/skills/poster/'), ...sha('comfyart/skills/poster-2/') }
       return { list: list.skills.filter((x) => x.name === 'Poster').map((x) => x.id).sort(), byId, otherSame: JSON.stringify(other) === JSON.stringify(otherAfterEdit), editedInstr: edited.instructions,
         byName, bothSame: JSON.stringify(both) === JSON.stringify(bothAfter) }
-    })()
+    })
     // "Import folder" in My Skills keeps main's direct overwrite.
-    r.folder = await (async () => {
+    r.folder = await safe(async () => {
       reset(); await S.importZip(zipFile(GOOD))
       const { skill } = await S.importFolder(Object.entries({ ...GOOD, 'poster/SKILL.md': '---\nname: Poster\n---\nNEW' }).map(([path, v]) => Object.assign(new File([v], path.split('/').pop()!), { webkitRelativePath: path }) as File))
       return { id: skill.id, skillMds: Object.keys(files).filter((k) => k.endsWith('/SKILL.md')).sort() }
-    })()
+    })
     out[lang] = r
   }
   // #463 (1) Edit in chat by id. The entry text is skillEditToolHint(); PR #484's skillEditTurn must embed it
   // (depends on #484's src/skillEdit.ts). Here the "agent" follows the hint: it pulls the id out of it and saves.
-  out.editChat = await (async () => {
+  out.editChat = await safe(async () => {
     reset()
     await S.importZip(zipFile(GOOD)); const dup = await S.importZip(zipFile(GOOD))
     const hint = S.skillEditToolHint(dup.skill)
@@ -87,9 +93,9 @@ async function main() {
     const after = sha('comfyart/skills/poster/')
     return { ids, hintHasName: hint.includes('name="'), readId: read.id, saved, xSame: JSON.stringify(before) === JSON.stringify(after) && Object.keys(before).length > 0,
       x2: files['comfyart/skills/poster-2/SKILL.md'], dirs: [...new Set(Object.keys(files).map((k) => k.split('/')[2]))].sort() }
-  })()
+  })
   // #463 (2) description: set, list, change alone, round trip through SKILL.md with colons / quotes / newlines.
-  out.desc = await (async () => {
+  out.desc = await safe(async () => {
     reset()
     const tricky = 'Posters: "bold" titles\nsecond line: \'x\''
     const created = await S.skillTool({ action: 'save', name: 'Desc', instructions: 'Body', description: tricky })
@@ -101,8 +107,19 @@ async function main() {
     const kept = await S.skillTool({ action: 'save', id: 'desc', instructions: 'Body 2' })
     const read3 = await S.skillTool({ action: 'read', id: 'desc' }) as { description: string; instructions: string }
     return { created, md1, list1: list1?.description, changed, read2, parsed, kept, read3 }
-  })()
+  })
+  // m2 target: two custom skills share a name; save by id (with that shared name) must update exactly that id.
+  out.saveByIdShared = await safe(async () => {
+    reset()
+    await S.importZip(zipFile(GOOD)); await S.importZip(zipFile(GOOD))
+    const before = sha('comfyart/skills/poster/')
+    const saved = await S.skillTool({ action: 'save', id: 'poster-2', name: 'Poster', instructions: 'BY ID' }) as { id: string }
+    return { savedId: saved.id, x2: files['comfyart/skills/poster-2/SKILL.md'] ?? null, x1Same: JSON.stringify(before) === JSON.stringify(sha('comfyart/skills/poster/')),
+      dirs: [...new Set(Object.keys(files).map((k) => k.split('/')[2]))].sort() }
+  })
+  // m7 target: the pure hint text, no store involved.
+  out.hint = await safe(() => S.skillEditToolHint({ id: 'poster-2', name: 'Poster' }))
   out.maxBytes = S.SKILL_IMPORT_MAX_BYTES
   console.log(JSON.stringify(out))
 }
-void main()
+main().catch((e) => { console.log(JSON.stringify({ fatal: String(e) })) })

@@ -51,6 +51,29 @@ def test_description_set_list_change_and_round_trip() -> None:
     assert r["read3"]["description"] == 'New: "two"' and r["read3"]["instructions"] == "Body 2"  # description kept
 
 
+def test_save_by_id_with_shared_name_updates_that_id() -> None:
+    # Mutation m2 (id matched by name) trips this: the save lands on "poster", not "poster-2".
+    r = report()["saveByIdShared"]
+    assert "error" not in r, r
+    assert r["savedId"] == "poster-2"
+    assert r["x2"] is not None and "BY ID" in r["x2"]
+    assert r["x1Same"] is True  # namesake "poster" byte-identical
+    assert r["dirs"] == ["poster", "poster-2"]
+
+
+def test_edit_tool_hint_addresses_by_id() -> None:
+    # Mutation m7 (hint uses name="<name>") trips this.
+    hint = report()["hint"]
+    assert isinstance(hint, str), hint
+    assert 'action="read", id="poster-2"' in hint
+    assert 'action="save" with id="poster-2"' in hint
+    assert 'name="Poster"' not in hint
+
+
+def test_harness_did_not_crash() -> None:
+    assert "fatal" not in report()
+
+
 def test_mcp_schema_has_description_and_id() -> None:
     canvas = (ROOT / "api/mcp_tools/canvas.py").read_text()
     seg = canvas[canvas.index('"skill": _tool('):canvas.index('"custom_workflow"')]
