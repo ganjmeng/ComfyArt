@@ -6,7 +6,8 @@ import { t } from '../i18n'
 import { refFromUrl } from '../comfy'
 import { editElements } from '../elements'
 import { placeMedia, toMedia, type ErrorSink } from '../jobs'
-import { loadSkills, skillAtom, skillCreatorAtom } from '../skills'
+import { CREATE_ENTRY_CHIP_KEY, loadSkills, skillAtom, skillCreatorAtom } from '../skills'
+import { chatViewAtom } from '../ui/AgentPanel'
 import { EDIT_SKILL_PARAM, startSkillEdit } from '../skillEdit'
 
 const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool', 'createSkill', 'editSkill']
@@ -25,6 +26,18 @@ async function placeRefs(editor: Editor, srcs: string[]): Promise<TLImageShape[]
     x += w + GAP
     return editor.getShape<TLImageShape>(id)!
   })
+}
+
+function focusComposer() {
+  // #491 (c): the full-screen switch re-mounts the layout and can leave focus on the view toggle; retry for a few frames
+  let tries = 0
+  const go = () => {
+    document.querySelector<HTMLTextAreaElement>('.ca-composer__input')?.focus()
+    const el = document.querySelector<HTMLTextAreaElement>('.ca-composer__input')
+    if ((!el || document.activeElement !== el) && ++tries < 30) requestAnimationFrame(go)
+    else if (tries < 30) setTimeout(() => { if (document.activeElement !== el) el?.focus() }, 150)
+  }
+  requestAnimationFrame(go)
 }
 
 export async function takeHandoff(editor: Editor, onError: ErrorSink) {
@@ -48,9 +61,22 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
     return startSkillEdit(editor, skill, (text, s, context) => sendToAgent(editor, text, [], s, [], [], context))
   }
   if (createSkill) {
-    skillCreatorAtom.set({ on: true })
+    // #491: both create entries land in the chat-only full-screen layout (chatView 'max')
+    chatViewAtom.set('max')
     agentModeAtom.set('agent')
-    if (!text && !refs.length && !skillId) return
+    if (text) {
+      // #491 entry A: the home send carries the brief; send it once with the creator prefill (same as Composer)
+      skillCreatorAtom.set({ on: false })
+      const shapes = await placeRefs(editor, refs)
+      await refreshBot()
+      // #491 A3: the bubble shows the 技能创建器 chip + the user's own words; the instruction rides in the hidden context
+      return sendToAgent(editor, text, shapes, null, [], [], t('composer.skillCreatorPrefill', text), { chip: t(CREATE_ENTRY_CHIP_KEY) })
+    }
+    // #491 entry B: chip preset, cursor in the input, nothing is sent
+    skillCreatorAtom.set({ on: true, chip: CREATE_ENTRY_CHIP_KEY })
+    if (refs.length) extraRefsAtom.set((await placeRefs(editor, refs)).map((s) => s.id))
+    focusComposer()
+    return
   }
   if (tool === 'elements') {
     const [shape] = await placeRefs(editor, refs.slice(0, 1))

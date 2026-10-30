@@ -46,7 +46,7 @@ def test_home_grid_kept_as_entry() -> None:
 
 def test_conversational_creator_chip_and_form_fallback() -> None:
     assert "skillCreatorAtom" in COMPOSER and "skillCreatorAtom" in SKILLS_TS
-    assert 'data-testid="skill-creator-chip"' in COMPOSER
+    assert 'testId="skill-creator-chip"' in COMPOSER  # #502 D3: rendered via shared SkillChip
     assert 'data-testid="skill-creator-start"' in COMPOSER
     assert "skillCreatorPrefill" in COMPOSER
     assert 'data-testid="skill-creator-form-fallback"' in COMPOSER
@@ -56,6 +56,8 @@ def test_conversational_creator_chip_and_form_fallback() -> None:
 
 def test_create_handoff() -> None:
     assert "createSkill" in HANDOFF
+    # #491: the create handoff lands in chat-only full screen
+    assert "chatViewAtom.set('max')" in HANDOFF
     assert "createSkill: '1'" in SKILLS or 'createSkill: "1"' in SKILLS
 
 

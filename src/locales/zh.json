@@ -1546,5 +1546,11 @@
   "skillsImport.error.unreadable": "无法读取这个文件",
   "skillsImport.error.tooLarge": "文件超过 20MB",
   "skillsImport.uploading": "上传中...{0}%",
-  "skillsImport.extracting": "解析中..."
+  "skillsImport.extracting": "解析中...",
+  "home.plusMenu": "添加",
+  "home.skillsMenu": "技能",
+  "home.skillsMenuMore": "创建或导入",
+  "home.createSkill": "创建技能",
+  "home.createSkillFromChat": "从对话创建",
+  "home.importSkill": "导入技能"
 }

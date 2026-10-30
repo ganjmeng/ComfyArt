@@ -178,6 +178,13 @@ button.ca-head__logo:hover, button.ca-head__logo[data-open] { background: var(--
 .ca-chat__bubble--skill > .ca-chip--skill { flex: 0 999 auto; min-width: 48px; overflow: hidden; white-space: nowrap; }
 .ca-chat__bubble--skill > .ca-chat__text { flex: 0 0 auto; min-width: 0; max-width: calc(100% - 54px); } /* never shrinks while the chip can; caps at bubble − chip min − gap, then wraps */
 .ca-chip__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* #491 design: the Skill Creator chip never shrinks — full label, no ellipsis; the bubble text wraps instead.
+   Keyed on the chip's title (= label from composer.skillCreator, zh/en), so no component change is needed and the
+   reloaded bubble (server-stored chip name) matches too. User skill chips keep the 160px + ellipsis above. */
+.ca-chip--skill:is([title="技能创建器"], [title="Skill Creator"]) { flex-shrink: 0; max-width: none; }
+.ca-chat__bubble--skill > .ca-chip--skill:is([title="技能创建器"], [title="Skill Creator"]) { flex: 0 0 auto; overflow: visible; }
+.ca-chip--skill:is([title="技能创建器"], [title="Skill Creator"]) .ca-chip__name { overflow: visible; text-overflow: clip; }
+.ca-chat__bubble--skill:has(> .ca-chip--skill:is([title="技能创建器"], [title="Skill Creator"])) > .ca-chat__text { flex: 0 1 auto; max-width: none; }
 .ca-chip button svg { width: 100%; height: 100%; }
 .ca-chip--image { position: relative; width: 40px; height: 40px; padding: 0; overflow: visible; }
 .ca-chip--image img, .ca-chip--image video { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; }

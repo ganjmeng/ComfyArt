@@ -478,3 +478,11 @@ body { background: var(--ca-float); }
   .ca-skillspage { padding: 24px 16px 96px; }
   .ca-swall { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
 }
+
+/* #491 home + → 技能 panel: title row with the create/import icon at top-right.
+   The panel is portaled to <body>, so scope by .ca-skills (not .ca-landing__box). Same side padding as the rows (10px). */
+.ca-skills .ca-menu__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 4px 4px 10px; font-size: 12px; color: var(--ca-muted); }
+.ca-skills .ca-menu__head > .ca-pop-anchor { margin-left: auto; }
+/* #491 design: rows are always one line; long names end in an ellipsis (full name in the native title) */
+.ca-skills .ca-menu__item { min-width: 0; }
+.ca-skills .ca-skills__name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
