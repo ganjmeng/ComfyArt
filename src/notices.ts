@@ -3,9 +3,10 @@ import { atom } from 'tldraw'
 import { readUserJson, writeUserJson } from './comfy'
 import { uuid } from './id'
 import { readLocal, writeLocal } from './localPrefs'
+import { OWNER_DEFAULT, WORKSPACE_DEFAULT } from './memoryStore'
 
 export type NoticeKind = 'task' | 'suggestion' | 'comment' | 'schedule'
-export interface Notice { id: string; kind: NoticeKind; title: string; body?: string; time: number; read?: boolean; project: string; chat?: string; srcs?: string[] }
+export interface Notice { id: string; kind: NoticeKind; title: string; body?: string; time: number; read?: boolean; project: string; chat?: string; srcs?: string[]; owner_id?: string; workspace_id?: string }
 
 const FILE = 'comfyart/notices.json'
 const MAX_NOTICES = 200
@@ -44,7 +45,11 @@ async function update(fn: (list: Notice[]) => Notice[]) {
 channel.onmessage = () => void loadNotices()
 
 export function notify(n: Omit<Notice, 'id' | 'time' | 'project'> & { project?: string }) {
-  const notice: Notice = { id: uuid().slice(0, 8), time: Date.now(), project: currentProject(), ...n }
+  const notice: Notice = {
+    id: uuid().slice(0, 8), time: Date.now(), project: currentProject(),
+    ...n,
+    owner_id: n.owner_id || OWNER_DEFAULT, workspace_id: n.workspace_id || WORKSPACE_DEFAULT,
+  }
   if (document.hidden && pushEnabled() && Notification.permission === 'granted') {
     new Notification(notice.title, { body: notice.body, icon: notice.srcs?.[0] })
   }

@@ -1476,5 +1476,7 @@
   "memoryDialog.partTitle.taste": "Tell me about your visual taste",
   "memoryDialog.partTitle.assets": "Finally — your reused assets",
   "memoryDialog.stepOf": "{0} / {1}",
-  "memoryDialog.freeHint": "Or just tell me…"
+  "memoryDialog.freeHint": "Or just tell me…",
+  "schedules.skippedOverQuote": "Scheduled task \"{0}\" skipped",
+  "schedules.skippedOverQuoteReason": "Needs quote confirmation (unattended); not started, not charged."
 }

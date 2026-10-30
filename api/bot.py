@@ -179,10 +179,15 @@ async def bot_send(request: web.Request) -> web.Response:
         text, skill_name=skill_name, memory=str(body.get("memory") or ""),
         lines=[*lines, *([context] if context else [])], review=review_on)
     lang = str(body.get("lang") or "")
+    # #388: turn run_mode (interactive|unattended) — distinct from chat auto|ask
+    turn_run_mode = str(body.get("run_mode") or "interactive")
+    if turn_run_mode not in ("interactive", "unattended"):
+        return error("run_mode must be 'interactive' or 'unattended'", 400)
     user_msg, assistant_msg = send_core.queue_or_begin(
         chat, text=text, provider_text=provider_text,
         attachments=attachments, display_blocks=display_blocks,
-        lang=lang if lang in ("zh", "en") else "")
+        lang=lang if lang in ("zh", "en") else "",
+        run_mode=turn_run_mode)
     if assistant_msg is None:
         return web.json_response({"queued": True, "user_message": user_msg})
     return web.json_response({"user_message": user_msg, "assistant_message": assistant_msg})

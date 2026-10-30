@@ -1476,5 +1476,7 @@
   "memoryDialog.partTitle.taste": "再聊聊你的审美偏好",
   "memoryDialog.partTitle.assets": "最后，你的常用资产",
   "memoryDialog.stepOf": "{0} / {1}",
-  "memoryDialog.freeHint": "也可以直接告诉我…"
+  "memoryDialog.freeHint": "也可以直接告诉我…",
+  "schedules.skippedOverQuote": "定时任务「{0}」已跳过",
+  "schedules.skippedOverQuoteReason": "需要报价确认（无人值守），未开始，未扣费。"
 }

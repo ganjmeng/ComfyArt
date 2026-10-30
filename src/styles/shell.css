@@ -646,6 +646,11 @@ span.arti-mascot { cursor: default; pointer-events: none; }
   font: 500 13px/20px Inter, system-ui, sans-serif;
   color: var(--ca-text, rgba(0,0,0,.9));
 }
+.arti-notify__card-body {
+  margin-top: 4px;
+  font: 400 12px/18px Inter, system-ui, sans-serif;
+  color: var(--ca-text-2, rgba(0,0,0,.6));
+}
 .arti-notify__card-dismiss {
   display: inline-flex;
   align-items: center;

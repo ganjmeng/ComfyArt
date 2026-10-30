@@ -415,7 +415,8 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
 
 def begin_turn(chat: dict, *, text: str, provider_text: str,
                attachments: list[dict], user_msg: dict, lang: str = "",
-               resume_run_id: str = "", lease_owner: str = "") -> dict:
+               resume_run_id: str = "", lease_owner: str = "",
+               run_mode: str = "interactive") -> dict:
     assistant_msg = chat_store.create_message(
         chat_id=chat["id"], role="assistant", blocks=[], status="streaming",
         parent_id=user_msg["id"],
@@ -430,7 +431,7 @@ def begin_turn(chat: dict, *, text: str, provider_text: str,
     asyncio.create_task(
         _run_turn(chat, text, state, provider_text=provider_text,
                   attachments=attachments, lang=lang, resume_run_id=resume_run_id,
-                  lease_owner=lease_owner),
+                  lease_owner=lease_owner, run_mode=run_mode),
         name=f"comfyart-bot-{chat['id'][:8]}",
     )
     return assistant_msg
@@ -452,4 +453,5 @@ def _drain_queue(chat_id: str) -> None:
                provider_text=item["provider_text"],
                attachments=item["attachments"],
                lang=item.get("lang", ""),
-               user_msg=user_msg or item["user_msg"])
+               user_msg=user_msg or item["user_msg"],
+               run_mode=item.get("run_mode") or "interactive")
