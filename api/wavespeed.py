@@ -51,6 +51,34 @@ _catalog: dict = {"at": 0.0, "models": {}}
 _jobs: dict[str, dict] = {}
 _uploaded: dict[tuple[str, int, int], str] = {}
 
+# #425: WaveSpeed catalog `base_price` is sometimes the cheapest tier, not the schema-default
+# run. pruna-ai/p-image/ideogram lists $0.003 (thinking="very low") while schema default
+# thinking="high" — and a prompt-only submit — quotes and bills $0.015. Product (YohakuX
+# 2026-10-30): catalog + cost display follow the actual quote. Verified against
+# POST /api/v3/model/price with defaults and with thinking omitted.
+CATALOG_PRICE_FIXES = {
+    "pruna-ai/p-image/ideogram": 0.015,
+}
+
+
+def base_price_of(model_id: str, meta: dict | None = None) -> float | None:
+    """USD for the schema-default run: #425 override when set, else catalog `base_price`."""
+    if model_id in CATALOG_PRICE_FIXES:
+        return float(CATALOG_PRICE_FIXES[model_id])
+    if not meta:
+        return None
+    v = meta.get("base_price")
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def apply_catalog_price_fixes(models: dict) -> dict:
+    """Patch `base_price` for known WaveSpeed catalog mismatches (#425)."""
+    for mid, price in CATALOG_PRICE_FIXES.items():
+        row = models.get(mid)
+        if isinstance(row, dict):
+            models[mid] = {**row, "base_price": price}
+    return models
+
 
 class WaveSpeedError(Exception):
     def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False, charged: float | None = None):
@@ -237,7 +265,7 @@ async def catalog(refresh: bool = False) -> dict:
     if refresh or not _catalog["models"] or time.time() - _catalog["at"] > CATALOG_TTL:
         try:
             async with aiohttp.ClientSession(headers=_headers()) as session:
-                _catalog["models"] = await _fetch_models(session)
+                _catalog["models"] = apply_catalog_price_fixes(await _fetch_models(session))
             _catalog["at"] = time.time()
             _catalog.pop("stale", None)
         except (TimeoutError, aiohttp.ClientError, WaveSpeedError) as e:
@@ -347,7 +375,7 @@ async def grouped_models(refresh: bool = False) -> dict:
                 "id": entry["id"],
                 "label": short_label(entry["id"]),
                 "subtitle": subtitle(entry["id"], m.get("name")),
-                "price": m.get("base_price"),
+                "price": base_price_of(entry["id"], m),
                 "desc": (m.get("description") or "")[:240],
                 "local_equivalent": entry.get("local"),
                 "default": entry["id"] == feature["default"],
@@ -552,7 +580,7 @@ def check_custom(spec: dict, required: list[str], optional: list[str], meta: dic
     if unfilled:
         errors.append(f"{model} requires {', '.join(unfilled)}; set it under params or map a marker to it.")
         codes.append({"code": "requiredParams", "model": model, "params": unfilled})
-    return {"ok": not errors, "errors": errors, "warnings": warnings, "fields": fields, "codes": codes, "price": meta[model].get("base_price")}
+    return {"ok": not errors, "errors": errors, "warnings": warnings, "fields": fields, "codes": codes, "price": base_price_of(model, meta.get(model))}
 
 
 async def _custom_fields(session: aiohttp.ClientSession, inputs: dict, payload: dict) -> None:
@@ -1001,7 +1029,7 @@ PREFS_FILE = "wavespeed_prefs.json"
 QUOTE_TTL = 300.0
 _quotes: dict[str, tuple[float, float]] = {}
 # scalar fields that change a model's price; media and prompts never do
-_PRICE_FIELDS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "num_images", "quality")
+_PRICE_FIELDS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "num_images", "quality", "thinking")
 
 
 # #397: confirm line is stored as integer UI credits (1 credit = $0.01). Legacy confirm_usd
@@ -1111,10 +1139,11 @@ def _submitted_tier(props: dict, inputs: dict, priced: dict) -> dict:
 
 
 def _is_default_tier(props: dict, priced: dict) -> bool:
-    """#159: the catalog base_price is the price of the schema's default tier, so it only estimates a job submitted at
-    that tier (resolution, duration, quality, aspect ratio at their schema default, or the first enum value without one).
-    Any other tier has no known price: the dialog then shows no amount (never the catalog price of another tier)."""
-    for k in ("resolution", "duration", "quality", "aspect_ratio"):
+    """#159 / #425: the catalog base_price is the price of the schema's default tier, so it only estimates a job
+    submitted at that tier (resolution, duration, quality, aspect ratio, thinking at their schema default, or the
+    first enum value without one). Any other tier has no known price: the dialog then shows no amount (never the
+    catalog price of another tier)."""
+    for k in ("resolution", "duration", "quality", "aspect_ratio", "thinking"):
         spec = props.get(k) or {}
         if k not in priced or not (spec.get("enum") or "default" in spec):
             continue
@@ -1212,7 +1241,7 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
         pass
     meta = (await catalog()).get(model) or {}
-    base = meta.get("base_price")
+    base = base_price_of(model, meta)
     if model in DURATION_BILLED and isinstance(base, (int, float)) and not isinstance(base, bool) and priced.get("duration"):
         # #185: the catalog base_price of a per-second model is its price per second of media (whisper $0.0007/s,
         # WaveSpeed docs; a real 4.752 s clip was charged $0.0035 = 5 s x $0.0007), so the local estimate is
