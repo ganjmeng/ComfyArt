@@ -5,6 +5,8 @@ const stubs = { i18n: '../i18n_stub.ts' }
 export default {
   input: path.join(here, 'main.tsx'),
   platform: 'browser',
+  // #416: SVG/PNG/WebP as data URLs (same as fail421/rail420) — without this, agent icons parse as JSX and rolldown aborts
+  moduleTypes: { '.svg': 'dataurl', '.png': 'dataurl', '.webp': 'dataurl' },
   transform: { define: { 'process.env.NODE_ENV': '"development"' } },
   output: { format: 'iife', file: process.env.OUT },
   plugins: [{ name: 'stubs', resolveId(id) {
