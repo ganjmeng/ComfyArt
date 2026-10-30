@@ -146,6 +146,8 @@ def test_locales_only_add_memory_retrieved_430():
         "memoryDialog.partTitle.about", "memoryDialog.partTitle.work",
         "memoryDialog.partTitle.taste", "memoryDialog.partTitle.assets",
         "memoryDialog.stepOf", "memoryDialog.freeHint",
+        # #423: 「已保存 N 条」 under the memory row
+        "chatMessage.memorySavedCount",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)
@@ -224,3 +226,18 @@ def test_memory_updating_row_437() -> None:
     assert "gap: 6px" in css.split(".ca-memory__saving")[1].split("}")[0]
     assert "ca-mem-body-shimmer 1.6s" in css
     assert ".ca-arti-mem__row[data-saving] .ca-arti-mem__actions { display: none; }" in css
+
+
+def test_saved_count_detail_wiring_423() -> None:
+    """#423: chat shows 「已保存 N 条」 under the single 记忆已更新 › row; locales already ship the key."""
+    cm = _src("src/ui/ChatMessage.tsx")
+    assert "memoryTexts" in cm and "memTextsAll" in cm
+    assert 'data-testid="memory-saved-detail"' in cm
+    assert "chatMessage.memorySavedCount" in cm
+    assert "ca-process__memdetail" in cm and "ca-process__memcount" in cm
+    css = _src("src/styles/overlays.css")
+    assert ".ca-process__memdetail" in css and ".ca-process__memcount" in css
+    zh = json.loads(_src("src/locales/zh.json"))
+    en = json.loads(_src("src/locales/en.json"))
+    assert zh["chatMessage.memorySavedCount"] == "已保存 {0} 条"
+    assert en["chatMessage.memorySavedCount"] == "Saved {0}"

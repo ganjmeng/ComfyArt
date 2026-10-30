@@ -131,7 +131,7 @@
 .ca-chat__memo { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ca-muted); }
 .ca-chat__memo .ca-icon { width: 14px; height: 14px; }
 
-/* #328/#335/#337 Question card — Lovart 1:1 remaining (PIXEL-GAP-REMAINING post-#338) */
+/* #328/#335/#337 Question card — reference 1:1 remaining (PIXEL-GAP-REMAINING post-#338) */
 .ca-q {
   display: flex; flex-direction: column; gap: 8px; padding: 10px;
   width: 100%; max-width: 100%;
@@ -182,13 +182,13 @@
 .ca-q__opt[data-text] { cursor: text; background: transparent; }
 .ca-q__opt[data-text]:hover { background: var(--ca-hover); }
 .ca-q__opt[data-text][data-on] { background: var(--ca-opt-on); }
-/* #334: open-text / Other = letter+input (not textarea); kill UA pad clip vs Lovart/MVP */
+/* #334: open-text / Other = letter+input (not textarea); kill UA pad clip vs reference/MVP */
 .ca-q__opt[data-text] .ca-q__input,
 .ca-q__opt[data-other] .ca-q__input {
   flex: 1; min-width: 0; margin: 0; width: auto; height: 18px; min-height: 18px; padding: 0;
   border: none; outline: none; box-shadow: none; background: transparent; color: var(--ca-text);
   font: inherit; font-size: 13px; line-height: 18px;
-  /* single-line input: no overflow:hidden glyph clip; ellipsis like Lovart long placeholder */
+  /* single-line input: no overflow:hidden glyph clip; ellipsis like reference long placeholder */
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ca-q__opt[data-text] .ca-q__input:focus,
@@ -571,7 +571,7 @@
   white-space: pre-wrap;
 }
 
-/* #358 chat media hero — flat grey under live image/video; left = icon column (Lovart), not label column */
+/* #358 chat media hero — flat grey under live image/video; left = icon column (reference), not label column */
 .ca-media-hero {
   box-sizing: border-box;
   margin-top: var(--ca-media-hero-gap);
@@ -1039,6 +1039,24 @@
 .ca-process__row[data-kind^='memory_']:hover { color: var(--ca-text); }
 .ca-process__memchev { width: 16px; height: 16px; display: block; flex: none; }
 .ca-process__memchev svg { width: 100%; height: 100%; display: block; }
+/* #423: 「已保存 N 条」 + entry list under the single 记忆已更新 › row */
+.ca-process__memdetail {
+  margin: 2px 0 8px 28px;
+  color: var(--ca-memory-text);
+  font: 400 12px/18px system-ui, sans-serif;
+}
+.ca-process__memcount { font-weight: 500; }
+.ca-process__memlist {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ca-process__memlist li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ca-process__group:not(:last-child):not(:has(.ca-process__card)) > .ca-process__row[data-kind^='memory_'] > .ca-process__spine { top: 20px; }
 .ca-chat__bot:has(.ca-process__row[data-kind^='memory_']) { gap: 8px; }
 
