@@ -105,9 +105,8 @@ export function SkillForm({ initial, onDone, onEditInChat, coach, onCoachDone }:
         {onEditInChat && <button type="button" className="ca-panel__secondary" data-testid="skill-edit-in-chat" disabled={!draft.name.trim()} onClick={() => onEditInChat({ ...draft, name: draft.name.trim(), description: draft.description?.trim() || undefined })}>{t('skillsDialog.editInChat')}</button>}
         <span className="ca-menu__grow" />
         <button type="button" className="ca-panel__secondary" onClick={() => onDone(null)}>{t('common.cancel')}</button>
-        <span className="ca-skillform__primary">
-          <button type="button" className="ca-panel__primary" data-testid="skill-form-primary" disabled={!valid} onClick={() => onDone({ ...draft, name: draft.name.trim(), description: draft.description?.trim() || undefined })}>{t('common.save')}</button>
-          {coach && (
+        <button type="button" className="ca-panel__primary" data-testid="skill-form-primary" disabled={!valid} onClick={() => onDone({ ...draft, name: draft.name.trim(), description: draft.description?.trim() || undefined })}>{t('common.save')}</button>
+        {coach && (
             // #463: dark coachmark, arrow on the primary action. Skip and Next both just close it (no further steps).
             <div className="ca-coach" role="dialog" data-testid="skill-import-guide">
               <div className="ca-coach__text">{coach}</div>
@@ -116,8 +115,7 @@ export function SkillForm({ initial, onDone, onEditInChat, coach, onCoachDone }:
                 <button type="button" className="ca-coach__next" data-testid="skill-import-guide-next" onClick={onCoachDone}>{t('skillsImport.next')}</button>
               </div>
             </div>
-          )}
-        </span>
+        )}
       </div>
     </div>
   )

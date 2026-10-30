@@ -296,7 +296,7 @@ async def main():
                     assert await page.locator('[data-testid="memory-toast"]').count() == 0  # nothing skipped -> no toast
                     if i == 1:
                         await shot("import-landing-coachmark")
-                    await page.locator('[data-testid="skill-import-guide-next" if i % 2 else "skill-import-guide-skip"]').click()
+                    await page.locator('[data-testid="skill-import-guide-next"]' if i % 2 else '[data-testid="skill-import-guide-skip"]').click()
                     await guide.wait_for(state="detached", timeout=3000)  # Skip / Next only close it
                     await page.keyboard.press("Escape")
                     await page.wait_for_timeout(300)

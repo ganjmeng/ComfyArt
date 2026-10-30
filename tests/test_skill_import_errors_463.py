@@ -182,7 +182,7 @@ def test_guide_is_coachmark_on_primary_action() -> None:
     dlg = (ROOT / "src/ui/SkillsDialog.tsx").read_text()
     css = (ROOT / "src/styles/overlays.css").read_text()
     assert 'className="ca-mem-toast" data-kind="guide"' not in dlg and "setTimeout(() => setGuide('')" not in dlg  # not a toast
-    prim = dlg[dlg.index('<span className="ca-skillform__primary">'):]
+    prim = dlg[dlg.index('className="ca-panel__foot ca-skillform__foot"'):]
     assert prim.index('data-testid="skill-form-primary"') < prim.index('data-testid="skill-import-guide"')  # bubble anchored on the primary button
     assert "onClick={onCoachDone}>{t('skillsImport.skip')}" in prim and "onClick={onCoachDone}>{t('skillsImport.next')}" in prim  # both only close
     assert (ZH["skillsImport.skip"], ZH["skillsImport.next"], EN["skillsImport.skip"], EN["skillsImport.next"]) == ("跳过", "下一步", "Skip", "Next")
