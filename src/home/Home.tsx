@@ -215,7 +215,10 @@ export function Home() {
       </section>
 
       <section className="ca-landing__section">
-        <div className="ca-landing__head"><h2>{t('home.startFromSkill')}</h2></div>
+        <div className="ca-landing__head">
+          <h2>{t('home.startFromSkill')}</h2>
+          <button type="button" className="ca-landing__link" onClick={() => openView('skills')}>{t('home.viewAll')}</button>
+        </div>
         <div className="ca-skillgrid">
           {skills.map((s) => {
             const cover = Object.values(s.images ?? {})[0]

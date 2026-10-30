@@ -11,7 +11,7 @@ import { botEnabledAtom, loadProviders, loadSettings, messagesAtom, providerLabe
 import { errorText } from '../jobs'
 import { libraryAtom } from '../library'
 import type { AudioShape } from '../shapes/EmbedShapes'
-import { loadSkills, saveSkill, skillAtom, type Skill } from '../skills'
+import { loadSkills, saveSkill, skillAtom, skillCreatorAtom, type Skill } from '../skills'
 import { AssetGrid } from './AssetPicker'
 import { schedulesOpenAtom } from '../schedules'
 import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPicker'
@@ -88,6 +88,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const listLoading = useValue('agent list loading', () => providersStateAtom.get().state === 'loading', [])
   const agentLoading = mode === 'agent' && listLoading  // #294: no sending to an Agent until the list has arrived
   const skill = useValue(skillAtom)
+  const skillCreator = useValue(skillCreatorAtom)
   const extra = useValue(extraRefsAtom)
   const kits = useValue(kitsAtom)
   const library = useValue(libraryAtom)
@@ -165,9 +166,14 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       const keptSkill = skill
       const keptKits = kits
       const keptDocs = docs
+      const creating = skillCreatorAtom.get().on
+      const agentText = creating && text
+        ? t('composer.skillCreatorPrefill', text)
+        : text
       draftAtom.set('')
       extraRefsAtom.set([])
       kitsAtom.set([])
+      if (creating) skillCreatorAtom.set({ on: false })
       if (mode === 'agent') {
         skillAtom.set(null)
         docsAtom.set([])
@@ -175,7 +181,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       const targets = keptRefs.length > 1 ? each.targets(keptRefs) : []
       each.reset()
       try {
-        if (mode === 'agent') await sendToAgent(editor, text, keptRefs, keptSkill, keptKits, keptDocs, targets.length ? eachLine(keptRefs, targets) : '')
+        if (mode === 'agent') await sendToAgent(editor, agentText, keptRefs, creating ? null : keptSkill, keptKits, keptDocs, targets.length ? eachLine(keptRefs, targets) : '')
         else await generateDirect(editor, text, eachRuns(keptRefs, targets, () => text), mode === 'video', onError)
       } catch (e) {
         // restore composer content if the send never reached the chat / job
@@ -286,7 +292,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           </div>
         </div>
       )}
-      {(refs.length > 0 || skill || kits.length > 0 || (mode === 'agent' && docs.length > 0)) && (
+      {(refs.length > 0 || skill || skillCreator.on || kits.length > 0 || (mode === 'agent' && docs.length > 0)) && (
         <div className="ca-composer__chips">
           {kits.map((k) => (
             <span key={k.id} className="ca-chip">
@@ -298,6 +304,12 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
             <span className="ca-chip">
               <span className="ca-icon">{Icons.skill}</span>{skill.name}
               <button type="button" title={t('common.remove')} onClick={() => skillAtom.set(null)}>{Icons.close}</button>
+            </span>
+          )}
+          {skillCreator.on && (
+            <span className="ca-chip ca-chip--creator" data-testid="skill-creator-chip">
+              <span className="ca-icon">{Icons.sparkles}</span>{t('composer.skillCreatorChip')}
+              <button type="button" title={t('common.remove')} onClick={() => skillCreatorAtom.set({ on: false })}>{Icons.close}</button>
             </span>
           )}
           {mode === 'agent' && docs.map((d) => (
@@ -331,7 +343,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       <textarea
         className="ca-composer__input"
         value={draft}
-        placeholder={t('composer.describeYourDesignNeedsFor')}
+        placeholder={skillCreator.on ? t('composer.skillCreatorHint') : t('composer.describeYourDesignNeedsFor')}
         onChange={(e) => draftAtom.set(e.target.value)}
         onCompositionStart={() => setComposing(true)}
         onCompositionEnd={() => setComposing(false)}
@@ -379,11 +391,14 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           )}
           {menu === 'skills' && (
             <div className="ca-menu ca-skills">
-              <button type="button" className="ca-menu__item" onClick={() => setMenu('create')}>
+              <button type="button" className="ca-menu__item" data-testid="skill-creator-start" onClick={() => { setMenu(null); skillCreatorAtom.set({ on: true }); agentModeAtom.set('agent') }}>
                 <span className="ca-icon">{Icons.plus}</span><span className="ca-menu__grow">{t('composer.skillCreator')}</span>
               </button>
               <button type="button" className="ca-menu__item" disabled={!started} onClick={() => { setMenu(null); void sendToAgent(editor, SKILL_PROMPT, [], null).catch(fail) }}>
                 <span className="ca-icon">{Icons.agent}</span><span className="ca-menu__grow">{t('composer.createSkillFromThisChat')}</span>
+              </button>
+              <button type="button" className="ca-menu__item" onClick={() => setMenu('create')}>
+                <span className="ca-icon">{Icons.files}</span><span className="ca-menu__grow">{t('composer.skillCreatorForm')}</span>
               </button>
               <button type="button" className="ca-menu__item" onClick={() => { setMenu(null); skillsOpenAtom.set(true) }}>
                 <span className="ca-icon">{Icons.files}</span><span className="ca-menu__grow">{t('composer.manageSkills')}</span>
@@ -403,8 +418,8 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
             </div>
           )}
           {menu === 'create' && (
-            <div className="ca-menu ca-skilled">
-              <div className="ca-gen__title">{t('composer.skillCreator')}</div>
+            <div className="ca-menu ca-skilled" data-testid="skill-creator-form-fallback">
+              <div className="ca-gen__title">{t('composer.skillCreator')} · {t('composer.skillCreatorForm')}</div>
               <SkillForm
                 initial={{ id: uuid().slice(0, 8), name: '', instructions: '', custom: true }}
                 onDone={(s) => {

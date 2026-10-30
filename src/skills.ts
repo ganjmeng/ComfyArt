@@ -119,3 +119,75 @@ export async function importFolder(list: FileList): Promise<{ skill: Skill; skip
   await saveSkill(skill)
   return { skill, skipped }
 }
+
+/** #460/#461 — Explore wall + conversational creator (form kept as fallback). */
+const FAV_KEY = 'comfyart.skillFavourites'
+
+export const skillCreatorAtom = atom<{ on: boolean }>('skillCreator', { on: false })
+
+export function loadFavourites(): string[] {
+  try {
+    const raw = localStorage.getItem(FAV_KEY)
+    const list = raw ? JSON.parse(raw) as unknown : []
+    return Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export function toggleFavourite(id: string): string[] {
+  const set = new Set(loadFavourites())
+  if (set.has(id)) set.delete(id)
+  else set.add(id)
+  const next = [...set]
+  localStorage.setItem(FAV_KEY, JSON.stringify(next))
+  return next
+}
+
+/** Chip ids for Explore wall filters (EN keys; UI labels via locales). */
+export type SkillChipId = 'forYou' | 'ecommerce' | 'branding' | 'social' | 'website' | 'ads'
+
+const CHIP_BY_SKILL: Record<string, SkillChipId> = {
+  poster: 'ads',
+  social: 'social',
+  brand: 'branding',
+  packaging: 'ecommerce',
+  thumbnail: 'social',
+  banner: 'ads',
+  character: 'forYou',
+  product: 'ecommerce',
+  motion: 'ads',
+  interior: 'website',
+  'custom-workflow': 'forYou',
+}
+
+export function skillChip(id: string): SkillChipId {
+  return CHIP_BY_SKILL[id] ?? 'forYou'
+}
+
+export function skillDescription(skill: Skill): string {
+  const key = `skills.desc.${skill.id}`
+  const localized = t(key)
+  if (localized !== key) return localized
+  const line = skill.instructions.split('\n').find((l) => l.trim()) ?? ''
+  return line.slice(0, 72) + (line.length > 72 ? '…' : '')
+}
+
+const WALL_META: Record<string, { author: string; views: string; likes: string; tone: string }> = {
+  poster: { author: '社区', views: '12.4k', likes: '860', tone: 'warm' },
+  social: { author: '社区', views: '9.1k', likes: '640', tone: 'cool' },
+  brand: { author: '社区', views: '7.8k', likes: '520', tone: 'mint' },
+  packaging: { author: '社区', views: '11.2k', likes: '910', tone: 'sand' },
+  thumbnail: { author: '社区', views: '15.6k', likes: '1.2k', tone: 'pop' },
+  banner: { author: '社区', views: '6.4k', likes: '410', tone: 'sky' },
+  character: { author: '社区', views: '18.3k', likes: '1.5k', tone: 'lilac' },
+  product: { author: '社区', views: '14.0k', likes: '980', tone: 'steel' },
+  motion: { author: '社区', views: '8.7k', likes: '700', tone: 'rose' },
+  interior: { author: '社区', views: '5.2k', likes: '360', tone: 'sage' },
+  'custom-workflow': { author: '社区', views: '3.1k', likes: '210', tone: 'ink' },
+}
+
+export function skillWallMeta(id: string): { author: string; views: string; likes: string; tone: string } {
+  const base = WALL_META[id] ?? { author: '', views: '—', likes: '—', tone: 'ink' }
+  return { ...base, author: t('home.skillsCommunity') }
+}

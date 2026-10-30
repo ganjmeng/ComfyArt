@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<title>#461 Skill Creator conversational · tip CSS/DOM</title>
+<link rel="stylesheet" href="../../../../../src/styles/base.css"/>
+<link rel="stylesheet" href="../../../../../src/styles/shell.css"/>
+<link rel="stylesheet" href="../../../../../src/styles/overlays.css"/>
+<style>
+  html, body { margin: 0; min-height: 100%; background: #e8e8e6; }
+  :root[data-theme="dark"] body { background: #0e0e0e; }
+  .stage { box-sizing: border-box; width: 420px; margin: 0 auto; padding: 48px 24px 36px; }
+  .ca-composer { width: 100%; margin: 0; box-sizing: border-box; }
+  .thread { margin-bottom: 16px; }
+  .user { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--ca-hover); font: 400 14px/20px var(--ca-font); }
+</style>
+</head>
+<body>
+<script>
+  const theme = new URLSearchParams(location.search).get('theme') || 'light';
+  document.documentElement.dataset.theme = theme;
+</script>
+<div class="stage" id="shot">
+  <div class="thread" id="thread"></div>
+  <div class="ca-composer" data-testid="composer">
+    <div class="ca-composer__chips" id="chips"></div>
+    <textarea class="ca-composer__input" placeholder="描述你想创建的技能…" rows="2" readonly></textarea>
+    <div class="ca-composer__foot">
+      <button type="button" class="ca-bar__btn ca-bar__btn--icon"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span></button>
+      <div class="ca-composer__mid">
+        <button type="button" class="ca-bar__btn ca-composer__mode"><span class="ca-composer__modetext">Agent</span></button>
+      </div>
+      <button type="button" class="ca-bar__btn ca-bar__btn--send">发送</button>
+    </div>
+  </div>
+</div>
+<script>
+const scene = new URLSearchParams(location.search).get('scene') || 'process';
+const thread = document.getElementById('thread');
+const chips = document.getElementById('chips');
+window.__scene = scene;
+chips.innerHTML = `<span class="ca-chip ca-chip--creator" data-testid="skill-creator-chip">
+  <span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg></span>
+  Skill Creator
+  <button type="button" title="remove">×</button>
+</span>`;
+
+if (scene === 'prefill' || scene === 'process') {
+  thread.innerHTML = `<div class="user">Create minimalist coffee shop menu poster skill</div>`;
+}
+if (scene === 'process') {
+  thread.innerHTML += `
+  <div class="ca-process" data-testid="process-rail-shot">
+    <div class="ca-process__steps">
+      <div class="ca-process__group">
+        <div class="ca-process__row" data-kind="thought">
+          <button type="button" class="ca-process__rowbtn">
+            <span class="ca-process__icon ca-process__icon--thought">✓</span>
+            <span class="ca-process__label">思考完成</span>
+          </button>
+          <span class="ca-process__spine" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="ca-process__group">
+        <div class="ca-process__row" data-kind="skill">
+          <button type="button" class="ca-process__rowbtn">
+            <span class="ca-process__icon ca-process__icon--skill">📄</span>
+            <span class="ca-process__label">技能就绪</span>
+          </button>
+          <span class="ca-process__spine" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="ca-process__group">
+        <div class="ca-process__row" data-kind="outputting" data-live="true">
+          <button type="button" class="ca-process__rowbtn">
+            <span class="ca-process__icon ca-process__icon--outputting">💬</span>
+            <span class="ca-process__label ca-process__label--active">待命…</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+if (scene === 'prefill') {
+  thread.innerHTML += `<div class="ca-process__status">输出中…</div>`;
+}
+</script>
+</body>
+</html>

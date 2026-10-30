@@ -5,9 +5,9 @@ import { refreshBot } from '../bot'
 import { refFromUrl } from '../comfy'
 import { editElements } from '../elements'
 import { placeMedia, toMedia, type ErrorSink } from '../jobs'
-import { loadSkills, skillAtom } from '../skills'
+import { loadSkills, skillAtom, skillCreatorAtom } from '../skills'
 
-const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool']
+const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool', 'createSkill']
 const REF_LONG = 512
 const GAP = 20
 
@@ -32,9 +32,15 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   const refs = url.searchParams.getAll('ref')
   const skillId = url.searchParams.get('skill')
   const tool = url.searchParams.get('tool')
-  if (!text && !refs.length && !skillId) return
+  const createSkill = url.searchParams.get('createSkill') === '1'
+  if (!text && !refs.length && !skillId && !createSkill) return
   for (const k of KEYS) url.searchParams.delete(k)
   history.replaceState(null, '', url)
+  if (createSkill) {
+    skillCreatorAtom.set({ on: true })
+    agentModeAtom.set('agent')
+    if (!text && !refs.length && !skillId) return
+  }
   if (tool === 'elements') {
     const [shape] = await placeRefs(editor, refs.slice(0, 1))
     if (shape) editElements(editor, shape, onError)
