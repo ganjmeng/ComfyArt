@@ -8,6 +8,7 @@ export interface KeyStatus { configured: boolean; source: 'env' | 'settings' | '
 export const keyStatusAtom = atom<KeyStatus | null>('wavespeed key', null)
 export const keySettingsOpenAtom = atom('wavespeed key settings', false)
 export const WAVESPEED_KEYS_URL = 'https://wavespeed.ai/accesskey'
+export const WAVESPEED_HISTORY_URL = 'https://wavespeed.ai/history'
 
 export const outOfCredit = (s: KeyStatus | null) => !!s?.configured && s.balance !== null && s.balance <= 0
 /** True only after status has loaded and no key is configured. null (still loading) is not "missing". #305 */
