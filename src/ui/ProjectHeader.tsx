@@ -16,9 +16,9 @@ import { t } from '../i18n'
 import { isEnter } from './keys'
 import { WAVESPEED_HISTORY_URL } from '../wavespeedKey'
 
-function Item({ icon, label, kbd, danger, disabled, run, close }: { icon: ReactNode; label: string; kbd?: string; danger?: boolean; disabled?: boolean; run: () => void; close: () => void }) {
+function Item({ icon, label, kbd, danger, disabled, run, close, title, testId }: { icon: ReactNode; label: string; kbd?: string; danger?: boolean; disabled?: boolean; run: () => void; close: () => void; title?: string; testId?: string }) {
   return (
-    <button type="button" className={`ca-menu__item${danger ? ' ca-menu__item--danger' : ''}`} disabled={disabled} onClick={() => { close(); run() }}>
+    <button type="button" className={`ca-menu__item${danger ? ' ca-menu__item--danger' : ''}`} disabled={disabled} title={title} data-testid={testId} onClick={() => { close(); run() }}>
       <span className="ca-icon">{icon}</span><span className="ca-menu__grow">{label}</span>{kbd && <span className="ca-menu__key">{kbd}</span>}
     </button>
   )
@@ -50,7 +50,7 @@ export function ProjectHeader({ editor, projectId, children }: { editor: Editor;
         <div className="ca-menu ca-head__list">
           <Item close={close} icon={Icons.home} label={t('home.home')} run={() => openView('home')} />
           <Item close={close} icon={Icons.folder} label={t('home.projectLibrary')} run={() => openView('projects')} />
-          <Item close={close} icon={Icons.exit} label={t('home.waveSpeedTaskHistory')} title={t('home.waveSpeedTaskHistory')} testId="menu-ws-history" run={() => window.open(WAVESPEED_HISTORY_URL, '_blank', 'noopener,noreferrer')} />
+          <Item close={close} icon={Icons.exit} label={t('home.waveSpeedTaskHistory')} title={t('home.waveSpeedTaskHistory')} testId="menu-ws-history" run={() => { window.open(WAVESPEED_HISTORY_URL, '_blank', 'noopener,noreferrer') }} />
           <Item close={close} icon={Icons.plus} label={t('projectHeader.newProject')} run={() => newProject()} />
           <Item close={close} icon={Icons.page} label={t('projectHeader.duplicateProject')} run={() => void saveNow().then(() => duplicateProject(projectId)).then(openProject)} />
           <Item close={close} icon={Icons.trash} label={t('home.deleteCurrentProject')} danger run={() => confirmDelete([projectId], () => openView('projects'))} />

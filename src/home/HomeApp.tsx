@@ -76,7 +76,7 @@ export function HomeApp({ view }: { view: View }) {
         <RailBtn
           icon={Icons.exit}
           label={t('home.waveSpeedTaskHistory')}
-          onClick={() => window.open(WAVESPEED_HISTORY_URL, '_blank', 'noopener,noreferrer')}
+          onClick={() => { window.open(WAVESPEED_HISTORY_URL, '_blank', 'noopener,noreferrer') }}
           testId="rail-ws-history"
         />
         <SettingsMenu trigger={({ open, toggle }) => <RailBtn icon={Icons.settings} label={t('settings.settings')} on={open} onClick={toggle} />} />

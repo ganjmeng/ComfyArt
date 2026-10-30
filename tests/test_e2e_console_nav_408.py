@@ -19,7 +19,7 @@ async def _shot(pg, name: str):
     await pg.screenshot(path=str(OUT / f"{name}.png"))
 
 
-async def _open(p, app_url, lang: str, theme: str):
+async def _open(p, app_url, lang: str, theme: str, path: str = "/"):
     browser = await p.chromium.launch()
     ctx = await browser.new_context(viewport={"width": 1280, "height": 800}, device_scale_factor=2)
     pg = await ctx.new_page()
@@ -30,8 +30,7 @@ async def _open(p, app_url, lang: str, theme: str):
         "window.__opened=[];"
         "window.open=function(url){window.__opened.push(String(url));return null};"
     )
-    await pg.goto(app_url)
-    await pg.wait_for_selector("[data-testid=home-shell]", timeout=20000)
+    await pg.goto(app_url.rstrip("/") + path)
     return browser, pg
 
 
@@ -43,6 +42,7 @@ async def test_home_rail_zh_light_opens_history(app_url, fake_tools, monkeypatch
             browser, pg = await _open(p, app_url, "zh", "light")
         except Exception as e:
             pytest.skip(f"chromium not available: {e}")
+        await pg.wait_for_selector("[data-testid=home-shell]", timeout=20000)
         btn = pg.locator("[data-testid=rail-ws-history]")
         await btn.wait_for(timeout=10000)
         assert await btn.get_attribute("title") == "打开 WaveSpeed 任务记录"
@@ -62,22 +62,20 @@ async def test_home_rail_en_dark_and_project_menu(app_url, fake_tools, monkeypat
             browser, pg = await _open(p, app_url, "en", "dark")
         except Exception as e:
             pytest.skip(f"chromium not available: {e}")
+        await pg.wait_for_selector("[data-testid=home-shell]", timeout=20000)
         btn = pg.locator("[data-testid=rail-ws-history]")
         await btn.wait_for(timeout=10000)
         assert await btn.get_attribute("title") == "Open WaveSpeed task history"
         await btn.hover()
         await pg.wait_for_timeout(300)
         await _shot(pg, "home-rail-en-dark")
+        await browser.close()
 
-        # create a project so ProjectHeader is mounted
-        await pg.locator(".ca-landing__input").fill("nav shot")
-        await pg.keyboard.press("Enter")
-        await pg.wait_for_url("**project=*", timeout=20000)
+        try:
+            browser, pg = await _open(p, app_url, "en", "dark", "/?project=e408nav&new=1")
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
         await pg.wait_for_selector(".ca-head__logo", timeout=20000)
-        # re-stub open after navigation
-        await pg.evaluate(
-            "() => { window.__opened=[]; window.open=function(url){window.__opened.push(String(url));return null}; }"
-        )
         await pg.locator(".ca-head__logo").click()
         menu_item = pg.locator("[data-testid=menu-ws-history]")
         await menu_item.wait_for(timeout=10000)
