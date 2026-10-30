@@ -1,0 +1,36 @@
+{
+  "scenes": [
+    "menu-skills",
+    "form-empty",
+    "form-filled",
+    "dialog-list",
+    "dialog-list-empty",
+    "dialog-edit",
+    "slash-picker",
+    "skill-chip",
+    "home-grid",
+    "arti-skills"
+  ],
+  "files": [
+    "menu-skills-zh-light.png",
+    "menu-skills-en-dark.png",
+    "form-empty-zh-light.png",
+    "form-empty-en-dark.png",
+    "form-filled-zh-light.png",
+    "form-filled-en-dark.png",
+    "dialog-list-zh-light.png",
+    "dialog-list-en-dark.png",
+    "dialog-list-empty-zh-light.png",
+    "dialog-list-empty-en-dark.png",
+    "dialog-edit-zh-light.png",
+    "dialog-edit-en-dark.png",
+    "slash-picker-zh-light.png",
+    "slash-picker-en-dark.png",
+    "skill-chip-zh-light.png",
+    "skill-chip-en-dark.png",
+    "home-grid-zh-light.png",
+    "home-grid-en-dark.png",
+    "arti-skills-zh-light.png",
+    "arti-skills-en-dark.png"
+  ]
+}
