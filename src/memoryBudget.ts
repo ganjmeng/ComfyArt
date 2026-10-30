@@ -94,6 +94,8 @@ export interface UnifiedBudgetInput {
   window?: number
   /** When false, image tokens are omitted (mutation for AC2). Default true. */
   countImages?: boolean
+  /** #384: canvas snapshot segment; counted in the same window as memory + history. */
+  snapshot?: string
 }
 
 export interface UnifiedBudget {
@@ -101,20 +103,23 @@ export interface UnifiedBudget {
   text: number
   images: number
   history: number
+  /** #384 */
+  snapshot: number
   total: number
   budget: number
   fits: boolean
 }
 
-/** Unified token budget: memory + user text + image estimates + history ≤ 70% window. */
+/** Unified token budget: memory + snapshot + user text + image estimates + history ≤ 70% window. */
 export function unifiedBudget(input: UnifiedBudgetInput): UnifiedBudget {
   const memory = countTokens(input.memoryPrompt || '')
+  const snapshot = countTokens(input.snapshot || '')
   const text = countTokens(input.text || '')
   const images = (input.countImages === false ? 0 : estimateImageTokens(input.imageCount ?? 0))
   const history = (input.historyTexts ?? []).reduce((n, t) => n + countTokens(t || ''), 0)
   const budget = inputTokenBudget(input.window)
-  const total = memory + text + images + history
-  return { memory, text, images, history, total, budget, fits: total <= budget }
+  const total = memory + snapshot + text + images + history
+  return { memory, snapshot, text, images, history, total, budget, fits: total <= budget }
 }
 
 export type BlockLike = { type: string; [k: string]: unknown }

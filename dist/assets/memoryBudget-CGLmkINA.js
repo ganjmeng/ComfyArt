@@ -1,1 +1,0 @@
-export{i as insertMemoryUpdatedBlock}from"./memoryBudget-XPWY7bcg.js";
