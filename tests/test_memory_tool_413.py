@@ -95,7 +95,9 @@ def test_rules_in_tool_description_and_fallback():
 def test_fallback_skips_when_turn_wrote_memory():
     pro = (ROOT / "src/proactive.ts").read_text()
     assert "wrote: turnWroteMemory(reply.blocks)" in pro
-    assert "if (plan?.memory && !ex.wrote) await learnMemory(" in pro
+    # #424: wrote-in-loop gates via memoryFallbackAllowed; learnMemory only when plan.memory
+    assert "memoryFallbackAllowed(ex.wrote, s.runs.memory ?? 0, dailyLimit(), enabled('memory'))" in pro
+    assert "const n = await learnMemory(ex, e.chat_id, e.message_id)" in pro
     layout = (ROOT / "src/botLayout.ts").read_text()
     assert "memory_ids: written.map((m) => m.id)" in layout  # #423: added + updated
     ui = (ROOT / "src/ui/ChatMessage.tsx").read_text()
