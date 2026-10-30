@@ -310,3 +310,16 @@ def test_r2_a3_provider_still_gets_instruction() -> None:
     out = ns["compose_provider_text"]("做一个咖啡店早安海报技能", lines=[instr])
     assert 'action="save"' in out and "做一个咖啡店早安海报技能" in out
     assert "Use the ComfyArt skill" not in out
+
+
+def test_r2_a3_bubble_text_is_exactly_user_text() -> None:
+    """Product: bubble text (chip excluded) must equal the typed text exactly — no prefix/suffix, not even a space."""
+    user = BUBBLE.split("export function UserMessage", 1)[1].split("\nexport function", 1)[0]
+    assert "const text = textOf(m)" in user
+    assert '<span className="ca-chat__text" data-testid="user-bubble-text">{text}</span>' in user
+    # server stores the typed text verbatim as the only text block; the instruction stays in context
+    seg = BOT_PY.split('chip_name = str(body.get("chip") or "")', 1)[1].split("context = str(body.get", 1)[0]
+    assert re.findall(r'display_blocks\.append\(\{"type": "text", "text": [^}]*\}\)', seg) == ['display_blocks.append({"type": "text", "text": text})']
+    # both client entries send exactly the typed text as `text`
+    assert "sendToAgent(editor, text, shapes, null, [], [], t('composer.skillCreatorPrefill', text)," in HANDOFF
+    assert "await sendToAgent(editor, text, keptRefs," in COMPOSER
