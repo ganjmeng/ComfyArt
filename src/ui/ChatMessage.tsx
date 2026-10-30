@@ -19,7 +19,7 @@ import { readLocal, writeLocal } from '../localPrefs'
 
 const GEN_TOOLS = new Set(['generate_image', 'generate_video', 'edit_image', 'animate_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers', 'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer', 'extend_video', 'upscale_video', 'remove_video_background', 'generate_music', 'generate_sound_effect', 'text_to_speech', 'image_to_3d', 'edit_elements', 'create_mockup', 'create_slides'])
 
-/** #326/#348 process-timeline kinds (Lovart multi-step card). */
+/** #326/#348/#420 process-timeline kinds (multi-step process rail). */
 type ProcessKind =
   | 'thought' | 'outputting' | 'skill' | 'skill_file_read' | 'search' | 'search_pages'
   | 'image' | 'video'
@@ -129,7 +129,9 @@ function processKindOf(b: BotBlock, opts?: { result?: BotBlock; live?: boolean }
   if (IMAGE_PROCESS_TOOLS.has(n)) return 'image'
   // Other generation-ish tools still join the rail with a generic icon
   if (GEN_TOOLS.has(n)) return n.includes('video') || n.includes('animate') ? 'video' : 'image'
-  return null
+  // #420: canvas tools (get_canvas / create_frame / add_text / …) and any other
+  // previously off-rail tool_use stay on the process spine — never flush into ca-chat__tool Step.
+  return 'tool'
 }
 
 /**
@@ -739,7 +741,7 @@ function orderMemorySteps(steps: ProcessStep[]): ProcessStep[] {
   return out
 }
 
-/** #326: Lovart-style multi-step process rail (solid spine · status card outside). */
+/** #326/#420: multi-step process rail (solid spine · status card outside; canvas tools stay on rail). */
 function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
   const steps = orderMemorySteps(rawSteps)
   const [openKey, setOpenKey] = useState<string | null>(null)
@@ -1044,7 +1046,9 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
           kind: kindResolved,
           // #393 nit: a declined / refused paid step never reads as done
           // #421: failed generation reads as failed, not the success/model-name row
-          label: (kindResolved === 'image' || kindResolved === 'video') && b.type === 'tool_use' && (genCancelled || genFailed)
+          // #420/#421: failed/cancelled tool_use on the rail reads 「工具名 · 失败/Failed」 (incl. canvas tools)
+          label: b.type === 'tool_use' && (genCancelled || genFailed)
+            && (kindResolved === 'image' || kindResolved === 'video' || kindResolved === 'tool')
             ? `${toolLabel(b.name)} · ${t(genCancelled ? 'chatMessage.cancelled' : 'chatMessage.failed')}`
             : processLabel(kindResolved, stepLive, {
               fallback: b.type === 'tool_use' ? toolLabel(b.name) : b.label,
