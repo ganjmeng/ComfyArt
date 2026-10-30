@@ -1,0 +1,676 @@
+{
+ "model": "bytedance/seedream-v4",
+ "count": 30,
+ "failures": [],
+ "this_run_cost_usd": 0.81,
+ "task_cumulative_usd": 1.647,
+ "task_cumulative_breakdown": {
+  "run1_cdn_undownloadable": 0.81,
+  "run2_canary_truncated": 0.027,
+  "run3": 0.81
+ },
+ "balance_before_usd": 8.160744,
+ "balance_after_usd": 7.350744,
+ "images": [
+  {
+   "skill_id": "poster",
+   "skill_name": {
+    "zh": "海报设计",
+    "en": "Poster design"
+   },
+   "n": 1,
+   "cover": true,
+   "preset_name": {
+    "zh": "极简排版",
+    "en": "Minimal layout"
+   },
+   "file": "poster/1.png",
+   "prompt": "a minimalist Swiss-style art poster with bold geometric shapes and generous negative space, framed and hanging on a plain wall, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "f4ec8a5e93654af3b75b09ad02d7de58",
+   "sha256": "e2b6d288b20c7b96e64f642911a2d9c08f3e85cc503428f42f116e4ce26ef918"
+  },
+  {
+   "skill_id": "poster",
+   "skill_name": {
+    "zh": "海报设计",
+    "en": "Poster design"
+   },
+   "n": 2,
+   "cover": false,
+   "preset_name": {
+    "zh": "复古印刷",
+    "en": "Retro print"
+   },
+   "file": "poster/2.png",
+   "prompt": "a vintage risograph-style screen-printed poster with grainy halftone texture and muted retro colors, pinned to a wall, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "b1835ea458364929a7e92f812f7fff42",
+   "sha256": "489feda1042515e745da51fb3c60bcf81cdc46bde77922f588f3b08129a5157c"
+  },
+  {
+   "skill_id": "poster",
+   "skill_name": {
+    "zh": "海报设计",
+    "en": "Poster design"
+   },
+   "n": 3,
+   "cover": false,
+   "preset_name": {
+    "zh": "霓虹潮流",
+    "en": "Neon trend"
+   },
+   "file": "poster/3.png",
+   "prompt": "a vibrant neon-gradient streetwear-style poster with glowing pink and cyan abstract shapes, displayed on a wall, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "cfe994299bd34a898a13bfa36b32ba69",
+   "sha256": "a2f2343c6c59134208248474166b6eefc97d08c215aebba485fd75acc7280084"
+  },
+  {
+   "skill_id": "social",
+   "skill_name": {
+    "zh": "社交媒体套图",
+    "en": "Social media set"
+   },
+   "n": 1,
+   "cover": true,
+   "preset_name": {
+    "zh": "清新生活",
+    "en": "Fresh lifestyle"
+   },
+   "file": "social/1.png",
+   "prompt": "a grid of three square social media images on floating cards showing fresh lifestyle scenes: coffee, plants, sunny breakfast, pastel tones, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "65bb03d583a84bb1b4c435eb1ae70c26",
+   "sha256": "502516b7f27ec39a7fce483b65f263e56feb07f6993a9caf09c71321292f4460"
+  },
+  {
+   "skill_id": "social",
+   "skill_name": {
+    "zh": "社交媒体套图",
+    "en": "Social media set"
+   },
+   "n": 2,
+   "cover": false,
+   "preset_name": {
+    "zh": "高级灰调",
+    "en": "Premium grey"
+   },
+   "file": "social/2.png",
+   "prompt": "a set of three square social media post designs on floating cards in sophisticated muted grey and beige tones, elegant fashion still life, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "034e6ce02fc14dfa8d5d954579a23636",
+   "sha256": "ff03ef79c236261bb04e0ca57d9bef73c20f6bf32ba121c2059293787c7b9bf3"
+  },
+  {
+   "skill_id": "social",
+   "skill_name": {
+    "zh": "社交媒体套图",
+    "en": "Social media set"
+   },
+   "n": 3,
+   "cover": false,
+   "preset_name": {
+    "zh": "撞色活力",
+    "en": "Bold color clash"
+   },
+   "file": "social/3.png",
+   "prompt": "a set of three square social media post designs on floating cards with energetic clashing complementary colors and playful abstract shapes, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "9e77a6e0eceb4e1f92741200c29e9e3e",
+   "sha256": "80343f84021be3837b7571d2cd12a642eb28f391d04e23dec1f0830f104126da"
+  },
+  {
+   "skill_id": "brand",
+   "skill_name": {
+    "zh": "品牌识别",
+    "en": "Brand identity"
+   },
+   "n": 1,
+   "cover": true,
+   "preset_name": {
+    "zh": "极简几何",
+    "en": "Minimal geometric"
+   },
+   "file": "brand/1.png",
+   "prompt": "a brand identity mockup flat lay: business cards, letterhead and envelope with a simple abstract geometric symbol, monochrome palette, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "523b32ce0eb94d66a898313fa3994264",
+   "sha256": "daab38e3e6e6d677c436bcfb89fd5aa546da7e4f9d8900021e72e3fed3916a20"
+  },
+  {
+   "skill_id": "brand",
+   "skill_name": {
+    "zh": "品牌识别",
+    "en": "Brand identity"
+   },
+   "n": 2,
+   "cover": false,
+   "preset_name": {
+    "zh": "手作温暖",
+    "en": "Handmade warmth"
+   },
+   "file": "brand/2.png",
+   "prompt": "a warm handmade brand identity flat lay: kraft paper cards, stamp, ribbon and tags with an organic hand-drawn leaf symbol, earthy tones, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "aa8d64e6802f487983afca53f166a1d4",
+   "sha256": "eaab2897f4c01060bad9d500f99ede401c3e486c409d09e87a46905d954e9a1b"
+  },
+  {
+   "skill_id": "brand",
+   "skill_name": {
+    "zh": "品牌识别",
+    "en": "Brand identity"
+   },
+   "n": 3,
+   "cover": false,
+   "preset_name": {
+    "zh": "科技未来",
+    "en": "Tech future"
+   },
+   "file": "brand/3.png",
+   "prompt": "a futuristic tech brand identity mockup: dark glossy cards, phone screen and badge with an abstract gradient symbol, electric blue accents, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "cc0efeef89ad43f09d88cb40c617984c",
+   "sha256": "39672900402d9264397e0f9372fb5a2eb7f5405f358695bd4fc40453523289df"
+  },
+  {
+   "skill_id": "packaging",
+   "skill_name": {
+    "zh": "包装设计",
+    "en": "Packaging design"
+   },
+   "n": 1,
+   "cover": true,
+   "preset_name": {
+    "zh": "自然环保",
+    "en": "Natural eco"
+   },
+   "file": "packaging/1.png",
+   "prompt": "eco-friendly product packaging set of recycled paper boxes and pouches with botanical illustrations, on a wooden table, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "42bb32d1379d4b80b2ad67f6e8310682",
+   "sha256": "a9a029a74787c5825a0edcaaf1772b6668a4c1960d2bcac758755eacba927f90"
+  },
+  {
+   "skill_id": "packaging",
+   "skill_name": {
+    "zh": "包装设计",
+    "en": "Packaging design"
+   },
+   "n": 2,
+   "cover": false,
+   "preset_name": {
+    "zh": "奢华烫金",
+    "en": "Luxury gold foil"
+   },
+   "file": "packaging/2.png",
+   "prompt": "luxury cosmetic packaging boxes and a bottle in deep emerald with gold foil patterns, on a marble surface, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "1b7af9fa7608481282b0a3b11ecb7a7c",
+   "sha256": "2478e61ea7a0c5bf08b57c28979a5995afef7b9ef11f735acf5344b4ccf60876"
+  },
+  {
+   "skill_id": "packaging",
+   "skill_name": {
+    "zh": "包装设计",
+    "en": "Packaging design"
+   },
+   "n": 3,
+   "cover": false,
+   "preset_name": {
+    "zh": "潮玩插画",
+    "en": "Playful illustration"
+   },
+   "file": "packaging/3.png",
+   "prompt": "playful snack packaging bags and cans covered in colorful cartoon character illustrations, on a table, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "9bb21762f601426698b7139e2f6ab23f",
+   "sha256": "1142af001f420d3d8e173ed8fba67dbfdaa5616ecd52f5f1ef15fe7df05f57d0"
+  },
+  {
+   "skill_id": "thumbnail",
+   "skill_name": {
+    "zh": "YouTube 缩略图",
+    "en": "YouTube thumbnail"
+   },
+   "n": 1,
+   "cover": true,
+   "preset_name": {
+    "zh": "夸张表情",
+    "en": "Exaggerated expression"
+   },
+   "file": "thumbnail/1.png",
+   "prompt": "a video thumbnail design on a laptop screen showing a surprised cartoon-style face with big eyes, bright yellow background and bold arrows, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "cf8685374b384fc99f14a4d8142db2fe",
+   "sha256": "19642a61f0dfaba4a398e946320c031ac6faa36019f78ab6f5e09f3103e00d1c"
+  },
+  {
+   "skill_id": "thumbnail",
+   "skill_name": {
+    "zh": "YouTube 缩略图",
+    "en": "YouTube thumbnail"
+   },
+   "n": 2,
+   "cover": false,
+   "preset_name": {
+    "zh": "科技评测",
+    "en": "Tech review"
+   },
+   "file": "thumbnail/2.png",
+   "prompt": "a video thumbnail design on a monitor showing a sleek smartphone and headphones with dramatic rim light on a dark gradient, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "c1590402308941e6a8d5cae4d1a860d8",
+   "sha256": "1a89f8cabb411961cc06ef4689cac7c35577b8bb604834862a177f6e630155ae"
+  },
+  {
+   "skill_id": "thumbnail",
+   "skill_name": {
+    "zh": "YouTube 缩略图",
+    "en": "YouTube thumbnail"
+   },
+   "n": 3,
+   "cover": false,
+   "preset_name": {
+    "zh": "Vlog 清新",
+    "en": "Fresh vlog"
+   },
+   "file": "thumbnail/3.png",
+   "prompt": "a video thumbnail design on a tablet showing a bright travel scene with a seaside town and soft pastel sky, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "e7da673733b84adfbdc5a3e9af5bfd4e",
+   "sha256": "db8b3b034c63de2b44fd4c2124ae8b9f6036f551d61b51924ad0ab67c85eb2c9"
+  },
+  {
+   "skill_id": "banner",
+   "skill_name": {
+    "zh": "横幅设计",
+    "en": "Banner design"
+   },
+   "n": 1,
+   "cover": true,
+   "preset_name": {
+    "zh": "大促促销",
+    "en": "Big sale"
+   },
+   "file": "banner/1.png",
+   "prompt": "a wide promotional web banner displayed on a desktop monitor, festive red and gold shopping bags, gift boxes and confetti, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "cea8fc5252ac4eab99ebba0c68a69270",
+   "sha256": "9aae887c2b33dc98a58d9fc20036127dccc036e1d7b0ee4e5b639d47ef9e1e04"
+  },
+  {
+   "skill_id": "banner",
+   "skill_name": {
+    "zh": "横幅设计",
+    "en": "Banner design"
+   },
+   "n": 2,
+   "cover": false,
+   "preset_name": {
+    "zh": "品牌形象",
+    "en": "Brand image"
+   },
+   "file": "banner/2.png",
+   "prompt": "a wide elegant brand hero banner displayed on a desktop monitor, minimal product still life with soft shadows in calm tones, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "75e7ae5657194736b8953113b079c348",
+   "sha256": "e3dfd226b0347be1312ba9dad78056179c76ee58944481ffeb0ddc6a1d2746e7"
+  },
+  {
+   "skill_id": "banner",
+   "skill_name": {
+    "zh": "横幅设计",
+    "en": "Banner design"
+   },
+   "n": 3,
+   "cover": false,
+   "preset_name": {
+    "zh": "活动预告",
+    "en": "Event teaser"
+   },
+   "file": "banner/3.png",
+   "prompt": "a wide event teaser banner on a desktop monitor with dramatic stage lights, spotlights and abstract light beams, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "4a342b060ff04997af18bdc6b6d48a68",
+   "sha256": "345f223c5e27686667b1bc7443c9aead28e29122669a37263a6aec1d7e340c8f"
+  },
+  {
+   "skill_id": "character",
+   "skill_name": {
+    "zh": "角色设定",
+    "en": "Character design"
+   },
+   "n": 1,
+   "cover": true,
+   "preset_name": {
+    "zh": "日系动漫",
+    "en": "Anime style"
+   },
+   "file": "character/1.png",
+   "prompt": "an anime-style character design sheet of an original young adventurer in front, side and back views, clean cel shading, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "bfcbb2d91c644a179e39eafef2cfbc88",
+   "sha256": "88524247fa032ad91a50396f2088d04d4b188f32be3e0bba269b6766d14c3bb1"
+  },
+  {
+   "skill_id": "character",
+   "skill_name": {
+    "zh": "角色设定",
+    "en": "Character design"
+   },
+   "n": 2,
+   "cover": false,
+   "preset_name": {
+    "zh": "3D 卡通",
+    "en": "3D cartoon"
+   },
+   "file": "character/2.png",
+   "prompt": "a 3D cartoon character turnaround of a cute round original mascot creature, glossy stylized render, front side and back views, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "75b600fe212349f5a0fe4597882206ac",
+   "sha256": "db21c5c27c98f1e39ecc6d56a0fc00a069883b558405d4206c836f109196991a"
+  },
+  {
+   "skill_id": "character",
+   "skill_name": {
+    "zh": "角色设定",
+    "en": "Character design"
+   },
+   "n": 3,
+   "cover": false,
+   "preset_name": {
+    "zh": "写实概念",
+    "en": "Realistic concept"
+   },
+   "file": "character/3.png",
+   "prompt": "a realistic concept art character sheet of an original armored explorer, painterly detail, front and side views, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "e8decfc9ba624fd19a4c3002ee10bc98",
+   "sha256": "667b01983b896159d9f87b0c4d17f79d0ab0c45755238986d8a22f03c3dc3cd0"
+  },
+  {
+   "skill_id": "product",
+   "skill_name": {
+    "zh": "电商产品图",
+    "en": "E-commerce product"
+   },
+   "n": 1,
+   "cover": true,
+   "preset_name": {
+    "zh": "白底主图",
+    "en": "White background hero"
+   },
+   "file": "product/1.png",
+   "prompt": "a clean e-commerce hero shot of a minimal ceramic water bottle on a pure white background with a soft shadow, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "295465d1f8e34d48bebd951dbcfad1ed",
+   "sha256": "0146b6fcff2411ab9466b06772e8dd955196761e2a6e3e50a7bea7dc3ae4b8f5"
+  },
+  {
+   "skill_id": "product",
+   "skill_name": {
+    "zh": "电商产品图",
+    "en": "E-commerce product"
+   },
+   "n": 2,
+   "cover": false,
+   "preset_name": {
+    "zh": "生活场景",
+    "en": "Lifestyle scene"
+   },
+   "file": "product/2.png",
+   "prompt": "the same style minimal ceramic water bottle in a lifestyle scene on a sunny kitchen counter with fruit and plants, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "14805eb7b89f419ab452871c6b53ae75",
+   "sha256": "98aba75c7ba27b563e3ccce12fc5515b4db56acfd16d0b9dd8d8240d909bdfde"
+  },
+  {
+   "skill_id": "product",
+   "skill_name": {
+    "zh": "电商产品图",
+    "en": "E-commerce product"
+   },
+   "n": 3,
+   "cover": false,
+   "preset_name": {
+    "zh": "细节特写",
+    "en": "Detail close-up"
+   },
+   "file": "product/3.png",
+   "prompt": "a macro detail close-up of the textured matte ceramic surface and cap of a water bottle, shallow depth of field, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "911cd530e2304fcdac7a2e02934d0ed9",
+   "sha256": "5a23116aeda57c4398b4a37361e00d5cb1600287a3847dc0d6013ed033343998"
+  },
+  {
+   "skill_id": "motion",
+   "skill_name": {
+    "zh": "动态海报",
+    "en": "Motion poster"
+   },
+   "n": 1,
+   "cover": true,
+   "preset_name": {
+    "zh": "微动循环",
+    "en": "Subtle loop"
+   },
+   "file": "motion/1.png",
+   "prompt": "a poster with floating glossy 3D spheres frozen mid-motion, subtle motion trails, displayed on a vertical screen, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "a47dc46269c54946844930eda967d978",
+   "sha256": "e6393448b5675409ac77e7fa5ec38a8c66d58b2c241b1bf301554fb28feac69a"
+  },
+  {
+   "skill_id": "motion",
+   "skill_name": {
+    "zh": "动态海报",
+    "en": "Motion poster"
+   },
+   "n": 2,
+   "cover": false,
+   "preset_name": {
+    "zh": "光影流动",
+    "en": "Flowing light"
+   },
+   "file": "motion/2.png",
+   "prompt": "a poster with flowing silky light ribbons and liquid gradients in motion, displayed on a vertical digital screen, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "c90419edcaf14125ba8a60529c2032cf",
+   "sha256": "b46b95e301c07ebb693e36787aa33d9c552295e1ac8d6d3616f00da7e18d4c50"
+  },
+  {
+   "skill_id": "motion",
+   "skill_name": {
+    "zh": "动态海报",
+    "en": "Motion poster"
+   },
+   "n": 3,
+   "cover": false,
+   "preset_name": {
+    "zh": "镜头推拉",
+    "en": "Camera push-pull"
+   },
+   "file": "motion/3.png",
+   "prompt": "a poster with a dramatic zoom-burst effect into a surreal tunnel landscape, radial motion blur, on a vertical screen, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "c19c49f060f54ae4912342fa281f22e0",
+   "sha256": "f7640a88533e17e08cfe7b4e37b9e38ce905c1e473d1c882d296dedc6d0e1f68"
+  },
+  {
+   "skill_id": "interior",
+   "skill_name": {
+    "zh": "室内与建筑可视化",
+    "en": "Interior & architecture"
+   },
+   "n": 1,
+   "cover": true,
+   "preset_name": {
+    "zh": "北欧自然光",
+    "en": "Nordic daylight"
+   },
+   "file": "interior/1.png",
+   "prompt": "an architectural visualization of a Scandinavian living room with light wood, linen sofa and large windows full of natural daylight, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "6ca4a0398f2a43da81bda10bbb934e6d",
+   "sha256": "64d0be569562e0a68188696ae2d2fdccc37ca93887f72a2a9c4990fee5102ca4"
+  },
+  {
+   "skill_id": "interior",
+   "skill_name": {
+    "zh": "室内与建筑可视化",
+    "en": "Interior & architecture"
+   },
+   "n": 2,
+   "cover": false,
+   "preset_name": {
+    "zh": "现代极简",
+    "en": "Modern minimal"
+   },
+   "file": "interior/2.png",
+   "prompt": "an architectural visualization of a modern minimalist bedroom with concrete, white walls and hidden indirect lighting, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "eb17b065bbad475f918d24ad839c358b",
+   "sha256": "54972ba8f8ea1744ecbf3039e916e53cd6f329df1d3ce105adf6259bad81e459"
+  },
+  {
+   "skill_id": "interior",
+   "skill_name": {
+    "zh": "室内与建筑可视化",
+    "en": "Interior & architecture"
+   },
+   "n": 3,
+   "cover": false,
+   "preset_name": {
+    "zh": "工业风",
+    "en": "Industrial"
+   },
+   "file": "interior/3.png",
+   "prompt": "an architectural visualization of an industrial loft office with exposed brick, black steel beams and warm pendant lights, centered composition on a light neutral warm-grey background, soft diffused studio lighting, clean modern commercial design photography, high detail. Absolutely no readable text, no letters, no logos, no brand names, no watermark.",
+   "model": "bytedance/seedream-v4",
+   "gen_size": "1024*768",
+   "gen_format": "jpeg (base64)",
+   "file_format": "png 1024x768",
+   "cost_usd": 0.027,
+   "prediction_id": "34a830332cb743e1ace63559e6b3b28d",
+   "sha256": "66a66f00621953244c8b01c4fdeb8a1f8c4ca6abfc41e747db4560c40ed91960"
+  }
+ ]
+}
