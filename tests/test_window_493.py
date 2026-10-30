@@ -182,10 +182,20 @@ async def test_493_overflow_without_number_shrinks_by_half():
     p = LocalLlmProvider(base_url=lambda: BASE)
     seq = _Seq(p, [LlmHttpError(400, OVERFLOW_NO_NUMBER), OK])
     _, used = await p._llm_request_fit(None, URL, {"model": "m", "messages": _big_messages()},
-                                       _noop, TurnHandle(), model="m", window=40_000, refit=_refit)
+                                       _noop, TurnHandle(), model="m", window=100_000, refit=_refit)
     assert local_llm.OVERFLOW_SHRINK == 0.5
-    assert used == 20_000
-    assert p._model_windows[(BASE, "m")] == 20_000
+    assert used == 50_000
+    assert p._model_windows[(BASE, "m")] == 50_000
+    assert len(seq.sent) == 2
+
+
+async def test_493_overflow_without_number_floor_32k():
+    p = LocalLlmProvider(base_url=lambda: BASE)
+    seq = _Seq(p, [LlmHttpError(400, OVERFLOW_NO_NUMBER), OK])
+    _, used = await p._llm_request_fit(None, URL, {"model": "m", "messages": _big_messages()},
+                                       _noop, TurnHandle(), model="m", window=40_000, refit=_refit)
+    assert used == 32_000                      # max(32_000, 40_000 * 0.5)
+    assert p._model_windows[(BASE, "m")] == 32_000
     assert len(seq.sent) == 2
 
 

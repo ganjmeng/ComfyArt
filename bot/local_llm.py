@@ -75,8 +75,9 @@ def resolve_context_window(model: str, declared: int = 0) -> int:
 
 
 # #493 overflow guard: a context-exceeded answer is re-fitted and resent exactly once.
-# TODO(#493): product to confirm the ratio used when the error states no window.
+# #493 (product AC): when the error states no window, shrink by half but never below 32k.
 OVERFLOW_SHRINK = 0.5
+OVERFLOW_FLOOR = 32_000
 _OVERFLOW_RE = re.compile(
     r"context[_ ]length[_ ]exceeded|maximum context|context (?:length|window|size)|"
     r"prompt is too long|too many (?:input )?tokens|input (?:is )?too long|exceeds? the (?:model'?s? )?"
@@ -1423,7 +1424,7 @@ class LocalLlmProvider(AgentProvider):
                                emit: EmitFn, handle: TurnHandle, *, model: str, window: int,
                                refit) -> tuple[dict, int]:
         """#493 overflow guard around _llm_request. On a context-exceeded error: read the real
-        window from the error (else window * OVERFLOW_SHRINK), cache it for (endpoint, model),
+        window from the error (else max(OVERFLOW_FLOOR, window * OVERFLOW_SHRINK)), cache it for (endpoint, model),
         re-fit the messages with `refit(messages, new_window)` and resend exactly once. A second
         overflow (or any other error) is raised. Returns (data, window used).
 
@@ -1435,7 +1436,7 @@ class LocalLlmProvider(AgentProvider):
             if not is_context_overflow(e) or handle.stop_requested:
                 raise
             stated = parse_overflow_window(e.body)
-            new_window = stated if 0 < stated < window else max(1, int(window * OVERFLOW_SHRINK))
+            new_window = stated if 0 < stated < window else max(OVERFLOW_FLOOR, int(window * OVERFLOW_SHRINK))
             _log.warning("[ComfyArt/local-llm] context overflow for %s: window %d -> %d, resend once",
                          model, window, new_window)
             self.remember_window(model, new_window)
