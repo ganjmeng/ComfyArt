@@ -419,9 +419,10 @@ _QUOTE_PLAN_TOOL = {
 
 _WINDOW_FIELDS = (
     "context_window", "context_length", "max_context_length",
-    "max_model_len", "max_context_tokens", "n_ctx",
+    "max_model_len", "max_context_tokens", "n_ctx", "max_input_tokens",
 )
-_WINDOW_NESTED = ("meta", "metadata", "details", "architecture")
+# #390-2: LiteLLM puts the window under model_info, OpenRouter also under top_provider.
+_WINDOW_NESTED = ("meta", "metadata", "details", "architecture", "model_info", "top_provider")
 _DATA_URL_RE = re.compile(r"data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=\r\n]+", re.I)
 _REQ_RES = (
     re.compile(r"(?:数量|count|qty)\s*[:：]?\s*\d+\s*(?:张|幅|个|images?|pictures?|shots?)?", re.I),
@@ -483,6 +484,13 @@ def explicit_context_window(model_info: object) -> int:
                 n = _positive_int(inner.get(key))
                 if n:
                     return n
+            # #390-2: GGUF-style keys carry the architecture as a prefix
+            # ("llama.context_length", "qwen2.context_length").
+            for key, value in inner.items():
+                if isinstance(key, str) and key.endswith(".context_length"):
+                    n = _positive_int(value)
+                    if n:
+                        return n
     return 0
 
 
@@ -1181,14 +1189,18 @@ class LocalLlmProvider(AgentProvider):
 
     async def _context_window(self, session: aiohttp.ClientSession, model: str) -> int:
         """Tokens in `model`'s window, from the endpoint's /models payload. 32k if it
-        does not say, the model is missing, or the request fails."""
+        does not say, the model is missing, or the request fails.
+
+        #390-2: cached per (endpoint, model). The same model id on another endpoint
+        (e.g. a local 8k quant vs. a hosted 128k one) is looked up again."""
         cache: dict = getattr(self, "_model_windows", None) or {}
         self._model_windows = cache
-        if model and model in cache:
-            return cache[model]
         base = self._base_url()
         if not base:
             return _FALLBACK_CONTEXT_WINDOW
+        key = (base, model)
+        if model and key in cache:
+            return cache[key]
         try:
             data = await self._request_json(
                 session, "GET", f"{base}/models", headers=self._api_headers(), timeout=10)
@@ -1200,12 +1212,12 @@ class LocalLlmProvider(AgentProvider):
                     continue
                 window = explicit_context_window(entry)
                 if window:
-                    cache[str(entry["id"])] = window
+                    cache[(base, str(entry["id"]))] = window
         # Remember a miss too, so a model that never advertises a window does not
         # refetch /models on every turn. A failed request is not cached.
-        if model and model not in cache:
-            cache[model] = _FALLBACK_CONTEXT_WINDOW
-        return cache.get(model) or _FALLBACK_CONTEXT_WINDOW
+        if model and key not in cache:
+            cache[key] = _FALLBACK_CONTEXT_WINDOW
+        return cache.get(key) or _FALLBACK_CONTEXT_WINDOW
 
     async def _wait_stage_done(self, session: aiohttp.ClientSession,
                                endpoint: str, args: dict, model: str,
