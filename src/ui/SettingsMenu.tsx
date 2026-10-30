@@ -1,11 +1,16 @@
 import { useState, type ReactNode } from 'react'
 import { useValue, type Editor } from 'tldraw'
 
+import { clearCache, unloadModels } from '../comfy'
 import { DOCS_SITE } from '../docsConfig'
+import { errorText } from '../jobs'
 import { lang, setLang, t, type Lang } from '../i18n'
+import { showMemoryToast } from '../memory'
 import { pushEnabled, setPush } from '../notices'
 import { saveTheme, setTheme, themeAtom, THEMES } from '../theme'
+import { loadCloudModels } from '../wavespeed'
 import { dockAtom, setDock } from './chatDock'
+import { reportError, reportSuccess } from './ErrorToasts'
 import { Icons } from './icons'
 import { Popover } from './Popover'
 import { shortcutsAtom } from './Shortcuts'
@@ -15,6 +20,9 @@ import { keySettingsOpenAtom } from '../wavespeedKey'
 export function docsUrl(l: Lang = lang): string {
   return l === 'zh' ? `${DOCS_SITE}/zh` : DOCS_SITE
 }
+
+// #408: canvas -> tldraw success toast; home has no tldraw toast host, so use the existing home toast (ca-mem-toast).
+const done = (text: string, onCanvas: boolean) => (onCanvas ? reportSuccess(text) : showMemoryToast(text))
 
 const LANGS: [Lang, string][] = [['zh', t('settings.langZh')], ['en', t('settings.langEn')]]
 const SIDES: ['left' | 'right', string][] = [['left', t('settings.chatLeft')], ['right', t('settings.chatRight')]]
@@ -45,6 +53,13 @@ export function SettingsMenu({ editor, trigger }: { editor?: Editor; trigger: (p
           <div className="ca-menu__sep" />
           <button type="button" className="ca-menu__item" onClick={() => { setOpen(false); keySettingsOpenAtom.set(true) }}>
             <span className="ca-icon">{Icons.settings}</span><span className="ca-menu__grow">{t('wsKey.menu')}</span>
+          </button>
+          {/* #408 (upstream 515d36e): both entries kept; no local models, so they act on the WaveSpeed lists and local caches */}
+          <button type="button" className="ca-menu__item" data-testid="settings-unload" onClick={() => { setOpen(false); void unloadModels().then((r) => { done(t('settings.unloadModelsDone', r.models, r.prices), !!editor); void loadCloudModels() }, (e) => reportError(errorText(e))) }}>
+            <span className="ca-icon">{Icons.erase}</span><span className="ca-menu__grow">{t('settings.unloadModels')}</span>
+          </button>
+          <button type="button" className="ca-menu__item" data-testid="settings-clear-cache" onClick={() => { setOpen(false); void clearCache().then((r) => done(t('settings.clearCacheDone', r.entries, r.thumbs), !!editor), (e) => reportError(errorText(e))) }}>
+            <span className="ca-icon">{Icons.trash}</span><span className="ca-menu__grow">{t('settings.clearCache')}</span>
           </button>
           {editor && (
             <>

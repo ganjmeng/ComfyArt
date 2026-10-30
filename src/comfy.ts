@@ -245,6 +245,20 @@ export async function cancelPrompt(promptId: string): Promise<CancelResult> {
   return { dropped: false }
 }
 
+/** #408 (upstream 515d36e 「卸载模型」): no local models; drops the loaded WaveSpeed model list and price table. */
+export async function unloadModels(): Promise<{ models: number; prices: number }> {
+  const res = await api('/comfyart/wavespeed/unload', { method: 'POST' })
+  if (!res.ok) throw new Error(`unload failed: ${res.status}`)
+  return res.json()
+}
+
+/** #408 (upstream 515d36e 「清缓存」): local generation cache and thumbnails. */
+export async function clearCache(): Promise<{ entries: number; thumbs: number }> {
+  const res = await api('/comfyart/cache/clear', { method: 'POST' })
+  if (!res.ok) throw new Error(`clear cache failed: ${res.status}`)
+  return res.json()
+}
+
 const wakers = new Map<string, Set<() => void>>()
 for (const type of ['execution_success', 'execution_error', 'execution_interrupted']) {
   onComfyEvent(type, (d: { prompt_id?: string }) => { for (const wake of wakers.get(String(d?.prompt_id)) ?? []) wake() })
