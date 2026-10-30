@@ -1,6 +1,7 @@
 """#491 新建技能流程：技能页「创建」(B) 与首页 + → 技能 → 创建技能 (A) 都落在只有对话的全屏布局。"""
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -224,3 +225,88 @@ def test_q1_skill_row_click_opens_no_dialog() -> None:
 
 def test_q2_import_dialog_module() -> None:
     assert "import { SkillImportDialog } from '../ui/SkillImportDialog'" in HOME
+
+
+# ---- #502 review round 2: design HOLD (panel head / one-line rows / A3 bubble) + product title ruling ----
+HOME_CSS = (ROOT / "src/styles/home.css").read_text()
+AGENT = (ROOT / "src/agent.ts").read_text()
+BOT_TS = (ROOT / "src/bot.ts").read_text()
+BOT_PY = (ROOT / "api/bot.py").read_text()
+BUBBLE = (ROOT / "src/ui/ChatMessage.tsx").read_text()
+
+
+def _home_skill_row() -> str:
+    m = re.search(r'\{skills\.map\(\(s\) => \((.*?)\)\)\}', HOME, re.S)
+    assert m, "skill rows missing"
+    return m.group(1)
+
+
+def test_r2_row_title_is_full_name() -> None:
+    row = _home_skill_row()
+    assert 'title={s.name} data-testid="home-skill-row"' in row
+    assert "title={s.instructions}" not in row
+    assert '<span className="ca-menu__grow ca-skills__name">{s.name}</span>' in row
+
+
+def test_r2_rows_single_line_ellipsis() -> None:
+    m = re.search(r"\.ca-skills \.ca-skills__name \{([^}]*)\}", HOME_CSS)
+    assert m, "row name rule missing"
+    for decl in ("white-space: nowrap", "overflow: hidden", "text-overflow: ellipsis", "min-width: 0"):
+        assert decl in m.group(1), decl
+    assert re.search(r"\.ca-skills \.ca-menu__item \{[^}]*min-width: 0", HOME_CSS)
+
+
+def test_r2_head_square_plus_top_right() -> None:
+    # the panel is portaled to <body>: the head rule must not hang off .ca-landing__box (it never matched)
+    assert ".ca-landing__box .ca-menu__head" not in HOME_CSS
+    m = re.search(r"\.ca-skills \.ca-menu__head \{([^}]*)\}", HOME_CSS)
+    assert m and "display: flex" in m.group(1) and "justify-content: space-between" in m.group(1)
+    assert "padding: 4px 4px 4px 10px" in m.group(1)  # same left padding as rows (.ca-menu__item 0 10px)
+    assert re.search(r"\.ca-skills \.ca-menu__head > \.ca-pop-anchor \{[^}]*margin-left: auto", HOME_CSS)
+    head = _skills_panel()
+    # title first, icon last
+    assert head.index("home.skillsMenu") < head.index('data-testid="home-skills-more"')
+
+
+def test_r2_dropdown_right_aligned_and_clamped_to_panel() -> None:
+    head = _skills_panel()
+    assert 'align="end"' in head and 'within=".ca-skills"' in head
+    assert 'className="ca-menu ca-skills" data-testid="home-skills-menu"' in HOME
+
+
+def test_r2_a3_home_send_shows_chip_and_own_text_only() -> None:
+    body = _create_branch()
+    a = body.split("if (text) {", 1)[1].split("\n    }\n", 1)[0]
+    # bubble text = user's words; instruction = hidden context; chip = 技能创建器
+    assert ("sendToAgent(editor, text, shapes, null, [], [], t('composer.skillCreatorPrefill', text), "
+            "{ chip: t(CREATE_ENTRY_CHIP_KEY) })") in a
+    assert "sendToAgent(editor, t('composer.skillCreatorPrefill'" not in HANDOFF
+
+
+def test_r2_a3_composer_send_shows_chip_and_own_text_only() -> None:
+    assert "agentText" not in COMPOSER
+    assert "const creatorContext = creating && text ? t('composer.skillCreatorPrefill', text) : ''" in COMPOSER
+    assert "await sendToAgent(editor, text, keptRefs," in COMPOSER
+    assert "creatorChip ? { chip: creatorChip } : undefined" in COMPOSER
+
+
+def test_r2_a3_chip_is_display_only_server_side() -> None:
+    assert "chip?: string" in BOT_TS
+    assert "...(opts?.chip ? { chip: opts.chip } : {})" in AGENT
+    seg = BOT_PY.split('chip_name = str(body.get("chip") or "")', 1)[1].split("provider_text = send_core.compose_provider_text(", 1)
+    assert 'display_blocks.append({"type": "skill", "name": chip_name})' in seg[0]
+    # provider text gets the user text + context (instruction), never the chip as a skill to read
+    assert "chip_name" not in seg[1].split("lang = ", 1)[0]
+    # stored display blocks are what history renders after reload: chip + text, no instruction
+    assert "display_blocks.append({\"type\": \"text\", \"text\": text})" in BOT_PY
+    assert 'testId="user-skill-chip"' in BUBBLE
+
+
+def test_r2_a3_provider_still_gets_instruction() -> None:
+    m = re.search(r"^def compose_provider_text\(.*?(?=^def )", (ROOT / "api/bot_send.py").read_text(), re.M | re.S)
+    ns: dict = {}
+    exec(m.group(0), ns)  # noqa: S102
+    instr = json.loads(ZH)["composer.skillCreatorPrefill"].replace("{0}", "做一个咖啡店早安海报技能")
+    out = ns["compose_provider_text"]("做一个咖啡店早安海报技能", lines=[instr])
+    assert 'action="save"' in out and "做一个咖啡店早安海报技能" in out
+    assert "Use the ComfyArt skill" not in out

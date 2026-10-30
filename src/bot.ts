@@ -307,7 +307,7 @@ async function ensureChat(): Promise<BotChat> {
   return chat
 }
 
-export interface SendInput { text: string; refs: { id: string; src: string; name: string; kind: 'image' | 'video' | 'audio'; transcript?: string }[]; docs: { src: string; name: string }[]; kits: { name: string; description: string; images: string[] }[]; skill?: string; memory?: string; context?: string; /** #388 turn mode (interactive|unattended); not chat auto|ask */ run_mode?: 'interactive' | 'unattended' }
+export interface SendInput { text: string; refs: { id: string; src: string; name: string; kind: 'image' | 'video' | 'audio'; transcript?: string }[]; docs: { src: string; name: string }[]; kits: { name: string; description: string; images: string[] }[]; skill?: string; /** #491: display-only chip (e.g. 技能创建器) — shown in the bubble, never sent as a skill to read */ chip?: string; memory?: string; context?: string; /** #388 turn mode (interactive|unattended); not chat auto|ask */ run_mode?: 'interactive' | 'unattended' }
 
 export async function sendMessage(input: SendInput) {
   const chat = await ensureChat()

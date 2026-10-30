@@ -168,8 +168,12 @@ async def bot_send(request: web.Request) -> web.Response:
     display_blocks = [{"type": r["kind"], "url": r["src"], "shape": r["id"]} for r in refs]
     display_blocks += [{"type": "file", "url": d["src"], "name": d["name"]} for d in docs]
     display_blocks += [{"type": "kit", "name": k["name"]} for k in kits]
+    # #491: display-only chip (技能创建器) — rendered like a skill chip in the bubble, not added to provider_text
+    chip_name = str(body.get("chip") or "").strip()[:80]
     if skill_name:
         display_blocks.append({"type": "skill", "name": skill_name})
+    elif chip_name:
+        display_blocks.append({"type": "skill", "name": chip_name})
     if text:
         display_blocks.append({"type": "text", "text": text})
     context = str(body.get("context") or "").strip()

@@ -61,7 +61,8 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
       skillCreatorAtom.set({ on: false })
       const shapes = await placeRefs(editor, refs)
       await refreshBot()
-      return sendToAgent(editor, t('composer.skillCreatorPrefill', text), shapes, null)
+      // #491 A3: the bubble shows the 技能创建器 chip + the user's own words; the instruction rides in the hidden context
+      return sendToAgent(editor, text, shapes, null, [], [], t('composer.skillCreatorPrefill', text), { chip: t(CREATE_ENTRY_CHIP_KEY) })
     }
     // #491 entry B: chip preset, cursor in the input, nothing is sent
     skillCreatorAtom.set({ on: true, chip: CREATE_ENTRY_CHIP_KEY })

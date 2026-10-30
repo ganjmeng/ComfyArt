@@ -172,7 +172,9 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       const keptKits = kits
       const keptDocs = docs
       const creating = skillCreatorAtom.get().on
-      const agentText = creating && text ? t('composer.skillCreatorPrefill', text) : text
+      // #491 A3: the user's words go in the bubble; the creator instruction rides in the hidden context
+      const creatorContext = creating && text ? t('composer.skillCreatorPrefill', text) : ''
+      const creatorChip = creating ? t(skillCreatorAtom.get().chip ?? 'composer.skillCreator') : ''
       draftAtom.set('')
       extraRefsAtom.set([])
       kitsAtom.set([])
@@ -184,7 +186,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       const targets = keptRefs.length > 1 ? each.targets(keptRefs) : []
       each.reset()
       try {
-        if (mode === 'agent') await sendToAgent(editor, agentText, keptRefs, creating ? null : keptSkill, keptKits, keptDocs, targets.length ? eachLine(keptRefs, targets) : '')
+        if (mode === 'agent') await sendToAgent(editor, text, keptRefs, creating ? null : keptSkill, keptKits, keptDocs, [targets.length ? eachLine(keptRefs, targets) : '', creatorContext].filter(Boolean).join('\n'), creatorChip ? { chip: creatorChip } : undefined)
         else await generateDirect(editor, text, eachRuns(keptRefs, targets, () => text), mode === 'video', onError)
       } catch (e) {
         // restore composer content if the send never reached the chat / job

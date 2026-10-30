@@ -206,6 +206,7 @@ export function Home() {
                     onOpenChange={setMore}
                     side="bottom"
                     align="end"
+                    within=".ca-skills"
                     contentKey="skillsMore"
                     trigger={({ open, toggle }) => (
                       <button type="button" className="ca-bar__btn ca-bar__btn--icon" data-testid="home-skills-more" title={t('home.skillsMenuMore')} data-open={open || undefined} onClick={toggle}>
@@ -228,8 +229,8 @@ export function Home() {
                   </Popover>
                 </div>
                 {skills.map((s) => (
-                  <button key={s.id} type="button" className="ca-menu__item" title={s.instructions} data-testid="home-skill-row" onClick={() => { setPlus(null); setCreator(false); setPicked(s); input.current?.focus() }}>
-                    <span className="ca-menu__grow">{s.name}</span>
+                  <button key={s.id} type="button" className="ca-menu__item" title={s.name} data-testid="home-skill-row" onClick={() => { setPlus(null); setCreator(false); setPicked(s); input.current?.focus() }}>
+                    <span className="ca-menu__grow ca-skills__name">{s.name}</span>
                     {s.custom && <span className="ca-menu__key">{t('composer.personal')}</span>}
                   </button>
                 ))}
