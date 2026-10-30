@@ -2,89 +2,75 @@
 <html lang="zh">
 <head>
 <meta charset="utf-8"/>
-<title>#386 Arti notify · review cards</title>
+<title>#386 ArtiMascot notify · review cards (real CSS/DOM)</title>
+<link rel="stylesheet" href="../../../../../src/styles/base.css"/>
+<link rel="stylesheet" href="../../../../../src/styles/shell.css"/>
 <style>
-:root {
-  --ca-bg: #f7f7f5;
-  --ca-surface: #fff;
-  --ca-text: rgba(0,0,0,.9);
-  --ca-text-2: rgba(0,0,0,.6);
-  --ca-muted: rgba(0,0,0,.55);
-  --ca-border: rgba(0,0,0,.08);
-  --ca-field: rgba(0,0,0,.04);
-  --ca-block-gap: 8px;
-  --ca-notify-close-hover: rgb(242,242,242);
-  --ca-radius: 12px;
-}
-[data-theme="dark"] {
-  --ca-bg: #1a1a1a;
-  --ca-surface: #242424;
-  --ca-text: rgba(255,255,255,.92);
-  --ca-text-2: rgba(255,255,255,.62);
-  --ca-muted: rgba(255,255,255,.5);
-  --ca-border: rgba(255,255,255,.1);
-  --ca-field: rgba(255,255,255,.06);
-  --ca-notify-close-hover: rgb(48,48,48);
-}
-body { margin: 0; font-family: Inter, system-ui, sans-serif; background: var(--ca-bg); color: var(--ca-text); }
-.page { display: flex; gap: 32px; padding: 32px; align-items: flex-start; }
-.col { width: 320px; }
-.label { font: 12px/16px system-ui; opacity: .5; margin-bottom: 8px; }
-.arti-notify {
-  width: 300px; min-height: 220px; padding: 14px 14px 16px;
-  border-radius: var(--ca-radius); background: var(--ca-surface);
-  border: 1px solid var(--ca-border); box-shadow: 0 8px 24px rgba(0,0,0,.08);
-}
-.arti-notify__head { display: flex; align-items: center; justify-content: space-between; }
-.arti-notify__title { font: 600 14px/20px Inter, system-ui, sans-serif; }
-.arti-notify__close {
-  width: 24px; height: 24px; border: none; border-radius: 6px; background: transparent;
-  color: var(--ca-muted); cursor: pointer; font-size: 16px; line-height: 1;
-}
-.arti-notify__empty { margin-top: 40px; text-align: center; }
-.arti-notify__empty-title { font: 500 14px/20px Inter, system-ui, sans-serif; }
-.arti-notify__empty-hint { margin-top: 1px; font: 400 14px/20px Inter, system-ui, sans-serif; color: var(--ca-text-2); }
-.arti-notify__list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--ca-block-gap); max-height: 280px; overflow-y: auto; }
-.arti-notify__card { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--ca-border); background: var(--ca-field); }
-.arti-notify__card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.arti-notify__card-title { font: 500 13px/20px Inter, system-ui, sans-serif; color: var(--ca-text); }
-.arti-notify__card-dismiss {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; margin: -2px -4px -2px 0; padding: 0;
-  border: none; border-radius: 6px; background: transparent; color: var(--ca-muted); cursor: pointer;
-}
-.arti-notify__issues { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.arti-notify__issue { font: 400 12px/18px Inter, system-ui, sans-serif; color: var(--ca-text-2); padding-left: 12px; position: relative; }
-.arti-notify__issue::before { content: '•'; position: absolute; left: 0; color: var(--ca-muted); }
+  html, body { margin: 0; min-height: 100%; background: #e8e8e6; }
+  :root[data-theme="dark"] body, body[data-theme="dark"] { background: #0e0e0e; }
+  .stage {
+    box-sizing: border-box;
+    width: 440px;
+    margin: 0 auto;
+    padding: 210px 28px 36px;
+  }
+  .ca-composer {
+    width: 383px;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  .ca-composer__foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ca-muted);
+    font-size: 13px;
+  }
+  .ca-composer__foot .grow { margin-left: auto; display: inline-flex; gap: 8px; align-items: center; }
+  .ca-composer__mode { display: inline-flex; align-items: center; gap: 4px; color: var(--ca-text); }
 </style>
 </head>
 <body>
-<div class="page">
-  <div class="col">
-    <div class="label">empty (Lv.1 locked copy)</div>
-    <div class="arti-notify" data-testid="arti-notify-empty-panel">
+<script>
+  const theme = new URLSearchParams(location.search).get('theme') || 'light';
+  document.documentElement.dataset.theme = theme;
+  document.body.dataset.theme = theme;
+</script>
+<div class="stage" id="shot">
+  <div class="ca-composer" data-testid="composer">
+    <span class="arti-mascot-wrap" data-testid="arti-mascot-wrap" data-notify-open aria-hidden="true">
+      <button
+        type="button"
+        class="arti-mascot"
+        data-testid="arti-mascot"
+        data-level="1"
+        data-trigger="idle"
+        data-frames="17"
+        data-frame-ms="250"
+        data-duration-ms="4250"
+        data-notify-open
+        aria-label="Arti 通知"
+        aria-expanded="true"
+        aria-haspopup="dialog"
+        tabindex="-1"
+        style="background-image:url('../../../../../src/assets/arti/mascot-lv1-dna-a.png');--mascot-frames:17;--mascot-frame-ms:250ms;--mascot-duration:4250ms"
+      ></button>
+    </span>
+
+    <div class="arti-notify" role="dialog" aria-label="Arti 通知" data-testid="arti-notify">
       <div class="arti-notify__head">
-        <div class="arti-notify__title">Arti 通知</div>
-        <button type="button" class="arti-notify__close" aria-label="关闭">×</button>
+        <div class="arti-notify__title" data-testid="arti-notify-title">Arti 通知 ⚡</div>
+        <button type="button" class="arti-notify__close" data-testid="arti-notify-close" aria-label="关闭">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+        </button>
       </div>
-      <div class="arti-notify__empty">
-        <div class="arti-notify__empty-title">暂无新通知</div>
-        <div class="arti-notify__empty-hint">使用 Agent 创作后，解锁巡检和调研功能</div>
-      </div>
-    </div>
-  </div>
-  <div class="col">
-    <div class="label">review cards (#386)</div>
-    <div class="arti-notify" data-testid="arti-notify-cards-panel">
-      <div class="arti-notify__head">
-        <div class="arti-notify__title">Arti 通知</div>
-        <button type="button" class="arti-notify__close" aria-label="关闭">×</button>
-      </div>
-      <ul class="arti-notify__list">
-        <li class="arti-notify__card">
+      <ul class="arti-notify__list" data-testid="arti-notify-list">
+        <li class="arti-notify__card" data-testid="arti-review-card" data-card-id="mock-1">
           <div class="arti-notify__card-head">
-            <div class="arti-notify__card-title">画布巡检</div>
-            <button type="button" class="arti-notify__card-dismiss" aria-label="关闭">×</button>
+            <div class="arti-notify__card-title">画布体检</div>
+            <button type="button" class="arti-notify__card-dismiss" data-testid="arti-review-dismiss" aria-label="关闭">
+              <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            </button>
           </div>
           <ul class="arti-notify__issues">
             <li class="arti-notify__issue">主视觉右上角文字被裁切，建议缩小字号或加宽画板</li>
@@ -93,6 +79,12 @@ body { margin: 0; font-family: Inter, system-ui, sans-serif; background: var(--c
           </ul>
         </li>
       </ul>
+    </div>
+
+    <textarea class="ca-composer__input" placeholder="请描述你的设计需求，'/'使用技能，'@'引用参考" readonly></textarea>
+    <div class="ca-composer__foot">
+      <span class="ca-composer__mode">Agent ▾</span>
+      <span class="grow"><span># 参考</span><span>↑</span></span>
     </div>
   </div>
 </div>
