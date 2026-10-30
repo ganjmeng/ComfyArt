@@ -78,10 +78,11 @@ def test_chip_icon_is_the_process_line_skill_icon() -> None:
 
 
 def test_mock_agent_flow_reads_lists_then_asks(got: dict) -> None:
-    kinds = [b["type"] for b in got["mockReply"]]
+    # Mutation m7 (hint without id) trips this: the context no longer gives the agent an id.
+    assert got.get("contextIds") == {"readId": "cafe1", "saveId": "cafe1", "hasNameAddr": False}
+    kinds = [b["type"] for b in got.get("mockReply", [])]
     assert kinds == ["thinking", "tool_use", "tool_result", "text"]
     assert got["mockReply"][1] == {"type": "tool_use", "name": "skill", "input": {"action": "read", "id": "cafe1"}}
-    assert got["contextIds"] == {"readId": "cafe1", "saveId": "cafe1", "hasNameAddr": False}
     reply = got["mockReply"][3]["text"]
     assert "old rules" in reply and "notes.md" in reply and reply.rstrip().endswith("？")
     # process line: thinking → 思考完成, skill read → 技能加载完成
@@ -95,7 +96,7 @@ def test_mock_agent_flow_reads_lists_then_asks(got: dict) -> None:
 def test_save_by_id_overwrites_original(got: dict) -> None:
     # #463: the agent skill tool (src/skills.ts skillTool, wired in botLayout) saves by the id from the context
     assert "skill: async (_editor, args) => skillTool(args)" in BOT
-    assert got["reusedId"] == "cafe1"
+    assert got.get("reusedId") == "cafe1", got.get("agentError")
     assert got["countBefore"] == got["countAfter"] == 2
     assert got["ids"] == ["cafe1", "other"]
     assert got["cafe"]["instructions"] == "new rules 9:16"

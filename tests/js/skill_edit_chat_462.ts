@@ -27,6 +27,7 @@ const turn = (r.zh as any).sends[0]
 const readId = /action="read", id="([^"]+)"/.exec(turn.context)?.[1]
 const saveId = /action="save" with id="([^"]+)"/.exec(turn.context)?.[1]
 r.contextIds = { readId, saveId, hasNameAddr: /action="(read|save)"[^\]]*name="/.test(turn.context) }
+try {
 const read = await skillTool({ action: 'read', id: readId }) as { name: string; instructions: string; files: string[] }
 r.mockReply = [
   { type: 'thinking', text: '…' },
@@ -43,4 +44,5 @@ r.countBefore = before
 r.countAfter = after.length
 r.cafe = after.find((s) => s.id === 'cafe1')
 r.ids = after.map((s) => s.id).sort()
+} catch (e) { r.agentError = String(e) }  // keep the report so a mutation trips a specific assertion, not a crash
 console.log(JSON.stringify(r))

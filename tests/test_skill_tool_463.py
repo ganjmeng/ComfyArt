@@ -29,7 +29,7 @@ def report() -> dict:
 
 def test_edit_chat_saves_same_id_and_leaves_namesake_byte_identical() -> None:
     r = report()["editChat"]
-    assert r["ids"] == ["poster-2", "poster-2"]  # hint gives the agent the id for read and save
+    assert r.get("ids") == ["poster-2", "poster-2"], r  # hint gives the agent the id for read and save
     assert r["hintHasName"] is False  # never tells the agent to address by name
     assert r["readId"] == "poster-2"
     assert r["saved"]["id"] == "poster-2"
@@ -41,7 +41,7 @@ def test_edit_chat_saves_same_id_and_leaves_namesake_byte_identical() -> None:
 def test_description_set_list_change_and_round_trip() -> None:
     r = report()["desc"]
     flat = 'Posters: "bold" titles second line: \'x\''  # #462 rule: newlines collapse to one space
-    assert r["created"] == {"saved": "Desc", "id": "desc", "description": flat}
+    assert r.get("created") == {"saved": "Desc", "id": "desc", "description": flat}
     assert f"description: {json.dumps(flat)}\n" in r["md1"]
     assert r["md1"].split("---")[1].count("\n") == 3  # frontmatter stays name + description only
     assert r["list1"] == flat  # list returns the stored description, not instructions
