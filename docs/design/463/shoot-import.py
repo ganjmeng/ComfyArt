@@ -1,4 +1,4 @@
-"""#463 live shots: Import a Skill menu, dialog, drag-over, 3 errors, x-close zero writes, landing + coachmark (x, x-2, x-3).
+"""#463 live shots: Import a Skill menu, dialog, drag-over, 3 errors, x-close zero writes, landing on the new skill page, no guide bubble (x, x-2, x-3).
 
 (base: #462: real Edit Skill dialog (Name/Description/Instructions Preview·Code, Edit in Chat) + real Composer chip.
 
@@ -182,7 +182,6 @@ ERRS = {
     "zh": {"noSkillMd": "未找到 SKILL.md", "unreadable": "无法读取这个文件", "tooLarge": "文件超过 20MB"},
     "en": {"noSkillMd": "No SKILL.md found", "unreadable": "Couldn't read this file", "tooLarge": "File is larger than 20 MB"},
 }
-GUIDE = {"zh": "Skill 创建成功，先试试效果吧", "en": "Skill created. Give it a try"}
 
 
 def make_error_files(d: Path) -> dict:
@@ -283,7 +282,7 @@ async def main():
                     assert (await err.inner_text()).strip() == ERRS[lang][code], (code, await err.inner_text())
                     await shot(f"import-error-{code}")
                 assert not (tmp / "user/default/comfyart/skills").exists() or not any((tmp / "user/default/comfyart/skills").iterdir())
-                guide = page.locator('[data-testid="skill-import-guide"]')
+                form = page.locator('.ca-skillform__foot .ca-panel__primary')
                 for i in range(3):
                     if i:
                         await page.locator('[data-testid="skills-create-menu"]').click()
@@ -291,13 +290,11 @@ async def main():
                         await dlg.wait_for()
                     await page.locator('[data-testid="skill-import-zip-input"]').set_input_files(str(zp))
                     await dlg.wait_for(state="detached", timeout=15000)
-                    await guide.wait_for(timeout=5000)  # lands on the new skill's #484 page with the guide toast
-                    assert (await guide.locator(".ca-coach__text").inner_text()).strip() == GUIDE[lang]
+                    await form.wait_for(timeout=5000)  # lands on the new skill's #484 page
+                    assert await page.locator('[data-testid="skill-import-guide"], .ca-coach').count() == 0  # #487: no guide bubble (moved to #464)
                     assert await page.locator('[data-testid="memory-toast"]').count() == 0  # nothing skipped -> no toast
                     if i == 1:
-                        await shot("import-landing-coachmark")
-                    await page.locator('[data-testid="skill-import-guide-next"]' if i % 2 else '[data-testid="skill-import-guide-skip"]').click()
-                    await guide.wait_for(state="detached", timeout=3000)  # Skip / Next only close it
+                        await shot("import-landing")  # zh/en x light/dark
                     await page.keyboard.press("Escape")
                     await page.wait_for_timeout(300)
                 dirs = sorted(d.name for d in (tmp / "user/default/comfyart/skills").iterdir())

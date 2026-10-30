@@ -1539,7 +1539,6 @@
   "skillsImport.title": "导入技能",
   "skillsImport.drop": "将技能文件夹或 ZIP 文件拖到此处",
   "skillsImport.release": "松开以导入",
-  "skillsImport.created": "Skill 创建成功，先试试效果吧",
   "skillsImport.menu": "导入技能",
   "skillsImport.note.formats": "支持 Claude Code、Codex 及其他标准技能格式",
   "skillsImport.note.skillMd": "必须包含 SKILL.md",
@@ -1547,7 +1546,5 @@
   "skillsImport.error.unreadable": "无法读取这个文件",
   "skillsImport.error.tooLarge": "文件超过 20MB",
   "skillsImport.uploading": "上传中...{0}%",
-  "skillsImport.extracting": "解析中...",
-  "skillsImport.skip": "跳过",
-  "skillsImport.next": "下一步"
+  "skillsImport.extracting": "解析中..."
 }

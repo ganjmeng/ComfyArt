@@ -1164,12 +1164,3 @@
 .ca-skills__createwrap .ca-skills__create { border-radius: 999px 0 0 999px; padding-right: 10px; }
 .ca-skills__createmore { border-radius: 0 999px 999px 0 !important; padding: 0 10px 0 6px !important; border-left: 1px solid color-mix(in srgb, var(--ca-float) 25%, transparent) !important; }
 .ca-skills__createmenu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 50; }
-
-/* #463 import guide coachmark: dark bubble above the primary action, arrow pointing down at it. */
-.ca-skillform__foot { position: relative; }
-.ca-coach { position: absolute; right: 12px; bottom: calc(100% - 8px); z-index: 20; box-sizing: border-box; min-width: 240px; padding: 12px 12px 10px 14px; border-radius: 12px; background: #1f1f1f; color: #fff; font: 400 13px/20px var(--ca-font); box-shadow: 0 8px 24px rgba(0,0,0,.24); white-space: nowrap; }
-.ca-coach::after { content: ''; position: absolute; right: 28px; top: 100%; border: 7px solid transparent; border-top-color: #1f1f1f; }
-.ca-coach__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
-.ca-coach__skip, .ca-coach__next { height: 26px; padding: 0 12px; border-radius: 8px; font: 500 12px/24px var(--ca-font); cursor: pointer; }
-.ca-coach__skip { border: 1px solid rgba(255,255,255,.4); background: transparent; color: #fff; }
-.ca-coach__next { border: 1px solid #fff; background: #fff; color: #1f1f1f; }

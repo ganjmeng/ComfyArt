@@ -20,19 +20,11 @@ export function openSkillEditor(id: string) {
   skillEditIdAtom.set(id)
   skillsOpenAtom.set(true)
 }
-/** #463: one-off guide coachmark shown when the Edit dialog opens on a just-imported skill. */
-export const skillImportGuideAtom = atom<string>('skill import guide', '')
-
-/** #463: after a successful import, open the NEW skill (a duplicate's -2/-3 id) via the shared entry, with the guide. */
-export function openImportedSkill(landing: { id: string; guide: string }) {
-  skillImportGuideAtom.set(landing.guide)
-  openSkillEditor(landing.id)
-}
 
 type View = { kind: 'list' } | { kind: 'edit'; skill: Skill } | { kind: 'history'; skill: Skill; versions: SkillVersion[] | null }
 
 /** #462 — reference Edit Skill layout: Name → Description → Instructions box (file picker + Preview/Code tabs) → Edit in Chat · Cancel · Save. */
-export function SkillForm({ initial, onDone, onEditInChat, coach, onCoachDone }: { initial: Skill; onDone: (s: Skill | null) => void; onEditInChat?: (s: Skill) => void; coach?: string; onCoachDone?: () => void }) {
+export function SkillForm({ initial, onDone, onEditInChat }: { initial: Skill; onDone: (s: Skill | null) => void; onEditInChat?: (s: Skill) => void }) {
   const [draft, setDraft] = useState(initial)
   const [open, setOpen] = useState<string>('SKILL.md')
   const [tab, setTab] = useState<'preview' | 'code'>(initial.instructions.trim() ? 'preview' : 'code')
@@ -105,17 +97,7 @@ export function SkillForm({ initial, onDone, onEditInChat, coach, onCoachDone }:
         {onEditInChat && <button type="button" className="ca-panel__secondary" data-testid="skill-edit-in-chat" disabled={!draft.name.trim()} onClick={() => onEditInChat({ ...draft, name: draft.name.trim(), description: draft.description?.trim() || undefined })}>{t('skillsDialog.editInChat')}</button>}
         <span className="ca-menu__grow" />
         <button type="button" className="ca-panel__secondary" onClick={() => onDone(null)}>{t('common.cancel')}</button>
-        <button type="button" className="ca-panel__primary" data-testid="skill-form-primary" disabled={!valid} onClick={() => onDone({ ...draft, name: draft.name.trim(), description: draft.description?.trim() || undefined })}>{t('common.save')}</button>
-        {coach && (
-            // #463: dark coachmark, arrow on the primary action. Skip and Next both just close it (no further steps).
-            <div className="ca-coach" role="dialog" data-testid="skill-import-guide">
-              <div className="ca-coach__text">{coach}</div>
-              <div className="ca-coach__actions">
-                <button type="button" className="ca-coach__skip" data-testid="skill-import-guide-skip" onClick={onCoachDone}>{t('skillsImport.skip')}</button>
-                <button type="button" className="ca-coach__next" data-testid="skill-import-guide-next" onClick={onCoachDone}>{t('skillsImport.next')}</button>
-              </div>
-            </div>
-        )}
+        <button type="button" className="ca-panel__primary" disabled={!valid} onClick={() => onDone({ ...draft, name: draft.name.trim(), description: draft.description?.trim() || undefined })}>{t('common.save')}</button>
       </div>
     </div>
   )
@@ -128,8 +110,6 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
   const [skills, setSkills] = useState<Skill[]>([])
   const [view, setView] = useState<View>({ kind: 'list' })
   const [note, setNote] = useState('')
-  const [guide, setGuide] = useState('')
-  const importGuide = useValue(skillImportGuideAtom)
   const folder = useRef<HTMLInputElement>(null)
   const refresh = () => loadSkills().then((all) => setSkills(all.filter((s) => s.custom))).catch((e) => onError(String(e)))
 
@@ -145,12 +125,6 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
       else onError(t('skillsDialog.notFound', editId))
     }).catch((e) => onError(String(e)))
   }, [open, editId])
-
-  useEffect(() => {
-    if (!open || !importGuide || view.kind !== 'edit') return
-    setGuide(importGuide)
-    skillImportGuideAtom.set('')
-    }, [open, importGuide, view.kind])
 
   useEffect(() => {
     if (view.kind === 'history' && !view.versions) void listVersions(view.skill.id).then((versions) => setView({ ...view, versions })).catch((e) => onError(String(e)))
@@ -169,8 +143,6 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
       {view.kind === 'edit' && (
         <SkillForm
           initial={view.skill}
-          coach={guide}
-          onCoachDone={() => setGuide('')}
           onDone={(s) => {
             setView({ kind: 'list' })
             if (s) act(() => saveSkill(s))

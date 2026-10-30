@@ -224,11 +224,11 @@ export async function importZip(file: File, onProgress?: (p: ImportProgress) => 
   return importEntries(entries, file.name.replace(/\.zip$/i, ''), { strict: true })
 }
 
-/** #463 — after a successful import: open the NEW skill's page (a duplicate lands on its -2/-3 id) with the guide coachmark.
+/** #463 — after a successful import: open the NEW skill's page (a duplicate lands on its -2/-3 id).
  *  `skipped` is the one-off toast text, only when unsupported files were actually skipped: the second half of main's
  *  `skillsDialog.importedSkipped` copy (「不支持的文件已跳过：{0}」), no new copy. */
-export function importLanding(skill: Pick<Skill, 'id'>, skipped: string[] = []): { id: string; guide: string; skipped: string } {
-  return { id: skill.id, guide: t('skillsImport.created'), skipped: skipped.length ? skippedNotice(skipped) : '' }
+export function importLanding(skill: Pick<Skill, 'id'>, skipped: string[] = []): { id: string; skipped: string } {
+  return { id: skill.id, skipped: skipped.length ? skippedNotice(skipped) : '' }
 }
 
 export function skippedNotice(skipped: string[]): string {

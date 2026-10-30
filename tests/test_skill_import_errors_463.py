@@ -91,20 +91,18 @@ def test_skill_tool_edits_by_id_and_never_overwrites_ambiguous_name(lang: str) -
     assert r["bothSame"] is True
 
 
-GUIDE = {"zh": "Skill 创建成功，先试试效果吧", "en": "Skill created. Give it a try"}
 SKIPPED = {"zh": "不支持的文件已跳过：tool.exe", "en": "Unsupported files were skipped: tool.exe"}
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
-def test_import_lands_on_new_skill_detail_with_guide(lang: str) -> None:
+def test_import_lands_on_new_skill_detail(lang: str) -> None:
     r = report()[lang]["landing"]
     assert "error" not in r, r
     # Mutation m8 (land on the old id) trips this ids assertion.
     assert r["ids"] == ["poster", "poster-2", "poster-3"]  # duplicate lands on the new -2/-3 id, never the old one
-    assert r["guides"] == [GUIDE[lang]] * 3
     assert r["origSame"] is True  # original byte-identical after the duplicate imports
     assert r["skipped"] == ["tool.exe"] and r["skipId"] == "poster-4"
-    assert r["skipGuide"] == GUIDE[lang]  # skipped info is NOT in the guide
+    assert set(r) >= {"ids", "skipToast"} and "guides" not in r and "skipGuide" not in r  # #487 ruling: no guide field
     assert r["skipToast"] == SKIPPED[lang]  # second half of main's skillsDialog.importedSkipped, shown once via main's toast
     assert r["noSkipToasts"] == ["", "", ""]  # nothing skipped -> no toast
 
@@ -112,14 +110,12 @@ def test_import_lands_on_new_skill_detail_with_guide(lang: str) -> None:
 def test_import_navigation_wiring_and_old_notice_removed() -> None:
     page = (ROOT / "src/home/Skills.tsx").read_text()
     dlg = (ROOT / "src/ui/SkillsDialog.tsx").read_text()
-    assert "openImportedSkill(landing)" in page and "if (landing.skipped) showMemoryToast(landing.skipped, 'info')" in page
+    assert "openSkillEditor(landing.id)" in page and "if (landing.skipped) showMemoryToast(landing.skipped, 'info')" in page
     assert "skillsImport.skipped" not in EN and "skillsImport.skipped" not in ZH
     assert "<SkillsDialog" not in page  # HomeApp already mounts the dialog
-    assert "openSkillEditor(landing.id)" in dlg and "skillImportGuideAtom.set(landing.guide)" in dlg
     assert "skills-import-note" not in page and "skillsImport.done" not in page
     assert "skillsImport.done" not in EN and "skillsImport.done" not in ZH
-    assert "setView({ kind: 'edit', skill: s })" in dlg and 'data-testid="skill-import-guide"' in dlg  # #484 skill page (Preview/Code)
-    assert EN["skillsImport.created"] == GUIDE["en"] and ZH["skillsImport.created"] == GUIDE["zh"]
+    assert "setView({ kind: 'edit', skill: s })" in dlg  # #484 skill page (Preview/Code)
     assert EN["skillsImport.release"] == "Release to import" and ZH["skillsImport.release"] == "松开以导入"  # drag-over copy unchanged
 
 
@@ -178,15 +174,17 @@ def test_dialog_copy_and_error_in_drop_zone() -> None:
     assert ZH["skillsImport.drop"].endswith("拖到此处") and "拖到这里" not in ZH["skillsImport.drop"]
 
 
-def test_guide_is_coachmark_on_primary_action() -> None:
+def test_no_guide_coachmark_487() -> None:
+    """#487 product ruling: the import guide bubble moved to #464; none of it stays here."""
     dlg = (ROOT / "src/ui/SkillsDialog.tsx").read_text()
     css = (ROOT / "src/styles/overlays.css").read_text()
-    assert 'className="ca-mem-toast" data-kind="guide"' not in dlg and "setTimeout(() => setGuide('')" not in dlg  # not a toast
-    prim = dlg[dlg.index('className="ca-panel__foot ca-skillform__foot"'):]
-    assert prim.index('data-testid="skill-form-primary"') < prim.index('data-testid="skill-import-guide"')  # bubble anchored on the primary button
-    assert "onClick={onCoachDone}>{t('skillsImport.skip')}" in prim and "onClick={onCoachDone}>{t('skillsImport.next')}" in prim  # both only close
-    assert (ZH["skillsImport.skip"], ZH["skillsImport.next"], EN["skillsImport.skip"], EN["skillsImport.next"]) == ("跳过", "下一步", "Skip", "Next")
-    assert ".ca-coach::after" in css and "border-top-color: #1f1f1f" in css  # arrow points down at the button
+    lib = (ROOT / "src/skills.ts").read_text()
+    for gone in ("skill-import-guide", "ca-coach", "skillImportGuideAtom", "openImportedSkill", "onCoachDone"):
+        assert gone not in dlg, gone
+    assert "ca-coach" not in css and "guide:" not in lib
+    for k in ("skillsImport.created", "skillsImport.skip", "skillsImport.next"):
+        assert k not in EN and k not in ZH, k
+    assert all(v.strip() for d in (ZH, EN) for k, v in d.items() if k.startswith("skillsImport."))  # no empty keys
 
 
 def test_progress_real_bytes_monotonic_to_100() -> None:

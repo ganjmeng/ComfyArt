@@ -19,7 +19,7 @@ import {
 } from '../skills'
 import { Icons } from '../ui/icons'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
-import { openImportedSkill, skillsOpenAtom } from '../ui/SkillsDialog'
+import { openSkillEditor, skillsOpenAtom } from '../ui/SkillsDialog'
 
 type Tab = 'explore' | 'favourites' | 'personal'
 const CHIPS: { id: SkillChipId; labelKey: string }[] = [
@@ -226,11 +226,11 @@ export function Skills() {
         <SkillImportDialog
           onClose={() => setImporting(false)}
           onImported={(skill, skipped) => {
-            // #463 product ruling: go straight to the new skill's detail (duplicates land on -2/-3) with the guide toast.
+            // #463 product ruling: go straight to the new skill's detail (duplicates land on -2/-3); skipped files get one toast.
             setImporting(false)
             setTab('personal')
             const landing = importLanding(skill, skipped)
-            openImportedSkill(landing)
+            openSkillEditor(landing.id)
             if (landing.skipped) showMemoryToast(landing.skipped, 'info')
             void loadSkills().then(setSkills)
           }}

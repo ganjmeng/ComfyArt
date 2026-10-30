@@ -1539,7 +1539,6 @@
   "skillsImport.title": "Import a skill",
   "skillsImport.drop": "Drop a Skill folder or ZIP file here",
   "skillsImport.release": "Release to import",
-  "skillsImport.created": "Skill created. Give it a try",
   "skillsImport.menu": "Import a Skill",
   "skillsImport.note.formats": "Supports Claude Code, Codex, and other standard skill formats",
   "skillsImport.note.skillMd": "Must include SKILL.md",
@@ -1547,7 +1546,5 @@
   "skillsImport.error.unreadable": "Couldn't read this file",
   "skillsImport.error.tooLarge": "File is larger than 20 MB",
   "skillsImport.uploading": "Uploading...{0}%",
-  "skillsImport.extracting": "Extracting...",
-  "skillsImport.skip": "Skip",
-  "skillsImport.next": "Next"
+  "skillsImport.extracting": "Extracting..."
 }
