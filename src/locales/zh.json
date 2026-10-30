@@ -1537,17 +1537,14 @@
   "skillEdit.projectTitle": "修改{0} Skill",
   "skillEdit.ask": "我想修改这个 Skill",
   "skillsImport.title": "导入技能",
-  "skillsImport.drop": "将技能文件夹或 ZIP 文件拖到这里",
+  "skillsImport.drop": "将技能文件夹或 ZIP 文件拖到此处",
   "skillsImport.release": "松开以导入",
   "skillsImport.importing": "正在导入…",
   "skillsImport.done": "已导入「{0}」",
-  "skillsImport.menu": "导入",
+  "skillsImport.menu": "导入技能",
   "skillsImport.note.formats": "支持 Claude Code、Codex 及其他标准 Skill 格式",
   "skillsImport.note.skillMd": "必须包含 SKILL.md",
   "skillsImport.error.noSkillMd": "未找到 SKILL.md",
   "skillsImport.error.unreadable": "无法读取这个文件",
-  "skillsImport.error.tooLarge": "文件超过 20MB",
-  "skillsImport.conflict": "已存在名为「{0}」的技能",
-  "skillsImport.conflict.replace": "替换",
-  "skillsImport.conflict.keepBoth": "保留两者"
+  "skillsImport.error.tooLarge": "文件超过 20MB"
 }

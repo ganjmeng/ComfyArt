@@ -1542,13 +1542,10 @@
   "skillsImport.release": "Release to import",
   "skillsImport.importing": "Importing…",
   "skillsImport.done": "Imported “{0}”",
-  "skillsImport.menu": "Import",
+  "skillsImport.menu": "Import a Skill",
   "skillsImport.note.formats": "Supports Claude Code, Codex, and other standard Skill formats",
   "skillsImport.note.skillMd": "Must include SKILL.md",
   "skillsImport.error.noSkillMd": "No SKILL.md found",
   "skillsImport.error.unreadable": "Couldn't read this file",
-  "skillsImport.error.tooLarge": "File is larger than 20 MB",
-  "skillsImport.conflict": "A skill named “{0}” already exists",
-  "skillsImport.conflict.replace": "Replace",
-  "skillsImport.conflict.keepBoth": "Keep both"
+  "skillsImport.error.tooLarge": "File is larger than 20 MB"
 }

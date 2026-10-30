@@ -60,20 +60,24 @@ def test_valid_zip_imports(lang: str) -> None:
 
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
-def test_name_conflict_never_silently_overwrites(lang: str) -> None:
-    r = report()[lang]
-    assert r["asked"] == ["poster", "poster", "poster"]  # always asks
-    assert r["conflictCancel"] == {"error": "SkillImportCancelled", "writes": 0, "oldKept": True, "keys": []}
-    assert r["conflictKeep"]["oldKept"] is True and "comfyart/skills/poster-2/SKILL.md" in r["conflictKeep"]["keys"]
-    assert r["conflictReplace"]["oldKept"] is False
-    assert any("/poster/versions/" in k for k in r["conflictReplace"]["keys"])  # replace keeps the old one as a version
-    assert r["noPromptSilent"] == {"answered": False, "writes": 0}  # nothing written until the user answers
+def test_duplicate_name_saves_new_skill_and_keeps_original(lang: str) -> None:
+    r = report()[lang]["dup"]
+    assert r["ids"] == ["poster-2", "poster-3"]  # 2nd import -> -2, 3rd -> -3
+    assert r["names"] == ["Poster", "Poster"]  # display name unchanged
+    assert r["skillMds"] == ["comfyart/skills/poster-2/SKILL.md", "comfyart/skills/poster-3/SKILL.md", "comfyart/skills/poster/SKILL.md"]
+    assert "NEW" in r["secondMd"]
+    assert r["origSame"] is True  # original skill files byte-for-byte unchanged
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_folder_import_unchanged(lang: str) -> None:
+    r = report()[lang]["folder"]
+    assert r["id"] == "poster" and r["skillMds"] == ["comfyart/skills/poster/SKILL.md"]
 
 
 def test_dialog_copy_and_error_in_drop_zone() -> None:
     assert ZH["skillsImport.title"] == "导入技能" and EN["skillsImport.title"] == "Import a skill"
-    assert ZH["skillsImport.menu"] == "导入" and EN["skillsImport.menu"] == "Import"
-    assert ZH["skillsImport.note.formats"] == "支持 Claude Code、Codex 及其他标准 Skill 格式"
+        assert ZH["skillsImport.note.formats"] == "支持 Claude Code、Codex 及其他标准 Skill 格式"
     assert EN["skillsImport.note.formats"] == "Supports Claude Code, Codex, and other standard Skill formats"
     assert ZH["skillsImport.note.skillMd"] == "必须包含 SKILL.md" and EN["skillsImport.note.skillMd"] == "Must include SKILL.md"
     for lang, d in (("zh", ZH), ("en", EN)):
@@ -85,4 +89,8 @@ def test_dialog_copy_and_error_in_drop_zone() -> None:
     assert "data-error=" in drop and "zip.current?.click()" in drop
     assert ".ca-skimport__drop[data-error]" in CSS and "#e74c3c" in CSS
     assert "skillsImport.note.formats" in DIALOG and "skillsImport.note.skillMd" in DIALOG
-    assert "onConflict" in DIALOG and 'data-testid="skill-import-conflict"' in DIALOG
+    # no conflict dialog / prompt: duplicates import silently as a new skill
+    assert "onConflict" not in DIALOG and "skill-import-conflict" not in DIALOG and "keepBoth" not in DIALOG
+    assert not any(k.startswith("skillsImport.conflict") for d in (ZH, EN) for k in d)
+    assert ZH["skillsImport.menu"] == "导入技能" and EN["skillsImport.menu"] == "Import a Skill"
+    assert ZH["skillsImport.drop"].endswith("拖到此处") and "拖到这里" not in ZH["skillsImport.drop"]

@@ -121,12 +121,6 @@ export class SkillImportError extends Error {
   }
 }
 
-/** #463 — what to do when a skill with the same id already exists. Never overwritten silently. */
-export type SkillConflictChoice = 'replace' | 'keepBoth' | 'cancel'
-export class SkillImportCancelled extends Error {
-  constructor() { super('cancelled'); this.name = 'SkillImportCancelled' }
-}
-
 /** Zip-slip / unsafe entry path: absolute, drive letter, backslash, `..`, or NUL. */
 export function unsafeEntryPath(path: string): boolean {
   if (!path || path.includes('\\') || path.includes('\0')) return true
@@ -137,12 +131,19 @@ export function unsafeEntryPath(path: string): boolean {
 export interface ImportOptions {
   /** ZIP / drop dialog: enforce path safety + size limit. Folder import in the manage dialog keeps its old behaviour. */
   strict?: boolean
-  /** Called when a skill with the same id exists; without it the old folder-import behaviour (save a version, then update) is kept. */
-  onConflict?: (existing: Skill) => Promise<SkillConflictChoice>
 }
 
 /** Shared by folder import and ZIP import (#463): finds the shallowest SKILL.md and imports its siblings.
  *  Everything is validated and read before the first write, so a failed import writes nothing. */
+/** First id not taken by an existing skill folder: `id`, else `id-2`, `id-3`, … */
+export async function freeSkillId(id: string): Promise<string> {
+  const taken = new Set((await listFiles('')).map((f) => f.split('/')[0]))
+  if (!taken.has(id)) return id
+  let n = 2
+  while (taken.has(`${id}-${n}`)) n++
+  return `${id}-${n}`
+}
+
 export async function importEntries(all: SkillEntry[], fallbackName = '', opts: ImportOptions = {}): Promise<{ skill: Skill; skipped: string[] }> {
   if (opts.strict) {
     if (all.some((e) => unsafeEntryPath(e.path))) throw new SkillImportError('unreadable')
@@ -167,20 +168,9 @@ export async function importEntries(all: SkillEntry[], fallbackName = '', opts: 
     else if (IMAGE_FILE.test(path)) imageEntries.push([path, e])
     else skipped.push(path)
   }
-  if (opts.onConflict) {
-    const paths = await listFiles(id)
-    const existing = paths.includes('SKILL.md') ? await readSkill(id, paths) : null
-    if (existing) {
-      const choice = await opts.onConflict(existing)
-      if (choice === 'cancel') throw new SkillImportCancelled()
-      if (choice === 'keepBoth') {
-        const taken = new Set((await listFiles('')).map((f) => f.split('/')[0]))
-        let n = 2
-        while (taken.has(`${id}-${n}`)) n++
-        id = `${id}-${n}`
-      }
-    }
-  }
+  // #463: a duplicate name in the drop dialog becomes a new skill (`id-2`, `id-3`, …) with the same display name;
+  // the existing skill is never touched. Folder import (non-strict) keeps main's direct overwrite.
+  if (opts.strict) id = await freeSkillId(id)
   const images: Record<string, string> = {}
   for (const [path, e] of imageEntries) {
     const name = path.split('/').pop() ?? path
@@ -203,12 +193,12 @@ export function zipEntries(bytes: Uint8Array): SkillEntry[] {
 
 export const isZip = (f: File) => /\.zip$/i.test(f.name) || /zip/.test(f.type)
 
-export async function importZip(file: File, opts: Omit<ImportOptions, 'strict'> = {}): Promise<{ skill: Skill; skipped: string[] }> {
+export async function importZip(file: File): Promise<{ skill: Skill; skipped: string[] }> {
   if (file.size > SKILL_IMPORT_MAX_BYTES) throw new SkillImportError('tooLarge')
   if (!isZip(file)) throw new SkillImportError('unreadable')
   let entries: SkillEntry[]
   try { entries = zipEntries(new Uint8Array(await file.arrayBuffer())) } catch { throw new SkillImportError('unreadable') }
-  return importEntries(entries, file.name.replace(/\.zip$/i, ''), { ...opts, strict: true })
+  return importEntries(entries, file.name.replace(/\.zip$/i, ''), { strict: true })
 }
 
 /** #460/#461 — Explore wall + conversational creator (form kept as fallback). */

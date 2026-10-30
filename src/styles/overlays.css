@@ -1157,7 +1157,6 @@
 .ca-skimport__error { color: #e74c3c; font: 400 12px/18px var(--ca-font); }
 .ca-skimport__drop[data-error] { border-color: #e74c3c; border-style: solid; }
 .ca-skimport__notes { margin: 12px 0 0; padding-left: 18px; color: var(--ca-muted); font: 400 12px/20px var(--ca-font); }
-.ca-skimport__conflict { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font: 400 13px/20px var(--ca-font); color: var(--ca-text); }
 
 /* #463 — Create split menu (Create · ▾ → Import a Skill) */
 .ca-skills__createwrap { position: relative; display: inline-flex; }

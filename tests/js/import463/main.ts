@@ -28,25 +28,22 @@ async function main() {
     r.tooLargeUnzipped = await attempt(() => S.importEntries([{ path: 'p/SKILL.md', file: new Blob(['x']) }, { path: 'p/big.md', file: new Blob([new Uint8Array(20 * 1024 * 1024)]) }], '', { strict: true }))
     r.ok = await attempt(() => S.importZip(zipFile(GOOD)))
     r.okFiles = Object.keys(files).sort()
-    // conflict: second import of the same skill must ask; cancel writes nothing, keepBoth keeps the old one, replace keeps a version.
-    const asked: string[] = []
-    const conflict = async (choice: S.SkillConflictChoice) => {
-      reset(); await S.importZip(zipFile(GOOD)); const before = { ...files }; writes.length = 0
-      let error = ''
-      try { await S.importZip(zipFile({ ...GOOD, 'poster/SKILL.md': '---\nname: Poster\n---\nNEW' }), { onConflict: async (s) => { asked.push(s.id); return choice } }) } catch (e) { error = (e as Error).name }
-      return { error, writes: writes.length, oldKept: files['comfyart/skills/poster/SKILL.md'] === before['comfyart/skills/poster/SKILL.md'], keys: Object.keys(files).filter((k) => !(k in before)).sort() }
-    }
-    r.conflictCancel = await conflict('cancel')
-    r.conflictKeep = await conflict('keepBoth')
-    r.conflictReplace = await conflict('replace')
-    r.asked = asked
-    r.noPromptSilent = await (async () => {
-      reset(); await S.importZip(zipFile(GOOD)); writes.length = 0
-      // Drop dialog always passes onConflict; without asking it must never reach a write. Simulate by an import that never answers.
-      let answered = false
-      void S.importZip(zipFile(GOOD), { onConflict: () => new Promise(() => {}) }).then(() => { answered = true })
-      await new Promise((r2) => setTimeout(r2, 50))
-      return { answered, writes: writes.length }
+    // duplicate name: 2nd import -> poster-2, 3rd -> poster-3; same display name; original bytes untouched; no prompt, no error.
+    r.dup = await (async () => {
+      reset(); await S.importZip(zipFile(GOOD))
+      const orig = Object.fromEntries(Object.entries(files).filter(([k]) => k.startsWith('comfyart/skills/poster/')))
+      const NEW = { ...GOOD, 'poster/SKILL.md': '---\nname: Poster\n---\nNEW' }
+      const second = await S.importZip(zipFile(NEW))
+      const third = await S.importEntries(Object.entries(NEW).map(([path, v]) => ({ path, file: new Blob([v]) })), 'poster', { strict: true })
+      const now = Object.fromEntries(Object.entries(files).filter(([k]) => k.startsWith('comfyart/skills/poster/')))
+      return { ids: [second.skill.id, third.skill.id], names: [second.skill.name, third.skill.name], origSame: JSON.stringify(orig) === JSON.stringify(now),
+        skillMds: Object.keys(files).filter((k) => k.endsWith('/SKILL.md')).sort(), secondMd: files['comfyart/skills/poster-2/SKILL.md'] ?? null }
+    })()
+    // "Import folder" in My Skills keeps main's direct overwrite.
+    r.folder = await (async () => {
+      reset(); await S.importZip(zipFile(GOOD))
+      const { skill } = await S.importFolder(Object.entries({ ...GOOD, 'poster/SKILL.md': '---\nname: Poster\n---\nNEW' }).map(([path, v]) => Object.assign(new File([v], path.split('/').pop()!), { webkitRelativePath: path }) as File))
+      return { id: skill.id, skillMds: Object.keys(files).filter((k) => k.endsWith('/SKILL.md')).sort() }
     })()
     out[lang] = r
   }

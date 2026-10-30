@@ -44,9 +44,9 @@ def test_folder_import_kept_in_manage_dialog() -> None:
 
 def test_product_copy() -> None:
     assert "t('skillsImport.menu')" in SKILLS
-    assert EN["skillsImport.menu"] == "Import" and ZH["skillsImport.menu"] == "导入"
+    assert EN["skillsImport.menu"] == "Import a Skill" and ZH["skillsImport.menu"] == "导入技能"
     assert EN["skillsImport.drop"] == "Drop a Skill folder or ZIP file here"
-    assert ZH["skillsImport.drop"] == "将技能文件夹或 ZIP 文件拖到这里"
+    assert ZH["skillsImport.drop"] == "将技能文件夹或 ZIP 文件拖到此处"
     assert "skillsImport.hint" not in EN and "skillsImport.hint" not in ZH
     assert EN["skills.noSkillMdInFolder"]  # folder import error kept
 
