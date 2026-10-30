@@ -8,6 +8,7 @@ import { errorText } from '../jobs'
 import { newProject, openView, startProject, type ProjectEntry } from '../projects'
 import { showMemoryToast } from '../memory'
 import { HOME_CREATOR_CHIP_KEY, importLanding, loadSkills, type Skill } from '../skills'
+import { SkillChip } from '../ui/SkillChip'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
 import { openSkillEditor } from '../ui/SkillsDialog'
 import { Icons } from '../ui/icons'
@@ -148,10 +149,7 @@ export function Home() {
         )}
         {picked && (
           <div className="ca-landing__refs">
-            <span className="ca-chip ca-chip--skill" data-testid="home-skill-chip" title={picked.name}>
-              <span className="ca-icon">{Icons.skill}</span><span className="ca-chip__name">{picked.name}</span>
-              <button type="button" title={t('common.remove')} onClick={() => setPicked(null)}>{Icons.close}</button>
-            </span>
+            <SkillChip name={picked.name} testId="home-skill-chip" onRemove={() => setPicked(null)} />
           </div>
         )}
         {refs.length > 0 && (

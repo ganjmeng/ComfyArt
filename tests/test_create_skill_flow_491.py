@@ -123,9 +123,16 @@ def test_a_skill_send_opens_project_with_skill_and_text() -> None:
     assert "if (picked) await startProject({ skill: picked.id, ask: text.trim(), mode, ref: refs })" in HOME
 
 
-def test_a_skill_chip_has_full_name_title_and_ellipsis() -> None:
-    assert 'data-testid="home-skill-chip" title={picked.name}' in HOME
-    assert "text-overflow: ellipsis" in (ROOT / "src/styles/home.css").read_text()
+def test_a_skill_chip_reuses_484_chip() -> None:
+    chip = (ROOT / "src/ui/SkillChip.tsx").read_text()
+    shell = (ROOT / "src/styles/shell.css").read_text()
+    assert '<SkillChip name={picked.name} testId="home-skill-chip"' in HOME
+    assert '<SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" />' in (ROOT / "src/ui/ChatMessage.tsx").read_text()
+    assert 'className="ca-chip ca-chip--skill"' in chip and "title={name}" in chip
+    assert '<span className="ca-chip__name">{name}</span>' in chip
+    assert ".ca-chip--skill { max-width: 160px;" in shell
+    assert re.search(r"\.ca-chip__name \{[^}]*text-overflow: ellipsis", shell)
+    assert "ca-chip--skill" not in (ROOT / "src/styles/home.css").read_text()
 
 
 def test_a_skills_panel_icon_is_square_plus() -> None:

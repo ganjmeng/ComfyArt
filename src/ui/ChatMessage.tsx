@@ -9,6 +9,7 @@ import { confirmAtom } from './Confirm'
 import OVER_QUOTE from '../../bot/over_quote.json'
 import { schedulesOpenAtom } from '../schedules'
 import { Icons } from './icons'
+import { SkillChip } from './SkillChip'
 import { Markdown } from './Markdown'
 import { Thumb } from './TaskDetails'
 import { CopyButton } from './CopyButton'
@@ -1147,7 +1148,7 @@ export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMes
       {/* #462: the skill chip sits inside the bubble, inline before the text, with the process-line skill icon */}
       {(text || skills.length > 0) && (
         <div className={skills.length > 0 ? 'ca-chat__bubble ca-chat__bubble--skill' : 'ca-chat__bubble'} data-testid="user-bubble">
-          {skills.map((b) => <span key={b.name} className="ca-chip ca-chip--skill" data-testid="user-skill-chip" title={b.name}><span className="ca-icon">{PROCESS_ICONS.skill}</span><span className="ca-chip__name">{b.name}</span></span>)}
+          {skills.map((b) => <SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" />)}
           {skills.length > 0 ? <span className="ca-chat__text" data-testid="user-bubble-text">{text}</span> : text}
         </div>
       )}
