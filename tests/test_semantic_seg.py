@@ -129,7 +129,8 @@ def test_zh_en_strings():
     loc = os.path.join(os.path.dirname(refprep.__file__), "..", "src", "locales")
     zh = json.load(open(os.path.join(loc, "zh.json"), encoding="utf-8"))
     en = json.load(open(os.path.join(loc, "en.json"), encoding="utf-8"))
-    assert zh["jobs.confirmSegMax"].startswith("最多 ${0}（识别加最多 {1} 次分割）")
+    # #397 (PR #405): upper bound is shown in UI credits, no $ prefix
+    assert zh["jobs.confirmSegMax"].startswith("最多 {0} 积分（识别加最多 {1} 次分割）")
     assert "{0}" in en["jobs.confirmSegMax"] and "{1}" in en["jobs.confirmSegMax"]
     assert "仅收识别费用" in zh["jobs.segNone"] and en["jobs.segNone"] == wavespeed.SEG_NONE
     assert zh["jobs.segAllBlack"] == "只识别到与背景同色的类别，分割图会是全黑，已停止，仅收识别费用"

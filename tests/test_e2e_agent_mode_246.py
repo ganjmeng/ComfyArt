@@ -43,7 +43,7 @@ async def test_mode_menu_agent_flow(app_url, fake_tools, monkeypatch, lang, them
         assert await pg.evaluate("document.documentElement.dataset.theme || 'light'") == theme
         btn = pg.locator(".ca-composer__mode")
         assert await btn.count() == 1  # no separate agent button any more
-        assert (await btn.inner_text()).strip() == "ComfyArt"
+        assert (await btn.inner_text()).strip() == "Loomi"  # #399 (PR #401): agentPicker.builtinAgentShort = {brand}
         await _shot(pg, f"01-closed-{lang}-{theme}")
         await btn.click()
         menu = pg.locator(".ca-agentpick")

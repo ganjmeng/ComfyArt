@@ -125,7 +125,10 @@ def test_frontend_default_and_copy():
     root = Path(__file__).resolve().parent.parent
     bot = (root / "src/bot.ts").read_text()
     assert "p.id === BUILTIN_AGENT" in bot.split("export function defaultProvider")[1].split("}\n")[0]
-    for lang, name, nd in (("zh", "ComfyArt Agent（内置）", "未检测到"), ("en", "ComfyArt Agent (built-in)", "Not detected")):
+    # #399 (PR #401): user-visible brand moved to src/brand.ts; locales carry {brand}, i18n fill() renders BRAND.name
+    assert "name: 'Loomi'" in (root / "src/brand.ts").read_text()
+    assert ".replace(/\\{brand\\}/g, BRAND.name)" in (root / "src/i18n.ts").read_text()
+    for lang, name, nd in (("zh", "{brand} Agent（内置）", "未检测到"), ("en", "{brand} Agent (built-in)", "Not detected")):
         loc = json.loads((root / f"src/locales/{lang}.json").read_text())
         assert loc["agentPicker.builtinAgent"] == name and loc["agentPicker.notDetected"] == nd
         assert "127.0.0.1" not in loc["botSettings.localLlmUrlHint"] and "llm.wavespeed.ai" in loc["botSettings.localLlmUrlHint"]

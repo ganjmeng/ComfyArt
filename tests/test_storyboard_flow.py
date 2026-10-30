@@ -79,7 +79,7 @@ async def test_storyboard_generate_to_canvas(ws, clips, bot_client, fresh_user_d
     runs = page["calls"]
     assert len(runs) == 2 and "confirmed" not in runs[0]["body"]["inputs"] and runs[1]["body"]["inputs"]["confirmed"] is True
     assert runs[0]["body"]["inputs"]["scenes"] == SCENES == runs[1]["body"]["inputs"]["scenes"]
-    assert len(page["asked"]) == 1 and f"${expected:.2f}" in page["asked"][0]["desc"]  # dialog price == quote
+    assert len(page["asked"]) == 1 and f" {-(-round(expected * 1_000_000) // 10_000)} 积分" in page["asked"][0]["desc"]  # dialog price == quote; #397 (PR #405) shows credits (uiCredits: ceil, 1 credit = $0.01)
 
     # what was submitted is exactly what was quoted: one task per scene, same models and durations
     submitted = [(m, p.get("duration")) for m, p in ws["submits"]]
