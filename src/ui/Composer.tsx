@@ -25,6 +25,7 @@ import { SkillForm, skillsOpenAtom } from './SkillsDialog'
 import { MODE_OPTIONS, modeOf } from './modeOptions'
 import { Popover } from './Popover'
 import { t } from '../i18n'
+import { mergeRefIds, removeRefId } from '../refDedupe'
 import { uuid } from '../id'
 import { isEnter } from './keys'
 
@@ -108,8 +109,10 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const content = !!draft.trim()
   const foot = useFootFit(`${mode}|${draft.length > 0}`)
 
-  const shown = selected.filter((s) => !hidden.includes(s.id))
-  const refs = [...shown, ...extra.map((id) => editor.getShape(id)).filter((s): s is RefShape => !!s && isRefShape(s) && !shown.some((x) => x.id === s.id))]
+  // #389: selected + @-mentioned → one chip per shape id
+  const refs = mergeRefIds(selected.map((s) => s.id), hidden, extra)
+    .map((id) => selected.find((s) => s.id === id) ?? editor.getShape(id))
+    .filter((s): s is RefShape => !!s && isRefShape(s))
   const slash = /^\/(\S*)$/.exec(draft)
   const at = /(?:^|\s)@(\S*)$/.exec(draft)
 
@@ -136,8 +139,9 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
     extraRefsAtom.set([...extraRefsAtom.get().filter((x) => x !== id), id])
   }
   const removeRef = (id: TLShapeId) => {
-    extraRefsAtom.set(extraRefsAtom.get().filter((x) => x !== id))
-    if (selected.some((s) => s.id === id)) setHidden((h) => [...h, id])
+    const next = removeRefId(id, selected.map((s) => s.id), hidden, extraRefsAtom.get())
+    extraRefsAtom.set(next.extra)
+    setHidden(next.hidden)
   }
   const useSkill = (s: Skill) => { skillAtom.set(s); setMenu(null); if (slash) draftAtom.set('') }
 
