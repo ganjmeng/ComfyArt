@@ -1,0 +1,92 @@
+/** #463 G4 — "Import" drop dialog: drop a Skill folder or a .zip; click opens a file picker. */
+import { useState, useRef, type DragEvent } from 'react'
+
+import { t } from '../i18n'
+import { importEntries, importZip, SkillImportError, type ImportProgress, type Skill, type SkillEntry } from '../skills'
+import { Icons } from './icons'
+import { Modal } from './Modal'
+
+type Entry = { isFile: boolean; isDirectory: boolean; name: string; fullPath: string }
+type FileEntry = Entry & { file: (ok: (f: File) => void, err: (e: unknown) => void) => void }
+type DirEntry = Entry & { createReader: () => { readEntries: (ok: (list: Entry[]) => void, err: (e: unknown) => void) => void } }
+
+/** Walks a dropped directory (webkitGetAsEntry) into path + file pairs. */
+async function walk(entry: Entry, out: SkillEntry[]): Promise<void> {
+  if (entry.isFile) {
+    const file = await new Promise<File>((ok, err) => (entry as FileEntry).file(ok, err))
+    out.push({ path: entry.fullPath.replace(/^\//, ''), file })
+    return
+  }
+  if (!entry.isDirectory) return
+  const reader = (entry as DirEntry).createReader()
+  for (;;) {
+    const batch = await new Promise<Entry[]>((ok, err) => reader.readEntries(ok, err))
+    if (!batch.length) break
+    for (const child of batch) await walk(child, out)
+  }
+}
+
+export function SkillImportDialog({ onClose, onImported }: { onClose: () => void; onImported: (skill: Skill, skipped: string[]) => void }) {
+  const zip = useRef<HTMLInputElement>(null)
+  const [over, setOver] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [progress, setProgress] = useState<ImportProgress>({ phase: 'upload', pct: 0 })
+
+  const run = (fn: () => Promise<{ skill: Skill; skipped: string[] }>) => {
+    setBusy(true)
+    setError('')
+    setProgress({ phase: 'upload', pct: 0 })
+    void fn()
+      .then(({ skill, skipped }) => onImported(skill, skipped))
+      .catch((e) => {
+        setError((e instanceof SkillImportError ? e : new SkillImportError('unreadable')).message)
+      })
+      .finally(() => setBusy(false))
+  }
+  const takeZip = (f: File | undefined) => {
+    if (!f) return
+    run(() => importZip(f, setProgress))
+  }
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault()
+    setOver(false)
+    if (busy) return
+    const entry = Array.from(e.dataTransfer.items ?? []).map((i) => (i as DataTransferItem & { webkitGetAsEntry?: () => Entry | null }).webkitGetAsEntry?.()).find(Boolean)
+    if (entry?.isDirectory) {
+      run(async () => { setProgress({ phase: 'extract' }); const out: SkillEntry[] = []; await walk(entry, out); return importEntries(out, entry.name, { strict: true }) })
+      return
+    }
+    takeZip(Array.from(e.dataTransfer.files)[0])
+  }
+
+  return (
+    <Modal title={t('skillsImport.title')} className="ca-rename ca-skimport" onClose={onClose}>
+      <div className="ca-rename__body" data-testid="skill-import-dialog">
+        <button
+          type="button"
+          className="ca-skimport__drop"
+          data-over={over || undefined}
+          data-busy={busy || undefined}
+          data-error={error ? true : undefined}
+          data-testid="skill-import-drop"
+          disabled={busy}
+          onClick={() => zip.current?.click()}
+          onDragEnter={(e) => { e.preventDefault(); setOver(true) }}
+          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setOver(true) }}
+          onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false) }}
+          onDrop={onDrop}
+        >
+          <span className="ca-skimport__icon ca-icon">{Icons.uploadArrow}</span>
+          <span className="ca-skimport__title">{busy ? (progress.phase === 'upload' ? t('skillsImport.uploading', progress.pct) : t('skillsImport.extracting')) : over ? t('skillsImport.release') : t('skillsImport.drop')}</span>
+          {error && !over && <span className="ca-skimport__error" role="alert" data-testid="skill-import-error">{error}</span>}
+        </button>
+        <ul className="ca-skimport__notes" data-testid="skill-import-notes">
+          <li>{t('skillsImport.note.formats')}</li>
+          <li>{t('skillsImport.note.skillMd')}</li>
+        </ul>
+        <input ref={zip} type="file" accept=".zip,application/zip" hidden data-testid="skill-import-zip-input" onChange={(e) => { takeZip(e.target.files?.[0]); e.target.value = '' }} />
+      </div>
+    </Modal>
+  )
+}

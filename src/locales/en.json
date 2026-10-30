@@ -1535,5 +1535,16 @@
   "skillsDialog.editInChat": "Edit in Chat",
   "skillsDialog.notFound": "Skill not found: {0}",
   "skillEdit.projectTitle": "Edit {0} Skill",
-  "skillEdit.ask": "I want to edit this Skill"
+  "skillEdit.ask": "I want to edit this Skill",
+  "skillsImport.title": "Import a skill",
+  "skillsImport.drop": "Drop a Skill folder or ZIP file here",
+  "skillsImport.release": "Release to import",
+  "skillsImport.menu": "Import a Skill",
+  "skillsImport.note.formats": "Supports Claude Code, Codex, and other standard skill formats",
+  "skillsImport.note.skillMd": "Must include SKILL.md",
+  "skillsImport.error.noSkillMd": "No SKILL.md found",
+  "skillsImport.error.unreadable": "Couldn't read this file",
+  "skillsImport.error.tooLarge": "File is larger than 20 MB",
+  "skillsImport.uploading": "Uploading...{0}%",
+  "skillsImport.extracting": "Extracting..."
 }

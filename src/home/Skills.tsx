@@ -1,10 +1,12 @@
+import { showMemoryToast } from '../memory'
 /** #460 G1 — Skills Explore / Favourites / Personal shell (mock community wall; Home grid kept). */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { thumbUrl } from '../comfy'
 import { t } from '../i18n'
 import { newProject } from '../projects'
 import {
+  importLanding,
   loadFavourites,
   loadSkills,
   skillChip,
@@ -16,7 +18,8 @@ import {
   type SkillChipId,
 } from '../skills'
 import { Icons } from '../ui/icons'
-import { skillsOpenAtom } from '../ui/SkillsDialog'
+import { SkillImportDialog } from '../ui/SkillImportDialog'
+import { openSkillEditor, skillsOpenAtom } from '../ui/SkillsDialog'
 
 type Tab = 'explore' | 'favourites' | 'personal'
 const CHIPS: { id: SkillChipId; labelKey: string }[] = [
@@ -87,7 +90,17 @@ export function Skills() {
   const [skills, setSkills] = useState<Skill[]>([])
   const [favs, setFavs] = useState<string[]>(() => loadFavourites())
 
+  const [menu, setMenu] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => { void loadSkills().then(setSkills) }, [])
+  useEffect(() => {
+    if (!menu) return
+    const off = (e: PointerEvent) => { if (!menuRef.current?.contains(e.target as Node)) setMenu(false) }
+    window.addEventListener('pointerdown', off)
+    return () => window.removeEventListener('pointerdown', off)
+  }, [menu])
 
   const personal = useMemo(() => skills.filter((s) => s.custom), [skills])
   const explore = useMemo(() => skills.filter((s) => !s.custom), [skills])
@@ -125,9 +138,29 @@ export function Skills() {
           >
             <span className="ca-icon">{Icons.search}</span>
           </button>
-          <button type="button" className="ca-skills__create" data-testid="skills-create" onClick={createConversational}>
-            {t('home.skillsCreate')}<span className="ca-icon">{Icons.plus}</span>
-          </button>
+          <div className="ca-skills__createwrap" ref={menuRef}>
+            <button type="button" className="ca-skills__create" data-testid="skills-create" onClick={createConversational}>
+              {t('home.skillsCreate')}<span className="ca-icon">{Icons.plus}</span>
+            </button>
+            <button
+              type="button"
+              className="ca-skills__create ca-skills__createmore"
+              data-testid="skills-create-menu"
+              aria-haspopup="menu"
+              aria-expanded={menu}
+              title={t('skillsImport.title')}
+              onClick={() => setMenu(!menu)}
+            >
+              <span className="ca-icon">{Icons.chevron}</span>
+            </button>
+            {menu && (
+              <div className="ca-menu ca-skills__createmenu" role="menu">
+                <button type="button" role="menuitem" className="ca-menu__item" data-testid="skills-import" onClick={() => { setMenu(false); setImporting(true) }}>
+                  <span className="ca-icon">{Icons.upload}</span>{t('skillsImport.menu')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -188,6 +221,20 @@ export function Skills() {
             {t('composer.manageSkills')} · {t('composer.skillCreatorForm')}
           </button>
         </div>
+      )}
+      {importing && (
+        <SkillImportDialog
+          onClose={() => setImporting(false)}
+          onImported={(skill, skipped) => {
+            // #463 product ruling: go straight to the new skill's detail (duplicates land on -2/-3); skipped files get one toast.
+            setImporting(false)
+            setTab('personal')
+            const landing = importLanding(skill, skipped)
+            openSkillEditor(landing.id)
+            if (landing.skipped) showMemoryToast(landing.skipped, 'info')
+            void loadSkills().then(setSkills)
+          }}
+        />
       )}
     </div>
   )
