@@ -1,6 +1,6 @@
 // #410: every process-rail kind, live + done, for the agent-loop audit harness. $0 mocks, no network.
 import { createRoot } from 'react-dom/client'
-import { AssistantBlocks } from '../../../src/ui/ChatMessage'
+import { AssistantBlocks, UserMessage } from '../../../src/ui/ChatMessage'
 import { setLang } from '../i18n_stub'
 
 const q = new URLSearchParams(location.search)
@@ -71,6 +71,16 @@ const scenes: Record<string, Msg> = {
       use('sf1', 'mcp__comfyart__skill', { action: 'read', name: 'poster', path: 'SKILL.md' }),
       res('sf1', 'mcp__comfyart__skill', '{"content":"# poster"}'),
       { type: 'text', text: 'Read.' },
+    ],
+  },
+  // #462: a skill read WITHOUT a path loads the whole skill (技能加载完成); with a path it is a file read (above)
+  'skill-read-done': {
+    id: 'sr-done', role: 'assistant', status: 'done',
+    blocks: [
+      { type: 'thinking', text: 'Read the skill.' },
+      use('sr1', 'mcp__comfyart__skill', { action: 'read', name: 'poster' }),
+      res('sr1', 'mcp__comfyart__skill', '{"name":"poster"}'),
+      { type: 'text', text: 'Loaded.' },
     ],
   },
   // Search live + done with page count
@@ -221,6 +231,17 @@ const scenes: Record<string, Msg> = {
   },
 }
 
+// #462: user turns with a skill chip inside the bubble (?scene=user-skill&name=…&text=…)
+const userScenes: Record<string, Msg> = {
+  'user-skill': {
+    id: 'us', role: 'user', status: 'done',
+    blocks: [
+      { type: 'skill', name: q.get('name') || '早安咖啡店海报生成器' },
+      { type: 'text', text: q.get('text') || (q.get('lang') === 'en' ? 'I want to edit this Skill' : '我想修改这个 Skill') },
+    ],
+  },
+}
+
 const scene = q.get('scene') || 'chain-done'
 const m = scenes[scene] || scenes['chain-done']
 
@@ -228,10 +249,10 @@ createRoot(document.getElementById('root')!).render(
   <div className="ca-root" style={{ width: 392, padding: 16 }}>
     <div className="ca-chat">
       <div className="ca-chat__bot" data-scene={scene} id="scene">
-        <AssistantBlocks editor={null as any} m={m as any} />
+        {userScenes[scene] ? <UserMessage editor={null as any} m={userScenes[scene] as any} /> : <AssistantBlocks editor={null as any} m={m as any} />}
       </div>
     </div>
   </div>,
 )
 ;(globalThis as any).__ready = true
-;(globalThis as any).__scenes = Object.keys(scenes)
+;(globalThis as any).__scenes = [...Object.keys(scenes), ...Object.keys(userScenes)]

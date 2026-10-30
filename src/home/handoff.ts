@@ -2,12 +2,14 @@ import type { Editor, TLImageShape } from 'tldraw'
 
 import { agentModeAtom, draftAtom, extraRefsAtom, generateDirect, sendToAgent, type AgentMode } from '../agent'
 import { refreshBot } from '../bot'
+import { t } from '../i18n'
 import { refFromUrl } from '../comfy'
 import { editElements } from '../elements'
 import { placeMedia, toMedia, type ErrorSink } from '../jobs'
 import { loadSkills, skillAtom, skillCreatorAtom } from '../skills'
+import { EDIT_SKILL_PARAM, startSkillEdit } from '../skillEdit'
 
-const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool', 'createSkill']
+const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool', 'createSkill', 'editSkill']
 const REF_LONG = 512
 const GAP = 20
 
@@ -33,9 +35,18 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   const skillId = url.searchParams.get('skill')
   const tool = url.searchParams.get('tool')
   const createSkill = url.searchParams.get('createSkill') === '1'
-  if (!text && !refs.length && !skillId && !createSkill) return
+  const editSkill = url.searchParams.get(EDIT_SKILL_PARAM)
+  if (!text && !refs.length && !skillId && !createSkill && !editSkill) return
   for (const k of KEYS) url.searchParams.delete(k)
   history.replaceState(null, '', url)
+  if (editSkill) {
+    // #462 Edit in chat: one auto-sent turn in this fresh project; the composer stays empty with its normal placeholder
+    const skill = (await loadSkills()).find((s) => s.custom && s.id === editSkill)
+    if (!skill) return onError(t('skillsDialog.notFound', editSkill))
+    agentModeAtom.set('agent')
+    await refreshBot()
+    return startSkillEdit(editor, skill, (text, s, context) => sendToAgent(editor, text, [], s, [], [], context))
+  }
   if (createSkill) {
     skillCreatorAtom.set({ on: true })
     agentModeAtom.set('agent')

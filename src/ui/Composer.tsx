@@ -171,9 +171,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       const keptKits = kits
       const keptDocs = docs
       const creating = skillCreatorAtom.get().on
-      const agentText = creating && text
-        ? t('composer.skillCreatorPrefill', text)
-        : text
+      const agentText = creating && text ? t('composer.skillCreatorPrefill', text) : text
       draftAtom.set('')
       extraRefsAtom.set([])
       kitsAtom.set([])
