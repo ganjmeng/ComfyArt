@@ -1148,7 +1148,8 @@ export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMes
       {/* #462: the skill chip sits inside the bubble, inline before the text, with the process-line skill icon */}
       {(text || skills.length > 0) && (
         <div className={skills.length > 0 ? 'ca-chat__bubble ca-chat__bubble--skill' : 'ca-chat__bubble'} data-testid="user-bubble">
-          {skills.map((b) => <SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" />)}
+          {skills.filter((b) => b.creator).map((b) => <SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" creator />)}
+          {skills.filter((b) => !b.creator).map((b) => <SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" />)}
           {skills.length > 0 ? <span className="ca-chat__text" data-testid="user-bubble-text">{text}</span> : text}
         </div>
       )}

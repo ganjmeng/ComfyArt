@@ -323,3 +323,28 @@ def test_r2_a3_bubble_text_is_exactly_user_text() -> None:
     # both client entries send exactly the typed text as `text`
     assert "sendToAgent(editor, text, shapes, null, [], [], t('composer.skillCreatorPrefill', text)," in HANDOFF
     assert "await sendToAgent(editor, text, keptRefs," in COMPOSER
+
+
+def test_r3_creator_chip_not_truncated() -> None:
+    """Design HOLD: the 技能创建器 / Skill Creator chip never shrinks (full text, no ellipsis); user skill chips keep the ellipsis."""
+    chip = (ROOT / "src/ui/SkillChip.tsx").read_text()
+    shell = (ROOT / "src/styles/shell.css").read_text()
+    assert "data-creator={creator ? '' : undefined}" in chip
+    rule = re.search(r"\.ca-chip--skill\[data-creator\] \{([^}]*)\}", shell)
+    assert rule and "flex-shrink: 0" in rule.group(1) and "max-width: none" in rule.group(1)
+    bub = re.search(r"\.ca-chat__bubble--skill > \.ca-chip--skill\[data-creator\] \{([^}]*)\}", shell)
+    assert bub and "flex: 0 0 auto" in bub.group(1)
+    name = re.search(r"\.ca-chip--skill\[data-creator\] \.ca-chip__name \{([^}]*)\}", shell)
+    assert name and "text-overflow: clip" in name.group(1) and "overflow: visible" in name.group(1)
+    # every creator entry renders with `creator`; user skill chips do not
+    assert 'testId="home-skill-creator-chip" creator />' in HOME
+    assert 'testId="skill-creator-chip" creator />' in COMPOSER
+    assert '<SkillChip name={picked.name} testId="home-skill-chip" />' in HOME
+    assert '<SkillChip name={skill.name} testId="composer-skill-chip" />' in COMPOSER
+    assert 'skills.filter((b) => b.creator).map((b) => <SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" creator />)' in BUBBLE
+    # server marks only the display-only creator chip
+    seg = BOT_PY.split("elif chip_name:", 1)[1].split("provider_text", 1)[0]
+    assert 'display_blocks[-1]["creator"] = True' in seg
+    # user-chip ellipsis untouched
+    assert ".ca-chip--skill { max-width: 160px;" in shell
+    assert re.search(r"\.ca-chip__name \{[^}]*text-overflow: ellipsis", shell)
