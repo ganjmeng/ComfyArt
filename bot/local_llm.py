@@ -1387,8 +1387,12 @@ class LocalLlmProvider(AgentProvider):
             from . import agent_loop
             agent_loop.paid_done(run, name, args, result_text, price,
                                  tool_failed or bool(model_call_failed(name, args, result_text)), call_id=tc_id or "")
+        # #421: model/payload failures (not only transport) must be is_error so the UI
+        # shows a failed step instead of the success/done generation row.
+        model_failed = bool(model_call_failed(name, args, result_text))
         await emit(BotEvent(
-            t="tool_result", name=name, text=result_text, id=tc_id, is_error=tool_failed,
+            t="tool_result", name=name, text=result_text, id=tc_id,
+            is_error=tool_failed or model_failed,
             detail="cancelled" if _CANCEL_RE.search(result_text) else ""))
         out = [{"role": "tool", "tool_call_id": tc_id or name, "content": result_text}]
         if images:
@@ -1585,7 +1589,8 @@ class LocalLlmProvider(AgentProvider):
         detail = "cancelled" if _CANCEL_RE.search(result_text) else ""
         messages.append({"role": "tool", "tool_call_id": tc_id, "content": result_text})
         await emit(BotEvent(t="tool_result", name=base, text=result_text, id=tc_id,
-                            is_error=result_text.startswith(("[tool error]", "[error]")),
+                            is_error=(result_text.startswith(("[tool error]", "[error]"))
+                                      or bool(model_call_failed(base, args, result_text))),
                             detail=detail))
         done.append(_step_label(base, args, lang))
         if images:
