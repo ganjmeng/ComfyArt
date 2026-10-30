@@ -398,4 +398,5 @@ def test_r4_entry_b_focuses_input() -> None:
     assert "focusComposer()" in entry_b
     fc = HANDOFF.split("function focusComposer() {", 1)[1].split("\n}\n", 1)[0]
     assert "querySelector<HTMLTextAreaElement>('.ca-composer__input')" in fc
-    assert "document.activeElement !== el" in fc and "requestAnimationFrame(go)" in fc
+    # keep retrying while focus is NOT on the input (a mounted-but-unfocused input must not stop the retry)
+    assert "if ((!el || document.activeElement !== el) && ++tries < 30) requestAnimationFrame(go)" in fc
