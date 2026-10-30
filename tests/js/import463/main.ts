@@ -72,6 +72,14 @@ async function main() {
       return { list: list.skills.filter((x) => x.name === 'Poster').map((x) => x.id).sort(), byId, otherSame: JSON.stringify(other) === JSON.stringify(otherAfterEdit), editedInstr: edited.instructions,
         byName, bothSame: JSON.stringify(both) === JSON.stringify(bothAfter) }
     })
+    // #463 ruling: after import, land on the NEW skill's detail with the guide toast; duplicates land on -2/-3.
+    r.landing = await safe(async () => {
+      reset()
+      const runs = [await S.importZip(zipFile(GOOD)), await S.importZip(zipFile(GOOD)), await S.importZip(zipFile(GOOD))]
+      const before = sha('comfyart/skills/poster/')
+      const lands = runs.map((x) => S.importLanding(x.skill))
+      return { ids: lands.map((l) => l.id), guides: lands.map((l) => l.guide), origSame: JSON.stringify(before) === JSON.stringify(sha('comfyart/skills/poster/')) }
+    })
     // "Import folder" in My Skills keeps main's direct overwrite.
     r.folder = await safe(async () => {
       reset(); await S.importZip(zipFile(GOOD))

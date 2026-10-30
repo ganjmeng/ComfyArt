@@ -203,6 +203,11 @@ export async function importZip(file: File): Promise<{ skill: Skill; skipped: st
   return importEntries(entries, file.name.replace(/\.zip$/i, ''), { strict: true })
 }
 
+/** #463 — after a successful import: open the NEW skill's detail (a duplicate lands on its -2/-3 id) with the guide toast. */
+export function importLanding(skill: Pick<Skill, 'id'>): { id: string; guide: string } {
+  return { id: skill.id, guide: t('skillsImport.created') }
+}
+
 /** #463 — what "Edit in chat" tells the agent, so it reads and saves the skill by id (names can repeat: x, x-2).
  *  DEPENDS ON #484: PR #484's `skillEditTurn` (src/skillEdit.ts, branch feat/462-skills-g3) still builds its hidden
  *  instruction with `name="…"`; when #484 lands, its `context` must use `skillEditToolHint(skill)` (or the same

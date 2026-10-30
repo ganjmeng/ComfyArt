@@ -1541,7 +1541,7 @@
   "skillsImport.drop": "Drop a Skill folder or ZIP file here",
   "skillsImport.release": "Release to import",
   "skillsImport.importing": "Importing…",
-  "skillsImport.done": "Imported “{0}”",
+  "skillsImport.created": "Skill created. Give it a try",
   "skillsImport.menu": "Import a Skill",
   "skillsImport.note.formats": "Supports Claude Code, Codex, and other standard skill formats",
   "skillsImport.note.skillMd": "Must include SKILL.md",

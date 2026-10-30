@@ -20,6 +20,8 @@ export function openSkillEditor(id: string) {
   skillEditIdAtom.set(id)
   skillsOpenAtom.set(true)
 }
+/** #463: open the dialog directly on this skill's detail (edit view), optionally with a one-off guide toast. */
+export const skillsOpenIdAtom = atom<{ id: string; guide?: string } | null>('skills open id', null)
 
 type View = { kind: 'list' } | { kind: 'edit'; skill: Skill } | { kind: 'history'; skill: Skill; versions: SkillVersion[] | null }
 
@@ -110,6 +112,8 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
   const [skills, setSkills] = useState<Skill[]>([])
   const [view, setView] = useState<View>({ kind: 'list' })
   const [note, setNote] = useState('')
+  const [guide, setGuide] = useState('')
+  const target = useValue(skillsOpenIdAtom)
   const folder = useRef<HTMLInputElement>(null)
   const refresh = () => loadSkills().then((all) => setSkills(all.filter((s) => s.custom))).catch((e) => onError(String(e)))
 
@@ -127,6 +131,17 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
   }, [open, editId])
 
   useEffect(() => {
+    if (!open || !target) return
+    skillsOpenIdAtom.set(null)
+    void loadSkills().then((all) => {
+      const s = all.find((x) => x.custom && x.id === target.id)
+      if (!s) return
+      setView({ kind: 'edit', skill: s })
+      if (target.guide) { setGuide(target.guide); setTimeout(() => setGuide(''), 2400) }
+    }).catch((e) => onError(String(e)))
+  }, [open, target])
+
+  useEffect(() => {
     if (view.kind === 'history' && !view.versions) void listVersions(view.skill.id).then((versions) => setView({ ...view, versions })).catch((e) => onError(String(e)))
   }, [view])
 
@@ -140,6 +155,7 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
 
   return (
     <Modal title={view.kind === 'list' ? t('skillsDialog.mySkills') : view.kind === 'edit' ? t('skillsDialog.editSkill') : t('skillsDialog.versionHistoryOf', view.skill.name)} className="ca-rename ca-memory ca-skills-dialog" onClose={close}>
+      {guide && view.kind === 'edit' && <div className="ca-mem-toast" data-kind="guide" role="status" data-testid="skill-import-guide">{guide}</div>}
       {view.kind === 'edit' && (
         <SkillForm
           initial={view.skill}

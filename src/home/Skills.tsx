@@ -5,6 +5,7 @@ import { thumbUrl } from '../comfy'
 import { t } from '../i18n'
 import { newProject } from '../projects'
 import {
+  importLanding,
   loadFavourites,
   loadSkills,
   skillChip,
@@ -17,7 +18,7 @@ import {
 } from '../skills'
 import { Icons } from '../ui/icons'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
-import { skillsOpenAtom } from '../ui/SkillsDialog'
+import { SkillsDialog, skillsOpenAtom, skillsOpenIdAtom } from '../ui/SkillsDialog'
 
 type Tab = 'explore' | 'favourites' | 'personal'
 const CHIPS: { id: SkillChipId; labelKey: string }[] = [
@@ -90,7 +91,6 @@ export function Skills() {
 
   const [menu, setMenu] = useState(false)
   const [importing, setImporting] = useState(false)
-  const [note, setNote] = useState('')
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { void loadSkills().then(setSkills) }, [])
@@ -200,8 +200,6 @@ export function Skills() {
         </div>
       )}
 
-      {note && <div className="ca-chat__hint" data-testid="skills-import-note">{note}</div>}
-
       {wall.length === 0 && <div className="ca-skills__empty" data-testid="skills-empty">{t(emptyKey)}</div>}
 
       <div className="ca-swall" data-testid="skills-wall">
@@ -226,14 +224,17 @@ export function Skills() {
       {importing && (
         <SkillImportDialog
           onClose={() => setImporting(false)}
-          onImported={(skill, skipped) => {
+          onImported={(skill) => {
+            // #463 product ruling: go straight to the new skill's detail (duplicates land on -2/-3) with the guide toast.
             setImporting(false)
             setTab('personal')
-            setNote(skipped.length ? t('skillsDialog.importedSkipped', skipped.join(t('common.listSep'))) : t('skillsImport.done', skill.name))
+            skillsOpenIdAtom.set(importLanding(skill))
+            skillsOpenAtom.set(true)
             void loadSkills().then(setSkills)
           }}
         />
       )}
+      <SkillsDialog onError={(msg) => console.error(msg)} />
     </div>
   )
 }
