@@ -996,6 +996,8 @@
 .ca-process__row[data-kind="image"] { grid-template-columns: var(--ca-process-col) 6px minmax(0, 1fr); }
 .ca-process__icon--image .ca-icon { width: 16px; height: 16px; opacity: .55; }
 .ca-process__row[data-kind="image"] .ca-process__label { font-size: 13px; font-weight: 400; }
+/* #421: failed generation row — same red as tool-step errors */
+.ca-process__row[data-error] .ca-process__label { color: #dc2626; }
 
 /* #442 v6 (designer): 24px flex rows, gap 6, column gap 8 → icon-to-icon 32; card is a sibling at the icon x */
 .ca-process { --ca-process-row-gap: 8px; --ca-process-gutter: 6px; --ca-process-card-ink: #000; }

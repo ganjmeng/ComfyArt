@@ -706,6 +706,8 @@ type ProcessStep = {
   kind: ProcessKind
   label: string
   live: boolean
+  /** #421: generation (or linked wait) failed — row reads as failed, not done. */
+  error?: boolean
   /** #437: the search source's real favicon, shown before the page count. */
   favicon?: string
   text?: string
@@ -788,7 +790,7 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
           // #442 v6: a display:contents group so the card is a sibling of its 24px row, at the icon x
           return (
             <div key={s.key} className="ca-process__group">
-            <div className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-testid={isMemory ? 'memory-updated-row' : s.kind === 'memory_retrieved' ? 'memory-retrieved-row' : s.kind === 'memory_updating' ? 'memory-updating-row' : undefined}>
+            <div className="ca-process__row" data-live={s.live || undefined} data-kind={s.kind} data-error={s.error || undefined} data-testid={isMemory ? 'memory-updated-row' : s.kind === 'memory_retrieved' ? 'memory-retrieved-row' : s.kind === 'memory_updating' ? 'memory-updating-row' : s.error ? 'process-row-failed' : undefined}>
               {canOpen ? (
                 <button
                   type="button"
@@ -1019,18 +1021,38 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
         if (b.type === 'memory_updated' && memBlocks.some((x) => (x.updated_ids ?? []).length > 0)) {
           proc.push({ key: `p${i}-read`, kind: 'memory_retrieved', label: processLabel('memory_retrieved', false), live: false })
         }
+        // #421: a failed generate_* (or its wait_generation) must not read as the done/success row
+        const ownState = result ? stepState(result) : undefined
+        let waitFailed = false
+        if ((kindResolved === 'image' || kindResolved === 'video') && b.type === 'tool_use' && ownState !== 'cancelled' && ownState !== 'error') {
+          for (let j = i + 1; j < m.blocks.length; j++) {
+            const nb = m.blocks[j]
+            if (nb.type !== 'tool_use') continue
+            const nn = toolName(nb.name)
+            if (nn === 'wait_generation') {
+              const wr = resultOf(nb, j)
+              waitFailed = !!(wr && stepState(wr) === 'error')
+              break
+            }
+            if (IMAGE_PROCESS_TOOLS.has(nn) || VIDEO_TOOLS.has(nn) || GEN_TOOLS.has(nn)) break
+          }
+        }
+        const genFailed = ownState === 'error' || waitFailed
+        const genCancelled = ownState === 'cancelled'
         proc.push({
           key: `p${i}`,
           kind: kindResolved,
           // #393 nit: a declined / refused paid step never reads as done
-          label: (kindResolved === 'image' || kindResolved === 'video') && b.type === 'tool_use' && result && stepState(result) === 'cancelled'
-            ? `${toolLabel(b.name)} · ${t('chatMessage.cancelled')}`
+          // #421: failed generation reads as failed, not the success/model-name row
+          label: (kindResolved === 'image' || kindResolved === 'video') && b.type === 'tool_use' && (genCancelled || genFailed)
+            ? `${toolLabel(b.name)} · ${t(genCancelled ? 'chatMessage.cancelled' : 'chatMessage.failed')}`
             : processLabel(kindResolved, stepLive, {
               fallback: b.type === 'tool_use' ? toolLabel(b.name) : b.label,
               model,
               pages,
             }),
           live: stepLive,
+          error: genFailed || undefined,
           text: b.type === 'thinking' ? b.text : undefined,
           aspectRatio,
           memoryIds: b.type === 'memory_updated' ? memIdsAll : undefined,
