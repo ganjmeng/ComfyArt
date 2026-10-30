@@ -8,6 +8,7 @@
 | `mascot-lv2-dna-a.png` | Lv.2 | **Final DNA A** + pink upright ears + beret + scarf |
 | `mascot-lv3-dna-a.png` | Lv.3 | **Final DNA A** + gold crown + cape + brush |
 | `mascot-lv{1,2,3}-frame0.png` | — | Frame 0 stills (face-raised for peek) |
+| `mascot-lv{1,2,3}-avatar.png` | — | Content-centered frame-0 stills for /arti level card (ink center = frame center; opaque eyes from sheet) |
 
 Timing: 17 frames × 250ms ≈ 4.25s one-shot on `--play` / `--typing` / `--hover`.
 
