@@ -6,8 +6,10 @@ import { thumbUrl, uploadImage, viewUrl } from '../comfy'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
 import { newProject, openView, startProject, type ProjectEntry } from '../projects'
-import { HOME_CREATOR_CHIP_KEY, loadSkills, type Skill } from '../skills'
-import { skillsOpenAtom } from '../ui/SkillsDialog'
+import { showMemoryToast } from '../memory'
+import { HOME_CREATOR_CHIP_KEY, importLanding, loadSkills, type Skill } from '../skills'
+import { SkillImportDialog } from '../ui/SkillImportDialog'
+import { openSkillEditor } from '../ui/SkillsDialog'
 import { Icons } from '../ui/icons'
 import { NoKeyNotice } from '../ui/NoKeyNotice'
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, refreshKeyStatus } from '../wavespeedKey'
@@ -50,6 +52,8 @@ export function Home() {
   // #491: home + menu (+ → 技能 → 创建技能); the creator chip stays on the home box until send
   const [plus, setPlus] = useState<null | 'plus' | 'skills' | 'skillsMore'>(null)
   const [creator, setCreator] = useState(false)
+  const [picked, setPicked] = useState<Skill | null>(null)  // #491: skill chip from the + → 技能 panel; only send leaves home
+  const [importing, setImporting] = useState(false)
   const current = useCurrentAgent()  // #278: same agent the canvas mode button shows
   const hasContent = !!text.trim() || refs.length > 0  // #276: an image with no text counts as content
   const { showSend, setVoice } = useSlot(hasContent, composing)
@@ -85,11 +89,13 @@ export function Home() {
     setError('')
     try {
       // #491 entry A: only the send leaves home; the new project opens in full-screen chat with the creator prefill
-      if (creator) await startProject({ createSkill: '1', ask: text.trim(), ref: refs })
+      if (picked) await startProject({ skill: picked.id, ask: text.trim(), mode, ref: refs })
+      else if (creator) await startProject({ createSkill: '1', ask: text.trim(), ref: refs })
       else await startProject({ ask: text.trim(), mode, ref: refs })  // #287: model / settings live in the shared saved store
       setText('')
       setRefs([])
       setCreator(false)
+      setPicked(null)
     } catch (e) {
       setError(errorText(e))
     } finally {
@@ -137,6 +143,14 @@ export function Home() {
             <span className="ca-chip ca-chip--creator" data-testid="home-skill-creator-chip">
               <span className="ca-icon">{Icons.sparkles}</span>{t(HOME_CREATOR_CHIP_KEY)}
               <button type="button" title={t('common.remove')} onClick={() => setCreator(false)}>{Icons.close}</button>
+            </span>
+          </div>
+        )}
+        {picked && (
+          <div className="ca-landing__refs">
+            <span className="ca-chip ca-chip--skill" data-testid="home-skill-chip" title={picked.name}>
+              <span className="ca-icon">{Icons.skill}</span><span className="ca-chip__name">{picked.name}</span>
+              <button type="button" title={t('common.remove')} onClick={() => setPicked(null)}>{Icons.close}</button>
             </span>
           </div>
         )}
@@ -191,11 +205,11 @@ export function Home() {
                 <div className="ca-menu__head">
                   <span className="ca-menu__grow">{t('home.skillsMenu')}</span>
                   <button type="button" className="ca-bar__btn ca-bar__btn--icon" data-testid="home-skills-more" title={t('home.skillsMenuMore')} onClick={() => setPlus('skillsMore')}>
-                    <span className="ca-icon">{Icons.plus}</span>
+                    <span className="ca-icon">{Icons.squarePlus}</span>
                   </button>
                 </div>
                 {skills.map((s) => (
-                  <button key={s.id} type="button" className="ca-menu__item" title={s.instructions} onClick={() => { setPlus(null); newProject({ skill: s.id }) }}>
+                  <button key={s.id} type="button" className="ca-menu__item" title={s.instructions} data-testid="home-skill-row" onClick={() => { setPlus(null); setCreator(false); setPicked(s); input.current?.focus() }}>
                     <span className="ca-menu__grow">{s.name}</span>
                     {s.custom && <span className="ca-menu__key">{t('composer.personal')}</span>}
                   </button>
@@ -205,13 +219,13 @@ export function Home() {
             {plus === 'skillsMore' && (
               <div className="ca-menu" data-testid="home-skills-more-menu">
                 {/* #491: stays on home — only the chip is added; nothing navigates or sends here */}
-                <button type="button" className="ca-menu__item" data-testid="home-create-skill" onClick={() => { setPlus(null); setCreator(true); setMode('agent'); input.current?.focus() }}>
+                <button type="button" className="ca-menu__item" data-testid="home-create-skill" onClick={() => { setPlus(null); setPicked(null); setCreator(true); setMode('agent'); input.current?.focus() }}>
                   <span className="ca-icon">{Icons.plus}</span><span className="ca-menu__grow">{t('home.createSkill')}</span>
                 </button>
                 <button type="button" className="ca-menu__item" disabled>
                   <span className="ca-icon">{Icons.agent}</span><span className="ca-menu__grow">{t('home.createSkillFromChat')}</span>
                 </button>
-                <button type="button" className="ca-menu__item" onClick={() => { setPlus(null); skillsOpenAtom.set(true) }}>
+                <button type="button" className="ca-menu__item" data-testid="home-import-skill" onClick={() => { setPlus(null); setImporting(true) }}>
                   <span className="ca-icon">{Icons.files}</span><span className="ca-menu__grow">{t('home.importSkill')}</span>
                 </button>
               </div>
@@ -257,6 +271,19 @@ export function Home() {
         </div>
         <input ref={file} type="file" accept="image/*" multiple hidden onChange={(e) => { void upload(e.target.files); e.target.value = '' }} />
       </div>
+      {importing && (
+        <SkillImportDialog
+          onClose={() => setImporting(false)}
+          onImported={(skill, skipped) => {
+            // #491: same landing as the Skills page import (#487)
+            setImporting(false)
+            const landing = importLanding(skill, skipped)
+            openSkillEditor(landing.id)
+            if (landing.skipped) showMemoryToast(landing.skipped, 'info')
+            void loadSkills().then(setSkills)
+          }}
+        />
+      )}
       {error && <div className="ca-landing__error" onClick={() => setError('')}>{error}</div>}
       <div className="ca-landing__quick">
         <span className="ca-landing__hint">{t('home.letAgentHelp')}</span>

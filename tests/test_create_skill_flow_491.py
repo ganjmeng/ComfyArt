@@ -101,3 +101,41 @@ def test_in_canvas_entry_unchanged() -> None:
             "skillCreatorAtom.set({ on: true }); agentModeAtom.set('agent') }}") in COMPOSER
     assert "chatViewAtom" not in COMPOSER
 
+
+
+ICONS = (ROOT / "src/ui/icons.tsx").read_text()
+
+
+def _home_skill_row_click() -> str:
+    m = re.search(r'data-testid="home-skill-row" onClick=\{\(\) => \{(.*?)\}\}>', HOME, re.S)
+    assert m, "home-skill-row missing"
+    return m.group(1)
+
+
+def test_a_skill_click_adds_chip_without_navigating() -> None:
+    click = _home_skill_row_click()
+    assert "setPlus(null)" in click and "setPicked(s)" in click
+    for bad in ("newProject", "startProject", "location", "send(", "openView"):
+        assert bad not in click, bad
+
+
+def test_a_skill_send_opens_project_with_skill_and_text() -> None:
+    assert "if (picked) await startProject({ skill: picked.id, ask: text.trim(), mode, ref: refs })" in HOME
+
+
+def test_a_skill_chip_has_full_name_title_and_ellipsis() -> None:
+    assert 'data-testid="home-skill-chip" title={picked.name}' in HOME
+    assert "text-overflow: ellipsis" in (ROOT / "src/styles/home.css").read_text()
+
+
+def test_a_skills_panel_icon_is_square_plus() -> None:
+    m = re.search(r'data-testid="home-skills-more".*?<span className="ca-icon">\{Icons\.(\w+)\}</span>', HOME, re.S)
+    assert m and m.group(1) == "squarePlus"
+    assert 'squarePlus: <Svg><rect width="18" height="18" x="3" y="3" rx="2" />' in ICONS
+
+
+def test_a_import_opens_new_dialog() -> None:
+    m = re.search(r'data-testid="home-import-skill" onClick=\{\(\) => \{(.*?)\}\}>', HOME, re.S)
+    assert m and "setImporting(true)" in m.group(1)
+    assert "skillsOpenAtom" not in HOME
+    assert "<SkillImportDialog" in HOME

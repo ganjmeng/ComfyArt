@@ -481,3 +481,4 @@ body { background: var(--ca-float); }
 
 /* #491 home + → 技能 panel: title row with the create/import icon at top-right */
 .ca-landing__box .ca-menu__head { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 10px; font-size: 12px; color: var(--ca-muted); }
+.ca-landing__box .ca-chip--skill .ca-chip__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
