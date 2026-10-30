@@ -17,6 +17,7 @@ import { Home } from './Home'
 import { NotFound } from './NotFound'
 import { Projects } from './Projects'
 import { Schedules } from './Schedules'
+import { Skills } from './Skills'
 
 type View = HomeView | { missing: string }
 
@@ -49,6 +50,7 @@ function RailBtn({
 function main(view: View) {
   if (view === 'home') return <Home />
   if (view === 'projects') return <Projects />
+  if (view === 'skills') return <Skills />
   if (view === 'schedules') return <Schedules />
   if (view === 'arti') return <Arti />
   return <NotFound id={view.missing} />
@@ -62,6 +64,7 @@ export function HomeApp({ view }: { view: View }) {
         <RailBtn icon={Icons.plus} label={t('projectHeader.newProject')} onClick={() => newProject()} />
         <RailBtn icon={Icons.home} label={t('home.home')} on={view === 'home'} onClick={() => openView('home')} testId="rail-home" />
         <RailBtn icon={Icons.folder} label={t('home.projectLibrary')} on={view === 'projects'} onClick={() => openView('projects')} testId="rail-projects" />
+        <RailBtn icon={Icons.skill} label={t('home.skills')} on={view === 'skills'} onClick={() => openView('skills')} testId="rail-skills" />
         {/* #367: account-level siblings — 设计委托 + Arti Beta (≠ canvas Agent chat) */}
         <RailBtn icon={Icons.bell} label={t('home.designSchedules')} on={view === 'schedules'} onClick={() => openView('schedules')} testId="rail-schedules" />
         <RailBtn

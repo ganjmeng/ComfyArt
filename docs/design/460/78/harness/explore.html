@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<title>#460 Skills Explore · tip CSS/DOM</title>
+<link rel="stylesheet" href="../../../../../src/styles/base.css"/>
+<link rel="stylesheet" href="../../../../../src/styles/shell.css"/>
+<link rel="stylesheet" href="../../../../../src/styles/home.css"/>
+<style>
+  html, body { margin: 0; min-height: 100%; background: var(--ca-bg, #f5f5f4); }
+  .stage { display: flex; min-height: 100vh; }
+  .ca-rail { width: 60px; flex: none; }
+  .ca-home__main { flex: 1; min-width: 0; overflow: auto; }
+  .ca-swall__cover { min-height: 0; }
+  .ca-swall { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 16px !important; }
+  .ca-skillspage { max-width: none; padding: 24px 32px 48px; width: auto !important; max-height: none !important; overflow: visible !important; }
+  .ca-swall__cover { aspect-ratio: 3/4; }
+  .ca-swall__placeholder .ca-icon { color: rgba(255,255,255,.85); }
+</style>
+</head>
+<body>
+<script>
+  const theme = new URLSearchParams(location.search).get('theme') || 'light';
+  document.documentElement.dataset.theme = theme;
+</script>
+<div class="stage ca-home" data-testid="home-shell">
+  <nav class="ca-rail" data-testid="account-rail">
+    <button type="button" class="ca-rail__btn" title="New"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+    <button type="button" class="ca-rail__btn" title="Home"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-3.5v-5.5h-6v5.5H5.5A1.5 1.5 0 0 1 4 19z"/></svg></span></button>
+    <button type="button" class="ca-rail__btn" title="Projects"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg></span></button>
+    <button type="button" class="ca-rail__btn" data-on title="Skills" data-testid="rail-skills"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3.5h9l3 3V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"/><path d="M9 10h6M9 13.5h6M9 17h3.5"/></svg></span></button>
+  </nav>
+  <main class="ca-home__main">
+    <div class="ca-skillspage" data-testid="skills-page">
+      <div class="ca-skills__head">
+        <h1>Skills</h1>
+        <div class="ca-skills__headacts">
+          <button type="button" class="ca-skills__create" data-testid="skills-create">Create<span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        </div>
+      </div>
+      <div class="ca-skills__tabs" role="tablist" data-testid="skills-tabs">
+        <button type="button" class="ca-skills__tab" data-on role="tab">Explore</button>
+        <button type="button" class="ca-skills__tab" role="tab">Favourites</button>
+        <button type="button" class="ca-skills__tab" role="tab">Personal</button>
+      </div>
+      <div class="ca-skills__chips" data-testid="skills-chips">
+        <button type="button" class="ca-skills__chip" data-on>为你推荐</button>
+        <button type="button" class="ca-skills__chip">电商</button>
+        <button type="button" class="ca-skills__chip">品牌</button>
+        <button type="button" class="ca-skills__chip">社交媒体</button>
+        <button type="button" class="ca-skills__chip">网站</button>
+        <button type="button" class="ca-skills__chip">广告创意</button>
+      </div>
+      <div class="ca-swall" data-testid="skills-wall">
+        <!-- cards -->
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+const cards = [
+  ['角色三视图','角色三视图与表情表','lilac','18.3k','1.5k'],
+  ['电商产品图','白底主图、场景与细节特写','steel','14.0k','980'],
+  ['海报设计','海报构图、标题层级与多方向提案','warm','12.4k','860'],
+  ['包装设计','包装正面与生活场景样机','sand','11.2k','910'],
+  ['社交媒体套图','一致的信息流 / 帖子 / 故事套图','cool','9.1k','640'],
+  ['视频封面','高对比、可缩略阅读的视频封面','pop','15.6k','1.2k'],
+  ['品牌识别','标志、色板与应用场景','mint','7.8k','520'],
+  ['宽幅 Banner','宽幅 Banner 与安全边距','sky','6.4k','410'],
+  ['动态海报','静帧海报再做成微动循环','rose','8.7k','700'],
+  ['室内建筑可视化','室内与建筑写实渲染','sage','5.2k','360'],
+];
+const wall = document.querySelector('.ca-swall');
+for (const [title, desc, tone, views, likes] of cards) {
+  const art = document.createElement('article');
+  art.className = 'ca-swall__card';
+  art.dataset.testid = 'skills-wall-card';
+  art.innerHTML = `
+    <button type="button" class="ca-swall__cover" data-tone="${tone}" aria-label="${title}">
+      <span class="ca-swall__placeholder"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3.5h9l3 3V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"/></svg></span></span>
+    </button>
+    <div class="ca-swall__body">
+      <h3 class="ca-swall__title">${title}</h3>
+      <p class="ca-swall__desc">${desc}</p>
+      <div class="ca-swall__meta">
+        <span class="ca-swall__author"><span class="ca-swall__avatar">社</span>社区</span>
+        <span class="ca-swall__stat"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg></span>${views}</span>
+        <button type="button" class="ca-swall__stat ca-swall__heart"><span class="ca-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19.5 12.5c1.8-1.8 1.8-4.7 0-6.5s-4.7-1.8-6.5 0L12 7.5l-1-1c-1.8-1.8-4.7-1.8-6.5 0s-1.8 4.7 0 6.5L12 20.5z"/></svg></span>${likes}</button>
+      </div>
+    </div>`;
+  wall.appendChild(art);
+}
+</script>
+</body>
+</html>
