@@ -41,6 +41,31 @@ _LLM_TIMEOUT_S = 300
 # for the reply and tool calls. Past the budget, the latest 6 turns stay verbatim
 # and older turns become one summary of at most 2000 tokens.
 _FALLBACK_CONTEXT_WINDOW = 32_000
+# #493: windows of known models, used only when the endpoint's /models does not declare
+# one. Matched by lowercase substring of the model id; first hit wins. Data only.
+# TODO(#493): confirm the exact DeepSeek id from QA's /models dump; "deepseek" is provisional.
+_KNOWN_MODEL_WINDOWS: tuple[tuple[str, int], ...] = (
+    ("deepseek", 1_000_000),
+)
+
+
+def known_model_window(model: str) -> int:
+    """#493: window from the known-model table, 0 if the model is not listed."""
+    mid = (model or "").strip().lower()
+    if not mid:
+        return 0
+    for needle, window in _KNOWN_MODEL_WINDOWS:
+        if needle in mid:
+            return window
+    return 0
+
+
+def resolve_context_window(model: str, declared: int = 0) -> int:
+    """#493: one rule for every caller. Endpoint-declared window wins, then the
+    known-model table, then 32k."""
+    if isinstance(declared, int) and declared > 0:
+        return declared
+    return known_model_window(model) or _FALLBACK_CONTEXT_WINDOW
 _INPUT_BUDGET_PERCENT = 70
 _VERBATIM_TURNS = 6
 _SUMMARY_TOKEN_CAP = 2_000
@@ -1188,8 +1213,9 @@ class LocalLlmProvider(AgentProvider):
                            reserved_tokens=reserved_tokens)
 
     async def _context_window(self, session: aiohttp.ClientSession, model: str) -> int:
-        """Tokens in `model`'s window, from the endpoint's /models payload. 32k if it
-        does not say, the model is missing, or the request fails.
+        """Tokens in `model`'s window, from the endpoint's /models payload. If it does
+        not say, the model is missing, or the request fails: #493 known-model table,
+        then 32k.
 
         #390-2: cached per (endpoint, model). The same model id on another endpoint
         (e.g. a local 8k quant vs. a hosted 128k one) is looked up again."""
@@ -1197,7 +1223,7 @@ class LocalLlmProvider(AgentProvider):
         self._model_windows = cache
         base = self._base_url()
         if not base:
-            return _FALLBACK_CONTEXT_WINDOW
+            return resolve_context_window(model)
         key = (base, model)
         if model and key in cache:
             return cache[key]
@@ -1205,7 +1231,7 @@ class LocalLlmProvider(AgentProvider):
             data = await self._request_json(
                 session, "GET", f"{base}/models", headers=self._api_headers(), timeout=10)
         except _NET_ERRORS:
-            return _FALLBACK_CONTEXT_WINDOW
+            return resolve_context_window(model)
         if isinstance(data, dict):
             for entry in data.get("data") or []:
                 if not isinstance(entry, dict) or not entry.get("id"):
@@ -1213,11 +1239,12 @@ class LocalLlmProvider(AgentProvider):
                 window = explicit_context_window(entry)
                 if window:
                     cache[(base, str(entry["id"]))] = window
-        # Remember a miss too, so a model that never advertises a window does not
-        # refetch /models on every turn. A failed request is not cached.
+        # Remember a miss too (as the table / 32k value), so a model that never
+        # advertises a window does not refetch /models on every turn. A failed
+        # request is not cached.
         if model and key not in cache:
-            cache[key] = _FALLBACK_CONTEXT_WINDOW
-        return cache.get(key) or _FALLBACK_CONTEXT_WINDOW
+            cache[key] = resolve_context_window(model)
+        return cache.get(key) or resolve_context_window(model)
 
     async def _wait_stage_done(self, session: aiohttp.ClientSession,
                                endpoint: str, args: dict, model: str,
