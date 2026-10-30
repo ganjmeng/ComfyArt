@@ -15,6 +15,7 @@ from ._cli_common import (
     merge_usage,
 )
 from . import lms
+from . import robustness as _rb
 from .guide import AGENT_GUIDE, CORE_MCP_TOOLS, PAID_TOOLS
 from .plan_quote import CANCEL_TEXT, QUOTE_TOOL, canon_key
 from .providers import (
@@ -884,6 +885,14 @@ def _message_tokens(messages: list[dict]) -> int:
     return sum(count_tokens(str(m.get("content") or "")) for m in messages)
 
 
+def _owner_kw(turn) -> dict:
+    """#390 ownership keys for stored data (local defaults in the single-user build)."""
+    from .run_budget import LOCAL_OWNER_ID, LOCAL_PROJECT_ID, LOCAL_WORKSPACE_ID
+    return {"owner_id": str(getattr(turn, "owner_id", "") or LOCAL_OWNER_ID),
+            "workspace_id": str(getattr(turn, "workspace_id", "") or LOCAL_WORKSPACE_ID),
+            "project_id": str(getattr(turn, "project_id", "") or LOCAL_PROJECT_ID)}
+
+
 def fit_history(history: Optional[list[dict]], *, context_window: Optional[int] = None,
                 reserved_tokens: int = 0) -> list[dict]:
     """History that fits the input budget. Over the budget, the last 6 turns stay
@@ -1300,6 +1309,44 @@ class LocalLlmProvider(AgentProvider):
                     await asyncio.sleep(min(0.25, max(0.0, end - time.monotonic())))
                 if handle.stop_requested:
                     raise e
+
+    async def _summarize_llm(self, session, base: str, model: str, previous: str, new_turns: str) -> str:
+        """One model call: previous summary + newly pushed-out turns -> updated summary. No retries."""
+        data = await self._request_json(
+            session, "POST", f"{base}/chat/completions", headers=self._api_headers(),
+            json_body={"model": model, "temperature": 0.1, "messages": [
+                {"role": "system", "content": _rb.SUMMARY_PROMPT},
+                {"role": "user", "content": f"Previous summary:\n{previous or '(none)'}\n\n"
+                                            f"Turns that just left the context:\n{new_turns}"}]},
+            timeout=_rb.DEFAULTS["summary_timeout_s"])
+        msg = (data.get("choices") or [{}])[0].get("message") or {}
+        return _THINK_RE.sub("", self._extract_text(msg.get("content") or "")).strip()
+
+    async def _history_with_model_summary(self, session, base: str, model: str, turn, window: int,
+                                          *, reserved: int) -> list[dict]:
+        """#390-1: the rule fit decides what stays verbatim (last 6 turns at most, 70% of the window);
+        the turns it pushed out get a rolling model summary (<= 2000 tokens, cut to the room left)."""
+        msgs = self._history_messages(turn.history, context_window=window, reserved_tokens=reserved)
+        if not msgs or msgs[0].get("role") != "system":
+            return msgs  # fits verbatim (or nothing fits): no model call
+        turns = _group_turns(turn.history)
+        kept = sum(1 for m in msgs[1:] if m.get("role") == "user")
+        head = turns[:max(0, len(turns) - kept)]
+        if not head:
+            return msgs
+        head_texts = ["\n".join(f"{m['role']}: {m['content']}" for m in _render_turns([t])) for t in head]
+        rule = str(msgs[0]["content"])
+
+        async def llm(previous: str, new_turns: str) -> str:
+            return await self._summarize_llm(session, base, model, previous, new_turns)
+        text, source, _n = await _rb.model_summary(head_texts, rule, llm, model_id=model,
+                                                     timeout_s=_rb.DEFAULTS["summary_timeout_s"],
+                                                     **_owner_kw(turn))
+        if source == "rule":
+            return msgs
+        budget = max(0, input_token_budget(window) - reserved - _message_tokens(msgs[1:]))
+        text = truncate_to_tokens(f"{_SUMMARY_HEADER}\n{text}", min(_SUMMARY_TOKEN_CAP, budget))
+        return [{"role": "system", "content": text}, *msgs[1:]] if text else msgs[1:]
 
     def _threshold(self) -> float:
         from ComfyArt.api.wavespeed import confirm_usd
@@ -1759,11 +1806,12 @@ class LocalLlmProvider(AgentProvider):
                 system = _SYSTEM_PROMPT if tools else ""
                 user_msg = _user_content(turn.user_text, turn.attachments)
                 window = await self._context_window(session, model)
+                history_msgs = await self._history_with_model_summary(
+                    session, base, model, turn, window,
+                    reserved=_content_tokens(system) + _content_tokens(user_msg))
                 messages: list[dict] = [
                     *([{"role": "system", "content": system}] if system else []),
-                    *self._history_messages(
-                        turn.history, context_window=window,
-                        reserved_tokens=_content_tokens(system) + _content_tokens(user_msg)),
+                    *history_msgs,
                     {"role": "user", "content": user_msg},
                 ]
 
