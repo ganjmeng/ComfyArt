@@ -85,15 +85,16 @@ def test_rev2_cells_pinned(got):
     assert all(u == R541.format("f2045022727c73e24bd6d5ebcb3815bedb7b8797", "brand", "brand", i) for i, u in b.items())
     assert list(k) == ["eco", "gold", "playful", "panels", "shelf"] and "mockup" not in k
     # packaging re-pinned to manifest c26cfad (mockup dropped; same 5 image blobs as 1014ef2)
-    assert all(u == R541.format("c26cfaddc5e12c8652b151ef09ad12c47b2062a0", "packaging", "packaging", i) for i, u in k.items())
+    assert all(u == R541.format("c26cfaddc5e12c8652b151ef09ad12c47b2062a0", "packaging", "packaging", i) for i, u in k.items() if i != "shelf")
+    assert k["shelf"] == R541.format("35c819e64b38cc7d64dcd814ae8b86133976fc8a", "packaging", "packaging", "shelf")  # retail-shelf re-wash
     assert got["presets"]["motion"] == 3 and got["presets"]["poster"] == 3
 
 
 @needs_node
 def test_examples_carousel_is_data_driven(got):
-    want = {"poster": 5, "thumbnail": 5, "character": 6, "social": 10}  # thumbnail #5 pending re-wash; interior pending ratio measurement
+    want = {"poster": 5, "thumbnail": 6, "character": 6, "social": 10, "banner": 1}  # interior pending re-wash (3× 4:5 + 1× 1:1)
     assert {k: v for k, v in got["examples"].items() if v} == want
-    for sid in ("product", "brand", "packaging", "motion", "interior", "banner", "custom-workflow"):
+    for sid in ("product", "brand", "packaging", "motion", "interior", "custom-workflow"):
         assert got["examples"][sid] == 0, sid
     assert got["exNone"] == ["", ""]
     html = got["exMock"]
@@ -107,9 +108,10 @@ def test_examples_carousel_is_data_driven(got):
 
 
 EX541 = {"poster": ("6d864bd2dd53b9f5b487829f2834d94be013b0a5", [1, 2, 3, 4, 5]),
-         "thumbnail": ("aae2cf95ea5045153da219e6a3769ff814441838", [1, 2, 3, 4, 6]),
+         "thumbnail": ("5fc35b17f11ee58fde21671b16b574ecb0d35e5a", [1, 2, 3, 4, 5, 6]),
          "character": ("dd97ee3782fc85090217c573b2ebb59ea4f19654", [1, 2, 3, 4, 5, 6]),
-         "social": ("cb41cb8a450139cd903e777c8f84024019d517cd", list(range(1, 11)))}
+         "social": ("cb41cb8a450139cd903e777c8f84024019d517cd", list(range(1, 11))),
+         "banner": ("8cc3fb305f7ce29ebbab63525680e3436e964dbb", [1])}  # 1 × ~2:1 composite
 
 
 @needs_node
