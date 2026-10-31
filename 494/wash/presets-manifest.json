@@ -1,0 +1,407 @@
+{
+  "kind": "preset-wash",
+  "count": 30,
+  "size": [
+    320,
+    240
+  ],
+  "params": {
+    "format": "WEBP",
+    "quality": 82,
+    "method": 6,
+    "exact": false
+  },
+  "encoder": "Pillow==13.0.0",
+  "presets": [
+    {
+      "skillId": "banner",
+      "presetId": "brand",
+      "file": "494/wash/presets/banner__brand.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "77d01c8e1dbe6b1faa967a90ff42348ce508a964219e5b7fdb7bc757dec21ead",
+      "bytes": 17232,
+      "source_png": "/workspace/494-wash-out/presets/banner__brand.png",
+      "source_sha256": "f269d561d983ebb63c7b7ea0c37b200dee1b3d33a6112b39aa87c80bf1190e86"
+    },
+    {
+      "skillId": "banner",
+      "presetId": "event",
+      "file": "494/wash/presets/banner__event.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "81aa963c2fbde5e9bffdf7c0e683635b42b928758b0f747b78259706bf0f903b",
+      "bytes": 11390,
+      "source_png": "/workspace/494-wash-out/presets/banner__event.png",
+      "source_sha256": "18a4543e9772d20a50e57f28e6a9a22077bc9b77ce8b97e996ddc1595cb2f366"
+    },
+    {
+      "skillId": "banner",
+      "presetId": "sale",
+      "file": "494/wash/presets/banner__sale.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "6105921d0a6cf7a4b4f12df98c65c636440b0b11a451e7eaeb6f7555c1dfa18c",
+      "bytes": 14400,
+      "source_png": "/workspace/494-wash-out/presets/banner__sale.png",
+      "source_sha256": "366832db351cf2347419827bafeb6b856e74f6576862ac2d71ccc7ad725f685a"
+    },
+    {
+      "skillId": "brand",
+      "presetId": "geometric",
+      "file": "494/wash/presets/brand__geometric.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "b0c238044455c086364edb1394e3ed9fbd01776b42ada39fc446bf2495f75fa7",
+      "bytes": 7224,
+      "source_png": "/workspace/494-wash-out/presets/brand__geometric.png",
+      "source_sha256": "f4eea6d9777857518493a6ce569036439bbd39ea8f57393494dd0151b8b55c8d"
+    },
+    {
+      "skillId": "brand",
+      "presetId": "handmade",
+      "file": "494/wash/presets/brand__handmade.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "b67c5e66e14bf69e5133506d12ceddf0d58231789123c94e8c7dd6f55069fdcb",
+      "bytes": 16366,
+      "source_png": "/workspace/494-wash-out/presets/brand__handmade.png",
+      "source_sha256": "7b7860a581ea6be44ec4a372d567a3741e1246d7e16be8c884aa971686d0ffa7"
+    },
+    {
+      "skillId": "brand",
+      "presetId": "tech",
+      "file": "494/wash/presets/brand__tech.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "0fd8564dd2a422d73d91813c4dd88de84b0ab92fac6635fe4ddc893b045c64c4",
+      "bytes": 8662,
+      "source_png": "/workspace/494-wash-out/presets/brand__tech.png",
+      "source_sha256": "ca8be8b55dcc887feaaa934ddcb1a7b44f9c121c957b0165406bcb5204b8a4dd"
+    },
+    {
+      "skillId": "character",
+      "presetId": "anime",
+      "file": "494/wash/presets/character__anime.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "9cb756dcb2304fe598aadd1800c04b0ce9c5bd7923eb79e9662821320e3503a9",
+      "bytes": 11214,
+      "source_png": "/workspace/494-wash-out/presets/character__anime.png",
+      "source_sha256": "108dc72efccda6050c58ff836999ba7a9730ea846b3f43c9f9889f3b59b78202"
+    },
+    {
+      "skillId": "character",
+      "presetId": "cartoon3d",
+      "file": "494/wash/presets/character__cartoon3d.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "3fe155170e024171e2675cb34e9179524928adc3a3aed060b1d727b21f9093fe",
+      "bytes": 9268,
+      "source_png": "/workspace/494-wash-out/presets/character__cartoon3d.png",
+      "source_sha256": "9be369027e2c8adb3f4492f2f47a57c02f7a89167597610541392e0e147be684"
+    },
+    {
+      "skillId": "character",
+      "presetId": "concept",
+      "file": "494/wash/presets/character__concept.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "c921111fc000bca9cb307caf3d9769c9b05a9c85c66b9f3da2144ff45bcd9508",
+      "bytes": 14822,
+      "source_png": "/workspace/494-wash-out/presets/character__concept.png",
+      "source_sha256": "8624df8be23c30a99e0ffd52144987c37f0e1889d392302be1a3fd9328efa5b8"
+    },
+    {
+      "skillId": "interior",
+      "presetId": "industrial",
+      "file": "494/wash/presets/interior__industrial.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "159b79f8b8e15600b8e99abedc0d263a63b9c2533235c801739520e46a697b11",
+      "bytes": 23534,
+      "source_png": "/workspace/494-wash-out/presets/interior__industrial.png",
+      "source_sha256": "a3f9455e6477cb9f48a9a238bb68362f8d1676d52b52fc12cb3f032a08705dec"
+    },
+    {
+      "skillId": "interior",
+      "presetId": "minimal",
+      "file": "494/wash/presets/interior__minimal.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "e715be08048e33082d173869dd0e97327d5200889cabbcc97dc518589b95ba7c",
+      "bytes": 14370,
+      "source_png": "/workspace/494-wash-out/presets/interior__minimal.png",
+      "source_sha256": "40f511aa17c91c96d5d91a1f36ec5cbce82d61fb8a1e24101b8f0a038a40aaea"
+    },
+    {
+      "skillId": "interior",
+      "presetId": "nordic",
+      "file": "494/wash/presets/interior__nordic.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "776271bdd58864de6e3d0605b7ecf87820cb6f76bae4a953a9fb6f9b54b4235d",
+      "bytes": 16008,
+      "source_png": "/workspace/494-wash-out/presets/interior__nordic.png",
+      "source_sha256": "0ff189ec63ea47453413f95c643b2cf3b752ec19db2a5bf7e4ec990ecb0c6b7b"
+    },
+    {
+      "skillId": "motion",
+      "presetId": "light",
+      "file": "494/wash/presets/motion__light.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "f2c5bdead5905e3e014310821b912961a39ca64dcf9753082aaa0c3b84ae2d10",
+      "bytes": 8500,
+      "source_png": "/workspace/494-wash-out/presets/motion__light.png",
+      "source_sha256": "21f83d1527b628756c939a33aa22f7daacfe9086bb76892f8f0e8f715a360797"
+    },
+    {
+      "skillId": "motion",
+      "presetId": "loop",
+      "file": "494/wash/presets/motion__loop.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "df9ca7056ad33fcf95ce1c04cd1e8536734f7294c127401d8b5d585ded9ab21f",
+      "bytes": 12472,
+      "source_png": "/workspace/494-wash-out/presets/motion__loop.png",
+      "source_sha256": "6e5e004f2da0f8a235d2ce2ae8c5066cb94d5d71856c9e158401cf6027bc6d7e"
+    },
+    {
+      "skillId": "motion",
+      "presetId": "push",
+      "file": "494/wash/presets/motion__push.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "326b1f0c1c46ce50e0f02595af9cd63e6b100238108af957d339da1f3d66ae75",
+      "bytes": 17396,
+      "source_png": "/workspace/494-wash-out/presets/motion__push.png",
+      "source_sha256": "96e7b0cf729159919006bf349be013a0738304eaa7cdfbfd967ef609ad37ce58"
+    },
+    {
+      "skillId": "packaging",
+      "presetId": "eco",
+      "file": "494/wash/presets/packaging__eco.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "efe97ab480bf6ffce5175d1618451346cc3bf62ed8100d491b5b935c55b10ba2",
+      "bytes": 14344,
+      "source_png": "/workspace/494-wash-out/presets/packaging__eco.png",
+      "source_sha256": "34dafc5334f2b2245f2c693abee6da6f47e02ed9c455a6ff3a26f3470c1b86ed"
+    },
+    {
+      "skillId": "packaging",
+      "presetId": "gold",
+      "file": "494/wash/presets/packaging__gold.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "87f03a65e247be8e82c66e9d7e13980bcf0b7cdf1f59ea4f54195ea6778ae979",
+      "bytes": 12514,
+      "source_png": "/workspace/494-wash-out/presets/packaging__gold.png",
+      "source_sha256": "ce3d332e1a86b758f0c468e5372eb548ee2acefa0ccb4761d59f95e12a4a52c9"
+    },
+    {
+      "skillId": "packaging",
+      "presetId": "playful",
+      "file": "494/wash/presets/packaging__playful.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "5f55a5e61303cf9b0a343e0bb59e83ead013c0223402e3a9eec0229489cf6c10",
+      "bytes": 16562,
+      "source_png": "/workspace/494-wash-out/presets/packaging__playful.png",
+      "source_sha256": "4659d700c34338a4b36be791510940a7fae24081f7106cfd7ce141c6d1425e52"
+    },
+    {
+      "skillId": "poster",
+      "presetId": "minimal",
+      "file": "494/wash/presets/poster__minimal.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "ff6579048059e4716570f1dbd73d18ec63b29b4977fed955a5165a9ae4d6b69f",
+      "bytes": 5996,
+      "source_png": "/workspace/494-wash-out/presets/poster__minimal.png",
+      "source_sha256": "9d86dbef2f0024f330644978a287526922595ccf6a48ee5bfe63c6ba9aa4eb48"
+    },
+    {
+      "skillId": "poster",
+      "presetId": "neon",
+      "file": "494/wash/presets/poster__neon.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "30b4fe630b93ba2dd32bc457e19ecc2a494717e4d32de2bfcd8da81e32f4e8fb",
+      "bytes": 13986,
+      "source_png": "/workspace/494-wash-out/presets/poster__neon.png",
+      "source_sha256": "1ef91937077db9823225466f6a7efdea2b0b9fa312a6975b174a453c3451255e"
+    },
+    {
+      "skillId": "poster",
+      "presetId": "retro",
+      "file": "494/wash/presets/poster__retro.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "d3fca397df92b82a3ad87abd334ada84f2ed4dce13f1bdbd8e6bb8d347c38843",
+      "bytes": 28304,
+      "source_png": "/workspace/494-wash-out/presets/poster__retro.png",
+      "source_sha256": "604394d93f406397f353cfb46658164b1cec333ee99ab5d1fa681df9eff6de99"
+    },
+    {
+      "skillId": "product",
+      "presetId": "detail",
+      "file": "494/wash/presets/product__detail.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "74d7a402fc302daa8016e4b5414f32cc429b015d71d832e4d71206998014a40c",
+      "bytes": 5806,
+      "source_png": "/workspace/494-wash-out/presets/product__detail.png",
+      "source_sha256": "1b0f7af8ceccd5cabb76bc082e20e2bff267daf5443af25d05a40170fbca2a22"
+    },
+    {
+      "skillId": "product",
+      "presetId": "lifestyle",
+      "file": "494/wash/presets/product__lifestyle.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "eab2c5ea51bdbe9691a11ed8cdcf4bffbdf13ceb9f78f289045734f05f1859f3",
+      "bytes": 21500,
+      "source_png": "/workspace/494-wash-out/presets/product__lifestyle.png",
+      "source_sha256": "e4c70fa2b9be08eb7221ba45471a30e7b5ab918290a030922cb383721f1b206b"
+    },
+    {
+      "skillId": "product",
+      "presetId": "white",
+      "file": "494/wash/presets/product__white.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "8adcd20f6fdc4e1ab7eca6808ccc42c9b07f2a1c61d06edb34b91a5d10812d87",
+      "bytes": 732,
+      "source_png": "/workspace/494-wash-out/presets/product__white.png",
+      "source_sha256": "3533d4620c450cf72af041ad711a259e05139f380008cdd365d70bd0b9c6fd87"
+    },
+    {
+      "skillId": "social",
+      "presetId": "clash",
+      "file": "494/wash/presets/social__clash.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "223d41298e76c7c8e2a5305807de2c46b40ec82fe48c7bc3b4344a4765435ae5",
+      "bytes": 14402,
+      "source_png": "/workspace/494-wash-out/presets/social__clash.png",
+      "source_sha256": "ab0056c61dabe32335913596334c20e485c4c9e1f87cab929995df0d922fd41a"
+    },
+    {
+      "skillId": "social",
+      "presetId": "fresh",
+      "file": "494/wash/presets/social__fresh.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "926569e15dc54ae5b34c80af710345193462dbecd3b568cedfe90f2e2d57a2d1",
+      "bytes": 18506,
+      "source_png": "/workspace/494-wash-out/presets/social__fresh.png",
+      "source_sha256": "c617bafa9cf1c2b29dd2167ce64810683121f8083827cb20c723fa48e2a34922"
+    },
+    {
+      "skillId": "social",
+      "presetId": "grey",
+      "file": "494/wash/presets/social__grey.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "0f4edcb3498f5a4b406c83bc94e0fce9d53994812cd43c22f453440dcf3643d7",
+      "bytes": 18762,
+      "source_png": "/workspace/494-wash-out/presets/social__grey.png",
+      "source_sha256": "e872e66222b7b902d91dde8dde79b2095eddac5cce954e36ac50b949bd5e1cff"
+    },
+    {
+      "skillId": "thumbnail",
+      "presetId": "expression",
+      "file": "494/wash/presets/thumbnail__expression.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "10d81bbd4b4e72ee389a12afb95ff48fc1ea98774e504e7c8d3d5bb57112f6e9",
+      "bytes": 14344,
+      "source_png": "/workspace/494-wash-out/presets/thumbnail__expression.png",
+      "source_sha256": "004905b38445a694a7aa494bfbb7df46fc751061475db47db457f57f6973392f"
+    },
+    {
+      "skillId": "thumbnail",
+      "presetId": "tech",
+      "file": "494/wash/presets/thumbnail__tech.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "e57b182a669736015d3037da4db5d980c6f4a7e0314a7fdf101f3f86e4d50175",
+      "bytes": 10638,
+      "source_png": "/workspace/494-wash-out/presets/thumbnail__tech.png",
+      "source_sha256": "07e6ac9e1a5e18743f25135d5fdfe4b151dfc4b110c9c322e5ece8a5a11a0e24"
+    },
+    {
+      "skillId": "thumbnail",
+      "presetId": "vlog",
+      "file": "494/wash/presets/thumbnail__vlog.webp",
+      "size": [
+        320,
+        240
+      ],
+      "sha256": "153cc2fc4c763395bb15e15343e9db5f7f75f32dcc4d11823d80719c1edf65fb",
+      "bytes": 20426,
+      "source_png": "/workspace/494-wash-out/presets/thumbnail__vlog.png",
+      "source_sha256": "fd336b968dfb86467ae8ab9a6ca7c6bee39d418af8b8adf3d6b01d8c2d633d8a"
+    }
+  ]
+}
