@@ -202,18 +202,4 @@ export const Icons = {
   memWrench: <Svg strokeWidth={1.5}><path d="M20.8 6.3a5.2 5.2 0 0 1-6.9 6.1l-7.2 7.2a2.1 2.1 0 0 1-3-3l7.2-7.2a5.2 5.2 0 0 1 6.1-6.9l-3.2 3.2.4 2.6 2.6.4 3.2-3.2c.1.3.1.5.1.8z" /></Svg>,
   memAssets: <Svg strokeWidth={1.5}><path d="M7 3.5l3.5 6h-7z" /><circle cx="16.5" cy="7" r="3" /><rect x="9" y="13.5" width="6" height="6" rx=".6" transform="rotate(15 12 16.5)" /></Svg>,
   info: <Svg><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></Svg>,
-  /* #540 更多工具: original filled glyphs (fill=currentColor, no stroke) — drawn in-house, not Lovart SVGs; design may swap. */
-  caretFill: <Svg fill><path d="M6.6 9.3h10.8a.6.6 0 0 1 .45 1l-5.4 5.7a.6.6 0 0 1-.9 0l-5.4-5.7a.6.6 0 0 1 .45-1z" /></Svg>,
-  toolErase: <Svg fill><path d="M14.1 3.6a2 2 0 0 1 2.8 0l3.5 3.5a2 2 0 0 1 0 2.8L12.3 18H20a1 1 0 1 1 0 2H8.6a2 2 0 0 1-1.4-.6l-3.6-3.6a2 2 0 0 1 0-2.8z" /></Svg>,
-  toolCrop: <Svg fill><path fillRule="evenodd" d="M6 2a1 1 0 0 1 1 1v13a1 1 0 0 0 1 1h13a1 1 0 1 1 0 2h-2v2a1 1 0 1 1-2 0v-2H8a3 3 0 0 1-3-3V8H3a1 1 0 0 1 0-2h2V3a1 1 0 0 1 1-1zm3 4h7a3 3 0 0 1 3 3v6h-2V9a1 1 0 0 0-1-1H9z" /></Svg>,
-  toolExpand: <Svg fill><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H9v2H6v3H4zM15 4h3.5A1.5 1.5 0 0 1 20 5.5V9h-2V6h-3zM4 15h2v3h3v2H5.5A1.5 1.5 0 0 1 4 18.5zM18 15h2v3.5a1.5 1.5 0 0 1-1.5 1.5H15v-2h3z" /><rect x="8.5" y="8.5" width="7" height="7" rx="1.5" /></Svg>,
-  toolAdjust: <Svg fill><path d="M3 6h9v2H3zM19.5 6H21v2h-1.5zM3 16h3.5v2H3zM13.5 16H21v2h-7.5z" /><circle cx="16" cy="7" r="3" /><circle cx="10" cy="17" r="3" /></Svg>,
-  toolText: <Svg fill><path fillRule="evenodd" d="M6 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zm2 5v2h3v7h2v-7h3V8z" /></Svg>,
-  toolAngles: <Svg fill><path d="M12 2.6 20 7l-8 4.4L4 7zM3.4 8.6l7.6 4.2v8.6l-7.6-4.2zM20.6 8.6v8.6L13 21.4v-8.6z" /></Svg>,
-  toolVector: <Svg fill><path fillRule="evenodd" d="M12 2l6 7-2.6 8H8.6L6 9zm0 8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z" /><rect x="8" y="18.5" width="8" height="3" rx="1" /></Svg>,
-  toolMove: <Svg fill><path d="M12 2l3.5 3.5H13v5.5h5.5V8.5L22 12l-3.5 3.5V13H13v5.5h2.5L12 22l-3.5-3.5H11V13H5.5v2.5L2 12l3.5-3.5V11H11V5.5H8.5z" /></Svg>,
-  toolFlip: <Svg fill><path d="M10.6 4.4a.6.6 0 0 1 1.1.3v14.7a.6.6 0 0 1-.6.6H3.6a.6.6 0 0 1-.5-.9zM13.4 4.4a.6.6 0 0 0-1.1.3v14.7a.6.6 0 0 0 .6.6h7.5a.6.6 0 0 0 .5-.9z" opacity=".55" /><path d="M10.6 4.4a.6.6 0 0 1 1.1.3v14.7a.6.6 0 0 1-.6.6H3.6a.6.6 0 0 1-.5-.9z" /></Svg>,
-  toolTo3d: <Svg fill><path fillRule="evenodd" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zM8.5 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z" /></Svg>,
-  toolLipsync: <Svg fill><path d="M12 2a3.5 3.5 0 0 1 3.5 3.5v5a3.5 3.5 0 0 1-7 0v-5A3.5 3.5 0 0 1 12 2zM5 10a1 1 0 0 1 2 0 5 5 0 0 0 10 0 1 1 0 1 1 2 0 7 7 0 0 1-6 6.9V20h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-3.1A7 7 0 0 1 5 10z" /></Svg>,
-  toolAudio: <Svg fill><path d="M20 3v12.5a3.5 3.5 0 1 1-2-3.2V7.3l-8 1.6v8.6a3.5 3.5 0 1 1-2-3.2V5.4z" /></Svg>,
 }

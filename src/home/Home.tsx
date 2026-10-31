@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import type { AgentMode } from '../agent'
 import { botEnabledAtom, loadProviders, loadSettings, providerLabel } from '../bot'
@@ -38,7 +38,7 @@ const QUICK: [keyof typeof Icons, string, string][] = [
 ]
 
 /** #537 / #496 / #540: home 「实用工具」— covers = design wash on review-assets (commit-pinned). */
-type ToolCard = { id: string; icon: keyof typeof Icons; label: string; accept: string; cover: string }
+type ToolCard = { id: string; icon?: keyof typeof Icons; label: string; accept: string; cover: string }
 const HOME_TOOL_CARDS: ToolCard[] = [
   { id: 'cutout', icon: 'cutout', label: t('common.removeBackground'), accept: 'image/*', cover: toolCover('main-5', 'cutout') },
   { id: 'extend', icon: 'extend', label: t('common.extendVideo'), accept: 'video/*', cover: toolCover('main-5', 'extend') },
@@ -46,41 +46,45 @@ const HOME_TOOL_CARDS: ToolCard[] = [
   { id: 'inpaint', icon: 'effects', label: t('home.toolPreciseEdit'), accept: 'image/*', cover: toolCover('main-5', 'inpaint') },
   { id: 'mockup', icon: 'box', label: t('mockup.title'), accept: 'image/*', cover: toolCover('main-5', 'mockup') },
 ]
-/** #540: icons = in-house FILLED glyphs (quick/video already filled; rest tool* in ui/icons.tsx), 18px.
- *  Lovart「更多」10 (Loomic order) + unique 4. The menu renders icon rows only (Jingmeng ruling);
+/** #540: Lovart「更多」10 (Loomic order) + unique 4. The menu renders icon rows only (Jingmeng ruling);
  *  `cover` is backup data, used only if a tool is pinned (置顶) into the main 16:9 row. */
-/** #540: the ONE place mapping 更多 tool id → 18px filled icon. Swap here when design posts its set on #540. */
+/** #540: the ONE place mapping 更多 tool id → 18px filled icon (design spec #540 comment 6545206549).
+ *  Paths inlined from Remix Icon v4.9.1 (`*-fill`; `text` has no fill variant) — Apache License 2.0,
+ *  Copyright (c) Remix Design (github.com/Remix-Design/RemixIcon). Not Lovart SVGs; no dependency added. */
+const rx = (d: string) => <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d={d} /></svg>
 const MORE_TOOL_ICON = {
-  quick: 'quick',
-  erase: 'toolErase',
-  crop: 'toolCrop',
-  expand: 'toolExpand',
-  adjust: 'toolAdjust',
-  text: 'toolText',
-  angles: 'toolAngles',
-  vectorize: 'toolVector',
-  move: 'toolMove',
-  transform: 'toolFlip',
-  to3d: 'toolTo3d',
-  lipsync: 'toolLipsync',
-  motion: 'video',
-  audio: 'toolAudio',
-} as const satisfies Record<string, keyof typeof Icons>
+  quick: rx('M15.2238 15.5079L13.0111 20.1581C12.8687 20.4573 12.5107 20.5844 12.2115 20.442C12.1448 20.4103 12.0845 20.3665 12.0337 20.3129L8.49229 16.5741C8.39749 16.474 8.27113 16.4096 8.13445 16.3918L3.02816 15.7243C2.69958 15.6814 2.46804 15.3802 2.51099 15.0516C2.52056 14.9784 2.54359 14.9075 2.5789 14.8426L5.04031 10.3192C5.1062 10.1981 5.12839 10.058 5.10314 9.92253L4.16 4.85991C4.09931 4.53414 4.3142 4.22086 4.63997 4.16017C4.7126 4.14664 4.78711 4.14664 4.85974 4.16017L9.92237 5.10331C10.0579 5.12855 10.198 5.10637 10.319 5.04048L14.8424 2.57907C15.1335 2.42068 15.4979 2.52825 15.6562 2.81931C15.6916 2.88421 15.7146 2.95507 15.7241 3.02833L16.3916 8.13462C16.4095 8.2713 16.4739 8.39766 16.5739 8.49245L20.3127 12.0338C20.5533 12.2617 20.5636 12.6415 20.3357 12.8821C20.2849 12.9357 20.2246 12.9795 20.1579 13.0112L15.5078 15.224C15.3833 15.2832 15.283 15.3835 15.2238 15.5079ZM16.0206 17.435L17.4348 16.0208L21.6775 20.2634L20.2633 21.6776L16.0206 17.435Z'), // ri-magic-fill
+  erase: rx('M13.9999 18.9966H20.9999V20.9966H11.9999L8.00229 20.9991L1.51457 14.5113C1.12405 14.1208 1.12405 13.4877 1.51457 13.0971L12.1212 2.49053C12.5117 2.1 13.1449 2.1 13.5354 2.49053L21.3136 10.2687C21.7041 10.6592 21.7041 11.2924 21.3136 11.6829L13.9999 18.9966ZM15.6567 14.5113L19.1922 10.9758L12.8283 4.61185L9.29275 8.14738L15.6567 14.5113Z'), // ri-eraser-fill
+  crop: rx('M19 17H22V19H19V22H17V19H6C5.44772 19 5 18.5523 5 18V7H2V5H5V2H7V5H18C18.5523 5 19 5.44772 19 6V17Z'), // ri-crop-fill
+  expand: rx('M21 3H13.5L16.5429 6.04289L13.2929 9.29289L14.7071 10.7071L17.9571 7.45711L21 10.5V3ZM3 21H10.5L7.45711 17.9571L10.7071 14.7071L9.29289 13.2929L6.04289 16.5429L3 13.5V21Z'), // ri-expand-diagonal-fill
+  adjust: rx('M6.17071 18C6.58254 16.8348 7.69378 16 9 16C10.3062 16 11.4175 16.8348 11.8293 18H22V20H11.8293C11.4175 21.1652 10.3062 22 9 22C7.69378 22 6.58254 21.1652 6.17071 20H2V18H6.17071ZM12.1707 11C12.5825 9.83481 13.6938 9 15 9C16.3062 9 17.4175 9.83481 17.8293 11H22V13H17.8293C17.4175 14.1652 16.3062 15 15 15C13.6938 15 12.5825 14.1652 12.1707 13H2V11H12.1707ZM6.17071 4C6.58254 2.83481 7.69378 2 9 2C10.3062 2 11.4175 2.83481 11.8293 4H22V6H11.8293C11.4175 7.16519 10.3062 8 9 8C7.69378 8 6.58254 7.16519 6.17071 6H2V4H6.17071Z'), // ri-equalizer-fill
+  text: rx('M13 6V21H11V6H5V4H19V6H13Z'), // ri-text
+  angles: rx('M9 3H15L17 5H21C21.5523 5 22 5.44772 22 6V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V6C2 5.44772 2.44772 5 3 5H7L9 3ZM14.6839 18.3677L13.7892 16.5785C13.2509 16.8482 12.6432 17 12 17C9.79086 17 8 15.2091 8 13H10L7.83875 8.67749C6.70523 9.76898 6 11.3021 6 13C6 16.3137 8.68629 19 12 19C12.9647 19 13.8763 18.7723 14.6839 18.3677ZM9.31613 7.63226L10.2108 9.42151C10.7491 9.15179 11.3568 9 12 9C14.2091 9 16 10.7909 16 13H14L16.1613 17.3225C17.2948 16.231 18 14.6979 18 13C18 9.68629 15.3137 7 12 7C11.0353 7 10.1237 7.22769 9.31613 7.63226Z'), // ri-camera-switch-fill
+  vectorize: rx('M4.92898 21.4819L10.775 15.6359C11.4423 15.8141 12.1837 15.6414 12.7071 15.118C13.4882 14.3369 13.4882 13.0706 12.7071 12.2896C11.9261 11.5085 10.6598 11.5085 9.87872 12.2896C9.35526 12.813 9.18263 13.5544 9.36081 14.2217L3.51476 20.0677L2.4541 19.0071C5.28253 15.7072 6.34319 12.0539 7.7574 5.9256L14.1214 5.21849L19.7783 10.8754L19.0711 17.2393C12.9429 18.6535 9.28947 19.7142 5.98964 22.5426L4.92898 21.4819ZM16.5962 2.03651L22.9428 8.38312C23.1381 8.57838 23.1381 8.89496 22.9428 9.09022C22.8679 9.16513 22.7712 9.21431 22.6665 9.23067L21.1924 9.46113L15.5356 3.80428L15.7477 2.31935C15.7868 2.04599 16.04 1.85604 16.3134 1.89509C16.4205 1.91039 16.5197 1.96001 16.5962 2.03651Z'), // ri-pen-nib-fill
+  move: rx('M18 11V8L22 12L18 16V13H13V18H16L12 22L8 18H11V13H6V16L2 12L6 8V11H11V6H8L12 2L16 6H13V11H18Z'), // ri-drag-move-2-fill
+  transform: rx('M14 4H16C18.7614 4 21 6.23858 21 9V13H19V9C19 7.34315 17.6569 6 16 6H14V9L9 5L14 1V4ZM15 11V21C15 21.5523 14.5523 22 14 22H4C3.44772 22 3 21.5523 3 21V11C3 10.4477 3.44772 10 4 10H14C14.5523 10 15 10.4477 15 11Z'), // ri-anticlockwise-2-fill
+  to3d: rx('M20.5021 5.92225 12 1 3.49793 5.92225 12 10.8445 20.5021 5.92225ZM2.5 7.6555V17.5L11 22.4211V12.5765L2.5 7.6555ZM13 22.4211 21.5 17.5V7.6555L13 12.5765V22.4211Z'), // ri-box-3-fill
+  lipsync: rx('M4.92893 19.0711C3.11929 17.2614 2 14.7614 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22H2L4.92893 19.0711ZM11 6V18H13V6H11ZM7 9V15H9V9H7ZM15 9V15H17V9H15Z'), // ri-chat-voice-fill
+  motion: rx('M9.82986 8.78986L7.99998 9.45588V13H5.99998V8.05H6.015L11.2834 6.13247C11.5274 6.03855 11.7922 5.99162 12.0648 6.0008C13.1762 6.02813 14.1522 6.75668 14.4917 7.82036C14.678 8.40431 14.848 8.79836 15.0015 9.0025C15.9138 10.2155 17.3653 11 19 11V13C16.8253 13 14.8823 12.0083 13.5984 10.4526L13.017 13.7497L15 15.67V23H13V17.0142L10.9507 15.0271L10.003 19.3253L3.10938 18.1098L3.45667 16.1401L8.38071 17.0084L9.82986 8.78986ZM13.5 5.5C12.3954 5.5 11.5 4.60457 11.5 3.5C11.5 2.39543 12.3954 1.5 13.5 1.5C14.6046 1.5 15.5 2.39543 15.5 3.5C15.5 4.60457 14.6046 5.5 13.5 5.5Z'), // ri-run-fill
+  audio: rx('M20 3V17C20 19.2091 18.2091 21 16 21C13.7909 21 12 19.2091 12 17C12 14.7909 13.7909 13 16 13C16.7286 13 17.4117 13.1948 18 13.5351V6H9V17C9 19.2091 7.20914 21 5 21C2.79086 21 1 19.2091 1 17C1 14.7909 2.79086 13 5 13C5.72857 13 6.41165 13.1948 7 13.5351V3H20Z'), // ri-music-2-fill
+} satisfies Record<string, ReactNode>
+/** Remix ri-arrow-down-s-fill (Apache-2.0) — 14px filled chevron on the 更多工具 trigger. */
+const MORE_TOOLS_CARET = rx('M12 16L6 10H18L12 16Z')
 const MORE_HOME_TOOLS: ToolCard[] = [
-  { id: 'quick', icon: MORE_TOOL_ICON.quick, label: t('common.quickEdit'), accept: 'image/*', cover: toolCover('more-10', 'quick') },
-  { id: 'erase', icon: MORE_TOOL_ICON.erase, label: t('common.eraser'), accept: 'image/*', cover: toolCover('more-10', 'erase') },
-  { id: 'crop', icon: MORE_TOOL_ICON.crop, label: t('imageToolbar.crop'), accept: 'image/*', cover: toolCover('more-10', 'crop') },
-  { id: 'expand', icon: MORE_TOOL_ICON.expand, label: t('common.expand'), accept: 'image/*', cover: toolCover('more-10', 'expand') },
-  { id: 'adjust', icon: MORE_TOOL_ICON.adjust, label: t('common.adjust'), accept: 'image/*', cover: toolCover('more-10', 'adjust') },
-  { id: 'text', icon: MORE_TOOL_ICON.text, label: t('common.editText'), accept: 'image/*', cover: toolCover('more-10', 'text') },
-  { id: 'angles', icon: MORE_TOOL_ICON.angles, label: t('common.multiAngle'), accept: 'image/*', cover: toolCover('more-10', 'angles') },
-  { id: 'vectorize', icon: MORE_TOOL_ICON.vectorize, label: t('imageToolbar.vectorize'), accept: 'image/*', cover: toolCover('more-10', 'vectorize') },
-  { id: 'move', icon: MORE_TOOL_ICON.move, label: t('common.moveObject'), accept: 'image/*', cover: toolCover('more-10', 'move') },
-  { id: 'transform', icon: MORE_TOOL_ICON.transform, label: t('imageToolbar.flipAndRotate'), accept: 'image/*', cover: toolCover('more-10', 'transform') },
-  { id: 'to3d', icon: MORE_TOOL_ICON.to3d, label: t('imageToolbar.imageTo3d'), accept: 'image/*', cover: toolCover('unique-4', 'to3d') },
-  { id: 'lipsync', icon: MORE_TOOL_ICON.lipsync, label: t('genPanel.lipSync'), accept: 'image/*', cover: toolCover('unique-4', 'lipsync') },
-  { id: 'motion', icon: MORE_TOOL_ICON.motion, label: t('genPanel.motionControl'), accept: 'image/*', cover: toolCover('unique-4', 'motion') },
-  { id: 'audio', icon: MORE_TOOL_ICON.audio, label: t('audio.generateAudio'), accept: 'audio/*', cover: toolCover('unique-4', 'audio') },
+  { id: 'quick', label: t('common.quickEdit'), accept: 'image/*', cover: toolCover('more-10', 'quick') },
+  { id: 'erase', label: t('common.eraser'), accept: 'image/*', cover: toolCover('more-10', 'erase') },
+  { id: 'crop', label: t('imageToolbar.crop'), accept: 'image/*', cover: toolCover('more-10', 'crop') },
+  { id: 'expand', label: t('common.expand'), accept: 'image/*', cover: toolCover('more-10', 'expand') },
+  { id: 'adjust', label: t('common.adjust'), accept: 'image/*', cover: toolCover('more-10', 'adjust') },
+  { id: 'text', label: t('common.editText'), accept: 'image/*', cover: toolCover('more-10', 'text') },
+  { id: 'angles', label: t('common.multiAngle'), accept: 'image/*', cover: toolCover('more-10', 'angles') },
+  { id: 'vectorize', label: t('imageToolbar.vectorize'), accept: 'image/*', cover: toolCover('more-10', 'vectorize') },
+  { id: 'move', label: t('common.moveObject'), accept: 'image/*', cover: toolCover('more-10', 'move') },
+  { id: 'transform', label: t('imageToolbar.flipAndRotate'), accept: 'image/*', cover: toolCover('more-10', 'transform') },
+  { id: 'to3d', label: t('imageToolbar.imageTo3d'), accept: 'image/*', cover: toolCover('unique-4', 'to3d') },
+  { id: 'lipsync', label: t('genPanel.lipSync'), accept: 'image/*', cover: toolCover('unique-4', 'lipsync') },
+  { id: 'motion', label: t('genPanel.motionControl'), accept: 'image/*', cover: toolCover('unique-4', 'motion') },
+  { id: 'audio', label: t('audio.generateAudio'), accept: 'audio/*', cover: toolCover('unique-4', 'audio') },
 ]
 
 export function Home() {
@@ -422,14 +426,14 @@ export function Home() {
             align="end"
             trigger={({ open, toggle }) => (
               <button type="button" className="ca-landing__link ca-landing__moretools" data-testid="home-more-tools" data-open={open || undefined} onClick={toggle}>
-                <span className="ca-landing__moretools-label">{t('home.moreTools')}</span><span className="ca-icon" aria-hidden>{Icons.caretFill}</span>
+                <span className="ca-landing__moretools-label">{t('home.moreTools')}</span><span className="ca-icon" aria-hidden>{MORE_TOOLS_CARET}</span>
               </button>
             )}
           >
             <div className="ca-menu ca-menu--tools" data-testid="home-more-tools-menu">
               {MORE_HOME_TOOLS.map((tool) => (
                 <button key={tool.id} type="button" className="ca-menu__item" data-testid={`home-more-tool-${tool.id}`} disabled={uploading} onClick={() => pickTool(tool)}>
-                  <span className="ca-icon" aria-hidden>{Icons[tool.icon]}</span><span className="ca-menu__grow ca-menu__label">{tool.label}</span>
+                  <span className="ca-icon" aria-hidden>{MORE_TOOL_ICON[tool.id as keyof typeof MORE_TOOL_ICON]}</span><span className="ca-menu__grow ca-menu__label">{tool.label}</span>
                 </button>
               ))}
             </div>

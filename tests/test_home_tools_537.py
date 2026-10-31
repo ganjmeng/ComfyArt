@@ -141,7 +141,7 @@ def test_tool_cards_16x9_and_more_menu_icon_rows() -> None:
     # #540 ratio-fix: Lovart main cards 16:9; 更多 = icon rows only (no covers); cover kept as pin backup
     assert "aspect-ratio: 235 / 132" in CSS and "16 / 10" not in CSS
     assert "ca-menu__thumb" not in HOME and "ca-menu__thumb" not in CSS
-    assert '<span className="ca-icon" aria-hidden>{Icons[tool.icon]}</span>' in HOME
+    assert '<span className="ca-icon" aria-hidden>{MORE_TOOL_ICON[tool.id as keyof typeof MORE_TOOL_ICON]}</span>' in HOME
     assert HOME.count("toolCover('more-10'") == 10 and HOME.count("toolCover('unique-4'") == 4
 
 
@@ -155,8 +155,9 @@ def test_lovart_measured_values_540() -> None:
               ':root[data-theme="dark"] { --ca-tools-row-hover'):
         assert v in CSS, v
     assert "box-shadow" not in CSS.split(".ca-toolcard {", 1)[1].split(".ca-menu--tools", 1)[0]
-    assert "const MORE_TOOL_ICON = {" in HOME and HOME.count("icon: MORE_TOOL_ICON.") == 14
-    assert "Icons.caretFill" in HOME
-    icons = (ROOT / "src/ui/icons.tsx").read_text()
-    for k in ("toolErase", "toolCrop", "toolExpand", "toolAdjust", "toolText", "toolAngles", "toolVector", "toolMove", "toolFlip", "toolTo3d", "toolLipsync", "toolAudio", "caretFill"):
-        assert f"  {k}: <Svg fill>" in icons, k
+    assert "const MORE_TOOL_ICON = {" in HOME and HOME.count("rx('") == 15  # 14 tools + caret
+    assert "Apache License 2.0" in HOME and "Remix" in HOME
+    assert "{MORE_TOOL_ICON[tool.id as keyof typeof MORE_TOOL_ICON]}" in HOME and "{MORE_TOOLS_CARET}" in HOME
+    for name in ("magic-fill", "eraser-fill", "crop-fill", "expand-diagonal-fill", "equalizer-fill", "ri-text", "camera-switch-fill",
+                 "pen-nib-fill", "drag-move-2-fill", "anticlockwise-2-fill", "box-3-fill", "chat-voice-fill", "run-fill", "music-2-fill"):
+        assert name in HOME, name
