@@ -18,6 +18,7 @@ HANDOFF = (ROOT / "src/home/handoff.ts").read_text()
 CSS = (ROOT / "src/styles/home.css").read_text()
 ZH = json.loads((ROOT / "src/locales/zh.json").read_text())
 EN = json.loads((ROOT / "src/locales/en.json").read_text())
+SKILLS_TS = (ROOT / "src/skills.ts").read_text()
 needs_node = pytest.mark.skipif(
     not (ROOT / "node_modules" / ".bin" / "rolldown").exists() or not shutil.which("node"), reason="needs node + npm install")
 
@@ -84,35 +85,47 @@ def test_handoff_applies_preset():
 
 
 def test_dialog_is_data_driven():
-    assert "skill.inputs" in DLG and "skill.presets" in DLG and "<Modal" in DLG
+    assert "skill.inputs" in DLG and "skill.presets" in DLG
+    assert "ca-skillrun__left" in DLG and "ca-skillrun__right" in DLG and "ca-skillrun__grid" in DLG
+    assert "skillRun.start" in DLG and "skillRun.currentTemplate" in DLG
     for bad in ("'poster'", "'product'", "topic", "headline"):
         assert bad not in DLG, bad
     assert "missing.length > 0" in DLG and "skillRunParams(skill, values, preset)" in DLG
+    # 「详情」 keeps main's #484 edit page — no new detail route.
+    assert "openSkillEditor(skill.id)" in DLG
 
 
 def test_page_wiring():
     assert "hasSkillDialog(s) ? tryCard(s) : newProject({ skill: s.id })" in PAGE
-    assert "openSkillDetail(landing.id, true)" in PAGE
-    assert "<SkillFileBox instructions={skill.instructions}" in PAGE and "onInstructions" not in PAGE.split("function SkillDetail")[1].split("export function Skills")[0]
-    for tid in ("skill-detail-back", "skill-detail-try", "skill-detail-edit-chat", "skill-detail-more", "skill-detail-form-edit",
-                "skill-detail-preset", "skill-guide-skip", "skill-guide-next", "skill-detail-author"):
-        assert tid in PAGE, tid
-    assert "{skill.custom && (" in PAGE  # chat edit / ⋯ only for the user's own skills
-    for bad in ("views", "likes", "Icons.eye", "Icons.heart"):
+    assert "openSkillEditor(landing.id)" in PAGE and "openSkillDetail" not in PAGE
+    assert 'data-testid="skills-card-try"' in PAGE and "home.skillsTryThis" in PAGE
+    assert "onClick={row ? undefined : onTry}" in PAGE  # cover + title open the same dialog
+    # Explore still has author; Personal row layout has none.
+    assert 'data-testid="skills-card-author"' in PAGE
+    assert PAGE.count('layout="row"') >= 2 and "skills-group-yours" in PAGE and "skills-group-loomi" in PAGE
+    assert "ca-swall__card--row" in PAGE and "ca-swall--rows" in PAGE
+    assert "home.skillsCreatedByYou" in PAGE and "home.skillsCreatedByLoomi" in PAGE
+    assert "home.skillsEmptyLoomi" in PAGE
+    assert "!s.learned" in PAGE and "!!s.learned" in PAGE  # same learned[] store #465 uses
+    for bad in ("views", "likes", "Icons.heart", "skill-guide", "skillDetail", "SkillDetail", "guideNext"):
         assert bad not in PAGE, bad
-    # one file card, reused (no second SKILL.md box)
+    # one file card, reused by the #484 edit form (not a second SKILL.md box on a detail page)
     assert EDIT.count('className="ca-skillform__box"') == 1 and "export function SkillFileBox" in EDIT
-    assert "<SkillFileBox instructions={draft.instructions}" in EDIT
+    assert "skillDetailAtom" not in SKILLS_TS and "skillGuideAtom" not in SKILLS_TS
 
 
-def test_copy_and_guide_style():
-    assert ZH["skillDetail.try"] == "试用该技能" and ZH["skillDetail.guide"] == "Skill 创建成功，先试试效果吧"
-    assert EN["skillDetail.guide"] == "Skill created. Give it a try"
-    assert (ZH["skillDetail.guideSkip"], ZH["skillDetail.guideNext"]) == ("跳过", "下一步")
-    for k in ZH:
-        if k.startswith(("skillDetail.", "skillRun.")):
-            assert k in EN, k
-    guide = CSS.split(".ca-skillguide {")[1].split("}")[0]
-    assert "#1f1f1f" in guide and "1px solid rgba(255, 255, 255, .1)" in guide
-    arrow = CSS.split(".ca-skillguide::before {")[1].split("}")[0]
-    assert "rgba(255, 255, 255, .1)" in arrow
+def test_copy_and_dialog_style():
+    assert ZH["home.skillsTryThis"] == "试用此技能" and EN["home.skillsTryThis"] == "Try this skill"
+    assert ZH["skillRun.start"] == "开始制作" and EN["skillRun.start"] == "Start creating"
+    assert (ZH["home.skillsCreatedByYou"], ZH["home.skillsCreatedByLoomi"]) == ("你创建的", "Loomi 创建的")
+    assert (EN["home.skillsCreatedByYou"], EN["home.skillsCreatedByLoomi"]) == ("Created by you", "Created by Loomi")
+    assert "暂无自动总结的技能" in ZH["home.skillsEmptyLoomi"] and "No auto-summarized skills yet" in EN["home.skillsEmptyLoomi"]
+    assert "Loomi" in ZH["home.skillsEmptyLoomi"] and "Loomi" in EN["home.skillsEmptyLoomi"]
+    for k in ("home.skillsTryThis", "home.skillsCreatedByYou", "home.skillsCreatedByLoomi", "home.skillsEmptyLoomi",
+              "skillRun.start", "skillRun.templates", "skillRun.currentTemplate", "skillRun.pickLeft", "skillRun.detail"):
+        assert k in ZH and k in EN, k
+    assert "skillDetail." not in " ".join(k for k in ZH if k.startswith("skillDetail"))
+    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in CSS
+    assert ".ca-skillrun__left" in CSS and ".ca-skillrun__right" in CSS
+    assert ".ca-swall__card--row" in CSS and "width: 72px; height: 72px" in CSS
+    assert ".ca-swall__try" in CSS

@@ -110,8 +110,7 @@ def test_import_lands_on_new_skill_detail(lang: str) -> None:
 def test_import_navigation_wiring_and_old_notice_removed() -> None:
     page = (ROOT / "src/home/Skills.tsx").read_text()
     dlg = (ROOT / "src/ui/SkillsDialog.tsx").read_text()
-    # #494-2 / #464: an import now lands on the skill's detail PAGE with the guide bubble (was the #484 edit form).
-    assert "openSkillDetail(landing.id, true)" in page and "openSkillEditor(landing.id)" not in page and "if (landing.skipped) showMemoryToast(landing.skipped, 'info')" in page
+    assert "openSkillEditor(landing.id)" in page and "if (landing.skipped) showMemoryToast(landing.skipped, 'info')" in page
     assert "skillsImport.skipped" not in EN and "skillsImport.skipped" not in ZH
     assert "<SkillsDialog" not in page  # HomeApp already mounts the dialog
     assert "skills-import-note" not in page and "skillsImport.done" not in page

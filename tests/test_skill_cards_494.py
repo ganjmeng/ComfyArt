@@ -118,8 +118,9 @@ def test_card_author_badge_bookmark():
     assert ZH["home.skillsAuthorPersonal"] == "个人" and EN["home.skillsAuthorPersonal"] == "Personal"
     assert 'data-testid="skills-card-kind" data-kind="image"' in SKILLS
     assert "e.stopPropagation(); onFav()" in SKILLS and "Icons.bookmark" in SKILLS
-    assert "onClick={onTry}" in SKILLS and "newProject({ skill: s.id })" in SKILLS  # AC 3: main's click kept
-    assert "skills-card-try" not in SKILLS and "home.skillsTryThis" not in ZH  # 试用 is step 2
+    assert "onTry" in SKILLS and "newProject({ skill: s.id })" in SKILLS  # AC 3: main's click kept (legacy path); #494-2 wires cover/title/try → onTry
+    # #494-2: hover 「试用此技能」 lands — same dialog as cover / title click.
+    assert 'data-testid="skills-card-try"' in SKILLS and ZH["home.skillsTryThis"] == "试用此技能" and EN["home.skillsTryThis"] == "Try this skill"
 
 
 def test_tab_labels_zh_488():

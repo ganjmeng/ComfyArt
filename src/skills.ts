@@ -406,17 +406,6 @@ export function skillAuthor(skill: Skill): { kind: 'builtin' | 'personal'; label
   return skill.custom ? { kind: 'personal', label: t('home.skillsAuthorPersonal') } : { kind: 'builtin', label: BRAND.name }
 }
 
-/** #494-2 — the Skills page shows THIS skill's detail (#464) when set; null = the card wall. */
-export const skillDetailAtom = atom<string | null>('skill detail', null)
-/** #494-2 / #464 — show the 「Skill 创建成功」 guide bubble once on the detail page right after an import. */
-export const skillGuideAtom = atom<string | null>('skill guide', null)
-
-/** #494-2 — open a skill's detail page on the Skills page (import landing, dialog 「详情」). */
-export function openSkillDetail(id: string, guide = false) {
-  skillGuideAtom.set(guide ? id : null)
-  skillDetailAtom.set(id)
-}
-
 /** #494-2 — a skill has its own input dialog only when its data carries `inputs[]`. Old imported / personal skills
  *  have none and keep main's behaviour (open a project with the skill chip) — no migration. */
 export const hasSkillDialog = (skill: Skill) => !!skill.inputs?.length
