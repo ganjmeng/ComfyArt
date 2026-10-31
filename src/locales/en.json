@@ -1551,5 +1551,17 @@
   "home.createSkill": "Create skill",
   "home.createSkillFromChat": "Create from chat",
   "home.importSkill": "Import skill",
-  "home.skillsAuthorPersonal": "Personal"
+  "home.skillsAuthorPersonal": "Personal",
+  "skillRun.generate": "Generate",
+  "skillRun.detail": "Details",
+  "skillRun.uploading": "Uploading…",
+  "home.skillsTryThis": "Try this skill",
+  "home.skillsCreatedByYou": "Created by you",
+  "home.skillsCreatedByLoomi": "Created by Loomi",
+  "home.skillsEmptyLoomi": "No auto-summarized skills yet. Turn on auto-summarizing and Loomi will turn the flows you repeat into skills you can reuse next time.",
+  "skillRun.start": "Start creating",
+  "skillRun.templates": "Templates",
+  "skillRun.currentTemplate": "Current template",
+  "skillRun.pickLeft": "Select on the left",
+  "skillRun.select": "Select"
 }

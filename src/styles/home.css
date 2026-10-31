@@ -503,3 +503,191 @@ body { background: var(--ca-float); }
 /* #491 design: rows are always one line; long names end in an ellipsis (full name in the native title) */
 .ca-skills .ca-menu__item { min-width: 0; }
 .ca-skills .ca-skills__name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* #494-2 — hover 「试用此技能」 on Explore/Favourites cards (same dialog as cover / title click). */
+.ca-swall__try {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 32px; padding: 0 12px; border: 0; border-radius: 999px;
+  background: #fff; color: #111; font: 500 12px/1 var(--ca-font); cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  opacity: 0; pointer-events: none;
+  transition: opacity 150ms cubic-bezier(.4, 0, .2, 1);
+}
+.ca-swall__card:hover .ca-swall__try, .ca-swall__card:focus-within .ca-swall__try {
+  opacity: 1; pointer-events: auto;
+}
+.ca-swall__title { cursor: pointer; }
+.ca-swall__meta { display: flex; flex-direction: column; min-width: 0; }
+
+/* #494-2 — skill's own dialog: left templates (2-col) + right 「开始制作」 panel. */
+.ca-skillrun {
+  width: min(1200px, calc(100vw - 32px));
+  height: min(820px, calc(100vh - 64px));
+  max-height: min(820px, calc(100vh - 64px));
+  display: flex; flex-direction: row; padding: 0; overflow: hidden;
+  animation: ca-skillrun-in 250ms cubic-bezier(.2, 0, 0, 1) both;
+  transform-origin: center center;
+}
+@keyframes ca-skillrun-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.ca-modal[data-testid="skill-run-modal"] {
+  animation: ca-skillrun-backdrop-in 250ms cubic-bezier(.2, 0, 0, 1) both;
+}
+@keyframes ca-skillrun-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.ca-skillrun__left {
+  flex: 1 1 58%; min-width: 0; padding: 24px 24px 16px; overflow: hidden;
+  display: flex; flex-direction: column; gap: 12px;
+}
+/* pinned head — title / author / desc never scroll away under the template grid */
+.ca-skillrun__head {
+  flex: none; display: flex; flex-direction: column; gap: 8px; min-width: 0;
+}
+.ca-skillrun__title {
+  margin: 0; font: 600 22px/30px var(--ca-font); color: var(--ca-text);
+  overflow-wrap: anywhere;
+}
+.ca-skillrun__author {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  color: var(--ca-text-2); font: 400 12px/18px var(--ca-font);
+}
+.ca-skillrun__desc {
+  margin: 0; color: var(--ca-text-2); font: 400 13px/20px var(--ca-font);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+}
+.ca-skillrun__templates { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.ca-skillrun__section { margin: 0 0 8px; font: 500 13px/20px var(--ca-font); color: var(--ca-text); }
+.ca-skillrun__grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;
+  margin-top: 8px;
+}
+.ca-skillrun__preset {
+  display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0;
+  background: none; color: var(--ca-text); cursor: pointer; font: inherit; text-align: left;
+}
+.ca-skillrun__presetimg {
+  position: relative; aspect-ratio: 160 / 120; border-radius: 12px; overflow: hidden;
+  background: var(--ca-hover); display: grid; place-items: center;
+  box-shadow: inset 0 0 0 var(--ca-border-w) var(--ca-border);
+  /* selected ring / ✓ are instantaneous — no transition */
+  transition: none;
+}
+.ca-skillrun__preset[data-on] .ca-skillrun__presetimg {
+  box-shadow: inset 0 0 0 1px var(--ca-text);
+}
+.ca-skillrun__presetimg img { width: 100%; height: 100%; object-fit: cover; }
+/* hover chip+「选择」: 150ms cubic-bezier(.4,0,.2,1); opacity+scale 0.85→1 only — frame no scale */
+.ca-skillrun__zoom, .ca-skillrun__pick {
+  position: absolute; opacity: 0; transform: scale(0.85);
+  transition: opacity 150ms cubic-bezier(.4, 0, .2, 1), transform 150ms cubic-bezier(.4, 0, .2, 1);
+  pointer-events: none; z-index: 1;
+}
+.ca-skillrun__zoom {
+  top: 8px; left: 8px; width: 28px; height: 28px; border-radius: 999px;
+  background: rgba(0,0,0,.45); color: #fff; display: grid; place-items: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.ca-skillrun__zoom .ca-icon { width: 14px; height: 14px; }
+.ca-skillrun__pick {
+  top: 8px; right: 8px; height: 28px; padding: 0 12px; border-radius: 999px;
+  background: #fff; color: #1a1a1a; font: 500 12px/28px var(--ca-font);
+  box-shadow: 0 1px 4px rgba(0,0,0,.12); display: inline-flex; align-items: center;
+}
+.ca-skillrun__preset:hover .ca-skillrun__zoom,
+.ca-skillrun__preset:hover .ca-skillrun__pick,
+.ca-skillrun__preset:focus-visible .ca-skillrun__zoom,
+.ca-skillrun__preset:focus-visible .ca-skillrun__pick {
+  opacity: 1; transform: scale(1);
+}
+.ca-skillrun__preset[data-on]:hover .ca-skillrun__pick { opacity: 0; } /* ✓ replaces pill when selected */
+.ca-skillrun__check {
+  position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; border-radius: 999px;
+  background: var(--ca-text); color: var(--ca-float, #fff); display: grid; place-items: center;
+  transition: none; z-index: 2; /* selected ring+✓ instantaneous */
+}
+.ca-skillrun__check .ca-icon { width: 10px; height: 10px; }
+.ca-skillrun__presetname { font: 400 12px/18px var(--ca-font); color: var(--ca-text-2); }
+.ca-skillrun__right {
+  flex: 0 0 360px; width: 360px; max-width: 360px; display: flex; flex-direction: column; min-width: 0;
+  background: var(--ca-hover); border-left: var(--ca-border-w) solid var(--ca-border);
+}
+.ca-skillrun__righthead {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px; padding: 0 16px 0 20px; font: 500 14px/20px var(--ca-font);
+}
+.ca-skillrun__body {
+  flex: 1; min-height: 0; overflow: auto; padding: 0 20px 16px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.ca-skillrun__currentlabel { display: block; font: 400 12px/18px var(--ca-font); color: var(--ca-text-2); margin-bottom: 6px; }
+.ca-skillrun__currentrow {
+  display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px;
+  background: var(--ca-float, var(--ca-surface)); box-shadow: inset 0 0 0 var(--ca-border-w) var(--ca-border);
+}
+.ca-skillrun__currentthumb {
+  width: 40px; height: 40px; border-radius: 8px; overflow: hidden; flex: none;
+  background: var(--ca-hover); display: grid; place-items: center;
+}
+.ca-skillrun__currentthumb img { width: 100%; height: 100%; object-fit: cover; }
+.ca-skillrun__currentname { font: 500 13px/18px var(--ca-font); color: var(--ca-text); }
+.ca-skillrun__currenthint { margin-left: auto; font: 400 12px/18px var(--ca-font); color: var(--ca-text-2); }
+/* right form: join .ca-skillform; field column mirrors Loomic template-dialog .fields/.field */
+.ca-skillrun__body > .ca-skillform {
+  display: flex; flex-direction: column; gap: 16px; width: 100%; min-width: 0; flex: none;
+}
+.ca-skillrun__field {
+  display: flex; flex-direction: column; gap: 8px; width: 100%; min-width: 0;
+}
+.ca-skillrun__field > .ca-skillform__label {
+  display: block; margin: 0; padding: 0 4px; flex: none;
+}
+.ca-skillrun .ca-skillform .ca-skillrun__field > .ca-panel__input,
+.ca-skillrun .ca-skillform .ca-skillrun__field > .ca-panel__prompt {
+  display: block; width: 100%; max-width: 100%; flex: none; box-sizing: border-box;
+}
+.ca-skillrun .ca-skillform .ca-skillrun__field > select.ca-panel__input { cursor: pointer; }
+.ca-skillrun__req { color: var(--ca-danger, #e5484d); }
+.ca-skillrun__foot {
+  display: flex; flex-direction: column; gap: 8px; padding: 12px 20px 20px;
+}
+.ca-skillrun__foot > button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 100%; height: 36px; padding: 0 16px; border-radius: 10px;
+  font: inherit; font-size: 14px; cursor: pointer; box-sizing: border-box;
+}
+.ca-skillrun__go {
+  width: 100%; justify-content: center;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  /* color only — no button scale */
+}
+.ca-skillrun__go:active { transform: none; }
+
+/* #494-2 / #489 — Personal tab: 「你创建的」 / 「Loomi 创建的」, horizontal cards (cover left, title+desc right, no author). */
+.ca-skills__personal { display: flex; flex-direction: column; gap: 28px; }
+.ca-skills__grouptitle { margin: 0 0 12px; font: 500 14px/22px var(--ca-font); color: var(--ca-text); }
+.ca-skills__empty--loomi { text-align: left; max-width: 560px; color: var(--ca-text-2); font: 400 13px/20px var(--ca-font); }
+.ca-swall--rows {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+.ca-swall__card--row {
+  flex-direction: row; align-items: center; gap: 12px; cursor: pointer;
+}
+.ca-swall__card--row::before { display: none; }
+.ca-swall__card--row .ca-swall__cover {
+  width: 72px; height: 72px; flex: none; aspect-ratio: auto; border-radius: 12px;
+}
+.ca-swall__card--row .ca-swall__placeholder .ca-icon { width: 24px; height: 24px; }
+.ca-swall__card--row .ca-swall__meta { flex: 1; min-width: 0; }
+.ca-swall__card--row .ca-swall__title { margin: 0; cursor: inherit; }
+.ca-swall__card--row .ca-swall__desc { margin: 2px 0 0; }
+@media (max-width: 720px) {
+  .ca-swall--rows { grid-template-columns: 1fr; }
+  .ca-skillrun { flex-direction: column; max-height: calc(100vh - 32px); }
+  .ca-skillrun__right { flex: 1 1 auto; max-width: none; border-left: 0; border-top: var(--ca-border-w) solid var(--ca-border); }
+}

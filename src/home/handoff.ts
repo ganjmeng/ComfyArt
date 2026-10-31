@@ -6,11 +6,11 @@ import { t } from '../i18n'
 import { refFromUrl } from '../comfy'
 import { editElements } from '../elements'
 import { placeMedia, toMedia, type ErrorSink } from '../jobs'
-import { CREATE_ENTRY_CHIP_KEY, loadSkills, skillAtom, skillCreatorAtom } from '../skills'
+import { CREATE_ENTRY_CHIP_KEY, loadSkills, skillAtom, skillCreatorAtom, withPreset } from '../skills'
 import { chatViewAtom } from '../ui/AgentPanel'
 import { EDIT_SKILL_PARAM, startSkillEdit } from '../skillEdit'
 
-const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool', 'createSkill', 'editSkill']
+const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool', 'createSkill', 'editSkill', 'preset']
 const REF_LONG = 512
 const GAP = 20
 
@@ -46,6 +46,8 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   const mode = (url.searchParams.get('mode') ?? 'agent') as AgentMode
   const refs = url.searchParams.getAll('ref')
   const skillId = url.searchParams.get('skill')
+  // #494-2: the skill dialog's preset — its prompt is appended after the skill's instructions for this run
+  const presetId = url.searchParams.get('preset')
   const tool = url.searchParams.get('tool')
   const createSkill = url.searchParams.get('createSkill') === '1'
   const editSkill = url.searchParams.get(EDIT_SKILL_PARAM)
@@ -85,7 +87,8 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   }
 
   agentModeAtom.set(mode)
-  const skill = skillId ? (await loadSkills()).find((s) => s.id === skillId) ?? null : null
+  const found = skillId ? (await loadSkills()).find((s) => s.id === skillId) ?? null : null
+  const skill = found && withPreset(found, presetId)
   if (skill) skillAtom.set(skill)
   const shapes = await placeRefs(editor, refs)
   if (!text) {

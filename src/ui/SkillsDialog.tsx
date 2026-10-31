@@ -23,11 +23,42 @@ export function openSkillEditor(id: string) {
 
 type View = { kind: 'list' } | { kind: 'edit'; skill: Skill } | { kind: 'history'; skill: Skill; versions: SkillVersion[] | null }
 
+/** #462 SKILL.md file card (file picker + file count + Preview/Code tabs). Shared by the Edit Skill form and, read-only
+ *  (no onInstructions / onFiles), by the #494-2 / #464 skill detail page — one component, two places. */
+export function SkillFileBox({ instructions, files, open, setOpen, onInstructions, onFiles }: {
+  instructions: string; files: Record<string, string>; open: string; setOpen: (path: string) => void
+  onInstructions?: (v: string) => void; onFiles?: (next: Record<string, string>) => void
+}) {
+  const [tab, setTab] = useState<'preview' | 'code'>(instructions.trim() ? 'preview' : 'code')
+  const isMain = open === 'SKILL.md' || !(open in files)
+  const body = isMain ? instructions : files[open]
+  const setBody = (v: string) => (isMain ? onInstructions?.(v) : onFiles?.({ ...files, [open]: v }))
+  return (
+    <div className="ca-skillform__box" data-testid="skill-instructions">
+      <div className="ca-skillform__bar">
+        <select className="ca-skillform__file" value={isMain ? 'SKILL.md' : open} onChange={(e) => setOpen(e.target.value)} onKeyDown={(e) => e.stopPropagation()}>
+          <option value="SKILL.md">SKILL.md</option>
+          {Object.keys(files).map((path) => <option key={path} value={path}>{path}</option>)}
+        </select>
+        <span className="ca-skillform__count">{t('skillsDialog.nFiles', Object.keys(files).length + 1)}</span>
+        {!isMain && onFiles && <button type="button" className="ca-history__del" title={t('common.remove')} onClick={() => { const { [open]: _gone, ...rest } = files; onFiles?.(rest); setOpen('SKILL.md') }}>{Icons.trash}</button>}
+        <span className="ca-menu__grow" />
+        <div className="ca-skillform__tabs" role="tablist" data-testid="skill-tabs">
+          <button type="button" role="tab" aria-selected={tab === 'preview'} title={t('skillsDialog.preview')} className={tab === 'preview' ? 'is-on' : ''} onClick={() => setTab('preview')}><span className="ca-icon">{Icons.eyeView}</span></button>
+          <button type="button" role="tab" aria-selected={tab === 'code'} title={t('skillsDialog.code')} className={tab === 'code' ? 'is-on' : ''} onClick={() => setTab('code')}><span className="ca-icon">{Icons.code}</span></button>
+        </div>
+      </div>
+      {tab === 'preview'
+        ? <div className="ca-skillform__preview ca-md" onDoubleClick={() => setTab('code')}>{body.trim() ? <Markdown text={body} /> : <span className="ca-side__empty">{t('composer.instructionsForTheAgentDeliverables')}</span>}</div>
+        : <textarea className="ca-skillform__code ca-skills__md" value={body} placeholder={isMain ? t('composer.instructionsForTheAgentDeliverables') : ''} readOnly={!onInstructions} onChange={(e) => setBody(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />}
+    </div>
+  )
+}
+
 /** #462 — reference Edit Skill layout: Name → Description → Instructions box (file picker + Preview/Code tabs) → Edit in Chat · Cancel · Save. */
 export function SkillForm({ initial, onDone, onEditInChat }: { initial: Skill; onDone: (s: Skill | null) => void; onEditInChat?: (s: Skill) => void }) {
   const [draft, setDraft] = useState(initial)
   const [open, setOpen] = useState<string>('SKILL.md')
-  const [tab, setTab] = useState<'preview' | 'code'>(initial.instructions.trim() ? 'preview' : 'code')
   const file = useRef<HTMLInputElement>(null)
   const imageFile = useRef<HTMLInputElement>(null)
   const files = draft.files ?? {}
@@ -38,9 +69,6 @@ export function SkillForm({ initial, onDone, onEditInChat }: { initial: Skill; o
     for (const f of Array.from(list ?? [])) next[f.name] = await f.text()
     setFiles(next)
   }
-  const isMain = open === 'SKILL.md' || !(open in files)
-  const body = isMain ? draft.instructions : files[open]
-  const setBody = (v: string) => (isMain ? setDraft({ ...draft, instructions: v }) : setFiles({ ...files, [open]: v }))
   const valid = !!draft.name.trim() && !!draft.instructions.trim()
   return (
     <div className="ca-skillform" data-testid="skill-form">
@@ -50,24 +78,7 @@ export function SkillForm({ initial, onDone, onEditInChat }: { initial: Skill; o
       <label className="ca-skillform__label" htmlFor="skill-desc">{t('skillsDialog.description')}</label>
       <textarea id="skill-desc" data-testid="skill-description" className="ca-panel__prompt ca-panel__prompt--boxed ca-skillform__desc" rows={2} value={draft.description ?? ''} placeholder={t('skillsDialog.descriptionPlaceholder')} onChange={(e) => setDraft({ ...draft, description: e.target.value })} onKeyDown={(e) => e.stopPropagation()} />
       <div className="ca-skillform__label">{t('skillsDialog.instructions')}</div>
-      <div className="ca-skillform__box" data-testid="skill-instructions">
-        <div className="ca-skillform__bar">
-          <select className="ca-skillform__file" value={isMain ? 'SKILL.md' : open} onChange={(e) => setOpen(e.target.value)} onKeyDown={(e) => e.stopPropagation()}>
-            <option value="SKILL.md">SKILL.md</option>
-            {Object.keys(files).map((path) => <option key={path} value={path}>{path}</option>)}
-          </select>
-          <span className="ca-skillform__count">{t('skillsDialog.nFiles', Object.keys(files).length + 1)}</span>
-          {!isMain && <button type="button" className="ca-history__del" title={t('common.remove')} onClick={() => { const { [open]: _gone, ...rest } = files; setFiles(rest); setOpen('SKILL.md') }}>{Icons.trash}</button>}
-          <span className="ca-menu__grow" />
-          <div className="ca-skillform__tabs" role="tablist" data-testid="skill-tabs">
-            <button type="button" role="tab" aria-selected={tab === 'preview'} title={t('skillsDialog.preview')} className={tab === 'preview' ? 'is-on' : ''} onClick={() => setTab('preview')}><span className="ca-icon">{Icons.eyeView}</span></button>
-            <button type="button" role="tab" aria-selected={tab === 'code'} title={t('skillsDialog.code')} className={tab === 'code' ? 'is-on' : ''} onClick={() => setTab('code')}><span className="ca-icon">{Icons.code}</span></button>
-          </div>
-        </div>
-        {tab === 'preview'
-          ? <div className="ca-skillform__preview ca-md" onDoubleClick={() => setTab('code')}>{body.trim() ? <Markdown text={body} /> : <span className="ca-side__empty">{t('composer.instructionsForTheAgentDeliverables')}</span>}</div>
-          : <textarea className="ca-skillform__code ca-skills__md" value={body} placeholder={isMain ? t('composer.instructionsForTheAgentDeliverables') : ''} onChange={(e) => setBody(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />}
-      </div>
+      <SkillFileBox instructions={draft.instructions} files={files} open={open} setOpen={setOpen} onInstructions={(v) => setDraft({ ...draft, instructions: v })} onFiles={setFiles} />
       <div className="ca-gen__label">{t('skillsDialog.attachedFiles')}</div>
       {Object.keys(files).map((path) => (
         <div key={path} className="ca-skills__file">
@@ -120,7 +131,7 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
     if (!editId) return
     skillEditIdAtom.set(null)
     void loadSkills().then((all) => {
-      const s = all.find((x) => x.custom && x.id === editId)
+      const s = all.find((x) => x.id === editId)
       if (s) setView({ kind: 'edit', skill: s })
       else onError(t('skillsDialog.notFound', editId))
     }).catch((e) => onError(String(e)))
@@ -147,7 +158,7 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
             setView({ kind: 'list' })
             if (s) act(() => saveSkill(s))
           }}
-          onEditInChat={view.skill.instructions.trim() ? () => { close(); editSkillInChat(view.skill) } : undefined}
+          onEditInChat={view.skill.custom && view.skill.instructions.trim() ? () => { close(); editSkillInChat(view.skill) } : undefined}
         />
       )}
       {view.kind === 'history' && (

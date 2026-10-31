@@ -60,11 +60,15 @@ def test_fake_wall_meta_gone():
 def test_presets_and_inputs_schema():
     for sid, e in _entries().items():
         assert len(re.findall(r"\bP\('", e)) == (0 if sid == "custom-workflow" else 3), sid
-        assert "inputs: [" in e and ", true)" in e, f"{sid} needs one required input"
-    # AC 11: preset prompts and input en copy are step 2 — no placeholder text now.
-    assert "prompt:" not in _builtin_block() and "prompt?: string" in SKILLS_TS
-    assert "SkillPreset => ({ id, name: { zh, en } })" in SKILLS_TS
-    assert "label: { zh }," in SKILLS_TS
+        # #494-2: required inputs now also carry a zh/en placeholder after the flag → ", true" (was ", true)").
+        assert "inputs: [" in e and ", true" in e, f"{sid} needs one required input"
+    # AC 11 was "preset prompts and input en copy are step 2"; #494-2 lands them: every preset has an en prompt and
+    # every input label has zh + en (updated, not removed).
+    assert "prompt?: string" in SKILLS_TS
+    assert "SkillPreset => ({ id, name: { zh, en }, prompt })" in SKILLS_TS
+    assert "label: { zh, en }," in SKILLS_TS and "label: { zh }," not in SKILLS_TS
+    for sid, e in _entries().items():
+        assert len(re.findall(r"\bP\('[^)]*', '[^']{12,}'\)", e)) == (0 if sid == "custom-workflow" else 3), sid
     # names/descriptions keep coming from locale keys (AC 1)
     for e in _entries().values():
         assert re.match(r"[\w-]+', name: t\('skills\.\w+'\)", e)
@@ -114,8 +118,9 @@ def test_card_author_badge_bookmark():
     assert ZH["home.skillsAuthorPersonal"] == "个人" and EN["home.skillsAuthorPersonal"] == "Personal"
     assert 'data-testid="skills-card-kind" data-kind="image"' in SKILLS
     assert "e.stopPropagation(); onFav()" in SKILLS and "Icons.bookmark" in SKILLS
-    assert "onClick={onTry}" in SKILLS and "newProject({ skill: s.id })" in SKILLS  # AC 3: main's click kept
-    assert "skills-card-try" not in SKILLS and "home.skillsTryThis" not in ZH  # 试用 is step 2
+    assert "onTry" in SKILLS and "newProject({ skill: s.id })" in SKILLS  # AC 3: main's click kept (legacy path); #494-2 wires cover/title/try → onTry
+    # #494-2: hover 「试用此技能」 lands — same dialog as cover / title click.
+    assert 'data-testid="skills-card-try"' in SKILLS and ZH["home.skillsTryThis"] == "试用此技能" and EN["home.skillsTryThis"] == "Try this skill"
 
 
 def test_tab_labels_zh_488():
