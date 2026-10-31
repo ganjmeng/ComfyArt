@@ -1,0 +1,5 @@
+{
+  "model": "wavespeed-ai/qwen-image/text-to-image-lora",
+  "fields": {"@image": "image", "@prompt": "prompt"},
+  "params": {}
+}
