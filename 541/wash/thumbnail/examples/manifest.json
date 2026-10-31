@@ -1,0 +1,55 @@
+{
+ "commit": "aae2cf9",
+ "skill": "thumbnail",
+ "examples": [
+  {
+   "id": "1",
+   "aspect_ratio": "16:9",
+   "subject": "YouTube thumbnail",
+   "lovart_ref_rebuilt_from_thumbnail": true,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/1.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/1@thumb.webp"
+  },
+  {
+   "id": "2",
+   "aspect_ratio": "16:9",
+   "subject": "YouTube science thumbnail",
+   "lovart_ref_rebuilt_from_thumbnail": true,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/2.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/2@thumb.webp"
+  },
+  {
+   "id": "3",
+   "aspect_ratio": "16:9",
+   "subject": "YouTube true-crime documentary thumbnail",
+   "lovart_ref_rebuilt_from_thumbnail": true,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/3.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/3@thumb.webp"
+  },
+  {
+   "id": "4",
+   "aspect_ratio": "16:9",
+   "subject": "YouTube reaction thumbnail",
+   "lovart_ref_rebuilt_from_thumbnail": true,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/4.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/4@thumb.webp"
+  },
+  {
+   "id": "5",
+   "aspect_ratio": "16:9",
+   "subject": "YouTube podcast thumbnail",
+   "lovart_ref_rebuilt_from_thumbnail": true,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/5.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/5@thumb.webp"
+  },
+  {
+   "id": "6",
+   "aspect_ratio": "16:9",
+   "subject": "cinematic YouTube essay thumbnail",
+   "lovart_ref_rebuilt_from_thumbnail": true,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/6.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/6@thumb.webp"
+  }
+ ],
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/sbs_examples_thumbnail.png"
+}
