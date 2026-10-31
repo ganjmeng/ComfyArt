@@ -1,0 +1,47 @@
+{
+ "commit": "6d864bd",
+ "skill": "poster",
+ "examples": [
+  {
+   "id": "1",
+   "aspect_ratio": "3:4",
+   "subject": "a quiet family dinner scene in a dim wooden house",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/1.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/1@thumb.webp"
+  },
+  {
+   "id": "2",
+   "aspect_ratio": "3:4",
+   "subject": "bold condensed headline \"Frescura natural",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/2.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/2@thumb.webp"
+  },
+  {
+   "id": "3",
+   "aspect_ratio": "3:4",
+   "subject": "two fictional actors (an older bearded man and a young woman with shor",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/3.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/3@thumb.webp"
+  },
+  {
+   "id": "4",
+   "aspect_ratio": "3:4",
+   "subject": "big sun icon",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/4.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/4@thumb.webp"
+  },
+  {
+   "id": "5",
+   "aspect_ratio": "3:4",
+   "subject": "huge glowing magenta-cyan title \"NOVA-7\"",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/5.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/5@thumb.webp"
+  }
+ ],
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/6d864bd/541/wash/poster/examples/sbs_examples_poster.png"
+}
