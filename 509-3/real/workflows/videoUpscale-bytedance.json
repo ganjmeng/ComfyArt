@@ -1,0 +1,9 @@
+{
+  "model": "bytedance/video-upscaler",
+  "fields": {
+    "@video": "video"
+  },
+  "params": {
+    "target_resolution": "1080p"
+  }
+}

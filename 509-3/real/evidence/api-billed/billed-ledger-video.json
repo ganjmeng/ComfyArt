@@ -1,0 +1,73 @@
+{
+  "budget": 0.06,
+  "video_url": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/c3f50fd1-e601-43ec-9b36-b96199d1cf54.mp4",
+  "quotes": {
+    "extend": {
+      "model": "wavespeed-ai/minimax-h3/video-extend",
+      "quote": 0.06,
+      "inputs": {
+        "video": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/c3f50fd1-e601-43ec-9b36-b96199d1cf54.mp4",
+        "prompt": "continue the scene gently",
+        "duration": 3,
+        "resolution": "480p"
+      }
+    },
+    "upscale": {
+      "model": "bytedance/video-upscaler",
+      "quote": 0.0072,
+      "inputs": {
+        "video": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/c3f50fd1-e601-43ec-9b36-b96199d1cf54.mp4",
+        "target_resolution": "1080p"
+      }
+    },
+    "cutout": {
+      "model": "wavespeed-ai/video-background-remover",
+      "quote": 0.03,
+      "inputs": {
+        "video": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/c3f50fd1-e601-43ec-9b36-b96199d1cf54.mp4"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "feature": "videoUpscale",
+      "model": "bytedance/video-upscaler",
+      "prediction_id": "d4909089bb064e84b3e34078f7bb6b8d",
+      "status": "completed",
+      "quote": 0.0072,
+      "balance_before": 6.276244,
+      "balance_after": 6.269044,
+      "actual_billed": 0.0072,
+      "outputs": [
+        "https://d2h7xmz5gqybh9.cloudfront.net/output/afc281cd-9371-447b-8124-6b9342b871d1.mp4"
+      ],
+      "error": ""
+    },
+    {
+      "feature": "videoCutout",
+      "model": "wavespeed-ai/video-background-remover",
+      "prediction_id": "9bbb96de0e6b46fa8388f9796ce1494f",
+      "status": "completed",
+      "quote": 0.03,
+      "balance_before": 6.269044,
+      "balance_after": 6.239044,
+      "actual_billed": 0.03,
+      "outputs": [
+        "https://d2h7xmz5gqybh9.cloudfront.net/output/5ae3d356-9a54-46ba-8134-887137bbde12-u2_e1fc8028-c0dd-4ecf-a9a1-e5694f19d1e1.mp4"
+      ],
+      "error": ""
+    }
+  ],
+  "skipped": [
+    {
+      "feature": "extend",
+      "model": "wavespeed-ai/minimax-h3/video-extend",
+      "quote": 0.06,
+      "reason": "minimax-h3 video-extend quotes $0.0600 alone (=full $0.06 budget); cheapest other paths upscale=$0.0072 cutout=$0.0300; all three sum $0.0972 > $0.06. Skipped to keep billed≤budget."
+    }
+  ],
+  "balance_before": 6.276244,
+  "balance_after": 6.239044,
+  "total_actual_billed": 0.0372,
+  "within_budget": true
+}

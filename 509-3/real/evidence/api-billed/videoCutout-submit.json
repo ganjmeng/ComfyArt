@@ -1,0 +1,22 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "9bbb96de0e6b46fa8388f9796ce1494f",
+    "model": "wavespeed-ai/video-background-remover",
+    "input": {
+      "video": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/c3f50fd1-e601-43ec-9b36-b96199d1cf54.mp4"
+    },
+    "outputs": [],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/9bbb96de0e6b46fa8388f9796ce1494f/result"
+    },
+    "status": "created",
+    "created_at": "2026-10-31T08:20:36.385Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 0
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "model": "wavespeed-ai/minimax-h3/video-extend",
+  "fields": {
+    "@video": "video",
+    "@prompt": "prompt",
+    "@seconds": "duration"
+  },
+  "params": {
+    "resolution": "480p"
+  }
+}

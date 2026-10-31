@@ -1,0 +1,21 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "d4909089bb064e84b3e34078f7bb6b8d",
+    "model": "bytedance/video-upscaler",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/afc281cd-9371-447b-8124-6b9342b871d1.mp4"
+    ],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/d4909089bb064e84b3e34078f7bb6b8d/result"
+    },
+    "status": "completed",
+    "created_at": "2026-10-31T08:19:51.663648786Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 38618
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "model": "wavespeed-ai/video-background-remover",
+  "fields": {
+    "@video": "video"
+  },
+  "params": {}
+}
