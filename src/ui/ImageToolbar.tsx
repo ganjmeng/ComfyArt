@@ -120,14 +120,22 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   const [moreTools, setMoreTools] = useState(false)
   const prefs = useValue(prefsAtom)
 
-  // #537: home 实用工具 handoff opens the matching menu after place+select (no auto-run)
+  // #537 / #540: home 实用工具 handoff opens the matching menu after place+select (no auto-run)
   const pendingHome = useValue(homeToolAtom)
   useEffect(() => {
     if (!shape || !pendingHome) return
-    if (pendingHome === 'upscale' || pendingHome === 'to3d') {
-      setMenu(pendingHome)
+    if (pendingHome === 'upscale' || pendingHome === 'to3d' || pendingHome === 'transform') {
+      // #545: unpinned menu tools live under 更多 — open it on the tool's real panel (no auto-run)
+      if (prefsAtom.get().pinned.includes(pendingHome)) setMenu(pendingHome)
+      else { setMenu('more'); setInMore(pendingHome) }
       homeToolAtom.set(null)
-    } else if (pendingHome === 'cutout' || pendingHome === 'mockup' || pendingHome === 'inpaint') {
+    } else if (
+      pendingHome === 'cutout' || pendingHome === 'mockup' || pendingHome === 'inpaint'
+      || pendingHome === 'vectorize' || pendingHome === 'quick' || pendingHome === 'erase'
+      || pendingHome === 'crop' || pendingHome === 'expand' || pendingHome === 'adjust'
+      || pendingHome === 'text' || pendingHome === 'angles' || pendingHome === 'move'
+    ) {
+      // modes / crop already entered in handoff; clear the atom
       homeToolAtom.set(null)
     }
   }, [shape?.id, pendingHome])

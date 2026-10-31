@@ -77,7 +77,7 @@ body { background: var(--ca-float); }
 
 .ca-home__main { flex: 1; min-width: 0; overflow-y: auto; }
 
-.ca-landing { max-width: 1600px; margin: 0 auto; padding: 96px 48px 64px; box-sizing: border-box; }
+.ca-landing { max-width: 1024px; /* #540: Lovart home column = 928px content (1280 viewport) + 2×48 padding */ margin: 0 auto; padding: 96px 48px 64px; box-sizing: border-box; }
 .ca-landing__title { margin: 0 0 28px; text-align: center; font: 500 32px/40px var(--ca-font); letter-spacing: -0.02em; }
 .ca-landing__notice { max-width: 760px; margin: 0 auto 12px; box-sizing: border-box; }
 .ca-landing__box { max-width: 760px; margin: 0 auto; padding: 14px 14px 10px 18px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 28px; box-shadow: 0 8px 28px -12px rgba(0,0,0,.12), 0 2px 8px -4px rgba(0,0,0,.06); box-sizing: border-box; background: var(--ca-float); }
@@ -116,32 +116,53 @@ body { background: var(--ca-float); }
 .ca-skillcard__icon img { width: 100%; height: 100%; object-fit: cover; }
 .ca-skillcard__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* #537 / #496 — home 「实用工具」5 cards + 更多工具 (Lucide/$0 covers) */
+/* #537 / #496 / #540 — home 「实用工具」5 cards + 更多工具. Values = Lovart live DevTools @1280 CSS px
+   (540/measure on review-assets). Theme tokens only, light + dark. */
+:root { --ca-tools-row-hover: rgba(0,0,0,.03); }
+:root[data-theme="dark"] { --ca-tools-row-hover: rgba(255,255,255,.05); }
+.ca-landing__tools .ca-landing__head { align-items: center; }
+.ca-landing__tools .ca-landing__head h2 { font: 500 14px/22px var(--ca-font); border-radius: 6px; padding: 3px 0 3px 6px; }
 .ca-landing__tools .ca-landing__moretools {
-  display: inline-flex; align-items: center; gap: 2px;
+  display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  height: 28px; min-width: 50px; padding: 0 8px; border-radius: 8px; gap: 0; color: var(--ca-text);
+  transition: background-color 150ms cubic-bezier(.4,0,.2,1), color 150ms cubic-bezier(.4,0,.2,1);
 }
+.ca-landing__tools .ca-landing__moretools:hover { background: var(--ca-hover); }
+.ca-landing__tools .ca-landing__moretools[data-open] { background: var(--ca-active); color: var(--ca-text); }
+.ca-landing__moretools-label { padding: 0 2px; font: 400 12px/18px var(--ca-font); }
 .ca-landing__moretools .ca-icon { width: 14px; height: 14px; }
-.ca-toolgrid {
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px;
-}
+.ca-toolgrid { display: flex; gap: 16px; }
 .ca-toolcard {
-  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 0; border: none;
+  flex: 1 0 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 0; border: none;
   background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
 }
 .ca-toolcard:disabled { opacity: .55; cursor: default; }
 .ca-toolcard__cover {
-  display: flex; align-items: center; justify-content: center; width: 100%;
-  aspect-ratio: 16 / 10; border-radius: 12px; background: var(--ca-field);
-  color: var(--ca-text);
+  display: block; width: 100%; aspect-ratio: 235 / 132; border-radius: 12px;
+  background: var(--ca-field); overflow: hidden; position: relative;
 }
-.ca-toolcard__cover .ca-icon { width: 28px; height: 28px; opacity: .85; }
-.ca-toolcard:hover .ca-toolcard__cover { background: var(--ca-hover); }
+.ca-toolcard__cover img {
+  object-fit: cover; width: 100%; height: 100%; display: block;
+  transition: transform 300ms ease;
+}
+.ca-toolcard:not(:disabled):hover .ca-toolcard__cover img { transform: scale(1.08); }
 .ca-toolcard__name {
-  margin: 0; font: 500 14px/22px var(--ca-font);
+  display: block; height: 20px; padding: 0 6px; box-sizing: border-box;
+  margin: 0; font: 400 13px/20px var(--ca-font); color: var(--ca-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-@media (max-width: 960px) { .ca-toolgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .ca-toolgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+/* 更多 dropdown: 200px (1px border + 4px pad from .ca-menu), radius 12, --ca-shadow (= Lovart 3-layer in light) */
+.ca-menu--tools { width: 200px; min-width: 200px; }
+.ca-menu--tools .ca-menu__item {
+  height: 32px; padding: 0 8px; gap: 8px; border-radius: 8px;
+  transition: background-color 150ms cubic-bezier(.4,0,.2,1);
+}
+.ca-menu--tools .ca-menu__item:hover { background: var(--ca-tools-row-hover); }
+.ca-menu--tools .ca-menu__item .ca-icon { width: 18px; height: 18px; flex: none; opacity: .9; color: currentColor; }
+.ca-menu--tools .ca-menu__item .ca-icon svg { width: 18px; height: 18px; }
+.ca-menu--tools .ca-menu__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 13px/20px var(--ca-font); }
+@media (max-width: 960px) { .ca-toolgrid { flex-wrap: wrap; } .ca-toolcard { flex: 0 0 calc((100% - 32px) / 3); } }
+@media (max-width: 640px) { .ca-toolgrid { gap: 12px; } .ca-toolcard { flex: 0 0 calc((100% - 12px) / 2); } }
 
 /* #494-3 / #533 / #537 — home 「精选」waterfall (Loomic column pack; our skill preset covers only) */
 .ca-featured--waterfall {

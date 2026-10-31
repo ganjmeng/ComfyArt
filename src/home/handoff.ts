@@ -19,9 +19,16 @@ const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool', 'createSkill', 'editSkill',
 const REF_LONG = 512
 const GAP = 20
 
-/** #537 / #496: home 「实用工具」→ canvas; toolbar opens the matching menu/panel (no auto-run). */
-export type HomeToolId = 'cutout' | 'extend' | 'upscale' | 'inpaint' | 'mockup' | 'to3d' | 'lipsync' | 'motion' | 'audio'
-export const HOME_TOOLS: HomeToolId[] = ['cutout', 'extend', 'upscale', 'inpaint', 'mockup', 'to3d', 'lipsync', 'motion', 'audio']
+/** #537 / #496 / #540: home 「实用工具」→ canvas; toolbar opens the matching menu/panel (no auto-run). */
+export type HomeToolId =
+  | 'cutout' | 'extend' | 'upscale' | 'inpaint' | 'mockup'
+  | 'quick' | 'erase' | 'crop' | 'expand' | 'adjust' | 'text' | 'angles' | 'vectorize' | 'move' | 'transform'
+  | 'to3d' | 'lipsync' | 'motion' | 'audio'
+export const HOME_TOOLS: HomeToolId[] = [
+  'cutout', 'extend', 'upscale', 'inpaint', 'mockup',
+  'quick', 'erase', 'crop', 'expand', 'adjust', 'text', 'angles', 'vectorize', 'move', 'transform',
+  'to3d', 'lipsync', 'motion', 'audio',
+]
 export const homeToolAtom = atom<HomeToolId | null>('home tool', null)
 
 async function placeRefs(editor: Editor, srcs: string[]): Promise<TLShape[]> {
@@ -65,6 +72,8 @@ function isHomeTool(tool: string | null): tool is HomeToolId {
 }
 
 /** Place media, select it, and (for menu tools) stash which toolbar menu to open — never auto-run. */
+const MODE_HOME_TOOLS = ['quick', 'erase', 'expand', 'adjust', 'text', 'angles', 'move', 'inpaint'] as const
+
 async function openHomeTool(editor: Editor, tool: HomeToolId, refs: string[]) {
   if (tool === 'audio') {
     if (refs[0] && refKind(refs[0]) === 'audio') {
@@ -93,15 +102,19 @@ async function openHomeTool(editor: Editor, tool: HomeToolId, refs: string[]) {
   editor.setCurrentTool('select')
   editor.select(shape.id)
   editor.zoomToSelectionIfOffscreen(64, { animation: { duration: 200 } })
-  if (tool === 'inpaint') {
-    enterMode('inpaint')
+  if ((MODE_HOME_TOOLS as readonly string[]).includes(tool)) {
+    enterMode(tool as (typeof MODE_HOME_TOOLS)[number])
     return
   }
-  if (tool === 'cutout' || tool === 'mockup') {
+  if (tool === 'crop') {
+    editor.setCroppingShape(shape.id)
+    return
+  }
+  if (tool === 'cutout' || tool === 'mockup' || tool === 'vectorize') {
     // Toolbar buttons run on click — place+select only (mutation: no auto-run)
     return
   }
-  // upscale / to3d / extend — ImageToolbar / VideoToolbar open the menu/panel from the atom
+  // upscale / to3d / transform / extend — ImageToolbar / VideoToolbar open the menu/panel from the atom
   homeToolAtom.set(tool)
 }
 
