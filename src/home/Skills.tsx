@@ -15,6 +15,7 @@ import {
   skillAuthor,
   skillChips,
   skillCover,
+  skillVideo,
   matchesSkillChip,
   toggleFavourite,
   type Skill,
@@ -49,13 +50,18 @@ function SkillWallCard({
   layout?: 'wall' | 'row'
 }) {
   const cover = skillCover(skill)
+  const videoSrc = skillVideo(skill)
   const author = skillAuthor(skill)
   const src = cover && (cover.own === 'bundled' ? cover.src : thumbUrl(cover.src, 512))
   const desc = skillDescription(skill)
   // #494 — a cover that fails to load falls back to the same placeholder; keyed by src so a new src retries.
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const showImg = !!src && failedSrc !== src
   const row = layout === 'row'
+  const kind = videoSrc ? 'video' : 'image'
+  const playVideo = () => { const v = videoRef.current; if (!v) return; void v.play().catch(() => {}) }
+  const stopVideo = () => { const v = videoRef.current; if (!v) return; v.pause(); v.currentTime = 0 }
   return (
     <article
       className={row ? 'ca-swall__card ca-swall__card--row' : 'ca-swall__card'}
@@ -63,14 +69,32 @@ function SkillWallCard({
       data-skill={skill.id}
       data-custom={skill.custom || undefined}
       data-layout={layout}
+      data-has-video={videoSrc ? '1' : undefined}
       onClick={row ? onTry : undefined}
+      onMouseEnter={videoSrc && !row ? playVideo : undefined}
+      onMouseLeave={videoSrc && !row ? stopVideo : undefined}
+      onFocus={videoSrc && !row ? playVideo : undefined}
+      onBlur={videoSrc && !row ? stopVideo : undefined}
     >
       <div className="ca-swall__cover" role="button" tabIndex={0} aria-label={skill.name} onClick={row ? undefined : onTry}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTry() } }}>
         {showImg
           ? <img src={src} alt={skill.name} loading="lazy" data-testid="skills-card-cover" onError={() => setFailedSrc(src)} />
           : <span className="ca-swall__placeholder" data-testid="skills-card-placeholder"><span className="ca-icon">{skill.id === 'custom-workflow' ? Icons.workflow : Icons.skill}</span></span>}
-        {!row && <span className="ca-swall__badge" data-testid="skills-card-kind" data-kind="image" aria-hidden="true"><span className="ca-icon">{Icons.imageLine}</span></span>}
+        {videoSrc && !row && (
+          <video
+            ref={videoRef}
+            className="ca-swall__video"
+            src={videoSrc}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            data-testid="skills-card-video"
+            aria-hidden="true"
+          />
+        )}
+        {!row && <span className="ca-swall__badge" data-testid="skills-card-kind" data-kind={kind} aria-hidden="true"><span className="ca-icon">{kind === 'video' ? Icons.videoLine : Icons.imageLine}</span></span>}
         {!row && (
           <>
             <button

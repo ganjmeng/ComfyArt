@@ -77,10 +77,13 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
         await pg.get_by_test_id("skills-chip-forYou").click()
         cw = pg.locator('[data-skill="custom-workflow"]')
         assert await cw.get_by_test_id("skills-card-placeholder").count() == 1
-        # 图片 badge on every card (no-cover too), inside the cover at bottom-left; icon colour = --ca-text-2
+        # #494/#529 — kind badge on every Explore card (bottom-left). Built-ins with `video` → data-kind=video;
+        # custom-workflow (no video) stays image. Never invent a video badge without data.
         assert await cards.locator(".ca-swall__cover [data-testid=skills-card-kind]").count() == 11
         box, badge = await cw.locator(".ca-swall__cover").bounding_box(), await cw.get_by_test_id("skills-card-kind").bounding_box()
         assert badge["x"] - box["x"] < 16 and (box["y"] + box["height"]) - (badge["y"] + badge["height"]) < 16
+        assert await cw.get_by_test_id("skills-card-kind").get_attribute("data-kind") == "image"
+        assert await cw.get_by_test_id("skills-card-video").count() == 0
         assert await cw.locator(".ca-swall__placeholder").evaluate(
             "e => { const p = document.createElement('i'); p.style.color = 'var(--ca-text-2)'; e.parentNode.append(p);"
             " const ok = getComputedStyle(e).color === getComputedStyle(p).color; p.remove(); return ok }")
@@ -91,9 +94,14 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
         assert await poster.get_by_test_id("skills-card-cover").get_attribute("alt") == await poster.locator("h3").inner_text()
         assert await poster.get_by_test_id("skills-card-author").inner_text() == BRAND_NAME
         assert await poster.get_by_test_id("skills-card-kind").count() == 1
+        assert await poster.get_by_test_id("skills-card-kind").get_attribute("data-kind") == "video"
+        assert await poster.get_by_test_id("skills-card-video").count() == 1
+        vsrc = await poster.get_by_test_id("skills-card-video").get_attribute("src")
+        assert "494/wash/videos/poster.mp4" in (vsrc or "")
         await poster.hover()
         assert await poster.get_by_test_id("skills-card-bookmark").is_visible()
-        assert await poster.get_by_test_id("skills-card-try").count() == 0
+        # #494-2 — hover 「试用此技能」 is intentional; #529 only mounts video + badge.
+        assert await poster.get_by_test_id("skills-card-try").is_visible()
         await _shot(pg, f"hover-{lang}-{theme}")
         before = pg.url
         await poster.get_by_test_id("skills-card-bookmark").click()

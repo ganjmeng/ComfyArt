@@ -52,3 +52,22 @@ def test_chips_from_data(got):
                   "social": ["social", "thumbnail"], "ads": ["poster", "banner", "motion"]}
     for sid in ("character", "interior", "custom-workflow"):
         assert all(sid not in v for k, v in by.items() if k != "forYou")
+
+
+def test_builtin_videos_unique(got):
+    """#529 — 10 distinct review-assets video URLs; custom-workflow stays null (no fake badge)."""
+    vids = got["builtinVideos"]
+    assert vids.pop("custom-workflow") is None
+    tip = "67a97f2bf27be29592d2e29fa9eea5948aa58f5f"
+    assert len(vids) == 10
+    assert vids == {
+        k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/{k}.mp4"
+        for k in vids
+    }
+    assert len(set(vids.values())) == 10
+
+
+def test_video_field_data_driven(got):
+    """#529 mutation: drop/omit video → skillVideo null (badge must not invent video)."""
+    assert got["noVideo"] is None and got["customVideo"] is None
+    assert got["videoMutated"] is None
