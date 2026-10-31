@@ -39,6 +39,17 @@ export function clampMusicSeconds(id: string, seconds: number): number {
   return Math.min(range.max, Math.max(range.min, snapped))
 }
 
+/** #509: empty lyrics go out as [instrumental] (upstream behaviour, awaiting product). To block them instead, set true. */
+export const BLOCK_EMPTY_LYRICS = false
+
+/** What a music job is missing before any request or charge: the style prompt (always required; YuE2 sends it as
+ * style), or lyrics when BLOCK_EMPTY_LYRICS. null when it may be submitted. */
+export function musicMissing(spec: { prompt: string; lyrics: string }): 'prompt' | 'lyrics' | null {
+  if (!spec.prompt.trim()) return 'prompt'
+  if (BLOCK_EMPTY_LYRICS && !spec.lyrics.trim()) return 'lyrics'
+  return null
+}
+
 export interface MusicSpec { model: string; prompt: string; lyrics: string; seconds: number; bpm?: number; language?: string; key?: string; seed?: number }
 
 /** WaveSpeed inputs for a music job. bpm / language / key only go out for ACE-Step; MiniMax and YuE2 read them from
@@ -54,4 +65,11 @@ export function musicInputs(spec: MusicSpec): WsInputs {
     ...(spec.model === CUSTOM_MUSIC ? { custom: 'music' } : {}),
     ...(Object.keys(music).length ? { music } : {}),
   }
+}
+
+/** musicInputs for a job about to be queued; throws (no request, no charge) when musicMissing says it is incomplete. */
+export function musicJobInputs(spec: MusicSpec): WsInputs {
+  const missing = musicMissing(spec)
+  if (missing) throw new Error(t(missing === 'prompt' ? 'audio.needMusicPrompt' : 'audio.needLyrics'))
+  return musicInputs(spec)
 }

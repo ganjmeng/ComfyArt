@@ -77,3 +77,69 @@ def test_audio_dialog_keeps_text_per_tab_and_separate_sfx_length():
     assert "useState(8)" in src and "seconds: sfxSeconds" in src
     # switching tabs only switches the tab: no reset of text or length
     assert "onPick={setTab}" in src
+
+
+# ---- #509 PR1 QA acceptance: what is actually handed to the WaveSpeed hook (wsBuilt -> withCustomModel) ----
+@pytest.fixture(scope="module")
+def sent(tmp_path_factory):
+    out = tmp_path_factory.mktemp("music509p") / "payload.mjs"
+    subprocess.run([str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/rolldown.config.mjs"], cwd=ROOT, check=True,
+                   capture_output=True, env={**os.environ, "OUT": str(out), "ENTRY": "music_509_payload.ts"})
+    return json.loads(subprocess.run(["node", str(out)], check=True, capture_output=True, text=True).stdout)
+
+
+ACE = "wavespeed-ai/ace-step-1.5"
+
+
+@needs_node
+def test_qa_ace_step_241_and_3_are_clamped_in_the_sent_inputs(sent):
+    assert sent["ace241"] == {"feature": "music", "model": ACE, "prompt": "lofi", "lyrics": "[instrumental]", "duration": 240}
+    assert sent["ace3"] == {"feature": "music", "model": ACE, "prompt": "lofi", "lyrics": "[instrumental]", "duration": 5}
+
+
+@needs_node
+def test_qa_minimax_and_yue2_send_no_duration(sent):
+    for k in ("minimax", "yue2", "yue2NoLyrics"):
+        assert "duration" not in sent[k] and "music_length_ms" not in sent[k], (k, sent[k])
+    assert sent["minimax"] == {"feature": "music", "model": "minimax/music-3.0", "prompt": "pop", "lyrics": "[instrumental]"}
+
+
+@needs_node
+def test_qa_yue2_style_always_sent_and_empty_prompt_blocked_before_any_request(sent):
+    assert sent["yue2"] == {"feature": "music", "model": YUE2, "prompt": "mandarin pop", "lyrics": "[verse] 你好"}
+    # empty lyrics: upstream behaviour kept (product to confirm); flipping BLOCK_EMPTY_LYRICS in src/music.ts blocks instead
+    assert sent["blockEmptyLyrics"] is False and sent["missing"] == {"empty": "prompt", "noLyrics": None}
+    assert sent["yue2NoLyrics"]["lyrics"] == "[instrumental]" and sent["yue2NoLyrics"]["prompt"] == "mandarin pop"
+    assert sent["yue2EmptyPrompt"] == sent["aceEmptyPrompt"] == "Describe the music style first"
+    assert sent["fetchesDuringJobs"] == 0  # refused before any request (so before any charge)
+    src = _dialog()
+    assert "musicMissing({ prompt, lyrics })" in src and "disabled={tab === 'music' ? !!musicMissing({ prompt, lyrics })" in src
+    assert "musicMissing({ prompt: String(args.prompt ?? ''), lyrics: String(args.lyrics ?? '') })" in (ROOT / "src/botCommands.ts").read_text(encoding="utf-8")
+    assert "wsBuilt(musicJobInputs(spec))" in (ROOT / "src/assetGen.ts").read_text(encoding="utf-8")
+
+
+@needs_node
+def test_qa_custom_music_uses_main_custom_path_and_falls_back_without_it(sent):
+    c = sent["custom"]
+    assert c == {"feature": "music", "model": "acme/custom-music", "prompt": "lofi", "lyrics": "[verse] la", "duration": 30,
+                 "custom": True, "fields": {"@lyrics": "lyrics"}, "params": {"seed": 3}}
+    # a built-in model with a custom file assigned stays on the default WaveSpeed path (tag dropped, no fields)
+    assert sent["builtInWithCustomAssigned"] == sent["ace241"]
+    # custom picked but its file is gone: refused, not silently sent to a default
+    assert "no longer" in sent["customGone"]
+
+
+def test_qa_minimax_fixed_tiers_removed():
+    for f in ("src/assetGen.ts", "src/music.ts", "src/ui/AudioDialog.tsx", "src/botCommands.ts"):
+        assert "MUSIC_SECONDS" not in (ROOT / f).read_text(encoding="utf-8"), f
+
+
+def test_qa_note_reuses_hint_class_in_a_fixed_height_shared_row():
+    src = _dialog()
+    row = re.search(r'<div className="ca-audio__length" data-testid="music-length-row">(.*?)\n          </div>', src, re.S)
+    assert row and 'type="range"' in row.group(1) and 'data-testid="music-duration-note"' in row.group(1)
+    assert '<span className="ca-chat__hint">{t(\'audio.durationByLyrics\')}</span>' in row.group(1)
+    assert "ca-audio__note" not in src  # no new text style
+    css = (ROOT / "src/styles/overlays.css").read_text(encoding="utf-8")
+    assert re.search(r"\.ca-audio__length \{[^}]*min-height: 32px", css)
+    assert ".ca-chat__hint { font-size: 12px; }" in (ROOT / "src/styles/shell.css").read_text(encoding="utf-8")

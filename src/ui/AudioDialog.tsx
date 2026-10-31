@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { atom, useValue, type Editor } from 'tldraw'
 
 import { generateAudio, musicModels, SFX_SECONDS, voices, type AudioSpec } from '../assetGen'
-import { clampMusicSeconds, musicDuration } from '../music'
+import { clampMusicSeconds, musicDuration, musicMissing } from '../music'
 import { AUDIO, clock, type AudioShape } from '../shapes/EmbedShapes'
 import { FieldSelect } from './FieldSelect'
 import { Modal } from './Modal'
@@ -39,6 +39,7 @@ export function AudioDialog({ editor, onError }: { editor: Editor; onError: (msg
   const prompt = prompts[tab]
   const spec = (): AudioSpec | null => {
     const text = prompt.trim()
+    if (tab === 'music' && musicMissing({ prompt, lyrics })) return null
     if (!text) return null
     if (tab === 'music') return { kind: 'music', model: model.id, prompt: text, lyrics: lyrics.trim(), seconds: musicSeconds }
     if (tab === 'sfx') return { kind: 'sfx', prompt: text, seconds: sfxSeconds }
@@ -76,11 +77,14 @@ export function AudioDialog({ editor, onError }: { editor: Editor; onError: (msg
           </>
         )}
         {tab === 'music' ? (
-          range ? (
-            <label className="ca-panel__row"><span>{t('audio.duration')}</span><input type="range" min={range.min} max={range.max} step={range.step} value={musicSeconds} onChange={(e) => setSeconds(Number(e.target.value))} /><span className="ca-panel__val">{clock(musicSeconds)}</span></label>
-          ) : (
-            <div className="ca-rename__field ca-audio__note" data-testid="music-duration-note"><span>{t('audio.duration')}</span><span>{t('audio.durationByLyrics')}</span></div>
-          )
+          // one fixed-height row for the slider and the note, so switching models never moves the controls below
+          <div className="ca-audio__length" data-testid="music-length-row">
+            {range ? (
+              <label className="ca-panel__row"><span>{t('audio.duration')}</span><input type="range" min={range.min} max={range.max} step={range.step} value={musicSeconds} onChange={(e) => setSeconds(Number(e.target.value))} /><span className="ca-panel__val">{clock(musicSeconds)}</span></label>
+            ) : (
+              <div className="ca-panel__row" data-testid="music-duration-note"><span>{t('audio.duration')}</span><span className="ca-chat__hint">{t('audio.durationByLyrics')}</span><span /></div>
+            )}
+          </div>
         ) : tab === 'speech' ? (
           <div className="ca-rename__field"><span>{t('audio.voice')}</span>
             <FieldSelect
@@ -99,7 +103,7 @@ export function AudioDialog({ editor, onError }: { editor: Editor; onError: (msg
         )}
         <div className="ca-panel__foot">
           <button type="button" className="ca-panel__secondary" onClick={close}>{t('common.cancel')}</button>
-          <button type="button" className="ca-panel__primary" disabled={!prompt.trim()} onClick={run}>{t('common.generate')}</button>
+          <button type="button" className="ca-panel__primary" disabled={tab === 'music' ? !!musicMissing({ prompt, lyrics }) : !prompt.trim()} onClick={run}>{t('common.generate')}</button>
         </div>
       </div>
     </Modal>

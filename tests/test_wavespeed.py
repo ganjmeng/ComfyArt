@@ -1130,3 +1130,26 @@ async def test_custom_music_workflow_checks_and_maps_lyrics(ws):
     await wavespeed.submit({"feature": "music", "custom": True, "model": YUE2, "fields": {"@lyrics": "lyrics"}, "prompt": "folk", "lyrics": "[verse] la", "duration": 40})
     (m, p), = ws["submits"]
     assert m == YUE2 and p == {"style": "folk", "lyrics": "[verse] la"}
+
+
+# #509 PR1 QA: payloads actually posted to WaveSpeed.
+async def test_qa_music_ace_241_and_3_clamped_minimax_yue2_no_duration(ws):
+    ace = "wavespeed-ai/ace-step-1.5"
+    await wavespeed.submit({"feature": "music", "model": ace, "prompt": "lofi", "lyrics": "[verse] hi", "duration": 241})
+    await wavespeed.submit({"feature": "music", "model": ace, "prompt": "lofi", "lyrics": "[verse] hi", "duration": 3})
+    await wavespeed.submit({"feature": "music", "model": "minimax/music-3.0", "prompt": "pop", "lyrics": "[verse] hi", "duration": 180})
+    await wavespeed.submit({"feature": "music", "model": YUE2, "prompt": "folk", "lyrics": "", "duration": 180})
+    (_, a), (_, b), (m3, c), (m4, d) = ws["submits"]
+    assert a == {"tags": "lofi", "lyrics": "[verse] hi", "duration": 240} and b == {"tags": "lofi", "lyrics": "[verse] hi", "duration": 5}
+    assert m3 == "minimax/music-3.0" and c == {"prompt": "pop", "lyrics": "[verse] hi"}
+    assert m4 == YUE2 and d == {"style": "folk", "lyrics": "[instrumental]"}  # style always sent; empty lyrics -> [instrumental]
+    for p in (c, d):
+        assert "duration" not in p and "music_length_ms" not in p
+
+
+async def test_qa_music_without_custom_uses_default_path(ws):
+    await wavespeed.submit({"feature": "music", "model": YUE2, "fields": {"@lyrics": "lyrics"}, "prompt": "folk", "lyrics": "[verse] la"})
+    await wavespeed.submit({"feature": "music", "prompt": "folk"})
+    (m1, p1), (m2, p2) = ws["submits"]
+    assert m1 == YUE2 and p1 == {"style": "folk", "lyrics": "[verse] la"}  # no custom flag: fields ignored, normal mapping
+    assert m2 == "minimax/music-3.0" and p2 == {"prompt": "folk"}

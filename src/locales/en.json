@@ -169,6 +169,8 @@
   "assetPicker.upload": "Upload",
   "audio.cloneSelected": "Clone the selected audio's voice",
   "audio.duration": "Duration",
+  "audio.needMusicPrompt": "Describe the music style first",
+  "audio.needLyrics": "Add lyrics first",
   "audio.durationByLyrics": "Length follows the lyrics",
   "audio.generateAudio": "Audio generation",
   "audio.lyricsPlaceholder": "Lyrics (optional, leave empty for instrumental). Use [verse] and [chorus] lines",

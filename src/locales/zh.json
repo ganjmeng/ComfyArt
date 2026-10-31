@@ -169,6 +169,8 @@
   "assetPicker.upload": "上传",
   "audio.cloneSelected": "克隆所选音频的声音",
   "audio.duration": "时长",
+  "audio.needMusicPrompt": "请先填写音乐风格描述",
+  "audio.needLyrics": "请先填写歌词",
   "audio.durationByLyrics": "时长由歌词决定",
   "audio.generateAudio": "音频生成",
   "audio.lyricsPlaceholder": "歌词（可选，留空为纯音乐），可用 [verse]、[chorus] 分段",

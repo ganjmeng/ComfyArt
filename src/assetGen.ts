@@ -6,7 +6,7 @@ import { GENERATOR } from './shapes/GeneratorShape'
 import { annotated, type Built } from './workflows'
 import { t } from './i18n'
 import { wsBuilt } from './wavespeed'
-import { musicInputs } from './music'
+import { musicJobInputs } from './music'
 
 const QWEN_VOICES = ['Serena', 'Vivian', 'Uncle_fu', 'Dylan', 'Eric', 'Ryan', 'Aiden', 'Ono_anna', 'Sohee']
 export const voices = () => QWEN_VOICES // WaveSpeed qwen3-tts voices
@@ -21,7 +21,7 @@ export type AudioSpec =
   | { kind: 'sfx'; prompt: string; seconds: number }
 
 async function audioGraph(spec: AudioSpec): Promise<Built> {
-  if (spec.kind === 'music') return wsBuilt(musicInputs(spec))
+  if (spec.kind === 'music') return wsBuilt(musicJobInputs(spec))
   if (spec.kind === 'sfx') return wsBuilt({ feature: 'sound_effect', prompt: spec.prompt, duration: spec.seconds })
   if (spec.kind === 'speech') return wsBuilt({ feature: 'text_to_speech', text: spec.text, voice: spec.voice })
   return wsBuilt({ feature: 'voice_clone', text: spec.text, audio: annotated(spec.reference) })
