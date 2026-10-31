@@ -10,7 +10,6 @@ import {
   importLanding,
   loadFavourites,
   loadSkills,
-  skillCreatorAtom,
   skillDescription,
   skillAuthor,
   skillChips,
@@ -177,10 +176,8 @@ export function Skills() {
       ? 'home.skillsEmptyPersonal'
       : 'home.skillsEmptyExplore'
 
-  const createConversational = () => {
-    skillCreatorAtom.set({ on: true })
-    newProject({ createSkill: '1' })
-  }
+  // #542: same call as home 创建技能; the canvas handoff sets chip / focus / chat-only full screen
+  const createConversational = () => newProject({ createSkill: '1' })
 
   const onFav = (id: string) => setFavs(toggleFavourite(id))
 

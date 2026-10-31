@@ -6,7 +6,7 @@ import { BUILTIN_AGENT, NO_KEY_DETAIL, botEnabledAtom, branchFrom, chatIdAtom, c
 import { chatFrameOf, locateChatFrame } from '../chatFrame'
 import { errorText } from '../jobs'
 import { libraryAtom } from '../library'
-import { loadSkills } from '../skills'
+import { loadSkills, skillCreatorAtom } from '../skills'
 import { botSettingsOpenAtom } from './AgentPicker'
 import { dockAtom } from './chatDock'
 import { libraryTabAtom } from './LibraryPanel'
@@ -119,6 +119,7 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
   const keyStatus = useValue(keyStatusAtom)
   const enabled = useValue(botEnabledAtom)
   const dock = useValue(dockAtom)
+  const creating = useValue(skillCreatorAtom).on  // #542: creator landing copy
   const hasFrame = useValue('chat frame', () => !!(chat && chatFrameOf(editor, chat.id, true)), [editor, chat?.id])
   const list = useRef<HTMLDivElement>(null)
   const busy = !!chat?.busy
@@ -187,14 +188,20 @@ export function AgentPanel({ editor, projectId, max, onMax, onCollapse, onError 
           </div>
         )}
         {enabled !== false && messages.length === 0 && (
-          <div className="ca-chat__empty">
-            <span className="ca-chat__hello"><LoomiMono /></span>
-            <div>{t('agentPanel.describeWhatYouWantTo')}</div>
-            <div className="ca-chat__hint">{t('agentPanel.selectImagesOnTheCanvas')}</div>
+          <div className="ca-chat__empty" data-creator={creating || undefined} data-testid="chat-empty">
+            {creating
+              ? <div className="ca-chat__title" data-testid="creator-landing-title">{t('agentPanel.creatorStartTitle')}</div>
+              : (
+                <>
+                  <span className="ca-chat__hello"><LoomiMono /></span>
+                  <div>{t('agentPanel.describeWhatYouWantTo')}</div>
+                  <div className="ca-chat__hint">{t('agentPanel.selectImagesOnTheCanvas')}</div>
+                </>
+              )}
             <div className="ca-chat__starts">
               <button type="button" className="ca-chat__start" onClick={() => pickFiles((files) => void uploadRefs(editor, files).catch(fail))}><span className="ca-icon">{Icons.upload}</span>{t('agentPanel.uploadReference')}</button>
-              <button type="button" className="ca-chat__start" onClick={() => draftAtom.set('/')}><span className="ca-icon">{Icons.skill}</span>{t('agentPanel.startFromSkill')}</button>
-              <button type="button" className="ca-chat__start" onClick={() => { libraryTabAtom.set('brand'); sideAtom.set('assets') }}><span className="ca-icon">{Icons.assets}</span>{t('agentPanel.useBrandKit')}</button>
+              <button type="button" className="ca-chat__start" onClick={() => { draftAtom.set('/'); (document.querySelector('.ca-composer__input') as HTMLTextAreaElement | null)?.focus() }}><span className="ca-icon">{Icons.skill}</span>{t('agentPanel.startFromSkill')}</button>
+              <button type="button" className="ca-chat__start" onClick={() => { if (max) onMax(); libraryTabAtom.set('brand'); sideAtom.set('assets') }}><span className="ca-icon">{Icons.assets}</span>{t('agentPanel.useBrandKit')}</button>
             </div>
           </div>
         )}

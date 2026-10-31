@@ -342,7 +342,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       <textarea
         className="ca-composer__input"
         value={draft}
-        placeholder={skillCreator.on ? t('composer.skillCreatorHint') : t('composer.describeYourDesignNeedsFor')}
+        placeholder={t('composer.describeYourDesignNeedsFor')}
         onChange={(e) => draftAtom.set(e.target.value)}
         onCompositionStart={() => setComposing(true)}
         onCompositionEnd={() => setComposing(false)}

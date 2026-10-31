@@ -9,7 +9,7 @@ import { newProject, openView, startProject } from '../projects'
 import { featuredAspect, packFeaturedColumns } from './featuredLayout'
 import { toolCover } from './toolCovers'
 import { showMemoryToast } from '../memory'
-import { HOME_CREATOR_CHIP_KEY, hasSkillDialog, importLanding, loadSkills, skillCover, skillFeaturedCases, type Skill } from '../skills'
+import { hasSkillDialog, importLanding, loadSkills, skillCover, skillFeaturedCases, type Skill } from '../skills'
 import { SkillChip, chipBackspace } from '../ui/SkillChip'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
 import { SkillRunDialog } from '../ui/SkillRunDialog'
@@ -100,10 +100,9 @@ export function Home() {
   const [drop, setDrop] = useState(false)
   const [composing, setComposing] = useState(false)
   const [sending, setSending] = useState(false)
-  // #491: home + menu (+ → 技能 → 创建技能); the creator chip stays on the home box until send
+  // #491: home + menu (+ → 技能 → 创建技能); #542: 创建技能 jumps straight to the canvas (same handoff as the Skills page 创建)
   const [plus, setPlus] = useState<null | 'plus' | 'skills'>(null)
   const [more, setMore] = useState(false)  // #491 design: 创建技能 dropdown anchored under the panel's square-plus; panel stays open
-  const [creator, setCreator] = useState(false)
   const [picked, setPicked] = useState<Skill | null>(null)  // #491: skill chip from the + → 技能 panel; only send leaves home
   const [importing, setImporting] = useState(false)
   // #494-3 / #533: home 精选 + 用 Skill 快速开始 open the same SkillRunDialog as the Skills page
@@ -138,7 +137,6 @@ export function Home() {
   // #278: keep the draft until the new project is created; on failure it stays and an error shows
   const send = async () => {
     if (!hasContent || uploading || sending) return
-    if (creator && !text.trim()) { input.current?.focus(); return }
     // #305: guide once; keep the ask in the box when Key is missing
     let key = keyStatusAtom.get()
     if (!key) key = await refreshKeyStatus()
@@ -146,13 +144,10 @@ export function Home() {
     setSending(true)
     setError('')
     try {
-      // #491 entry A: only the send leaves home; the new project opens in full-screen chat with the creator prefill
       if (picked) await startProject({ skill: picked.id, ask: text.trim(), mode, ref: refs })
-      else if (creator) await startProject({ createSkill: '1', ask: text.trim(), ref: refs })
       else await startProject({ ask: text.trim(), mode, ref: refs })  // #287: model / settings live in the shared saved store
       setText('')
       setRefs([])
-      setCreator(false)
       setPicked(null)
     } catch (e) {
       setError(errorText(e))
@@ -252,11 +247,6 @@ export function Home() {
         onDragLeave={() => setDrop(false)}
         onDrop={(e) => { e.preventDefault(); setDrop(false); void upload(e.dataTransfer.files) }}
       >
-        {creator && (
-          <div className="ca-landing__refs">
-            <SkillChip name={t(HOME_CREATOR_CHIP_KEY)} testId="home-skill-creator-chip" />
-          </div>
-        )}
         {picked && (
           <div className="ca-landing__refs">
             <SkillChip name={picked.name} testId="home-skill-chip" />
@@ -276,12 +266,12 @@ export function Home() {
           ref={input}
           className="ca-landing__input"
           value={text}
-          placeholder={creator ? t('composer.skillCreatorHint') : EXAMPLES[example]}
+          placeholder={EXAMPLES[example]}
           onChange={(e) => setText(e.target.value)}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}
           onKeyDown={(e) => {
-            if ((picked || creator) && chipBackspace(e)) { e.preventDefault(); setPicked(null); setCreator(false); return }
+            if (picked && chipBackspace(e)) { e.preventDefault(); setPicked(null); return }
             if (e.key === 'Tab' && !text) { e.preventDefault(); setText(EXAMPLES[example]) }
             if (isEnter(e) && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send() }
           }}
@@ -327,8 +317,8 @@ export function Home() {
                     )}
                   >
                     <div className="ca-menu" data-testid="home-skills-more-menu">
-                      {/* #491: stays on home — only the chip is added; nothing navigates or sends here */}
-                      <button type="button" className="ca-menu__item" data-testid="home-create-skill" onClick={() => { setMore(false); setPlus(null); setPicked(null); setCreator(true); setMode('agent'); input.current?.focus() }}>
+                      {/* #542: jumps on click (no send) — the canvas lands exactly like the Skills page 创建 */}
+                      <button type="button" className="ca-menu__item" data-testid="home-create-skill" onClick={() => { setMore(false); setPlus(null); newProject({ createSkill: '1' }) }}>
                         <span className="ca-icon">{Icons.circlePlus}</span><span className="ca-menu__grow">{t('home.createSkill')}</span>
                       </button>
                       <button type="button" className="ca-menu__item" disabled>
@@ -341,7 +331,7 @@ export function Home() {
                   </Popover>
                 </div>
                 {skills.map((s) => (
-                  <button key={s.id} type="button" className="ca-menu__item" title={s.name} data-testid="home-skill-row" onClick={() => { setPlus(null); setCreator(false); setPicked(s); input.current?.focus() }}>
+                  <button key={s.id} type="button" className="ca-menu__item" title={s.name} data-testid="home-skill-row" onClick={() => { setPlus(null); setPicked(s); input.current?.focus() }}>
                     <span className="ca-menu__grow ca-skills__name">{s.name}</span>
                     {s.custom && <span className="ca-menu__key">{t('composer.personal')}</span>}
                   </button>
