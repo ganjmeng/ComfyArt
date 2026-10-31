@@ -20,3 +20,9 @@ def test_title_can_shrink():
 
 def test_agent_panel_width_unchanged():
     assert "width: 400px" in _rule(".ca-agent")
+
+
+def test_568_spacing():
+    assert "padding: 0 10px 0 12px" in _rule(".ca-head")
+    assert "padding: 0 12px 0 10px" in _rule(".ca-top")
+    assert "margin-right: -2px" in _rule(".ca-head__logo")
