@@ -51,8 +51,11 @@ function LibCard({ item, save }: { item: LibraryItem; save: (list: LibraryItem[]
   )
 }
 
-export function LibraryPanel({ editor, onError }: { editor: Editor; onError: (msg: string) => void }) {
-  const tab = useValue(libraryTabAtom)
+/** #539: `kitsOnly` = home Assets page — only the 4 kit tabs (no canvas 「文件」 tab, no editor needed). */
+export function LibraryPanel({ editor, onError, kitsOnly }: { editor?: Editor; onError: (msg: string) => void; kitsOnly?: boolean }) {
+  const current = useValue(libraryTabAtom)
+  const tab: Tab = kitsOnly && current === 'files' ? 'brand' : current
+  const tabs = kitsOnly ? TABS.filter(([k]) => k !== 'files') : TABS
   const setTab = (t: Tab) => libraryTabAtom.set(t)
   const library = useValue(libraryAtom)
   const items = library.filter((i) => i.kind === tab)
@@ -64,11 +67,11 @@ export function LibraryPanel({ editor, onError }: { editor: Editor; onError: (ms
   }
 
   return (
-    <div className="ca-lib">
+    <div className="ca-lib" data-testid={kitsOnly ? 'assets-library' : undefined}>
       <div className="ca-utabs" role="tablist">
-        {TABS.map(([t, label]) => <button key={t} type="button" role="tab" aria-selected={tab === t} className="ca-utabs__tab" data-on={tab === t || undefined} onClick={() => setTab(t)}>{label}</button>)}
+        {tabs.map(([t, label]) => <button key={t} type="button" role="tab" aria-selected={tab === t} className="ca-utabs__tab" data-on={tab === t || undefined} onClick={() => setTab(t)}>{label}</button>)}
       </div>
-      {tab === 'files' && <AssetGrid onPick={(item) => void placeAsset(editor, item)} />}
+      {tab === 'files' && editor && <AssetGrid onPick={(item) => void placeAsset(editor, item)} />}
       {tab !== 'files' && (
         <>
           <button type="button" className="ca-lib__new" onClick={() => create(tab)}>

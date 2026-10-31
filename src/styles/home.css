@@ -898,3 +898,11 @@ body { background: var(--ca-float); }
   .ca-skillrun { flex-direction: column; max-height: calc(100vh - 32px); }
   .ca-skillrun__right { flex: 1 1 auto; max-width: none; border-left: 0; border-top: var(--ca-border-w) solid var(--ca-border); }
 }
+
+/* #539 PR-A: 我的素材 page shell — left = existing LibraryPanel (kitsOnly), right = empty state. */
+.ca-assets-page { display: flex; height: 100%; min-height: 0; }
+.ca-assets-page__left { width: 360px; flex-shrink: 0; overflow-y: auto; border-right: var(--ca-border-w) solid var(--ca-border); padding-top: 24px; box-sizing: border-box; }
+.ca-assets-page__title { margin: 0 16px 16px; font: 500 24px/32px var(--ca-font); color: var(--ca-text); }
+.ca-assets-page__right { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--ca-muted); font: 14px/20px var(--ca-font); }
+.ca-assets-page__icon { font-size: 32px; color: var(--ca-text-2); }
+.ca-assets-page__empty-title { color: var(--ca-text); font-weight: 500; }

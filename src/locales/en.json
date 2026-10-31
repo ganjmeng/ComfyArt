@@ -1597,5 +1597,7 @@
   "home.assets": "Assets",
   "home.tools": "Tools",
   "home.moreTools": "More tools",
-  "home.toolPreciseEdit": "Precise edit"
+  "home.toolPreciseEdit": "Precise edit",
+  "assets.emptyTitle": "No item selected",
+  "assets.emptyHint": "Pick an item on the left, or create a new one"
 }

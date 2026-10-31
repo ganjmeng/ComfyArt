@@ -28,6 +28,7 @@ import { SettingsMenu } from '../ui/SettingsMenu'
 import { WAVESPEED_HISTORY_URL } from '../wavespeedKey'
 import '../styles/home.css'
 import { Arti } from './Arti'
+import { Assets } from './Assets'
 import { confirmDelete } from './confirmDelete'
 import { Home } from './Home'
 import { NotFound } from './NotFound'
@@ -40,8 +41,8 @@ type View = HomeView | { missing: string }
 /** #495 — persist expand/collapse across refresh. */
 export const RAIL_COLLAPSE_KEY = 'comfyart.rail.collapsed'
 const RECENT_LIMIT = 8
-/** #497 flips this once Assets lands on main. */
-const SHOW_ASSETS = false
+/** #539 PR-A: Assets page shell is on main → rail entry shown. */
+const SHOW_ASSETS = true
 
 function RailBtn({
   icon, label, on, onClick, testId, badge, expanded,
@@ -138,6 +139,7 @@ function main(view: View) {
   if (view === 'home') return <Home />
   if (view === 'projects') return <Projects />
   if (view === 'skills') return <Skills />
+  if (view === 'assets') return <Assets />
   if (view === 'schedules') return <Schedules />
   if (view === 'arti') return <Arti />
   return <NotFound id={view.missing} />
@@ -206,9 +208,9 @@ export function HomeApp({ view }: { view: View }) {
         <RailBtn icon={Icons.home} label={t('home.home')} on={view === 'home'} onClick={() => openView('home')} testId="rail-home" expanded={expanded} />
         <RailBtn icon={Icons.folder} label={t('home.projects')} on={view === 'projects'} onClick={() => openView('projects')} testId="rail-projects" expanded={expanded} />
         <RailBtn icon={Icons.skill} label={t('home.skills')} on={view === 'skills'} onClick={() => openView('skills')} testId="rail-skills" expanded={expanded} />
-        {/* #495: Assets only after #497 lands on main */}
+        {/* #495/#539: Assets entry → page shell (src/home/Assets.tsx) */}
         {SHOW_ASSETS ? (
-          <RailBtn icon={Icons.assets} label={t('home.assets')} onClick={() => {}} testId="rail-assets" expanded={expanded} />
+          <RailBtn icon={Icons.assets} label={t('home.assets')} on={view === 'assets'} onClick={() => openView('assets')} testId="rail-assets" expanded={expanded} />
         ) : null}
         {/* #367/#495: Schedules = main bell in the competitor design-commission slot; our name */}
         <RailBtn icon={Icons.bell} label={t('home.designSchedules')} on={view === 'schedules'} onClick={() => openView('schedules')} testId="rail-schedules" expanded={expanded} />

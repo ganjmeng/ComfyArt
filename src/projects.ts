@@ -93,7 +93,7 @@ export async function projectExists(id: string) {
   return (await loadProject(id)) !== null
 }
 
-export type HomeView = 'home' | 'projects' | 'skills' | 'schedules' | 'arti'
+export type HomeView = 'home' | 'projects' | 'skills' | 'assets' | 'schedules' | 'arti'
 
 /** #367/#460: account-level views — skills Explore shell beside home/projects. */
 export function openView(view: HomeView) {
