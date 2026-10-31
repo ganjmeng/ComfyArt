@@ -688,10 +688,10 @@ async def test_custom_workflow_check(ws):
     # unmapped image + missing required param + bad field + unknown model
     bad = wavespeed.check_custom({"model": "acme/my-edit", "fields": {"@prompt": "nope"}}, ["image", "prompt"], [], meta)
     codes = {c["code"]: c for c in bad["codes"]}
-    assert codes["missingFields"]["markers"] == ["@image"] and "strength" in codes["requiredParams"]["params"] and codes["badField"]["field"] == "nope"
+    assert codes["missingFields"]["markers"] == ["@image"] and codes["requiredParams"]["params"] == ["input_image", "instruction"] and "strength" not in codes["requiredParams"]["params"] and codes["badField"]["field"] == "nope"
     assert wavespeed.check_custom({"model": "made/up"}, ["image"], [], meta)["codes"] == [{"code": "unknownModel", "model": "made/up"}]
     assert wavespeed.check_custom({"model": "noslash"}, ["image"], [], meta)["codes"][0]["code"] == "badModelId"
-    assert not bad["ok"] and any("@image" in e for e in bad["errors"]) and any("strength" in e for e in bad["errors"]) and any("'nope'" in e for e in bad["errors"])
+    assert not bad["ok"] and any("@image" in e for e in bad["errors"]) and not any("strength" in e for e in bad["errors"]) and any("'nope'" in e for e in bad["errors"])
     assert not wavespeed.check_custom({"model": "made/up"}, ["image"], [], meta)["ok"]
     assert not wavespeed.check_custom({"model": "noslash"}, ["image"], [], meta)["ok"]
     # unknown or unused markers only warn; a curated model maps automatically

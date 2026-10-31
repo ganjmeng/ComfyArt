@@ -37,6 +37,8 @@ ALLOWLIST = {
     # i18n hint text for the multi-view 3D tool (cloud-backed).
     ("src/locales/zh.json", "Pixal3D"): "UI text",
     ("src/locales/en.json", "Pixal3D"): "UI text",
+    # #397f219b: model3d marker note names the built-in cloud 3D models (TRELLIS.2 / Pixal3D); descriptive text only.
+    ("src/customMarkers.ts", "TRELLIS.2 and Pixal3D stay built-in"): "descriptive note, cloud models",
 }
 
 
