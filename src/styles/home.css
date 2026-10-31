@@ -1,7 +1,7 @@
 body { background: var(--ca-float); }
 .ca-home { position: fixed; inset: 0; display: flex; background: var(--ca-float); color: var(--ca-text); font: 400 14px/22px var(--ca-font); }
 
-.ca-rail { width: var(--ca-rail-w-collapsed); flex: none; display: flex; flex-direction: column; align-items: center; gap: var(--ca-rail-pitch-gap); padding: 12px 0; border-right: none; /* #546: Lovart rail has no border */ box-sizing: border-box; }
+.ca-rail { width: var(--ca-rail-w-collapsed); flex: none; display: flex; flex-direction: column; align-items: center; gap: var(--ca-rail-pitch-gap); padding: 12px 0; border-right: none; /* #546: reference design rail has no border */ box-sizing: border-box; }
 .ca-rail__logo { display: inline-flex; width: 30px; height: 30px; margin-bottom: 12px; color: var(--ca-strong); }
 .ca-rail__logo svg { width: 100%; height: 100%; }
 .ca-brand-mark { display: inline-flex; width: 100%; height: 100%; color: inherit; }
@@ -17,13 +17,13 @@ body { background: var(--ca-float); }
 .ca-rail__spacer { flex: 1; }
 .ca-rail__btn[data-testid="rail-new"] { margin-bottom: var(--ca-rail-new-gap); } /* #546 */
 
-/* #495 expanded sidebar (#546: 240 = Lovart) — collapsed keeps the 60px icon rail */
+/* #495 expanded sidebar (#546: 240 = reference design) — collapsed keeps the 60px icon rail */
 .ca-rail__top { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 4px; }
 .ca-rail__logo { margin-bottom: 0; }
 .ca-rail__logo--btn { border: none; background: transparent; padding: 0; cursor: pointer; color: inherit; }
 .ca-rail__collapse {
   display: none; align-items: center; justify-content: center;
-  width: 36px; height: 36px; margin-left: auto; border: none; border-radius: 8px; /* #546 Lovart toggle 36×36 @x196 */
+  width: 36px; height: 36px; margin-left: auto; border: none; border-radius: 8px; /* #546 reference design toggle 36×36 @x196 */
   background: transparent; color: var(--ca-text-2); cursor: pointer;
 }
 .ca-rail__collapse:hover { background: var(--ca-hover); color: var(--ca-text); }
@@ -78,7 +78,7 @@ body { background: var(--ca-float); }
 
 .ca-home__main { flex: 1; min-width: 0; overflow-y: auto; }
 
-.ca-landing { max-width: none; /* #546: column = main − 2×56 (Lovart: 928 @1280 expanded, 1088 @1440) */ margin: 0 auto; padding: 96px var(--ca-home-main-px) 64px; box-sizing: border-box; }
+.ca-landing { max-width: none; /* #546: column = main − 2×56 (reference design: 928 @1280 expanded, 1088 @1440) */ margin: 0 auto; padding: 96px var(--ca-home-main-px) 64px; box-sizing: border-box; }
 .ca-landing__title { margin: 0 0 28px; text-align: center; font: 500 32px/40px var(--ca-font); letter-spacing: -0.02em; }
 .ca-landing__notice { max-width: 760px; margin: 0 auto 12px; box-sizing: border-box; }
 .ca-landing__box { max-width: 760px; margin: 0 auto; padding: 14px 14px 10px 18px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 28px; box-shadow: 0 8px 28px -12px rgba(0,0,0,.12), 0 2px 8px -4px rgba(0,0,0,.06); box-sizing: border-box; background: var(--ca-float); }
@@ -117,7 +117,7 @@ body { background: var(--ca-float); }
 .ca-skillcard__icon img { width: 100%; height: 100%; object-fit: cover; }
 .ca-skillcard__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* #537 / #496 / #540 — home 「实用工具」5 cards + 更多工具. Values = Lovart live DevTools @1280 CSS px
+/* #537 / #496 / #540 — home 「实用工具」5 cards + 更多工具. Values = reference design live DevTools @1280 CSS px
    (540/measure on review-assets). Theme tokens only, light + dark. */
 :root { --ca-tools-row-hover: rgba(0,0,0,.03); }
 :root[data-theme="dark"] { --ca-tools-row-hover: rgba(255,255,255,.05); }
@@ -152,7 +152,7 @@ body { background: var(--ca-float); }
   margin: 0; font: 400 13px/20px var(--ca-font); color: var(--ca-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* 更多 dropdown: 200px (1px border + 4px pad from .ca-menu), radius 12, --ca-shadow (= Lovart 3-layer in light) */
+/* 更多 dropdown: 200px (1px border + 4px pad from .ca-menu), radius 12, --ca-shadow (= reference design 3-layer in light) */
 .ca-menu--tools { width: 200px; min-width: 200px; }
 .ca-menu--tools .ca-menu__item {
   height: 32px; padding: 0 8px; gap: 8px; border-radius: 8px;
@@ -488,7 +488,7 @@ body { background: var(--ca-float); }
 /* #381: empty-state line, multi-match chooser (delete-confirm style), top-left toast, /arti 即将开放 */
 .ca-arti-mem__guide { margin: 8px 0 12px; text-align: center; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
 .ca-arti-mem__retry { padding: 0; border: none; background: none; color: var(--ca-text); font: inherit; text-decoration: underline; cursor: pointer; }
-/* confirm-style dialogs (Confirm, memory chooser): bold title like Lovart, no ✕ (product: only 取消 + 删除) */
+/* confirm-style dialogs (Confirm, memory chooser): bold title like the reference design, no ✕ (product: only 取消 + 删除) */
 .ca-confirm > .ca-side__head { font-weight: 600; }
 /* chooser: 5 rows visible; a visible scrollbar + bottom fade tell the user more rows are below */
 .ca-mem-choose__scroll { position: relative; flex: none; }
@@ -503,7 +503,7 @@ body { background: var(--ca-float); }
 .ca-mem-choose__text { flex: 1; min-width: 0; }
 .ca-mem-choose__time { flex: none; margin-left: 12px; color: var(--ca-text-2); font: 400 12px/20px var(--ca-font); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ca-confirm .ca-panel__primary:not(.ca-panel__danger) { background: var(--ca-strong); color: var(--ca-float); }
-/* toast: Lovart size (≈120×48, 14px text, 16px icon) */
+/* toast: reference design size (≈120×48, 14px text, 16px icon) */
 .ca-mem-toast { position: fixed; top: 16px; left: 72px; display: flex; align-items: center; gap: 8px; z-index: 3000; box-sizing: border-box; min-height: 48px; padding: 12px 20px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 14px; background: var(--ca-float); color: var(--ca-text); font: 500 14px/24px var(--ca-font); box-shadow: 0 8px 24px rgba(0,0,0,.12); }
 .ca-mem-toast__icon { color: #e53935; width: 16px; height: 16px; }
 .ca-mem-toast__icon svg { width: 16px; height: 16px; }

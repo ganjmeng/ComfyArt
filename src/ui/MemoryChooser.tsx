@@ -73,7 +73,7 @@ export function MemoryChooser() {
   )
 }
 
-/** #381: Lovart-style top-left toast: 记忆已删除 (trash) or 保存失败，请重试 (error). */
+/** #381: reference-style top-left toast: 记忆已删除 (trash) or 保存失败，请重试 (error). */
 export function MemoryToast() {
   const toast = useValue(memoryToastAtom)
   if (!toast) return null

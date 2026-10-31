@@ -30,7 +30,7 @@
 .ca-brand-mark .lm-star .lm-cut { stroke: none; }
 .ca-brand-mark .lm-smile { fill: none; stroke-dasharray: none; stroke-dashoffset: 0; opacity: 1; }
 
-/* #486: Lovart top-bar title ~182×20, single-line ellipsis; no hover tooltip */
+/* #486: reference design top-bar title ~182×20, single-line ellipsis; no hover tooltip */
 .ca-head__name { flex: none; width: 182px; max-width: 182px; min-width: 0; height: 20px; padding: 0 6px; border: none; border-radius: 6px; background: transparent; font: 500 13px/20px var(--ca-font); color: var(--ca-text); outline: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ca-save { flex: none; padding: 0 4px; border: none; background: none; font: 400 12px/20px var(--ca-font); color: var(--ca-muted); white-space: nowrap; }
 .ca-save[data-state="error"] { color: #e74c3c; cursor: pointer; text-decoration: underline; }
@@ -62,7 +62,7 @@
 .ca-chat__hello svg { width: 100%; height: 100%; }
 .ca-chat__hint { font-size: 12px; }
 .ca-chat__title { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ca-strong); }  /* #542 creator landing heading */
-.ca-chat__empty[data-creator] .ca-chat__starts { margin-top: 16px; gap: 15px; align-items: center; }  /* #542: Lovart stack pitch; 3 buttons, not stretched */
+.ca-chat__empty[data-creator] .ca-chat__starts { margin-top: 16px; gap: 15px; align-items: center; }  /* #542: reference design stack pitch; 3 buttons, not stretched */
 .ca-chat__empty[data-creator] .ca-chat__start { justify-content: center; width: 172px; min-width: 172px; height: 38px; flex: none; border-radius: 19px; padding: 0 10px; gap: 6px; white-space: nowrap; font-size: 13px; }
 .ca-chat__user { align-self: flex-end; max-width: 85%; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .ca-chat__bubble { padding: 10px 14px; border-radius: 16px; background: var(--ca-field); white-space: pre-wrap; word-break: break-word; }
@@ -485,7 +485,7 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 
 /* #371 P1-mascot — composer left-top pixel Arti badge (DNA A) */
 .ca-composer { overflow: visible; background: var(--ca-float); isolation: isolate; }
-/* #371fix: opaque composer surface painted ABOVE the mascot (Lovart: only the head peeks over the rim) */
+/* #371fix: opaque composer surface painted ABOVE the mascot (reference design: only the head peeks over the rim) */
 .ca-composer::before {
   content: '';
   position: absolute;
@@ -566,7 +566,7 @@ span.arti-mascot { cursor: default; pointer-events: none; }
 }
 
 /* In-canvas Arti notifications panel (click badge; NOT /arti).
-   #376 Lovart CN 1:1: composer child → same width as composer; bottom 8px above composer top; z5 topmost. */
+   #376 reference design CN 1:1: composer child → same width as composer; bottom 8px above composer top; z5 topmost. */
 .ca-composer > .arti-notify,
 .arti-notify {
   position: absolute;
@@ -577,7 +577,7 @@ span.arti-mascot { cursor: default; pointer-events: none; }
   top: auto;
   bottom: calc(100% + 1px + 8px); /* 8px gap above composer outer top edge */
   box-sizing: border-box;
-  /* #376 designer (visual, Lovart CN): title glyph 16px below panel top, hint glyph 37px above bottom, height ~198.
+  /* #376 designer (visual, reference design CN): title glyph 16px below panel top, hint glyph 37px above bottom, height ~198.
      1px border + 3px/4px half-leading → padding 13 / 33. */
   padding: 13px 16px 33px;
   border-radius: 12px;

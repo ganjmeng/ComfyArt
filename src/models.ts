@@ -86,7 +86,7 @@ export function featurePicks(workflow: string, picks: unknown): Record<string, s
   return isAuto(workflow) ? {} : (picks as Record<string, string> | undefined) ?? {}
 }
 
-/** Dropdown order from the backend (#95): first curated id, then Lovart's in-app order (#134: the default does not move). */
+/** Dropdown order from the backend (#95): first curated id, then the reference design's in-app order (#134: the default does not move). */
 export function byPickerOrder(f: CloudFeature | undefined) {
   if (!f) return []
   const rank = new Map((f.picker_order ?? []).map((id, i) => [id, i]))
@@ -99,7 +99,7 @@ async function useCloudImageModels() {
   const defs = (names: string[], video: boolean): ModelDef[] => {
     const seen = new Set<string>()
     return names.flatMap((n) => byPickerOrder(all[n])).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
-      // Lovart-style row (#95 design): display name + one-line description; the raw id only in the tooltip
+      // reference-style row (#95 design): display name + one-line description; the raw id only in the tooltip
       id: m.id, label: m.name || m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, ratios: m.aspect_ratios, durations: m.durations, resolutions: m.resolutions, maxImages: m.max_images, defaults: m.defaults, inputs: m.inputs, desc: m.blurb?.[lang] ?? '', about: m.desc || undefined, files: [], cloud: true, lora: null,
       // control: structure refs run on WaveSpeed control models (#80), so the ControlNet knobs show like upstream
       ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }),
