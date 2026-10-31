@@ -20,8 +20,8 @@
 .ca-split__chev .ca-icon { width: 16px; height: 16px; }
 .ca-menu__empty { padding: 8px 10px; color: var(--ca-muted); }
 
-.ca-head { display: flex; align-items: center; gap: 4px; height: 40px; padding: 0 10px 0 12px; box-sizing: border-box; flex: none; font: 400 14px/20px var(--ca-font); }
-.ca-head__logo { display: inline-flex; width: 24px; height: 24px; flex: none; margin-right: -2px; color: var(--ca-strong); }  /* #568: logo → title text 8px (−2 + gap 4 + title pad 6) */
+.ca-head { display: flex; align-items: center; gap: 4px; height: 40px; padding: 0 12px; box-sizing: border-box; flex: none; font: 400 14px/20px var(--ca-font); }
+.ca-head__logo { display: inline-flex; width: 24px; height: 24px; flex: none; margin-right: 4px; color: var(--ca-strong); }
 .ca-head__logo svg { width: 100%; height: 100%; }
 .ca-brand-mark { display: inline-flex; width: 100%; height: 100%; color: inherit; }
 .ca-brand-mark svg { width: 100%; height: 100%; display: block; overflow: visible; }

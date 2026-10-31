@@ -1,6 +1,6 @@
 """#568: canvas chat panel top bar fits its 400px panel at 1280×800 and 1920×1080 (zh light + en dark).
-Every button + 「已保存」/Saved stays visible; last button 10px from the panel edge, first canvas tool 10px
-from the divider, logo → title text 8px, nothing overlaps the canvas
+Every button stays visible and there is no 「已保存」/Saved label; last button 12px from the panel edge, first canvas tool 10px
+from the divider, logo → title 8px, nothing overlaps the canvas
 toolbar (.ca-top), the head does not overflow, and a very long title ellipsizes without hiding buttons."""
 from __future__ import annotations
 
@@ -34,14 +34,9 @@ MEASURE = """() => {
 }"""
 
 
-async def _measure(pg, saved):
-    for _ in range(5):  # autosave debounce can briefly re-render the status; settle on 「已保存」/Saved
-        await pg.wait_for_timeout(800)
-        await pg.wait_for_function("(t) => document.querySelector('.ca-agent .ca-save')?.textContent === t", arg=saved, timeout=10000)
-        m = await pg.evaluate(MEASURE)
-        if m["save"]:
-            return m
-    return m
+async def _measure(pg):
+    await pg.wait_for_timeout(2500)  # let autosave persist; the top bar must still show no status text
+    return await pg.evaluate(MEASURE)
 
 
 def _hit(a, b):
@@ -50,10 +45,10 @@ def _hit(a, b):
 
 def _check(m):
     edge = m["panelRight"] - m["padRight"]
-    assert m["padRight"] == 10, m
-    assert abs(m["panelRight"] - m["btns"][-1]["r"] - 10) <= 1, m  # chat gap 10±1
+    assert m["padRight"] == 12, m
+    assert abs(m["panelRight"] - m["btns"][-1]["r"] - 12) <= 1, m  # chat gap 12±1
     assert abs(m["tools"][0]["l"] - m["divider"] - 10) <= 1, m  # canvas gap 10±1
-    assert abs(m["nameL"] + m["namePadL"] - m["logoR"] - 8) <= 1, m  # logo → title text 8±1
+    assert abs(m["nameL"] - m["logoR"] - 8) <= 1, m  # logo box → title box 8±1 (unchanged from main)
     assert len(m["btns"]) == 5, m["btns"]  # new chat, history ▾, notices, maximize, collapse
     for b in m["btns"]:
         assert b["r"] <= edge + 1 and b["l"] >= 0, (b, edge)
@@ -62,8 +57,7 @@ def _check(m):
     assert m["scrollW"] <= m["clientW"], m
     assert m["tools"] and m["tools"][0]["l"] > m["divider"], m
     assert not any(_hit(a, b) for a in m["btns"] for b in m["tools"]), m
-    assert m["save"] and m["save"]["r"] - m["save"]["l"] > 10 and m["saveOnTop"], m  # Saved visible, not covered
-    assert m["save"]["r"] <= m["btns"][0]["l"] + 1, m
+    assert m["save"] is None, m  # #568: no 「已保存」/Saved label in the top bar
 
 
 @pytest.mark.parametrize("vw,vh", [(1280, 800), (1920, 1080)])
@@ -88,8 +82,7 @@ async def test_chat_topbar_fits_panel(app_url, lang, theme, vw, vh):  # noqa: F8
         name = pg.locator(".ca-agent .ca-head__name")
         await name.fill("Brief")
         await pg.keyboard.press("Enter")
-        saved = "已保存" if lang == "zh" else "Saved"
-        short = await _measure(pg, saved)
+        short = await _measure(pg)
         print("MEAS", lang, theme, vw, short)
         _check(short)
         if SHOTS:
@@ -97,7 +90,7 @@ async def test_chat_topbar_fits_panel(app_url, lang, theme, vw, vh):  # noqa: F8
             await pg.screenshot(path=f"{SHOTS}/crop-{vw}-{lang}-{theme}.png", clip={"x": 0, "y": 0, "width": 640, "height": 48})
         await name.fill("A very long project name that keeps going well past the title slot width 一个非常长的项目名称")
         await pg.keyboard.press("Enter")
-        long = await _measure(pg, saved)
+        long = await _measure(pg)
         _check(long)
         assert len(long["btns"]) == len(short["btns"])
         assert long["nameScroll"] > long["nameClient"] and long["nameOverflow"] == "ellipsis", long

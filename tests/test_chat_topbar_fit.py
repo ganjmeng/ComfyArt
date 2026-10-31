@@ -23,6 +23,11 @@ def test_agent_panel_width_unchanged():
 
 
 def test_568_spacing():
-    assert "padding: 0 10px 0 12px" in _rule(".ca-head")
+    assert "padding: 0 12px;" in _rule(".ca-head")
     assert "padding: 0 12px 0 10px" in _rule(".ca-top")
-    assert "margin-right: -2px" in _rule(".ca-head__logo")
+
+
+def test_568_no_saved_label():
+    src = (CSS.parents[1] / "ui/ProjectHeader.tsx").read_text()
+    assert "projectHeader.saved'" not in src and "projectHeader.saving" not in src
+    assert "projectHeader.saveFailed" in src  # failed save + retry still shown
