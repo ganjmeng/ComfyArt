@@ -158,6 +158,6 @@ def test_lovart_measured_values_540() -> None:
     assert "const MORE_TOOL_ICON = {" in HOME and HOME.count("rx('") == 15  # 14 tools + caret
     assert "Apache License 2.0" in HOME and "Remix" in HOME
     assert "{MORE_TOOL_ICON[tool.id as keyof typeof MORE_TOOL_ICON]}" in HOME and "{MORE_TOOLS_CARET}" in HOME
-    for name in ("magic-fill", "eraser-fill", "crop-fill", "expand-diagonal-fill", "equalizer-fill", "ri-text", "camera-switch-fill",
+    for name in ("magic-fill", "eraser-fill", "crop-fill", "expand-diagonal-fill", "equalizer-fill", "ri-t-box-fill", "camera-switch-fill",
                  "pen-nib-fill", "drag-move-2-fill", "anticlockwise-2-fill", "box-3-fill", "chat-voice-fill", "run-fill", "music-2-fill"):
         assert name in HOME, name
