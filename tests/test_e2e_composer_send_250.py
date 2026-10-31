@@ -13,6 +13,50 @@ from test_e2e_default_agent import pytestmark  # noqa: E402,F401
 SHORT = {"image": "1K · 1:1", "video": "16:9 · 5s"}
 LABEL = {"image": {"zh": "图像", "en": "Image"}, "video": {"zh": "视频", "en": "Video"}, "agent": {"zh": "Agent", "en": "Agent"}}
 
+
+async def _pick_mode(pg, mode: str, lang: str) -> None:
+    """Open composer mode menu and choose image / video / Loomi Agent.
+
+    #505: Popover portals the menu at left:-9999 until useLayoutEffect places it
+    (Popover.tsx). Under full-suite load, Playwright can start clicking Video while
+    the portal is still off-screen and time out scrolling it into view. Wait until
+    the .ca-pop that owns .ca-agentpick is on-screen, then click. No product change.
+    """
+    trigger = pg.locator(".ca-composer__mode").first
+    await trigger.wait_for()
+    menu = pg.locator(".ca-agentpick")
+    for _ in range(3):
+        if await menu.count() and await menu.is_visible():
+            break
+        await trigger.click()
+        try:
+            await menu.wait_for(state="visible", timeout=5000)
+            break
+        except Exception:
+            await pg.keyboard.press("Escape")
+            await pg.wait_for_timeout(200)
+    else:
+        await menu.wait_for(state="visible", timeout=10000)
+    # Portal starts at (-9999,-9999); only then is the Video row actionable.
+    await pg.wait_for_function(
+        """() => {
+          const pick = document.querySelector('.ca-agentpick');
+          if (!pick) return false;
+          const pop = pick.closest('.ca-pop');
+          if (!pop) return false;
+          const r = pop.getBoundingClientRect();
+          return r.left >= -1 && r.top >= -1 && r.width > 8 && r.height > 8;
+        }""",
+        timeout=15000,
+    )
+    if mode == "agent":
+        item = menu.locator(".ca-menu__item").filter(has_text="Loomi Agent").first  # #399
+    else:
+        item = menu.locator(".ca-menu__item:not(.ca-agentpick__row)").filter(has_text=LABEL[mode][lang]).first
+    await item.wait_for(state="visible")
+    await item.click()
+
+
 FOOT = """() => {
   const c = document.querySelector('.ca-composer').getBoundingClientRect()
   const foot = document.querySelector('.ca-composer__foot'); const fr = foot.getBoundingClientRect()
@@ -57,11 +101,7 @@ async def test_send_stays_in_bar(app_url, fake_tools, monkeypatch, width, lang, 
             if await pg.locator(".ca-modal").count():
                 await pg.keyboard.press("Escape")
                 await pg.wait_for_timeout(300)
-        await pg.locator(".ca-composer__mode").click()
-        if mode == "agent":  # the built-in agent row
-            await pg.locator(".ca-agentpick .ca-menu__item").filter(has_text="Loomi Agent").first.click()  # #399 (PR #401): built-in row is "{brand} Agent"
-        else:
-            await pg.locator(".ca-agentpick .ca-menu__item:not(.ca-agentpick__row)").filter(has_text=LABEL[mode][lang]).first.click()
+        await _pick_mode(pg, mode, lang)
         await pg.wait_for_timeout(300)
         if await pg.locator(".ca-agentpick").count():
             await pg.keyboard.press("Escape")
