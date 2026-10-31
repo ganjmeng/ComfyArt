@@ -22,6 +22,8 @@ r.withNull = withPreset(old, null) === old
 r.presetDefault = skillPreset(poster)?.id
 r.presetPick = skillPreset(poster, second.id)?.id
 r.presetImg = presetImage(poster, second)
+r.posterPresetImgs = poster.presets!.map((p) => presetImage(poster, p))
+r.builtinPresetImgs = BUILTIN_SKILLS.flatMap((s) => (s.presets ?? []).map((p) => presetImage(s, p)))
 r.posterRun = skillRunParams(poster, { ...skillDefaults(poster), topic: 'Autumn launch', reference: '/view?f=a.png' }, second.id)
 r.cwRun = skillRunParams(cw, { brief: 'Upscale my photo' }, null)
 r.emptyRun = skillRunParams(old, {}, null)

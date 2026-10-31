@@ -53,6 +53,14 @@ def test_presets_have_prompts(got):
 
 
 @needs_node
+def test_builtin_preset_images_unique(got):
+    imgs = got["builtinPresetImgs"]
+    assert len(imgs) == 30
+    assert all(u and "raw.githubusercontent.com/ganjmeng/ComfyArt/" in u and "494/wash/presets/" in u for u in imgs)
+    assert len(set(imgs)) == 30  # no shared cover fallback across presets
+
+
+@needs_node
 def test_defaults_and_required(got):
     assert got["posterDefaults"]["ratio"] == "3:4" and got["posterDefaults"]["topic"] == ""
     assert got["cwDefaults"] == {"brief": ""}
@@ -66,7 +74,10 @@ def test_preset_prompt_appended_after_instructions(got):
     assert got["withPreset"] == got["posterInstr"].rstrip() + "\n\n" + got["secondPrompt"]
     assert got["withUnknown"] and got["withNull"]
     assert got["presetDefault"] != got["presetPick"]
-    assert got["presetImg"] == "/comfyart/skills/poster/cover.webp"  # no preset image yet → cover
+    assert got["presetImg"] and got["presetImg"] != "/comfyart/skills/poster/cover.webp"
+    assert "494/wash/presets/poster__retro.webp" in got["presetImg"]
+    assert len(set(got["posterPresetImgs"])) == 3  # poster three thumbs distinct
+    assert all(u and "494/wash/presets/" in u for u in got["posterPresetImgs"])
 
 
 @needs_node
