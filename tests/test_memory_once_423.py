@@ -157,6 +157,10 @@ def test_locales_only_add_memory_retrieved_430():
         "customWorkflows.action.music", "customWorkflows.musicGone", "customWorkflows.group.audio",
         "customWorkflows.action.speech", "customWorkflows.action.clone", "customWorkflows.action.sfx",
         "customWorkflows.speechGone",
+        # #509 PR3: video extend/upscale/cutout + model3d custom workflows
+        "customWorkflows.action.extend", "customWorkflows.action.videoUpscale",
+        "customWorkflows.action.videoCutout", "customWorkflows.action.model3d",
+        "customWorkflows.group.model", "customWorkflows.model3dGone", "customWorkflows.needsVideo",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)

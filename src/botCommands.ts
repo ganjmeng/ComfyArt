@@ -24,7 +24,7 @@ import type { Edit, TransitionType } from './videoEdit'
 import type { Crop } from './workflows'
 import { CLIENT_ID, onComfyEvent, onReconnect } from './ws'
 import { setPendingModel } from './wavespeed'
-import { customWorkflowCommand } from './customWorkflows'
+import { CUSTOM_MODEL3D, customWorkflowCommand } from './customWorkflows'
 
 const AUDIO_MAX_SECONDS = 1000
 
@@ -304,7 +304,7 @@ const HANDLERS: Record<string, Handler> = {
   },
   image_to_3d: (editor, args, onError) => started(editor, Array.isArray(args.views) && args.views.length
     ? viewsTo3d(editor, args.views.map((v: unknown) => imageOf(editor, v)), onError)
-    : imageTo3d(editor, imageOf(editor, args.id), onError, args.model === 'pixal3d' ? 'pixal3d' : 'trellis2')),
+    : imageTo3d(editor, imageOf(editor, args.id), onError, args.model === 'pixal3d' ? 'pixal3d' : args.model === 'custom' ? CUSTOM_MODEL3D : 'trellis2')),
   custom_workflow: (_editor, args) => customWorkflowCommand(args),
   wait_generation: (editor, args) => waitResults(editor, (args.ids ?? []).map(String), Number(args.timeout_s) || 60),
 }

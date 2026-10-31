@@ -10,6 +10,7 @@ const CONFIG = 'comfyart/workflow-config.json'
 export const CUSTOM_GENERATE = 'custom:generate'
 export const CUSTOM_MUSIC = 'custom:music'
 export const CUSTOM_SPEECH = 'custom:speech'
+export const CUSTOM_MODEL3D = 'custom:model3d'
 export const workflowConfigAtom = atom<Partial<Record<CustomAction, string>>>('workflow config', {})
 /** #509: WaveSpeed model id of each assigned file, so the audio dialog can read its duration range synchronously. */
 export const customModelsAtom = atom<Partial<Record<CustomAction, string>>>('custom models', {})
@@ -62,6 +63,7 @@ export async function withCustomModel(inputs: Record<string, unknown>): Promise<
     if (action === 'generate' && rest.model === CUSTOM_GENERATE) throw new Error(t('customWorkflows.generateGone', CUSTOM_GENERATE))
     if (action === 'music' && rest.model === CUSTOM_MUSIC) throw new Error(t('customWorkflows.musicGone'))
     if (action === 'speech' && rest.model === CUSTOM_SPEECH) throw new Error(t('customWorkflows.speechGone'))
+    if (action === 'model3d' && rest.model === CUSTOM_MODEL3D) throw new Error(t('customWorkflows.model3dGone'))
     return rest
   }
   const spec = await readCustomWorkflow(action as CustomAction, file)
@@ -69,9 +71,12 @@ export async function withCustomModel(inputs: Record<string, unknown>): Promise<
     if (action === 'generate') throw new Error(t('customWorkflows.generateGone', file.replace(/\.json$/, '')))
     if (action === 'music') throw new Error(t('customWorkflows.musicGone'))
     if (action === 'speech') throw new Error(t('customWorkflows.speechGone'))
+    if (action === 'model3d') throw new Error(t('customWorkflows.model3dGone'))
     return rest
   }
-  if (specOf(action as CustomAction).required.includes('image') && !rest.image && !(rest.images as unknown[] | undefined)?.length) throw new Error(t('customWorkflows.needsImage', file))
+  const req = specOf(action as CustomAction).required
+  if (req.includes('image') && !rest.image && !(rest.images as unknown[] | undefined)?.length) throw new Error(t('customWorkflows.needsImage', file))
+  if (req.includes('video') && !rest.video) throw new Error(t('customWorkflows.needsVideo', file))
   return { ...rest, feature: rest.feature ?? specOf(action as CustomAction).feature, custom: true, model: spec.model, fields: spec.fields ?? {}, params: { ...(rest.params as object | undefined), ...spec.params } }
 }
 
