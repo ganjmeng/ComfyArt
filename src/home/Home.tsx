@@ -45,7 +45,18 @@ const HOME_TOOL_CARDS: ToolCard[] = [
   { id: 'inpaint', icon: 'effects', label: t('home.toolPreciseEdit'), accept: 'image/*' },
   { id: 'mockup', icon: 'box', label: t('mockup.title'), accept: 'image/*' },
 ]
+/** #540: Lovart「更多」10 (Loomic order) + our unique 4. Covers Lucide until design wash PASS. */
 const MORE_HOME_TOOLS: ToolCard[] = [
+  { id: 'quick', icon: 'quick', label: t('common.quickEdit'), accept: 'image/*' },
+  { id: 'erase', icon: 'erase', label: t('common.eraser'), accept: 'image/*' },
+  { id: 'crop', icon: 'crop', label: t('imageToolbar.crop'), accept: 'image/*' },
+  { id: 'expand', icon: 'expand', label: t('common.expand'), accept: 'image/*' },
+  { id: 'adjust', icon: 'adjust', label: t('common.adjust'), accept: 'image/*' },
+  { id: 'text', icon: 'text', label: t('common.editText'), accept: 'image/*' },
+  { id: 'angles', icon: 'angles', label: t('common.multiAngle'), accept: 'image/*' },
+  { id: 'vectorize', icon: 'polygon', label: t('imageToolbar.vectorize'), accept: 'image/*' },
+  { id: 'move', icon: 'hand', label: t('common.moveObject'), accept: 'image/*' },
+  { id: 'transform', icon: 'rotate', label: t('imageToolbar.flipAndRotate'), accept: 'image/*' },
   { id: 'to3d', icon: 'cube', label: t('imageToolbar.imageTo3d'), accept: 'image/*' },
   { id: 'lipsync', icon: 'mic', label: t('genPanel.lipSync'), accept: 'image/*' },
   { id: 'motion', icon: 'video', label: t('genPanel.motionControl'), accept: 'image/*' },

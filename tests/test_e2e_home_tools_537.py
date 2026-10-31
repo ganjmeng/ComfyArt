@@ -1,4 +1,4 @@
-"""#537 e2e (mock only, $0): home 实用工具 + 精选 waterfall visible.
+"""#537 / #540 e2e (mock only, $0): home 实用工具 + 精选 waterfall visible.
 Set HOME_TOOLS_SHOTS=/dir for zh/en × light/dark PNGs."""
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ async def test_home_tools_and_waterfall(app_url, lang, theme):  # noqa: F811
         await pg.get_by_test_id("home-more-tools").click()
         menu = pg.get_by_test_id("home-more-tools-menu")
         await menu.wait_for()
-        for tid in ("to3d", "lipsync", "motion", "audio"):
+        for tid in ("quick", "erase", "crop", "expand", "adjust", "text", "angles", "vectorize", "move", "transform", "to3d", "lipsync", "motion", "audio"):
             assert await pg.get_by_test_id(f"home-more-tool-{tid}").count() == 1
         await _shot(pg, f"home-tools-{lang}-{theme}")
         await pg.keyboard.press("Escape")

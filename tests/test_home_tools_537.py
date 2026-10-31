@@ -16,7 +16,7 @@ ZH = json.loads((ROOT / "src/locales/zh.json").read_text())
 EN = json.loads((ROOT / "src/locales/en.json").read_text())
 
 MAIN = ["cutout", "extend", "upscale", "inpaint", "mockup"]
-MORE = ["to3d", "lipsync", "motion", "audio"]
+MORE = ["quick", "erase", "crop", "expand", "adjust", "text", "angles", "vectorize", "move", "transform", "to3d", "lipsync", "motion", "audio"]
 
 
 def test_tools_section_five_cards_and_more() -> None:
@@ -51,7 +51,8 @@ def test_pick_file_then_new_project_no_autorun() -> None:
     assert "if (!f || !tool) return" in HOME
     # handoff never auto-runs generate for home tools
     assert "homeToolAtom.set(tool)" in HANDOFF
-    assert "enterMode('inpaint')" in HANDOFF
+    assert "enterMode(tool as" in HANDOFF or "enterMode('inpaint')" in HANDOFF
+    assert "MODE_HOME_TOOLS" in HANDOFF
     assert "Never auto-runs" in HOME or "never auto-run" in HANDOFF.lower() or "no auto-run" in HANDOFF.lower()
     open_fn = HANDOFF.split("async function openHomeTool", 1)[1].split("\nexport ", 1)[0]
     for bad in ("generateDirect", "sendToAgent", "actions.cutout", "generate("):
@@ -114,3 +115,13 @@ def test_featured_layout_column_math() -> None:
     assert "export function packFeaturedColumns" in LAYOUT
     assert "280" in LAYOUT and "320" in LAYOUT
     assert "Math.min(...heights)" in LAYOUT or "indexOf(Math.min" in LAYOUT
+
+
+def test_more_tools_lovart_order_540() -> None:
+    """#540: Lovart 10 then unique 4, exact order in MORE_HOME_TOOLS."""
+    block = HOME.split("MORE_HOME_TOOLS", 1)[1].split("export function Home", 1)[0]
+    ids = re.findall(r"id: '([a-z0-9]+)'", block)
+    assert ids == MORE, ids
+    assert "enterMode(tool" in HANDOFF or "enterMode(tool as" in HANDOFF
+    assert "setCroppingShape" in HANDOFF
+    assert "pendingHome === 'transform'" in IMG_TB
