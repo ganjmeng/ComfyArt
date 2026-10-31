@@ -77,7 +77,7 @@ body { background: var(--ca-float); }
 
 .ca-home__main { flex: 1; min-width: 0; overflow-y: auto; }
 
-.ca-landing { max-width: 1600px; margin: 0 auto; padding: 96px 48px 64px; box-sizing: border-box; }
+.ca-landing { max-width: 1024px; /* #540: Lovart home column = 928px content (1280 viewport) + 2×48 padding */ margin: 0 auto; padding: 96px 48px 64px; box-sizing: border-box; }
 .ca-landing__title { margin: 0 0 28px; text-align: center; font: 500 32px/40px var(--ca-font); letter-spacing: -0.02em; }
 .ca-landing__notice { max-width: 760px; margin: 0 auto 12px; box-sizing: border-box; }
 .ca-landing__box { max-width: 760px; margin: 0 auto; padding: 14px 14px 10px 18px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 28px; box-shadow: 0 8px 28px -12px rgba(0,0,0,.12), 0 2px 8px -4px rgba(0,0,0,.06); box-sizing: border-box; background: var(--ca-float); }
