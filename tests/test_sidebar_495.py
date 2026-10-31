@@ -220,6 +220,16 @@ def test_assets_c_539() -> None:
     assert "export const kitDisplayName = (item: { name: string; kind: LibraryKind }) => item.name || t('kitEditor.untitled', KIND_LABELS[item.kind])" in lib
     assert "const name = kitDisplayName(item)" in (ROOT / "src/ui/LibraryPanel.tsx").read_text()
     assert "value={titleDraft ?? kitDisplayName(item)}" in kit
+    # P2: upload errors inline only (no toast), stale errors cleared, 「添加」 reuses 「取消」 button class
+    assert "if (msg) onError(msg)" not in kit and "setUploadErr(msg); setUrlErr('')" in kit
+    assert kit.count("setUploadErr('')") >= 5
+    assert 'className="ca-kit__urlsave" data-testid="assets-url-save" disabled={!url.trim() || checking}' in kit
+    base = (ROOT / "src/styles/base.css").read_text()
+    assert "--ca-btn-primary-bg: #191919;" in base and "--ca-btn-primary-fg: #ffffff;" in base
+    assert "--ca-btn-primary-bg: #e8e8e8;" in base and "--ca-btn-primary-fg: #161616;" in base
+    assert "padding: 0 12px; border: none; border-radius: 8px; background: var(--ca-btn-primary-bg); color: var(--ca-btn-primary-fg); font: 13px/20px var(--ca-font)" in rules
+    assert ".ca-kit[data-embedded] .ca-kit__urlsave:disabled { opacity: .4;" in rules
+    assert 'className="ca-assets-page__new" data-testid="assets-url-cancel"' in kit
     assert "placeholder={t('kitEditor.untitled', '')}" not in kit
     assert ".ca-assets-page .ca-lib__card:hover .ca-lib__more" in rules
     # P2 5: CTA at the right edge of an 800 centred container

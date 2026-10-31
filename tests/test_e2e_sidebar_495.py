@@ -404,6 +404,7 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
         await err.wait_for()
         text = await err.inner_text()
         assert ("文件超过 20MB" if lang == "zh" else "File exceeds 20MB") in text and "big.png" in text
+        assert await pg.locator(".ca-mem-toast").count() == 0  # P2: inline only, no toast
         assert await pg.locator(".ca-kit[data-embedded] .ca-kit__tiles img").count() == 0
         if ASSET_SHOTS:
             await pg.wait_for_timeout(300)
@@ -415,10 +416,28 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
         await pg.wait_for_timeout(300)
         assert ("仅支持 PNG、JPG、PDF" if lang == "zh" else "Only PNG, JPG and PDF") in await err.inner_text()
         assert await pg.locator(".ca-kit[data-embedded] .ca-kit__tiles img").count() == 0
+        assert await pg.locator(".ca-mem-toast").count() == 0  # P2: inline only, no toast over 我的素材
         if ASSET_SHOTS and lang == "zh":
-            await pg.screenshot(path=f"{ASSET_SHOTS}/539c-badformat-p1-zh-light.png")
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539c-badformat-p2-zh-light.png")
         # (b) URL import: invalid → i18n error; https → reference tile
         await pg.get_by_test_id("assets-import-url").click()
+        assert await err.count() == 0  # P2: opening the URL row clears the stale upload error
+        # P2 design spec for 「添加」: 32 high, r8, px12, 13/20, theme colours, disabled+0.4 when empty, gap 8
+        save, cancel, inp = pg.get_by_test_id("assets-url-save"), pg.get_by_test_id("assets-url-cancel"), pg.get_by_test_id("assets-url-input")
+        spec = "e => { const s = getComputedStyle(e); return [s.height, s.borderTopLeftRadius, s.paddingLeft, s.paddingRight, s.fontSize, s.lineHeight, s.backgroundColor, s.color, s.opacity] }"
+        bg, fg = ("rgb(25, 25, 25)", "rgb(255, 255, 255)") if theme == "light" else ("rgb(232, 232, 232)", "rgb(22, 22, 22)")
+        assert await save.evaluate(spec) == ["32px", "8px", "12px", "12px", "13px", "20px", bg, fg, "0.4"]
+        assert await save.is_disabled()
+        assert (await cancel.bounding_box())["height"] == 32 and (await inp.bounding_box())["height"] == 32
+        if ASSET_SHOTS:
+            await inp.fill("https://img.example.com/ref.png")
+            await pg.wait_for_timeout(200)
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539c-url-row-p2-{lang}-{theme}.png")
+            await inp.fill("")
+        await inp.fill("https://x.example.com/a.png")
+        assert not await save.is_disabled() and await save.evaluate("e => getComputedStyle(e).opacity") == "1"
+        sb, cb = await save.bounding_box(), await cancel.bounding_box()
+        assert round(cb["x"] - (sb["x"] + sb["width"])) == 8
         await pg.get_by_test_id("assets-url-input").fill("ftp://x")
         await pg.get_by_test_id("assets-url-save").click()
         uerr = await pg.get_by_test_id("assets-url-error").inner_text()
@@ -433,8 +452,24 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
         assert await pg.get_by_test_id("assets-url-input").input_value() == bad
         assert await pg.locator(".ca-kit[data-embedded] .ca-kit__tiles img").count() == 0
         assert await pg.locator(".ca-confirm").count() == 0
+        assert await err.count() == 0 and await pg.locator(".ca-mem-toast").count() == 0
         if ASSET_SHOTS and lang == "zh":
-            await pg.screenshot(path=f"{ASSET_SHOTS}/539c-urlformat-p1-zh-light.png")
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539c-urlformat-p2-zh-light.png")
+        # P2: stale-error case — gif badFormat, then a bad .webp URL → only urlFormat, no toast
+        await pg.get_by_test_id("assets-url-cancel").click()
+        assert await pg.get_by_test_id("assets-url-error").count() == 0
+        await pg.locator(".ca-kit[data-embedded] input[type=file][multiple]").first.set_input_files(
+            {"name": "anim.gif", "mimeType": "image/gif", "buffer": _PNG}
+        )
+        await err.wait_for()
+        await pg.get_by_test_id("assets-import-url").click()
+        await pg.get_by_test_id("assets-url-input").fill(bad)
+        await pg.get_by_test_id("assets-url-save").click()
+        await pg.wait_for_timeout(500)
+        assert (await uerr.inner_text()) == ("无法确认链接是 PNG、JPG 或 PDF" if lang == "zh" else "Couldn't confirm the link is a PNG, JPG or PDF")
+        assert await err.count() == 0
+        assert await pg.locator(".ca-mem-toast").count() == 0
+        assert await pg.locator(".ca-kit[data-embedded] .ca-kit__tiles img").count() == 0
         await pg.get_by_test_id("assets-url-input").fill("https://img.example.com/ref.png")
         if ASSET_SHOTS:
             await pg.screenshot(path=f"{ASSET_SHOTS}/539c-url-input-{lang}-{theme}.png")

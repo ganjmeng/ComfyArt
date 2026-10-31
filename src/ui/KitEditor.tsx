@@ -116,6 +116,7 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
   const [urlOpen, setUrlOpen] = useState(false)
   const [url, setUrl] = useState('')
   const [urlErr, setUrlErr] = useState('')
+  const [checking, setChecking] = useState(false)
   const [fontMenu, setFontMenu] = useState<'menu' | 'library' | null>(null)
   const files = useRef<HTMLInputElement>(null)
   const logos = useRef<HTMLInputElement>(null)
@@ -152,14 +153,17 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
     const bad = embedded ? list.filter((f) => !okUploadFile(f)) : []
     const big = embedded ? list.filter((f) => okUploadFile(f) && f.size > MAX_UPLOAD) : []
     const msg = bad.length ? t('assets.badFormat', bad.map((f) => f.name).join(', ')) : big.length ? t('assets.tooLarge', big.map((f) => f.name).join(', ')) : ''
-    setUploadErr(msg)
-    if (msg) onError(msg)
+    // #539 P2: inline error only (no toast); a new upload/drop replaces any stale error
+    setUploadErr(msg); setUrlErr('')
     const ok = list.filter((f) => !big.includes(f) && !bad.includes(f))
     if (ok.length) void filesToImages(ok).then(addImages).catch(fail)
   }
   const saveUrl = async () => {
+    setUploadErr(''); setUrlErr('')
     if (!validImportUrl(url)) { setUrlErr(t('assets.urlInvalid')); return }
-    if (!(await confirmedImportUrl(url))) { setUrlErr(t('assets.urlFormat')); return }
+    setChecking(true)
+    const ok = await confirmedImportUrl(url).finally(() => setChecking(false))
+    if (!ok) { setUrlErr(t('assets.urlFormat')); return }
     addImages([url.trim()])
     setUrl(''); setUrlErr(''); setUploadErr(''); setUrlOpen(false)
   }
@@ -220,7 +224,7 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
           <div
             className="ca-kit__drop"
             data-on={drag || undefined}
-            onClick={() => files.current?.click()}
+            onClick={() => { setUploadErr(''); files.current?.click() }}
             onDragOver={(e) => { e.preventDefault(); setDrag(true) }}
             onDragLeave={() => setDrag(false)}
             onDrop={(e) => { e.preventDefault(); setDrag(false); dropFiles(Array.from(e.dataTransfer.files)) }}
@@ -228,14 +232,14 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
             <span className="ca-icon">{embedded ? Icons.uploadArrow : Icons.upload}</span>
             {embedded ? (
               /* #539 PR-C: 20MB validation + 「导入 URL」 */
-              <div><div>{t('assets.dropHint')}<button type="button" className="ca-kit__url" data-testid="assets-import-url" onClick={(e) => { e.stopPropagation(); setUrlOpen(true) }}>{t('assets.importUrl')}</button></div><div className="ca-kit__muted">{t('assets.dropFormats')}</div>{uploadErr && <div className="ca-kit__err" role="alert" data-testid="assets-upload-error">{uploadErr}</div>}</div>
+              <div><div>{t('assets.dropHint')}<button type="button" className="ca-kit__url" data-testid="assets-import-url" onClick={(e) => { e.stopPropagation(); setUrlOpen(true); setUploadErr(''); setUrlErr('') }}>{t('assets.importUrl')}</button></div><div className="ca-kit__muted">{t('assets.dropFormats')}</div>{uploadErr && <div className="ca-kit__err" role="alert" data-testid="assets-upload-error">{uploadErr}</div>}</div>
             ) : <div><div>{t('kitEditor.dropHint')}</div><div className="ca-kit__muted">{t('kitEditor.dropFormats')}</div></div>}
           </div>
           {embedded && urlOpen && (
             <div className="ca-kit__urlrow" data-testid="assets-url-row">
-              <input className="ca-kit__urlinput" data-testid="assets-url-input" autoFocus value={url} placeholder="https://" onChange={(e) => { setUrl(e.target.value); setUrlErr('') }} onKeyDown={(e) => { if (isEnter(e)) void saveUrl(); if (e.key === 'Escape') setUrlOpen(false) }} />
-              <button type="button" className="ca-panel__primary" data-testid="assets-url-save" onClick={() => void saveUrl()}>{t('common.add')}</button>
-              <button type="button" className="ca-assets-page__new" onClick={() => { setUrlOpen(false); setUrlErr('') }}>{t('common.cancel')}</button>
+              <input className="ca-kit__urlinput" data-testid="assets-url-input" autoFocus value={url} placeholder="https://" onChange={(e) => { setUrl(e.target.value); setUrlErr(''); setUploadErr('') }} onKeyDown={(e) => { if (isEnter(e) && url.trim() && !checking) void saveUrl(); if (e.key === 'Escape') { setUrlOpen(false); setUrlErr(''); setUploadErr('') } }} />
+              <button type="button" className="ca-kit__urlsave" data-testid="assets-url-save" disabled={!url.trim() || checking} onClick={() => void saveUrl()}>{t('common.add')}</button>
+              <button type="button" className="ca-assets-page__new" data-testid="assets-url-cancel" onClick={() => { setUrlOpen(false); setUrlErr(''); setUploadErr('') }}>{t('common.cancel')}</button>
               {urlErr && <div className="ca-kit__err" role="alert" data-testid="assets-url-error">{urlErr}</div>}
             </div>
           )}
