@@ -1,0 +1,47 @@
+{
+ "commit": "150887f",
+ "skill": "poster",
+ "examples": [
+  {
+   "id": "ex-1",
+   "aspect_ratio": "2:3",
+   "subject": "Japanese indie film poster",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/ex-1.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/ex-1@thumb.webp"
+  },
+  {
+   "id": "ex-2",
+   "aspect_ratio": "3:4",
+   "subject": "Spanish retail promo poster for a fictional sparkling herbal tea can \"VERDEA\"",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/ex-2.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/ex-2@thumb.webp"
+  },
+  {
+   "id": "ex-3",
+   "aspect_ratio": "2:3",
+   "subject": "dark moody drama film poster",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/ex-3.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/ex-3@thumb.webp"
+  },
+  {
+   "id": "ex-4",
+   "aspect_ratio": "2:3",
+   "subject": "community public-health info poster",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/ex-4.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/ex-4@thumb.webp"
+  },
+  {
+   "id": "ex-5",
+   "aspect_ratio": "9:16",
+   "subject": "neon cyberpunk live-music gig poster",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/ex-5.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/ex-5@thumb.webp"
+  }
+ ],
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/150887f/541/wash/examples/poster/sbs_examples_poster.png"
+}
