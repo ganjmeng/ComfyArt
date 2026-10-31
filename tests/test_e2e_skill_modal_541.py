@@ -62,6 +62,8 @@ async def test_zoom_select_and_gating(app_url):  # noqa: F811
         tile = pg.locator(".ca-skillrun__tile").nth(1)
         await tile.hover()
         z = tile.get_by_test_id("skill-run-zoom")
+        # measure after the 150ms scale(0.85→1) hover transition settles (was timing-dependent)
+        await z.evaluate("el => Promise.all(el.getAnimations().map(a => a.finished))")
         assert (await z.evaluate(BOX))[:2] == [22, 22]
         await z.click()
         view = pg.get_by_test_id("skill-run-zoomview")

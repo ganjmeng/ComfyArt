@@ -91,9 +91,9 @@ def test_rev2_cells_pinned(got):
 
 @needs_node
 def test_examples_carousel_is_data_driven(got):
-    want = {"poster": 5, "thumbnail": 5, "character": 6, "interior": 4, "social": 10, "banner": 2}  # thumbnail #5 pending re-wash
+    want = {"poster": 5, "thumbnail": 5, "character": 6, "social": 10}  # thumbnail #5 pending re-wash; interior pending ratio measurement
     assert {k: v for k, v in got["examples"].items() if v} == want
-    for sid in ("product", "brand", "packaging", "motion", "custom-workflow"):
+    for sid in ("product", "brand", "packaging", "motion", "interior", "banner", "custom-workflow"):
         assert got["examples"][sid] == 0, sid
     assert got["exNone"] == ["", ""]
     html = got["exMock"]
@@ -109,9 +109,7 @@ def test_examples_carousel_is_data_driven(got):
 EX541 = {"poster": ("6d864bd2dd53b9f5b487829f2834d94be013b0a5", [1, 2, 3, 4, 5]),
          "thumbnail": ("aae2cf95ea5045153da219e6a3769ff814441838", [1, 2, 3, 4, 6]),
          "character": ("dd97ee3782fc85090217c573b2ebb59ea4f19654", [1, 2, 3, 4, 5, 6]),
-         "interior": ("53f0f2c39573ed692cabf4cba8f63ccd13b8b170", [1, 2, 3, 4]),
-         "social": ("cb41cb8a450139cd903e777c8f84024019d517cd", list(range(1, 11))),
-         "banner": ("69c58fb99db6e46ecd71617f0db4eaac98010048", [1, 2])}
+         "social": ("cb41cb8a450139cd903e777c8f84024019d517cd", list(range(1, 11)))}
 
 
 @needs_node
