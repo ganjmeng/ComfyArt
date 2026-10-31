@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { atom, useValue, type Editor } from 'tldraw'
 
 import { generateAudio, musicModels, SFX_SECONDS, voices, type AudioSpec } from '../assetGen'
+import { CUSTOM_SPEECH, workflowConfigAtom } from '../customWorkflows'
 import { clampMusicSeconds, musicDuration, musicMissing } from '../music'
 import { AUDIO, clock, type AudioShape } from '../shapes/EmbedShapes'
 import { FieldSelect } from './FieldSelect'
@@ -25,6 +26,7 @@ export function AudioDialog({ editor, onError }: { editor: Editor; onError: (msg
   const models = useValue('music models', musicModels, [])
   const [pickedModel, setModel] = useState(models[0].id)
   const model = models.find((m) => m.id === pickedModel) ?? models[0]
+  const speechFile = useValue('speech workflow', () => workflowConfigAtom.get().speech ?? null, [])
   const [picked, setVoice] = useState('')
   const reference = useValue('selected audio', () => {
     const s = editor.getOnlySelectedShape()
@@ -32,7 +34,9 @@ export function AudioDialog({ editor, onError }: { editor: Editor; onError: (msg
   }, [editor])
   if (!open) return null
   const list = voices()
-  const voice = picked === CLONE || list.includes(picked) ? picked : list[0]
+  // product #509: custom speech replaces the built-in voice list with the assigned workflow filename
+  const speechCustom = !!speechFile
+  const voice = picked === CLONE || picked === CUSTOM_SPEECH || list.includes(picked) ? picked : (speechCustom ? CUSTOM_SPEECH : list[0])
   const close = () => audioDialogAtom.set(false)
   const range = musicDuration(model.id)
   const musicSeconds = clampMusicSeconds(model.id, seconds)
@@ -43,7 +47,8 @@ export function AudioDialog({ editor, onError }: { editor: Editor; onError: (msg
     if (!text) return null
     if (tab === 'music') return { kind: 'music', model: model.id, prompt: text, lyrics: lyrics.trim(), seconds: musicSeconds }
     if (tab === 'sfx') return { kind: 'sfx', prompt: text, seconds: sfxSeconds }
-    return voice === CLONE && reference ? { kind: 'clone', text, reference } : { kind: 'speech', text, voice: voice === CLONE ? list[0] : voice }
+    if (voice === CLONE && reference) return { kind: 'clone', text, reference }
+    return { kind: 'speech', text, voice: voice === CUSTOM_SPEECH || voice === CLONE ? list[0] : voice }
   }
   const run = () => {
     const s = spec()
@@ -91,7 +96,9 @@ export function AudioDialog({ editor, onError }: { editor: Editor; onError: (msg
               value={voice}
               options={[
                 ...(reference ? [{ id: CLONE, label: t('audio.cloneSelected') }] : []),
-                ...list.map((v) => ({ id: v, label: v, title: v })),
+                ...(speechCustom
+                  ? [{ id: CUSTOM_SPEECH, label: speechFile!.replace(/\.json$/, ''), title: speechFile! }]
+                  : list.map((v) => ({ id: v, label: v, title: v }))),
               ]}
               onChange={setVoice}
             />

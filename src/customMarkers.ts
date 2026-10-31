@@ -2,8 +2,8 @@ import { BRAND } from './brand'
 import { api } from './comfy'
 import { lang, t } from './i18n'
 
-export type CustomAction = 'generate' | 'edit' | 'style' | 'inpaint' | 'expand' | 'upscale' | 'cutout' | 'erase' | 'angles' | 'layers' | 'video' | 'animate' | 'music'
-export type Marker = 'image' | 'image2' | 'mask' | 'last' | 'prompt' | 'lyrics' | 'size' | 'width' | 'height' | 'count' | 'seconds'
+export type CustomAction = 'generate' | 'edit' | 'style' | 'inpaint' | 'expand' | 'upscale' | 'cutout' | 'erase' | 'angles' | 'layers' | 'video' | 'animate' | 'music' | 'speech' | 'clone' | 'sfx'
+export type Marker = 'image' | 'image2' | 'mask' | 'last' | 'audio' | 'prompt' | 'lyrics' | 'size' | 'width' | 'height' | 'count' | 'seconds'
 
 export type CustomGroup = 'image' | 'edit' | 'tools' | 'video' | 'audio'
 
@@ -25,6 +25,9 @@ export const CUSTOM_ACTIONS: ActionSpec[] = [
   { id: 'video', group: 'video', required: ['prompt'], optional: ['image', 'last', 'size', 'seconds'], feature: 'image_to_video', note: 'Replaces the built-in model in the video generator\'s first/last frame mode (reference, motion, lip sync and storyboard modes stay built in).' },
   { id: 'animate', group: 'video', required: ['image', 'prompt'], optional: ['size', 'seconds', 'last'], feature: 'image_to_video', note: 'Animate an image into a short clip. With loop on, @last receives the source image again so the clip ends where it starts.' },
   { id: 'music', group: 'audio', required: ['prompt'], optional: ['lyrics', 'seconds'], feature: 'music', note: 'Text to music. Shows up as an extra model in the audio dialog. @prompt receives the style, @lyrics the lyrics (empty lyrics are sent as [instrumental]), @seconds the length, clamped to the model\'s duration range; a model with no duration field gets none.' },
+  { id: 'speech', group: 'audio', required: ['prompt'], optional: [], feature: 'text_to_speech', note: 'Voiceover. Replaces the built-in model when no recording is cloned. @prompt receives the text to read. The workflow picks its own voice (set voice under params, otherwise the model\'s default), so the voice setting is not passed.' },
+  { id: 'clone', group: 'audio', required: ['audio', 'prompt'], optional: [], feature: 'voice_clone', note: 'Voice clone. @audio receives the selected recording (URL) and @prompt the text to read.' },
+  { id: 'sfx', group: 'audio', required: ['prompt'], optional: ['seconds'], feature: 'sound_effect', note: 'Sound effect. Replaces the built-in model. @prompt receives the description, @seconds the length, clamped to the model\'s duration range.' },
 ]
 
 export const MARKERS: { id: Marker; fill: string }[] = [
@@ -32,13 +35,14 @@ export const MARKERS: { id: Marker; fill: string }[] = [
   { id: 'image2', fill: 'a second image, e.g. a style reference (URL)' },
   { id: 'mask', fill: 'mask image URL, white = area to change' },
   { id: 'last', fill: 'the last frame of a video (URL)' },
-  { id: 'prompt', fill: 'the text prompt or instruction' },
+  { id: 'audio', fill: 'the input recording (uploaded to WaveSpeed, sent as a URL)' },
+  { id: 'prompt', fill: 'the text prompt or instruction (for voiceover and voice clone: the text to read)' },
   { id: 'lyrics', fill: 'song lyrics; [instrumental] when empty' },
   { id: 'size', fill: 'output size as "width*height"' },
   { id: 'width', fill: 'output width in pixels' },
   { id: 'height', fill: 'output height in pixels' },
   { id: 'count', fill: 'how many results / layers' },
-  { id: 'seconds', fill: 'video or music length in seconds' },
+  { id: 'seconds', fill: 'video or audio length in seconds' },
 ]
 
 export const NO_LYRICS = '[instrumental]'
@@ -105,7 +109,7 @@ export function rulesText(): string {
   const actions = CUSTOM_ACTIONS.map((a) => `- ${a.id}: needs ${a.required.map((m) => `@${m}`).join(', ')}${a.optional.length ? `; optional ${a.optional.map((m) => `@${m}`).join(', ')}` : ''}. ${a.note}`).join('\n')
   return [
     `Connect a WaveSpeed model of the user's choice to a ${BRAND.name} feature. ${BRAND.name} runs every feature on WaveSpeed; a custom workflow swaps the built-in model for another one and says which request field gets each value.`,
-    `Steps:\n1. A workflow is a JSON object: {"model": "owner/model-name", "fields": {"@prompt": "prompt", "@image": "image"}, "params": {"num_inference_steps": 30}}. model is a WaveSpeed model id (wavespeed.ai/models). fields maps ${BRAND.name} markers to the model's request field names; common names (prompt, image, images, mask_image, size, aspect_ratio, duration, last_image) are filled automatically, so fields is only needed for other names. params are fixed values sent on every run. Do not invent fields the model does not have.\n2. Pick the feature (action) below.\n3. Call custom_workflow with action check, the workflow and the feature; fix every error it reports (unknown model, field the model does not accept, required field left empty).\n4. Call custom_workflow with action install, a short name, the workflow and the feature. It saves the file to comfyart/workflows/<feature>/ in the ComfyUI user folder and assigns it to that feature. There is no delete: to remove a workflow, the user deletes its file there.\n5. Tell the user which feature now uses it; assign with file "" switches back to built in.`,
+    `Steps:\n1. A workflow is a JSON object: {"model": "owner/model-name", "fields": {"@prompt": "prompt", "@image": "image"}, "params": {"num_inference_steps": 30}}. model is a WaveSpeed model id (wavespeed.ai/models). fields maps ${BRAND.name} markers to the model's request field names; common names (prompt, text, image, images, video, audio, mask_image, size, aspect_ratio, duration, last_image) are filled automatically, so fields is only needed for other names. params are fixed values sent on every run. Do not invent fields the model does not have.\n2. Pick the feature (action) below.\n3. Call custom_workflow with action check, the workflow and the feature; fix every error it reports (unknown model, field the model does not accept, required field left empty).\n4. Call custom_workflow with action install, a short name, the workflow and the feature. It saves the file to comfyart/workflows/<feature>/ in the ComfyUI user folder and assigns it to that feature. There is no delete: to remove a workflow, the user deletes its file there.\n5. Tell the user which feature now uses it; assign with file "" switches back to built in.`,
     `Markers (${BRAND.name} values a field can receive):\n${markers}`,
     `Features:\n${actions}`,
     `Runs are billed by WaveSpeed at the chosen model's price; jobs of $0.50 or more ask the user first. Features not listed above (storyboard, video extend, creative upscale, move object, video upscale) always use the built-in models.`,

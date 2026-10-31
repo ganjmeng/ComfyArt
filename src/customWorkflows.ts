@@ -9,6 +9,7 @@ const CONFIG = 'comfyart/workflow-config.json'
 
 export const CUSTOM_GENERATE = 'custom:generate'
 export const CUSTOM_MUSIC = 'custom:music'
+export const CUSTOM_SPEECH = 'custom:speech'
 export const workflowConfigAtom = atom<Partial<Record<CustomAction, string>>>('workflow config', {})
 /** #509: WaveSpeed model id of each assigned file, so the audio dialog can read its duration range synchronously. */
 export const customModelsAtom = atom<Partial<Record<CustomAction, string>>>('custom models', {})
@@ -60,12 +61,14 @@ export async function withCustomModel(inputs: Record<string, unknown>): Promise<
   if (!file) {
     if (action === 'generate' && rest.model === CUSTOM_GENERATE) throw new Error(t('customWorkflows.generateGone', CUSTOM_GENERATE))
     if (action === 'music' && rest.model === CUSTOM_MUSIC) throw new Error(t('customWorkflows.musicGone'))
+    if (action === 'speech' && rest.model === CUSTOM_SPEECH) throw new Error(t('customWorkflows.speechGone'))
     return rest
   }
   const spec = await readCustomWorkflow(action as CustomAction, file)
   if (!spec) {
     if (action === 'generate') throw new Error(t('customWorkflows.generateGone', file.replace(/\.json$/, '')))
     if (action === 'music') throw new Error(t('customWorkflows.musicGone'))
+    if (action === 'speech') throw new Error(t('customWorkflows.speechGone'))
     return rest
   }
   if (specOf(action as CustomAction).required.includes('image') && !rest.image && !(rest.images as unknown[] | undefined)?.length) throw new Error(t('customWorkflows.needsImage', file))

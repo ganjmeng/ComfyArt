@@ -5,8 +5,9 @@ import { AUDIO, AUDIO_SIZE, MODEL } from './shapes/EmbedShapes'
 import { GENERATOR } from './shapes/GeneratorShape'
 import { annotated, type Built } from './workflows'
 import { t } from './i18n'
-import { wsBuilt } from './wavespeed'
+import { wsBuilt, type WsInputs } from './wavespeed'
 import { musicJobInputs } from './music'
+import { workflowConfigAtom } from './customWorkflows'
 
 const QWEN_VOICES = ['Serena', 'Vivian', 'Uncle_fu', 'Dylan', 'Eric', 'Ryan', 'Aiden', 'Ono_anna', 'Sohee']
 export const voices = () => QWEN_VOICES // WaveSpeed qwen3-tts voices
@@ -22,9 +23,15 @@ export type AudioSpec =
 
 async function audioGraph(spec: AudioSpec): Promise<Built> {
   if (spec.kind === 'music') return wsBuilt(musicJobInputs(spec))
-  if (spec.kind === 'sfx') return wsBuilt({ feature: 'sound_effect', prompt: spec.prompt, duration: spec.seconds })
-  if (spec.kind === 'speech') return wsBuilt({ feature: 'text_to_speech', text: spec.text, voice: spec.voice })
-  return wsBuilt({ feature: 'voice_clone', text: spec.text, audio: annotated(spec.reference) })
+  return wsBuilt(audioInputs(spec))
+}
+
+/** WaveSpeed inputs of a voiceover / clone / sound effect; tagged so an assigned custom workflow swaps the model (#509). */
+export function audioInputs(spec: Exclude<AudioSpec, { kind: 'music' }>, customSpeech = !!workflowConfigAtom.get().speech): WsInputs {
+  if (spec.kind === 'sfx') return { feature: 'sound_effect', custom: 'sfx', prompt: spec.prompt, duration: spec.seconds }
+  // a custom voiceover picks its own voice: the built-in voice id means nothing to another model
+  if (spec.kind === 'speech') return { feature: 'text_to_speech', custom: 'speech', text: spec.text, prompt: spec.text, ...(customSpeech ? {} : { voice: spec.voice }) }
+  return { feature: 'voice_clone', custom: 'clone', text: spec.text, prompt: spec.text, audio: annotated(spec.reference) }
 }
 
 const LABELS: Record<AudioSpec['kind'], string> = { music: t('audio.music'), speech: t('audio.voiceover'), clone: t('audio.voiceover'), sfx: t('audio.soundEffect') }
