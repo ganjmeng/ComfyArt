@@ -99,8 +99,8 @@ async def test_sidebar_expanded_labels_recent(app_url, lang, theme):  # noqa: F8
         # labels visible when expanded
         home = pg.get_by_test_id("rail-home")
         assert await home.locator(".ca-rail__label").inner_text() != ""
-        # Assets gated; competitor slots absent
-        assert await pg.get_by_test_id("rail-assets").count() == 0
+        # #539 PR-A: Assets entry now shown (was gated); competitor slots absent
+        assert await pg.get_by_test_id("rail-assets").count() == 1
         assert await pg.get_by_test_id("rail-schedules").count() == 1
         assert await pg.get_by_test_id("rail-ws-history").count() == 1
         assert await pg.get_by_test_id("rail-settings").count() == 1
@@ -134,4 +134,49 @@ async def test_sidebar_empty_hides_recent(app_url):  # noqa: F811
         browser, pg = await _open(p, app_url, "zh", "light", collapsed=False)
         await pg.get_by_test_id("rail-home").wait_for()
         assert await pg.get_by_test_id("rail-recent").count() == 0
+        await browser.close()
+
+
+ASSET_SHOTS = os.environ.get("ASSETS_539_SHOTS")
+
+
+@pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
+async def test_assets_page_shell_539(app_url, lang, theme):  # noqa: F811
+    """#539 PR-A: rail → Assets page; 4 kit tabs (no 文件); empty state; no demo data."""
+    async with pw.async_playwright() as p:
+        browser = await p.chromium.launch()
+        ctx = await browser.new_context(viewport={"width": 1280, "height": 800})
+        pg = await ctx.new_page()
+        await pg.add_init_script(
+            f"""localStorage.setItem('comfyart.lang','{lang}');
+                localStorage.setItem('comfyart.theme','{theme}');
+                localStorage.setItem('comfyart.rail.collapsed','1');"""
+        )
+        await pg.goto(app_url)
+        await pg.get_by_test_id("rail-assets").wait_for()
+        if ASSET_SHOTS:
+            Path(ASSET_SHOTS).mkdir(parents=True, exist_ok=True)
+            await pg.wait_for_timeout(500)
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539a-entry-{lang}-{theme}.png")
+        await pg.get_by_test_id("rail-assets").click()
+        await pg.get_by_test_id("assets-page").wait_for()
+        assert "view=assets" in pg.url
+        assert await pg.get_by_test_id("rail-assets").get_attribute("data-on") == "true"
+        tabs = pg.get_by_test_id("assets-library").get_by_role("tab")
+        assert await tabs.count() == 4
+        want = ["品牌套件", "角色", "产品", "自定义"] if lang == "zh" else None
+        names = [await tabs.nth(i).inner_text() for i in range(4)]
+        if want:
+            assert names == want, names
+        assert "文件" not in names and "Files" not in names
+        await pg.get_by_test_id("assets-detail-empty").wait_for()
+        # no demo data: fresh library → zero cards in every tab
+        for i in range(4):
+            await tabs.nth(i).click()
+            assert await pg.locator(".ca-lib__card").count() == 0
+            assert await pg.locator(".ca-side__empty").count() == 1
+        await tabs.nth(0).click()
+        if ASSET_SHOTS:
+            await pg.wait_for_timeout(500)
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539a-empty-{lang}-{theme}.png")
         await browser.close()

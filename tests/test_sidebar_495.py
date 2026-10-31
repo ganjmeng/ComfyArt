@@ -55,13 +55,38 @@ def test_nav_order_and_labels() -> None:
 
 
 def test_assets_hidden_until_497() -> None:
-    assert "SHOW_ASSETS = false" in HOME_APP
-    assert 'testId="rail-assets"' not in HOME_APP or "SHOW_ASSETS" in HOME_APP
-    # must not render when flag false — gate present
+    # #539 PR-A: assertion updated (not removed) — the gate now flips ON because the Assets
+    # page shell landed; the gate itself must still exist and the entry must route in place.
+    assert "SHOW_ASSETS = true" in HOME_APP
     assert "SHOW_ASSETS ?" in HOME_APP or "SHOW_ASSETS &&" in HOME_APP
-    # mutation: Assets must not appear as an unconditional RailBtn
-    unconditional = re.findall(r"<RailBtn[^>]*testId=\"rail-assets\"", HOME_APP)
-    assert unconditional == []
+    assert "onClick={() => openView('assets')}" in HOME_APP
+    assert "onClick={() => {}}" not in HOME_APP  # mutation: dead entry
+    # order: skills → assets → schedules
+    assert HOME_APP.index('testId="rail-skills"') < HOME_APP.index('testId="rail-assets"') < HOME_APP.index('testId="rail-schedules"')
+
+
+def test_assets_page_shell_539() -> None:
+    projects = (ROOT / "src/projects.ts").read_text()
+    main = (ROOT / "src/main.tsx").read_text()
+    assets = (ROOT / "src/home/Assets.tsx").read_text()
+    panel = (ROOT / "src/ui/LibraryPanel.tsx").read_text()
+    assert "'assets'" in projects.split("export type HomeView")[1].split("\n")[0]
+    assert "viewParam === 'assets'" in main
+    assert "if (view === 'assets') return <Assets />" in HOME_APP
+    # reuses existing LibraryPanel + libraryAtom data; no parallel list/store
+    assert "<LibraryPanel kitsOnly" in assets
+    assert "loadLibrary" in assets
+    assert "atom(" not in assets and "AssetGrid" not in assets
+    for f in ("AssetsPanel.tsx", "AssetList.tsx", "AssetLibrary.tsx"):
+        assert not (ROOT / "src/home" / f).exists() and not (ROOT / "src/ui" / f).exists()
+    # kitsOnly hides 「文件」 tab only; canvas path keeps it
+    assert "kitsOnly ? TABS.filter(([k]) => k !== 'files') : TABS" in panel
+    assert "['files', t('libraryPanel.files')]" in panel
+    # no demo data
+    for demo in ("demo", "sample", "示例"):
+        assert demo not in assets.lower()
+    for k in ("assets.emptyTitle", "assets.emptyHint"):
+        assert ZH[k] and EN[k] and ZH[k] != EN[k]
 
 
 def test_hidden_items_absent() -> None:

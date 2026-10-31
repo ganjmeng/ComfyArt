@@ -1596,5 +1596,7 @@
   "home.assets": "我的素材",
   "home.tools": "实用工具",
   "home.moreTools": "更多工具",
-  "home.toolPreciseEdit": "精准编辑"
+  "home.toolPreciseEdit": "精准编辑",
+  "assets.emptyTitle": "未选择素材",
+  "assets.emptyHint": "在左侧选择一个素材，或新建一个"
 }
