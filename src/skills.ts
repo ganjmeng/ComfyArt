@@ -450,6 +450,13 @@ export function withPreset(skill: Skill, presetId?: string | null): Skill {
   return p?.prompt ? { ...skill, instructions: `${skill.instructions.trimEnd()}\n\n${p.prompt}` } : skill
 }
 
+/** #541 — Lovart meta line under the description. Only real data: no usage counter exists in our data, so the line
+ *  carries the template count alone (never a made-up 「已使用N次」); no presets → null (no line). */
+export function skillMeta(skill: Skill): { templates: number } | null {
+  const n = skill.presets?.length ?? 0
+  return n ? { templates: n } : null
+}
+
 /** #494-2 — the preset's own image, else the skill's list cover (one decision point, like `skillCover`). */
 export function presetImage(skill: Skill, preset: SkillPreset): string | null {
   return preset.image ?? skillCover(skill)?.src ?? null

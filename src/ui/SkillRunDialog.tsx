@@ -4,7 +4,7 @@
  *  New because main had no form that renders a data schema. 「详情」 keeps main's #484 edit page (openSkillEditor). */
 import { useState } from 'react'
 
-import { uploadSkillImage, loc, missingInputs, presetImage, skillAuthor, skillDefaults, skillDescription, skillPreset, skillRunParams, type Skill } from '../skills'
+import { uploadSkillImage, loc, missingInputs, presetImage, skillAuthor, skillMeta, skillDefaults, skillDescription, skillPreset, skillRunParams, type Skill } from '../skills'
 import { newProject } from '../projects'
 import { BRAND } from '../brand'
 import { t } from '../i18n'
@@ -24,6 +24,8 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
   const chosen = skillPreset(skill, preset)
   const author = skillAuthor(skill)
   const desc = skillDescription(skill)
+  const meta = skillMeta(skill)
+  const [zoom, setZoom] = useState<string | null>(null)
   const set = (key: string, v: string) => setValues((cur) => ({ ...cur, [key]: v }))
   const stop = (e: React.KeyboardEvent) => e.stopPropagation()
   useEscape(true, onClose)
@@ -34,13 +36,18 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
           {/* #494-2 对照结构: title / author / desc stay pinned above the template grid */}
           <header className="ca-skillrun__head" data-testid="skill-run-head">
             <h2 className="ca-skillrun__title" data-testid="skill-run-title">{skill.name}</h2>
-            <div className="ca-skillrun__author" data-testid="skill-run-author" data-kind={author.kind}>
-              {author.kind === 'builtin'
-                ? <img className="ca-swall__avatar" src={BRAND.logoPath} alt="" aria-hidden="true" />
-                : <span className="ca-swall__avatar" aria-hidden="true"><span className="ca-icon">{Icons.user}</span></span>}
-              {author.label}
+            {/* #541 Lovart creator row: 28px avatar + name, actions right (we have 详情; no share / bookmark data) */}
+            <div className="ca-skillrun__creator" data-testid="skill-run-creator">
+              <div className="ca-skillrun__author" data-testid="skill-run-author" data-kind={author.kind}>
+                {author.kind === 'builtin'
+                  ? <img className="ca-swall__avatar" src={BRAND.logoPath} alt="" aria-hidden="true" />
+                  : <span className="ca-swall__avatar" aria-hidden="true"><span className="ca-icon">{Icons.user}</span></span>}
+                {author.label}
+              </div>
+              <button type="button" className="ca-skillrun__action" data-testid="skill-run-detail" onClick={() => { onClose(); openSkillEditor(skill.id) }}>{t('skillRun.detail')}</button>
             </div>
             {desc && <p className="ca-skillrun__desc" data-testid="skill-run-desc">{desc}</p>}
+            {meta && <p className="ca-skillrun__meta" data-testid="skill-run-meta">{t('skillRun.templateCount', meta.templates)}</p>}
           </header>
           {!!skill.presets?.length && (
             <div className="ca-skillrun__templates" role="radiogroup" data-testid="skill-run-presets">
@@ -50,16 +57,19 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
                   const img = presetImage(skill, p)
                   const on = preset === p.id
                   return (
-                    <button key={p.id} type="button" role="radio" aria-checked={on} data-on={on || undefined}
-                      className="ca-skillrun__preset" data-testid="skill-run-preset" data-preset={p.id} onClick={() => setPreset(p.id)}>
-                      <span className="ca-skillrun__presetimg">
-                        {img ? <img src={img} alt="" /> : <span className="ca-icon">{Icons.skill}</span>}
-                        <span className="ca-skillrun__zoom" aria-hidden="true"><span className="ca-icon">{Icons.expand}</span></span>
-                        <span className="ca-skillrun__pick">{t('skillRun.select')}</span>
-                        {on && <span className="ca-skillrun__check" aria-hidden="true"><span className="ca-icon">{Icons.check}</span></span>}
-                      </span>
-                      <span className="ca-skillrun__presetname">{loc(p.name)}</span>
-                    </button>
+                    <div key={p.id} className="ca-skillrun__tile" data-on={on || undefined}>
+                      <button type="button" role="radio" aria-checked={on} data-on={on || undefined}
+                        className="ca-skillrun__preset" data-testid="skill-run-preset" data-preset={p.id} onClick={() => setPreset(p.id)}>
+                        <span className="ca-skillrun__presetimg">
+                          {img ? <img src={img} alt="" /> : <span className="ca-icon">{Icons.skill}</span>}
+                          <span className="ca-skillrun__pick">{t('skillRun.select')}</span>
+                          {on && <span className="ca-skillrun__check" aria-hidden="true"><span className="ca-icon">{Icons.check}</span></span>}
+                        </span>
+                        <span className="ca-skillrun__presetname">{loc(p.name)}</span>
+                      </button>
+                      {img && <button type="button" className="ca-skillrun__zoom" data-testid="skill-run-zoom" title={t('skillRun.zoom')} aria-label={t('skillRun.zoom')}
+                        onClick={() => setZoom(img)}><span className="ca-icon">{Icons.expand}</span></button>}
+                    </div>
                   )
                 })}
               </div>
@@ -108,10 +118,10 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
               if (f.type === 'image') return (
                 <div key={f.key} className="ca-skillrun__field">
                   {label}
-                  <div className="ca-gen__refs" {...common}>
+                  <div className="ca-gen__refs ca-skillrun__uploadwrap" {...common}>
                     {values[f.key]
                       ? <span className="ca-gen__ref"><img src={values[f.key]} alt="" /><button type="button" title={t('common.remove')} onClick={() => set(f.key, '')}>{Icons.close}</button></span>
-                      : <label className="ca-gen__refadd"><span className="ca-icon">{Icons.plus}</span><span>{uploading === f.key ? t('skillRun.uploading') : t('skillsDialog.addImage')}</span>
+                      : <label className="ca-skillrun__upload" data-testid="skill-run-upload"><span className="ca-icon">{Icons.image}</span><span>{uploading === f.key ? t('skillRun.uploading') : t('skillRun.uploadHint')}</span>
                           <input id={id} type="file" accept="image/*" hidden onChange={(e) => {
                             const file = e.target.files?.[0]; e.target.value = ''
                             if (!file) return
@@ -131,11 +141,15 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
             </div>
           </div>
           <div className="ca-skillrun__foot">
-            <button type="button" className="ca-panel__secondary" data-testid="skill-run-detail" onClick={() => { onClose(); openSkillEditor(skill.id) }}>{t('skillRun.detail')}</button>
             <button type="button" className="ca-panel__primary ca-skillrun__go" data-testid="skill-run-go" disabled={missing.length > 0 || !!uploading}
               onClick={() => run(skillRunParams(skill, values, preset))}>{t('skillRun.start')}</button>
           </div>
         </div>
+        {zoom && (
+          <button type="button" className="ca-skillrun__zoomview" data-testid="skill-run-zoomview" title={t('common.close')} onClick={() => setZoom(null)}>
+            <img src={zoom} alt="" />
+          </button>
+        )}
       </div>
     </div>
   )
