@@ -53,6 +53,11 @@ async def _landing_state(pg) -> dict:
       buttons: [...document.querySelectorAll('[data-creator] .ca-chat__start')].map(b => {
         const r = b.getBoundingClientRect(); if (b.scrollWidth > b.clientWidth + 1 || b.querySelectorAll('*').length && [...b.childNodes].some(n => n.nodeType === 3 && n.parentElement && (() => { const g = document.createRange(); g.selectNodeContents(n); return g.getClientRects().length > 1 })())) return ['wrap']; return [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)] }),
       newProject: !!new URL(location.href).searchParams.get('project'),
+      mode: document.querySelector('.ca-composer__mode').innerText.trim(),
+      modeAgent: document.querySelector('.ca-composer__mode').dataset.agent || null,
+      ref: document.querySelector('.ca-refbtn')?.innerText.trim() ?? null,
+      top: (() => { const r = [...document.querySelectorAll('.ca-agent .ca-head .ca-bar__btn')].map(b => b.getBoundingClientRect()).filter(r => r.width);
+        return [Math.round(innerWidth - Math.max(...r.map(x => x.right))), Math.round(Math.min(...r.map(x => x.left)))] })(),
     })""")
 
 
@@ -81,6 +86,12 @@ async def test_both_entries_identical(app_url, lang, theme, chip):  # noqa: F811
     assert h == k, (h, k)
     assert h["max"] and h["chip"] == chip and "ca-composer__input" in h["focus"] and h["draft"] == "" and h["bubbles"] == 0
     assert h["newProject"] is True  # (4) entering creates a new canvas project
+    # P1-1: both entries show the normal composer's product label (Loomi, never the 'Agent' fallback) in zh and en,
+    # and the reference control is main's normal-composer form (icon only next to a product pill)
+    assert h["mode"] == "Loomi" and h["modeAgent"], h
+    assert h["ref"] == "", h
+    # P1-2: the full-screen top-bar group (saved / new chat / notices / expand / collapse) sits at the top right
+    assert h["top"][0] <= 24 and h["top"][1] > 640, h["top"]
     assert h["placeholder"].startswith("请描述你的设计需求" if lang == "zh" else "Describe your design needs")
     # 3 buttons, stacked, centred, ~172x38, not stretched
     b = h["buttons"]
@@ -131,4 +142,41 @@ async def test_collapse_keeps_text_without_confirm(app_url):  # noqa: F811
         await pg.go_back()
         await pg.wait_for_timeout(500)
         assert not dialogs and not sends
+        await browser.close()
+
+
+async def test_brand_kit_leaves_full_screen_and_keeps_text(app_url):  # noqa: F811
+    """#542 product ruling: 使用品牌套件 switches back to normal view; the typed text stays; nothing is sent."""
+    async with pw.async_playwright() as p:
+        browser, pg, sends, dialogs = await _page(p, app_url, "zh", "light", "/?view=skills")
+        await _via_skills(pg)
+        await _landing_state(pg)
+        await pg.locator(".ca-composer__input").fill("做一个咖啡店海报技能")
+        await pg.locator("[data-creator] .ca-chat__start").nth(2).click()
+        await pg.locator(".ca-agent[data-max]").wait_for(state="detached")
+        assert await pg.locator(".ca-agent").count() == 1  # normal (docked) chat view
+        await pg.locator(".ca-lib").wait_for()
+        assert (await pg.locator('.ca-lib [role="tab"][aria-selected="true"]').inner_text()).strip() == "品牌套件"
+        assert await pg.locator(".ca-composer__input").input_value() == "做一个咖啡店海报技能"
+        assert await pg.locator('[data-testid="skill-creator-chip"]').count() == 1
+        await pg.wait_for_timeout(500)
+        assert not sends and not dialogs
+        await browser.close()
+
+
+@pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
+async def test_normal_full_screen_chat_composer(app_url, lang, theme):  # noqa: F811
+    """#542: every full-screen chat (not only the creator) uses the 720-wide input card docked 8px from the bottom."""
+    async with pw.async_playwright() as p:
+        browser, pg, sends, _ = await _page(p, app_url, lang, theme, "/?project=n542abcd&new=1")
+        await pg.locator(".ca-composer__input").wait_for()
+        await pg.locator(".ca-agent .ca-wide-only").click()
+        await pg.locator(".ca-agent[data-max]").wait_for()
+        await pg.mouse.move(1, 400)
+        await _shot(pg, f"542-normal-max-{lang}-{theme}")
+        box = await pg.locator(".ca-agent .ca-composer").bounding_box()
+        assert await pg.locator('[data-testid="creator-landing-title"]').count() == 0
+        assert round(box["width"]) == 720 and abs(box["x"] + 360 - 640) <= 2
+        assert abs(800 - (box["y"] + box["height"]) - 8) <= 1
+        assert not sends
         await browser.close()

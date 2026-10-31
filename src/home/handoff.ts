@@ -148,6 +148,9 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
     skillCreatorAtom.set({ on: true, chip: CREATE_ENTRY_CHIP_KEY })
     if (text) draftAtom.set(text)  // #542: an old ask= link keeps its text as a draft, never auto-sent
     if (refs.length) extraRefsAtom.set((await placeRefs(editor, refs)).map((s) => s.id))
+    // #542 P1-1: wait for the provider list like every other agent handoff, so the mode pill shows the same product
+    // label (Loomi) and the same collapsed reference button as the normal composer, whichever entry was used
+    await refreshBot().catch(() => {})
     focusComposer()
     return
   }

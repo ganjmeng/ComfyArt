@@ -47,6 +47,11 @@ def test_b_presets_chip_and_focuses() -> None:
 def test_b_does_not_send() -> None:
     b = _entry_b()
     assert "sendToAgent" not in b and "generateDirect" not in b
+    # P1-1: the mode label and reference control match the normal composer (Loomi + icon-only 参考) on both entries,
+    # because the branch waits for the provider list before focusing, like every other agent handoff
+    assert b.index("await refreshBot()") < b.index("focusComposer()")
+    # P1-2: in full screen the top-bar group is pushed to the right
+    assert ".ca-agent[data-max] .ca-head__name { margin-right: auto; }" in (ROOT / "src/styles/shell.css").read_text()
     assert b.strip().endswith("return")
 
 

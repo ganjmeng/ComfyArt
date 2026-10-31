@@ -161,6 +161,7 @@ button.ca-head__logo:hover, button.ca-head__logo[data-open] { background: var(--
 .ca-agent[data-max] { flex: 1; width: auto; border-right: none; }
 .ca-agent[data-max] .ca-chat, .ca-agent[data-max] .ca-composer { width: min(720px, calc(100% - 24px)); margin-left: auto; margin-right: auto; box-sizing: border-box; }
 .ca-agent[data-max] .ca-composer { margin-bottom: 8px; }  /* #542: chat-only input card 720 wide, docked 8px from the bottom */
+.ca-agent[data-max] .ca-head__name { margin-right: auto; }  /* #542 P1-2: full-screen chat keeps logo + name left and the saved / new chat / notices / expand / collapse group at the top right */
 
 .ca-history { width: 300px; max-height: 420px; overflow: auto; }
 .ca-history .ca-bg__hex { margin-bottom: 4px; }

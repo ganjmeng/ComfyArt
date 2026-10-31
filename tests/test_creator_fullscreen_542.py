@@ -41,8 +41,10 @@ def test_handoff_sets_chip_focus_max_and_never_sends() -> None:
     for s in ("chatViewAtom.set('max')", "agentModeAtom.set('agent')",
               "skillCreatorAtom.set({ on: true, chip: CREATE_ENTRY_CHIP_KEY })", "focusComposer()"):
         assert s in b, s
-    for bad in ("sendToAgent", "generateDirect", "refreshBot", "if (text) {"):
+    for bad in ("sendToAgent", "generateDirect", "if (text) {"):
         assert bad not in b, bad
+    # P1-1: providers are loaded (not sent to) before focus, so the pill reads Loomi like the normal composer
+    assert "await refreshBot().catch(() => {})" in b
     assert b.rstrip().endswith("return")
 
 
