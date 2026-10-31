@@ -1,0 +1,24 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "99336d9da4194b40ae0a9abe30bc7c16",
+    "model": "wavespeed-ai/ace-step-1.5",
+    "input": {
+      "duration": 5,
+      "lyrics": "[instrumental]",
+      "tags": "calm soft piano #514 billed proof"
+    },
+    "outputs": [],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/99336d9da4194b40ae0a9abe30bc7c16/result"
+    },
+    "status": "created",
+    "created_at": "2026-10-31T07:15:09.294Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 0
+    }
+  }
+}

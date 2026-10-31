@@ -1,0 +1,20 @@
+{
+  "request": {
+    "model_id": "minimax/music-3.0",
+    "inputs": {
+      "lyrics": "la la",
+      "prompt": "pop"
+    }
+  },
+  "response": {
+    "code": 200,
+    "message": "success",
+    "data": {
+      "model_id": "minimax/music-3.0",
+      "price": 0.15,
+      "discounted_price": 0.15,
+      "discount_rate": 100,
+      "currency": "USD"
+    }
+  }
+}

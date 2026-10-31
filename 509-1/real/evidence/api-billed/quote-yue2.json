@@ -1,0 +1,20 @@
+{
+  "request": {
+    "model_id": "wavespeed-ai/yue2-3b/text-to-music",
+    "inputs": {
+      "lyrics": "hello\nworld",
+      "prompt": "folk"
+    }
+  },
+  "response": {
+    "code": 200,
+    "message": "success",
+    "data": {
+      "model_id": "wavespeed-ai/yue2-3b/text-to-music",
+      "price": 0.1,
+      "discounted_price": 0.1,
+      "discount_rate": 100,
+      "currency": "USD"
+    }
+  }
+}
