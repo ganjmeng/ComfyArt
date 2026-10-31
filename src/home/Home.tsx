@@ -7,9 +7,10 @@ import { t } from '../i18n'
 import { errorText } from '../jobs'
 import { newProject, openView, startProject, type ProjectEntry } from '../projects'
 import { showMemoryToast } from '../memory'
-import { HOME_CREATOR_CHIP_KEY, importLanding, loadSkills, type Skill } from '../skills'
+import { HOME_CREATOR_CHIP_KEY, hasSkillDialog, importLanding, loadSkills, skillCover, skillFeaturedCases, type Skill } from '../skills'
 import { SkillChip, chipBackspace } from '../ui/SkillChip'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
+import { SkillRunDialog } from '../ui/SkillRunDialog'
 import { openSkillEditor } from '../ui/SkillsDialog'
 import { Icons } from '../ui/icons'
 import { NoKeyNotice } from '../ui/NoKeyNotice'
@@ -56,6 +57,8 @@ export function Home() {
   const [creator, setCreator] = useState(false)
   const [picked, setPicked] = useState<Skill | null>(null)  // #491: skill chip from the + → 技能 panel; only send leaves home
   const [importing, setImporting] = useState(false)
+  // #494-3 / #533: home 精选 + 用 Skill 快速开始 open the same SkillRunDialog as the Skills page
+  const [running, setRunning] = useState<{ id: string; preset: string | null } | null>(null)
   const current = useCurrentAgent()  // #278: same agent the canvas mode button shows
   const hasContent = !!text.trim() || refs.length > 0  // #276: an image with no text counts as content
   const { showSend, setVoice } = useSlot(hasContent, composing)
@@ -128,6 +131,12 @@ export function Home() {
     }
   }
   const modeInfo = modeOf(mode)
+  /** #494-3 — Skills-page rule: dialog when inputs[] exist; else main's direct start. Featured passes a preset id. */
+  const trySkill = (s: Skill, preset: string | null = null) => (
+    hasSkillDialog(s) ? setRunning({ id: s.id, preset }) : newProject({ skill: s.id })
+  )
+  const featured = skillFeaturedCases(skills)
+  const runSkill = running ? skills.find((s) => s.id === running.id) : undefined
 
   return (
     <div className="ca-landing">
@@ -315,17 +324,19 @@ export function Home() {
         </div>
       </section>
 
-      <section className="ca-landing__section">
+      <section className="ca-landing__section" data-testid="home-start-skill">
         <div className="ca-landing__head">
           <h2>{t('home.startFromSkill')}</h2>
           <button type="button" className="ca-landing__link" onClick={() => openView('skills')}>{t('home.viewAll')}</button>
         </div>
-        <div className="ca-skillgrid">
+        <div className="ca-skillgrid" data-testid="home-skill-grid">
           {skills.map((s) => {
-            const cover = Object.values(s.images ?? {})[0]
+            const cover = skillCover(s)
+            const src = cover && (cover.own === 'bundled' ? cover.src : thumbUrl(cover.src, 128))
             return (
-              <button key={s.id} type="button" className="ca-skillcard" onClick={() => newProject({ skill: s.id })}>
-                <span className="ca-skillcard__icon">{cover ? <img src={thumbUrl(cover, 128)} alt="" /> : <span className="ca-icon">{Icons.skill}</span>}</span>
+              <button key={s.id} type="button" className="ca-skillcard" data-testid="home-skill-card" data-skill={s.id}
+                onClick={() => trySkill(s)}>
+                <span className="ca-skillcard__icon">{src ? <img src={src} alt={s.name} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
                 <span className="ca-skillcard__name">{s.name}</span>
                 <span className="ca-model__tag">{s.custom ? t('home.mySkill') : t('home.builtIn')}</span>
               </button>
@@ -333,6 +344,38 @@ export function Home() {
           })}
         </div>
       </section>
+
+      {featured.length > 0 && (
+        <section className="ca-landing__section" data-testid="home-featured">
+          <div className="ca-landing__head">
+            <h2>{t('home.featured')}</h2>
+          </div>
+          <div className="ca-featured" data-testid="home-featured-grid">
+            {featured.map(({ skill: s, preset: p, image }) => (
+              <button
+                key={`${s.id}:${p.id}`}
+                type="button"
+                className="ca-featured__card"
+                data-testid="home-featured-card"
+                data-skill={s.id}
+                data-preset={p.id}
+                onClick={() => trySkill(s, p.id)}
+              >
+                <span className="ca-featured__cover">
+                  <img src={image} alt={s.name} loading="lazy" />
+                  <span className="ca-featured__badge">{t('home.skillCase')}</span>
+                  <span className="ca-featured__go">{t('skillRun.start')}</span>
+                </span>
+                <span className="ca-featured__name">{s.name}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {runSkill && (
+        <SkillRunDialog skill={runSkill} presetId={running?.preset} onClose={() => setRunning(null)} />
+      )}
     </div>
   )
 }

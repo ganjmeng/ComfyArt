@@ -758,7 +758,7 @@
   "home.rename": "Rename",
   "home.select": "Select",
   "home.selectAll": "Select all ({0})",
-  "home.startFromSkill": "Start from a skill",
+  "home.startFromSkill": "Start with a Skill",
   "home.unpin": "Unpin",
   "home.updatedOn": "Updated {0}",
   "home.viewAll": "View all",
@@ -1584,5 +1584,7 @@
   "skillRun.templates": "Templates",
   "skillRun.currentTemplate": "Current template",
   "skillRun.pickLeft": "Select on the left",
-  "skillRun.select": "Select"
+  "skillRun.select": "Select",
+  "home.featured": "Featured",
+  "home.skillCase": "Skill case"
 }
