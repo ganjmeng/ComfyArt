@@ -41,7 +41,7 @@ async def test_music_length_row_does_not_shift(app_url, fake_tools, monkeypatch,
             if await pg.locator(".ca-modal").count():
                 await pg.keyboard.press("Escape")
                 await pg.wait_for_timeout(300)
-        await pg.locator(".ca-split__chev").first.click()
+        await pg.locator(".ca-split__chev:not([title])").first.click()
         await pg.locator(".ca-menu__item", has_text="音频" if lang == "zh" else "audio").first.click()
         await pg.locator("[data-testid=music-length-row]").wait_for()
         SHOTS.mkdir(parents=True, exist_ok=True)

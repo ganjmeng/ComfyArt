@@ -143,3 +143,29 @@ def test_qa_note_reuses_hint_class_in_a_fixed_height_shared_row():
     css = (ROOT / "src/styles/overlays.css").read_text(encoding="utf-8")
     assert re.search(r"\.ca-audio__length \{[^}]*min-height: 32px", css)
     assert ".ca-chat__hint { font-size: 12px; }" in (ROOT / "src/styles/shell.css").read_text(encoding="utf-8")
+
+
+def test_music_length_ms_is_clamped_into_the_schema_range():
+    # #509: models that take music_length_ms get the length clamped to the schema's range (ms), not seconds * 1000 raw
+    from ComfyArt.api import wavespeed
+    props = {"music_length_ms": {"type": "integer", "minimum": 5000, "maximum": 240000}}
+    for seconds, want in ((1000, 240000), (2, 5000), (30, 30000)):
+        payload: dict = {}
+        wavespeed._av_fields(props, set(), {"duration": seconds}, payload)
+        assert payload == {"music_length_ms": want}, (seconds, payload)
+
+
+def test_custom_music_lyrics_marker_reaches_the_request():
+    # #509: a custom music workflow maps @lyrics onto the user's model field, like @prompt
+    import asyncio
+    from ComfyArt.api import wavespeed
+    assert "lyrics" in wavespeed.MARKER_INPUTS
+    payload: dict = {}
+    asyncio.run(wavespeed._custom_fields(None, {"prompt": "lofi", "lyrics": "[verse] hi", "fields": {"@prompt": "style", "@lyrics": "words"}}, payload))
+    assert payload == {"style": "lofi", "words": "[verse] hi"}
+
+
+def test_yue2_listed_for_the_agent_music_models():
+    # #509: YuE2 sits in curated music "more" (the curated top list is capped at 5), so list_models still offers it
+    from ComfyArt.api import wavespeed
+    assert YUE2 in [m["id"] for m in wavespeed.load_config()["features"]["music"]["models"]]

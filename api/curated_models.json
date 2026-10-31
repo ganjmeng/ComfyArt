@@ -140,10 +140,10 @@
     "music": {"needs": [], "models": [
       "minimax/music-3.0",
       "wavespeed-ai/ace-step-1.5",
-      "wavespeed-ai/yue2-3b/text-to-music",
       "google/lyria-3.5/music",
       "mureka-ai/mureka-v9/generate-bgm",
-      "elevenlabs/music-v2.5"]},
+      "elevenlabs/music-v2.5"], "more": [
+      "wavespeed-ai/yue2-3b/text-to-music"]},
     "sound_effect": {"needs": [], "models": [
       "mirelo-ai/sfx-2.0/text-to-audio",
       "elevenlabs/sound-effects-v2",

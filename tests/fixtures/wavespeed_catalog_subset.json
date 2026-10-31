@@ -6963,6 +6963,29 @@
 "model_id": "wavespeed-ai/wan-2.2/t2v-480p-lora",
 "name": "wavespeed-ai/wan-2.2/t2v-480p-lora"
 },
+"wavespeed-ai/yue2-3b/text-to-music": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"guidance_scale": {},
+"lyrics": {},
+"seed": {},
+"style": {},
+"temperature": {},
+"top_k": {},
+"top_p": {}
+}
+}
+}
+]
+},
+"base_price": 0.1,
+"description": "YuE2 3B creates songs from lyrics and a musical style description.",
+"model_id": "wavespeed-ai/yue2-3b/text-to-music",
+"name": "wavespeed-ai/yue2-3b/text-to-music"
+},
 "wavespeed-ai/z-image/turbo": {
 "api_schema": {
 "api_schemas": [
