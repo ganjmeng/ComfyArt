@@ -556,14 +556,14 @@ body { background: var(--ca-float); }
   background: none; color: var(--ca-text); cursor: pointer; font: inherit; text-align: left;
 }
 .ca-skillrun__presetimg {
-  position: relative; aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden;
+  position: relative; aspect-ratio: 160 / 120; border-radius: 12px; overflow: hidden;
   background: var(--ca-hover); display: grid; place-items: center;
   box-shadow: inset 0 0 0 var(--ca-border-w) var(--ca-border);
   /* selected ring / ✓ are instantaneous — no transition */
   transition: none;
 }
 .ca-skillrun__preset[data-on] .ca-skillrun__presetimg {
-  box-shadow: inset 0 0 0 2px var(--ca-text);
+  box-shadow: inset 0 0 0 1px var(--ca-text);
 }
 .ca-skillrun__presetimg img { width: 100%; height: 100%; object-fit: cover; }
 /* hover: fade-in + enlarge chip + 「选择」 pill (~150ms) */

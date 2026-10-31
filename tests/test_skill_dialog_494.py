@@ -128,6 +128,8 @@ def test_copy_and_dialog_style():
         assert k in ZH and k in EN, k
     assert "skillDetail." not in " ".join(k for k in ZH if k.startswith("skillDetail"))
     assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in CSS
+    assert "aspect-ratio: 160 / 120" in CSS  # template cells ~160×120, not 1:1
+    assert "inset 0 0 0 1px var(--ca-text)" in CSS  # selected ring 1px
     assert ".ca-skillrun__left" in CSS and ".ca-skillrun__right" in CSS
     assert ".ca-swall__card--row" in CSS and "width: 72px; height: 72px" in CSS
     assert ".ca-swall__try" in CSS
