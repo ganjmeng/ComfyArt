@@ -83,6 +83,34 @@ async def test_zoom_select_and_gating(app_url):  # noqa: F811
         await browser.close()
 
 
+STAGE = """() => { const st = document.querySelector('[data-testid=skill-run-example-stage]'), i = st.querySelector('img');
+  const a = st.getBoundingClientRect(), c = i.getBoundingClientRect(), cs = getComputedStyle(i);
+  return {fit: cs.objectFit, pos: cs.objectPosition, bg: getComputedStyle(st).backgroundColor,
+          st: [a.x, a.y, a.width, a.height], img: [c.x, c.y, c.width, c.height], nat: [i.naturalWidth, i.naturalHeight]} }"""
+
+
+@pytest.mark.parametrize("skill,portrait", [("poster", True), ("character", False)])
+async def test_example_stage_contain_no_crop(app_url, skill, portrait):  # noqa: F811
+    """Lovart stage: whole image visible (contain), centered, on #f4f4f4 - portrait must not overflow/crop."""
+    async with pw.async_playwright() as p:
+        browser, pg = await _open(p, app_url, "zh", "light")
+        await _modal(pg, skill)
+        await pg.wait_for_function("() => { const i = document.querySelector('[data-testid=skill-run-example-stage] img');"
+                                   " return i && i.complete && i.naturalWidth > 0 }", timeout=60000)
+        r = await pg.evaluate(STAGE)
+        assert r["fit"] == "contain" and r["pos"] == "50% 50%"
+        assert r["bg"] == "rgb(244, 244, 244)"
+        sx, sy, sw, sh = r["st"]
+        assert [round(v) for v in r["img"]] == [round(sx), round(sy), round(sw), round(sh)]  # img box == stage box
+        nw, nh = r["nat"]
+        assert (nh > nw) == portrait
+        k = min(sw / nw, sh / nh)  # contain scale: painted content fits inside the stage
+        cw, ch = nw * k, nh * k
+        assert cw <= sw + 0.5 and ch <= sh + 0.5
+        assert abs(ch - sh) < 1 if portrait else abs(cw - sw) < 1  # fills the limiting axis
+        await browser.close()
+
+
 async def test_custom_workflow_no_meta_no_tiles(app_url):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url, "en")

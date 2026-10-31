@@ -60,7 +60,7 @@ const EX_541 = {
   poster: '6d864bd2dd53b9f5b487829f2834d94be013b0a5', // 5 @3:4, manifest 5eb216e
   thumbnail: '5fc35b17f11ee58fde21671b16b574ecb0d35e5a', // 6 @16:9 (#5 single-scene re-wash), manifests 249b9e09 / 88824ff1
   character: 'dd97ee3782fc85090217c573b2ebb59ea4f19654', // 6 @16:9, manifest 65a99b1
-  // interior: not wired — design re-washing to 3× 4:5 + 1× 1:1
+  interior: '535d9568d1b8ca25e300fa32db1eca887889ba88', // 4 = 3 scenes @4:5 + 1:1 material mood board, manifest ea13dd4
   social: 'cb41cb8a450139cd903e777c8f84024019d517cd', // 10 @3:4 (小红书封面制作器), manifest e1b34fa
   banner: '8cc3fb305f7ce29ebbab63525680e3436e964dbb', // 1 × ~2:1 composite (4:3 + 3:4 side by side), manifest cd871d76
 }
@@ -113,7 +113,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     category: 'ads', cover: cover('motion'), video: video('motion'), presets: [P('loop', '微动循环', 'Subtle loop', 'Motion: subtle seamless loop, gentle floating of the subject, text static.', washPreset('motion', 'loop')), P('light', '光影流动', 'Flowing light', 'Motion: light and shadow sweeping across the scene, glints on surfaces, text static.', washPreset('motion', 'light')), P('push', '镜头推拉', 'Camera push-pull', 'Motion: slow camera push in then pull out, slight parallax, text static.', washPreset('motion', 'push'))],
     inputs: [I('topic', ['主题', 'Topic'], 'text', true, ['例如：新年音乐节', 'e.g. New Year music festival']), I('headline', ['标题文字', 'Headline'], 'text'), SEL('ratio', ['比例', 'Aspect ratio'], ['3:4','9:16'],'3:4')] },
   { id: 'interior', name: t('skills.interiorArchitecturalVisualization'), instructions: 'Produce photoreal interior or architecture renders: eye-level wide shot, natural light, accurate materials, 16:9. Add a detail vignette at 4:3.',
-    cover: cover('interior'), video: video('interior'), presets: [P('nordic', '北欧自然光', 'Nordic daylight', 'Style: Nordic interior, light oak and white walls, soft overcast daylight, linen textiles.', washPreset('interior', 'nordic')), P('minimal', '现代极简', 'Modern minimal', 'Style: modern minimal, concealed storage, neutral palette, sharp architectural lines.', washPreset('interior', 'minimal')), P('industrial', '工业风', 'Industrial', 'Style: industrial loft, exposed brick and concrete, black steel, warm Edison lighting.', washPreset('interior', 'industrial'))],
+    cover: cover('interior'), video: video('interior'), examples: ex541('interior', [1, 2, 3, 4]), presets: [P('nordic', '北欧自然光', 'Nordic daylight', 'Style: Nordic interior, light oak and white walls, soft overcast daylight, linen textiles.', washPreset('interior', 'nordic')), P('minimal', '现代极简', 'Modern minimal', 'Style: modern minimal, concealed storage, neutral palette, sharp architectural lines.', washPreset('interior', 'minimal')), P('industrial', '工业风', 'Industrial', 'Style: industrial loft, exposed brick and concrete, black steel, warm Edison lighting.', washPreset('interior', 'industrial'))],
     inputs: [SELL('space', ['空间类型', 'Space type'], [['living', '客厅', 'Living room'],['bedroom', '卧室', 'Bedroom'],['office', '办公', 'Office'],['exterior', '建筑外观', 'Building exterior']], true), I('style', ['风格描述', 'Style notes'], 'textarea'), I('reference', ['参考图或平面图', 'Reference or floor plan'], 'image')] },
   { id: 'custom-workflow', name: t('skills.customWorkflow'), instructions: `${rulesText()}\n\nUse the custom_workflow tool for every step; action rules returns these same rules.`,
     inputs: [I('brief', ['需求描述', 'Brief'], 'textarea', true, ['描述你要用自定义工作流做什么', 'Describe what the custom workflow should make'])] },

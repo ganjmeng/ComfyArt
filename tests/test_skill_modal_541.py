@@ -92,9 +92,9 @@ def test_rev2_cells_pinned(got):
 
 @needs_node
 def test_examples_carousel_is_data_driven(got):
-    want = {"poster": 5, "thumbnail": 6, "character": 6, "social": 10, "banner": 1}  # interior pending re-wash (3× 4:5 + 1× 1:1)
+    want = {"poster": 5, "thumbnail": 6, "character": 6, "social": 10, "banner": 1, "interior": 4}  # interior 535d956: 3× 4:5 + 1× 1:1
     assert {k: v for k, v in got["examples"].items() if v} == want
-    for sid in ("product", "brand", "packaging", "motion", "interior", "custom-workflow"):
+    for sid in ("product", "brand", "packaging", "motion", "custom-workflow"):
         assert got["examples"][sid] == 0, sid
     assert got["exNone"] == ["", ""]
     html = got["exMock"]
@@ -107,7 +107,7 @@ def test_examples_carousel_is_data_driven(got):
     assert "<SkillExamples examples={skill.examples} />" in DLG and "from './SkillExamples'" in DLG
 
 
-EX541 = {"poster": ("6d864bd2dd53b9f5b487829f2834d94be013b0a5", [1, 2, 3, 4, 5]),
+EX541 = {"interior": ("535d9568d1b8ca25e300fa32db1eca887889ba88", [1, 2, 3, 4]), "poster": ("6d864bd2dd53b9f5b487829f2834d94be013b0a5", [1, 2, 3, 4, 5]),
          "thumbnail": ("5fc35b17f11ee58fde21671b16b574ecb0d35e5a", [1, 2, 3, 4, 5, 6]),
          "character": ("dd97ee3782fc85090217c573b2ebb59ea4f19654", [1, 2, 3, 4, 5, 6]),
          "social": ("cb41cb8a450139cd903e777c8f84024019d517cd", list(range(1, 11))),

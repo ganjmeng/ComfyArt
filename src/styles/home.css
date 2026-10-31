@@ -730,10 +730,11 @@ body { background: var(--ca-float); }
 .ca-skillrun__templates { padding-bottom: 24px; }
 .ca-skillrun__examples { margin-bottom: 24px; }
 .ca-skillrun__stage {
-  width: 100%; aspect-ratio: 704 / 526; border-radius: 12px; overflow: hidden;
-  background: var(--ca-skillrun-tile); display: grid; place-items: center;
+  position: relative; width: 100%; aspect-ratio: 704 / 526; border-radius: 12px; overflow: hidden;
+  background: var(--ca-skillrun-tile);
 }
-.ca-skillrun__stage img { width: 100%; height: 100%; object-fit: contain; }
+/* absolute fill: % height doesn't resolve on a grid item of an aspect-ratio box, which let portrait images overflow (crop) */
+.ca-skillrun__stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; }
 .ca-skillrun__strip { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; }
 .ca-skillrun__thumb {
   flex: none; width: 64px; height: 48px; padding: 0; border: 0; border-radius: 8px; overflow: hidden; cursor: pointer;
