@@ -42,6 +42,10 @@ async def test_audio_dialog_custom_speech_shows_filename(app_url, fake_tools, mo
         await pg.wait_for_timeout(2500)
         SHOTS.mkdir(parents=True, exist_ok=True)
         await row.scroll_into_view_if_needed()
+        # design HOLD: assigned row must show workflow filename (music-like), not 「内置」
+        row_text = await row.inner_text()
+        assert "speech-demo" in row_text, f"assigned row still shows builtin: {row_text!r}"
+        assert "内置" not in (await row.locator(".ca-fieldselect__text").inner_text()), row_text
         await pg.locator(".ca-modal").screenshot(path=str(SHOTS / "workflows-speech-assigned-zh-light.png"))
         await pg.locator(".ca-modal .ca-panel__primary").click()
         await pg.wait_for_timeout(400)

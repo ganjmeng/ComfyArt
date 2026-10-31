@@ -58,7 +58,10 @@ export function WorkflowsDialog({ onError }: { onError: (msg: string) => void })
     const spec = parseApiWorkflow(await file.text())
     const check = await checkWorkflow(spec, action)
     if (check.errors.length) throw new Error(checkProblem(file.name, check))
-    await setCustomWorkflow(action, await saveCustomWorkflow(action, file.name, spec))
+    // #525 design: show workflow filename in the row immediately (music-like), not 「内置」 until files refetch
+    const saved = await saveCustomWorkflow(action, file.name, spec)
+    setFiles((prev) => ({ ...prev, [action]: [...new Set([...(prev[action] ?? []), saved])].sort() }))
+    await setCustomWorkflow(action, saved)
   }
 
   return (
@@ -78,10 +81,11 @@ export function WorkflowsDialog({ onError }: { onError: (msg: string) => void })
               <div key={id} className="ca-workflows__row">
                 <span>{t(`customWorkflows.action.${id}`)}</span>
                 <FieldSelect
-                  value={files[id]?.includes(config[id] ?? '') ? (config[id] ?? '') : ''}
+                  value={config[id] ?? ''}
                   options={[
                     { id: '', label: t('customWorkflows.builtIn') },
-                    ...(files[id] ?? []).map((f) => ({ id: f, label: f.replace(/\.json$/, ''), title: f })),
+                    ...Array.from(new Set([...(files[id] ?? []), config[id]].filter(Boolean) as string[])).sort()
+                      .map((f) => ({ id: f, label: f.replace(/\.json$/, ''), title: f })),
                   ]}
                   onChange={(v) => run(pick(id, v))}
                 />

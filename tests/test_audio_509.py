@@ -204,3 +204,10 @@ def test_mutation_js_harness_mirrors_assetgen_audio_inputs():
         assert "custom: 'sfx'" in h and "custom: 'speech'" in h and "custom: 'clone'" in h
         assert "customSpeech ? {} : { voice: spec.voice }" in h
     assert "export function audioInputs" in src
+
+
+def test_workflows_dialog_shows_assigned_filename_not_builtin():
+    """#525 design HOLD: after assign/upload, FieldSelect value is config[id] (filename), not empty→内置."""
+    src = (ROOT / "src/ui/WorkflowsDialog.tsx").read_text(encoding="utf-8")
+    assert "value={config[id] ?? ''}" in src
+    assert "setFiles((prev)" in src  # optimistic files refresh on upload
