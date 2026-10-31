@@ -38,7 +38,7 @@ const WASH_COVER_COMMIT = '48362260e70c8d60a1a755a1b31d0f4ae5c0ab67'
 const cover = (id: string) =>
   `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${WASH_COVER_COMMIT}/494/wash/covers/${id}.webp`
 /** #529 list/detail cover videos (10× short mp4 on review-assets; commit-pinned). */
-const WASH_VIDEO_COMMIT = '67a97f2bf27be29592d2e29fa9eea5948aa58f5f'
+const WASH_VIDEO_COMMIT = '1bbb3f208f18b26ef95c8d9f16efeea111c43ac7'
 const video = (id: string) =>
   `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${WASH_VIDEO_COMMIT}/494/wash/videos/${id}.mp4`
 /** #494 wash presets. */

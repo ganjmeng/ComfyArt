@@ -58,7 +58,7 @@ def test_builtin_videos_unique(got):
     """#529 — 10 distinct review-assets video URLs; custom-workflow stays null (no fake badge)."""
     vids = got["builtinVideos"]
     assert vids.pop("custom-workflow") is None
-    tip = "67a97f2bf27be29592d2e29fa9eea5948aa58f5f"
+    tip = "1bbb3f208f18b26ef95c8d9f16efeea111c43ac7"
     assert len(vids) == 10
     assert vids == {
         k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/{k}.mp4"
