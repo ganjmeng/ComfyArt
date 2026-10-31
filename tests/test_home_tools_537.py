@@ -135,3 +135,11 @@ def test_more_tools_lovart_order_540() -> None:
     assert "enterMode(tool" in HANDOFF or "enterMode(tool as" in HANDOFF
     assert "setCroppingShape" in HANDOFF
     assert "pendingHome === 'transform'" in IMG_TB
+
+
+def test_tool_cards_16x9_and_more_menu_icon_rows() -> None:
+    # #540 ratio-fix: Lovart main cards 16:9; 更多 = icon rows only (no covers); cover kept as pin backup
+    assert "aspect-ratio: 16 / 9" in CSS and "16 / 10" not in CSS
+    assert "ca-menu__thumb" not in HOME and "ca-menu__thumb" not in CSS
+    assert '<span className="ca-icon" aria-hidden>{Icons[tool.icon]}</span>' in HOME
+    assert HOME.count("toolCover('more-10'") == 10 and HOME.count("toolCover('unique-4'") == 4

@@ -50,7 +50,7 @@ async def test_home_tools_and_waterfall(app_url, lang, theme):  # noqa: F811
         # #540: wait wash covers (raw.githubusercontent) before shot
         await pg.wait_for_function(
             """() => {
-              const imgs = [...document.querySelectorAll('.ca-toolcard__cover img, .ca-menu__thumb img')];
+              const imgs = [...document.querySelectorAll('.ca-toolcard__cover img')];
               return imgs.length >= 5 && imgs.every(i => i.complete && i.naturalWidth > 0);
             }""",
             timeout=60000,

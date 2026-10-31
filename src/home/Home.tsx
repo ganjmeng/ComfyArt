@@ -46,7 +46,8 @@ const HOME_TOOL_CARDS: ToolCard[] = [
   { id: 'inpaint', icon: 'effects', label: t('home.toolPreciseEdit'), accept: 'image/*', cover: toolCover('main-5', 'inpaint') },
   { id: 'mockup', icon: 'box', label: t('mockup.title'), accept: 'image/*', cover: toolCover('main-5', 'mockup') },
 ]
-/** #540: Lovart「更多」10 (Loomic order) + unique 4; covers from 540/wash PASS. */
+/** #540: Lovart「更多」10 (Loomic order) + unique 4. The menu renders icon rows only (Jingmeng ruling);
+ *  `cover` is backup data, used only if a tool is pinned (置顶) into the main 16:9 row. */
 const MORE_HOME_TOOLS: ToolCard[] = [
   { id: 'quick', icon: 'quick', label: t('common.quickEdit'), accept: 'image/*', cover: toolCover('more-10', 'quick') },
   { id: 'erase', icon: 'erase', label: t('common.eraser'), accept: 'image/*', cover: toolCover('more-10', 'erase') },
@@ -407,10 +408,10 @@ export function Home() {
               </button>
             )}
           >
-            <div className="ca-menu" data-testid="home-more-tools-menu">
+            <div className="ca-menu ca-menu--tools" data-testid="home-more-tools-menu">
               {MORE_HOME_TOOLS.map((tool) => (
                 <button key={tool.id} type="button" className="ca-menu__item" data-testid={`home-more-tool-${tool.id}`} disabled={uploading} onClick={() => pickTool(tool)}>
-                  <span className="ca-menu__thumb" aria-hidden><img src={tool.cover} alt="" draggable={false} /></span><span className="ca-menu__grow">{tool.label}</span>
+                  <span className="ca-icon" aria-hidden>{Icons[tool.icon]}</span><span className="ca-menu__grow">{tool.label}</span>
                 </button>
               ))}
             </div>
