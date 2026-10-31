@@ -77,7 +77,8 @@ function Tile({ src, onRemove, badge }: { src: string; onRemove: () => void; bad
   )
 }
 
-export function KitEditor({ onError }: { onError: (msg: string) => void }) {
+/** #539 PR-B: `embedded` = home Assets detail pane (in-flow, title + 「…」 menu, bottom bar). Canvas overlay path unchanged. */
+export function KitEditor({ onError, embedded }: { onError: (msg: string) => void; embedded?: boolean }) {
   const id = useValue(kitEditAtom)
   const stored = useValue('kit item', () => libraryAtom.get().find((x) => x.id === id) ?? null, [id])
   const timer = useRef(0)
@@ -85,6 +86,7 @@ export function KitEditor({ onError }: { onError: (msg: string) => void }) {
   const [busy, setBusy] = useState(false)
   const [drag, setDrag] = useState(false)
   const [pick, setPick] = useState(false)
+  const [more, setMore] = useState(false)
   const [fontMenu, setFontMenu] = useState<'menu' | 'library' | null>(null)
   const files = useRef<HTMLInputElement>(null)
   const logos = useRef<HTMLInputElement>(null)
@@ -149,16 +151,25 @@ export function KitEditor({ onError }: { onError: (msg: string) => void }) {
   const picked = (input: HTMLInputElement, use: (list: File[]) => void) => { use(Array.from(input.files ?? [])); input.value = '' }
 
   return (
-    <div className="ca-kit" onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') close() }}>
-      <div className="ca-kit__bar">
+    <div className="ca-kit" data-embedded={embedded || undefined} data-testid={embedded ? 'assets-detail' : undefined} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => { e.stopPropagation(); if (!embedded && e.key === 'Escape') close() }}>
+      {!embedded && <div className="ca-kit__bar">
         <span className="ca-model__tag">{KIND_LABELS[item.kind]}</span>
         <div className="ca-kit__spacer" />
         <button type="button" className="ca-bar__btn ca-bar__btn--icon" title={t('common.delete')} onClick={remove}><span className="ca-icon">{Icons.trash}</span></button>
         <button type="button" className="ca-bar__btn ca-bar__btn--icon" title={t('common.close')} onClick={close}><span className="ca-icon">{Icons.close}</span></button>
-      </div>
+      </div>}
       <div className="ca-kit__scroll">
         <div className="ca-kit__page">
-          <input className="ca-kit__title" value={item.name} placeholder={t('kitEditor.untitled', KIND_LABELS[item.kind])} onChange={(e) => set({ name: e.target.value })} onKeyDown={(e) => { if (isEnter(e)) e.currentTarget.blur() }} />
+          {embedded ? (
+            <div className="ca-kit__titlerow">
+              <input className="ca-kit__title" data-testid="assets-detail-name" value={item.name} placeholder={t('kitEditor.untitled', '')} onChange={(e) => set({ name: e.target.value })} onBlur={flush} onKeyDown={(e) => { if (isEnter(e)) e.currentTarget.blur() }} />
+              <Popover open={more} onOpenChange={setMore} align="end" trigger={({ open, toggle }) => <button type="button" className="ca-lib__more" data-open={open || undefined} data-testid="assets-detail-more" title={t('home.more')} aria-label={t('home.more')} onClick={toggle}><span className="ca-icon">{Icons.more}</span></button>}>
+                <div className="ca-menu ca-lib__menu">
+                  <button type="button" className="ca-menu__item ca-menu__item--danger" onClick={() => { setMore(false); remove() }}>{t('common.delete')}</button>
+                </div>
+              </Popover>
+            </div>
+          ) : <input className="ca-kit__title" value={item.name} placeholder={t('kitEditor.untitled', KIND_LABELS[item.kind])} onChange={(e) => set({ name: e.target.value })} onKeyDown={(e) => { if (isEnter(e)) e.currentTarget.blur() }} />}
           <div
             className="ca-kit__drop"
             data-on={drag || undefined}
@@ -168,7 +179,10 @@ export function KitEditor({ onError }: { onError: (msg: string) => void }) {
             onDrop={(e) => { e.preventDefault(); setDrag(false); dropFiles(Array.from(e.dataTransfer.files)) }}
           >
             <span className="ca-icon">{Icons.upload}</span>
-            <div><div>{t('kitEditor.dropHint')}</div><div className="ca-kit__muted">{t('kitEditor.dropFormats')}</div></div>
+            {embedded ? (
+              /* #539 PR-B: copy + 「导入 URL」 entry only; 20MB validation + URL import are PR-C */
+              <div><div>{t('assets.dropHint')}<button type="button" className="ca-kit__url" data-testid="assets-import-url" aria-disabled="true" onClick={(e) => e.stopPropagation()}>{t('assets.importUrl')}</button></div><div className="ca-kit__muted">{t('assets.dropFormats')}</div></div>
+            ) : <div><div>{t('kitEditor.dropHint')}</div><div className="ca-kit__muted">{t('kitEditor.dropFormats')}</div></div>}
           </div>
           <input ref={files} type="file" accept="image/*,.pdf" multiple hidden onChange={(e) => picked(e.target, dropFiles)} />
           {brand && (
@@ -269,7 +283,12 @@ export function KitEditor({ onError }: { onError: (msg: string) => void }) {
           </Section>
         </div>
       </div>
-      {brand && (
+      {embedded ? (
+        /* #539 PR-B: full-width bar; create-project handoff is PR-C, so the button is rendered but not wired. */
+        <div className="ca-kit__foot" data-testid="assets-detail-foot">
+          <button type="button" className="ca-panel__primary ca-kit__cta" data-testid="assets-create-project" aria-disabled="true">{t('kitEditor.createProject')} →</button>
+        </div>
+      ) : brand && (
         <div className="ca-kit__foot">
           <button type="button" className="ca-panel__primary ca-kit__cta" onClick={() => { flush(); newProject({ kit: item.id }) }}>{t('kitEditor.createProject')} →</button>
         </div>

@@ -17,7 +17,7 @@ type Tab = 'files' | LibraryKind
 export const libraryTabAtom = atom<Tab>('library tab', 'files')
 const TABS: [Tab, string][] = [['files', t('libraryPanel.files')], ['brand', t('library.brandKit')], ['character', t('library.character')], ['product', t('library.product')], ['custom', t('common.custom')]]
 
-function LibCard({ item, save }: { item: LibraryItem; save: (list: LibraryItem[]) => void }) {
+function LibCard({ item, save, on }: { item: LibraryItem; save: (list: LibraryItem[]) => void; on?: boolean }) {
   const [menu, setMenu] = useState(false)
   const kits = useValue(kitsAtom)
   const brand = item.kind === 'brand'
@@ -26,7 +26,7 @@ function LibCard({ item, save }: { item: LibraryItem; save: (list: LibraryItem[]
   const act = (fn: () => void) => () => { setMenu(false); fn() }
   const all = () => libraryAtom.get()
   return (
-    <div className="ca-lib__card" onClick={() => kitEditAtom.set(item.id)}>
+    <div className="ca-lib__card" data-on={on || undefined} onClick={() => kitEditAtom.set(item.id)}>
       <div className="ca-lib__row">
         <span className="ca-lib__name">{name}</span>
         {item.isDefault && <span className="ca-model__tag">{t('common.default')}</span>}
@@ -52,6 +52,16 @@ function LibCard({ item, save }: { item: LibraryItem; save: (list: LibraryItem[]
 }
 
 /** #539: `kitsOnly` = home Assets page — only the 4 kit tabs (no canvas 「文件」 tab, no editor needed). */
+/** #539: shared 新建 action (canvas list, Assets list, Assets empty state). Real data only — never auto-called. */
+export function createLibraryItem(kind: LibraryKind, onError: (msg: string) => void) {
+  const id = uuid().slice(0, 8)
+  void saveLibrary([...libraryAtom.get(), { id, kind, name: '', description: '', images: [], colors: [], fonts: [] }]).catch((e) => onError(String(e)))
+  kitEditAtom.set(id)
+}
+
+/** #539: active kit tab as the Assets page sees it (canvas default 'files' → brand). */
+export function kitTab(tab: Tab): LibraryKind { return tab === 'files' ? 'brand' : tab }
+
 export function LibraryPanel({ editor, onError, kitsOnly }: { editor?: Editor; onError: (msg: string) => void; kitsOnly?: boolean }) {
   const current = useValue(libraryTabAtom)
   const tab: Tab = kitsOnly && current === 'files' ? 'brand' : current
@@ -60,11 +70,8 @@ export function LibraryPanel({ editor, onError, kitsOnly }: { editor?: Editor; o
   const library = useValue(libraryAtom)
   const items = library.filter((i) => i.kind === tab)
   const save = (list: LibraryItem[]) => saveLibrary(list).catch((e) => onError(String(e)))
-  const create = (kind: LibraryKind) => {
-    const id = uuid().slice(0, 8)
-    void save([...library, { id, kind, name: '', description: '', images: [], colors: [], fonts: [] }])
-    kitEditAtom.set(id)
-  }
+  const create = (kind: LibraryKind) => createLibraryItem(kind, onError)
+  const selected = useValue(kitEditAtom)
 
   return (
     <div className="ca-lib" data-testid={kitsOnly ? 'assets-library' : undefined}>
@@ -74,11 +81,11 @@ export function LibraryPanel({ editor, onError, kitsOnly }: { editor?: Editor; o
       {tab === 'files' && editor && <AssetGrid onPick={(item) => void placeAsset(editor, item)} />}
       {tab !== 'files' && (
         <>
-          <button type="button" className="ca-lib__new" onClick={() => create(tab)}>
-            <span className="ca-icon">{Icons.plus}</span>{t('libraryPanel.newItem', KIND_LABELS[tab])}
+          <button type="button" className="ca-lib__new" data-testid={kitsOnly ? 'assets-new' : undefined} onClick={() => create(tab)}>
+            {kitsOnly ? <span className="ca-lib__plus" aria-hidden>+</span> : <span className="ca-icon">{Icons.plus}</span>}{kitsOnly ? t('assets.newItem') : t('libraryPanel.newItem', KIND_LABELS[tab])}
           </button>
-          {items.length === 0 && <div className="ca-side__empty">{t('libraryPanel.emptyHint', KIND_LABELS[tab])}</div>}
-          {items.map((item) => <LibCard key={item.id} item={item} save={save} />)}
+          {items.length === 0 && !kitsOnly && <div className="ca-side__empty">{t('libraryPanel.emptyHint', KIND_LABELS[tab])}</div>}
+          {items.map((item) => <LibCard key={item.id} item={item} save={save} on={kitsOnly && selected === item.id} />)}
         </>
       )}
     </div>

@@ -1598,6 +1598,9 @@
   "home.tools": "Tools",
   "home.moreTools": "More tools",
   "home.toolPreciseEdit": "Precise edit",
-  "assets.emptyTitle": "No item selected",
-  "assets.emptyHint": "Pick an item on the left, or create a new one"
+  "assets.emptyHint": "No {0} yet. Create one to get started.",
+  "assets.dropHint": "Drag or upload files, or ",
+  "assets.importUrl": "import a URL",
+  "assets.dropFormats": "PNG, JPG, PDF · up to 20MB",
+  "assets.newItem": "New"
 }

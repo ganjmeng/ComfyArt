@@ -85,8 +85,51 @@ def test_assets_page_shell_539() -> None:
     # no demo data
     for demo in ("demo", "sample", "示例"):
         assert demo not in assets.lower()
-    for k in ("assets.emptyTitle", "assets.emptyHint"):
+    # #539 PR-B: assertion updated (not removed) — assets.emptyTitle dropped because the spec'd
+    # empty state is one neutral hint line + 新建 (no title/icon); the remaining keys are checked.
+    for k in ("assets.emptyHint", "assets.dropHint", "assets.importUrl", "assets.dropFormats"):
         assert ZH[k] and EN[k] and ZH[k] != EN[k]
+    assert "assets.emptyTitle" not in assets
+
+
+def test_assets_detail_539b() -> None:
+    """#539 PR-B: right pane = existing KitEditor (embedded); default-select; empty state; scoped list styles."""
+    assets = (ROOT / "src/home/Assets.tsx").read_text()
+    kit = (ROOT / "src/ui/KitEditor.tsx").read_text()
+    panel = (ROOT / "src/ui/LibraryPanel.tsx").read_text()
+    css = (ROOT / "src/styles/home.css").read_text()
+    # reuse, no duplicate editor/list
+    assert "<KitEditor embedded" in assets
+    for f in ("AssetDetail.tsx", "AssetsDetail.tsx", "KitDetail.tsx"):
+        assert not (ROOT / "src/home" / f).exists() and not (ROOT / "src/ui" / f).exists()
+    # default-select first kit of active tab; never auto-create
+    assert "kitEditAtom.set(items[0]?.id ?? null)" in assets
+    assert "createLibraryItem(kind, fail)" in assets and "useEffect(() => { createLibraryItem" not in assets
+    # one shared create action for list 新建 + empty 新建
+    assert "const create = (kind: LibraryKind) => createLibraryItem(kind, onError)" in panel
+    # embedded: no URL/20MB logic, CTA not wired; canvas path keeps newProject + Escape close
+    emb = kit.split("{embedded ? (\n        /* #539 PR-B: full-width bar")[1].split(") : brand && (")[0]
+    assert "onClick" not in emb and "newProject" not in emb
+    assert "newProject({ kit: item.id })" in kit
+    assert "if (!embedded && e.key === 'Escape') close()" in kit
+    assert "20 * 1024" not in kit and "fetch(" not in kit
+    # list column measurements, scoped to the page (canvas .ca-lib untouched)
+    rules = css.split("/* #539 我的素材 page")[1]
+    assert "width: 380px" in rules and "border-right: 1px solid var(--ca-border)" in rules
+    assert "font: 600 18px/26px" in rules
+    assert ".ca-assets-page .ca-lib__new { border-style: dashed" in rules
+    assert ".ca-kit[data-embedded] .ca-kit__page { max-width: 800px" in rules
+    for line in rules.splitlines():
+        if line.startswith(".ca-lib") or line.startswith(".ca-kit "):
+            raise AssertionError(f"unscoped rule: {line}")
+    for f in (assets, rules):
+        assert "lovart" not in f.lower()
+    # product ruling: Assets create buttons = shared assets.newItem 新建/New; canvas keeps libraryPanel.newItem
+    assert "{t('assets.newItem')}" in assets
+    assert "kitsOnly ? t('assets.newItem') : t('libraryPanel.newItem', KIND_LABELS[tab])" in panel
+    assert ZH["assets.newItem"] == "新建" and EN["assets.newItem"] == "New"
+    # persistent selected card = one scoped rule on two theme tokens
+    assert ".ca-assets-page .ca-lib__card[data-on] { background: var(--ca-assets-card-on-bg); border-color: var(--ca-assets-card-on-border); }" in rules
 
 
 def test_hidden_items_absent() -> None:
