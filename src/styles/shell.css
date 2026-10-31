@@ -31,7 +31,8 @@
 .ca-brand-mark .lm-smile { fill: none; stroke-dasharray: none; stroke-dashoffset: 0; opacity: 1; }
 
 /* #486: reference design top-bar title ~182×20, single-line ellipsis; no hover tooltip */
-.ca-head__name { flex: none; width: 182px; max-width: 182px; min-width: 0; height: 20px; padding: 0 6px; border: none; border-radius: 6px; background: transparent; font: 500 13px/20px var(--ca-font); color: var(--ca-text); outline: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* fix: chat panel is 400px; with 5 actions + Saved a rigid 182px title pushed the last icon over the divider — let it shrink (ellipsis) */
+.ca-head__name { flex: 0 1 auto; width: 182px; max-width: 182px; min-width: 0; height: 20px; padding: 0 6px; border: none; border-radius: 6px; background: transparent; font: 500 13px/20px var(--ca-font); color: var(--ca-text); outline: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ca-save { flex: none; padding: 0 4px; border: none; background: none; font: 400 12px/20px var(--ca-font); color: var(--ca-muted); white-space: nowrap; }
 .ca-save[data-state="error"] { color: #e74c3c; cursor: pointer; text-decoration: underline; }
 .ca-head__name:hover, .ca-head__name:focus { background: var(--ca-field); }
