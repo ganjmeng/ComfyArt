@@ -86,7 +86,7 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
             " const ok = getComputedStyle(e).color === getComputedStyle(p).color; p.remove(); return ok }")
         poster = pg.locator('[data-skill="poster"]')
         src = await poster.get_by_test_id("skills-card-cover").get_attribute("src")
-        assert src.endswith("/skills/poster/cover.webp")
+        assert "494/wash/covers/poster.webp" in (src or "")
         assert await pg.evaluate("s => fetch(s).then(r => r.status)", src) == 200
         assert await poster.get_by_test_id("skills-card-cover").get_attribute("alt") == await poster.locator("h3").inner_text()
         assert await poster.get_by_test_id("skills-card-author").inner_text() == BRAND_NAME

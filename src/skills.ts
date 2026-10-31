@@ -30,11 +30,14 @@ const ROOT = 'comfyart/skills'
 const TEXT_FILE = /\.(md|txt|json|csv|ya?ml|html?|css|js|ts|svg)$/i
 const IMAGE_FILE = /\.(png|jpe?g|webp|gif)$/i
 
-/** #494 — one list cover per skill: the `cover: true` image from review-assets 3c3edaa 494/covers, converted to a
- *  462x346 webp by scripts/skill_covers_494.py (pinned Pillow; source sha256 in public/skills/covers.json). */
+/** #494 — list covers + wash presets on orphan review-assets (commit-pinned; washed outputs only).
+ *  Legacy local `/comfyart/skills/<id>/cover.webp` kept as SKILL_ASSET_BASE for any non-data callers. */
 export const SKILL_ASSET_BASE = '/comfyart/skills'
-const cover = (id: string) => `${SKILL_ASSET_BASE}/${id}/cover.webp`
-/** #494 wash presets on orphan review-assets (commit-pinned; washed outputs only). */
+/** #494 wash covers (10×462x346 webp). */
+const WASH_COVER_COMMIT = '48362260e70c8d60a1a755a1b31d0f4ae5c0ab67'
+const cover = (id: string) =>
+  `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${WASH_COVER_COMMIT}/494/wash/covers/${id}.webp`
+/** #494 wash presets. */
 const WASH_PRESET_COMMIT = '7607a8e95ba69357d86fdcb583dc7af122f4ff65'
 const washPreset = (skillId: string, presetId: string) =>
   `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${WASH_PRESET_COMMIT}/494/wash/presets/${skillId}__${presetId}.webp`

@@ -37,7 +37,11 @@ def test_own_image_used(got):
 def test_builtin_covers(got):
     covers = got["builtinCovers"]
     assert covers.pop("custom-workflow") is None
-    assert covers == {k: f"/comfyart/skills/{k}/cover.webp" for k in covers} and len(covers) == 10
+    tip = "48362260e70c8d60a1a755a1b31d0f4ae5c0ab67"
+    assert covers == {
+        k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/covers/{k}.webp"
+        for k in covers
+    } and len(covers) == 10
 
 
 def test_chips_from_data(got):
