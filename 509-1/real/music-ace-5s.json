@@ -1,0 +1,5 @@
+{
+  "model": "wavespeed-ai/ace-step-1.5",
+  "fields": { "@prompt": "tags", "@lyrics": "lyrics" },
+  "params": { "duration": 5 }
+}
