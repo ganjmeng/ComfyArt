@@ -1,0 +1,69 @@
+{
+ "commit": "1014ef25ad2a8b49cae0c438c673a0b7f9e7797f",
+ "skill": "packaging",
+ "lovart_counterpart": "Lovart · 品牌包装设计系统 (5)",
+ "cells": 6,
+ "presets": [
+  {
+   "id": "eco",
+   "zh": "自然环保",
+   "en": "Natural eco",
+   "status": "existing (id/prompt unchanged, image replaced)",
+   "lovart_cell": "Master Packaging Design",
+   "fictional_brand": "MOSSFIELD",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__eco.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__eco@thumb.webp"
+  },
+  {
+   "id": "gold",
+   "zh": "奢华烫金",
+   "en": "Luxury gold foil",
+   "status": "existing (id/prompt unchanged, image replaced)",
+   "lovart_cell": "Packaging Visual Direction",
+   "fictional_brand": "AURELLE",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__gold.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__gold@thumb.webp"
+  },
+  {
+   "id": "playful",
+   "zh": "潮玩插画",
+   "en": "Playful illustration",
+   "status": "existing (id/prompt unchanged, image replaced)",
+   "lovart_cell": "Multi-SKU Packaging Series",
+   "fictional_brand": "BOPSY",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__playful.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__playful@thumb.webp"
+  },
+  {
+   "id": "panels",
+   "zh": "展开结构图",
+   "en": "Panels & structure",
+   "status": "new (proposed id/name)",
+   "lovart_cell": "Packaging Panels & Structural Diagram",
+   "fictional_brand": "TIDAL TEA",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__panels.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__panels@thumb.webp"
+  },
+  {
+   "id": "shelf",
+   "zh": "货架陈列",
+   "en": "Shelf display",
+   "status": "new (proposed id/name)",
+   "lovart_cell": "Packaging Shelf Display",
+   "fictional_brand": "KUMO COFFEE",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__shelf.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__shelf@thumb.webp"
+  },
+  {
+   "id": "mockup",
+   "zh": "包装场景样机",
+   "en": "Packaging mockup scene",
+   "status": "new (proposed id/name)",
+   "lovart_cell": "(design-added)",
+   "fictional_brand": "NOLLA",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__mockup.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__mockup@thumb.webp"
+  }
+ ],
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/sbs_packaging.png"
+}
