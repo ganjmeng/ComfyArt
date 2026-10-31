@@ -1,0 +1,5 @@
+{
+  "model": "wavespeed-ai/minimax-h3/video-extend",
+  "fields": {"@seconds": "duration"},
+  "params": {}
+}
