@@ -373,6 +373,10 @@
      "local": "ACE-Step"
     },
     {
+     "id": "wavespeed-ai/yue2-3b/text-to-music",
+     "local": "YuE2"
+    },
+    {
      "id": "minimax/music-2.6"
     },
     {

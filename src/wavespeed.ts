@@ -55,7 +55,9 @@ export interface WsInputs {
   dy?: number
 }
 
-export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null; vendor?: string; recommended?: boolean; qualities?: string[]; aspect_ratios?: string[]; durations?: number[]; resolutions?: string[]; defaults?: Record<string, string | number>; name?: string; blurb?: { zh: string; en: string } }
+export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null; vendor?: string; recommended?: boolean; qualities?: string[]; aspect_ratios?: string[]; durations?: number[]; duration_range?: DurationRange; resolutions?: string[]; defaults?: Record<string, string | number>; name?: string; blurb?: { zh: string; en: string } }
+/** #509: a free numeric duration field's range in seconds, from the model's WaveSpeed schema. */
+export interface DurationRange { min: number; max: number; step: number; default?: number }
 export interface CloudFeature { default: string; available: boolean; models: CloudModel[]; picker_order?: string[] }
 
 let pending: string | undefined
@@ -75,6 +77,9 @@ export function featurePrice(name: string): number | null {
   const price = model?.price
   return typeof price === 'number' && Number.isFinite(price) ? price : null
 }
+
+/** A catalog model by id, in any feature (undefined before `loadCloudModels` or for unknown ids). */
+export const cloudModel = (id: string): CloudModel | undefined => Object.values(features).flatMap((f) => f.models).find((m) => m.id === id)
 
 /** model if it belongs to the feature's curated list, else undefined (backend default). */
 export const modelIn = (feature: string, model: string | undefined) => (model && features[feature]?.models.some((m) => m.id === model) ? model : undefined)

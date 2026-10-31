@@ -304,10 +304,10 @@ SPECS: dict[str, dict] = {
         "Generate a piece of music as an audio element on the canvas. model: a music model id from list_models "
         "(default the first). prompt: English description of genre, mood, instruments, tempo and vocal type. "
         "lyrics optional (use [intro]/[verse]/[chorus]/[outro] lines; omit for an instrumental). duration in "
-        "seconds (default 30). bpm, language (e.g. en, ko, zh, ja) and key (e.g. F minor) are used by ACE-Step; "
-        "MiniMax Music 3 reads them from the prompt. Returns ids for wait_generation.",
+        "seconds (default 30), clamped to the model's duration range; YuE2 and MiniMax Music 3 have no duration and ignore it (length follows the lyrics). bpm, language (e.g. en, ko, zh, ja) and key (e.g. F minor) are used by ACE-Step; "
+        "MiniMax Music 3 and YuE2 read them from the prompt. Returns ids for wait_generation.",
         {"prompt": {"type": "string"}, "lyrics": {"type": "string"}, "duration": {"type": "integer"}, "model": {"type": "string"},
-         "bpm": {"type": "integer"}, "language": {"type": "string"}, "key": {"type": "string"}},
+         "bpm": {"type": "integer"}, "language": {"type": "string"}, "key": {"type": "string"}, "seed": {"type": "integer"}},
         ["prompt"], approval="生成配乐"),
     "generate_sound_effect": _tool(
         "Generate a short sound effect (an audio element) from an English description. duration in "
@@ -411,7 +411,7 @@ SPECS: dict[str, dict] = {
         ["action"]),
     "custom_workflow": _tool(
         "Connect the user's own WaveSpeed model to a ComfyArt feature (image generation, edit, inpaint, "
-        "upscale, video...). action rules: how to describe the model, read it first. list: each feature's "
+        "upscale, video, music...). action rules: how to describe the model, read it first. list: each feature's "
         "markers, its saved files and the one in use. check: validate workflow ({model, fields, params} "
         "object) or file for a feature and report what to fix. install: save workflow as name for "
         "feature and use it (refused while check has errors). assign: give feature one of its files, or "

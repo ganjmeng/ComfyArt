@@ -398,6 +398,8 @@
 .ca-audio__body { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
 .ca-audio__name { overflow: hidden; font-size: 26px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .ca-audio__seek { width: 100%; accent-color: var(--ca-strong); pointer-events: all; }
+.ca-audio__length { display: flex; flex-direction: column; justify-content: center; min-height: 32px; }
+.ca-audio__length > .ca-panel__row { min-height: 32px; }
 .ca-audio__time { color: var(--ca-muted); font-size: 18px; font-variant-numeric: tabular-nums; }
 .ca-pathedit { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 250; overflow: visible; pointer-events: none; }
 .ca-pathedit line { stroke: #3b82f6; stroke-width: 1; }

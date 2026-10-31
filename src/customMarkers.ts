@@ -2,10 +2,10 @@ import { BRAND } from './brand'
 import { api } from './comfy'
 import { lang, t } from './i18n'
 
-export type CustomAction = 'generate' | 'edit' | 'style' | 'inpaint' | 'expand' | 'upscale' | 'cutout' | 'erase' | 'angles' | 'layers' | 'video' | 'animate'
-export type Marker = 'image' | 'image2' | 'mask' | 'last' | 'prompt' | 'size' | 'width' | 'height' | 'count' | 'seconds'
+export type CustomAction = 'generate' | 'edit' | 'style' | 'inpaint' | 'expand' | 'upscale' | 'cutout' | 'erase' | 'angles' | 'layers' | 'video' | 'animate' | 'music'
+export type Marker = 'image' | 'image2' | 'mask' | 'last' | 'prompt' | 'lyrics' | 'size' | 'width' | 'height' | 'count' | 'seconds'
 
-export type CustomGroup = 'image' | 'edit' | 'tools' | 'video'
+export type CustomGroup = 'image' | 'edit' | 'tools' | 'video' | 'audio'
 
 interface ActionSpec { id: CustomAction; group: CustomGroup; required: Marker[]; optional: Marker[]; feature: string; note: string }
 
@@ -24,6 +24,7 @@ export const CUSTOM_ACTIONS: ActionSpec[] = [
   { id: 'layers', group: 'tools', required: ['image'], optional: ['prompt', 'count'], feature: 'split_layers', note: '@count receives the number of layers. The result is several RGBA images.' },
   { id: 'video', group: 'video', required: ['prompt'], optional: ['image', 'last', 'size', 'seconds'], feature: 'image_to_video', note: 'Replaces the built-in model in the video generator\'s first/last frame mode (reference, motion, lip sync and storyboard modes stay built in).' },
   { id: 'animate', group: 'video', required: ['image', 'prompt'], optional: ['size', 'seconds', 'last'], feature: 'image_to_video', note: 'Animate an image into a short clip. With loop on, @last receives the source image again so the clip ends where it starts.' },
+  { id: 'music', group: 'audio', required: ['prompt'], optional: ['lyrics', 'seconds'], feature: 'music', note: 'Text to music. Shows up as an extra model in the audio dialog. @prompt receives the style, @lyrics the lyrics (empty lyrics are sent as [instrumental]), @seconds the length, clamped to the model\'s duration range; a model with no duration field gets none.' },
 ]
 
 export const MARKERS: { id: Marker; fill: string }[] = [
@@ -32,12 +33,15 @@ export const MARKERS: { id: Marker; fill: string }[] = [
   { id: 'mask', fill: 'mask image URL, white = area to change' },
   { id: 'last', fill: 'the last frame of a video (URL)' },
   { id: 'prompt', fill: 'the text prompt or instruction' },
+  { id: 'lyrics', fill: 'song lyrics; [instrumental] when empty' },
   { id: 'size', fill: 'output size as "width*height"' },
   { id: 'width', fill: 'output width in pixels' },
   { id: 'height', fill: 'output height in pixels' },
   { id: 'count', fill: 'how many results / layers' },
-  { id: 'seconds', fill: 'video length in seconds' },
+  { id: 'seconds', fill: 'video or music length in seconds' },
 ]
+
+export const NO_LYRICS = '[instrumental]'
 
 /** A custom workflow file: comfyart/workflows/<feature>/<name>.json */
 export interface CustomSpec { model: string; fields?: Partial<Record<string, string>>; params?: Record<string, unknown> }

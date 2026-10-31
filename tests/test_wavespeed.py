@@ -46,6 +46,8 @@ MODELS = [
     _meta("wavespeed-ai/ace-step-1.5", {"tags": {"type": "string"}, "lyrics": {"type": "string"}, "duration": {"type": "number", "minimum": 5, "maximum": 240}, "seed": {"type": "integer"}}, ("tags", "lyrics"), price=0.0003),
     _meta("minimax/music-3.0", {"prompt": {"type": "string"}, "lyrics": {"type": "string"}, "is_instrumental": {"type": "boolean"}}, ("prompt",), price=0.15),
     _meta("elevenlabs/music-v2", {"prompt": {"type": "string"}, "music_length_ms": {"type": "integer"}}, ("prompt", "music_length_ms"), price=0.75),
+    # #509: WaveSpeed's documented yue2-3b schema: style + lyrics required, seed, output_format, no duration
+    _meta("wavespeed-ai/yue2-3b/text-to-music", {"style": {"type": "string"}, "lyrics": {"type": "string"}, "seed": {"type": "integer", "default": -1}, "output_format": {"type": "string", "enum": ["mp3", "wav"]}}, ("style", "lyrics"), price=0.10),
     _meta("mirelo-ai/sfx-2.0/text-to-audio", {"prompt": {"type": "string"}, "duration": {"type": "number"}}, price=0.016),
     _meta("wavespeed-ai/qwen3-tts/text-to-speech", {"text": {"type": "string"}, "language": {"type": "string", "enum": ["auto", "Chinese", "English"]}, "voice": {"type": "string", "enum": ["Vivian", "Serena", "Uncle_Fu"]}}, ("text", "language", "voice"), price=0.005),
     _meta("wavespeed-ai/qwen3-tts/voice-clone", {"audio": {"type": "string"}, "text": {"type": "string"}, "language": {"type": "string", "enum": ["auto"]}}, ("audio", "text"), price=0.005),
@@ -1089,3 +1091,65 @@ def test_insufficient_permissions_is_not_balance():
     assert wavespeed.error_kind(400, None, "insufficient balance") == "insufficientCredit"
     assert wavespeed.error_kind(402, None, "whatever") == "insufficientCredit"
     assert wavespeed.error_kind(400, 1407, "whatever") == "insufficientCredit"
+
+
+# #509 YuE2 + schema-driven music length.
+YUE2 = "wavespeed-ai/yue2-3b/text-to-music"
+
+
+async def test_music_yue2_maps_style_lyrics_seed_and_drops_duration(ws):
+    await wavespeed.submit({"feature": "music", "model": YUE2, "prompt": "mandarin pop, female vocal", "lyrics": "[verse] 你好\n[chorus] 再见", "seed": 7, "duration": 600})
+    await wavespeed.submit({"feature": "generate_music", "model": YUE2, "prompt": "lofi", "lyrics": "", "duration": 30})
+    (m1, p1), (m2, p2) = ws["submits"]
+    assert m1 == YUE2 and p1 == {"style": "mandarin pop, female vocal", "lyrics": "[verse] 你好\n[chorus] 再见", "seed": 7}
+    # empty lyrics -> [instrumental]; the duration is ignored, not an error
+    assert m2 == YUE2 and p2 == {"style": "lofi", "lyrics": "[instrumental]"}
+
+
+def test_music_duration_range_comes_from_the_schema():
+    props = lambda m: wavespeed._schema(next(x for x in MODELS if x["model_id"] == m))["properties"]
+    assert wavespeed.duration_range(props("wavespeed-ai/ace-step-1.5")) == {"min": 5, "max": 240, "step": 1}
+    assert wavespeed._caps(wavespeed._schema(next(x for x in MODELS if x["model_id"] == "wavespeed-ai/ace-step-1.5")))["duration_range"]["max"] == 240
+    # no duration field (YuE2, MiniMax music-3.0) -> no slider
+    assert wavespeed.duration_range(props(YUE2)) is None
+    assert wavespeed.duration_range(props("minimax/music-3.0")) is None
+    assert "duration_range" not in wavespeed._caps(wavespeed._schema(next(x for x in MODELS if x["model_id"] == YUE2)))
+    # an enum duration is a picker, not a range; a free field without bounds has no range either
+    assert wavespeed.duration_range({"duration": {"type": "integer", "enum": [3, 4, 5]}}) is None
+    assert wavespeed.duration_range({"duration": {"type": "number"}}) is None
+    # schema step and default are kept; music_length_ms is converted to seconds
+    assert wavespeed.duration_range({"duration": {"type": "integer", "minimum": 10, "maximum": 600, "step": 10, "default": 60}}) == {"min": 10, "max": 600, "step": 10, "default": 60}
+    assert wavespeed.duration_range({"music_length_ms": {"type": "integer", "minimum": 3000, "maximum": 300000}}) == {"min": 3, "max": 300, "step": 1}
+
+
+async def test_custom_music_workflow_checks_and_maps_lyrics(ws):
+    meta = await wavespeed.catalog()
+    # YuE2 needs no mapping: @prompt goes to style, @lyrics to lyrics
+    ok = wavespeed.check_custom({"model": YUE2}, ["prompt"], ["lyrics", "seconds"], meta)
+    assert ok["ok"], ok
+    await wavespeed.submit({"feature": "music", "custom": True, "model": YUE2, "fields": {"@lyrics": "lyrics"}, "prompt": "folk", "lyrics": "[verse] la", "duration": 40})
+    (m, p), = ws["submits"]
+    assert m == YUE2 and p == {"style": "folk", "lyrics": "[verse] la"}
+
+
+# #509 PR1 QA: payloads actually posted to WaveSpeed.
+async def test_qa_music_ace_241_and_3_clamped_minimax_yue2_no_duration(ws):
+    ace = "wavespeed-ai/ace-step-1.5"
+    await wavespeed.submit({"feature": "music", "model": ace, "prompt": "lofi", "lyrics": "[verse] hi", "duration": 241})
+    await wavespeed.submit({"feature": "music", "model": ace, "prompt": "lofi", "lyrics": "[verse] hi", "duration": 3})
+    await wavespeed.submit({"feature": "music", "model": "minimax/music-3.0", "prompt": "pop", "lyrics": "[verse] hi", "duration": 180})
+    await wavespeed.submit({"feature": "music", "model": YUE2, "prompt": "folk", "lyrics": "", "duration": 180})
+    (_, a), (_, b), (m3, c), (m4, d) = ws["submits"]
+    assert a == {"tags": "lofi", "lyrics": "[verse] hi", "duration": 240} and b == {"tags": "lofi", "lyrics": "[verse] hi", "duration": 5}
+    assert m3 == "minimax/music-3.0" and c == {"prompt": "pop", "lyrics": "[verse] hi"}
+    assert m4 == YUE2 and d == {"style": "folk", "lyrics": "[instrumental]"}  # style always sent; empty lyrics -> [instrumental]
+    for p in (c, d):
+        assert "duration" not in p and "music_length_ms" not in p
+
+
+async def test_qa_music_without_custom_uses_default_path(ws):
+    await wavespeed.submit({"feature": "music", "model": YUE2, "fields": {"@lyrics": "lyrics"}, "prompt": "folk", "lyrics": "[verse] la"})
+    await wavespeed.submit({"feature": "music", "prompt": "folk"})
+    (m1, p1), (m2, p2) = ws["submits"]
+    assert m1 == YUE2 and p1 == {"style": "folk", "lyrics": "[verse] la"}  # no custom flag: fields ignored, normal mapping
+    assert m2 == "minimax/music-3.0" and p2 == {"prompt": "folk"}
