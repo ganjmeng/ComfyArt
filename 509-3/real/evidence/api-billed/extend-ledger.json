@@ -1,0 +1,24 @@
+{
+  "feature": "extend",
+  "model": "wavespeed-ai/minimax-h3/video-extend",
+  "prediction_id": "00dd5868d8f24a798fdd866473ffe86b",
+  "status": "completed",
+  "quote": 0.06,
+  "inputs": {
+    "video": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/08408ad3-bb1c-4c87-a558-d2dd98658f92.mp4",
+    "prompt": "continue the scene gently",
+    "duration": 3,
+    "resolution": "480p"
+  },
+  "balance_before": 6.239044,
+  "balance_after": 6.179044,
+  "actual_billed": 0.06,
+  "outputs": [
+    "https://d2h7xmz5gqybh9.cloudfront.net/output/b1cfb1c2-e105-456f-8cd8-b26b6dbd946f.mp4"
+  ],
+  "error": "",
+  "budget": 0.07,
+  "within_budget": true,
+  "prior_upscale_cutout": 0.0372,
+  "session_total_with_prior": 0.0972
+}

@@ -1,0 +1,25 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "00dd5868d8f24a798fdd866473ffe86b",
+    "model": "wavespeed-ai/minimax-h3/video-extend",
+    "input": {
+      "duration": 3,
+      "prompt": "continue the scene gently",
+      "resolution": "480p",
+      "video": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/08408ad3-bb1c-4c87-a558-d2dd98658f92.mp4"
+    },
+    "outputs": [],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/00dd5868d8f24a798fdd866473ffe86b/result"
+    },
+    "status": "created",
+    "created_at": "2026-10-31T08:22:04.31Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 0
+    }
+  }
+}

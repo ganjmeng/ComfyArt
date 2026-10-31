@@ -56,18 +56,31 @@
         "https://d2h7xmz5gqybh9.cloudfront.net/output/5ae3d356-9a54-46ba-8134-887137bbde12-u2_e1fc8028-c0dd-4ecf-a9a1-e5694f19d1e1.mp4"
       ],
       "error": ""
-    }
-  ],
-  "skipped": [
+    },
     {
       "feature": "extend",
       "model": "wavespeed-ai/minimax-h3/video-extend",
+      "prediction_id": "00dd5868d8f24a798fdd866473ffe86b",
+      "status": "completed",
       "quote": 0.06,
-      "reason": "minimax-h3 video-extend quotes $0.0600 alone (=full $0.06 budget); cheapest other paths upscale=$0.0072 cutout=$0.0300; all three sum $0.0972 > $0.06. Skipped to keep billed≤budget."
+      "balance_before": 6.239044,
+      "balance_after": 6.179044,
+      "actual_billed": 0.06,
+      "outputs": [
+        "https://d2h7xmz5gqybh9.cloudfront.net/output/b1cfb1c2-e105-456f-8cd8-b26b6dbd946f.mp4"
+      ],
+      "error": ""
     }
   ],
+  "skipped": [],
   "balance_before": 6.276244,
   "balance_after": 6.239044,
   "total_actual_billed": 0.0372,
-  "within_budget": true
+  "within_budget": true,
+  "extend_budget": 0.07,
+  "extend_actual": 0.06,
+  "prior_upscale_cutout": 0.0372,
+  "session_total": 0.0972,
+  "balance_after_extend": 6.179044,
+  "balance_before_extend": 6.239044
 }

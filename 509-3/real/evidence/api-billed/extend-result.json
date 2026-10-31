@@ -1,0 +1,21 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "00dd5868d8f24a798fdd866473ffe86b",
+    "model": "wavespeed-ai/minimax-h3/video-extend",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/b1cfb1c2-e105-456f-8cd8-b26b6dbd946f.mp4"
+    ],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/00dd5868d8f24a798fdd866473ffe86b/result"
+    },
+    "status": "completed",
+    "created_at": "2026-10-31T08:22:04.308916578Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 19558
+    }
+  }
+}
