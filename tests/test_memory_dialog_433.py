@@ -92,7 +92,7 @@ def test_hover_edit_and_delete_kept_434() -> None:
 
 def test_header_info_and_updated() -> None:
     assert 'data-testid="memory-dialog-info"' in DLG and 'data-testid="memory-dialog-updated"' in DLG
-    assert ZH["memoryDialog.updatedAt"] == "更新于{0}" and ZH["memoryDialog.justNow"] == "此刻"
+    assert ZH["memoryDialog.updatedAt"] == "更新于{0}" and ZH["memoryDialog.justNow"] == "刚刚"
 
 
 def test_existing_features_kept() -> None:
