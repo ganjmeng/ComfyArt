@@ -55,7 +55,10 @@ async def test_zoom_select_and_gating(app_url):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url, "zh")
         await _modal(pg, "product")
-        assert await pg.locator(".ca-skillrun__tile").count() == 3
+        assert await pg.locator(".ca-skillrun__tile").count() == 6  # tiles follow presets[]
+        ids = await pg.get_by_test_id("skill-run-preset").evaluate_all("bs => bs.map(b => b.dataset.preset)")
+        assert ids == ["white", "lifestyle", "detail", "electronics", "food", "beauty"]
+        assert await pg.get_by_test_id("skill-run-meta").inner_text() == "6 个模板"
         tile = pg.locator(".ca-skillrun__tile").nth(1)
         await tile.hover()
         z = tile.get_by_test_id("skill-run-zoom")

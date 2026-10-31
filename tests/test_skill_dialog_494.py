@@ -48,16 +48,18 @@ def test_every_field_is_bilingual_data(got):
 @needs_node
 def test_presets_have_prompts(got):
     for sid, ps in got["presets"].items():
-        assert len(ps) == (0 if sid == "custom-workflow" else 3), sid
+        assert len(ps) == (0 if sid == "custom-workflow" else 6 if sid == "product" else 3), sid  # #541 product +3 categories
+        assert len({i for i, _, _ in ps}) == len(ps), sid  # unique ids
         assert all(en and prompt for _, en, prompt in ps), sid
 
 
 @needs_node
 def test_builtin_preset_images_unique(got):
     imgs = got["builtinPresetImgs"]
-    assert len(imgs) == 30
-    assert all(u and "raw.githubusercontent.com/ganjmeng/ComfyArt/" in u and "494/wash/presets/" in u for u in imgs)
-    assert len(set(imgs)) == 30  # no shared cover fallback across presets
+    assert len(imgs) == 33  # 30 #494 + 3 #541 product categories
+    assert all(u and "raw.githubusercontent.com/ganjmeng/ComfyArt/" in u and ("494/wash/presets/" in u or "541/wash/product/" in u) for u in imgs)
+    assert sum("541/wash/product/" in u for u in imgs) == 3
+    assert len(set(imgs)) == 33  # no shared cover fallback across presets
 
 
 @needs_node

@@ -62,3 +62,10 @@ def test_tiles_from_presets_and_zoom_is_sibling_button():
     assert tile.count("</button>") == 1  # zoom is not nested inside the radio button
     for k in ("skillRun.zoom", "skillRun.uploadHint", "skillRun.templateCount"):
         assert k in ZH and k in EN
+
+
+@needs_node
+def test_product_has_six_presets(got):
+    assert got["presets"]["product"] == 6 and got["meta"]["product"] == {"templates": 6}
+    assert got["productIds"] == ["white", "lifestyle", "detail", "electronics", "food", "beauty"]
+    assert all("/a4b39fea0ccb9e64a7f6063466c37980afba611a/541/wash/product/product__" in u for u in got["productNew"])
