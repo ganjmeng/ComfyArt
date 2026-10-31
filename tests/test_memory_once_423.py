@@ -155,6 +155,8 @@ def test_locales_only_add_memory_retrieved_430():
         # #509: 配乐时长提示、空风格拦截、自定义配乐工作流文案（非记忆文案）
         "audio.needMusicPrompt", "audio.needLyrics", "audio.durationByLyrics",
         "customWorkflows.action.music", "customWorkflows.musicGone", "customWorkflows.group.audio",
+        "customWorkflows.action.speech", "customWorkflows.action.clone", "customWorkflows.action.sfx",
+        "customWorkflows.speechGone",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)
