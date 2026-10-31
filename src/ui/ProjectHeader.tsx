@@ -96,7 +96,7 @@ export function ProjectHeader({ editor, projectId, children }: { editor: Editor;
         onKeyDown={(e) => {
           e.stopPropagation()
           if (isEnter(e)) e.currentTarget.blur()
-          // #486 Lovart: Escape cancels the edit without saving the draft
+          // #486 reference design: Escape cancels the edit without saving the draft
           if (e.key === 'Escape') {
             editor.updateDocumentSettings({ name: titleBaseline.current })
             e.currentTarget.blur()
