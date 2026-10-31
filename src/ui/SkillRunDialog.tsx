@@ -84,23 +84,30 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
                 </div>
               </div>
             )}
+            {/* join existing ca-skillform system; field column mirrors Loomic template-dialog .fields/.field */}
+            <div className="ca-skillform" data-testid="skill-run-form">
             {(skill.inputs ?? []).map((f) => {
               const id = `skill-run-${f.key}`
               const label = <label className="ca-skillform__label" htmlFor={id}>{loc(f.label)}{f.required && <span className="ca-skillrun__req" aria-hidden="true"> *</span>}</label>
               const ph = f.placeholder ? loc(f.placeholder) : ''
               const common = { id, 'data-testid': 'skill-run-field', 'data-key': f.key, 'data-type': f.type, required: f.required, 'aria-required': f.required || undefined }
               if (f.type === 'select') return (
-                <div key={f.key}>{label}
+                <div key={f.key} className="ca-skillrun__field">
+                  {label}
                   <select {...common} className="ca-panel__input" value={values[f.key] ?? ''} onChange={(e) => set(f.key, e.target.value)} onKeyDown={stop}>
                     {f.options?.map((o) => <option key={o.value} value={o.value}>{loc(o.label)}</option>)}
                   </select>
                 </div>
               )
               if (f.type === 'textarea') return (
-                <div key={f.key}>{label}<textarea {...common} className="ca-panel__prompt ca-panel__prompt--boxed" rows={3} placeholder={ph} value={values[f.key] ?? ''} onChange={(e) => set(f.key, e.target.value)} onKeyDown={stop} /></div>
+                <div key={f.key} className="ca-skillrun__field">
+                  {label}
+                  <textarea {...common} className="ca-panel__prompt ca-panel__prompt--boxed" rows={3} placeholder={ph} value={values[f.key] ?? ''} onChange={(e) => set(f.key, e.target.value)} onKeyDown={stop} />
+                </div>
               )
               if (f.type === 'image') return (
-                <div key={f.key}>{label}
+                <div key={f.key} className="ca-skillrun__field">
+                  {label}
                   <div className="ca-gen__refs" {...common}>
                     {values[f.key]
                       ? <span className="ca-gen__ref"><img src={values[f.key]} alt="" /><button type="button" title={t('common.remove')} onClick={() => set(f.key, '')}>{Icons.close}</button></span>
@@ -114,8 +121,14 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
                   </div>
                 </div>
               )
-              return <div key={f.key}>{label}<input {...common} className="ca-panel__input" placeholder={ph} value={values[f.key] ?? ''} onChange={(e) => set(f.key, e.target.value)} onKeyDown={stop} /></div>
+              return (
+                <div key={f.key} className="ca-skillrun__field">
+                  {label}
+                  <input {...common} className="ca-panel__input" placeholder={ph} value={values[f.key] ?? ''} onChange={(e) => set(f.key, e.target.value)} onKeyDown={stop} />
+                </div>
+              )
             })}
+            </div>
           </div>
           <div className="ca-skillrun__foot">
             <button type="button" className="ca-panel__secondary" data-testid="skill-run-detail" onClick={() => { onClose(); openSkillEditor(skill.id) }}>{t('skillRun.detail')}</button>
