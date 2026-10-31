@@ -1,0 +1,137 @@
+{
+  "kind": "cover-wash",
+  "count": 10,
+  "size": [
+    462,
+    346
+  ],
+  "params": {
+    "format": "WEBP",
+    "quality": 82,
+    "method": 6,
+    "exact": false
+  },
+  "encoder": "Pillow==13.0.0",
+  "covers": [
+    {
+      "skillId": "poster",
+      "file": "494/wash/covers/poster.webp",
+      "size": [
+        462,
+        346
+      ],
+      "sha256": "14cab287db6ad7045a2be9bee83efe4ba786d4e080fbc56c4225fff1d1ad81a7",
+      "bytes": 16584,
+      "source_png": "/workspace/494-wash-out/covers/poster.png",
+      "source_sha256": "f11cbbe30767760967dc6981113bc1c2c431263dcafcee605ede568ee5a9f3f4"
+    },
+    {
+      "skillId": "social",
+      "file": "494/wash/covers/social.webp",
+      "size": [
+        462,
+        346
+      ],
+      "sha256": "9437972dacf1f6a30161b5954b43b6d78091c82449694df8a7adfca794e7cf90",
+      "bytes": 22918,
+      "source_png": "/workspace/494-wash-out/covers/social.png",
+      "source_sha256": "1e8d1702adebb52a000fb1b585481c48df7a84a1c93b1f8c82d26cef5c3a1b11"
+    },
+    {
+      "skillId": "brand",
+      "file": "494/wash/covers/brand.webp",
+      "size": [
+        462,
+        346
+      ],
+      "sha256": "12a859541662da3471841da0ea01f729ebd9df677135e64c8fee5a894b6d4ac5",
+      "bytes": 6580,
+      "source_png": "/workspace/494-wash-out/covers/brand.png",
+      "source_sha256": "08f584c07dc15147b2f3abb891a45fa171acd0b87cfd3a6de9b3b2fa8db1c67d"
+    },
+    {
+      "skillId": "packaging",
+      "file": "494/wash/covers/packaging.webp",
+      "size": [
+        462,
+        346
+      ],
+      "sha256": "89fe6842824655c0459bd9787833179f2004cdb9fbbd92878b3b937ccac2adfb",
+      "bytes": 11296,
+      "source_png": "/workspace/494-wash-out/covers/packaging.png",
+      "source_sha256": "8ce85a1e71e203e283a2b245019ed44a67fad72e165b081028f3a60b645393b2"
+    },
+    {
+      "skillId": "thumbnail",
+      "file": "494/wash/covers/thumbnail.webp",
+      "size": [
+        462,
+        346
+      ],
+      "sha256": "375a866ebfda00a5a343b343abd35a3e4bb252f5cb72d6583abe13ac9e56b9e4",
+      "bytes": 20444,
+      "source_png": "/workspace/494-wash-out/covers/thumbnail.png",
+      "source_sha256": "5a5dc1368914a4204e9b95667d99665051292f7f5012d5205ae05316b0d8c1c0"
+    },
+    {
+      "skillId": "banner",
+      "file": "494/wash/covers/banner.webp",
+      "size": [
+        462,
+        346
+      ],
+      "sha256": "72ef256224d2b17e89bc455ed5db277de38822e056dd3a834b851ac0e0c9e21a",
+      "bytes": 22196,
+      "source_png": "/workspace/494-wash-out/covers/banner.png",
+      "source_sha256": "8d5235aac4fee49706aa740ad4515ed487ea8e5f89d47f5946771ac03bf74295"
+    },
+    {
+      "skillId": "character",
+      "file": "494/wash/covers/character.webp",
+      "size": [
+        462,
+        346
+      ],
+      "sha256": "b24b332928d5f1039aba2bb54bd069ee0f46cb66cf6538fe340e72ee228f1440",
+      "bytes": 33832,
+      "source_png": "/workspace/494-wash-out/covers/character.png",
+      "source_sha256": "c144e57471b21b6beb1613121d585e9f5a6d25f6692eee25f529cd91223c7c5b"
+    },
+    {
+      "skillId": "product",
+      "file": "494/wash/covers/product.webp",
+      "size": [
+        462,
+        346
+      ],
+      "sha256": "183cce0bda6a00302e00d3e202a603c6eb2fc8334b5acb8305adfea372538f38",
+      "bytes": 2886,
+      "source_png": "/workspace/494-wash-out/covers/product.png",
+      "source_sha256": "e5d1d3fe73d304daa4836305ac502c35a7c4f20eb96258abd8544fc46bf8801e"
+    },
+    {
+      "skillId": "motion",
+      "file": "494/wash/covers/motion.webp",
+      "size": [
+        462,
+        346
+      ],
+      "sha256": "513a368bb153a61464687a1477d1afa7572b310dcb8fd242eb156f53a95b0771",
+      "bytes": 10614,
+      "source_png": "/workspace/494-wash-out/covers/motion.png",
+      "source_sha256": "55b145f874ccbef4c6634a586bfae9ffd7fbc3df7d439b3b37bbc9980ac19992"
+    },
+    {
+      "skillId": "interior",
+      "file": "494/wash/covers/interior.webp",
+      "size": [
+        462,
+        346
+      ],
+      "sha256": "edaf8eeb2753f9ece10cfdd0c061fd77a25bdb044ee2d980fb47fbb1773513be",
+      "bytes": 36436,
+      "source_png": "/workspace/494-wash-out/covers/interior.png",
+      "source_sha256": "ef8af2168fb9637f258593a74429459af368126891a244297148b34ba5dc8f06"
+    }
+  ]
+}
