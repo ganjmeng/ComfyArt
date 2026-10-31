@@ -35,7 +35,7 @@ export function Assets() {
       ) : (
         <section className="ca-assets-page__right" data-testid="assets-detail-empty">
           <div className="ca-assets-page__empty-hint">{t('assets.emptyHint', KIND_LABELS[kind])}</div>
-          <button type="button" className="ca-assets-page__new" data-testid="assets-empty-new" onClick={() => createLibraryItem(kind, fail)}>{t('libraryPanel.newItem', KIND_LABELS[kind])}</button>
+          <button type="button" className="ca-assets-page__new" data-testid="assets-empty-new" onClick={() => createLibraryItem(kind, fail)}>{t('assets.newItem')}</button>
         </section>
       )}
     </div>

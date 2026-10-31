@@ -1601,5 +1601,6 @@
   "assets.emptyHint": "No {0} yet. Create one to get started.",
   "assets.dropHint": "Drag or upload files, or ",
   "assets.importUrl": "import a URL",
-  "assets.dropFormats": "PNG, JPG, PDF · up to 20MB"
+  "assets.dropFormats": "PNG, JPG, PDF · up to 20MB",
+  "assets.newItem": "New"
 }

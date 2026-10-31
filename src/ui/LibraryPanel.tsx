@@ -82,7 +82,7 @@ export function LibraryPanel({ editor, onError, kitsOnly }: { editor?: Editor; o
       {tab !== 'files' && (
         <>
           <button type="button" className="ca-lib__new" data-testid={kitsOnly ? 'assets-new' : undefined} onClick={() => create(tab)}>
-            {kitsOnly ? <span className="ca-lib__plus" aria-hidden>+</span> : <span className="ca-icon">{Icons.plus}</span>}{t('libraryPanel.newItem', KIND_LABELS[tab])}
+            {kitsOnly ? <span className="ca-lib__plus" aria-hidden>+</span> : <span className="ca-icon">{Icons.plus}</span>}{kitsOnly ? t('assets.newItem') : t('libraryPanel.newItem', KIND_LABELS[tab])}
           </button>
           {items.length === 0 && !kitsOnly && <div className="ca-side__empty">{t('libraryPanel.emptyHint', KIND_LABELS[tab])}</div>}
           {items.map((item) => <LibCard key={item.id} item={item} save={save} on={kitsOnly && selected === item.id} />)}

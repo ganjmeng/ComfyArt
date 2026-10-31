@@ -911,7 +911,8 @@ body { background: var(--ca-float); }
 .ca-assets-page__detail { flex: 1; min-width: 0; display: flex; }
 .ca-assets-page .ca-lib__new { border-style: dashed; color: var(--ca-text-2); }
 .ca-assets-page .ca-lib__plus { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: var(--ca-assets-new-dot); color: #000; font: 600 11px/1 var(--ca-font); }
-.ca-assets-page .ca-lib__card[data-on] { background: var(--ca-hover); }
+/* selected kit card: persistent (not hover); values = tokens in base.css, adjust there */
+.ca-assets-page .ca-lib__card[data-on] { background: var(--ca-assets-card-on-bg); border-color: var(--ca-assets-card-on-border); }
 .ca-kit[data-embedded] { position: static; inset: auto; z-index: auto; flex: 1; min-width: 0; height: 100%; }
 .ca-kit[data-embedded] .ca-kit__page { max-width: 800px; padding: 32px 0 120px; }
 .ca-kit[data-embedded] .ca-kit__titlerow { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }

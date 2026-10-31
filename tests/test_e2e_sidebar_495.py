@@ -187,6 +187,27 @@ async def test_assets_page_shell_539(app_url, lang, theme):  # noqa: F811
         await browser.close()
 
 
+async def tabs_new_unselected(pg, style, sel):
+    """create a 2nd kit → it becomes selected; the first (now unselected) must not keep the selected style."""
+    await pg.get_by_test_id("assets-new").click()
+    await pg.wait_for_timeout(300)
+    cards = pg.locator(".ca-lib__card")
+    assert await cards.count() == 2
+    assert await pg.locator(".ca-lib__card[data-on]").count() == 1
+    await pg.mouse.move(1200, 780)
+    off = pg.locator(".ca-lib__card:not([data-on])")
+    assert await off.evaluate(style) != sel
+    # delete the 2nd kit via 「…」 → selection falls back to the first kit, still styled
+    await pg.get_by_test_id("assets-detail-more").click()
+    await pg.locator(".ca-lib__menu .ca-menu__item--danger").click()
+    await pg.locator(".ca-confirm .ca-panel__primary").click()
+    await pg.wait_for_timeout(500)
+    assert await cards.count() == 1
+    await pg.mouse.move(1200, 780)
+    await pg.wait_for_timeout(300)
+    assert await pg.locator(".ca-lib__card[data-on]").evaluate(style) == sel
+
+
 async def _assets_page(p, lang, theme):
     browser = await p.chromium.launch()
     ctx = await browser.new_context(viewport={"width": 1280, "height": 800})
@@ -246,6 +267,18 @@ async def test_assets_detail_539b(app_url, lang, theme):  # noqa: F811
             await pg.mouse.move(0, 0)
             await pg.wait_for_timeout(500)
             await pg.screenshot(path=f"{ASSET_SHOTS}/539b-selected-{lang}-{theme}.png")
+        # product ruling: list + empty create button read 新建 / New on every tab
+        assert (await pg.get_by_test_id("assets-new").inner_text()).strip().lstrip("+").strip() == ("新建" if lang == "zh" else "New")
+        # persistent selected style, distinct from unselected, survives mouse-out
+        style = "e => { const s = getComputedStyle(e); return [s.backgroundColor, s.borderTopColor] }"
+        on = pg.locator(".ca-lib__card[data-on]")
+        await on.hover()
+        await pg.mouse.move(1200, 780)
+        await pg.wait_for_timeout(300)
+        sel = await on.evaluate(style)
+        want = ["rgb(245, 245, 245)", "rgb(228, 228, 228)"] if theme == "light" else ["rgb(38, 38, 38)", "rgb(54, 54, 54)"]
+        assert sel == want, sel
+        await tabs_new_unselected(pg, style, sel)
         # other tab with no kits → empty state; back → selected again
         tabs = pg.get_by_test_id("assets-library").get_by_role("tab")
         await tabs.nth(1).click()

@@ -124,6 +124,12 @@ def test_assets_detail_539b() -> None:
             raise AssertionError(f"unscoped rule: {line}")
     for f in (assets, rules):
         assert "lovart" not in f.lower()
+    # product ruling: Assets create buttons = shared assets.newItem 新建/New; canvas keeps libraryPanel.newItem
+    assert "{t('assets.newItem')}" in assets
+    assert "kitsOnly ? t('assets.newItem') : t('libraryPanel.newItem', KIND_LABELS[tab])" in panel
+    assert ZH["assets.newItem"] == "新建" and EN["assets.newItem"] == "New"
+    # persistent selected card = one scoped rule on two theme tokens
+    assert ".ca-assets-page .ca-lib__card[data-on] { background: var(--ca-assets-card-on-bg); border-color: var(--ca-assets-card-on-border); }" in rules
 
 
 def test_hidden_items_absent() -> None:
