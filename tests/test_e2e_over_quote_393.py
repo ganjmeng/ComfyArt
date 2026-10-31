@@ -107,6 +107,20 @@ class Run:
         async def price(name, args):
             return self.prices[min(len(self.r.paid_mcp()), len(self.prices) - 1)] if name == "generate_image" else None
         monkeypatch.setattr(self.r.p, "_price_call", price)
+
+        # #512: two paid calls in one step first go through the #418 plan quote (_quote_steps), whose pricer is
+        # _price_one / _models_for, not _price_call. Unmocked, they POST to the real WaveSpeed price API and load the
+        # live model catalog (10 s timeouts each), so a slow or unreachable network kept the run from reaching the
+        # over-quote ask inside pending()'s window ("no over-quote ask #1; asks=0"). Pin them offline to what that
+        # lookup gives for the fake model "m": no price of its own, priced at the dearest text-to-image model, so
+        # the plan total stays under the 50-credit confirm line and the per-call over-quote gate is what asks.
+        async def plan_price(model, inputs):
+            return None
+
+        async def plan_models(feature):
+            return [("plan-quote-stub/text-to-image", 0.14)]
+        monkeypatch.setattr(self.r.p, "_price_one", plan_price)
+        monkeypatch.setattr(self.r.p, "_models_for", plan_models)
         monkeypatch.setitem(providers._REGISTRY, self.r.p.id, self.r.p)
         self.client = client
         self.asks: list = []
