@@ -69,6 +69,11 @@ async def test_zoom_select_and_gating(app_url):  # noqa: F811
         await tile.get_by_test_id("skill-run-preset").click()
         assert await tile.get_by_test_id("skill-run-preset").get_attribute("aria-checked") == "true"
         assert await tile.locator(".ca-skillrun__check").count() == 1
+        ring = await tile.get_by_test_id("skill-run-preset").evaluate(
+            "el => { const a = getComputedStyle(el, '::after'); const r = el.getBoundingClientRect();"
+            " return [a.boxShadow, Math.round(r.width), Math.round(r.height)] }")
+        assert "1px" in ring[0] and ring[1:] == [344, 288]  # ring spans image + label
+
         assert await pg.get_by_test_id("skill-run-go").is_disabled()  # productImage required, empty
         await browser.close()
 
