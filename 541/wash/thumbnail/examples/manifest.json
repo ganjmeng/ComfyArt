@@ -1,5 +1,5 @@
 {
- "commit": "aae2cf9",
+ "commit": "5fc35b1",
  "skill": "thumbnail",
  "examples": [
   {
@@ -7,49 +7,49 @@
    "aspect_ratio": "16:9",
    "subject": "a shocked fictional young man with curly hair on left holding a 50 dol",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/1.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/1@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/1.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/1@thumb.webp"
   },
   {
    "id": "2",
    "aspect_ratio": "16:9",
    "subject": "huge white bold text \"48 HOURS NO PHONE\" left with small subtitle \"Wha",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/2.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/2@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/2.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/2@thumb.webp"
   },
   {
    "id": "3",
    "aspect_ratio": "16:9",
    "subject": "dark empty courtroom chair under a spotlight",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/3.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/3@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/3.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/3@thumb.webp"
   },
   {
    "id": "4",
    "aspect_ratio": "16:9",
    "subject": "fictional young man with shocked open mouth on right pointing left",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/4.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/4@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/4.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/4@thumb.webp"
   },
   {
    "id": "5",
    "aspect_ratio": "16:9",
    "subject": "two fictional hosts (a man and a woman) at a warm cozy studio table wi",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/5.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/5@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/5.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/5@thumb.webp"
   },
   {
    "id": "6",
    "aspect_ratio": "16:9",
    "subject": "silhouette of a person looking out a tall window at golden-hour city",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/6.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/6@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/6.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/6@thumb.webp"
   }
  ],
- "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/aae2cf9/541/wash/thumbnail/examples/sbs_examples_thumbnail.png"
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5fc35b1/541/wash/thumbnail/examples/sbs_examples_thumbnail.png"
 }
