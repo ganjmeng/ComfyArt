@@ -54,14 +54,21 @@ async def test_workflows_dialog_motion_lipsync_assigned_zh_light(app_url, fake_t
         assert "motion-demo" in row_text, f"motion not assigned: {row_text!r}"
         assert "内置" not in (await row.locator(".ca-fieldselect__text").inner_text()), row_text
         SHOTS.mkdir(parents=True, exist_ok=True)
+        # Full app window ≥1280×900 (design HOLD): motion assigned, lipsync still 内置
         await row.scroll_into_view_if_needed()
         await pg.wait_for_timeout(200)
-        # tight crop on the motion row only (distinct from the video-group overview)
-        await row.screenshot(path=str(SHOTS / "workflows-motion-assigned-zh-light.png"))
+        await pg.screenshot(path=str(SHOTS / "workflows-motion-assigned-zh-light.png"))
+        # Assign lipsync too so the second full-window shot differs (md5 ≠ motion shot)
+        lip = pg.locator(".ca-workflows__row").filter(has=pg.locator("span", has_text="对口型")).first
+        await lip.scroll_into_view_if_needed()
+        async with pg.expect_file_chooser() as fc:
+            await lip.locator("button.ca-panel__icon").click()
+        await (await fc.value).set_files(str(WF_LIP))
+        await pg.wait_for_timeout(2500)
+        assert "lipsync-demo" in await lip.inner_text()
         await video.scroll_into_view_if_needed()
-        await pg.wait_for_timeout(150)
-        # full video group overview (动作控制 + 对口型 rows)
-        await video.screenshot(path=str(SHOTS / "workflows-video-motion-lipsync-zh-light.png"))
+        await pg.wait_for_timeout(200)
+        await pg.screenshot(path=str(SHOTS / "workflows-video-motion-lipsync-zh-light.png"))
         await browser.close()
 
 
