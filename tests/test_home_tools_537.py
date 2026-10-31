@@ -97,7 +97,7 @@ def test_tool_covers_are_wash_commit_pinned() -> None:
     assert "toolCover(" in HOME and "tool.cover" in HOME
     assert 'src={tool.cover}' in HOME
     assert ".ca-toolcard__cover" in CSS and ".ca-toolcard__cover img" in CSS
-    assert "grid-template-columns: repeat(5" in CSS
+    assert ".ca-toolgrid { display: flex; gap: 16px; }" in CSS and "flex: 1 0 0" in CSS
     assert "wavespeed.com" not in (HOME + covers).lower() and "api.wavespeed" not in (HOME + covers).lower()
     # all 19 ids resolve through toolCover groups
     for tid in MAIN:
@@ -139,7 +139,24 @@ def test_more_tools_lovart_order_540() -> None:
 
 def test_tool_cards_16x9_and_more_menu_icon_rows() -> None:
     # #540 ratio-fix: Lovart main cards 16:9; 更多 = icon rows only (no covers); cover kept as pin backup
-    assert "aspect-ratio: 16 / 9" in CSS and "16 / 10" not in CSS
+    assert "aspect-ratio: 235 / 132" in CSS and "16 / 10" not in CSS
     assert "ca-menu__thumb" not in HOME and "ca-menu__thumb" not in CSS
     assert '<span className="ca-icon" aria-hidden>{Icons[tool.icon]}</span>' in HOME
     assert HOME.count("toolCover('more-10'") == 10 and HOME.count("toolCover('unique-4'") == 4
+
+
+def test_lovart_measured_values_540() -> None:
+    """#540: Lovart DevTools @1280 — card, title, heading, trigger, dropdown rows, filled icons via one map."""
+    for v in ("border-radius: 12px", "transition: transform 300ms ease", "transform: scale(1.08)",
+              "height: 20px; padding: 0 6px", "font: 400 13px/20px", "font: 500 14px/22px",
+              "border-radius: 6px; padding: 3px 0 3px 6px", "height: 28px; min-width: 50px; padding: 0 8px; border-radius: 8px",
+              "font: 400 12px/18px", ".ca-menu--tools { width: 200px", "height: 32px; padding: 0 8px; gap: 8px; border-radius: 8px",
+              "150ms cubic-bezier(.4,0,.2,1)", "width: 18px; height: 18px", "opacity: .9", "--ca-tools-row-hover: rgba(0,0,0,.03)",
+              ':root[data-theme="dark"] { --ca-tools-row-hover'):
+        assert v in CSS, v
+    assert "box-shadow" not in CSS.split(".ca-toolcard {", 1)[1].split(".ca-menu--tools", 1)[0]
+    assert "const MORE_TOOL_ICON = {" in HOME and HOME.count("icon: MORE_TOOL_ICON.") == 14
+    assert "Icons.caretFill" in HOME
+    icons = (ROOT / "src/ui/icons.tsx").read_text()
+    for k in ("toolErase", "toolCrop", "toolExpand", "toolAdjust", "toolText", "toolAngles", "toolVector", "toolMove", "toolFlip", "toolTo3d", "toolLipsync", "toolAudio", "caretFill"):
+        assert f"  {k}: <Svg fill>" in icons, k

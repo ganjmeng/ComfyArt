@@ -46,23 +46,41 @@ const HOME_TOOL_CARDS: ToolCard[] = [
   { id: 'inpaint', icon: 'effects', label: t('home.toolPreciseEdit'), accept: 'image/*', cover: toolCover('main-5', 'inpaint') },
   { id: 'mockup', icon: 'box', label: t('mockup.title'), accept: 'image/*', cover: toolCover('main-5', 'mockup') },
 ]
-/** #540: Lovart「更多」10 (Loomic order) + unique 4. The menu renders icon rows only (Jingmeng ruling);
+/** #540: icons = in-house FILLED glyphs (quick/video already filled; rest tool* in ui/icons.tsx), 18px.
+ *  Lovart「更多」10 (Loomic order) + unique 4. The menu renders icon rows only (Jingmeng ruling);
  *  `cover` is backup data, used only if a tool is pinned (置顶) into the main 16:9 row. */
+/** #540: the ONE place mapping 更多 tool id → 18px filled icon. Swap here when design posts its set on #540. */
+const MORE_TOOL_ICON = {
+  quick: 'quick',
+  erase: 'toolErase',
+  crop: 'toolCrop',
+  expand: 'toolExpand',
+  adjust: 'toolAdjust',
+  text: 'toolText',
+  angles: 'toolAngles',
+  vectorize: 'toolVector',
+  move: 'toolMove',
+  transform: 'toolFlip',
+  to3d: 'toolTo3d',
+  lipsync: 'toolLipsync',
+  motion: 'video',
+  audio: 'toolAudio',
+} as const satisfies Record<string, keyof typeof Icons>
 const MORE_HOME_TOOLS: ToolCard[] = [
-  { id: 'quick', icon: 'quick', label: t('common.quickEdit'), accept: 'image/*', cover: toolCover('more-10', 'quick') },
-  { id: 'erase', icon: 'erase', label: t('common.eraser'), accept: 'image/*', cover: toolCover('more-10', 'erase') },
-  { id: 'crop', icon: 'crop', label: t('imageToolbar.crop'), accept: 'image/*', cover: toolCover('more-10', 'crop') },
-  { id: 'expand', icon: 'expand', label: t('common.expand'), accept: 'image/*', cover: toolCover('more-10', 'expand') },
-  { id: 'adjust', icon: 'adjust', label: t('common.adjust'), accept: 'image/*', cover: toolCover('more-10', 'adjust') },
-  { id: 'text', icon: 'text', label: t('common.editText'), accept: 'image/*', cover: toolCover('more-10', 'text') },
-  { id: 'angles', icon: 'angles', label: t('common.multiAngle'), accept: 'image/*', cover: toolCover('more-10', 'angles') },
-  { id: 'vectorize', icon: 'polygon', label: t('imageToolbar.vectorize'), accept: 'image/*', cover: toolCover('more-10', 'vectorize') },
-  { id: 'move', icon: 'hand', label: t('common.moveObject'), accept: 'image/*', cover: toolCover('more-10', 'move') },
-  { id: 'transform', icon: 'rotate', label: t('imageToolbar.flipAndRotate'), accept: 'image/*', cover: toolCover('more-10', 'transform') },
-  { id: 'to3d', icon: 'cube', label: t('imageToolbar.imageTo3d'), accept: 'image/*', cover: toolCover('unique-4', 'to3d') },
-  { id: 'lipsync', icon: 'mic', label: t('genPanel.lipSync'), accept: 'image/*', cover: toolCover('unique-4', 'lipsync') },
-  { id: 'motion', icon: 'video', label: t('genPanel.motionControl'), accept: 'image/*', cover: toolCover('unique-4', 'motion') },
-  { id: 'audio', icon: 'music', label: t('audio.generateAudio'), accept: 'audio/*', cover: toolCover('unique-4', 'audio') },
+  { id: 'quick', icon: MORE_TOOL_ICON.quick, label: t('common.quickEdit'), accept: 'image/*', cover: toolCover('more-10', 'quick') },
+  { id: 'erase', icon: MORE_TOOL_ICON.erase, label: t('common.eraser'), accept: 'image/*', cover: toolCover('more-10', 'erase') },
+  { id: 'crop', icon: MORE_TOOL_ICON.crop, label: t('imageToolbar.crop'), accept: 'image/*', cover: toolCover('more-10', 'crop') },
+  { id: 'expand', icon: MORE_TOOL_ICON.expand, label: t('common.expand'), accept: 'image/*', cover: toolCover('more-10', 'expand') },
+  { id: 'adjust', icon: MORE_TOOL_ICON.adjust, label: t('common.adjust'), accept: 'image/*', cover: toolCover('more-10', 'adjust') },
+  { id: 'text', icon: MORE_TOOL_ICON.text, label: t('common.editText'), accept: 'image/*', cover: toolCover('more-10', 'text') },
+  { id: 'angles', icon: MORE_TOOL_ICON.angles, label: t('common.multiAngle'), accept: 'image/*', cover: toolCover('more-10', 'angles') },
+  { id: 'vectorize', icon: MORE_TOOL_ICON.vectorize, label: t('imageToolbar.vectorize'), accept: 'image/*', cover: toolCover('more-10', 'vectorize') },
+  { id: 'move', icon: MORE_TOOL_ICON.move, label: t('common.moveObject'), accept: 'image/*', cover: toolCover('more-10', 'move') },
+  { id: 'transform', icon: MORE_TOOL_ICON.transform, label: t('imageToolbar.flipAndRotate'), accept: 'image/*', cover: toolCover('more-10', 'transform') },
+  { id: 'to3d', icon: MORE_TOOL_ICON.to3d, label: t('imageToolbar.imageTo3d'), accept: 'image/*', cover: toolCover('unique-4', 'to3d') },
+  { id: 'lipsync', icon: MORE_TOOL_ICON.lipsync, label: t('genPanel.lipSync'), accept: 'image/*', cover: toolCover('unique-4', 'lipsync') },
+  { id: 'motion', icon: MORE_TOOL_ICON.motion, label: t('genPanel.motionControl'), accept: 'image/*', cover: toolCover('unique-4', 'motion') },
+  { id: 'audio', icon: MORE_TOOL_ICON.audio, label: t('audio.generateAudio'), accept: 'audio/*', cover: toolCover('unique-4', 'audio') },
 ]
 
 export function Home() {
@@ -404,14 +422,14 @@ export function Home() {
             align="end"
             trigger={({ open, toggle }) => (
               <button type="button" className="ca-landing__link ca-landing__moretools" data-testid="home-more-tools" data-open={open || undefined} onClick={toggle}>
-                {t('home.moreTools')}<span className="ca-icon">{Icons.chevron}</span>
+                <span className="ca-landing__moretools-label">{t('home.moreTools')}</span><span className="ca-icon" aria-hidden>{Icons.caretFill}</span>
               </button>
             )}
           >
             <div className="ca-menu ca-menu--tools" data-testid="home-more-tools-menu">
               {MORE_HOME_TOOLS.map((tool) => (
                 <button key={tool.id} type="button" className="ca-menu__item" data-testid={`home-more-tool-${tool.id}`} disabled={uploading} onClick={() => pickTool(tool)}>
-                  <span className="ca-icon" aria-hidden>{Icons[tool.icon]}</span><span className="ca-menu__grow">{tool.label}</span>
+                  <span className="ca-icon" aria-hidden>{Icons[tool.icon]}</span><span className="ca-menu__grow ca-menu__label">{tool.label}</span>
                 </button>
               ))}
             </div>
