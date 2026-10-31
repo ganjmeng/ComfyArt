@@ -56,10 +56,12 @@ async def test_workflows_dialog_motion_lipsync_assigned_zh_light(app_url, fake_t
         SHOTS.mkdir(parents=True, exist_ok=True)
         await row.scroll_into_view_if_needed()
         await pg.wait_for_timeout(200)
-        await pg.screenshot(path=str(SHOTS / "workflows-motion-assigned-zh-light.png"))
+        # tight crop on the motion row only (distinct from the video-group overview)
+        await row.screenshot(path=str(SHOTS / "workflows-motion-assigned-zh-light.png"))
         await video.scroll_into_view_if_needed()
         await pg.wait_for_timeout(150)
-        await pg.screenshot(path=str(SHOTS / "workflows-video-motion-lipsync-zh-light.png"))
+        # full video group overview (动作控制 + 对口型 rows)
+        await video.screenshot(path=str(SHOTS / "workflows-video-motion-lipsync-zh-light.png"))
         await browser.close()
 
 
