@@ -787,7 +787,7 @@
 .ca-composer .ca-composer__foot .ca-gen__pill { gap: 4px; } /* model / settings: text → arrow */
 .ca-composer .ca-composer__slot > .ca-icon { width: 16px; height: 16px; } /* voice / send glyph; the button stays 32 */
 :root[data-theme="light"] .ca-menu { box-shadow: 0 4px 24px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04); }
-/* #545: home 更多 menu keeps Lovart's 3-layer shadow in both themes (beats the light .ca-menu override above) */
+/* #545: home 更多 menu keeps the design-spec 3-layer shadow in both themes (beats the light .ca-menu override above) */
 :root .ca-menu.ca-menu--tools { box-shadow: 0 16px 24px -8px rgba(0,0,0,.06), 0 4px 8px -4px rgba(0,0,0,.04), 0 1px 1px 0 rgba(0,0,0,.02); }
 /* #276: the home composer reuses the same voice/send slot — 16px glyph, button stays 32 */
 .ca-landing__foot .ca-composer__slot > .ca-icon { width: 16px; height: 16px; }
