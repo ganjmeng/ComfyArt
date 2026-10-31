@@ -11,6 +11,7 @@ console.log(JSON.stringify({
   presets: Object.fromEntries(BUILTIN_SKILLS.map((s) => [s.id, s.presets?.length ?? 0])),
   old: skillMeta(old),
   imgs: { product: img('product'), brand: img('brand'), packaging: img('packaging') },
+  exUrls: Object.fromEntries(BUILTIN_SKILLS.filter((s) => s.examples?.length).map((s) => [s.id, s.examples])),
   examples: Object.fromEntries(BUILTIN_SKILLS.map((s) => [s.id, s.examples?.length ?? 0])),
   exMock: renderToStaticMarkup(createElement(SkillExamples, { examples: mock })),
   exOne: renderToStaticMarkup(createElement(SkillExamples, { examples: [mock[0]] })),

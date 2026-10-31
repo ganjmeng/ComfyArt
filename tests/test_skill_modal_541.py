@@ -76,7 +76,7 @@ R541 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/{}/541/wash/{}/{}__{
 
 @needs_node
 def test_rev2_cells_pinned(got):
-    """AC rev 2 (6546010130): product 6 (detail @2422dc5), brand 6 @f204502, packaging 5 @1014ef2 (no mockup)."""
+    """AC rev 2 (6546010130): product 6 (detail @2422dc5), brand 6 @f204502, packaging 5 @c26cfad (no mockup)."""
     p, b, k = got["imgs"]["product"], got["imgs"]["brand"], got["imgs"]["packaging"]
     for pid in ("white", "lifestyle", "electronics", "food", "beauty"):
         assert p[pid] == R541.format("688a702a1f322082cde4e5ed46200c3593db9c43", "product", "product", pid)
@@ -84,13 +84,17 @@ def test_rev2_cells_pinned(got):
     assert list(b) == ["geometric", "handmade", "tech", "beauty", "foodbev", "pet"]
     assert all(u == R541.format("f2045022727c73e24bd6d5ebcb3815bedb7b8797", "brand", "brand", i) for i, u in b.items())
     assert list(k) == ["eco", "gold", "playful", "panels", "shelf"] and "mockup" not in k
-    assert all(u == R541.format("1014ef25ad2a8b49cae0c438c673a0b7f9e7797f", "packaging", "packaging", i) for i, u in k.items())
+    # packaging re-pinned to manifest c26cfad (mockup dropped; same 5 image blobs as 1014ef2)
+    assert all(u == R541.format("c26cfaddc5e12c8652b151ef09ad12c47b2062a0", "packaging", "packaging", i) for i, u in k.items())
     assert got["presets"]["motion"] == 3 and got["presets"]["poster"] == 3
 
 
 @needs_node
 def test_examples_carousel_is_data_driven(got):
-    assert all(n == 0 for n in got["examples"].values())  # design hasn't delivered; no section renders yet
+    want = {"poster": 5, "thumbnail": 5, "character": 6, "interior": 4, "social": 10, "banner": 2}  # thumbnail #5 pending re-wash
+    assert {k: v for k, v in got["examples"].items() if v} == want
+    for sid in ("product", "brand", "packaging", "motion", "custom-workflow"):
+        assert got["examples"][sid] == 0, sid
     assert got["exNone"] == ["", ""]
     html = got["exMock"]
     assert 'data-testid="skill-run-examples"' in html and 'data-count="5"' in html
@@ -100,3 +104,27 @@ def test_examples_carousel_is_data_driven(got):
     assert ZH["skillRun.examples"] == "效果示例" and EN["skillRun.examples"] == "Examples"
     assert ".ca-skillrun__stage" in CSS and "aspect-ratio: 704 / 526" in CSS and "object-fit: contain" in CSS
     assert "<SkillExamples examples={skill.examples} />" in DLG and "from './SkillExamples'" in DLG
+
+
+EX541 = {"poster": ("6d864bd2dd53b9f5b487829f2834d94be013b0a5", [1, 2, 3, 4, 5]),
+         "thumbnail": ("aae2cf95ea5045153da219e6a3769ff814441838", [1, 2, 3, 4, 6]),
+         "character": ("dd97ee3782fc85090217c573b2ebb59ea4f19654", [1, 2, 3, 4, 5, 6]),
+         "interior": ("53f0f2c39573ed692cabf4cba8f63ccd13b8b170", [1, 2, 3, 4]),
+         "social": ("cb41cb8a450139cd903e777c8f84024019d517cd", list(range(1, 11))),
+         "banner": ("69c58fb99db6e46ecd71617f0db4eaac98010048", [1, 2])}
+
+
+@needs_node
+def test_examples_pinned_to_image_commits(got):
+    for sid, (sha, ids) in EX541.items():
+        assert got["exUrls"][sid] == [f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{sha}/541/wash/{sid}/examples/{n}.webp" for n in ids], sid
+    assert not any("/541/wash/examples/" in u for us in got["exUrls"].values() for u in us)  # old void path
+
+
+def test_brand_logo_system_prompts():
+    src = (ROOT / "src/skills.ts").read_text()
+    for pid in ("beauty", "foodbev", "pet"):
+        line = src[src.index(f"P('{pid}', ", src.index("id: 'brand'")):]
+        line = line[:line.index("wash541(")]
+        assert "logo system presentation board" in line and "no product mockups" in line, pid
+        assert "applied" not in line and "stacked mockups" not in line, pid
