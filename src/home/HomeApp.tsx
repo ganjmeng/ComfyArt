@@ -144,7 +144,7 @@ function main(view: View) {
 }
 
 export function HomeApp({ view }: { view: View }) {
-  const [collapsed, setCollapsed] = useState(() => readLocal(RAIL_COLLAPSE_KEY) === '1')
+  const [collapsed, setCollapsed] = useState(() => readLocal(RAIL_COLLAPSE_KEY) !== '0') // #546: Lovart default = collapsed; '0' persists expanded
   const expanded = !collapsed
   const [recent, setRecent] = useState<ProjectEntry[] | null>(null)
 

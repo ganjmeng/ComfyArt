@@ -20,7 +20,6 @@ def test_tokens_match_lovart() -> None:
     assert _var("--ca-rail-px-expanded") == 12
     assert _var("--ca-rail-w-expanded") - 2 * _var("--ca-rail-px-expanded") == 216
     assert _var("--ca-home-main-px") == 56
-    assert _var("--ca-rail-w-collapsed") > 0
 
 
 def test_home_column_math() -> None:
@@ -35,3 +34,12 @@ def test_rules_use_tokens_in_place() -> None:
     assert "padding: 96px var(--ca-home-main-px) 64px" in HOME_CSS
     assert "width: 160px" not in HOME_CSS
     assert not (ROOT / "src/home/Sidebar.tsx").exists()
+
+
+def test_collapsed_tokens_and_default() -> None:
+    assert _var("--ca-rail-w-collapsed") == 60
+    assert 36 + _var("--ca-rail-pitch-gap") == 38
+    assert 38 + _var("--ca-rail-new-gap") == 52
+    assert 1280 - _var("--ca-rail-w-collapsed") - 2 * _var("--ca-home-main-px") == 1108
+    app = (ROOT / "src/home/HomeApp.tsx").read_text()
+    assert "readLocal(RAIL_COLLAPSE_KEY) !== '0'" in app

@@ -1,7 +1,7 @@
 body { background: var(--ca-float); }
 .ca-home { position: fixed; inset: 0; display: flex; background: var(--ca-float); color: var(--ca-text); font: 400 14px/22px var(--ca-font); }
 
-.ca-rail { width: var(--ca-rail-w-collapsed); flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 0; border-right: var(--ca-border-w) solid var(--ca-border); box-sizing: border-box; }
+.ca-rail { width: var(--ca-rail-w-collapsed); flex: none; display: flex; flex-direction: column; align-items: center; gap: var(--ca-rail-pitch-gap); padding: 12px 0; border-right: none; /* #546: Lovart rail has no border */ box-sizing: border-box; }
 .ca-rail__logo { display: inline-flex; width: 30px; height: 30px; margin-bottom: 12px; color: var(--ca-strong); }
 .ca-rail__logo svg { width: 100%; height: 100%; }
 .ca-brand-mark { display: inline-flex; width: 100%; height: 100%; color: inherit; }
@@ -15,6 +15,7 @@ body { background: var(--ca-float); }
 .ca-rail__btn:hover, .ca-rail__btn[data-open] { background: var(--ca-hover); }
 .ca-rail__btn[data-on] { background: var(--ca-active); }
 .ca-rail__spacer { flex: 1; }
+.ca-rail__btn[data-testid="rail-new"] { margin-bottom: var(--ca-rail-new-gap); } /* #546 */
 
 /* #495 expanded sidebar (#546: 240 = Lovart) — collapsed keeps the 60px icon rail */
 .ca-rail__top { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 4px; }
@@ -22,7 +23,7 @@ body { background: var(--ca-float); }
 .ca-rail__logo--btn { border: none; background: transparent; padding: 0; cursor: pointer; color: inherit; }
 .ca-rail__collapse {
   display: none; align-items: center; justify-content: center;
-  width: 28px; height: 28px; margin-left: auto; border: none; border-radius: 8px;
+  width: 36px; height: 36px; margin-left: auto; border: none; border-radius: 8px; /* #546 Lovart toggle 36×36 @x196 */
   background: transparent; color: var(--ca-text-2); cursor: pointer;
 }
 .ca-rail__collapse:hover { background: var(--ca-hover); color: var(--ca-text); }
@@ -32,11 +33,10 @@ body { background: var(--ca-float); }
 }
 .ca-rail__recent { display: none; }
 .ca-rail[data-expanded] {
-  width: var(--ca-rail-w-expanded); align-items: stretch; gap: 2px; padding: 12px var(--ca-rail-px-expanded) 12px;
-  border-right: none; /* #546: Lovart has no sidebar border */
+  width: var(--ca-rail-w-expanded); align-items: stretch; gap: var(--ca-rail-pitch-gap); padding: 12px var(--ca-rail-px-expanded) 12px;
   background: var(--ca-rail-bg); overflow: hidden;
 }
-.ca-rail[data-expanded] .ca-rail__top { justify-content: flex-start; gap: 4px; padding: 0 4px; margin-bottom: 8px; }
+.ca-rail[data-expanded] .ca-rail__top { justify-content: flex-start; gap: 4px; padding: 0 0 0 4px; margin-bottom: 8px; }
 .ca-rail[data-expanded] .ca-rail__collapse { display: inline-flex; }
 .ca-rail[data-expanded] .ca-rail__btn {
   width: auto; justify-content: flex-start; gap: 10px; padding: 0 10px; height: 36px;
