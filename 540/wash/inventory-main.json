@@ -1,0 +1,102 @@
+[
+  {
+    "slot": "main",
+    "id": "cutout",
+    "zh": "去背景",
+    "metaphor": "remove background — subject on checker vs scenic",
+    "ref": "540/wash/refs/ref-main-cutout.png",
+    "size": [
+      163,
+      116
+    ],
+    "box": [
+      248,
+      412,
+      411,
+      528
+    ],
+    "aspect": 1.405,
+    "source": "crop from review-assets c8eb0fb / 495-498/lovart/F1-home-top.png (also 494/lovart/F1)",
+    "plan": "kie i2i from this ref (NOT pixel copy); strip watermarks/avatars/UI chrome if any"
+  },
+  {
+    "slot": "main",
+    "id": "extend",
+    "zh": "延长视频",
+    "metaphor": "extend video — couple + filmstrip timeline",
+    "ref": "540/wash/refs/ref-main-extend.png",
+    "size": [
+      163,
+      116
+    ],
+    "box": [
+      425,
+      412,
+      588,
+      528
+    ],
+    "aspect": 1.405,
+    "source": "crop from review-assets c8eb0fb / 495-498/lovart/F1-home-top.png (also 494/lovart/F1)",
+    "plan": "kie i2i from this ref (NOT pixel copy); strip watermarks/avatars/UI chrome if any"
+  },
+  {
+    "slot": "main",
+    "id": "upscale",
+    "zh": "放大",
+    "metaphor": "upscale — vinyl before/after sharpness split",
+    "ref": "540/wash/refs/ref-main-upscale.png",
+    "size": [
+      163,
+      116
+    ],
+    "box": [
+      602,
+      412,
+      765,
+      528
+    ],
+    "aspect": 1.405,
+    "source": "crop from review-assets c8eb0fb / 495-498/lovart/F1-home-top.png (also 494/lovart/F1)",
+    "plan": "kie i2i from this ref (NOT pixel copy); strip watermarks/avatars/UI chrome if any"
+  },
+  {
+    "slot": "main",
+    "id": "inpaint",
+    "zh": "精准编辑",
+    "metaphor": "precise edit — subject with selection + add description",
+    "ref": "540/wash/refs/ref-main-inpaint.png",
+    "size": [
+      163,
+      116
+    ],
+    "box": [
+      779,
+      412,
+      942,
+      528
+    ],
+    "aspect": 1.405,
+    "source": "crop from review-assets c8eb0fb / 495-498/lovart/F1-home-top.png (also 494/lovart/F1)",
+    "plan": "kie i2i from this ref (NOT pixel copy); strip watermarks/avatars/UI chrome if any"
+  },
+  {
+    "slot": "main",
+    "id": "mockup",
+    "zh": "样机",
+    "metaphor": "mockup — tote bag product mock",
+    "ref": "540/wash/refs/ref-main-mockup.png",
+    "size": [
+      163,
+      116
+    ],
+    "box": [
+      956,
+      412,
+      1119,
+      528
+    ],
+    "aspect": 1.405,
+    "source": "crop from review-assets c8eb0fb / 495-498/lovart/F1-home-top.png (also 494/lovart/F1)",
+    "plan": "kie i2i from this ref (NOT pixel copy); strip watermarks/avatars/UI chrome if any"
+  }
+]

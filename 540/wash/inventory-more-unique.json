@@ -1,0 +1,114 @@
+[
+  {
+    "slot": "more10",
+    "id": "quick",
+    "zh": "快捷编辑",
+    "plan": "t2i or i2i from guides/image-tools quick-edit still if any; else metaphor t2i (wand/edit overlay)",
+    "ref_candidate": "guides/image-tools — no dedicated quick still; use t2i metaphor",
+    "lovart_photo_cover": "NO — menu is line icons only (540/lovart-more/more-tools-menu.png)"
+  },
+  {
+    "slot": "more10",
+    "id": "erase",
+    "zh": "橡皮工具",
+    "plan": "i2i from erase/inpaint demo",
+    "ref_candidate": "guides/image-tools/t-13-inpaint-zh.png (erase-adjacent) or canvas erase result",
+    "lovart_photo_cover": "NO — menu is line icons only (540/lovart-more/more-tools-menu.png)"
+  },
+  {
+    "slot": "more10",
+    "id": "crop",
+    "zh": "裁剪",
+    "plan": "i2i from crop guide",
+    "ref_candidate": "guides/image-tools/t-07-crop-zh.png",
+    "lovart_photo_cover": "NO — menu is line icons only (540/lovart-more/more-tools-menu.png)"
+  },
+  {
+    "slot": "more10",
+    "id": "expand",
+    "zh": "扩展",
+    "plan": "i2i from expand guide",
+    "ref_candidate": "guides/image-tools/t-05-expand-zh.png",
+    "lovart_photo_cover": "NO — menu is line icons only (540/lovart-more/more-tools-menu.png)"
+  },
+  {
+    "slot": "more10",
+    "id": "adjust",
+    "zh": "调整",
+    "plan": "i2i from adjust guide",
+    "ref_candidate": "guides/image-tools/t-06-adjust-zh.png",
+    "lovart_photo_cover": "NO — menu is line icons only (540/lovart-more/more-tools-menu.png)"
+  },
+  {
+    "slot": "more10",
+    "id": "text",
+    "zh": "编辑文字",
+    "plan": "i2i from edittext guide",
+    "ref_candidate": "guides/elements-mockups/t-01-edittext-zh.png",
+    "lovart_photo_cover": "NO — menu is line icons only (540/lovart-more/more-tools-menu.png)"
+  },
+  {
+    "slot": "more10",
+    "id": "angles",
+    "zh": "多角度",
+    "plan": "i2i from angle guide",
+    "ref_candidate": "guides/image-tools/t-02-angle-zh.png",
+    "lovart_photo_cover": "NO — menu is line icons only (540/lovart-more/more-tools-menu.png)"
+  },
+  {
+    "slot": "more10",
+    "id": "vectorize",
+    "zh": "矢量",
+    "plan": "i2i from vectorize guide",
+    "ref_candidate": "guides/image-tools/t-08-vectorize-zh.png",
+    "lovart_photo_cover": "NO — menu is line icons only (540/lovart-more/more-tools-menu.png)"
+  },
+  {
+    "slot": "more10",
+    "id": "move",
+    "zh": "移动对象",
+    "plan": "i2i from move guide",
+    "ref_candidate": "guides/image-tools/t-04-move-zh.png",
+    "lovart_photo_cover": "NO — menu is line icons only (540/lovart-more/more-tools-menu.png)"
+  },
+  {
+    "slot": "more10",
+    "id": "transform",
+    "zh": "翻转与旋转",
+    "plan": "i2i from flip guide",
+    "ref_candidate": "guides/image-tools/t-12-flip-zh.png",
+    "lovart_photo_cover": "NO — menu is line icons only (540/lovart-more/more-tools-menu.png)"
+  },
+  {
+    "slot": "unique4",
+    "id": "to3d",
+    "zh": "转3D",
+    "plan": "i2i/t2i 3D object metaphor",
+    "ref_candidate": "pr211/ or ImageToolbar 3D demos if present; else t2i",
+    "lovart_photo_cover": "N/A (ComfyArt-unique)"
+  },
+  {
+    "slot": "unique4",
+    "id": "lipsync",
+    "zh": "对口型",
+    "plan": "i2i portrait+audio metaphor",
+    "ref_candidate": "509-2 / gen lipsync demos; else t2i",
+    "lovart_photo_cover": "N/A (ComfyArt-unique)"
+  },
+  {
+    "slot": "unique4",
+    "id": "motion",
+    "zh": "动作控制",
+    "plan": "i2i motion/reference metaphor",
+    "ref_candidate": "513-1 motion shots; else t2i",
+    "lovart_photo_cover": "N/A (ComfyArt-unique)"
+  },
+  {
+    "slot": "unique4",
+    "id": "audio",
+    "zh": "音频",
+    "plan": "i2i waveform/music metaphor",
+    "ref_candidate": "509-2 audio demos; else t2i",
+    "lovart_photo_cover": "N/A (ComfyArt-unique)"
+  }
+]
