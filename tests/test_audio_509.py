@@ -109,8 +109,9 @@ def test_custom_markers_list_speech_clone_sfx_and_audio():
     assert "feature: 'text_to_speech'" in src
     assert "feature: 'voice_clone'" in src
     assert "feature: 'sound_effect'" in src
-    # PR2 only — no video/3d actions in this PR
-    assert "videoUpscale" not in src and "model3d" not in src and "id: 'extend'" not in src
+    # #525 shipped audio-only; #526 then added the video/3d actions — guard that
+    # they are present (the old "not in" guard from #525 is obsolete).
+    assert "id: 'videoUpscale'" in src and "id: 'model3d'" in src and "id: 'extend'" in src
 
 
 def test_builtin_sfx_default_stays_mirelo():
