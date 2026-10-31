@@ -93,6 +93,7 @@ def test_tool_covers_are_wash_commit_pinned() -> None:
     # #540: design wash PASS covers via toolCovers.ts (review-assets commit-pin; no WaveSpeed)
     covers = (ROOT / "src/home/toolCovers.ts").read_text()
     assert "TOOL_WASH_COMMIT" in covers and "8eb46909" in covers
+    assert "TOOL_MAIN5_COMMIT = '1ecb47a'" in covers and "/540/wash-v2/main-5" in covers
     assert "540/wash" in covers and "toolCover" in covers
     assert "toolCover(" in HOME and "tool.cover" in HOME
     assert 'src={tool.cover}' in HOME
