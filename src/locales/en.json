@@ -1562,5 +1562,6 @@
   "skillRun.start": "Start creating",
   "skillRun.templates": "Templates",
   "skillRun.currentTemplate": "Current template",
-  "skillRun.pickLeft": "Select on the left"
+  "skillRun.pickLeft": "Select on the left",
+  "skillRun.select": "Select"
 }

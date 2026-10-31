@@ -51,6 +51,8 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
                       className="ca-skillrun__preset" data-testid="skill-run-preset" data-preset={p.id} onClick={() => setPreset(p.id)}>
                       <span className="ca-skillrun__presetimg">
                         {img ? <img src={img} alt="" /> : <span className="ca-icon">{Icons.skill}</span>}
+                        <span className="ca-skillrun__zoom" aria-hidden="true"><span className="ca-icon">{Icons.expand}</span></span>
+                        <span className="ca-skillrun__pick">{t('skillRun.select')}</span>
                         {on && <span className="ca-skillrun__check" aria-hidden="true"><span className="ca-icon">{Icons.check}</span></span>}
                       </span>
                       <span className="ca-skillrun__presetname">{loc(p.name)}</span>

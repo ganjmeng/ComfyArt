@@ -44,7 +44,8 @@ async def test_title_and_hover_try_open_same_dialog(app_url):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url, "zh")
         card = pg.locator('[data-skill="poster"]')
-        await card.get_by_test_id("skills-card-try").click(force=True)
+        await card.hover()
+        await card.get_by_test_id("skills-card-try").click()
         assert await pg.get_by_test_id("skill-run-dialog").get_attribute("data-skill") == "poster"
         await pg.keyboard.press("Escape")
         await card.locator(".ca-swall__title").click()

@@ -507,20 +507,38 @@ body { background: var(--ca-float); }
 /* #494-2 — hover 「试用此技能」 on Explore/Favourites cards (same dialog as cover / title click). */
 .ca-swall__try {
   position: absolute; top: 8px; right: 8px; z-index: 2;
-  display: none; align-items: center; justify-content: center;
+  display: inline-flex; align-items: center; justify-content: center;
   height: 32px; padding: 0 12px; border: 0; border-radius: 999px;
   background: #fff; color: #111; font: 500 12px/1 var(--ca-font); cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  opacity: 0; pointer-events: none;
+  transition: opacity 150ms ease;
 }
-.ca-swall__card:hover .ca-swall__try, .ca-swall__card:focus-within .ca-swall__try { display: inline-flex; }
+.ca-swall__card:hover .ca-swall__try, .ca-swall__card:focus-within .ca-swall__try {
+  opacity: 1; pointer-events: auto;
+}
 .ca-swall__title { cursor: pointer; }
 .ca-swall__meta { display: flex; flex-direction: column; min-width: 0; }
 
 /* #494-2 — skill's own dialog: left templates (2-col) + right 「开始制作」 panel. */
 .ca-skillrun {
-  width: min(920px, calc(100vw - 32px));
-  max-height: min(720px, calc(100vh - 64px));
+  width: min(1200px, calc(100vw - 32px));
+  height: min(820px, calc(100vh - 64px));
+  max-height: min(820px, calc(100vh - 64px));
   display: flex; flex-direction: row; padding: 0; overflow: hidden;
+  animation: ca-skillrun-in 250ms ease both;
+  transform-origin: center center;
+}
+@keyframes ca-skillrun-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.ca-modal[data-testid="skill-run-modal"] {
+  animation: ca-skillrun-backdrop-in 250ms ease both;
+}
+@keyframes ca-skillrun-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .ca-skillrun__left {
   flex: 1 1 58%; min-width: 0; padding: 24px; overflow: auto;
@@ -530,7 +548,7 @@ body { background: var(--ca-float); }
 .ca-skillrun__desc { margin: 0; color: var(--ca-text-2); font: 400 13px/20px var(--ca-font); }
 .ca-skillrun__section { margin-top: 12px; font: 500 13px/20px var(--ca-font); color: var(--ca-text); }
 .ca-skillrun__grid {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;
   margin-top: 8px;
 }
 .ca-skillrun__preset {
@@ -538,22 +556,49 @@ body { background: var(--ca-float); }
   background: none; color: var(--ca-text); cursor: pointer; font: inherit; text-align: left;
 }
 .ca-skillrun__presetimg {
-  position: relative; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden;
+  position: relative; aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden;
   background: var(--ca-hover); display: grid; place-items: center;
   box-shadow: inset 0 0 0 var(--ca-border-w) var(--ca-border);
+  /* selected ring / ✓ are instantaneous — no transition */
+  transition: none;
 }
 .ca-skillrun__preset[data-on] .ca-skillrun__presetimg {
   box-shadow: inset 0 0 0 2px var(--ca-text);
 }
 .ca-skillrun__presetimg img { width: 100%; height: 100%; object-fit: cover; }
+/* hover: fade-in + enlarge chip + 「选择」 pill (~150ms) */
+.ca-skillrun__zoom, .ca-skillrun__pick {
+  position: absolute; opacity: 0; transform: scale(0.85);
+  transition: opacity 150ms ease, transform 150ms ease;
+  pointer-events: none; z-index: 1;
+}
+.ca-skillrun__zoom {
+  top: 8px; left: 8px; width: 28px; height: 28px; border-radius: 999px;
+  background: rgba(0,0,0,.45); color: #fff; display: grid; place-items: center;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.ca-skillrun__zoom .ca-icon { width: 14px; height: 14px; }
+.ca-skillrun__pick {
+  top: 8px; right: 8px; height: 28px; padding: 0 12px; border-radius: 999px;
+  background: #fff; color: #1a1a1a; font: 500 12px/28px var(--ca-font);
+  box-shadow: 0 1px 4px rgba(0,0,0,.12); display: inline-flex; align-items: center;
+}
+.ca-skillrun__preset:hover .ca-skillrun__zoom,
+.ca-skillrun__preset:hover .ca-skillrun__pick,
+.ca-skillrun__preset:focus-visible .ca-skillrun__zoom,
+.ca-skillrun__preset:focus-visible .ca-skillrun__pick {
+  opacity: 1; transform: scale(1);
+}
+.ca-skillrun__preset[data-on]:hover .ca-skillrun__pick { opacity: 0; } /* ✓ replaces pill when selected */
 .ca-skillrun__check {
   position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 999px;
   background: var(--ca-text); color: var(--ca-float, #fff); display: grid; place-items: center;
+  transition: none; z-index: 2;
 }
 .ca-skillrun__check .ca-icon { width: 14px; height: 14px; }
 .ca-skillrun__presetname { font: 400 12px/18px var(--ca-font); color: var(--ca-text-2); }
 .ca-skillrun__right {
-  flex: 0 0 38%; max-width: 360px; display: flex; flex-direction: column; min-width: 0;
+  flex: 0 0 360px; width: 360px; max-width: 360px; display: flex; flex-direction: column; min-width: 0;
   background: var(--ca-hover); border-left: var(--ca-border-w) solid var(--ca-border);
 }
 .ca-skillrun__righthead {

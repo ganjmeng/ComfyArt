@@ -117,15 +117,21 @@ def test_page_wiring():
 def test_copy_and_dialog_style():
     assert ZH["home.skillsTryThis"] == "试用此技能" and EN["home.skillsTryThis"] == "Try this skill"
     assert ZH["skillRun.start"] == "开始制作" and EN["skillRun.start"] == "Start creating"
+    assert ZH["skillRun.select"] == "选择" and EN["skillRun.select"] == "Select"
     assert (ZH["home.skillsCreatedByYou"], ZH["home.skillsCreatedByLoomi"]) == ("你创建的", "Loomi 创建的")
     assert (EN["home.skillsCreatedByYou"], EN["home.skillsCreatedByLoomi"]) == ("Created by you", "Created by Loomi")
     assert "暂无自动总结的技能" in ZH["home.skillsEmptyLoomi"] and "No auto-summarized skills yet" in EN["home.skillsEmptyLoomi"]
     assert "Loomi" in ZH["home.skillsEmptyLoomi"] and "Loomi" in EN["home.skillsEmptyLoomi"]
     for k in ("home.skillsTryThis", "home.skillsCreatedByYou", "home.skillsCreatedByLoomi", "home.skillsEmptyLoomi",
-              "skillRun.start", "skillRun.templates", "skillRun.currentTemplate", "skillRun.pickLeft", "skillRun.detail"):
+              "skillRun.start", "skillRun.templates", "skillRun.currentTemplate", "skillRun.pickLeft", "skillRun.detail",
+              "skillRun.select"):
         assert k in ZH and k in EN, k
     assert "skillDetail." not in " ".join(k for k in ZH if k.startswith("skillDetail"))
     assert "grid-template-columns: repeat(2, minmax(0, 1fr))" in CSS
     assert ".ca-skillrun__left" in CSS and ".ca-skillrun__right" in CSS
     assert ".ca-swall__card--row" in CSS and "width: 72px; height: 72px" in CSS
     assert ".ca-swall__try" in CSS
+    # #494 anim: template hover ~150ms fade+scale; modal open 250ms scale 0.96→1; selected ring/✓ no spring
+    assert "150ms" in CSS and "ca-skillrun__pick" in CSS and "ca-skillrun__zoom" in CSS
+    assert "ca-skillrun-in" in CSS and "250ms" in CSS and "scale(0.96)" in CSS
+    assert "skillRun.select" in DLG and "Icons.expand" in DLG

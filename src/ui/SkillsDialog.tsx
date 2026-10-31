@@ -131,7 +131,7 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
     if (!editId) return
     skillEditIdAtom.set(null)
     void loadSkills().then((all) => {
-      const s = all.find((x) => x.custom && x.id === editId)
+      const s = all.find((x) => x.id === editId)
       if (s) setView({ kind: 'edit', skill: s })
       else onError(t('skillsDialog.notFound', editId))
     }).catch((e) => onError(String(e)))
@@ -158,7 +158,7 @@ export function SkillsDialog({ onError }: { onError: (msg: string) => void; home
             setView({ kind: 'list' })
             if (s) act(() => saveSkill(s))
           }}
-          onEditInChat={view.skill.instructions.trim() ? () => { close(); editSkillInChat(view.skill) } : undefined}
+          onEditInChat={view.skill.custom && view.skill.instructions.trim() ? () => { close(); editSkillInChat(view.skill) } : undefined}
         />
       )}
       {view.kind === 'history' && (

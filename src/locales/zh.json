@@ -1562,5 +1562,6 @@
   "skillRun.start": "开始制作",
   "skillRun.templates": "模板",
   "skillRun.currentTemplate": "当前模板",
-  "skillRun.pickLeft": "在左侧选择"
+  "skillRun.pickLeft": "在左侧选择",
+  "skillRun.select": "选择"
 }
