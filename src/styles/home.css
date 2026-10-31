@@ -541,12 +541,27 @@ body { background: var(--ca-float); }
   to { opacity: 1; }
 }
 .ca-skillrun__left {
-  flex: 1 1 58%; min-width: 0; padding: 24px; overflow: auto;
-  display: flex; flex-direction: column; gap: 8px;
+  flex: 1 1 58%; min-width: 0; padding: 24px 24px 16px; overflow: hidden;
+  display: flex; flex-direction: column; gap: 12px;
 }
-.ca-skillrun__title { margin: 0; font: 600 20px/28px var(--ca-font); color: var(--ca-text); }
-.ca-skillrun__desc { margin: 0; color: var(--ca-text-2); font: 400 13px/20px var(--ca-font); }
-.ca-skillrun__section { margin-top: 12px; font: 500 13px/20px var(--ca-font); color: var(--ca-text); }
+/* pinned head — title / author / desc never scroll away under the template grid */
+.ca-skillrun__head {
+  flex: none; display: flex; flex-direction: column; gap: 8px; min-width: 0;
+}
+.ca-skillrun__title {
+  margin: 0; font: 600 22px/30px var(--ca-font); color: var(--ca-text);
+  overflow-wrap: anywhere;
+}
+.ca-skillrun__author {
+  display: flex; align-items: center; gap: 6px; min-width: 0;
+  color: var(--ca-text-2); font: 400 12px/18px var(--ca-font);
+}
+.ca-skillrun__desc {
+  margin: 0; color: var(--ca-text-2); font: 400 13px/20px var(--ca-font);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+}
+.ca-skillrun__templates { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.ca-skillrun__section { margin: 0 0 8px; font: 500 13px/20px var(--ca-font); color: var(--ca-text); }
 .ca-skillrun__grid {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;
   margin-top: 8px;

@@ -88,6 +88,10 @@ def test_dialog_is_data_driven():
     assert "skill.inputs" in DLG and "skill.presets" in DLG
     assert "ca-skillrun__left" in DLG and "ca-skillrun__right" in DLG and "ca-skillrun__grid" in DLG
     assert "skillRun.start" in DLG and "skillRun.currentTemplate" in DLG
+    # #494-2 对照结构: left column title / author / description above the template grid
+    assert 'data-testid="skill-run-head"' in DLG and 'data-testid="skill-run-title"' in DLG
+    assert 'data-testid="skill-run-author"' in DLG and 'data-testid="skill-run-desc"' in DLG
+    assert "ca-skillrun__head" in DLG and "ca-skillrun__title" in DLG and "ca-skillrun__desc" in DLG
     for bad in ("'poster'", "'product'", "topic", "headline"):
         assert bad not in DLG, bad
     assert "missing.length > 0" in DLG and "skillRunParams(skill, values, preset)" in DLG
@@ -131,6 +135,8 @@ def test_copy_and_dialog_style():
     assert "aspect-ratio: 160 / 120" in CSS  # template cells ~160×120, not 1:1
     assert "inset 0 0 0 1px var(--ca-text)" in CSS  # selected ring 1px
     assert ".ca-skillrun__left" in CSS and ".ca-skillrun__right" in CSS
+    assert ".ca-skillrun__head" in CSS and ".ca-skillrun__author" in CSS
+    assert "ca-skillrun__templates { flex: 1 1 auto; min-height: 0; overflow: auto; }" in CSS
     assert ".ca-swall__card--row" in CSS and "width: 72px; height: 72px" in CSS
     assert ".ca-swall__try" in CSS
     # #494 anim: template hover ~150ms fade+scale; modal open 250ms scale 0.96→1; selected ring/✓ no spring

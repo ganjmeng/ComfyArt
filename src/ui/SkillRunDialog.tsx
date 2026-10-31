@@ -31,14 +31,17 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
     <div className="ca-modal" data-testid="skill-run-modal" onPointerDown={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) onClose() }}>
       <div className="ca-modal__card ca-skillrun" data-testid="skill-run-dialog" data-skill={skill.id}>
         <div className="ca-skillrun__left">
-          <h2 className="ca-skillrun__title">{skill.name}</h2>
-          <div className="ca-swall__author" data-testid="skill-run-author" data-kind={author.kind}>
-            {author.kind === 'builtin'
-              ? <img className="ca-swall__avatar" src={BRAND.logoPath} alt="" aria-hidden="true" />
-              : <span className="ca-swall__avatar" aria-hidden="true"><span className="ca-icon">{Icons.user}</span></span>}
-            {author.label}
-          </div>
-          {desc && <p className="ca-skillrun__desc">{desc}</p>}
+          {/* #494-2 对照结构: title / author / desc stay pinned above the template grid */}
+          <header className="ca-skillrun__head" data-testid="skill-run-head">
+            <h2 className="ca-skillrun__title" data-testid="skill-run-title">{skill.name}</h2>
+            <div className="ca-skillrun__author" data-testid="skill-run-author" data-kind={author.kind}>
+              {author.kind === 'builtin'
+                ? <img className="ca-swall__avatar" src={BRAND.logoPath} alt="" aria-hidden="true" />
+                : <span className="ca-swall__avatar" aria-hidden="true"><span className="ca-icon">{Icons.user}</span></span>}
+              {author.label}
+            </div>
+            {desc && <p className="ca-skillrun__desc" data-testid="skill-run-desc">{desc}</p>}
+          </header>
           {!!skill.presets?.length && (
             <div className="ca-skillrun__templates" role="radiogroup" data-testid="skill-run-presets">
               <div className="ca-skillrun__section">{t('skillRun.templates')}</div>
