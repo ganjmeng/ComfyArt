@@ -107,12 +107,13 @@ def test_assets_detail_539b() -> None:
     assert "createLibraryItem(kind, fail)" in assets and "useEffect(() => { createLibraryItem" not in assets
     # one shared create action for list 新建 + empty 新建
     assert "const create = (kind: LibraryKind) => createLibraryItem(kind, onError)" in panel
-    # embedded: no URL/20MB logic, CTA not wired; canvas path keeps newProject + Escape close
-    emb = kit.split("{embedded ? (\n        /* #539 PR-B: full-width bar")[1].split(") : brand && (")[0]
-    assert "onClick" not in emb and "newProject" not in emb
+    # #539 PR-C: assertion updated (not removed) — embedded CTA is now wired (test_assets_c_539);
+    # canvas path keeps newProject + Escape close; still no network fetch for URL import
+    emb = kit.split("{embedded ? (\n        /* #539 PR-C: full-width bar")[1].split(") : brand && (")[0]
+    assert "onClick={createProject}" in emb
     assert "newProject({ kit: item.id })" in kit
     assert "if (!embedded && e.key === 'Escape') close()" in kit
-    assert "20 * 1024" not in kit and "fetch(" not in kit
+    assert "fetch(" not in kit
     # list column measurements, scoped to the page (canvas .ca-lib untouched)
     rules = css.split("/* #539 我的素材 page")[1]
     assert "width: 380px" in rules and "border-right: 1px solid var(--ca-border)" in rules
@@ -177,3 +178,35 @@ def test_i18n_collapse_keys() -> None:
     assert EN["home.expandSidebar"]
     assert ZH["home.assets"] == "我的素材"
     assert EN["home.assets"] == "Assets"
+
+
+def test_assets_c_539() -> None:
+    """#539 PR-C: 20MB check, URL import, wired CTA, design P2s — all in the existing files."""
+    kit = (ROOT / "src/ui/KitEditor.tsx").read_text()
+    css = (ROOT / "src/styles/home.css").read_text()
+    rules = css.split("/* #539 我的素材 page")[1]
+    for f in ("AssetDetail.tsx", "UrlImport.tsx", "AssetUpload.tsx"):
+        assert not (ROOT / "src/home" / f).exists() and not (ROOT / "src/ui" / f).exists()
+    # (a) 20MB limit before upload, i18n error
+    assert "export const MAX_UPLOAD = 20 * 1024 * 1024" in kit
+    assert "f.size > MAX_UPLOAD" in kit and "t('assets.tooLarge'" in kit
+    assert "20MB" in ZH["assets.tooLarge"] and "20MB" in EN["assets.tooLarge"]
+    # (b) URL import: http/https only, i18n error
+    assert "['http:', 'https:'].includes(parsed.protocol)" in kit and "t('assets.urlInvalid')" in kit
+    assert ZH["assets.urlInvalid"] and EN["assets.urlInvalid"]
+    assert 'aria-disabled="true"' not in kit
+    # (c) CTA reuses #555 newProject with the selected kit
+    assert "const createProject = () => { flush(); newProject(brand ? { kit: item.id } : {}) }" in kit
+    # P2 1: arrow icon + no dashed border (embedded only)
+    assert "embedded ? Icons.uploadArrow : Icons.upload" in kit
+    assert ".ca-kit[data-embedded] .ca-kit__drop { border: none; }" in rules
+    # P2 2: single-line guide ~30
+    assert "rows={embedded ? 1 : undefined}" in kit and "height: 30px" in rules
+    # P2 3: 「…」 hover only, scoped to the page
+    assert ".ca-assets-page .ca-lib__more { opacity: 0; }" in rules
+    assert ".ca-assets-page .ca-lib__card:hover .ca-lib__more" in rules
+    # P2 5: CTA at the right edge of an 800 centred container
+    assert '<div className="ca-kit__footin">' in kit
+    assert ".ca-kit[data-embedded] .ca-kit__footin { display: flex; justify-content: flex-end; width: 100%; max-width: 800px; }" in rules
+    # P2 4: no Acme seed names in screenshot tests
+    assert "Acme" not in (ROOT / "tests/test_e2e_sidebar_495.py").read_text()

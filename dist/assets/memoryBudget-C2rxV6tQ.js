@@ -1,0 +1,1 @@
+export{l as insertMemoryUpdatedBlock}from"./memoryBudget-Bp4-ts-J.js";

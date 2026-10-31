@@ -1602,5 +1602,7 @@
   "assets.dropHint": "Drag or upload files, or ",
   "assets.importUrl": "import a URL",
   "assets.dropFormats": "PNG, JPG, PDF · up to 20MB",
-  "assets.newItem": "New"
+  "assets.newItem": "New",
+  "assets.tooLarge": "File exceeds 20MB: {0}",
+  "assets.urlInvalid": "Enter a valid http or https URL"
 }
