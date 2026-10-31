@@ -1,0 +1,5 @@
+{
+  "model": "wavespeed-ai/wan-2.2/animate",
+  "fields": {"@image": "image", "@video": "video", "@prompt": "prompt"},
+  "params": {"mode": "animate", "resolution": "480p"}
+}
