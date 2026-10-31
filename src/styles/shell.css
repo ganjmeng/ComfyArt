@@ -61,6 +61,9 @@
 .ca-chat__hello { display: inline-flex; width: 40px; height: 40px; color: var(--ca-strong); margin-bottom: 6px; }
 .ca-chat__hello svg { width: 100%; height: 100%; }
 .ca-chat__hint { font-size: 12px; }
+.ca-chat__title { font-size: 16px; font-weight: 600; line-height: 24px; color: var(--ca-strong); }  /* #542 creator landing heading */
+.ca-chat__empty[data-creator] .ca-chat__starts { margin-top: 16px; gap: 15px; align-items: center; }  /* #542: reference stack pitch; 3 buttons, not stretched */
+.ca-chat__empty[data-creator] .ca-chat__start { justify-content: center; width: 172px; min-width: 172px; height: 38px; flex: none; border-radius: 19px; padding: 0 10px; gap: 6px; white-space: nowrap; font-size: 13px; }
 .ca-chat__user { align-self: flex-end; max-width: 85%; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .ca-chat__bubble { padding: 10px 14px; border-radius: 16px; background: var(--ca-field); white-space: pre-wrap; word-break: break-word; }
 .ca-chat__bot { display: flex; flex-direction: column; gap: 10px; }
@@ -156,8 +159,9 @@ button.ca-head__logo { padding: 0; border: none; border-radius: 8px; background:
 button.ca-head__logo:hover, button.ca-head__logo[data-open] { background: var(--ca-hover); }
 .ca-root[data-chat="max"] .ca-main { display: none; }
 .ca-agent[data-max] { flex: 1; width: auto; border-right: none; }
-.ca-agent[data-max] .ca-chat, .ca-agent[data-max] .ca-composer { width: min(760px, calc(100% - 24px)); margin-left: auto; margin-right: auto; box-sizing: border-box; }
-.ca-agent[data-max] .ca-composer { margin-bottom: 24px; }
+.ca-agent[data-max] .ca-chat, .ca-agent[data-max] .ca-composer { width: min(720px, calc(100% - 24px)); margin-left: auto; margin-right: auto; box-sizing: border-box; }
+.ca-agent[data-max] .ca-composer { margin-bottom: 8px; }  /* #542: chat-only input card 720 wide, docked 8px from the bottom */
+.ca-agent[data-max] .ca-head__name { margin-right: auto; }  /* #542 P1-2: full-screen chat keeps logo + name left and the saved / new chat / notices / expand / collapse group at the top right */
 
 .ca-history { width: 300px; max-height: 420px; overflow: auto; }
 .ca-history .ca-bg__hex { margin-bottom: 4px; }
