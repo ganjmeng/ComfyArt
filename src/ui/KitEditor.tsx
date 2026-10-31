@@ -24,6 +24,20 @@ const SAVE_DELAY = 400
 /** #539 PR-C: Assets upload zone limit (copy says 最大 20MB / up to 20MB). */
 export const MAX_UPLOAD = 20 * 1024 * 1024
 /** #539 PR-C: URL import check, ported from the reference group upload flow — http/https only. */
+/** #539 PR-C product ruling: Assets accepts PNG/JPG/PDF only (no webp/gif). */
+const OK_EXT = /\.(png|jpe?g|pdf)$/i
+const OK_TYPES = ['image/png', 'image/jpeg', 'application/pdf']
+export const okUploadFile = (f: File) => OK_TYPES.includes(f.type) || OK_EXT.test(f.name)
+/** URL passes if its extension OR its content-type confirms PNG/JPG/PDF; HEAD/CORS failure = unconfirmed. */
+export async function confirmedImportUrl(raw: string) {
+  if (OK_EXT.test(new URL(raw.trim()).pathname)) return true
+  try {
+    const r = await fetch(raw.trim(), { method: 'HEAD' })
+    return OK_TYPES.includes((r.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase())
+  } catch {
+    return false
+  }
+}
 export function validImportUrl(raw: string) {
   try {
     const parsed = new URL(raw.trim())
@@ -133,18 +147,21 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
   const addImages = (srcs: string[]) => update((x) => ({ ...x, images: [...x.images, ...srcs.filter((s) => !x.images.includes(s))] }))
   const dropFiles = (list: File[]) => {
     // #539 PR-C: embedded upload zone rejects files over 20MB before any upload
-    const big = embedded ? list.filter((f) => f.size > MAX_UPLOAD) : []
-    setUploadErr(big.length ? t('assets.tooLarge', big.map((f) => f.name).join(', ')) : '')
-    if (big.length) onError(t('assets.tooLarge', big.map((f) => f.name).join(', ')))
-    const ok = list.filter((f) => !big.includes(f))
+    const bad = embedded ? list.filter((f) => !okUploadFile(f)) : []
+    const big = embedded ? list.filter((f) => okUploadFile(f) && f.size > MAX_UPLOAD) : []
+    const msg = bad.length ? t('assets.badFormat', bad.map((f) => f.name).join(', ')) : big.length ? t('assets.tooLarge', big.map((f) => f.name).join(', ')) : ''
+    setUploadErr(msg)
+    if (msg) onError(msg)
+    const ok = list.filter((f) => !big.includes(f) && !bad.includes(f))
     if (ok.length) void filesToImages(ok).then(addImages).catch(fail)
   }
-  const saveUrl = () => {
+  const saveUrl = async () => {
     if (!validImportUrl(url)) { setUrlErr(t('assets.urlInvalid')); return }
+    if (!(await confirmedImportUrl(url))) { setUrlErr(t('assets.urlFormat')); return }
     addImages([url.trim()])
     setUrl(''); setUrlErr(''); setUploadErr(''); setUrlOpen(false)
   }
-  const createProject = () => { flush(); newProject(brand ? { kit: item.id } : {}) }
+  const createProject = () => { flush(); newProject({ kit: item.id }) }
   const fromGuide = async (file: File) => {
     setBusy(true)
     try {
@@ -214,13 +231,13 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
           </div>
           {embedded && urlOpen && (
             <div className="ca-kit__urlrow" data-testid="assets-url-row">
-              <input className="ca-kit__urlinput" data-testid="assets-url-input" autoFocus value={url} placeholder="https://" onChange={(e) => { setUrl(e.target.value); setUrlErr('') }} onKeyDown={(e) => { if (isEnter(e)) saveUrl(); if (e.key === 'Escape') setUrlOpen(false) }} />
-              <button type="button" className="ca-panel__primary" data-testid="assets-url-save" onClick={saveUrl}>{t('common.add')}</button>
+              <input className="ca-kit__urlinput" data-testid="assets-url-input" autoFocus value={url} placeholder="https://" onChange={(e) => { setUrl(e.target.value); setUrlErr('') }} onKeyDown={(e) => { if (isEnter(e)) void saveUrl(); if (e.key === 'Escape') setUrlOpen(false) }} />
+              <button type="button" className="ca-panel__primary" data-testid="assets-url-save" onClick={() => void saveUrl()}>{t('common.add')}</button>
               <button type="button" className="ca-assets-page__new" onClick={() => { setUrlOpen(false); setUrlErr('') }}>{t('common.cancel')}</button>
               {urlErr && <div className="ca-kit__err" role="alert" data-testid="assets-url-error">{urlErr}</div>}
             </div>
           )}
-          <input ref={files} type="file" accept="image/*,.pdf" multiple hidden onChange={(e) => picked(e.target, dropFiles)} />
+          <input ref={files} type="file" accept={embedded ? '.png,.jpg,.jpeg,.pdf' : 'image/*,.pdf'} multiple hidden onChange={(e) => picked(e.target, dropFiles)} />
           {brand && (
             <button type="button" className="ca-kit__link" disabled={busy} onClick={() => guide.current?.click()}>
               <span className="ca-icon">{Icons.agent}</span>{busy ? t('libraryPanel.extracting') : t('libraryPanel.extractFromFileBrandGuide')}

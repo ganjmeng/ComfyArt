@@ -167,7 +167,7 @@ def test_locales_only_add_memory_retrieved_430():
         "assets.emptyTitle", "assets.emptyHint", "assets.dropHint", "assets.importUrl", "assets.dropFormats",
         "assets.newItem",
         # #539 PR-C: 20MB upload + URL import errors (not memory copy)
-        "assets.tooLarge", "assets.urlInvalid",
+        "assets.tooLarge", "assets.urlInvalid", "assets.badFormat", "assets.urlFormat",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)

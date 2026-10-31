@@ -358,7 +358,7 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
     URL import (mocked image host), CTA aligned to 800 content (1280 + 1920), CTA → new project with kit."""
     async with pw.async_playwright() as p:
         browser, pg = await _assets_page(p, lang, theme)
-        await pg.route("https://img.example.com/**", lambda r: r.fulfill(status=200, content_type="image/png", body=_PNG))
+        await pg.route("https://img.example.com/**", lambda r: r.fulfill(status=200, content_type="image/webp" if r.request.url.endswith(".webp") else "image/png", body=_PNG))
         await pg.goto(app_url + "?view=assets")
         await pg.get_by_test_id("assets-detail-empty").wait_for()
         await pg.get_by_test_id("assets-empty-new").click()  # default-name flow, no custom name
@@ -396,12 +396,29 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
         if ASSET_SHOTS:
             await pg.wait_for_timeout(300)
             await pg.screenshot(path=f"{ASSET_SHOTS}/539c-20mb-{lang}-{theme}.png")
+        # bad local format → error, nothing written
+        await pg.locator(".ca-kit[data-embedded] input[type=file][multiple]").first.set_input_files(
+            {"name": "anim.gif", "mimeType": "image/gif", "buffer": _PNG}
+        )
+        await pg.wait_for_timeout(300)
+        assert ("仅支持 PNG、JPG、PDF" if lang == "zh" else "Only PNG, JPG and PDF") in await err.inner_text()
+        assert await pg.locator(".ca-kit[data-embedded] .ca-kit__tiles img").count() == 0
         # (b) URL import: invalid → i18n error; https → reference tile
         await pg.get_by_test_id("assets-import-url").click()
         await pg.get_by_test_id("assets-url-input").fill("ftp://x")
         await pg.get_by_test_id("assets-url-save").click()
         uerr = await pg.get_by_test_id("assets-url-error").inner_text()
         assert uerr == ("请输入有效的 http 或 https URL" if lang == "zh" else "Enter a valid http or https URL")
+        # neither extension nor content-type confirms → error, text kept, nothing written, no dialog
+        bad = "https://img.example.com/pic.webp"
+        await pg.get_by_test_id("assets-url-input").fill(bad)
+        await pg.get_by_test_id("assets-url-save").click()
+        uerr = pg.get_by_test_id("assets-url-error")
+        await pg.wait_for_timeout(500)
+        assert (await uerr.inner_text()) == ("无法确认链接是 PNG、JPG 或 PDF" if lang == "zh" else "Couldn't confirm the link is a PNG, JPG or PDF")
+        assert await pg.get_by_test_id("assets-url-input").input_value() == bad
+        assert await pg.locator(".ca-kit[data-embedded] .ca-kit__tiles img").count() == 0
+        assert await pg.locator(".ca-confirm").count() == 0
         await pg.get_by_test_id("assets-url-input").fill("https://img.example.com/ref.png")
         if ASSET_SHOTS:
             await pg.screenshot(path=f"{ASSET_SHOTS}/539c-url-input-{lang}-{theme}.png")
@@ -430,4 +447,40 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
         assert "kit=" not in pg.url  # consumed by the project as its brand kit
         if ASSET_SHOTS:
             await pg.screenshot(path=f"{ASSET_SHOTS}/539c-new-project-{lang}-{theme}.png")
+        await browser.close()
+
+
+@pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
+async def test_assets_c_kinds_539(app_url, lang, theme):  # noqa: F811
+    """#539 PR-C: 「使用此素材创建项目 →」 on all 4 tabs opens a new project carrying that kit; nothing auto-sent."""
+    async with pw.async_playwright() as p:
+        browser, pg = await _assets_page(p, lang, theme)
+        for i, kind in enumerate(["brand", "character", "product", "custom"]):
+            await pg.goto(app_url + "?view=assets")
+            await pg.get_by_test_id("assets-page").wait_for()
+            await pg.get_by_test_id("assets-library").get_by_role("tab").nth(i).click()
+            await pg.get_by_test_id("assets-detail-empty").wait_for()
+            await pg.get_by_test_id("assets-empty-new").click()
+            await pg.get_by_test_id("assets-detail").wait_for()
+            await pg.wait_for_timeout(800)
+            seen: list[str] = []
+            pg.on("framenavigated", lambda f: seen.append(f.url) if f == pg.main_frame else None)
+            async with pg.expect_navigation():
+                await pg.get_by_test_id("assets-create-project").click()
+            await pg.locator(".tl-canvas").wait_for()
+            await pg.wait_for_timeout(1500)
+            kit_id = next(u for u in seen if "kit=" in u).split("kit=")[1].split("&")[0]
+            brand_kit = await pg.evaluate("() => window.__caEditor.getDocumentSettings().meta.brandKit")
+            chips = pg.locator(".ca-composer__chips .ca-chip")
+            if kind == "brand":
+                assert brand_kit == kit_id, (brand_kit, kit_id)
+                assert await chips.count() == 0
+            else:
+                assert brand_kit != kit_id
+                assert await chips.count() == 1
+                assert (await chips.first.inner_text()).strip()  # untitled kit label, not blank
+            # nothing sent automatically: no user message in the chat
+            assert await pg.get_by_test_id("chat-empty").count() == 1
+            if kind == "character" and ASSET_SHOTS:
+                await pg.screenshot(path=f"{ASSET_SHOTS}/539c-new-project-character-{lang}-{theme}.png")
         await browser.close()
