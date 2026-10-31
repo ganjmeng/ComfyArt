@@ -16,6 +16,65 @@ body { background: var(--ca-float); }
 .ca-rail__btn[data-on] { background: var(--ca-active); }
 .ca-rail__spacer { flex: 1; }
 
+/* #495 expanded sidebar (~160) — collapsed keeps the 60px icon rail */
+.ca-rail__top { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 4px; }
+.ca-rail__logo { margin-bottom: 0; }
+.ca-rail__logo--btn { border: none; background: transparent; padding: 0; cursor: pointer; color: inherit; }
+.ca-rail__collapse {
+  display: none; align-items: center; justify-content: center;
+  width: 28px; height: 28px; margin-left: auto; border: none; border-radius: 8px;
+  background: transparent; color: var(--ca-text-2); cursor: pointer;
+}
+.ca-rail__collapse:hover { background: var(--ca-hover); color: var(--ca-text); }
+.ca-rail__label {
+  display: none; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 400 13px/18px var(--ca-font); text-align: left;
+}
+.ca-rail__recent { display: none; }
+.ca-rail[data-expanded] {
+  width: 160px; align-items: stretch; gap: 2px; padding: 12px 8px 12px;
+  background: var(--ca-rail-bg); overflow: hidden;
+}
+.ca-rail[data-expanded] .ca-rail__top { justify-content: flex-start; gap: 4px; padding: 0 4px; margin-bottom: 8px; }
+.ca-rail[data-expanded] .ca-rail__collapse { display: inline-flex; }
+.ca-rail[data-expanded] .ca-rail__btn {
+  width: auto; justify-content: flex-start; gap: 10px; padding: 0 10px; height: 36px;
+}
+.ca-rail[data-expanded] .ca-rail__label { display: block; }
+.ca-rail[data-expanded] .ca-rail__badge { position: static; margin-left: 4px; flex: none; }
+.ca-rail[data-expanded] .ca-brand-mark .lm-cut { fill: var(--ca-rail-bg); stroke: var(--ca-rail-bg); }
+.ca-rail[data-expanded] .ca-rail__recent {
+  display: flex; flex-direction: column; gap: 2px; margin-top: 10px; min-height: 0; overflow-y: auto;
+}
+.ca-rail__recent-title {
+  padding: 6px 10px 4px; font: 500 11px/16px var(--ca-font); color: var(--ca-muted);
+  text-transform: none; letter-spacing: 0;
+}
+.ca-rail__recent-row {
+  display: flex; align-items: center; gap: 2px; min-height: 32px; padding: 0 4px 0 10px;
+  border-radius: 8px; color: var(--ca-text);
+}
+.ca-rail__recent-row:hover { background: var(--ca-hover); }
+.ca-rail__recent-row:hover .ca-rail__recent-more { opacity: 1; }
+.ca-rail__recent-name {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border: none; background: transparent; padding: 0; color: inherit; font: 400 13px/18px var(--ca-font);
+  text-align: left; cursor: pointer;
+}
+.ca-rail__recent-input {
+  flex: 1; min-width: 0; height: 28px; border: var(--ca-border-w) solid var(--ca-border);
+  border-radius: 6px; padding: 0 6px; background: var(--ca-float); color: var(--ca-text);
+  font: 400 13px/18px var(--ca-font); outline: none;
+}
+.ca-rail__recent-more {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex: none; opacity: 0; border: none; border-radius: 6px;
+  background: transparent; color: var(--ca-text-2); cursor: pointer;
+}
+.ca-rail__recent-more:hover, .ca-rail__recent-more[data-open] { background: var(--ca-hover); color: var(--ca-text); opacity: 1; }
+.ca-rail__recent-menu { min-width: 140px; padding: 4px; }
+.ca-rail__recent-menu .ca-menu__item { height: 32px; }
+
 .ca-home__main { flex: 1; min-width: 0; overflow-y: auto; }
 
 .ca-landing { max-width: 1600px; margin: 0 auto; padding: 96px 48px 64px; box-sizing: border-box; }
@@ -125,7 +184,8 @@ body { background: var(--ca-float); }
 @media (max-width: 640px) {
   .ca-home { flex-direction: column-reverse; }
   .ca-rail { width: auto; flex-direction: row; justify-content: space-around; padding: 6px 16px; border-right: none; border-top: var(--ca-border-w) solid var(--ca-border); }
-  .ca-rail__logo, .ca-rail__spacer { display: none; }
+  .ca-rail__logo, .ca-rail__spacer, .ca-rail__top, .ca-rail__recent, .ca-rail__label, .ca-rail__collapse { display: none; }
+  .ca-rail[data-expanded] { width: auto; background: transparent; padding: 6px 16px; }
   .ca-landing { padding: 48px 16px 32px; }
   .ca-projects { padding: 24px 16px 96px; }
   .ca-projects__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }

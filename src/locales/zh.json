@@ -728,7 +728,7 @@
   "home.deleteProject": "删除这个项目？",
   "home.deleteProjectDesc": "画布、对话和历史快照会被删除，生成的图片和视频文件仍保留。",
   "home.deleteProjects": "删除 {0} 个项目？",
-  "home.designSchedules": "设计委托",
+  "home.designSchedules": "设计日程",
   "home.example1": "设计一张浪漫的婚礼海报",
   "home.example2": "为一家柯基咖啡馆做 logo 和品牌色",
   "home.example3": "给一款陶瓷马克杯做三张电商主图",
@@ -1586,5 +1586,8 @@
   "skillRun.pickLeft": "在左侧选择",
   "skillRun.select": "选择",
   "home.featured": "精选",
-  "home.skillCase": "Skill 案例"
+  "home.skillCase": "Skill 案例",
+  "home.collapseSidebar": "收起侧边栏",
+  "home.expandSidebar": "展开侧边栏",
+  "home.assets": "我的素材"
 }
