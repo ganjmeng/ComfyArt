@@ -1,0 +1,21 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "428e692e46314a8ea85d74204d5b5cd3",
+    "model": "wavespeed-ai/ace-step-1.5",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/da29960d-7aab-485d-b57b-98c86bfa5643-u2_0aa02533-84f9-4776-839e-0a354d84abaa.mp3"
+    ],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/428e692e46314a8ea85d74204d5b5cd3/result"
+    },
+    "status": "completed",
+    "created_at": "2026-10-31T07:27:37.279149981Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 2304
+    }
+  }
+}

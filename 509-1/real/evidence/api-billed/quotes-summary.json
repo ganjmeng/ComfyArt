@@ -6,15 +6,21 @@
     "price": 0.15
   },
   {
-    "file": "quote-ace-5s.json",
+    "file": "quote-yue2.json",
+    "model": "wavespeed-ai/yue2-3b/text-to-music",
+    "discounted_price": 0.1,
+    "price": 0.1
+  },
+  {
+    "file": "quote-custom.json",
     "model": "wavespeed-ai/ace-step-1.5",
     "discounted_price": 0.0015,
     "price": 0.0015
   },
   {
-    "file": "quote-yue2.json",
-    "model": "wavespeed-ai/yue2-3b/text-to-music",
-    "discounted_price": 0.1,
-    "price": 0.1
+    "file": "quote-ace-5s.json",
+    "model": "wavespeed-ai/ace-step-1.5",
+    "discounted_price": 0.0015,
+    "price": 0.0015
   }
 ]

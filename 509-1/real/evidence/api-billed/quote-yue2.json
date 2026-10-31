@@ -3,7 +3,7 @@
     "model_id": "wavespeed-ai/yue2-3b/text-to-music",
     "inputs": {
       "lyrics": "hello\nworld",
-      "prompt": "folk"
+      "style": "folk"
     }
   },
   "response": {

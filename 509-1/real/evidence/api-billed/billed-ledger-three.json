@@ -1,0 +1,62 @@
+{
+  "method": "WaveSpeed GET /api/v3/balance before+after each run (no console login)",
+  "prior_ace": {
+    "task_id": "99336d9da4194b40ae0a9abe30bc7c16",
+    "model": "wavespeed-ai/ace-step-1.5",
+    "actual_billed_usd": 0.0015,
+    "assets_commit": "2067a686f306e4d6d4b04ed06a4c45c53d145619",
+    "slug": "ace"
+  },
+  "runs": [
+    {
+      "slug": "minimax",
+      "label": "MiniMax Music 3",
+      "task_id": "a1925e3d4ca64fc0b4c34068a56a3a99",
+      "model": "minimax/music-3.0",
+      "payload": {
+        "lyrics": "la la",
+        "prompt": "pop"
+      },
+      "balance_before": 6.553744,
+      "balance_after": 6.403744,
+      "actual_billed_usd": 0.15,
+      "quote_discounted_price": 0.15,
+      "status": "completed"
+    },
+    {
+      "slug": "yue2",
+      "label": "YuE2",
+      "task_id": "414df4caa0e44ca78d2f34302ebe41ab",
+      "model": "wavespeed-ai/yue2-3b/text-to-music",
+      "payload": {
+        "lyrics": "hello\nworld",
+        "style": "folk"
+      },
+      "balance_before": 6.403744,
+      "balance_after": 6.303744,
+      "actual_billed_usd": 0.1,
+      "quote_discounted_price": 0.1,
+      "status": "completed"
+    },
+    {
+      "slug": "custom",
+      "label": "Custom music workflow (ace-step-1.5 5s)",
+      "task_id": "428e692e46314a8ea85d74204d5b5cd3",
+      "model": "wavespeed-ai/ace-step-1.5",
+      "payload": {
+        "duration": 5,
+        "lyrics": "[instrumental]",
+        "tags": "calm soft piano #514 custom billed proof"
+      },
+      "balance_before": 6.303744,
+      "balance_after": 6.302244,
+      "actual_billed_usd": 0.0015,
+      "quote_discounted_price": 0.0015,
+      "status": "completed",
+      "note": "Same params as music-ace-5s.json custom path (@prompt→tags, @lyrics→lyrics, duration=5)"
+    }
+  ],
+  "ending_balance": 6.302244,
+  "total_this_session_usd": 0.2515,
+  "note": "Prediction result has no cost field. Actual billed = balance delta. ACE already on assets 2067a68."
+}

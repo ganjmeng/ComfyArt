@@ -1,0 +1,15 @@
+{
+  "slug": "minimax",
+  "label": "MiniMax Music 3",
+  "task_id": "a1925e3d4ca64fc0b4c34068a56a3a99",
+  "model": "minimax/music-3.0",
+  "payload": {
+    "lyrics": "la la",
+    "prompt": "pop"
+  },
+  "balance_before": 6.553744,
+  "balance_after": 6.403744,
+  "actual_billed_usd": 0.15,
+  "quote_discounted_price": 0.15,
+  "status": "completed"
+}

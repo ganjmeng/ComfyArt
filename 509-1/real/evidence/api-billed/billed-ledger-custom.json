@@ -1,0 +1,17 @@
+{
+  "slug": "custom",
+  "label": "Custom music workflow (ace-step-1.5 5s)",
+  "task_id": "428e692e46314a8ea85d74204d5b5cd3",
+  "model": "wavespeed-ai/ace-step-1.5",
+  "payload": {
+    "duration": 5,
+    "lyrics": "[instrumental]",
+    "tags": "calm soft piano #514 custom billed proof"
+  },
+  "balance_before": 6.303744,
+  "balance_after": 6.302244,
+  "actual_billed_usd": 0.0015,
+  "quote_discounted_price": 0.0015,
+  "status": "completed",
+  "note": "Same params as music-ace-5s.json custom path (@prompt→tags, @lyrics→lyrics, duration=5)"
+}

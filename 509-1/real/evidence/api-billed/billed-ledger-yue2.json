@@ -1,0 +1,15 @@
+{
+  "slug": "yue2",
+  "label": "YuE2",
+  "task_id": "414df4caa0e44ca78d2f34302ebe41ab",
+  "model": "wavespeed-ai/yue2-3b/text-to-music",
+  "payload": {
+    "lyrics": "hello\nworld",
+    "style": "folk"
+  },
+  "balance_before": 6.403744,
+  "balance_after": 6.303744,
+  "actual_billed_usd": 0.1,
+  "quote_discounted_price": 0.1,
+  "status": "completed"
+}

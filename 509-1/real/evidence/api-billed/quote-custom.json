@@ -1,0 +1,21 @@
+{
+  "request": {
+    "model_id": "wavespeed-ai/ace-step-1.5",
+    "inputs": {
+      "lyrics": "[instrumental]",
+      "tags": "calm",
+      "duration": 5
+    }
+  },
+  "response": {
+    "code": 200,
+    "message": "success",
+    "data": {
+      "model_id": "wavespeed-ai/ace-step-1.5",
+      "price": 0.0015,
+      "discounted_price": 0.0015,
+      "discount_rate": 100,
+      "currency": "USD"
+    }
+  }
+}

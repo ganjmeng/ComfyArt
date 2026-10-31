@@ -1,0 +1,27 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "414df4caa0e44ca78d2f34302ebe41ab",
+    "model": "wavespeed-ai/yue2-3b/text-to-music",
+    "input": {
+      "guidance_scale": 1,
+      "lyrics": "hello\nworld",
+      "style": "folk",
+      "temperature": 1,
+      "top_k": 100,
+      "top_p": 0.95
+    },
+    "outputs": [],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/414df4caa0e44ca78d2f34302ebe41ab/result"
+    },
+    "status": "created",
+    "created_at": "2026-10-31T07:26:49.968Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 0
+    }
+  }
+}

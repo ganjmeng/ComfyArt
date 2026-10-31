@@ -1,0 +1,27 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "a1925e3d4ca64fc0b4c34068a56a3a99",
+    "model": "minimax/music-3.0",
+    "input": {
+      "bitrate": 256000,
+      "is_instrumental": false,
+      "lyrics": "la la",
+      "lyrics_optimizer": false,
+      "prompt": "pop",
+      "sample_rate": 44100
+    },
+    "outputs": [],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/a1925e3d4ca64fc0b4c34068a56a3a99/result"
+    },
+    "status": "created",
+    "created_at": "2026-10-31T07:23:59.304Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 0
+    }
+  }
+}
