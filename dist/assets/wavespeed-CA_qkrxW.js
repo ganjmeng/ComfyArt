@@ -1,1 +1,0 @@
-export{a as loadCloudModels}from"./wavespeed-D2-tCOv3.js";
