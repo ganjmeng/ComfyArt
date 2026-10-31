@@ -13,7 +13,7 @@ import { t } from '../i18n'
 export const workflowsOpenAtom = atom('workflows open', false)
 
 const DOCS = 'https://comfyart.org/guides/custom-workflows'
-const GROUPS: CustomGroup[] = ['image', 'edit', 'tools', 'video', 'audio']
+const GROUPS: CustomGroup[] = ['image', 'edit', 'tools', 'video', 'audio', 'model']
 
 async function problemsOf(action: CustomAction, file: string): Promise<string[]> {
   const spec = await readCustomWorkflow(action, file)

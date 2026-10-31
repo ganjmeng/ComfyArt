@@ -7,7 +7,7 @@ import { annotated, type Built } from './workflows'
 import { t } from './i18n'
 import { wsBuilt, type WsInputs } from './wavespeed'
 import { musicJobInputs } from './music'
-import { workflowConfigAtom } from './customWorkflows'
+import { CUSTOM_MODEL3D, workflowConfigAtom } from './customWorkflows'
 
 const QWEN_VOICES = ['Serena', 'Vivian', 'Uncle_fu', 'Dylan', 'Eric', 'Ryan', 'Aiden', 'Ono_anna', 'Sohee']
 export const voices = () => QWEN_VOICES // WaveSpeed qwen3-tts voices
@@ -47,9 +47,11 @@ export function generateAudio(editor: Editor, spec: AudioSpec, onError: ErrorSin
   return id
 }
 
-export type Model3d = 'trellis2' | 'pixal3d'
+export type Model3d = 'trellis2' | 'pixal3d' | typeof CUSTOM_MODEL3D
 
 async function modelGraph(image: string, model: Model3d): Promise<Built> {
+  // custom:model3d → assigned WaveSpeed JSON; trellis2/pixal3d stay the curated default (labels unchanged)
+  if (model === CUSTOM_MODEL3D) return wsBuilt({ feature: 'image_to_3d', custom: 'model3d', model: CUSTOM_MODEL3D, image })
   void model // legacy local names; the curated WaveSpeed default or the agent's model is used
   return wsBuilt({ feature: 'image_to_3d', image })
 }

@@ -543,8 +543,8 @@ def resolve_model(feature: str, model: str | None) -> str:
 
 # custom_workflow (cloud): a feature can run any WaveSpeed model; "fields" maps ComfyArt's values
 # (the upstream @markers) onto that model's request fields.
-MARKER_INPUTS = {"image", "image2", "mask", "last", "audio", "prompt", "lyrics", "size", "width", "height", "count", "seconds"}
-MEDIA_MARKERS = {"image", "image2", "mask", "last", "audio"}
+MARKER_INPUTS = {"image", "image2", "mask", "last", "audio", "video", "prompt", "lyrics", "size", "width", "height", "count", "seconds"}
+MEDIA_MARKERS = {"image", "image2", "mask", "last", "audio", "video"}
 AUTO_FIELDS = {"image", "images", "mask_image", "prompt", "tags", "size", "aspect_ratio", "resolution", "duration",
                "music_length_ms", "last_image", "num_layers", "seed", "output_format", "text", "lyrics", "style", "voice", "voice_id", "language", "audio", "video"}
 
@@ -586,7 +586,7 @@ def check_custom(spec: dict, required: list[str], optional: list[str], meta: dic
             errors.append(f"param {k!r} is not accepted by {model}.")
             codes.append({"code": "badParam", "model": model, "param": str(k)})
     auto = {"image": "image" in props or "images" in props, "image2": "images" in props, "mask": "mask_image" in props,
-            "last": "last_image" in props, "audio": "audio" in props,
+            "last": "last_image" in props, "audio": "audio" in props, "video": "video" in props,
             "prompt": bool({"prompt", "tags", "style", "text"} & set(props)), "lyrics": "lyrics" in props,
             "size": bool({"size", "aspect_ratio", "resolution"} & set(props)), "count": "num_layers" in props or "prompt" in props,
             "seconds": "duration" in props or "music_length_ms" in props}
@@ -605,7 +605,7 @@ def check_custom(spec: dict, required: list[str], optional: list[str], meta: dic
 async def _custom_fields(session: aiohttp.ClientSession, inputs: dict, payload: dict) -> None:
     images = list(inputs.get("images") or [])
     values = {"image": inputs.get("image"), "image2": images[0] if images else None, "mask": inputs.get("mask"),
-              "last": inputs.get("last_image"), "audio": inputs.get("audio"),
+              "last": inputs.get("last_image"), "audio": inputs.get("audio"), "video": inputs.get("video"),
               "prompt": inputs.get("prompt") or inputs.get("text"), "lyrics": inputs.get("lyrics"), "width": inputs.get("width"),
               "height": inputs.get("height"), "count": inputs.get("layers"), "seconds": inputs.get("duration")}
     if inputs.get("width") and inputs.get("height"):
