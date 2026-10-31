@@ -678,7 +678,9 @@ body { background: var(--ca-float); }
 
 /* #494-2 — skill's own dialog: left templates (2-col) + right 「开始制作」 panel. */
 .ca-skillrun {
-  width: min(1200px, calc(100vw - 32px));
+  /* #541 Lovart: 1112×820, left 752 + right 360 */
+  position: relative; border-radius: 16px;
+  width: min(1112px, calc(100vw - 32px));
   height: min(820px, calc(100vh - 64px));
   max-height: min(820px, calc(100vh - 64px));
   display: flex; flex-direction: row; padding: 0; overflow: hidden;
@@ -697,66 +699,101 @@ body { background: var(--ca-float); }
   to { opacity: 1; }
 }
 .ca-skillrun__left {
-  flex: 1 1 58%; min-width: 0; padding: 24px 24px 16px; overflow: hidden;
-  display: flex; flex-direction: column; gap: 12px;
+  flex: 1 1 752px; min-width: 0; padding: 24px 24px 0; overflow: hidden;
+  display: flex; flex-direction: column; gap: 16px;
 }
 /* pinned head — title / author / desc never scroll away under the template grid */
 .ca-skillrun__head {
   flex: none; display: flex; flex-direction: column; gap: 8px; min-width: 0;
 }
 .ca-skillrun__title {
-  margin: 0; font: 600 22px/30px var(--ca-font); color: var(--ca-text);
+  margin: 0; font: 600 16px/24px var(--ca-font); color: var(--ca-text);
   overflow-wrap: anywhere;
 }
+.ca-skillrun__creator { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; }
 .ca-skillrun__author {
-  display: flex; align-items: center; gap: 6px; min-width: 0;
-  color: var(--ca-text-2); font: 400 12px/18px var(--ca-font);
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  color: var(--ca-text); font: 500 13px/20px var(--ca-font);
 }
+.ca-skillrun__author .ca-swall__avatar { width: 28px; height: 28px; }
+.ca-skillrun__action {
+  flex: none; height: 32px; min-width: 60px; padding: 0 12px; border-radius: 8px; border: 0;
+  background: var(--ca-field); color: var(--ca-text); font: 500 13px/32px var(--ca-font); cursor: pointer;
+}
+.ca-skillrun__action:hover { background: var(--ca-active); }
+.ca-skillrun__meta { margin: 0; font: 400 12px/18px var(--ca-font); color: var(--ca-muted); }
 .ca-skillrun__desc {
   margin: 0; color: var(--ca-text-2); font: 400 13px/20px var(--ca-font);
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
 }
 .ca-skillrun__templates { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.ca-skillrun__templates { padding-bottom: 24px; }
+.ca-skillrun__examples { margin-bottom: 24px; }
+.ca-skillrun__stage {
+  width: 100%; aspect-ratio: 704 / 526; border-radius: 12px; overflow: hidden;
+  background: var(--ca-skillrun-tile); display: grid; place-items: center;
+}
+.ca-skillrun__stage img { width: 100%; height: 100%; object-fit: contain; }
+.ca-skillrun__strip { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; }
+.ca-skillrun__thumb {
+  flex: none; width: 64px; height: 48px; padding: 0; border: 0; border-radius: 8px; overflow: hidden; cursor: pointer;
+  background: var(--ca-skillrun-tile); box-shadow: inset 0 0 0 1px transparent; opacity: .6;
+}
+.ca-skillrun__thumb[data-on] { opacity: 1; box-shadow: inset 0 0 0 1px var(--ca-text); }
+.ca-skillrun__thumb img { width: 100%; height: 100%; object-fit: contain; }
 .ca-skillrun__section { margin: 0 0 8px; font: 500 13px/20px var(--ca-font); color: var(--ca-text); }
 .ca-skillrun__grid {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;
   margin-top: 8px;
 }
+.ca-skillrun__tile { position: relative; min-width: 0; }
 .ca-skillrun__preset {
-  display: flex; flex-direction: column; gap: 6px; padding: 0; border: 0;
+  width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 0; border: 0;
   background: none; color: var(--ca-text); cursor: pointer; font: inherit; text-align: left;
 }
 .ca-skillrun__presetimg {
   position: relative; aspect-ratio: 160 / 120; border-radius: 12px; overflow: hidden;
-  background: var(--ca-hover); display: grid; place-items: center;
-  box-shadow: inset 0 0 0 var(--ca-border-w) var(--ca-border);
+  background: var(--ca-skillrun-tile); display: grid; place-items: center;
+  box-shadow: inset 0 0 0 var(--ca-border-w) transparent;
   /* selected ring / ✓ are instantaneous — no transition */
   transition: none;
 }
-.ca-skillrun__preset[data-on] .ca-skillrun__presetimg {
+/* #541 selected ring wraps the whole tile (image + label), as Lovart — overlay so the image can't paint over it */
+.ca-skillrun__preset { position: relative; border-radius: 12px; }
+.ca-skillrun__preset::after {
+  content: ""; position: absolute; inset: 0; border-radius: 12px; pointer-events: none; z-index: 3;
+  box-shadow: none; transition: none;
+}
+.ca-skillrun__preset[data-on]::after {
   box-shadow: inset 0 0 0 1px var(--ca-text);
 }
-.ca-skillrun__presetimg img { width: 100%; height: 100%; object-fit: cover; }
+.ca-skillrun__presetimg img { width: 100%; height: 100%; object-fit: contain; }
 /* hover chip+「选择」: 150ms cubic-bezier(.4,0,.2,1); opacity+scale 0.85→1 only — frame no scale */
 .ca-skillrun__zoom, .ca-skillrun__pick {
   position: absolute; opacity: 0; transform: scale(0.85);
   transition: opacity 150ms cubic-bezier(.4, 0, .2, 1), transform 150ms cubic-bezier(.4, 0, .2, 1);
   pointer-events: none; z-index: 1;
 }
+.ca-skillrun__tile:hover .ca-skillrun__zoom, .ca-skillrun__zoom:focus-visible { pointer-events: auto; }
 .ca-skillrun__zoom {
-  top: 8px; left: 8px; width: 28px; height: 28px; border-radius: 999px;
+  top: 8px; left: 8px; width: 22px; height: 22px; border-radius: 6px; border: 0; padding: 0; cursor: pointer;
   background: rgba(0,0,0,.45); color: #fff; display: grid; place-items: center;
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 }
 .ca-skillrun__zoom .ca-icon { width: 14px; height: 14px; }
+.ca-skillrun__zoomview {
+  position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; padding: 32px; border: 0;
+  background: rgba(0,0,0,.72); cursor: zoom-out;
+}
+.ca-skillrun__zoomview img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; }
 .ca-skillrun__pick {
   top: 8px; right: 8px; height: 28px; padding: 0 12px; border-radius: 999px;
   background: #fff; color: #1a1a1a; font: 500 12px/28px var(--ca-font);
   box-shadow: 0 1px 4px rgba(0,0,0,.12); display: inline-flex; align-items: center;
 }
-.ca-skillrun__preset:hover .ca-skillrun__zoom,
+.ca-skillrun__tile:hover .ca-skillrun__zoom,
+.ca-skillrun__zoom:focus-visible,
 .ca-skillrun__preset:hover .ca-skillrun__pick,
-.ca-skillrun__preset:focus-visible .ca-skillrun__zoom,
 .ca-skillrun__preset:focus-visible .ca-skillrun__pick {
   opacity: 1; transform: scale(1);
 }
@@ -767,26 +804,27 @@ body { background: var(--ca-float); }
   transition: none; z-index: 2; /* selected ring+✓ instantaneous */
 }
 .ca-skillrun__check .ca-icon { width: 10px; height: 10px; }
-.ca-skillrun__presetname { font: 400 12px/18px var(--ca-font); color: var(--ca-text-2); }
+.ca-skillrun__presetname { font: 400 13px/22px var(--ca-font); color: var(--ca-text-2); padding: 0 12px; }
+.ca-skillrun__preset[data-on] .ca-skillrun__presetname { color: var(--ca-text); font-weight: 500; }
 .ca-skillrun__right {
   flex: 0 0 360px; width: 360px; max-width: 360px; display: flex; flex-direction: column; min-width: 0;
-  background: var(--ca-hover); border-left: var(--ca-border-w) solid var(--ca-border);
+  background: var(--ca-skillrun-side); border-left: 0;
 }
 .ca-skillrun__righthead {
   display: flex; align-items: center; justify-content: space-between;
-  height: 56px; padding: 0 16px 0 20px; font: 500 14px/20px var(--ca-font);
+  height: 64px; padding: 0 16px 0 24px; font: 600 14px/20px var(--ca-font);
 }
 .ca-skillrun__body {
-  flex: 1; min-height: 0; overflow: auto; padding: 0 20px 16px;
-  display: flex; flex-direction: column; gap: 14px;
+  flex: 1; min-height: 0; overflow: auto; padding: 0 24px 16px;
+  display: flex; flex-direction: column; gap: 16px;
 }
 .ca-skillrun__currentlabel { display: block; font: 400 12px/18px var(--ca-font); color: var(--ca-text-2); margin-bottom: 6px; }
 .ca-skillrun__currentrow {
-  display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px;
+  display: flex; align-items: center; gap: 12px; height: 86px; padding: 0 16px; box-sizing: border-box; border-radius: 12px;
   background: var(--ca-float, var(--ca-surface)); box-shadow: inset 0 0 0 var(--ca-border-w) var(--ca-border);
 }
 .ca-skillrun__currentthumb {
-  width: 40px; height: 40px; border-radius: 8px; overflow: hidden; flex: none;
+  width: 36px; height: 36px; border-radius: 8px; overflow: hidden; flex: none;
   background: var(--ca-hover); display: grid; place-items: center;
 }
 .ca-skillrun__currentthumb img { width: 100%; height: 100%; object-fit: cover; }
@@ -807,13 +845,25 @@ body { background: var(--ca-float); }
   display: block; width: 100%; max-width: 100%; flex: none; box-sizing: border-box;
 }
 .ca-skillrun .ca-skillform .ca-skillrun__field > select.ca-panel__input { cursor: pointer; }
+.ca-skillrun .ca-skillform .ca-skillrun__field > .ca-panel__input { height: 36px; border-radius: 8px; }
+.ca-skillrun__field > .ca-skillform__label { font: 400 12px/18px var(--ca-font); color: var(--ca-text-2); padding: 0; }
+.ca-skillrun__uploadwrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.ca-skillrun__upload {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; height: 108px; box-sizing: border-box; border-radius: 12px; cursor: pointer;
+  border: 1px dashed var(--ca-rail); background: var(--ca-float); color: var(--ca-text-2);
+  font: 400 12px/18px var(--ca-font);
+}
+.ca-skillrun__upload:hover { border-color: var(--ca-muted); color: var(--ca-text); }
+.ca-skillrun__upload .ca-icon { width: 20px; height: 20px; }
+.ca-skillrun__upload input { display: none; }
 .ca-skillrun__req { color: var(--ca-danger, #e5484d); }
 .ca-skillrun__foot {
-  display: flex; flex-direction: column; gap: 8px; padding: 12px 20px 20px;
+  flex: none; margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px 24px 24px;
 }
 .ca-skillrun__foot > button {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 100%; height: 36px; padding: 0 16px; border-radius: 10px;
+  width: 100%; height: 36px; padding: 0 16px; border-radius: 8px;
   font: inherit; font-size: 14px; cursor: pointer; box-sizing: border-box;
 }
 .ca-skillrun__go {
