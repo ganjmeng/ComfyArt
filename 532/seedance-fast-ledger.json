@@ -1,0 +1,99 @@
+{
+  "model": "bytedance/seedance-v1-pro-fast/image-to-video",
+  "duration": 3,
+  "resolution": "480p",
+  "aspect_ratio": "4:3",
+  "budget": 0.36,
+  "unit_quote": 0.036,
+  "balance_before": 5.984044,
+  "input_tip": "b3d99ea20afe3de954fccdfec5c051dc146ab522",
+  "clips": [
+    {
+      "skill": "poster",
+      "prediction_id": "df2ebb8f066c4b189f06a3887c168609",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/6cd542ee-1f79-4cbf-8e92-d307c8ed09c0-u1_79d4f1a7-18c3-4ad0-8da0-751db4874425.mp4",
+      "bytes": 385747,
+      "sha256": "c8ac4e8bd2ed812051787b06cd5996eb67e3a69e529ea46103942f26cd36864b",
+      "unit_quote": 0.036
+    },
+    {
+      "skill": "social",
+      "prediction_id": "56bb52e0bbc7495bbbb6d620b3ba46a0",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/7cd3ecb0-8ffd-43d4-a41d-5890bf31dcb6-u1_f0f2818a-9b56-479a-87f2-cf8eec9befa3.mp4",
+      "bytes": 520620,
+      "sha256": "9da9b7c9f92c75fdde23cace1969ce3a7d7806ec8677d2bcbfd3d6a799b858c3",
+      "unit_quote": 0.036
+    },
+    {
+      "skill": "brand",
+      "prediction_id": "3da0d6a4f3eb499b8f727597caeec6b4",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/2c72d8b4-5a1b-4007-a56a-ee69fe9a3d25-u1_e976b981-f57e-4fa2-bd9b-e87715558958.mp4",
+      "bytes": 198506,
+      "sha256": "21936318a978d79459a9b97318968c69e01f818f76d5e3c5f9fbb9e2d9818af1",
+      "unit_quote": 0.036
+    },
+    {
+      "skill": "packaging",
+      "prediction_id": "a122998486ed42d69f8d5ba00955197a",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/267fc66c-260d-4c05-9c33-ff4a7dcffdec-u2_387530c2-402b-4009-a337-065597181db3.mp4",
+      "bytes": 313507,
+      "sha256": "66885e7dd25ce1c7d9f3456a58bfac4f9e1219c190e9c969b36c7881cc96ecd7",
+      "unit_quote": 0.036
+    },
+    {
+      "skill": "thumbnail",
+      "prediction_id": "fa07fc7568704e7180254e822ba86757",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/d02a6017-1345-4282-82d4-b620908c1cf1-u2_6c9592c6-0012-4403-9a3f-cf4ab5d7eb4b.mp4",
+      "bytes": 499470,
+      "sha256": "466ba2ad1007a00b970931b5fed50155cc9d2449439d22ecadf1551ab95089bb",
+      "unit_quote": 0.036
+    },
+    {
+      "skill": "banner",
+      "prediction_id": "5d1db70e0d194de0908a4901c0ca160b",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/5830fdfe-7822-46bb-a99a-54babf6753c6-u2_8ae826ec-6029-46a9-81ed-d689eb5c3128.mp4",
+      "bytes": 499246,
+      "sha256": "09d1416a833e722abaedcb087f9950890b1a5b57f0ae3c27e2e5c94244f0f389",
+      "unit_quote": 0.036
+    },
+    {
+      "skill": "character",
+      "prediction_id": "e6da728c17514a49854f2bb7bfab12ad",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/c278b685-634f-4691-b87e-5ed1e243dd05-u1_df105232-5bb5-4179-a9b8-3da72687a01d.mp4",
+      "bytes": 668224,
+      "sha256": "0df870627c48aad7dc9494664e76d94a0b11665a597f3adee487b266d2c648eb",
+      "unit_quote": 0.036
+    },
+    {
+      "skill": "product",
+      "prediction_id": "be73c7854c88499eae06599a1f1bd8e4",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/44c68474-896f-484e-9005-9820dc0f163f-u1_87064a9f-59cc-4515-a8ff-f55856d31326.mp4",
+      "bytes": 112889,
+      "sha256": "a4a9ddaff0cde4f1be547fcb566e32a46c25a44c79067b8974024fd981cabf16",
+      "unit_quote": 0.036
+    },
+    {
+      "skill": "motion",
+      "prediction_id": "91e6f036eecc4fceab4245e0987bf6c5",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/d301b964-3bad-4f18-93b3-26adfdc7039e-u1_3268da9d-cc0a-4fef-903c-0b20bd02fcd3.mp4",
+      "bytes": 276575,
+      "sha256": "bdba636d7a8e386c5093c911818cbb2811d1d8eafe7c47f5b3cb5b431529287d",
+      "unit_quote": 0.036
+    },
+    {
+      "skill": "interior",
+      "prediction_id": "86788248951b489b8ca5f8cb7a757b39",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/e8e55021-9045-480d-8887-f9eb4a44afc5-u2_04e35ae1-f29d-4046-a09a-516443d85324.mp4",
+      "bytes": 540541,
+      "sha256": "b7b5fdc8f481ff1e0889b30b3045501e79e85a20025d2f40e050ff0cc89dad9a",
+      "unit_quote": 0.036
+    }
+  ],
+  "failures": [],
+  "spend_cap_ok": true,
+  "balance_after": 5.624044,
+  "spend_actual": 0.36,
+  "spend_est": 0.36,
+  "n_ok": 10,
+  "n_fail": 0
+}
