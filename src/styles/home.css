@@ -188,7 +188,7 @@ body { background: var(--ca-float); }
 .ca-arti__cap[data-disabled] .ca-switch { opacity: .72; }
 .ca-arti__capbody { flex: 1; min-width: 0; }
 .ca-arti__captitle { font: 500 14px/22px var(--ca-font); }
-.ca-arti__capdesc { margin-top: 2px; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
+.ca-arti__capdesc { margin-top: 2px; color: var(--ca-text-2); font: 400 13px/20px var(--ca-font); }
 .ca-arti__capnote { margin-top: 6px; color: var(--ca-muted); font: 400 12px/18px var(--ca-font); }
 
 .ca-arti__tabs { display: flex; gap: 4px; border-bottom: var(--ca-border-w) solid var(--ca-border); margin-bottom: 16px; }
@@ -361,6 +361,9 @@ body { background: var(--ca-float); }
 /* '即将开放': secondary text token straight, never under the disabled switch's opacity */
 .ca-arti__capsoon { margin-top: 4px; color: var(--ca-text-2); opacity: 1; font: 400 12px/18px var(--ca-font); }
 :root:not([data-theme="dark"]) .ca-switch:disabled { box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); background: rgba(0,0,0,.08); opacity: .7; }
+/* #398: enabled-off keeps ≥3:1 outline; disabled is more muted (lower opacity, no matching outline) so off ≠ disabled */
+.ca-arti__cap .ca-switch:not([data-on]):not(:disabled) { box-shadow: inset 0 0 0 1px var(--ca-text-2); }
+.ca-arti__cap[data-disabled] .ca-switch:disabled { opacity: .55; box-shadow: none; }
 
 /* #385: /arti evolution log (时间 | 操作) + chat intent hint */
 .ca-arti-evo { display: flex; flex-direction: column; gap: 0; }
