@@ -161,6 +161,8 @@ def test_locales_only_add_memory_retrieved_430():
         "customWorkflows.action.extend", "customWorkflows.action.videoUpscale",
         "customWorkflows.action.videoCutout", "customWorkflows.action.model3d",
         "customWorkflows.group.model", "customWorkflows.model3dGone", "customWorkflows.needsVideo",
+        # #542: Skill Creator landing heading (not memory copy)
+        "agentPanel.creatorStartTitle",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)

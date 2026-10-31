@@ -52,6 +52,7 @@
   "agentPanel.chatHistory": "Chat History",
   "agentPanel.collapseChat": "Collapse chat",
   "agentPanel.createChat": "New Chat",
+  "agentPanel.creatorStartTitle": "How would you like to start creating?",
   "agentPanel.describeWhatYouWantTo": "Describe what you want to design. The Agent will look at the canvas, plan and generate.",
   "agentPanel.enableMcpAndAgentIn": "Enable MCP and Agent in Agent Settings to design on the canvas with local Claude Code, Codex and more. Image and video modes are unaffected.",
   "agentPanel.enterASearchTerm": "Enter a search term",

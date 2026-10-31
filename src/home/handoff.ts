@@ -141,19 +141,12 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
     return startSkillEdit(editor, skill, (text, s, context) => sendToAgent(editor, text, [], s, [], [], context))
   }
   if (createSkill) {
-    // #491: both create entries land in the chat-only full-screen layout (chatView 'max')
+    // #491 / #542: both create entries (home 创建技能, Skills page 创建) land here identically: chat-only full screen
+    // (chatView 'max'), the 技能创建器 chip, caret in the input. Nothing is sent; the user sends from the composer.
     chatViewAtom.set('max')
     agentModeAtom.set('agent')
-    if (text) {
-      // #491 entry A: the home send carries the brief; send it once with the creator prefill (same as Composer)
-      skillCreatorAtom.set({ on: false })
-      const shapes = await placeRefs(editor, refs)
-      await refreshBot()
-      // #491 A3: the bubble shows the 技能创建器 chip + the user's own words; the instruction rides in the hidden context
-      return sendToAgent(editor, text, shapes as TLImageShape[], null, [], [], t('composer.skillCreatorPrefill', text), { chip: t(CREATE_ENTRY_CHIP_KEY) })
-    }
-    // #491 entry B: chip preset, cursor in the input, nothing is sent
     skillCreatorAtom.set({ on: true, chip: CREATE_ENTRY_CHIP_KEY })
+    if (text) draftAtom.set(text)  // #542: an old ask= link keeps its text as a draft, never auto-sent
     if (refs.length) extraRefsAtom.set((await placeRefs(editor, refs)).map((s) => s.id))
     focusComposer()
     return

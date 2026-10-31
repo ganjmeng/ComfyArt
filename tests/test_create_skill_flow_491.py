@@ -22,8 +22,8 @@ def _create_branch() -> str:
 
 
 def _entry_b() -> str:
-    body = _create_branch()
-    return body.split("if (text) {", 1)[1].split("\n    }\n", 1)[1]
+    # #542: one path for both entries (no A/B split any more)
+    return _create_branch()
 
 
 def _home_create_click() -> str:
@@ -73,28 +73,26 @@ def test_a_home_menu_path() -> None:
     assert '"home.importSkill": "导入技能"' in ZH
 
 
-def test_a_click_adds_chip_without_navigating() -> None:
+def test_a_click_jumps_like_skills_page() -> None:
+    """#542 Step 1: home 创建技能 jumps on click with the same handoff as the Skills page 创建 (no send, no home chip)."""
     click = _home_create_click()
-    assert "setCreator(true)" in click
-    for bad in ("newProject", "startProject", "location", "send(", "openView"):
+    assert "newProject({ createSkill: '1' })" in click
+    for bad in ("startProject", "send(", "setCreator", "ask"):
         assert bad not in click, bad
-    assert 'testId="home-skill-creator-chip"' in HOME  # #502 D3: rendered via SkillChip
-    assert "t(HOME_CREATOR_CHIP_KEY)" in HOME
+    assert 'testId="home-skill-creator-chip"' not in HOME
     assert '"composer.skillCreator": "技能创建器"' in ZH
 
 
-def test_a_send_opens_project_with_create_skill_and_text() -> None:
-    assert "if (creator) await startProject({ createSkill: '1', ask: text.trim(), ref: refs })" in HOME
+def test_a_send_no_longer_carries_creator() -> None:
+    """#542: nothing on home sends a createSkill brief any more."""
+    assert "createSkill: '1', ask" not in HOME and "setCreator" not in HOME
 
 
-def test_a_send_lands_full_screen_with_prefill_once() -> None:
+def test_create_branch_lands_full_screen_without_send() -> None:
     body = _create_branch()
-    a = body.split("if (text) {", 1)[1].split("\n    }\n", 1)[0]
-    assert "skillCreatorAtom.set({ on: false })" in a
-    assert a.count("sendToAgent(") == 1
-    assert "t('composer.skillCreatorPrefill', text)" in a
-    # max is set before the A/B split, so A also lands in chat-only full screen
-    assert body.index("chatViewAtom.set('max')") < body.index("if (text) {")
+    assert "sendToAgent" not in body and "skillCreatorAtom.set({ on: false })" not in body
+    assert "if (text) draftAtom.set(text)" in body  # legacy ask= stays a draft
+    assert body.index("chatViewAtom.set('max')") < body.index("focusComposer()")
 
 
 def test_in_canvas_entry_unchanged() -> None:
@@ -195,7 +193,7 @@ def test_d2_dropdown_icons() -> None:
 
 
 def test_d3_creator_chip_is_skill_chip_everywhere() -> None:
-    assert '<SkillChip name={t(HOME_CREATOR_CHIP_KEY)} testId="home-skill-creator-chip" />' in HOME
+    # #542: the creator chip now only lives in the canvas composer (home jumps on click)
     assert "<SkillChip name={t(skillCreator.chip ?? 'composer.skillCreator')} testId=\"skill-creator-chip\" />" in COMPOSER
     for src in (HOME, COMPOSER):
         assert "ca-chip--creator" not in src
@@ -212,7 +210,7 @@ def test_d4_chips_have_no_remove_button() -> None:
 
 def test_d4_backspace_rule() -> None:
     assert "el.value === '' || (el.selectionStart === 0 && el.selectionEnd === 0)" in CHIP
-    assert "if ((picked || creator) && chipBackspace(e)) { e.preventDefault(); setPicked(null); setCreator(false); return }" in HOME
+    assert "if (picked && chipBackspace(e)) { e.preventDefault(); setPicked(null); return }" in HOME
     assert "if ((skillCreator.on || skill) && chipBackspace(e)) {" in COMPOSER
 
 
@@ -275,12 +273,10 @@ def test_r2_dropdown_right_aligned_and_clamped_to_panel() -> None:
 
 
 def test_r2_a3_home_send_shows_chip_and_own_text_only() -> None:
-    body = _create_branch()
-    a = body.split("if (text) {", 1)[1].split("\n    }\n", 1)[0]
-    # bubble text = user's words; instruction = hidden context; chip = 技能创建器
-    assert ("sendToAgent(editor, text, shapes, null, [], [], t('composer.skillCreatorPrefill', text), "
-            "{ chip: t(CREATE_ENTRY_CHIP_KEY) })") in a
+    # #542: the handoff never sends; the creator turn is always the composer send (chip + own text, prefill as context)
+    assert "sendToAgent" not in _create_branch()
     assert "sendToAgent(editor, t('composer.skillCreatorPrefill'" not in HANDOFF
+    assert "creatorChip ? { chip: creatorChip } : undefined" in COMPOSER
 
 
 def test_r2_a3_composer_send_shows_chip_and_own_text_only() -> None:
@@ -320,8 +316,8 @@ def test_r2_a3_bubble_text_is_exactly_user_text() -> None:
     # server stores the typed text verbatim as the only text block; the instruction stays in context
     seg = BOT_PY.split('chip_name = str(body.get("chip") or "")', 1)[1].split("context = str(body.get", 1)[0]
     assert re.findall(r'display_blocks\.append\(\{"type": "text", "text": [^}]*\}\)', seg) == ['display_blocks.append({"type": "text", "text": text})']
-    # both client entries send exactly the typed text as `text`
-    assert "sendToAgent(editor, text, shapes, null, [], [], t('composer.skillCreatorPrefill', text)," in HANDOFF
+    # #542: the composer is the only creator send and sends exactly the typed text as `text`
+    assert "t('composer.skillCreatorPrefill', text)" not in HANDOFF
     assert "await sendToAgent(editor, text, keptRefs," in COMPOSER
 
 
@@ -374,29 +370,33 @@ def test_r4_plus_menu_skills_item_opens_panel() -> None:
 
 
 def test_r4_both_create_entries_go_full_screen() -> None:
-    """QA gap xe: entry A (home send) and entry B (skills page) both land in chatView 'max'."""
-    branch = HANDOFF.split("if (createSkill) {", 1)[1]
-    head, rest = branch.split("if (text) {", 1)
-    assert "chatViewAtom.set('max')" in head, "max must be set before the A/B split so it covers entry A"
-    entry_a = rest.split("// #491 entry B", 1)[0]
-    assert "return sendToAgent(" in entry_a  # entry A returns inside its branch, so a B-only max would miss it
+    """QA gap xe / #542: both entries call the same handoff, which sets chatView 'max' with no branch that skips it."""
+    branch = _create_branch()
+    assert "chatViewAtom.set('max')" in branch and "return sendToAgent(" not in branch
+    assert "newProject({ createSkill: '1' })" in _home_create_click()
+    assert "const createConversational = () => newProject({ createSkill: '1' })" in SKILLS_PAGE
 
 
 def test_r4_create_drops_picked_skill_chip() -> None:
-    """QA gap xf: choosing 创建技能 after picking a skill leaves only the creator chip (picked is cleared, else the send would silently drop the creator)."""
-    m = re.search(r'data-testid="home-create-skill" onClick=\{\(\) => \{([^}]*)\}\}', HOME)
-    assert m, "create-skill handler"
-    body = m.group(1)
-    assert "setPicked(null)" in body and "setCreator(true)" in body
-    # the send prefers `picked`, so both chips together would send a plain skill turn
-    assert re.search(r"if \(picked\) await startProject\(\{ skill: picked\.id.*?\n\s*else if \(creator\) await startProject\(\{ createSkill: '1'", HOME, re.S)
+    """QA gap xf / #542: 创建技能 leaves home, so a picked skill can never ride along with the creator."""
+    body = _home_create_click()
+    assert "newProject({ createSkill: '1' })" in body and "picked" not in body
 
 
 def test_r4_entry_b_focuses_input() -> None:
-    """(c) after entry B the caret is in the composer input, not on the full-screen toggle."""
-    entry_b = HANDOFF.split("// #491 entry B", 1)[1].split("return", 1)[0]
-    assert "focusComposer()" in entry_b
+    """(c) after either entry the caret is in the composer input, not on the full-screen toggle."""
+    assert "focusComposer()" in _create_branch()
     fc = HANDOFF.split("function focusComposer() {", 1)[1].split("\n}\n", 1)[0]
     assert "querySelector<HTMLTextAreaElement>('.ca-composer__input')" in fc
-    # keep retrying while focus is NOT on the input (a mounted-but-unfocused input must not stop the retry)
     assert "if ((!el || document.activeElement !== el) && ++tries < 30) requestAnimationFrame(go)" in fc
+
+
+def test_r5_542_both_entries_identical_landing_state() -> None:
+    """#542 lock: home 创建技能 and Skills 「创建」 make the same call; the one handoff branch gives the same chip,
+    focus and chat-only full screen, and sends nothing (browser check: test_e2e_creator_fullscreen_542.py)."""
+    assert "newProject({ createSkill: '1' })" in _home_create_click()
+    assert "const createConversational = () => newProject({ createSkill: '1' })" in SKILLS_PAGE
+    b = _create_branch()
+    for s in ("chatViewAtom.set('max')", "skillCreatorAtom.set({ on: true, chip: CREATE_ENTRY_CHIP_KEY })", "focusComposer()"):
+        assert s in b, s
+    assert "sendToAgent" not in b and "generateDirect" not in b
