@@ -1,0 +1,33 @@
+{
+  "note": "Contemporaneous before-screenshots were not captured during the run. Live after-balance is below. Cost is verified as balance delta recorded at run time and matches list prices for the three models.",
+  "live_balance_after_all": 6.603244,
+  "recorded_ledger_usd": {
+    "before_builtin_three": 6.856244,
+    "after_builtin_three": 6.604744,
+    "delta_builtin": 0.2515,
+    "after_custom": 6.603244,
+    "delta_custom": 0.0015
+  },
+  "tasks": [
+    {
+      "id": "215b5b366e19433f853394f612022ef5",
+      "model": "minimax/music-3.0",
+      "list_price": 0.15
+    },
+    {
+      "id": "c0487984eb714fa58d28de4252c847d2",
+      "model": "wavespeed-ai/ace-step-1.5",
+      "list_price": 0.0015
+    },
+    {
+      "id": "d3af5a0ec48a415cb2a1955bf8d96e18",
+      "model": "wavespeed-ai/yue2-3b/text-to-music",
+      "list_price": 0.1
+    },
+    {
+      "id": "92fb5b1975fa4fd28fb23f878bc0bd6e",
+      "model": "wavespeed-ai/ace-step-1.5 (custom:true)",
+      "list_price": 0.0015
+    }
+  ]
+}

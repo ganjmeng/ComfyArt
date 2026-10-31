@@ -1,0 +1,21 @@
+{
+    "code": 200,
+    "message": "success",
+    "data": {
+        "id": "215b5b366e19433f853394f612022ef5",
+        "model": "minimax/music-3.0",
+        "outputs": [
+            "https://d2h7xmz5gqybh9.cloudfront.net/output/948751d1-0ba4-462d-89d5-2319b0b77eef.mp3"
+        ],
+        "urls": {
+            "get": "https://api.wavespeed.ai/api/v3/predictions/215b5b366e19433f853394f612022ef5/result"
+        },
+        "status": "completed",
+        "created_at": "2026-10-31T01:26:34.757719436Z",
+        "code": 0,
+        "error": "",
+        "timings": {
+            "inference": 32290
+        }
+    }
+}

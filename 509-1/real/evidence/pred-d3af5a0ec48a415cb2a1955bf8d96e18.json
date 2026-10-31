@@ -1,0 +1,21 @@
+{
+    "code": 200,
+    "message": "success",
+    "data": {
+        "id": "d3af5a0ec48a415cb2a1955bf8d96e18",
+        "model": "wavespeed-ai/yue2-3b/text-to-music",
+        "outputs": [
+            "https://d2h7xmz5gqybh9.cloudfront.net/output/fbc503ac-2528-4898-83fa-5ff5ddef8ab2-u2_7f763895-df39-4fb1-87f0-a95c708c1eec.mp3"
+        ],
+        "urls": {
+            "get": "https://api.wavespeed.ai/api/v3/predictions/d3af5a0ec48a415cb2a1955bf8d96e18/result"
+        },
+        "status": "completed",
+        "created_at": "2026-10-31T01:27:57.279602993Z",
+        "code": 0,
+        "error": "",
+        "timings": {
+            "inference": 31220
+        }
+    }
+}
