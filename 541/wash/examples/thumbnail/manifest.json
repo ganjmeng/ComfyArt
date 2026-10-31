@@ -1,5 +1,5 @@
 {
- "commit": "811e4d1",
+ "commit": "64a19e1",
  "skill": "thumbnail",
  "examples": [
   {
@@ -7,49 +7,49 @@
    "aspect_ratio": "16:9",
    "subject": "YouTube thumbnail",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-1.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-1@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-1.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-1@thumb.webp"
   },
   {
    "id": "ex-2",
    "aspect_ratio": "16:9",
    "subject": "YouTube science thumbnail",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-2.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-2@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-2.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-2@thumb.webp"
   },
   {
    "id": "ex-3",
    "aspect_ratio": "16:9",
    "subject": "YouTube true-crime documentary thumbnail",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-3.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-3@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-3.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-3@thumb.webp"
   },
   {
    "id": "ex-4",
    "aspect_ratio": "16:9",
    "subject": "YouTube reaction thumbnail",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-4.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-4@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-4.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-4@thumb.webp"
   },
   {
    "id": "ex-5",
    "aspect_ratio": "16:9",
    "subject": "YouTube podcast thumbnail",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-5.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-5@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-5.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-5@thumb.webp"
   },
   {
    "id": "ex-6",
    "aspect_ratio": "16:9",
    "subject": "cinematic YouTube essay thumbnail",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-6.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/ex-6@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-6.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/ex-6@thumb.webp"
   }
  ],
- "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/811e4d1/541/wash/examples/thumbnail/sbs_examples_thumbnail.png"
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/64a19e1/541/wash/examples/thumbnail/sbs_examples_thumbnail.png"
 }
