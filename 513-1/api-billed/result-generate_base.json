@@ -1,0 +1,21 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "0f0360efd02941c88b8e1c9ea70b1fd2",
+    "model": "wavespeed-ai/flux-dev-lora",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/720bb1d2-e0cd-4589-871c-59256a00c87b-u1_203817e3-159a-41e2-95e3-269a78e5ad16.jpeg"
+    ],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/0f0360efd02941c88b8e1c9ea70b1fd2/result"
+    },
+    "status": "completed",
+    "created_at": "2026-10-31T09:50:11.246787588Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 8632
+    }
+  }
+}

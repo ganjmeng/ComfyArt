@@ -1,0 +1,19 @@
+{
+  "ws:91dca275421b4ddbb46575ff100aac42": {
+    "status": {
+      "completed": true,
+      "status_str": "completed",
+      "messages": []
+    },
+    "outputs": {
+      "ws": {
+        "images": [
+          {
+            "filename": "15990ffd-03e3-4ad0-b3bd-e180268728c2-u1_6fda1b3c-09d6-431e-84ef-f6c219573391.mp4",
+            "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/15990ffd-03e3-4ad0-b3bd-e180268728c2-u1_6fda1b3c-09d6-431e-84ef-f6c219573391.mp4"
+          }
+        ]
+      }
+    }
+  }
+}

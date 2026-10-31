@@ -1,0 +1,26 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "0984e958eeef4237bd7a0be56cf7850d",
+    "model": "kwaivgi/kling-v2.6-std/motion-control",
+    "input": {
+      "character_orientation": "image",
+      "image": "https://d2h7xmz5gqybh9.cloudfront.net/media/images/20a8f357-ba1a-463e-936f-4ce7744befb0.png",
+      "keep_original_sound": false,
+      "prompt": "person talks and moves naturally",
+      "video": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/46b35a52-65e1-44dc-ac34-70a7f05a8b24.mp4"
+    },
+    "outputs": [],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/0984e958eeef4237bd7a0be56cf7850d/result"
+    },
+    "status": "created",
+    "created_at": "2026-10-31T09:52:32.937Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 0
+    }
+  }
+}

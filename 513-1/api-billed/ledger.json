@@ -1,0 +1,79 @@
+{
+  "issue": "#513-1 / PR #530",
+  "budget": 0.5,
+  "balance_before": 6.179044,
+  "balance_after": 5.984044,
+  "total_actual_billed": 0.195,
+  "order": "generate_refs \u2192 generate_base \u2192 lipsync \u2192 motion (product HOLD order; motion last)",
+  "runs": [
+    {
+      "path": "generate_refs",
+      "model": "wavespeed-ai/flux-dev-lora",
+      "prediction_id": "defd54f9fb5a47fbb5741ebd43e04483",
+      "quoted": 0.015,
+      "actual_billed": 0.015,
+      "status": "completed",
+      "balance_before": 6.179044,
+      "balance_after": 6.164044,
+      "note": "custom generate @image (refs)"
+    },
+    {
+      "path": "generate_base",
+      "model": "wavespeed-ai/flux-dev-lora",
+      "prediction_id": "0f0360efd02941c88b8e1c9ea70b1fd2",
+      "quoted": 0.015,
+      "actual_billed": 0.015,
+      "status": "completed",
+      "balance_before": 6.164044,
+      "balance_after": 6.149044,
+      "note": "custom generate @base/@strength (\u5e95\u56fe)"
+    },
+    {
+      "path": "lipsync",
+      "model": "wavespeed-ai/infinitetalk-fast",
+      "prediction_id": "1e9f82f988c64d8d8cc623c9a2d638d4",
+      "quoted": 0.045,
+      "actual_billed": 0.045,
+      "status": "completed",
+      "balance_before": 6.149044,
+      "balance_after": 6.104044,
+      "note": "custom lipsync / curated default"
+    },
+    {
+      "path": "motion",
+      "model": "wavespeed-ai/wan-2.2/animate",
+      "prediction_id": "91dca275421b4ddbb46575ff100aac42",
+      "quoted": 0.12,
+      "actual_billed": 0.12,
+      "status": "completed",
+      "balance_before": 6.104044,
+      "balance_after": 5.984044,
+      "note": "curated motion_control; Kling v2.6 failed twice (no upper-body in video, content not transient) \u2014 wan-2.2/animate succeeded; shortest cheap path"
+    }
+  ],
+  "failed_attempts": [
+    {
+      "path": "motion_kling_v26_attempt1",
+      "prediction_id": "527ecb723f7746b889e64be37028d96e",
+      "actual_billed": 0.0,
+      "status": "failed",
+      "error": "No complete upper body was detected in the video."
+    },
+    {
+      "path": "motion_kling_v26_attempt2",
+      "prediction_id": "0984e958eeef4237bd7a0be56cf7850d",
+      "actual_billed": 0.0,
+      "status": "failed",
+      "error": "No complete upper body was detected in the video."
+    }
+  ],
+  "note": "prediction_id == ComfyArt /comfyart/wavespeed/history/<id> task id (same as #509/#514 API-billed)",
+  "media": {
+    "portrait": "https://d2h7xmz5gqybh9.cloudfront.net/media/images/bb22a745-a7f3-4c57-994b-121fa3c4760a.png",
+    "ref": "https://d2h7xmz5gqybh9.cloudfront.net/media/images/0869e265-a71d-462c-83f7-e21c66916271.png",
+    "motion": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/e0d64df1-f5b7-4d91-b7d0-9cee14bb70fc.mp4",
+    "speech": "https://d2h7xmz5gqybh9.cloudfront.net/media/audios/4d034dce-50f7-4342-8fdb-b8b4a628a513.mp3",
+    "person": "https://d2h7xmz5gqybh9.cloudfront.net/media/images/20a8f357-ba1a-463e-936f-4ce7744befb0.png",
+    "motion_person": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/46b35a52-65e1-44dc-ac34-70a7f05a8b24.mp4"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "model": "wavespeed-ai/flux-dev-lora",
+  "fields": {
+    "@base": "image",
+    "@strength": "strength",
+    "@prompt": "prompt"
+  },
+  "params": {
+    "size": "512*512",
+    "num_inference_steps": 8
+  }
+}

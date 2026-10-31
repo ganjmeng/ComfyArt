@@ -1,0 +1,12 @@
+{
+  "model": "kwaivgi/kling-v2.6-std/motion-control",
+  "fields": {
+    "@image": "image",
+    "@video": "video",
+    "@prompt": "prompt"
+  },
+  "params": {
+    "character_orientation": "image",
+    "keep_original_sound": false
+  }
+}

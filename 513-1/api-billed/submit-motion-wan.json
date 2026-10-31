@@ -1,0 +1,26 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "91dca275421b4ddbb46575ff100aac42",
+    "model": "wavespeed-ai/wan-2.2/animate",
+    "input": {
+      "image": "https://d2h7xmz5gqybh9.cloudfront.net/media/images/20a8f357-ba1a-463e-936f-4ce7744befb0.png",
+      "mode": "animate",
+      "prompt": "person moves naturally",
+      "resolution": "480p",
+      "video": "https://d2h7xmz5gqybh9.cloudfront.net/media/videos/e0d64df1-f5b7-4d91-b7d0-9cee14bb70fc.mp4"
+    },
+    "outputs": [],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/91dca275421b4ddbb46575ff100aac42/result"
+    },
+    "status": "created",
+    "created_at": "2026-10-31T09:53:57.365Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 0
+    }
+  }
+}

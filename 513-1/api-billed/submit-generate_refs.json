@@ -1,0 +1,31 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "defd54f9fb5a47fbb5741ebd43e04483",
+    "model": "wavespeed-ai/flux-dev-lora",
+    "input": {
+      "enable_base64_output": false,
+      "enable_sync_mode": false,
+      "guidance_scale": 3.5,
+      "image": "https://d2h7xmz5gqybh9.cloudfront.net/media/images/0869e265-a71d-462c-83f7-e21c66916271.png",
+      "num_images": 1,
+      "num_inference_steps": 8,
+      "output_format": "jpeg",
+      "prompt": "a small red cube on a table, soft light, #513 refs",
+      "size": "512*512",
+      "strength": 0.8
+    },
+    "outputs": [],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/defd54f9fb5a47fbb5741ebd43e04483/result"
+    },
+    "status": "created",
+    "created_at": "2026-10-31T09:49:57.836Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 0
+    }
+  }
+}

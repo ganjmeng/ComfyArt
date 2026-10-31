@@ -1,0 +1,38 @@
+[
+  {
+    "path": "generate_refs",
+    "prediction_id": "defd54f9fb5a47fbb5741ebd43e04483",
+    "history_url": "/comfyart/wavespeed/history/defd54f9fb5a47fbb5741ebd43e04483",
+    "status": "completed",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/0717ffd2-4499-4886-b2a9-d1bb9a09ee9a-u1_680b819f-238d-4cd3-a7d3-24e9550a7551.jpeg"
+    ]
+  },
+  {
+    "path": "generate_base",
+    "prediction_id": "0f0360efd02941c88b8e1c9ea70b1fd2",
+    "history_url": "/comfyart/wavespeed/history/0f0360efd02941c88b8e1c9ea70b1fd2",
+    "status": "completed",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/720bb1d2-e0cd-4589-871c-59256a00c87b-u1_203817e3-159a-41e2-95e3-269a78e5ad16.jpeg"
+    ]
+  },
+  {
+    "path": "lipsync",
+    "prediction_id": "1e9f82f988c64d8d8cc623c9a2d638d4",
+    "history_url": "/comfyart/wavespeed/history/1e9f82f988c64d8d8cc623c9a2d638d4",
+    "status": "completed",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/bbef05bf-bdb7-4bd7-b216-cc117ce3affa-u1_10a647f0-7082-4f06-bf98-c0f5ed2af18a.mp4"
+    ]
+  },
+  {
+    "path": "motion",
+    "prediction_id": "91dca275421b4ddbb46575ff100aac42",
+    "history_url": "/comfyart/wavespeed/history/91dca275421b4ddbb46575ff100aac42",
+    "status": "completed",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/15990ffd-03e3-4ad0-b3bd-e180268728c2-u1_6fda1b3c-09d6-431e-84ef-f6c219573391.mp4"
+    ]
+  }
+]

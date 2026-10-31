@@ -1,0 +1,19 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "527ecb723f7746b889e64be37028d96e",
+    "model": "kwaivgi/kling-v2.6-std/motion-control",
+    "outputs": [],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/527ecb723f7746b889e64be37028d96e/result"
+    },
+    "status": "failed",
+    "created_at": "2026-10-31T09:50:31.192704931Z",
+    "code": 1401,
+    "error": "No complete upper body was detected in the video. Please use a video where the person's upper body is fully visible.",
+    "timings": {
+      "inference": 22064
+    }
+  }
+}

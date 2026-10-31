@@ -1,0 +1,9 @@
+{
+  "model": "wavespeed-ai/infinitetalk-fast",
+  "fields": {
+    "@image": "image",
+    "@audio": "audio",
+    "@prompt": "prompt"
+  },
+  "params": {}
+}
