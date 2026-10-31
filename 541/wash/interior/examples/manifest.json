@@ -1,0 +1,39 @@
+{
+ "commit": "53f0f2c",
+ "skill": "interior",
+ "examples": [
+  {
+   "id": "1",
+   "aspect_ratio": "16:9",
+   "subject": "a creator home office in a high-rise with a big window to a coastal ci",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/53f0f2c/541/wash/interior/examples/1.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/53f0f2c/541/wash/interior/examples/1@thumb.webp"
+  },
+  {
+   "id": "2",
+   "aspect_ratio": "16:9",
+   "subject": "a Japandi bedroom suite with low oak platform bed",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/53f0f2c/541/wash/interior/examples/2.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/53f0f2c/541/wash/interior/examples/2@thumb.webp"
+  },
+  {
+   "id": "3",
+   "aspect_ratio": "16:9",
+   "subject": "a narrow modern apartment entry and kitchen corridor",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/53f0f2c/541/wash/interior/examples/3.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/53f0f2c/541/wash/interior/examples/3@thumb.webp"
+  },
+  {
+   "id": "4",
+   "aspect_ratio": "16:9",
+   "subject": "title \"COASTAL LOFT — Material Study\" top left",
+   "lovart_ref_rebuilt_from_thumbnail": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/53f0f2c/541/wash/interior/examples/4.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/53f0f2c/541/wash/interior/examples/4@thumb.webp"
+  }
+ ],
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/53f0f2c/541/wash/interior/examples/sbs_examples_interior.png"
+}
