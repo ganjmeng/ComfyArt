@@ -1,0 +1,68 @@
+{
+  "kind": "skill-list-cover-video",
+  "source": "local-kenburns-from-wash-covers",
+  "note": "placeholder for UI review; real i2v pending EL budget",
+  "count": 10,
+  "videos": [
+    {
+      "skillId": "banner",
+      "file": "banner.mp4",
+      "bytes": 66608,
+      "sha256": "9c0edfa3b44baef9477ef014c31c8ba0b6e648106d7ee8b5eaff656230ad5428"
+    },
+    {
+      "skillId": "brand",
+      "file": "brand.mp4",
+      "bytes": 26717,
+      "sha256": "148a0fc5f7a644130477c4caf60b07c6d7cbd23de4425af62dac75de8aaf2cd9"
+    },
+    {
+      "skillId": "character",
+      "file": "character.mp4",
+      "bytes": 93196,
+      "sha256": "62a441313db284f6c19d078bc65d5d206e13d3aafd18bc00220c07ee96e947bb"
+    },
+    {
+      "skillId": "interior",
+      "file": "interior.mp4",
+      "bytes": 106090,
+      "sha256": "fed6bd26845bc902c1a0ff940299941e5b26c6ac213ece8910ab5411cd4e61d1"
+    },
+    {
+      "skillId": "motion",
+      "file": "motion.mp4",
+      "bytes": 37162,
+      "sha256": "857ec2c3a578f49f92c87d5d3e373f4a9d4fd9f8f7d427bbca3cbe70ad83fe22"
+    },
+    {
+      "skillId": "packaging",
+      "file": "packaging.mp4",
+      "bytes": 34310,
+      "sha256": "2686d201a218416c2fa03d3f2c3a3de9c1224d00563e751e0aaf5a47a55d7f07"
+    },
+    {
+      "skillId": "poster",
+      "file": "poster.mp4",
+      "bytes": 50057,
+      "sha256": "28d038a4af68865f862cff0a73b5d59040e3c6ded4ca604325ebccdeebdf050a"
+    },
+    {
+      "skillId": "product",
+      "file": "product.mp4",
+      "bytes": 13341,
+      "sha256": "a9ddf91b18cca94744af2e19656969be9b186a1e6f393628b177ea103cd2d93b"
+    },
+    {
+      "skillId": "social",
+      "file": "social.mp4",
+      "bytes": 61309,
+      "sha256": "cf28281cea3dfff822572bd15b16bd75a367842dc0191f2f2aea9c6c2392a3b9"
+    },
+    {
+      "skillId": "thumbnail",
+      "file": "thumbnail.mp4",
+      "bytes": 59086,
+      "sha256": "6a26ecf65de2c6d37c79ba5d1a297360616d78cfefbed78753f62059a5cc3169"
+    }
+  ]
+}
