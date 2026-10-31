@@ -18,6 +18,8 @@
   --ca-rail-new-gap: 14px; /* 新建项目 → first item pitch 52 */
   --ca-home-main-px: 56px;
   --ca-text: rgba(0,0,0,.9);
+  --ca-btn-primary-bg: #191919; /* #539 URL 「添加」 */
+  --ca-btn-primary-fg: #ffffff;
   --ca-muted: rgba(0,0,0,.3);
   --ca-text-2: rgba(0,0,0,.6); /* secondary text (reference design CN secondary level) */
   --ca-notify-close-hover: rgb(242,242,242);
@@ -82,6 +84,8 @@
   --ca-skillrun-side: #1c1c1c;
   --ca-skillrun-tile: rgba(255,255,255,.06);
   --ca-text: rgba(255,255,255,.9);
+  --ca-btn-primary-bg: #e8e8e8;
+  --ca-btn-primary-fg: #161616;
   --ca-muted: rgba(255,255,255,.4);
   --ca-text-2: rgba(255,255,255,.6);
   --ca-notify-close-hover: rgb(52,52,52);

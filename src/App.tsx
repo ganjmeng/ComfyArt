@@ -9,7 +9,8 @@ import { svgRaster } from './vectorize'
 import { errorText, resumeJobs } from './jobs'
 import { loadWorkflowConfig } from './customWorkflows'
 import './layers'
-import { defaultKitId, loadLibrary } from './library'
+import { kitsAtom } from './agent'
+import { defaultKitId, libraryAtom, loadLibrary } from './library'
 import { loadMemory } from './memory'
 import { loadModels } from './models'
 import { loadProject, NEW_PARAM } from './projects'
@@ -184,7 +185,10 @@ export function App({ id, onCanvasReady }: { id: string; onCanvasReady?: () => v
         }
         const doc = editor.getDocumentSettings()
         const kit = new URL(location.href).searchParams.get('kit')
-        if (!snap && !('brandKit' in doc.meta)) editor.updateDocumentSettings({ meta: { ...doc.meta, brandKit: kit ?? defaultKitId() } })
+        // #539 PR-C: a character/product/custom kit rides `?kit=` too and is attached like LibraryPanel 「添加到对话」; brand kits unchanged
+        const other = libraryAtom.get().find((x) => x.id === kit && x.kind !== 'brand')
+        if (!snap && !('brandKit' in doc.meta)) editor.updateDocumentSettings({ meta: { ...doc.meta, brandKit: (other ? null : kit) ?? defaultKitId() } })
+        if (other && !kitsAtom.get().some((k) => k.id === other.id)) kitsAtom.set([...kitsAtom.get(), other])
         if (kit) {
           const url = new URL(location.href)
           url.searchParams.delete('kit')
