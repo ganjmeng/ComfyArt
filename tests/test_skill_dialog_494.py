@@ -146,7 +146,12 @@ def test_copy_and_dialog_style():
     assert "ca-skillrun__templates { flex: 1 1 auto; min-height: 0; overflow: auto; }" in CSS
     assert ".ca-swall__card--row" in CSS and "width: 72px; height: 72px" in CSS
     assert ".ca-swall__try" in CSS
-    # #494 anim: template hover ~150ms fade+scale; modal open 250ms scale 0.96→1; selected ring/✓ no spring
+    # #494 anim locks (design beziers): hover 150ms .4,0,.2,1; modal 250ms .2,0,0,1; select none; go color 150ms ease no scale
     assert "150ms" in CSS and "ca-skillrun__pick" in CSS and "ca-skillrun__zoom" in CSS
     assert "ca-skillrun-in" in CSS and "250ms" in CSS and "scale(0.96)" in CSS
+    assert "cubic-bezier(.4, 0, .2, 1)" in CSS  # hover chip/pill
+    assert "cubic-bezier(.2, 0, 0, 1)" in CSS  # modal open/close
+    assert "transition: none" in CSS  # selected ring / ✓
+    assert "background-color 150ms ease" in CSS  # 开始制作 color only
+    assert "width: 16px; height: 16px" in CSS and "ca-skillrun__check" in CSS
     assert "skillRun.select" in DLG and "Icons.expand" in DLG

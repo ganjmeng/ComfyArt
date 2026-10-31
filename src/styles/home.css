@@ -512,7 +512,7 @@ body { background: var(--ca-float); }
   background: #fff; color: #111; font: 500 12px/1 var(--ca-font); cursor: pointer;
   box-shadow: 0 2px 8px rgba(0,0,0,.12);
   opacity: 0; pointer-events: none;
-  transition: opacity 150ms ease;
+  transition: opacity 150ms cubic-bezier(.4, 0, .2, 1);
 }
 .ca-swall__card:hover .ca-swall__try, .ca-swall__card:focus-within .ca-swall__try {
   opacity: 1; pointer-events: auto;
@@ -526,7 +526,7 @@ body { background: var(--ca-float); }
   height: min(820px, calc(100vh - 64px));
   max-height: min(820px, calc(100vh - 64px));
   display: flex; flex-direction: row; padding: 0; overflow: hidden;
-  animation: ca-skillrun-in 250ms ease both;
+  animation: ca-skillrun-in 250ms cubic-bezier(.2, 0, 0, 1) both;
   transform-origin: center center;
 }
 @keyframes ca-skillrun-in {
@@ -534,7 +534,7 @@ body { background: var(--ca-float); }
   to { opacity: 1; transform: scale(1); }
 }
 .ca-modal[data-testid="skill-run-modal"] {
-  animation: ca-skillrun-backdrop-in 250ms ease both;
+  animation: ca-skillrun-backdrop-in 250ms cubic-bezier(.2, 0, 0, 1) both;
 }
 @keyframes ca-skillrun-backdrop-in {
   from { opacity: 0; }
@@ -581,10 +581,10 @@ body { background: var(--ca-float); }
   box-shadow: inset 0 0 0 1px var(--ca-text);
 }
 .ca-skillrun__presetimg img { width: 100%; height: 100%; object-fit: cover; }
-/* hover: fade-in + enlarge chip + 「选择」 pill (~150ms) */
+/* hover chip+「选择」: 150ms cubic-bezier(.4,0,.2,1); opacity+scale 0.85→1 only — frame no scale */
 .ca-skillrun__zoom, .ca-skillrun__pick {
   position: absolute; opacity: 0; transform: scale(0.85);
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition: opacity 150ms cubic-bezier(.4, 0, .2, 1), transform 150ms cubic-bezier(.4, 0, .2, 1);
   pointer-events: none; z-index: 1;
 }
 .ca-skillrun__zoom {
@@ -606,11 +606,11 @@ body { background: var(--ca-float); }
 }
 .ca-skillrun__preset[data-on]:hover .ca-skillrun__pick { opacity: 0; } /* ✓ replaces pill when selected */
 .ca-skillrun__check {
-  position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 999px;
+  position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; border-radius: 999px;
   background: var(--ca-text); color: var(--ca-float, #fff); display: grid; place-items: center;
-  transition: none; z-index: 2;
+  transition: none; z-index: 2; /* selected ring+✓ instantaneous */
 }
-.ca-skillrun__check .ca-icon { width: 14px; height: 14px; }
+.ca-skillrun__check .ca-icon { width: 10px; height: 10px; }
 .ca-skillrun__presetname { font: 400 12px/18px var(--ca-font); color: var(--ca-text-2); }
 .ca-skillrun__right {
   flex: 0 0 360px; width: 360px; max-width: 360px; display: flex; flex-direction: column; min-width: 0;
@@ -660,7 +660,12 @@ body { background: var(--ca-float); }
   width: 100%; height: 36px; padding: 0 16px; border-radius: 10px;
   font: inherit; font-size: 14px; cursor: pointer; box-sizing: border-box;
 }
-.ca-skillrun__go { width: 100%; justify-content: center; }
+.ca-skillrun__go {
+  width: 100%; justify-content: center;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  /* color only — no button scale */
+}
+.ca-skillrun__go:active { transform: none; }
 
 /* #494-2 / #489 — Personal tab: 「你创建的」 / 「Loomi 创建的」, horizontal cards (cover left, title+desc right, no author). */
 .ca-skills__personal { display: flex; flex-direction: column; gap: 28px; }
