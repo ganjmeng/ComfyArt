@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { t } from '../i18n'
 
-/** #541 Lovart 「效果示例」: 704×526 contain-centred stage + thumbnail strip. Data-driven from skill.examples;
+/** #541 「效果示例」: 704×506 contain-centred stage + thumbnail strip. Data-driven from skill.examples;
  *  renders nothing when a skill has none (personal / imported skills, or examples not washed yet). */
 export function SkillExamples({ examples }: { examples?: string[] }) {
   const [at, setAt] = useState(0)

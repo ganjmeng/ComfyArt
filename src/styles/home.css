@@ -678,7 +678,7 @@ body { background: var(--ca-float); }
 
 /* #494-2 — skill's own dialog: left templates (2-col) + right 「开始制作」 panel. */
 .ca-skillrun {
-  /* #541 Lovart: 1112×820, left 752 + right 360 */
+  /* #541 design spec: 1112×820, left 752 + right 360 */
   position: relative; border-radius: 16px;
   width: min(1112px, calc(100vw - 32px));
   height: min(820px, calc(100vh - 64px));
@@ -730,7 +730,7 @@ body { background: var(--ca-float); }
 .ca-skillrun__templates { padding-bottom: 24px; }
 .ca-skillrun__examples { margin-bottom: 24px; }
 .ca-skillrun__stage {
-  position: relative; width: 100%; aspect-ratio: 704 / 526; border-radius: 12px; overflow: hidden;
+  position: relative; width: 100%; aspect-ratio: 704 / 506; border-radius: 12px; overflow: hidden;
   background: var(--ca-skillrun-tile);
 }
 /* absolute fill: % height doesn't resolve on a grid item of an aspect-ratio box, which let portrait images overflow (crop) */
@@ -759,7 +759,7 @@ body { background: var(--ca-float); }
   /* selected ring / ✓ are instantaneous — no transition */
   transition: none;
 }
-/* #541 selected ring wraps the whole tile (image + label), as Lovart — overlay so the image can't paint over it */
+/* #541 selected ring wraps the whole tile (image + label), per design spec — overlay so the image can't paint over it */
 .ca-skillrun__preset { position: relative; border-radius: 12px; }
 .ca-skillrun__preset::after {
   content: ""; position: absolute; inset: 0; border-radius: 12px; pointer-events: none; z-index: 3;

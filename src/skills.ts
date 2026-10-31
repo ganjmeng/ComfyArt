@@ -23,7 +23,7 @@ export interface Skill {
   id: string; name: string; description?: string; instructions: string; files?: Record<string, string>; images?: Record<string, string>; custom?: boolean; learned?: string[]
   /** #494 built-in metadata. Imported / personal skills have none of these and need no migration. */
   category?: SkillCategory; cover?: string; video?: string; presets?: SkillPreset[]; inputs?: SkillInput[]
-  /** #541 Lovart 「效果示例」 carousel images (commit-pinned). Unset / empty → the section is not rendered. */
+  /** #541 「效果示例」 carousel images (commit-pinned). Unset / empty → the section is not rendered. */
   examples?: string[]
 }
 export interface SkillVersion { time: number; skill: Skill }
@@ -474,7 +474,7 @@ export function withPreset(skill: Skill, presetId?: string | null): Skill {
   return p?.prompt ? { ...skill, instructions: `${skill.instructions.trimEnd()}\n\n${p.prompt}` } : skill
 }
 
-/** #541 — Lovart meta line under the description. Only real data: no usage counter exists in our data, so the line
+/** #541 — design-spec meta line under the description. Only real data: no usage counter exists in our data, so the line
  *  carries the template count alone (never a made-up 「已使用N次」); no presets → null (no line). */
 export function skillMeta(skill: Skill): { templates: number } | null {
   const n = skill.presets?.length ?? 0

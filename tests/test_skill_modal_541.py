@@ -103,7 +103,7 @@ def test_examples_carousel_is_data_driven(got):
     assert 'data-testid="skill-run-example-stage"><img src="https://x.test/e1.webp"' in html
     assert "skill-run-example-thumb" not in got["exOne"] and "skill-run-example-stage" in got["exOne"]
     assert ZH["skillRun.examples"] == "效果示例" and EN["skillRun.examples"] == "Examples"
-    assert ".ca-skillrun__stage" in CSS and "aspect-ratio: 704 / 526" in CSS and "object-fit: contain" in CSS
+    assert ".ca-skillrun__stage" in CSS and "aspect-ratio: 704 / 506" in CSS and "object-fit: contain" in CSS
     assert "<SkillExamples examples={skill.examples} />" in DLG and "from './SkillExamples'" in DLG
 
 

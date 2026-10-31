@@ -37,7 +37,7 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
           {/* #494-2 对照结构: title / author / desc stay pinned above the template grid */}
           <header className="ca-skillrun__head" data-testid="skill-run-head">
             <h2 className="ca-skillrun__title" data-testid="skill-run-title">{skill.name}</h2>
-            {/* #541 Lovart creator row: 28px avatar + name, actions right (we have 详情; no share / bookmark data) */}
+            {/* #541 creator row: 28px avatar + name, actions right (we have 详情; no share / bookmark data) */}
             <div className="ca-skillrun__creator" data-testid="skill-run-creator">
               <div className="ca-skillrun__author" data-testid="skill-run-author" data-kind={author.kind}>
                 {author.kind === 'builtin'

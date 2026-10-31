@@ -89,7 +89,7 @@ STAGE = """() => { const st = document.querySelector('[data-testid=skill-run-exa
           st: [a.x, a.y, a.width, a.height], img: [c.x, c.y, c.width, c.height], nat: [i.naturalWidth, i.naturalHeight]} }"""
 
 
-@pytest.mark.parametrize("skill,portrait", [("poster", True), ("character", False)])
+@pytest.mark.parametrize("skill,portrait", [("poster", True), ("social", True), ("interior", True), ("character", False)])
 async def test_example_stage_contain_no_crop(app_url, skill, portrait):  # noqa: F811
     """Lovart stage: whole image visible (contain), centered, on #f4f4f4 - portrait must not overflow/crop."""
     async with pw.async_playwright() as p:
@@ -101,6 +101,7 @@ async def test_example_stage_contain_no_crop(app_url, skill, portrait):  # noqa:
         assert r["fit"] == "contain" and r["pos"] == "50% 50%"
         assert r["bg"] == "rgb(244, 244, 244)"
         sx, sy, sw, sh = r["st"]
+        assert [round(sw), round(sh)] == [704, 506]  # design-spec frame
         assert [round(v) for v in r["img"]] == [round(sx), round(sy), round(sw), round(sh)]  # img box == stage box
         nw, nh = r["nat"]
         assert (nh > nw) == portrait
