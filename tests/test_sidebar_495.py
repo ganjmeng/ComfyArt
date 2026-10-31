@@ -164,7 +164,7 @@ def test_expanded_css_and_theme_var() -> None:
     assert "width: var(--ca-rail-w-expanded)" in HOME_CSS  # #546: 160 → Lovart 240
     assert "--ca-rail-w-expanded: 240px" in BASE_CSS
     assert "var(--ca-rail-bg)" in HOME_CSS
-    assert "--ca-rail-bg: #f2f2f2" in BASE_CSS
+    assert "--ca-rail-bg: #f5f5f5" in BASE_CSS  # #552 design measured (was #f2f2f2)
     assert "--ca-rail-bg: #1c1c1c" in BASE_CSS
     assert ".ca-rail__recent-name" in HOME_CSS
     assert "text-overflow: ellipsis" in HOME_CSS

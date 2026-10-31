@@ -1,7 +1,7 @@
 body { background: var(--ca-float); }
 .ca-home { position: fixed; inset: 0; display: flex; background: var(--ca-float); color: var(--ca-text); font: 400 14px/22px var(--ca-font); }
 
-.ca-rail { width: var(--ca-rail-w-collapsed); flex: none; display: flex; flex-direction: column; align-items: center; gap: var(--ca-rail-pitch-gap); padding: 12px 0; border-right: none; /* #546: reference design rail has no border */ box-sizing: border-box; }
+.ca-rail { width: var(--ca-rail-w-collapsed); flex: none; display: flex; flex-direction: column; align-items: center; gap: var(--ca-rail-pitch-gap); padding: 12px 0; border-right: none; /* #546: reference design rail has no border */ box-sizing: border-box; background: var(--ca-rail-bg); /* #552: collapsed rail also grey */ }
 .ca-rail__logo { display: inline-flex; width: 30px; height: 30px; margin-bottom: 12px; color: var(--ca-strong); }
 .ca-rail__logo svg { width: 100%; height: 100%; }
 .ca-brand-mark { display: inline-flex; width: 100%; height: 100%; color: inherit; }
@@ -43,7 +43,7 @@ body { background: var(--ca-float); }
 }
 .ca-rail[data-expanded] .ca-rail__label { display: block; }
 .ca-rail[data-expanded] .ca-rail__badge { position: static; margin-left: 4px; flex: none; }
-.ca-rail[data-expanded] .ca-brand-mark .lm-cut { fill: var(--ca-rail-bg); stroke: var(--ca-rail-bg); }
+.ca-rail .ca-brand-mark .lm-cut { fill: var(--ca-rail-bg); stroke: var(--ca-rail-bg); }
 .ca-rail[data-expanded] .ca-rail__recent {
   display: flex; flex-direction: column; gap: 2px; margin-top: 10px; min-height: 0; overflow-y: auto;
 }
@@ -234,7 +234,7 @@ body { background: var(--ca-float); }
 
 @media (max-width: 640px) {
   .ca-home { flex-direction: column-reverse; }
-  .ca-rail { width: auto; flex-direction: row; justify-content: space-around; padding: 6px 16px; border-right: none; border-top: var(--ca-border-w) solid var(--ca-border); }
+  .ca-rail { width: auto; flex-direction: row; justify-content: space-around; padding: 6px 16px; background: transparent; border-right: none; border-top: var(--ca-border-w) solid var(--ca-border); }
   .ca-rail__logo, .ca-rail__spacer, .ca-rail__top, .ca-rail__recent, .ca-rail__label, .ca-rail__collapse { display: none; }
   .ca-rail[data-expanded] { width: auto; background: transparent; padding: 6px 16px; }
   .ca-landing { padding: 48px 16px 32px; }
