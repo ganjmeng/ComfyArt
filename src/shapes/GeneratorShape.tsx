@@ -84,7 +84,7 @@ export class GeneratorShapeUtil extends BaseBoxShapeUtil<GeneratorShape> {
     return false
   }
 
-  /** #356: while generating — no selection border / resize / rotate chrome (Lovart) */
+  /** #356: while generating — no selection border / resize / rotate chrome (reference design) */
   override hideSelectionBoundsFg(shape: GeneratorShape) {
     return !!(shape.meta as { job?: unknown }).job
   }

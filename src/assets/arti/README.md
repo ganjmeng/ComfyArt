@@ -1,6 +1,6 @@
 # Arti composer mascot assets (#371)
 
-**DNA A (Ashley-locked 2026-10-27):** cream dumpling + teal antenna — **≠ Lovart white ghost**.
+**DNA A (Ashley-locked 2026-10-27):** cream dumpling + teal antenna — **≠ reference design white ghost**.
 
 | File | Level | Source |
 |------|-------|--------|
@@ -12,6 +12,6 @@
 
 Timing: 17 frames × 250ms ≈ 4.25s one-shot on `--play` / `--typing` / `--hover`.
 
-**VOID:** prior CN Lovart white-ghost `mascot-lv1-developing.png` and provisional beret/brush ghost derivatives — deleted; do not reintroduce.
+**VOID:** prior CN reference design white-ghost `mascot-lv1-developing.png` and provisional beret/brush ghost derivatives — deleted; do not reintroduce.
 
 Peek: ~50×50, left 12px, top −22px; hover lifts ~11px + play; click → in-canvas 「Arti 通知」 (not `/arti`).
