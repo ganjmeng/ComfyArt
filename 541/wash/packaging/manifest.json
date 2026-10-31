@@ -1,8 +1,8 @@
 {
- "commit": "1014ef25ad2a8b49cae0c438c673a0b7f9e7797f",
+ "commit": "81dfce77557fcea42e97f10e41e6c3c18fc9b357",
  "skill": "packaging",
  "lovart_counterpart": "Lovart · 品牌包装设计系统 (5)",
- "cells": 6,
+ "cells": 5,
  "presets": [
   {
    "id": "eco",
@@ -11,8 +11,8 @@
    "status": "existing (id/prompt unchanged, image replaced)",
    "lovart_cell": "Master Packaging Design",
    "fictional_brand": "MOSSFIELD",
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__eco.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__eco@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/packaging__eco.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/packaging__eco@thumb.webp"
   },
   {
    "id": "gold",
@@ -21,8 +21,8 @@
    "status": "existing (id/prompt unchanged, image replaced)",
    "lovart_cell": "Packaging Visual Direction",
    "fictional_brand": "AURELLE",
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__gold.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__gold@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/packaging__gold.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/packaging__gold@thumb.webp"
   },
   {
    "id": "playful",
@@ -31,8 +31,8 @@
    "status": "existing (id/prompt unchanged, image replaced)",
    "lovart_cell": "Multi-SKU Packaging Series",
    "fictional_brand": "BOPSY",
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__playful.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__playful@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/packaging__playful.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/packaging__playful@thumb.webp"
   },
   {
    "id": "panels",
@@ -41,8 +41,8 @@
    "status": "new (proposed id/name)",
    "lovart_cell": "Packaging Panels & Structural Diagram",
    "fictional_brand": "TIDAL TEA",
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__panels.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__panels@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/packaging__panels.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/packaging__panels@thumb.webp"
   },
   {
    "id": "shelf",
@@ -51,19 +51,10 @@
    "status": "new (proposed id/name)",
    "lovart_cell": "Packaging Shelf Display",
    "fictional_brand": "KUMO COFFEE",
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__shelf.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__shelf@thumb.webp"
-  },
-  {
-   "id": "mockup",
-   "zh": "包装场景样机",
-   "en": "Packaging mockup scene",
-   "status": "new (proposed id/name)",
-   "lovart_cell": "(design-added)",
-   "fictional_brand": "NOLLA",
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__mockup.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/packaging__mockup@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/packaging__shelf.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/packaging__shelf@thumb.webp"
   }
  ],
- "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1014ef25ad2a8b49cae0c438c673a0b7f9e7797f/541/wash/packaging/sbs_packaging.png"
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/81dfce77557fcea42e97f10e41e6c3c18fc9b357/541/wash/packaging/sbs_packaging.png",
+ "note": "packaging = Lovart 5 per amendment 2 (6545859044) + 6545935208; packaging__mockup*.webp remain in repo but are unreferenced"
 }
