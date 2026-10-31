@@ -728,7 +728,7 @@
   "home.deleteProject": "Delete this project?",
   "home.deleteProjectDesc": "The canvas, its chats and saved versions will be deleted. Generated images and videos stay in place.",
   "home.deleteProjects": "Delete {0} projects?",
-  "home.designSchedules": "Design schedules",
+  "home.designSchedules": "Schedules",
   "home.example1": "Design a romantic wedding poster",
   "home.example2": "Make a logo and brand colors for a corgi café",
   "home.example3": "Create three product shots for a ceramic mug",
@@ -1586,5 +1586,8 @@
   "skillRun.pickLeft": "Select on the left",
   "skillRun.select": "Select",
   "home.featured": "Featured",
-  "home.skillCase": "Skill case"
+  "home.skillCase": "Skill case",
+  "home.collapseSidebar": "Collapse sidebar",
+  "home.expandSidebar": "Expand sidebar",
+  "home.assets": "Assets"
 }
