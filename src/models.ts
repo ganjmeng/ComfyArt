@@ -15,7 +15,7 @@ export interface ModelDef {
   files: string[]
   video?: boolean
   cloud?: boolean
-  refs?: 'qwen' | 'latent'
+  refs?: 'qwen' | 'latent' | 'custom'
   prompt?: string
   steps?: [string, Record<string, number>]
   sizes?: string[]
@@ -65,7 +65,7 @@ export const hasNegative = (m: ModelDef | null | undefined) => !!m && (!!m.negat
 export const isVideo = (workflow: string) => workflow === AUTO_VIDEO || VIDEO_MODELS.some((m) => m.id === workflow)
 function customModels(): ModelDef[] {
   const file = workflowConfigAtom.get().generate
-  return file ? [{ id: CUSTOM_GENERATE, label: file.replace(/\.json$/, ''), desc: t('customWorkflows.customModelDesc'), files: [], cloud: true, lora: null }] : []
+  return file ? [{ id: CUSTOM_GENERATE, label: file.replace(/\.json$/, ''), desc: t('customWorkflows.customModelDesc'), files: [], cloud: true, lora: null, refs: 'custom' }] : []
 }
 
 export const modelOf = (workflow: string) => [autoDef(false), autoDef(true), ...IMAGE_MODELS, ...VIDEO_MODELS, ...customModels()].find((m) => m.id === workflow)

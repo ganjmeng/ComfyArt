@@ -1,0 +1,1 @@
+export{l as insertMemoryUpdatedBlock}from"./memoryBudget-D9-viKmo.js";

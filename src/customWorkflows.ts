@@ -75,8 +75,13 @@ export async function withCustomModel(inputs: Record<string, unknown>): Promise<
     return rest
   }
   const req = specOf(action as CustomAction).required
-  if (req.includes('image') && !rest.image && !(rest.images as unknown[] | undefined)?.length) throw new Error(t('customWorkflows.needsImage', file))
+  const mapped = Object.keys(spec.fields ?? {}).map((k) => String(k).replace(/^@/, '').toLowerCase())
+  const needsImage = req.includes('image') || mapped.includes('image')
+  if (needsImage && !rest.image && !(rest.images as unknown[] | undefined)?.length) throw new Error(t('customWorkflows.needsImage', file))
   if (req.includes('video') && !rest.video) throw new Error(t('customWorkflows.needsVideo', file))
+  if (req.includes('audio') && !rest.audio) throw new Error(t('customWorkflows.needsAudio', file))
+  // Upstream: a base image with no @base mapping is an error (generate).
+  if (rest.base && !mapped.includes('base')) throw new Error(t('customWorkflows.unusedInput', file, '@base'))
   return { ...rest, feature: rest.feature ?? specOf(action as CustomAction).feature, custom: true, model: spec.model, fields: spec.fields ?? {}, params: { ...(rest.params as object | undefined), ...spec.params } }
 }
 

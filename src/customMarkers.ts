@@ -2,8 +2,8 @@ import { BRAND } from './brand'
 import { api } from './comfy'
 import { lang, t } from './i18n'
 
-export type CustomAction = 'generate' | 'edit' | 'style' | 'inpaint' | 'expand' | 'upscale' | 'cutout' | 'erase' | 'angles' | 'layers' | 'video' | 'animate' | 'extend' | 'videoUpscale' | 'videoCutout' | 'music' | 'speech' | 'clone' | 'sfx' | 'model3d'
-export type Marker = 'image' | 'image2' | 'mask' | 'last' | 'audio' | 'video' | 'prompt' | 'lyrics' | 'size' | 'width' | 'height' | 'count' | 'seconds'
+export type CustomAction = 'generate' | 'edit' | 'style' | 'inpaint' | 'expand' | 'upscale' | 'cutout' | 'erase' | 'angles' | 'layers' | 'video' | 'animate' | 'motion' | 'lipsync' | 'extend' | 'videoUpscale' | 'videoCutout' | 'music' | 'speech' | 'clone' | 'sfx' | 'model3d'
+export type Marker = 'image' | 'image2' | 'base' | 'mask' | 'last' | 'audio' | 'video' | 'prompt' | 'lyrics' | 'size' | 'width' | 'height' | 'count' | 'seconds' | 'strength'
 
 export type CustomGroup = 'image' | 'edit' | 'tools' | 'video' | 'audio' | 'model'
 
@@ -12,7 +12,7 @@ interface ActionSpec { id: CustomAction; group: CustomGroup; required: Marker[];
 // Cloud version of upstream's custom workflows: a "workflow" is a WaveSpeed model id plus a mapping of
 // ComfyArt values (the same @markers) onto that model's request fields.
 export const CUSTOM_ACTIONS: ActionSpec[] = [
-  { id: 'generate', group: 'image', required: ['prompt', 'size'], optional: ['count'], feature: 'text_to_image', note: 'Text to image. Shows up as an extra model in the image generator. Reference and base images are not passed.' },
+  { id: 'generate', group: 'image', required: ['prompt', 'size'], optional: ['count', 'image', 'image2', 'base', 'strength'], feature: 'text_to_image', note: 'Text to image. Shows up as an extra model in the image generator. @image and @image2 receive the first two reference images; a workflow with @image needs a reference to run, and @image2 gets the first one when only one is given. @base receives the base image and @strength its strength from 0.1 to 1. A base image given to a workflow with no @base is an error.' },
   { id: 'edit', group: 'edit', required: ['image', 'prompt'], optional: [], feature: 'image_edit', note: 'Instruction edit: quick edit, edit text, compose and mockup blending. @prompt receives the edit instruction.' },
   { id: 'style', group: 'edit', required: ['image', 'prompt'], optional: ['image2'], feature: 'image_edit', note: 'Style transfer. @image2 is the style reference; without one ' + BRAND.name + ' passes the source image again.' },
   { id: 'inpaint', group: 'edit', required: ['image', 'prompt'], optional: [], feature: 'image_edit', note: 'Edit a region: @prompt names the area to change and what to do there.' },
@@ -22,8 +22,10 @@ export const CUSTOM_ACTIONS: ActionSpec[] = [
   { id: 'cutout', group: 'tools', required: ['image'], optional: [], feature: 'remove_background', note: 'Background removal. The result should keep an alpha channel.' },
   { id: 'erase', group: 'tools', required: ['image', 'mask'], optional: [], feature: 'erase_region', note: 'Object removal. @mask is the area to remove (white = remove).' },
   { id: 'layers', group: 'tools', required: ['image'], optional: ['prompt', 'count'], feature: 'split_layers', note: '@count receives the number of layers. The result is several RGBA images.' },
-  { id: 'video', group: 'video', required: ['prompt'], optional: ['image', 'last', 'size', 'seconds'], feature: 'image_to_video', note: 'Replaces the built-in model in the video generator\'s first/last frame mode (reference, motion, lip sync and storyboard modes stay built in).' },
+  { id: 'video', group: 'video', required: ['prompt'], optional: ['image', 'last', 'size', 'seconds'], feature: 'image_to_video', note: 'Replaces the built-in model in the video generator\'s first/last frame mode (reference and storyboard modes stay built in).' },
   { id: 'animate', group: 'video', required: ['image', 'prompt'], optional: ['size', 'seconds', 'last'], feature: 'image_to_video', note: 'Animate an image into a short clip. With loop on, @last receives the source image again so the clip ends where it starts.' },
+  { id: 'motion', group: 'video', required: ['image', 'video', 'prompt'], optional: ['size', 'seconds'], feature: 'motion_control', note: 'Motion control. @image receives the character, @video the motion video. Replaces the built-in model in the video generator\'s motion-control mode.' },
+  { id: 'lipsync', group: 'video', required: ['image', 'audio', 'prompt'], optional: ['size', 'seconds'], feature: 'lip_sync', note: 'Lip sync. @image receives the portrait, @audio the speech, @seconds the length of the audio. Replaces the built-in model in the video generator\'s lip-sync mode.' },
   { id: 'extend', group: 'video', required: ['video'], optional: ['prompt', 'seconds'], feature: 'extend_video', note: 'Extend a selected video. Same result handling as the built-in WaveSpeed video-extend: the model returns the extended clip; ' + BRAND.name + ' does not stitch or concatenate locally.' },
   { id: 'videoUpscale', group: 'video', required: ['video'], optional: [], feature: 'upscale_video', note: 'Upscale a selected video. Passes nearest-up target_resolution (1080p / 2k / 4k) from the user\'s pick; never smaller than that pick; no exact post-scale resize after the model returns.' },
   { id: 'videoCutout', group: 'video', required: ['video'], optional: [], feature: 'remove_video_background', note: 'Remove the background of a selected video. @video receives the clip (uploaded to WaveSpeed, sent as a URL).' },
@@ -37,6 +39,7 @@ export const CUSTOM_ACTIONS: ActionSpec[] = [
 export const MARKERS: { id: Marker; fill: string }[] = [
   { id: 'image', fill: 'the input image (uploaded to WaveSpeed, sent as a URL)' },
   { id: 'image2', fill: 'a second image, e.g. a style reference (URL)' },
+  { id: 'base', fill: 'the base image of an image-to-image run (URL)' },
   { id: 'mask', fill: 'mask image URL, white = area to change' },
   { id: 'last', fill: 'the last frame of a video (URL)' },
   { id: 'audio', fill: 'the input recording (uploaded to WaveSpeed, sent as a URL)' },
@@ -48,6 +51,7 @@ export const MARKERS: { id: Marker; fill: string }[] = [
   { id: 'height', fill: 'output height in pixels' },
   { id: 'count', fill: 'how many results / layers' },
   { id: 'seconds', fill: 'video or audio length in seconds' },
+  { id: 'strength', fill: 'how much the base image changes, from 0.1 to 1' },
 ]
 
 export const NO_LYRICS = '[instrumental]'

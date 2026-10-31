@@ -61,10 +61,12 @@ export function refStrengthsOf(shape: GeneratorShape): Record<string, number> {
 }
 
 const QWEN_EDIT_IMAGES = 16
+const CUSTOM_IMAGES = 2
 
-export const refLimit = (model: ModelDef) => (model.refs === 'qwen' ? QWEN_EDIT_IMAGES : Infinity)
+export const refLimit = (model: ModelDef) => (model.refs === 'qwen' ? QWEN_EDIT_IMAGES : model.refs === 'custom' ? CUSTOM_IMAGES : Infinity)
 
 export function modesFor(model: ModelDef): RefMode[] {
+  if (model.refs === 'custom') return REF_MODES.slice(0, 1)
   return model.refs ? REF_MODES : model.control ? REF_MODES.filter((m) => m.control) : []
 }
 
