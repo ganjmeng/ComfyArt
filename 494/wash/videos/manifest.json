@@ -1,68 +1,73 @@
 {
   "kind": "skill-list-cover-video",
-  "source": "local-kenburns-from-wash-covers",
-  "note": "placeholder for UI review; real i2v pending EL budget",
+  "source": "wavespeed-bytedance-seedance-v1-pro-fast-i2v",
+  "model": "bytedance/seedance-v1-pro-fast/image-to-video",
+  "note": "Real WaveSpeed seedance-v1-pro-fast i2v clips (duration=3, 480p, 4:3). $0.36 total; see 532/seedance-fast-ledger.json.",
+  "duration": 3,
+  "resolution": "480p",
+  "aspect_ratio": "4:3",
+  "billed_usd": 0.36,
   "count": 10,
   "videos": [
     {
       "skillId": "banner",
       "file": "banner.mp4",
-      "bytes": 66608,
-      "sha256": "9c0edfa3b44baef9477ef014c31c8ba0b6e648106d7ee8b5eaff656230ad5428"
+      "bytes": 499246,
+      "sha256": "09d1416a833e722abaedcb087f9950890b1a5b57f0ae3c27e2e5c94244f0f389"
     },
     {
       "skillId": "brand",
       "file": "brand.mp4",
-      "bytes": 26717,
-      "sha256": "148a0fc5f7a644130477c4caf60b07c6d7cbd23de4425af62dac75de8aaf2cd9"
+      "bytes": 198506,
+      "sha256": "21936318a978d79459a9b97318968c69e01f818f76d5e3c5f9fbb9e2d9818af1"
     },
     {
       "skillId": "character",
       "file": "character.mp4",
-      "bytes": 93196,
-      "sha256": "62a441313db284f6c19d078bc65d5d206e13d3aafd18bc00220c07ee96e947bb"
+      "bytes": 668224,
+      "sha256": "0df870627c48aad7dc9494664e76d94a0b11665a597f3adee487b266d2c648eb"
     },
     {
       "skillId": "interior",
       "file": "interior.mp4",
-      "bytes": 106090,
-      "sha256": "fed6bd26845bc902c1a0ff940299941e5b26c6ac213ece8910ab5411cd4e61d1"
+      "bytes": 540541,
+      "sha256": "b7b5fdc8f481ff1e0889b30b3045501e79e85a20025d2f40e050ff0cc89dad9a"
     },
     {
       "skillId": "motion",
       "file": "motion.mp4",
-      "bytes": 37162,
-      "sha256": "857ec2c3a578f49f92c87d5d3e373f4a9d4fd9f8f7d427bbca3cbe70ad83fe22"
+      "bytes": 276575,
+      "sha256": "bdba636d7a8e386c5093c911818cbb2811d1d8eafe7c47f5b3cb5b431529287d"
     },
     {
       "skillId": "packaging",
       "file": "packaging.mp4",
-      "bytes": 34310,
-      "sha256": "2686d201a218416c2fa03d3f2c3a3de9c1224d00563e751e0aaf5a47a55d7f07"
+      "bytes": 313507,
+      "sha256": "66885e7dd25ce1c7d9f3456a58bfac4f9e1219c190e9c969b36c7881cc96ecd7"
     },
     {
       "skillId": "poster",
       "file": "poster.mp4",
-      "bytes": 50057,
-      "sha256": "28d038a4af68865f862cff0a73b5d59040e3c6ded4ca604325ebccdeebdf050a"
+      "bytes": 385747,
+      "sha256": "c8ac4e8bd2ed812051787b06cd5996eb67e3a69e529ea46103942f26cd36864b"
     },
     {
       "skillId": "product",
       "file": "product.mp4",
-      "bytes": 13341,
-      "sha256": "a9ddf91b18cca94744af2e19656969be9b186a1e6f393628b177ea103cd2d93b"
+      "bytes": 112889,
+      "sha256": "a4a9ddaff0cde4f1be547fcb566e32a46c25a44c79067b8974024fd981cabf16"
     },
     {
       "skillId": "social",
       "file": "social.mp4",
-      "bytes": 61309,
-      "sha256": "cf28281cea3dfff822572bd15b16bd75a367842dc0191f2f2aea9c6c2392a3b9"
+      "bytes": 520620,
+      "sha256": "9da9b7c9f92c75fdde23cace1969ce3a7d7806ec8677d2bcbfd3d6a799b858c3"
     },
     {
       "skillId": "thumbnail",
       "file": "thumbnail.mp4",
-      "bytes": 59086,
-      "sha256": "6a26ecf65de2c6d37c79ba5d1a297360616d78cfefbed78753f62059a5cc3169"
+      "bytes": 499470,
+      "sha256": "466ba2ad1007a00b970931b5fed50155cc9d2449439d22ecadf1551ab95089bb"
     }
   ]
 }
