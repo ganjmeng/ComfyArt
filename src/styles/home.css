@@ -78,9 +78,9 @@ body { background: var(--ca-float); }
 .ca-home__main { flex: 1; min-width: 0; overflow-y: auto; }
 
 .ca-landing { max-width: 1600px; margin: 0 auto; padding: 96px 48px 64px; box-sizing: border-box; }
-.ca-landing__title { margin: 0 0 24px; text-align: center; font: 400 24px/32px var(--ca-font); }
+.ca-landing__title { margin: 0 0 28px; text-align: center; font: 500 32px/40px var(--ca-font); letter-spacing: -0.02em; }
 .ca-landing__notice { max-width: 760px; margin: 0 auto 12px; box-sizing: border-box; }
-.ca-landing__box { max-width: 760px; margin: 0 auto; padding: 14px 14px 10px 18px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 24px; box-shadow: var(--ca-shadow); box-sizing: border-box; background: var(--ca-float); }
+.ca-landing__box { max-width: 760px; margin: 0 auto; padding: 14px 14px 10px 18px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 28px; box-shadow: 0 8px 28px -12px rgba(0,0,0,.12), 0 2px 8px -4px rgba(0,0,0,.06); box-sizing: border-box; background: var(--ca-float); }
 .ca-landing__box[data-drop] { outline: 2px dashed var(--ca-blue); outline-offset: -2px; }
 .ca-landing__input { width: 100%; min-height: 64px; max-height: 240px; resize: none; border: none; outline: none; background: transparent; font: inherit; color: inherit; box-sizing: border-box; }
 .ca-landing__input::placeholder { color: var(--ca-muted); }
@@ -100,7 +100,7 @@ body { background: var(--ca-float); }
 .ca-landing__error { max-width: 760px; margin: 8px auto 0; padding: 6px 12px; border-radius: 8px; background: var(--ca-error-bg); color: var(--ca-error-text); cursor: pointer; box-sizing: border-box; }
 .ca-landing__quick { max-width: 760px; margin: 16px auto 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ca-landing__hint { color: var(--ca-muted); font-size: 13px; }
-.ca-landing__chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 16px; background: transparent; color: inherit; font: 400 13px/20px var(--ca-font); cursor: pointer; }
+.ca-landing__chip { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 999px; background: transparent; color: inherit; font: 400 13px/20px var(--ca-font); cursor: pointer; }
 .ca-landing__chip:hover { background: var(--ca-hover); }
 .ca-landing__chip .ca-icon { width: 16px; height: 16px; }
 .ca-landing__section { margin-top: 64px; }
@@ -116,17 +116,49 @@ body { background: var(--ca-float); }
 .ca-skillcard__icon img { width: 100%; height: 100%; object-fit: cover; }
 .ca-skillcard__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* #494-3 / #533 — home 「精选」: preset cases from skills.ts → same SkillRunDialog as Skills page */
-.ca-featured { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px 16px; }
+/* #537 / #496 — home 「实用工具」5 cards + 更多工具 (Lucide/$0 covers) */
+.ca-landing__tools .ca-landing__moretools {
+  display: inline-flex; align-items: center; gap: 2px;
+}
+.ca-landing__moretools .ca-icon { width: 14px; height: 14px; }
+.ca-toolgrid {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px;
+}
+.ca-toolcard {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 0; border: none;
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ca-toolcard:disabled { opacity: .55; cursor: default; }
+.ca-toolcard__cover {
+  display: flex; align-items: center; justify-content: center; width: 100%;
+  aspect-ratio: 16 / 10; border-radius: 12px; background: var(--ca-field);
+  color: var(--ca-text);
+}
+.ca-toolcard__cover .ca-icon { width: 28px; height: 28px; opacity: .85; }
+.ca-toolcard:hover .ca-toolcard__cover { background: var(--ca-hover); }
+.ca-toolcard__name {
+  margin: 0; font: 500 14px/22px var(--ca-font);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (max-width: 960px) { .ca-toolgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .ca-toolgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+
+/* #494-3 / #533 / #537 — home 「精选」waterfall (Loomic column pack; our skill preset covers only) */
+.ca-featured--waterfall {
+  display: flex; align-items: flex-start; gap: 16px;
+}
+.ca-featured__col {
+  display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 16px;
+}
 .ca-featured__card {
-  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 0; border: none; background: none;
-  color: inherit; font: inherit; text-align: left; cursor: pointer;
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 0 0 4px; border: none; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: 12px; overflow: hidden;
 }
 .ca-featured__cover {
-  position: relative; display: block; width: 100%; aspect-ratio: 231 / 173; overflow: hidden;
+  position: relative; display: block; width: 100%; max-height: 680px; overflow: hidden;
   border-radius: 12px; background: var(--ca-field);
 }
-.ca-featured__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ca-featured__cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .ca-featured__cover::after {
   content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.28); opacity: 0;
   transition: opacity 150ms cubic-bezier(.4, 0, .2, 1); pointer-events: none;
@@ -147,12 +179,9 @@ body { background: var(--ca-float); }
   opacity: 1; transform: scale(1);
 }
 .ca-featured__name {
-  margin: 0; font: 500 14px/22px var(--ca-font); color: var(--ca-text);
+  margin: 0; padding: 0 4px; font: 500 14px/22px var(--ca-font); color: var(--ca-text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-@media (max-width: 1200px) { .ca-featured { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (max-width: 960px) { .ca-featured { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .ca-featured { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; } }
 
 .ca-projects { max-width: 1600px; margin: 0 auto; padding: 32px 48px 96px; box-sizing: border-box; }
 .ca-projects__head { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }

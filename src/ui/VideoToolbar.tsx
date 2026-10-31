@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { useEditor, type TLVideoShape } from 'tldraw'
+import { useEditor, useValue, type TLVideoShape } from 'tldraw'
 
 import * as actions from '../actions'
 import { genInfoOf, remix } from '../generate'
@@ -12,6 +12,7 @@ import { videoEditorAtom } from './VideoEditor'
 import { t } from '../i18n'
 import { isEnter } from './keys'
 import { useEscape } from './escape'
+import { homeToolAtom } from '../home/handoff'
 
 const GAP = 22
 const EDGE = 8
@@ -82,6 +83,14 @@ export function VideoToolbar({ onError }: { onError: Err }) {
   })
 
   useEffect(() => setMode(null), [shape?.id])
+
+  // #537: home 「延长视频」→ open ExtendPanel after place+select
+  const pendingHome = useValue(homeToolAtom)
+  useEffect(() => {
+    if (!shape || pendingHome !== 'extend') return
+    setMode('extend')
+    homeToolAtom.set(null)
+  }, [shape?.id, pendingHome])
 
   useEscape(!!mode, () => setMode(null))
 

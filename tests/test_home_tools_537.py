@@ -1,0 +1,116 @@
+"""#537 / #496: home 「实用工具」5 cards + 更多工具 + 精选 waterfall (Loomic column math; no scraped Lovart feed)."""
+from __future__ import annotations
+
+import json
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+HOME = (ROOT / "src/home/Home.tsx").read_text()
+HANDOFF = (ROOT / "src/home/handoff.ts").read_text()
+LAYOUT = (ROOT / "src/home/featuredLayout.ts").read_text()
+CSS = (ROOT / "src/styles/home.css").read_text()
+IMG_TB = (ROOT / "src/ui/ImageToolbar.tsx").read_text()
+VID_TB = (ROOT / "src/ui/VideoToolbar.tsx").read_text()
+ZH = json.loads((ROOT / "src/locales/zh.json").read_text())
+EN = json.loads((ROOT / "src/locales/en.json").read_text())
+
+MAIN = ["cutout", "extend", "upscale", "inpaint", "mockup"]
+MORE = ["to3d", "lipsync", "motion", "audio"]
+
+
+def test_tools_section_five_cards_and_more() -> None:
+    assert 'data-testid="home-tools"' in HOME
+    assert 'data-testid="home-tool-grid"' in HOME
+    assert 'data-testid="home-more-tools"' in HOME
+    assert 'data-testid="home-more-tools-menu"' in HOME
+    for tid in MAIN:
+        assert f'data-testid={{`home-tool-card-${{tool.id}}`}}' in HOME or f'home-tool-card-{tid}' in HOME
+        assert f"id: '{tid}'" in HOME
+    for tid in MORE:
+        assert f"id: '{tid}'" in HOME
+        assert f"home-more-tool-${{tool.id}}" in HOME or f"home-more-tool-{tid}" in HOME
+    # layout order: tools before skill quick-start before featured
+    i_tools = HOME.index('data-testid="home-tools"')
+    i_skill = HOME.index('data-testid="home-start-skill"')
+    i_feat = HOME.index('data-testid="home-featured"')
+    assert i_tools < i_skill < i_feat
+
+
+def test_no_home_recent_section() -> None:
+    assert "home-recent" not in HOME
+    assert "ca-landing__recent" not in HOME
+    assert "recentProjects" not in HOME
+
+
+def test_pick_file_then_new_project_no_autorun() -> None:
+    assert "const pickTool" in HOME and "const launchTool" in HOME
+    assert "toolFile.current" in HOME
+    assert "newProject({ ref: viewUrl(await uploadImage(f, f.name)), tool })" in HOME
+    # cancel = clear pending without project
+    assert "if (!f || !tool) return" in HOME
+    # handoff never auto-runs generate for home tools
+    assert "homeToolAtom.set(tool)" in HANDOFF
+    assert "enterMode('inpaint')" in HANDOFF
+    assert "Never auto-runs" in HOME or "never auto-run" in HANDOFF.lower() or "no auto-run" in HANDOFF.lower()
+    open_fn = HANDOFF.split("async function openHomeTool", 1)[1].split("\nexport ", 1)[0]
+    for bad in ("generateDirect", "sendToAgent", "actions.cutout", "generate("):
+        assert bad not in open_fn, bad
+
+
+def test_handoff_home_tools_and_toolbars() -> None:
+    assert "export type HomeToolId" in HANDOFF
+    assert "export const homeToolAtom" in HANDOFF
+    for tid in MAIN + MORE:
+        assert f"'{tid}'" in HANDOFF
+    assert "import { homeToolAtom } from '../home/handoff'" in IMG_TB
+    assert "import { homeToolAtom } from '../home/handoff'" in VID_TB
+    assert "pendingHome === 'upscale'" in IMG_TB and "pendingHome === 'to3d'" in IMG_TB
+    assert "pendingHome !== 'extend'" in VID_TB
+    # hooks before early return
+    assert IMG_TB.index("const pendingHome") < IMG_TB.index("if (!shape || !rect || mode) return null")
+    assert VID_TB.index("const pendingHome") < VID_TB.index("if (!shape || !rect) return null")
+
+
+def test_waterfall_layout_logic_no_scraped_feed() -> None:
+    assert "featuredColumnCount" in LAYOUT and "packFeaturedColumns" in LAYOUT
+    assert "featuredAspect" in LAYOUT
+    assert "packFeaturedColumns(featuredItems, featuredWidth)" in HOME
+    assert "ca-featured--waterfall" in HOME
+    assert 'data-testid="home-featured-col"' in HOME
+    assert "style={{ aspectRatio: aspect }}" in HOME
+    assert ".ca-featured--waterfall" in CSS and ".ca-featured__col" in CSS
+    # no third-party CDN / feed urls in home featured path
+    low = (HOME + LAYOUT).lower()
+    for bad in ("a.lovart.ai", "lovartcdn", "cdn.lovart", "http://", "https://"):
+        assert bad not in low, bad
+    # data remains skillFeaturedCases (our presets)
+    assert "skillFeaturedCases(skills)" in HOME
+
+
+def test_tool_covers_are_lucide_zero_cost() -> None:
+    # covers are Icons[tool.icon] on ca-toolcard__cover — no <img> WaveSpeed / remote art
+    tools_block = HOME.split("HOME_TOOL_CARDS", 1)[1].split("MORE_HOME_TOOLS", 1)[0]
+    assert "<img" not in tools_block
+    assert "Icons[tool.icon]" in HOME
+    assert ".ca-toolcard__cover" in CSS
+    assert "grid-template-columns: repeat(5" in CSS
+
+
+def test_i18n_tools() -> None:
+    assert ZH["home.tools"] == "实用工具"
+    assert EN["home.tools"] == "Tools"
+    assert ZH["home.moreTools"] == "更多工具"
+    assert EN["home.moreTools"] == "More tools"
+    assert ZH["home.toolPreciseEdit"] == "精准编辑"
+    assert EN["home.toolPreciseEdit"] == "Precise edit"
+    assert "home.toolPreciseEdit" in HOME
+
+
+def test_featured_layout_column_math() -> None:
+    """Mirror Loomic 280–320 / 16px gap rules without importing TS."""
+    # smoke: file exports match expected signatures
+    assert "export function featuredColumnCount(width: number, gap = 16)" in LAYOUT
+    assert "export function packFeaturedColumns" in LAYOUT
+    assert "280" in LAYOUT and "320" in LAYOUT
+    assert "Math.min(...heights)" in LAYOUT or "indexOf(Math.min" in LAYOUT

@@ -88,7 +88,9 @@ def test_copy_and_style() -> None:
     assert ZH["home.featured"] == "精选" and EN["home.featured"] == "Featured"
     assert ZH["home.skillCase"] == "Skill 案例" and EN["home.skillCase"] == "Skill case"
     assert ".ca-featured" in CSS and ".ca-featured__go" in CSS
-    assert "aspect-ratio: 231 / 173" in CSS
+    # #537: waterfall columns (Loomic pack); aspect via inline style, not fixed 231/173 grid
+    assert "ca-featured--waterfall" in CSS or "ca-featured--waterfall" in HOME
+    assert ".ca-featured__col" in CSS
     assert "scale(0.85)" in CSS  # hover 「开始制作」 pill
 
 

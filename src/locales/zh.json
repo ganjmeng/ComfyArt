@@ -1589,5 +1589,8 @@
   "home.skillCase": "Skill 案例",
   "home.collapseSidebar": "收起侧边栏",
   "home.expandSidebar": "展开侧边栏",
-  "home.assets": "我的素材"
+  "home.assets": "我的素材",
+  "home.tools": "实用工具",
+  "home.moreTools": "更多工具",
+  "home.toolPreciseEdit": "精准编辑"
 }
