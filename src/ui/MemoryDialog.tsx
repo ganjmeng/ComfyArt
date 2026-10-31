@@ -11,16 +11,9 @@ import { AbilitiesPanel } from './AbilitiesPanel'
 import { ChatComposer, EditRow, MemoryRow, GROUP_ORDER, MemoryEmpty } from '../home/ArtiMemory'
 import { Icons } from './icons'
 import { t } from '../i18n'
+import { ago } from '../memoryRelativeTime'
 import { isEnter } from './keys'
 import { Modal } from './Modal'
-
-function ago(time: number) {
-  const min = Math.floor((Date.now() - time) / 60000)
-  if (min < 1) return t('memoryDialog.justNow')
-  if (min < 60) return t('memoryDialog.minutesAgo', min)
-  const h = Math.floor(min / 60)
-  return h < 24 ? t('memoryDialog.hoursAgo', h) : t('memoryDialog.daysAgo', Math.floor(h / 24))
-}
 
 /** Skeleton while the dialog's memory read is in flight: group title bars + card bars, as in the reference. */
 function MemorySkeleton() {
