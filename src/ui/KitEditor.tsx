@@ -4,7 +4,7 @@ import { atom, useValue } from 'tldraw'
 import { uploadImage, viewUrl } from '../comfy'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
-import { COLOR_ROLES, KIND_LABELS, libraryAtom, saveLibrary, type FontFile, type LibraryItem } from '../library'
+import { COLOR_ROLES, KIND_LABELS, kitDisplayName, libraryAtom, saveLibrary, type FontFile, type LibraryItem } from '../library'
 import { ask, parseJson } from '../llm'
 import { isPdf, uploadPdf } from '../pdf'
 import { newProject } from '../projects'
@@ -130,6 +130,8 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
   }
   useEffect(() => flush, [id])
 
+  // #539 P1: title shows the card's display name; draft only while typing so clearing falls back to the default on blur
+  const [titleDraft, setTitleDraft] = useState<string | null>(null)
   if (!id || !stored) return null
   const item = stored
   const brand = item.kind === 'brand'
@@ -207,7 +209,7 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
         <div className="ca-kit__page">
           {embedded ? (
             <div className="ca-kit__titlerow">
-              <input className="ca-kit__title" data-testid="assets-detail-name" value={item.name} placeholder={t('kitEditor.untitled', '')} onChange={(e) => set({ name: e.target.value })} onBlur={flush} onKeyDown={(e) => { if (isEnter(e)) e.currentTarget.blur() }} />
+              <input className="ca-kit__title" data-testid="assets-detail-name" value={titleDraft ?? kitDisplayName(item)} placeholder={kitDisplayName({ ...item, name: '' })} onChange={(e) => { setTitleDraft(e.target.value); set({ name: e.target.value }) }} onBlur={() => { setTitleDraft(null); flush() }} onKeyDown={(e) => { if (isEnter(e)) e.currentTarget.blur() }} />
               <Popover open={more} onOpenChange={setMore} align="end" trigger={({ open, toggle }) => <button type="button" className="ca-lib__more" data-open={open || undefined} data-testid="assets-detail-more" title={t('home.more')} aria-label={t('home.more')} onClick={toggle}><span className="ca-icon">{Icons.more}</span></button>}>
                 <div className="ca-menu ca-lib__menu">
                   <button type="button" className="ca-menu__item ca-menu__item--danger" onClick={() => { setMore(false); remove() }}>{t('common.delete')}</button>

@@ -9,6 +9,8 @@ export interface FontFile { family: string; src: string }
 
 export const COLOR_ROLES: Record<string, string> = { primary: t('library.primary'), secondary: t('library.secondary'), accent: t('library.accent'), background: t('library.background'), text: t('library.text') }
 
+/** display name shared by the list card and the Assets detail title (#539 P1) */
+export const kitDisplayName = (item: { name: string; kind: LibraryKind }) => item.name || t('kitEditor.untitled', KIND_LABELS[item.kind])
 export const KIND_LABELS: Record<LibraryKind, string> = { brand: t('library.brandKit'), character: t('library.character'), product: t('library.product'), custom: t('common.custom') }
 
 const FILE = 'comfyart/library.json'

@@ -929,5 +929,5 @@ body { background: var(--ca-float); }
 .ca-kit[data-embedded] .ca-kit__urlrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .ca-kit[data-embedded] .ca-kit__urlinput { flex: 1; height: 32px; padding: 0 10px; border: var(--ca-border-w, 1px) solid var(--ca-border); border-radius: 8px; background: var(--ca-field); color: inherit; font: inherit; outline: none; }
 .ca-kit[data-embedded] .ca-kit__urlrow .ca-kit__err { flex-basis: 100%; margin-top: 0; }
-.ca-assets-page .ca-lib__more { opacity: 0; }
-.ca-assets-page .ca-lib__card:hover .ca-lib__more, .ca-assets-page .ca-lib__more[data-open] { opacity: 1; }
+.ca-assets-page .ca-lib__card .ca-lib__more { opacity: 0; }
+.ca-assets-page .ca-lib__card:hover .ca-lib__more, .ca-assets-page .ca-lib__card .ca-lib__more[data-open] { opacity: 1; }

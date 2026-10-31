@@ -211,7 +211,16 @@ def test_assets_c_539() -> None:
     # P2 2: single-line guide ~30
     assert "rows={embedded ? 1 : undefined}" in kit and "height: 30px" in rules
     # P2 3: 「…」 hover only, scoped to the page
-    assert ".ca-assets-page .ca-lib__more { opacity: 0; }" in rules
+    # P1 2: hover-only scoped to list cards; detail-title 「…」 always visible
+    assert ".ca-assets-page .ca-lib__card .ca-lib__more { opacity: 0; }" in rules
+    assert ".ca-assets-page .ca-lib__more { opacity: 0; }" not in rules
+    assert ".ca-assets-page .ca-lib__card .ca-lib__more[data-open]" in rules
+    # P1 1: title = card display name via shared helper, body colour (value, not placeholder)
+    lib = (ROOT / "src/library.ts").read_text()
+    assert "export const kitDisplayName = (item: { name: string; kind: LibraryKind }) => item.name || t('kitEditor.untitled', KIND_LABELS[item.kind])" in lib
+    assert "const name = kitDisplayName(item)" in (ROOT / "src/ui/LibraryPanel.tsx").read_text()
+    assert "value={titleDraft ?? kitDisplayName(item)}" in kit
+    assert "placeholder={t('kitEditor.untitled', '')}" not in kit
     assert ".ca-assets-page .ca-lib__card:hover .ca-lib__more" in rules
     # P2 5: CTA at the right edge of an 800 centred container
     assert '<div className="ca-kit__footin">' in kit

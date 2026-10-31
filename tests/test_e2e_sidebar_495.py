@@ -197,7 +197,8 @@ async def tabs_new_unselected(pg, style, sel):
     await pg.mouse.move(1200, 780)
     off = pg.locator(".ca-lib__card:not([data-on])")
     assert await off.evaluate(style) != sel
-    # delete the 2nd kit via 「…」 → selection falls back to the first kit, still styled
+    # delete the 2nd kit via the title 「…」, un-hovered (P1 2) → selection falls back to the first kit
+    assert await pg.get_by_test_id("assets-detail-more").evaluate("e => getComputedStyle(e).opacity") == "1"
     await pg.get_by_test_id("assets-detail-more").click()
     await pg.locator(".ca-lib__menu .ca-menu__item--danger").click()
     await pg.locator(".ca-confirm .ca-panel__primary").click()
@@ -264,7 +265,17 @@ async def test_assets_detail_539b(app_url, lang, theme):  # noqa: F811
         # reload → persisted + default-selected first kit
         await pg.reload()
         await pg.get_by_test_id("assets-detail").wait_for()
-        assert await pg.get_by_test_id("assets-detail-name").input_value() == ""
+        # P1 1: cleared name falls back to the card's default name, in body colour
+        title = pg.get_by_test_id("assets-detail-name")
+        card_name = (await pg.locator(".ca-lib__card[data-on] .ca-lib__name").inner_text()).strip()
+        assert await title.input_value() == card_name == ("未命名品牌套件" if lang == "zh" else "Untitled Brand Kit")
+        colors = await title.evaluate("e => [getComputedStyle(e).color, getComputedStyle(e, '::placeholder').color, getComputedStyle(document.body).color]")
+        assert colors[0] == colors[2] and colors[0] != colors[1], colors
+        # P1 2: title 「…」 visible without hover
+        await pg.mouse.move(1200, 780)
+        await pg.wait_for_timeout(300)
+        assert await pg.get_by_test_id("assets-detail-more").evaluate("e => getComputedStyle(e).opacity") == "1"
+        assert await pg.get_by_test_id("assets-detail-more").is_visible()
         assert await pg.locator(".ca-lib__card[data-on]").count() == 1
         if ASSET_SHOTS:
             await pg.mouse.move(0, 0)
@@ -358,7 +369,7 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
     URL import (mocked image host), CTA aligned to 800 content (1280 + 1920), CTA → new project with kit."""
     async with pw.async_playwright() as p:
         browser, pg = await _assets_page(p, lang, theme)
-        await pg.route("https://img.example.com/**", lambda r: r.fulfill(status=200, content_type="image/webp" if r.request.url.endswith(".webp") else "image/png", body=_PNG))
+        await pg.route("https://img.example.com/**", lambda r: r.fulfill(status=200, headers={"access-control-allow-origin": "*"}, content_type="image/webp" if r.request.url.endswith(".webp") else "application/pdf" if "download" in r.request.url else "image/png", body=_PNG))
         await pg.goto(app_url + "?view=assets")
         await pg.get_by_test_id("assets-detail-empty").wait_for()
         await pg.get_by_test_id("assets-empty-new").click()  # default-name flow, no custom name
@@ -369,10 +380,11 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
         guide = pg.get_by_test_id("assets-guide")
         h = (await guide.bounding_box())["height"]
         assert 28 <= h <= 32, h
-        # 「…」 hidden until hover
+        # 「…」 hidden until hover on the card only; title 「…」 always shown
         card = pg.locator(".ca-assets-page .ca-lib__card").first
         await pg.mouse.move(1200, 780)
         await pg.wait_for_timeout(300)
+        assert await pg.get_by_test_id("assets-detail-more").evaluate("e => getComputedStyle(e).opacity") == "1"
         assert await card.locator(".ca-lib__more").evaluate("e => getComputedStyle(e).opacity") == "0"
         await card.hover()
         await pg.wait_for_timeout(300)
@@ -403,6 +415,8 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
         await pg.wait_for_timeout(300)
         assert ("仅支持 PNG、JPG、PDF" if lang == "zh" else "Only PNG, JPG and PDF") in await err.inner_text()
         assert await pg.locator(".ca-kit[data-embedded] .ca-kit__tiles img").count() == 0
+        if ASSET_SHOTS and lang == "zh":
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539c-badformat-p1-zh-light.png")
         # (b) URL import: invalid → i18n error; https → reference tile
         await pg.get_by_test_id("assets-import-url").click()
         await pg.get_by_test_id("assets-url-input").fill("ftp://x")
@@ -419,6 +433,8 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
         assert await pg.get_by_test_id("assets-url-input").input_value() == bad
         assert await pg.locator(".ca-kit[data-embedded] .ca-kit__tiles img").count() == 0
         assert await pg.locator(".ca-confirm").count() == 0
+        if ASSET_SHOTS and lang == "zh":
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539c-urlformat-p1-zh-light.png")
         await pg.get_by_test_id("assets-url-input").fill("https://img.example.com/ref.png")
         if ASSET_SHOTS:
             await pg.screenshot(path=f"{ASSET_SHOTS}/539c-url-input-{lang}-{theme}.png")
@@ -428,6 +444,15 @@ async def test_assets_c_539(app_url, lang, theme):  # noqa: F811
         if ASSET_SHOTS:
             await pg.wait_for_timeout(500)
             await pg.screenshot(path=f"{ASSET_SHOTS}/539c-url-imported-{lang}-{theme}.png")
+        # PDF passes by extension, and by application/pdf content-type without one
+        tiles = pg.locator(".ca-kit[data-embedded] .ca-kit__tiles img")
+        for i, u in enumerate(["https://img.example.com/doc.pdf", "https://img.example.com/download?id=7"]):
+            await pg.get_by_test_id("assets-import-url").click()
+            await pg.get_by_test_id("assets-url-input").fill(u)
+            await pg.get_by_test_id("assets-url-save").click()
+            await pg.locator(f'.ca-kit[data-embedded] .ca-kit__tiles img[src="{u}"]').wait_for(state="attached")
+            assert await pg.get_by_test_id("assets-url-row").count() == 0
+            assert await tiles.count() == 2 + i
         # wide viewport: still aligned
         await pg.set_viewport_size({"width": 1920, "height": 1080})
         await pg.wait_for_timeout(300)
