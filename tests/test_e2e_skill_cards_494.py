@@ -119,16 +119,17 @@ async def test_old_personal_skill_renders(app_url, lang, theme):  # noqa: F811
         await pg.get_by_test_id("skills-tab-personal").click()
         card = pg.locator('[data-skill="old-skill"]')
         await card.wait_for()
-        assert await card.get_by_test_id("skills-card-author").inner_text() == ("个人" if lang == "zh" else "Personal")
+        # 46df37d: personal tab renders row cards — no author / kind badge / bookmark by design
+        assert await card.get_attribute("data-layout") == "row"
+        assert await card.get_attribute("data-custom") is not None
+        assert await card.locator(".ca-swall__title").is_visible()
+        assert (await card.locator(".ca-swall__title").inner_text()).strip()
+        assert await card.get_by_test_id("skills-card-author").count() == 0
         # images[0] fails to load → same placeholder as a card without image; no broken img / alt text
         await card.get_by_test_id("skills-card-placeholder").wait_for(state="visible")
         assert await card.get_by_test_id("skills-card-cover").count() == 0
         assert await card.locator("img").count() == 0
         assert await card.get_by_test_id("skills-card-placeholder").locator("svg").count() == 1
-        assert await card.get_by_test_id("skills-card-kind").is_visible()
-        assert await card.locator(".ca-swall__cover").evaluate("e => getComputedStyle(e).backgroundColor") == \
-            await pg.evaluate("() => { const p = document.createElement('i'); p.style.background = 'var(--ca-hover)';"
-                              " document.body.append(p); const c = getComputedStyle(p).backgroundColor; p.remove(); return c }")
         await _shot(pg, f"personal-old-{lang}-{theme}")
         # old import with a loadable images.json entry → its own images[0] via thumb (AC 5), no migration
         ok = pg.locator('[data-skill="img-skill"]')
@@ -137,7 +138,5 @@ async def test_old_personal_skill_renders(app_url, lang, theme):  # noqa: F811
         assert "good.png" in (await img.get_attribute("src"))
         await pg.wait_for_function("e => e.complete && e.naturalWidth > 0", arg=await img.element_handle())
         assert await ok.get_by_test_id("skills-card-placeholder").count() == 0
-        await card.get_by_test_id("skills-card-bookmark").click()
-        assert "old-skill" in await pg.evaluate("localStorage.getItem('comfyart.skillFavourites')")
         assert "社" + "区" not in await card.inner_text()
         await browser.close()

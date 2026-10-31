@@ -118,7 +118,8 @@ def test_badge_position_and_placeholder_colour():
 def test_card_author_badge_bookmark():
     assert 'data-testid="skills-card-author"' in SKILLS and "skillAuthor(skill)" in SKILLS
     assert ZH["home.skillsAuthorPersonal"] == "个人" and EN["home.skillsAuthorPersonal"] == "Personal"
-    assert 'data-testid="skills-card-kind" data-kind="image"' in SKILLS
+    # d932c50 (#532): kind is dynamic (image | video), not hard-coded
+    assert 'data-testid="skills-card-kind" data-kind={kind}' in SKILLS and "videoSrc ? 'video' : 'image'" in SKILLS
     assert "e.stopPropagation(); onFav()" in SKILLS and "Icons.bookmark" in SKILLS
     assert "onTry" in SKILLS and "newProject({ skill: s.id })" in SKILLS  # AC 3: main's click kept (legacy path); #494-2 wires cover/title/try → onTry
     # #494-2: hover 「试用此技能」 lands — same dialog as cover / title click.
