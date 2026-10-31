@@ -1,0 +1,69 @@
+{
+ "commit": "f2045022727c73e24bd6d5ebcb3815bedb7b8797",
+ "skill": "brand",
+ "lovart_counterpart": "Lovart · Logo 系统 (6)",
+ "cells": 6,
+ "presets": [
+  {
+   "id": "handmade",
+   "zh": "手作温暖",
+   "en": "Handmade warmth",
+   "status": "existing (id/prompt unchanged, image replaced)",
+   "lovart_cell": "Food Service",
+   "fictional_brand": "CRUMBWELL",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__handmade.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__handmade@thumb.webp"
+  },
+  {
+   "id": "geometric",
+   "zh": "极简几何",
+   "en": "Minimal geometric",
+   "status": "existing (id/prompt unchanged, image replaced)",
+   "lovart_cell": "Fashion & Accessories",
+   "fictional_brand": "NORVIK",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__geometric.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__geometric@thumb.webp"
+  },
+  {
+   "id": "beauty",
+   "zh": "美妆个护",
+   "en": "Beauty & personal care",
+   "status": "new (proposed id/name)",
+   "lovart_cell": "Beauty & Personal Care",
+   "fictional_brand": "saphia",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__beauty.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__beauty@thumb.webp"
+  },
+  {
+   "id": "foodbev",
+   "zh": "食品饮料",
+   "en": "Food & beverage",
+   "status": "new (proposed id/name)",
+   "lovart_cell": "Food & Beverage",
+   "fictional_brand": "Citrova",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__foodbev.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__foodbev@thumb.webp"
+  },
+  {
+   "id": "pet",
+   "zh": "宠物用品",
+   "en": "Pet supplies",
+   "status": "new (proposed id/name)",
+   "lovart_cell": "Pet Supplies",
+   "fictional_brand": "BARKHAVEN",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__pet.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__pet@thumb.webp"
+  },
+  {
+   "id": "tech",
+   "zh": "科技未来",
+   "en": "Tech future",
+   "status": "existing (id/prompt unchanged, image replaced)",
+   "lovart_cell": "Home & Lifestyle",
+   "fictional_brand": "HOVELO",
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__tech.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/brand__tech@thumb.webp"
+  }
+ ],
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/f2045022727c73e24bd6d5ebcb3815bedb7b8797/541/wash/brand/sbs_brand.png"
+}
