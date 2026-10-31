@@ -9,7 +9,7 @@ import { RefFrameButton } from './RefFrameButton'
 import { listAssets, placeAsset, type AssetItem } from '../assets'
 import { botEnabledAtom, loadProviders, loadSettings, messagesAtom, providerLabel, providersStateAtom } from '../bot'
 import { errorText } from '../jobs'
-import { libraryAtom } from '../library'
+import { KIND_LABELS, libraryAtom } from '../library'
 import type { AudioShape } from '../shapes/EmbedShapes'
 import { loadSkills, saveSkill, skillAtom, skillCreatorAtom, type Skill } from '../skills'
 import { AssetGrid } from './AssetPicker'
@@ -301,7 +301,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
         <div className="ca-composer__chips">
           {kits.map((k) => (
             <span key={k.id} className="ca-chip">
-              <span className="ca-icon">{Icons.assets}</span>{k.name}
+              <span className="ca-icon">{Icons.assets}</span>{k.name || t('kitEditor.untitled', KIND_LABELS[k.kind])}
               <button type="button" title={t('common.remove')} onClick={() => kitsAtom.set(kits.filter((x) => x.id !== k.id))}>{Icons.close}</button>
             </span>
           ))}

@@ -4,7 +4,7 @@ import { atom, useValue } from 'tldraw'
 import { uploadImage, viewUrl } from '../comfy'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
-import { COLOR_ROLES, KIND_LABELS, libraryAtom, saveLibrary, type FontFile, type LibraryItem } from '../library'
+import { COLOR_ROLES, KIND_LABELS, kitDisplayName, libraryAtom, saveLibrary, type FontFile, type LibraryItem } from '../library'
 import { ask, parseJson } from '../llm'
 import { isPdf, uploadPdf } from '../pdf'
 import { newProject } from '../projects'
@@ -21,6 +21,31 @@ import '../styles/kit.css'
 export const kitEditAtom = atom<string | null>('kit edit', null)
 
 const SAVE_DELAY = 400
+/** #539 PR-C: Assets upload zone limit (copy says 最大 20MB / up to 20MB). */
+export const MAX_UPLOAD = 20 * 1024 * 1024
+/** #539 PR-C: URL import check, ported from the reference group upload flow — http/https only. */
+/** #539 PR-C product ruling: Assets accepts PNG/JPG/PDF only (no webp/gif). */
+const OK_EXT = /\.(png|jpe?g|pdf)$/i
+const OK_TYPES = ['image/png', 'image/jpeg', 'application/pdf']
+export const okUploadFile = (f: File) => OK_TYPES.includes(f.type) || OK_EXT.test(f.name)
+/** URL passes if its extension OR its content-type confirms PNG/JPG/PDF; HEAD/CORS failure = unconfirmed. */
+export async function confirmedImportUrl(raw: string) {
+  if (OK_EXT.test(new URL(raw.trim()).pathname)) return true
+  try {
+    const r = await fetch(raw.trim(), { method: 'HEAD' })
+    return OK_TYPES.includes((r.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase())
+  } catch {
+    return false
+  }
+}
+export function validImportUrl(raw: string) {
+  try {
+    const parsed = new URL(raw.trim())
+    return ['http:', 'https:'].includes(parsed.protocol)
+  } catch {
+    return false
+  }
+}
 const GUIDE_PAGES = 6
 const GUIDE_TEXT = 12000
 const BRAND_SYSTEM = t('libraryPanel.youReadBrandGuidelinesReply')
@@ -87,6 +112,11 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
   const [drag, setDrag] = useState(false)
   const [pick, setPick] = useState(false)
   const [more, setMore] = useState(false)
+  const [uploadErr, setUploadErr] = useState('')
+  const [urlOpen, setUrlOpen] = useState(false)
+  const [url, setUrl] = useState('')
+  const [urlErr, setUrlErr] = useState('')
+  const [checking, setChecking] = useState(false)
   const [fontMenu, setFontMenu] = useState<'menu' | 'library' | null>(null)
   const files = useRef<HTMLInputElement>(null)
   const logos = useRef<HTMLInputElement>(null)
@@ -101,6 +131,8 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
   }
   useEffect(() => flush, [id])
 
+  // #539 P1: title shows the card's display name; draft only while typing so clearing falls back to the default on blur
+  const [titleDraft, setTitleDraft] = useState<string | null>(null)
   if (!id || !stored) return null
   const item = stored
   const brand = item.kind === 'brand'
@@ -116,7 +148,26 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
   const close = () => { flush(); kitEditAtom.set(null) }
   const roles = item.colors.map((_, i) => item.roles?.[i] ?? '')
   const addImages = (srcs: string[]) => update((x) => ({ ...x, images: [...x.images, ...srcs.filter((s) => !x.images.includes(s))] }))
-  const dropFiles = (list: File[]) => void filesToImages(list).then(addImages).catch(fail)
+  const dropFiles = (list: File[]) => {
+    // #539 PR-C: embedded upload zone rejects files over 20MB before any upload
+    const bad = embedded ? list.filter((f) => !okUploadFile(f)) : []
+    const big = embedded ? list.filter((f) => okUploadFile(f) && f.size > MAX_UPLOAD) : []
+    const msg = bad.length ? t('assets.badFormat', bad.map((f) => f.name).join(', ')) : big.length ? t('assets.tooLarge', big.map((f) => f.name).join(', ')) : ''
+    // #539 P2: inline error only (no toast); a new upload/drop replaces any stale error
+    setUploadErr(msg); setUrlErr('')
+    const ok = list.filter((f) => !big.includes(f) && !bad.includes(f))
+    if (ok.length) void filesToImages(ok).then(addImages).catch(fail)
+  }
+  const saveUrl = async () => {
+    setUploadErr(''); setUrlErr('')
+    if (!validImportUrl(url)) { setUrlErr(t('assets.urlInvalid')); return }
+    setChecking(true)
+    const ok = await confirmedImportUrl(url).finally(() => setChecking(false))
+    if (!ok) { setUrlErr(t('assets.urlFormat')); return }
+    addImages([url.trim()])
+    setUrl(''); setUrlErr(''); setUploadErr(''); setUrlOpen(false)
+  }
+  const createProject = () => { flush(); newProject({ kit: item.id }) }
   const fromGuide = async (file: File) => {
     setBusy(true)
     try {
@@ -162,7 +213,7 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
         <div className="ca-kit__page">
           {embedded ? (
             <div className="ca-kit__titlerow">
-              <input className="ca-kit__title" data-testid="assets-detail-name" value={item.name} placeholder={t('kitEditor.untitled', '')} onChange={(e) => set({ name: e.target.value })} onBlur={flush} onKeyDown={(e) => { if (isEnter(e)) e.currentTarget.blur() }} />
+              <input className="ca-kit__title" data-testid="assets-detail-name" value={titleDraft ?? kitDisplayName(item)} placeholder={kitDisplayName({ ...item, name: '' })} onChange={(e) => { setTitleDraft(e.target.value); set({ name: e.target.value }) }} onBlur={() => { setTitleDraft(null); flush() }} onKeyDown={(e) => { if (isEnter(e)) e.currentTarget.blur() }} />
               <Popover open={more} onOpenChange={setMore} align="end" trigger={({ open, toggle }) => <button type="button" className="ca-lib__more" data-open={open || undefined} data-testid="assets-detail-more" title={t('home.more')} aria-label={t('home.more')} onClick={toggle}><span className="ca-icon">{Icons.more}</span></button>}>
                 <div className="ca-menu ca-lib__menu">
                   <button type="button" className="ca-menu__item ca-menu__item--danger" onClick={() => { setMore(false); remove() }}>{t('common.delete')}</button>
@@ -173,18 +224,26 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
           <div
             className="ca-kit__drop"
             data-on={drag || undefined}
-            onClick={() => files.current?.click()}
+            onClick={() => { setUploadErr(''); files.current?.click() }}
             onDragOver={(e) => { e.preventDefault(); setDrag(true) }}
             onDragLeave={() => setDrag(false)}
             onDrop={(e) => { e.preventDefault(); setDrag(false); dropFiles(Array.from(e.dataTransfer.files)) }}
           >
-            <span className="ca-icon">{Icons.upload}</span>
+            <span className="ca-icon">{embedded ? Icons.uploadArrow : Icons.upload}</span>
             {embedded ? (
-              /* #539 PR-B: copy + 「导入 URL」 entry only; 20MB validation + URL import are PR-C */
-              <div><div>{t('assets.dropHint')}<button type="button" className="ca-kit__url" data-testid="assets-import-url" aria-disabled="true" onClick={(e) => e.stopPropagation()}>{t('assets.importUrl')}</button></div><div className="ca-kit__muted">{t('assets.dropFormats')}</div></div>
+              /* #539 PR-C: 20MB validation + 「导入 URL」 */
+              <div><div>{t('assets.dropHint')}<button type="button" className="ca-kit__url" data-testid="assets-import-url" onClick={(e) => { e.stopPropagation(); setUrlOpen(true); setUploadErr(''); setUrlErr('') }}>{t('assets.importUrl')}</button></div><div className="ca-kit__muted">{t('assets.dropFormats')}</div>{uploadErr && <div className="ca-kit__err" role="alert" data-testid="assets-upload-error">{uploadErr}</div>}</div>
             ) : <div><div>{t('kitEditor.dropHint')}</div><div className="ca-kit__muted">{t('kitEditor.dropFormats')}</div></div>}
           </div>
-          <input ref={files} type="file" accept="image/*,.pdf" multiple hidden onChange={(e) => picked(e.target, dropFiles)} />
+          {embedded && urlOpen && (
+            <div className="ca-kit__urlrow" data-testid="assets-url-row">
+              <input className="ca-kit__urlinput" data-testid="assets-url-input" autoFocus value={url} placeholder="https://" onChange={(e) => { setUrl(e.target.value); setUrlErr(''); setUploadErr('') }} onKeyDown={(e) => { if (isEnter(e) && url.trim() && !checking) void saveUrl(); if (e.key === 'Escape') { setUrlOpen(false); setUrlErr(''); setUploadErr('') } }} />
+              <button type="button" className="ca-kit__urlsave" data-testid="assets-url-save" disabled={!url.trim() || checking} onClick={() => void saveUrl()}>{t('common.add')}</button>
+              <button type="button" className="ca-assets-page__new" data-testid="assets-url-cancel" onClick={() => { setUrlOpen(false); setUrlErr(''); setUploadErr('') }}>{t('common.cancel')}</button>
+              {urlErr && <div className="ca-kit__err" role="alert" data-testid="assets-url-error">{urlErr}</div>}
+            </div>
+          )}
+          <input ref={files} type="file" accept={embedded ? '.png,.jpg,.jpeg,.pdf' : 'image/*,.pdf'} multiple hidden onChange={(e) => picked(e.target, dropFiles)} />
           {brand && (
             <button type="button" className="ca-kit__link" disabled={busy} onClick={() => guide.current?.click()}>
               <span className="ca-icon">{Icons.agent}</span>{busy ? t('libraryPanel.extracting') : t('libraryPanel.extractFromFileBrandGuide')}
@@ -193,7 +252,7 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
           <input ref={guide} type="file" accept="image/*,.pdf" hidden onChange={(e) => picked(e.target, (l) => l[0] && void fromGuide(l[0]).catch(fail))} />
 
           <Section title={brand ? t('libraryPanel.designGuidelines') : t('kitEditor.description')}>
-            <textarea className="ca-kit__text" value={item.description} placeholder={brand ? t('libraryPanel.describeTheBrandsPersonality') : t('libraryPanel.describeTheLookStyleUse')} onChange={(e) => set({ description: e.target.value })} />
+            <textarea className="ca-kit__text" rows={embedded ? 1 : undefined} data-testid={embedded ? 'assets-guide' : undefined} value={item.description} placeholder={brand ? t('libraryPanel.describeTheBrandsPersonality') : t('libraryPanel.describeTheLookStyleUse')} onChange={(e) => set({ description: e.target.value })} />
           </Section>
 
           {brand && (
@@ -284,9 +343,9 @@ export function KitEditor({ onError, embedded }: { onError: (msg: string) => voi
         </div>
       </div>
       {embedded ? (
-        /* #539 PR-B: full-width bar; create-project handoff is PR-C, so the button is rendered but not wired. */
+        /* #539 PR-C: full-width bar, button at the right edge of an 800 centred container; reuses #555 newProject */
         <div className="ca-kit__foot" data-testid="assets-detail-foot">
-          <button type="button" className="ca-panel__primary ca-kit__cta" data-testid="assets-create-project" aria-disabled="true">{t('kitEditor.createProject')} →</button>
+          <div className="ca-kit__footin"><button type="button" className="ca-panel__primary ca-kit__cta" data-testid="assets-create-project" onClick={createProject}>{t('kitEditor.createProject')} →</button></div>
         </div>
       ) : brand && (
         <div className="ca-kit__foot">

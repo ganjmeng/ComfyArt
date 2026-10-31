@@ -3,7 +3,7 @@ import { atom, useValue, type Editor } from 'tldraw'
 
 import { kitsAtom } from '../agent'
 import { placeAsset } from '../assets'
-import { KIND_LABELS, libraryAtom, saveLibrary, type LibraryItem, type LibraryKind } from '../library'
+import { KIND_LABELS, kitDisplayName, libraryAtom, saveLibrary, type LibraryItem, type LibraryKind } from '../library'
 import { newProject } from '../projects'
 import { AssetGrid } from './AssetPicker'
 import { confirmAtom } from './Confirm'
@@ -22,7 +22,7 @@ function LibCard({ item, save, on }: { item: LibraryItem; save: (list: LibraryIt
   const kits = useValue(kitsAtom)
   const brand = item.kind === 'brand'
   const cover = item.cover ?? item.logos?.[0] ?? item.images[0]
-  const name = item.name || t('kitEditor.untitled', KIND_LABELS[item.kind])
+  const name = kitDisplayName(item)
   const act = (fn: () => void) => () => { setMenu(false); fn() }
   const all = () => libraryAtom.get()
   return (
