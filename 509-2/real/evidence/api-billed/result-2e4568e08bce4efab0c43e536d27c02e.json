@@ -1,0 +1,21 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "2e4568e08bce4efab0c43e536d27c02e",
+    "model": "mirelo-ai/sfx-2.0/text-to-audio",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/57c3a00f-c98c-404a-b993-ad7f0e2f260f.wav"
+    ],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/2e4568e08bce4efab0c43e536d27c02e/result"
+    },
+    "status": "completed",
+    "created_at": "2026-10-31T07:57:03.964155515Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 4801
+    }
+  }
+}

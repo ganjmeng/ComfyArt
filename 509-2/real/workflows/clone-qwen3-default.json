@@ -1,0 +1,10 @@
+{
+  "model": "wavespeed-ai/qwen3-tts/voice-clone",
+  "fields": {
+    "@audio": "audio",
+    "@prompt": "text"
+  },
+  "params": {
+    "language": "auto"
+  }
+}

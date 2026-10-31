@@ -1,0 +1,11 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "model_id": "wavespeed-ai/qwen3-tts/voice-clone",
+    "price": 0.005,
+    "discounted_price": 0.005,
+    "discount_rate": 100,
+    "currency": "USD"
+  }
+}

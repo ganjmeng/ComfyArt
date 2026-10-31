@@ -1,0 +1,11 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "model_id": "mirelo-ai/sfx-2.0/text-to-audio",
+    "price": 0.016,
+    "discounted_price": 0.016,
+    "discount_rate": 100,
+    "currency": "USD"
+  }
+}

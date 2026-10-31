@@ -1,0 +1,59 @@
+{
+  "method": "WaveSpeed GET /api/v3/balance before+after each run (API billed; app UI login wall skipped like #514)",
+  "pattern": "#514 api-billed: actual_billed = balance delta (prediction result has no cost field)",
+  "starting_balance": 6.302244,
+  "ending_balance": 6.276244,
+  "budget_usd": 0.05,
+  "quoted_sum": 0.026,
+  "spend_total": 0.026,
+  "spend_sum_of_deltas": 0.026,
+  "tip_code_at_bill": "3e9bd38",
+  "no_minimax_voice_clone": true,
+  "custom_workflows": [
+    "509-2/real/workflows/speech-qwen3-default.json",
+    "509-2/real/workflows/clone-qwen3-default.json",
+    "509-2/real/workflows/sfx-mirelo-default.json"
+  ],
+  "runs": [
+    {
+      "slug": "speech",
+      "label": "Custom speech \u2192 wavespeed-ai/qwen3-tts/text-to-speech (speech-qwen3-default.json)",
+      "workflow": "speech-qwen3-default.json",
+      "model": "wavespeed-ai/qwen3-tts/text-to-speech",
+      "task_id": "c41f44726a874104804ca882bd75c61d",
+      "quoted": 0.005,
+      "balance_before": 6.302244,
+      "balance_after": 6.297244,
+      "note": "Dialog voice NOT passed when custom speech assigned; workflow params.voice used.",
+      "actual_billed": 0.005
+    },
+    {
+      "slug": "clone",
+      "label": "Custom clone \u2192 wavespeed-ai/qwen3-tts/voice-clone (clone-qwen3-default.json)",
+      "workflow": "clone-qwen3-default.json",
+      "model": "wavespeed-ai/qwen3-tts/voice-clone",
+      "task_id": "38c605d8414d499388036da215a8de84",
+      "quoted": 0.005,
+      "balance_before": 6.297244,
+      "balance_after": 6.292244,
+      "note": "NOT minimax/voice-clone ($1.60). Shortest text + tiny ref audio.",
+      "actual_billed": 0.005
+    },
+    {
+      "slug": "sfx",
+      "label": "Custom sfx \u2192 mirelo-ai/sfx-2.0/text-to-audio (sfx-mirelo-default.json)",
+      "workflow": "sfx-mirelo-default.json",
+      "model": "mirelo-ai/sfx-2.0/text-to-audio",
+      "task_id": "2e4568e08bce4efab0c43e536d27c02e",
+      "quoted": 0.016,
+      "balance_before": 6.292244,
+      "balance_after": 6.276244,
+      "note": "Builtin default stays mirelo. duration=1s shortest.",
+      "outputs": [
+        "https://d2h7xmz5gqybh9.cloudfront.net/output/57c3a00f-c98c-404a-b993-ad7f0e2f260f.wav"
+      ],
+      "actual_billed": 0.016
+    }
+  ],
+  "note": "Three e2e paths via custom workflow JSON pointing at product defaults. Cap \u2264$0.05."
+}

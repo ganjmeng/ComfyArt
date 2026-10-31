@@ -1,0 +1,21 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "38c605d8414d499388036da215a8de84",
+    "model": "wavespeed-ai/qwen3-tts/voice-clone",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/12dfcaeb-9666-429d-8926-4a65cc6702aa-u1_a6552592-1aa8-4fc9-a413-5bcb27918317.mp3"
+    ],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/38c605d8414d499388036da215a8de84/result"
+    },
+    "status": "completed",
+    "created_at": "2026-10-31T07:56:23.395590478Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 32458
+    }
+  }
+}

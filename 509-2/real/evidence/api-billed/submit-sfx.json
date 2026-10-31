@@ -1,0 +1,24 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "2e4568e08bce4efab0c43e536d27c02e",
+    "model": "mirelo-ai/sfx-2.0/text-to-audio",
+    "input": {
+      "duration": 1,
+      "output_format": "wav",
+      "prompt": "click"
+    },
+    "outputs": [],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/2e4568e08bce4efab0c43e536d27c02e/result"
+    },
+    "status": "created",
+    "created_at": "2026-10-31T07:57:03.966Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 0
+    }
+  }
+}
