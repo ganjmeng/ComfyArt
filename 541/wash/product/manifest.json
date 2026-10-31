@@ -1,34 +1,60 @@
 {
- "commit": "a4b39fea0ccb9e64a7f6063466c37980afba611a",
+ "commit": "688a702a1f322082cde4e5ed46200c3593db9c43",
  "skill": "product",
  "lovart_counterpart": "Amazon商品主图 (6 cells)",
  "ratio": "1:1",
  "cells": 6,
- "existing": {
-  "white": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/a4b39fea0ccb9e64a7f6063466c37980afba611a/494/wash/presets/product__white.webp",
-  "lifestyle": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/a4b39fea0ccb9e64a7f6063466c37980afba611a/494/wash/presets/product__lifestyle.webp",
-  "detail": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/a4b39fea0ccb9e64a7f6063466c37980afba611a/494/wash/presets/product__detail.webp"
- },
- "new": {
-  "electronics": {
+ "presets": [
+  {
+   "id": "white",
+   "zh": "白底主图",
+   "en": "White background hero",
+   "existing_preset": true,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__white.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__white@thumb.webp"
+  },
+  {
+   "id": "lifestyle",
+   "zh": "生活场景",
+   "en": "Lifestyle scene",
+   "existing_preset": true,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__lifestyle.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__lifestyle@thumb.webp"
+  },
+  {
+   "id": "detail",
+   "zh": "细节特写",
+   "en": "Detail close-up",
+   "existing_preset": true,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__detail.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__detail@thumb.webp"
+  },
+  {
+   "id": "electronics",
    "zh": "数码电子",
    "en": "Electronics",
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/a4b39fea0ccb9e64a7f6063466c37980afba611a/541/wash/product/product__electronics.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/a4b39fea0ccb9e64a7f6063466c37980afba611a/541/wash/product/product__electronics@thumb.webp"
+   "existing_preset": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__electronics.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__electronics@thumb.webp"
   },
-  "food": {
+  {
+   "id": "food",
    "zh": "美食",
    "en": "Food",
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/a4b39fea0ccb9e64a7f6063466c37980afba611a/541/wash/product/product__food.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/a4b39fea0ccb9e64a7f6063466c37980afba611a/541/wash/product/product__food@thumb.webp"
+   "existing_preset": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__food.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__food@thumb.webp"
   },
-  "beauty": {
+  {
+   "id": "beauty",
    "zh": "美妆个护",
    "en": "Beauty",
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/a4b39fea0ccb9e64a7f6063466c37980afba611a/541/wash/product/product__beauty.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/a4b39fea0ccb9e64a7f6063466c37980afba611a/541/wash/product/product__beauty@thumb.webp"
+   "existing_preset": false,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__beauty.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__beauty@thumb.webp"
   }
- },
- "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/a4b39fea0ccb9e64a7f6063466c37980afba611a/541/wash/product/sbs_product_lovart-amazon_vs_ours.png",
- "refs": "Lovart Amazon template thumbs (Women/Men/Electronics/Home/Food/Beauty) as seen in 494/lovart-anim @55ef216 (>=c586afd)"
+ ],
+ "note": "white/lifestyle/detail: preset ids and prompts unchanged in src/skills.ts; images replaced only",
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/sbs_product_lovart-amazon_vs_ours.png",
+ "refs": "Lovart Amazon template thumbs as seen in 494/lovart-anim @55ef216 (>=c586afd); bottle subject refs from 494/wash/presets/product__*.webp"
 }
