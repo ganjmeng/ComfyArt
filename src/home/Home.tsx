@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import type { AgentMode } from '../agent'
 import { botEnabledAtom, loadProviders, loadSettings, providerLabel } from '../bot'
 import { thumbUrl, uploadImage, viewUrl } from '../comfy'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
-import { newProject, openView, startProject, type ProjectEntry } from '../projects'
+import { newProject, openView, startProject } from '../projects'
+import { featuredAspect, packFeaturedColumns } from './featuredLayout'
 import { showMemoryToast } from '../memory'
 import { HOME_CREATOR_CHIP_KEY, hasSkillDialog, importLanding, loadSkills, skillCover, skillFeaturedCases, type Skill } from '../skills'
 import { SkillChip, chipBackspace } from '../ui/SkillChip'
@@ -24,9 +25,7 @@ import { MODE_OPTIONS, modeOf } from '../ui/modeOptions'
 import { DirectPills } from '../ui/DirectPills'
 import { ModelPrefs } from '../ui/ModelPrefs'
 import { loadModels } from '../models'
-import { loadEntries, ProjectCard } from './Projects'
 
-const RECENT = 5
 const ROTATE_MS = 4000
 const EXAMPLES = [t('home.example1'), t('home.example2'), t('home.example3'), t('home.example4')]
 const QUICK: [keyof typeof Icons, string, string][] = [
@@ -37,6 +36,22 @@ const QUICK: [keyof typeof Icons, string, string][] = [
   ['page', t('home.quickWebsite'), t('home.quickWebsitePrompt')],
 ]
 
+/** #537 / #496: home 「实用工具」— main features only; cover = Lucide icon on neutral field ($0). */
+type ToolCard = { id: string; icon: keyof typeof Icons; label: string; accept: string }
+const HOME_TOOL_CARDS: ToolCard[] = [
+  { id: 'cutout', icon: 'cutout', label: t('common.removeBackground'), accept: 'image/*' },
+  { id: 'extend', icon: 'extend', label: t('common.extendVideo'), accept: 'video/*' },
+  { id: 'upscale', icon: 'upscale', label: t('common.upscale'), accept: 'image/*' },
+  { id: 'inpaint', icon: 'effects', label: t('home.toolPreciseEdit'), accept: 'image/*' },
+  { id: 'mockup', icon: 'box', label: t('mockup.title'), accept: 'image/*' },
+]
+const MORE_HOME_TOOLS: ToolCard[] = [
+  { id: 'to3d', icon: 'cube', label: t('imageToolbar.imageTo3d'), accept: 'image/*' },
+  { id: 'lipsync', icon: 'mic', label: t('genPanel.lipSync'), accept: 'image/*' },
+  { id: 'motion', icon: 'video', label: t('genPanel.motionControl'), accept: 'image/*' },
+  { id: 'audio', icon: 'music', label: t('audio.generateAudio'), accept: 'audio/*' },
+]
+
 export function Home() {
   const [text, setText] = useState('')
   const [refs, setRefs] = useState<string[]>([])
@@ -44,7 +59,6 @@ export function Home() {
   const [agent, setAgent] = useState<boolean | null>(null)
   const [modeMenu, setModeMenu] = useState(false)
   const [example, setExample] = useState(0)
-  const [recent, setRecent] = useState<ProjectEntry[] | null>(null)
   const [skills, setSkills] = useState<Skill[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -59,6 +73,11 @@ export function Home() {
   const [importing, setImporting] = useState(false)
   // #494-3 / #533: home 精选 + 用 Skill 快速开始 open the same SkillRunDialog as the Skills page
   const [running, setRunning] = useState<{ id: string; preset: string | null } | null>(null)
+  const [moreTools, setMoreTools] = useState(false)  // #537: 「更多工具」
+  const [featuredWidth, setFeaturedWidth] = useState(1200)  // #537: masonry columns
+  const featuredRoot = useRef<HTMLElement>(null)
+  const toolFile = useRef<HTMLInputElement>(null)
+  const pendingTool = useRef<string>('')
   const current = useCurrentAgent()  // #278: same agent the canvas mode button shows
   const hasContent = !!text.trim() || refs.length > 0  // #276: an image with no text counts as content
   const { showSend, setVoice } = useSlot(hasContent, composing)
@@ -76,7 +95,6 @@ export function Home() {
       setAgent(on)
       if (!on) setMode('image')
     }, () => { setAgent(false); setMode('image') })
-    void loadEntries(RECENT).then(setRecent)
     void loadSkills().then(setSkills)
     const timer = window.setInterval(() => setExample((i) => (i + 1) % EXAMPLES.length), ROTATE_MS)
     return () => clearInterval(timer)
@@ -130,12 +148,62 @@ export function Home() {
       setUploading(false)
     }
   }
+  /** #537: pick file → upload → new project with tool=; cancel leaves home (no project). Never auto-runs. */
+  const pickTool = (tool: ToolCard) => {
+    pendingTool.current = tool.id
+    const el = toolFile.current
+    if (!el) return
+    el.value = ''
+    el.accept = tool.accept
+    el.click()
+  }
+  const launchTool = async (f: File | undefined) => {
+    const tool = pendingTool.current
+    pendingTool.current = ''
+    if (!f || !tool) return
+    setUploading(true)
+    setMoreTools(false)
+    setError('')
+    try {
+      newProject({ ref: viewUrl(await uploadImage(f, f.name)), tool })
+    } catch (e) {
+      setError(errorText(e))
+      setUploading(false)
+    }
+  }
   const modeInfo = modeOf(mode)
   /** #494-3 — Skills-page rule: dialog when inputs[] exist; else main's direct start. Featured passes a preset id. */
   const trySkill = (s: Skill, preset: string | null = null) => (
     hasSkillDialog(s) ? setRunning({ id: s.id, preset }) : newProject({ skill: s.id })
   )
   const featured = skillFeaturedCases(skills)
+  // #537: masonry waterfall via Loomic column math; cards from our skill presets only (no third-party feed data)
+  const featuredItems = useMemo(
+    () => featured.map(({ skill: s, preset: p, image }) => ({
+      id: `${s.id}:${p.id}`,
+      skill: s,
+      preset: p,
+      image,
+      aspect: featuredAspect(`${s.id}:${p.id}`),
+    })),
+    [featured],
+  )
+  const featuredColumns = useMemo(
+    () => packFeaturedColumns(featuredItems, featuredWidth),
+    [featuredItems, featuredWidth],
+  )
+  useEffect(() => {
+    const el = featuredRoot.current
+    if (!el) return
+    const update = () => {
+      const w = el.getBoundingClientRect().width
+      if (w > 0) setFeaturedWidth(w)
+    }
+    update()
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update)
+    ro?.observe(el)
+    return () => ro?.disconnect()
+  }, [featuredItems.length])
   const runSkill = running ? skills.find((s) => s.id === running.id) : undefined
 
   return (
@@ -313,15 +381,48 @@ export function Home() {
         <input ref={breakdown} type="file" accept="image/*" hidden onChange={(e) => { void breakDown(e.target.files?.[0]); e.target.value = '' }} />
       </div>
 
-      <section className="ca-landing__section">
+      <section className="ca-landing__section ca-landing__tools" data-testid="home-tools">
         <div className="ca-landing__head">
-          <h2>{t('home.recentProjects')}</h2>
-          <button type="button" className="ca-landing__link" onClick={() => openView('projects')}>{t('home.viewAll')}</button>
+          <h2>{t('home.tools')}</h2>
+          <Popover
+            open={moreTools}
+            onOpenChange={setMoreTools}
+            side="bottom"
+            align="end"
+            trigger={({ open, toggle }) => (
+              <button type="button" className="ca-landing__link ca-landing__moretools" data-testid="home-more-tools" data-open={open || undefined} onClick={toggle}>
+                {t('home.moreTools')}<span className="ca-icon">{Icons.chevron}</span>
+              </button>
+            )}
+          >
+            <div className="ca-menu" data-testid="home-more-tools-menu">
+              {MORE_HOME_TOOLS.map((tool) => (
+                <button key={tool.id} type="button" className="ca-menu__item" data-testid={`home-more-tool-${tool.id}`} disabled={uploading} onClick={() => pickTool(tool)}>
+                  <span className="ca-icon">{Icons[tool.icon]}</span><span className="ca-menu__grow">{tool.label}</span>
+                </button>
+              ))}
+            </div>
+          </Popover>
         </div>
-        {recent?.length === 0 && <div className="ca-projects__empty">{t('home.noProjectsYet')}</div>}
-        <div className="ca-projects__grid">
-          {recent?.map((e) => <ProjectCard key={e.id} entry={e} onChanged={() => void loadEntries(RECENT).then(setRecent)} />)}
+        <div className="ca-toolgrid" data-testid="home-tool-grid">
+          {HOME_TOOL_CARDS.map((tool) => (
+            <button
+              key={tool.id}
+              type="button"
+              className="ca-toolcard"
+              data-testid={`home-tool-card-${tool.id}`}
+              data-tool={tool.id}
+              disabled={uploading}
+              onClick={() => pickTool(tool)}
+            >
+              <span className="ca-toolcard__cover" data-tool={tool.id}>
+                <span className="ca-icon">{Icons[tool.icon]}</span>
+              </span>
+              <span className="ca-toolcard__name">{tool.label}</span>
+            </button>
+          ))}
         </div>
+        <input ref={toolFile} type="file" hidden onChange={(e) => { void launchTool(e.target.files?.[0]); e.target.value = '' }} />
       </section>
 
       <section className="ca-landing__section" data-testid="home-start-skill">
@@ -345,29 +446,33 @@ export function Home() {
         </div>
       </section>
 
-      {featured.length > 0 && (
-        <section className="ca-landing__section" data-testid="home-featured">
+      {featuredItems.length > 0 && (
+        <section ref={featuredRoot} className="ca-landing__section ca-landing__featured" data-testid="home-featured">
           <div className="ca-landing__head">
             <h2>{t('home.featured')}</h2>
           </div>
-          <div className="ca-featured" data-testid="home-featured-grid">
-            {featured.map(({ skill: s, preset: p, image }) => (
-              <button
-                key={`${s.id}:${p.id}`}
-                type="button"
-                className="ca-featured__card"
-                data-testid="home-featured-card"
-                data-skill={s.id}
-                data-preset={p.id}
-                onClick={() => trySkill(s, p.id)}
-              >
-                <span className="ca-featured__cover">
-                  <img src={image} alt={s.name} loading="lazy" />
-                  <span className="ca-featured__badge">{t('home.skillCase')}</span>
-                  <span className="ca-featured__go">{t('skillRun.start')}</span>
-                </span>
-                <span className="ca-featured__name">{s.name}</span>
-              </button>
+          <div className="ca-featured ca-featured--waterfall" data-testid="home-featured-grid">
+            {featuredColumns.map((col, ci) => (
+              <div key={`col-${ci}`} className="ca-featured__col" data-testid="home-featured-col">
+                {col.map(({ id, skill: s, preset: p, image, aspect }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className="ca-featured__card"
+                    data-testid="home-featured-card"
+                    data-skill={s.id}
+                    data-preset={p.id}
+                    onClick={() => trySkill(s, p.id)}
+                  >
+                    <span className="ca-featured__cover" style={{ aspectRatio: aspect }}>
+                      <img src={image} alt={s.name} loading="lazy" />
+                      <span className="ca-featured__badge">{t('home.skillCase')}</span>
+                      <span className="ca-featured__go">{t('skillRun.start')}</span>
+                    </span>
+                    <span className="ca-featured__name">{s.name}</span>
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         </section>

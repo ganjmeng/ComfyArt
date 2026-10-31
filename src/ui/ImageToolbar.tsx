@@ -21,6 +21,7 @@ import { Icons } from './icons'
 import { infoAtom } from './InfoDialog'
 import { lightboxAtom } from './Lightbox'
 import { enterMode, modeAtom, type Mode } from './mode'
+import { homeToolAtom } from '../home/handoff'
 import { Popover } from './Popover'
 import { UpscaleMenu } from './UpscaleMenu'
 import { useSelectedImage, useSelectionRect } from './selection'
@@ -118,6 +119,18 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   const [customize, setCustomize] = useState(false)
   const [moreTools, setMoreTools] = useState(false)
   const prefs = useValue(prefsAtom)
+
+  // #537: home 实用工具 handoff opens the matching menu after place+select (no auto-run)
+  const pendingHome = useValue(homeToolAtom)
+  useEffect(() => {
+    if (!shape || !pendingHome) return
+    if (pendingHome === 'upscale' || pendingHome === 'to3d') {
+      setMenu(pendingHome)
+      homeToolAtom.set(null)
+    } else if (pendingHome === 'cutout' || pendingHome === 'mockup' || pendingHome === 'inpaint') {
+      homeToolAtom.set(null)
+    }
+  }, [shape?.id, pendingHome])
 
   useLayoutEffect(() => {
     if (bar.current) setWidth(bar.current.offsetWidth)

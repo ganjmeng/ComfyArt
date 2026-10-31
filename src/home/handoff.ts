@@ -1,22 +1,34 @@
-import type { Editor, TLImageShape } from 'tldraw'
+import { atom, createShapeId, type Editor, type TLImageShape, type TLShape } from 'tldraw'
 
 import { agentModeAtom, draftAtom, extraRefsAtom, generateDirect, sendToAgent, type AgentMode } from '../agent'
 import { refreshBot } from '../bot'
 import { t } from '../i18n'
-import { refFromUrl } from '../comfy'
+import { refFromUrl, refKind } from '../comfy'
 import { editElements } from '../elements'
+import { createGenerator } from '../generate'
 import { placeMedia, toMedia, type ErrorSink } from '../jobs'
 import { CREATE_ENTRY_CHIP_KEY, loadSkills, skillAtom, skillCreatorAtom, withPreset } from '../skills'
 import { chatViewAtom } from '../ui/AgentPanel'
+import { audioDialogAtom } from '../ui/AudioDialog'
+import { enterMode } from '../ui/mode'
 import { EDIT_SKILL_PARAM, startSkillEdit } from '../skillEdit'
+import { AUDIO, AUDIO_SIZE } from '../shapes/EmbedShapes'
+import { GENERATOR, type GeneratorShape } from '../shapes/GeneratorShape'
 
 const KEYS = ['ask', 'mode', 'ref', 'skill', 'tool', 'createSkill', 'editSkill', 'preset']
 const REF_LONG = 512
 const GAP = 20
 
-async function placeRefs(editor: Editor, srcs: string[]): Promise<TLImageShape[]> {
-  const media = await Promise.all(srcs.map((src) => toMedia(refFromUrl(src), 'image')))
-  const sizes = media.map((m) => Math.min(1, REF_LONG / Math.max(m.w, m.h)))
+/** #537 / #496: home 「实用工具」→ canvas; toolbar opens the matching menu/panel (no auto-run). */
+export type HomeToolId = 'cutout' | 'extend' | 'upscale' | 'inpaint' | 'mockup' | 'to3d' | 'lipsync' | 'motion' | 'audio'
+export const HOME_TOOLS: HomeToolId[] = ['cutout', 'extend', 'upscale', 'inpaint', 'mockup', 'to3d', 'lipsync', 'motion', 'audio']
+export const homeToolAtom = atom<HomeToolId | null>('home tool', null)
+
+async function placeRefs(editor: Editor, srcs: string[]): Promise<TLShape[]> {
+  const visualSrcs = srcs.filter((src) => refKind(src) !== 'audio')
+  if (!visualSrcs.length) return []
+  const media = await Promise.all(visualSrcs.map((src) => toMedia(refFromUrl(src), refKind(src) === 'video' ? 'video' : 'image')))
+  const sizes = media.map((m) => Math.min(1, REF_LONG / Math.max(m.w, m.h, 1)))
   const total = media.reduce((n, m, i) => n + m.w * sizes[i], 0) + GAP * (media.length - 1)
   const center = editor.getViewportPageBounds().center
   let x = center.x - total / 2
@@ -24,8 +36,16 @@ async function placeRefs(editor: Editor, srcs: string[]): Promise<TLImageShape[]
     const w = m.w * sizes[i]
     const id = placeMedia(editor, m, m.ref.filename, x, center.y - m.h * sizes[i] / 2, w)
     x += w + GAP
-    return editor.getShape<TLImageShape>(id)!
+    return editor.getShape(id)!
   })
+}
+
+function placeAudio(editor: Editor, src: string): TLShape {
+  const id = createShapeId()
+  const [w, h] = AUDIO_SIZE
+  const center = editor.getViewportPageBounds().center
+  editor.createShape({ id, type: AUDIO, x: center.x - w / 2, y: center.y - h / 2, props: { src, name: refFromUrl(src).filename } })
+  return editor.getShape(id)!
 }
 
 function focusComposer() {
@@ -40,6 +60,51 @@ function focusComposer() {
   requestAnimationFrame(go)
 }
 
+function isHomeTool(tool: string | null): tool is HomeToolId {
+  return !!tool && (HOME_TOOLS as string[]).includes(tool)
+}
+
+/** Place media, select it, and (for menu tools) stash which toolbar menu to open — never auto-run. */
+async function openHomeTool(editor: Editor, tool: HomeToolId, refs: string[]) {
+  if (tool === 'audio') {
+    if (refs[0] && refKind(refs[0]) === 'audio') {
+      const shape = placeAudio(editor, refs[0])
+      editor.select(shape.id)
+    }
+    audioDialogAtom.set(true)
+    return
+  }
+  if (tool === 'lipsync' || tool === 'motion') {
+    const shapes = refs.length ? await placeRefs(editor, refs.slice(0, 1)) : []
+    const src = shapes[0] ? (editor.getAsset((shapes[0] as TLImageShape).props.assetId!)?.props.src as string | undefined) : refs[0]
+    const id = createGenerator(editor, true)
+    const firstImage = src && refKind(src) === 'image' ? [src] : src ? [src] : []
+    editor.updateShape<GeneratorShape>({
+      id,
+      type: GENERATOR,
+      meta: { refs: firstImage, videoMode: tool, lastFrame: null, scenes: null },
+    })
+    editor.select(id)
+    return
+  }
+  const shapes = await placeRefs(editor, refs.slice(0, 1))
+  const shape = shapes[0]
+  if (!shape) return
+  editor.setCurrentTool('select')
+  editor.select(shape.id)
+  editor.zoomToSelectionIfOffscreen(64, { animation: { duration: 200 } })
+  if (tool === 'inpaint') {
+    enterMode('inpaint')
+    return
+  }
+  if (tool === 'cutout' || tool === 'mockup') {
+    // Toolbar buttons run on click — place+select only (mutation: no auto-run)
+    return
+  }
+  // upscale / to3d / extend — ImageToolbar / VideoToolbar open the menu/panel from the atom
+  homeToolAtom.set(tool)
+}
+
 export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   const url = new URL(location.href)
   const text = url.searchParams.get('ask')?.trim() ?? ''
@@ -51,7 +116,7 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   const tool = url.searchParams.get('tool')
   const createSkill = url.searchParams.get('createSkill') === '1'
   const editSkill = url.searchParams.get(EDIT_SKILL_PARAM)
-  if (!text && !refs.length && !skillId && !createSkill && !editSkill) return
+  if (!text && !refs.length && !skillId && !createSkill && !editSkill && !isHomeTool(tool) && tool !== 'elements') return
   for (const k of KEYS) url.searchParams.delete(k)
   history.replaceState(null, '', url)
   if (editSkill) {
@@ -72,7 +137,7 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
       const shapes = await placeRefs(editor, refs)
       await refreshBot()
       // #491 A3: the bubble shows the 技能创建器 chip + the user's own words; the instruction rides in the hidden context
-      return sendToAgent(editor, text, shapes, null, [], [], t('composer.skillCreatorPrefill', text), { chip: t(CREATE_ENTRY_CHIP_KEY) })
+      return sendToAgent(editor, text, shapes as TLImageShape[], null, [], [], t('composer.skillCreatorPrefill', text), { chip: t(CREATE_ENTRY_CHIP_KEY) })
     }
     // #491 entry B: chip preset, cursor in the input, nothing is sent
     skillCreatorAtom.set({ on: true, chip: CREATE_ENTRY_CHIP_KEY })
@@ -82,7 +147,11 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   }
   if (tool === 'elements') {
     const [shape] = await placeRefs(editor, refs.slice(0, 1))
-    if (shape) editElements(editor, shape, onError)
+    if (shape) editElements(editor, shape as TLImageShape, onError)
+    return
+  }
+  if (isHomeTool(tool)) {
+    await openHomeTool(editor, tool, refs)
     return
   }
 
@@ -96,9 +165,9 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
     return
   }
   await refreshBot()
-  if (mode !== 'agent') return generateDirect(editor, text, [{ refs: shapes, prompt: text }], mode === 'video', onError)
+  if (mode !== 'agent') return generateDirect(editor, text, [{ refs: shapes as TLImageShape[], prompt: text }], mode === 'video', onError)
   skillAtom.set(null)
-  await sendToAgent(editor, text, shapes, skill)
+  await sendToAgent(editor, text, shapes as TLImageShape[], skill)
 }
 
 /** #286: the project couldn't be created on the canvas page, so the home draft would be lost. Put the prompt from
