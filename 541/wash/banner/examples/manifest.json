@@ -1,16 +1,23 @@
 {
- "commit": "8cc3fb3",
+ "commit": "69c58fb",
  "skill": "banner",
  "examples": [
   {
    "id": "1",
-   "aspect_ratio": "2:1",
-   "subject": "horizontal composite: left fintech web banner (fictional Pocketly), right vertical organic-grocery promo (fictional FRESCO MERCADO)",
+   "aspect_ratio": "4:3",
+   "subject": "a diverse team of fictional coworkers smiling around a laptop in a mod",
    "lovart_ref_rebuilt_from_thumbnail": true,
-   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/8cc3fb3/541/wash/banner/examples/1.webp",
-   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/8cc3fb3/541/wash/banner/examples/1@thumb.webp"
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/69c58fb/541/wash/banner/examples/1.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/69c58fb/541/wash/banner/examples/1@thumb.webp"
+  },
+  {
+   "id": "2",
+   "aspect_ratio": "3:4",
+   "subject": "kraft-paper background",
+   "lovart_ref_rebuilt_from_thumbnail": true,
+   "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/69c58fb/541/wash/banner/examples/2.webp",
+   "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/69c58fb/541/wash/banner/examples/2@thumb.webp"
   }
  ],
- "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/8cc3fb3/541/wash/banner/examples/sbs_examples_banner.png",
- "note": "Lovart banner has 1 example (single ~2:1 composite). examples/2.webp remains in repo but is unreferenced."
+ "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/69c58fb/541/wash/banner/examples/sbs_examples_banner.png"
 }
