@@ -68,4 +68,35 @@ def test_tiles_from_presets_and_zoom_is_sibling_button():
 def test_product_has_six_presets(got):
     assert got["presets"]["product"] == 6 and got["meta"]["product"] == {"templates": 6}
     assert got["productIds"] == ["white", "lifestyle", "detail", "electronics", "food", "beauty"]
-    assert all("/a4b39fea0ccb9e64a7f6063466c37980afba611a/541/wash/product/product__" in u for u in got["productNew"])
+    assert all("/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__" in u for u in got["productNew"])
+
+
+R541 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/{}/541/wash/{}/{}__{}.webp"
+
+
+@needs_node
+def test_rev2_cells_pinned(got):
+    """AC rev 2 (6546010130): product 6 (detail @2422dc5), brand 6 @f204502, packaging 5 @1014ef2 (no mockup)."""
+    p, b, k = got["imgs"]["product"], got["imgs"]["brand"], got["imgs"]["packaging"]
+    for pid in ("white", "lifestyle", "electronics", "food", "beauty"):
+        assert p[pid] == R541.format("688a702a1f322082cde4e5ed46200c3593db9c43", "product", "product", pid)
+    assert p["detail"] == R541.format("2422dc53d37b8f4437a7f9f7986440d2ea79bbf1", "product", "product", "detail")
+    assert list(b) == ["geometric", "handmade", "tech", "beauty", "foodbev", "pet"]
+    assert all(u == R541.format("f2045022727c73e24bd6d5ebcb3815bedb7b8797", "brand", "brand", i) for i, u in b.items())
+    assert list(k) == ["eco", "gold", "playful", "panels", "shelf"] and "mockup" not in k
+    assert all(u == R541.format("1014ef25ad2a8b49cae0c438c673a0b7f9e7797f", "packaging", "packaging", i) for i, u in k.items())
+    assert got["presets"]["motion"] == 3 and got["presets"]["poster"] == 3
+
+
+@needs_node
+def test_examples_carousel_is_data_driven(got):
+    assert all(n == 0 for n in got["examples"].values())  # design hasn't delivered; no section renders yet
+    assert got["exNone"] == ["", ""]
+    html = got["exMock"]
+    assert 'data-testid="skill-run-examples"' in html and 'data-count="5"' in html
+    assert html.count('data-testid="skill-run-example-thumb"') == 5 and html.count('aria-selected="true"') == 1
+    assert 'data-testid="skill-run-example-stage"><img src="https://x.test/e1.webp"' in html
+    assert "skill-run-example-thumb" not in got["exOne"] and "skill-run-example-stage" in got["exOne"]
+    assert ZH["skillRun.examples"] == "效果示例" and EN["skillRun.examples"] == "Examples"
+    assert ".ca-skillrun__stage" in CSS and "aspect-ratio: 704 / 526" in CSS and "object-fit: contain" in CSS
+    assert "<SkillExamples examples={skill.examples} />" in DLG and "from './SkillExamples'" in DLG

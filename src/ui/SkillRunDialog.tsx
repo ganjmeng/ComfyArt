@@ -11,6 +11,7 @@ import { t } from '../i18n'
 import { useEscape } from './escape'
 import { Icons } from './icons'
 import { openSkillEditor } from './SkillsDialog'
+import { SkillExamples } from './SkillExamples'
 
 export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
   skill: Skill; presetId?: string | null; onClose: () => void
@@ -49,8 +50,10 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
             {desc && <p className="ca-skillrun__desc" data-testid="skill-run-desc">{desc}</p>}
             {meta && <p className="ca-skillrun__meta" data-testid="skill-run-meta">{t('skillRun.templateCount', meta.templates)}</p>}
           </header>
-          {!!skill.presets?.length && (
-            <div className="ca-skillrun__templates" role="radiogroup" data-testid="skill-run-presets">
+          {(!!skill.presets?.length || !!skill.examples?.length) && (
+            <div className="ca-skillrun__templates">
+              <SkillExamples examples={skill.examples} />
+              {!!skill.presets?.length && <div role="radiogroup" data-testid="skill-run-presets">
               <div className="ca-skillrun__section">{t('skillRun.templates')}</div>
               <div className="ca-skillrun__grid">
                 {skill.presets.map((p) => {
@@ -73,6 +76,7 @@ export function SkillRunDialog({ skill, presetId, onClose, run = newProject }: {
                   )
                 })}
               </div>
+              </div>}
             </div>
           )}
         </div>
