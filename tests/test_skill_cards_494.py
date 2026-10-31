@@ -60,11 +60,15 @@ def test_fake_wall_meta_gone():
 def test_presets_and_inputs_schema():
     for sid, e in _entries().items():
         assert len(re.findall(r"\bP\('", e)) == (0 if sid == "custom-workflow" else 3), sid
-        assert "inputs: [" in e and ", true)" in e, f"{sid} needs one required input"
-    # AC 11: preset prompts and input en copy are step 2 — no placeholder text now.
-    assert "prompt:" not in _builtin_block() and "prompt?: string" in SKILLS_TS
-    assert "SkillPreset => ({ id, name: { zh, en } })" in SKILLS_TS
-    assert "label: { zh }," in SKILLS_TS
+        # #494-2: required inputs now also carry a zh/en placeholder after the flag → ", true" (was ", true)").
+        assert "inputs: [" in e and ", true" in e, f"{sid} needs one required input"
+    # AC 11 was "preset prompts and input en copy are step 2"; #494-2 lands them: every preset has an en prompt and
+    # every input label has zh + en (updated, not removed).
+    assert "prompt?: string" in SKILLS_TS
+    assert "SkillPreset => ({ id, name: { zh, en }, prompt })" in SKILLS_TS
+    assert "label: { zh, en }," in SKILLS_TS and "label: { zh }," not in SKILLS_TS
+    for sid, e in _entries().items():
+        assert len(re.findall(r"\bP\('[^)]*', '[^']{12,}'\)", e)) == (0 if sid == "custom-workflow" else 3), sid
     # names/descriptions keep coming from locale keys (AC 1)
     for e in _entries().values():
         assert re.match(r"[\w-]+', name: t\('skills\.\w+'\)", e)

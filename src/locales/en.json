@@ -1551,5 +1551,13 @@
   "home.createSkill": "Create skill",
   "home.createSkillFromChat": "Create from chat",
   "home.importSkill": "Import skill",
-  "home.skillsAuthorPersonal": "Personal"
+  "home.skillsAuthorPersonal": "Personal",
+  "skillDetail.try": "Try this skill",
+  "skillDetail.more": "More",
+  "skillDetail.guide": "Skill created. Give it a try",
+  "skillDetail.guideSkip": "Skip",
+  "skillDetail.guideNext": "Next",
+  "skillRun.generate": "Generate",
+  "skillRun.detail": "Details",
+  "skillRun.uploading": "Uploading…"
 }

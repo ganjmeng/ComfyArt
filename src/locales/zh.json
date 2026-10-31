@@ -1551,5 +1551,13 @@
   "home.createSkill": "创建技能",
   "home.createSkillFromChat": "从对话创建",
   "home.importSkill": "导入技能",
-  "home.skillsAuthorPersonal": "个人"
+  "home.skillsAuthorPersonal": "个人",
+  "skillDetail.try": "试用该技能",
+  "skillDetail.more": "更多",
+  "skillDetail.guide": "Skill 创建成功，先试试效果吧",
+  "skillDetail.guideSkip": "跳过",
+  "skillDetail.guideNext": "下一步",
+  "skillRun.generate": "生成",
+  "skillRun.detail": "详情",
+  "skillRun.uploading": "上传中…"
 }

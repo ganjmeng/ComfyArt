@@ -11,11 +11,10 @@ import { BRAND } from './brand'
 export interface LocText { zh: string; en: string }
 /** #494 — Explore category (data only, never hardcoded in components). Unset = only under 「为你推荐」. A category with no skill gets no chip. */
 export type SkillCategory = 'ecommerce' | 'branding' | 'social' | 'website' | 'ads'
-/** #494 — one preset (template): `prompt` is the style text appended after the skill's instructions. */
-/** Step 1 carries preset names only; preset images and `prompt` arrive with the step-2 dialog. */
-export interface SkillPreset { id: string; name: LocText; prompt?: string }
-/** #494 — one field of the skill's input dialog (rendered in step 2; data lives here). */
-/** `label.en` / `placeholder` are filled in step 2 (not rendered in step 1). */
+/** #494 — one preset (template): `prompt` is the style text appended after the skill's instructions when the user runs
+ *  the skill with this preset (step 2). `image` is the preset's own example image; unset → the skill's list cover. */
+export interface SkillPreset { id: string; name: LocText; prompt?: string; image?: string }
+/** #494 — one field of the skill's input dialog. Label / placeholder / default / required all come from here. */
 export interface SkillInput {
   key: string; label: { zh: string; en?: string }; type: 'text' | 'textarea' | 'select' | 'image'; required?: boolean
   options?: { value: string; label: { zh: string; en?: string } }[]; default?: string; placeholder?: LocText
@@ -35,41 +34,53 @@ const IMAGE_FILE = /\.(png|jpe?g|webp|gif)$/i
  *  462x346 webp by scripts/skill_covers_494.py (pinned Pillow; source sha256 in public/skills/covers.json). */
 export const SKILL_ASSET_BASE = '/comfyart/skills'
 const cover = (id: string) => `${SKILL_ASSET_BASE}/${id}/cover.webp`
-const P = (id: string, zh: string, en: string): SkillPreset => ({ id, name: { zh, en } })
-function I(key: string, zh: string, type: SkillInput['type'], required = false): SkillInput {
-  return { key, label: { zh }, type, ...(required ? { required } : {}) }
+const P = (id: string, zh: string, en: string, prompt: string): SkillPreset => ({ id, name: { zh, en }, prompt })
+type L = [zh: string, en: string]
+function I(key: string, [zh, en]: L, type: SkillInput['type'], required = false, ph?: L): SkillInput {
+  return { key, label: { zh, en }, type, ...(required ? { required } : {}), ...(ph ? { placeholder: { zh: ph[0], en: ph[1] } } : {}) }
 }
-const SEL = (key: string, zh: string, values: string[], def?: string): SkillInput =>
-  ({ key, label: { zh }, type: 'select', options: values.map((v) => ({ value: v, label: { zh: v, en: v } })), default: def ?? values[0] })
-const SELL = (key: string, zh: string, opts: [string, string][], required = false): SkillInput =>
-  ({ key, label: { zh }, type: 'select', ...(required ? { required } : {}), options: opts.map(([value, z]) => ({ value, label: { zh: z } })), default: opts[0][0] })
+const SEL = (key: string, [zh, en]: L, values: string[], def?: string): SkillInput =>
+  ({ key, label: { zh, en }, type: 'select', options: values.map((v) => ({ value: v, label: { zh: v, en: v } })), default: def ?? values[0] })
+const SELL = (key: string, [zh, en]: L, opts: [string, string, string][], required = false): SkillInput =>
+  ({ key, label: { zh, en }, type: 'select', ...(required ? { required } : {}), options: opts.map(([value, z, e]) => ({ value, label: { zh: z, en: e } })), default: opts[0][0] })
+const REF: L = ['参考图', 'Reference image']
 
 /** #494 — pick the current UI language from data-carried copy. */
 export const loc = (text: { zh: string; en?: string }) => (lang === 'en' && text.en) || text.zh
 
 export const BUILTIN_SKILLS: Skill[] = [
   { id: 'poster', name: t('skills.posterDesign'), instructions: 'Design posters: strong headline typography in quotes, clear visual hierarchy, one hero subject, generous margins. Default ratio 3:4. Offer 2 distinct directions when the brief is open.',
-    category: 'ads', cover: cover('poster'), presets: [P('minimal', '极简排版', 'Minimal layout'), P('retro', '复古印刷', 'Retro print'), P('neon', '霓虹潮流', 'Neon trend')], inputs: [I('topic', '主题', 'text', true), I('headline', '标题文字', 'text'), SEL('ratio', '比例', ['3:4','2:3','9:16'],'3:4'), I('reference', '参考图', 'image')] },
+    category: 'ads', cover: cover('poster'), presets: [P('minimal', '极简排版', 'Minimal layout', 'Style: minimal Swiss layout, lots of white space, one accent color, clean sans-serif type.'), P('retro', '复古印刷', 'Retro print', 'Style: retro risograph print, grain texture, limited 2-3 ink palette, vintage typography.'), P('neon', '霓虹潮流', 'Neon trend', 'Style: neon glow on a dark background, saturated magenta and cyan, bold condensed type.')],
+    inputs: [I('topic', ['主题', 'Topic'], 'text', true, ['例如：秋季新品发布会', 'e.g. Autumn product launch']), I('headline', ['标题文字', 'Headline'], 'text'), SEL('ratio', ['比例', 'Aspect ratio'], ['3:4','2:3','9:16'],'3:4'), I('reference', REF, 'image')] },
   { id: 'social', name: t('skills.socialMediaSet'), instructions: 'Create a consistent social media set: one 1:1 feed post, one 4:5 post and one 9:16 story sharing palette, typography and motif. Keep text short and legible on mobile.',
-    category: 'social', cover: cover('social'), presets: [P('fresh', '清新生活', 'Fresh lifestyle'), P('grey', '高级灰调', 'Premium grey'), P('clash', '撞色活力', 'Bold color clash')], inputs: [I('topic', '主题', 'text', true), I('account', '品牌或账号名', 'text'), I('copy', '文案', 'textarea'), I('reference', '参考图', 'image')] },
+    category: 'social', cover: cover('social'), presets: [P('fresh', '清新生活', 'Fresh lifestyle', 'Style: fresh lifestyle photography, soft daylight, pastel palette, airy composition.'), P('grey', '高级灰调', 'Premium grey', 'Style: premium muted grey tones, low saturation, refined serif accents, calm luxury mood.'), P('clash', '撞色活力', 'Bold color clash', 'Style: bold complementary color clash, flat graphic shapes, energetic playful layout.')],
+    inputs: [I('topic', ['主题', 'Topic'], 'text', true, ['例如：周末咖啡探店', 'e.g. Weekend coffee shop visit']), I('account', ['品牌或账号名', 'Brand or account name'], 'text'), I('copy', ['文案', 'Copy'], 'textarea'), I('reference', REF, 'image')] },
   { id: 'brand', name: t('skills.brandIdentity'), instructions: 'Build a brand identity: a logo mark on plain background (1:1), a color palette board, and a stationery/mockup scene applying the logo. Describe shapes, colors (hex) and type style precisely.',
-    category: 'branding', cover: cover('brand'), presets: [P('geometric', '极简几何', 'Minimal geometric'), P('handmade', '手作温暖', 'Handmade warmth'), P('tech', '科技未来', 'Tech future')], inputs: [I('brandName', '品牌名', 'text', true), I('industry', '行业', 'text'), I('tone', '调性关键词', 'text'), I('color', '主色', 'text')] },
+    category: 'branding', cover: cover('brand'), presets: [P('geometric', '极简几何', 'Minimal geometric', 'Style: minimal geometric mark built from simple shapes, strict grid, two-color palette.'), P('handmade', '手作温暖', 'Handmade warmth', 'Style: hand-drawn warm mark, organic lines, earthy palette, craft paper textures.'), P('tech', '科技未来', 'Tech future', 'Style: futuristic tech identity, precise linework, gradient-free electric blue accents, monospace details.')],
+    inputs: [I('brandName', ['品牌名', 'Brand name'], 'text', true, ['例如：山野咖啡', 'e.g. Wildpeak Coffee']), I('industry', ['行业', 'Industry'], 'text'), I('tone', ['调性关键词', 'Tone keywords'], 'text'), I('color', ['主色', 'Main color'], 'text')] },
   { id: 'packaging', name: t('skills.packagingDesign'), instructions: 'Design product packaging: a front view of the package on a clean studio background, then a 3/4 angle mockup in a lifestyle scene. Mention material, finish and label layout.',
-    category: 'ecommerce', cover: cover('packaging'), presets: [P('eco', '自然环保', 'Natural eco'), P('gold', '奢华烫金', 'Luxury gold foil'), P('playful', '潮玩插画', 'Playful illustration')], inputs: [I('productName', '产品名', 'text', true), I('kind', '品类', 'text'), SELL('form', '包装形式', [['box', '盒'],['bottle', '瓶'],['bag', '袋'],['can', '罐']]), I('reference', '参考图', 'image')] },
+    category: 'ecommerce', cover: cover('packaging'), presets: [P('eco', '自然环保', 'Natural eco', 'Style: natural eco packaging, kraft and recycled paper, botanical line art, muted greens.'), P('gold', '奢华烫金', 'Luxury gold foil', 'Style: luxury packaging, deep matte color with gold foil stamping, embossed logo.'), P('playful', '潮玩插画', 'Playful illustration', 'Style: playful illustrated packaging, bright characters, bold outlines, pop colors.')],
+    inputs: [I('productName', ['产品名', 'Product name'], 'text', true, ['例如：桂花乌龙茶', 'e.g. Osmanthus oolong tea']), I('kind', ['品类', 'Category'], 'text'), SELL('form', ['包装形式', 'Package type'], [['box', '盒', 'Box'],['bottle', '瓶', 'Bottle'],['bag', '袋', 'Bag'],['can', '罐', 'Can']]), I('reference', REF, 'image')] },
   { id: 'thumbnail', name: t('skills.youtubeThumbnail'), instructions: 'Design 16:9 video thumbnails: big expressive subject, 2-4 word bold title in quotes, high contrast, readable at small size. Offer 2 variations.',
-    category: 'social', cover: cover('thumbnail'), presets: [P('expression', '夸张表情', 'Exaggerated expression'), P('tech', '科技评测', 'Tech review'), P('vlog', 'Vlog 清新', 'Fresh vlog')], inputs: [I('topic', '视频主题', 'text', true), I('title', '标题（2–4 个词）', 'text'), I('photo', '人物照片', 'image')] },
+    category: 'social', cover: cover('thumbnail'), presets: [P('expression', '夸张表情', 'Exaggerated expression', 'Style: exaggerated surprised facial expression, close crop, bright rim light, yellow-red title.'), P('tech', '科技评测', 'Tech review', 'Style: clean tech review look, product hero on dark gradient-free backdrop, crisp white title.'), P('vlog', 'Vlog 清新', 'Fresh vlog', 'Style: fresh vlog look, natural daylight, soft colors, handwritten-style title.')],
+    inputs: [I('topic', ['视频主题', 'Video topic'], 'text', true, ['例如：一周减脂餐', 'e.g. A week of healthy meals']), I('title', ['标题（2–4 个词）', 'Title (2–4 words)'], 'text'), I('photo', ['人物照片', 'Person photo'], 'image')] },
   { id: 'banner', name: t('skills.bannerDesign'), instructions: 'Design wide banners (21:9 or 16:9): headline on one side, visual on the other, safe margins for cropping, clear call to action text in quotes.',
-    category: 'ads', cover: cover('banner'), presets: [P('sale', '大促促销', 'Big sale'), P('brand', '品牌形象', 'Brand image'), P('event', '活动预告', 'Event teaser')], inputs: [I('headline', '标题', 'text', true), I('cta', '行动号召文案', 'text'), SEL('ratio', '比例', ['21:9','16:9'],'21:9'), I('reference', '参考图', 'image')] },
+    category: 'ads', cover: cover('banner'), presets: [P('sale', '大促促销', 'Big sale', 'Style: big sale banner, huge discount numerals, red and gold, festive energy.'), P('brand', '品牌形象', 'Brand image', 'Style: calm brand image banner, single lifestyle photo, restrained type, lots of space.'), P('event', '活动预告', 'Event teaser', 'Style: event teaser, dramatic lighting, date and place as strong typographic element.')],
+    inputs: [I('headline', ['标题', 'Headline'], 'text', true, ['例如：双十一全场五折', 'e.g. 50% off everything']), I('cta', ['行动号召文案', 'Call to action'], 'text'), SEL('ratio', ['比例', 'Aspect ratio'], ['21:9','16:9'],'21:9'), I('reference', REF, 'image')] },
   { id: 'character', name: t('skills.characterSheet'), instructions: 'Create a character sheet: full body front, side and back views on white background in one 16:9 image, plus a close-up expression sheet. Keep outfit and colors identical across views.',
-    cover: cover('character'), presets: [P('anime', '日系动漫', 'Anime style'), P('cartoon3d', '3D 卡通', '3D cartoon'), P('concept', '写实概念', 'Realistic concept')], inputs: [I('character', '角色描述', 'textarea', true), I('outfit', '服装', 'text'), I('reference', '参考图', 'image')] },
+    cover: cover('character'), presets: [P('anime', '日系动漫', 'Anime style', 'Style: Japanese anime cel shading, clean line art, flat colors.'), P('cartoon3d', '3D 卡通', '3D cartoon', 'Style: stylized 3D cartoon render, soft subsurface lighting, rounded proportions.'), P('concept', '写实概念', 'Realistic concept', 'Style: realistic concept art, painterly detail, accurate anatomy and materials.')],
+    inputs: [I('character', ['角色描述', 'Character description'], 'textarea', true, ['例如：戴红围巾的少年剑客', 'e.g. A young swordsman with a red scarf']), I('outfit', ['服装', 'Outfit'], 'text'), I('reference', REF, 'image')] },
   { id: 'product', name: t('skills.eCommerceProductImages'), instructions: 'Create e-commerce product imagery: a clean white-background hero shot (1:1), a lifestyle scene, and a detail close-up. Keep the product identical. When the user gives a product image, pass its shape id in refs (ref_modes content) on every generate_image call; describing it in the prompt does not send the image.',
-    category: 'ecommerce', cover: cover('product'), presets: [P('white', '白底主图', 'White background hero'), P('lifestyle', '生活场景', 'Lifestyle scene'), P('detail', '细节特写', 'Detail close-up')], inputs: [I('productImage', '产品图', 'image', true), I('productName', '产品名', 'text'), I('points', '卖点', 'textarea')] },
+    category: 'ecommerce', cover: cover('product'), presets: [P('white', '白底主图', 'White background hero', 'Focus on the white-background hero shot: pure white seamless background, soft shadow, product centered.'), P('lifestyle', '生活场景', 'Lifestyle scene', 'Focus on the lifestyle scene: product in use in a realistic home setting, natural light.'), P('detail', '细节特写', 'Detail close-up', 'Focus on the detail close-up: macro view of material and craftsmanship, shallow depth of field.')],
+    inputs: [I('productImage', ['产品图', 'Product image'], 'image', true), I('productName', ['产品名', 'Product name'], 'text'), I('points', ['卖点', 'Selling points'], 'textarea')] },
   { id: 'motion', name: t('skills.motionPoster'), instructions: 'Make a poster first (3:4) with generate_image, wait for it, then animate that image shape with animate_image using subtle motion (loop on) so the text stays readable.',
-    category: 'ads', cover: cover('motion'), presets: [P('loop', '微动循环', 'Subtle loop'), P('light', '光影流动', 'Flowing light'), P('push', '镜头推拉', 'Camera push-pull')], inputs: [I('topic', '主题', 'text', true), I('headline', '标题文字', 'text'), SEL('ratio', '比例', ['3:4','9:16'],'3:4')] },
+    category: 'ads', cover: cover('motion'), presets: [P('loop', '微动循环', 'Subtle loop', 'Motion: subtle seamless loop, gentle floating of the subject, text static.'), P('light', '光影流动', 'Flowing light', 'Motion: light and shadow sweeping across the scene, glints on surfaces, text static.'), P('push', '镜头推拉', 'Camera push-pull', 'Motion: slow camera push in then pull out, slight parallax, text static.')],
+    inputs: [I('topic', ['主题', 'Topic'], 'text', true, ['例如：新年音乐节', 'e.g. New Year music festival']), I('headline', ['标题文字', 'Headline'], 'text'), SEL('ratio', ['比例', 'Aspect ratio'], ['3:4','9:16'],'3:4')] },
   { id: 'interior', name: t('skills.interiorArchitecturalVisualization'), instructions: 'Produce photoreal interior or architecture renders: eye-level wide shot, natural light, accurate materials, 16:9. Add a detail vignette at 4:3.',
-    cover: cover('interior'), presets: [P('nordic', '北欧自然光', 'Nordic daylight'), P('minimal', '现代极简', 'Modern minimal'), P('industrial', '工业风', 'Industrial')], inputs: [SELL('space', '空间类型', [['living', '客厅'],['bedroom', '卧室'],['office', '办公'],['exterior', '建筑外观']], true), I('style', '风格描述', 'textarea'), I('reference', '参考图或平面图', 'image')] },
+    cover: cover('interior'), presets: [P('nordic', '北欧自然光', 'Nordic daylight', 'Style: Nordic interior, light oak and white walls, soft overcast daylight, linen textiles.'), P('minimal', '现代极简', 'Modern minimal', 'Style: modern minimal, concealed storage, neutral palette, sharp architectural lines.'), P('industrial', '工业风', 'Industrial', 'Style: industrial loft, exposed brick and concrete, black steel, warm Edison lighting.')],
+    inputs: [SELL('space', ['空间类型', 'Space type'], [['living', '客厅', 'Living room'],['bedroom', '卧室', 'Bedroom'],['office', '办公', 'Office'],['exterior', '建筑外观', 'Building exterior']], true), I('style', ['风格描述', 'Style notes'], 'textarea'), I('reference', ['参考图或平面图', 'Reference or floor plan'], 'image')] },
   { id: 'custom-workflow', name: t('skills.customWorkflow'), instructions: `${rulesText()}\n\nUse the custom_workflow tool for every step; action rules returns these same rules.`,
-    inputs: [I('brief', '需求描述', 'textarea', true)] },
+    inputs: [I('brief', ['需求描述', 'Brief'], 'textarea', true, ['描述你要用自定义工作流做什么', 'Describe what the custom workflow should make'])] },
 ]
 
 export const skillAtom = atom<Skill | null>('skill', null)
@@ -393,4 +404,63 @@ export function skillCover(skill: Skill): { src: string; own: 'bundled' | 'userd
 /** #494/#489 — author line: built-ins show BRAND.name (logo); personal / imported skills say 个人. No counts. */
 export function skillAuthor(skill: Skill): { kind: 'builtin' | 'personal'; label: string } {
   return skill.custom ? { kind: 'personal', label: t('home.skillsAuthorPersonal') } : { kind: 'builtin', label: BRAND.name }
+}
+
+/** #494-2 — the Skills page shows THIS skill's detail (#464) when set; null = the card wall. */
+export const skillDetailAtom = atom<string | null>('skill detail', null)
+/** #494-2 / #464 — show the 「Skill 创建成功」 guide bubble once on the detail page right after an import. */
+export const skillGuideAtom = atom<string | null>('skill guide', null)
+
+/** #494-2 — open a skill's detail page on the Skills page (import landing, dialog 「详情」). */
+export function openSkillDetail(id: string, guide = false) {
+  skillGuideAtom.set(guide ? id : null)
+  skillDetailAtom.set(id)
+}
+
+/** #494-2 — a skill has its own input dialog only when its data carries `inputs[]`. Old imported / personal skills
+ *  have none and keep main's behaviour (open a project with the skill chip) — no migration. */
+export const hasSkillDialog = (skill: Skill) => !!skill.inputs?.length
+
+export type SkillValues = Record<string, string>
+
+/** #494-2 — initial dialog values, straight from each input's `default` (selects fall back to their first option). */
+export function skillDefaults(skill: Skill): SkillValues {
+  return Object.fromEntries((skill.inputs ?? []).map((f) => [f.key, f.default ?? (f.type === 'select' ? f.options?.[0]?.value ?? '' : '')]))
+}
+
+/** #494-2 — keys of required inputs that are still empty (the dialog disables 生成 until this is empty). */
+export function missingInputs(skill: Skill, values: SkillValues): string[] {
+  return (skill.inputs ?? []).filter((f) => f.required && !values[f.key]?.trim()).map((f) => f.key)
+}
+
+/** #494-2 — the chosen preset (unknown id → first preset; no presets → undefined). */
+export function skillPreset(skill: Skill, presetId?: string | null): SkillPreset | undefined {
+  return skill.presets?.find((p) => p.id === presetId) ?? skill.presets?.[0]
+}
+
+/** #494-2 product rule: the selected preset's `prompt` is appended AFTER the skill's instructions. */
+export function withPreset(skill: Skill, presetId?: string | null): Skill {
+  const p = presetId ? skill.presets?.find((x) => x.id === presetId) : undefined
+  return p?.prompt ? { ...skill, instructions: `${skill.instructions.trimEnd()}\n\n${p.prompt}` } : skill
+}
+
+/** #494-2 — the preset's own image, else the skill's list cover (one decision point, like `skillCover`). */
+export function presetImage(skill: Skill, preset: SkillPreset): string | null {
+  return preset.image ?? skillCover(skill)?.src ?? null
+}
+
+/** #494-2 — turn the dialog into the handoff: the text the user "sends" (label: value per filled text/select field,
+ *  in data order), image fields as refs, and the skill + preset ids. Read by src/home/handoff.ts. */
+export function skillRunParams(skill: Skill, values: SkillValues, presetId?: string | null): Record<string, string | string[]> {
+  const lines: string[] = []
+  const refs: string[] = []
+  for (const f of skill.inputs ?? []) {
+    const v = values[f.key]?.trim()
+    if (!v) continue
+    if (f.type === 'image') { refs.push(v); continue }
+    const shown = f.type === 'select' ? loc(f.options?.find((o) => o.value === v)?.label ?? { zh: v }) : v
+    lines.push(`${loc(f.label)}: ${shown}`)
+  }
+  const preset = presetId ? skill.presets?.find((p) => p.id === presetId) : undefined
+  return { skill: skill.id, mode: 'agent', ask: lines.join('\n') || skill.name, ...(preset ? { preset: preset.id } : {}), ...(refs.length ? { ref: refs } : {}) }
 }

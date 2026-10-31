@@ -503,3 +503,30 @@ body { background: var(--ca-float); }
 /* #491 design: rows are always one line; long names end in an ellipsis (full name in the native title) */
 .ca-skills .ca-menu__item { min-width: 0; }
 .ca-skills .ca-skills__name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* #494-2 / #464 — skill detail page + the skill's own input dialog (theme vars; guide bubble per spec). */
+.ca-skilldetail { display: flex; flex-direction: column; gap: 16px; max-width: 880px; margin: 0 auto; padding: 8px 0 48px; }
+.ca-skilldetail__back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--ca-text-dim); cursor: pointer; font: inherit; }
+.ca-skilldetail__back:hover { color: var(--ca-text); }
+.ca-skilldetail__backicon { transform: rotate(90deg); }
+.ca-skilldetail__hero { aspect-ratio: 231 / 173; max-height: 420px; border-radius: 16px; overflow: hidden; background: var(--ca-surface-2, var(--ca-hover)); display: grid; place-items: center; }
+.ca-skilldetail__hero img { width: 100%; height: 100%; object-fit: cover; }
+.ca-skilldetail__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.ca-skilldetail__head h2 { margin: 0 0 6px; font-size: 22px; }
+.ca-skilldetail__acts { display: flex; align-items: center; gap: 8px; }
+.ca-skilldetail__trywrap { position: relative; }
+.ca-skilldetail__desc { margin: 0; color: var(--ca-text-dim); line-height: 1.6; }
+.ca-skillrun__presets { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.ca-skillrun__preset { flex: 0 0 auto; width: 112px; display: flex; flex-direction: column; gap: 4px; padding: 4px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 12px; background: none; color: var(--ca-text); cursor: pointer; font: inherit; font-size: 12px; }
+.ca-skillrun__preset img, .ca-skillrun__preset > .ca-icon { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; display: grid; place-items: center; background: var(--ca-hover); }
+.ca-skillrun__preset[data-on] { border-color: var(--ca-accent, var(--ca-text)); }
+.ca-skillrun { width: min(560px, calc(100vw - 32px)); }
+.ca-skillrun__body { display: flex; flex-direction: column; gap: 12px; max-height: 64vh; overflow: auto; }
+.ca-skillrun__req { color: var(--ca-danger, #e5484d); }
+/* guide bubble: dark #1f1f1f, bubble + arrow both get the 1px rgba(255,255,255,.1) border (spec). */
+.ca-skillguide { position: absolute; top: calc(100% + 12px); right: 0; z-index: 20; width: 260px; padding: 12px 14px; border-radius: 12px; background: #1f1f1f; color: #fff; border: 1px solid rgba(255, 255, 255, .1); box-shadow: var(--ca-shadow-float); }
+.ca-skillguide::before { content: ''; position: absolute; top: -6px; right: 24px; width: 10px; height: 10px; background: #1f1f1f; border-left: 1px solid rgba(255, 255, 255, .1); border-top: 1px solid rgba(255, 255, 255, .1); transform: rotate(45deg); }
+.ca-skillguide p { margin: 0 0 10px; font-size: 13px; }
+.ca-skillguide__acts { display: flex; justify-content: flex-end; gap: 8px; }
+.ca-skillguide__acts button { border: 0; border-radius: 8px; padding: 4px 10px; background: rgba(255, 255, 255, .1); color: #fff; cursor: pointer; font: inherit; font-size: 12px; }
+.ca-skillguide__acts button[data-primary] { background: #fff; color: #1f1f1f; }
