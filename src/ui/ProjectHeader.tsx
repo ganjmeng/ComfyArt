@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { useValue, type Editor } from 'tldraw'
 
 import { libraryAtom } from '../library'
@@ -26,6 +26,7 @@ function Item({ icon, label, kbd, danger, disabled, run, close, title, testId }:
 
 export function ProjectHeader({ editor, projectId, children }: { editor: Editor; projectId: string; children?: ReactNode }) {
   const name = useValue('doc name', () => editor.getDocumentSettings().name, [editor])
+  const titleBaseline = useRef(name)
   const [open, setOpen] = useState(false)
   const canUndo = useValue('can undo', () => editor.getCanUndo(), [editor])
   const canRedo = useValue('can redo', () => editor.getCanRedo(), [editor])
@@ -86,10 +87,20 @@ export function ProjectHeader({ editor, projectId, children }: { editor: Editor;
         className="ca-head__name"
         value={name}
         placeholder={UNTITLED}
+        data-testid="project-title"
         onChange={(e) => editor.updateDocumentSettings({ name: e.target.value })}
+        onFocus={(e) => {
+          titleBaseline.current = name
+          e.currentTarget.select()
+        }}
         onKeyDown={(e) => {
           e.stopPropagation()
           if (isEnter(e)) e.currentTarget.blur()
+          // #486 Lovart: Escape cancels the edit without saving the draft
+          if (e.key === 'Escape') {
+            editor.updateDocumentSettings({ name: titleBaseline.current })
+            e.currentTarget.blur()
+          }
         }}
       />
       <SaveStatus />
