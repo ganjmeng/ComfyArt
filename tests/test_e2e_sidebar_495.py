@@ -174,9 +174,131 @@ async def test_assets_page_shell_539(app_url, lang, theme):  # noqa: F811
         for i in range(4):
             await tabs.nth(i).click()
             assert await pg.locator(".ca-lib__card").count() == 0
-            assert await pg.locator(".ca-side__empty").count() == 1
+            # #539 PR-B: assertion updated (not removed) — kitsOnly list keeps only 新建; the hint
+            # moved to the right-pane empty state (one line + 新建, no icon, no auto-created kit).
+            assert await pg.locator(".ca-side__empty").count() == 0
+            await pg.get_by_test_id("assets-detail-empty").wait_for()
+            assert await pg.get_by_test_id("assets-empty-new").count() == 1
+            assert await pg.locator(".ca-assets-page__right .ca-icon").count() == 0
         await tabs.nth(0).click()
         if ASSET_SHOTS:
             await pg.wait_for_timeout(500)
             await pg.screenshot(path=f"{ASSET_SHOTS}/539a-empty-{lang}-{theme}.png")
+        await browser.close()
+
+
+async def _assets_page(p, lang, theme):
+    browser = await p.chromium.launch()
+    ctx = await browser.new_context(viewport={"width": 1280, "height": 800})
+    pg = await ctx.new_page()
+    await pg.add_init_script(
+        f"""localStorage.setItem('comfyart.lang','{lang}');
+            localStorage.setItem('comfyart.theme','{theme}');
+            localStorage.setItem('comfyart.rail.collapsed','1');"""
+    )
+    return browser, pg
+
+
+@pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
+async def test_assets_detail_539b(app_url, lang, theme):  # noqa: F811
+    """#539 PR-B: list 380 / dashed 新建; empty state; create → default-select → rename → reload persists."""
+    async with pw.async_playwright() as p:
+        browser, pg = await _assets_page(p, lang, theme)
+        await pg.goto(app_url + "?view=assets")
+        await pg.get_by_test_id("assets-page").wait_for()
+        left = await pg.locator(".ca-assets-page__left").bounding_box()
+        assert round(left["width"]) == 380, left
+        new = pg.get_by_test_id("assets-new")
+        assert await new.evaluate("e => getComputedStyle(e).borderTopStyle") == "dashed"
+        assert await pg.locator(".ca-assets-page__title").evaluate("e => getComputedStyle(e).fontSize") == "18px"
+        # empty: no auto-created kit
+        await pg.get_by_test_id("assets-detail-empty").wait_for()
+        await pg.wait_for_timeout(600)
+        assert await pg.locator(".ca-lib__card").count() == 0
+        if ASSET_SHOTS:
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539b-empty-{lang}-{theme}.png")
+        # create via the empty-state 新建 (same action as list 新建) → selected in detail
+        await pg.get_by_test_id("assets-empty-new").click()
+        await pg.get_by_test_id("assets-detail").wait_for()
+        assert await pg.locator(".ca-lib__card").count() == 1
+        page = await pg.locator(".ca-kit[data-embedded] .ca-kit__page").bounding_box()
+        assert round(page["width"]) == 800, page
+        foot = await pg.get_by_test_id("assets-detail-foot").bounding_box()
+        detail = await pg.locator(".ca-assets-page__detail").bounding_box()
+        assert round(foot["width"]) == round(detail["width"])
+        cta = pg.get_by_test_id("assets-create-project")
+        assert await cta.get_attribute("aria-disabled") == "true"
+        await pg.get_by_test_id("assets-import-url").wait_for()
+        name = "Acme 品牌" if lang == "zh" else "Acme Brand"
+        await pg.get_by_test_id("assets-detail-name").fill(name)
+        await pg.get_by_test_id("assets-detail-name").press("Enter")
+        await pg.wait_for_timeout(800)
+        # CTA not wired: stays on the Assets page
+        await cta.click(force=True)
+        await pg.wait_for_timeout(300)
+        assert "view=assets" in pg.url
+        # reload → persisted + default-selected first kit
+        await pg.reload()
+        await pg.get_by_test_id("assets-detail").wait_for()
+        assert await pg.get_by_test_id("assets-detail-name").input_value() == name
+        assert await pg.locator(".ca-lib__card[data-on]").count() == 1
+        if ASSET_SHOTS:
+            await pg.mouse.move(0, 0)
+            await pg.wait_for_timeout(500)
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539b-selected-{lang}-{theme}.png")
+        # other tab with no kits → empty state; back → selected again
+        tabs = pg.get_by_test_id("assets-library").get_by_role("tab")
+        await tabs.nth(1).click()
+        await pg.get_by_test_id("assets-detail-empty").wait_for()
+        await tabs.nth(0).click()
+        await pg.get_by_test_id("assets-detail").wait_for()
+        # delete via 「…」 → empty, persisted after reload
+        await pg.get_by_test_id("assets-detail-more").click()
+        await pg.locator(".ca-lib__menu .ca-menu__item--danger").click()
+        await pg.locator(".ca-confirm .ca-panel__primary").click()
+        await pg.get_by_test_id("assets-detail-empty").wait_for()
+        await pg.wait_for_timeout(500)
+        await pg.reload()
+        await pg.get_by_test_id("assets-detail-empty").wait_for()
+        assert await pg.locator(".ca-lib__card").count() == 0
+        await browser.close()
+
+
+async def test_canvas_library_unchanged_539b(app_url):  # noqa: F811
+    """#539 PR-B no-regression: canvas LibraryPanel keeps 5 tabs (incl. 文件) + solid 新建; KitEditor stays the overlay."""
+    async with pw.async_playwright() as p:
+        browser, pg = await _assets_page(p, "zh", "light")
+        await pg.goto(app_url)
+        await pg.get_by_test_id("rail-new").click()
+        await pg.locator(".tl-canvas").wait_for()
+        await pg.wait_for_timeout(1500)
+        if await pg.locator(".ca-modal").count():
+            await pg.locator(".ca-modal button").nth(-2).click()
+        await pg.locator('button[title="我的素材"]').first.click()
+        lib = pg.locator(".ca-lib").first
+        await lib.wait_for()
+        assert await pg.get_by_test_id("assets-library").count() == 0
+        tabs = lib.get_by_role("tab")
+        assert await tabs.count() == 5
+        assert "文件" in [await tabs.nth(i).inner_text() for i in range(5)]
+        await tabs.nth(1).click()
+        new = lib.locator(".ca-lib__new")
+        assert await new.evaluate("e => getComputedStyle(e).borderTopStyle") == "solid"
+        assert await lib.locator(".ca-side__empty").count() == 1
+        await new.click()
+        kit = pg.locator(".ca-kit")
+        await kit.wait_for()
+        assert await kit.get_attribute("data-embedded") is None
+        assert await kit.evaluate("e => getComputedStyle(e).position") == "fixed"
+        assert await pg.locator(".ca-kit__bar").count() == 1
+        if ASSET_SHOTS:
+            await pg.wait_for_timeout(500)
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539b-canvas-kiteditor-zh-light.png")
+        await pg.locator(".ca-kit__title").focus()
+        await pg.keyboard.press("Escape")  # canvas overlay still closes on Escape
+        await pg.wait_for_timeout(300)
+        assert await pg.locator(".ca-kit").count() == 0
+        assert await lib.locator(".ca-lib__card").count() == 1
+        if ASSET_SHOTS:
+            await pg.screenshot(path=f"{ASSET_SHOTS}/539b-canvas-library-zh-light.png")
         await browser.close()
