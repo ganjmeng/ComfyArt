@@ -130,12 +130,21 @@ body { background: var(--ca-float); }
 }
 .ca-toolcard:disabled { opacity: .55; cursor: default; }
 .ca-toolcard__cover {
-  display: flex; align-items: center; justify-content: center; width: 100%;
-  aspect-ratio: 16 / 10; border-radius: 12px; background: var(--ca-field);
-  color: var(--ca-text);
+  display: block; width: 100%; aspect-ratio: 16 / 10; border-radius: 12px;
+  background: var(--ca-field); overflow: hidden; position: relative;
 }
-.ca-toolcard__cover .ca-icon { width: 28px; height: 28px; opacity: .85; }
-.ca-toolcard:hover .ca-toolcard__cover { background: var(--ca-hover); }
+.ca-toolcard__cover img {
+  object-fit: cover; width: 100%; height: 100%; display: block;
+}
+.ca-toolcard:hover .ca-toolcard__cover { filter: brightness(1.03); }
+/* #540: more-menu wash thumbs (Popover portals outside .ca-landing__tools) */
+.ca-menu__item .ca-menu__thumb {
+  width: 20px; height: 20px; border-radius: 5px; overflow: hidden; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ca-menu__item .ca-menu__thumb img {
+  object-fit: cover; width: 20px; height: 20px; display: block;
+}
 .ca-toolcard__name {
   margin: 0; font: 500 14px/22px var(--ca-font);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;

@@ -30,7 +30,7 @@ async def _shot(pg, name: str) -> None:
     if not SHOTS:
         return
     Path(SHOTS).mkdir(parents=True, exist_ok=True)
-    await pg.wait_for_timeout(500)
+    await pg.wait_for_timeout(800)
     await pg.screenshot(path=str(Path(SHOTS) / f"{name}.png"), full_page=False)
 
 
@@ -47,6 +47,14 @@ async def test_home_tools_and_waterfall(app_url, lang, theme):  # noqa: F811
         await menu.wait_for()
         for tid in ("quick", "erase", "crop", "expand", "adjust", "text", "angles", "vectorize", "move", "transform", "to3d", "lipsync", "motion", "audio"):
             assert await pg.get_by_test_id(f"home-more-tool-{tid}").count() == 1
+        # #540: wait wash covers (raw.githubusercontent) before shot
+        await pg.wait_for_function(
+            """() => {
+              const imgs = [...document.querySelectorAll('.ca-toolcard__cover img, .ca-menu__thumb img')];
+              return imgs.length >= 5 && imgs.every(i => i.complete && i.naturalWidth > 0);
+            }""",
+            timeout=60000,
+        )
         await _shot(pg, f"home-tools-{lang}-{theme}")
         await pg.keyboard.press("Escape")
 

@@ -89,13 +89,23 @@ def test_waterfall_layout_logic_no_scraped_feed() -> None:
     assert "skillFeaturedCases(skills)" in HOME
 
 
-def test_tool_covers_are_lucide_zero_cost() -> None:
-    # covers are Icons[tool.icon] on ca-toolcard__cover — no <img> WaveSpeed / remote art
-    tools_block = HOME.split("HOME_TOOL_CARDS", 1)[1].split("MORE_HOME_TOOLS", 1)[0]
-    assert "<img" not in tools_block
-    assert "Icons[tool.icon]" in HOME
-    assert ".ca-toolcard__cover" in CSS
+def test_tool_covers_are_wash_commit_pinned() -> None:
+    # #540: design wash PASS covers via toolCovers.ts (review-assets commit-pin; no WaveSpeed)
+    covers = (ROOT / "src/home/toolCovers.ts").read_text()
+    assert "TOOL_WASH_COMMIT" in covers and "8eb46909" in covers
+    assert "540/wash" in covers and "toolCover" in covers
+    assert "toolCover(" in HOME and "tool.cover" in HOME
+    assert 'src={tool.cover}' in HOME
+    assert ".ca-toolcard__cover" in CSS and ".ca-toolcard__cover img" in CSS
     assert "grid-template-columns: repeat(5" in CSS
+    assert "wavespeed.com" not in (HOME + covers).lower() and "api.wavespeed" not in (HOME + covers).lower()
+    # all 19 ids resolve through toolCover groups
+    for tid in MAIN:
+        assert f"toolCover('main-5', '{tid}')" in HOME
+    for tid in MORE[:10]:
+        assert f"toolCover('more-10', '{tid}')" in HOME
+    for tid in MORE[10:]:
+        assert f"toolCover('unique-4', '{tid}')" in HOME
 
 
 def test_i18n_tools() -> None:

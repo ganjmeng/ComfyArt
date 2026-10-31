@@ -7,6 +7,7 @@ import { t } from '../i18n'
 import { errorText } from '../jobs'
 import { newProject, openView, startProject } from '../projects'
 import { featuredAspect, packFeaturedColumns } from './featuredLayout'
+import { toolCover } from './toolCovers'
 import { showMemoryToast } from '../memory'
 import { HOME_CREATOR_CHIP_KEY, hasSkillDialog, importLanding, loadSkills, skillCover, skillFeaturedCases, type Skill } from '../skills'
 import { SkillChip, chipBackspace } from '../ui/SkillChip'
@@ -36,31 +37,31 @@ const QUICK: [keyof typeof Icons, string, string][] = [
   ['page', t('home.quickWebsite'), t('home.quickWebsitePrompt')],
 ]
 
-/** #537 / #496: home 「实用工具」— main features only; cover = Lucide icon on neutral field ($0). */
-type ToolCard = { id: string; icon: keyof typeof Icons; label: string; accept: string }
+/** #537 / #496 / #540: home 「实用工具」— covers = design wash on review-assets (commit-pinned). */
+type ToolCard = { id: string; icon: keyof typeof Icons; label: string; accept: string; cover: string }
 const HOME_TOOL_CARDS: ToolCard[] = [
-  { id: 'cutout', icon: 'cutout', label: t('common.removeBackground'), accept: 'image/*' },
-  { id: 'extend', icon: 'extend', label: t('common.extendVideo'), accept: 'video/*' },
-  { id: 'upscale', icon: 'upscale', label: t('common.upscale'), accept: 'image/*' },
-  { id: 'inpaint', icon: 'effects', label: t('home.toolPreciseEdit'), accept: 'image/*' },
-  { id: 'mockup', icon: 'box', label: t('mockup.title'), accept: 'image/*' },
+  { id: 'cutout', icon: 'cutout', label: t('common.removeBackground'), accept: 'image/*', cover: toolCover('main-5', 'cutout') },
+  { id: 'extend', icon: 'extend', label: t('common.extendVideo'), accept: 'video/*', cover: toolCover('main-5', 'extend') },
+  { id: 'upscale', icon: 'upscale', label: t('common.upscale'), accept: 'image/*', cover: toolCover('main-5', 'upscale') },
+  { id: 'inpaint', icon: 'effects', label: t('home.toolPreciseEdit'), accept: 'image/*', cover: toolCover('main-5', 'inpaint') },
+  { id: 'mockup', icon: 'box', label: t('mockup.title'), accept: 'image/*', cover: toolCover('main-5', 'mockup') },
 ]
-/** #540: Lovart「更多」10 (Loomic order) + our unique 4. Covers Lucide until design wash PASS. */
+/** #540: Lovart「更多」10 (Loomic order) + unique 4; covers from 540/wash PASS. */
 const MORE_HOME_TOOLS: ToolCard[] = [
-  { id: 'quick', icon: 'quick', label: t('common.quickEdit'), accept: 'image/*' },
-  { id: 'erase', icon: 'erase', label: t('common.eraser'), accept: 'image/*' },
-  { id: 'crop', icon: 'crop', label: t('imageToolbar.crop'), accept: 'image/*' },
-  { id: 'expand', icon: 'expand', label: t('common.expand'), accept: 'image/*' },
-  { id: 'adjust', icon: 'adjust', label: t('common.adjust'), accept: 'image/*' },
-  { id: 'text', icon: 'text', label: t('common.editText'), accept: 'image/*' },
-  { id: 'angles', icon: 'angles', label: t('common.multiAngle'), accept: 'image/*' },
-  { id: 'vectorize', icon: 'polygon', label: t('imageToolbar.vectorize'), accept: 'image/*' },
-  { id: 'move', icon: 'hand', label: t('common.moveObject'), accept: 'image/*' },
-  { id: 'transform', icon: 'rotate', label: t('imageToolbar.flipAndRotate'), accept: 'image/*' },
-  { id: 'to3d', icon: 'cube', label: t('imageToolbar.imageTo3d'), accept: 'image/*' },
-  { id: 'lipsync', icon: 'mic', label: t('genPanel.lipSync'), accept: 'image/*' },
-  { id: 'motion', icon: 'video', label: t('genPanel.motionControl'), accept: 'image/*' },
-  { id: 'audio', icon: 'music', label: t('audio.generateAudio'), accept: 'audio/*' },
+  { id: 'quick', icon: 'quick', label: t('common.quickEdit'), accept: 'image/*', cover: toolCover('more-10', 'quick') },
+  { id: 'erase', icon: 'erase', label: t('common.eraser'), accept: 'image/*', cover: toolCover('more-10', 'erase') },
+  { id: 'crop', icon: 'crop', label: t('imageToolbar.crop'), accept: 'image/*', cover: toolCover('more-10', 'crop') },
+  { id: 'expand', icon: 'expand', label: t('common.expand'), accept: 'image/*', cover: toolCover('more-10', 'expand') },
+  { id: 'adjust', icon: 'adjust', label: t('common.adjust'), accept: 'image/*', cover: toolCover('more-10', 'adjust') },
+  { id: 'text', icon: 'text', label: t('common.editText'), accept: 'image/*', cover: toolCover('more-10', 'text') },
+  { id: 'angles', icon: 'angles', label: t('common.multiAngle'), accept: 'image/*', cover: toolCover('more-10', 'angles') },
+  { id: 'vectorize', icon: 'polygon', label: t('imageToolbar.vectorize'), accept: 'image/*', cover: toolCover('more-10', 'vectorize') },
+  { id: 'move', icon: 'hand', label: t('common.moveObject'), accept: 'image/*', cover: toolCover('more-10', 'move') },
+  { id: 'transform', icon: 'rotate', label: t('imageToolbar.flipAndRotate'), accept: 'image/*', cover: toolCover('more-10', 'transform') },
+  { id: 'to3d', icon: 'cube', label: t('imageToolbar.imageTo3d'), accept: 'image/*', cover: toolCover('unique-4', 'to3d') },
+  { id: 'lipsync', icon: 'mic', label: t('genPanel.lipSync'), accept: 'image/*', cover: toolCover('unique-4', 'lipsync') },
+  { id: 'motion', icon: 'video', label: t('genPanel.motionControl'), accept: 'image/*', cover: toolCover('unique-4', 'motion') },
+  { id: 'audio', icon: 'music', label: t('audio.generateAudio'), accept: 'audio/*', cover: toolCover('unique-4', 'audio') },
 ]
 
 export function Home() {
@@ -409,7 +410,7 @@ export function Home() {
             <div className="ca-menu" data-testid="home-more-tools-menu">
               {MORE_HOME_TOOLS.map((tool) => (
                 <button key={tool.id} type="button" className="ca-menu__item" data-testid={`home-more-tool-${tool.id}`} disabled={uploading} onClick={() => pickTool(tool)}>
-                  <span className="ca-icon">{Icons[tool.icon]}</span><span className="ca-menu__grow">{tool.label}</span>
+                  <span className="ca-menu__thumb" aria-hidden><img src={tool.cover} alt="" draggable={false} /></span><span className="ca-menu__grow">{tool.label}</span>
                 </button>
               ))}
             </div>
@@ -427,7 +428,7 @@ export function Home() {
               onClick={() => pickTool(tool)}
             >
               <span className="ca-toolcard__cover" data-tool={tool.id}>
-                <span className="ca-icon">{Icons[tool.icon]}</span>
+                <img src={tool.cover} alt="" draggable={false} />
               </span>
               <span className="ca-toolcard__name">{tool.label}</span>
             </button>
