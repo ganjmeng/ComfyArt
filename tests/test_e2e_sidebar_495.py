@@ -95,7 +95,7 @@ async def test_sidebar_expanded_labels_recent(app_url, lang, theme):  # noqa: F8
         rail = pg.get_by_test_id("account-rail")
         assert await rail.get_attribute("data-expanded") == "true"
         box = await rail.bounding_box()
-        assert box and 150 <= box["width"] <= 180
+        assert box and box["width"] == 240  # #546 Lovart
         # labels visible when expanded
         home = pg.get_by_test_id("rail-home")
         assert await home.locator(".ca-rail__label").inner_text() != ""

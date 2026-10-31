@@ -93,7 +93,8 @@ def test_recent_max_8_titles_menu() -> None:
 
 def test_expanded_css_and_theme_var() -> None:
     assert ".ca-rail[data-expanded]" in HOME_CSS
-    assert "width: 160px" in HOME_CSS
+    assert "width: var(--ca-rail-w-expanded)" in HOME_CSS  # #546: 160 → Lovart 240
+    assert "--ca-rail-w-expanded: 240px" in BASE_CSS
     assert "var(--ca-rail-bg)" in HOME_CSS
     assert "--ca-rail-bg: #f2f2f2" in BASE_CSS
     assert "--ca-rail-bg: #1c1c1c" in BASE_CSS
