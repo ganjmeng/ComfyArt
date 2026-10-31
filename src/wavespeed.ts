@@ -13,7 +13,13 @@ export interface WsInputs {
   model?: string
   prompt?: string
   image?: string
+  /** Second image for custom @image2 (generate / style). */
+  image2?: string
   images?: string[]
+  /** Base image for custom @base (img2img-style generate). */
+  base?: string
+  /** Denoise / strength 0.1–1 for custom @strength with @base. */
+  strength?: number
   mask?: string
   width?: number
   height?: number

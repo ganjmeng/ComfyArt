@@ -41,6 +41,7 @@ For an agent that is not connected to Loomi, open **Custom workflows** in the pr
 |---|---|
 | `@image` | the selected image (uploaded to WaveSpeed, sent as a URL) |
 | `@image2` | a second image, e.g. the style reference (URL) |
+| `@base` | the base image of an image-to-image run (URL) |
 | `@mask` | the area to change as an image URL, white = change |
 | `@last` | the last frame of a video (URL) |
 | `@prompt` | the prompt or instruction (for voiceover and voice clone: the text to read) |
@@ -51,6 +52,7 @@ For an agent that is not connected to Loomi, open **Custom workflows** in the pr
 | `@count` | how many results / layers |
 | `@lyrics` | song lyrics |
 | `@seconds` | video or audio length in **seconds** |
+| `@strength` | how much the base image changes, from 0.1 to 1 |
 
 Markers are case-insensitive. A marker the feature does not use is ignored with a warning. Do not map a marker to a field the model does not have: the check rejects it.
 
@@ -64,7 +66,7 @@ Runs are billed by WaveSpeed at the chosen model's price. Jobs at or above the c
 
 | Feature | Required | Optional | Notes |
 |---|---|---|---|
-| Text to image | `@prompt`, `@size` (or `@width` + `@height`) | `@count` | Appears as an extra model in the generator. Reference and base images are not passed. |
+| Text to image | `@prompt`, `@size` (or `@width` + `@height`) | `@count`, `@image`, `@image2`, `@base`, `@strength` | Appears as an extra model in the generator. `@image` and `@image2` get the first two reference images; a workflow with `@image` needs a reference to run. `@base` gets the base image and `@strength` its strength from 0.1 to 1. |
 | Quick edit / edit text | `@image`, `@prompt` | | Also used by compose and mockup blending. `@prompt` receives the edit instruction. |
 | Style transfer | `@image`, `@prompt` | `@image2` | Without a reference, `@image2` gets the same image. |
 | Inpaint / edit region | `@image`, `@prompt` | | The model gets the whole image; `@prompt` names the area to change and what to do there. |
@@ -74,7 +76,9 @@ Runs are billed by WaveSpeed at the chosen model's price. Jobs at or above the c
 | Remove background | `@image` | | The result should keep an alpha channel. |
 | Eraser | `@image`, `@mask` | | `@mask` is the area to remove. |
 | Split layers | `@image` | `@prompt`, `@count` | `@count` is the number of layers. The result is several RGBA images. |
-| Video generation | `@prompt` | `@image`, `@last`, `@size`, `@seconds` | Used by the first/last frame mode. Reference, motion control, lip sync and storyboard keep the built-in model. |
+| Video generation | `@prompt` | `@image`, `@last`, `@size`, `@seconds` | Used by the first/last frame mode. Reference and storyboard keep the built-in model. |
+| Motion control | `@image`, `@video`, `@prompt` | `@size`, `@seconds` | `@image` gets the character, `@video` the motion video. |
+| Lip sync | `@image`, `@audio`, `@prompt` | `@size`, `@seconds` | `@image` gets the portrait, `@audio` the speech, `@seconds` the length of the audio. |
 | Animate image | `@image`, `@prompt` | `@size`, `@seconds`, `@last` | With loop on, `@last` gets the source image again. |
 | Music | `@prompt` | `@lyrics`, `@seconds` | Appears as an extra model in the audio dialog. `@prompt` gets the style, `@lyrics` the lyrics (empty lyrics are sent as `[instrumental]`), `@seconds` the length, clamped to the model's duration range. A model without a duration field gets no length. |
 | Voiceover | `@prompt` | | Replaces the built-in model when no recording is cloned. `@prompt` receives the text to read. The workflow picks its own voice (set `voice` under `params`, otherwise the model's default), so the dialog voice setting is not passed; the voice list shows the workflow filename. |

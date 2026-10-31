@@ -543,10 +543,10 @@ def resolve_model(feature: str, model: str | None) -> str:
 
 # custom_workflow (cloud): a feature can run any WaveSpeed model; "fields" maps ComfyArt's values
 # (the upstream @markers) onto that model's request fields.
-MARKER_INPUTS = {"image", "image2", "mask", "last", "audio", "video", "prompt", "lyrics", "size", "width", "height", "count", "seconds"}
-MEDIA_MARKERS = {"image", "image2", "mask", "last", "audio", "video"}
+MARKER_INPUTS = {"image", "image2", "base", "mask", "last", "audio", "video", "prompt", "lyrics", "size", "width", "height", "count", "seconds", "strength"}
+MEDIA_MARKERS = {"image", "image2", "base", "mask", "last", "audio", "video"}
 AUTO_FIELDS = {"image", "images", "mask_image", "prompt", "tags", "size", "aspect_ratio", "resolution", "duration",
-               "music_length_ms", "last_image", "num_layers", "seed", "output_format", "text", "lyrics", "style", "voice", "voice_id", "language", "audio", "video"}
+               "music_length_ms", "last_image", "num_layers", "seed", "output_format", "text", "lyrics", "style", "voice", "voice_id", "language", "audio", "video", "strength", "denoise"}
 
 
 def custom_model(model: str | None, meta: dict) -> str:
@@ -604,10 +604,11 @@ def check_custom(spec: dict, required: list[str], optional: list[str], meta: dic
 
 async def _custom_fields(session: aiohttp.ClientSession, inputs: dict, payload: dict) -> None:
     images = list(inputs.get("images") or [])
-    values = {"image": inputs.get("image"), "image2": images[0] if images else None, "mask": inputs.get("mask"),
-              "last": inputs.get("last_image"), "audio": inputs.get("audio"), "video": inputs.get("video"),
+    values = {"image": inputs.get("image"), "image2": inputs.get("image2") or (images[0] if images else None), "base": inputs.get("base"),
+              "mask": inputs.get("mask"), "last": inputs.get("last_image"), "audio": inputs.get("audio"), "video": inputs.get("video"),
               "prompt": inputs.get("prompt") or inputs.get("text"), "lyrics": inputs.get("lyrics"), "width": inputs.get("width"),
-              "height": inputs.get("height"), "count": inputs.get("layers"), "seconds": inputs.get("duration")}
+              "height": inputs.get("height"), "count": inputs.get("layers"), "seconds": inputs.get("duration"),
+              "strength": inputs.get("strength")}
     if inputs.get("width") and inputs.get("height"):
         values["size"] = f"{int(inputs['width'])}*{int(inputs['height'])}"
     for marker, field in (inputs.get("fields") or {}).items():

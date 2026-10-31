@@ -148,7 +148,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   const model = isVideo(workflow) ? null : modelOf(workflow) ?? agentModels(false)[0]
   const colors = isVideo(workflow) ? [] : colorsOf(shape)
   const picked = model ? usableRefs(model, refs, refModesOf(shape)).slice(0, refLimit(model)) : []
-  const palette = colors.length && model?.refs && picked.length < refLimit(model)
+  const palette = colors.length && model?.refs && model.id !== CUSTOM_GENERATE && picked.length < refLimit(model)
     ? viewUrl(await uploadImage(await paletteImage(colors), `palette-mosaic-${colors.join('').replace(/#/g, '')}.png`))
     : null
   const used = palette ? [...picked, { src: palette, mode: PALETTE_MODE }] : picked
@@ -177,8 +177,8 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
       const by = (k: RefKind) => refs.filter((r) => refKind(r) === k).map(annotated)
       return wsBuilt({ ...base, feature: 'reference_to_video', reference_images: by('image'), reference_videos: by('video'), reference_audios: by('audio') })
     }
-    if (mode === 'motion' && refs[0] && motion) return wsBuilt({ ...base, feature: 'motion_control', image: annotated(refs[0]), video: annotated(motion) })
-    if (mode === 'lipsync' && refs[0] && speech) return wsBuilt({ ...base, feature: 'lip_sync', image: annotated(refs[0]), audio: annotated(speech) })
+    if (mode === 'motion' && refs[0] && motion) return wsBuilt({ ...base, feature: 'motion_control', custom: 'motion', image: annotated(refs[0]), video: annotated(motion) })
+    if (mode === 'lipsync' && refs[0] && speech) return wsBuilt({ ...base, feature: 'lip_sync', custom: 'lipsync', image: annotated(refs[0]), audio: annotated(speech) })
     const last = lastFrameOf(shape)
     if (refs.length || last) {
       return wsBuilt({ ...base, feature: 'image_to_video', custom: 'video', model: modelIn('image_to_video', featureModelsOf(shape).image_to_video ?? workflow), image: annotated(refs[0] ?? last!), last_image: refs[0] && last ? annotated(last) : undefined })
@@ -188,8 +188,15 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   if (isVideo(workflow)) throw new Error(t('jobs.notInCloud'))
   const [width, height] = targetSize(shape.props)
   if (model?.id === CUSTOM_GENERATE) {
-    // the user's own WaveSpeed text-to-image model (custom_workflow); reference and base images are not passed
-    return wsBuilt({ feature: 'text_to_image', custom: 'generate', model: CUSTOM_GENERATE, prompt, width, height, seed: seedOf(shape) ?? undefined, png: transparent })
+    // custom text-to-image: @image/@image2 get the first two refs; @base/@strength get the base image
+    const start = baseOf(shape)
+    const [image, image2] = picked.map((r) => annotated(r.src))
+    return wsBuilt({
+      feature: 'text_to_image', custom: 'generate', model: CUSTOM_GENERATE, prompt, width, height,
+      image, image2, images: image2 ? [image2] : undefined,
+      base: start ? annotated(start.src) : undefined, strength: start ? start.strength / 100 : undefined,
+      seed: seedOf(shape) ?? undefined, png: transparent,
+    })
   }
   if (model && isCloudModel(model.id)) {
     const base = baseOf(shape)

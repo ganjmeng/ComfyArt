@@ -70,6 +70,15 @@ with open(os.path.join(os.path.dirname(__file__), "fixtures", "wavespeed_catalog
 if not any(m.get("model_id") == _ANGLE_ID for m in MODELS):
     MODELS.append(_angle_meta)
 
+# #528/#513 step1: motion-control + generate-with-refs models for custom workflow e2e assign
+for _mid in (
+    "kwaivgi/kling-v3.0-std/motion-control",
+    "wavespeed-ai/qwen-image/text-to-image-lora",
+):
+    if not any(m.get("model_id") == _mid for m in MODELS):
+        with open(os.path.join(os.path.dirname(__file__), "fixtures", "wavespeed_catalog_subset.json"), encoding="utf-8") as _f:
+            MODELS.append(json.load(_f)[_mid])
+
 
 @pytest.fixture(autouse=True)
 def uncurated(monkeypatch):
