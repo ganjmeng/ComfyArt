@@ -105,6 +105,16 @@ def _install_stubs() -> None:
 os.environ.setdefault("COMFYART_SKIP_KEY_CHECK", "1")
 _install_stubs()
 
+# Bind `ComfyArt` to THIS checkout even when it lives in a worktree dir with another name
+# (otherwise a sibling ../ComfyArt with a stale dist/ gets imported and served).
+if "ComfyArt" not in sys.modules or Path(getattr(sys.modules["ComfyArt"], "__file__", "") or "").resolve().parent != _REPO:
+    import importlib.util as _ilu
+    for _k in [k for k in sys.modules if k == "ComfyArt" or k.startswith("ComfyArt.")]:
+        del sys.modules[_k]
+    _spec = _ilu.spec_from_file_location("ComfyArt", _REPO / "__init__.py", submodule_search_locations=[str(_REPO)])
+    _mod = _ilu.module_from_spec(_spec)
+    sys.modules["ComfyArt"] = _mod
+    _spec.loader.exec_module(_mod)
 from ComfyArt import api
 from ComfyArt.api import bot_asks, chat_store
 from ComfyArt.api.bot_turns import ACTIVE_TURNS, QUEUED

@@ -125,7 +125,9 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   useEffect(() => {
     if (!shape || !pendingHome) return
     if (pendingHome === 'upscale' || pendingHome === 'to3d' || pendingHome === 'transform') {
-      setMenu(pendingHome)
+      // #545: unpinned menu tools live under 更多 — open it on the tool's real panel (no auto-run)
+      if (prefsAtom.get().pinned.includes(pendingHome)) setMenu(pendingHome)
+      else { setMenu('more'); setInMore(pendingHome) }
       homeToolAtom.set(null)
     } else if (
       pendingHome === 'cutout' || pendingHome === 'mockup' || pendingHome === 'inpaint'
