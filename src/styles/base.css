@@ -5,6 +5,8 @@
   --ca-border: rgba(0,0,0,.07);
   --ca-rail: rgba(0,0,0,.1); /* #441/#442: shared process rail + stub colour (reference measured) */
   --ca-rail-bg: #f2f2f2; /* #495 expanded sidebar */
+  --ca-skillrun-side: #f5f5f5; /* #541 skill modal right pane (design-spec measured) */
+  --ca-skillrun-tile: #f4f4f4; /* #541 template image well */
   /* #546 Lovart @1280: expanded sidebar 240 (inner nav 216, px 12); collapsed icon rail; main px 56 */
   --ca-rail-w-expanded: 240px;
   --ca-rail-px-expanded: 12px;
@@ -71,6 +73,8 @@
   --ca-border: rgba(255,255,255,.1);
   --ca-rail: rgba(255,255,255,.12);
   --ca-rail-bg: #1c1c1c; /* #495 expanded sidebar */
+  --ca-skillrun-side: #1c1c1c;
+  --ca-skillrun-tile: rgba(255,255,255,.06);
   --ca-text: rgba(255,255,255,.9);
   --ca-muted: rgba(255,255,255,.4);
   --ca-text-2: rgba(255,255,255,.6);
