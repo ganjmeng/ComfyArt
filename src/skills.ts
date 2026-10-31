@@ -455,6 +455,18 @@ export function presetImage(skill: Skill, preset: SkillPreset): string | null {
   return preset.image ?? skillCover(skill)?.src ?? null
 }
 
+/** #494-3 — home 「精选」 tiles: one card per preset with a real image (data-driven; no demo rows). */
+export function skillFeaturedCases(skills: Skill[]): { skill: Skill; preset: SkillPreset; image: string }[] {
+  const out: { skill: Skill; preset: SkillPreset; image: string }[] = []
+  for (const skill of skills) {
+    for (const preset of skill.presets ?? []) {
+      const image = presetImage(skill, preset)
+      if (image) out.push({ skill, preset, image })
+    }
+  }
+  return out
+}
+
 /** #494-2 — turn the dialog into the handoff: the text the user "sends" (label: value per filled text/select field,
  *  in data order), image fields as refs, and the skill + preset ids. Read by src/home/handoff.ts. */
 export function skillRunParams(skill: Skill, values: SkillValues, presetId?: string | null): Record<string, string | string[]> {

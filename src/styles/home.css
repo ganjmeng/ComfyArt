@@ -57,6 +57,44 @@ body { background: var(--ca-float); }
 .ca-skillcard__icon img { width: 100%; height: 100%; object-fit: cover; }
 .ca-skillcard__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* #494-3 / #533 — home 「精选」: preset cases from skills.ts → same SkillRunDialog as Skills page */
+.ca-featured { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px 16px; }
+.ca-featured__card {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 0; border: none; background: none;
+  color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ca-featured__cover {
+  position: relative; display: block; width: 100%; aspect-ratio: 231 / 173; overflow: hidden;
+  border-radius: 12px; background: var(--ca-field);
+}
+.ca-featured__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ca-featured__cover::after {
+  content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.28); opacity: 0;
+  transition: opacity 150ms cubic-bezier(.4, 0, .2, 1); pointer-events: none;
+}
+.ca-featured__card:hover .ca-featured__cover::after, .ca-featured__card:focus-visible .ca-featured__cover::after { opacity: 1; }
+.ca-featured__badge {
+  position: absolute; left: 8px; bottom: 8px; z-index: 1; padding: 2px 8px; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45); color: #fff; font: 500 12px/18px var(--ca-font); pointer-events: none;
+}
+.ca-featured__go {
+  position: absolute; right: 8px; top: 8px; z-index: 1; padding: 6px 12px; border-radius: 999px;
+  background: #fff; color: #111; font: 500 12px/16px var(--ca-font);
+  opacity: 0; transform: scale(0.85); transform-origin: top right;
+  transition: opacity 150ms cubic-bezier(.4, 0, .2, 1), transform 150ms cubic-bezier(.4, 0, .2, 1);
+  pointer-events: none;
+}
+.ca-featured__card:hover .ca-featured__go, .ca-featured__card:focus-visible .ca-featured__go {
+  opacity: 1; transform: scale(1);
+}
+.ca-featured__name {
+  margin: 0; font: 500 14px/22px var(--ca-font); color: var(--ca-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (max-width: 1200px) { .ca-featured { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 960px) { .ca-featured { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .ca-featured { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; } }
+
 .ca-projects { max-width: 1600px; margin: 0 auto; padding: 32px 48px 96px; box-sizing: border-box; }
 .ca-projects__head { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
 .ca-projects__head h1 { margin: 0; font: 500 24px/32px var(--ca-font); }

@@ -758,7 +758,7 @@
   "home.rename": "重命名",
   "home.select": "选择",
   "home.selectAll": "全选（{0}）",
-  "home.startFromSkill": "从 Skill 开始",
+  "home.startFromSkill": "用 Skill 快速开始",
   "home.unpin": "取消置顶",
   "home.updatedOn": "更新于 {0}",
   "home.viewAll": "查看全部",
@@ -1584,5 +1584,7 @@
   "skillRun.templates": "模板",
   "skillRun.currentTemplate": "当前模板",
   "skillRun.pickLeft": "在左侧选择",
-  "skillRun.select": "选择"
+  "skillRun.select": "选择",
+  "home.featured": "精选",
+  "home.skillCase": "Skill 案例"
 }
