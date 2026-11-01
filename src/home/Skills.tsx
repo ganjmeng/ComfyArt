@@ -14,6 +14,7 @@ import {
   skillAuthor,
   skillChips,
   skillCover,
+  skillCoverVideoHover,
   skillVideo,
   matchesSkillChip,
   toggleFavourite,
@@ -59,8 +60,8 @@ function SkillWallCard({
   const showImg = !!src && failedSrc !== src
   const row = layout === 'row'
   const kind = videoSrc ? 'video' : 'image'
-  const playVideo = () => { const v = videoRef.current; if (!v) return; void v.play().catch(() => {}) }
-  const stopVideo = () => { const v = videoRef.current; if (!v) return; v.pause(); v.currentTime = 0 }
+  const playVideo = () => skillCoverVideoHover(videoRef.current, 'enter')
+  const stopVideo = () => skillCoverVideoHover(videoRef.current, 'leave')
   return (
     <article
       className={row ? 'ca-swall__card ca-swall__card--row' : 'ca-swall__card'}

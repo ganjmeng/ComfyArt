@@ -44,7 +44,7 @@ def test_upgrade9_presets_examples_inputs_complete():
         assert "inputs:" in e, sid
         if sid in EFFECT:
             assert "inputs: EFFECT_INPUTS" in e, sid
-            assert "examples: ex541(" in e, sid
+            assert ("examples: ex541(" in e) or ("examples: [video(" in e and "ex541(" in e), sid  # #575 video lead ok
             assert len(re.findall(r"\bP\('", e)) == 0, sid
         else:
             n = TEMPLATE_COUNTS[sid]

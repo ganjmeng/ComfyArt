@@ -11,7 +11,7 @@ import { Assets } from './Assets'
 import { CHIP_LABEL } from './Skills'
 import { toolCover } from './toolCovers'
 import { showMemoryToast } from '../memory'
-import { hasSkillDialog, importLanding, loadSkills, matchesSkillChip, skillChips, skillFeaturedCases, skillQuickStartCover, FEED_SPECIAL_COLLAGE, type Skill, type SkillChipId } from '../skills'
+import { hasSkillDialog, importLanding, loadSkills, matchesSkillChip, skillChips, skillCoverVideoHover, skillFeaturedCases, skillQuickStartCover, skillVideo, FEED_SPECIAL_COLLAGE, type Skill, type SkillChipId } from '../skills'
 import { SkillChip, chipBackspace } from '../ui/SkillChip'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
 import { SkillRunDialog } from '../ui/SkillRunDialog'
@@ -88,6 +88,48 @@ const MORE_HOME_TOOLS: ToolCard[] = [
   { id: 'motion', label: t('genPanel.motionControl'), accept: 'image/*', cover: toolCover('unique-4', 'motion') },
   { id: 'audio', label: t('audio.generateAudio'), accept: 'audio/*', cover: toolCover('unique-4', 'audio') },
 ]
+
+
+/** #575 — home quick-start card: still (or video first-frame) + muted hover loop when `skill.video` is set.
+ *  Dual-fit / object-fit left to #602/#594 — this only adds playback overlay. */
+function HomeSkillCard({ skill, onTry }: { skill: Skill; onTry: () => void }) {
+  const cover = skillQuickStartCover(skill)
+  const src = cover && (cover.own === 'userdata' ? thumbUrl(cover.src, 512) : cover.src)
+  const videoSrc = skillVideo(skill)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const play = () => skillCoverVideoHover(videoRef.current, 'enter')
+  const stop = () => skillCoverVideoHover(videoRef.current, 'leave')
+  return (
+    <button type="button" className="ca-skillcard" data-testid="home-skill-card" data-skill={skill.id}
+      data-has-video={videoSrc ? '1' : undefined}
+      onClick={onTry}
+      onMouseEnter={videoSrc ? play : undefined}
+      onMouseLeave={videoSrc ? stop : undefined}
+      onFocus={videoSrc ? play : undefined}
+      onBlur={videoSrc ? stop : undefined}
+    >
+      <span className="ca-skillcard__cover" data-testid="home-skill-cover">
+        {src && cover?.own === 'video'
+          ? <video src={`${src}#t=0.001`} muted playsInline preload="metadata" data-testid="home-skill-cover-frame" />
+          : src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}
+        {videoSrc && (
+          <video
+            ref={videoRef}
+            className="ca-skillcard__video"
+            src={videoSrc}
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            data-testid="home-skill-card-video"
+            aria-hidden="true"
+          />
+        )}
+      </span>
+      <span className="ca-skillcard__name"><span className="ca-skillcard__label">{skill.name}</span></span>
+    </button>
+  )
+}
 
 export function Home() {
   const [text, setText] = useState('')
@@ -532,17 +574,9 @@ export function Home() {
         </div>
         {/* skills-cut1: one row of HOME_SKILL_ROW cover cards (cover + title ›), real skills only; click keeps trySkill */}
         <div className="ca-skillgrid" data-testid="home-skill-grid">
-          {shown.slice(0, HOME_SKILL_ROW).map((s) => {
-            const cover = skillQuickStartCover(s)
-            const src = cover && (cover.own === 'userdata' ? thumbUrl(cover.src, 512) : cover.src)
-            return (
-              <button key={s.id} type="button" className="ca-skillcard" data-testid="home-skill-card" data-skill={s.id}
-                onClick={() => trySkill(s)}>
-                <span className="ca-skillcard__cover" data-testid="home-skill-cover">{src && cover?.own === 'video' ? <video src={`${src}#t=0.001`} muted playsInline preload="metadata" data-testid="home-skill-cover-frame" /> : src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
-                <span className="ca-skillcard__name"><span className="ca-skillcard__label">{s.name}</span></span>
-              </button>
-            )
-          })}
+          {shown.slice(0, HOME_SKILL_ROW).map((s) => (
+            <HomeSkillCard key={s.id} skill={s} onTry={() => trySkill(s)} />
+          ))}
         </div>
       </section>
 
