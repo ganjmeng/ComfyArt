@@ -50,26 +50,38 @@
         "title": "Outfit / Form Variation Sheet",
         "zh": "服装/形态变体板",
         "lovart_ref": "/workspace/569ref/character-3.png",
-        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/04-outfit-form-variation-sheet.webp",
-        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/04-outfit-form-variation-sheet@thumb.webp",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/9024565c9857c5cb79e3bce85e636f5f102ad181/569/wash/character/templates/v3.1/04-outfit-form-variation-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/9024565c9857c5cb79e3bce85e636f5f102ad181/569/wash/character/templates/v3.1/04-outfit-form-variation-sheet@thumb.webp",
         "model": "nano-banana-2-1",
         "taskIds": [
-          "8f4c6ec5556daecf9469bb0164d71a80"
+          "0978feff84dc9a9330078ae356d2c1e3"
         ],
-        "version": "v3"
+        "version": "v3.1",
+        "rejected_taskIds": [
+          "30587f153deb78c66ee29b510cc1b7f9",
+          "544e9ffca9fc5eda2a960fefc2fb05be"
+        ],
+        "note": "skirt warm beige-camel sampled from Lovart (~#CCB8AC)"
       },
       {
         "index": 4,
         "title": "Prop Interaction Sheet",
         "zh": "道具互动板",
         "lovart_ref": "/workspace/569ref/character-4.png",
-        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/05-prop-interaction-sheet.webp",
-        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/05-prop-interaction-sheet@thumb.webp",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/9024565c9857c5cb79e3bce85e636f5f102ad181/569/wash/character/templates/v3.1/05-prop-interaction-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/9024565c9857c5cb79e3bce85e636f5f102ad181/569/wash/character/templates/v3.1/05-prop-interaction-sheet@thumb.webp",
         "model": "nano-banana-2-1",
         "taskIds": [
-          "d52c99efa296ca5efa1c203a6889886c"
+          "7d68e09326de1e8cbe9ba3a30b7f26ed"
         ],
-        "version": "v3"
+        "version": "v3.1",
+        "rejected_taskIds": [
+          "df80ba11b81ae3f84795b65a43cb94f7",
+          "5d44ea86093c72bc51842564a9ba62e1",
+          "de5f88a2899908bfc82991633500976f",
+          "a43e742ee476937967047478d661cc6c"
+        ],
+        "note": "top row 1 face + 5 phone poses matching Lovart (call, pocket+look, text, photo, back pocket)"
       },
       {
         "index": 5,
@@ -374,7 +386,36 @@
           "80a32fb1df3ad504469e4948c0fec4ef"
         ]
       }
-    }
+    },
+    "previous_v3": [
+      {
+        "index": 3,
+        "title": "Outfit / Form Variation Sheet",
+        "zh": "服装/形态变体板",
+        "lovart_ref": "/workspace/569ref/character-3.png",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/04-outfit-form-variation-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/04-outfit-form-variation-sheet@thumb.webp",
+        "model": "nano-banana-2-1",
+        "taskIds": [
+          "8f4c6ec5556daecf9469bb0164d71a80"
+        ],
+        "version": "v3"
+      },
+      {
+        "index": 4,
+        "title": "Prop Interaction Sheet",
+        "zh": "道具互动板",
+        "lovart_ref": "/workspace/569ref/character-4.png",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/05-prop-interaction-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/05-prop-interaction-sheet@thumb.webp",
+        "model": "nano-banana-2-1",
+        "taskIds": [
+          "d52c99efa296ca5efa1c203a6889886c"
+        ],
+        "version": "v3"
+      }
+    ],
+    "sbs_v3_1": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/9024565c9857c5cb79e3bce85e636f5f102ad181/569/wash/v3.1/sbs-04-05.webp"
   },
   "motion": {
     "templates": [
@@ -432,5 +473,8 @@
     "balance": 940.4,
     "v3_spent": 90.0,
     "balance_checked": "2026-11-01 UTC+8"
-  }
+  },
+  "kie_balance": 895.4,
+  "v3_1_spend_credits": 35.0,
+  "v3_1_assets_commit": "9024565c9857c5cb79e3bce85e636f5f102ad181"
 }
