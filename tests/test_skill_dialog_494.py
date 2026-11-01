@@ -61,14 +61,18 @@ def test_presets_have_prompts(got):
 
 @needs_node
 def test_builtin_preset_images_unique(got):
-    # #593 new-6 presets ship without washed images (grey tiles) until #594 — count only pinned URLs.
+    # #569 template washes stay unique; #594 new-6 have no preset.image — presetImage falls back to covers-v4.
     imgs = [u for u in got["builtinPresetImgs"] if u]
-    assert len(imgs) == 27  # #569: product 6 / brand 6 / packaging 5 (#541) + character 8 / motion 2 (#569)
-    assert all("raw.githubusercontent.com/ganjmeng/ComfyArt/" in u and ("569/wash/" in u or "541/wash/" in u) for u in imgs)
-    assert sum("569/wash/character/templates/" in u for u in imgs) == 8 and sum("569/wash/motion/templates/" in u for u in imgs) == 2
-    assert sum("541/wash/product/" in u for u in imgs) == 6
-    assert sum("541/wash/brand/" in u for u in imgs) == 6 and sum("541/wash/packaging/" in u for u in imgs) == 5
-    assert len(set(imgs)) == 27  # no shared cover fallback across presets
+    washed = [u for u in imgs if "569/wash/" in u or "541/wash/" in u]
+    covers = [u for u in imgs if "494/covers-v4/" in u]
+    assert len(washed) == 27  # product 6 / brand 6 / packaging 5 + character 8 / motion 2
+    assert all("raw.githubusercontent.com/ganjmeng/ComfyArt/" in u for u in washed)
+    assert sum("569/wash/character/templates/" in u for u in washed) == 8 and sum("569/wash/motion/templates/" in u for u in washed) == 2
+    assert sum("541/wash/product/" in u for u in washed) == 6
+    assert sum("541/wash/brand/" in u for u in washed) == 6 and sum("541/wash/packaging/" in u for u in washed) == 5
+    assert len(set(washed)) == 27  # no shared cover fallback across washed presets
+    assert len(covers) == 24  # 6 new × 4 presets → cover fallback via presetImage
+    assert len(set(covers)) == 6
 
 
 @needs_node
