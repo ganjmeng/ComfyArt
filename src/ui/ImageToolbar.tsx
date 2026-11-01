@@ -22,7 +22,7 @@ import { lightboxAtom } from './Lightbox'
 import { enterMode, modeAtom, type Mode } from './mode'
 import { HOME_LANDING, homeToolAtom } from '../home/handoff'
 import { Popover } from './Popover'
-import { To3dPanel, ToolPanel, UpscaleMenu } from './UpscaleMenu'
+import { To3dPanel, UpscaleMenu } from './UpscaleMenu'
 import { useSelectedImage, useSelectionRect } from './selection'
 import { readLocal, writeLocal } from '../localPrefs'
 import { t } from '../i18n'
@@ -266,9 +266,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
     <div className="ca-toolpanel-host" style={{ left: panelLeft, top: panelTop }} onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
       {panel === 'to3d'
         ? <To3dPanel key={shape.id} editor={editor} shape={shape} src={src} custom={custom3d} onDone={() => setPanel(null)} onError={onError} />
-        : <ToolPanel tool="upscale" title={t('common.upscale')} onCancel={() => setPanel(null)}>
-            <UpscaleMenu key={shape.id} editor={editor} shape={shape} w={iw} h={ih} onDone={() => setPanel(null)} onError={onError} />
-          </ToolPanel>}
+        : <UpscaleMenu key={shape.id} asPanel editor={editor} shape={shape} w={iw} h={ih} onDone={() => setPanel(null)} onError={onError} />}
     </div>
   )
   const swapTool = swap ? tools.find((x) => x.id === swap) : null

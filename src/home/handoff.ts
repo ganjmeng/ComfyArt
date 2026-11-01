@@ -33,7 +33,7 @@ export const HOME_TOOLS: HomeToolId[] = [
  *  'menu' opens the tool's pinned bar popover (its own panel at the image's right when unpinned),
  *  'panel' opens the tool's own panel at the image's right, 'bar' swaps the image toolbar to the tool's own bar.
  *  Tools not listed only select (cutout / mockup / vectorize) or were already handled (crop, modes). ⋯ never auto-opens. */
-export const HOME_LANDING: Record<string, 'menu' | 'panel' | 'bar'> = { upscale: 'menu', to3d: 'panel', transform: 'bar' }
+export const HOME_LANDING: Record<string, 'menu' | 'panel' | 'bar'> = { upscale: 'panel', to3d: 'panel', transform: 'bar' }
 
 export const homeToolAtom = atom<HomeToolId | null>('home tool', null)
 

@@ -68,7 +68,7 @@ def test_handoff_home_tools_and_toolbars() -> None:
     assert "import { homeToolAtom } from '../home/handoff'" in VID_TB
     # #570 (supersedes #545): landing per tool is data (HOME_LANDING), read by the image toolbar
     assert "HOME_LANDING[pendingHome]" in IMG_TB
-    assert "upscale: 'menu'" in HANDOFF and "to3d: 'panel'" in HANDOFF and "transform: 'bar'" in HANDOFF
+    assert "upscale: 'panel'" in HANDOFF and "to3d: 'panel'" in HANDOFF and "transform: 'bar'" in HANDOFF
     assert "setMenu('more'); setInMore(pendingHome)" not in IMG_TB
     assert "pendingHome !== 'extend'" in VID_TB
     # hooks before early return

@@ -88,13 +88,24 @@ async def test_a_home_to3d_opens_panel_not_more(app_url):  # noqa: F811
         await browser.close()
 
 
-async def test_b_home_upscale_keeps_pinned_popover(app_url):  # noqa: F811
-    """Product: upscale unchanged — home handoff opens its pinned popover, never ⋯."""
+async def test_b_home_upscale_opens_its_panel(app_url, mock_ws):  # noqa: F811
+    """Acceptance 6550945029 + design 6551032261: home → upscale opens its own panel at the image's right
+    (title, resolution dropdown, 取消 / 立即使用) — not the toolbar dropdown, never ⋯."""
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url)
         await _launch(pg, "upscale")
-        await pg.locator(".ca-pop .ca-upscale").wait_for(timeout=15000)
-        assert await pg.locator(MORE_POP).count() == 0 and await pg.locator(PANEL).count() == 0
+        panel = pg.locator(f"{PANEL}[data-tool='upscale']")
+        await panel.wait_for(timeout=15000)
+        assert await pg.locator(".ca-pop .ca-upscale").count() == 0 and await pg.locator(MORE_POP).count() == 0
+        await _panel_right_of_image(pg, "upscale")
+        assert await panel.locator(".ca-toolpanel__select select").count() == 1
+        before = len(mock_ws["submits"])
+        await panel.get_by_role("button", name="立即使用").click()
+        for _ in range(50):
+            if len(mock_ws["submits"]) > before:
+                break
+            await asyncio.sleep(0.2)
+        assert len(mock_ws["submits"]) > before and await panel.count() == 0
         await browser.close()
 
 
@@ -187,7 +198,7 @@ async def test_f_switch_renders_params_from_data_and_runs_mock(app_url, mock_ws)
         await browser.close()
 
 
-@pytest.mark.parametrize("tool", ["to3d"])
+@pytest.mark.parametrize("tool", ["to3d", "upscale"])
 async def test_g_i_close_panel_then_more_opens_main_list(app_url, tool):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url)
@@ -202,7 +213,7 @@ async def test_g_i_close_panel_then_more_opens_main_list(app_url, tool):  # noqa
         await browser.close()
 
 
-@pytest.mark.parametrize("first,ready", [("upscale", ".ca-pop .ca-upscale"), ("transform", ".ca-toolbar--swap")])
+@pytest.mark.parametrize("first,ready", [("upscale", f"{PANEL}[data-tool='upscale']"), ("transform", ".ca-toolbar--swap")])
 async def test_h_two_handoffs_do_not_leak(app_url, first, ready):  # noqa: F811
     """QA (h): home → upscale/transform, then a new home → to3d handoff: only the to3d panel, fresh state."""
     async with pw.async_playwright() as p:
@@ -243,7 +254,7 @@ async def test_h2_second_image_in_same_canvas_resets_panel(app_url):  # noqa: F8
 @pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
 async def test_shots_570(app_url, lang, theme):  # noqa: F811
     async with pw.async_playwright() as p:
-        for tool, sel in (("to3d", f"{PANEL}[data-tool='to3d']"), ("upscale", ".ca-pop .ca-upscale"), ("transform", ".ca-toolbar--swap")):
+        for tool, sel in (("to3d", f"{PANEL}[data-tool='to3d']"), ("upscale", f"{PANEL}[data-tool='upscale']"), ("transform", ".ca-toolbar--swap")):
             browser, pg = await _open(p, app_url, lang, theme)
             await _launch(pg, tool)
             await pg.locator(sel).wait_for()

@@ -75,18 +75,28 @@ const STYLES: [string, string][] = [
 ]
 const TARGETS: [string, number][] = [['2K', 2048], ['4K', 4096], ['8K', 8192]]
 
-export function UpscaleMenu({ editor, shape, w, h, onDone, onError }: { editor: Editor; shape: TLImageShape; w: number; h: number; onDone: () => void; onError: (msg: string) => void }) {
+/** asPanel (#570 home handoff): the same controls inside the ToolPanel at the image's right — resolution as a dropdown, 取消 / 立即使用 ⚡n. */
+export function UpscaleMenu({ editor, shape, w, h, onDone, onError, asPanel }: { editor: Editor; shape: TLImageShape; w: number; h: number; onDone: () => void; onError: (msg: string) => void; asPanel?: boolean }) {
   const [detail, setDetail] = useState(false)
   const [style, setStyle] = useState('')
   const [strength, setStrength] = useState(30)
   const long = Math.max(w, h)
+  const usable = TARGETS.filter(([, target]) => target > long)
+  const [pick, setPick] = useState(usable[0]?.[0] ?? '')
+  const [credits, setCredits] = useState<number | null>(null)
+  useEffect(() => {
+    if (!asPanel) return
+    let live = true
+    void estimateCost({ feature: 'upscale_image' }).then((e) => { if (live && e?.price != null) setCredits(uiCredits(e.price)) }).catch(() => undefined)
+    return () => { live = false }
+  }, [asPanel])
   const go = (k: number) => {
     onDone()
     if (detail) actions.creativeUpscale(editor, shape, k, style, strength / 100, onError)
     else actions.upscale(editor, shape, k, onError)
   }
-  return (
-    <div className="ca-menu ca-upscale">
+  const modes = (
+    <>
       <div className="ca-panel__chips">
         <button type="button" className="ca-panel__chip" data-on={!detail || undefined} onClick={() => setDetail(false)}>{t('upscaleMenu.faithfulToOriginal')}</button>
         <button type="button" className="ca-panel__chip" data-on={detail || undefined} onClick={() => setDetail(true)}>{t('upscaleMenu.enhanceDetails')}</button>
@@ -97,6 +107,27 @@ export function UpscaleMenu({ editor, shape, w, h, onDone, onError }: { editor: 
           <label className="ca-panel__row"><span>{t('upscaleMenu.detailStrength')}</span><input type="range" min={10} max={70} value={strength} onChange={(e) => setStrength(Number(e.target.value))} /><span className="ca-panel__val">{strength}</span></label>
         </>
       )}
+    </>
+  )
+  if (asPanel) {
+    const target = TARGETS.find(([label]) => label === pick)?.[1]
+    const reset = () => { setDetail(false); setStyle(''); setStrength(30); setPick(usable[0]?.[0] ?? '') }
+    return (
+      <ToolPanel tool="upscale" title={t('common.upscale')} credits={credits} onReset={reset} onCancel={onDone} onUse={target ? () => go(target / long) : undefined}>
+        <div className="ca-menu ca-upscale">
+          {modes}
+          <label className="ca-panel__row ca-toolpanel__select"><span>{t('toolPanel.resolution')}</span>
+            <select value={pick} onChange={(e) => setPick(e.target.value)} disabled={!usable.length}>
+              {TARGETS.map(([label, tg]) => <option key={label} value={label} disabled={tg <= long}>{label} · {Math.round(w * tg / long)}×{Math.round(h * tg / long)}</option>)}
+            </select>
+          </label>
+        </div>
+      </ToolPanel>
+    )
+  }
+  return (
+    <div className="ca-menu ca-upscale">
+      {modes}
       {TARGETS.map(([label, target]) => {
         const k = target / long
         return (

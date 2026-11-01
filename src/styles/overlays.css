@@ -1197,3 +1197,5 @@
 .ca-menu__flyhost .ca-menu__sub { width: 100%; }
 .ca-menu.ca-menu__flyout { position: absolute; left: 100%; top: -4px; margin-left: 4px; z-index: 1; }
 .ca-menu__flyout .ca-menu__item { padding-left: 10px; }
+.ca-toolpanel__select { grid-template-columns: max-content 1fr; }
+.ca-toolpanel__select select { min-width: 0; height: 28px; border-radius: 6px; border: 1px solid var(--ca-border); background: var(--ca-field); color: var(--ca-text); font: inherit; }
