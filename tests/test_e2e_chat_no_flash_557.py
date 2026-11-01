@@ -61,6 +61,9 @@ async def test_mode_pill_and_ref_never_flash(app_url, lang, theme):  # noqa: F81
         loading = await pg.evaluate("window.__seen557.slice()")
         if SHOTS:
             Path(SHOTS).mkdir(parents=True, exist_ok=True)
+            # shots only: lift the boot loader overlay so the composer state underneath (asserted above) is visible
+            await pg.add_style_tag(content=".lm-loader{display:none!important}")
+            await pg.wait_for_timeout(300)
             await pg.screenshot(path=str(Path(SHOTS) / f"557-loading-{lang}-{theme}.png"))
         release.set()
         await pg.wait_for_function("document.querySelector('.ca-composer__mode')?.dataset.agent")
