@@ -147,7 +147,6 @@ body { background: var(--ca-float); }
   font: var(--ca-skillrow-title-weight) var(--ca-skillrow-title-size)/var(--ca-skillrow-title-line) var(--ca-font); color: var(--ca-text);
 }
 .ca-skillcard__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ca-skillcard__chev { flex: none; color: var(--ca-muted); }
 
 /* #537 / #496 / #540 — home 「实用工具」5 cards + 更多工具. Values = reference design live DevTools @1280 CSS px
    (540/measure on review-assets). Theme tokens only, light + dark. */

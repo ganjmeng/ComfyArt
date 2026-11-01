@@ -123,7 +123,7 @@ def test_i18n_tools() -> None:
 
 
 def test_featured_layout_column_math() -> None:
-    """#580: Skill 案例 masonry — fixed ≈299 column width, adaptive count (was Loomic 280–320)."""
+    """#580: 精选 masonry — fixed ≈299 column width, adaptive count (was Loomic 280–320)."""
     # smoke: file exports match expected signatures
     assert "export function featuredColumnCount(width: number, gap = FEATURED_GAP" in LAYOUT
     assert "export function packFeaturedColumns" in LAYOUT

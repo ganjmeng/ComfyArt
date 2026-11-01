@@ -27,7 +27,9 @@ def test_six_cover_cards_from_real_skills() -> None:
     body = _start_block()
     assert "skills.slice(0, HOME_SKILL_ROW).map" in body  # real skills, no demo data
     assert 'data-testid="home-skill-cover"' in body and "skillCover(s)" in body
-    assert "ca-skillcard__chev" in body and "›" in body
+    # design 5727385011: › only after the section title, not on each card
+    card = body.split("ca-skillcard__name", 1)[1].split("</button>", 1)[0]
+    assert "›" not in card and "ca-skillcard__chev" not in body
     # old row card pieces gone: 40×40 icon + 内置/我的 badge
     assert "ca-skillcard__icon" not in body and "home.builtIn" not in body and "ca-model__tag" not in body
     assert "onClick={() => trySkill(s)}" in body  # keeps #533 dialog behaviour
@@ -77,14 +79,22 @@ def test_no_reference_brand_in_src() -> None:
 SKILLS_TS = (ROOT / "src/skills.ts").read_text()
 
 
-def test_featured_cases_one_per_skill_no_repeat() -> None:
+def test_featured_cases_round_robin_both_types() -> None:
+    """#580 P0: every skill with real images; examples for example-type, preset images for template-type;
+    round-robin, no repeated image, no two adjacent tiles from the same skill."""
     helper = SKILLS_TS.split("export function skillFeaturedCases", 1)[1].split("\nexport ", 1)[0]
-    assert "seen.has(image)" in helper and "seen.add(image)" in helper
-    assert "break" in helper  # first usable preset only → every card is a different skill
+    assert "skill.examples" in helper and "preset.image" in helper
+    assert "seen.has(c.image)" in helper and "seen.add(c.image)" in helper
+    assert "for (let round = 0;" in helper
+    assert "out[out.length - 1]!.skill.id === c.skill.id" in helper
+    assert "break" not in helper  # no longer one-per-skill
+    assert "featured: 'editorial'" in SKILLS_TS  # P2: character leads with the editorial sheet
 
 
 def test_featured_heading_renamed() -> None:
-    assert ZH["home.featured"] == "Skill 案例" and EN["home.featured"] == "Skill cases"
+    # product: section title back to 精选 / Featured; 「Skill 案例」 stays as the per-card caption
+    assert ZH["home.featured"] == "精选" and EN["home.featured"] == "Featured"
+    assert ZH["home.skillCase"] == "Skill 案例" and EN["home.skillCase"] == "Skill case"
     assert "<h2>{t('home.featured')}</h2>" in HOME
 
 

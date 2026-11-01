@@ -25,6 +25,8 @@ export interface Skill {
   category?: SkillCategory; cover?: string; video?: string; presets?: SkillPreset[]; inputs?: SkillInput[]
   /** #541 「效果示例」 carousel images (commit-pinned). Unset / empty → the section is not rendered. */
   examples?: string[]
+  /** #580 P2 — preset id shown first for this skill in home 「Skill 案例」. */
+  featured?: string
 }
 export interface SkillVersion { time: number; skill: Skill }
 
@@ -115,7 +117,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     category: 'ads', cover: cover('banner'), video: video('banner'), examples: ex541('banner', [1]),
     inputs: EFFECT_INPUTS },
   { id: 'character', name: t('skills.characterSheet'), instructions: 'Create a character sheet: full body front, side and back views on white background in one 16:9 image, plus a close-up expression sheet. Keep outfit and colors identical across views.',
-    cover: cover('character'), video: video('character'), presets: [P('turnaround', '角色转身板', 'Character Turnaround Sheet', 'Template: character turnaround sheet, full-body front, side and back views evenly spaced in one row on a white background.', wash569('character', 0)), P('expression', '表情动作板', 'Expression & Pose Sheet', 'Template: expression and pose sheet, a row of head-shot expressions above full-body poses (standing, walking, sitting).', wash569('character', 1)), P('modeling', '建模细节参考板', 'Modeling Detail Reference Sheet', 'Template: modeling detail reference sheet, full-body angles on the left and close-up cells of face, eyes, lips, ears, hair, hands and shoes on the right.', wash569('character', 2)), P('outfit', '服装/形态变体板', 'Outfit / Form Variation Sheet', 'Template: outfit variation sheet, the same character in three different outfits shown full body side by side.', wash569('character', 3)), P('prop', '道具互动板', 'Prop Interaction Sheet', 'Template: prop interaction sheet, full-body poses holding a prop on top and close-up cells of hands and prop below.', wash569('character', 4)), P('basic', '基础角色板', 'Basic Character Sheet', 'Template: basic character sheet, full-body three views on the left and four head-shot expressions on the right.', wash569('character', 5)), P('technical', '完整技术角色板', 'Complete Technical Character Sheet', 'Template: complete technical character sheet, multi-angle full body, an expression grid, outfit items, color swatches and detail close-ups.', wash569('character', 6)), P('editorial', '时装大片角色板', 'Editorial Fashion Sheet', 'Template: editorial fashion sheet, the reference character as the lead in a luxury-brand fashion campaign style; full-body standing pose, half-body and face close-ups of the same person, keeping facial features, hairstyle and body shape consistent, soft studio lighting, clean light background, no text or logos.', wash569('character', 7))],
+    cover: cover('character'), video: video('character'), featured: 'editorial', presets: [P('turnaround', '角色转身板', 'Character Turnaround Sheet', 'Template: character turnaround sheet, full-body front, side and back views evenly spaced in one row on a white background.', wash569('character', 0)), P('expression', '表情动作板', 'Expression & Pose Sheet', 'Template: expression and pose sheet, a row of head-shot expressions above full-body poses (standing, walking, sitting).', wash569('character', 1)), P('modeling', '建模细节参考板', 'Modeling Detail Reference Sheet', 'Template: modeling detail reference sheet, full-body angles on the left and close-up cells of face, eyes, lips, ears, hair, hands and shoes on the right.', wash569('character', 2)), P('outfit', '服装/形态变体板', 'Outfit / Form Variation Sheet', 'Template: outfit variation sheet, the same character in three different outfits shown full body side by side.', wash569('character', 3)), P('prop', '道具互动板', 'Prop Interaction Sheet', 'Template: prop interaction sheet, full-body poses holding a prop on top and close-up cells of hands and prop below.', wash569('character', 4)), P('basic', '基础角色板', 'Basic Character Sheet', 'Template: basic character sheet, full-body three views on the left and four head-shot expressions on the right.', wash569('character', 5)), P('technical', '完整技术角色板', 'Complete Technical Character Sheet', 'Template: complete technical character sheet, multi-angle full body, an expression grid, outfit items, color swatches and detail close-ups.', wash569('character', 6)), P('editorial', '时装大片角色板', 'Editorial Fashion Sheet', 'Template: editorial fashion sheet, the reference character as the lead in a luxury-brand fashion campaign style; full-body standing pose, half-body and face close-ups of the same person, keeping facial features, hairstyle and body shape consistent, soft studio lighting, clean light background, no text or logos.', wash569('character', 7))],
     inputs: [I('characterRef', ['角色参考图片', 'Character reference images'], 'image'), I('characterInfo', ['角色资料', 'Character details'], 'text', false, ['描述角色外观，以及这次需要保持一致的地方', 'Describe the look and what must stay consistent this time']), VISUAL] },
   { id: 'product', name: t('skills.eCommerceProductImages'), instructions: 'Create e-commerce product imagery: a clean white-background hero shot (1:1), a lifestyle scene, and a detail close-up. Keep the product identical. When the user gives a product image, pass its shape id in refs (ref_modes content) on every generate_image call; describing it in the prompt does not send the image.',
     category: 'ecommerce', cover: cover('product'), video: video('product'), presets: [P('white', '白底主图', 'White background hero', 'Focus on the white-background hero shot: pure white seamless background, soft shadow, product centered.', washProduct541('white')), P('lifestyle', '生活场景', 'Lifestyle scene', 'Focus on the lifestyle scene: product in use in a realistic home setting, natural light.', washProduct541('lifestyle')), P('detail', '细节特写', 'Detail close-up', 'Focus on the detail close-up: macro view of material and craftsmanship, shallow depth of field.', washProduct541('detail')), P('electronics', '数码电子', 'Electronics', 'Focus on the electronics hero: earbuds and their charging case on a clean studio backdrop, crisp reflections, precise edges.', washProduct541('electronics')), P('food', '美食', 'Food', 'Focus on the food hero: appetizing close shot, fresh ingredients as props, warm natural light, rich texture.', washProduct541('food')), P('beauty', '美妆个护', 'Beauty', 'Focus on the beauty hero: skincare or cosmetic product on soft pastel surfaces, gentle diffused light, clean premium mood.', washProduct541('beauty'))],
@@ -497,18 +499,34 @@ export function presetImage(skill: Skill, preset: SkillPreset): string | null {
   return preset.image ?? skillCover(skill)?.src ?? null
 }
 
-/** #494-3 — home 「精选」 tiles: one card per preset with a real image (data-driven; no demo rows). */
-export function skillFeaturedCases(skills: Skill[]): { skill: Skill; preset: SkillPreset; image: string }[] {
-  // #580: one case per skill (every card a different skill) and no repeated image
-  const out: { skill: Skill; preset: SkillPreset; image: string }[] = []
+/** #580 — home 「Skill 案例」 tiles, data-driven from the skill list (no demo rows).
+ *  Example-type skills (`examples`) contribute their 「效果示例」 images; template-type skills their presets' own images.
+ *  `featured` (preset id) moves that template to the front of the skill's queue.
+ *  Round-robin: one image per skill per round, in list order; no repeated image, and never two adjacent tiles
+ *  from the same skill (a tile that would be is dropped, which only happens once a single skill is left). */
+export interface SkillFeaturedCase { skill: Skill; preset: SkillPreset | null; image: string; key: string }
+export function skillFeaturedCases(skills: Skill[]): SkillFeaturedCase[] {
+  const queues = skills.map((skill) => {
+    const q: SkillFeaturedCase[] = []
+    if (skill.examples?.length) {
+      skill.examples.forEach((image, i) => { if (image) q.push({ skill, preset: null, image, key: `${skill.id}:ex${i}` }) })
+    } else {
+      const presets = [...(skill.presets ?? [])]
+      const first = presets.findIndex((p) => p.id === skill.featured)
+      if (first > 0) presets.unshift(...presets.splice(first, 1))
+      for (const preset of presets) if (preset.image) q.push({ skill, preset, image: preset.image, key: `${skill.id}:${preset.id}` })
+    }
+    return q
+  }).filter((q) => q.length)
+  const out: SkillFeaturedCase[] = []
   const seen = new Set<string>()
-  for (const skill of skills) {
-    for (const preset of skill.presets ?? []) {
-      const image = presetImage(skill, preset)
-      if (!image || seen.has(image)) continue
-      seen.add(image)
-      out.push({ skill, preset, image })
-      break
+  for (let round = 0; queues.some((q) => q.length > round); round++) {
+    for (const q of queues) {
+      const c = q[round]
+      if (!c || seen.has(c.image)) continue
+      if (out.length && out[out.length - 1]!.skill.id === c.skill.id) continue
+      seen.add(c.image)
+      out.push(c)
     }
   }
   return out

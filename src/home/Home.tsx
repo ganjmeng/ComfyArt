@@ -210,12 +210,12 @@ export function Home() {
   const featured = skillFeaturedCases(skills)
   // #537: masonry waterfall via Loomic column math; cards from our skill presets only (no third-party feed data)
   const featuredItems = useMemo(
-    () => featured.map(({ skill: s, preset: p, image }) => ({
-      id: `${s.id}:${p.id}`,
+    () => featured.map(({ skill: s, preset: p, image, key }) => ({
+      id: key,
       skill: s,
       preset: p,
       image,
-      aspect: featuredAspect(`${s.id}:${p.id}`),
+      aspect: featuredAspect(key),
     })),
     [featured],
   )
@@ -467,7 +467,7 @@ export function Home() {
               <button key={s.id} type="button" className="ca-skillcard" data-testid="home-skill-card" data-skill={s.id}
                 onClick={() => trySkill(s)}>
                 <span className="ca-skillcard__cover" data-testid="home-skill-cover">{src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
-                <span className="ca-skillcard__name"><span className="ca-skillcard__label">{s.name}</span><span className="ca-skillcard__chev" aria-hidden>›</span></span>
+                <span className="ca-skillcard__name"><span className="ca-skillcard__label">{s.name}</span></span>
               </button>
             )
           })}
@@ -489,8 +489,8 @@ export function Home() {
                     className="ca-featured__card"
                     data-testid="home-featured-card"
                     data-skill={s.id}
-                    data-preset={p.id}
-                    onClick={() => trySkill(s, p.id)}
+                    data-preset={p?.id}
+                    onClick={() => trySkill(s, p?.id ?? null)}
                   >
                     <span className="ca-featured__cover" style={{ aspectRatio: aspect }}>
                       <img src={image} alt={s.name} loading="lazy" />

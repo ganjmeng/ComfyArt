@@ -29,8 +29,9 @@ async def _measure(app_url, width, *, collapsed=False):
               const covers = [...document.querySelectorAll('[data-testid="home-skill-cover"]')].map(b);
               const cols = [...document.querySelectorAll('[data-testid="home-featured-col"]')].filter(c => c.children.length).map(b);
               const allCols = [...document.querySelectorAll('[data-testid="home-featured-col"]')].map(b);
-              const names = [...document.querySelectorAll('[data-testid="home-featured-card"] .ca-featured__title')].map(e => e.textContent);
-              return {grid: b(grid), scroll: grid.scrollWidth - grid.clientWidth, cards, covers, cols: allCols, names};
+              const tiles = [...document.querySelectorAll('[data-testid="home-featured-card"]')]
+                .map(e => ({skill: e.dataset.skill, preset: e.dataset.preset || null, img: e.querySelector('img').getAttribute('src')}));
+              return {grid: b(grid), scroll: grid.scrollWidth - grid.clientWidth, cards, covers, cols: allCols, tiles};
             }"""
         )
         await browser.close()
@@ -52,10 +53,44 @@ async def test_cut1_1280_expanded(app_url):  # noqa: F811
         assert abs(c["w"] - 299) <= 1.5, c
     for a, b in zip(m["cols"], m["cols"][1:]):
         assert abs(b["x"] - (a["x"] + a["w"]) - 16) <= 0.6
-    assert len(m["names"]) == len(set(m["names"])) and m["names"]
+    _check_tiles(m["tiles"])
 
 
 async def test_cut1_1920_five_columns(app_url):  # noqa: F811
     m = await _measure(app_url, 1920)
     assert len(m["cards"]) == 6 and m["scroll"] <= 0
     assert len(m["cols"]) == 5
+    _check_tiles(m["tiles"])
+
+
+# built-in skills with real images in src/skills.ts (example-type: 效果示例; template-type: preset images)
+EXAMPLE_SKILLS = {"poster", "social", "thumbnail", "banner", "interior"}
+TEMPLATE_SKILLS = {"brand", "packaging", "character", "product", "motion"}
+
+
+def _check_tiles(tiles):
+    skills = [t["skill"] for t in tiles]
+    assert set(skills) == EXAMPLE_SKILLS | TEMPLATE_SKILLS, set(skills)
+    assert any(t["preset"] is None and t["skill"] in EXAMPLE_SKILLS for t in tiles)
+    assert any(t["preset"] and t["skill"] in TEMPLATE_SKILLS for t in tiles)
+    assert all(a != b for a, b in zip(skills, skills[1:])), skills  # data order: no adjacent duplicates
+    assert len({t["img"] for t in tiles}) == len(tiles)
+    assert len(tiles) > len(EXAMPLE_SKILLS | TEMPLATE_SKILLS)  # second round follows
+    assert skills[: len(set(skills))] and len(set(skills[:10])) == 10  # first round: one per skill
+    first_char = next(t for t in tiles if t["skill"] == "character")
+    assert first_char["preset"] == "editorial"
+
+
+async def test_cut1_example_tile_opens_dialog(app_url):  # noqa: F811
+    async with pw.async_playwright() as p:
+        browser = await p.chromium.launch()
+        pg = await (await browser.new_context(viewport={"width": 1280, "height": 800})).new_page()
+        await pg.goto(app_url)
+        card = pg.locator('[data-testid="home-featured-card"]:not([data-preset])').first
+        await card.wait_for()
+        skill = await card.get_attribute("data-skill")
+        await card.click()
+        dlg = pg.get_by_test_id("skill-run-dialog")
+        await dlg.wait_for()
+        assert await dlg.get_attribute("data-skill") == skill
+        await browser.close()
