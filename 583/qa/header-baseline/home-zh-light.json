@@ -1,0 +1,122 @@
+{
+ "title": {
+  "text": "你想设计什么？",
+  "rect": {
+   "x": 296,
+   "y": 96,
+   "w": 928,
+   "h": 40
+  },
+  "style": {
+   "font-size": "32px",
+   "line-height": "40px",
+   "font-weight": "500",
+   "letter-spacing": "-0.64px",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "0px 0px 28px"
+  }
+ },
+ "box": {
+  "text": "Loomi",
+  "rect": {
+   "x": 380,
+   "y": 164,
+   "w": 760,
+   "h": 128
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "0px 84px"
+  }
+ },
+ "tools": {
+  "text": "实用工具更多工具去背景视频延长放大精准编辑样机",
+  "rect": {
+   "x": 296,
+   "y": 406,
+   "w": 928,
+   "h": 169.06
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "startSkill": {
+  "text": "用 Skill 快速开始›查看全部海报设计社交媒体套图品牌识别包装设计YouTu",
+  "rect": {
+   "x": 296,
+   "y": 639.06,
+   "w": 928,
+   "h": 177
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "startHead": {
+  "text": "用 Skill 快速开始›",
+  "rect": {
+   "x": 296,
+   "y": 639.06,
+   "w": 130.31,
+   "h": 24
+  },
+  "style": {
+   "font-size": "16px",
+   "line-height": "24px",
+   "font-weight": "500",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "0px"
+  }
+ },
+ "featured": {
+  "text": "精选开始制作海报设计Skill 案例开始制作横幅设计Skill 案例开始制作室内",
+  "rect": {
+   "x": 296,
+   "y": 880.06,
+   "w": 928,
+   "h": 5995.86
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "featuredH": {
+  "text": "精选",
+  "rect": {
+   "x": 296,
+   "y": 880.06,
+   "w": 32,
+   "h": 24
+  },
+  "style": {
+   "font-size": "16px",
+   "line-height": "24px",
+   "font-weight": "500",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "0px"
+  }
+ },
+ "tabs": null
+}

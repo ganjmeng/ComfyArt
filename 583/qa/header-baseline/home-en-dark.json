@@ -1,0 +1,122 @@
+{
+ "title": {
+  "text": "What do you want to design?",
+  "rect": {
+   "x": 296,
+   "y": 96,
+   "w": 928,
+   "h": 40
+  },
+  "style": {
+   "font-size": "32px",
+   "line-height": "40px",
+   "font-weight": "500",
+   "letter-spacing": "-0.64px",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "0px 0px 28px"
+  }
+ },
+ "box": {
+  "text": "Loomi",
+  "rect": {
+   "x": 380,
+   "y": 164,
+   "w": 760,
+   "h": 128
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "0px 84px"
+  }
+ },
+ "tools": {
+  "text": "ToolsMore toolsRemove BackgroundExtend V",
+  "rect": {
+   "x": 296,
+   "y": 448,
+   "w": 928,
+   "h": 169.06
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "startSkill": {
+  "text": "Start with a Skill›View allPoster Design",
+  "rect": {
+   "x": 296,
+   "y": 681.06,
+   "w": 928,
+   "h": 177
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "startHead": {
+  "text": "Start with a Skill›",
+  "rect": {
+   "x": 296,
+   "y": 681.06,
+   "w": 132.91,
+   "h": 24
+  },
+  "style": {
+   "font-size": "16px",
+   "line-height": "24px",
+   "font-weight": "500",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "0px"
+  }
+ },
+ "featured": {
+  "text": "FeaturedStart creatingPoster DesignSkill",
+  "rect": {
+   "x": 296,
+   "y": 922.06,
+   "w": 928,
+   "h": 5995.86
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "featuredH": {
+  "text": "Featured",
+  "rect": {
+   "x": 296,
+   "y": 922.06,
+   "w": 67.73,
+   "h": 24
+  },
+  "style": {
+   "font-size": "16px",
+   "line-height": "24px",
+   "font-weight": "500",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "0px"
+  }
+ },
+ "tabs": null
+}
