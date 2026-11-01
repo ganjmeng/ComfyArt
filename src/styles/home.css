@@ -1,3 +1,20 @@
+/* #580 cut 2 — ONE shared tab-row + chip token set (home feed tabs/chips now; Skills page header via #583).
+ * Values = design measured table (#583 issuecomment-6557502265, review-assets 8296d114): home tabs 14px gap 24, selected 600,
+ * no underline; chips h30, padding 5px 12px, gap 8, selected rgba(0,0,0,.08), unselected text-only. Both stick on scroll. */
+/* Shared masonry column width (design v2: 298.7 @1280); #583's Skills list reuses it. */
+:root { --ca-feed-col-w: 298.7px; --ca-feed-special-bg: rgb(245, 245, 245); --ca-feed-special-collage-h: 122px; --ca-feed-special-pad: 6px;
+  --ca-feed-tag-bg: rgba(0, 0, 0, .04); --ca-feed-tag-fg: rgba(0, 0, 0, .55); --ca-feed-tag-font: 400 11px/16px var(--ca-font); }
+:root {
+  --ca-tabs-gap: 24px; --ca-tabs-py: 8px; --ca-tabs-font: 400 14px/22px var(--ca-font); --ca-tabs-on-weight: 600; --ca-tabs-top: 0px;
+  --ca-tabs-fg: var(--ca-muted); --ca-tabs-on-fg: var(--ca-text); --ca-tabs-indicator: transparent; --ca-tabs-indicator-h: 0px;
+  /* #583 Skills header tabs (defined here, consumed by #583's PR): 13px, gap 20, 1px underline = text width */
+  --ca-skilltabs-gap: 20px; --ca-skilltabs-font: 400 13px/20px var(--ca-font); --ca-skilltabs-on-weight: 600;
+  --ca-skilltabs-fg: var(--ca-muted); --ca-skilltabs-on-fg: var(--ca-text); --ca-skilltabs-indicator: var(--ca-text); --ca-skilltabs-indicator-h: 1px;
+  --ca-tabs-rule: var(--ca-border-w) solid var(--ca-border);
+  --ca-chip-gap: 8px; --ca-chip-h: 30px; --ca-chip-py: 5px; --ca-chip-px: 12px; --ca-chip-radius: 999px; --ca-chip-font: 400 13px/20px var(--ca-font);
+  --ca-chip-bg: transparent; --ca-chip-fg: var(--ca-muted); --ca-chip-border: var(--ca-border-w) solid transparent; --ca-chip-hover-bg: var(--ca-hover);
+  --ca-chip-on-bg: rgba(0, 0, 0, .08); --ca-chip-on-fg: var(--ca-text); --ca-chip-on-border: transparent;
+}
 body { background: var(--ca-float); }
 .ca-home { position: fixed; inset: 0; display: flex; background: var(--ca-float); color: var(--ca-text); font: 400 14px/22px var(--ca-font); }
 
@@ -140,7 +157,7 @@ body { background: var(--ca-float); }
   position: relative; display: flex; align-items: center; justify-content: center; width: 100%;
   aspect-ratio: var(--ca-skillrow-cover-ratio); border-radius: var(--ca-skillrow-radius); background: var(--ca-field); overflow: hidden;
 }
-.ca-skillcard__cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 300ms ease; }
+.ca-skillcard__cover img, .ca-skillcard__cover video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 300ms ease; }
 .ca-skillcard:hover .ca-skillcard__cover img, .ca-skillcard:focus-visible .ca-skillcard__cover img { transform: scale(1.05); }
 .ca-skillcard__name {
   display: flex; align-items: center; gap: 2px; min-width: 0; padding: 0 4px;
@@ -199,7 +216,7 @@ body { background: var(--ca-float); }
 /* #494-3 / #533 / #537 — home 「精选」waterfall (Loomic column pack; our skill preset covers only) */
 .ca-landing__featured {
   /* skills-cut1: Skill 案例 masonry — column ≈299 + gap 16 (design @1280); count adapts (3 @1280, 5 @1920). */
-  --ca-featured-col-w: 299px;
+  --ca-featured-col-w: var(--ca-feed-col-w);
   --ca-featured-gap: 16px;
 }
 .ca-featured--waterfall {
@@ -213,8 +230,9 @@ body { background: var(--ca-float); }
   color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: 12px; overflow: hidden;
 }
 .ca-featured__cover {
+  /* #580 cut 2: full-bleed — height follows the image's natural ratio, no base plate behind it */
   position: relative; display: block; width: 100%; max-height: 680px; overflow: hidden;
-  border-radius: 12px; background: var(--ca-field);
+  border-radius: var(--ca-featured-radius, 12px); background: none;
 }
 .ca-featured__cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 /* #580 item 4 / 6: no dimming on hover; small kind icon bottom-left */
@@ -238,7 +256,23 @@ body { background: var(--ca-float); }
   font: 500 14px/22px var(--ca-font); color: var(--ca-text);
 }
 .ca-featured__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ca-featured__tag { flex: none; font: 400 12px/18px var(--ca-font); color: var(--ca-muted); }  /* #580 item 5 */
+/* #580 cut 2 — the two embedded special cards (neutral, token-based until design measures the reference) */
+.ca-featured__special { cursor: default; }
+.ca-featured__special-body {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; width: 100%; max-height: 680px;
+  border-radius: var(--ca-featured-radius, 12px); background: var(--ca-feed-special-bg); color: #111; box-sizing: border-box; padding: var(--ca-feed-special-pad); text-align: center;
+}
+.ca-featured__special-collage { display: block; width: 100%; height: var(--ca-feed-special-collage-h); border-radius: calc(var(--ca-featured-radius, 12px) - 4px); background: rgba(0, 0, 0, .04); margin-bottom: 8px; }
+.ca-featured__special-collage { overflow: hidden; }
+.ca-featured__special-collage img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ca-featured__special-text { font: 400 12px/18px var(--ca-font); color: rgba(0, 0, 0, .55); padding: 0 12px; }
+.ca-featured__special-input { width: calc(100% - 24px); height: 32px; padding: 0 10px; box-sizing: border-box; border: 1px solid rgba(0, 0, 0, .1); border-radius: 8px; background: #fff; font: 400 12px/18px var(--ca-font); }
+.ca-featured__special-title { font: 500 14px/22px var(--ca-font); }
+.ca-featured__special-btn {
+  padding: 6px 14px; border: none; border-radius: 999px; background: #111;
+  color: #fff; font: 500 12px/16px var(--ca-font); cursor: pointer;
+}
+.ca-featured__tag { flex: none; padding: 0 4px; border-radius: 4px; font: var(--ca-feed-tag-font); color: var(--ca-feed-tag-fg); background: var(--ca-feed-tag-bg); }  /* #580 item 5 */
 
 .ca-projects { max-width: 1600px; margin: 0 auto; padding: 32px 48px 96px; box-sizing: border-box; }
 .ca-projects__head { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
@@ -605,14 +639,14 @@ body { background: var(--ca-float); }
   content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px;
   border-radius: 1px; background: var(--ca-strong);
 }
-.ca-skills__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.ca-skills__chips { display: flex; flex-wrap: wrap; gap: var(--ca-chip-gap); margin-bottom: 20px; }
 .ca-skills__chip {
-  height: 32px; padding: 0 14px; border: var(--ca-border-w) solid var(--ca-border);
-  border-radius: 999px; background: transparent; color: var(--ca-text);
-  font: 400 13px/20px var(--ca-font); cursor: pointer;
+  height: var(--ca-chip-h); padding: var(--ca-chip-py) var(--ca-chip-px); box-sizing: border-box; border: var(--ca-chip-border);
+  border-radius: var(--ca-chip-radius); background: var(--ca-chip-bg); color: var(--ca-chip-fg);
+  font: var(--ca-chip-font); cursor: pointer;
 }
-.ca-skills__chip:hover { background: var(--ca-hover); }
-.ca-skills__chip[data-on] { background: var(--ca-strong); color: var(--ca-float); border-color: var(--ca-strong); }
+.ca-skills__chip:hover { background: var(--ca-chip-hover-bg); }
+.ca-skills__chip[data-on] { background: var(--ca-chip-on-bg); color: var(--ca-chip-on-fg); border-color: var(--ca-chip-on-border); }
 .ca-skills__empty { color: var(--ca-muted); padding: 48px 0; text-align: center; }
 .ca-skills__fallback { margin-top: 24px; }
 
@@ -969,3 +1003,30 @@ body { background: var(--ca-float); }
 .ca-kit[data-embedded] .ca-kit__urlrow .ca-kit__err { flex-basis: 100%; margin-top: 0; }
 .ca-assets-page .ca-lib__card .ca-lib__more { opacity: 0; }
 .ca-assets-page .ca-lib__card:hover .ca-lib__more, .ca-assets-page .ca-lib__card .ca-lib__more[data-open] { opacity: 1; }
+
+/* #580 cut 2 — home feed tabs + sticky category chips + floating composer (tokens: swap in design v2 values) */
+.ca-landing {
+  --ca-hometabs-mt: 40px; --ca-homechips-top: 38px; /* = sticky tab row height (8+20+8+2) */ --ca-homechips-pad: 12px; --ca-homebox-float-bottom: 24px;
+}
+.ca-landing__boxslot { position: relative; }
+.ca-landing__box[data-floating] {
+  position: fixed; z-index: 30; bottom: var(--ca-homebox-float-bottom); left: 50%; transform: translateX(-50%);
+  width: min(760px, calc(100% - 32px)); margin: 0;
+}
+.ca-hometabs { position: sticky; top: var(--ca-tabs-top); z-index: 6; background: var(--ca-float); display: flex; gap: var(--ca-tabs-gap); margin: var(--ca-hometabs-mt) 0 0; border-bottom: var(--ca-tabs-rule); }
+.ca-hometabs__tab {
+  padding: var(--ca-tabs-py) 0; border: none; border-bottom: var(--ca-tabs-indicator-h) solid transparent; margin-bottom: calc(-1 * var(--ca-border-w));
+  background: none; color: var(--ca-tabs-fg); font: var(--ca-tabs-font); cursor: pointer;
+}
+.ca-hometabs__tab[data-active] { font-weight: var(--ca-tabs-on-weight); color: var(--ca-tabs-on-fg); border-bottom-color: var(--ca-tabs-indicator); }
+.ca-homechips { position: sticky; top: var(--ca-homechips-top); z-index: 5; padding: var(--ca-homechips-pad) 0; background: var(--ca-float); }
+.ca-hometab-soon {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 320px; color: var(--ca-muted);
+}
+.ca-hometab-soon > .ca-icon { width: 32px; height: 32px; }
+.ca-hometab-soon__title { font: 500 16px/24px var(--ca-font); color: var(--ca-text); }
+.ca-hometab-soon__text { font: 400 13px/20px var(--ca-font); }
+.ca-hometab-soon__collage { width: 226px; height: 122px; }
+.ca-hometab-soon__btn { margin-top: 8px; padding: 8px 18px; border: none; border-radius: 999px; background: var(--ca-strong); color: var(--ca-float); font: 500 13px/20px var(--ca-font); cursor: pointer; }
+.ca-hometab-soon__btn[data-variant="outline"] { background: transparent; color: var(--ca-text); border: var(--ca-border-w) solid var(--ca-border); }
+.ca-hometab-assets { margin-top: 16px; }

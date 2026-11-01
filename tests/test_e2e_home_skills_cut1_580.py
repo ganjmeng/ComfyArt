@@ -77,14 +77,14 @@ TEMPLATE_SKILLS = {"brand", "packaging", "character", "product", "motion"}
 def _check_tiles(tiles):
     skills = [t["skill"] for t in tiles]
     assert set(skills) == EXAMPLE_SKILLS | TEMPLATE_SKILLS, set(skills)
-    assert any(t["preset"] is None and t["skill"] in EXAMPLE_SKILLS for t in tiles)
-    assert any(t["preset"] and t["skill"] in TEMPLATE_SKILLS for t in tiles)
+    # #588: every skill now ships its own washed featured[] set (commit-pinned), so tiles are case images, not presets
+    assert all("/580/featured-v1/" in t["img"] for t in tiles), [t["img"] for t in tiles]
     assert all(a != b for a, b in zip(skills, skills[1:])), skills  # data order: no adjacent duplicates
     assert len({t["img"] for t in tiles}) == len(tiles)
     assert len(tiles) > len(EXAMPLE_SKILLS | TEMPLATE_SKILLS)  # second round follows
     assert skills[: len(set(skills))] and len(set(skills[:10])) == 10  # first round: one per skill
     first_char = next(t for t in tiles if t["skill"] == "character")
-    assert first_char["preset"] == "editorial"
+    assert "/580/featured-v1/character/01.webp" in first_char["img"]  # #588 featured[] supersedes featuredPreset
 
 
 def _check_columns(m):

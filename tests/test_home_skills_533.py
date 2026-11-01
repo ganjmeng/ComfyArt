@@ -42,7 +42,7 @@ def _plus_skill_row_click() -> str:
 def test_home_imports_same_dialog_as_skills() -> None:
     assert "import { SkillRunDialog } from '../ui/SkillRunDialog'" in HOME
     assert "import { SkillRunDialog } from '../ui/SkillRunDialog'" in PAGE
-    assert "hasSkillDialog" in HOME and "skillFeaturedCases" in HOME and "skillCover" in HOME
+    assert "hasSkillDialog" in HOME and "skillFeaturedCases" in HOME and "skillQuickStartCover" in HOME
 
 
 def test_quick_start_opens_dialog_not_direct_project() -> None:
@@ -62,7 +62,7 @@ def test_featured_opens_dialog_with_preset() -> None:
     assert 'data-testid="home-featured-card"' in HOME
     assert "data-preset={p?.id}" in HOME
     assert "home.skillCase" in HOME and "skillRun.start" in HOME
-    assert "skillFeaturedCases(skills)" in HOME
+    assert "skillFeaturedCases(shown)" in HOME
 
 
 def test_plus_skills_still_chip_only() -> None:

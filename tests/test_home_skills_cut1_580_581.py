@@ -25,8 +25,8 @@ def _rule(sel: str) -> str:
 def test_six_cover_cards_from_real_skills() -> None:
     assert "export const HOME_SKILL_ROW = 6" in LAYOUT
     body = _start_block()
-    assert "skills.slice(0, HOME_SKILL_ROW).map" in body  # real skills, no demo data
-    assert 'data-testid="home-skill-cover"' in body and "skillCover(s)" in body
+    assert "shown.slice(0, HOME_SKILL_ROW).map" in body  # real skills (cut 2: chip-filtered), no demo data
+    assert 'data-testid="home-skill-cover"' in body and "skillQuickStartCover(s)" in body  # cut 2: own quick-start slot, falls back to skillCover
     # design 5727385011: › only after the section title, not on each card
     card = body.split("ca-skillcard__name", 1)[1].split("</button>", 1)[0]
     assert "›" not in card and "ca-skillcard__chev" not in body
@@ -88,7 +88,7 @@ def test_featured_cases_round_robin_both_types() -> None:
     assert "for (let round = 0;" in helper
     assert "out[out.length - 1]!.skill.id === c.skill.id" in helper
     assert "break" not in helper  # no longer one-per-skill
-    assert "featured: 'editorial'" in SKILLS_TS  # P2: character leads with the editorial sheet
+    assert "featuredPreset: 'editorial'" in SKILLS_TS  # P2: character leads with the editorial sheet
 
 
 def test_featured_heading_renamed() -> None:
@@ -106,7 +106,7 @@ def test_featured_card_icon_tag_hover() -> None:
     assert "home.skillCase" not in badge
     # item 5: grey 「Skill 案例」 after the title
     assert 'className="ca-featured__tag">{t(\'home.skillCase\')}' in block
-    assert "color: var(--ca-muted)" in CSS.split(".ca-featured__tag {", 1)[1].split("}", 1)[0]
+    assert "color: var(--ca-feed-tag-fg)" in CSS.split(".ca-featured__tag {", 1)[1].split("}", 1)[0]
     # item 6: no dim overlay on hover; white 开始制作 top-right kept
     assert ".ca-featured__cover::after" not in CSS
     assert "skillRun.start" in block and "onClick={() => trySkill(s, p?.id ?? null)}" in block
@@ -118,7 +118,7 @@ def test_row_cover_ratio_4x3() -> None:
 
 def test_featured_masonry_metrics_are_css_vars():
     css = (ROOT / "src/styles/home.css").read_text(encoding="utf-8")
-    for v in ("--ca-featured-col-w: 299px", "--ca-featured-gap: 16px", "gap: var(--ca-featured-gap"):
+    for v in ("--ca-featured-col-w: var(--ca-feed-col-w)", "--ca-feed-col-w: 298.7px", "--ca-featured-gap: 16px", "gap: var(--ca-featured-gap"):
         assert v in css
     ts = (ROOT / "src/home/featuredLayout.ts").read_text(encoding="utf-8")
     assert "readFeaturedMetrics" in ts and "--ca-featured-col-w" in ts and "FEATURED_MAX_COLUMNS" not in ts

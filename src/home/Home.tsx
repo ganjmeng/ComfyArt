@@ -6,10 +6,12 @@ import { thumbUrl, uploadImage, viewUrl } from '../comfy'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
 import { newProject, openView, startProject } from '../projects'
-import { HOME_SKILL_ROW, FEATURED_DEFAULTS, featuredAspect, packFeaturedColumns, readFeaturedMetrics } from './featuredLayout'
+import { HOME_SKILL_ROW, FEATURED_DEFAULTS, FEED_SPECIAL_ASPECT, HOME_TABS, HOME_TAB_PLACEHOLDER, HOME_ASSET_CHIPS, featuredAspect, packFeaturedColumns, readFeaturedMetrics, withSpecialCards, type FeedSpecialId, type HomeTab, type HomeAssetChip } from './featuredLayout'
+import { Assets } from './Assets'
+import { CHIP_LABEL } from './Skills'
 import { toolCover } from './toolCovers'
 import { showMemoryToast } from '../memory'
-import { hasSkillDialog, importLanding, loadSkills, skillCover, skillFeaturedCases, type Skill } from '../skills'
+import { hasSkillDialog, importLanding, loadSkills, matchesSkillChip, skillChips, skillFeaturedCases, skillQuickStartCover, FEED_SPECIAL_COLLAGE, type Skill, type SkillChipId } from '../skills'
 import { SkillChip, chipBackspace } from '../ui/SkillChip'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
 import { SkillRunDialog } from '../ui/SkillRunDialog'
@@ -111,6 +113,13 @@ export function Home() {
   const [featuredWidth, setFeaturedWidth] = useState(1200)  // #537: masonry columns
   const featuredRoot = useRef<HTMLElement>(null)
   const [featuredMetrics, setFeaturedMetrics] = useState(FEATURED_DEFAULTS)
+  // #580 cut 2: feed tabs + category chips (from skills.ts categories) + natural image ratios + floating input
+  const [tab, setTab] = useState<HomeTab>('explore')
+  const [chip, setChip] = useState<SkillChipId>('forYou')
+  const [assetChip, setAssetChip] = useState<HomeAssetChip>('brandKit')
+  const [ratios, setRatios] = useState<Record<string, number>>({})
+  const [floating, setFloating] = useState(false)
+  const boxSlot = useRef<HTMLDivElement>(null)
   const toolFile = useRef<HTMLInputElement>(null)
   const pendingTool = useRef<string>('')
   const current = useCurrentAgent()  // #278: same agent the canvas mode button shows
@@ -207,22 +216,43 @@ export function Home() {
   const trySkill = (s: Skill, preset: string | null = null) => (
     hasSkillDialog(s) ? setRunning({ id: s.id, preset }) : newProject({ skill: s.id })
   )
-  const featured = skillFeaturedCases(skills)
+  const chips = useMemo(() => skillChips(skills), [skills])
+  const shown = useMemo(() => skills.filter((s) => matchesSkillChip(s, chip)), [skills, chip])
+  const featured = useMemo(() => skillFeaturedCases(shown), [shown])
   // #537: masonry waterfall via Loomic column math; cards from our skill presets only (no third-party feed data)
+  // #580 cut 2: card height = the image's natural ratio once loaded (estimate before); two special cards embedded.
   const featuredItems = useMemo(
     () => featured.map(({ skill: s, preset: p, image, key }, order) => ({
-      id: key,
-      order,
-      group: s.id,
-      skill: s,
-      preset: p,
-      image,
-      aspect: featuredAspect(key),
-    })),
-    [featured],
+        kind: 'case' as const,
+        id: key,
+        order,
+        group: s.id as string | undefined,
+        skill: s,
+        preset: p,
+        image,
+        aspect: ratios[key] ?? featuredAspect(key),
+      })),
+    [featured, ratios],
   )
+  const onCaseLoad = (key: string, img: HTMLImageElement) => {
+    if (!img.naturalWidth || !img.naturalHeight) return
+    const r = img.naturalWidth / img.naturalHeight
+    setRatios((m) => (Math.abs((m[key] ?? 0) - r) < 0.001 ? m : { ...m, [key]: r }))
+  }
+  const comingSoon = () => showMemoryToast(t('home.comingSoon'), 'info')
+  // #580 cut 2: the composer floats at the bottom once its slot scrolls out of view (slot keeps the layout height)
+  useEffect(() => {
+    const el = boxSlot.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => setFloating(!!e && !e.isIntersecting && e.boundingClientRect.top < 0))
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
   const featuredColumns = useMemo(
-    () => packFeaturedColumns(featuredItems, featuredWidth, featuredMetrics.gap, featuredMetrics.colWidth),
+    () => withSpecialCards(
+      packFeaturedColumns(featuredItems, featuredWidth, featuredMetrics.gap, featuredMetrics.colWidth),
+      (id: FeedSpecialId) => ({ kind: 'special' as const, id: `special:${id}`, special: id, aspect: FEED_SPECIAL_ASPECT }),
+    ),
     [featuredItems, featuredWidth, featuredMetrics],
   )
   useEffect(() => {
@@ -238,14 +268,17 @@ export function Home() {
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update)
     ro?.observe(el)
     return () => ro?.disconnect()
-  }, [featuredItems.length])
+  }, [featuredItems.length, tab])
   const runSkill = running ? skills.find((s) => s.id === running.id) : undefined
 
   return (
     <div className="ca-landing">
       <h1 className="ca-landing__title">{t('home.whatToDesign')}</h1>
       {agent && <NoKeyNotice className="ca-landing__notice" />}
+      <div ref={boxSlot} className="ca-landing__boxslot" data-testid="home-box-slot" style={floating ? { minHeight: boxSlot.current?.offsetHeight } : undefined}>
       <div
+        data-floating={floating || undefined}
+        data-testid="home-box"
         className="ca-landing__box"
         data-drop={drop || undefined}
         onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDrop(true) } }}
@@ -384,6 +417,7 @@ export function Home() {
         </div>
         <input ref={file} type="file" accept="image/*" multiple hidden onChange={(e) => { void upload(e.target.files); e.target.value = '' }} />
       </div>
+      </div>
       {importing && (
         <SkillImportDialog
           onClose={() => setImporting(false)}
@@ -455,6 +489,42 @@ export function Home() {
         <input ref={toolFile} type="file" hidden onChange={(e) => { void launchTool(e.target.files?.[0]); e.target.value = '' }} />
       </section>
 
+      <nav className="ca-hometabs" data-testid="home-tabs" role="tablist">
+        {HOME_TABS.map((id) => (
+          <button key={id} type="button" role="tab" className="ca-hometabs__tab" data-testid={`home-tab-${id}`} aria-selected={tab === id} data-active={tab === id || undefined} onClick={() => setTab(id)}>
+            {t(`home.tab.${id}`)}
+          </button>
+        ))}
+      </nav>
+      {tab === 'explore' && chips.length > 1 && (
+        <div className="ca-skills__chips ca-homechips" data-testid="home-chips">
+          {chips.map((c) => (
+            <button key={c} type="button" className="ca-skills__chip" data-testid={`home-chip-${c}`} data-on={chip === c || undefined} aria-pressed={chip === c} onClick={() => setChip(c)}>
+              {t(CHIP_LABEL[c])}
+            </button>
+          ))}
+        </div>
+      )}
+      {tab === 'assets' && (
+        <div className="ca-skills__chips ca-homechips" data-testid="home-asset-chips">
+          {HOME_ASSET_CHIPS.map((c) => (
+            <button key={c} type="button" className="ca-skills__chip" data-testid={`home-asset-chip-${c}`} data-on={assetChip === c || undefined} aria-pressed={assetChip === c} onClick={() => setAssetChip(c)}>
+              {t(`home.assetChip.${c}`)}
+            </button>
+          ))}
+        </div>
+      )}
+      {tab === 'assets' && <div className="ca-hometab-assets" data-testid="home-tab-panel-assets"><Assets /></div>}
+      {HOME_TAB_PLACEHOLDER.has(tab) && (
+        <div className="ca-hometab-soon" data-testid={`home-tab-panel-${tab}`}>
+          {tab === 'inspiration' ? <span className="ca-featured__special-collage ca-hometab-soon__collage" aria-hidden /> : <span className="ca-icon" aria-hidden>{Icons.imageLine}</span>}
+          <span className="ca-hometab-soon__title">{t(`home.tabPanel.${tab}.title`)}</span>
+          <span className="ca-hometab-soon__text">{t(`home.tabPanel.${tab}.text`)}</span>
+          <button type="button" className="ca-hometab-soon__btn" data-variant={tab === 'pinterest' ? 'outline' : undefined} data-testid={`home-tab-action-${tab}`} onClick={comingSoon}>{t(`home.tabPanel.${tab}.action`)}</button>
+        </div>
+      )}
+
+      {tab === 'explore' && <>
       <section className="ca-landing__section" data-testid="home-start-skill">
         <div className="ca-landing__head">
           <h2><button type="button" className="ca-landing__headlink" data-testid="home-start-skill-head" onClick={() => openView('skills')}>{t('home.startFromSkill')}<span className="ca-landing__chev" aria-hidden>›</span></button></h2>
@@ -462,13 +532,13 @@ export function Home() {
         </div>
         {/* skills-cut1: one row of HOME_SKILL_ROW cover cards (cover + title ›), real skills only; click keeps trySkill */}
         <div className="ca-skillgrid" data-testid="home-skill-grid">
-          {skills.slice(0, HOME_SKILL_ROW).map((s) => {
-            const cover = skillCover(s)
-            const src = cover && (cover.own === 'bundled' ? cover.src : thumbUrl(cover.src, 512))
+          {shown.slice(0, HOME_SKILL_ROW).map((s) => {
+            const cover = skillQuickStartCover(s)
+            const src = cover && (cover.own === 'userdata' ? thumbUrl(cover.src, 512) : cover.src)
             return (
               <button key={s.id} type="button" className="ca-skillcard" data-testid="home-skill-card" data-skill={s.id}
                 onClick={() => trySkill(s)}>
-                <span className="ca-skillcard__cover" data-testid="home-skill-cover">{src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
+                <span className="ca-skillcard__cover" data-testid="home-skill-cover">{src && cover?.own === 'video' ? <video src={`${src}#t=0.001`} muted playsInline preload="metadata" data-testid="home-skill-cover-frame" /> : src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
                 <span className="ca-skillcard__name"><span className="ca-skillcard__label">{s.name}</span></span>
               </button>
             )
@@ -484,7 +554,20 @@ export function Home() {
           <div className="ca-featured ca-featured--waterfall" data-testid="home-featured-grid">
             {featuredColumns.map((col, ci) => (
               <div key={`col-${ci}`} className="ca-featured__col" data-testid="home-featured-col">
-                {col.map(({ id, order, skill: s, preset: p, image, aspect }) => (
+                {col.map((item) => item.kind === 'special' ? (
+                  <div key={item.id} className="ca-featured__card ca-featured__special" data-testid="home-feed-special" data-special={item.special}>
+                    <span className="ca-featured__special-body" style={{ aspectRatio: item.aspect }}>
+                      {/* #588 collage from review-assets (commit-pinned) */}
+                      <span className="ca-featured__special-collage" data-testid="home-feed-special-collage" aria-hidden>{FEED_SPECIAL_COLLAGE[item.special] && <img src={FEED_SPECIAL_COLLAGE[item.special]} alt="" loading="lazy" draggable={false} />}</span>
+                      <span className="ca-featured__special-title">{t(`home.special.${item.special}`)}</span>
+                      <span className="ca-featured__special-text">{t(`home.special.${item.special}Text`)}</span>
+                      {item.special === 'connector' && (
+                        <input className="ca-featured__special-input" data-testid="home-feed-special-input" placeholder={t('home.special.connectorPlaceholder')} onKeyDown={(e) => { if (e.key === 'Enter') comingSoon() }} />
+                      )}
+                      <button type="button" className="ca-featured__special-btn" data-testid={`home-feed-special-${item.special}`} onClick={comingSoon}>{t(`home.special.${item.special}Action`)}</button>
+                    </span>
+                  </div>
+                ) : (({ id, order, skill: s, preset: p, image, aspect }) => (
                   <button
                     key={id}
                     type="button"
@@ -496,18 +579,19 @@ export function Home() {
                     onClick={() => trySkill(s, p?.id ?? null)}
                   >
                     <span className="ca-featured__cover" style={{ aspectRatio: aspect }}>
-                      <img src={image} alt={s.name} loading="lazy" />
+                      <img src={image} alt={s.name} loading="lazy" onLoad={(e) => onCaseLoad(id, e.currentTarget)} />
                       <span className="ca-featured__badge" data-testid="home-featured-kind" aria-hidden><span className="ca-icon">{/\.(mp4|webm|mov)(\?|$)/i.test(image) ? Icons.videoLine : Icons.imageLine}</span></span>
                       <span className="ca-featured__go">{t('skillRun.start')}</span>
                     </span>
                     <span className="ca-featured__name"><span className="ca-featured__title">{s.name}</span><span className="ca-featured__tag">{t('home.skillCase')}</span></span>
                   </button>
-                ))}
+                ))(item))}
               </div>
             ))}
           </div>
         </section>
       )}
+      </>}
 
       {runSkill && (
         <SkillRunDialog skill={runSkill} presetId={running?.preset} onClose={() => setRunning(null)} />

@@ -89,7 +89,7 @@ def test_waterfall_layout_logic_no_scraped_feed() -> None:
     for bad in ("a.lovart.ai", "lovartcdn", "cdn.lovart", "http://", "https://"):
         assert bad not in low, bad
     # data remains skillFeaturedCases (our presets)
-    assert "skillFeaturedCases(skills)" in HOME
+    assert "skillFeaturedCases(shown)" in HOME
 
 
 def test_tool_covers_are_wash_commit_pinned() -> None:
@@ -127,7 +127,7 @@ def test_featured_layout_column_math() -> None:
     # smoke: file exports match expected signatures
     assert "export function featuredColumnCount(width: number, gap = FEATURED_GAP" in LAYOUT
     assert "export function packFeaturedColumns" in LAYOUT
-    assert "FEATURED_COL_W = 299" in LAYOUT
+    assert "FEATURED_COL_W = 298.7" in LAYOUT
     assert "Math.min(...heights)" in LAYOUT or "a[0] - b[0]" in LAYOUT  # shortest column first (#580: group-aware)
 
 
