@@ -26,9 +26,11 @@ export interface Skill {
   /** #541 「效果示例」 carousel images (commit-pinned). Unset / empty → the section is not rendered. */
   examples?: string[]
   /** #580 cut 2 — the three image slots, one per surface: `cover` = Skills module (above, unchanged);
-   *  `quickStartCover` = home 「用 Skill 快速开始」 row (fixed 4:3, full-bleed); `featured` = home masonry images
+   *  `quickStartCover` = home 「用 Skill 快速开始」 row (fixed 4:3); `featured` = home masonry images
    *  (natural ratio, full-bleed). Unset → fall back to the existing images (see skillQuickStartCover / skillFeaturedCases). */
   quickStartCover?: string
+  /** #602 — home quick-start cover object-fit. Default `cover` (full-bleed). Set `contain` for letterbox on the card plate. */
+  quickStartCoverFit?: 'cover' | 'contain'
   featured?: string[]
   /** #580 P2 — preset id shown first for this skill in home 「Skill 案例」 (fallback path only). */
   featuredPreset?: string
@@ -526,11 +528,16 @@ export function skillCover(skill: Skill): { src: string; own: 'bundled' | 'userd
 /** #580 cut 2 — video skills whose quick-start tile is the video's first frame (design v2 / product confirmed). */
 export const QUICK_START_VIDEO_FIRST: ReadonlySet<string> = new Set(['motion'])
 /** #580 cut 2 — home quick-start row image: optional `quickStartCover` override; default = video skills' first frame,
- *  else the Skills-module `cover` (center-cropped to 4:3 by CSS object-fit). */
+ *  else the Skills-module `cover`. Fit is dual (#602): cover full-bleed or contain + letterbox via skillQuickStartCoverFit. */
 export function skillQuickStartCover(skill: Skill): { src: string; own: 'bundled' | 'userdata' | 'video' } | null {
   if (skill.quickStartCover) return { src: skill.quickStartCover, own: 'bundled' }
   if (QUICK_START_VIDEO_FIRST.has(skill.id) && skill.video) return { src: skill.video, own: 'video' }
   return skillCover(skill)
+}
+
+/** #602 — resolve quick-start cover fit. Defaults to `cover` unless the skill marks `contain` (letterbox plate). */
+export function skillQuickStartCoverFit(skill: Skill): 'cover' | 'contain' {
+  return skill.quickStartCoverFit === 'contain' ? 'contain' : 'cover'
 }
 
 export function skillVideo(skill: Skill): string | null {
