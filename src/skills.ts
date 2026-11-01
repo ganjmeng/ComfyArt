@@ -66,12 +66,14 @@ const wash541 = (commit: string, skillId: string, presetId: string) =>
 const washProduct541 = (presetId: string) => wash541(presetId === 'detail' ? WASH_541.productDetail : WASH_541.product, 'product', presetId)
 /** #569 character (7) + motion (2) template washes, from review-assets manifest 881494ff (assets pinned to bd043d4c). */
 const WASH_569_COMMIT = 'bd043d4cff5019fc4117b5b2f3a33ae437015a28'
+// character v2 (manifest review-assets 74321c52, assets d7e40116 under 569/wash/character/templates/v2/)
+const CHARACTER_V2 = 'd7e40116d81b6a42b9898ad0c2a4f9143c1e238b'
 type Wash569 = string | readonly [string, string, string]
 const WASH_569: Record<'character' | 'motion', readonly Wash569[]> = {
-  character: ['01-character-turnaround-sheet', '02-expression-pose-sheet', '03-modeling-detail-reference-sheet', '04-outfit-form-variation-sheet', '05-prop-interaction-sheet', '06-basic-character-sheet', '07-complete-technical-character-sheet', ['08-luxury-editorial-character-sheet', '569/wash', 'fa8248fe00a27b97e03c1dd2eae522b272dffe7c']],
+  character: [['v2/01-character-turnaround-sheet', '569/wash', CHARACTER_V2], ['v2/02-expression-pose-sheet', '569/wash', CHARACTER_V2], ['v2/03-modeling-detail-reference-sheet', '569/wash', CHARACTER_V2], ['v2/04-outfit-form-variation-sheet', '569/wash', CHARACTER_V2], ['v2/05-prop-interaction-sheet', '569/wash', CHARACTER_V2], ['v2/06-basic-character-sheet', '569/wash', CHARACTER_V2], ['v2/07-complete-technical-character-sheet', '569/wash', CHARACTER_V2], ['v2/08-luxury-editorial-character-sheet', '569/wash', CHARACTER_V2]],
   motion: ['01-poster-animation', '02-first-to-last-frame-animation'],
 }
-// Manifest-driven (review-assets 569/wash/manifest.json @f79229a0): an entry is a file name at WASH_569_COMMIT, or
+// Manifest-driven (review-assets 569/wash/manifest.json @74321c52): an entry is a file name at WASH_569_COMMIT, or
 // [name, dir, commit] when the manifest pins that template to another assets commit. A re-wash only edits this data.
 const wash569 = (skillId: keyof typeof WASH_569, n: number) => {
   const e = WASH_569[skillId][n]

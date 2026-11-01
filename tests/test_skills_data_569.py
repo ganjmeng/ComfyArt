@@ -1,5 +1,5 @@
 """#569 (product ruling 6550618343 on #494): effect skills lose presets, template skills get the reference's three
-inputs and template counts, character/motion wired from review-assets manifest 881494ff (assets @bd043d4c).
+inputs and template counts, character/motion wired from review-assets manifest 881494ff (motion assets @bd043d4c); character v2 from manifest 74321c52 (assets @d7e40116).
 Runs src/skills.ts through tests/js/skills_data_569.ts; $0, no network."""
 from __future__ import annotations
 
@@ -26,7 +26,8 @@ CHARACTER = [("角色转身板", "Character Turnaround Sheet", "01-character-tur
              ("基础角色板", "Basic Character Sheet", "06-basic-character-sheet"),
              ("完整技术角色板", "Complete Technical Character Sheet", "07-complete-technical-character-sheet"),
              ("时装大片角色板", "Editorial Fashion Sheet", "08-luxury-editorial-character-sheet")]  # product-final name (#574)
-PINNED = {"08-luxury-editorial-character-sheet": "fa8248fe00a27b97e03c1dd2eae522b272dffe7c"}  # manifest f79229a0 index 7
+PINNED = {}  # manifest 74321c52: all character templates live under CHARACTER_V2
+CHARACTER_V2 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2"
 MOTION = [("海报动画", "Poster Animation", "01-poster-animation"),
           ("首帧到末帧动画", "First-to-Last Frame Animation", "02-first-to-last-frame-animation")]
 # (zh label, type, required) — 当前模板 is the dialog's own preset row, so each template skill has 3 data inputs.
@@ -98,7 +99,7 @@ def test_character_and_motion_wired_from_manifest(got):
     for sid, rows in (("character", CHARACTER), ("motion", MOTION)):
         ps = got["skills"][sid]["presets"]
         assert [(p["zh"], p["en"]) for p in ps] == [(z, e) for z, e, _ in rows], sid
-        assert [p["image"] for p in ps] == [(f"{ASSETS}/{sid}/templates/{f}@thumb.webp" if f not in PINNED else
+        assert [p["image"] for p in ps] == [(f"{CHARACTER_V2}/{f}@thumb.webp" if sid == "character" else f"{ASSETS}/{sid}/templates/{f}@thumb.webp" if f not in PINNED else
                                              f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{PINNED[f]}/569/wash/{sid}/templates/{f}@thumb.webp")
                                             for _, _, f in rows], sid
 
