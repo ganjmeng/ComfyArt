@@ -108,9 +108,19 @@ body { background: var(--ca-float); }
 .ca-landing { max-width: none; /* #546: column = main − 2×56 (reference design: 928 @1280 expanded, 1088 @1440) */ margin: 0 auto; padding: 96px var(--ca-home-main-px) 64px; box-sizing: border-box; }
 .ca-landing__title { margin: 0 0 28px; text-align: center; font: 500 32px/40px var(--ca-font); letter-spacing: -0.02em; }
 .ca-landing__notice { max-width: 760px; margin: 0 auto 12px; box-sizing: border-box; }
-.ca-landing__box { max-width: 760px; margin: 0 auto; padding: 14px 14px 10px 18px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 28px; box-shadow: 0 8px 28px -12px rgba(0,0,0,.12), 0 2px 8px -4px rgba(0,0,0,.06); box-sizing: border-box; background: var(--ca-float); }
+/* #602 — welcome/expanded composer ≈114, radius 24; compact float pill via [data-compact] */
+.ca-landing__box {
+  --ca-homebox-radius: 24px;
+  --ca-homebox-pad: 11px 8px 7px 16px;
+  --ca-homebox-input-min-h: 56px;
+  --ca-homebox-compact-h: 52px; /* mid of gold 48–56 collapsed pill */
+  max-width: 760px; margin: 0 auto; padding: var(--ca-homebox-pad);
+  border: var(--ca-border-w) solid var(--ca-border); border-radius: var(--ca-homebox-radius);
+  box-shadow: 0 8px 28px -12px rgba(0,0,0,.12), 0 2px 8px -4px rgba(0,0,0,.06);
+  box-sizing: border-box; background: var(--ca-float);
+}
 .ca-landing__box[data-drop] { outline: 2px dashed var(--ca-blue); outline-offset: -2px; }
-.ca-landing__input { width: 100%; min-height: 64px; max-height: 240px; resize: none; border: none; outline: none; background: transparent; font: inherit; color: inherit; box-sizing: border-box; }
+.ca-landing__input { width: 100%; min-height: var(--ca-homebox-input-min-h, 56px); max-height: 240px; resize: none; border: none; outline: none; background: transparent; font: inherit; color: inherit; box-sizing: border-box; }
 .ca-landing__input::placeholder { color: var(--ca-muted); }
 .ca-landing__foot { display: flex; align-items: center; gap: 6px; }
 .ca-landing__spacer { flex: 1; }
@@ -131,7 +141,9 @@ body { background: var(--ca-float); }
 .ca-landing__chip { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 999px; background: transparent; color: inherit; font: 400 13px/20px var(--ca-font); cursor: pointer; }
 .ca-landing__chip:hover { background: var(--ca-hover); }
 .ca-landing__chip .ca-icon { width: 16px; height: 16px; }
-.ca-landing__section { margin-top: 64px; }
+/* #602 — explore stack section rhythm (skills→精选 / chips→快速开始): gold gap-6 = 24 */
+.ca-landing { --ca-landing-section-mt: 24px; }
+.ca-landing__section { margin-top: var(--ca-landing-section-mt); }
 .ca-landing__head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
 .ca-landing__head h2 { margin: 0; font: 500 16px/24px var(--ca-font); }
 .ca-landing__link { border: none; background: none; color: var(--ca-muted); font: inherit; cursor: pointer; }
@@ -163,7 +175,9 @@ body { background: var(--ca-float); }
   position: relative; display: flex; align-items: center; justify-content: center; width: 100%;
   aspect-ratio: var(--ca-skillrow-cover-ratio); border-radius: var(--ca-skillrow-radius); background: var(--ca-field); overflow: hidden;
 }
+/* #602 — dual media-fit: default cover full-bleed; data-fit=contain → letterbox on --ca-field plate */
 .ca-skillcard__cover img, .ca-skillcard__cover video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 300ms ease; }
+.ca-skillcard__cover[data-fit="contain"] img, .ca-skillcard__cover[data-fit="contain"] video { object-fit: contain; }
 .ca-skillcard:hover .ca-skillcard__cover img, .ca-skillcard:focus-visible .ca-skillcard__cover img { transform: scale(1.05); }
 /* #575 — muted loop overlays still on hover/focus when skill.video is set; leave → opacity 0 + seek 0 under. */
 .ca-skillcard__video {
@@ -1035,6 +1049,24 @@ body { background: var(--ca-float); }
   position: fixed; z-index: 30; bottom: var(--ca-homebox-float-bottom); left: 50%; transform: translateX(-50%);
   width: min(760px, calc(100% - 32px)); margin: 0;
 }
+/* #602 — scrolled compact float pill: placeholder + send; toolbar hidden until expand */
+.ca-landing__box[data-floating][data-compact] {
+  display: flex; flex-direction: row; align-items: center; gap: 8px;
+  height: var(--ca-homebox-compact-h); min-height: var(--ca-homebox-compact-h);
+  max-height: var(--ca-homebox-compact-h); padding: 8px 10px 8px 18px;
+  overflow: hidden;
+}
+.ca-landing__box[data-floating][data-compact] .ca-landing__refs { display: none; }
+.ca-landing__box[data-floating][data-compact] .ca-landing__input {
+  flex: 1; min-width: 0; min-height: 0; height: 32px; max-height: 32px;
+  padding: 0; line-height: 32px; overflow: hidden; white-space: nowrap;
+}
+.ca-landing__box[data-floating][data-compact] .ca-landing__foot {
+  flex: none; gap: 0; margin: 0;
+}
+.ca-landing__box[data-floating][data-compact] .ca-landing__foot > :not(.ca-composer__slotwrap) { display: none; }
+.ca-landing__box[data-floating][data-compact] .ca-composer__slotwrap { margin: 0; }
+
 .ca-hometabs { position: sticky; top: var(--ca-tabs-top); z-index: 6; background: var(--ca-float); display: flex; gap: var(--ca-tabs-gap); margin: var(--ca-hometabs-mt) 0 0; border-bottom: var(--ca-tabs-rule); }
 .ca-hometabs__tab {
   padding: var(--ca-tabs-py) 0; border: none; border-bottom: var(--ca-tabs-indicator-h) solid transparent; margin-bottom: calc(-1 * var(--ca-border-w));
