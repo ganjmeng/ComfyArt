@@ -5,15 +5,21 @@
 :root { --ca-feed-col-w: 298.7px; --ca-feed-special-bg: rgb(245, 245, 245); --ca-feed-special-collage-h: 122px; --ca-feed-special-pad: 6px;
   --ca-feed-tag-bg: rgba(0, 0, 0, .04); --ca-feed-tag-fg: rgba(0, 0, 0, .55); --ca-feed-tag-font: 400 11px/16px var(--ca-font); }
 :root {
-  --ca-tabs-gap: 24px; --ca-tabs-py: 8px; --ca-tabs-font: 400 14px/22px var(--ca-font); --ca-tabs-on-weight: 600; --ca-tabs-top: 0px;
-  --ca-tabs-fg: var(--ca-muted); --ca-tabs-on-fg: var(--ca-text); --ca-tabs-indicator: transparent; --ca-tabs-indicator-h: 0px;
+  --ca-tabs-gap: 24px; --ca-tabs-py: 11px; --ca-tabs-font: 400 14px/22px var(--ca-font); --ca-tabs-on-weight: 600; --ca-tabs-top: 0px;
+  --ca-tabs-fg: rgba(0, 0, 0, .55); --ca-tabs-on-fg: var(--ca-text); --ca-tabs-indicator: transparent; --ca-tabs-indicator-h: 0px;
   /* #583 Skills header tabs (defined here, consumed by #583's PR): 13px, gap 20, 1px underline = text width */
   --ca-skilltabs-gap: 20px; --ca-skilltabs-font: 400 13px/20px var(--ca-font); --ca-skilltabs-on-weight: 600;
-  --ca-skilltabs-fg: var(--ca-muted); --ca-skilltabs-on-fg: var(--ca-text); --ca-skilltabs-indicator: var(--ca-text); --ca-skilltabs-indicator-h: 1px;
+  --ca-skilltabs-fg: rgba(0, 0, 0, .55); --ca-skilltabs-on-fg: var(--ca-text); --ca-skilltabs-indicator: var(--ca-text); --ca-skilltabs-indicator-h: 1px;
   --ca-tabs-rule: var(--ca-border-w) solid var(--ca-border);
   --ca-chip-gap: 8px; --ca-chip-h: 30px; --ca-chip-py: 5px; --ca-chip-px: 12px; --ca-chip-radius: 999px; --ca-chip-font: 400 13px/20px var(--ca-font);
-  --ca-chip-bg: transparent; --ca-chip-fg: var(--ca-muted); --ca-chip-border: var(--ca-border-w) solid transparent; --ca-chip-hover-bg: var(--ca-hover);
+  --ca-chip-bg: transparent; --ca-chip-fg: rgba(0, 0, 0, .55); --ca-chip-border: var(--ca-border-w) solid transparent; --ca-chip-hover-bg: var(--ca-hover);
   --ca-chip-on-bg: rgba(0, 0, 0, .08); --ca-chip-on-fg: var(--ca-text); --ca-chip-on-border: transparent;
+}
+/* #596 soft FU: inactive tab/chip fg .55 (scoped; do not bump global --ca-muted) */
+:root[data-theme="dark"] {
+  --ca-tabs-fg: rgba(255, 255, 255, .55);
+  --ca-chip-fg: rgba(255, 255, 255, .55);
+  --ca-skilltabs-fg: rgba(255, 255, 255, .55);
 }
 body { background: var(--ca-float); }
 .ca-home { position: fixed; inset: 0; display: flex; background: var(--ca-float); color: var(--ca-text); font: 400 14px/22px var(--ca-font); }
@@ -1013,7 +1019,7 @@ body { background: var(--ca-float); }
 
 /* #580 cut 2 — home feed tabs + sticky category chips + floating composer (tokens: swap in design v2 values) */
 .ca-landing {
-  --ca-hometabs-mt: 40px; --ca-homechips-top: 38px; /* = sticky tab row height (8+20+8+2) */ --ca-homechips-pad: 12px; --ca-homebox-float-bottom: 24px;
+  --ca-hometabs-mt: 40px; --ca-homechips-top: 44px; /* = sticky tab row height (11+22+11(+border)) */ --ca-homechips-pad: 12px; --ca-homebox-float-bottom: 24px;
 }
 .ca-landing__boxslot { position: relative; }
 .ca-landing__box[data-floating] {
