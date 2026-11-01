@@ -5,6 +5,7 @@ import * as actions from '../actions'
 import { imageTo3d, MODEL3D_SPECS, type Model3d, type Model3dParam } from '../assetGen'
 import { CUSTOM_MODEL3D } from '../customWorkflows'
 import { Chips } from './Chips'
+import { Pick } from './StyleToolbars'
 import { Icons } from './icons'
 import { t } from '../i18n'
 import { estimateCost } from '../wavespeedKey'
@@ -83,7 +84,7 @@ const STYLES: [string, string][] = [
 ]
 const TARGETS: [string, number][] = [['2K', 2048], ['4K', 4096], ['8K', 8192]]
 
-/** asPanel (#570 home handoff): the same controls inside the ToolPanel at the image's right — mode and resolution as segmented switches (same Seg as to3d), height follows content, 取消 / 立即使用 ⚡n. */
+/** asPanel (#570 home handoff): the same controls inside the ToolPanel at the image's right — mode as the shared Seg, resolution as the app's Pick dropdown, height follows content, 取消 / 立即使用 ⚡n. */
 export function UpscaleMenu({ editor, shape, w, h, onDone, onError, asPanel }: { editor: Editor; shape: TLImageShape; w: number; h: number; onDone: () => void; onError: (msg: string) => void; asPanel?: boolean }) {
   const [detail, setDetail] = useState(false)
   const [style, setStyle] = useState('')
@@ -125,10 +126,12 @@ export function UpscaleMenu({ editor, shape, w, h, onDone, onError, asPanel }: {
       <ToolPanel tool="upscale" title={t('common.upscale')} credits={credits} onReset={reset} onCancel={onDone} onUse={target ? () => go(target / long) : undefined}>
         <div className="ca-menu ca-upscale">
           <Seg label={t('toolPanel.mode')} attr="data-mode" value={detail ? 'detail' : 'faithful'} onPick={(id) => setDetail(id === 'detail')}
-            options={[{ id: 'faithful', label: t('upscaleMenu.faithfulToOriginal') }, { id: 'detail', label: t('upscaleMenu.enhanceDetails') }]} />
+            options={[{ id: 'faithful', label: t('toolPanel.faithful') }, { id: 'detail', label: t('toolPanel.enhance') }]} />
           {detailControls}
-          <Seg label={t('toolPanel.resolution')} attr="data-res" value={pick} onPick={setPick}
-              options={TARGETS.map(([label, tg]) => ({ id: label, label, disabled: tg <= long, title: `${Math.round(w * tg / long)}×${Math.round(h * tg / long)}` }))} />
+          <div className="ca-toolpanel__res" data-res-pick title={t('toolPanel.resolution')}>
+            <Pick value={pick} label={pick ? `${pick} ${Math.round(w * (target ?? 0) / long)}×${Math.round(h * (target ?? 0) / long)}` : t('toolPanel.resolution')} onPick={setPick}
+              options={TARGETS.filter(([, tg]) => tg > long).map(([label, tg]) => [label, `${label} ${Math.round(w * tg / long)}×${Math.round(h * tg / long)}`] as [string, string])} />
+          </div>
         </div>
       </ToolPanel>
     )

@@ -1608,5 +1608,7 @@
   "toolPanel.useNow": "Use now",
   "toolPanel.model": "Model",
   "toolPanel.mode": "Mode",
+  "toolPanel.faithful": "Faithful",
+  "toolPanel.enhance": "Enhance",
   "toolPanel.resolution": "Resolution"
 }

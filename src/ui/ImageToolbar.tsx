@@ -129,6 +129,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   const prefs = useValue(prefsAtom)
   // #570: a panel / swapped bar belongs to one image — a new selection (e.g. the next home handoff) starts clean
   useEffect(() => { setPanel(null); setSwap(null) }, [shape?.id])
+  useEscape(!!swap, () => setSwap(null))  // #570: Esc leaves the swapped transform bar (empty-canvas click deselects, which also exits)
 
   // #537 / #540: home 实用工具 handoff opens the matching menu after place+select (no auto-run)
   const pendingHome = useValue(homeToolAtom)
@@ -272,14 +273,12 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   )
   const swapTool = swap ? tools.find((x) => x.id === swap) : null
   if (swapTool?.menu) {
-    // #570: the tool's own bar in place of the image toolbar (flip & rotate); Done returns to the normal bar
+    // #570: the tool's own bar in place of the image toolbar (flip & rotate); Esc or an empty-canvas click (deselect) exits
     return (
       <div ref={bar} className="ca-bar ca-toolbar ca-toolbar--image ca-toolbar--swap" data-tool={swapTool.id} style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
         <span className="ca-toolbar__name">{swapTool.label}</span>
         <TransformMenu editor={editor} shape={shape} bar />
         <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
-        <div className="ca-bar__sep" />
-        <Btn icon={Icons.check} hint={t('common.done')} onClick={() => setSwap(null)} />
       </div>
     )
   }

@@ -1608,5 +1608,7 @@
   "toolPanel.useNow": "立即使用",
   "toolPanel.model": "模型",
   "toolPanel.mode": "模式",
+  "toolPanel.faithful": "忠于原图",
+  "toolPanel.enhance": "增强细节",
   "toolPanel.resolution": "分辨率"
 }

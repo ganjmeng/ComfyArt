@@ -147,7 +147,7 @@ def test_locales_only_add_memory_retrieved_430():
         "memoryDialog.partTitle.taste", "memoryDialog.partTitle.assets",
         "memoryDialog.stepOf", "memoryDialog.freeHint",
         # #570: to3d / upscale tool panel copy
-        "toolPanel.reset", "toolPanel.useNow", "toolPanel.model", "toolPanel.mode", "toolPanel.resolution",
+        "toolPanel.reset", "toolPanel.useNow", "toolPanel.model", "toolPanel.mode", "toolPanel.faithful", "toolPanel.enhance", "toolPanel.resolution",
         # #423: 「已保存 N 条」 under the memory row
         "chatMessage.memorySavedCount",
         # #494: 技能页标签中文化、作者行「个人」，移除旧作者与浏览量文案

@@ -57,7 +57,7 @@ function useBar(rect: ReturnType<typeof useSelectionRect>) {
   return { bar, style: { left, top } }
 }
 
-function Pick<T extends string | number>({ value, options, label, onPick, width }: { value: T; options: [T, string][]; label: ReactNode; onPick: (v: T) => void; width?: number }) {
+export function Pick<T extends string | number>({ value, options, label, onPick, width }: { value: T; options: [T, string][]; label: ReactNode; onPick: (v: T) => void; width?: number }) {
   const [open, setOpen] = useState(false)
   return (
     <Popover

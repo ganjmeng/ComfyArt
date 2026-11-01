@@ -52,6 +52,10 @@ async def _shot(pg, name: str) -> None:
     await pg.screenshot(path=str(Path(SHOTS) / f"{name}.png"), full_page=False)
 
 
+GAP_JS = """e => e.querySelector('.ca-toolpanel__foot').getBoundingClientRect().top
+            - [...e.querySelector('.ca-toolpanel__body').querySelectorAll(':scope > *, :scope > .ca-upscale > *')].reduce((m, c) => Math.max(m, c.getBoundingClientRect().bottom), 0)"""
+
+
 async def _panel_right_of_image(pg, tool: str) -> None:
     panel = pg.locator(f"{PANEL}[data-tool='{tool}']")
     await panel.wait_for(state="visible", timeout=15000)
@@ -59,8 +63,9 @@ async def _panel_right_of_image(pg, tool: str) -> None:
     bar = await pg.locator(".ca-toolbar--image").bounding_box()
     box = await panel.bounding_box()
     assert box and bar and box["width"] == pytest.approx(172, abs=2)
-    if tool == "to3d":  # design 6551032261: to3d is ~172×346; upscale follows its content (review 5725811299)
-        assert box["height"] >= 340
+    # round 3: both panels follow their content; the footer sits 8px under the last control
+    gap = await panel.evaluate(GAP_JS)
+    assert gap == pytest.approx(8, abs=1), gap
     sel = await pg.evaluate("() => { const e = window.__caEditor; const b = e.getSelectionScreenBounds(); return b && { r: b.maxX } }")
     if sel:
         assert box["x"] >= sel["r"] - 2  # at the image's right
@@ -102,23 +107,29 @@ async def test_b_home_upscale_opens_its_panel(app_url, mock_ws):  # noqa: F811
         await panel.wait_for(timeout=15000)
         assert await pg.locator(".ca-pop .ca-upscale").count() == 0 and await pg.locator(MORE_POP).count() == 0
         await _panel_right_of_image(pg, "upscale")
-        # no native <select>; mode and resolution reuse the to3d segmented switch
+        # mode = shared segmented switch; resolution = the app's custom Pick dropdown (not native, not a segment)
         assert await panel.locator("select").count() == 0
         assert await panel.locator(".ca-panel__chip").count() == 0
         assert await panel.locator(".ca-seg [data-mode]").count() == 2
-        assert await panel.locator(".ca-seg [data-res]").all_inner_texts() == ["2K", "4K", "8K"]
+        assert await panel.locator(".ca-seg [data-res]").count() == 0
         await panel.locator(".ca-seg [data-mode='detail']").click()
         assert await panel.locator(".ca-seg [data-mode='detail']").get_attribute("aria-selected") == "true"
         await panel.locator(".ca-seg [data-mode='faithful']").click()
-        res = panel.locator(".ca-seg [data-res]:not([disabled])").last
-        await res.click()
-        assert await res.get_attribute("aria-selected") == "true"
-        # height follows content: no fixed 346 and no big gap between controls and the footer
+        pick = panel.locator("[data-res-pick] button.ca-pick")
+        assert await pick.count() == 1
+        st = await pick.evaluate("e => { const c = getComputedStyle(e); return { h: e.getBoundingClientRect().height, r: c.borderTopLeftRadius, tag: e.tagName } }")
+        assert st["h"] == pytest.approx(32, abs=0.5) and st["r"] == "8px" and st["tag"] == "BUTTON", st
+        assert (await pick.inner_text()).startswith("2K")
+        await pick.click()
+        menu = pg.locator(".ca-pick__menu")
+        await menu.wait_for()
+        assert await menu.locator(".ca-menu__item").all_inner_texts() == ["2K 2048×2048", "4K 4096×4096", "8K 8192×8192"]
+        await menu.get_by_text("4K 4096×4096", exact=True).click()
+        assert (await pick.inner_text()).startswith("4K")
+        assert await panel.count() == 1
         box = await panel.bounding_box()
+        print("UPSCALE_PANEL_HEIGHT", box["height"])
         assert box["height"] <= 160, box  # head + mode + resolution + footer, no filler
-        gap = await panel.evaluate("""e => e.querySelector('.ca-toolpanel__foot').getBoundingClientRect().top
-            - [...e.querySelector('.ca-toolpanel__body').children].reduce((m, c) => Math.max(m, c.getBoundingClientRect().bottom), 0)""")
-        assert gap <= 16, gap
         before = len(mock_ws["submits"])
         await panel.get_by_role("button", name="立即使用").click()
         for _ in range(50):
@@ -140,7 +151,8 @@ async def test_c2_more_transform_swaps_bar(app_url):  # noqa: F811
         await pg.locator(".ca-menu__flyout").get_by_text("翻转与旋转", exact=True).click()
         await pg.locator(".ca-toolbar--swap[data-tool='transform'] .ca-transform").wait_for()
         assert await pg.locator(".ca-pop .ca-transform").count() == 0 and await pg.locator(MORE_POP).count() == 0
-        await pg.locator(".ca-toolbar--swap").get_by_role("button", name="完成").click()
+        assert await pg.locator(".ca-toolbar--swap").get_by_role("button", name="完成").count() == 0  # round 3: no ✓
+        await pg.keyboard.press("Escape")  # Esc exits back to the normal image toolbar, image stays selected
         await pg.locator(".ca-toolbar--image:not(.ca-toolbar--swap)").wait_for()
         await browser.close()
 
@@ -162,6 +174,32 @@ async def test_c_home_transform_swaps_bar(app_url):  # noqa: F811
         await ccw.click()
         await pg.wait_for_function("([s]) => { const v = Number(document.querySelector('.ca-toolbar--swap .ca-crop__input').value); return v !== s }", arg=[start])
         assert (int(await inp.input_value()) - start) % 360 == 270
+        sizes = await bar.evaluate("""e => ['向左旋转 90°', '旋转 90°'].map(t => { const b = e.querySelector(`button[title="${t}"]`).getBoundingClientRect(); return [b.x, b.width, b.height] })""")
+        (ccw_x, ccw_w, ccw_h), (cw_x, cw_w, cw_h) = sizes
+        assert ccw_x < cw_x and ccw_w == cw_w == 28 and ccw_h == cw_h == 28, sizes
+        swap = pg.locator(".ca-toolbar--swap")
+        assert await swap.get_by_role("button", name="完成").count() == 0 and await swap.get_by_title("完成").count() == 0
+        # Lovart (6551886922): rotate applied immediately, no confirm
+        assert await pg.evaluate("() => { const e = window.__caEditor; return e.getSelectedShapes()[0].rotation }") != 0
+        sel_ids = "() => window.__caEditor.getSelectedShapeIds().length"
+        # clicking the image again does NOT exit
+        img = await pg.evaluate("() => { const b = window.__caEditor.getSelectionScreenBounds(); return [b.midX, b.midY] }")
+        await pg.mouse.click(*img)
+        await pg.wait_for_timeout(300)
+        assert await swap.count() == 1 and await pg.evaluate(sel_ids) == 1
+        # Esc exits but keeps the image selected; the general image toolbar is back
+        await pg.keyboard.press("Escape")
+        await pg.locator(".ca-toolbar--image:not(.ca-toolbar--swap)").wait_for()
+        assert await swap.count() == 0 and await pg.evaluate(sel_ids) == 1
+        # re-enter, then an empty-canvas click exits AND deselects
+        await _open_more(pg)
+        await pg.locator(".ca-menu__sub").hover()
+        await pg.locator(".ca-menu__flyout").get_by_text("翻转与旋转", exact=True).click()
+        await swap.wait_for()
+        empty = await pg.evaluate("() => { const b = window.__caEditor.getSelectionScreenBounds(); return [Math.min(b.maxX + 100, innerWidth - 120), b.midY] }")
+        await pg.mouse.click(*empty)
+        await swap.wait_for(state="detached")
+        assert await pg.evaluate(sel_ids) == 0
         await browser.close()
 
 
@@ -307,6 +345,10 @@ async def test_shots_570(app_url, lang, theme):  # noqa: F811
             await _launch(pg, tool, _shot_png())
             await pg.locator(sel).wait_for()
             await _shot(pg, f"home-{tool}-{lang}-{theme}")
+            if tool == "upscale":
+                await pg.locator("[data-res-pick] button.ca-pick").click()
+                await pg.locator(".ca-pick__menu").wait_for()
+                await _shot(pg, f"upscale-res-open-{lang}-{theme}")
             if tool == "to3d":
                 for mid in ("trellis2", "pixal3d"):
                     await pg.locator(f".ca-seg__btn[data-model='{mid}']").click()
