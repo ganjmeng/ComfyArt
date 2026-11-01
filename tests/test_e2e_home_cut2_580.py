@@ -25,6 +25,12 @@ async def test_tabs_chips_special_cards_and_full_bleed(app_url):  # noqa: F811
         specials = pg.get_by_test_id("home-feed-special")
         assert await specials.count() == 2
         assert sorted([await s.get_attribute("data-special") for s in await specials.all()]) == ["capture", "connector"]
+        # design v2: placed by column — capture = col 1 slot 2, connector in col 2; grey card, connector has an input
+        cols = pg.get_by_test_id("home-featured-col")
+        assert await cols.nth(0).locator(":scope > *").nth(1).get_attribute("data-special") == "capture"
+        assert await cols.nth(1).get_by_test_id("home-feed-special").get_attribute("data-special") == "connector"
+        assert await pg.locator(".ca-featured__special-body").first.evaluate("e=>getComputedStyle(e).backgroundColor") == "rgb(245, 245, 245)"
+        assert await pg.get_by_test_id("home-feed-special-input").count() == 1
         # full-bleed: cover has no base plate and its ratio follows the loaded image
         card = pg.get_by_test_id("home-featured-card").first
         await card.scroll_into_view_if_needed()
@@ -50,8 +56,11 @@ async def test_tabs_chips_special_cards_and_full_bleed(app_url):  # noqa: F811
             await pg.get_by_test_id(f"home-tab-{t}").click()
             await pg.get_by_test_id(f"home-tab-panel-{t}").wait_for()
             assert await pg.get_by_test_id("home-featured").count() == 0
+            assert await pg.get_by_test_id("home-chips").count() == 0
+            await pg.get_by_test_id(f"home-tab-action-{t}").click()
         await pg.get_by_test_id("home-tab-assets").click()
         await pg.get_by_test_id("assets-page").wait_for()
+        assert await pg.get_by_test_id("home-asset-chips").locator("button").count() == 4
         await pg.get_by_test_id("home-tab-explore").click()
         await pg.get_by_test_id("home-featured").wait_for()
         await b.close()

@@ -475,9 +475,14 @@ export function skillCover(skill: Skill): { src: string; own: 'bundled' | 'userd
 }
 
 /** #529 — list/detail cover video URL when the skill data carries `video` (no video → no badge, no fake). */
-/** #580 cut 2 — home quick-start row image: `quickStartCover`, else the Skills-module cover rule. */
-export function skillQuickStartCover(skill: Skill): { src: string; own: 'bundled' | 'userdata' } | null {
-  return skill.quickStartCover ? { src: skill.quickStartCover, own: 'bundled' } : skillCover(skill)
+/** #580 cut 2 — video skills whose quick-start tile is the video's first frame (design v2 / product confirmed). */
+export const QUICK_START_VIDEO_FIRST: ReadonlySet<string> = new Set(['motion'])
+/** #580 cut 2 — home quick-start row image: optional `quickStartCover` override; default = video skills' first frame,
+ *  else the Skills-module `cover` (center-cropped to 4:3 by CSS object-fit). */
+export function skillQuickStartCover(skill: Skill): { src: string; own: 'bundled' | 'userdata' | 'video' } | null {
+  if (skill.quickStartCover) return { src: skill.quickStartCover, own: 'bundled' }
+  if (QUICK_START_VIDEO_FIRST.has(skill.id) && skill.video) return { src: skill.video, own: 'video' }
+  return skillCover(skill)
 }
 
 export function skillVideo(skill: Skill): string | null {

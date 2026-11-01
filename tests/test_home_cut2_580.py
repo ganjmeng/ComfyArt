@@ -16,7 +16,8 @@ def test_three_image_slots_with_fallback():
 
 def test_tabs_and_special_cards_constants():
     assert "export const HOME_TABS = ['explore', 'assets', 'inspiration', 'pinterest']" in LAYOUT
-    assert "{ id: 'capture', at:" in LAYOUT and "{ id: 'connector', at:" in LAYOUT
+    assert "{ id: 'capture', col: 0, slot: 1 }" in LAYOUT and "{ id: 'connector', col: 1, slot: 4 }" in LAYOUT
+    assert "QUICK_START_VIDEO_FIRST" in SKILLS and "HOME_ASSET_CHIPS" in LAYOUT and "--ca-feed-col-w: 298.7px" in CSS
     assert "withSpecialCards(" in HOME and "<Assets />" in HOME and "CHIP_LABEL" in HOME
 
 

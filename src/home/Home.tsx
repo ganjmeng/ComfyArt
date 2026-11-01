@@ -6,7 +6,7 @@ import { thumbUrl, uploadImage, viewUrl } from '../comfy'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
 import { newProject, openView, startProject } from '../projects'
-import { HOME_SKILL_ROW, FEATURED_DEFAULTS, FEED_SPECIAL_ASPECT, HOME_TABS, HOME_TAB_PLACEHOLDER, featuredAspect, packFeaturedColumns, readFeaturedMetrics, withSpecialCards, type FeedSpecialId, type HomeTab } from './featuredLayout'
+import { HOME_SKILL_ROW, FEATURED_DEFAULTS, FEED_SPECIAL_ASPECT, HOME_TABS, HOME_TAB_PLACEHOLDER, HOME_ASSET_CHIPS, featuredAspect, packFeaturedColumns, readFeaturedMetrics, withSpecialCards, type FeedSpecialId, type HomeTab, type HomeAssetChip } from './featuredLayout'
 import { Assets } from './Assets'
 import { CHIP_LABEL } from './Skills'
 import { toolCover } from './toolCovers'
@@ -116,6 +116,7 @@ export function Home() {
   // #580 cut 2: feed tabs + category chips (from skills.ts categories) + natural image ratios + floating input
   const [tab, setTab] = useState<HomeTab>('explore')
   const [chip, setChip] = useState<SkillChipId>('forYou')
+  const [assetChip, setAssetChip] = useState<HomeAssetChip>('brandKit')
   const [ratios, setRatios] = useState<Record<string, number>>({})
   const [floating, setFloating] = useState(false)
   const boxSlot = useRef<HTMLDivElement>(null)
@@ -221,8 +222,7 @@ export function Home() {
   // #537: masonry waterfall via Loomic column math; cards from our skill presets only (no third-party feed data)
   // #580 cut 2: card height = the image's natural ratio once loaded (estimate before); two special cards embedded.
   const featuredItems = useMemo(
-    () => withSpecialCards(
-      featured.map(({ skill: s, preset: p, image, key }, order) => ({
+    () => featured.map(({ skill: s, preset: p, image, key }, order) => ({
         kind: 'case' as const,
         id: key,
         order,
@@ -232,8 +232,6 @@ export function Home() {
         image,
         aspect: ratios[key] ?? featuredAspect(key),
       })),
-      (id: FeedSpecialId) => ({ kind: 'special' as const, id: `special:${id}`, special: id, group: undefined, aspect: FEED_SPECIAL_ASPECT }),
-    ),
     [featured, ratios],
   )
   const onCaseLoad = (key: string, img: HTMLImageElement) => {
@@ -251,7 +249,10 @@ export function Home() {
     return () => io.disconnect()
   }, [])
   const featuredColumns = useMemo(
-    () => packFeaturedColumns(featuredItems, featuredWidth, featuredMetrics.gap, featuredMetrics.colWidth),
+    () => withSpecialCards(
+      packFeaturedColumns(featuredItems, featuredWidth, featuredMetrics.gap, featuredMetrics.colWidth),
+      (id: FeedSpecialId) => ({ kind: 'special' as const, id: `special:${id}`, special: id, aspect: FEED_SPECIAL_ASPECT }),
+    ),
     [featuredItems, featuredWidth, featuredMetrics],
   )
   useEffect(() => {
@@ -504,12 +505,22 @@ export function Home() {
           ))}
         </div>
       )}
+      {tab === 'assets' && (
+        <div className="ca-skills__chips ca-homechips" data-testid="home-asset-chips">
+          {HOME_ASSET_CHIPS.map((c) => (
+            <button key={c} type="button" className="ca-skills__chip" data-testid={`home-asset-chip-${c}`} data-on={assetChip === c || undefined} aria-pressed={assetChip === c} onClick={() => setAssetChip(c)}>
+              {t(`home.assetChip.${c}`)}
+            </button>
+          ))}
+        </div>
+      )}
       {tab === 'assets' && <div className="ca-hometab-assets" data-testid="home-tab-panel-assets"><Assets /></div>}
       {HOME_TAB_PLACEHOLDER.has(tab) && (
         <div className="ca-hometab-soon" data-testid={`home-tab-panel-${tab}`}>
-          <span className="ca-icon" aria-hidden>{tab === 'pinterest' ? Icons.imageLine : Icons.layers}</span>
-          <span className="ca-hometab-soon__title">{t(`home.tab.${tab}`)}</span>
-          <span className="ca-hometab-soon__text">{t('home.comingSoon')}</span>
+          {tab === 'inspiration' ? <span className="ca-featured__special-collage ca-hometab-soon__collage" aria-hidden /> : <span className="ca-icon" aria-hidden>{Icons.imageLine}</span>}
+          <span className="ca-hometab-soon__title">{t(`home.tabPanel.${tab}.title`)}</span>
+          <span className="ca-hometab-soon__text">{t(`home.tabPanel.${tab}.text`)}</span>
+          <button type="button" className="ca-hometab-soon__btn" data-variant={tab === 'pinterest' ? 'outline' : undefined} data-testid={`home-tab-action-${tab}`} onClick={comingSoon}>{t(`home.tabPanel.${tab}.action`)}</button>
         </div>
       )}
 
@@ -523,11 +534,11 @@ export function Home() {
         <div className="ca-skillgrid" data-testid="home-skill-grid">
           {shown.slice(0, HOME_SKILL_ROW).map((s) => {
             const cover = skillQuickStartCover(s)
-            const src = cover && (cover.own === 'bundled' ? cover.src : thumbUrl(cover.src, 512))
+            const src = cover && (cover.own === 'userdata' ? thumbUrl(cover.src, 512) : cover.src)
             return (
               <button key={s.id} type="button" className="ca-skillcard" data-testid="home-skill-card" data-skill={s.id}
                 onClick={() => trySkill(s)}>
-                <span className="ca-skillcard__cover" data-testid="home-skill-cover">{src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
+                <span className="ca-skillcard__cover" data-testid="home-skill-cover">{src && cover?.own === 'video' ? <video src={`${src}#t=0.001`} muted playsInline preload="metadata" data-testid="home-skill-cover-frame" /> : src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
                 <span className="ca-skillcard__name"><span className="ca-skillcard__label">{s.name}</span></span>
               </button>
             )
@@ -546,8 +557,13 @@ export function Home() {
                 {col.map((item) => item.kind === 'special' ? (
                   <div key={item.id} className="ca-featured__card ca-featured__special" data-testid="home-feed-special" data-special={item.special}>
                     <span className="ca-featured__special-body" style={{ aspectRatio: item.aspect }}>
-                      <span className="ca-icon" aria-hidden>{item.special === 'capture' ? Icons.layers : Icons.circlePlus}</span>
+                      {/* collage slot stays empty until design supplies the collage (no generated art) */}
+                      <span className="ca-featured__special-collage" data-testid="home-feed-special-collage" aria-hidden />
                       <span className="ca-featured__special-title">{t(`home.special.${item.special}`)}</span>
+                      <span className="ca-featured__special-text">{t(`home.special.${item.special}Text`)}</span>
+                      {item.special === 'connector' && (
+                        <input className="ca-featured__special-input" data-testid="home-feed-special-input" placeholder={t('home.special.connectorPlaceholder')} onKeyDown={(e) => { if (e.key === 'Enter') comingSoon() }} />
+                      )}
                       <button type="button" className="ca-featured__special-btn" data-testid={`home-feed-special-${item.special}`} onClick={comingSoon}>{t(`home.special.${item.special}Action`)}</button>
                     </span>
                   </div>

@@ -4,7 +4,8 @@ export const HOME_SKILL_ROW = 6
 /** Home 「Skill 案例」 masonry: column width ≈ FEATURED_COL_W (design: 299 @1280 expanded), gap FEATURED_GAP;
  * column count adapts to the container (3 @1280, 5 @1920) — columns stay fluid so they fill the row.
  * Overridable from CSS vars --ca-featured-col-w / --ca-featured-gap. */
-export const FEATURED_COL_W = 299
+/** Mirrors --ca-feed-col-w (design v2: 298.7 @1280). */
+export const FEATURED_COL_W = 298.7
 export const FEATURED_GAP = 16
 export interface FeaturedMetrics { colWidth: number; gap: number }
 export const FEATURED_DEFAULTS: FeaturedMetrics = { colWidth: FEATURED_COL_W, gap: FEATURED_GAP }
@@ -81,21 +82,29 @@ export function packFeaturedColumns<T extends { id: string; aspect: number; grou
  *  灵感采集 / Pinterest are placeholders that open a 「即将上线」 state. */
 export const HOME_TABS = ['explore', 'assets', 'inspiration', 'pinterest'] as const
 export type HomeTab = (typeof HOME_TABS)[number]
+/** #580 cut 2 — 我的素材 tab chips (design v2). Visual filter only until assets carry these kinds. */
+export const HOME_ASSET_CHIPS = ['brandKit', 'character', 'product', 'custom'] as const
+export type HomeAssetChip = (typeof HOME_ASSET_CHIPS)[number]
 export const HOME_TAB_PLACEHOLDER: ReadonlySet<HomeTab> = new Set(['inspiration', 'pinterest'])
 
-/** #580 cut 2 — the two special cards the reference embeds in the masonry. `at` = index in the feed data order;
- *  provisional until design measures the live positions. Their buttons only show a coming-soon toast. */
+/** #580 cut 2 — the two special cards the reference embeds in the masonry, placed by COLUMN (design v2 measure,
+ *  issuecomment-6557249001): capture = column 1 slot 2 (~8th overall), connector = column 2 slot 5 (~14th).
+ *  `col`/`slot` are 0-based and clamp to the columns/length that exist. Buttons only show a coming-soon toast. */
 export const FEED_SPECIAL_CARDS = [
-  { id: 'capture', at: 2 },
-  { id: 'connector', at: 9 },
+  { id: 'capture', col: 0, slot: 1 },
+  { id: 'connector', col: 1, slot: 4 },
 ] as const
 export type FeedSpecialId = (typeof FEED_SPECIAL_CARDS)[number]['id']
-/** Masonry height estimate for a special card before it renders (column-width ratio). */
+/** Masonry height estimate for a special card (measured 299×398 → 3:4). */
 export const FEED_SPECIAL_ASPECT = 3 / 4
 
-/** Insert the special cards into `items` at their `at` positions (clamped to the end). Pure, for tests. */
-export function withSpecialCards<T, S>(items: readonly T[], make: (id: FeedSpecialId) => S): (T | S)[] {
-  const out: (T | S)[] = [...items]
-  for (const c of [...FEED_SPECIAL_CARDS].sort((a, b) => a.at - b.at)) out.splice(Math.min(c.at, out.length), 0, make(c.id))
+/** Insert the special cards into packed `columns` at their column/slot (clamped). Pure, for tests. */
+export function withSpecialCards<T, S>(columns: readonly (readonly T[])[], make: (id: FeedSpecialId) => S): (T | S)[][] {
+  const out: (T | S)[][] = columns.map((c) => [...c])
+  if (!out.length) return out
+  for (const c of FEED_SPECIAL_CARDS) {
+    const col = out[Math.min(c.col, out.length - 1)]!
+    col.splice(Math.min(c.slot, col.length), 0, make(c.id))
+  }
   return out
 }

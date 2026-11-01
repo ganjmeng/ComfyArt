@@ -1,6 +1,9 @@
 /* #580 cut 2 — ONE shared tab-row + chip token set (home feed tabs/chips now; Skills page header via #583).
  * Values = today's look (black filled selected + outlined); design's v2 (light-grey filled, unselected text-only)
  * is a value swap here only. */
+/* Shared masonry column width (design v2: 298.7 @1280); #583's Skills list reuses it. */
+:root { --ca-feed-col-w: 298.7px; --ca-feed-special-bg: rgb(245, 245, 245); --ca-feed-special-collage-h: 122px; --ca-feed-special-pad: 6px;
+  --ca-feed-tag-bg: rgba(0, 0, 0, .04); --ca-feed-tag-fg: rgba(0, 0, 0, .55); --ca-feed-tag-font: 400 11px/16px var(--ca-font); }
 :root {
   --ca-tabs-gap: 24px; --ca-tabs-py: 8px; --ca-tabs-font: 500 14px/22px var(--ca-font);
   --ca-tabs-fg: var(--ca-muted); --ca-tabs-on-fg: var(--ca-text); --ca-tabs-indicator: var(--ca-text); --ca-tabs-indicator-h: 2px;
@@ -151,7 +154,7 @@ body { background: var(--ca-float); }
   position: relative; display: flex; align-items: center; justify-content: center; width: 100%;
   aspect-ratio: var(--ca-skillrow-cover-ratio); border-radius: var(--ca-skillrow-radius); background: var(--ca-field); overflow: hidden;
 }
-.ca-skillcard__cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 300ms ease; }
+.ca-skillcard__cover img, .ca-skillcard__cover video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 300ms ease; }
 .ca-skillcard:hover .ca-skillcard__cover img, .ca-skillcard:focus-visible .ca-skillcard__cover img { transform: scale(1.05); }
 .ca-skillcard__name {
   display: flex; align-items: center; gap: 2px; min-width: 0; padding: 0 4px;
@@ -210,7 +213,7 @@ body { background: var(--ca-float); }
 /* #494-3 / #533 / #537 — home 「精选」waterfall (Loomic column pack; our skill preset covers only) */
 .ca-landing__featured {
   /* skills-cut1: Skill 案例 masonry — column ≈299 + gap 16 (design @1280); count adapts (3 @1280, 5 @1920). */
-  --ca-featured-col-w: 299px;
+  --ca-featured-col-w: var(--ca-feed-col-w);
   --ca-featured-gap: 16px;
 }
 .ca-featured--waterfall {
@@ -253,16 +256,18 @@ body { background: var(--ca-float); }
 /* #580 cut 2 — the two embedded special cards (neutral, token-based until design measures the reference) */
 .ca-featured__special { cursor: default; }
 .ca-featured__special-body {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%; max-height: 680px;
-  border-radius: var(--ca-featured-radius, 12px); background: var(--ca-field); color: var(--ca-text); box-sizing: border-box; padding: 16px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; width: 100%; max-height: 680px;
+  border-radius: var(--ca-featured-radius, 12px); background: var(--ca-feed-special-bg); color: #111; box-sizing: border-box; padding: var(--ca-feed-special-pad); text-align: center;
 }
-.ca-featured__special-body > .ca-icon { width: 28px; height: 28px; color: var(--ca-muted); }
+.ca-featured__special-collage { display: block; width: 100%; height: var(--ca-feed-special-collage-h); border-radius: calc(var(--ca-featured-radius, 12px) - 4px); background: rgba(0, 0, 0, .04); margin-bottom: 8px; }
+.ca-featured__special-text { font: 400 12px/18px var(--ca-font); color: rgba(0, 0, 0, .55); padding: 0 12px; }
+.ca-featured__special-input { width: calc(100% - 24px); height: 32px; padding: 0 10px; box-sizing: border-box; border: 1px solid rgba(0, 0, 0, .1); border-radius: 8px; background: #fff; font: 400 12px/18px var(--ca-font); }
 .ca-featured__special-title { font: 500 14px/22px var(--ca-font); }
 .ca-featured__special-btn {
-  padding: 6px 14px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 999px; background: var(--ca-float);
-  color: var(--ca-text); font: 500 12px/16px var(--ca-font); cursor: pointer;
+  padding: 6px 14px; border: none; border-radius: 999px; background: #111;
+  color: #fff; font: 500 12px/16px var(--ca-font); cursor: pointer;
 }
-.ca-featured__tag { flex: none; font: 400 12px/18px var(--ca-font); color: var(--ca-muted); }  /* #580 item 5 */
+.ca-featured__tag { flex: none; padding: 0 4px; border-radius: 4px; font: var(--ca-feed-tag-font); color: var(--ca-feed-tag-fg); background: var(--ca-feed-tag-bg); }  /* #580 item 5 */
 
 .ca-projects { max-width: 1600px; margin: 0 auto; padding: 32px 48px 96px; box-sizing: border-box; }
 .ca-projects__head { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
@@ -1016,4 +1021,7 @@ body { background: var(--ca-float); }
 .ca-hometab-soon > .ca-icon { width: 32px; height: 32px; }
 .ca-hometab-soon__title { font: 500 16px/24px var(--ca-font); color: var(--ca-text); }
 .ca-hometab-soon__text { font: 400 13px/20px var(--ca-font); }
+.ca-hometab-soon__collage { width: 226px; height: 122px; }
+.ca-hometab-soon__btn { margin-top: 8px; padding: 8px 18px; border: none; border-radius: 999px; background: var(--ca-strong); color: var(--ca-float); font: 500 13px/20px var(--ca-font); cursor: pointer; }
+.ca-hometab-soon__btn[data-variant="outline"] { background: transparent; color: var(--ca-text); border: var(--ca-border-w) solid var(--ca-border); }
 .ca-hometab-assets { margin-top: 16px; }
