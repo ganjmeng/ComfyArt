@@ -87,14 +87,14 @@ def test_rev2_cells_pinned(got):
     # packaging re-pinned to manifest c26cfad (mockup dropped; same 5 image blobs as 1014ef2)
     assert all(u == R541.format("c26cfaddc5e12c8652b151ef09ad12c47b2062a0", "packaging", "packaging", i) for i, u in k.items() if i != "shelf")
     assert k["shelf"] == R541.format("35c819e64b38cc7d64dcd814ae8b86133976fc8a", "packaging", "packaging", "shelf")  # retail-shelf re-wash
-    assert got["presets"]["motion"] == 3 and got["presets"]["poster"] == 3
+    assert got["presets"]["motion"] == 2 and got["presets"]["poster"] == 0  # #569: motion 2 templates, poster effect-only
 
 
 @needs_node
 def test_examples_carousel_is_data_driven(got):
-    want = {"poster": 5, "thumbnail": 6, "character": 6, "social": 10, "banner": 1, "interior": 4}  # interior 535d956: 3× 4:5 + 1× 1:1
+    want = {"poster": 5, "thumbnail": 6, "social": 10, "banner": 1, "interior": 4}  # #569: character examples removed  # interior 535d956: 3× 4:5 + 1× 1:1
     assert {k: v for k, v in got["examples"].items() if v} == want
-    for sid in ("product", "brand", "packaging", "motion", "custom-workflow"):
+    for sid in ("product", "brand", "packaging", "motion", "character", "custom-workflow"):
         assert got["examples"][sid] == 0, sid
     assert got["exNone"] == ["", ""]
     html = got["exMock"]
@@ -109,7 +109,6 @@ def test_examples_carousel_is_data_driven(got):
 
 EX541 = {"interior": ("535d9568d1b8ca25e300fa32db1eca887889ba88", [1, 2, 3, 4]), "poster": ("6d864bd2dd53b9f5b487829f2834d94be013b0a5", [1, 2, 3, 4, 5]),
          "thumbnail": ("5fc35b17f11ee58fde21671b16b574ecb0d35e5a", [1, 2, 3, 4, 5, 6]),
-         "character": ("dd97ee3782fc85090217c573b2ebb59ea4f19654", [1, 2, 3, 4, 5, 6]),
          "social": ("cb41cb8a450139cd903e777c8f84024019d517cd", list(range(1, 11))),
          "banner": ("8cc3fb305f7ce29ebbab63525680e3436e964dbb", [1])}  # 1 × ~2:1 composite
 
