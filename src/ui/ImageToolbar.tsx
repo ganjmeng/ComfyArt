@@ -6,8 +6,7 @@ import { createPortal } from 'react-dom'
 import { Tip } from './Tip'
 import * as actions from '../actions'
 import { extractText } from '../agent'
-import { imageTo3d } from '../assetGen'
-import { CUSTOM_MODEL3D, workflowConfigAtom } from '../customWorkflows'
+import { workflowConfigAtom } from '../customWorkflows'
 import { openCanvasChat } from '../canvasChat'
 import { editElements } from '../elements'
 import { createMockup } from '../mockup'
@@ -21,9 +20,9 @@ import { Icons } from './icons'
 import { infoAtom } from './InfoDialog'
 import { lightboxAtom } from './Lightbox'
 import { enterMode, modeAtom, type Mode } from './mode'
-import { homeToolAtom } from '../home/handoff'
+import { HOME_LANDING, homeToolAtom } from '../home/handoff'
 import { Popover } from './Popover'
-import { UpscaleMenu } from './UpscaleMenu'
+import { To3dPanel, UpscaleMenu } from './UpscaleMenu'
 import { useSelectedImage, useSelectionRect } from './selection'
 import { readLocal, writeLocal } from '../localPrefs'
 import { t } from '../i18n'
@@ -44,7 +43,9 @@ function setPrefs(patch: Partial<BarPrefs>) {
   writeLocal(BAR_KEY, JSON.stringify(prefsAtom.get()))
 }
 
-interface Tool { id: string; icon: ReactNode; label: string; hint?: string; run?: () => void; menu?: ReactNode; when?: boolean }
+/** panel: #570 — the tool opens its own panel at the image's right (bar button and ⋯ item alike), never a ⋯ subview. */
+/** swap: #570 — the tool's menu becomes the image toolbar itself (flip & rotate), from the bar, ⋯ and home alike. */
+interface Tool { id: string; icon: ReactNode; label: string; hint?: string; run?: () => void; menu?: ReactNode; panel?: boolean; swap?: boolean; when?: boolean }
 
 function download(src: string, name: string) {
   const a = document.createElement('a')
@@ -78,22 +79,26 @@ function Item({ icon, label, onClick }: { icon: ReactNode; label: string; onClic
   )
 }
 
-function TransformMenu({ editor, shape }: { editor: Editor; shape: TLImageShape }) {
+/** #570: `bar` lays the same controls out as the dedicated transform toolbar, in design's order:
+ *  name, angle, rotate, flip H, flip V (download follows in the bar). */
+function TransformMenu({ editor, shape, bar }: { editor: Editor; shape: TLImageShape; bar?: boolean }) {
   const deg = Math.round((((shape.rotation * 180) / Math.PI) % 360 + 360) % 360)
   const [text, setText] = useState(String(deg))
   useEffect(() => setText(String(deg)), [deg])
   const rotateTo = (d: number) => editor.rotateShapesBy([shape.id], (d * Math.PI) / 180 - shape.rotation)
   const commit = () => (Number.isFinite(Number(text)) && text.trim() ? rotateTo(Number(text)) : setText(String(deg)))
+  const flipH = <button key="fh" type="button" className="ca-bar__btn" title={t('common.flipHorizontal')} onClick={() => editor.flipShapes([shape.id], 'horizontal')}><span className="ca-icon">{Icons.flipH}</span></button>
+  const flipV = <button key="fv" type="button" className="ca-bar__btn" title={t('common.flipVertical')} onClick={() => editor.flipShapes([shape.id], 'vertical')}><span className="ca-icon">{Icons.flipV}</span></button>
+  const ccw = <button key="ccw" type="button" className="ca-bar__btn" title={t('imageToolbar.rotateLeft')} onClick={() => rotateTo(deg - 90)}><span className="ca-icon ca-transform__ccw">{Icons.rotate}</span></button>
+  const cw = <button key="cw" type="button" className="ca-bar__btn" title={t('canvasMenu.rotate90')} onClick={() => rotateTo(deg + 90)}><span className="ca-icon">{Icons.rotate}</span></button>
+  const angle = (
+    <label key="angle" className="ca-crop__field" title={t('imageToolbar.angle')}>
+      <input className="ca-crop__input" value={text} inputMode="numeric" onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { e.stopPropagation(); if (isEnter(e)) commit() }} />°
+    </label>
+  )
   return (
     <div className="ca-menu ca-transform">
-      <button type="button" className="ca-bar__btn" title={t('common.flipHorizontal')} onClick={() => editor.flipShapes([shape.id], 'horizontal')}><span className="ca-icon">{Icons.flipH}</span></button>
-      <button type="button" className="ca-bar__btn" title={t('common.flipVertical')} onClick={() => editor.flipShapes([shape.id], 'vertical')}><span className="ca-icon">{Icons.flipV}</span></button>
-      <button type="button" className="ca-bar__btn" title={t('imageToolbar.rotateLeft')} onClick={() => rotateTo(deg - 90)}><span className="ca-icon ca-transform__ccw">{Icons.rotate}</span></button>
-      <button type="button" className="ca-bar__btn" title={t('canvasMenu.rotate90')} onClick={() => rotateTo(deg + 90)}><span className="ca-icon">{Icons.rotate}</span></button>
-      <div className="ca-bar__sep" />
-      <label className="ca-crop__field" title={t('imageToolbar.angle')}>
-        <input className="ca-crop__input" value={text} inputMode="numeric" onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { e.stopPropagation(); if (isEnter(e)) commit() }} />°
-      </label>
+      {bar ? [angle, ccw, cw, flipH, flipV] : [flipH, flipV, ccw, cw, <div key="sep" className="ca-bar__sep" />, angle]}
     </div>
   )
 }
@@ -118,16 +123,27 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   const [inMore, setInMore] = useState<string | null>(null)
   const [customize, setCustomize] = useState(false)
   const [moreTools, setMoreTools] = useState(false)
+  const [panel, setPanel] = useState<string | null>(null)  // #570: tool panel at the image's right
+  const [swap, setSwap] = useState<string | null>(null)  // #570: tool's own bar replacing the image toolbar
+  const [fly, setFly] = useState<{ left: number; top: number } | null>(null)  // #570: ⋯ 更多工具 flyout, fixed so the ⋯ list's scroll box does not clip it
   const prefs = useValue(prefsAtom)
+  // #570: a panel / swapped bar belongs to one image — a new selection (e.g. the next home handoff) starts clean
+  useEffect(() => { setPanel(null); setSwap(null) }, [shape?.id])
+  useEscape(!!swap, () => setSwap(null))  // #570: Esc leaves the swapped transform bar (empty-canvas click deselects, which also exits)
 
   // #537 / #540: home 实用工具 handoff opens the matching menu after place+select (no auto-run)
   const pendingHome = useValue(homeToolAtom)
   useEffect(() => {
     if (!shape || !pendingHome) return
-    if (pendingHome === 'upscale' || pendingHome === 'to3d' || pendingHome === 'transform') {
-      // #545: unpinned menu tools live under 更多 — open it on the tool's real panel (no auto-run)
-      if (prefsAtom.get().pinned.includes(pendingHome)) setMenu(pendingHome)
-      else { setMenu('more'); setInMore(pendingHome) }
+    const landing = HOME_LANDING[pendingHome]
+    if (landing) {
+      // #570: the tool's own panel at the image's right / its own bar — ⋯ never auto-opens (supersedes #545)
+      setMenu(null); setInMore(null); setMoreTools(false)
+      // upscale keeps its pinned popover (unchanged); unpinned it opens the same UpscaleMenu at the image's right
+      const pinnedHere = prefsAtom.get().pinned.includes(pendingHome)
+      if (landing === 'menu' && pinnedHere) setMenu(pendingHome)
+      setPanel(landing === 'panel' || (landing === 'menu' && !pinnedHere) ? pendingHome : null)
+      setSwap(landing === 'bar' ? pendingHome : null)
       homeToolAtom.set(null)
     } else if (
       pendingHome === 'cutout' || pendingHome === 'mockup' || pendingHome === 'inpaint'
@@ -167,6 +183,8 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   if (top < EDGE) top = rect.b + GAP
 
   const close = (fn: () => void) => () => { setMenu(null); fn() }
+  const openSwap = (id: string) => { setMenu(null); setInMore(null); setMoreTools(false); setPanel(null); setSwap(id) }
+  const openPanel = (id: string) => { setMenu(null); setInMore(null); setMoreTools(false); setSwap(null); setPanel(id) }
   const genInfo = genInfoOf(shape)
   const custom3d = workflowConfigAtom.get().model3d
   const ocr = async () => {
@@ -180,7 +198,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
       onError(errorText(e))
     }
   }
-  const toggle = (m: string) => (o: boolean) => { setMenu(o ? m : null); setInMore(null); setMoreTools(false) }
+  const toggle = (m: string) => (o: boolean) => { setMenu(o ? m : null); setInMore(null); setMoreTools(false); if (o) setPanel(null) }
   const mode$ = (m: Mode) => () => enterMode(m)
   const frame = editor.getShape(shape.parentId as any)
   const fitFrame = (cover: boolean) => {
@@ -220,16 +238,8 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
     { id: 'vectorize', icon: Icons.polygon, label: t('imageToolbar.vectorize'), run: () => void vectorize(editor, shape).catch((e) => onError(String(e))) },
     { id: 'elements', icon: Icons.textTool, label: t('imageToolbar.editElements'), run: () => editElements(editor, shape, onError) },
     { id: 'mockup', icon: Icons.box, label: t('mockup.title'), run: () => createMockup(editor, shape, onError) },
-    {
-      id: 'to3d', icon: Icons.cube, label: t('imageToolbar.imageTo3d'), menu: (
-        <div className="ca-menu">
-          <Item icon={Icons.cube} label="TRELLIS.2" onClick={close(() => imageTo3d(editor, shape, onError, 'trellis2'))} />
-          <Item icon={Icons.cube} label="Pixal3D" onClick={close(() => imageTo3d(editor, shape, onError, 'pixal3d'))} />
-          {custom3d && <Item icon={Icons.cube} label={custom3d.replace(/\.json$/, '')} onClick={close(() => imageTo3d(editor, shape, onError, CUSTOM_MODEL3D))} />}
-        </div>
-      ),
-    },
-    { id: 'transform', icon: Icons.rotate, label: t('imageToolbar.flipAndRotate'), menu: <TransformMenu editor={editor} shape={shape} /> },
+    { id: 'to3d', icon: Icons.cube, label: t('imageToolbar.imageTo3d'), panel: true },
+    { id: 'transform', icon: Icons.rotate, label: t('imageToolbar.flipAndRotate'), menu: <TransformMenu editor={editor} shape={shape} />, swap: true },
     { id: 'regenerate', icon: Icons.replace, label: t('common.regenerate'), run: () => void regenerate(editor, shape, onError), when: !!genInfo?.prompt },
     { id: 'remix', icon: Icons.genImage, label: t('imageToolbar.remix'), run: () => remix(editor, shape), when: !!genInfo?.prompt },
     { id: 'copyPrompt', icon: Icons.skill, label: t('imageToolbar.copyPrompt'), run: () => void copyText(genInfo!.prompt!), when: !!genInfo?.prompt },
@@ -240,18 +250,44 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   const usable = tools.filter((t) => t.when !== false).sort((a, b) => ALL_TOOLS.indexOf(a.id) - ALL_TOOLS.indexOf(b.id))
   const pinned = usable.filter((t) => prefs.pinned.includes(t.id))
   const unpinned = usable.filter((t) => !prefs.pinned.includes(t.id))
-  const barTool = (t: Tool) => (t.menu
+  const barTool = (t: Tool) => (t.swap
+    ? <Btn key={t.id} icon={t.icon} label={t.label} onClick={() => openSwap(t.id)} />
+    : t.panel
+    ? <Btn key={t.id} icon={t.icon} label={t.label} open={panel === t.id} onClick={() => (panel === t.id ? setPanel(null) : openPanel(t.id))} />
+    : t.menu
     ? <Popover key={t.id} open={menu === t.id} onOpenChange={toggle(t.id)} trigger={({ open, toggle: tg }) => <Btn icon={t.icon} label={t.label} open={open} onClick={tg} />}>{t.menu}</Popover>
     : <Btn key={t.id} icon={t.icon} label={t.label} hint={t.hint} onClick={t.run!} />)
   const moreView = tools.find((t) => t.id === inMore)
-  const menuItem = (t: Tool) => <Item key={t.id} icon={t.icon} label={t.label} onClick={t.menu ? () => setInMore(t.id) : close(t.run!)} />
+  const menuItem = (t: Tool) => <Item key={t.id} icon={t.icon} label={t.label} onClick={t.swap ? () => openSwap(t.id) : t.panel ? () => openPanel(t.id) : t.menu ? () => setInMore(t.id) : close(t.run!)} />
   const groups = [MENU_MAIN, MENU_GEN].map((ids) => unpinned.filter((t) => ids.includes(t.id)))
   const moreList = unpinned.filter((t) => MORE_TOOLS.includes(t.id))
+  const host$ = host
+  const panelLeft = Math.min(rect.r + 6, host$.width - 172 - EDGE)
+  const panelTop = Math.max(EDGE, Math.min(rect.t, host$.height - 346 - EDGE))
+  const panelEl = panel && (
+    <div className="ca-toolpanel-host" style={{ left: panelLeft, top: panelTop }} onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
+      {panel === 'to3d'
+        ? <To3dPanel key={shape.id} editor={editor} shape={shape} src={src} custom={custom3d} onDone={() => setPanel(null)} onError={onError} />
+        : <UpscaleMenu key={shape.id} asPanel editor={editor} shape={shape} w={iw} h={ih} onDone={() => setPanel(null)} onError={onError} />}
+    </div>
+  )
+  const swapTool = swap ? tools.find((x) => x.id === swap) : null
+  if (swapTool?.menu) {
+    // #570: the tool's own bar in place of the image toolbar (flip & rotate); Esc or an empty-canvas click (deselect) exits
+    return (
+      <div ref={bar} className="ca-bar ca-toolbar ca-toolbar--image ca-toolbar--swap" data-tool={swapTool.id} style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
+        <span className="ca-toolbar__name">{swapTool.label}</span>
+        <TransformMenu editor={editor} shape={shape} bar />
+        <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
+      </div>
+    )
+  }
 
   return (
+    <>
     <div ref={bar} className="ca-bar ca-toolbar ca-toolbar--image" style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
       {pinned.map(barTool)}
-      <Popover open={menu === 'more'} onOpenChange={toggle('more')} align="end" bar=".ca-toolbar" contentKey={inMore ?? (moreTools ? 'tools' : '')} trigger={({ open, toggle: flip }) => <Btn icon={Icons.more} hint={t('imageToolbar.more')} open={open} onClick={flip} />}>
+      <Popover open={menu === 'more'} onOpenChange={toggle('more')} align="end" bar=".ca-toolbar" contentKey={inMore ?? ''} trigger={({ open, toggle: flip }) => <Btn icon={Icons.more} hint={t('imageToolbar.more')} open={open} onClick={flip} />}>
         {moreView?.menu ? moreView.menu : (
         <div className="ca-menu ca-menu--image">
           {frame?.type === 'frame' && <Item icon={Icons.frame} label={t('imageToolbar.fillArtboard')} onClick={close(() => fitFrame(true))} />}
@@ -265,10 +301,17 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
           ))}
           {moreList.length > 0 && <>
             <div className="ca-menu__sep" />
+            <div className="ca-menu__flyhost" onMouseEnter={(e) => {
+              const r = e.currentTarget.getBoundingClientRect(), w = 184
+              const left = r.right + w > window.innerWidth - EDGE ? r.left - w : r.right  // flush with the row so the pointer never crosses a gap
+              setFly({ left, top: r.top - 4 }); setMoreTools(true)
+            }} onMouseLeave={() => setMoreTools(false)}>
             <button type="button" className="ca-menu__item ca-menu__sub" aria-expanded={moreTools} data-open={moreTools || undefined} onClick={() => setMoreTools(!moreTools)}>
               <span className="ca-icon">{Icons.more}</span><span className="ca-menu__grow">{t('imageToolbar.moreTools')}</span><span className="ca-icon ca-menu__chev">{Icons.chevron}</span>
             </button>
-            {moreTools && <div className="ca-menu__nested">{moreList.map(menuItem)}</div>}
+            {moreTools && <div className="ca-menu ca-menu__nested ca-menu__flyout" style={fly ?? undefined}
+              ref={(el) => { if (el && fly) el.style.top = `${Math.max(EDGE, Math.min(fly.top, window.innerHeight - el.offsetHeight - EDGE))}px` }}>{moreList.map(menuItem)}</div>}
+            </div>
           </>}
           <div className="ca-menu__sep" />
           <Item icon={Icons.grid} label={t('imageToolbar.customizeToolbar')} onClick={() => { setMenu(null); setCustomize(true) }} />
@@ -279,6 +322,8 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
       <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
       {customize && createPortal(<CustomizeDialog tools={tools} onClose={() => setCustomize(false)} />, document.body)}
     </div>
+    {panelEl}
+    </>
   )
 }
 

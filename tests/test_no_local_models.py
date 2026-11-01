@@ -32,6 +32,8 @@ ALLOWLIST = {
     ("src/locales/en.json", '"wsErr.loraUrl"'): "UI text",
     # Toolbar label kept from upstream; routes to cloud tripo3d multiview model.
     ("src/ui/ImageToolbar.tsx", 'label="Pixal3D"'): "UI label, cloud model",
+    # #570: the to3d panel's model list moved into data (MODEL3D_SPECS); same cloud model label
+    ("src/assetGen.ts", "label: 'Pixal3D'"): "UI label, cloud model",
     # Mapping metadata naming the upstream local model this cloud id replaces.
     ("api/wavespeed_models.json", '"local": "Pixal3D multiview"'): "mapping note",
     # i18n hint text for the multi-view 3D tool (cloud-backed).

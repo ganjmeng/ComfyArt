@@ -121,10 +121,12 @@ def test_markers_video_and_model3d_actions():
 
 
 def test_image_toolbar_third_3d_item_filename_keeps_trellis_pixal_labels():
-    src = _toolbar()
-    assert 'label="TRELLIS.2"' in src and 'label="Pixal3D"' in src
+    # #570: models moved to MODEL3D_SPECS data + the 转 3D panel's segmented switch (custom stays the third option)
+    src = _toolbar() + (ROOT / "src/ui/UpscaleMenu.tsx").read_text(encoding="utf-8")
+    asset = _asset()
+    assert "label: 'TRELLIS.2'" in asset and "label: 'Pixal3D'" in asset
     assert "CUSTOM_MODEL3D" in src and "custom3d" in src
-    assert "custom3d.replace" in src
+    assert "custom.replace" in src
 
 
 def test_asset_gen_custom_model3d_tags_only_when_custom():

@@ -49,11 +49,20 @@ export function generateAudio(editor: Editor, spec: AudioSpec, onError: ErrorSin
 
 export type Model3d = 'trellis2' | 'pixal3d' | typeof CUSTOM_MODEL3D
 
-async function modelGraph(image: string, model: Model3d): Promise<Built> {
+/** #570: one slider/number parameter of a 3D model, rendered by the 转 3D panel from this data. */
+export interface Model3dParam { key: string; label: string; min: number; max: number; step: number; value: number }
+/** #570: the built-in 3D models and their user parameters (the panel renders exactly these; none are hard-coded there).
+ *  Neither built-in model exposes a user parameter today — both send only the image to WaveSpeed. */
+export const MODEL3D_SPECS: { id: Model3d; label: string; params: Model3dParam[] }[] = [
+  { id: 'trellis2', label: 'TRELLIS.2', params: [] },
+  { id: 'pixal3d', label: 'Pixal3D', params: [] },
+]
+
+async function modelGraph(image: string, model: Model3d, params: Record<string, number> = {}): Promise<Built> {
   // custom:model3d → assigned WaveSpeed JSON; trellis2/pixal3d stay the curated default (labels unchanged)
-  if (model === CUSTOM_MODEL3D) return wsBuilt({ feature: 'image_to_3d', custom: 'model3d', model: CUSTOM_MODEL3D, image })
+  if (model === CUSTOM_MODEL3D) return wsBuilt({ feature: 'image_to_3d', custom: 'model3d', model: CUSTOM_MODEL3D, image, ...params })
   void model // legacy local names; the curated WaveSpeed default or the agent's model is used
-  return wsBuilt({ feature: 'image_to_3d', image })
+  return wsBuilt({ feature: 'image_to_3d', image, ...params })
 }
 
 const VIEWS = ['front', 'left', 'back', 'right'] as const
@@ -74,11 +83,11 @@ export function viewsTo3d(editor: Editor, shapes: TLImageShape[], onError: Error
   return holder
 }
 
-export function imageTo3d(editor: Editor, shape: TLImageShape, onError: ErrorSink, model: Model3d = 'trellis2') {
+export function imageTo3d(editor: Editor, shape: TLImageShape, onError: ErrorSink, model: Model3d = 'trellis2', params: Record<string, number> = {}) {
   const asset = shape.props.assetId ? editor.getAsset(shape.props.assetId) : null
   if (asset?.type !== 'image' || !asset.props.src) return
   const holder = spawnHolder(editor, shape, [MODEL_SIZE, MODEL_SIZE])
-  void startJob(editor, holder, modelGraph(annotated(asset.props.src), model), { name: `${asset.props.name || t('common.image')} · 3D`, kind: 'model', placer: 'model' }, onError)
+  void startJob(editor, holder, modelGraph(annotated(asset.props.src), model, params), { name: `${asset.props.name || t('common.image')} · 3D`, kind: 'model', placer: 'model' }, onError)
   return holder
 }
 
