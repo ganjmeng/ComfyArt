@@ -1083,9 +1083,6 @@
   "projectHeader.projectBrandKit": "Project Brand Kit",
   "projectHeader.projects": "Projects",
   "projectHeader.saveFailed": "Save failed · Retry",
-  "projectHeader.saved": "Saved",
-  "projectHeader.savedAt": "Saved at {0}",
-  "projectHeader.saving": "Saving…",
   "projectHeader.theme": "Theme",
   "projectHeader.themeDark": "Dark",
   "projectHeader.themeLight": "Light",
@@ -1606,5 +1603,12 @@
   "assets.tooLarge": "File exceeds 20MB: {0}",
   "assets.urlInvalid": "Enter a valid http or https URL",
   "assets.badFormat": "Only PNG, JPG and PDF are supported: {0}",
-  "assets.urlFormat": "Couldn't confirm the link is a PNG, JPG or PDF"
+  "assets.urlFormat": "Couldn't confirm the link is a PNG, JPG or PDF",
+  "toolPanel.reset": "Reset",
+  "toolPanel.useNow": "Use now",
+  "toolPanel.model": "Model",
+  "toolPanel.mode": "Mode",
+  "toolPanel.faithful": "Faithful",
+  "toolPanel.enhance": "Enhance",
+  "toolPanel.resolution": "Resolution"
 }

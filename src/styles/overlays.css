@@ -282,7 +282,7 @@
 .ca-lib__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ca-lib__more { display: inline-flex; width: 24px; height: 24px; padding: 2px; border: none; border-radius: 6px; background: transparent; color: var(--ca-muted); cursor: pointer; box-sizing: border-box; }
 .ca-lib__more:hover, .ca-lib__more[data-open] { background: var(--ca-active); color: var(--ca-text); }
-.ca-lib__menu { min-width: 180px; padding: 4px; }
+.ca-lib__menu { padding: 4px; }
 .ca-lib__menu .ca-menu__item { height: 32px; }
 .ca-lib__cover { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; background: var(--ca-field); color: var(--ca-muted); }
 .ca-lib__cover img { width: 100%; height: 100%; object-fit: cover; }
@@ -1168,3 +1168,39 @@
 .ca-skills__createwrap .ca-skills__create { border-radius: 999px 0 0 999px; padding-right: 10px; }
 .ca-skills__createmore { border-radius: 0 999px 999px 0 !important; padding: 0 10px 0 6px !important; border-left: 1px solid color-mix(in srgb, var(--ca-float) 25%, transparent) !important; }
 .ca-skills__createmenu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 50; }
+
+/* #570: tool panel at the image's right (upscale / 转 3D), modeled on the reference multi-angle panel */
+.ca-toolpanel-host { position: absolute; z-index: 301; }
+/* #570 design 6551032261: white, radius 8, light shadow, padding 8; dark #262626 / selected segment #363636 */
+.ca-toolpanel { display: flex; flex-direction: column; gap: 8px; width: 172px; box-sizing: border-box; padding: 8px; border-radius: 8px; background: var(--ca-toolpanel-bg, var(--ca-float)); color: var(--ca-text); box-shadow: 0 2px 8px rgba(0,0,0,.08); font-size: 12px; }
+.ca-toolpanel__head { display: flex; align-items: center; gap: 4px; font-size: 13px; line-height: 20px; font-weight: 600; }
+.ca-toolpanel__head .ca-panel__icon { margin-left: auto; }
+.ca-toolpanel__body { display: flex; flex-direction: column; gap: 8px; }
+.ca-toolpanel__body > .ca-upscale { display: flex; flex-direction: column; gap: 8px; }
+.ca-toolpanel__res .ca-pick { width: 100%; height: 32px; border-radius: 8px; border: 1px solid var(--ca-border); padding: 0 8px; box-sizing: border-box; }
+.ca-toolpanel__body .ca-menu { min-width: 0; padding: 0; box-shadow: none; background: transparent; border: none; }
+.ca-toolpanel__preview { aspect-ratio: 1; border-radius: 6px; background: var(--ca-field); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.ca-toolpanel__preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.ca-toolpanel__params { display: flex; flex-direction: column; gap: 8px; }
+.ca-toolpanel__params .ca-panel__row { grid-template-columns: max-content 1fr 28px; }
+.ca-toolpanel__params .ca-panel__val { text-align: right; }
+.ca-toolpanel__foot { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ca-toolpanel__foot > button { height: 32px; padding: 0 6px; border-radius: 8px; font-size: 12px; white-space: nowrap; }
+.ca-toolpanel__foot > .ca-panel__secondary { background: transparent; border: 1px solid var(--ca-border); color: var(--ca-text); }
+.ca-toolpanel__foot > .ca-panel__primary { background: var(--ca-text); color: var(--ca-float); border: none; }
+.ca-seg { display: flex; padding: 2px; border-radius: 8px; background: var(--ca-field); }
+.ca-seg__btn { flex: 1; min-width: 0; min-height: 26px; padding: 2px 4px; line-height: 16px; border: none; border-radius: 6px; background: transparent; color: var(--ca-muted); font: inherit; font-size: 12px; cursor: pointer; }
+.ca-seg__btn[data-on] { background: var(--ca-seg-on, var(--ca-float)); color: var(--ca-text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.ca-toolbar--swap .ca-toolbar__name { padding: 0 6px; font-weight: 600; white-space: nowrap; }
+.ca-toolbar--swap .ca-transform { display: flex; align-items: center; gap: 2px; padding: 0; box-shadow: none; background: transparent; border: none; min-width: 0; }
+/* #570: existing ⋯ submenu expands to the right on hover; the main list stays */
+.ca-menu__flyhost { position: relative; align-self: stretch; }
+.ca-menu__flyhost .ca-menu__sub { width: 100%; }
+.ca-menu.ca-menu__flyout { position: fixed; z-index: 1001; box-sizing: border-box; width: 184px; }
+.ca-menu__flyout .ca-menu__item { padding-left: 10px; }
+.ca-seg__btn:disabled { opacity: .4; cursor: default; }
+.ca-toolpanel .ca-upscale .ca-panel__chips { flex-wrap: wrap; }
+.ca-toolpanel .ca-upscale { width: auto; }
+.ca-menu.ca-menu__nested.ca-menu__flyout { padding: 4px; margin-top: 0; border-radius: 8px; background: var(--ca-float); box-shadow: var(--ca-shadow, 0 4px 16px rgba(0,0,0,.12)); border: var(--ca-border-w, 1px) solid var(--ca-border); }
+.ca-toolbar--swap .ca-transform > .ca-bar__btn { width: 28px; height: 28px; min-width: 28px; padding: 0; justify-content: center; border-radius: 6px; }
+.ca-toolpanel__res, .ca-toolpanel__res > * { display: flex; width: 100%; }

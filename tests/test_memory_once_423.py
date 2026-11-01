@@ -146,6 +146,8 @@ def test_locales_only_add_memory_retrieved_430():
         "memoryDialog.partTitle.about", "memoryDialog.partTitle.work",
         "memoryDialog.partTitle.taste", "memoryDialog.partTitle.assets",
         "memoryDialog.stepOf", "memoryDialog.freeHint",
+        # #570: to3d / upscale tool panel copy
+        "toolPanel.reset", "toolPanel.useNow", "toolPanel.model", "toolPanel.mode", "toolPanel.faithful", "toolPanel.enhance", "toolPanel.resolution",
         # #423: 「已保存 N 条」 under the memory row
         "chatMessage.memorySavedCount",
         # #494: 技能页标签中文化、作者行「个人」，移除旧作者与浏览量文案
@@ -168,6 +170,8 @@ def test_locales_only_add_memory_retrieved_430():
         "assets.newItem",
         # #539 PR-C: 20MB upload + URL import errors (not memory copy)
         "assets.tooLarge", "assets.urlInvalid", "assets.badFormat", "assets.urlFormat",
+        # #568: top-bar Saved/Saving label removed (not memory copy)
+        "projectHeader.saved", "projectHeader.savedAt", "projectHeader.saving",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)

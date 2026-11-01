@@ -41,7 +41,8 @@ def test_save_project_rejects_null_404():
     projects = (ROOT / "src/projects.ts").read_text()
     assert "if (!entry) throw new Error(t('err.requestFailed', 404))" in projects
     header = (ROOT / "src/ui/ProjectHeader.tsx").read_text()
-    assert "state === 'saved' && time == null" in header
+    # #568: header shows no Saved label at all; only the failed-save retry renders
+    assert "if (state !== 'error') return null" in header
     auto = (ROOT / "src/autosave.ts").read_text()
     assert "{ state: 'pending' }" in auto  # never green before a real persist
 

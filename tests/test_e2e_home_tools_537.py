@@ -114,9 +114,9 @@ async def _launch(pg, tid: str, more: bool) -> None:
     await pg.locator(".tl-container").first.wait_for(timeout=15000)
 
 
-@pytest.mark.parametrize("tid,panel", [("to3d", "text=Pixal3D"), ("transform", ".ca-transform")])
+@pytest.mark.parametrize("tid,panel", [("to3d", ".ca-toolpanel[data-tool='to3d']"), ("transform", ".ca-toolbar--swap .ca-transform")])
 async def test_unpinned_more_tool_opens_panel_545(app_url, tid, panel):  # noqa: F811
-    """#545 QA-2: to3d / transform are not pinned → handoff opens ⋯ on the tool's real panel (no auto-run)."""
+    """#545 QA-2, updated by #570: to3d opens its own panel at the image's right, transform swaps in its own bar (⋯ never auto-opens)."""
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url, "zh", "light")
         await _launch(pg, tid, True)

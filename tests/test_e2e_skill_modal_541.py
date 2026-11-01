@@ -29,12 +29,12 @@ async def _modal(pg, skill):
 async def test_geometry(app_url, lang):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url, lang)
-        dlg = await _modal(pg, "poster")
+        dlg = await _modal(pg, "brand")  # #569: poster has no tiles now; brand is the template-grid fixture
         assert (await dlg.evaluate(BOX))[:2] == [1112, 820]
         assert (await dlg.locator(".ca-skillrun__left").evaluate(BOX))[0] == 752
         assert (await dlg.locator(".ca-skillrun__right").evaluate(BOX))[0] == 360
         tiles = pg.locator(".ca-skillrun__tile")
-        assert await tiles.count() == 3
+        assert await tiles.count() == 6
         assert (await tiles.first.evaluate(BOX))[:2] == [344, 288]
         assert (await pg.locator(".ca-skillrun__presetimg").first.evaluate(BOX))[:2] == [344, 258]
         a, b = await tiles.nth(0).evaluate(BOX), await tiles.nth(1).evaluate(BOX)
@@ -45,7 +45,7 @@ async def test_geometry(app_url, lang):  # noqa: F811
         g, r = await go.evaluate(BOX), await dlg.evaluate(BOX)
         assert g[:2] == [312, 36] and r[3] + r[1] - (g[3] + g[1]) == 24  # pinned to bottom
         meta = await pg.get_by_test_id("skill-run-meta").inner_text()
-        assert meta == ("3 个模板" if lang == "zh" else "3 templates")
+        assert meta == ("6 个模板" if lang == "zh" else "6 templates")
         bg = await dlg.locator(".ca-skillrun__right").evaluate("el => getComputedStyle(el).backgroundColor")
         assert bg == "rgb(245, 245, 245)"
         await browser.close()
@@ -89,7 +89,7 @@ STAGE = """() => { const st = document.querySelector('[data-testid=skill-run-exa
           st: [a.x, a.y, a.width, a.height], img: [c.x, c.y, c.width, c.height], nat: [i.naturalWidth, i.naturalHeight]} }"""
 
 
-@pytest.mark.parametrize("skill,portrait", [("poster", True), ("social", True), ("interior", True), ("character", False)])
+@pytest.mark.parametrize("skill,portrait", [("poster", True), ("social", True), ("interior", True), ("thumbnail", False)])  # #569: character examples removed
 async def test_example_stage_contain_no_crop(app_url, skill, portrait):  # noqa: F811
     """Lovart stage: whole image visible (contain), centered, on #f4f4f4 - portrait must not overflow/crop."""
     async with pw.async_playwright() as p:

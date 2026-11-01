@@ -19,24 +19,34 @@ pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("*")), reason="need
 async def test_dialog_from_data_and_handoff(app_url, lang):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url, lang)
+        # #569: poster is an effect skill (upload + note, no presets); preset/required handoff runs on brand.
         await pg.locator('[data-skill="poster"] .ca-swall__cover').click()
         dlg = pg.get_by_test_id("skill-run-dialog")
         await dlg.wait_for()
         assert await dlg.get_attribute("data-skill") == "poster"
+        keys = await dlg.get_by_test_id("skill-run-field").evaluate_all("fs => fs.map(f => f.dataset.key)")
+        assert keys == ["file", "note"]
+        assert await pg.get_by_test_id("skill-run-preset").count() == 0
+        assert await pg.get_by_test_id("skill-run-go").is_enabled()
+        await pg.keyboard.press("Escape")
+        await pg.locator('[data-skill="brand"] .ca-swall__cover').click()
+        dlg = pg.get_by_test_id("skill-run-dialog")
+        await dlg.wait_for()
+        assert await dlg.get_attribute("data-skill") == "brand"
         assert await dlg.locator(".ca-skillrun__left").count() == 1
         assert await dlg.locator(".ca-skillrun__right").count() == 1
         keys = await dlg.get_by_test_id("skill-run-field").evaluate_all("fs => fs.map(f => f.dataset.key)")
-        assert keys == ["topic", "headline", "ratio", "reference"]
-        assert await pg.get_by_test_id("skill-run-preset").count() == 3
+        assert keys == ["brandInfo", "brandAssets", "visual"]
+        assert await pg.get_by_test_id("skill-run-preset").count() == 6
         go = pg.get_by_test_id("skill-run-go")
         assert await go.is_disabled()
-        await pg.locator('[data-key="topic"]').fill("Autumn launch")
+        await pg.locator('[data-key="brandInfo"]').fill("Autumn launch")
         assert await go.is_enabled()
         await pg.get_by_test_id("skill-run-preset").nth(1).click()
         assert await pg.get_by_test_id("skill-run-current").inner_text()
         await go.click()
-        await pg.wait_for_url(re.compile(r"[?&]skill=poster"), timeout=10_000)
-        assert "preset=retro" in pg.url and "mode=agent" in pg.url
+        await pg.wait_for_url(re.compile(r"[?&]skill=brand"), timeout=10_000)
+        assert "preset=handmade" in pg.url and "mode=agent" in pg.url
         await browser.close()
 
 
