@@ -462,7 +462,7 @@
     "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/sbs-motion.webp"
   },
   "kie": {
-    "credits_spent_total": 824.4,
+    "credits_spent_total": 869.4,
     "balance_start": 954.8,
     "rejected": [
       "character-0 (v1, tight margins)",
@@ -470,11 +470,10 @@
       "character-7 candidate c1 (task 2672e83b), kept c2"
     ],
     "v2_spent": 100.0,
-    "balance": 940.4,
+    "balance": 895.4,
     "v3_spent": 90.0,
-    "balance_checked": "2026-11-01 UTC+8"
-  },
-  "kie_balance": 895.4,
-  "v3_1_spend_credits": 45.0,
-  "v3_1_assets_commit": "9024565c9857c5cb79e3bce85e636f5f102ad181"
+    "balance_checked": "2026-11-01 UTC+8",
+    "v3_1_spent": 45.0,
+    "v3_1_assets_commit": "9024565c9857c5cb79e3bce85e636f5f102ad181"
+  }
 }
