@@ -1,0 +1,59 @@
+{
+ "skills": {
+  "n": 8,
+  "distinct": 8,
+  "broken": 0,
+  "fit": [
+   "contain"
+  ],
+  "stretch": [],
+  "ratios": [
+   1.0,
+   1.79
+  ],
+  "keys": [
+   "characterRef",
+   "characterInfo",
+   "visual"
+  ],
+  "cur": "当前模板\n时装大片角色板\n在左侧选择",
+  "go_before": true,
+  "go_after08": true
+ },
+ "home": {
+  "n": 8,
+  "distinct": 8,
+  "broken": 0,
+  "fit": [
+   "contain"
+  ],
+  "stretch": [],
+  "ratios": [
+   1.0,
+   1.79
+  ],
+  "keys": [
+   "characterRef",
+   "characterInfo",
+   "visual"
+  ],
+  "cur": "当前模板\n时装大片角色板\n在左侧选择",
+  "go_before": true,
+  "go_after08": true
+ },
+ "brand": {
+  "keys": [
+   "brandInfo",
+   "brandAssets",
+   "visual"
+  ],
+  "presets": 6
+ },
+ "poster": {
+  "keys": [
+   "file",
+   "note"
+  ],
+  "presets": 0
+ }
+}
