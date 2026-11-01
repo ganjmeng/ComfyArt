@@ -4,109 +4,243 @@
   "assets_commit": "bd043d4cff5019fc4117b5b2f3a33ae437015a28",
   "character": {
     "skillKey": "character-sheet-design",
-    "persona": "fictional East Asian woman, black shoulder-length bob, white T-shirt, khaki wide-leg trousers, white studio",
+    "persona": "v2: fictional East Asian luxury-brand supermodel (stunning refined features, sculpted oval face, luminous real skin, polished soft glam, long glossy dark-brown soft waves, no bangs), fitted white ribbed tank, black slim straight jeans, white minimal sneakers, soft editorial studio light",
     "templates": [
       {
         "index": 0,
         "title": "Character Turnaround Sheet",
         "zh": "角色转身板",
         "lovart_ref": "/workspace/569ref/character-0.png",
-        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/01-character-turnaround-sheet.webp",
-        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/01-character-turnaround-sheet@thumb.webp",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/01-character-turnaround-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/01-character-turnaround-sheet@thumb.webp",
         "model": "nano-banana-2-1",
         "taskIds": [
-          "cac143d7103c4115abf35cf06f367d51"
-        ]
+          "3851b549dc5152f630b23f7c60c9b25f"
+        ],
+        "version": "v2"
       },
       {
         "index": 1,
         "title": "Expression & Pose Sheet",
         "zh": "表情动作板",
         "lovart_ref": "/workspace/569ref/character-1.png",
-        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/02-expression-pose-sheet.webp",
-        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/02-expression-pose-sheet@thumb.webp",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/02-expression-pose-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/02-expression-pose-sheet@thumb.webp",
         "model": "nano-banana-2-1",
         "taskIds": [
-          "ce1e951a757740064190d07d2663a2ba"
-        ]
+          "24534eb7f78b61dad602afb500f901ab"
+        ],
+        "version": "v2"
       },
       {
         "index": 2,
         "title": "Modeling Detail Reference Sheet",
         "zh": "建模细节参考板",
         "lovart_ref": "/workspace/569ref/character-2.png",
-        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/03-modeling-detail-reference-sheet.webp",
-        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/03-modeling-detail-reference-sheet@thumb.webp",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/03-modeling-detail-reference-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/03-modeling-detail-reference-sheet@thumb.webp",
         "model": "nano-banana-2-1",
         "taskIds": [
-          "68481675218692e27af1e2c020283b98"
-        ]
+          "6bdf0809f38e1564b9a58615dd03256a"
+        ],
+        "version": "v2"
       },
       {
         "index": 3,
         "title": "Outfit / Form Variation Sheet",
         "zh": "服装/形态变体板",
         "lovart_ref": "/workspace/569ref/character-3.png",
-        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/04-outfit-form-variation-sheet.webp",
-        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/04-outfit-form-variation-sheet@thumb.webp",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/04-outfit-form-variation-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/04-outfit-form-variation-sheet@thumb.webp",
         "model": "nano-banana-2-1",
         "taskIds": [
-          "3ff50fd2bbe0fa8da682cfa3fc018ef2"
-        ]
+          "d3f9ade9a4718334abd1a6acf3cb19cf"
+        ],
+        "version": "v2"
       },
       {
         "index": 4,
         "title": "Prop Interaction Sheet",
         "zh": "道具互动板",
         "lovart_ref": "/workspace/569ref/character-4.png",
-        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/05-prop-interaction-sheet.webp",
-        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/05-prop-interaction-sheet@thumb.webp",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/05-prop-interaction-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/05-prop-interaction-sheet@thumb.webp",
         "model": "nano-banana-2-1",
         "taskIds": [
-          "d65acc650687846607b0fd6014d04192"
-        ]
+          "d9bacd5fd557c07afb8cadb9ba35ccba"
+        ],
+        "version": "v2"
       },
       {
         "index": 5,
         "title": "Basic Character Sheet",
         "zh": "基础角色板",
         "lovart_ref": "/workspace/569ref/character-5.png",
-        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/06-basic-character-sheet.webp",
-        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/06-basic-character-sheet@thumb.webp",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/06-basic-character-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/06-basic-character-sheet@thumb.webp",
         "model": "nano-banana-2-1",
         "taskIds": [
-          "ad4e55db57aaf9307e8dacae3e88a11f"
-        ]
+          "68fc8f2d1006cd7ac2dd20bb7e221446"
+        ],
+        "version": "v2"
       },
       {
         "index": 6,
         "title": "Complete Technical Character Sheet",
         "zh": "完整技术角色板",
         "lovart_ref": "/workspace/569ref/character-6.png",
-        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/07-complete-technical-character-sheet.webp",
-        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/07-complete-technical-character-sheet@thumb.webp",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/07-complete-technical-character-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/07-complete-technical-character-sheet@thumb.webp",
         "model": "nano-banana-2-1",
         "taskIds": [
-          "6e6761e3bf3e37fcccf4108113fc01df"
-        ]
+          "312d4108d271377e324fae93e77900b7"
+        ],
+        "version": "v2"
       },
       {
         "index": 7,
-        "title": "Luxury Editorial Character Sheet",
-        "zh": "高级时装角色板",
+        "title": "Editorial Fashion Sheet",
+        "zh": "时装大片角色板",
         "persona": "fictional European woman, luxury-campaign supermodel look, honey-blonde low ponytail, ivory silk cowl blouse, black tailored wide-leg trousers, white studio; no logo or text",
-        "lovart_ref": null,
+        "lovart_ref": "/workspace/569ref/character-5.png (layout)",
         "layout_ref": "same 16:9 layout family as 06-basic-character-sheet",
-        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/fa8248fe00a27b97e03c1dd2eae522b272dffe7c/569/wash/character/templates/08-luxury-editorial-character-sheet.webp",
-        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/fa8248fe00a27b97e03c1dd2eae522b272dffe7c/569/wash/character/templates/08-luxury-editorial-character-sheet@thumb.webp",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/08-luxury-editorial-character-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/character/templates/v2/08-luxury-editorial-character-sheet@thumb.webp",
         "model": "nano-banana-2-1",
         "taskIds": [
-          "1273d3ccfed4edc7d8f050d150bd3353"
+          "e6c94e672a5a49d101d37a52362dc942"
         ],
-        "added": "2026-11-01 per Jingmeng, Refs #574"
+        "added": "2026-11-01 per Jingmeng, Refs #574",
+        "version": "v2"
       }
     ],
-    "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/sbs-character.webp"
+    "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/sbs-character.webp",
+    "previous_v1": {
+      "persona": "fictional East Asian woman, black shoulder-length bob, white T-shirt, khaki wide-leg trousers, white studio",
+      "templates": [
+        {
+          "index": 0,
+          "title": "Character Turnaround Sheet",
+          "zh": "角色转身板",
+          "lovart_ref": "/workspace/569ref/character-0.png",
+          "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/01-character-turnaround-sheet.webp",
+          "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/01-character-turnaround-sheet@thumb.webp",
+          "model": "nano-banana-2-1",
+          "taskIds": [
+            "cac143d7103c4115abf35cf06f367d51"
+          ]
+        },
+        {
+          "index": 1,
+          "title": "Expression & Pose Sheet",
+          "zh": "表情动作板",
+          "lovart_ref": "/workspace/569ref/character-1.png",
+          "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/02-expression-pose-sheet.webp",
+          "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/02-expression-pose-sheet@thumb.webp",
+          "model": "nano-banana-2-1",
+          "taskIds": [
+            "ce1e951a757740064190d07d2663a2ba"
+          ]
+        },
+        {
+          "index": 2,
+          "title": "Modeling Detail Reference Sheet",
+          "zh": "建模细节参考板",
+          "lovart_ref": "/workspace/569ref/character-2.png",
+          "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/03-modeling-detail-reference-sheet.webp",
+          "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/03-modeling-detail-reference-sheet@thumb.webp",
+          "model": "nano-banana-2-1",
+          "taskIds": [
+            "68481675218692e27af1e2c020283b98"
+          ]
+        },
+        {
+          "index": 3,
+          "title": "Outfit / Form Variation Sheet",
+          "zh": "服装/形态变体板",
+          "lovart_ref": "/workspace/569ref/character-3.png",
+          "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/04-outfit-form-variation-sheet.webp",
+          "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/04-outfit-form-variation-sheet@thumb.webp",
+          "model": "nano-banana-2-1",
+          "taskIds": [
+            "3ff50fd2bbe0fa8da682cfa3fc018ef2"
+          ]
+        },
+        {
+          "index": 4,
+          "title": "Prop Interaction Sheet",
+          "zh": "道具互动板",
+          "lovart_ref": "/workspace/569ref/character-4.png",
+          "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/05-prop-interaction-sheet.webp",
+          "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/05-prop-interaction-sheet@thumb.webp",
+          "model": "nano-banana-2-1",
+          "taskIds": [
+            "d65acc650687846607b0fd6014d04192"
+          ]
+        },
+        {
+          "index": 5,
+          "title": "Basic Character Sheet",
+          "zh": "基础角色板",
+          "lovart_ref": "/workspace/569ref/character-5.png",
+          "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/06-basic-character-sheet.webp",
+          "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/06-basic-character-sheet@thumb.webp",
+          "model": "nano-banana-2-1",
+          "taskIds": [
+            "ad4e55db57aaf9307e8dacae3e88a11f"
+          ]
+        },
+        {
+          "index": 6,
+          "title": "Complete Technical Character Sheet",
+          "zh": "完整技术角色板",
+          "lovart_ref": "/workspace/569ref/character-6.png",
+          "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/07-complete-technical-character-sheet.webp",
+          "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/07-complete-technical-character-sheet@thumb.webp",
+          "model": "nano-banana-2-1",
+          "taskIds": [
+            "6e6761e3bf3e37fcccf4108113fc01df"
+          ]
+        },
+        {
+          "index": 7,
+          "title": "Luxury Editorial Character Sheet",
+          "zh": "高级时装角色板",
+          "persona": "fictional European woman, luxury-campaign supermodel look, honey-blonde low ponytail, ivory silk cowl blouse, black tailored wide-leg trousers, white studio; no logo or text",
+          "lovart_ref": null,
+          "layout_ref": "same 16:9 layout family as 06-basic-character-sheet",
+          "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/fa8248fe00a27b97e03c1dd2eae522b272dffe7c/569/wash/character/templates/08-luxury-editorial-character-sheet.webp",
+          "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/fa8248fe00a27b97e03c1dd2eae522b272dffe7c/569/wash/character/templates/08-luxury-editorial-character-sheet@thumb.webp",
+          "model": "nano-banana-2-1",
+          "taskIds": [
+            "1273d3ccfed4edc7d8f050d150bd3353"
+          ],
+          "added": "2026-11-01 per Jingmeng, Refs #574"
+        }
+      ]
+    },
+    "persona_08": "v2: fictional European luxury-house supermodel, honey-blonde low polished ponytail, grey-green eyes, ivory silk cowl blouse, black tailored wide-leg trousers, black pumps, thin gold hoops",
+    "v2": {
+      "assets_commit": "d7e40116d81b6a42b9898ad0c2a4f9143c1e238b",
+      "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/v2/sbs-character-v2.webp",
+      "face_zoom": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/v2/face-zoom-v2-vs-lovart.webp",
+      "old_vs_v2": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d7e40116d81b6a42b9898ad0c2a4f9143c1e238b/569/wash/v2/sbs-character-old-vs-v2.webp",
+      "rejected_candidates": {
+        "anchor_a1_a2_a3": [
+          "bdc2a53cbdaf705d81d4374f870e0503",
+          "624e4fe98265f256754c7dae33814233",
+          "87579fcf074041b90680b950337320c9"
+        ],
+        "anchor_b1_b3": [
+          "5b7d9c554038663d320a3d3e62d1d151",
+          "b0f99b2759b8e39d5100e2ee32016df6"
+        ],
+        "t8_d2": [
+          "78053603e7c37d34e462f957238f0942"
+        ],
+        "orphaned_interrupted_batch": "6 tasks, ids not captured, 30 credits"
+      }
+    }
   },
   "motion": {
     "templates": [
@@ -160,6 +294,8 @@
       "character-0 (v1, tight margins)",
       "motion-0 v1 seedance-2 12s first->last (garbled KOI-70 title, cropped)",
       "character-7 candidate c1 (task 2672e83b), kept c2"
-    ]
+    ],
+    "v2_spent": 100.0,
+    "balance": 30.4
   }
 }
