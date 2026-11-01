@@ -31,7 +31,11 @@ async def _measure(app_url, width, *, collapsed=False):
               const allCols = [...document.querySelectorAll('[data-testid="home-featured-col"]')].map(b);
               const tiles = [...document.querySelectorAll('[data-testid="home-featured-card"]')]
                 .sort((a, b) => a.dataset.order - b.dataset.order).map(e => ({skill: e.dataset.skill, preset: e.dataset.preset || null, img: e.querySelector('img').getAttribute('src')}));
-              return {grid: b(grid), scroll: grid.scrollWidth - grid.clientWidth, cards, covers, cols: allCols, tiles};
+              const colSkills = [...document.querySelectorAll('[data-testid="home-featured-col"]')].map(c =>
+                [...c.querySelectorAll('[data-testid="home-featured-card"]')]
+                  .sort((a, b) => a.getBoundingClientRect().y - b.getBoundingClientRect().y).map(e => e.dataset.skill));
+              const domSkills = [...document.querySelectorAll('[data-testid="home-featured-card"]')].map(e => e.dataset.skill);
+              return {grid: b(grid), scroll: grid.scrollWidth - grid.clientWidth, cards, covers, cols: allCols, tiles, colSkills, domSkills};
             }"""
         )
         await browser.close()
@@ -54,6 +58,7 @@ async def test_cut1_1280_expanded(app_url):  # noqa: F811
     for a, b in zip(m["cols"], m["cols"][1:]):
         assert abs(b["x"] - (a["x"] + a["w"]) - 16) <= 0.6
     _check_tiles(m["tiles"])
+    _check_columns(m)
 
 
 async def test_cut1_1920_five_columns(app_url):  # noqa: F811
@@ -61,6 +66,7 @@ async def test_cut1_1920_five_columns(app_url):  # noqa: F811
     assert len(m["cards"]) == 6 and m["scroll"] <= 0
     assert len(m["cols"]) == 5
     _check_tiles(m["tiles"])
+    _check_columns(m)
 
 
 # built-in skills with real images in src/skills.ts (example-type: 效果示例; template-type: preset images)
@@ -79,6 +85,14 @@ def _check_tiles(tiles):
     assert skills[: len(set(skills))] and len(set(skills[:10])) == 10  # first round: one per skill
     first_char = next(t for t in tiles if t["skill"] == "character")
     assert first_char["preset"] == "editorial"
+
+
+def _check_columns(m):
+    # #580 QA: no adjacent duplicates in each rendered column (visual top→bottom order) and in DOM order
+    for col in m["colSkills"]:
+        assert all(a != b for a, b in zip(col, col[1:])), m["colSkills"]
+    dom = m["domSkills"]
+    assert all(a != b for a, b in zip(dom, dom[1:])), dom
 
 
 async def test_cut1_example_tile_opens_dialog(app_url):  # noqa: F811

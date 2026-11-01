@@ -128,7 +128,7 @@ def test_featured_layout_column_math() -> None:
     assert "export function featuredColumnCount(width: number, gap = FEATURED_GAP" in LAYOUT
     assert "export function packFeaturedColumns" in LAYOUT
     assert "FEATURED_COL_W = 299" in LAYOUT
-    assert "Math.min(...heights)" in LAYOUT or "indexOf(Math.min" in LAYOUT
+    assert "Math.min(...heights)" in LAYOUT or "a[0] - b[0]" in LAYOUT  # shortest column first (#580: group-aware)
 
 
 def test_more_tools_lovart_order_540() -> None:

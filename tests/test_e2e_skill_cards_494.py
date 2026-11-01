@@ -65,7 +65,7 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
         browser, pg = await _open(p, app_url, lang, theme)
         cards = pg.get_by_test_id("skills-wall-card")
         assert await cards.count() == 11
-        await pg.locator('[data-skill="custom-workflow"]').scroll_into_view_if_needed()  # no-cover card in the list shot
+        await pg.locator('[data-skill="custom-workflow"]').scroll_into_view_if_needed()  # #581: last card now has its own cover
         await _shot(pg, f"list-{lang}-{theme}")
         chips = await pg.get_by_test_id("skills-chips").locator("button").all_inner_texts()
         zh_chips, en_chips = ['为你推荐', '电商', '品牌', '社交媒体', '广告创意'], ['For you', 'E-commerce', 'Branding', 'Social Media', 'Ads & Creative']
@@ -76,7 +76,9 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
         await _shot(pg, f"chip-ecommerce-{lang}-{theme}")
         await pg.get_by_test_id("skills-chip-forYou").click()
         cw = pg.locator('[data-skill="custom-workflow"]')
-        assert await cw.get_by_test_id("skills-card-placeholder").count() == 1
+        # #581 — custom-workflow has a real cover now (manifest 7237c371); placeholder only for cover-less user skills.
+        assert await cw.get_by_test_id("skills-card-placeholder").count() == 0
+        assert "494/covers-v3/custom-workflow.webp" in (await cw.get_by_test_id("skills-card-cover").get_attribute("src") or "")
         # #494/#529 — kind badge on every Explore card (bottom-left). Built-ins with `video` → data-kind=video;
         # custom-workflow (no video) stays image. Never invent a video badge without data.
         assert await cards.locator(".ca-swall__cover [data-testid=skills-card-kind]").count() == 11
@@ -84,12 +86,13 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
         assert badge["x"] - box["x"] < 16 and (box["y"] + box["height"]) - (badge["y"] + badge["height"]) < 16
         assert await cw.get_by_test_id("skills-card-kind").get_attribute("data-kind") == "image"
         assert await cw.get_by_test_id("skills-card-video").count() == 0
-        assert await cw.locator(".ca-swall__placeholder").evaluate(
-            "e => { const p = document.createElement('i'); p.style.color = 'var(--ca-text-2)'; e.parentNode.append(p);"
-            " const ok = getComputedStyle(e).color === getComputedStyle(p).color; p.remove(); return ok }")
+        assert await cw.locator(".ca-swall__cover").evaluate(  # placeholder CSS still resolves to --ca-text-2
+            "c => { const e = document.createElement('span'); e.className = 'ca-swall__placeholder'; c.append(e);"
+            " const p = document.createElement('i'); p.style.color = 'var(--ca-text-2)'; e.parentNode.append(p);"
+            " const ok = getComputedStyle(e).color === getComputedStyle(p).color; p.remove(); e.remove(); return ok }")
         poster = pg.locator('[data-skill="poster"]')
         src = await poster.get_by_test_id("skills-card-cover").get_attribute("src")
-        assert "494/wash/covers/poster.webp" in (src or "")
+        assert "494/covers-v3/poster.webp" in (src or "")
         assert await pg.evaluate("s => fetch(s).then(r => r.status)", src) == 200
         assert await poster.get_by_test_id("skills-card-cover").get_attribute("alt") == await poster.locator("h3").inner_text()
         assert await poster.get_by_test_id("skills-card-author").inner_text() == BRAND_NAME

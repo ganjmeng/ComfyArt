@@ -213,6 +213,7 @@ export function Home() {
     () => featured.map(({ skill: s, preset: p, image, key }, order) => ({
       id: key,
       order,
+      group: s.id,
       skill: s,
       preset: p,
       image,
