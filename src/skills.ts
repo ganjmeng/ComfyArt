@@ -66,14 +66,15 @@ const wash541 = (commit: string, skillId: string, presetId: string) =>
 const washProduct541 = (presetId: string) => wash541(presetId === 'detail' ? WASH_541.productDetail : WASH_541.product, 'product', presetId)
 /** #569 character (7) + motion (2) template washes, from review-assets manifest 881494ff (assets pinned to bd043d4c). */
 const WASH_569_COMMIT = 'bd043d4cff5019fc4117b5b2f3a33ae437015a28'
-// character v2 (manifest review-assets 74321c52, assets d7e40116 under 569/wash/character/templates/v2/)
-const CHARACTER_V2 = 'd7e40116d81b6a42b9898ad0c2a4f9143c1e238b'
+// character final (manifest review-assets f81ce12a): v3 @b63d44ea under templates/v3/, 04/05 v3.1 @9024565c under templates/v3.1/
+const CHARACTER_V2 = 'b63d44ea61085a77a1c990605c31ae552db36c71'
+const CHARACTER_V3_1 = '9024565c9857c5cb79e3bce85e636f5f102ad181' // 04 + 05 re-washed under templates/v3.1/
 type Wash569 = string | readonly [string, string, string]
 const WASH_569: Record<'character' | 'motion', readonly Wash569[]> = {
-  character: [['v2/01-character-turnaround-sheet', '569/wash', CHARACTER_V2], ['v2/02-expression-pose-sheet', '569/wash', CHARACTER_V2], ['v2/03-modeling-detail-reference-sheet', '569/wash', CHARACTER_V2], ['v2/04-outfit-form-variation-sheet', '569/wash', CHARACTER_V2], ['v2/05-prop-interaction-sheet', '569/wash', CHARACTER_V2], ['v2/06-basic-character-sheet', '569/wash', CHARACTER_V2], ['v2/07-complete-technical-character-sheet', '569/wash', CHARACTER_V2], ['v2/08-luxury-editorial-character-sheet', '569/wash', CHARACTER_V2]],
+  character: [['v3/01-character-turnaround-sheet', '569/wash', CHARACTER_V2], ['v3/02-expression-pose-sheet', '569/wash', CHARACTER_V2], ['v3/03-modeling-detail-reference-sheet', '569/wash', CHARACTER_V2], ['v3.1/04-outfit-form-variation-sheet', '569/wash', CHARACTER_V3_1], ['v3.1/05-prop-interaction-sheet', '569/wash', CHARACTER_V3_1], ['v3/06-basic-character-sheet', '569/wash', CHARACTER_V2], ['v3/07-complete-technical-character-sheet', '569/wash', CHARACTER_V2], ['v3/08-luxury-editorial-character-sheet', '569/wash', CHARACTER_V2]],
   motion: ['01-poster-animation', '02-first-to-last-frame-animation'],
 }
-// Manifest-driven (review-assets 569/wash/manifest.json @74321c52): an entry is a file name at WASH_569_COMMIT, or
+// Manifest-driven (review-assets 569/wash/manifest.json @f81ce12a): an entry is a file name at WASH_569_COMMIT, or
 // [name, dir, commit] when the manifest pins that template to another assets commit. A re-wash only edits this data.
 const wash569 = (skillId: keyof typeof WASH_569, n: number) => {
   const e = WASH_569[skillId][n]
