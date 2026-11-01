@@ -58,9 +58,12 @@ def test_new_skills_cut2_skeleton_and_website_categories():
         assert f"category: '{cat}'" in e, sid
         assert "instructions:" in e and "inputs:" in e, sid
         assert "name: t(" in e, sid
-        # #594 wash later — no cover/video/featured pins yet
+        # #594 wash pins — cover + featured; no hover video (#575)
         head = e.split("inputs:", 1)[0]
-        assert "cover:" not in head and "video:" not in head and "featured:" not in head, sid
+        assert "cover: cover(" in head and "featured: feedCovers(" in head, sid
+        assert "video:" not in head, sid
+        assert "quickStartCoverFit: 'contain'" in head, sid
+        assert "examples: ex594(" in head, sid
 
 
 def test_locale_titles_and_descriptions_for_new_ids():

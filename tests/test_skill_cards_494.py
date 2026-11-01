@@ -94,19 +94,22 @@ def test_presets_and_inputs_schema():
 def test_covers_ten_webps_with_source_manifest():
     man = json.loads((COVERS / "covers.json").read_text())
     files = sorted(p.relative_to(COVERS).as_posix() for p in COVERS.rglob("*") if p.is_file())
-    assert files == sorted(["covers.json"] + [f"{s}/cover.webp" for s in COVERED if s != "custom-workflow"])
+    local_covered = [s for s in COVERED if s != "custom-workflow"]  # legacy local public/skills; new6 are remote-only
+    assert files == sorted(["covers.json"] + [f"{s}/cover.webp" for s in local_covered])
     assert man["encoder"] == "Pillow==13.0.0" and man["size"] == [462, 346]
-    assert set(man["covers"]) == {s for s in COVERED if s != "custom-workflow"}
+    assert set(man["covers"]) == set(local_covered)
     for sid, c in man["covers"].items():
         assert hashlib.sha256((COVERS / sid / "cover.webp").read_bytes()).hexdigest() == c["sha256"], sid
         assert re.fullmatch(r"[0-9a-f]{64}", c["source_sha256"]) and c["source"] == f"494/covers/{sid}/1.png"
         assert (COVERS / sid / "cover.webp").read_bytes()[8:12] == b"WEBP"
     assert "PILLOW = \"13.0.0\"" in (ROOT / "scripts/skill_covers_494.py").read_text()
+    phase1_new = ["multi-angle", "logo-material", "meta-ads", "mobile-ui", "web-product", "marketing-campaign"]
     for sid, e in _entries().items():
-        if sid in COVERED:
-            assert f"cover: cover('{sid}')" in e, sid  # #581 washed covers; new Phase1 ids omit until #594
+        head = e.split("inputs:", 1)[0]
+        if sid in COVERED or sid in phase1_new:
+            assert f"cover: cover('{sid}')" in head, sid  # #581 + #594 covers-v4 pins
         else:
-            assert "cover:" not in e.split("inputs:", 1)[0], sid  # #591/#594: no temporary broken pin
+            assert "cover:" not in head, sid
 
 
 def test_cover_fallback_single_place():

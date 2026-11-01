@@ -14,6 +14,7 @@ import {
   skillAuthor,
   skillChips,
   skillCover,
+  skillQuickStartCoverFit,
   skillVideo,
   matchesSkillChip,
   toggleFavourite,
@@ -75,7 +76,7 @@ function SkillWallCard({
       onFocus={videoSrc && !row ? playVideo : undefined}
       onBlur={videoSrc && !row ? stopVideo : undefined}
     >
-      <div className="ca-swall__cover" role="button" tabIndex={0} aria-label={skill.name} onClick={row ? undefined : onTry}
+      <div className="ca-swall__cover" data-fit={skillQuickStartCoverFit(skill)} role="button" tabIndex={0} aria-label={skill.name} onClick={row ? undefined : onTry}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTry() } }}>
         {showImg
           ? <img src={src} alt={skill.name} loading="lazy" data-testid="skills-card-cover" onError={() => setFailedSrc(src)} />

@@ -36,7 +36,7 @@ def test_own_image_used(got):
 
 
 def test_builtin_covers(got):
-    """#581 washed covers stay pinned; #591 Phase1 new 6 omit cover until #594 (Explore placeholder)."""
+    """#581 washed covers stay pinned; #594 Phase1 new 6 covers-v4 @ WASH_594."""
     covers = got["builtinCovers"]
     washed = ["poster", "social", "brand", "packaging", "thumbnail", "banner", "character", "product", "motion", "interior", "custom-workflow"]
     phase1_new = ["multi-angle", "logo-material", "meta-ads", "mobile-ui", "web-product", "marketing-campaign"]
@@ -44,12 +44,16 @@ def test_builtin_covers(got):
         "banner": ("494/covers-v3.1", "9b23a3e8e3ca2f6b64dc16c0cf36fbf9c41fcaf4"),
         "character": ("494/covers-v3.2", "dc335056e81e0350e2f98487fb680e22ffb14bb9"),
     }
+    v4 = "cc76d743d416c3d9a9a6852d811a7a80caf40319"
     assert len(covers) == 17 and "custom-workflow" in covers
     assert {k: covers[k] for k in washed} == {
         k: "https://raw.githubusercontent.com/ganjmeng/ComfyArt/{1}/{0}/{2}.webp".format(*pin.get(k, ("494/covers-v3", v3)), k)
         for k in washed
     }
-    assert all(covers[k] is None for k in phase1_new)
+    assert {k: covers[k] for k in phase1_new} == {
+        k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v4}/494/covers-v4/{k}.webp"
+        for k in phase1_new
+    }
 
 
 def test_chips_from_data(got):
