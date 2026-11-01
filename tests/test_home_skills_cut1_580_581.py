@@ -1,4 +1,4 @@
-"""#580 / #581 cut 1: home 「用 Skill 快速开始 ›」 = one row of 6 cover cards (248 wide, cover + title ›),
+"""#580 / #581 cut 1: home 「用 Skill 快速开始 ›」 = one row of 6 cover cards (fluid 6-col grid, 4:3 cover + title ›),
 精选 waterfall 5 columns, Skills grid column 16 / row 24. Static checks + column math mirror."""
 from __future__ import annotations
 
@@ -43,13 +43,17 @@ def test_head_chevron_opens_skills_explore() -> None:
 
 def test_row_card_css_vars() -> None:
     grid = _rule(".ca-skillgrid")
-    assert "--ca-skillrow-card-w: 248px" in grid
-    for v in ("--ca-skillrow-gap", "--ca-skillrow-cover-ratio", "--ca-skillrow-title-gap"):
+    for v in ("--ca-skillrow-cols: 6", "--ca-skillrow-gap: 16px", "--ca-skillrow-radius: 12px",
+              "--ca-skillrow-title-size: 14px", "--ca-skillrow-title-line: 22px", "--ca-skillrow-title-weight: 500",
+              "--ca-skillrow-title-gap"):
         assert v in grid, v
-    assert "display: flex" in grid and "overflow-x: auto" in grid
+    assert "grid-template-columns: repeat(var(--ca-skillrow-cols), minmax(0, 1fr))" in grid
+    assert "overflow-x" not in grid and "px; width" not in grid  # fluid, no hardcoded card width / scroll
     card = _rule(".ca-skillcard")
-    assert "flex: 0 0 var(--ca-skillrow-card-w)" in card and "border: none" in card
-    assert "aspect-ratio: var(--ca-skillrow-cover-ratio)" in _rule(".ca-skillcard__cover")
+    assert "border: none" in card and "flex: 0 0" not in card
+    cover = _rule(".ca-skillcard__cover")
+    assert "aspect-ratio: var(--ca-skillrow-cover-ratio)" in cover and "border-radius: var(--ca-skillrow-radius)" in cover
+    assert "var(--ca-skillrow-title-size)/var(--ca-skillrow-title-line)" in _rule(".ca-skillcard__name")
     assert "#" not in _rule(".ca-skillcard__name")  # theme vars only
 
 
@@ -100,8 +104,8 @@ def test_featured_card_icon_tag_hover() -> None:
     assert "skillRun.start" in block and "onClick={() => trySkill(s, p.id)}" in block
 
 
-def test_row_cover_ratio_248x188() -> None:
-    assert "--ca-skillrow-cover-ratio: 248 / 188" in _rule(".ca-skillgrid")
+def test_row_cover_ratio_4x3() -> None:
+    assert "--ca-skillrow-cover-ratio: 4 / 3" in _rule(".ca-skillgrid")
 
 
 def test_featured_masonry_metrics_are_css_vars():
