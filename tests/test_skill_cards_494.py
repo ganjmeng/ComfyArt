@@ -59,19 +59,23 @@ def test_fake_wall_meta_gone():
 
 def test_presets_and_inputs_schema():
     for sid, e in _entries().items():
-        assert len(re.findall(r"\bP\('", e)) == {"custom-workflow": 0, "product": 6, "brand": 6, "packaging": 5}.get(sid, 3), sid  # #541 AC rev 2
+        assert len(re.findall(r"\bP\('", e)) == {"product": 6, "brand": 6, "packaging": 5, "character": 7, "motion": 2}.get(sid, 0), sid  # #541 AC rev 2 → #569: effect skills have no presets
         # #494-2: required inputs now also carry a zh/en placeholder after the flag → ", true" (was ", true)").
-        assert "inputs: [" in e and ", true" in e, f"{sid} needs one required input"
+        # #569: effect skills share EFFECT_INPUTS (upload + note, none required); character's Lovart fields are optional too.
+        if sid in ("poster", "social", "thumbnail", "banner", "interior"):
+            assert "inputs: EFFECT_INPUTS }" in e, sid
+        else:
+            assert "inputs: [" in e and (", true" in e) == (sid != "character"), f"{sid} required input"
     # AC 11 was "preset prompts and input en copy are step 2"; #494-2 lands them: every preset has an en prompt and
     # every input label has zh + en (updated, not removed).
     assert "prompt?: string" in SKILLS_TS
     assert "SkillPreset =>" in SKILLS_TS and "prompt, ...(image ? { image } : {})" in SKILLS_TS  # #520 wash image
     assert "label: { zh, en }," in SKILLS_TS and "label: { zh }," not in SKILLS_TS
     for sid, e in _entries().items():
-        n = 0 if sid == "custom-workflow" else 3
-        assert len(re.findall(r"\bwashPreset\(", e)) == (0 if sid in ("product", "brand", "packaging") else n), sid  # #520/#494 wash image per preset
+        assert len(re.findall(r"\bwashPreset\(", e)) == 0, sid  # #569: 494 preset washes retired
+        assert len(re.findall(r"\bwash569\(", e)) == {"character": 7, "motion": 2}.get(sid, 0), sid  # #569 manifest washes
         assert len(re.findall(r"\bwashProduct541\(", e)) == (6 if sid == "product" else 0), sid  # #541 product 6
-        assert len(re.findall(r"Style: |Focus on |Motion: ", e)) == {"custom-workflow": 0, "product": 6, "brand": 6, "packaging": 5}.get(sid, 3), sid  # en prompt body
+        assert len(re.findall(r"Style: |Focus on |Motion: |Template: ", e)) == {"product": 6, "brand": 6, "packaging": 5, "character": 7, "motion": 2}.get(sid, 0), sid  # en prompt body
     # names/descriptions keep coming from locale keys (AC 1)
     for e in _entries().values():
         assert re.match(r"[\w-]+', name: t\('skills\.\w+'\)", e)

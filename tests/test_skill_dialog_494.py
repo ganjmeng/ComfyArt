@@ -31,12 +31,17 @@ def got(tmp_path_factory) -> dict:
     return json.loads(subprocess.run(["node", str(out)], check=True, capture_output=True, text=True).stdout)
 
 
+EFFECT = ("poster", "social", "thumbnail", "banner", "interior")
+COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 7, "motion": 2}  # #569 template counts
+
+
 @needs_node
 def test_every_field_is_bilingual_data(got):
     assert len(got["fields"]) == 11
     for sid, fields in got["fields"].items():
         assert fields, sid
-        assert any(req for _, _, req, *_ in fields), sid
+        # #569: effect skills (upload + note) and character carry no required field, like the reference.
+        assert any(req for _, _, req, *_ in fields) == (sid not in EFFECT and sid != "character"), sid
         for key, typ, req, zh, en, ph in fields:
             assert typ in {"text", "textarea", "select", "image"} and zh and en, (sid, key)
             if req and typ in {"text", "textarea"}:
@@ -48,7 +53,7 @@ def test_every_field_is_bilingual_data(got):
 @needs_node
 def test_presets_have_prompts(got):
     for sid, ps in got["presets"].items():
-        assert len(ps) == {"custom-workflow": 0, "product": 6, "brand": 6, "packaging": 5}.get(sid, 3), sid  # #541 AC rev 2
+        assert len(ps) == COUNTS.get(sid, 0), sid  # #541 AC rev 2 → #569
         assert len({i for i, _, _ in ps}) == len(ps), sid  # unique ids
         assert all(en and prompt for _, en, prompt in ps), sid
 
@@ -56,39 +61,45 @@ def test_presets_have_prompts(got):
 @needs_node
 def test_builtin_preset_images_unique(got):
     imgs = got["builtinPresetImgs"]
-    assert len(imgs) == 38  # 7×3 #494 + product 6 / brand 6 / packaging 5 (#541)
-    assert all(u and "raw.githubusercontent.com/ganjmeng/ComfyArt/" in u and ("494/wash/presets/" in u or "541/wash/" in u) for u in imgs)
+    assert len(imgs) == 26  # #569: product 6 / brand 6 / packaging 5 (#541) + character 7 / motion 2 (#569)
+    assert all(u and "raw.githubusercontent.com/ganjmeng/ComfyArt/" in u and ("569/wash/" in u or "541/wash/" in u) for u in imgs)
+    assert sum("569/wash/character/templates/" in u for u in imgs) == 7 and sum("569/wash/motion/templates/" in u for u in imgs) == 2
     assert sum("541/wash/product/" in u for u in imgs) == 6
     assert sum("541/wash/brand/" in u for u in imgs) == 6 and sum("541/wash/packaging/" in u for u in imgs) == 5
-    assert len(set(imgs)) == 38  # no shared cover fallback across presets
+    assert len(set(imgs)) == 26  # no shared cover fallback across presets
 
 
 @needs_node
 def test_defaults_and_required(got):
-    assert got["posterDefaults"]["ratio"] == "3:4" and got["posterDefaults"]["topic"] == ""
+    assert got["posterDefaults"] == {"file": "", "note": ""}  # #569 effect skill: upload + note only
+    assert got["brandDefaults"] == {"brandInfo": "", "brandAssets": "", "visual": ""}
+    assert got["brandMissing"] == ["brandInfo"] and got["brandFilled"] == []
+    assert got["posterPresets"] == 0
     assert got["cwDefaults"] == {"brief": ""}
-    assert got["posterMissing"] == ["topic"] and got["posterFilled"] == []
+    assert got["posterMissing"] == [] and got["posterFilled"] == []
     assert got["cwMissing"] == ["brief"]  # whitespace is empty
-    assert got["dialog"] == [True, True, False]  # old personal skill: no dialog, main's direct start
+    assert got["dialog"] == [True, True, False, True]  # old personal skill: no dialog, main's direct start
 
 
 @needs_node
 def test_preset_prompt_appended_after_instructions(got):
-    assert got["withPreset"] == got["posterInstr"].rstrip() + "\n\n" + got["secondPrompt"]
+    assert got["withPreset"] == got["brandInstr"].rstrip() + "\n\n" + got["secondPrompt"]
     assert got["withUnknown"] and got["withNull"]
     assert got["presetDefault"] != got["presetPick"]
-    assert got["presetImg"] and got["presetImg"] != "/comfyart/skills/poster/cover.webp"
-    assert "494/wash/presets/poster__retro.webp" in got["presetImg"]
-    assert len(set(got["posterPresetImgs"])) == 3  # poster three thumbs distinct
-    assert all(u and "494/wash/presets/" in u for u in got["posterPresetImgs"])
+    assert got["presetImg"] and got["presetImg"] != "/comfyart/skills/brand/cover.webp"
+    assert "541/wash/brand/brand__handmade.webp" in got["presetImg"]
+    assert len(set(got["brandPresetImgs"])) == 6  # brand six thumbs distinct
+    assert all(u and "541/wash/brand/" in u for u in got["brandPresetImgs"])
 
 
 @needs_node
 def test_run_params(got):
-    p = got["posterRun"]
-    assert p["skill"] == "poster" and p["mode"] == "agent" and p["ref"] == ["/view?f=a.png"]
+    p = got["brandRun"]
+    assert p["skill"] == "brand" and p["mode"] == "agent" and p["ref"] == ["/view?f=a.png"]
     assert p["preset"] and p["preset"] != got["presetDefault"]
-    assert p["ask"].splitlines()[0].endswith(": Autumn launch") and "3:4" in p["ask"]
+    assert p["ask"].splitlines()[0].endswith(": Autumn launch")
+    q = got["posterNoPreset"]
+    assert q["skill"] == "poster" and q["ref"] == ["/view?f=a.png"] and "preset" not in q and q["ask"].endswith(": Autumn launch")
     assert got["cwRun"] == {"skill": "custom-workflow", "mode": "agent", "ask": got["cwRun"]["ask"]}
     assert got["cwRun"]["ask"].endswith(": Upscale my photo")
     assert got["emptyRun"]["ask"] == "Old" and "preset" not in got["emptyRun"]
