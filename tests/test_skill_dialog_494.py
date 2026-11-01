@@ -32,7 +32,8 @@ def got(tmp_path_factory) -> dict:
 
 
 EFFECT = ("poster", "social", "thumbnail", "banner", "interior")
-COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2}  # #569 template counts
+COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2,  # #569 template counts
+          "multi-angle": 4, "logo-material": 4, "meta-ads": 4, "mobile-ui": 4, "web-product": 4, "marketing-campaign": 4}  # #593 new-6
 
 
 @needs_node
@@ -60,9 +61,10 @@ def test_presets_have_prompts(got):
 
 @needs_node
 def test_builtin_preset_images_unique(got):
-    imgs = got["builtinPresetImgs"]
+    # #593 new-6 presets ship without washed images (grey tiles) until #594 — count only pinned URLs.
+    imgs = [u for u in got["builtinPresetImgs"] if u]
     assert len(imgs) == 27  # #569: product 6 / brand 6 / packaging 5 (#541) + character 8 / motion 2 (#569)
-    assert all(u and "raw.githubusercontent.com/ganjmeng/ComfyArt/" in u and ("569/wash/" in u or "541/wash/" in u) for u in imgs)
+    assert all("raw.githubusercontent.com/ganjmeng/ComfyArt/" in u and ("569/wash/" in u or "541/wash/" in u) for u in imgs)
     assert sum("569/wash/character/templates/" in u for u in imgs) == 8 and sum("569/wash/motion/templates/" in u for u in imgs) == 2
     assert sum("541/wash/product/" in u for u in imgs) == 6
     assert sum("541/wash/brand/" in u for u in imgs) == 6 and sum("541/wash/packaging/" in u for u in imgs) == 5
@@ -147,7 +149,7 @@ def test_page_wiring():
 
 def test_copy_and_dialog_style():
     assert ZH["home.skillsTryThis"] == "试用此技能" and EN["home.skillsTryThis"] == "Try this skill"
-    assert ZH["skillRun.start"] == "开始制作" and EN["skillRun.start"] == "Start creating"
+    assert ZH["skillRun.start"] == "开始制作" and EN["skillRun.start"] == "Start making"  # #593 dual-column CTA gold
     assert ZH["skillRun.select"] == "选择" and EN["skillRun.select"] == "Select"
     assert (ZH["home.skillsCreatedByYou"], ZH["home.skillsCreatedByLoomi"]) == ("你创建的", "Loomi 创建的")
     assert (EN["home.skillsCreatedByYou"], EN["home.skillsCreatedByLoomi"]) == ("Created by you", "Created by Loomi")
