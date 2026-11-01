@@ -1,6 +1,6 @@
 import { atom, useValue } from 'tldraw'
 
-import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, lostProvider, NO_KEY_DETAIL, providerLabel, messagesAtom, newProviderAtom, openChat, providersAtom, saveSettings, settingsAtom, updateChat, type ProviderInfo } from '../bot'
+import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, lostProvider, NO_KEY_DETAIL, providerLabel, messagesAtom, newProviderAtom, openChat, providersAtom, providersStateAtom, saveSettings, settingsAtom, updateChat, type ProviderInfo } from '../bot'
 import { errorText } from '../jobs'
 import { confirmAtom } from './Confirm'
 import { AgentLogo } from './agentLogos'
@@ -37,8 +37,15 @@ export function useCurrentAgent() {
   const chat = useValue('current chat', () => chatsAtom.get().find((c) => c.id === chatIdAtom.get()) ?? null, [])
   const pending = useValue(newProviderAtom)
   const providerId = chat?.provider ?? (pending || defaultProvider())
-  return providers.find((p) => p.id === providerId) ?? null
+  const loading = useValue('agent list loading', () => providersStateAtom.get().state === 'loading', [])
+  const found = providers.find((p) => p.id === providerId) ?? null
+  // #557: while the provider list is still loading, show the agent the list will resolve to (the built-in one unless the
+  // chat already names another) instead of the generic mode fallback, so the pill / reference button never flash.
+  if (!found && loading) return { ...LOADING_AGENT, id: providerId || BUILTIN_AGENT, label: providerId }
+  return found
 }
+
+const LOADING_AGENT: ProviderInfo = { id: BUILTIN_AGENT, label: '', available: true, version: '', detail: '', logged_in: null, stateful: false, attachments: false, branch: false, models: [] }
 
 export function AgentItems({ onError, current, close, onChosen }: { onError: (msg: string) => void; current: boolean; close: () => void; onChosen: () => void }) {
   const providers = useValue(providersAtom)
