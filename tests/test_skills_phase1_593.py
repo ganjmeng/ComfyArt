@@ -1,4 +1,4 @@
-"""#593 Phase1-S3: new-6 production instructions+presets; dual-column CTA Start making; no cover wash yet.
+"""#593 Phase1-S3: new-6 production instructions+presets; dual-column CTA Start making; #594 wash pins land on tip.
 $0 static reads; no network."""
 from __future__ import annotations
 
@@ -39,7 +39,9 @@ def test_new6_production_instructions_and_presets():
         e = entries[sid]
         assert f"category: '{cat}'" in e, sid
         head, _, rest = e.partition("inputs:")
-        assert "cover:" not in head and "video:" not in head and "featured:" not in head, sid
+        assert "cover: cover(" in head and "featured: feedCovers(" in head, sid
+        assert "video:" not in head, sid  # #575 hover video out
+        assert "quickStartCoverFit: 'contain'" in head and "examples: ex594(" in head, sid
         assert "presets:" in head, sid
         body = head.split("presets:", 1)[1]
         n = body.count("P(")

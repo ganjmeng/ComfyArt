@@ -41,7 +41,13 @@ Harness uses production classnames / testids from `home.css` + `Home.tsx` (not l
 | `left-ours/AFTER-pills-order-zh-light.png` | welcome pills L→R 电商→… + empty composer placeholder |
 | `left-ours/AFTER-pills-row-crop.png` | pills row crop |
 | `left-ours/AFTER-starter-ecommerce-zh-light.png` | starter after 电商; icon `aria-pressed=true`; Close; 3 suggests |
-| `left-ours/AFTER-starter-card-crop.png` | starter card crop |
+| `left-ours/AFTER-starter-social.png` | starter after 社交媒体; pressed icon + 3 Phase1 suggests |
+| `left-ours/AFTER-starter-brand.png` | starter after 品牌 |
+| `left-ours/AFTER-starter-creative.png` | starter after 创意 |
+| `left-ours/AFTER-starter-website.png` | starter after 网站 |
+| `left-ours/AFTER-starter-close-pills.png` | Close → pills row restored (电商→…→网站) |
+| `left-ours/AFTER-starter-card-crop.png` | starter card crop (电商) |
+| `harness/mock.html` + `harness/shoot.py` | Playwright CSS-class harness (prod classnames/testids) |
 
 ## L/R composites (`lr-pairs/`)
 
@@ -82,7 +88,8 @@ Mutation lock: `tests/test_home_soft_610.py`. Prior soft locks `#602` / `#596` s
 
 - Soft 3rd suggestions for social/brand/website reuse family skill id with alt locale (map has only 2 builtins) — prefer unique ids when Phase1 grows.
 - Live Playwright against running ComfyArt custom-node serve deferred (mock CSS harness for tip-bound #78).
-- #606 still open on main — this branch soft/non-blocking from `7c98d1c`.
+- Full 5-pill starter matrix + Close-restored filmed on CSS harness (2026-11-01 Asia/Shanghai).
+- Merged `origin/main` @ `c4fb9dc` (#606) for MERGEABLE; tip SHA in PR body.
 
 ## Out of scope
 
