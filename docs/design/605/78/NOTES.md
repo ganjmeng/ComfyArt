@@ -1,8 +1,7 @@
 # #605 → #78 tip-pin — skill cover hover video (Explore + Home)
 
 **Tip:** `3130b7b45293d1ef3f413978a1f7b49c96ce566a` · **Asia/Shanghai** · branch `feat/575-skill-cover-video`  
-**Assets tip:** `3130b7b45293d1ef3f413978a1f7b49c96ce566a` (webm + NOTES draft)  
-**Final tip:** (this NOTES tip-pin commit HEAD — see PR)  
+**Assets tip:** `3130b7b45293d1ef3f413978a1f7b49c96ce566a` (webm + initial NOTES)  
 **Issue:** Refs #575 (do **not** Closes)
 
 ## Verdict
