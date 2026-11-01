@@ -76,3 +76,26 @@ export function packFeaturedColumns<T extends { id: string; aspect: number; grou
   }
   return columns
 }
+
+/** #580 cut 2 — home feed tabs (order = reference). Only 探索 and 我的素材 carry content today;
+ *  灵感采集 / Pinterest are placeholders that open a 「即将上线」 state. */
+export const HOME_TABS = ['explore', 'assets', 'inspiration', 'pinterest'] as const
+export type HomeTab = (typeof HOME_TABS)[number]
+export const HOME_TAB_PLACEHOLDER: ReadonlySet<HomeTab> = new Set(['inspiration', 'pinterest'])
+
+/** #580 cut 2 — the two special cards the reference embeds in the masonry. `at` = index in the feed data order;
+ *  provisional until design measures the live positions. Their buttons only show a coming-soon toast. */
+export const FEED_SPECIAL_CARDS = [
+  { id: 'capture', at: 2 },
+  { id: 'connector', at: 9 },
+] as const
+export type FeedSpecialId = (typeof FEED_SPECIAL_CARDS)[number]['id']
+/** Masonry height estimate for a special card before it renders (column-width ratio). */
+export const FEED_SPECIAL_ASPECT = 3 / 4
+
+/** Insert the special cards into `items` at their `at` positions (clamped to the end). Pure, for tests. */
+export function withSpecialCards<T, S>(items: readonly T[], make: (id: FeedSpecialId) => S): (T | S)[] {
+  const out: (T | S)[] = [...items]
+  for (const c of [...FEED_SPECIAL_CARDS].sort((a, b) => a.at - b.at)) out.splice(Math.min(c.at, out.length), 0, make(c.id))
+  return out
+}

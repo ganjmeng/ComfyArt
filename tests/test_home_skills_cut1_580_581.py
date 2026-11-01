@@ -88,7 +88,7 @@ def test_featured_cases_round_robin_both_types() -> None:
     assert "for (let round = 0;" in helper
     assert "out[out.length - 1]!.skill.id === c.skill.id" in helper
     assert "break" not in helper  # no longer one-per-skill
-    assert "featured: 'editorial'" in SKILLS_TS  # P2: character leads with the editorial sheet
+    assert "featuredPreset: 'editorial'" in SKILLS_TS  # P2: character leads with the editorial sheet
 
 
 def test_featured_heading_renamed() -> None:

@@ -27,7 +27,7 @@ import { openSkillEditor, skillsOpenAtom } from '../ui/SkillsDialog'
 import { SkillRunDialog } from '../ui/SkillRunDialog'
 
 type Tab = 'explore' | 'favourites' | 'personal'
-const CHIP_LABEL: Record<SkillChipId, string> = {
+export const CHIP_LABEL: Record<SkillChipId, string> = {
   forYou: 'home.skillsForYou',
   ecommerce: 'home.skillsChipEcommerce',
   branding: 'home.skillsChipBranding',
