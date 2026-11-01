@@ -16,6 +16,9 @@ body { background: var(--ca-float); }
 .ca-rail__btn[data-on] { background: var(--ca-active); }
 .ca-rail__spacer { flex: 1; }
 .ca-rail__btn[data-testid="rail-new"] { margin-bottom: var(--ca-rail-new-gap); } /* #546 */
+/* #578: 新建项目 = bordered button on float bg (expanded) / bordered 36 square around ＋ (collapsed) */
+.ca-rail__btn[data-testid="rail-new"] { box-sizing: border-box; border: 1px solid var(--ca-border); background: var(--ca-float); }
+.ca-rail__btn[data-testid="rail-new"]:hover { background: var(--ca-hover); }
 
 /* #495 expanded sidebar (#546: 240 = reference design) — collapsed keeps the 60px icon rail */
 .ca-rail__top { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 4px; }
@@ -42,7 +45,8 @@ body { background: var(--ca-float); }
   width: auto; justify-content: flex-start; gap: 10px; padding: 0 10px; height: 36px;
 }
 .ca-rail[data-expanded] .ca-rail__label { display: block; }
-.ca-rail[data-expanded] .ca-rail__badge { position: static; margin-left: 4px; flex: none; }
+.ca-rail[data-expanded] .ca-rail__btn[data-testid="rail-arti"] .ca-rail__label { flex: 0 1 auto; } /* #578: Beta sits right after 「Arti」 */
+.ca-rail[data-expanded] .ca-rail__badge { position: static; margin-left: -4px; flex: none; }
 .ca-rail .ca-brand-mark .lm-cut { fill: var(--ca-rail-bg); stroke: var(--ca-rail-bg); }
 .ca-rail[data-expanded] .ca-rail__recent {
   display: flex; flex-direction: column; gap: 2px; margin-top: 10px; min-height: 0; overflow-y: auto;
@@ -52,7 +56,7 @@ body { background: var(--ca-float); }
   text-transform: none; letter-spacing: 0;
 }
 .ca-rail__recent-row {
-  display: flex; align-items: center; gap: 2px; min-height: 32px; padding: 0 4px 0 10px;
+  display: flex; align-items: center; gap: 2px; min-height: 36px; padding: 0 4px 0 10px; /* #578: 36 + 2 gap = 38 pitch (reference measured) */
   border-radius: 8px; color: var(--ca-text);
 }
 .ca-rail__recent-row:hover { background: var(--ca-hover); }
@@ -264,8 +268,8 @@ body { background: var(--ca-float); }
 .ca-rail__badge {
   position: absolute; top: -2px; right: -4px;
   padding: 0 4px; height: 14px; line-height: 14px;
-  border-radius: 7px; background: #3b82f6; color: #fff;
-  font: 600 9px/14px var(--ca-font); pointer-events: none;
+  border-radius: 4px; background: color-mix(in srgb, var(--ca-blue) 14%, transparent); color: var(--ca-blue); /* #578 light-blue tag, blue text */
+  font: 500 10px/14px var(--ca-font); pointer-events: none;
 }
 .ca-switch:disabled { opacity: .45; cursor: not-allowed; }
 
