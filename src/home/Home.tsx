@@ -11,7 +11,7 @@ import { Assets } from './Assets'
 import { CHIP_LABEL } from './Skills'
 import { toolCover } from './toolCovers'
 import { showMemoryToast } from '../memory'
-import { hasSkillDialog, importLanding, loadSkills, matchesSkillChip, skillChips, skillFeaturedCases, skillQuickStartCover, FEED_SPECIAL_COLLAGE, type Skill, type SkillChipId } from '../skills'
+import { hasSkillDialog, importLanding, loadSkills, matchesSkillChip, skillChips, skillFeaturedCases, skillQuickStartCover, skillQuickStartCoverFit, FEED_SPECIAL_COLLAGE, type Skill, type SkillChipId } from '../skills'
 import { SkillChip, chipBackspace } from '../ui/SkillChip'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
 import { SkillRunDialog } from '../ui/SkillRunDialog'
@@ -119,6 +119,8 @@ export function Home() {
   const [assetChip, setAssetChip] = useState<HomeAssetChip>('brandKit')
   const [ratios, setRatios] = useState<Record<string, number>>({})
   const [floating, setFloating] = useState(false)
+  // #602 — floating composer collapses to a send-forward pill until focus/click expands it
+  const [boxExpanded, setBoxExpanded] = useState(true)
   const boxSlot = useRef<HTMLDivElement>(null)
   const toolFile = useRef<HTMLInputElement>(null)
   const pendingTool = useRef<string>('')
@@ -244,7 +246,13 @@ export function Home() {
   useEffect(() => {
     const el = boxSlot.current
     if (!el || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver(([e]) => setFloating(!!e && !e.isIntersecting && e.boundingClientRect.top < 0))
+    const io = new IntersectionObserver(([e]) => {
+      const next = !!e && !e.isIntersecting && e.boundingClientRect.top < 0
+      setFloating(next)
+      // #602: enter float → compact unless the input already holds focus; leave float → always expanded
+      if (next) setBoxExpanded(document.activeElement === input.current)
+      else setBoxExpanded(true)
+    })
     io.observe(el)
     return () => io.disconnect()
   }, [])
@@ -278,12 +286,28 @@ export function Home() {
       <div ref={boxSlot} className="ca-landing__boxslot" data-testid="home-box-slot" style={floating ? { minHeight: boxSlot.current?.offsetHeight } : undefined}>
       <div
         data-floating={floating || undefined}
+        data-compact={(floating && !boxExpanded) || undefined}
         data-testid="home-box"
         className="ca-landing__box"
         data-drop={drop || undefined}
         onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDrop(true) } }}
         onDragLeave={() => setDrop(false)}
         onDrop={(e) => { e.preventDefault(); setDrop(false); void upload(e.dataTransfer.files) }}
+        onClick={() => { if (floating && !boxExpanded) { setBoxExpanded(true); input.current?.focus() } }}
+        onFocusCapture={() => { if (floating) setBoxExpanded(true) }}
+        onBlurCapture={(e) => {
+          if (!floating) return
+          const next = e.relatedTarget as Node | null
+          if (next && e.currentTarget.contains(next)) return
+          setBoxExpanded(false)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && floating && boxExpanded) {
+            e.stopPropagation()
+            setBoxExpanded(false)
+            input.current?.blur()
+          }
+        }}
       >
         {picked && (
           <div className="ca-landing__refs">
@@ -538,7 +562,7 @@ export function Home() {
             return (
               <button key={s.id} type="button" className="ca-skillcard" data-testid="home-skill-card" data-skill={s.id}
                 onClick={() => trySkill(s)}>
-                <span className="ca-skillcard__cover" data-testid="home-skill-cover">{src && cover?.own === 'video' ? <video src={`${src}#t=0.001`} muted playsInline preload="metadata" data-testid="home-skill-cover-frame" /> : src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
+                <span className="ca-skillcard__cover" data-testid="home-skill-cover" data-fit={skillQuickStartCoverFit(s)}>{src && cover?.own === 'video' ? <video src={`${src}#t=0.001`} muted playsInline preload="metadata" data-testid="home-skill-cover-frame" /> : src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
                 <span className="ca-skillcard__name"><span className="ca-skillcard__label">{s.name}</span></span>
               </button>
             )
