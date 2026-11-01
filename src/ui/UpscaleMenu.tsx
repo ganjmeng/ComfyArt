@@ -11,6 +11,17 @@ import { estimateCost } from '../wavespeedKey'
 import { uiCredits } from '../usd'
 
 /** #570: the tool panel frame at the image's right (title + reset, body, 取消 / 立即使用 ⚡n). Upscale and 转 3D share it. */
+/** Segmented switch shared by the #570 tool panels (to3d model, upscale mode and resolution). */
+export function Seg<T extends string>({ label, value, options, onPick, attr = 'data-value' }: {
+  label: string; value: T; options: { id: T; label: string; disabled?: boolean; title?: string }[]; onPick: (id: T) => void; attr?: string
+}) {
+  return (
+    <div className="ca-seg" role="tablist" aria-label={label}>
+      {options.map((o) => <button key={o.id} type="button" role="tab" className="ca-seg__btn" {...{ [attr]: o.id }} title={o.title} disabled={o.disabled} aria-selected={o.id === value} data-on={o.id === value || undefined} onClick={() => onPick(o.id)}>{o.label}</button>)}
+    </div>
+  )
+}
+
 export function ToolPanel({ tool, title, onReset, onCancel, onUse, credits, children }: {
   tool: string; title: string; onReset?: () => void; onCancel: () => void; onUse?: () => void; credits?: number | null; children: ReactNode
 }) {
@@ -47,9 +58,7 @@ export function To3dPanel({ editor, shape, src, custom, onDone, onError }: { edi
   return (
     <ToolPanel tool="to3d" title={t('imageToolbar.imageTo3d')} credits={credits} onReset={() => pick(models[0].id)} onCancel={onDone}
       onUse={() => { onDone(); imageTo3d(editor, shape, onError, model, vals) }}>
-      <div className="ca-seg" role="tablist" aria-label={t('toolPanel.model')}>
-        {models.map((m) => <button key={m.id} type="button" role="tab" className="ca-seg__btn" data-model={m.id} aria-selected={m.id === model} data-on={m.id === model || undefined} onClick={() => pick(m.id)}>{m.label}</button>)}
-      </div>
+      <Seg label={t('toolPanel.model')} attr="data-model" value={model} options={models.map((m) => ({ id: m.id, label: m.label }))} onPick={pick} />
       <div className="ca-toolpanel__preview"><img src={src} alt="" draggable={false} /></div>
       {spec.params.length > 0 && <div className="ca-toolpanel__params" data-count={spec.params.length}>
         {spec.params.map((p) => (
@@ -74,7 +83,7 @@ const STYLES: [string, string][] = [
 ]
 const TARGETS: [string, number][] = [['2K', 2048], ['4K', 4096], ['8K', 8192]]
 
-/** asPanel (#570 home handoff): the same controls inside the ToolPanel at the image's right — resolution as a dropdown, 取消 / 立即使用 ⚡n. */
+/** asPanel (#570 home handoff): the same controls inside the ToolPanel at the image's right — mode and resolution as segmented switches (same Seg as to3d), height follows content, 取消 / 立即使用 ⚡n. */
 export function UpscaleMenu({ editor, shape, w, h, onDone, onError, asPanel }: { editor: Editor; shape: TLImageShape; w: number; h: number; onDone: () => void; onError: (msg: string) => void; asPanel?: boolean }) {
   const [detail, setDetail] = useState(false)
   const [style, setStyle] = useState('')
@@ -94,18 +103,19 @@ export function UpscaleMenu({ editor, shape, w, h, onDone, onError, asPanel }: {
     if (detail) actions.creativeUpscale(editor, shape, k, style, strength / 100, onError)
     else actions.upscale(editor, shape, k, onError)
   }
+  const detailControls = detail && (
+    <>
+      <Chips value={style} options={STYLES.map(([label, value]) => [value, label] as const)} onPick={setStyle} />
+      <label className="ca-panel__row"><span>{t('upscaleMenu.detailStrength')}</span><input type="range" min={10} max={70} value={strength} onChange={(e) => setStrength(Number(e.target.value))} /><span className="ca-panel__val">{strength}</span></label>
+    </>
+  )
   const modes = (
     <>
       <div className="ca-panel__chips">
         <button type="button" className="ca-panel__chip" data-on={!detail || undefined} onClick={() => setDetail(false)}>{t('upscaleMenu.faithfulToOriginal')}</button>
         <button type="button" className="ca-panel__chip" data-on={detail || undefined} onClick={() => setDetail(true)}>{t('upscaleMenu.enhanceDetails')}</button>
       </div>
-      {detail && (
-        <>
-          <Chips value={style} options={STYLES.map(([label, value]) => [value, label] as const)} onPick={setStyle} />
-          <label className="ca-panel__row"><span>{t('upscaleMenu.detailStrength')}</span><input type="range" min={10} max={70} value={strength} onChange={(e) => setStrength(Number(e.target.value))} /><span className="ca-panel__val">{strength}</span></label>
-        </>
-      )}
+      {detailControls}
     </>
   )
   if (asPanel) {
@@ -114,12 +124,11 @@ export function UpscaleMenu({ editor, shape, w, h, onDone, onError, asPanel }: {
     return (
       <ToolPanel tool="upscale" title={t('common.upscale')} credits={credits} onReset={reset} onCancel={onDone} onUse={target ? () => go(target / long) : undefined}>
         <div className="ca-menu ca-upscale">
-          {modes}
-          <label className="ca-panel__row ca-toolpanel__select"><span>{t('toolPanel.resolution')}</span>
-            <select value={pick} onChange={(e) => setPick(e.target.value)} disabled={!usable.length}>
-              {TARGETS.map(([label, tg]) => <option key={label} value={label} disabled={tg <= long}>{label} · {Math.round(w * tg / long)}×{Math.round(h * tg / long)}</option>)}
-            </select>
-          </label>
+          <Seg label={t('toolPanel.mode')} attr="data-mode" value={detail ? 'detail' : 'faithful'} onPick={(id) => setDetail(id === 'detail')}
+            options={[{ id: 'faithful', label: t('upscaleMenu.faithfulToOriginal') }, { id: 'detail', label: t('upscaleMenu.enhanceDetails') }]} />
+          {detailControls}
+          <Seg label={t('toolPanel.resolution')} attr="data-res" value={pick} onPick={setPick}
+              options={TARGETS.map(([label, tg]) => ({ id: label, label, disabled: tg <= long, title: `${Math.round(w * tg / long)}×${Math.round(h * tg / long)}` }))} />
         </div>
       </ToolPanel>
     )

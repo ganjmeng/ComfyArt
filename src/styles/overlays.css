@@ -1172,9 +1172,10 @@
 /* #570: tool panel at the image's right (upscale / 转 3D), modeled on the reference multi-angle panel */
 .ca-toolpanel-host { position: absolute; z-index: 301; }
 /* #570 design 6551032261: white, radius 8, light shadow, padding 8; dark #262626 / selected segment #363636 */
-.ca-toolpanel { display: flex; flex-direction: column; gap: 8px; width: 172px; min-height: 346px; box-sizing: border-box; padding: 8px; border-radius: 8px; background: var(--ca-toolpanel-bg, var(--ca-float)); color: var(--ca-text); box-shadow: 0 2px 8px rgba(0,0,0,.08); font-size: 12px; }
+.ca-toolpanel { display: flex; flex-direction: column; gap: 8px; width: 172px; box-sizing: border-box; padding: 8px; border-radius: 8px; background: var(--ca-toolpanel-bg, var(--ca-float)); color: var(--ca-text); box-shadow: 0 2px 8px rgba(0,0,0,.08); font-size: 12px; }
 .ca-toolpanel__head { display: flex; align-items: center; gap: 4px; font-size: 13px; line-height: 20px; font-weight: 600; }
 .ca-toolpanel__head .ca-panel__icon { margin-left: auto; }
+.ca-toolpanel[data-tool='to3d'] { min-height: 346px; }
 .ca-toolpanel__body { display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .ca-toolpanel__body .ca-menu { min-width: 0; padding: 0; box-shadow: none; background: transparent; border: none; }
 .ca-toolpanel__preview { aspect-ratio: 1; border-radius: 6px; background: var(--ca-field); overflow: hidden; display: flex; align-items: center; justify-content: center; }
@@ -1187,7 +1188,7 @@
 .ca-toolpanel__foot > .ca-panel__secondary { background: transparent; border: 1px solid var(--ca-border); color: var(--ca-text); }
 .ca-toolpanel__foot > .ca-panel__primary { background: var(--ca-text); color: var(--ca-float); border: none; }
 .ca-seg { display: flex; padding: 2px; border-radius: 8px; background: var(--ca-field); }
-.ca-seg__btn { flex: 1; height: 26px; border: none; border-radius: 6px; background: transparent; color: var(--ca-muted); font: inherit; font-size: 12px; cursor: pointer; }
+.ca-seg__btn { flex: 1; min-width: 0; min-height: 26px; padding: 2px 4px; line-height: 16px; border: none; border-radius: 6px; background: transparent; color: var(--ca-muted); font: inherit; font-size: 12px; cursor: pointer; }
 .ca-seg__btn[data-on] { background: var(--ca-seg-on, var(--ca-float)); color: var(--ca-text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 .ca-toolbar--swap .ca-toolbar__name { padding: 0 6px; font-weight: 600; white-space: nowrap; }
 .ca-toolbar--swap .ca-transform { display: flex; align-items: center; gap: 2px; padding: 0; box-shadow: none; background: transparent; border: none; min-width: 0; }
@@ -1196,8 +1197,7 @@
 .ca-menu__flyhost .ca-menu__sub { width: 100%; }
 .ca-menu.ca-menu__flyout { position: fixed; z-index: 1001; box-sizing: border-box; width: 184px; }
 .ca-menu__flyout .ca-menu__item { padding-left: 10px; }
-.ca-panel__row.ca-toolpanel__select { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
-.ca-toolpanel__select select { width: 100%; min-width: 0; height: 28px; border-radius: 6px; border: 1px solid var(--ca-border); background: var(--ca-field); color: var(--ca-text); font: inherit; }
+.ca-seg__btn:disabled { opacity: .4; cursor: default; }
 .ca-toolpanel .ca-upscale .ca-panel__chips { flex-wrap: wrap; }
 .ca-toolpanel .ca-upscale { width: auto; }
 .ca-menu.ca-menu__nested.ca-menu__flyout { padding: 4px; margin-top: 0; border-radius: 8px; background: var(--ca-float); box-shadow: var(--ca-shadow, 0 4px 16px rgba(0,0,0,.12)); border: var(--ca-border-w, 1px) solid var(--ca-border); }

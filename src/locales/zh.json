@@ -1607,5 +1607,6 @@
   "toolPanel.reset": "重置",
   "toolPanel.useNow": "立即使用",
   "toolPanel.model": "模型",
+  "toolPanel.mode": "模式",
   "toolPanel.resolution": "分辨率"
 }

@@ -1607,5 +1607,6 @@
   "toolPanel.reset": "Reset",
   "toolPanel.useNow": "Use now",
   "toolPanel.model": "Model",
+  "toolPanel.mode": "Mode",
   "toolPanel.resolution": "Resolution"
 }

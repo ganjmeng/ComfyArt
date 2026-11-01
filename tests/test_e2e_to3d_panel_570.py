@@ -58,7 +58,9 @@ async def _panel_right_of_image(pg, tool: str) -> None:
     assert await pg.locator(MORE_POP).count() == 0, "⋯ must not auto-open"
     bar = await pg.locator(".ca-toolbar--image").bounding_box()
     box = await panel.bounding_box()
-    assert box and bar and box["width"] == pytest.approx(172, abs=2) and box["height"] >= 340
+    assert box and bar and box["width"] == pytest.approx(172, abs=2)
+    if tool == "to3d":  # design 6551032261: to3d is ~172×346; upscale follows its content (review 5725811299)
+        assert box["height"] >= 340
     sel = await pg.evaluate("() => { const e = window.__caEditor; const b = e.getSelectionScreenBounds(); return b && { r: b.maxX } }")
     if sel:
         assert box["x"] >= sel["r"] - 2  # at the image's right
@@ -92,7 +94,7 @@ async def test_a_home_to3d_opens_panel_not_more(app_url):  # noqa: F811
 
 async def test_b_home_upscale_opens_its_panel(app_url, mock_ws):  # noqa: F811
     """Acceptance 6550945029 + design 6551032261: home → upscale opens its own panel at the image's right
-    (title, resolution dropdown, 取消 / 立即使用) — not the toolbar dropdown, never ⋯."""
+    (title, segmented mode + resolution, 取消 / 立即使用; review 5725811299) — not the toolbar dropdown, never ⋯."""
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url)
         await _launch(pg, "upscale")
@@ -100,7 +102,23 @@ async def test_b_home_upscale_opens_its_panel(app_url, mock_ws):  # noqa: F811
         await panel.wait_for(timeout=15000)
         assert await pg.locator(".ca-pop .ca-upscale").count() == 0 and await pg.locator(MORE_POP).count() == 0
         await _panel_right_of_image(pg, "upscale")
-        assert await panel.locator(".ca-toolpanel__select select").count() == 1
+        # no native <select>; mode and resolution reuse the to3d segmented switch
+        assert await panel.locator("select").count() == 0
+        assert await panel.locator(".ca-panel__chip").count() == 0
+        assert await panel.locator(".ca-seg [data-mode]").count() == 2
+        assert await panel.locator(".ca-seg [data-res]").all_inner_texts() == ["2K", "4K", "8K"]
+        await panel.locator(".ca-seg [data-mode='detail']").click()
+        assert await panel.locator(".ca-seg [data-mode='detail']").get_attribute("aria-selected") == "true"
+        await panel.locator(".ca-seg [data-mode='faithful']").click()
+        res = panel.locator(".ca-seg [data-res]:not([disabled])").last
+        await res.click()
+        assert await res.get_attribute("aria-selected") == "true"
+        # height follows content: no fixed 346 and no big gap between controls and the footer
+        box = await panel.bounding_box()
+        assert box["height"] <= 160, box  # head + mode + resolution + footer, no filler
+        gap = await panel.evaluate("""e => e.querySelector('.ca-toolpanel__foot').getBoundingClientRect().top
+            - [...e.querySelector('.ca-toolpanel__body').children].reduce((m, c) => Math.max(m, c.getBoundingClientRect().bottom), 0)""")
+        assert gap <= 16, gap
         before = len(mock_ws["submits"])
         await panel.get_by_role("button", name="立即使用").click()
         for _ in range(50):
