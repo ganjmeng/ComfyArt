@@ -1,16 +1,19 @@
 /* #580 cut 2 — ONE shared tab-row + chip token set (home feed tabs/chips now; Skills page header via #583).
- * Values = QA header baseline (review-assets ab89fae7, 583/qa/header-baseline/): chip selected #ebebeb + dark text,
- * unselected text-only, h30, gap 22; tabs 13px, gap 23, underline = text width; both stick on scroll. */
+ * Values = design measured table (#583 issuecomment-6557502265, review-assets 8296d114): home tabs 14px gap 24, selected 600,
+ * no underline; chips h30, padding 5px 12px, gap 8, selected rgba(0,0,0,.08), unselected text-only. Both stick on scroll. */
 /* Shared masonry column width (design v2: 298.7 @1280); #583's Skills list reuses it. */
 :root { --ca-feed-col-w: 298.7px; --ca-feed-special-bg: rgb(245, 245, 245); --ca-feed-special-collage-h: 122px; --ca-feed-special-pad: 6px;
   --ca-feed-tag-bg: rgba(0, 0, 0, .04); --ca-feed-tag-fg: rgba(0, 0, 0, .55); --ca-feed-tag-font: 400 11px/16px var(--ca-font); }
 :root {
-  --ca-tabs-gap: 23px; --ca-tabs-py: 8px; --ca-tabs-font: 500 13px/20px var(--ca-font); --ca-tabs-top: 0px;
-  --ca-tabs-fg: var(--ca-muted); --ca-tabs-on-fg: var(--ca-text); --ca-tabs-indicator: var(--ca-text); --ca-tabs-indicator-h: 2px;
+  --ca-tabs-gap: 24px; --ca-tabs-py: 8px; --ca-tabs-font: 400 14px/22px var(--ca-font); --ca-tabs-on-weight: 600; --ca-tabs-top: 0px;
+  --ca-tabs-fg: var(--ca-muted); --ca-tabs-on-fg: var(--ca-text); --ca-tabs-indicator: transparent; --ca-tabs-indicator-h: 0px;
+  /* #583 Skills header tabs (defined here, consumed by #583's PR): 13px, gap 20, 1px underline = text width */
+  --ca-skilltabs-gap: 20px; --ca-skilltabs-font: 400 13px/20px var(--ca-font); --ca-skilltabs-on-weight: 600;
+  --ca-skilltabs-fg: var(--ca-muted); --ca-skilltabs-on-fg: var(--ca-text); --ca-skilltabs-indicator: var(--ca-text); --ca-skilltabs-indicator-h: 1px;
   --ca-tabs-rule: var(--ca-border-w) solid var(--ca-border);
-  --ca-chip-gap: 22px; --ca-chip-h: 30px; --ca-chip-px: 12px; --ca-chip-radius: 999px; --ca-chip-font: 400 13px/20px var(--ca-font);
+  --ca-chip-gap: 8px; --ca-chip-h: 30px; --ca-chip-py: 5px; --ca-chip-px: 12px; --ca-chip-radius: 999px; --ca-chip-font: 400 13px/20px var(--ca-font);
   --ca-chip-bg: transparent; --ca-chip-fg: var(--ca-muted); --ca-chip-border: var(--ca-border-w) solid transparent; --ca-chip-hover-bg: var(--ca-hover);
-  --ca-chip-on-bg: #ebebeb; --ca-chip-on-fg: #111; --ca-chip-on-border: #ebebeb;
+  --ca-chip-on-bg: rgba(0, 0, 0, .08); --ca-chip-on-fg: var(--ca-text); --ca-chip-on-border: transparent;
 }
 body { background: var(--ca-float); }
 .ca-home { position: fixed; inset: 0; display: flex; background: var(--ca-float); color: var(--ca-text); font: 400 14px/22px var(--ca-font); }
@@ -638,7 +641,7 @@ body { background: var(--ca-float); }
 }
 .ca-skills__chips { display: flex; flex-wrap: wrap; gap: var(--ca-chip-gap); margin-bottom: 20px; }
 .ca-skills__chip {
-  height: var(--ca-chip-h); padding: 0 var(--ca-chip-px); border: var(--ca-chip-border);
+  height: var(--ca-chip-h); padding: var(--ca-chip-py) var(--ca-chip-px); box-sizing: border-box; border: var(--ca-chip-border);
   border-radius: var(--ca-chip-radius); background: var(--ca-chip-bg); color: var(--ca-chip-fg);
   font: var(--ca-chip-font); cursor: pointer;
 }
@@ -1015,7 +1018,7 @@ body { background: var(--ca-float); }
   padding: var(--ca-tabs-py) 0; border: none; border-bottom: var(--ca-tabs-indicator-h) solid transparent; margin-bottom: calc(-1 * var(--ca-border-w));
   background: none; color: var(--ca-tabs-fg); font: var(--ca-tabs-font); cursor: pointer;
 }
-.ca-hometabs__tab[data-active] { color: var(--ca-tabs-on-fg); border-bottom-color: var(--ca-tabs-indicator); }
+.ca-hometabs__tab[data-active] { font-weight: var(--ca-tabs-on-weight); color: var(--ca-tabs-on-fg); border-bottom-color: var(--ca-tabs-indicator); }
 .ca-homechips { position: sticky; top: var(--ca-homechips-top); z-index: 5; padding: var(--ca-homechips-pad) 0; background: var(--ca-float); }
 .ca-hometab-soon {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 320px; color: var(--ca-muted);

@@ -35,3 +35,10 @@ def test_featured_v1_and_collages_pinned_588():
     for sid in ("poster", "social", "brand", "packaging", "thumbnail", "banner", "character", "product", "motion", "interior"):
         assert f"{sid}: ['580/featured-v1/{sid}', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']]" in SKILLS
     assert "inspiration@thumb.webp" in SKILLS and "connector@thumb.webp" in SKILLS
+
+
+def test_tab_and_chip_token_values_design_table_583():
+    for v in ("--ca-tabs-gap: 24px", "400 14px/22px", "--ca-tabs-on-weight: 600", "--ca-tabs-indicator-h: 0px",
+              "--ca-skilltabs-gap: 20px", "400 13px/20px", "--ca-skilltabs-indicator-h: 1px",
+              "--ca-chip-gap: 8px", "--ca-chip-h: 30px", "--ca-chip-py: 5px", "--ca-chip-px: 12px", "--ca-chip-on-bg: rgba(0, 0, 0, .08)"):
+        assert v in CSS, v
