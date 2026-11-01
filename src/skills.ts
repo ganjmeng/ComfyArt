@@ -47,6 +47,9 @@ export const SKILL_ASSET_BASE = '/comfyart/skills'
 /** #581 final list covers (11×462x346 webp), manifest review-assets 494/covers-final/manifest.json @7237c371.
  *  Each entry is [dir, commit]: v3 for 9, banner v3.1, character v3.2 (composed from the merged #574 templates). */
 const COVER_V3 = '3c9b87e7eae72164efdd1fe30e00f576144475f4'
+/** #594 Phase1 new6 covers (494/covers-v4) + featured-v2 + 594/wash examples — eye PASS 6/6 incl. mobile-ui cover regen. */
+const WASH_594 = 'cc76d743d416c3d9a9a6852d811a7a80caf40319'
+const COVER_V4 = WASH_594
 const COVERS_581: Record<string, readonly [string, string]> = {
   poster: ['494/covers-v3', COVER_V3], social: ['494/covers-v3', COVER_V3], brand: ['494/covers-v3', COVER_V3],
   packaging: ['494/covers-v3', COVER_V3], thumbnail: ['494/covers-v3', COVER_V3],
@@ -54,6 +57,9 @@ const COVERS_581: Record<string, readonly [string, string]> = {
   character: ['494/covers-v3.2', 'dc335056e81e0350e2f98487fb680e22ffb14bb9'],
   product: ['494/covers-v3', COVER_V3], motion: ['494/covers-v3', COVER_V3], interior: ['494/covers-v3', COVER_V3],
   'custom-workflow': ['494/covers-v3', COVER_V3],
+  'multi-angle': ['494/covers-v4', COVER_V4], 'logo-material': ['494/covers-v4', COVER_V4],
+  'meta-ads': ['494/covers-v4', COVER_V4], 'mobile-ui': ['494/covers-v4', COVER_V4],
+  'web-product': ['494/covers-v4', COVER_V4], 'marketing-campaign': ['494/covers-v4', COVER_V4],
 }
 const cover = (id: string) => {
   const [dir, commit] = COVERS_581[id]
@@ -63,6 +69,7 @@ const cover = (id: string) => {
  *  review-assets (commit-pinned). Empty until design delivers the washed home sets; skills absent here fall back. */
 const QUICK_START_COVERS: Record<string, readonly [string, string, string]> = {}
 const FEED_V1 = '98a34727037f806895a4baed34dd2a498cb9baa2'  // #588 PASS, manifest review-assets 580/featured-v1/manifest.json
+const FEED_V2 = WASH_594  // #594 new6 featured-v2
 const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> = {
   poster: ['580/featured-v1/poster', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   social: ['580/featured-v1/social', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
@@ -74,6 +81,12 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   product: ['580/featured-v1/product', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   motion: ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   interior: ['580/featured-v1/interior', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'multi-angle': ['580/featured-v2/multi-angle', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'logo-material': ['580/featured-v2/logo-material', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'meta-ads': ['580/featured-v2/meta-ads', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'mobile-ui': ['580/featured-v2/mobile-ui', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'web-product': ['580/featured-v2/web-product', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'marketing-campaign': ['580/featured-v2/marketing-campaign', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
 }
 const pinned = (dir: string, commit: string, file: string) => `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${commit}/${dir}/${file}`
 const quickStartCover = (id: string) => { const e = QUICK_START_COVERS[id]; return e ? pinned(e[0], e[1], e[2]) : undefined }
@@ -117,6 +130,9 @@ const EX_541 = {
 }
 const ex541 = (skillId: keyof typeof EX_541, ids: number[]) =>
   ids.map((n) => `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${EX_541[skillId]}/541/wash/${skillId}/examples/${n}.webp`)
+/** #594 「效果示例」 — 594/wash/<id>/examples/01–04.webp @ WASH_594. */
+const ex594 = (skillId: string, ids: number[]) =>
+  ids.map((n) => pinned(`594/wash/${skillId}/examples`, WASH_594, `${String(n).padStart(2, '0')}.webp`))
 const wash541 = (commit: string, skillId: string, presetId: string) =>
   `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${commit}/541/wash/${skillId}/${skillId}__${presetId}.webp`
 const washProduct541 = (presetId: string) => wash541(presetId === 'detail' ? WASH_541.productDetail : WASH_541.product, 'product', presetId)
@@ -151,11 +167,10 @@ const VISUAL = I('visual', ['视觉呈现方式', 'Visual presentation'], 'text'
 /** #494 — pick the current UI language from data-carried copy. */
 export const loc = (text: { zh: string; en?: string }) => (lang === 'en' && text.en) || text.zh
 
-/** #591 Phase1-S1 data contract + #592 Phase1-S2 production instructions for the upgrade 9
- *  (`brand` `packaging` `poster` `product` `character` `social` `motion` `banner` `thumbnail`).
- *  New 6 skeletons stay until #593. `interior` / `custom-workflow` untouched.
- *  Product lock: canvas f784c59b + box PRODUCT-LOCK-TOP15.md (gold UX site external — never name it in src).
- *  Keep existing covers/videos/feeds/presets/examples; #594 washes new-6 media later. Soft FU #596 separate.
+/** #591 Phase1-S1 data contract + #592 Phase1-S2 upgrade-9 + #593 new-6 instructions/presets + #594 wash pins.
+ *  Upgrade 9: brand packaging poster product character social motion banner thumbnail.
+ *  New 6 media: covers-v4 + featured-v2 + 594/wash examples @ WASH_594; dual-fit contain (#602). No hover video (#575).
+ *  `interior` / `custom-workflow` untouched. Gold UX site external — never name it in src.
  */
 export const BUILTIN_SKILLS: Skill[] = [
   { id: 'poster', name: t('skills.posterDesign'), instructions: 'You are a production poster designer. Deliver print-ready compositions, not loose mood sketches.\n1) Brief: pull headline, subject, audience and use (event, promo, editorial) from the upload and notes.\n2) Hierarchy: one hero subject, strong headline typography in quotes, clear subcopy ladder, generous margins.\n3) Ratio: default 3:4; keep safe margins for print crop. Offer 2 distinct art directions when the brief is open.\n4) Finish: high contrast, legible at arm length, no clipped type. Put every on-art phrase in quotes.\n5) Refs: when the user uploaded a file, pass its shape id in refs (ref_modes content) on every generate_image call.',
@@ -185,29 +200,41 @@ export const BUILTIN_SKILLS: Skill[] = [
   { id: 'motion', name: t('skills.motionPoster'), instructions: 'You are a production motion designer for UGC ads, product TVC stills-to-video and poster animation.\n1) Still first: if stillArt is missing, generate a strong 3:4 or 9:16 key still with generate_image and wait for it.\n2) Animate: drive animate_image from that image shape with subtle, readable motion (loop on); keep titles sharp.\n3) Preset focus: Poster Animation keeps text locked while the scene breathes; First-to-Last Frame Animation morphs cleanly between two planned frames.\n4) Ad intent: prefer product-hero or UGC-style energy over abstract noise; CTA text in quotes when present.\n5) Refs: pass the still shape id into animate_image; never invent motion on a missing frame.',
     category: 'ads', cover: cover('motion'), quickStartCover: quickStartCover('motion'), featured: feedCovers('motion'), video: video('motion'), /* #575: preset.video TODO until design motion-01/02 mp4 PASS */ presets: [P('poster', '海报动画', 'Poster Animation', 'Template: poster animation for ads — lock the still, then subtle looping motion; show static vs animated pair; text stays sharp and readable.', wash569('motion', 0)), P('firstlast', '首帧到末帧动画', 'First-to-Last Frame Animation', 'Template: first-to-last frame animation for product TVC beats — plan first and last frames that share layout and transition smoothly.', wash569('motion', 1))],
     inputs: [I('stillArt', ['静态原稿', 'Static artwork'], 'image', true), I('motionNotes', ['动态要求', 'Motion requirements'], 'text', false, ['说明希望怎么动，哪些部分保持不动', 'How it should move and what should stay still']), VISUAL] },
-  // #593 Phase1-S3 new 6 — production instructions + presets (grey tiles OK); cover/video/featured wash → #594.
+  // #593 Phase1-S3 new 6 instructions+presets; #594 wash pins (covers-v4 / featured-v2 / examples); dual-fit contain; no hover video (#575).
   { id: 'multi-angle', name: t('skills.multiAngleImageGenerator'), instructions: 'You are a production multi-angle catalog photographer. Deliver a locked identity set, not random variants.\n1) Lock: read subjectImage; keep identity, materials, proportions and palette identical across every frame.\n2) Set: default front, 3/4, side and one detail/macro on clean matching backgrounds unless angleBrief says otherwise.\n3) Use: PDP and ads prefer neutral seamless; lifestyle only when the brief asks.\n4) Consistency: same lens height and lighting family; no costume or finish drift between angles.\n5) Refs: pass the subject shape id in refs (ref_modes content) on every generate_image call.',
     category: 'ecommerce',
+    cover: cover('multi-angle'), quickStartCover: quickStartCover('multi-angle'), quickStartCoverFit: 'contain',
+    featured: feedCovers('multi-angle'), examples: ex594('multi-angle', [1, 2, 3, 4]),
     presets: [P('front', '正面主图', 'Front hero', 'Style: front hero catalog shot of the same subject, eye-level, clean seamless background, locked identity and materials, production PDP ready.'), P('threequarter', '四分之三侧', 'Three-quarter', 'Style: three-quarter catalog angle of the same subject, slight turn, matching light and background to the front hero, locked proportions.'), P('side', '正侧轮廓', 'Side profile', 'Style: true side profile of the same subject, silhouette readable, matching seamless set, no identity drift.'), P('detail', '细节特写', 'Detail close-up', 'Style: detail or macro close-up of a key material or feature of the same subject, matching color science, still catalog-grade.')],
     inputs: [I('subjectImage', ['主体图片', 'Subject images'], 'image', true), I('angleBrief', ['角度与用途', 'Angles & use'], 'text', false, ['需要哪些角度、用途（详情页/广告）', 'Which angles and where they will be used (PDP / ads)']), VISUAL] },
   { id: 'logo-material', name: t('skills.logoMaterialExplorer'), instructions: 'You are a production 3D material artist for logo finish studies. Explore materials only — never redesign the mark.\n1) Lock geometry: keep logo paths, proportions and negative space identical to logoImage.\n2) Materials: vary finish only (metal, glass, plastic, fabric, ceramic) per selected preset or materialNotes.\n3) Stage: neutral studio turntable or soft gradient; soft product lighting; no busy brand scenes.\n4) Scope: one material study per frame; do not invent a full VI kit or packaging system.\n5) Refs: pass the logo shape id in refs (ref_modes content) on every generate_image call.',
     category: 'branding',
+    cover: cover('logo-material'), quickStartCover: quickStartCover('logo-material'), quickStartCoverFit: 'contain',
+    featured: feedCovers('logo-material'), examples: ex594('logo-material', [1, 2, 3, 4]),
     presets: [P('metal', '金属拉丝', 'Brushed metal', 'Style: brushed metal 3D logo material study on a neutral turntable, identical mark geometry, soft studio light, no redesign.'), P('glass', '透明玻璃', 'Clear glass', 'Style: clear glass 3D logo material study with soft refraction, identical mark geometry, soft gradient backdrop.'), P('fabric', '织物绣章', 'Fabric emblem', 'Style: woven fabric or embroidered emblem material study of the same logo, identical geometry, soft studio light.'), P('ceramic', '陶瓷釉面', 'Ceramic glaze', 'Style: glazed ceramic 3D logo material study, identical mark geometry, soft highlight, neutral seamless set.')],
     inputs: [I('logoImage', ['Logo 图片', 'Logo image'], 'image', true), I('materialNotes', ['材质偏好', 'Material preferences'], 'text', false, ['想试的材质、光泽或场景，可留空', 'Materials, finishes or scenes to try; leave blank if none']), VISUAL] },
   { id: 'meta-ads', name: t('skills.metaAdsCreative'), instructions: 'You are a production Meta paid-social creative director. Ship a ratio pack that shares one idea.\n1) Brief: pull product, audience, offer and CTA from campaignBrief; put every on-art phrase in quotes.\n2) Ratios: deliver 1:1 feed, 4:5 feed and 9:16 story/reel that share motif, palette and CTA.\n3) Treatment: prefer photo-led UGC or product-hero; avoid static website-banner layouts.\n4) Mobile: short high-contrast type; safe margins for UI chrome; one clear CTA.\n5) Refs: when adAssets are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
     category: 'ads',
+    cover: cover('meta-ads'), quickStartCover: quickStartCover('meta-ads'), quickStartCoverFit: 'contain',
+    featured: feedCovers('meta-ads'), examples: ex594('meta-ads', [1, 2, 3, 4]),
     presets: [P('feed1x1', '信息流 1:1', 'Feed 1:1', 'Style: Meta feed 1:1 paid creative, photo-led product hero, short high-contrast CTA in quotes, mobile-first.'), P('feed4x5', '信息流 4:5', 'Feed 4:5', 'Style: Meta feed 4:5 paid creative sharing the same campaign idea and CTA in quotes, taller crop, mobile-first.'), P('story9x16', '故事 9:16', 'Story 9:16', 'Style: Meta story/reel 9:16 creative, same campaign motif and CTA in quotes, safe margins for UI chrome.'), P('ugc', 'UGC 口播风', 'UGC talking-head', 'Style: UGC-style Meta creative, handheld energy, authentic product-in-hand moment, short CTA in quotes, not a website banner.')],
     inputs: [I('campaignBrief', ['投放简报', 'Campaign brief'], 'text', true, ['产品、受众、卖点与 CTA', 'Product, audience, offer and CTA']), I('adAssets', ['投放素材', 'Ad assets'], 'image'), VISUAL] },
   { id: 'mobile-ui', name: t('skills.mobileAppVisualDesign'), instructions: 'You are a production mobile product designer. Deliver coherent app UI screens, not marketing posters.\n1) System: one type scale, spacing rhythm and component language across the requested flows.\n2) Frames: phone-framed mockups at about 9:19.5; clear hierarchy and accessible contrast.\n3) Flows: cover 2–4 key screens (home, detail, checkout or onboarding) per brief.\n4) Scope: product UI chrome and content — not a landing-page poster or print layout.\n5) Refs: when uiRefs are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
     category: 'website',
+    cover: cover('mobile-ui'), quickStartCover: quickStartCover('mobile-ui'), quickStartCoverFit: 'contain',
+    featured: feedCovers('mobile-ui'), examples: ex594('mobile-ui', [1, 2, 3, 4]),
     presets: [P('home', '首页信息架构', 'Home IA', 'Style: mobile app home screen mockup in a phone frame, clear IA, coherent type and components, product UI not a poster.'), P('detail', '详情页', 'Detail screen', 'Style: mobile app detail screen mockup, strong hierarchy, accessible contrast, same design system as home.'), P('checkout', '结算流程', 'Checkout flow', 'Style: mobile checkout or cart flow screen, trust-first layout, clear primary CTA, same component language.'), P('onboarding', '引导页', 'Onboarding', 'Style: mobile onboarding screen, short copy, one primary action, coherent with the app system, phone-framed.')],
     inputs: [I('appBrief', ['应用与页面资料', 'App & screen brief'], 'text', true, ['应用名称、目标用户与要做的页面', 'App name, audience and screens to design']), I('uiRefs', ['界面参考', 'UI references'], 'image'), VISUAL] },
   { id: 'web-product', name: t('skills.webProductVisualDesign'), instructions: 'You are a production web product visual designer. Ship landing or product-page systems, not printable posters.\n1) System: shared layout grid, illustration/photo treatment and UI chrome across modules.\n2) Ratios: desktop 16:9 hero plus an optional responsive crop when useful.\n3) Modules: hero, feature row and supporting UI that share one visual language.\n4) Copy: keep marketing lines short; put on-art phrases in quotes; focus on layout quality.\n5) Refs: when webRefs are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
     category: 'website',
+    cover: cover('web-product'), quickStartCover: quickStartCover('web-product'), quickStartCoverFit: 'contain',
+    featured: feedCovers('web-product'), examples: ex594('web-product', [1, 2, 3, 4]),
     presets: [P('hero', '落地页主视觉', 'Landing hero', 'Style: web product landing hero at 16:9, strong hierarchy, short headline in quotes, coherent UI chrome.'), P('features', '功能模块', 'Feature modules', 'Style: web product feature modules row, shared grid and illustration treatment, desktop product page language.'), P('pricing', '定价区', 'Pricing section', 'Style: web pricing section visual, clear cards, accessible contrast, same system as the hero.'), P('responsive', '响应式裁切', 'Responsive crop', 'Style: responsive crop of the same web product system for a narrower viewport, layout reflowed not letterboxed.')],
     inputs: [I('webBrief', ['产品与页面资料', 'Product & page brief'], 'text', true, ['产品名称、页面目标与关键模块', 'Product name, page goal and key modules']), I('webRefs', ['视觉参考', 'Visual references'], 'image'), VISUAL] },
   { id: 'marketing-campaign', name: t('skills.marketingCampaignGenerator'), instructions: 'You are a production campaign art director. One big idea, then keyed frames across platforms.\n1) Idea: lock brand/product, goal and lead slogan from campaignGoal; put slogans in quotes.\n2) System: shared motif, palette and typography across hero KV, social and display frames.\n3) Adapt: show how the system reflows across ratios without collapsing into a single poster or a Meta-only set.\n4) Deliverables: at least a hero key visual plus social and display adaptations that stay on-system.\n5) Refs: when campaignAssets are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
     category: 'ads',
+    cover: cover('marketing-campaign'), quickStartCover: quickStartCover('marketing-campaign'), quickStartCoverFit: 'contain',
+    featured: feedCovers('marketing-campaign'), examples: ex594('marketing-campaign', [1, 2, 3, 4]),
     presets: [P('kv', '主视觉 KV', 'Hero key visual', 'Style: campaign hero key visual, one big idea, slogan in quotes, strong motif and palette, platform-agnostic master.'), P('social', '社交延展', 'Social extension', 'Style: social extension frames of the same campaign system, adapted ratios, slogan in quotes, not a Meta-only pack.'), P('display', '展示广告', 'Display ads', 'Style: display ad adaptations of the same campaign motif and palette, short copy in quotes, clear hierarchy.'), P('ooh', '户外主画面', 'OOH master', 'Style: out-of-home campaign master of the same big idea, legible at distance, slogan in quotes, shared motif.')],
     inputs: [I('campaignGoal', ['战役目标', 'Campaign goal'], 'text', true, ['品牌/产品、目标与主口号', 'Brand/product, goal and lead slogan']), I('campaignAssets', ['品牌与参考素材', 'Brand & reference assets'], 'image'), VISUAL] },
   { id: 'interior', name: t('skills.interiorArchitecturalVisualization'), instructions: 'Produce photoreal interior or architecture renders: eye-level wide shot, natural light, accurate materials, 16:9. Add a detail vignette at 4:3.',

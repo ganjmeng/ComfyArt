@@ -698,6 +698,10 @@ body { background: var(--ca-float); }
   border-radius: 12px; overflow: hidden; background: var(--ca-hover);
 }
 .ca-swall__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* #594/#602 — dual media-fit on Skills wall: contain + light-gray plate for Phase1 new6 boards */
+.ca-swall__cover[data-fit="contain"] { background: var(--ca-field); }
+.ca-swall__cover[data-fit="contain"] img { object-fit: contain; }
+.ca-swall__cover[data-fit="contain"] .ca-swall__video { object-fit: contain; }
 /* #529 — cover video overlays the still on hover/focus; badge switches to video when data has video. */
 .ca-swall__video {
   position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
