@@ -150,6 +150,8 @@ def test_locales_only_add_memory_retrieved_430():
         "toolPanel.reset", "toolPanel.useNow", "toolPanel.model", "toolPanel.mode", "toolPanel.faithful", "toolPanel.enhance", "toolPanel.resolution",
         # #423: 「已保存 N 条」 under the memory row
         "chatMessage.memorySavedCount",
+        # #580: home 「精选」 → 「Skill 案例」
+        "home.featured",
         # #494: 技能页标签中文化、作者行「个人」，移除旧作者与浏览量文案
         "home.skillsFavourites", "home.skillsExplore", "home.skillsPersonal",
         "home.skillsAuthorPersonal", "home.skillsCommunity", "home.skillsViews",
