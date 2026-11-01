@@ -250,5 +250,47 @@
    "model": "nano-banana-2-1",
    "lovartRefTitle": "横幅设计"
   }
+ ],
+ "character": [
+  {
+   "file": "580/featured-v1/character/01.webp",
+   "thumb": "580/featured-v1/character/01@thumb.webp",
+   "w": 900,
+   "h": 1200,
+   "ratio": "3:4",
+   "taskId": "b367f244a25f1a69ce788a4723dfabb8",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "角色设定表设计"
+  },
+  {
+   "file": "580/featured-v1/character/02.webp",
+   "thumb": "580/featured-v1/character/02@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "d558eac1f535899825f217d3956c9645",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "电商直播素材"
+  },
+  {
+   "file": "580/featured-v1/character/03.webp",
+   "thumb": "580/featured-v1/character/03@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "11ec8118c758db8e5c46cb97f3e9d313",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "角色设定表设计"
+  },
+  {
+   "file": "580/featured-v1/character/04.webp",
+   "thumb": "580/featured-v1/character/04@thumb.webp",
+   "w": 720,
+   "h": 1440,
+   "ratio": "1:2",
+   "taskId": "1e0ddfc91041e4e8d941f8cd6f2abf82",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "电商直播素材"
+  }
  ]
 }
