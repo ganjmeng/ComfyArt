@@ -6,7 +6,7 @@ import { thumbUrl, uploadImage, viewUrl } from '../comfy'
 import { t } from '../i18n'
 import { errorText } from '../jobs'
 import { newProject, openView, startProject } from '../projects'
-import { featuredAspect, packFeaturedColumns } from './featuredLayout'
+import { HOME_SKILL_ROW, FEATURED_DEFAULTS, featuredAspect, packFeaturedColumns, readFeaturedMetrics } from './featuredLayout'
 import { toolCover } from './toolCovers'
 import { showMemoryToast } from '../memory'
 import { hasSkillDialog, importLanding, loadSkills, skillCover, skillFeaturedCases, type Skill } from '../skills'
@@ -110,6 +110,7 @@ export function Home() {
   const [moreTools, setMoreTools] = useState(false)  // #537: 「更多工具」
   const [featuredWidth, setFeaturedWidth] = useState(1200)  // #537: masonry columns
   const featuredRoot = useRef<HTMLElement>(null)
+  const [featuredMetrics, setFeaturedMetrics] = useState(FEATURED_DEFAULTS)
   const toolFile = useRef<HTMLInputElement>(null)
   const pendingTool = useRef<string>('')
   const current = useCurrentAgent()  // #278: same agent the canvas mode button shows
@@ -219,8 +220,8 @@ export function Home() {
     [featured],
   )
   const featuredColumns = useMemo(
-    () => packFeaturedColumns(featuredItems, featuredWidth),
-    [featuredItems, featuredWidth],
+    () => packFeaturedColumns(featuredItems, featuredWidth, featuredMetrics.gap, featuredMetrics.maxColumns, featuredMetrics.minCard),
+    [featuredItems, featuredWidth, featuredMetrics],
   )
   useEffect(() => {
     const el = featuredRoot.current
@@ -228,6 +229,8 @@ export function Home() {
     const update = () => {
       const w = el.getBoundingClientRect().width
       if (w > 0) setFeaturedWidth(w)
+      const m = readFeaturedMetrics(el)
+      setFeaturedMetrics((p) => (p.gap === m.gap && p.maxColumns === m.maxColumns && p.minCard === m.minCard ? p : m))
     }
     update()
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update)
@@ -452,19 +455,19 @@ export function Home() {
 
       <section className="ca-landing__section" data-testid="home-start-skill">
         <div className="ca-landing__head">
-          <h2>{t('home.startFromSkill')}</h2>
+          <h2><button type="button" className="ca-landing__headlink" data-testid="home-start-skill-head" onClick={() => openView('skills')}>{t('home.startFromSkill')}<span className="ca-landing__chev" aria-hidden>›</span></button></h2>
           <button type="button" className="ca-landing__link" onClick={() => openView('skills')}>{t('home.viewAll')}</button>
         </div>
+        {/* skills-cut1: one row of HOME_SKILL_ROW cover cards (cover + title ›), real skills only; click keeps trySkill */}
         <div className="ca-skillgrid" data-testid="home-skill-grid">
-          {skills.map((s) => {
+          {skills.slice(0, HOME_SKILL_ROW).map((s) => {
             const cover = skillCover(s)
-            const src = cover && (cover.own === 'bundled' ? cover.src : thumbUrl(cover.src, 128))
+            const src = cover && (cover.own === 'bundled' ? cover.src : thumbUrl(cover.src, 512))
             return (
               <button key={s.id} type="button" className="ca-skillcard" data-testid="home-skill-card" data-skill={s.id}
                 onClick={() => trySkill(s)}>
-                <span className="ca-skillcard__icon">{src ? <img src={src} alt={s.name} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
-                <span className="ca-skillcard__name">{s.name}</span>
-                <span className="ca-model__tag">{s.custom ? t('home.mySkill') : t('home.builtIn')}</span>
+                <span className="ca-skillcard__cover" data-testid="home-skill-cover">{src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}</span>
+                <span className="ca-skillcard__name"><span className="ca-skillcard__label">{s.name}</span><span className="ca-skillcard__chev" aria-hidden>›</span></span>
               </button>
             )
           })}
@@ -491,10 +494,10 @@ export function Home() {
                   >
                     <span className="ca-featured__cover" style={{ aspectRatio: aspect }}>
                       <img src={image} alt={s.name} loading="lazy" />
-                      <span className="ca-featured__badge">{t('home.skillCase')}</span>
+                      <span className="ca-featured__badge" data-testid="home-featured-kind" aria-hidden><span className="ca-icon">{/\.(mp4|webm|mov)(\?|$)/i.test(image) ? Icons.videoLine : Icons.imageLine}</span></span>
                       <span className="ca-featured__go">{t('skillRun.start')}</span>
                     </span>
-                    <span className="ca-featured__name">{s.name}</span>
+                    <span className="ca-featured__name"><span className="ca-featured__title">{s.name}</span><span className="ca-featured__tag">{t('home.skillCase')}</span></span>
                   </button>
                 ))}
               </div>

@@ -85,7 +85,7 @@ def test_featured_helper_is_data_driven() -> None:
 def test_copy_and_style() -> None:
     assert ZH["home.startFromSkill"] == "用 Skill 快速开始"
     assert EN["home.startFromSkill"] == "Start with a Skill"
-    assert ZH["home.featured"] == "精选" and EN["home.featured"] == "Featured"
+    assert ZH["home.featured"] == "Skill 案例" and EN["home.featured"] == "Skill cases"  # #580 rename
     assert ZH["home.skillCase"] == "Skill 案例" and EN["home.skillCase"] == "Skill case"
     assert ".ca-featured" in CSS and ".ca-featured__go" in CSS
     # #537: waterfall columns (Loomic pack); aspect via inline style, not fixed 231/173 grid

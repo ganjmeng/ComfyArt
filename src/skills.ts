@@ -499,11 +499,16 @@ export function presetImage(skill: Skill, preset: SkillPreset): string | null {
 
 /** #494-3 — home 「精选」 tiles: one card per preset with a real image (data-driven; no demo rows). */
 export function skillFeaturedCases(skills: Skill[]): { skill: Skill; preset: SkillPreset; image: string }[] {
+  // #580: one case per skill (every card a different skill) and no repeated image
   const out: { skill: Skill; preset: SkillPreset; image: string }[] = []
+  const seen = new Set<string>()
   for (const skill of skills) {
     for (const preset of skill.presets ?? []) {
       const image = presetImage(skill, preset)
-      if (image) out.push({ skill, preset, image })
+      if (!image || seen.has(image)) continue
+      seen.add(image)
+      out.push({ skill, preset, image })
+      break
     }
   }
   return out
