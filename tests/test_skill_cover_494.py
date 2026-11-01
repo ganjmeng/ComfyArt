@@ -27,7 +27,8 @@ def got(tmp_path_factory) -> dict:
 
 
 def test_no_image_falls_back_to_icon(got):
-    assert got["noImage"] is None and got["custom"] is None  # null → grey background + Lucide icon
+    assert got["noImage"] is None and got["customNoCover"] is None  # null → grey background + Lucide icon
+    assert got["custom"] == {"src": got["builtinCovers"]["custom-workflow"], "own": "bundled"}  # #581 real cover
 
 
 def test_own_image_used(got):
