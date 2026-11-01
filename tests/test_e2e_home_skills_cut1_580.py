@@ -30,7 +30,7 @@ async def _measure(app_url, width, *, collapsed=False):
               const cols = [...document.querySelectorAll('[data-testid="home-featured-col"]')].filter(c => c.children.length).map(b);
               const allCols = [...document.querySelectorAll('[data-testid="home-featured-col"]')].map(b);
               const tiles = [...document.querySelectorAll('[data-testid="home-featured-card"]')]
-                .map(e => ({skill: e.dataset.skill, preset: e.dataset.preset || null, img: e.querySelector('img').getAttribute('src')}));
+                .sort((a, b) => a.dataset.order - b.dataset.order).map(e => ({skill: e.dataset.skill, preset: e.dataset.preset || null, img: e.querySelector('img').getAttribute('src')}));
               return {grid: b(grid), scroll: grid.scrollWidth - grid.clientWidth, cards, covers, cols: allCols, tiles};
             }"""
         )

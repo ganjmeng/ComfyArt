@@ -210,8 +210,9 @@ export function Home() {
   const featured = skillFeaturedCases(skills)
   // #537: masonry waterfall via Loomic column math; cards from our skill presets only (no third-party feed data)
   const featuredItems = useMemo(
-    () => featured.map(({ skill: s, preset: p, image, key }) => ({
+    () => featured.map(({ skill: s, preset: p, image, key }, order) => ({
       id: key,
+      order,
       skill: s,
       preset: p,
       image,
@@ -482,7 +483,7 @@ export function Home() {
           <div className="ca-featured ca-featured--waterfall" data-testid="home-featured-grid">
             {featuredColumns.map((col, ci) => (
               <div key={`col-${ci}`} className="ca-featured__col" data-testid="home-featured-col">
-                {col.map(({ id, skill: s, preset: p, image, aspect }) => (
+                {col.map(({ id, order, skill: s, preset: p, image, aspect }) => (
                   <button
                     key={id}
                     type="button"
@@ -490,6 +491,7 @@ export function Home() {
                     data-testid="home-featured-card"
                     data-skill={s.id}
                     data-preset={p?.id}
+                    data-order={order}
                     onClick={() => trySkill(s, p?.id ?? null)}
                   >
                     <span className="ca-featured__cover" style={{ aspectRatio: aspect }}>

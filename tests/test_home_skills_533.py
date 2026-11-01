@@ -57,10 +57,10 @@ def test_quick_start_opens_dialog_not_direct_project() -> None:
 
 def test_featured_opens_dialog_with_preset() -> None:
     click = _featured_card_click()
-    assert "trySkill(s, p.id)" in click
+    assert "trySkill(s, p?.id ?? null)" in click
     assert 'data-testid="home-featured"' in HOME
     assert 'data-testid="home-featured-card"' in HOME
-    assert "data-preset={p.id}" in HOME
+    assert "data-preset={p?.id}" in HOME
     assert "home.skillCase" in HOME and "skillRun.start" in HOME
     assert "skillFeaturedCases(skills)" in HOME
 
@@ -74,7 +74,7 @@ def test_plus_skills_still_chip_only() -> None:
 
 def test_featured_helper_is_data_driven() -> None:
     assert "export function skillFeaturedCases" in SKILLS_TS
-    assert "presetImage(skill, preset)" in SKILLS_TS
+    assert "preset.image" in SKILLS_TS  # #580: template-type tiles use the preset's own image
     helper = SKILLS_TS.split("export function skillFeaturedCases", 1)[1].split("\nexport ", 1)[0]
     low = helper.lower()
     for bad in ("'poster'", '"poster"', "'product'", "'demo'", '"demo"'):

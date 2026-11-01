@@ -109,7 +109,7 @@ def test_featured_card_icon_tag_hover() -> None:
     assert "color: var(--ca-muted)" in CSS.split(".ca-featured__tag {", 1)[1].split("}", 1)[0]
     # item 6: no dim overlay on hover; white 开始制作 top-right kept
     assert ".ca-featured__cover::after" not in CSS
-    assert "skillRun.start" in block and "onClick={() => trySkill(s, p.id)}" in block
+    assert "skillRun.start" in block and "onClick={() => trySkill(s, p?.id ?? null)}" in block
 
 
 def test_row_cover_ratio_4x3() -> None:
