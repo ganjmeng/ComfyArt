@@ -42,7 +42,9 @@ def test_preview_markup():
     # main toolbar: #283 version A (supersedes #244) puts the upstream 5231d59 sep back right before download
     main = src[src.index("export function ImageToolbar"):src.index("export function CustomizeDialog")]
     assert 'hint={t(\'common.download\')}' in main or 'hint={t("common.download")}' in main
-    assert main.split("Icons.download")[0].split("Popover")[-1].count("ca-bar__sep") == 1
+    # #570: the transform swap bar has its own download; check the normal bar only
+    bar = main[main.index("{pinned.map(barTool)}"):]
+    assert bar.split("Icons.download")[0].split("Popover")[-1].count("ca-bar__sep") == 1
     # fixed tools get no unpin ×, stay off the pin list, and cannot be toggled off
     assert "{!fixed && <button" in src and "!isFixed(id) && setPinned" in dlg and "withFixed(pinned)" in dlg
     assert "cards.filter((x) => !isFixed(x.id))" in dlg
