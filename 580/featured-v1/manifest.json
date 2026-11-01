@@ -1,0 +1,44 @@
+{
+ "poster": [
+  {
+   "file": "580/featured-v1/poster/01.webp",
+   "thumb": "580/featured-v1/poster/01@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "23ccdc8b6a4d2bae6b5c0b531d9396da",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "海报设计"
+  },
+  {
+   "file": "580/featured-v1/poster/02.webp",
+   "thumb": "580/featured-v1/poster/02@thumb.webp",
+   "w": 900,
+   "h": 1200,
+   "ratio": "3:4",
+   "taskId": "40d1c783a7e5b63e82e7480065487ce6",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "动态海报生成器"
+  },
+  {
+   "file": "580/featured-v1/poster/03.webp",
+   "thumb": "580/featured-v1/poster/03@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "749da0deaee24dc471fafe600e900104",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "复古照片日记"
+  },
+  {
+   "file": "580/featured-v1/poster/04.webp",
+   "thumb": "580/featured-v1/poster/04@thumb.webp",
+   "w": 720,
+   "h": 1440,
+   "ratio": "1:2",
+   "taskId": "340ddb6ec371091b7799e1ac86da821d",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "海报设计"
+  }
+ ]
+}
