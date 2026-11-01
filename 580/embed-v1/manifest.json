@@ -1,0 +1,20 @@
+{
+ "inspiration": {
+  "file": "580/embed-v1/inspiration.webp",
+  "thumb": "580/embed-v1/inspiration@thumb.webp",
+  "w": 1446,
+  "h": 778,
+  "taskId": "98bef0ecfd5f700e7ac5f3817e79f726",
+  "model": "nano-banana-2-1",
+  "lovartRefTitle": "随处捕捉灵感"
+ },
+ "connector": {
+  "file": "580/embed-v1/connector.webp",
+  "thumb": "580/embed-v1/connector@thumb.webp",
+  "w": 1446,
+  "h": 778,
+  "taskId": "a3f261b6dfacd4270d283f43310910e8",
+  "model": "nano-banana-2-1",
+  "lovartRefTitle": "添加连接器"
+ }
+}
