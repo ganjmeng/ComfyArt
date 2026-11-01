@@ -1,6 +1,6 @@
 # #594 → #78 tip-pin — Phase1 new6 wash static + dual-fit
 
-**Tip:** `0ea38b90d3baa8c60a987e83a77d10df16278cf4` · **Asia/Shanghai** · branch `feat/594-skills-phase1-wash-static`  
+**Tip:** `a4e1889cfaa6f7fe0c271109097c22519e0dece8` · **Asia/Shanghai** · branch `feat/594-skills-phase1-wash-static`  
 **review-assets pin:** `cc76d743d416c3d9a9a6852d811a7a80caf40319`  
 **Eye:** design soft → **6/6 PASS** after `mobile-ui/cover` overnight harden regen (EYE-CHECK.md).
 
