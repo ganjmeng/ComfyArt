@@ -1,0 +1,231 @@
+{
+ "skillsPage": "https://www.lovart.ai/zh/skills",
+ "cards": [
+  {
+   "title": "亚马逊产品主图",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/b62903ef50644a3386d43c11683f841b.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "Amazon A+ 内容",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/39391e24fb764f6ea80b8ba205a2c355.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "标志系统",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/9ce473776fd94d2d968a258d69c2acc6.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "品牌应用",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/18bf442568f147cfb1abe2ef765276e2.jpeg?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "UGC广告视频导演",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/5804f67994de40af8b82e5f263909df3.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "动态海报",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/91e7b04cbdca45769f46aeaeb5935e16.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "淘宝商品首图",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/49f8ff6e59da41c6afe1987c3416e5da.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "淘宝场景图",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/2aa2c9a5fa2f49579f5fcfd47c99ef4d.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "产品广告",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/91ed5455c61e4c6998d8ded711218a29.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "淘宝商品详情页",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/f075b1b0b1bb4c31ac85c356e608d7ff.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "Amazon 卖点证据图",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/3fa61902db1f45ee8db0b9c3a60e0605.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "参考视频重制",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/f4b18a5f3244413cb5bd727fb29d4796.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "Amazon 规格说明图",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/4e1ddd62404b4363a8d3623c7d0cc9d4.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "VI 规范板",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/b4ec6ea8731e4a2aa1ff99d59ad29fba.png?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  },
+  {
+   "title": "品牌视觉方向板",
+   "natural": [
+    640,
+    480
+   ],
+   "rendered": [
+    296,
+    221.7
+   ],
+   "objectFit": "cover",
+   "mediaContainerPadding": "0px",
+   "mediaContainerBg": "rgba(0,0,0,0.04)",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/ef7f6f6e22f44ad3a4869eb6ef44011d.jpeg?x-oss-process=image/resize,w_640,m_lfit/format,webp"
+  }
+ ],
+ "note": "title order matched to img order by DOM order; srcs 1-4 identical filenames to home quick-start"
+}

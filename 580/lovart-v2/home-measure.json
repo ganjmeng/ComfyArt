@@ -1,0 +1,597 @@
+{
+ "viewport": "innerWidth 1280",
+ "quickStart": [
+  {
+   "title": "Amazon 商品主图",
+   "tag": "IMG",
+   "natural": [
+    644,
+    483
+   ],
+   "rendered": [
+    141.3,
+    106
+   ],
+   "objectFit": "cover",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/b62903ef50644a3386d43c11683f841b.png?x-oss-process=image/resize,w_644,m_lfit/format,webp",
+   "parentPadding": "0px",
+   "containerBg": "rgba(0,0,0,0.04)"
+  },
+  {
+   "title": "Amazon A+ 内容页",
+   "tag": "IMG",
+   "natural": [
+    644,
+    483
+   ],
+   "rendered": [
+    141.3,
+    106
+   ],
+   "objectFit": "cover",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/39391e24fb764f6ea80b8ba205a2c355.png?x-oss-process=image/resize,w_644,m_lfit/format,webp",
+   "parentPadding": "0px",
+   "containerBg": "rgba(0,0,0,0.04)"
+  },
+  {
+   "title": "Logo 系统",
+   "tag": "IMG",
+   "natural": [
+    644,
+    483
+   ],
+   "rendered": [
+    141.3,
+    106
+   ],
+   "objectFit": "cover",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/9ce473776fd94d2d968a258d69c2acc6.png?x-oss-process=image/resize,w_644,m_lfit/format,webp",
+   "parentPadding": "0px",
+   "containerBg": "rgba(0,0,0,0.04)"
+  },
+  {
+   "title": "品牌延展物",
+   "tag": "IMG",
+   "natural": [
+    644,
+    483
+   ],
+   "rendered": [
+    141.3,
+    106
+   ],
+   "objectFit": "cover",
+   "src": "https://a.lovart.ai/asset/showcase-cover/202609/18bf442568f147cfb1abe2ef765276e2.jpeg?x-oss-process=image/resize,w_644,m_lfit/format,webp",
+   "parentPadding": "0px",
+   "containerBg": "rgba(0,0,0,0.04)"
+  },
+  {
+   "title": "UGC 广告视频导演",
+   "tag": "IMG",
+   "natural": [
+    645,
+    484
+   ],
+   "rendered": [
+    141.3,
+    106
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/cf/cfd0321c17782394f4f81cbec2bacc0de03ab24ce7f3035209cc11622847f561.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_484,m_fast",
+   "parentPadding": "0px",
+   "containerBg": "rgba(0,0,0,0.04)"
+  },
+  {
+   "title": "动态海报",
+   "tag": "IMG",
+   "natural": [
+    645,
+    484
+   ],
+   "rendered": [
+    141.3,
+    106
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/f8/f8f529f174414c41c5de2cf28b814cb5629a278e9f17c9140d13710d0b6e6e4d.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_484,m_fast",
+   "parentPadding": "0px",
+   "containerBg": "rgba(0,0,0,0.04)"
+  }
+ ],
+ "masonryFirst24": [
+  {
+   "title": "爆款视频复刻",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    800
+   ],
+   "rendered": [
+    298.7,
+    398.2
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/29/293ba1c0bf75ef67d6ae4446da24718c7aadc545c0128e357685a2aff3176699.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_800,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "复古照片日记",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/be/beaef4c71bca341e8f68ab99867e90887961764d1dcb86c272131e9170330deb.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "电商促销品牌设计",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://a.lovart.ai/artifacts/user/uMuBmUTHov9wZ8AY.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "电商直播素材",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://a.lovart.ai/artifacts/user/WMPgKjDg3HCbghwk.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "品牌识别",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/64/64925f8a49af6482e392a018d987fcb85a2a2ffd36c6c8638e415ad8b02047ed.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "封面设计总监",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/86/86272143d60b14604994448a9d436210c0a48d22f89fa5a8f7eca15ed4ea05d4.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "视频重制",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/0d/0dd2bbdcdfb73dbdb88a6b0af922d2c6c301d0926b3d0a75f73a809497cab9f3.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "随处捕捉灵感",
+   "nonSkill": true,
+   "greySuffix": null,
+   "text": [
+    "随处捕捉灵感",
+    "网页图片一键存到画布",
+    "安装插件"
+   ],
+   "tag": "IMG",
+   "natural": [
+    723,
+    389
+   ],
+   "rendered": [
+    226,
+    121.6
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/11/110e6f568b2f84fcf932902a1faf623c9d6b1957807eb588c3e56785abcfe3d3.webp",
+   "mediaPadding": "6px (media container padding 6px, radius 6px, bg rgba(0,0,0,0.04))",
+   "cardBg": "rgb(245,245,245)",
+   "cardSize": [
+    299,
+    398
+   ],
+   "y": 1808,
+   "x": 332
+  },
+  {
+   "title": "淘宝商品视觉",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    223.7
+   ],
+   "objectFit": "cover",
+   "src": "https://a.lovart.ai/artifacts/user/DXY5ZK3TSC1rznDh.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "Amazon产品列表图片",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/33/33eda5b7a3e6dd21e5089c8ea01f13190e2535d68eacd7b105ed0ede308f5f68.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "海报设计",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/e7/e7c9952d16e6f8f1fa039ca557bf092e80c07093a9e45277f0a3c92f58e0ec6d.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "营销活动生成器",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/e4/e4abd63aa40195a5128ad28c566322f763cf588278562a8570b51b48719891e1.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "产品电视广告",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    600,
+    450
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/03/03065bc4252d3821d43706a9bc73a3f9990bd9057995a2e5bd402006ea815365.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": ""
+  },
+  {
+   "title": "添加连接器",
+   "nonSkill": true,
+   "greySuffix": null,
+   "text": [
+    "添加连接器",
+    "输入应用名称或粘贴网址 (input placeholder, rgba(0,0,0,.3))",
+    "连接 (button)"
+   ],
+   "tag": "IMG",
+   "natural": [
+    723,
+    389
+   ],
+   "rendered": [
+    226,
+    121.6
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/a2/a22ece6f81ce7a326ebdecafdab1184880795e8152f6df6f1b704256e348a38a.webp",
+   "mediaPadding": "6px",
+   "y": 2176,
+   "x": 647
+  },
+  {
+   "title": "Meta广告创意",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    0,
+    0
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/eb/eb2d09abc28560b4a15857cb9f87fe286d1dc82ed227cadeb13d3dfffbad3b79.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": "natural 0x0 = lazy image not yet loaded/complete=false"
+  },
+  {
+   "title": "动态海报生成器",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    0,
+    0
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/9b/9b3d02ce7047d54cf04e1603c39ee16b54b3d45abf8dcae7250c5e391029d8cf.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": "natural 0x0 = lazy image not yet loaded/complete=false"
+  },
+  {
+   "title": "角色设定表设计",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    0,
+    0
+   ],
+   "rendered": [
+    298.7,
+    223.4
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/5d/5d14f1d149fb031d4f29e7da6a656bde7d5f7edec20e8ab8be3f4820ef67218b.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_448,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": "natural 0x0 = lazy image not yet loaded/complete=false"
+  },
+  {
+   "title": "横幅设计",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    0,
+    0
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/92/92f62f81f2f384938e6f6a6d64df2328310234b8af69568c888ad56021c4a42f.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": "natural 0x0 = lazy image not yet loaded/complete=false"
+  },
+  {
+   "title": "创作者视觉识别系统",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    0,
+    0
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/11/119ee67a96d95d05320471ad4eea028b9d191052e8f65cca0469014fe05557d8.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": "natural 0x0 = lazy image not yet loaded/complete=false"
+  },
+  {
+   "title": "小红书封面制作器",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    0,
+    0
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/f8/f8661bc2b2b11a6ab40648a0fffde4ecb69f41a80a557f8d88709e0a9ff98d63.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": "natural 0x0 = lazy image not yet loaded/complete=false"
+  },
+  {
+   "title": "Web产品视觉设计",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    0,
+    0
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/4b/4bc66e3624af14f7292a71a3369050d1179facea2e77afe3871ab676916007b9.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": "natural 0x0 = lazy image not yet loaded/complete=false"
+  },
+  {
+   "title": "移动应用视觉设计",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    0,
+    0
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/e3/e3a6fabc37986be389a585de4301c3ec4cc6c2ca5fc062ef5b0997d9110648e0.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": "natural 0x0 = lazy image not yet loaded/complete=false"
+  },
+  {
+   "title": "移动应用商店素材工具包",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    0,
+    0
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/10/1006118e50fa5cb65e5374ac763e1d5d505fa61b3c90a24d88574f1b060c137c.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": "natural 0x0 = lazy image not yet loaded/complete=false"
+  },
+  {
+   "title": "YouTube频道横幅",
+   "greySuffix": "Skill 案例",
+   "tag": "IMG(video snapshot/cover)",
+   "natural": [
+    0,
+    0
+   ],
+   "rendered": [
+    298.7,
+    224
+   ],
+   "objectFit": "cover",
+   "src": "https://web-static3.lovart.ai/static-assets/v1/sha256/2c/2c5fa32c3975ce81bee6aa4957b1905f92c2088c6c0567267c706263ffdf942b.mp4?x-oss-process=video/snapshot,t_0,f_jpg,h_450,m_fast",
+   "mediaPadding": "0px",
+   "mediaBg": "transparent",
+   "containerBg": "rgba(0,0,0,0.04)",
+   "containerPadding": "0px",
+   "note": "natural 0x0 = lazy image not yet loaded/complete=false"
+  }
+ ],
+ "notes": "skill tiles: media container padding 0, bg rgba(0,0,0,0.04) behind cover img, object-fit cover; card pad 0 0 4px; title 14px rgba(0,0,0,.9); grey suffix 'Skill 案例' 11px rgba(0,0,0,.55) on rgba(0,0,0,.04) chip; hover overlay '开始制作' button white bg"
+}
