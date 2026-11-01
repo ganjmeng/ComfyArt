@@ -64,9 +64,12 @@ def test_handoff_home_tools_and_toolbars() -> None:
     assert "export const homeToolAtom" in HANDOFF
     for tid in MAIN + MORE:
         assert f"'{tid}'" in HANDOFF
-    assert "import { homeToolAtom } from '../home/handoff'" in IMG_TB
+    assert "import { HOME_LANDING, homeToolAtom } from '../home/handoff'" in IMG_TB  # #570
     assert "import { homeToolAtom } from '../home/handoff'" in VID_TB
-    assert "pendingHome === 'upscale'" in IMG_TB and "pendingHome === 'to3d'" in IMG_TB
+    # #570 (supersedes #545): landing per tool is data (HOME_LANDING), read by the image toolbar
+    assert "HOME_LANDING[pendingHome]" in IMG_TB
+    assert "upscale: 'menu'" in HANDOFF and "to3d: 'panel'" in HANDOFF and "transform: 'bar'" in HANDOFF
+    assert "setMenu('more'); setInMore(pendingHome)" not in IMG_TB
     assert "pendingHome !== 'extend'" in VID_TB
     # hooks before early return
     assert IMG_TB.index("const pendingHome") < IMG_TB.index("if (!shape || !rect || mode) return null")
@@ -135,7 +138,7 @@ def test_more_tools_lovart_order_540() -> None:
     assert ids == MORE, ids
     assert "enterMode(tool" in HANDOFF or "enterMode(tool as" in HANDOFF
     assert "setCroppingShape" in HANDOFF
-    assert "pendingHome === 'transform'" in IMG_TB
+    assert "transform: 'bar'" in HANDOFF and "HOME_LANDING[pendingHome]" in IMG_TB  # #570: data-driven landing
 
 
 def test_tool_cards_16x9_and_more_menu_icon_rows() -> None:

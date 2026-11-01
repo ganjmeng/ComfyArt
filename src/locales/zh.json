@@ -1603,5 +1603,9 @@
   "assets.tooLarge": "文件超过 20MB：{0}",
   "assets.urlInvalid": "请输入有效的 http 或 https URL",
   "assets.badFormat": "仅支持 PNG、JPG、PDF：{0}",
-  "assets.urlFormat": "无法确认链接是 PNG、JPG 或 PDF"
+  "assets.urlFormat": "无法确认链接是 PNG、JPG 或 PDF",
+  "toolPanel.reset": "重置",
+  "toolPanel.useNow": "立即使用",
+  "toolPanel.model": "模型",
+  "toolPanel.noParams": "这个模型没有可调参数"
 }

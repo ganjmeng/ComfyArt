@@ -124,9 +124,10 @@ async def test_image_toolbar_custom_3d_full_window_en_dark(app_url, fake_tools, 
         assert await btn.count() >= 1
         await btn.first.click()
         await pg.wait_for_timeout(300)
-        menu = pg.locator(".ca-menu").filter(has=pg.locator(".ca-menu__item", has_text="TRELLIS.2"))
+        # #570: the 3D button opens the 转 3D panel; models are its segmented switch (custom = third option)
+        menu = pg.locator(".ca-toolpanel[data-tool='to3d']")
         await menu.wait_for()
-        items = await menu.locator(".ca-menu__item").all_inner_texts()
+        items = await menu.locator(".ca-seg__btn").all_inner_texts()
         flat = " ".join(items)
         assert "TRELLIS.2" in flat and "Pixal3D" in flat and "demo-3d" in flat, items
         SHOTS.mkdir(parents=True, exist_ok=True)

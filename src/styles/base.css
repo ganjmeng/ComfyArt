@@ -74,6 +74,8 @@
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
+  --ca-toolpanel-bg: #262626; /* #570 design 6551032261 */
+  --ca-seg-on: #363636;
   --ca-float: #161616;
   --ca-border: rgba(255,255,255,.1);
   --ca-rail: rgba(255,255,255,.12);

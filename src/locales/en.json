@@ -1603,5 +1603,9 @@
   "assets.tooLarge": "File exceeds 20MB: {0}",
   "assets.urlInvalid": "Enter a valid http or https URL",
   "assets.badFormat": "Only PNG, JPG and PDF are supported: {0}",
-  "assets.urlFormat": "Couldn't confirm the link is a PNG, JPG or PDF"
+  "assets.urlFormat": "Couldn't confirm the link is a PNG, JPG or PDF",
+  "toolPanel.reset": "Reset",
+  "toolPanel.useNow": "Use now",
+  "toolPanel.model": "Model",
+  "toolPanel.noParams": "This model has no adjustable parameters"
 }
