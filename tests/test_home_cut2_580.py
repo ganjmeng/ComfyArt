@@ -21,7 +21,7 @@ def test_tabs_and_special_cards_constants():
 
 
 def test_tokens_and_full_bleed_css():
-    for v in ("--ca-hometabs-gap", "--ca-homechips-top", "--ca-homebox-float-bottom"):
+    for v in ("--ca-tabs-gap", "--ca-tabs-font", "--ca-chip-bg", "--ca-chip-on-bg", "--ca-homechips-top", "--ca-homebox-float-bottom"):
         assert v in CSS
     assert ".ca-homechips { position: sticky" in CSS
     assert "border-radius: var(--ca-featured-radius, 12px); background: none;" in CSS
