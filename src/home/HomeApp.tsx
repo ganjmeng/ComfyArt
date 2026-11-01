@@ -216,11 +216,11 @@ export function HomeApp({ view }: { view: View }) {
         <RailBtn icon={Icons.bell} label={t('home.designSchedules')} on={view === 'schedules'} onClick={() => openView('schedules')} testId="rail-schedules" expanded={expanded} />
         <RailBtn
           icon={Icons.sparkles}
-          label={expanded ? t('home.arti') : `${t('home.arti')} ${t('home.artiBeta')}`}
+          label={t('home.arti')}
           on={view === 'arti'}
           onClick={() => openView('arti')}
           testId="rail-arti"
-          badge={t('home.artiBeta')}
+          badge={expanded ? t('home.artiBeta') : undefined} /* #552: collapsed rail hides the Beta badge */
           expanded={expanded}
         />
 
