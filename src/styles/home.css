@@ -1,16 +1,16 @@
 /* #580 cut 2 — ONE shared tab-row + chip token set (home feed tabs/chips now; Skills page header via #583).
- * Values = today's look (black filled selected + outlined); design's v2 (light-grey filled, unselected text-only)
- * is a value swap here only. */
+ * Values = QA header baseline (review-assets ab89fae7, 583/qa/header-baseline/): chip selected #ebebeb + dark text,
+ * unselected text-only, h30, gap 22; tabs 13px, gap 23, underline = text width; both stick on scroll. */
 /* Shared masonry column width (design v2: 298.7 @1280); #583's Skills list reuses it. */
 :root { --ca-feed-col-w: 298.7px; --ca-feed-special-bg: rgb(245, 245, 245); --ca-feed-special-collage-h: 122px; --ca-feed-special-pad: 6px;
   --ca-feed-tag-bg: rgba(0, 0, 0, .04); --ca-feed-tag-fg: rgba(0, 0, 0, .55); --ca-feed-tag-font: 400 11px/16px var(--ca-font); }
 :root {
-  --ca-tabs-gap: 24px; --ca-tabs-py: 8px; --ca-tabs-font: 500 14px/22px var(--ca-font);
+  --ca-tabs-gap: 23px; --ca-tabs-py: 8px; --ca-tabs-font: 500 13px/20px var(--ca-font); --ca-tabs-top: 0px;
   --ca-tabs-fg: var(--ca-muted); --ca-tabs-on-fg: var(--ca-text); --ca-tabs-indicator: var(--ca-text); --ca-tabs-indicator-h: 2px;
   --ca-tabs-rule: var(--ca-border-w) solid var(--ca-border);
-  --ca-chip-gap: 8px; --ca-chip-h: 32px; --ca-chip-px: 14px; --ca-chip-radius: 999px; --ca-chip-font: 400 13px/20px var(--ca-font);
-  --ca-chip-bg: transparent; --ca-chip-fg: var(--ca-text); --ca-chip-border: var(--ca-border-w) solid var(--ca-border); --ca-chip-hover-bg: var(--ca-hover);
-  --ca-chip-on-bg: var(--ca-strong); --ca-chip-on-fg: var(--ca-float); --ca-chip-on-border: var(--ca-strong);
+  --ca-chip-gap: 22px; --ca-chip-h: 30px; --ca-chip-px: 12px; --ca-chip-radius: 999px; --ca-chip-font: 400 13px/20px var(--ca-font);
+  --ca-chip-bg: transparent; --ca-chip-fg: var(--ca-muted); --ca-chip-border: var(--ca-border-w) solid transparent; --ca-chip-hover-bg: var(--ca-hover);
+  --ca-chip-on-bg: #ebebeb; --ca-chip-on-fg: #111; --ca-chip-on-border: #ebebeb;
 }
 body { background: var(--ca-float); }
 .ca-home { position: fixed; inset: 0; display: flex; background: var(--ca-float); color: var(--ca-text); font: 400 14px/22px var(--ca-font); }
@@ -1001,14 +1001,14 @@ body { background: var(--ca-float); }
 
 /* #580 cut 2 — home feed tabs + sticky category chips + floating composer (tokens: swap in design v2 values) */
 .ca-landing {
-  --ca-hometabs-mt: 40px; --ca-homechips-top: 0px; --ca-homechips-pad: 12px; --ca-homebox-float-bottom: 24px;
+  --ca-hometabs-mt: 40px; --ca-homechips-top: 38px; /* = sticky tab row height (8+20+8+2) */ --ca-homechips-pad: 12px; --ca-homebox-float-bottom: 24px;
 }
 .ca-landing__boxslot { position: relative; }
 .ca-landing__box[data-floating] {
   position: fixed; z-index: 30; bottom: var(--ca-homebox-float-bottom); left: 50%; transform: translateX(-50%);
   width: min(760px, calc(100% - 32px)); margin: 0;
 }
-.ca-hometabs { display: flex; gap: var(--ca-tabs-gap); margin: var(--ca-hometabs-mt) 0 0; border-bottom: var(--ca-tabs-rule); }
+.ca-hometabs { position: sticky; top: var(--ca-tabs-top); z-index: 6; background: var(--ca-float); display: flex; gap: var(--ca-tabs-gap); margin: var(--ca-hometabs-mt) 0 0; border-bottom: var(--ca-tabs-rule); }
 .ca-hometabs__tab {
   padding: var(--ca-tabs-py) 0; border: none; border-bottom: var(--ca-tabs-indicator-h) solid transparent; margin-bottom: calc(-1 * var(--ca-border-w));
   background: none; color: var(--ca-tabs-fg); font: var(--ca-tabs-font); cursor: pointer;

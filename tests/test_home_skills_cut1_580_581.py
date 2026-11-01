@@ -106,7 +106,7 @@ def test_featured_card_icon_tag_hover() -> None:
     assert "home.skillCase" not in badge
     # item 5: grey 「Skill 案例」 after the title
     assert 'className="ca-featured__tag">{t(\'home.skillCase\')}' in block
-    assert "color: var(--ca-muted)" in CSS.split(".ca-featured__tag {", 1)[1].split("}", 1)[0]
+    assert "color: var(--ca-feed-tag-fg)" in CSS.split(".ca-featured__tag {", 1)[1].split("}", 1)[0]
     # item 6: no dim overlay on hover; white 开始制作 top-right kept
     assert ".ca-featured__cover::after" not in CSS
     assert "skillRun.start" in block and "onClick={() => trySkill(s, p?.id ?? null)}" in block
@@ -118,7 +118,7 @@ def test_row_cover_ratio_4x3() -> None:
 
 def test_featured_masonry_metrics_are_css_vars():
     css = (ROOT / "src/styles/home.css").read_text(encoding="utf-8")
-    for v in ("--ca-featured-col-w: 299px", "--ca-featured-gap: 16px", "gap: var(--ca-featured-gap"):
+    for v in ("--ca-featured-col-w: var(--ca-feed-col-w)", "--ca-feed-col-w: 298.7px", "--ca-featured-gap: 16px", "gap: var(--ca-featured-gap"):
         assert v in css
     ts = (ROOT / "src/home/featuredLayout.ts").read_text(encoding="utf-8")
     assert "readFeaturedMetrics" in ts and "--ca-featured-col-w" in ts and "FEATURED_MAX_COLUMNS" not in ts

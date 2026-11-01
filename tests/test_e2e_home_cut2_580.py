@@ -21,6 +21,9 @@ async def test_tabs_chips_special_cards_and_full_bleed(app_url):  # noqa: F811
         # chips from real categories; sticky
         assert await pg.get_by_test_id("home-chip-forYou").count() == 1
         assert await pg.get_by_test_id("home-chips").evaluate("e=>getComputedStyle(e).position") == "sticky"
+        assert await pg.get_by_test_id("home-tabs").evaluate("e=>getComputedStyle(e).position") == "sticky"
+        on = await pg.get_by_test_id("home-chip-forYou").evaluate("e=>[getComputedStyle(e).backgroundColor,getComputedStyle(e).height]")
+        assert on == ["rgb(235, 235, 235)", "30px"]
         # exactly two special cards, in the masonry
         specials = pg.get_by_test_id("home-feed-special")
         assert await specials.count() == 2
