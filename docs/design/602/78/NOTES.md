@@ -2,46 +2,70 @@
 
 Home soft FU (parent design comment 6559584299 / Ashley 2026-11-01 gaps): landing section mt **64→24**, composer float **pill↔expand** (r **28→24**, compact ~52), skillcard cover **dual fit** (`data-fit="cover"|"contain"`). Gold = lovart.ai measure pack; **do not** put competitor brand strings in `src/`.
 
-Mocks / harness shots only. Tip-pin via PR body `raw.githubusercontent.com` URLs to **branch HEAD**. Do not embed a tip SHA here (avoids fighting HEAD after follow-up tips).
+Mocks / harness shots only. Tip-pin via PR body `raw.githubusercontent.com` URLs to **branch HEAD tip SHA**. Do not embed a tip SHA here (avoids fighting HEAD after follow-up tips).
 
 **Out of scope (product lock):** hover video / Ken Burns / focus scale-mask = P1 soft on **#575**, not #602.
 
-## LEFT = ours
+## LEFT = ours (BEFORE)
 
 | File | Notes |
 |------|-------|
-| `left-ours/BEFORE-skills-to-featured-gap-annotated.png` | Pre-#602 measure — section mt 64 annotated (from 600 ashley pack @ tip-42 / 6e67b0cb lineage) |
+| `left-ours/BEFORE-skills-to-featured-gap-annotated.png` | Pre-#602 — section mt 64 annotated (600 ashley / tip-42 lineage) |
 | `left-ours/BEFORE-composer-floating-full-chrome.png` | Pre-#602 floating composer always-full ~130×758 r28 |
 
-Live AFTER left-ours (skills→精选 24, compact pill ~52, expand ~114 r24, optional `data-fit=contain` letterbox) — shoot on tip when design re-signs; not blocking tip land of mutation locks.
+## LEFT = ours (AFTER) — tip preview measure 2026-11-01 Asia/Shanghai
 
-## RIGHT refs (relative under `docs/design/602/78/refs-right/`)
+Live Playwright @1280×800 zh-light on tip `f0492865` lineage (docs tip-pin commit follows):
 
-Copied from `ComfyArt-review-assets/600/ashley-home-gap-2026-11-01/` for offline review (not duplicated into lr-pairs until AFTER left exists):
+| File | Shows | Measured |
+|------|-------|----------|
+| `left-ours/AFTER-skills-to-featured-gap-annotated.png` | skills→精选 gap | **mt 24px** (`cardsBottom→featTitleTop` = 24; CSS `--ca-landing-section-mt: 24px`) |
+| `left-ours/AFTER-skills-to-featured-gap-crop.png` | gap crop | same |
+| `left-ours/AFTER-composer-floating-compact-pill.png` | scrolled float compact | **h 52** / **r24** / `data-compact` (placeholder + slot; toolbar hidden) |
+| `left-ours/AFTER-composer-expanded.png` | float expanded | **h 114** / **r24** / full chrome (+ · Loomi · prefs · slot) |
+| `left-ours/AFTER-composer-welcome-inflow.png` | welcome in-flow | **h 114** / **r24** |
+| `left-ours/AFTER-skillcard-letterbox-contain.png` | dual-fit proof | forced `data-fit=contain` → `object-fit: contain` on `--ca-field` plate `rgba(0,0,0,.04)` |
+
+Optional full-viewport: `AFTER-composer-floating-compact-pill-full.png`, `AFTER-composer-expanded-full.png`, `AFTER-skills-to-featured-gap.png`.
+
+## L/R composites (`lr-pairs/`)
+
+| File | Pair |
+|------|------|
+| `LR-skills-to-featured-gap.png` | AFTER gap crop vs Lovart annotated |
+| `LR-composer-float-compact.png` | AFTER compact pill vs Lovart sticky bottom |
+| `LR-composer-welcome.png` | AFTER welcome vs Lovart explore welcome |
+| `LR-composer-expanded-vs-lovart-pill.png` | AFTER expanded crop vs Lovart masonry pill |
+
+## RIGHT refs (`refs-right/`)
 
 | File | Shows |
 |------|-------|
-| `RIGHT-lovart-skills-to-featured-gap-annotated.png` | skills→精选 gap (prefer JSON **24**) |
-| `RIGHT-lovart-explore-welcome.png` | welcome composer ≈114 / r24 |
-| `RIGHT-lovart-sticky-bottom.png` | scrolled compact float pill ~48–56 |
+| `RIGHT-lovart-skills-to-featured-gap-annotated.png` | skills→精选 (prefer JSON **24**) |
+| `RIGHT-lovart-explore-welcome.png` | welcome ≈114 / r24 |
+| `RIGHT-lovart-sticky-bottom.png` | scrolled compact float ~48–56 |
 | `RIGHT-lovart-m1-bottom.png` | masonry bottom compact pill |
 
 ## Soft-FU TARGET checklist (design L/R soft PASS)
 
 | Target | Expected | Result |
 |--------|----------|--------|
-| `--ca-landing-section-mt` | **24px** on `.ca-landing__section` (skills→精选 + chips→快速开始 + tools) | CODE PASS — live L/R pending |
-| Composer radius | `--ca-homebox-radius: **24px**` (was 28) | CODE PASS |
-| Compact float pill | `[data-floating][data-compact]` height **52** (`--ca-homebox-compact-h`); toolbar hidden; placeholder+send | CODE PASS — interaction wired |
-| Expand / welcome | full chrome; blur/Escape → compact when floating; focus/click → expand | CODE PASS |
-| Skillcard dual fit | default `cover`; `data-fit="contain"` → `object-fit: contain` on `--ca-field` plate; `Skill.quickStartCoverFit` + `skillQuickStartCoverFit()` | CODE PASS — builtins default cover until #594 wash marks contain |
-| No force-fill | CSS must not require all covers crop-fill | CODE PASS |
-| Competitor brand in src | absent | CODE PASS |
+| `--ca-landing-section-mt` | **24px** | **PASS** live 24 + CSS |
+| Composer radius | `--ca-homebox-radius: **24px**` | **PASS** measured borderRadius 24px |
+| Compact float pill | `[data-floating][data-compact]` **52** | **PASS** h=52px compact=true |
+| Expand / welcome | full chrome ~114; focus expands | **PASS** h=114 expanded |
+| Skillcard dual fit | cover default; contain+letterbox plate | **PASS** CSS + forced-contain demo (builtins still default cover until #594 marks contain) |
+| No force-fill | CSS dual path | **PASS** |
+| Competitor brand in src | absent | **PASS** |
 
-Mutation lock: `tests/test_home_soft_602.py` (revert → RED). #596 locks remain via `tests/test_home_soft_596.py`.
+Mutation lock: `tests/test_home_soft_602.py`. #596 locks via `tests/test_home_soft_596.py`.
 
-## Out of scope / residual (non-blocking)
+## Soft residual (non-blocking)
 
-- Marking specific builtins `quickStartCoverFit: 'contain'` (#594 wash)
-- Featured waterfall ratio pack (#588)
+- Builtin skills not yet marked `quickStartCoverFit: 'contain'` (#594 wash) — letterbox shot is CSS proof via attr force.
+- Compact slot icon may show voice when empty (send-forward density still met at 52/r24).
+
+## Out of scope
+
 - #575 hover video / Ken Burns / focus scale-mask
+- Featured waterfall (#588)
