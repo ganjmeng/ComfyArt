@@ -1,7 +1,7 @@
 # #605 → #78 tip-pin — skill cover hover video (Explore + Home)
 
-**Tip:** `TBA` · **Asia/Shanghai** · branch `feat/575-skill-cover-video`  
-**Assets tip:** (set after assets commit)  
+**Tip:**  (assets@this; final tip = follow-up NOTES pin commit)`TBA` · **Asia/Shanghai** · branch `feat/575-skill-cover-video`  
+**Assets tip:**   
 **Issue:** Refs #575 (do **not** Closes)
 
 ## Verdict
