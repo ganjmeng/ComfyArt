@@ -93,7 +93,7 @@ def test_covers_ten_webps_with_source_manifest():
         assert (COVERS / sid / "cover.webp").read_bytes()[8:12] == b"WEBP"
     assert "PILLOW = \"13.0.0\"" in (ROOT / "scripts/skill_covers_494.py").read_text()
     for sid, e in _entries().items():
-        assert (f"cover: cover('{sid}')" in e) == (sid != "custom-workflow"), sid
+        assert f"cover: cover('{sid}')" in e, sid  # #581: custom-workflow got its own cover (manifest 7237c371)
 
 
 def test_cover_fallback_single_place():

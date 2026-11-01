@@ -35,10 +35,21 @@ const IMAGE_FILE = /\.(png|jpe?g|webp|gif)$/i
 /** #494 — list covers + wash presets on orphan review-assets (commit-pinned; washed outputs only).
  *  Legacy local `/comfyart/skills/<id>/cover.webp` kept as SKILL_ASSET_BASE for any non-data callers. */
 export const SKILL_ASSET_BASE = '/comfyart/skills'
-/** #494 wash covers (10×462x346 webp). */
-const WASH_COVER_COMMIT = '48362260e70c8d60a1a755a1b31d0f4ae5c0ab67'
-const cover = (id: string) =>
-  `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${WASH_COVER_COMMIT}/494/wash/covers/${id}.webp`
+/** #581 final list covers (11×462x346 webp), manifest review-assets 494/covers-final/manifest.json @7237c371.
+ *  Each entry is [dir, commit]: v3 for 9, banner v3.1, character v3.2 (composed from the merged #574 templates). */
+const COVER_V3 = '3c9b87e7eae72164efdd1fe30e00f576144475f4'
+const COVERS_581: Record<string, readonly [string, string]> = {
+  poster: ['494/covers-v3', COVER_V3], social: ['494/covers-v3', COVER_V3], brand: ['494/covers-v3', COVER_V3],
+  packaging: ['494/covers-v3', COVER_V3], thumbnail: ['494/covers-v3', COVER_V3],
+  banner: ['494/covers-v3.1', '9b23a3e8e3ca2f6b64dc16c0cf36fbf9c41fcaf4'],
+  character: ['494/covers-v3.2', 'dc335056e81e0350e2f98487fb680e22ffb14bb9'],
+  product: ['494/covers-v3', COVER_V3], motion: ['494/covers-v3', COVER_V3], interior: ['494/covers-v3', COVER_V3],
+  'custom-workflow': ['494/covers-v3', COVER_V3],
+}
+const cover = (id: string) => {
+  const [dir, commit] = COVERS_581[id]
+  return `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${commit}/${dir}/${id}.webp`
+}
 /** #529 list/detail cover videos (10× short mp4 on review-assets; commit-pinned). */
 const WASH_VIDEO_COMMIT = '1bbb3f208f18b26ef95c8d9f16efeea111c43ac7'
 const video = (id: string) =>
@@ -127,6 +138,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     cover: cover('interior'), video: video('interior'), examples: ex541('interior', [1, 2, 3, 4]),
     inputs: EFFECT_INPUTS },
   { id: 'custom-workflow', name: t('skills.customWorkflow'), instructions: `${rulesText()}\n\nUse the custom_workflow tool for every step; action rules returns these same rules.`,
+    cover: cover('custom-workflow'),
     inputs: [I('brief', ['需求描述', 'Brief'], 'textarea', true, ['描述你要用自定义工作流做什么', 'Describe what the custom workflow should make'])] },
 ]
 
