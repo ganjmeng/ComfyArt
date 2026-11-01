@@ -60,9 +60,26 @@ const cover = (id: string) => {
 /** #580 cut 2 — home-feed image sets, parallel to COVERS_581 / WASH_569: skill id → [dir, commit, files[]] on
  *  review-assets (commit-pinned). Empty until design delivers the washed home sets; skills absent here fall back. */
 const QUICK_START_COVERS: Record<string, readonly [string, string, string]> = {}
-const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> = {}
+const FEED_V1 = '98a34727037f806895a4baed34dd2a498cb9baa2'  // #588 PASS, manifest review-assets 580/featured-v1/manifest.json
+const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> = {
+  poster: ['580/featured-v1/poster', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  social: ['580/featured-v1/social', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  brand: ['580/featured-v1/brand', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  packaging: ['580/featured-v1/packaging', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  thumbnail: ['580/featured-v1/thumbnail', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  banner: ['580/featured-v1/banner', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  character: ['580/featured-v1/character', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  product: ['580/featured-v1/product', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  motion: ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  interior: ['580/featured-v1/interior', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+}
 const pinned = (dir: string, commit: string, file: string) => `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${commit}/${dir}/${file}`
 const quickStartCover = (id: string) => { const e = QUICK_START_COVERS[id]; return e ? pinned(e[0], e[1], e[2]) : undefined }
+/** #588 — the two masonry special cards' collage images (580/embed-v1/manifest.json, commit-pinned). */
+export const FEED_SPECIAL_COLLAGE: Readonly<Record<string, string>> = {
+  capture: pinned('580/embed-v1', FEED_V1, 'inspiration@thumb.webp'),
+  connector: pinned('580/embed-v1', FEED_V1, 'connector@thumb.webp'),
+}
 const feedCovers = (id: string) => { const e = FEED_COVERS[id]; return e ? e[2].map((f) => pinned(e[0], e[1], f)) : undefined }
 /** #529 list/detail cover videos (10× short mp4 on review-assets; commit-pinned). */
 const WASH_VIDEO_COMMIT = '1bbb3f208f18b26ef95c8d9f16efeea111c43ac7'

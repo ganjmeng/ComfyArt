@@ -11,7 +11,7 @@ import { Assets } from './Assets'
 import { CHIP_LABEL } from './Skills'
 import { toolCover } from './toolCovers'
 import { showMemoryToast } from '../memory'
-import { hasSkillDialog, importLanding, loadSkills, matchesSkillChip, skillChips, skillFeaturedCases, skillQuickStartCover, type Skill, type SkillChipId } from '../skills'
+import { hasSkillDialog, importLanding, loadSkills, matchesSkillChip, skillChips, skillFeaturedCases, skillQuickStartCover, FEED_SPECIAL_COLLAGE, type Skill, type SkillChipId } from '../skills'
 import { SkillChip, chipBackspace } from '../ui/SkillChip'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
 import { SkillRunDialog } from '../ui/SkillRunDialog'
@@ -557,8 +557,8 @@ export function Home() {
                 {col.map((item) => item.kind === 'special' ? (
                   <div key={item.id} className="ca-featured__card ca-featured__special" data-testid="home-feed-special" data-special={item.special}>
                     <span className="ca-featured__special-body" style={{ aspectRatio: item.aspect }}>
-                      {/* collage slot stays empty until design supplies the collage (no generated art) */}
-                      <span className="ca-featured__special-collage" data-testid="home-feed-special-collage" aria-hidden />
+                      {/* #588 collage from review-assets (commit-pinned) */}
+                      <span className="ca-featured__special-collage" data-testid="home-feed-special-collage" aria-hidden>{FEED_SPECIAL_COLLAGE[item.special] && <img src={FEED_SPECIAL_COLLAGE[item.special]} alt="" loading="lazy" draggable={false} />}</span>
                       <span className="ca-featured__special-title">{t(`home.special.${item.special}`)}</span>
                       <span className="ca-featured__special-text">{t(`home.special.${item.special}Text`)}</span>
                       {item.special === 'connector' && (

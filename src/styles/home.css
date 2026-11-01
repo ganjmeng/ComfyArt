@@ -260,6 +260,8 @@ body { background: var(--ca-float); }
   border-radius: var(--ca-featured-radius, 12px); background: var(--ca-feed-special-bg); color: #111; box-sizing: border-box; padding: var(--ca-feed-special-pad); text-align: center;
 }
 .ca-featured__special-collage { display: block; width: 100%; height: var(--ca-feed-special-collage-h); border-radius: calc(var(--ca-featured-radius, 12px) - 4px); background: rgba(0, 0, 0, .04); margin-bottom: 8px; }
+.ca-featured__special-collage { overflow: hidden; }
+.ca-featured__special-collage img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ca-featured__special-text { font: 400 12px/18px var(--ca-font); color: rgba(0, 0, 0, .55); padding: 0 12px; }
 .ca-featured__special-input { width: calc(100% - 24px); height: 32px; padding: 0 10px; box-sizing: border-box; border: 1px solid rgba(0, 0, 0, .1); border-radius: 8px; background: #fff; font: 400 12px/18px var(--ca-font); }
 .ca-featured__special-title { font: 500 14px/22px var(--ca-font); }

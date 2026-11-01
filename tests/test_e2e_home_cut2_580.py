@@ -34,6 +34,7 @@ async def test_tabs_chips_special_cards_and_full_bleed(app_url):  # noqa: F811
         assert await cols.nth(1).get_by_test_id("home-feed-special").get_attribute("data-special") == "connector"
         assert await pg.locator(".ca-featured__special-body").first.evaluate("e=>getComputedStyle(e).backgroundColor") == "rgb(245, 245, 245)"
         assert await pg.get_by_test_id("home-feed-special-input").count() == 1
+        assert "580/embed-v1/" in (await pg.get_by_test_id("home-feed-special-collage").first.locator("img").get_attribute("src"))
         # full-bleed: cover has no base plate and its ratio follows the loaded image
         card = pg.get_by_test_id("home-featured-card").first
         await card.scroll_into_view_if_needed()

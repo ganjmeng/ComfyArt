@@ -60,16 +60,13 @@ async def test_home_skills_open_dialog(app_url, lang, theme):  # noqa: F811
 
         # featured → dialog with that preset
         await pg.get_by_test_id("home-featured").scroll_into_view_if_needed()
-        card = pg.locator('[data-testid="home-featured-card"][data-preset]').first  # #580: template-type tile
+        # #588: featured tiles are the skill's washed case images (featured[]), so pick a template-type skill's tile
+        card = pg.locator('[data-testid="home-featured-card"][data-skill="brand"]').first
         skill = await card.get_attribute("data-skill")
-        preset = await card.get_attribute("data-preset")
         await card.click()
         await dlg.wait_for()
         assert await dlg.get_attribute("data-skill") == skill
-        assert preset
-        sel = pg.locator(f'[data-testid="skill-run-preset"][data-preset="{preset}"]')
-        assert await sel.count() == 1
-        assert await sel.get_attribute("data-on") is not None
+        assert await pg.locator('[data-testid="skill-run-preset"]').count() > 0
         await _shot(pg, f"home-featured-dialog-{lang}-{theme}")
         await pg.keyboard.press("Escape")
         await browser.close()

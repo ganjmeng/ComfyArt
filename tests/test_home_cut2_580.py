@@ -27,3 +27,11 @@ def test_tokens_and_full_bleed_css():
     assert ".ca-homechips { position: sticky" in CSS
     assert "border-radius: var(--ca-featured-radius, 12px); background: none;" in CSS
     assert "Lovart" not in HOME + LAYOUT + SKILLS + CSS
+
+
+def test_featured_v1_and_collages_pinned_588():
+    c = "98a34727037f806895a4baed34dd2a498cb9baa2"
+    assert f"const FEED_V1 = '{c}'" in SKILLS
+    for sid in ("poster", "social", "brand", "packaging", "thumbnail", "banner", "character", "product", "motion", "interior"):
+        assert f"{sid}: ['580/featured-v1/{sid}', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']]" in SKILLS
+    assert "inspiration@thumb.webp" in SKILLS and "connector@thumb.webp" in SKILLS
