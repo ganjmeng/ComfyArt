@@ -1,20 +1,22 @@
-/** #537 / #496: Loomic `featured-layout` column rule (280–320px cards, 16px gap). Logic only — no third-party feed data. */
-export function featuredColumnCount(width: number, gap = 16): number {
+/** Home 「用 Skill 快速开始」: one row of this many cover cards (skills-cut1). */
+export const HOME_SKILL_ROW = 6
+
+/** Home 「Skill 案例」 masonry: column width ≈ FEATURED_COL_W (design: 299 @1280 expanded), gap FEATURED_GAP;
+ * column count adapts to the container (3 @1280, 5 @1920) — columns stay fluid so they fill the row.
+ * Overridable from CSS vars --ca-featured-col-w / --ca-featured-gap. */
+export const FEATURED_COL_W = 299
+export const FEATURED_GAP = 16
+export interface FeaturedMetrics { colWidth: number; gap: number }
+export const FEATURED_DEFAULTS: FeaturedMetrics = { colWidth: FEATURED_COL_W, gap: FEATURED_GAP }
+export function featuredColumnCount(width: number, gap = FEATURED_GAP, colWidth = FEATURED_COL_W): number {
   if (!Number.isFinite(width) || width <= 0) return 1
-  const minimum = Math.max(1, Math.ceil((width + gap) / (320 + gap)))
-  const maximum = Math.max(1, Math.floor((width + gap) / (280 + gap)))
-  if (minimum <= maximum) return maximum
-  let closest = 1
-  let distance = Number.POSITIVE_INFINITY
-  for (let count = 1; count <= Math.max(minimum, maximum) + 1; count++) {
-    const cardWidth = (width - gap * (count - 1)) / count
-    const next = Math.max(280 - cardWidth, cardWidth - 320, 0)
-    if (next <= distance) {
-      closest = count
-      distance = next
-    }
-  }
-  return closest
+  // round (not floor): 928 @1280 → 2.997 → 3 columns ≈ 298.7 wide
+  return Math.max(1, Math.round((width + gap) / (colWidth + gap)))
+}
+export function readFeaturedMetrics(el: Element): FeaturedMetrics {
+  const cs = getComputedStyle(el)
+  const num = (name: string, d: number) => { const v = parseFloat(cs.getPropertyValue(name)); return Number.isFinite(v) && v > 0 ? v : d }
+  return { colWidth: num('--ca-featured-col-w', FEATURED_COL_W), gap: num('--ca-featured-gap', FEATURED_GAP) }
 }
 
 /** Stable aspect for masonry height without remote metadata (deterministic cycle). */
@@ -25,20 +27,52 @@ export function featuredAspect(seed: string): number {
   return ASPECTS[h % ASPECTS.length]!
 }
 
-/** Shortest-column pack — same idea as Loomic home-featured-gallery when count ≠ 5. */
-export function packFeaturedColumns<T extends { id: string; aspect: number }>(
+/** Shortest-column pack — same idea as Loomic home-featured-gallery when count ≠ 5.
+ * #580: items carrying a `group` (skill id) never sit directly under a tile of the same group in a
+ * column, and a column never ends with the group the next column starts with (DOM order). */
+export function packFeaturedColumns<T extends { id: string; aspect: number; group?: string }>(
   items: readonly T[],
   width: number,
-  gap = 16,
+  gap = FEATURED_GAP,
+  colWidth = FEATURED_COL_W,
 ): T[][] {
-  const count = featuredColumnCount(width, gap)
+  const count = featuredColumnCount(width, gap, colWidth)
   const columns: T[][] = Array.from({ length: count }, () => [])
   const heights = Array.from({ length: count }, () => 0)
   const columnWidth = (width - (count - 1) * gap) / count
-  for (const item of items) {
-    const index = heights.indexOf(Math.min(...heights))
-    columns[index]!.push(item)
-    heights[index] = (heights[index] ?? 0) + gap + Math.min(columnWidth / item.aspect, 680) + 34
+  const clash = (col: number, item: T) => {
+    if (item.group == null) return false
+    const last = columns[col]![columns[col]!.length - 1]
+    return last?.group === item.group
+  }
+  const pending = [...items]
+  while (pending.length) {
+    const order = heights.map((h, i) => [h, i] as const).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(([, i]) => i)
+    let pick = -1, col = order[0]!
+    // try the next items in data order for the shortest column, then other columns
+    outer: for (const c of order) {
+      for (let k = 0; k < Math.min(pending.length, 4); k++) {
+        if (!clash(c, pending[k]!)) { pick = k; col = c; break outer }
+      }
+    }
+    if (pick < 0) pick = 0
+    const item = pending.splice(pick, 1)[0]!
+    columns[col]!.push(item)
+    heights[col] = (heights[col] ?? 0) + gap + Math.min(columnWidth / item.aspect, 680) + 34
+  }
+  // DOM order: column i's tail must not repeat column i+1's head — move the tail up one if needed
+  for (let i = 0; i + 1 < count; i++) {
+    const col = columns[i]!, head = columns[i + 1]![0]
+    const n = col.length
+    if (n >= 2 && head?.group != null && col[n - 1]!.group === head.group) {
+      for (let j = n - 2; j >= 0; j--) {
+        const a = col[j]!
+        if (a.group === head.group) continue
+        // swap col[j] and col[n-1] if neighbours stay distinct
+        const t = col.slice(); [t[j], t[n - 1]] = [t[n - 1]!, t[j]!]
+        if (t.every((x, q) => q === 0 || x.group == null || x.group !== t[q - 1]!.group)) { columns[i] = t; break }
+      }
+    }
   }
   return columns
 }

@@ -79,7 +79,7 @@ def test_handoff_home_tools_and_toolbars() -> None:
 def test_waterfall_layout_logic_no_scraped_feed() -> None:
     assert "featuredColumnCount" in LAYOUT and "packFeaturedColumns" in LAYOUT
     assert "featuredAspect" in LAYOUT
-    assert "packFeaturedColumns(featuredItems, featuredWidth)" in HOME
+    assert "packFeaturedColumns(featuredItems, featuredWidth, featuredMetrics.gap" in HOME
     assert "ca-featured--waterfall" in HOME
     assert 'data-testid="home-featured-col"' in HOME
     assert "style={{ aspectRatio: aspect }}" in HOME
@@ -123,12 +123,12 @@ def test_i18n_tools() -> None:
 
 
 def test_featured_layout_column_math() -> None:
-    """Mirror Loomic 280–320 / 16px gap rules without importing TS."""
+    """#580: 精选 masonry — fixed ≈299 column width, adaptive count (was Loomic 280–320)."""
     # smoke: file exports match expected signatures
-    assert "export function featuredColumnCount(width: number, gap = 16)" in LAYOUT
+    assert "export function featuredColumnCount(width: number, gap = FEATURED_GAP" in LAYOUT
     assert "export function packFeaturedColumns" in LAYOUT
-    assert "280" in LAYOUT and "320" in LAYOUT
-    assert "Math.min(...heights)" in LAYOUT or "indexOf(Math.min" in LAYOUT
+    assert "FEATURED_COL_W = 299" in LAYOUT
+    assert "Math.min(...heights)" in LAYOUT or "a[0] - b[0]" in LAYOUT  # shortest column first (#580: group-aware)
 
 
 def test_more_tools_lovart_order_540() -> None:

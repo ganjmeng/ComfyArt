@@ -60,7 +60,7 @@ async def test_home_skills_open_dialog(app_url, lang, theme):  # noqa: F811
 
         # featured → dialog with that preset
         await pg.get_by_test_id("home-featured").scroll_into_view_if_needed()
-        card = pg.get_by_test_id("home-featured-card").first
+        card = pg.locator('[data-testid="home-featured-card"][data-preset]').first  # #580: template-type tile
         skill = await card.get_attribute("data-skill")
         preset = await card.get_attribute("data-preset")
         await card.click()

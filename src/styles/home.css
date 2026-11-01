@@ -113,13 +113,40 @@ body { background: var(--ca-float); }
 .ca-landing__head h2 { margin: 0; font: 500 16px/24px var(--ca-font); }
 .ca-landing__link { border: none; background: none; color: var(--ca-muted); font: inherit; cursor: pointer; }
 .ca-landing__link:hover { color: var(--ca-text); }
+.ca-landing__headlink { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: none; background: none; color: inherit; font: inherit; cursor: pointer; }
+.ca-landing__chev { color: var(--ca-muted); }
+.ca-landing__headlink:hover .ca-landing__chev { color: var(--ca-text); }
 
-.ca-skillgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.ca-skillcard { display: flex; align-items: center; gap: 10px; padding: 12px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 12px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.ca-skillcard:hover { background: var(--ca-hover); }
-.ca-skillcard__icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--ca-field); overflow: hidden; }
-.ca-skillcard__icon img { width: 100%; height: 100%; object-fit: cover; }
-.ca-skillcard__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* skills-cut1 — home 「用 Skill 快速开始」: fluid 6-column grid of cover cards (4:3, r12) + title ›.
+   Values from design (100% zoom); title gap TODO-measure. All CSS vars so design values drop in. */
+.ca-skillgrid {
+  /* skills-cut1: fluid 6-column grid (design, measured at 100%) — card width falls out of the grid. */
+  --ca-skillrow-cols: 6;
+  --ca-skillrow-gap: 16px;
+  --ca-skillrow-cover-ratio: 4 / 3;
+  --ca-skillrow-radius: 12px;
+  --ca-skillrow-title-gap: 8px;     /* TODO-measure */
+  --ca-skillrow-title-size: 14px;
+  --ca-skillrow-title-line: 22px;
+  --ca-skillrow-title-weight: 500;
+  display: grid; grid-template-columns: repeat(var(--ca-skillrow-cols), minmax(0, 1fr)); gap: var(--ca-skillrow-gap);
+}
+.ca-skillcard {
+  min-width: 0;
+  display: flex; flex-direction: column; gap: var(--ca-skillrow-title-gap);
+  padding: 0; border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ca-skillcard__cover {
+  position: relative; display: flex; align-items: center; justify-content: center; width: 100%;
+  aspect-ratio: var(--ca-skillrow-cover-ratio); border-radius: var(--ca-skillrow-radius); background: var(--ca-field); overflow: hidden;
+}
+.ca-skillcard__cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 300ms ease; }
+.ca-skillcard:hover .ca-skillcard__cover img, .ca-skillcard:focus-visible .ca-skillcard__cover img { transform: scale(1.05); }
+.ca-skillcard__name {
+  display: flex; align-items: center; gap: 2px; min-width: 0; padding: 0 4px;
+  font: var(--ca-skillrow-title-weight) var(--ca-skillrow-title-size)/var(--ca-skillrow-title-line) var(--ca-font); color: var(--ca-text);
+}
+.ca-skillcard__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* #537 / #496 / #540 — home 「实用工具」5 cards + 更多工具. Values = reference design live DevTools @1280 CSS px
    (540/measure on review-assets). Theme tokens only, light + dark. */
@@ -170,11 +197,16 @@ body { background: var(--ca-float); }
 @media (max-width: 640px) { .ca-toolgrid { gap: 12px; } .ca-toolcard { flex: 0 0 calc((100% - 12px) / 2); } }
 
 /* #494-3 / #533 / #537 — home 「精选」waterfall (Loomic column pack; our skill preset covers only) */
+.ca-landing__featured {
+  /* skills-cut1: Skill 案例 masonry — column ≈299 + gap 16 (design @1280); count adapts (3 @1280, 5 @1920). */
+  --ca-featured-col-w: 299px;
+  --ca-featured-gap: 16px;
+}
 .ca-featured--waterfall {
-  display: flex; align-items: flex-start; gap: 16px;
+  display: flex; align-items: flex-start; gap: var(--ca-featured-gap, 16px);
 }
 .ca-featured__col {
-  display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 16px;
+  display: flex; flex: 1; min-width: 0; flex-direction: column; gap: var(--ca-featured-gap, 16px);
 }
 .ca-featured__card {
   display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 0 0 4px; border: none; background: none;
@@ -185,15 +217,12 @@ body { background: var(--ca-float); }
   border-radius: 12px; background: var(--ca-field);
 }
 .ca-featured__cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.ca-featured__cover::after {
-  content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.28); opacity: 0;
-  transition: opacity 150ms cubic-bezier(.4, 0, .2, 1); pointer-events: none;
-}
-.ca-featured__card:hover .ca-featured__cover::after, .ca-featured__card:focus-visible .ca-featured__cover::after { opacity: 1; }
+/* #580 item 4 / 6: no dimming on hover; small kind icon bottom-left */
 .ca-featured__badge {
-  position: absolute; left: 8px; bottom: 8px; z-index: 1; padding: 2px 8px; border-radius: 999px;
-  background: rgba(0, 0, 0, 0.45); color: #fff; font: 500 12px/18px var(--ca-font); pointer-events: none;
+  position: absolute; left: 8px; bottom: 8px; z-index: 1; display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 6px; background: var(--ca-float); color: var(--ca-text); opacity: .9; pointer-events: none;
 }
+.ca-featured__badge .ca-icon { width: 14px; height: 14px; }
 .ca-featured__go {
   position: absolute; right: 8px; top: 8px; z-index: 1; padding: 6px 12px; border-radius: 999px;
   background: #fff; color: #111; font: 500 12px/16px var(--ca-font);
@@ -205,9 +234,11 @@ body { background: var(--ca-float); }
   opacity: 1; transform: scale(1);
 }
 .ca-featured__name {
-  margin: 0; padding: 0 4px; font: 500 14px/22px var(--ca-font); color: var(--ca-text);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: flex; align-items: baseline; gap: 6px; min-width: 0; margin: 0; padding: 0 4px;
+  font: 500 14px/22px var(--ca-font); color: var(--ca-text);
 }
+.ca-featured__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-featured__tag { flex: none; font: 400 12px/18px var(--ca-font); color: var(--ca-muted); }  /* #580 item 5 */
 
 .ca-projects { max-width: 1600px; margin: 0 auto; padding: 32px 48px 96px; box-sizing: border-box; }
 .ca-projects__head { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
