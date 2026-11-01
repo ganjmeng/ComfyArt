@@ -1,0 +1,131 @@
+{
+ "kind": "covers-v3",
+ "model": "nano-banana-2-1",
+ "gen": "2400x1792 png, 2K, aspect 4:3",
+ "size": [
+  462,
+  346
+ ],
+ "thumb": [
+  231,
+  173
+ ],
+ "params": {
+  "format": "WEBP",
+  "quality": 82,
+  "method": 6
+ },
+ "lovart_refs_from": "494/lovart/E1-zh-light.png, E2-zh-light-scrolled.png (cropped card covers)",
+ "covers": {
+  "poster": {
+   "file": "494/covers-v3/poster.webp",
+   "thumb": "494/covers-v3/poster@thumb.webp",
+   "taskId": "0c692b499ec591bf337e915793532d8e",
+   "candidate": 2,
+   "rejected_taskId": "9b593da0309f3f04c1716c2b41228006",
+   "ref": "E1 r2c1 Amazon 卖点证据图",
+   "content_refs": "494/covers/poster/1.png,2.png",
+   "sha256": "edb2818eeec8bd10dd27857459b4826234d7907fb8e6b0146392fdf5dc208177"
+  },
+  "social": {
+   "file": "494/covers-v3/social.webp",
+   "thumb": "494/covers-v3/social@thumb.webp",
+   "taskId": "4582bf2ca9aac1193f6f81612089b2a5",
+   "candidate": 2,
+   "rejected_taskId": "954478fab1061779eb5d18e075402d90",
+   "ref": "E1 r1c2 淘宝商品首图",
+   "content_refs": "494/covers/social/1.png,2.png",
+   "sha256": "3dad05396f46c4e45a06ca9e2647b199d79c1185bd91b8635f7ecb1ef4cff516"
+  },
+  "brand": {
+   "file": "494/covers-v3/brand.webp",
+   "thumb": "494/covers-v3/brand@thumb.webp",
+   "taskId": "a8eb4bb91a3f041e1b70ded67238a87b",
+   "candidate": 2,
+   "rejected_taskId": "88e98d6e23949e2c686cd0a84164e446",
+   "ref": "E1 r2c4 VI 规范",
+   "content_refs": "494/covers/brand/1.png,2.png",
+   "sha256": "95f792e0c9842eca8f0c351fff01afa133eb853158342606522c4eba298925e4"
+  },
+  "packaging": {
+   "file": "494/covers-v3/packaging.webp",
+   "thumb": "494/covers-v3/packaging@thumb.webp",
+   "taskId": "cc7e073b8be2079f1a0c2658724bb021",
+   "candidate": 2,
+   "rejected_taskId": "c0dd87c0241bfddaccc836c55e91482e",
+   "ref": "E2 r3c2 品牌包装设计系统",
+   "content_refs": "494/covers/packaging/1.png,2.png",
+   "sha256": "a7c1d788d4108cf22dbc471fdbd14902f751c84712a77ac49434671ce89a75bb"
+  },
+  "thumbnail": {
+   "file": "494/covers-v3/thumbnail.webp",
+   "thumb": "494/covers-v3/thumbnail@thumb.webp",
+   "taskId": "1fe0dbdf1b88075dd7bb41dd7c99f722",
+   "candidate": 2,
+   "rejected_taskId": "5f2a9018b2657dab2169b7a98705fda4",
+   "ref": "E1 r1c4 产品广告",
+   "content_refs": "494/covers/thumbnail/1.png,2.png",
+   "sha256": "3edefe1cf4a80931f159cb7bf645aadb978da32891c968fd46c5e6c36781eaef"
+  },
+  "banner": {
+   "file": "494/covers-v3/banner.webp",
+   "thumb": "494/covers-v3/banner@thumb.webp",
+   "taskId": "e8019f333b373d875eb42b7511417860",
+   "candidate": 1,
+   "rejected_taskId": "13f70b7cde979256e72cb0ebd94d516c",
+   "ref": "E1 r2c5 品牌视觉方向板",
+   "content_refs": "494/covers/banner/1.png,2.png",
+   "sha256": "f47b7366b8096746f57a8cee6c3ff973ba128e9d4e166aa282f88adca9a95275"
+  },
+  "character": {
+   "file": "494/covers-v3/character.webp",
+   "thumb": "494/covers-v3/character@thumb.webp",
+   "taskId": "7160e59f104648a50611270d5f782450",
+   "candidate": 2,
+   "rejected_taskId": "586fcf89a0d81df516d0da8627c69b41",
+   "ref": "E2 r3c1 淘宝模特图",
+   "content_refs": "494/covers/character/1.png,2.png",
+   "sha256": "7b38a55c49f93a5b999f6ea458a5b372f0ddc8d14c0338cb9b6e993dbb1c870b"
+  },
+  "product": {
+   "file": "494/covers-v3/product.webp",
+   "thumb": "494/covers-v3/product@thumb.webp",
+   "taskId": "198d5b316a41ef5c95f4f14f906f3fbc",
+   "candidate": 2,
+   "rejected_taskId": "9db4c4d3c74742140e9dff455d0ab013",
+   "ref": "E1 r1c5 淘宝商品详情页",
+   "content_refs": "494/covers/product/1.png,2.png",
+   "sha256": "5cce4995d0e9605eddce5a8baba070f4d86d2c040fead170241c0f82bff74143"
+  },
+  "motion": {
+   "file": "494/covers-v3/motion.webp",
+   "thumb": "494/covers-v3/motion@thumb.webp",
+   "taskId": "4705cb203ae2bd041e348deca3a56e4e",
+   "candidate": 1,
+   "rejected_taskId": "4b8912d8834894f605634eb277537849",
+   "ref": "E1 r1c1 动态海报",
+   "content_refs": "494/covers/motion/1.png,2.png",
+   "sha256": "77b838219985eeb1270731f2758adcb0673f14266d7a0b6586976b2162424238"
+  },
+  "interior": {
+   "file": "494/covers-v3/interior.webp",
+   "thumb": "494/covers-v3/interior@thumb.webp",
+   "taskId": "3c26df4eb610c0edc41d9c299ad39f48",
+   "candidate": 1,
+   "rejected_taskId": "c3e7288dc23e4356acee28934544e254",
+   "ref": "E1 r2c3 Amazon 规格说明图",
+   "content_refs": "494/covers/interior/1.png,2.png",
+   "sha256": "4a1980ac754f90e27c1f65ddc9569165015994e94f8d749d4989aa2e3a2ebbdb"
+  },
+  "custom-workflow": {
+   "file": "494/covers-v3/custom-workflow.webp",
+   "thumb": "494/covers-v3/custom-workflow@thumb.webp",
+   "taskId": "6213bf91c53c57f1e8c9b20e41712e1d",
+   "candidate": 1,
+   "rejected_taskId": "0900101a5efbd2e4c80b2a04ea49d2d6",
+   "ref": "E2 r3c3 App 视觉方向",
+   "content_refs": null,
+   "sha256": "9c428cbfad872952c24b1c7a1f82176fa235cef878879b6841dc6fd20697d528"
+  }
+ }
+}
