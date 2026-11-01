@@ -60,12 +60,18 @@ def test_chips_from_data(got):
     assert got["chips"] == ["forYou", "ecommerce", "branding", "social", "website", "ads"]  # #591 website lit
     by = got["byChip"]
     assert len(by["forYou"]) == 17
+    # #595: within-chip order follows PHASE1 hot mount (orderBuiltins)
     assert by == {"forYou": by["forYou"],
-                  "ecommerce": ["packaging", "product", "multi-angle"],
+                  "ecommerce": ["product", "multi-angle", "packaging"],
                   "branding": ["brand", "logo-material"],
-                  "social": ["social", "thumbnail"],
+                  "social": ["thumbnail", "social"],
                   "website": ["mobile-ui", "web-product"],
-                  "ads": ["poster", "banner", "motion", "meta-ads", "marketing-campaign"]}
+                  "ads": ["motion", "meta-ads", "poster", "marketing-campaign", "banner"]}
+    assert by["forYou"][:15] == [
+        "product", "multi-angle", "brand", "character", "logo-material", "packaging",
+        "motion", "meta-ads", "poster", "thumbnail", "mobile-ui", "social",
+        "marketing-campaign", "web-product", "banner",
+    ]
     for sid in ("character", "interior", "custom-workflow"):
         assert all(sid not in v for k, v in by.items() if k != "forYou")
 
