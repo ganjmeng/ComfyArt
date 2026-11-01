@@ -292,5 +292,131 @@
    "model": "nano-banana-2-1",
    "lovartRefTitle": "电商直播素材"
   }
+ ],
+ "product": [
+  {
+   "file": "580/featured-v1/product/01.webp",
+   "thumb": "580/featured-v1/product/01@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "783d9e6002894b893417e346b475a737",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "营销活动生成器"
+  },
+  {
+   "file": "580/featured-v1/product/02.webp",
+   "thumb": "580/featured-v1/product/02@thumb.webp",
+   "w": 900,
+   "h": 1200,
+   "ratio": "3:4",
+   "taskId": "a120abc34a73af8ad41e94d10acb3795",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "淘宝商品视觉"
+  },
+  {
+   "file": "580/featured-v1/product/03.webp",
+   "thumb": "580/featured-v1/product/03@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "9020a5be26545fad38df6183164de28b",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "Amazon产品列表图片"
+  },
+  {
+   "file": "580/featured-v1/product/04.webp",
+   "thumb": "580/featured-v1/product/04@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "1236f20fa41f0396648c5810ebf8dd75",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "营销活动生成器"
+  }
+ ],
+ "motion": [
+  {
+   "file": "580/featured-v1/motion/01.webp",
+   "thumb": "580/featured-v1/motion/01@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "adf35449d5945604f0cc1a2cd9c66e2b",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "动态海报生成器"
+  },
+  {
+   "file": "580/featured-v1/motion/02.webp",
+   "thumb": "580/featured-v1/motion/02@thumb.webp",
+   "w": 1280,
+   "h": 720,
+   "ratio": "16:9",
+   "taskId": "1e8fbc5d48dce085e107cffabd921f62",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "产品电视广告"
+  },
+  {
+   "file": "580/featured-v1/motion/03.webp",
+   "thumb": "580/featured-v1/motion/03@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "c7c853079a81f31e5769670279d666f9",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "视频重制"
+  },
+  {
+   "file": "580/featured-v1/motion/04.webp",
+   "thumb": "580/featured-v1/motion/04@thumb.webp",
+   "w": 900,
+   "h": 1200,
+   "ratio": "3:4",
+   "taskId": "b4cb4cd95fffe33a10df9653e13605b4",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "爆款视频复刻"
+  }
+ ],
+ "interior": [
+  {
+   "file": "580/featured-v1/interior/01.webp",
+   "thumb": "580/featured-v1/interior/01@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "94ad6f8cb2c0835046cd0c0d971805e8",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "复古照片日记"
+  },
+  {
+   "file": "580/featured-v1/interior/02.webp",
+   "thumb": "580/featured-v1/interior/02@thumb.webp",
+   "w": 900,
+   "h": 1200,
+   "ratio": "3:4",
+   "taskId": "986d2b4cb881b00c91fdbb916712d6f2",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "海报设计"
+  },
+  {
+   "file": "580/featured-v1/interior/03.webp",
+   "thumb": "580/featured-v1/interior/03@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "3c891d76ba89dc6e99cb3f5524ded7e7",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "产品电视广告"
+  },
+  {
+   "file": "580/featured-v1/interior/04.webp",
+   "thumb": "580/featured-v1/interior/04@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "c51dc3d3e21af614d26357a4890ed6b3",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "Web产品视觉设计"
+  }
  ]
 }
