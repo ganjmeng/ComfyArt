@@ -1,0 +1,464 @@
+{
+ "title": {
+  "text": "你想设计什么？",
+  "rect": {
+   "x": 296,
+   "y": 96,
+   "w": 928,
+   "h": 40
+  },
+  "style": {
+   "font-size": "32px",
+   "line-height": "40px",
+   "font-weight": "500",
+   "letter-spacing": "-0.64px",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "0px 0px 28px"
+  }
+ },
+ "box": {
+  "text": "Loomi",
+  "rect": {
+   "x": 380,
+   "y": 164,
+   "w": 760,
+   "h": 128
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "0px 84px"
+  }
+ },
+ "tools": {
+  "text": "实用工具更多工具去背景视频延长放大精准编辑样机",
+  "rect": {
+   "x": 296,
+   "y": 406,
+   "w": 928,
+   "h": 169.06
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "startSkill": {
+  "text": "用 Skill 快速开始›查看全部海报设计社交媒体套图品牌识别包装设计YouTu",
+  "rect": {
+   "x": 296,
+   "y": 775.06,
+   "w": 928,
+   "h": 177
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "startHead": {
+  "text": "用 Skill 快速开始›",
+  "rect": {
+   "x": 296,
+   "y": 775.06,
+   "w": 130.31,
+   "h": 24
+  },
+  "style": {
+   "font-size": "16px",
+   "line-height": "24px",
+   "font-weight": "500",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "0px"
+  }
+ },
+ "featured": {
+  "text": "精选开始制作海报设计Skill 案例随处捕捉灵感网页图片一键存到画布安装插件开始",
+  "rect": {
+   "x": 296,
+   "y": 1016.06,
+   "w": 928,
+   "h": 6323.13
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "featuredH": {
+  "text": "精选",
+  "rect": {
+   "x": 296,
+   "y": 1016.06,
+   "w": 32,
+   "h": 24
+  },
+  "style": {
+   "font-size": "16px",
+   "line-height": "24px",
+   "font-weight": "500",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "0px"
+  }
+ },
+ "tabs": {
+  "text": "探索我的素材灵感采集Pinterest",
+  "rect": {
+   "x": 296,
+   "y": 615.06,
+   "w": 928,
+   "h": 40
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "40px 0px 0px",
+   "padding": "0px",
+   "gap": "24px",
+   "height": "39px",
+   "border-bottom": "1px solid rgba(0, 0, 0, 0.07)",
+   "border": "",
+   "border-radius": "0px",
+   "background-color": "rgba(0, 0, 0, 0)",
+   "position": "static",
+   "top": "auto"
+  }
+ },
+ "tabItems": [
+  {
+   "text": "探索",
+   "active": true,
+   "rect": {
+    "x": 296,
+    "y": 615.06,
+    "w": 28,
+    "h": 40
+   },
+   "textW": 28,
+   "style": {
+    "font-size": "14px",
+    "line-height": "22px",
+    "font-weight": "500",
+    "letter-spacing": "normal",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "margin": "0px 0px -1px",
+    "padding": "8px 0px",
+    "gap": "normal",
+    "height": "40px",
+    "border-bottom": "2px solid rgba(0, 0, 0, 0.9)",
+    "border": "",
+    "border-radius": "0px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   },
+   "indicator": {
+    "thickness": "2px",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "width": 28
+   }
+  },
+  {
+   "text": "我的素材",
+   "active": false,
+   "rect": {
+    "x": 348,
+    "y": 615.06,
+    "w": 56,
+    "h": 40
+   },
+   "textW": 56,
+   "style": {
+    "font-size": "14px",
+    "line-height": "22px",
+    "font-weight": "500",
+    "letter-spacing": "normal",
+    "color": "rgba(0, 0, 0, 0.3)",
+    "margin": "0px 0px -1px",
+    "padding": "8px 0px",
+    "gap": "normal",
+    "height": "40px",
+    "border-bottom": "2px solid rgba(0, 0, 0, 0)",
+    "border": "",
+    "border-radius": "0px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   },
+   "indicator": {
+    "thickness": "2px",
+    "color": "rgba(0, 0, 0, 0)",
+    "width": 56
+   }
+  },
+  {
+   "text": "灵感采集",
+   "active": false,
+   "rect": {
+    "x": 428,
+    "y": 615.06,
+    "w": 56,
+    "h": 40
+   },
+   "textW": 56,
+   "style": {
+    "font-size": "14px",
+    "line-height": "22px",
+    "font-weight": "500",
+    "letter-spacing": "normal",
+    "color": "rgba(0, 0, 0, 0.3)",
+    "margin": "0px 0px -1px",
+    "padding": "8px 0px",
+    "gap": "normal",
+    "height": "40px",
+    "border-bottom": "2px solid rgba(0, 0, 0, 0)",
+    "border": "",
+    "border-radius": "0px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   },
+   "indicator": {
+    "thickness": "2px",
+    "color": "rgba(0, 0, 0, 0)",
+    "width": 56
+   }
+  },
+  {
+   "text": "Pinterest",
+   "active": false,
+   "rect": {
+    "x": 508,
+    "y": 615.06,
+    "w": 59.47,
+    "h": 40
+   },
+   "textW": 59.47,
+   "style": {
+    "font-size": "14px",
+    "line-height": "22px",
+    "font-weight": "500",
+    "letter-spacing": "normal",
+    "color": "rgba(0, 0, 0, 0.3)",
+    "margin": "0px 0px -1px",
+    "padding": "8px 0px",
+    "gap": "normal",
+    "height": "40px",
+    "border-bottom": "2px solid rgba(0, 0, 0, 0)",
+    "border": "",
+    "border-radius": "0px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   },
+   "indicator": {
+    "thickness": "2px",
+    "color": "rgba(0, 0, 0, 0)",
+    "width": 59.47
+   }
+  }
+ ],
+ "tabGaps": [
+  24,
+  24,
+  24
+ ],
+ "chips": {
+  "text": "为你推荐电商品牌社交媒体广告创意",
+  "rect": {
+   "x": 296,
+   "y": 655.06,
+   "w": 928,
+   "h": 56
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(0, 0, 0, 0.9)",
+   "margin": "0px 0px 20px",
+   "padding": "12px 0px",
+   "gap": "8px",
+   "height": "32px",
+   "border-bottom": "0px none rgba(0, 0, 0, 0.9)",
+   "border": "0px none rgba(0, 0, 0, 0.9)",
+   "border-radius": "0px",
+   "background-color": "rgb(255, 255, 255)",
+   "position": "sticky",
+   "top": "0px"
+  }
+ },
+ "chipItems": [
+  {
+   "text": "为你推荐",
+   "on": true,
+   "rect": {
+    "x": 296,
+    "y": 667.06,
+    "w": 82,
+    "h": 32
+   },
+   "style": {
+    "font-size": "13px",
+    "line-height": "20px",
+    "font-weight": "400",
+    "letter-spacing": "normal",
+    "color": "rgb(255, 255, 255)",
+    "margin": "0px",
+    "padding": "0px 14px",
+    "gap": "normal",
+    "height": "32px",
+    "border-bottom": "1px solid rgba(0, 0, 0, 0.9)",
+    "border": "1px solid rgba(0, 0, 0, 0.9)",
+    "border-radius": "999px",
+    "background-color": "rgba(0, 0, 0, 0.9)",
+    "position": "static",
+    "top": "auto"
+   }
+  },
+  {
+   "text": "电商",
+   "on": false,
+   "rect": {
+    "x": 386,
+    "y": 667.06,
+    "w": 56,
+    "h": 32
+   },
+   "style": {
+    "font-size": "13px",
+    "line-height": "20px",
+    "font-weight": "400",
+    "letter-spacing": "normal",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "margin": "0px",
+    "padding": "0px 14px",
+    "gap": "normal",
+    "height": "32px",
+    "border-bottom": "1px solid rgba(0, 0, 0, 0.07)",
+    "border": "1px solid rgba(0, 0, 0, 0.07)",
+    "border-radius": "999px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   }
+  },
+  {
+   "text": "品牌",
+   "on": false,
+   "rect": {
+    "x": 450,
+    "y": 667.06,
+    "w": 56,
+    "h": 32
+   },
+   "style": {
+    "font-size": "13px",
+    "line-height": "20px",
+    "font-weight": "400",
+    "letter-spacing": "normal",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "margin": "0px",
+    "padding": "0px 14px",
+    "gap": "normal",
+    "height": "32px",
+    "border-bottom": "1px solid rgba(0, 0, 0, 0.07)",
+    "border": "1px solid rgba(0, 0, 0, 0.07)",
+    "border-radius": "999px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   }
+  },
+  {
+   "text": "社交媒体",
+   "on": false,
+   "rect": {
+    "x": 514,
+    "y": 667.06,
+    "w": 82,
+    "h": 32
+   },
+   "style": {
+    "font-size": "13px",
+    "line-height": "20px",
+    "font-weight": "400",
+    "letter-spacing": "normal",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "margin": "0px",
+    "padding": "0px 14px",
+    "gap": "normal",
+    "height": "32px",
+    "border-bottom": "1px solid rgba(0, 0, 0, 0.07)",
+    "border": "1px solid rgba(0, 0, 0, 0.07)",
+    "border-radius": "999px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   }
+  },
+  {
+   "text": "广告创意",
+   "on": false,
+   "rect": {
+    "x": 604,
+    "y": 667.06,
+    "w": 82,
+    "h": 32
+   },
+   "style": {
+    "font-size": "13px",
+    "line-height": "20px",
+    "font-weight": "400",
+    "letter-spacing": "normal",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "margin": "0px",
+    "padding": "0px 14px",
+    "gap": "normal",
+    "height": "32px",
+    "border-bottom": "1px solid rgba(0, 0, 0, 0.07)",
+    "border": "1px solid rgba(0, 0, 0, 0.07)",
+    "border-radius": "999px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   }
+  }
+ ],
+ "firstFeedCard": {
+  "rect": {
+   "x": 296,
+   "y": 1056.06,
+   "w": 298.66,
+   "h": 432.2
+  }
+ },
+ "spacing": {
+  "featuredH_bottom_to_tabs_top": -425,
+  "startSkill_bottom_to_tabs_top": -337,
+  "tabs_bottom_to_chips_top": 0,
+  "chips_bottom_to_first_card": 345,
+  "tabs_bottom_to_first_card": 401
+ }
+}

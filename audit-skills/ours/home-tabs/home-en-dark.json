@@ -1,0 +1,464 @@
+{
+ "title": {
+  "text": "What do you want to design?",
+  "rect": {
+   "x": 296,
+   "y": 96,
+   "w": 928,
+   "h": 40
+  },
+  "style": {
+   "font-size": "32px",
+   "line-height": "40px",
+   "font-weight": "500",
+   "letter-spacing": "-0.64px",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "0px 0px 28px"
+  }
+ },
+ "box": {
+  "text": "Loomi",
+  "rect": {
+   "x": 380,
+   "y": 164,
+   "w": 760,
+   "h": 128
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "0px 84px"
+  }
+ },
+ "tools": {
+  "text": "ToolsMore toolsRemove BackgroundExtend V",
+  "rect": {
+   "x": 296,
+   "y": 448,
+   "w": 928,
+   "h": 169.06
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "startSkill": {
+  "text": "Start with a Skill›View allPoster Design",
+  "rect": {
+   "x": 296,
+   "y": 817.56,
+   "w": 928,
+   "h": 177
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "startHead": {
+  "text": "Start with a Skill›",
+  "rect": {
+   "x": 296,
+   "y": 817.56,
+   "w": 132.91,
+   "h": 24
+  },
+  "style": {
+   "font-size": "16px",
+   "line-height": "24px",
+   "font-weight": "500",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "0px"
+  }
+ },
+ "featured": {
+  "text": "FeaturedStart creatingPoster DesignSkill",
+  "rect": {
+   "x": 296,
+   "y": 1058.56,
+   "w": 928,
+   "h": 6455.55
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "64px 0px 0px"
+  }
+ },
+ "featuredH": {
+  "text": "Featured",
+  "rect": {
+   "x": 296,
+   "y": 1058.56,
+   "w": 67.73,
+   "h": 24
+  },
+  "style": {
+   "font-size": "16px",
+   "line-height": "24px",
+   "font-weight": "500",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "0px"
+  }
+ },
+ "tabs": {
+  "text": "ExploreMy AssetsInspirationPinterest",
+  "rect": {
+   "x": 296,
+   "y": 657.06,
+   "w": 928,
+   "h": 40.5
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "40px 0px 0px",
+   "padding": "0px",
+   "gap": "24px",
+   "height": "39.5px",
+   "border-bottom": "1px solid rgba(255, 255, 255, 0.1)",
+   "border": "",
+   "border-radius": "0px",
+   "background-color": "rgba(0, 0, 0, 0)",
+   "position": "static",
+   "top": "auto"
+  }
+ },
+ "tabItems": [
+  {
+   "text": "Explore",
+   "active": true,
+   "rect": {
+    "x": 296,
+    "y": 657.06,
+    "w": 50.25,
+    "h": 40
+   },
+   "textW": 50.25,
+   "style": {
+    "font-size": "14px",
+    "line-height": "22px",
+    "font-weight": "500",
+    "letter-spacing": "normal",
+    "color": "rgba(255, 255, 255, 0.9)",
+    "margin": "0px 0px -0.5px",
+    "padding": "8px 0px",
+    "gap": "normal",
+    "height": "40px",
+    "border-bottom": "2px solid rgba(255, 255, 255, 0.9)",
+    "border": "",
+    "border-radius": "0px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   },
+   "indicator": {
+    "thickness": "2px",
+    "color": "rgba(255, 255, 255, 0.9)",
+    "width": 50.25
+   }
+  },
+  {
+   "text": "My Assets",
+   "active": false,
+   "rect": {
+    "x": 370.25,
+    "y": 657.06,
+    "w": 70.02,
+    "h": 40
+   },
+   "textW": 70.02,
+   "style": {
+    "font-size": "14px",
+    "line-height": "22px",
+    "font-weight": "500",
+    "letter-spacing": "normal",
+    "color": "rgba(255, 255, 255, 0.4)",
+    "margin": "0px 0px -0.5px",
+    "padding": "8px 0px",
+    "gap": "normal",
+    "height": "40px",
+    "border-bottom": "2px solid rgba(0, 0, 0, 0)",
+    "border": "",
+    "border-radius": "0px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   },
+   "indicator": {
+    "thickness": "2px",
+    "color": "rgba(0, 0, 0, 0)",
+    "width": 70.02
+   }
+  },
+  {
+   "text": "Inspiration",
+   "active": false,
+   "rect": {
+    "x": 464.27,
+    "y": 657.06,
+    "w": 70.44,
+    "h": 40
+   },
+   "textW": 70.44,
+   "style": {
+    "font-size": "14px",
+    "line-height": "22px",
+    "font-weight": "500",
+    "letter-spacing": "normal",
+    "color": "rgba(255, 255, 255, 0.4)",
+    "margin": "0px 0px -0.5px",
+    "padding": "8px 0px",
+    "gap": "normal",
+    "height": "40px",
+    "border-bottom": "2px solid rgba(0, 0, 0, 0)",
+    "border": "",
+    "border-radius": "0px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   },
+   "indicator": {
+    "thickness": "2px",
+    "color": "rgba(0, 0, 0, 0)",
+    "width": 70.44
+   }
+  },
+  {
+   "text": "Pinterest",
+   "active": false,
+   "rect": {
+    "x": 558.7,
+    "y": 657.06,
+    "w": 59.47,
+    "h": 40
+   },
+   "textW": 59.47,
+   "style": {
+    "font-size": "14px",
+    "line-height": "22px",
+    "font-weight": "500",
+    "letter-spacing": "normal",
+    "color": "rgba(255, 255, 255, 0.4)",
+    "margin": "0px 0px -0.5px",
+    "padding": "8px 0px",
+    "gap": "normal",
+    "height": "40px",
+    "border-bottom": "2px solid rgba(0, 0, 0, 0)",
+    "border": "",
+    "border-radius": "0px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   },
+   "indicator": {
+    "thickness": "2px",
+    "color": "rgba(0, 0, 0, 0)",
+    "width": 59.47
+   }
+  }
+ ],
+ "tabGaps": [
+  24,
+  24,
+  23.99
+ ],
+ "chips": {
+  "text": "For youE-commerceBrandingSocial MediaAds & Creative",
+  "rect": {
+   "x": 296,
+   "y": 697.56,
+   "w": 928,
+   "h": 56
+  },
+  "style": {
+   "font-size": "14px",
+   "line-height": "22px",
+   "font-weight": "400",
+   "letter-spacing": "normal",
+   "color": "rgba(255, 255, 255, 0.9)",
+   "margin": "0px 0px 20px",
+   "padding": "12px 0px",
+   "gap": "8px",
+   "height": "32px",
+   "border-bottom": "0px none rgba(255, 255, 255, 0.9)",
+   "border": "0px none rgba(255, 255, 255, 0.9)",
+   "border-radius": "0px",
+   "background-color": "rgb(22, 22, 22)",
+   "position": "sticky",
+   "top": "0px"
+  }
+ },
+ "chipItems": [
+  {
+   "text": "For you",
+   "on": true,
+   "rect": {
+    "x": 296,
+    "y": 709.56,
+    "w": 76.05,
+    "h": 32
+   },
+   "style": {
+    "font-size": "13px",
+    "line-height": "20px",
+    "font-weight": "400",
+    "letter-spacing": "normal",
+    "color": "rgb(22, 22, 22)",
+    "margin": "0px",
+    "padding": "0px 14px",
+    "gap": "normal",
+    "height": "32px",
+    "border-bottom": "1px solid rgba(255, 255, 255, 0.92)",
+    "border": "1px solid rgba(255, 255, 255, 0.92)",
+    "border-radius": "999px",
+    "background-color": "rgba(255, 255, 255, 0.92)",
+    "position": "static",
+    "top": "auto"
+   }
+  },
+  {
+   "text": "E-commerce",
+   "on": false,
+   "rect": {
+    "x": 380.05,
+    "y": 709.56,
+    "w": 109.06,
+    "h": 32
+   },
+   "style": {
+    "font-size": "13px",
+    "line-height": "20px",
+    "font-weight": "400",
+    "letter-spacing": "normal",
+    "color": "rgba(255, 255, 255, 0.9)",
+    "margin": "0px",
+    "padding": "0px 14px",
+    "gap": "normal",
+    "height": "32px",
+    "border-bottom": "1px solid rgba(255, 255, 255, 0.1)",
+    "border": "1px solid rgba(255, 255, 255, 0.1)",
+    "border-radius": "999px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   }
+  },
+  {
+   "text": "Branding",
+   "on": false,
+   "rect": {
+    "x": 497.11,
+    "y": 709.56,
+    "w": 85.16,
+    "h": 32
+   },
+   "style": {
+    "font-size": "13px",
+    "line-height": "20px",
+    "font-weight": "400",
+    "letter-spacing": "normal",
+    "color": "rgba(255, 255, 255, 0.9)",
+    "margin": "0px",
+    "padding": "0px 14px",
+    "gap": "normal",
+    "height": "32px",
+    "border-bottom": "1px solid rgba(255, 255, 255, 0.1)",
+    "border": "1px solid rgba(255, 255, 255, 0.1)",
+    "border-radius": "999px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   }
+  },
+  {
+   "text": "Social Media",
+   "on": false,
+   "rect": {
+    "x": 590.27,
+    "y": 709.56,
+    "w": 108.55,
+    "h": 32
+   },
+   "style": {
+    "font-size": "13px",
+    "line-height": "20px",
+    "font-weight": "400",
+    "letter-spacing": "normal",
+    "color": "rgba(255, 255, 255, 0.9)",
+    "margin": "0px",
+    "padding": "0px 14px",
+    "gap": "normal",
+    "height": "32px",
+    "border-bottom": "1px solid rgba(255, 255, 255, 0.1)",
+    "border": "1px solid rgba(255, 255, 255, 0.1)",
+    "border-radius": "999px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   }
+  },
+  {
+   "text": "Ads & Creative",
+   "on": false,
+   "rect": {
+    "x": 706.81,
+    "y": 709.56,
+    "w": 120.7,
+    "h": 32
+   },
+   "style": {
+    "font-size": "13px",
+    "line-height": "20px",
+    "font-weight": "400",
+    "letter-spacing": "normal",
+    "color": "rgba(255, 255, 255, 0.9)",
+    "margin": "0px",
+    "padding": "0px 14px",
+    "gap": "normal",
+    "height": "32px",
+    "border-bottom": "1px solid rgba(255, 255, 255, 0.1)",
+    "border": "1px solid rgba(255, 255, 255, 0.1)",
+    "border-radius": "999px",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "position": "static",
+    "top": "auto"
+   }
+  }
+ ],
+ "firstFeedCard": {
+  "rect": {
+   "x": 296,
+   "y": 1098.56,
+   "w": 298.66,
+   "h": 432.2
+  }
+ },
+ "spacing": {
+  "featuredH_bottom_to_tabs_top": -425.5,
+  "startSkill_bottom_to_tabs_top": -337.5,
+  "tabs_bottom_to_chips_top": 0,
+  "chips_bottom_to_first_card": 345,
+  "tabs_bottom_to_first_card": 401
+ }
+}
