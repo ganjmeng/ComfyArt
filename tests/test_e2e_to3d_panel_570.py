@@ -133,6 +133,17 @@ async def test_c_home_transform_swaps_bar(app_url):  # noqa: F811
         await _launch(pg, "transform")
         await pg.locator(".ca-toolbar--swap[data-tool='transform'] .ca-transform").wait_for(timeout=15000)
         assert await pg.locator(PANEL).count() == 0 and await pg.locator(MORE_POP).count() == 0
+        bar = pg.locator(".ca-toolbar--swap[data-tool='transform'] .ca-transform")
+        # design order with counter-clockwise rotate restored (reused main control): angle, ccw, cw, flipH, flipV
+        kids = await bar.evaluate("e => [...e.children].map(c => c.tagName === 'LABEL' ? 'angle' : c.getAttribute('title'))")
+        assert kids == ["angle", "向左旋转 90°", "旋转 90°", "水平翻转", "垂直翻转"]
+        ccw = bar.get_by_title("向左旋转 90°")
+        assert await ccw.count() == 1
+        inp = bar.locator(".ca-crop__input")
+        start = int(await inp.input_value())
+        await ccw.click()
+        await pg.wait_for_function("([s]) => { const v = Number(document.querySelector('.ca-toolbar--swap .ca-crop__input').value); return v !== s }", arg=[start])
+        assert (int(await inp.input_value()) - start) % 360 == 270
         await browser.close()
 
 
@@ -177,8 +188,14 @@ async def test_f_switch_renders_params_from_data_and_runs_mock(app_url, mock_ws)
         for mid, n in expected.items():
             await panel.locator(f".ca-seg__btn[data-model='{mid}']").click()
             assert await panel.locator(f".ca-seg__btn[data-model='{mid}']").get_attribute("aria-selected") == "true"
-            assert await panel.locator(".ca-toolpanel__params").get_attribute("data-count") == str(n)
-            assert await panel.locator(".ca-toolpanel__params [data-param]").count() == n
+            if n:
+                assert await panel.locator(".ca-toolpanel__params").get_attribute("data-count") == str(n)
+                assert await panel.locator(".ca-toolpanel__params [data-param]").count() == n
+            else:  # no params in the model's data: no section and no "no params" note
+                assert await panel.locator(".ca-toolpanel__params").count() == 0
+                assert await panel.locator(".ca-toolpanel__empty").count() == 0
+                for note in ("没有可调参数", "no adjustable parameters"):
+                    assert await panel.get_by_text(note).count() == 0
         for mid in ("trellis2", "pixal3d"):
             before = len(mock_ws["submits"])
             await pg.locator(".tl-container").first.wait_for()

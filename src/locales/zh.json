@@ -1607,6 +1607,5 @@
   "toolPanel.reset": "重置",
   "toolPanel.useNow": "立即使用",
   "toolPanel.model": "模型",
-  "toolPanel.noParams": "这个模型没有可调参数",
   "toolPanel.resolution": "分辨率"
 }

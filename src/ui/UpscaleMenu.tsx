@@ -51,7 +51,7 @@ export function To3dPanel({ editor, shape, src, custom, onDone, onError }: { edi
         {models.map((m) => <button key={m.id} type="button" role="tab" className="ca-seg__btn" data-model={m.id} aria-selected={m.id === model} data-on={m.id === model || undefined} onClick={() => pick(m.id)}>{m.label}</button>)}
       </div>
       <div className="ca-toolpanel__preview"><img src={src} alt="" draggable={false} /></div>
-      <div className="ca-toolpanel__params" data-count={spec.params.length}>
+      {spec.params.length > 0 && <div className="ca-toolpanel__params" data-count={spec.params.length}>
         {spec.params.map((p) => (
           <label key={p.key} className="ca-panel__row" data-param={p.key}>
             <span>{p.label}</span>
@@ -59,8 +59,7 @@ export function To3dPanel({ editor, shape, src, custom, onDone, onError }: { edi
             <span className="ca-panel__val">{vals[p.key] ?? p.value}</span>
           </label>
         ))}
-        {!spec.params.length && <div className="ca-toolpanel__empty">{t('toolPanel.noParams')}</div>}
-      </div>
+      </div>}
     </ToolPanel>
   )
 }

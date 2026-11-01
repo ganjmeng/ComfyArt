@@ -1182,7 +1182,6 @@
 .ca-toolpanel__params { display: flex; flex-direction: column; gap: 8px; }
 .ca-toolpanel__params .ca-panel__row { grid-template-columns: max-content 1fr 28px; }
 .ca-toolpanel__params .ca-panel__val { text-align: right; }
-.ca-toolpanel__empty { color: var(--ca-muted); font-size: 12px; }
 .ca-toolpanel__foot { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .ca-toolpanel__foot > button { height: 32px; padding: 0 6px; border-radius: 8px; font-size: 12px; white-space: nowrap; }
 .ca-toolpanel__foot > .ca-panel__secondary { background: transparent; border: 1px solid var(--ca-border); color: var(--ca-text); }

@@ -98,7 +98,7 @@ function TransformMenu({ editor, shape, bar }: { editor: Editor; shape: TLImageS
   )
   return (
     <div className="ca-menu ca-transform">
-      {bar ? [angle, cw, flipH, flipV] : [flipH, flipV, ccw, cw, <div key="sep" className="ca-bar__sep" />, angle]}
+      {bar ? [angle, ccw, cw, flipH, flipV] : [flipH, flipV, ccw, cw, <div key="sep" className="ca-bar__sep" />, angle]}
     </div>
   )
 }
