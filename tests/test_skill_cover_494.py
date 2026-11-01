@@ -35,13 +35,16 @@ def test_own_image_used(got):
 
 
 def test_builtin_covers(got):
+    """#581 — all 11 built-ins (incl. custom-workflow) pinned to manifest 494/covers-final @7237c371."""
     covers = got["builtinCovers"]
-    assert covers.pop("custom-workflow") is None
-    tip = "48362260e70c8d60a1a755a1b31d0f4ae5c0ab67"
+    v3, pin = "3c9b87e7eae72164efdd1fe30e00f576144475f4", {
+        "banner": ("494/covers-v3.1", "9b23a3e8e3ca2f6b64dc16c0cf36fbf9c41fcaf4"),
+        "character": ("494/covers-v3.2", "dc335056e81e0350e2f98487fb680e22ffb14bb9"),
+    }
     assert covers == {
-        k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/covers/{k}.webp"
+        k: "https://raw.githubusercontent.com/ganjmeng/ComfyArt/{1}/{0}/{2}.webp".format(*pin.get(k, ("494/covers-v3", v3)), k)
         for k in covers
-    } and len(covers) == 10
+    } and len(covers) == 11 and "custom-workflow" in covers
 
 
 def test_chips_from_data(got):
