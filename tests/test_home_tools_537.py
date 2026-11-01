@@ -89,7 +89,7 @@ def test_waterfall_layout_logic_no_scraped_feed() -> None:
     for bad in ("a.lovart.ai", "lovartcdn", "cdn.lovart", "http://", "https://"):
         assert bad not in low, bad
     # data remains skillFeaturedCases (our presets)
-    assert "skillFeaturedCases(skills)" in HOME
+    assert "skillFeaturedCases(shown)" in HOME
 
 
 def test_tool_covers_are_wash_commit_pinned() -> None:

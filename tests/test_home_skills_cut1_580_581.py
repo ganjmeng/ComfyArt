@@ -25,8 +25,8 @@ def _rule(sel: str) -> str:
 def test_six_cover_cards_from_real_skills() -> None:
     assert "export const HOME_SKILL_ROW = 6" in LAYOUT
     body = _start_block()
-    assert "skills.slice(0, HOME_SKILL_ROW).map" in body  # real skills, no demo data
-    assert 'data-testid="home-skill-cover"' in body and "skillCover(s)" in body
+    assert "shown.slice(0, HOME_SKILL_ROW).map" in body  # real skills (cut 2: chip-filtered), no demo data
+    assert 'data-testid="home-skill-cover"' in body and "skillQuickStartCover(s)" in body  # cut 2: own quick-start slot, falls back to skillCover
     # design 5727385011: › only after the section title, not on each card
     card = body.split("ca-skillcard__name", 1)[1].split("</button>", 1)[0]
     assert "›" not in card and "ca-skillcard__chev" not in body
