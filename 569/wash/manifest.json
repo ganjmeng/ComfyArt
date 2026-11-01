@@ -89,6 +89,21 @@
         "taskIds": [
           "6e6761e3bf3e37fcccf4108113fc01df"
         ]
+      },
+      {
+        "index": 7,
+        "title": "Luxury Editorial Character Sheet",
+        "zh": "高级时装角色板",
+        "persona": "fictional European woman, luxury-campaign supermodel look, honey-blonde low ponytail, ivory silk cowl blouse, black tailored wide-leg trousers, white studio; no logo or text",
+        "lovart_ref": null,
+        "layout_ref": "same 16:9 layout family as 06-basic-character-sheet",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/fa8248fe00a27b97e03c1dd2eae522b272dffe7c/569/wash/character/templates/08-luxury-editorial-character-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/fa8248fe00a27b97e03c1dd2eae522b272dffe7c/569/wash/character/templates/08-luxury-editorial-character-sheet@thumb.webp",
+        "model": "nano-banana-2-1",
+        "taskIds": [
+          "1273d3ccfed4edc7d8f050d150bd3353"
+        ],
+        "added": "2026-11-01 per Jingmeng, Refs #574"
       }
     ],
     "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/sbs-character.webp"
@@ -138,12 +153,13 @@
     "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/sbs-motion.webp"
   },
   "kie": {
-    "credits_spent_total": 814.4,
+    "credits_spent_total": 824.4,
     "balance_start": 954.8,
-    "balance_end": 140.4,
+    "balance_end": 130.4,
     "rejected": [
       "character-0 (v1, tight margins)",
-      "motion-0 v1 seedance-2 12s first->last (garbled KOI-70 title, cropped)"
+      "motion-0 v1 seedance-2 12s first->last (garbled KOI-70 title, cropped)",
+      "character-7 candidate c1 (task 2672e83b), kept c2"
     ]
   }
 }
