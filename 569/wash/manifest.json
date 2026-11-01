@@ -1,0 +1,149 @@
+{
+  "issue": 569,
+  "spec": "https://github.com/ganjmeng/ComfyArt/issues/569#issuecomment-6550761346",
+  "assets_commit": "bd043d4cff5019fc4117b5b2f3a33ae437015a28",
+  "character": {
+    "skillKey": "character-sheet-design",
+    "persona": "fictional East Asian woman, black shoulder-length bob, white T-shirt, khaki wide-leg trousers, white studio",
+    "templates": [
+      {
+        "index": 0,
+        "title": "Character Turnaround Sheet",
+        "zh": "角色转身板",
+        "lovart_ref": "/workspace/569ref/character-0.png",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/01-character-turnaround-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/01-character-turnaround-sheet@thumb.webp",
+        "model": "nano-banana-2-1",
+        "taskIds": [
+          "cac143d7103c4115abf35cf06f367d51"
+        ]
+      },
+      {
+        "index": 1,
+        "title": "Expression & Pose Sheet",
+        "zh": "表情动作板",
+        "lovart_ref": "/workspace/569ref/character-1.png",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/02-expression-pose-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/02-expression-pose-sheet@thumb.webp",
+        "model": "nano-banana-2-1",
+        "taskIds": [
+          "ce1e951a757740064190d07d2663a2ba"
+        ]
+      },
+      {
+        "index": 2,
+        "title": "Modeling Detail Reference Sheet",
+        "zh": "建模细节参考板",
+        "lovart_ref": "/workspace/569ref/character-2.png",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/03-modeling-detail-reference-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/03-modeling-detail-reference-sheet@thumb.webp",
+        "model": "nano-banana-2-1",
+        "taskIds": [
+          "68481675218692e27af1e2c020283b98"
+        ]
+      },
+      {
+        "index": 3,
+        "title": "Outfit / Form Variation Sheet",
+        "zh": "服装/形态变体板",
+        "lovart_ref": "/workspace/569ref/character-3.png",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/04-outfit-form-variation-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/04-outfit-form-variation-sheet@thumb.webp",
+        "model": "nano-banana-2-1",
+        "taskIds": [
+          "3ff50fd2bbe0fa8da682cfa3fc018ef2"
+        ]
+      },
+      {
+        "index": 4,
+        "title": "Prop Interaction Sheet",
+        "zh": "道具互动板",
+        "lovart_ref": "/workspace/569ref/character-4.png",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/05-prop-interaction-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/05-prop-interaction-sheet@thumb.webp",
+        "model": "nano-banana-2-1",
+        "taskIds": [
+          "d65acc650687846607b0fd6014d04192"
+        ]
+      },
+      {
+        "index": 5,
+        "title": "Basic Character Sheet",
+        "zh": "基础角色板",
+        "lovart_ref": "/workspace/569ref/character-5.png",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/06-basic-character-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/06-basic-character-sheet@thumb.webp",
+        "model": "nano-banana-2-1",
+        "taskIds": [
+          "ad4e55db57aaf9307e8dacae3e88a11f"
+        ]
+      },
+      {
+        "index": 6,
+        "title": "Complete Technical Character Sheet",
+        "zh": "完整技术角色板",
+        "lovart_ref": "/workspace/569ref/character-6.png",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/07-complete-technical-character-sheet.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/character/templates/07-complete-technical-character-sheet@thumb.webp",
+        "model": "nano-banana-2-1",
+        "taskIds": [
+          "6e6761e3bf3e37fcccf4108113fc01df"
+        ]
+      }
+    ],
+    "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/sbs-character.webp"
+  },
+  "motion": {
+    "templates": [
+      {
+        "index": 0,
+        "title": "Poster Animation",
+        "zh": "海报动画",
+        "lovart_ref": "/workspace/569ref/motion-0.mp4",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/motion/templates/01-poster-animation.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/motion/templates/01-poster-animation@thumb.webp",
+        "video": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/motion/templates/01-poster-animation.mp4",
+        "poster": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/motion/templates/01-poster-animation@poster.webp",
+        "model": {
+          "frames": "nano-banana-2-1",
+          "video": "bytedance/seedance-2-mini (two 6s first=last clips, ffmpeg 0.6s xfade)"
+        },
+        "taskIds": [
+          "1188916d016f724e7abe23af387ddadb",
+          "4db59434b410ad0c3580edc492b45f16",
+          "0a3a2e350bdefa8ef0901afcea06acba",
+          "185ace2c25fbf79c24372979645a4e22"
+        ]
+      },
+      {
+        "index": 1,
+        "title": "First-to-Last Frame Animation",
+        "zh": "首帧到末帧动画",
+        "lovart_ref": "/workspace/569ref/motion-1.mp4",
+        "full": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/motion/templates/02-first-to-last-frame-animation.webp",
+        "thumb": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/motion/templates/02-first-to-last-frame-animation@thumb.webp",
+        "video": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/motion/templates/02-first-to-last-frame-animation.mp4",
+        "poster": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/motion/templates/02-first-to-last-frame-animation@poster.webp",
+        "model": {
+          "frames": "nano-banana-2-1",
+          "video": "bytedance/seedance-2 (first+last frame)"
+        },
+        "taskIds": [
+          "a763da5dc25291e20940aebe43242aae",
+          "b13623ec7f6bf5eaca4d49dd134e2c0b",
+          "304e96fcfc7fdc9875e654c531f71389"
+        ]
+      }
+    ],
+    "sbs": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/sbs-motion.webp"
+  },
+  "kie": {
+    "credits_spent_total": 814.4,
+    "balance_start": 954.8,
+    "balance_end": 140.4,
+    "rejected": [
+      "character-0 (v1, tight margins)",
+      "motion-0 v1 seedance-2 12s first->last (garbled KOI-70 title, cropped)"
+    ]
+  }
+}
