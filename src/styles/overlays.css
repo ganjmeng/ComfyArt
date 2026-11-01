@@ -282,7 +282,7 @@
 .ca-lib__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ca-lib__more { display: inline-flex; width: 24px; height: 24px; padding: 2px; border: none; border-radius: 6px; background: transparent; color: var(--ca-muted); cursor: pointer; box-sizing: border-box; }
 .ca-lib__more:hover, .ca-lib__more[data-open] { background: var(--ca-active); color: var(--ca-text); }
-.ca-lib__menu { min-width: 180px; padding: 4px; }
+.ca-lib__menu { padding: 4px; }
 .ca-lib__menu .ca-menu__item { height: 32px; }
 .ca-lib__cover { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; background: var(--ca-field); color: var(--ca-muted); }
 .ca-lib__cover img { width: 100%; height: 100%; object-fit: cover; }
@@ -1195,7 +1195,10 @@
 /* #570: existing ⋯ submenu expands to the right on hover; the main list stays */
 .ca-menu__flyhost { position: relative; align-self: stretch; }
 .ca-menu__flyhost .ca-menu__sub { width: 100%; }
-.ca-menu.ca-menu__flyout { position: absolute; left: 100%; top: -4px; margin-left: 4px; z-index: 1; }
+.ca-menu.ca-menu__flyout { position: fixed; z-index: 1001; box-sizing: border-box; width: 184px; }
 .ca-menu__flyout .ca-menu__item { padding-left: 10px; }
-.ca-toolpanel__select { grid-template-columns: max-content 1fr; }
-.ca-toolpanel__select select { min-width: 0; height: 28px; border-radius: 6px; border: 1px solid var(--ca-border); background: var(--ca-field); color: var(--ca-text); font: inherit; }
+.ca-panel__row.ca-toolpanel__select { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.ca-toolpanel__select select { width: 100%; min-width: 0; height: 28px; border-radius: 6px; border: 1px solid var(--ca-border); background: var(--ca-field); color: var(--ca-text); font: inherit; }
+.ca-toolpanel .ca-upscale .ca-panel__chips { flex-wrap: wrap; }
+.ca-toolpanel .ca-upscale { width: auto; }
+.ca-menu.ca-menu__nested.ca-menu__flyout { padding: 4px; margin-top: 0; border-radius: 8px; background: var(--ca-float); box-shadow: var(--ca-shadow, 0 4px 16px rgba(0,0,0,.12)); border: var(--ca-border-w, 1px) solid var(--ca-border); }

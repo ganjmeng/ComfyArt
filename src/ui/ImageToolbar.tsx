@@ -125,6 +125,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   const [moreTools, setMoreTools] = useState(false)
   const [panel, setPanel] = useState<string | null>(null)  // #570: tool panel at the image's right
   const [swap, setSwap] = useState<string | null>(null)  // #570: tool's own bar replacing the image toolbar
+  const [fly, setFly] = useState<{ left: number; top: number } | null>(null)  // #570: ⋯ 更多工具 flyout, fixed so the ⋯ list's scroll box does not clip it
   const prefs = useValue(prefsAtom)
   // #570: a panel / swapped bar belongs to one image — a new selection (e.g. the next home handoff) starts clean
   useEffect(() => { setPanel(null); setSwap(null) }, [shape?.id])
@@ -287,7 +288,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
     <>
     <div ref={bar} className="ca-bar ca-toolbar ca-toolbar--image" style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
       {pinned.map(barTool)}
-      <Popover open={menu === 'more'} onOpenChange={toggle('more')} align="end" bar=".ca-toolbar" contentKey={inMore ?? (moreTools ? 'tools' : '')} trigger={({ open, toggle: flip }) => <Btn icon={Icons.more} hint={t('imageToolbar.more')} open={open} onClick={flip} />}>
+      <Popover open={menu === 'more'} onOpenChange={toggle('more')} align="end" bar=".ca-toolbar" contentKey={inMore ?? ''} trigger={({ open, toggle: flip }) => <Btn icon={Icons.more} hint={t('imageToolbar.more')} open={open} onClick={flip} />}>
         {moreView?.menu ? moreView.menu : (
         <div className="ca-menu ca-menu--image">
           {frame?.type === 'frame' && <Item icon={Icons.frame} label={t('imageToolbar.fillArtboard')} onClick={close(() => fitFrame(true))} />}
@@ -301,11 +302,16 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
           ))}
           {moreList.length > 0 && <>
             <div className="ca-menu__sep" />
-            <div className="ca-menu__flyhost" onMouseEnter={() => setMoreTools(true)} onMouseLeave={() => setMoreTools(false)}>
+            <div className="ca-menu__flyhost" onMouseEnter={(e) => {
+              const r = e.currentTarget.getBoundingClientRect(), w = 184
+              const left = r.right + w > window.innerWidth - EDGE ? r.left - w : r.right  // flush with the row so the pointer never crosses a gap
+              setFly({ left, top: r.top - 4 }); setMoreTools(true)
+            }} onMouseLeave={() => setMoreTools(false)}>
             <button type="button" className="ca-menu__item ca-menu__sub" aria-expanded={moreTools} data-open={moreTools || undefined} onClick={() => setMoreTools(!moreTools)}>
               <span className="ca-icon">{Icons.more}</span><span className="ca-menu__grow">{t('imageToolbar.moreTools')}</span><span className="ca-icon ca-menu__chev">{Icons.chevron}</span>
             </button>
-            {moreTools && <div className="ca-menu ca-menu__nested ca-menu__flyout">{moreList.map(menuItem)}</div>}
+            {moreTools && <div className="ca-menu ca-menu__nested ca-menu__flyout" style={fly ?? undefined}
+              ref={(el) => { if (el && fly) el.style.top = `${Math.max(EDGE, Math.min(fly.top, window.innerHeight - el.offsetHeight - EDGE))}px` }}>{moreList.map(menuItem)}</div>}
             </div>
           </>}
           <div className="ca-menu__sep" />

@@ -31,14 +31,14 @@ async def _open(p, app_url, lang="zh", theme="light"):
     return browser, pg
 
 
-async def _launch(pg, tid: str) -> None:
+async def _launch(pg, tid: str, png: bytes = _PNG) -> None:
     more = tid not in ("cutout", "extend", "upscale", "inpaint", "mockup")
     if more:
         await pg.get_by_test_id("home-more-tools").click()
         await pg.get_by_test_id("home-more-tools-menu").wait_for()
     async with pg.expect_file_chooser() as fc:
         await pg.get_by_test_id(f"home-more-tool-{tid}" if more else f"home-tool-card-{tid}").click()
-    await (await fc.value).set_files({"name": "t.png", "mimeType": "image/png", "buffer": _PNG})
+    await (await fc.value).set_files({"name": "t.png", "mimeType": "image/png", "buffer": png})
     await pg.locator(".tl-container").first.wait_for(timeout=15000)
 
 
@@ -46,7 +46,9 @@ async def _shot(pg, name: str) -> None:
     if not SHOTS:
         return
     Path(SHOTS).mkdir(parents=True, exist_ok=True)
-    await pg.wait_for_timeout(600)
+    await pg.locator(".tl-container").first.wait_for()
+    await pg.wait_for_load_state("networkidle")
+    await pg.wait_for_timeout(2500)  # let the boot splash fade before capturing
     await pg.screenshot(path=str(Path(SHOTS) / f"{name}.png"), full_page=False)
 
 
@@ -250,13 +252,24 @@ async def test_h2_second_image_in_same_canvas_resets_panel(app_url):  # noqa: F8
         await browser.close()
 
 
+def _shot_png() -> bytes:
+    """512×512 beige with a blue square, same subject as the 570/main/ shots."""
+    import io
+    from PIL import Image, ImageDraw
+    im = Image.new("RGB", (512, 512), (230, 222, 206))
+    ImageDraw.Draw(im).rectangle([128, 160, 320, 352], fill=(80, 130, 200))
+    buf = io.BytesIO()
+    im.save(buf, "PNG")
+    return buf.getvalue()
+
+
 @pytest.mark.skipif(not SHOTS, reason="screenshots only with TO3D_570_SHOTS")
 @pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
 async def test_shots_570(app_url, lang, theme):  # noqa: F811
     async with pw.async_playwright() as p:
         for tool, sel in (("to3d", f"{PANEL}[data-tool='to3d']"), ("upscale", f"{PANEL}[data-tool='upscale']"), ("transform", ".ca-toolbar--swap")):
             browser, pg = await _open(p, app_url, lang, theme)
-            await _launch(pg, tool)
+            await _launch(pg, tool, _shot_png())
             await pg.locator(sel).wait_for()
             await _shot(pg, f"home-{tool}-{lang}-{theme}")
             if tool == "to3d":
@@ -265,7 +278,8 @@ async def test_shots_570(app_url, lang, theme):  # noqa: F811
                     await _shot(pg, f"to3d-panel-{mid}-{lang}-{theme}")
                 await pg.locator(PANEL).get_by_role("button", name="取消" if lang == "zh" else "Cancel").click()
                 await _open_more(pg, lang)
+                await _shot(pg, f"more-menu-{lang}-{theme}")
                 await pg.locator(".ca-menu__sub").hover()
                 await pg.locator(".ca-menu__flyout").wait_for()
-                await _shot(pg, f"more-menu-{lang}-{theme}")
+                await _shot(pg, f"more-tools-{lang}-{theme}")
             await browser.close()
