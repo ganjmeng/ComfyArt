@@ -32,7 +32,7 @@ def got(tmp_path_factory) -> dict:
 
 
 EFFECT = ("poster", "social", "thumbnail", "banner", "interior")
-COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 7, "motion": 2}  # #569 template counts
+COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2}  # #569 template counts
 
 
 @needs_node
@@ -61,12 +61,12 @@ def test_presets_have_prompts(got):
 @needs_node
 def test_builtin_preset_images_unique(got):
     imgs = got["builtinPresetImgs"]
-    assert len(imgs) == 26  # #569: product 6 / brand 6 / packaging 5 (#541) + character 7 / motion 2 (#569)
+    assert len(imgs) == 27  # #569: product 6 / brand 6 / packaging 5 (#541) + character 8 / motion 2 (#569)
     assert all(u and "raw.githubusercontent.com/ganjmeng/ComfyArt/" in u and ("569/wash/" in u or "541/wash/" in u) for u in imgs)
-    assert sum("569/wash/character/templates/" in u for u in imgs) == 7 and sum("569/wash/motion/templates/" in u for u in imgs) == 2
+    assert sum("569/wash/character/templates/" in u for u in imgs) == 8 and sum("569/wash/motion/templates/" in u for u in imgs) == 2
     assert sum("541/wash/product/" in u for u in imgs) == 6
     assert sum("541/wash/brand/" in u for u in imgs) == 6 and sum("541/wash/packaging/" in u for u in imgs) == 5
-    assert len(set(imgs)) == 26  # no shared cover fallback across presets
+    assert len(set(imgs)) == 27  # no shared cover fallback across presets
 
 
 @needs_node

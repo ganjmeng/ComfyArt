@@ -16,7 +16,7 @@ needs_node = pytest.mark.skipif(
     not (ROOT / "node_modules" / ".bin" / "rolldown").exists() or not shutil.which("node"), reason="needs node + npm install")
 
 EFFECT = ("poster", "social", "thumbnail", "banner", "interior")
-TEMPLATE = {"brand": 6, "packaging": 5, "character": 7, "product": 6, "motion": 2}
+TEMPLATE = {"brand": 6, "packaging": 5, "character": 8, "product": 6, "motion": 2}
 ASSETS = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash"
 CHARACTER = [("角色转身板", "Character Turnaround Sheet", "01-character-turnaround-sheet"),
              ("表情动作板", "Expression & Pose Sheet", "02-expression-pose-sheet"),
@@ -24,7 +24,9 @@ CHARACTER = [("角色转身板", "Character Turnaround Sheet", "01-character-tur
              ("服装/形态变体板", "Outfit / Form Variation Sheet", "04-outfit-form-variation-sheet"),
              ("道具互动板", "Prop Interaction Sheet", "05-prop-interaction-sheet"),
              ("基础角色板", "Basic Character Sheet", "06-basic-character-sheet"),
-             ("完整技术角色板", "Complete Technical Character Sheet", "07-complete-technical-character-sheet")]
+             ("完整技术角色板", "Complete Technical Character Sheet", "07-complete-technical-character-sheet"),
+             ("时装大片角色板", "Editorial Fashion Sheet", "08-luxury-editorial-character-sheet")]  # product-final name (#574)
+PINNED = {"08-luxury-editorial-character-sheet": "fa8248fe00a27b97e03c1dd2eae522b272dffe7c"}  # manifest f79229a0 index 7
 MOTION = [("海报动画", "Poster Animation", "01-poster-animation"),
           ("首帧到末帧动画", "First-to-Last Frame Animation", "02-first-to-last-frame-animation")]
 # (zh label, type, required) — 当前模板 is the dialog's own preset row, so each template skill has 3 data inputs.
@@ -96,7 +98,9 @@ def test_character_and_motion_wired_from_manifest(got):
     for sid, rows in (("character", CHARACTER), ("motion", MOTION)):
         ps = got["skills"][sid]["presets"]
         assert [(p["zh"], p["en"]) for p in ps] == [(z, e) for z, e, _ in rows], sid
-        assert [p["image"] for p in ps] == [f"{ASSETS}/{sid}/templates/{f}@thumb.webp" for _, _, f in rows], sid
+        assert [p["image"] for p in ps] == [(f"{ASSETS}/{sid}/templates/{f}@thumb.webp" if f not in PINNED else
+                                             f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{PINNED[f]}/569/wash/{sid}/templates/{f}@thumb.webp")
+                                            for _, _, f in rows], sid
 
 
 @needs_node
