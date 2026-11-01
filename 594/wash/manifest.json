@@ -1,0 +1,374 @@
+{
+  "issue": 594,
+  "phase": "new6",
+  "eye": "PASS 6/6 (mobile-ui cover regen)",
+  "created": "2026-11-01 Asia/Shanghai",
+  "paths": {
+    "covers": "494/covers-v4/<id>.webp",
+    "featured": "580/featured-v2/<id>/01-04.webp",
+    "examples": "594/wash/<id>/examples/01-04.webp"
+  },
+  "packs": {
+    "multi-angle": {
+      "cover": {
+        "path": "494/covers-v4/multi-angle.webp",
+        "w": 1200,
+        "h": 896,
+        "bytes": 56554
+      },
+      "featured": [
+        {
+          "path": "580/featured-v2/multi-angle/01.webp",
+          "w": 896,
+          "h": 1200,
+          "bytes": 84920
+        },
+        {
+          "path": "580/featured-v2/multi-angle/02.webp",
+          "w": 1200,
+          "h": 896,
+          "bytes": 52324
+        },
+        {
+          "path": "580/featured-v2/multi-angle/03.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 132288
+        },
+        {
+          "path": "580/featured-v2/multi-angle/04.webp",
+          "w": 1264,
+          "h": 848,
+          "bytes": 32564
+        }
+      ],
+      "examples": [
+        {
+          "path": "594/wash/multi-angle/examples/01.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 44844
+        },
+        {
+          "path": "594/wash/multi-angle/examples/02.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 106732
+        },
+        {
+          "path": "594/wash/multi-angle/examples/03.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 19996
+        },
+        {
+          "path": "594/wash/multi-angle/examples/04.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 52008
+        }
+      ]
+    },
+    "logo-material": {
+      "cover": {
+        "path": "494/covers-v4/logo-material.webp",
+        "w": 1200,
+        "h": 896,
+        "bytes": 124826
+      },
+      "featured": [
+        {
+          "path": "580/featured-v2/logo-material/01.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 54258
+        },
+        {
+          "path": "580/featured-v2/logo-material/02.webp",
+          "w": 1200,
+          "h": 896,
+          "bytes": 50060
+        },
+        {
+          "path": "580/featured-v2/logo-material/03.webp",
+          "w": 896,
+          "h": 1200,
+          "bytes": 19834
+        },
+        {
+          "path": "580/featured-v2/logo-material/04.webp",
+          "w": 1376,
+          "h": 768,
+          "bytes": 76190
+        }
+      ],
+      "examples": [
+        {
+          "path": "594/wash/logo-material/examples/01.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 32976
+        },
+        {
+          "path": "594/wash/logo-material/examples/02.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 16260
+        },
+        {
+          "path": "594/wash/logo-material/examples/03.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 51146
+        },
+        {
+          "path": "594/wash/logo-material/examples/04.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 49452
+        }
+      ]
+    },
+    "meta-ads": {
+      "cover": {
+        "path": "494/covers-v4/meta-ads.webp",
+        "w": 1200,
+        "h": 896,
+        "bytes": 127276
+      },
+      "featured": [
+        {
+          "path": "580/featured-v2/meta-ads/01.webp",
+          "w": 928,
+          "h": 1152,
+          "bytes": 194634
+        },
+        {
+          "path": "580/featured-v2/meta-ads/02.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 87938
+        },
+        {
+          "path": "580/featured-v2/meta-ads/03.webp",
+          "w": 768,
+          "h": 1376,
+          "bytes": 124530
+        },
+        {
+          "path": "580/featured-v2/meta-ads/04.webp",
+          "w": 1264,
+          "h": 848,
+          "bytes": 169556
+        }
+      ],
+      "examples": [
+        {
+          "path": "594/wash/meta-ads/examples/01.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 339742
+        },
+        {
+          "path": "594/wash/meta-ads/examples/02.webp",
+          "w": 928,
+          "h": 1152,
+          "bytes": 94728
+        },
+        {
+          "path": "594/wash/meta-ads/examples/03.webp",
+          "w": 768,
+          "h": 1376,
+          "bytes": 134004
+        },
+        {
+          "path": "594/wash/meta-ads/examples/04.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 247814
+        }
+      ]
+    },
+    "mobile-ui": {
+      "cover": {
+        "path": "494/covers-v4/mobile-ui.webp",
+        "w": 1200,
+        "h": 896,
+        "bytes": 70324
+      },
+      "featured": [
+        {
+          "path": "580/featured-v2/mobile-ui/01.webp",
+          "w": 768,
+          "h": 1376,
+          "bytes": 64292
+        },
+        {
+          "path": "580/featured-v2/mobile-ui/02.webp",
+          "w": 1200,
+          "h": 896,
+          "bytes": 81638
+        },
+        {
+          "path": "580/featured-v2/mobile-ui/03.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 73378
+        },
+        {
+          "path": "580/featured-v2/mobile-ui/04.webp",
+          "w": 896,
+          "h": 1200,
+          "bytes": 66304
+        }
+      ],
+      "examples": [
+        {
+          "path": "594/wash/mobile-ui/examples/01.webp",
+          "w": 768,
+          "h": 1376,
+          "bytes": 50490
+        },
+        {
+          "path": "594/wash/mobile-ui/examples/02.webp",
+          "w": 768,
+          "h": 1376,
+          "bytes": 42952
+        },
+        {
+          "path": "594/wash/mobile-ui/examples/03.webp",
+          "w": 768,
+          "h": 1376,
+          "bytes": 26214
+        },
+        {
+          "path": "594/wash/mobile-ui/examples/04.webp",
+          "w": 768,
+          "h": 1376,
+          "bytes": 58996
+        }
+      ]
+    },
+    "web-product": {
+      "cover": {
+        "path": "494/covers-v4/web-product.webp",
+        "w": 1200,
+        "h": 896,
+        "bytes": 57412
+      },
+      "featured": [
+        {
+          "path": "580/featured-v2/web-product/01.webp",
+          "w": 1376,
+          "h": 768,
+          "bytes": 116938
+        },
+        {
+          "path": "580/featured-v2/web-product/02.webp",
+          "w": 1376,
+          "h": 768,
+          "bytes": 51260
+        },
+        {
+          "path": "580/featured-v2/web-product/03.webp",
+          "w": 1200,
+          "h": 896,
+          "bytes": 69154
+        },
+        {
+          "path": "580/featured-v2/web-product/04.webp",
+          "w": 1264,
+          "h": 848,
+          "bytes": 42648
+        }
+      ],
+      "examples": [
+        {
+          "path": "594/wash/web-product/examples/01.webp",
+          "w": 1376,
+          "h": 768,
+          "bytes": 99462
+        },
+        {
+          "path": "594/wash/web-product/examples/02.webp",
+          "w": 1376,
+          "h": 768,
+          "bytes": 58072
+        },
+        {
+          "path": "594/wash/web-product/examples/03.webp",
+          "w": 1376,
+          "h": 768,
+          "bytes": 96998
+        },
+        {
+          "path": "594/wash/web-product/examples/04.webp",
+          "w": 1200,
+          "h": 896,
+          "bytes": 74820
+        }
+      ]
+    },
+    "marketing-campaign": {
+      "cover": {
+        "path": "494/covers-v4/marketing-campaign.webp",
+        "w": 1200,
+        "h": 896,
+        "bytes": 205166
+      },
+      "featured": [
+        {
+          "path": "580/featured-v2/marketing-campaign/01.webp",
+          "w": 1264,
+          "h": 848,
+          "bytes": 91396
+        },
+        {
+          "path": "580/featured-v2/marketing-campaign/02.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 246978
+        },
+        {
+          "path": "580/featured-v2/marketing-campaign/03.webp",
+          "w": 1376,
+          "h": 768,
+          "bytes": 111050
+        },
+        {
+          "path": "580/featured-v2/marketing-campaign/04.webp",
+          "w": 1200,
+          "h": 896,
+          "bytes": 100526
+        }
+      ],
+      "examples": [
+        {
+          "path": "594/wash/marketing-campaign/examples/01.webp",
+          "w": 1264,
+          "h": 848,
+          "bytes": 77848
+        },
+        {
+          "path": "594/wash/marketing-campaign/examples/02.webp",
+          "w": 1024,
+          "h": 1024,
+          "bytes": 176236
+        },
+        {
+          "path": "594/wash/marketing-campaign/examples/03.webp",
+          "w": 1376,
+          "h": 768,
+          "bytes": 102052
+        },
+        {
+          "path": "594/wash/marketing-campaign/examples/04.webp",
+          "w": 928,
+          "h": 1152,
+          "bytes": 99572
+        }
+      ]
+    }
+  },
+  "notes": "No Lovart CDN. Dual-fit: contain letterbox OK for covers. Hover video \u2192 #575."
+}
