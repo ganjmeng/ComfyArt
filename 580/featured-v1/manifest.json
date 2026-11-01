@@ -40,5 +40,215 @@
    "model": "nano-banana-2-1",
    "lovartRefTitle": "海报设计"
   }
+ ],
+ "social": [
+  {
+   "file": "580/featured-v1/social/01.webp",
+   "thumb": "580/featured-v1/social/01@thumb.webp",
+   "w": 900,
+   "h": 1200,
+   "ratio": "3:4",
+   "taskId": "63868c893861d78b2a8cf548e294d612",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "小红书封面制作器"
+  },
+  {
+   "file": "580/featured-v1/social/02.webp",
+   "thumb": "580/featured-v1/social/02@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "64cd9637d659ed3ba38af74713d6e2a8",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "复古照片日记"
+  },
+  {
+   "file": "580/featured-v1/social/03.webp",
+   "thumb": "580/featured-v1/social/03@thumb.webp",
+   "w": 1080,
+   "h": 1080,
+   "ratio": "1:1",
+   "taskId": "e91744855b6cb7bbbb6fd6e20668f2de",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "爆款视频复刻"
+  },
+  {
+   "file": "580/featured-v1/social/04.webp",
+   "thumb": "580/featured-v1/social/04@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "08db25c2aaaf2f988e9bb18344e87b19",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "随处捕捉灵感"
+  }
+ ],
+ "brand": [
+  {
+   "file": "580/featured-v1/brand/01.webp",
+   "thumb": "580/featured-v1/brand/01@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "b98898a1605b4fb575fe279c5b411700",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "品牌识别"
+  },
+  {
+   "file": "580/featured-v1/brand/02.webp",
+   "thumb": "580/featured-v1/brand/02@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "d77b3af37ff49bf0145711073aae9a8d",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "创作者视觉识别系统"
+  },
+  {
+   "file": "580/featured-v1/brand/03.webp",
+   "thumb": "580/featured-v1/brand/03@thumb.webp",
+   "w": 1280,
+   "h": 720,
+   "ratio": "16:9",
+   "taskId": "defd0fe84ab9908248ebdfe13de587ac",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "品牌识别"
+  },
+  {
+   "file": "580/featured-v1/brand/04.webp",
+   "thumb": "580/featured-v1/brand/04@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "2de8906058d4edf47625d47046234350",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "电商促销品牌设计"
+  }
+ ],
+ "packaging": [
+  {
+   "file": "580/featured-v1/packaging/01.webp",
+   "thumb": "580/featured-v1/packaging/01@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "158988c6bbfe2dbdbb84b68d0918e878",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "Meta广告创意"
+  },
+  {
+   "file": "580/featured-v1/packaging/02.webp",
+   "thumb": "580/featured-v1/packaging/02@thumb.webp",
+   "w": 900,
+   "h": 1200,
+   "ratio": "3:4",
+   "taskId": "b8955641156d767c5001be94f5dd3f76",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "Amazon产品列表图片"
+  },
+  {
+   "file": "580/featured-v1/packaging/03.webp",
+   "thumb": "580/featured-v1/packaging/03@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "6e6d05b9fe31fc12e9d47bb537eae22e",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "Meta广告创意"
+  },
+  {
+   "file": "580/featured-v1/packaging/04.webp",
+   "thumb": "580/featured-v1/packaging/04@thumb.webp",
+   "w": 1080,
+   "h": 1080,
+   "ratio": "1:1",
+   "taskId": "7b3713a87dba736a989add0a4e3e3fd6",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "Amazon产品列表图片"
+  }
+ ],
+ "thumbnail": [
+  {
+   "file": "580/featured-v1/thumbnail/01.webp",
+   "thumb": "580/featured-v1/thumbnail/01@thumb.webp",
+   "w": 1280,
+   "h": 720,
+   "ratio": "16:9",
+   "taskId": "c8b9e0d406f723799a6e023d9feed2dd",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "封面设计总监"
+  },
+  {
+   "file": "580/featured-v1/thumbnail/02.webp",
+   "thumb": "580/featured-v1/thumbnail/02@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "d4b45c6c735160bbec70c1423c24db83",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "YouTube频道横幅"
+  },
+  {
+   "file": "580/featured-v1/thumbnail/03.webp",
+   "thumb": "580/featured-v1/thumbnail/03@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "99f04bf77942647e7d8d5a14ff929cbe",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "产品电视广告"
+  },
+  {
+   "file": "580/featured-v1/thumbnail/04.webp",
+   "thumb": "580/featured-v1/thumbnail/04@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "2d4d042b01ec75f88ff8d4d4d1b771f0",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "封面设计总监"
+  }
+ ],
+ "banner": [
+  {
+   "file": "580/featured-v1/banner/01.webp",
+   "thumb": "580/featured-v1/banner/01@thumb.webp",
+   "w": 1280,
+   "h": 720,
+   "ratio": "16:9",
+   "taskId": "1ba5d4328357e077da0fdde100a1626a",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "横幅设计"
+  },
+  {
+   "file": "580/featured-v1/banner/02.webp",
+   "thumb": "580/featured-v1/banner/02@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "565ca45e66dfca8780741c42778b5405",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "Meta广告创意"
+  },
+  {
+   "file": "580/featured-v1/banner/03.webp",
+   "thumb": "580/featured-v1/banner/03@thumb.webp",
+   "w": 1200,
+   "h": 900,
+   "ratio": "4:3",
+   "taskId": "55295a0a50db167fc9e4f61f653d91ef",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "YouTube频道横幅"
+  },
+  {
+   "file": "580/featured-v1/banner/04.webp",
+   "thumb": "580/featured-v1/banner/04@thumb.webp",
+   "w": 900,
+   "h": 1200,
+   "ratio": "3:4",
+   "taskId": "87020576e61bc23f4897f2f5082e4104",
+   "model": "nano-banana-2-1",
+   "lovartRefTitle": "横幅设计"
+  }
  ]
 }
