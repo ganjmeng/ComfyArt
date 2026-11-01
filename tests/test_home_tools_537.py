@@ -123,11 +123,11 @@ def test_i18n_tools() -> None:
 
 
 def test_featured_layout_column_math() -> None:
-    """#580: 精选 waterfall caps at 5 columns (was Loomic 280–320 → 4 at 1280)."""
+    """#580: Skill 案例 masonry — fixed ≈299 column width, adaptive count (was Loomic 280–320)."""
     # smoke: file exports match expected signatures
     assert "export function featuredColumnCount(width: number, gap = FEATURED_GAP" in LAYOUT
     assert "export function packFeaturedColumns" in LAYOUT
-    assert "FEATURED_MAX_COLUMNS = 5" in LAYOUT
+    assert "FEATURED_COL_W = 299" in LAYOUT
     assert "Math.min(...heights)" in LAYOUT or "indexOf(Math.min" in LAYOUT
 
 

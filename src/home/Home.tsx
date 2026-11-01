@@ -220,7 +220,7 @@ export function Home() {
     [featured],
   )
   const featuredColumns = useMemo(
-    () => packFeaturedColumns(featuredItems, featuredWidth, featuredMetrics.gap, featuredMetrics.maxColumns, featuredMetrics.minCard),
+    () => packFeaturedColumns(featuredItems, featuredWidth, featuredMetrics.gap, featuredMetrics.colWidth),
     [featuredItems, featuredWidth, featuredMetrics],
   )
   useEffect(() => {
@@ -230,7 +230,7 @@ export function Home() {
       const w = el.getBoundingClientRect().width
       if (w > 0) setFeaturedWidth(w)
       const m = readFeaturedMetrics(el)
-      setFeaturedMetrics((p) => (p.gap === m.gap && p.maxColumns === m.maxColumns && p.minCard === m.minCard ? p : m))
+      setFeaturedMetrics((p) => (p.gap === m.gap && p.colWidth === m.colWidth ? p : m))
     }
     update()
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update)

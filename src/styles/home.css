@@ -199,9 +199,8 @@ body { background: var(--ca-float); }
 
 /* #494-3 / #533 / #537 — home 「精选」waterfall (Loomic column pack; our skill preset covers only) */
 .ca-landing__featured {
-  /* skills-cut1: Skill 案例 masonry — TODO-measure final values from design v2 (1280x800, 100%). */
-  --ca-featured-cols: 5;
-  --ca-featured-min-col: 180px;
+  /* skills-cut1: Skill 案例 masonry — column ≈299 + gap 16 (design @1280); count adapts (3 @1280, 5 @1920). */
+  --ca-featured-col-w: 299px;
   --ca-featured-gap: 16px;
 }
 .ca-featured--waterfall {

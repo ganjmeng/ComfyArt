@@ -1,26 +1,22 @@
 /** Home 「用 Skill 快速开始」: one row of this many cover cards (skills-cut1). */
 export const HOME_SKILL_ROW = 6
 
-/** Home 「精选」 waterfall: at most FEATURED_MAX_COLUMNS columns (skills-cut1: 4 → 5), each ≥ FEATURED_MIN_CARD px; fewer on narrow widths. */
-export const FEATURED_MAX_COLUMNS = 5
-export const FEATURED_MIN_CARD = 180
+/** Home 「Skill 案例」 masonry: column width ≈ FEATURED_COL_W (design: 299 @1280 expanded), gap FEATURED_GAP;
+ * column count adapts to the container (3 @1280, 5 @1920) — columns stay fluid so they fill the row.
+ * Overridable from CSS vars --ca-featured-col-w / --ca-featured-gap. */
+export const FEATURED_COL_W = 299
 export const FEATURED_GAP = 16
-/** Overridable from CSS vars (--ca-featured-cols / --ca-featured-min-col / --ca-featured-gap); final 1280x800 numbers TODO-measure (design v2). */
-export interface FeaturedMetrics { maxColumns: number; minCard: number; gap: number }
-export const FEATURED_DEFAULTS: FeaturedMetrics = { maxColumns: FEATURED_MAX_COLUMNS, minCard: FEATURED_MIN_CARD, gap: FEATURED_GAP }
-export function featuredColumnCount(width: number, gap = FEATURED_GAP, maxColumns = FEATURED_MAX_COLUMNS, minCard = FEATURED_MIN_CARD): number {
+export interface FeaturedMetrics { colWidth: number; gap: number }
+export const FEATURED_DEFAULTS: FeaturedMetrics = { colWidth: FEATURED_COL_W, gap: FEATURED_GAP }
+export function featuredColumnCount(width: number, gap = FEATURED_GAP, colWidth = FEATURED_COL_W): number {
   if (!Number.isFinite(width) || width <= 0) return 1
-  const fit = Math.floor((width + gap) / (minCard + gap))
-  return Math.max(1, Math.min(maxColumns, fit))
+  // round (not floor): 928 @1280 → 2.997 → 3 columns ≈ 298.7 wide
+  return Math.max(1, Math.round((width + gap) / (colWidth + gap)))
 }
 export function readFeaturedMetrics(el: Element): FeaturedMetrics {
   const cs = getComputedStyle(el)
   const num = (name: string, d: number) => { const v = parseFloat(cs.getPropertyValue(name)); return Number.isFinite(v) && v > 0 ? v : d }
-  return {
-    maxColumns: Math.round(num('--ca-featured-cols', FEATURED_MAX_COLUMNS)),
-    minCard: num('--ca-featured-min-col', FEATURED_MIN_CARD),
-    gap: num('--ca-featured-gap', FEATURED_GAP),
-  }
+  return { colWidth: num('--ca-featured-col-w', FEATURED_COL_W), gap: num('--ca-featured-gap', FEATURED_GAP) }
 }
 
 /** Stable aspect for masonry height without remote metadata (deterministic cycle). */
@@ -36,10 +32,9 @@ export function packFeaturedColumns<T extends { id: string; aspect: number }>(
   items: readonly T[],
   width: number,
   gap = FEATURED_GAP,
-  maxColumns = FEATURED_MAX_COLUMNS,
-  minCard = FEATURED_MIN_CARD,
+  colWidth = FEATURED_COL_W,
 ): T[][] {
-  const count = featuredColumnCount(width, gap, maxColumns, minCard)
+  const count = featuredColumnCount(width, gap, colWidth)
   const columns: T[][] = Array.from({ length: count }, () => [])
   const heights = Array.from({ length: count }, () => 0)
   const columnWidth = (width - (count - 1) * gap) / count

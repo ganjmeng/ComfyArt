@@ -58,17 +58,15 @@ def test_row_card_css_vars() -> None:
 
 
 def _cols(width: float, gap: int = 16) -> int:
-    mn = int(re.search(r"FEATURED_MIN_CARD = (\d+)", LAYOUT).group(1))
-    mx = int(re.search(r"FEATURED_MAX_COLUMNS = (\d+)", LAYOUT).group(1))
-    return max(1, min(mx, (width + gap) // (mn + gap)))
+    cw = int(re.search(r"FEATURED_COL_W = (\d+)", LAYOUT).group(1))
+    return max(1, round((width + gap) / (cw + gap)))
 
 
-def test_featured_five_columns_at_1280() -> None:
-    assert "Math.min(maxColumns, fit)" in LAYOUT
-    # content width at 1280 viewport ≈ 1088 (QA baseline: 4 × 265 + gaps)
-    assert _cols(1108) == 5 and _cols(1088) == 5
-    assert _cols(2000) == 5  # capped
-    assert _cols(600) == 3 and _cols(300) == 1
+def test_featured_columns_adapt_to_width() -> None:
+    assert "Math.round((width + gap) / (colWidth + gap))" in LAYOUT
+    assert _cols(928) == 3 and (928 - 2 * 16) / 3 > 297  # 1280 expanded → 3 × ≈299
+    assert _cols(1568) == 5  # 1920 → 5
+    assert _cols(300) == 1
 
 
 def test_no_reference_brand_in_src() -> None:
@@ -110,8 +108,8 @@ def test_row_cover_ratio_4x3() -> None:
 
 def test_featured_masonry_metrics_are_css_vars():
     css = (ROOT / "src/styles/home.css").read_text(encoding="utf-8")
-    for v in ("--ca-featured-cols: 5", "--ca-featured-min-col: 180px", "--ca-featured-gap: 16px", "gap: var(--ca-featured-gap"):
+    for v in ("--ca-featured-col-w: 299px", "--ca-featured-gap: 16px", "gap: var(--ca-featured-gap"):
         assert v in css
     ts = (ROOT / "src/home/featuredLayout.ts").read_text(encoding="utf-8")
-    assert "readFeaturedMetrics" in ts and "--ca-featured-cols" in ts
+    assert "readFeaturedMetrics" in ts and "--ca-featured-col-w" in ts and "FEATURED_MAX_COLUMNS" not in ts
     assert "readFeaturedMetrics(el)" in (ROOT / "src/home/Home.tsx").read_text(encoding="utf-8")
