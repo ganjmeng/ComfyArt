@@ -13,7 +13,7 @@
 .ca-body { flex: 1; min-height: 0; display: flex; }
 .ca-canvas { position: relative; flex: 1; min-width: 0; }
 
-.ca-bar__btn--icon { width: 32px; padding: 0; justify-content: center; }
+.ca-bar__btn--icon { width: 32px; flex: none; padding: 0; justify-content: center; }  /* #568: icon buttons never shrink; the title gives way */
 .ca-bar__btn:disabled { opacity: .4; cursor: default; }
 .ca-split { display: inline-flex; align-items: center; }
 .ca-split__chev { width: 22px; padding: 0; justify-content: center; }
@@ -31,14 +31,15 @@
 .ca-brand-mark .lm-smile { fill: none; stroke-dasharray: none; stroke-dashoffset: 0; opacity: 1; }
 
 /* #486: reference design top-bar title ~182×20, single-line ellipsis; no hover tooltip */
-.ca-head__name { flex: none; width: 182px; max-width: 182px; min-width: 0; height: 20px; padding: 0 6px; border: none; border-radius: 6px; background: transparent; font: 500 13px/20px var(--ca-font); color: var(--ca-text); outline: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* #568: chat panel is 400px; with 5 actions + Saved a rigid 182px title pushed the last icon over the divider — let it shrink (ellipsis) */
+.ca-head__name { flex: 0 1 auto; width: 182px; max-width: 182px; min-width: 0; height: 20px; padding: 0 6px; border: none; border-radius: 6px; background: transparent; font: 500 13px/20px var(--ca-font); color: var(--ca-text); outline: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ca-save { flex: none; padding: 0 4px; border: none; background: none; font: 400 12px/20px var(--ca-font); color: var(--ca-muted); white-space: nowrap; }
 .ca-save[data-state="error"] { color: #e74c3c; cursor: pointer; text-decoration: underline; }
 .ca-head__name:hover, .ca-head__name:focus { background: var(--ca-field); }
 .ca-head__list { max-height: calc(100vh - 80px); overflow: auto; min-width: 240px; }
 .ca-head__list .ca-gen__label { padding: 0 10px; }
 
-.ca-top { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; flex: none; border-bottom: var(--ca-border-w) solid var(--ca-border); background: var(--ca-float); font: 400 14px/20px var(--ca-font); color: var(--ca-text); }
+.ca-top { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px 0 10px; flex: none; border-bottom: var(--ca-border-w) solid var(--ca-border); background: var(--ca-float); font: 400 14px/20px var(--ca-font); color: var(--ca-text); }
 .ca-top > .ca-head { width: 340px; padding: 0 8px 0 0; border-right: var(--ca-border-w) solid var(--ca-border); }
 .ca-tabs { display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; }
 .ca-tab { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap; flex: none; }
