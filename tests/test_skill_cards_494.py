@@ -14,10 +14,18 @@ ICONS = (ROOT / "src/ui/icons.tsx").read_text()
 ZH = json.loads((ROOT / "src/locales/zh.json").read_text())
 EN = json.loads((ROOT / "src/locales/en.json").read_text())
 COVERS = ROOT / "public/skills"
-REAL = ["poster", "social", "brand", "packaging", "thumbnail", "banner", "character", "product", "motion", "interior", "custom-workflow"]
+REAL = ["poster", "social", "brand", "packaging", "thumbnail", "banner", "character", "product", "motion",
+        "multi-angle", "logo-material", "meta-ads", "mobile-ui", "web-product", "marketing-campaign",
+        "interior", "custom-workflow"]
+PHASE1_HOT = ["brand", "packaging", "poster", "product", "character", "social", "motion", "banner", "thumbnail",
+              "multi-angle", "logo-material", "meta-ads", "mobile-ui", "web-product", "marketing-campaign"]
+COVERED = ["poster", "social", "brand", "packaging", "thumbnail", "banner", "character", "product", "motion", "interior", "custom-workflow"]  # washed covers; new 6 omit until #594
 # Product ruling (#494 18:26 + AC comment 23:15): 3 skills have no category and appear only under 为你推荐.
 CATEGORY = {"poster": "ads", "social": "social", "brand": "branding", "packaging": "ecommerce", "thumbnail": "social",
-            "banner": "ads", "character": None, "product": "ecommerce", "motion": "ads", "interior": None, "custom-workflow": None}
+            "banner": "ads", "character": None, "product": "ecommerce", "motion": "ads",
+            "multi-angle": "ecommerce", "logo-material": "branding", "meta-ads": "ads",
+            "mobile-ui": "website", "web-product": "website", "marketing-campaign": "ads",
+            "interior": None, "custom-workflow": None}
 
 
 def _builtin_block() -> str:
@@ -31,8 +39,10 @@ def _entries() -> dict[str, str]:
     return {p.split("'", 1)[0]: p for p in parts}
 
 
-def test_builtins_are_exactly_the_11_real_skills():
+def test_builtins_are_exactly_the_17_real_skills():
     assert list(_entries()) == REAL
+    assert set(PHASE1_HOT) <= set(REAL)
+    assert len(PHASE1_HOT) == 15
 
 
 def test_categories_live_in_data():
@@ -46,7 +56,7 @@ def test_categories_live_in_data():
 def test_empty_categories_hidden():
     assert "SKILL_CATEGORY_ORDER.filter((c) => used.has(c))" in SKILLS_TS
     assert "chips.map" in SKILLS
-    assert "category: 'website'" not in SKILLS_TS  # so 网站 has no chip today
+    assert "category: 'website'" in SKILLS_TS  # #591: mobile-ui / web-product light the 网站 chip
     assert "CHIPS.map" not in SKILLS
 
 
@@ -84,16 +94,19 @@ def test_presets_and_inputs_schema():
 def test_covers_ten_webps_with_source_manifest():
     man = json.loads((COVERS / "covers.json").read_text())
     files = sorted(p.relative_to(COVERS).as_posix() for p in COVERS.rglob("*") if p.is_file())
-    assert files == sorted(["covers.json"] + [f"{s}/cover.webp" for s in REAL if s != "custom-workflow"])
+    assert files == sorted(["covers.json"] + [f"{s}/cover.webp" for s in COVERED if s != "custom-workflow"])
     assert man["encoder"] == "Pillow==13.0.0" and man["size"] == [462, 346]
-    assert set(man["covers"]) == {s for s in REAL if s != "custom-workflow"}
+    assert set(man["covers"]) == {s for s in COVERED if s != "custom-workflow"}
     for sid, c in man["covers"].items():
         assert hashlib.sha256((COVERS / sid / "cover.webp").read_bytes()).hexdigest() == c["sha256"], sid
         assert re.fullmatch(r"[0-9a-f]{64}", c["source_sha256"]) and c["source"] == f"494/covers/{sid}/1.png"
         assert (COVERS / sid / "cover.webp").read_bytes()[8:12] == b"WEBP"
     assert "PILLOW = \"13.0.0\"" in (ROOT / "scripts/skill_covers_494.py").read_text()
     for sid, e in _entries().items():
-        assert f"cover: cover('{sid}')" in e, sid  # #581: custom-workflow got its own cover (manifest 7237c371)
+        if sid in COVERED:
+            assert f"cover: cover('{sid}')" in e, sid  # #581 washed covers; new Phase1 ids omit until #594
+        else:
+            assert "cover:" not in e.split("inputs:", 1)[0], sid  # #591/#594: no temporary broken pin
 
 
 def test_cover_fallback_single_place():

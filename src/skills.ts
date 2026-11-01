@@ -137,6 +137,14 @@ const VISUAL = I('visual', ['视觉呈现方式', 'Visual presentation'], 'text'
 /** #494 — pick the current UI language from data-carried copy. */
 export const loc = (text: { zh: string; en?: string }) => (lang === 'en' && text.en) || text.zh
 
+/** #591 Phase1-S1 — hot-set data contract (parent #494).
+ *  Phase1 fifteen slots = upgrade 9 (`brand` `packaging` `poster` `product` `character` `social` `motion` `banner` `thumbnail`)
+ *  + new 6 (`multi-angle` `logo-material` `meta-ads` `mobile-ui` `web-product` `marketing-campaign`).
+ *  `interior` / `custom-workflow` stay builtins but are outside the Phase1 hot set (untouched this tip).
+ *  Product lock: canvas f784c59b + box PRODUCT-LOCK-TOP15.md (section B; gold UX site is external — never name it in src).
+ *  Cover/video/featured wash for the new 6 deferred to #594 — omit cover for now so Explore uses the grey placeholder
+ *  (skillCover → null) instead of inventing a broken pin. Soft FU #596 is separate.
+ */
 export const BUILTIN_SKILLS: Skill[] = [
   { id: 'poster', name: t('skills.posterDesign'), instructions: 'Design posters: strong headline typography in quotes, clear visual hierarchy, one hero subject, generous margins. Default ratio 3:4. Offer 2 distinct directions when the brief is open.',
     category: 'ads', cover: cover('poster'), quickStartCover: quickStartCover('poster'), featured: feedCovers('poster'), video: video('poster'), examples: ex541('poster', [1, 2, 3, 4, 5]),
@@ -165,6 +173,25 @@ export const BUILTIN_SKILLS: Skill[] = [
   { id: 'motion', name: t('skills.motionPoster'), instructions: 'Make a poster first (3:4) with generate_image, wait for it, then animate that image shape with animate_image using subtle motion (loop on) so the text stays readable.',
     category: 'ads', cover: cover('motion'), quickStartCover: quickStartCover('motion'), featured: feedCovers('motion'), video: video('motion'), presets: [P('poster', '海报动画', 'Poster Animation', 'Template: poster animation, the static poster shown small beside a larger animated version of the same poster; text stays sharp and readable.', wash569('motion', 0)), P('firstlast', '首帧到末帧动画', 'First-to-Last Frame Animation', 'Template: first-to-last frame animation, the first and last frames share one layout and transition smoothly between them.', wash569('motion', 1))],
     inputs: [I('stillArt', ['静态原稿', 'Static artwork'], 'image', true), I('motionNotes', ['动态要求', 'Motion requirements'], 'text', false, ['说明希望怎么动，哪些部分保持不动', 'How it should move and what should stay still']), VISUAL] },
+  // #591 Phase1 new 6 — skeleton cut2 fields; washed cover/video/featured/#594 later. No near-duplicate of upgrade-9 intents.
+  { id: 'multi-angle', name: t('skills.multiAngleImageGenerator'), instructions: 'Generate a multi-angle set of the same subject (product or person). Keep identity, materials and proportions locked across views. Deliver front, 3/4, side and detail angles on clean or matching backgrounds. When the user uploads a reference, pass its shape id in refs (ref_modes content) on every generate_image call.',
+    category: 'ecommerce',
+    inputs: [I('subjectImage', ['主体图片', 'Subject images'], 'image', true), I('angleBrief', ['角度与用途', 'Angles & use'], 'text', false, ['需要哪些角度、用途（详情页/广告）', 'Which angles and where they will be used (PDP / ads)']), VISUAL] },
+  { id: 'logo-material', name: t('skills.logoMaterialExplorer'), instructions: 'Explore the uploaded logo as a 3D material study: keep the mark geometry identical while varying finish (metal, glass, plastic, fabric, ceramic). Show each material on a neutral studio turntable or soft gradient. Do not redesign the logo or invent a full brand system — this skill is material only.',
+    category: 'branding',
+    inputs: [I('logoImage', ['Logo 图片', 'Logo image'], 'image', true), I('materialNotes', ['材质偏好', 'Material preferences'], 'text', false, ['想试的材质、光泽或场景，可留空', 'Materials, finishes or scenes to try; leave blank if none']), VISUAL] },
+  { id: 'meta-ads', name: t('skills.metaAdsCreative'), instructions: 'Create a Meta (Facebook/Instagram) paid-social creative pack: 1:1 feed, 4:5 feed and 9:16 story/reel frames that share one campaign idea, palette and CTA in quotes. Keep text short and high-contrast for mobile. Prefer photo-led UGC or product-hero treatments over static website banners.',
+    category: 'ads',
+    inputs: [I('campaignBrief', ['投放简报', 'Campaign brief'], 'text', true, ['产品、受众、卖点与 CTA', 'Product, audience, offer and CTA']), I('adAssets', ['投放素材', 'Ad assets'], 'image'), VISUAL] },
+  { id: 'mobile-ui', name: t('skills.mobileAppVisualDesign'), instructions: 'Design mobile app visual screens: coherent type scale, spacing and component language across 2–4 key flows (home, detail, checkout or onboarding). Deliver phone-framed mockups at ~9:19.5 with clear hierarchy and accessible contrast. Prefer product UI, not marketing landing posters.',
+    category: 'website',
+    inputs: [I('appBrief', ['应用与页面资料', 'App & screen brief'], 'text', true, ['应用名称、目标用户与要做的页面', 'App name, audience and screens to design']), I('uiRefs', ['界面参考', 'UI references'], 'image'), VISUAL] },
+  { id: 'web-product', name: t('skills.webProductVisualDesign'), instructions: 'Design web product visuals: landing or product-page hero, feature modules and UI chrome that share one system. Use desktop 16:9 plus an optional responsive crop. Keep marketing copy short; focus on layout, illustration/photo treatment and component consistency — not a printable poster.',
+    category: 'website',
+    inputs: [I('webBrief', ['产品与页面资料', 'Product & page brief'], 'text', true, ['产品名称、页面目标与关键模块', 'Product name, page goal and key modules']), I('webRefs', ['视觉参考', 'Visual references'], 'image'), VISUAL] },
+  { id: 'marketing-campaign', name: t('skills.marketingCampaignGenerator'), instructions: 'Plan and visualize a cross-platform marketing campaign: one big idea, then keyed frames for social, display and a hero key visual that share motif, palette and slogan in quotes. Show how the system adapts across ratios without becoming a single poster or a Meta-only ad set.',
+    category: 'ads',
+    inputs: [I('campaignGoal', ['战役目标', 'Campaign goal'], 'text', true, ['品牌/产品、目标与主口号', 'Brand/product, goal and lead slogan']), I('campaignAssets', ['品牌与参考素材', 'Brand & reference assets'], 'image'), VISUAL] },
   { id: 'interior', name: t('skills.interiorArchitecturalVisualization'), instructions: 'Produce photoreal interior or architecture renders: eye-level wide shot, natural light, accurate materials, 16:9. Add a detail vignette at 4:3.',
     cover: cover('interior'), quickStartCover: quickStartCover('interior'), featured: feedCovers('interior'), video: video('interior'), examples: ex541('interior', [1, 2, 3, 4]),
     inputs: EFFECT_INPUTS },
@@ -461,7 +488,7 @@ export function toggleFavourite(id: string): string[] {
 
 /** Chip ids for Explore filters: 「为你推荐」 plus the categories (#494: read from each skill's `category`). */
 export type SkillChipId = 'forYou' | SkillCategory
-/** Display order of category chips; a category no skill uses is dropped by `skillChips` (so 「网站」 is hidden today). */
+/** Display order of category chips; a category no skill uses is dropped by `skillChips` (#591: `website` appears once `mobile-ui`/`web-product` land). */
 export const SKILL_CATEGORY_ORDER: SkillCategory[] = ['ecommerce', 'branding', 'social', 'website', 'ads']
 
 /** #494 — chips shown on Explore: 「为你推荐」 + every category that has at least one of `skills`. */

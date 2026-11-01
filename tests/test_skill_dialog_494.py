@@ -37,7 +37,7 @@ COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2}
 
 @needs_node
 def test_every_field_is_bilingual_data(got):
-    assert len(got["fields"]) == 11
+    assert len(got["fields"]) == 17  # #591: +6 Phase1 new builtins
     for sid, fields in got["fields"].items():
         assert fields, sid
         # #569: effect skills (upload + note) and character carry no required field, like the reference.
