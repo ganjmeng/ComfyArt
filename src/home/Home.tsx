@@ -127,6 +127,9 @@ export function Home() {
   const current = useCurrentAgent()  // #278: same agent the canvas mode button shows
   const hasContent = !!text.trim() || refs.length > 0  // #276: an image with no text counts as content
   const { showSend, setVoice } = useSlot(hasContent, composing)
+  // #604 hotfix / product lock: compact float pill trailing = ↑ send (not voice), matching expanded send affordance
+  const compact = floating && !boxExpanded
+  const slotSend = showSend || compact
   const input = useRef<HTMLTextAreaElement>(null)
   const file = useRef<HTMLInputElement>(null)
   const breakdown = useRef<HTMLInputElement>(null)
@@ -436,7 +439,7 @@ export function Home() {
           {/* #287: same right group as the canvas (#272): model → settings → voice/send; agent mode shows only prefs (no Ref: home has no canvas) */}
           {mode !== 'agent' && <DirectPills video={mode === 'video'} within=".ca-landing__box" spacer={false} onError={setError} side="bottom" />}
           {mode === 'agent' && agent && <ModelPrefs onError={setError} within=".ca-landing__box" side="bottom" />}
-          <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={hasContent && !uploading && !sending} onSend={() => void send()} onError={setError}
+          <ComposerSlot showSend={slotSend} setVoice={setVoice} canSend={(hasContent || compact) && !uploading && !sending} onSend={() => void send()} onError={setError}
             onText={(v) => setText((cur) => `${cur}${cur ? ' ' : ''}${v}`)} />
         </div>
         <input ref={file} type="file" accept="image/*" multiple hidden onChange={(e) => { void upload(e.target.files); e.target.value = '' }} />

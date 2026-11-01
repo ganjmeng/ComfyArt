@@ -21,7 +21,7 @@ Live Playwright @1280×800 zh-light on tip `f0492865` lineage (docs tip-pin comm
 |------|-------|----------|
 | `left-ours/AFTER-skills-to-featured-gap-annotated.png` | skills→精选 gap | **mt 24px** (`cardsBottom→featTitleTop` = 24; CSS `--ca-landing-section-mt: 24px`) |
 | `left-ours/AFTER-skills-to-featured-gap-crop.png` | gap crop | same |
-| `left-ours/AFTER-composer-floating-compact-pill.png` | scrolled float compact | **h 52** / **r24** / `data-compact` (placeholder + slot; toolbar hidden) |
+| `left-ours/AFTER-composer-floating-compact-pill.png` | scrolled float compact | **h 52** / **r24** / `data-compact` (placeholder + **↑ send**; toolbar hidden) |
 | `left-ours/AFTER-composer-expanded.png` | float expanded | **h 114** / **r24** / full chrome (+ · Loomi · prefs · slot) |
 | `left-ours/AFTER-composer-welcome-inflow.png` | welcome in-flow | **h 114** / **r24** |
 | `left-ours/AFTER-skillcard-letterbox-contain.png` | dual-fit proof | forced `data-fit=contain` → `object-fit: contain` on `--ca-field` plate `rgba(0,0,0,.04)` |
@@ -52,7 +52,7 @@ Optional full-viewport: `AFTER-composer-floating-compact-pill-full.png`, `AFTER-
 |--------|----------|--------|
 | `--ca-landing-section-mt` | **24px** | **PASS** live 24 + CSS |
 | Composer radius | `--ca-homebox-radius: **24px**` | **PASS** measured borderRadius 24px |
-| Compact float pill | `[data-floating][data-compact]` **52** | **PASS** h=52px compact=true |
+| Compact float pill | `[data-floating][data-compact]` **52** + trailing **↑ send** | **PASS** h=52px compact=true slot=send |
 | Expand / welcome | full chrome ~114; focus expands | **PASS** h=114 expanded |
 | Skillcard dual fit | cover default; contain+letterbox plate | **PASS** CSS + forced-contain demo (builtins still default cover until #594 marks contain) |
 | No force-fill | CSS dual path | **PASS** |
@@ -63,7 +63,7 @@ Mutation lock: `tests/test_home_soft_602.py`. #596 locks via `tests/test_home_so
 ## Soft residual (non-blocking)
 
 - Builtin skills not yet marked `quickStartCoverFit: 'contain'` (#594 wash) — letterbox shot is CSS proof via attr force.
-- Compact slot icon may show voice when empty (send-forward density still met at 52/r24).
+- Compact trailing control = ↑ send (product lock #604 hotfix; empty compact no longer voice/mic).
 
 ## Out of scope
 
