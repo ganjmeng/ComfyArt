@@ -27,6 +27,11 @@ def test_homebox_radius_24_and_compact_pill_tokens():
     # interaction wired in Home
     assert "data-compact={(floating && !boxExpanded) || undefined}" in HOME
     assert "setBoxExpanded" in HOME
+    # #604 hotfix: compact float forces ↑ send (not voice/mic)
+    assert "const compact = floating && !boxExpanded" in HOME
+    assert "const slotSend = showSend || compact" in HOME
+    assert "showSend={slotSend}" in HOME
+    assert "canSend={(hasContent || compact) && !uploading && !sending}" in HOME
 
 
 def test_skillcard_dual_fit_api_and_css():
