@@ -2,8 +2,8 @@ import { useState } from 'react'
 
 import { t } from '../i18n'
 
-/** #541 「效果示例」: 704×506 contain-centred stage + thumbnail strip. Data-driven from skill.examples;
- *  renders nothing when a skill has none (personal / imported skills, or examples not washed yet). */
+/** #541 「效果示例」: 704×506 contain-centred stage + thumbnail strip.
+ *  #593: numbered filmstrip (1…n) so left-column examples match dual-column gold UX. */
 export function SkillExamples({ examples }: { examples?: string[] }) {
   const [at, setAt] = useState(0)
   if (!examples?.length) return null
@@ -16,7 +16,11 @@ export function SkillExamples({ examples }: { examples?: string[] }) {
         <div className="ca-skillrun__strip" role="tablist">
           {examples.map((src, i) => (
             <button key={src} type="button" role="tab" aria-selected={i === at} data-on={i === at || undefined}
-              className="ca-skillrun__thumb" data-testid="skill-run-example-thumb" onClick={() => setAt(i)}><img src={src} alt="" /></button>
+              className="ca-skillrun__thumb" data-testid="skill-run-example-thumb" data-index={i + 1}
+              onClick={() => setAt(i)}>
+              <img src={src} alt="" />
+              <span className="ca-skillrun__thumbnum" aria-hidden="true">{i + 1}</span>
+            </button>
           ))}
         </div>
       )}

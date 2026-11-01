@@ -69,7 +69,7 @@ def test_fake_wall_meta_gone():
 
 def test_presets_and_inputs_schema():
     for sid, e in _entries().items():
-        assert len(re.findall(r"\bP\('", e)) == {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2}.get(sid, 0), sid  # #541 AC rev 2 → #569: effect skills have no presets
+        assert len(re.findall(r"\bP\('", e)) == {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2, "multi-angle": 4, "logo-material": 4, "meta-ads": 4, "mobile-ui": 4, "web-product": 4, "marketing-campaign": 4}.get(sid, 0), sid  # #541/#569 + #593 new-6 presets
         # #494-2: required inputs now also carry a zh/en placeholder after the flag → ", true" (was ", true)").
         # #569: effect skills share EFFECT_INPUTS (upload + note, none required); character's Lovart fields are optional too.
         if sid in ("poster", "social", "thumbnail", "banner", "interior"):
@@ -85,7 +85,7 @@ def test_presets_and_inputs_schema():
         assert len(re.findall(r"\bwashPreset\(", e)) == 0, sid  # #569: 494 preset washes retired
         assert len(re.findall(r"\bwash569\(", e)) == {"character": 8, "motion": 2}.get(sid, 0), sid  # #569 manifest washes
         assert len(re.findall(r"\bwashProduct541\(", e)) == (6 if sid == "product" else 0), sid  # #541 product 6
-        assert len(re.findall(r"Style: |Focus on |Motion: |Template: ", e)) == {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2}.get(sid, 0), sid  # en prompt body
+        assert len(re.findall(r"Style: |Focus on |Motion: |Template: ", e)) == {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2, "multi-angle": 4, "logo-material": 4, "meta-ads": 4, "mobile-ui": 4, "web-product": 4, "marketing-campaign": 4}.get(sid, 0), sid  # en prompt body (#593 new-6)
     # names/descriptions keep coming from locale keys (AC 1)
     for e in _entries().values():
         assert re.match(r"[\w-]+', name: t\('skills\.\w+'\)", e)
