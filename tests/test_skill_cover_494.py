@@ -95,3 +95,15 @@ def test_video_field_data_driven(got):
     """#529 mutation: drop/omit video → skillVideo null (badge must not invent video)."""
     assert got["noVideo"] is None and got["customVideo"] is None
     assert got["videoMutated"] is None
+
+
+def test_575_video_contract(got):
+    """#575 — detector, hover play/pause+seek0, new6 pending, thumbnail/banner lead mp4, motion preset.video unset."""
+    assert got["isVideo"] == {"mp4": True, "webm": True, "mov": True, "webp": False, "empty": False, "undef": False}
+    assert got["pendingNew6"] == ["multi-angle", "logo-material", "meta-ads", "mobile-ui", "web-product", "marketing-campaign"]
+    tip = "1bbb3f208f18b26ef95c8d9f16efeea111c43ac7"
+    assert got["thumbEx"][0] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/thumbnail.mp4"
+    assert got["bannerEx"][0] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/banner.mp4"
+    assert len(got["thumbEx"]) == 7 and len(got["bannerEx"]) == 2
+    assert got["motionPresetVideos"] == [None, None]  # design motion-01/02 mp4 TODO
+    assert got["hoverCalls"] == ["play", "pause"] and got["hoverSeek"] == 0
