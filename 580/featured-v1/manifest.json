@@ -6,9 +6,10 @@
    "w": 1200,
    "h": 900,
    "ratio": "4:3",
-   "taskId": "23ccdc8b6a4d2bae6b5c0b531d9396da",
+   "taskId": "e1e2e8a878cb33d6d89f8eaca65a148e",
    "model": "nano-banana-2-1",
-   "lovartRefTitle": "海报设计"
+   "lovartRefTitle": "海报设计",
+   "brand": "HALCYON"
   },
   {
    "file": "580/featured-v1/poster/02.webp",
@@ -26,9 +27,10 @@
    "w": 1200,
    "h": 900,
    "ratio": "4:3",
-   "taskId": "749da0deaee24dc471fafe600e900104",
+   "taskId": "4ea327f39f1e32aca8b7c5a8271a3df9",
    "model": "nano-banana-2-1",
-   "lovartRefTitle": "复古照片日记"
+   "lovartRefTitle": "复古照片日记",
+   "brand": "Daylight Notes"
   },
   {
    "file": "580/featured-v1/poster/04.webp",
@@ -58,9 +60,10 @@
    "w": 1200,
    "h": 900,
    "ratio": "4:3",
-   "taskId": "64cd9637d659ed3ba38af74713d6e2a8",
+   "taskId": "4267d6c7b98b4740780eb62e9b8e2cd2",
    "model": "nano-banana-2-1",
-   "lovartRefTitle": "复古照片日记"
+   "lovartRefTitle": "复古照片日记",
+   "brand": "Tide Ledger"
   },
   {
    "file": "580/featured-v1/social/03.webp",
@@ -90,9 +93,10 @@
    "w": 1200,
    "h": 900,
    "ratio": "4:3",
-   "taskId": "b98898a1605b4fb575fe279c5b411700",
+   "taskId": "22a3baab855fa6faea3d21539f9bb0c5",
    "model": "nano-banana-2-1",
-   "lovartRefTitle": "品牌识别"
+   "lovartRefTitle": "品牌识别",
+   "brand": "ARC RIDE"
   },
   {
    "file": "580/featured-v1/brand/02.webp",
@@ -132,9 +136,10 @@
    "w": 1200,
    "h": 900,
    "ratio": "4:3",
-   "taskId": "158988c6bbfe2dbdbb84b68d0918e878",
+   "taskId": "aa619ff07e1abbb46c6458b687c3b3b7",
    "model": "nano-banana-2-1",
-   "lovartRefTitle": "Meta广告创意"
+   "lovartRefTitle": "Meta广告创意",
+   "brand": "HELIO"
   },
   {
    "file": "580/featured-v1/packaging/02.webp",
@@ -226,9 +231,10 @@
    "w": 1200,
    "h": 900,
    "ratio": "4:3",
-   "taskId": "565ca45e66dfca8780741c42778b5405",
+   "taskId": "12465d376d9df39d68cc8a34a58e225d",
    "model": "nano-banana-2-1",
-   "lovartRefTitle": "Meta广告创意"
+   "lovartRefTitle": "Meta广告创意",
+   "brand": "HELIO"
   },
   {
    "file": "580/featured-v1/banner/03.webp",
@@ -300,9 +306,10 @@
    "w": 1200,
    "h": 900,
    "ratio": "4:3",
-   "taskId": "783d9e6002894b893417e346b475a737",
+   "taskId": "03931cb67b4ac42e532c1032ac793f1c",
    "model": "nano-banana-2-1",
-   "lovartRefTitle": "营销活动生成器"
+   "lovartRefTitle": "营销活动生成器",
+   "brand": "NODAL"
   },
   {
    "file": "580/featured-v1/product/02.webp",
@@ -394,9 +401,10 @@
    "w": 900,
    "h": 1200,
    "ratio": "3:4",
-   "taskId": "986d2b4cb881b00c91fdbb916712d6f2",
+   "taskId": "5dad170858f9d1bc7a7b728d2ad48919",
    "model": "nano-banana-2-1",
-   "lovartRefTitle": "海报设计"
+   "lovartRefTitle": "海报设计",
+   "brand": "HALCYON"
   },
   {
    "file": "580/featured-v1/interior/03.webp",
