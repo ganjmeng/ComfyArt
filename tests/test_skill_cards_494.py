@@ -30,7 +30,7 @@ CATEGORY = {"poster": "ads", "social": "social", "brand": "branding", "packaging
 
 def _builtin_block() -> str:
     a = SKILLS_TS.index("export const BUILTIN_SKILLS")
-    return SKILLS_TS[a:SKILLS_TS.index("\n]\n", a)]
+    return SKILLS_TS[a:next(i for i in (SKILLS_TS.find("\n])\n", a), SKILLS_TS.find("\n]\n", a)) if i >= 0)]
 
 
 def _entries() -> dict[str, str]:

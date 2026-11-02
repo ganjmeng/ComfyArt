@@ -167,12 +167,36 @@ const VISUAL = I('visual', ['视觉呈现方式', 'Visual presentation'], 'text'
 /** #494 — pick the current UI language from data-carried copy. */
 export const loc = (text: { zh: string; en?: string }) => (lang === 'en' && text.en) || text.zh
 
-/** #591 Phase1-S1 data contract + #592 Phase1-S2 upgrade-9 + #593 new-6 instructions/presets + #594 wash pins.
+/** #595 — Phase1 15 ids in hot-mapping uses order (product lock TOP15 unique).
+ *  Home forYou / Explore forYou / quick-start / featured queues follow this via orderBuiltins.
+ *  website chip lit by mobile-ui + web-product. interior / custom-workflow kept after Phase1 (not Phase1 slots). */
+export const PHASE1_SKILL_IDS = [
+  'product', 'multi-angle', 'brand', 'character', 'logo-material', 'packaging',
+  'motion', 'meta-ads', 'poster', 'thumbnail', 'mobile-ui', 'social',
+  'marketing-campaign', 'web-product', 'banner',
+] as const
+export const PHASE1_SKILL_ID_SET: ReadonlySet<string> = new Set(PHASE1_SKILL_IDS)
+export const UNTOUCHED_SKILL_IDS = ['interior', 'custom-workflow'] as const
+
+/** Put Phase1 in hot order, then untouched / any other builtins in their relative order. */
+function orderBuiltins(skills: Skill[]): Skill[] {
+  const rank = new Map<string, number>(PHASE1_SKILL_IDS.map((id, i) => [id, i]))
+  const phase1: Skill[] = []
+  const rest: Skill[] = []
+  for (const s of skills) {
+    if (rank.has(s.id)) phase1.push(s)
+    else rest.push(s)
+  }
+  phase1.sort((a, b) => (rank.get(a.id)! - rank.get(b.id)!))
+  return [...phase1, ...rest]
+}
+
+/** #591 Phase1-S1 data contract + #592 Phase1-S2 upgrade-9 + #593 new-6 instructions/presets + #594 wash pins + #595 hot mount order.
  *  Upgrade 9: brand packaging poster product character social motion banner thumbnail.
  *  New 6 media: covers-v4 + featured-v2 + 594/wash examples @ WASH_594; dual-fit contain (#602). No hover video (#575).
- *  `interior` / `custom-workflow` untouched. Gold UX site external — never name it in src.
+ *  `interior` / `custom-workflow` untouched (after Phase1). Gold UX site external — never name it in src.
  */
-export const BUILTIN_SKILLS: Skill[] = [
+export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
   { id: 'poster', name: t('skills.posterDesign'), instructions: 'You are a production poster designer. Deliver print-ready compositions, not loose mood sketches.\n1) Brief: pull headline, subject, audience and use (event, promo, editorial) from the upload and notes.\n2) Hierarchy: one hero subject, strong headline typography in quotes, clear subcopy ladder, generous margins.\n3) Ratio: default 3:4; keep safe margins for print crop. Offer 2 distinct art directions when the brief is open.\n4) Finish: high contrast, legible at arm length, no clipped type. Put every on-art phrase in quotes.\n5) Refs: when the user uploaded a file, pass its shape id in refs (ref_modes content) on every generate_image call.',
     category: 'ads', cover: cover('poster'), quickStartCover: quickStartCover('poster'), featured: feedCovers('poster'), video: video('poster'), examples: ex541('poster', [1, 2, 3, 4, 5]),
     inputs: EFFECT_INPUTS },
@@ -243,7 +267,7 @@ export const BUILTIN_SKILLS: Skill[] = [
   { id: 'custom-workflow', name: t('skills.customWorkflow'), instructions: `${rulesText()}\n\nUse the custom_workflow tool for every step; action rules returns these same rules.`,
     cover: cover('custom-workflow'),
     inputs: [I('brief', ['需求描述', 'Brief'], 'textarea', true, ['描述你要用自定义工作流做什么', 'Describe what the custom workflow should make'])] },
-]
+])
 
 export const skillAtom = atom<Skill | null>('skill', null)
 
