@@ -89,15 +89,22 @@ def test_fake_wall_meta_gone():
 
 def test_presets_and_inputs_schema():
     for sid, e in _entries().items():
-        assert len(re.findall(r"\bP\('", e)) == {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2, "multi-angle": 4, "logo-material": 4, "meta-ads": 4, "mobile-ui": 4, "web-product": 4, "marketing-campaign": 4, "flash-cut-video": 3, "style-transfer": 3, "person-swap": 3, "commerce-strategist": 3, "lifestyle-scene": 3, "naive-illustration": 2, "logo-abstract": 2, "photo-split-poster": 2, "ppt-visual": 3, "promo-ecommerce": 2, "yingzao": 2, "crt-interface": 3, "crayon-sketch": 2, "fabric-collage": 2, "social": 2, "taobao-product": 3, "before-after": 3, "anim-2d": 2, "creator-identity": 3, "product-website": 2, "studio-model": 3, "youtube-channel-banner": 2, "ai-model": 3, "product-to-packaging": 3, "game-art": 3, "portrait-studio": 2, "premium-website": 2, "animated-poster": 2, "pose-fission": 3, "live-promo-decor": 3, "linkedin-banner": 2, "logo-animation": 2, "restaurant-website": 2, "clothing-swap": 3}.get(sid, 0), sid  # #541/#569 + #593 + #634 + #635 + #640 Phase3
+        assert len(re.findall(r"\bP\('", e)) == {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2, "multi-angle": 4, "logo-material": 4, "meta-ads": 4, "mobile-ui": 4, "web-product": 4, "marketing-campaign": 4, "flash-cut-video": 3, "style-transfer": 3, "person-swap": 3, "commerce-strategist": 3, "lifestyle-scene": 3, "naive-illustration": 2, "logo-abstract": 2, "photo-split-poster": 2, "ppt-visual": 3, "promo-ecommerce": 2, "yingzao": 2, "crt-interface": 3, "crayon-sketch": 2, "fabric-collage": 2, "social": 2, "thumbnail": 3, "taobao-product": 3, "before-after": 3, "anim-2d": 2, "creator-identity": 3, "product-website": 2, "studio-model": 3, "youtube-channel-banner": 2, "ai-model": 3, "product-to-packaging": 3, "game-art": 3, "portrait-studio": 2, "premium-website": 2, "animated-poster": 2, "pose-fission": 3, "live-promo-decor": 3, "linkedin-banner": 2, "logo-animation": 2, "restaurant-website": 2, "clothing-swap": 3}.get(sid, 0), sid  # #541/#569 + #593 + #634 + #635 + #640 Phase3
         # #494-2: required inputs now also carry a zh/en placeholder after the flag → ", true" (was ", true)").
         # #569: effect skills share EFFECT_INPUTS (upload + note, none required); character's Lovart fields are optional too.
-        if sid in ("poster", "thumbnail", "banner", "interior"):
+        if sid in ("poster", "banner", "interior"):
             assert "inputs: EFFECT_INPUTS }" in e, sid
+        elif sid == "thumbnail":
+            # #641 Phase3-S2 YT CTR inputs (file + required titleCopy + note)
+            assert "inputs: [" in e and "titleCopy" in e and ", true" in e, sid
+            assert "inputs: EFFECT_INPUTS" not in e, sid
         elif sid == "social":
             # #635: Fashion UGC inputs (file + product/person refs + note); no required fields
             assert "inputs: [" in e and "productRef" in e and "personRef" in e, sid
             assert "inputs: EFFECT_INPUTS" not in e, sid
+        elif sid in ("naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual", "promo-ecommerce"):
+            # #636 C nearMiss Examples-only right rail
+            assert "inputs: NEARMISS_INPUTS" in e, sid
         else:
             assert "inputs: [" in e and (", true" in e) == (sid != "character"), f"{sid} required input"
     # AC 11 was "preset prompts and input en copy are step 2"; #494-2 lands them: every preset has an en prompt and
@@ -109,7 +116,7 @@ def test_presets_and_inputs_schema():
         assert len(re.findall(r"\bwashPreset\(", e)) == 0, sid  # #569: 494 preset washes retired
         assert len(re.findall(r"\bwash569\(", e)) == {"character": 8, "motion": 2}.get(sid, 0), sid  # #569 manifest washes
         assert len(re.findall(r"\bwashProduct541\(", e)) == (6 if sid == "product" else 0), sid  # #541 product 6
-        assert len(re.findall(r"Style: |Focus on |Motion: |Template: ", e)) == {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2, "multi-angle": 4, "logo-material": 4, "meta-ads": 4, "mobile-ui": 4, "web-product": 4, "marketing-campaign": 4, "flash-cut-video": 3, "style-transfer": 3, "person-swap": 3, "commerce-strategist": 3, "lifestyle-scene": 3, "naive-illustration": 2, "logo-abstract": 2, "photo-split-poster": 2, "ppt-visual": 3, "promo-ecommerce": 2, "yingzao": 2, "crt-interface": 3, "crayon-sketch": 2, "fabric-collage": 2, "social": 2, "taobao-product": 3, "before-after": 3, "anim-2d": 2, "creator-identity": 3, "product-website": 2, "studio-model": 3, "youtube-channel-banner": 2, "ai-model": 3, "product-to-packaging": 3, "game-art": 3, "portrait-studio": 2, "premium-website": 2, "animated-poster": 2, "pose-fission": 3, "live-promo-decor": 3, "linkedin-banner": 2, "logo-animation": 2, "restaurant-website": 2, "clothing-swap": 3}.get(sid, 0), sid  # en prompt body (#593 + #634 + #635 + #640)
+        assert len(re.findall(r"Style: |Focus on |Motion: |Template: ", e)) == {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2, "multi-angle": 4, "logo-material": 4, "meta-ads": 4, "mobile-ui": 4, "web-product": 4, "marketing-campaign": 4, "flash-cut-video": 3, "style-transfer": 3, "person-swap": 3, "commerce-strategist": 3, "lifestyle-scene": 3, "naive-illustration": 2, "logo-abstract": 2, "photo-split-poster": 2, "ppt-visual": 3, "promo-ecommerce": 2, "yingzao": 2, "crt-interface": 3, "crayon-sketch": 2, "fabric-collage": 2, "social": 2, "thumbnail": 3, "taobao-product": 3, "before-after": 3, "anim-2d": 2, "creator-identity": 3, "product-website": 2, "studio-model": 3, "youtube-channel-banner": 2, "ai-model": 3, "product-to-packaging": 3, "game-art": 3, "portrait-studio": 2, "premium-website": 2, "animated-poster": 2, "pose-fission": 3, "live-promo-decor": 3, "linkedin-banner": 2, "logo-animation": 2, "restaurant-website": 2, "clothing-swap": 3}.get(sid, 0), sid  # en prompt body (#593 + #634 + #635 + #640)
     # names/descriptions keep coming from locale keys (AC 1)
     for e in _entries().values():
         assert re.match(r"[\w-]+', name: t\('skills\.\w+'\)", e)
@@ -133,7 +140,9 @@ def test_covers_ten_webps_with_source_manifest():
     phase2_c = ["naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual", "promo-ecommerce"]
     for sid, e in _entries().items():
         head = e.split("inputs:", 1)[0]
-        if sid in COVERED or sid in phase1_new:
+        if sid == "thumbnail":
+            assert "cover: cover641('thumbnail')" in head, sid  # #641 Phase3-S2 soft wash
+        elif sid in COVERED or sid in phase1_new:
             assert f"cover: cover('{sid}')" in head, sid  # #581 + #594 covers-v4 pins
         elif sid in phase2_b:
             assert f"cover: cover637('{sid}')" in head, sid  # #637 soft wash intentional covers

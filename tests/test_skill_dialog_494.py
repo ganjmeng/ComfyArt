@@ -31,13 +31,14 @@ def got(tmp_path_factory) -> dict:
     return json.loads(subprocess.run(["node", str(out)], check=True, capture_output=True, text=True).stdout)
 
 
-EFFECT = ("poster", "thumbnail", "banner", "interior")  # #635 social Fashion UGC
+EFFECT = ("poster", "banner", "interior")  # #641 thumbnail gains YT CTR presets/inputs
 COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2,  # #569 template counts
           "multi-angle": 4, "logo-material": 4, "meta-ads": 4, "mobile-ui": 4, "web-product": 4, "marketing-campaign": 4,  # #593 new-6
           "flash-cut-video": 3, "style-transfer": 3, "person-swap": 3, "commerce-strategist": 3, "lifestyle-scene": 3,
           "naive-illustration": 2, "logo-abstract": 2, "photo-split-poster": 2, "ppt-visual": 3, "promo-ecommerce": 2,
           "yingzao": 2, "crt-interface": 3, "crayon-sketch": 2, "fabric-collage": 2,  # #634 Phase2-S1
           "social": 2,  # #635 Phase2-S2 Fashion UGC feed+story
+          "thumbnail": 3,  # #641 Phase3-S2 YT CTR presets
           # #640 Phase3-S1 NEW19
           "taobao-product": 3, "before-after": 3, "anim-2d": 2, "creator-identity": 3, "product-website": 2,
           "studio-model": 3, "youtube-channel-banner": 2, "ai-model": 3, "product-to-packaging": 3,

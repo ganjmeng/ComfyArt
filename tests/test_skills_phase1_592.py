@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS_TS = (ROOT / "src/skills.ts").read_text()
 
 UPGRADE = ["brand", "packaging", "poster", "product", "character", "social", "motion", "banner", "thumbnail"]
-EFFECT = {"poster", "thumbnail", "banner"}  # #635: social gains Fashion UGC presets
+EFFECT = {"poster", "banner"}  # #641: thumbnail gains YT CTR presets
 TEMPLATE_COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2}
 
 
@@ -53,6 +53,15 @@ def test_upgrade9_presets_examples_inputs_complete():
             assert len(re.findall(r"\bP\('", e)) >= 2, sid
             body = e.split("presets:", 1)[1].split("inputs:", 1)[0]
             assert len(re.findall(r"Style: |Focus on |Template: ", body)) >= 2, sid
+        elif sid == "thumbnail":
+            # #641 Phase3-S2: YT CTR presets + titleCopy; soft-wash cover641/ex641/feat641; Phase1 video hover kept
+            assert "inputs: EFFECT_INPUTS" not in e, sid
+            assert "titleCopy" in e, sid
+            assert "cover641(" in e and "ex641(" in e and "feat641(" in e, sid
+            assert "video: video('thumbnail')" in e, sid
+            assert len(re.findall(r"\bP\('", e)) >= 2, sid
+            body = e.split("presets:", 1)[1].split("inputs:", 1)[0]
+            assert len(re.findall(r"Style: ", body)) >= 2, sid
         else:
             n = TEMPLATE_COUNTS[sid]
             assert len(re.findall(r"\bP\('", e)) == n, sid
@@ -65,9 +74,16 @@ def test_upgrade9_keeps_existing_media_pins():
     entries = _entries()
     for sid in UPGRADE:
         e = entries[sid]
-        assert f"cover: cover('{sid}')" in e, sid
-        assert f"video: video('{sid}')" in e, sid
-        assert f"featured: feedCovers('{sid}')" in e, sid
+        if sid == "thumbnail":
+            # #641 soft wash cover/featured/examples; Phase1 video hover + quickStart kept
+            assert "cover: cover641('thumbnail')" in e, sid
+            assert "video: video('thumbnail')" in e, sid
+            assert "feat641('thumbnail'" in e, sid
+            assert "quickStartCover: quickStartCover('thumbnail')" in e, sid
+        else:
+            assert f"cover: cover('{sid}')" in e, sid
+            assert f"video: video('{sid}')" in e, sid
+            assert f"featured: feedCovers('{sid}')" in e, sid
 
 
 def test_no_competitor_brand_in_src_skills():
