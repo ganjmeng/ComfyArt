@@ -1,0 +1,118 @@
+{
+  "issue": 637,
+  "model": "openai/gpt-image-2.5-sunburst/edit",
+  "skills": {
+    "flash-cut-video": {
+      "layout": "examples-single-video",
+      "ex_max": 1,
+      "stills": 4,
+      "ar_cover": "16:9"
+    },
+    "style-transfer": {
+      "layout": "examples-carousel",
+      "ex_max": 4,
+      "stills": 4,
+      "ar_cover": "4:3"
+    },
+    "person-swap": {
+      "layout": "examples-single-still",
+      "ex_max": 1,
+      "stills": 1,
+      "ar_cover": "4:3"
+    },
+    "commerce-strategist": {
+      "layout": "examples-single-video",
+      "ex_max": 1,
+      "stills": 5,
+      "ar_cover": "4:3"
+    },
+    "lifestyle-scene": {
+      "layout": "examples-carousel",
+      "ex_max": 2,
+      "stills": 2,
+      "ar_cover": "4:3"
+    }
+  },
+  "ok": 21,
+  "fail": 0,
+  "balance_after": 4.199044,
+  "outs": {
+    "flash-cut-video": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "example_mp4": true
+    },
+    "style-transfer": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "example_mp4": false
+    },
+    "person-swap": {
+      "cover": true,
+      "examples": [
+        "01.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp"
+      ],
+      "example_mp4": false
+    },
+    "commerce-strategist": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "example_mp4": true
+    },
+    "lifestyle-scene": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp"
+      ],
+      "example_mp4": false
+    }
+  }
+}

@@ -1,0 +1,304 @@
+jobs=21 balance_before=5.018044
+upload flash-cut-video/cover /workspace/ComfyArt-review-assets/phase2/bc-refs/flash-cut-video/cover.png
+upload flash-cut-video/example/01 /workspace/ComfyArt-review-assets/phase2/bc-refs/flash-cut-video/examples/01.png
+upload flash-cut-video/example/02 /workspace/ComfyArt-review-assets/phase2/bc-refs/flash-cut-video/examples/02.png
+upload flash-cut-video/example/03 /workspace/ComfyArt-review-assets/phase2/bc-refs/flash-cut-video/examples/03.png
+poll 9416608e status=processing
+poll b3d294c5 status=processing
+poll 96049a75 status=processing
+poll b241a00d status=processing
+poll 9416608e status=processing
+poll 96049a75 status=processing
+poll b3d294c5 status=processing
+poll b241a00d status=processing
+poll 9416608e status=processing
+poll 96049a75 status=processing
+poll b3d294c5 status=processing
+poll b241a00d status=processing
+poll 9416608e status=processing
+poll 96049a75 status=processing
+poll b3d294c5 status=processing
+poll b241a00d status=processing
+poll 9416608e status=processing
+poll 96049a75 status=processing
+poll b3d294c5 status=processing
+poll b241a00d status=processing
+poll 9416608e status=processing
+poll 96049a75 status=processing
+poll b3d294c5 status=processing
+poll b241a00d status=processing
+poll 9416608e status=completed
+poll 96049a75 status=completed
+poll b3d294c5 status=completed
+poll b241a00d status=completed
+ok flash-cut-video/example/03 -> /workspace/637/review-assets/637/wash/flash-cut-video/examples/03.webp
+upload flash-cut-video/example/04 /workspace/ComfyArt-review-assets/phase2/bc-refs/flash-cut-video/examples/04.png
+ok flash-cut-video/example/02 -> /workspace/637/review-assets/637/wash/flash-cut-video/examples/02.webp
+upload style-transfer/cover /workspace/ComfyArt-review-assets/phase2/bc-refs/style-transfer/cover.png
+ok flash-cut-video/example/01 -> /workspace/637/review-assets/637/wash/flash-cut-video/examples/01.webp
+upload style-transfer/example/01 /workspace/ComfyArt-review-assets/phase2/bc-refs/style-transfer/examples/01.png
+ok flash-cut-video/cover -> /workspace/637/review-assets/637/wash/flash-cut-video/cover.webp
+upload style-transfer/example/02 /workspace/ComfyArt-review-assets/phase2/bc-refs/style-transfer/examples/02.png
+poll 70a84c87 status=processing
+poll c0f87fdd status=processing
+poll bec6d921 status=processing
+poll 70a84c87 status=processing
+poll 8bb1c650 status=processing
+poll c0f87fdd status=processing
+poll bec6d921 status=processing
+poll 8bb1c650 status=processing
+poll 70a84c87 status=processing
+poll c0f87fdd status=processing
+poll bec6d921 status=processing
+poll 8bb1c650 status=processing
+poll 70a84c87 status=processing
+poll c0f87fdd status=processing
+poll bec6d921 status=processing
+poll 8bb1c650 status=processing
+poll 70a84c87 status=processing
+poll c0f87fdd status=processing
+poll bec6d921 status=processing
+poll 8bb1c650 status=processing
+poll 70a84c87 status=processing
+poll c0f87fdd status=completed
+poll bec6d921 status=completed
+poll 8bb1c650 status=processing
+ok style-transfer/cover -> /workspace/637/review-assets/637/wash/style-transfer/cover.webp
+upload style-transfer/example/03 /workspace/ComfyArt-review-assets/phase2/bc-refs/style-transfer/examples/03.png
+ok style-transfer/example/01 -> /workspace/637/review-assets/637/wash/style-transfer/examples/01.webp
+upload style-transfer/example/04 /workspace/ComfyArt-review-assets/phase2/bc-refs/style-transfer/examples/04.png
+poll 70a84c87 status=processing
+poll 98f3ed37 status=processing
+poll 8bb1c650 status=completed
+poll 98f3ed37 status=processing
+poll 53fa246b status=processing
+poll 53fa246b status=processing
+ok style-transfer/example/02 -> /workspace/637/review-assets/637/wash/style-transfer/examples/02.webp
+upload person-swap/cover /workspace/ComfyArt-review-assets/phase2/bc-refs/person-swap/cover.png
+poll 98f3ed37 status=processing
+poll 70a84c87 status=completed
+poll 53fa246b status=processing
+poll f02f0f88 status=processing
+poll 98f3ed37 status=processing
+ok flash-cut-video/example/04 -> /workspace/637/review-assets/637/wash/flash-cut-video/examples/04.webp
+upload person-swap/example/01 /workspace/ComfyArt-review-assets/phase2/bc-refs/person-swap/examples/01.png
+poll 53fa246b status=processing
+poll f02f0f88 status=processing
+poll 98f3ed37 status=processing
+poll 0da88221 status=processing
+poll 53fa246b status=processing
+poll f02f0f88 status=processing
+poll 0da88221 status=processing
+poll 98f3ed37 status=processing
+poll f02f0f88 status=processing
+poll 0da88221 status=processing
+poll 53fa246b status=processing
+poll f02f0f88 status=processing
+poll 0da88221 status=processing
+poll 98f3ed37 status=completed
+poll 53fa246b status=completed
+ok style-transfer/example/03 -> /workspace/637/review-assets/637/wash/style-transfer/examples/03.webp
+upload commerce-strategist/cover /workspace/ComfyArt-review-assets/phase2/bc-refs/commerce-strategist/cover.png
+poll 0da88221 status=processing
+poll f02f0f88 status=completed
+ok style-transfer/example/04 -> /workspace/637/review-assets/637/wash/style-transfer/examples/04.webp
+upload commerce-strategist/example/01 /workspace/ComfyArt-review-assets/phase2/bc-refs/commerce-strategist/examples/01.png
+ok person-swap/cover -> /workspace/637/review-assets/637/wash/person-swap/cover.webp
+upload commerce-strategist/example/02 /workspace/ComfyArt-review-assets/phase2/bc-refs/commerce-strategist/examples/02.png
+poll bb171281 status=processing
+poll 0da88221 status=processing
+poll bf0ddb33 status=processing
+poll bb171281 status=processing
+poll 7128f2c9 status=processing
+poll bf0ddb33 status=processing
+poll 0da88221 status=completed
+poll bb171281 status=processing
+poll 7128f2c9 status=processing
+poll bf0ddb33 status=processing
+ok person-swap/example/01 -> /workspace/637/review-assets/637/wash/person-swap/examples/01.webp
+upload commerce-strategist/example/03 /workspace/ComfyArt-review-assets/phase2/bc-refs/commerce-strategist/examples/03.png
+poll bb171281 status=processing
+poll 7128f2c9 status=processing
+poll bf0ddb33 status=processing
+poll fc37b24b status=processing
+poll 7128f2c9 status=processing
+poll bb171281 status=processing
+poll fc37b24b status=processing
+poll bf0ddb33 status=processing
+poll 7128f2c9 status=processing
+poll fc37b24b status=processing
+poll bb171281 status=processing
+poll bf0ddb33 status=completed
+poll fc37b24b status=processing
+poll 7128f2c9 status=completed
+ok commerce-strategist/example/01 -> /workspace/637/review-assets/637/wash/commerce-strategist/examples/01.webp
+upload commerce-strategist/example/04 /workspace/ComfyArt-review-assets/phase2/bc-refs/commerce-strategist/examples/04.png
+poll bb171281 status=completed
+ok commerce-strategist/example/02 -> /workspace/637/review-assets/637/wash/commerce-strategist/examples/02.webp
+upload commerce-strategist/example/05 /workspace/ComfyArt-review-assets/phase2/bc-refs/commerce-strategist/examples/05.png
+poll fc37b24b status=processing
+ok commerce-strategist/cover -> /workspace/637/review-assets/637/wash/commerce-strategist/cover.webp
+upload lifestyle-scene/cover /workspace/ComfyArt-review-assets/phase2/bc-refs/lifestyle-scene/cover.png
+poll 8772df5f status=processing
+poll 1d216a17 status=processing
+poll 8772df5f status=processing
+poll fc37b24b status=processing
+poll d8271971 status=processing
+poll 1d216a17 status=processing
+poll 8772df5f status=processing
+poll d8271971 status=processing
+poll 1d216a17 status=processing
+poll d8271971 status=processing
+poll fc37b24b status=completed
+poll 8772df5f status=processing
+poll 1d216a17 status=processing
+poll d8271971 status=processing
+ok commerce-strategist/example/03 -> /workspace/637/review-assets/637/wash/commerce-strategist/examples/03.webp
+upload lifestyle-scene/example/01 /workspace/ComfyArt-review-assets/phase2/bc-refs/lifestyle-scene/examples/01.png
+poll 8772df5f status=processing
+poll 1d216a17 status=processing
+poll 9c56ecc5 status=processing
+poll d8271971 status=processing
+poll 8772df5f status=processing
+poll 9c56ecc5 status=processing
+poll 1d216a17 status=completed
+poll d8271971 status=processing
+poll 9c56ecc5 status=processing
+poll 8772df5f status=completed
+ok commerce-strategist/example/05 -> /workspace/637/review-assets/637/wash/commerce-strategist/examples/05.webp
+upload lifestyle-scene/example/02 /workspace/ComfyArt-review-assets/phase2/bc-refs/lifestyle-scene/examples/02.png
+poll 9c56ecc5 status=processing
+poll d8271971 status=completed
+ok commerce-strategist/example/04 -> /workspace/637/review-assets/637/wash/commerce-strategist/examples/04.webp
+ok lifestyle-scene/cover -> /workspace/637/review-assets/637/wash/lifestyle-scene/cover.webp
+poll c95ad4e7 status=processing
+poll 9c56ecc5 status=processing
+poll c95ad4e7 status=processing
+poll 9c56ecc5 status=completed
+poll c95ad4e7 status=processing
+ok lifestyle-scene/example/01 -> /workspace/637/review-assets/637/wash/lifestyle-scene/examples/01.webp
+poll c95ad4e7 status=processing
+poll c95ad4e7 status=processing
+poll c95ad4e7 status=processing
+poll c95ad4e7 status=completed
+ok lifestyle-scene/example/02 -> /workspace/637/review-assets/637/wash/lifestyle-scene/examples/02.webp
+mp4 flash-cut-video -> /workspace/637/review-assets/637/wash/flash-cut-video/example.mp4
+mp4 commerce-strategist -> /workspace/637/review-assets/637/wash/commerce-strategist/example.mp4
+{
+  "issue": 637,
+  "model": "openai/gpt-image-2.5-sunburst/edit",
+  "skills": {
+    "flash-cut-video": {
+      "layout": "examples-single-video",
+      "ex_max": 1,
+      "stills": 4,
+      "ar_cover": "16:9"
+    },
+    "style-transfer": {
+      "layout": "examples-carousel",
+      "ex_max": 4,
+      "stills": 4,
+      "ar_cover": "4:3"
+    },
+    "person-swap": {
+      "layout": "examples-single-still",
+      "ex_max": 1,
+      "stills": 1,
+      "ar_cover": "4:3"
+    },
+    "commerce-strategist": {
+      "layout": "examples-single-video",
+      "ex_max": 1,
+      "stills": 5,
+      "ar_cover": "4:3"
+    },
+    "lifestyle-scene": {
+      "layout": "examples-carousel",
+      "ex_max": 2,
+      "stills": 2,
+      "ar_cover": "4:3"
+    }
+  },
+  "ok": 21,
+  "fail": 0,
+  "balance_after": 4.199044,
+  "outs": {
+    "flash-cut-video": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "example_mp4": true
+    },
+    "style-transfer": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "example_mp4": false
+    },
+    "person-swap": {
+      "cover": true,
+      "examples": [
+        "01.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp"
+      ],
+      "example_mp4": false
+    },
+    "commerce-strategist": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "example_mp4": true
+    },
+    "lifestyle-scene": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp"
+      ],
+      "example_mp4": false
+    }
+  }
+}
