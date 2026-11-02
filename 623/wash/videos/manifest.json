@@ -1,0 +1,51 @@
+{
+  "kind": "skill-list-cover-video",
+  "source": "wavespeed-bytedance-seedance-v1-pro-fast-i2v",
+  "model": "bytedance/seedance-v1-pro-fast/image-to-video",
+  "note": "Real WaveSpeed seedance-v1-pro-fast i2v clips for Phase1 new6 (duration=3, 480p, 4:3). See prep/seedance-fast-ledger.json. Twin wire path: 594/wash/videos/<id>.mp4 (same bytes as 623/wash/videos).",
+  "duration": 3,
+  "resolution": "480p",
+  "aspect_ratio": "4:3",
+  "billed_usd": 0.216,
+  "count": 6,
+  "videos": [
+    {
+      "skillId": "multi-angle",
+      "file": "multi-angle.mp4",
+      "bytes": 166741,
+      "sha256": "4850ae8e2647f475a257765be9ecd618513cdb6fb25ca84df5a3d0bf1b42fd61"
+    },
+    {
+      "skillId": "logo-material",
+      "file": "logo-material.mp4",
+      "bytes": 393868,
+      "sha256": "99895c6d8be6da5d25ca97599baf9f5d0c5d76575b9d095dccce6bedcd41d852"
+    },
+    {
+      "skillId": "meta-ads",
+      "file": "meta-ads.mp4",
+      "bytes": 451660,
+      "sha256": "bde18e0ef79fc2687a0e71d0badabd211cd9533958acbd2ecb9bf1d8eeaaa5ff"
+    },
+    {
+      "skillId": "mobile-ui",
+      "file": "mobile-ui.mp4",
+      "bytes": 251837,
+      "sha256": "e1b6ba6bf68ef0f78c8093b8a8e9c24c9c1229f16a6bab6024b24a4dffbfa98b"
+    },
+    {
+      "skillId": "web-product",
+      "file": "web-product.mp4",
+      "bytes": 227666,
+      "sha256": "d41e600dba5a5d732f25cc3a30aa1bad1ddfdc953858d2cae82ee47d1f69b734"
+    },
+    {
+      "skillId": "marketing-campaign",
+      "file": "marketing-campaign.mp4",
+      "bytes": 895943,
+      "sha256": "8129e14452057abb6248e5cda2af476494788bfe6367dfad4d719d9f0d306ccd"
+    }
+  ],
+  "wire_path": "594/wash/videos",
+  "archive_path": "623/wash/videos"
+}
