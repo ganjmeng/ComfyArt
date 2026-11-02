@@ -41,5 +41,7 @@ def test_collapsed_tokens_and_default() -> None:
     assert 36 + _var("--ca-rail-pitch-gap") == 38
     assert 38 + _var("--ca-rail-new-gap") == 52
     assert 1280 - _var("--ca-rail-w-collapsed") - 2 * _var("--ca-home-main-px") == 1108
+    # #607 flipped cold-start default to expanded; width tokens unchanged
     app = (ROOT / "src/home/HomeApp.tsx").read_text()
-    assert "readLocal(RAIL_COLLAPSE_KEY) !== '0'" in app
+    assert "readLocal(RAIL_COLLAPSE_KEY) === '1'" in app
+    assert "readLocal(RAIL_COLLAPSE_KEY) !== '0'" not in app
