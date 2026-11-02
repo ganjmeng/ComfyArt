@@ -11,7 +11,7 @@ import { Assets } from './Assets'
 import { CHIP_LABEL } from './Skills'
 import { toolCover } from './toolCovers'
 import { showMemoryToast } from '../memory'
-import { hasSkillDialog, importLanding, loadSkills, matchesSkillChip, skillChips, skillCoverVideoHover, skillFeaturedCases, skillQuickStartCover, skillQuickStartCoverFit, skillVideo, FEED_SPECIAL_COLLAGE, type Skill, type SkillChipId } from '../skills'
+import { BUILTIN_SKILLS, hasSkillDialog, importLanding, loadSkills, matchesSkillChip, skillChips, skillCoverVideoHover, skillFeaturedCases, skillQuickStartCover, skillQuickStartCoverFit, skillVideo, FEED_SPECIAL_COLLAGE, type Skill, type SkillChipId } from '../skills'
 import { SkillChip, chipBackspace } from '../ui/SkillChip'
 import { SkillImportDialog } from '../ui/SkillImportDialog'
 import { SkillRunDialog } from '../ui/SkillRunDialog'
@@ -31,12 +31,43 @@ import { loadModels } from '../models'
 
 const ROTATE_MS = 4000
 const EXAMPLES = [t('home.example1'), t('home.example2'), t('home.example3'), t('home.example4')]
-const QUICK: [keyof typeof Icons, string, string][] = [
-  ['grid', t('home.quickSocial'), t('home.quickSocialPrompt')],
-  ['assets', t('home.quickEcommerce'), t('home.quickEcommercePrompt')],
-  ['palette', t('home.quickBrand'), t('home.quickBrandPrompt')],
-  ['effects', t('home.quickCreative'), t('home.quickCreativePrompt')],
-  ['page', t('home.quickWebsite'), t('home.quickWebsitePrompt')],
+/** #610 soft P1 — category pills L→R 1:1 gold order; click → inline starter card (not prompt-fill). */
+type QuickId = 'ecommerce' | 'social' | 'brand' | 'creative' | 'website'
+type StarterSuggest = { skillId: string; labelKey: string }
+const QUICK_TESTID: Record<QuickId, string> = {
+  ecommerce: 'e_commerce',
+  social: 'social_media',
+  brand: 'branding',
+  creative: 'ads_creative',
+  website: 'website',
+}
+/** Phase1 skill suggestions (3 per pill). Soft thirds reuse family when map has only 2. */
+const QUICK: { id: QuickId; icon: keyof typeof Icons; label: string; suggests: StarterSuggest[] }[] = [
+  { id: 'ecommerce', icon: 'assets', label: t('home.quickEcommerce'), suggests: [
+    { skillId: 'product', labelKey: 'home.starter.product' },
+    { skillId: 'packaging', labelKey: 'home.starter.packaging' },
+    { skillId: 'multi-angle', labelKey: 'home.starter.multiAngle' },
+  ] },
+  { id: 'social', icon: 'grid', label: t('home.quickSocial'), suggests: [
+    { skillId: 'social', labelKey: 'home.starter.social' },
+    { skillId: 'thumbnail', labelKey: 'home.starter.thumbnail' },
+    { skillId: 'social', labelKey: 'home.starter.socialAlt' },
+  ] },
+  { id: 'brand', icon: 'palette', label: t('home.quickBrand'), suggests: [
+    { skillId: 'brand', labelKey: 'home.starter.brand' },
+    { skillId: 'logo-material', labelKey: 'home.starter.logoMaterial' },
+    { skillId: 'brand', labelKey: 'home.starter.brandAlt' },
+  ] },
+  { id: 'creative', icon: 'effects', label: t('home.quickCreative'), suggests: [
+    { skillId: 'poster', labelKey: 'home.starter.poster' },
+    { skillId: 'banner', labelKey: 'home.starter.banner' },
+    { skillId: 'meta-ads', labelKey: 'home.starter.metaAds' },
+  ] },
+  { id: 'website', icon: 'page', label: t('home.quickWebsite'), suggests: [
+    { skillId: 'mobile-ui', labelKey: 'home.starter.mobileUi' },
+    { skillId: 'web-product', labelKey: 'home.starter.webProduct' },
+    { skillId: 'web-product', labelKey: 'home.starter.webProductAlt' },
+  ] },
 ]
 
 /** #537 / #496 / #540: home 「实用工具」— covers = design wash on review-assets (commit-pinned). */
@@ -163,6 +194,8 @@ export function Home() {
   const [floating, setFloating] = useState(false)
   // #602 — floating composer collapses to a send-forward pill until focus/click expands it
   const [boxExpanded, setBoxExpanded] = useState(true)
+  // #610: category pill → inline starter card (Close restores pills; composer stays empty)
+  const [starter, setStarter] = useState<QuickId | null>(null)
   const boxSlot = useRef<HTMLDivElement>(null)
   const toolFile = useRef<HTMLInputElement>(null)
   const pendingTool = useRef<string>('')
@@ -174,7 +207,6 @@ export function Home() {
   const slotSend = showSend || compact
   const input = useRef<HTMLTextAreaElement>(null)
   const file = useRef<HTMLInputElement>(null)
-  const breakdown = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     input.current?.focus()
@@ -222,16 +254,6 @@ export function Home() {
     } catch (e) {
       setError(errorText(e))
     } finally {
-      setUploading(false)
-    }
-  }
-  const breakDown = async (f: File | undefined) => {
-    if (!f) return
-    setUploading(true)
-    try {
-      newProject({ ref: viewUrl(await uploadImage(f, f.name)), tool: 'elements' })
-    } catch (e) {
-      setError(errorText(e))
       setUploading(false)
     }
   }
@@ -501,17 +523,74 @@ export function Home() {
         />
       )}
       {error && <div className="ca-landing__error" onClick={() => setError('')}>{error}</div>}
-      <div className="ca-landing__quick">
-        <span className="ca-landing__hint">{t('home.letAgentHelp')}</span>
-        {QUICK.map(([icon, label, prompt]) => (
-          <button key={label} type="button" className="ca-landing__chip" onClick={() => { setText(prompt); input.current?.focus() }}>
-            <span className="ca-icon">{Icons[icon]}</span>{label}
-          </button>
-        ))}
-        <button type="button" className="ca-landing__chip" disabled={uploading} title={t('home.breakdownHint')} onClick={() => breakdown.current?.click()}>
-          <span className="ca-icon">{Icons.layers}</span>{t('home.breakdown')}
-        </button>
-        <input ref={breakdown} type="file" accept="image/*" hidden onChange={(e) => { void breakDown(e.target.files?.[0]); e.target.value = '' }} />
+      <div className="ca-landing__quick" data-testid="home-quick-row">
+        {starter ? (
+          <div className="ca-landing__starter" data-testid="ca-home-starter">
+            <div className="ca-landing__starter-bar">
+              <div className="ca-landing__starter-icons" role="group" aria-label={t('home.starterCategories')}>
+                {QUICK.map((q) => (
+                  <button
+                    key={q.id}
+                    type="button"
+                    className="ca-landing__starter-icon"
+                    data-testid={`home-v3-starter-icon-${QUICK_TESTID[q.id]}`}
+                    aria-label={q.label}
+                    aria-pressed={starter === q.id}
+                    data-on={starter === q.id || undefined}
+                    onClick={() => setStarter(q.id)}
+                  >
+                    <span className="ca-icon" aria-hidden>{Icons[q.icon]}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="ca-landing__starter-back"
+                data-testid="home-v3-starter-back"
+                aria-label={t('common.close')}
+                onClick={() => setStarter(null)}
+              >
+                <span className="ca-icon" aria-hidden>{Icons.close}</span>
+              </button>
+            </div>
+            <div className="ca-landing__starter-suggests" data-testid="home-starter-suggests">
+              {(QUICK.find((q) => q.id === starter) ?? QUICK[0]).suggests.map((s, i) => {
+                const skill = skills.find((x) => x.id === s.skillId) ?? BUILTIN_SKILLS.find((x) => x.id === s.skillId)
+                const name = skill?.name ?? s.skillId
+                return (
+                  <button
+                    key={`${s.skillId}-${s.labelKey}-${i}`}
+                    type="button"
+                    className="ca-landing__starter-suggest"
+                    data-testid={`home-starter-suggest-${s.skillId}`}
+                    data-skill={s.skillId}
+                    disabled={!skill}
+                    onClick={() => { if (skill) trySkill(skill) }}
+                  >
+                    <span className="ca-icon" aria-hidden>{Icons.sparkles}</span>
+                    <span className="ca-landing__starter-suggest-text">{t(s.labelKey, name)}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : (
+          <>
+            <span className="ca-landing__hint">{t('home.letAgentHelp')}</span>
+            {QUICK.map((q) => (
+              <button
+                key={q.id}
+                type="button"
+                className="ca-landing__chip"
+                data-testid={`home-v3-hero-chip-${QUICK_TESTID[q.id]}`}
+                data-quick={q.id}
+                onClick={() => setStarter(q.id)}
+              >
+                <span className="ca-icon" aria-hidden>{Icons[q.icon]}</span>{q.label}
+              </button>
+            ))}
+          </>
+        )}
       </div>
 
       <section className="ca-landing__section ca-landing__tools" data-testid="home-tools">

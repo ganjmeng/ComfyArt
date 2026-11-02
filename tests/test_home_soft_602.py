@@ -39,8 +39,8 @@ def test_skillcard_dual_fit_api_and_css():
     assert "object-fit: contain" in CSS
     assert "quickStartCoverFit?: 'cover' | 'contain'" in SKILLS
     assert "export function skillQuickStartCoverFit" in SKILLS
-    assert "skillQuickStartCoverFit(s)" in HOME
-    assert 'data-fit={skillQuickStartCoverFit(s)}' in HOME
+    assert "skillQuickStartCoverFit(skill)" in HOME
+    assert 'data-fit={skillQuickStartCoverFit(skill)}' in HOME
     # default path remains cover (helper returns cover unless marked contain)
     assert "skill.quickStartCoverFit === 'contain' ? 'contain' : 'cover'" in SKILLS
 
