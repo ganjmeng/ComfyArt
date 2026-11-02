@@ -16,7 +16,7 @@ WASH_594 = "cc76d743d416c3d9a9a6852d811a7a80caf40319"
 
 def _entries() -> dict[str, str]:
     a = SKILLS_TS.index("export const BUILTIN_SKILLS")
-    block = SKILLS_TS[a:SKILLS_TS.index("\n]\n", a)]
+    block = SKILLS_TS[a:next(i for i in (SKILLS_TS.find("\n])\n", a), SKILLS_TS.find("\n]\n", a)) if i >= 0)]
     parts = re.split(r"\n  \{ id: '", block)[1:]
     return {p.split("'", 1)[0]: p for p in parts}
 

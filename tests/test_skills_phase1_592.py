@@ -15,7 +15,7 @@ TEMPLATE_COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 8, "mo
 
 def _entries() -> dict[str, str]:
     a = SKILLS_TS.index("export const BUILTIN_SKILLS")
-    block = SKILLS_TS[a:SKILLS_TS.index("\n]\n", a)]
+    block = SKILLS_TS[a:next(i for i in (SKILLS_TS.find("\n])\n", a), SKILLS_TS.find("\n]\n", a)) if i >= 0)]
     parts = re.split(r"\n  \{ id: '", block)[1:]
     return {p.split("'", 1)[0]: p for p in parts}
 
@@ -44,7 +44,7 @@ def test_upgrade9_presets_examples_inputs_complete():
         assert "inputs:" in e, sid
         if sid in EFFECT:
             assert "inputs: EFFECT_INPUTS" in e, sid
-            assert "examples: ex541(" in e, sid
+            assert ("examples: ex541(" in e) or ("examples: [video(" in e and "ex541(" in e), sid  # #575 video lead ok
             assert len(re.findall(r"\bP\('", e)) == 0, sid
         else:
             n = TEMPLATE_COUNTS[sid]

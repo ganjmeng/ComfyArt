@@ -69,22 +69,28 @@ async def test_cut1_1920_five_columns(app_url):  # noqa: F811
     _check_columns(m)
 
 
-# built-in skills with real images in src/skills.ts (example-type: 效果示例; template-type: preset images)
-EXAMPLE_SKILLS = {"poster", "social", "thumbnail", "banner", "interior"}
-TEMPLATE_SKILLS = {"brand", "packaging", "character", "product", "motion"}
+# #595 Phase1 mount: upgrade9 + new6 + interior (custom-workflow has no featured[]). featured-v1 (cut1) + featured-v2 (new6).
+PHASE1_FEATURED = {
+    "product", "multi-angle", "brand", "character", "logo-material", "packaging",
+    "motion", "meta-ads", "poster", "thumbnail", "mobile-ui", "social",
+    "marketing-campaign", "web-product", "banner", "interior",
+}
 
 
 def _check_tiles(tiles):
     skills = [t["skill"] for t in tiles]
-    assert set(skills) == EXAMPLE_SKILLS | TEMPLATE_SKILLS, set(skills)
-    # #588: every skill now ships its own washed featured[] set (commit-pinned), so tiles are case images, not presets
-    assert all("/580/featured-v1/" in t["img"] for t in tiles), [t["img"] for t in tiles]
+    assert set(skills) == PHASE1_FEATURED, set(skills)
+    # #588/#594: every skill ships washed featured[] (v1 upgrade9+interior, v2 Phase1 new6)
+    assert all("/580/featured-v1/" in t["img"] or "/580/featured-v2/" in t["img"] for t in tiles), [t["img"] for t in tiles]
     assert all(a != b for a, b in zip(skills, skills[1:])), skills  # data order: no adjacent duplicates
     assert len({t["img"] for t in tiles}) == len(tiles)
-    assert len(tiles) > len(EXAMPLE_SKILLS | TEMPLATE_SKILLS)  # second round follows
-    assert skills[: len(set(skills))] and len(set(skills[:10])) == 10  # first round: one per skill
+    assert len(tiles) > len(PHASE1_FEATURED)  # second round follows
+    n = len(PHASE1_FEATURED)
+    assert len(set(skills[:n])) == n  # first round: one per skill
     first_char = next(t for t in tiles if t["skill"] == "character")
     assert "/580/featured-v1/character/01.webp" in first_char["img"]  # #588 featured[] supersedes featuredPreset
+    # #595 hot mount: first featured tile is the first Phase1 hot id with featured (product)
+    assert skills[0] == "product"
 
 
 def _check_columns(m):

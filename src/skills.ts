@@ -13,7 +13,7 @@ export interface LocText { zh: string; en: string }
 export type SkillCategory = 'ecommerce' | 'branding' | 'social' | 'website' | 'ads'
 /** #494 — one preset (template): `prompt` is the style text appended after the skill's instructions when the user runs
  *  the skill with this preset (step 2). `image` is the preset's own example image; unset → the skill's list cover. */
-export interface SkillPreset { id: string; name: LocText; prompt?: string; image?: string }
+export interface SkillPreset { id: string; name: LocText; prompt?: string; image?: string; /** #575 — optional template hover/detail mp4; unset → still `image` / skill cover. */ video?: string }
 /** #494 — one field of the skill's input dialog. Label / placeholder / default / required all come from here. */
 export interface SkillInput {
   key: string; label: { zh: string; en?: string }; type: 'text' | 'textarea' | 'select' | 'image'; required?: boolean
@@ -23,7 +23,7 @@ export interface Skill {
   id: string; name: string; description?: string; instructions: string; files?: Record<string, string>; images?: Record<string, string>; custom?: boolean; learned?: string[]
   /** #494 built-in metadata. Imported / personal skills have none of these and need no migration. */
   category?: SkillCategory; cover?: string; video?: string; presets?: SkillPreset[]; inputs?: SkillInput[]
-  /** #541 「效果示例」 carousel images (commit-pinned). Unset / empty → the section is not rendered. */
+  /** #541/#575 「效果示例」 carousel media (commit-pinned stills and/or short mp4). Unset / empty → the section is not rendered. */
   examples?: string[]
   /** #580 cut 2 — the three image slots, one per surface: `cover` = Skills module (above, unchanged);
    *  `quickStartCover` = home 「用 Skill 快速开始」 row (fixed 4:3); `featured` = home masonry images
@@ -100,6 +100,18 @@ const feedCovers = (id: string) => { const e = FEED_COVERS[id]; return e ? e[2].
 const WASH_VIDEO_COMMIT = '1bbb3f208f18b26ef95c8d9f16efeea111c43ac7'
 const video = (id: string) =>
   `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${WASH_VIDEO_COMMIT}/494/wash/videos/${id}.mp4`
+/** #575 — media URL is a short cover/example video (mp4/webm/mov). Stills stay images; no fake video badge without data. */
+export function isSkillMediaVideo(src: string | null | undefined): boolean {
+  return !!src && /\.(mp4|webm|mov)(\?|#|$)/i.test(src)
+}
+/** #575 — new6 hover mp4s land under 594/wash/videos/<id>.mp4 when design Batch A-video ships; keep `video` unset until then. */
+export const SKILL_VIDEO_PENDING_NEW6 = [
+  'multi-angle', 'logo-material', 'meta-ads', 'mobile-ui', 'web-product', 'marketing-campaign',
+] as const
+/** #575 TODO(design): motion template mp4s (P2 re-wash) — expected paths once PASS:
+ *  569/wash/videos/motion-01-poster-animation.mp4
+ *  569/wash/videos/motion-02-first-to-last-frame-animation.mp4
+ *  Wire via preset.video; until then motion card uses upgrade9 `video('motion')` only. */
 /** #541 AC rev 2 washes on review-assets (541/wash/<skill>/<skill>__<preset>.webp; each pinned to its own commit). */
 const WASH_541 = {
   product: '688a702a1f322082cde4e5ed46200c3593db9c43', // 1:1, Amazon 商品主图
@@ -155,12 +167,36 @@ const VISUAL = I('visual', ['视觉呈现方式', 'Visual presentation'], 'text'
 /** #494 — pick the current UI language from data-carried copy. */
 export const loc = (text: { zh: string; en?: string }) => (lang === 'en' && text.en) || text.zh
 
-/** #591 Phase1-S1 data contract + #592 Phase1-S2 upgrade-9 + #593 new-6 instructions/presets + #594 wash pins.
+/** #595 — Phase1 15 ids in hot-mapping uses order (product lock TOP15 unique).
+ *  Home forYou / Explore forYou / quick-start / featured queues follow this via orderBuiltins.
+ *  website chip lit by mobile-ui + web-product. interior / custom-workflow kept after Phase1 (not Phase1 slots). */
+export const PHASE1_SKILL_IDS = [
+  'product', 'multi-angle', 'brand', 'character', 'logo-material', 'packaging',
+  'motion', 'meta-ads', 'poster', 'thumbnail', 'mobile-ui', 'social',
+  'marketing-campaign', 'web-product', 'banner',
+] as const
+export const PHASE1_SKILL_ID_SET: ReadonlySet<string> = new Set(PHASE1_SKILL_IDS)
+export const UNTOUCHED_SKILL_IDS = ['interior', 'custom-workflow'] as const
+
+/** Put Phase1 in hot order, then untouched / any other builtins in their relative order. */
+function orderBuiltins(skills: Skill[]): Skill[] {
+  const rank = new Map<string, number>(PHASE1_SKILL_IDS.map((id, i) => [id, i]))
+  const phase1: Skill[] = []
+  const rest: Skill[] = []
+  for (const s of skills) {
+    if (rank.has(s.id)) phase1.push(s)
+    else rest.push(s)
+  }
+  phase1.sort((a, b) => (rank.get(a.id)! - rank.get(b.id)!))
+  return [...phase1, ...rest]
+}
+
+/** #591 Phase1-S1 data contract + #592 Phase1-S2 upgrade-9 + #593 new-6 instructions/presets + #594 wash pins + #595 hot mount order.
  *  Upgrade 9: brand packaging poster product character social motion banner thumbnail.
  *  New 6 media: covers-v4 + featured-v2 + 594/wash examples @ WASH_594; dual-fit contain (#602). No hover video (#575).
- *  `interior` / `custom-workflow` untouched. Gold UX site external — never name it in src.
+ *  `interior` / `custom-workflow` untouched (after Phase1). Gold UX site external — never name it in src.
  */
-export const BUILTIN_SKILLS: Skill[] = [
+export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
   { id: 'poster', name: t('skills.posterDesign'), instructions: 'You are a production poster designer. Deliver print-ready compositions, not loose mood sketches.\n1) Brief: pull headline, subject, audience and use (event, promo, editorial) from the upload and notes.\n2) Hierarchy: one hero subject, strong headline typography in quotes, clear subcopy ladder, generous margins.\n3) Ratio: default 3:4; keep safe margins for print crop. Offer 2 distinct art directions when the brief is open.\n4) Finish: high contrast, legible at arm length, no clipped type. Put every on-art phrase in quotes.\n5) Refs: when the user uploaded a file, pass its shape id in refs (ref_modes content) on every generate_image call.',
     category: 'ads', cover: cover('poster'), quickStartCover: quickStartCover('poster'), featured: feedCovers('poster'), video: video('poster'), examples: ex541('poster', [1, 2, 3, 4, 5]),
     inputs: EFFECT_INPUTS },
@@ -174,10 +210,10 @@ export const BUILTIN_SKILLS: Skill[] = [
     category: 'ecommerce', cover: cover('packaging'), quickStartCover: quickStartCover('packaging'), featured: feedCovers('packaging'), video: video('packaging'), presets: [P('eco', '自然环保', 'Natural eco', 'Style: natural eco packaging, kraft and recycled paper, botanical line art, muted greens; show front label hierarchy and material callouts.', wash541(WASH_541.packaging, 'packaging', 'eco')), P('gold', '奢华烫金', 'Luxury gold foil', 'Style: luxury packaging, deep matte color with gold foil stamping, embossed logo; keep foil readable at shelf distance.', wash541(WASH_541.packaging, 'packaging', 'gold')), P('playful', '潮玩插画', 'Playful illustration', 'Style: playful illustrated packaging, bright characters, bold outlines, pop colors; keep character on-pack consistent across panels.', wash541(WASH_541.packaging, 'packaging', 'playful')), P('panels', '展开结构图', 'Panels & structure', 'Style: packaging panels and structural dieline, flat unfolded box with front, back and side panels laid out.', wash541(WASH_541.packaging, 'packaging', 'panels')), P('shelf', '货架陈列', 'Shelf display', 'Style: packaging shelf display, the product repeated in rows on a retail shelf, eye-level store lighting.', wash541(WASH_541.packagingShelf, 'packaging', 'shelf'))],
     inputs: [I('packInfo', ['商品与包装资料', 'Product & packaging details'], 'text', true, ['简单说明要包装的商品、规格和包装形式', 'What product is being packaged, its size and package type']), I('packAssets', ['商品与包装素材', 'Product & packaging assets'], 'image'), VISUAL] },
   { id: 'thumbnail', name: t('skills.youtubeThumbnail'), instructions: 'You are a production cover / thumbnail designer for video and short drama. Deliver clickable covers, not vague key art.\n1) Brief: title mood, subject and platform (16:9 video or vertical short-drama cover) from the upload and notes.\n2) Hook: big expressive subject, 2-4 word bold title in quotes, high contrast, readable at small size.\n3) Variants: offer 2 variations with different crop or emotion while keeping the same title lockup.\n4) Safe area: keep faces and title clear of UI chrome edges.\n5) Refs: when a file is uploaded, pass its shape id in refs (ref_modes content) on every generate_image call.',
-    category: 'social', cover: cover('thumbnail'), quickStartCover: quickStartCover('thumbnail'), featured: feedCovers('thumbnail'), video: video('thumbnail'), examples: ex541('thumbnail', [1, 2, 3, 4, 5, 6]),
+    category: 'social', cover: cover('thumbnail'), quickStartCover: quickStartCover('thumbnail'), featured: feedCovers('thumbnail'), video: video('thumbnail'), examples: [video('thumbnail'), ...ex541('thumbnail', [1, 2, 3, 4, 5, 6])],
     inputs: EFFECT_INPUTS },
   { id: 'banner', name: t('skills.bannerDesign'), instructions: 'You are a production banner designer for web and campaign placement. Deliver crop-safe wide frames, not square posts.\n1) Brief: campaign goal, offer and placement width from the upload and notes.\n2) Layout: wide 21:9 or 16:9; headline on one side, visual on the other; clear CTA text in quotes.\n3) Safe margins: protect type and logo from edge crop across common ad slots.\n4) Hierarchy: one focal product or scene; avoid cluttered multi-offer walls.\n5) Refs: when a file is uploaded, pass its shape id in refs (ref_modes content) on every generate_image call.',
-    category: 'ads', cover: cover('banner'), quickStartCover: quickStartCover('banner'), featured: feedCovers('banner'), video: video('banner'), examples: ex541('banner', [1]),
+    category: 'ads', cover: cover('banner'), quickStartCover: quickStartCover('banner'), featured: feedCovers('banner'), video: video('banner'), examples: [video('banner'), ...ex541('banner', [1])],
     inputs: EFFECT_INPUTS },
   { id: 'character', name: t('skills.characterSheet'), instructions: 'You are a production character-sheet designer. Deliver turnaround-ready reference boards for downstream art and IP.\n1) Lock identity: from characterRef and characterInfo, freeze face, body, outfit colors and key props.\n2) Board: follow the selected template (turnaround, expression, modeling detail, outfit, prop, basic, technical, editorial).\n3) Consistency: identical proportions, palette and costume language across every cell in the sheet.\n4) Presentation: prefer clean backgrounds; label nothing with stray UI chrome; keep sheets readable as production refs.\n5) Refs: when characterRef images are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
     cover: cover('character'), quickStartCover: quickStartCover('character'), featured: feedCovers('character'), video: video('character'), featuredPreset: 'editorial', presets: [P('turnaround', '角色转身板', 'Character Turnaround Sheet', 'Template: character turnaround sheet, full-body front, side and back views evenly spaced in one row on a white background.', wash569('character', 0)), P('expression', '表情动作板', 'Expression & Pose Sheet', 'Template: expression and pose sheet, a row of head-shot expressions above full-body poses (standing, walking, sitting).', wash569('character', 1)), P('modeling', '建模细节参考板', 'Modeling Detail Reference Sheet', 'Template: modeling detail reference sheet, full-body angles on the left and close-up cells of face, eyes, lips, ears, hair, hands and shoes on the right.', wash569('character', 2)), P('outfit', '服装/形态变体板', 'Outfit / Form Variation Sheet', 'Template: outfit variation sheet, the same character in three different outfits shown full body side by side.', wash569('character', 3)), P('prop', '道具互动板', 'Prop Interaction Sheet', 'Template: prop interaction sheet, full-body poses holding a prop on top and close-up cells of hands and prop below.', wash569('character', 4)), P('basic', '基础角色板', 'Basic Character Sheet', 'Template: basic character sheet, full-body three views on the left and four head-shot expressions on the right.', wash569('character', 5)), P('technical', '完整技术角色板', 'Complete Technical Character Sheet', 'Template: complete technical character sheet, multi-angle full body, an expression grid, outfit items, color swatches and detail close-ups.', wash569('character', 6)), P('editorial', '时装大片角色板', 'Editorial Fashion Sheet', 'Template: editorial fashion sheet, the reference character as the lead in a luxury-brand fashion campaign style; full-body standing pose, half-body and face close-ups of the same person, keeping facial features, hairstyle and body shape consistent, soft studio lighting, clean light background, no text or logos.', wash569('character', 7))],
@@ -186,7 +222,7 @@ export const BUILTIN_SKILLS: Skill[] = [
     category: 'ecommerce', cover: cover('product'), quickStartCover: quickStartCover('product'), featured: feedCovers('product'), video: video('product'), presets: [P('white', '白底主图', 'White background hero', 'Focus on the white-background hero shot: pure white seamless background, soft shadow, product centered; listing-ready 1:1 main image.', washProduct541('white')), P('lifestyle', '生活场景', 'Lifestyle scene', 'Focus on the lifestyle scene: product in use in a realistic home setting, natural light; keep product identity locked to the hero.', washProduct541('lifestyle')), P('detail', '细节特写', 'Detail close-up', 'Focus on the detail close-up: macro view of material and craftsmanship, shallow depth of field; useful as A+ or PDP inset.', washProduct541('detail')), P('electronics', '数码电子', 'Electronics', 'Focus on the electronics hero: earbuds and their charging case on a clean studio backdrop, crisp reflections, precise edges.', washProduct541('electronics')), P('food', '美食', 'Food', 'Focus on the food hero: appetizing close shot, fresh ingredients as props, warm natural light, rich texture.', washProduct541('food')), P('beauty', '美妆个护', 'Beauty', 'Focus on the beauty hero: skincare or cosmetic product on soft pastel surfaces, gentle diffused light, clean premium mood.', washProduct541('beauty'))],
     inputs: [I('productImage', ['商品图片', 'Product images'], 'image', true), I('productInfo', ['商品资料', 'Product details'], 'text', false, ['补充商品名称、真实卖点和使用场景', 'Product name, real selling points and use cases']), VISUAL] },
   { id: 'motion', name: t('skills.motionPoster'), instructions: 'You are a production motion designer for UGC ads, product TVC stills-to-video and poster animation.\n1) Still first: if stillArt is missing, generate a strong 3:4 or 9:16 key still with generate_image and wait for it.\n2) Animate: drive animate_image from that image shape with subtle, readable motion (loop on); keep titles sharp.\n3) Preset focus: Poster Animation keeps text locked while the scene breathes; First-to-Last Frame Animation morphs cleanly between two planned frames.\n4) Ad intent: prefer product-hero or UGC-style energy over abstract noise; CTA text in quotes when present.\n5) Refs: pass the still shape id into animate_image; never invent motion on a missing frame.',
-    category: 'ads', cover: cover('motion'), quickStartCover: quickStartCover('motion'), featured: feedCovers('motion'), video: video('motion'), presets: [P('poster', '海报动画', 'Poster Animation', 'Template: poster animation for ads — lock the still, then subtle looping motion; show static vs animated pair; text stays sharp and readable.', wash569('motion', 0)), P('firstlast', '首帧到末帧动画', 'First-to-Last Frame Animation', 'Template: first-to-last frame animation for product TVC beats — plan first and last frames that share layout and transition smoothly.', wash569('motion', 1))],
+    category: 'ads', cover: cover('motion'), quickStartCover: quickStartCover('motion'), featured: feedCovers('motion'), video: video('motion'), /* #575: preset.video TODO until design motion-01/02 mp4 PASS */ presets: [P('poster', '海报动画', 'Poster Animation', 'Template: poster animation for ads — lock the still, then subtle looping motion; show static vs animated pair; text stays sharp and readable.', wash569('motion', 0)), P('firstlast', '首帧到末帧动画', 'First-to-Last Frame Animation', 'Template: first-to-last frame animation for product TVC beats — plan first and last frames that share layout and transition smoothly.', wash569('motion', 1))],
     inputs: [I('stillArt', ['静态原稿', 'Static artwork'], 'image', true), I('motionNotes', ['动态要求', 'Motion requirements'], 'text', false, ['说明希望怎么动，哪些部分保持不动', 'How it should move and what should stay still']), VISUAL] },
   // #593 Phase1-S3 new 6 instructions+presets; #594 wash pins (covers-v4 / featured-v2 / examples); dual-fit contain; no hover video (#575).
   { id: 'multi-angle', name: t('skills.multiAngleImageGenerator'), instructions: 'You are a production multi-angle catalog photographer. Deliver a locked identity set, not random variants.\n1) Lock: read subjectImage; keep identity, materials, proportions and palette identical across every frame.\n2) Set: default front, 3/4, side and one detail/macro on clean matching backgrounds unless angleBrief says otherwise.\n3) Use: PDP and ads prefer neutral seamless; lifestyle only when the brief asks.\n4) Consistency: same lens height and lighting family; no costume or finish drift between angles.\n5) Refs: pass the subject shape id in refs (ref_modes content) on every generate_image call.',
@@ -231,7 +267,7 @@ export const BUILTIN_SKILLS: Skill[] = [
   { id: 'custom-workflow', name: t('skills.customWorkflow'), instructions: `${rulesText()}\n\nUse the custom_workflow tool for every step; action rules returns these same rules.`,
     cover: cover('custom-workflow'),
     inputs: [I('brief', ['需求描述', 'Brief'], 'textarea', true, ['描述你要用自定义工作流做什么', 'Describe what the custom workflow should make'])] },
-]
+])
 
 export const skillAtom = atom<Skill | null>('skill', null)
 
@@ -571,6 +607,22 @@ export function skillVideo(skill: Skill): string | null {
   return skill.video || null
 }
 
+/** #575 — Explore / home cover hover contract: muted loop on enter/focus; leave/blur → pause + seek 0 (still/first frame under). */
+export function skillCoverVideoHover(video: HTMLVideoElement | null | undefined, phase: 'enter' | 'leave'): void {
+  if (!video) return
+  if (phase === 'enter') {
+    void video.play().catch(() => {})
+    return
+  }
+  video.pause()
+  try { video.currentTime = 0 } catch { /* seek may throw before metadata */ }
+}
+
+/** #575 — preset template video when design pins one; else null (still path via presetImage). */
+export function presetVideo(_skill: Skill, preset: SkillPreset): string | null {
+  return preset.video || null
+}
+
 /** #494/#489 — author line: built-ins show BRAND.name (logo); personal / imported skills say 个人. No counts. */
 export function skillAuthor(skill: Skill): { kind: 'builtin' | 'personal'; label: string } {
   return skill.custom ? { kind: 'personal', label: t('home.skillsAuthorPersonal') } : { kind: 'builtin', label: BRAND.name }
@@ -627,7 +679,9 @@ export function skillFeaturedCases(skills: Skill[]): SkillFeaturedCase[] {
     if (skill.featured?.length) {
       skill.featured.forEach((image, i) => { if (image) q.push({ skill, preset: null, image, key: `${skill.id}:feed${i}` }) })
     } else if (skill.examples?.length) {
-      skill.examples.forEach((image, i) => { if (image) q.push({ skill, preset: null, image, key: `${skill.id}:ex${i}` }) })
+      skill.examples.forEach((image, i) => {
+        if (image && !isSkillMediaVideo(image)) q.push({ skill, preset: null, image, key: `${skill.id}:ex${i}` })
+      })
     } else {
       const presets = [...(skill.presets ?? [])]
       const first = presets.findIndex((p) => p.id === skill.featuredPreset)

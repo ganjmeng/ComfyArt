@@ -217,6 +217,15 @@ body { background: var(--ca-float); }
 .ca-skillcard__cover img, .ca-skillcard__cover video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 300ms ease; }
 .ca-skillcard__cover[data-fit="contain"] img, .ca-skillcard__cover[data-fit="contain"] video { object-fit: contain; }
 .ca-skillcard:hover .ca-skillcard__cover img, .ca-skillcard:focus-visible .ca-skillcard__cover img { transform: scale(1.05); }
+/* #575 — muted loop overlays still on hover/focus when skill.video is set; leave → opacity 0 + seek 0 under. */
+.ca-skillcard__video {
+  opacity: 0; pointer-events: none; z-index: 1;
+  transition: opacity 150ms ease, transform 300ms ease;
+}
+.ca-skillcard:hover .ca-skillcard__video,
+.ca-skillcard:focus-visible .ca-skillcard__video { opacity: 1; transform: scale(1.05); }
+.ca-skillcard[data-has-video] .ca-skillcard__cover img { /* still stays under video */ }
+
 .ca-skillcard__name {
   display: flex; align-items: center; gap: 2px; min-width: 0; padding: 0 4px;
   font: var(--ca-skillrow-title-weight) var(--ca-skillrow-title-size)/var(--ca-skillrow-title-line) var(--ca-font); color: var(--ca-text);
@@ -865,14 +874,14 @@ body { background: var(--ca-float); }
   background: var(--ca-skillrun-tile);
 }
 /* absolute fill: % height doesn't resolve on a grid item of an aspect-ratio box, which let portrait images overflow (crop) */
-.ca-skillrun__stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; }
+.ca-skillrun__stage img, .ca-skillrun__stage video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; }
 .ca-skillrun__strip { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; }
 .ca-skillrun__thumb {
   flex: none; width: 64px; height: 48px; padding: 0; border: 0; border-radius: 8px; overflow: hidden; cursor: pointer;
   background: var(--ca-skillrun-tile); box-shadow: inset 0 0 0 1px transparent; opacity: .6;
 }
 .ca-skillrun__thumb[data-on] { opacity: 1; box-shadow: inset 0 0 0 1px var(--ca-text); }
-.ca-skillrun__thumb img { width: 100%; height: 100%; object-fit: contain; }
+.ca-skillrun__thumb img, .ca-skillrun__thumb video { width: 100%; height: 100%; object-fit: contain; }
 .ca-skillrun__thumb { position: relative; }
 .ca-skillrun__thumbnum {
   position: absolute; left: 4px; bottom: 4px; min-width: 16px; height: 16px; padding: 0 4px;
