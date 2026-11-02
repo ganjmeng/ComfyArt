@@ -137,10 +137,48 @@ body { background: var(--ca-float); }
 .ca-landing__ref button { position: absolute; top: -6px; right: -6px; display: inline-flex; width: 18px; height: 18px; padding: 2px; border: none; border-radius: 50%; background: var(--ca-strong); color: var(--ca-float); cursor: pointer; box-sizing: border-box; }
 .ca-landing__error { max-width: 760px; margin: 8px auto 0; padding: 6px 12px; border-radius: 8px; background: var(--ca-error-bg); color: var(--ca-error-text); cursor: pointer; box-sizing: border-box; }
 .ca-landing__quick { max-width: 760px; margin: 16px auto 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.ca-landing__hint { color: var(--ca-muted); font-size: 13px; }
-.ca-landing__chip { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 999px; background: transparent; color: inherit; font: 400 13px/20px var(--ca-font); cursor: pointer; }
+.ca-landing__hint { font: 400 13px/20px var(--ca-font); color: var(--ca-muted); margin-right: 4px; }
+/* #610: outline pills ~h32, gap 8, radius full — gold welcome category row */
+.ca-landing__chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 9999px; background: transparent; color: inherit; font: 400 13px/20px var(--ca-font); cursor: pointer; }
 .ca-landing__chip:hover { background: var(--ca-hover); }
 .ca-landing__chip .ca-icon { width: 16px; height: 16px; }
+/* #610 starter card — replaces pills under composer; Close restores pills */
+.ca-landing__starter {
+  width: 100%; max-width: 760px; box-sizing: border-box;
+  padding: 12px 14px 14px; border: var(--ca-border-w) solid var(--ca-border);
+  border-radius: 16px; background: var(--ca-panel, var(--ca-bg, #fff));
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ca-landing__starter-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ca-landing__starter-icons { display: inline-flex; align-items: center; gap: 6px; }
+.ca-landing__starter-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0; border: var(--ca-border-w) solid var(--ca-border);
+  border-radius: 9999px; background: transparent; color: inherit; cursor: pointer;
+}
+.ca-landing__starter-icon:hover { background: var(--ca-hover); }
+.ca-landing__starter-icon[data-on], .ca-landing__starter-icon[aria-pressed="true"] {
+  background: var(--ca-hover); border-color: var(--ca-strong, currentColor);
+}
+.ca-landing__starter-icon .ca-icon { width: 16px; height: 16px; }
+.ca-landing__starter-back {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0; border: none; border-radius: 8px;
+  background: transparent; color: inherit; cursor: pointer;
+}
+.ca-landing__starter-back:hover { background: var(--ca-hover); }
+.ca-landing__starter-back .ca-icon { width: 16px; height: 16px; }
+.ca-landing__starter-suggests { display: flex; flex-direction: column; gap: 8px; }
+.ca-landing__starter-suggest {
+  display: flex; align-items: flex-start; gap: 8px; width: 100%; box-sizing: border-box;
+  padding: 10px 12px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 12px;
+  background: transparent; color: inherit; font: 400 13px/20px var(--ca-font);
+  text-align: left; cursor: pointer;
+}
+.ca-landing__starter-suggest:hover { background: var(--ca-hover); }
+.ca-landing__starter-suggest:disabled { opacity: .5; cursor: default; }
+.ca-landing__starter-suggest .ca-icon { width: 16px; height: 16px; flex: none; margin-top: 2px; color: var(--ca-muted); }
+.ca-landing__starter-suggest-text { flex: 1; min-width: 0; }
 /* #602 — explore stack section rhythm (skills→精选 / chips→快速开始): gold gap-6 = 24 */
 .ca-landing { --ca-landing-section-mt: 24px; }
 .ca-landing__section { margin-top: var(--ca-landing-section-mt); }

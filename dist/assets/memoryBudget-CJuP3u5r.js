@@ -1,0 +1,1 @@
+export{l as insertMemoryUpdatedBlock}from"./memoryBudget-Sjw-1R-b.js";
