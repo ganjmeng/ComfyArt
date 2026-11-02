@@ -1,0 +1,131 @@
+{
+  "issue": 636,
+  "pr": 653,
+  "model": "openai/gpt-image-2.5-sunburst/edit",
+  "remap": {
+    "logo-abstract": "2ns5q6jxbyf4",
+    "photo-split-poster": "2pg3z0ftueww",
+    "ppt-visual": "2n7npu8pocu8",
+    "promo-ecommerce": "2q1txsahwp34",
+    "naive-illustration": "2qapfgd34fsw"
+  },
+  "skills": {
+    "logo-abstract": {
+      "layout": "examples-carousel",
+      "ex_max": 11,
+      "ar_cover": "4:3",
+      "near": "2ns5q6jxbyf4"
+    },
+    "photo-split-poster": {
+      "layout": "examples-single-still",
+      "ex_max": 1,
+      "ar_cover": "4:3",
+      "near": "2pg3z0ftueww"
+    },
+    "ppt-visual": {
+      "layout": "examples-single-still",
+      "ex_max": 1,
+      "ar_cover": "4:3",
+      "near": "2n7npu8pocu8"
+    },
+    "promo-ecommerce": {
+      "layout": "examples-carousel",
+      "ex_max": 4,
+      "ar_cover": "4:3",
+      "near": "2q1txsahwp34"
+    },
+    "naive-illustration": {
+      "layout": "examples-carousel",
+      "ex_max": 4,
+      "ar_cover": "4:3",
+      "near": "2qapfgd34fsw"
+    }
+  },
+  "ok": 26,
+  "fail": 0,
+  "balance_after": 3.185044,
+  "outs": {
+    "logo-abstract": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp",
+        "06.webp",
+        "07.webp",
+        "08.webp",
+        "09.webp",
+        "10.webp",
+        "11.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "ex_max": 11
+    },
+    "photo-split-poster": {
+      "cover": true,
+      "examples": [
+        "01.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp"
+      ],
+      "ex_max": 1
+    },
+    "ppt-visual": {
+      "cover": true,
+      "examples": [
+        "01.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp"
+      ],
+      "ex_max": 1
+    },
+    "promo-ecommerce": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "ex_max": 4
+    },
+    "naive-illustration": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "ex_max": 4
+    }
+  }
+}

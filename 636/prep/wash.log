@@ -1,0 +1,359 @@
+jobs=26 balance_before=4.199044
+upload logo-abstract/cover /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/cover.png
+upload logo-abstract/example/01 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/01.png
+upload logo-abstract/example/02 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/02.png
+upload logo-abstract/example/03 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/03.png
+poll 6ad2f241 status=processing
+poll d8752ac9 status=processing
+poll dc32658a status=processing
+poll 5c79ee13 status=processing
+poll dc32658a status=processing
+poll 5c79ee13 status=processing
+poll 6ad2f241 status=processing
+poll d8752ac9 status=processing
+poll dc32658a status=processing
+poll d8752ac9 status=processing
+poll 5c79ee13 status=processing
+poll 6ad2f241 status=processing
+poll dc32658a status=processing
+poll d8752ac9 status=processing
+poll 6ad2f241 status=processing
+poll 5c79ee13 status=processing
+poll dc32658a status=processing
+poll d8752ac9 status=processing
+poll 6ad2f241 status=processing
+poll 5c79ee13 status=processing
+poll dc32658a status=processing
+poll 5c79ee13 status=completed
+poll d8752ac9 status=completed
+poll 6ad2f241 status=completed
+ok logo-abstract/cover -> /workspace/636-c/review-assets/636/wash/logo-abstract/cover.webp
+upload logo-abstract/example/04 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/04.png
+ok logo-abstract/example/01 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/01.webp
+upload logo-abstract/example/05 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/05.png
+ok logo-abstract/example/02 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/02.webp
+upload logo-abstract/example/06 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/06.png
+poll dc32658a status=completed
+poll d73d7785 status=processing
+ok logo-abstract/example/03 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/03.webp
+upload logo-abstract/example/07 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/07.png
+poll be18dd8b status=processing
+poll bdfb20a4 status=processing
+poll d73d7785 status=processing
+poll be18dd8b status=processing
+poll bdfb20a4 status=processing
+poll 98200e96 status=processing
+poll d73d7785 status=processing
+poll bdfb20a4 status=processing
+poll be18dd8b status=processing
+poll 98200e96 status=processing
+poll d73d7785 status=processing
+poll be18dd8b status=processing
+poll bdfb20a4 status=processing
+poll 98200e96 status=processing
+poll d73d7785 status=processing
+poll be18dd8b status=processing
+poll 98200e96 status=processing
+poll bdfb20a4 status=processing
+poll 98200e96 status=processing
+poll be18dd8b status=processing
+poll d73d7785 status=completed
+poll bdfb20a4 status=processing
+ok logo-abstract/example/04 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/04.webp
+upload logo-abstract/example/08 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/08.png
+poll 98200e96 status=completed
+poll be18dd8b status=processing
+poll bdfb20a4 status=completed
+poll 85f4ee39 status=processing
+ok logo-abstract/example/07 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/07.webp
+upload logo-abstract/example/09 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/09.png
+ok logo-abstract/example/06 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/06.webp
+upload logo-abstract/example/10 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/10.png
+poll 85f4ee39 status=processing
+poll c2031974 status=processing
+poll 85f4ee39 status=processing
+poll be18dd8b status=processing
+poll 467ffdf5 status=processing
+poll c2031974 status=processing
+poll 467ffdf5 status=processing
+poll 85f4ee39 status=processing
+poll c2031974 status=processing
+poll 467ffdf5 status=processing
+poll 85f4ee39 status=processing
+poll c2031974 status=processing
+poll be18dd8b status=completed
+poll 467ffdf5 status=processing
+ok logo-abstract/example/05 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/05.webp
+upload logo-abstract/example/11 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2ns5q6jxbyf4/examples/11.png
+poll c2031974 status=processing
+poll 85f4ee39 status=completed
+poll 467ffdf5 status=processing
+ok logo-abstract/example/08 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/08.webp
+upload photo-split-poster/cover /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2pg3z0ftueww/cover.png
+poll d6390567 status=processing
+poll c2031974 status=processing
+poll d6390567 status=processing
+poll 467ffdf5 status=completed
+poll b67a495c status=processing
+poll d6390567 status=processing
+ok logo-abstract/example/10 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/10.webp
+upload photo-split-poster/example/01 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2pg3z0ftueww/examples/01.png
+poll b67a495c status=processing
+poll c2031974 status=completed
+ok logo-abstract/example/09 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/09.webp
+upload ppt-visual/cover /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2n7npu8pocu8/cover.png
+poll d6390567 status=processing
+poll b67a495c status=processing
+poll db9af0ab status=processing
+poll b67a495c status=processing
+poll db9af0ab status=processing
+poll d6390567 status=processing
+poll b1614a73 status=processing
+poll db9af0ab status=processing
+poll b1614a73 status=processing
+poll b67a495c status=processing
+poll d6390567 status=completed
+poll b1614a73 status=processing
+poll db9af0ab status=processing
+ok logo-abstract/example/11 -> /workspace/636-c/review-assets/636/wash/logo-abstract/examples/11.webp
+upload ppt-visual/example/01 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2n7npu8pocu8/examples/01.png
+poll b67a495c status=completed
+poll b1614a73 status=processing
+poll db9af0ab status=processing
+ok photo-split-poster/cover -> /workspace/636-c/review-assets/636/wash/photo-split-poster/cover.webp
+upload promo-ecommerce/cover /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2q1txsahwp34/cover.png
+poll 5f225194 status=processing
+poll b1614a73 status=processing
+poll db9af0ab status=processing
+poll 5f225194 status=processing
+poll 8326cf2d status=processing
+poll 8326cf2d status=processing
+poll 5f225194 status=processing
+poll b1614a73 status=processing
+poll db9af0ab status=completed
+poll 8326cf2d status=processing
+poll 5f225194 status=processing
+ok photo-split-poster/example/01 -> /workspace/636-c/review-assets/636/wash/photo-split-poster/examples/01.webp
+upload promo-ecommerce/example/01 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2q1txsahwp34/examples/01.png
+poll b1614a73 status=completed
+poll 8326cf2d status=processing
+poll 5f225194 status=processing
+ok ppt-visual/cover -> /workspace/636-c/review-assets/636/wash/ppt-visual/cover.webp
+upload promo-ecommerce/example/02 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2q1txsahwp34/examples/02.png
+poll 08627fa5 status=processing
+poll 8326cf2d status=processing
+poll 08627fa5 status=processing
+poll 5f225194 status=processing
+poll 5a81685c status=processing
+poll 8326cf2d status=processing
+poll 08627fa5 status=processing
+poll 5a81685c status=processing
+poll 5f225194 status=processing
+poll 5a81685c status=processing
+poll 08627fa5 status=processing
+poll 8326cf2d status=completed
+poll 5a81685c status=processing
+poll 08627fa5 status=processing
+ok promo-ecommerce/cover -> /workspace/636-c/review-assets/636/wash/promo-ecommerce/cover.webp
+upload promo-ecommerce/example/03 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2q1txsahwp34/examples/03.png
+poll 5f225194 status=completed
+poll 5a81685c status=processing
+poll 08627fa5 status=processing
+poll 68d2013f status=processing
+ok ppt-visual/example/01 -> /workspace/636-c/review-assets/636/wash/ppt-visual/examples/01.webp
+upload promo-ecommerce/example/04 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2q1txsahwp34/examples/04.png
+poll 5a81685c status=processing
+poll 68d2013f status=processing
+poll c16e8f60 status=processing
+poll 08627fa5 status=processing
+poll 68d2013f status=processing
+poll c16e8f60 status=processing
+poll 5a81685c status=processing
+poll 68d2013f status=processing
+poll c16e8f60 status=processing
+poll 08627fa5 status=completed
+poll 68d2013f status=processing
+poll c16e8f60 status=processing
+ok promo-ecommerce/example/01 -> /workspace/636-c/review-assets/636/wash/promo-ecommerce/examples/01.webp
+upload naive-illustration/cover /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2qapfgd34fsw/cover.png
+poll 5a81685c status=completed
+poll c16e8f60 status=processing
+ok promo-ecommerce/example/02 -> /workspace/636-c/review-assets/636/wash/promo-ecommerce/examples/02.webp
+upload naive-illustration/example/01 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2qapfgd34fsw/examples/01.png
+poll 68d2013f status=processing
+poll c4738aea status=processing
+poll c4738aea status=processing
+poll c16e8f60 status=processing
+poll 418ea340 status=processing
+poll c4738aea status=processing
+poll 68d2013f status=completed
+poll 418ea340 status=processing
+ok promo-ecommerce/example/03 -> /workspace/636-c/review-assets/636/wash/promo-ecommerce/examples/03.webp
+upload naive-illustration/example/02 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2qapfgd34fsw/examples/02.png
+poll c4738aea status=processing
+poll c16e8f60 status=completed
+poll 418ea340 status=processing
+poll 4edb5e41 status=processing
+ok promo-ecommerce/example/04 -> /workspace/636-c/review-assets/636/wash/promo-ecommerce/examples/04.webp
+upload naive-illustration/example/03 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2qapfgd34fsw/examples/03.png
+poll 418ea340 status=processing
+poll c4738aea status=processing
+poll 4edb5e41 status=processing
+poll a7a4064a status=processing
+poll 418ea340 status=processing
+poll c4738aea status=completed
+poll 4edb5e41 status=processing
+poll a7a4064a status=processing
+ok naive-illustration/cover -> /workspace/636-c/review-assets/636/wash/naive-illustration/cover.webp
+upload naive-illustration/example/04 /workspace/ComfyArt-review-assets/phase2/bc-refs/c5-nearmiss/2qapfgd34fsw/examples/04.png
+poll 4edb5e41 status=processing
+poll 418ea340 status=processing
+poll a7a4064a status=processing
+poll 04332137 status=processing
+poll 4edb5e41 status=processing
+poll a7a4064a status=processing
+poll 418ea340 status=completed
+poll 04332137 status=processing
+ok naive-illustration/example/01 -> /workspace/636-c/review-assets/636/wash/naive-illustration/examples/01.webp
+poll a7a4064a status=processing
+poll 4edb5e41 status=completed
+poll 04332137 status=processing
+ok naive-illustration/example/02 -> /workspace/636-c/review-assets/636/wash/naive-illustration/examples/02.webp
+poll 04332137 status=processing
+poll a7a4064a status=completed
+ok naive-illustration/example/03 -> /workspace/636-c/review-assets/636/wash/naive-illustration/examples/03.webp
+poll 04332137 status=processing
+poll 04332137 status=processing
+poll 04332137 status=completed
+ok naive-illustration/example/04 -> /workspace/636-c/review-assets/636/wash/naive-illustration/examples/04.webp
+{
+  "issue": 636,
+  "pr": 653,
+  "model": "openai/gpt-image-2.5-sunburst/edit",
+  "remap": {
+    "logo-abstract": "2ns5q6jxbyf4",
+    "photo-split-poster": "2pg3z0ftueww",
+    "ppt-visual": "2n7npu8pocu8",
+    "promo-ecommerce": "2q1txsahwp34",
+    "naive-illustration": "2qapfgd34fsw"
+  },
+  "skills": {
+    "logo-abstract": {
+      "layout": "examples-carousel",
+      "ex_max": 11,
+      "ar_cover": "4:3",
+      "near": "2ns5q6jxbyf4"
+    },
+    "photo-split-poster": {
+      "layout": "examples-single-still",
+      "ex_max": 1,
+      "ar_cover": "4:3",
+      "near": "2pg3z0ftueww"
+    },
+    "ppt-visual": {
+      "layout": "examples-single-still",
+      "ex_max": 1,
+      "ar_cover": "4:3",
+      "near": "2n7npu8pocu8"
+    },
+    "promo-ecommerce": {
+      "layout": "examples-carousel",
+      "ex_max": 4,
+      "ar_cover": "4:3",
+      "near": "2q1txsahwp34"
+    },
+    "naive-illustration": {
+      "layout": "examples-carousel",
+      "ex_max": 4,
+      "ar_cover": "4:3",
+      "near": "2qapfgd34fsw"
+    }
+  },
+  "ok": 26,
+  "fail": 0,
+  "balance_after": 3.185044,
+  "outs": {
+    "logo-abstract": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp",
+        "06.webp",
+        "07.webp",
+        "08.webp",
+        "09.webp",
+        "10.webp",
+        "11.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "ex_max": 11
+    },
+    "photo-split-poster": {
+      "cover": true,
+      "examples": [
+        "01.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp"
+      ],
+      "ex_max": 1
+    },
+    "ppt-visual": {
+      "cover": true,
+      "examples": [
+        "01.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp"
+      ],
+      "ex_max": 1
+    },
+    "promo-ecommerce": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "ex_max": 4
+    },
+    "naive-illustration": {
+      "cover": true,
+      "examples": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp"
+      ],
+      "featured": [
+        "01.webp",
+        "02.webp",
+        "03.webp",
+        "04.webp",
+        "05.webp"
+      ],
+      "ex_max": 4
+    }
+  }
+}
