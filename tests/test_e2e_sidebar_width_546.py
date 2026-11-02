@@ -59,10 +59,12 @@ async def test_expanded_matches_lovart(app_url, width, col):  # noqa: F811
     assert m["tools"]["x"] == 296 and m["tools"]["w"] == col
 
 
-async def test_default_is_collapsed(app_url):  # noqa: F811
+async def test_default_is_expanded(app_url):  # noqa: F811
+    """#607: clear local → desktop rail starts expanded (flips #546 default-collapsed)."""
     async with pw.async_playwright() as p:
-        m = await _measure(p, app_url, 1280, collapsed=True, seed=False)
-    assert m["expanded"] is False
+        m = await _measure(p, app_url, 1280, collapsed=False, seed=False)
+    assert m["expanded"] is True
+    assert m["rail"]["w"] == 240
 
 
 @pytest.mark.parametrize("width", [1280, 1440])
@@ -86,18 +88,22 @@ async def test_expanded_toggle_and_pitch(app_url):  # noqa: F811
 
 
 async def test_toggle_persists_across_reload(app_url):  # noqa: F811
+    """Cold start expanded (#607); collapse/expand still persist via localStorage."""
     async with pw.async_playwright() as p:
         browser = await p.chromium.launch()
         pg = await (await browser.new_context(viewport={"width": 1280, "height": 900})).new_page()
         await pg.goto(app_url)
         rail = pg.get_by_test_id("account-rail")
+        await pg.get_by_test_id("rail-collapse").wait_for()
+        assert (await rail.bounding_box())["width"] == 240
+        await pg.get_by_test_id("rail-collapse").click()
+        await pg.get_by_test_id("rail-expand").wait_for()
+        await pg.reload()
+        await pg.get_by_test_id("rail-expand").wait_for()
+        assert (await rail.bounding_box())["width"] == 60
         await pg.get_by_test_id("rail-expand").click()
         await pg.get_by_test_id("rail-collapse").wait_for()
         await pg.reload()
         await pg.get_by_test_id("rail-collapse").wait_for()
         assert (await rail.bounding_box())["width"] == 240
-        await pg.get_by_test_id("rail-collapse").click()
-        await pg.reload()
-        await pg.get_by_test_id("rail-expand").wait_for()
-        assert (await rail.bounding_box())["width"] == 60
         await browser.close()

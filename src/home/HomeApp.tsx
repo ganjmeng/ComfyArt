@@ -146,7 +146,7 @@ function main(view: View) {
 }
 
 export function HomeApp({ view }: { view: View }) {
-  const [collapsed, setCollapsed] = useState(() => readLocal(RAIL_COLLAPSE_KEY) !== '0') // #546: reference design default = collapsed; '0' persists expanded
+  const [collapsed, setCollapsed] = useState(() => readLocal(RAIL_COLLAPSE_KEY) === '1') // #607: desktop default expanded; only '1' persists collapsed (clears #546 default-collapsed)
   const expanded = !collapsed
   const [recent, setRecent] = useState<ProjectEntry[] | null>(null)
 
