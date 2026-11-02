@@ -1,5 +1,5 @@
 // #541 harness: Lovart meta line is real data only (template count from presets[]; no usage counter).
-import { BUILTIN_SKILLS, presetImage, skillMeta } from '../../src/skills'
+import { BUILTIN_SKILLS, isSkillMediaVideo, presetImage, skillMeta } from '../../src/skills'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { SkillExamples } from '../../src/ui/SkillExamples'
@@ -18,4 +18,7 @@ console.log(JSON.stringify({
   exNone: [renderToStaticMarkup(createElement(SkillExamples, {})), renderToStaticMarkup(createElement(SkillExamples, { examples: [] }))],
   productIds: BUILTIN_SKILLS.find((s) => s.id === 'product')!.presets!.map((p) => p.id),
   productNew: BUILTIN_SKILLS.find((s) => s.id === 'product')!.presets!.slice(3).map((p) => presetImage(BUILTIN_SKILLS.find((s) => s.id === 'product')!, p)),
+  exVideoMock: renderToStaticMarkup(createElement(SkillExamples, { examples: ['https://x.test/clip.mp4', 'https://x.test/e2.webp'] })),
+  isVideoMp4: isSkillMediaVideo('https://x.test/clip.mp4'),
+  isVideoWebp: isSkillMediaVideo('https://x.test/e2.webp'),
 }))

@@ -92,7 +92,7 @@ def test_rev2_cells_pinned(got):
 
 @needs_node
 def test_examples_carousel_is_data_driven(got):
-    want = {"poster": 5, "thumbnail": 6, "social": 10, "banner": 1, "interior": 4}  # #569: character examples removed  # interior 535d956: 3× 4:5 + 1× 1:1
+    want = {"poster": 5, "thumbnail": 7, "social": 10, "banner": 2, "interior": 4}  # #575: thumbnail/banner lead with wash mp4
     assert {k: v for k, v in got["examples"].items() if v} == want
     for sid in ("product", "brand", "packaging", "motion", "character", "custom-workflow"):
         assert got["examples"][sid] == 0, sid
@@ -100,10 +100,13 @@ def test_examples_carousel_is_data_driven(got):
     html = got["exMock"]
     assert 'data-testid="skill-run-examples"' in html and 'data-count="5"' in html
     assert html.count('data-testid="skill-run-example-thumb"') == 5 and html.count('aria-selected="true"') == 1
-    assert 'data-testid="skill-run-example-stage"><img src="https://x.test/e1.webp"' in html
+    assert 'data-testid="skill-run-example-stage"' in html and 'data-media="image"' in html
+    assert 'src="https://x.test/e1.webp"' in html
     assert "skill-run-example-thumb" not in got["exOne"] and "skill-run-example-stage" in got["exOne"]
     assert ZH["skillRun.examples"] == "效果示例" and EN["skillRun.examples"] == "Examples"
     assert ".ca-skillrun__stage" in CSS and "aspect-ratio: 704 / 506" in CSS and "object-fit: contain" in CSS
+    assert ".ca-skillrun__stage img, .ca-skillrun__stage video" in CSS
+    assert ".ca-skillrun__thumb img, .ca-skillrun__thumb video" in CSS
     assert "<SkillExamples examples={skill.examples} />" in DLG and "from './SkillExamples'" in DLG
 
 
@@ -113,11 +116,27 @@ EX541 = {"interior": ("535d9568d1b8ca25e300fa32db1eca887889ba88", [1, 2, 3, 4]),
          "banner": ("8cc3fb305f7ce29ebbab63525680e3436e964dbb", [1])}  # 1 × ~2:1 composite
 
 
+TIP_VIDEO = "1bbb3f208f18b26ef95c8d9f16efeea111c43ac7"
+VIDEO_LEAD = {"thumbnail", "banner"}  # #575 lead example is upgrade9 wash mp4
+
+
 @needs_node
 def test_examples_pinned_to_image_commits(got):
     for sid, (sha, ids) in EX541.items():
-        assert got["exUrls"][sid] == [f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{sha}/541/wash/{sid}/examples/{n}.webp" for n in ids], sid
+        stills = [f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{sha}/541/wash/{sid}/examples/{n}.webp" for n in ids]
+        want = ([f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{TIP_VIDEO}/494/wash/videos/{sid}.mp4"] + stills) if sid in VIDEO_LEAD else stills
+        assert got["exUrls"][sid] == want, sid
     assert not any("/541/wash/examples/" in u for us in got["exUrls"].values() for u in us)  # old void path
+
+
+@needs_node
+def test_examples_video_stage_markup(got):
+    """#575 — SkillExamples renders muted looping <video> for mp4 examples; stills stay <img>."""
+    html = got["exVideoMock"]
+    assert 'data-media="video"' in html and 'data-testid="skill-run-example-stage-video"' in html
+    assert 'src="https://x.test/clip.mp4"' in html and "muted" in html and "loop" in html
+    assert got["isVideoMp4"] is True and got["isVideoWebp"] is False
+    assert 'data-testid="skill-run-example-thumb-video"' in html
 
 
 def test_brand_logo_system_prompts():

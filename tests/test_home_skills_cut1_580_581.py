@@ -26,13 +26,14 @@ def test_six_cover_cards_from_real_skills() -> None:
     assert "export const HOME_SKILL_ROW = 6" in LAYOUT
     body = _start_block()
     assert "shown.slice(0, HOME_SKILL_ROW).map" in body  # real skills (cut 2: chip-filtered), no demo data
-    assert 'data-testid="home-skill-cover"' in body and "skillQuickStartCover(s)" in body  # cut 2: own quick-start slot, falls back to skillCover
+    # #575: cover lives on HomeSkillCard (hoisted); still uses skillQuickStartCover + home-skill-cover
+    assert "HomeSkillCard" in body and 'data-testid="home-skill-cover"' in HOME
+    assert "skillQuickStartCover" in HOME
     # design 5727385011: › only after the section title, not on each card
-    card = body.split("ca-skillcard__name", 1)[1].split("</button>", 1)[0]
-    assert "›" not in card and "ca-skillcard__chev" not in body
+    assert "ca-skillcard__chev" not in body and "ca-skillcard__chev" not in HOME
     # old row card pieces gone: 40×40 icon + 内置/我的 badge
-    assert "ca-skillcard__icon" not in body and "home.builtIn" not in body and "ca-model__tag" not in body
-    assert "onClick={() => trySkill(s)}" in body  # keeps #533 dialog behaviour
+    assert "ca-skillcard__icon" not in HOME and "home.builtIn" not in body and "ca-model__tag" not in body
+    assert "onTry={() => trySkill(s)}" in body  # keeps #533 dialog behaviour via HomeSkillCard
 
 
 def test_head_chevron_opens_skills_explore() -> None:

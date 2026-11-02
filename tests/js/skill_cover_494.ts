@@ -1,4 +1,4 @@
-import { BUILTIN_SKILLS, matchesSkillChip, skillChips, skillCover, skillVideo } from '../../src/skills'
+import { BUILTIN_SKILLS, isSkillMediaVideo, matchesSkillChip, skillChips, skillCover, skillCoverVideoHover, skillVideo, SKILL_VIDEO_PENDING_NEW6 } from '../../src/skills'
 const r: Record<string, unknown> = {}
 const old = { id: 'old-skill', name: 'o', instructions: '', custom: true }
 r.noImage = skillCover(old)
@@ -13,4 +13,29 @@ r.builtinVideos = Object.fromEntries(BUILTIN_SKILLS.map((s) => [s.id, skillVideo
 r.noVideo = skillVideo(old)
 r.customVideo = skillVideo(BUILTIN_SKILLS.find((s) => s.id === 'custom-workflow')!)
 r.videoMutated = skillVideo({ ...BUILTIN_SKILLS.find((s) => s.id === 'poster')!, video: undefined })
+// #575 — media detector + hover contract + pending new6 + thumbnail/banner example lead mp4
+r.isVideo = {
+  mp4: isSkillMediaVideo('https://x.test/a.mp4'),
+  webm: isSkillMediaVideo('https://x.test/a.webm?x=1'),
+  mov: isSkillMediaVideo('https://x.test/a.mov#t=0'),
+  webp: isSkillMediaVideo('https://x.test/a.webp'),
+  empty: isSkillMediaVideo(''),
+  undef: isSkillMediaVideo(undefined),
+}
+r.pendingNew6 = [...SKILL_VIDEO_PENDING_NEW6]
+r.thumbEx = BUILTIN_SKILLS.find((s) => s.id === 'thumbnail')!.examples
+r.bannerEx = BUILTIN_SKILLS.find((s) => s.id === 'banner')!.examples
+r.motionPresetVideos = (BUILTIN_SKILLS.find((s) => s.id === 'motion')!.presets ?? []).map((p) => p.video ?? null)
+// hover: enter plays; leave pauses + seeks 0; null is no-op
+const calls: string[] = []
+const fake = {
+  play: () => { calls.push('play'); return Promise.resolve() },
+  pause: () => { calls.push('pause') },
+  currentTime: 9,
+} as unknown as HTMLVideoElement
+skillCoverVideoHover(null, 'enter')
+skillCoverVideoHover(fake, 'enter')
+skillCoverVideoHover(fake, 'leave')
+r.hoverCalls = calls
+r.hoverSeek = fake.currentTime
 console.log(JSON.stringify(r))
