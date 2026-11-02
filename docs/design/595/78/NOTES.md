@@ -1,9 +1,8 @@
 # #595 → #78 tip-pin — Phase1-S5 mount (hot order + website chip)
 
-**Tip:** `b61484001ec3f26c81a3e6a7543d9dd1e6145127` · **Asia/Shanghai** · branch `feat/595-skills-phase1-mount`  
-**Raw tip-pin:** https://raw.githubusercontent.com/ganjmeng/ComfyArt/b61484001ec3f26c81a3e6a7543d9dd1e6145127/docs/design/595/78/NOTES.md  
-**Base:** `feat/594-skills-phase1-wash-static` @ `42051d6f` (PR #606 wash; that tip also carries #604/#602 soft)  
-**Issue:** #595
+**Branch:** `feat/595-skills-phase1-mount` · **Asia/Shanghai** · Issue #595  
+**Tip-pin:** absolute `raw.githubusercontent.com` URLs live in PR #609 body (exact tip SHA). Do not treat an older tip in chat history as current.  
+**Absorbed:** `main` @ `#605` / `#575` skill-cover hover video (merge tip) + Phase1-S5 mount.
 
 ## Mount (Phase1 15 hot order)
 
@@ -24,10 +23,20 @@
 - Left: examples filmstrip (`SkillExamples`) and/or presets; right: inputs; CTA → Agent (`mode=agent`)
 - e2e: multi-angle carousel present; brand dialog → new project (`test_e2e_skills_phase1_595`)
 - No demo / placeholder media; no competitor CDN or name in `src/`
+- Soft: #605 hover video absorbed from main (stills + muted loop when `skill.video` set)
 
-## left-ours
-- Mount is data-order wiring on existing cut2 chrome (no new chrome tokens). Visual delta = quick-start card order + website chip occupancy + new6 in featured-v2.
-- Design walk on tip: home forYou quick-start (6) + `home-chip-website` + Skills Explore website wall.
+## LEFT = ours (AFTER) — live dist zh-light 1280×800
+
+Harness: `harness/shoot.py` + `tests/test_design_595_78_shots.py` (Playwright vs `app_url`, mock $0).
+
+| File | Shows |
+|------|-------|
+| `left-ours/AFTER-home-quickstart-order-zh-light.png` | Home「用 Skill 快速开始」 first 6 = product → multi-angle → brand → character → logo-material → packaging |
+| `left-ours/AFTER-home-chip-website-zh-light.png` | Home chips: **网站** lit; filtered quick-start = mobile-ui + web-product |
+| `left-ours/AFTER-skills-explore-website-chip-zh-light.png` | Skills Explore: **网站** chip lit; wall = mobile-ui + web-product |
+| `left-ours/AFTER-home-featured-waterfall-zh-light.png` | Explore forYou featured waterfall (Phase1 15 + interior; website chip present) |
+| `left-ours/AFTER-skill-modal-brand-dualcol-zh-light.png` | SkillRun dual-col: brand presets left + inputs right |
+| `left-ours/AFTER-skill-modal-multi-angle-dualcol-zh-light.png` | SkillRun dual-col: multi-angle examples carousel left + inputs right |
 
 ## @design
-Please re-sign after visual check on tip (hot quick-start order + website chip + featured includes new6). Soft: #605 hover video not required for this mount.
+Please re-sign after visual check on tip (hot quick-start order + website chip + featured Phase1 + dual-col modal). Hover video from #605 is on tip (soft for mount AC).
