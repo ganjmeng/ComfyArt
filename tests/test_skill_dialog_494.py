@@ -33,7 +33,7 @@ def got(tmp_path_factory) -> dict:
 
 EFFECT = ("poster", "banner", "interior", "thumbnail")  # #641 thumbnail dialog parity → EFFECT_INPUTS
 COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2,  # #569 template counts
-          "multi-angle": 4, "logo-material": 4, "meta-ads": 4, "mobile-ui": 4, "web-product": 4, "marketing-campaign": 4,  # #593 new-6
+          "multi-angle": 0, "logo-material": 4, "meta-ads": 4, "mobile-ui": 4, "web-product": 4, "marketing-campaign": 4,  # #593 new-6; multi-angle → Upload+Additional (#691)
           "flash-cut-video": 3, "style-transfer": 3, "person-swap": 3, "commerce-strategist": 3, "lifestyle-scene": 3,
           "naive-illustration": 2, "logo-abstract": 2, "photo-split-poster": 2, "ppt-visual": 3, "promo-ecommerce": 2,
           "yingzao": 2, "crt-interface": 3, "crayon-sketch": 2, "fabric-collage": 2,  # #634 Phase2-S1
@@ -80,8 +80,8 @@ def test_builtin_preset_images_unique(got):
     assert sum("541/wash/product/" in u for u in washed) == 6
     assert sum("541/wash/brand/" in u for u in washed) == 6 and sum("541/wash/packaging/" in u for u in washed) == 5
     assert len(set(washed)) == 27  # no shared cover fallback across washed presets
-    assert len(covers) == 24  # 6 new × 4 presets → cover fallback via presetImage
-    assert len(set(covers)) == 6
+    assert len(covers) == 20  # 5 new × 4 presets → cover fallback (multi-angle has no presets since #691)
+    assert len(set(covers)) == 5
 
 
 @needs_node

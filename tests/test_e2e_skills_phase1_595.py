@@ -44,15 +44,18 @@ async def test_home_quickstart_hot_order_and_website_chip(app_url):  # noqa: F81
 async def test_multi_angle_carousel_and_brand_dialog_to_agent(app_url):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _open_home(p, app_url, "en")
-        # new6: horizontal examples carousel + presets + inputs present
+        # new6: horizontal examples carousel; #691 right pane = exactly Upload then Additional, zero preset UI
         await pg.locator('[data-testid="home-skill-card"][data-skill="multi-angle"]').click()
         dlg = pg.get_by_test_id("skill-run-dialog")
         await dlg.wait_for()
         assert await dlg.get_attribute("data-skill") == "multi-angle"
         assert await pg.get_by_test_id("skill-run-examples").count() == 1
         assert await pg.get_by_test_id("skill-run-example-thumb").count() >= 2
-        assert await pg.get_by_test_id("skill-run-preset").count() >= 1
-        assert await pg.get_by_test_id("skill-run-field").count() >= 1
+        assert await pg.get_by_test_id("skill-run-preset").count() == 0
+        assert await pg.get_by_test_id("skill-run-preset-chips").count() == 0
+        fields = pg.get_by_test_id("skill-run-field")
+        assert await fields.evaluate_all("fs => fs.map(f => [f.dataset.key, f.dataset.type])") == [["file", "image"], ["note", "textarea"]]
+        assert await pg.locator('[data-key="note"]').get_attribute("placeholder") == "Anything you want to add?"
         await pg.keyboard.press("Escape")
         await dlg.wait_for(state="hidden")
         # Phase1 upgrade skill: dialog → new Agent project (AC ≥1)
