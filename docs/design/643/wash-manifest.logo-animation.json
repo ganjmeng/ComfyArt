@@ -21,7 +21,7 @@
    "slot": "examples",
    "index": 3,
    "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH, original artwork, new pixels. Keep the same logo-lockup composition: a row of 7 vertical emblem elements of descending height left-to-right with the tallest-right element carrying a top accent, English two-line name beneath on the left, large Chinese calligraphic title along the bottom. REDRAW THE EMBLEM MOTIF: instead of flat rounded bars, each element is a tall stylized ink-brush stroke with rough dry-brush edges shaped like bamboo slips / scrolls bound by thin cords, and the rightmost top accent becomes a round red cinnabar seal stamp (not a P-shaped loop). Palette: ink black and jade green strokes on rice-paper texture with one red seal. English text: 'HERITAGE / CULTURAL CRAFT AND TRADITION'. Chinese title: '华夏非遗博观园'. No brand marks or watermarks."
+   "prompt": "TRUE WASH, original artwork, new pixels. Keep the same logo-lockup composition: a row of 7 vertical emblem elements of descending height left-to-right with the tallest-right element carrying a top accent, English two-line name beneath on the left, large Chinese calligraphic title along the bottom. REDRAW THE EMBLEM MOTIF: instead of flat rounded bars, each element is a tall stylized ink-brush stroke with rough dry-brush edges shaped like bamboo slips / scrolls bound by thin cords, and the rightmost top accent becomes a round red cinnabar seal stamp (not a P-shaped loop). Palette: ink black and jade green strokes on rice-paper texture with one red seal. English text: 'HERITAGE / CULTURAL CRAFT AND TRADITION'. Chinese title: '华夏匠艺博览苑' (NO 非遗 substring). No brand marks or watermarks."
   },
   {
    "skill_id": "logo-animation",
