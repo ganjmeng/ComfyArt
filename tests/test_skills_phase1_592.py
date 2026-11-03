@@ -47,9 +47,9 @@ def test_upgrade9_presets_examples_inputs_complete():
             assert len(re.findall(r"\bP\('", e)) == 0, sid
             if sid == "thumbnail":
                 assert "titleCopy" not in e, sid
-                assert "cover641(" in e and "ex641(" in e and "feat641(" in e, sid
+                assert "cover: cover('thumbnail')" in e and "ex541(" in e and "feedCovers('thumbnail')" in e, sid
                 assert "video: video('thumbnail')" in e, sid
-                assert ("examples: [video(" in e and "ex641(" in e), sid
+                assert ("examples: [video(" in e and "ex541(" in e), sid
             else:
                 assert ("examples: ex541(" in e) or ("examples: [video(" in e and "ex541(" in e), sid  # #575 video lead ok
         elif sid == "social":
@@ -72,10 +72,10 @@ def test_upgrade9_keeps_existing_media_pins():
     for sid in UPGRADE:
         e = entries[sid]
         if sid == "thumbnail":
-            # #641 soft wash cover/featured/examples; Phase1 video hover + quickStart kept
-            assert "cover: cover641('thumbnail')" in e, sid
+            # #641 drop soft-wash: Phase1 cover/featured/examples + video hover + quickStart
+            assert "cover: cover('thumbnail')" in e, sid
             assert "video: video('thumbnail')" in e, sid
-            assert "feat641('thumbnail'" in e, sid
+            assert "featured: feedCovers('thumbnail')" in e, sid
             assert "quickStartCover: quickStartCover('thumbnail')" in e, sid
         else:
             assert f"cover: cover('{sid}')" in e, sid

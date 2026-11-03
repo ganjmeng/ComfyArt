@@ -121,7 +121,7 @@ def test_examples_carousel_is_data_driven(got):
 
 
 EX541 = {"interior": ("535d9568d1b8ca25e300fa32db1eca887889ba88", [1, 2, 3, 4]), "poster": ("6d864bd2dd53b9f5b487829f2834d94be013b0a5", [1, 2, 3, 4, 5]),
-         "thumbnail": ("70a2eb93d27da980cc1aa8e7c4f5c4bf113b50e0", [1, 2, 3, 4, 5, 6]),  # #641 641/wash stills, zero-padded
+         "thumbnail": ("5fc35b17f11ee58fde21671b16b574ecb0d35e5a", [1, 2, 3, 4, 5, 6]),  # Phase1 541/wash stills @16:9
          "social": ("cb41cb8a450139cd903e777c8f84024019d517cd", list(range(1, 11))),
          "banner": ("8cc3fb305f7ce29ebbab63525680e3436e964dbb", [1])}  # 1 × ~2:1 composite
 
@@ -133,10 +133,7 @@ VIDEO_LEAD = {"thumbnail", "banner"}  # #575 lead example is upgrade9 wash mp4
 @needs_node
 def test_examples_pinned_to_image_commits(got):
     for sid, (sha, ids) in EX541.items():
-        if sid == "thumbnail":  # #641 soft wash: 641/wash/thumbnail/examples/01–06.webp
-            stills = [f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{sha}/641/wash/{sid}/examples/{n:02d}.webp" for n in ids]
-        else:
-            stills = [f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{sha}/541/wash/{sid}/examples/{n}.webp" for n in ids]
+        stills = [f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{sha}/541/wash/{sid}/examples/{n}.webp" for n in ids]
         want = ([f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{TIP_VIDEO}/494/wash/videos/{sid}.mp4"] + stills) if sid in VIDEO_LEAD else stills
         assert got["exUrls"][sid] == want, sid
     assert not any("/541/wash/examples/" in u for us in got["exUrls"].values() for u in us)  # old void path

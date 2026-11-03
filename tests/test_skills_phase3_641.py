@@ -30,7 +30,8 @@ def test_no_youtube_thumbnail_id_and_thumbnail_present():
     assert "thumbnail" in ids
     assert "youtube-thumbnail" not in ids
     assert "youtube_thumbnail" not in ids
-    assert "#641" in SKILLS_TS and "WASH_641" in SKILLS_TS and "cover641" in SKILLS_TS
+    assert "#641" in SKILLS_TS and "Phase3-S2" in SKILLS_TS
+    assert "WASH_641" not in SKILLS_TS and "cover641" not in SKILLS_TS and "641/wash" not in SKILLS_TS
 
 
 def test_thumbnail_dialog_parity_upload_additional():
@@ -59,11 +60,11 @@ def test_thumbnail_inputs_media_and_effect_inputs():
     e = _entries()["thumbnail"]
     assert "titleCopy" not in e
     assert "inputs: EFFECT_INPUTS" in e
-    assert "cover: cover641('thumbnail')" in e
-    assert "feat641('thumbnail'" in e
-    assert "ex641('thumbnail'" in e
+    assert "cover: cover('thumbnail')" in e
+    assert "featured: feedCovers('thumbnail')" in e
+    assert "ex541('thumbnail'" in e
     assert "video: video('thumbnail')" in e
-    assert "examples: [video('thumbnail'), ...ex641(" in e
+    assert "examples: [video('thumbnail'), ...ex541(" in e
     assert "quickStartCover: quickStartCover('thumbnail')" in e
 
 
