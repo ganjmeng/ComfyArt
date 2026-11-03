@@ -1,0 +1,42 @@
+{
+ "skill_id": "logo-animation",
+ "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+ "assets": [
+  {
+   "skill_id": "logo-animation",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered logo lockup on white: circular teal-to-navy brush ring with play-triangle + line-eye mark, dark-blue Chinese wordmark beneath. Generic institute mark only. Same logo-animation still/poster use-slot — stay logo mark, do not invent a website or person. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): redesign the emblem with a visibly different mark geometry and a different dominant color palette, set it on a tinted colored background instead of plain white, change typeface weight/style of the wordmark. Keep the same logo lockup layout family and text content so it is still the same logo-animation still use-slot.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "logo-animation",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a horizontal logo lockup on white: rainbow translucent circle of interlocking human figures on the left, black English stacked title WORLD / INTANGIBLE CULTURAL HERITAGE / EXPO + Chinese wordmark on the right, thin vertical divider. Same logo-animation still/poster use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): redesign the emblem with a visibly different mark geometry and a different dominant color palette, set it on a tinted colored background instead of plain white, change typeface weight/style of the wordmark. Keep the same logo lockup layout family and text content so it is still the same logo-animation still use-slot.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "logo-animation",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH with NEW pixels. IDENTITY-LOCK: same subject category, composition, layout and use-slot as reference; no topic drift. No brand marks, watermarks, real logos or celebrity likeness. EMBLEM STRUCTURE LOCK: keep the emblem geometry exactly — seven vertical bars in the same arrangement, proportions and spacing forming the same stylized heritage icon, same centered position and size, wordmark block in the same place beneath with the same line structure. Do NOT redraw the emblem into a different shape. STYLE MAY CHANGE: change bar color from red to deep indigo/teal gradient with subtle texture, change background from white to warm cream paper texture, change typography face of the wordmark (new invented generic text of same length, e.g. HERITAGE CRAFT INSTITUTE). Composition identical to reference.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "logo-animation",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered circular brand mark on white: lime-green disc with yellow cow + blue horse cartoon characters integrated with bold yellow bubble lettering, footer Chinese 牛马生活 | N&M CULTURAL CREATIVITY. Same logo-animation still/poster use-slot — stay cartoon logo mark. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): redesign the emblem with a visibly different mark geometry and a different dominant color palette, set it on a tinted colored background instead of plain white, change typeface weight/style of the wordmark. Keep the same logo lockup layout family and text content so it is still the same logo-animation still use-slot.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  }
+ ]
+}
