@@ -158,8 +158,9 @@ const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4
 // #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
 const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
-const ex643 = (id: string, ids: number[]) =>
-  ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
+// #643 per-slot PRs: optional per-slot pin so each slot merges independently.
+const ex643 = (id: string, ids: number[], pin: string = WASH_643) =>
+  ids.map((n) => pinned(`643/wash/${id}/examples`, pin, `${String(n).padStart(2, '0')}.webp`))
 const feat643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/featured`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
 // #636 Phase2-S3 C deferred5 soft wash — nearMiss remap Examples-only (hardMax layouts).
@@ -451,7 +452,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('series', '系列识别', 'Series identity', 'Style: YouTube channel banner 2560×1440, series identity, safe-area protected title/face.'), P('face', '人像安全区', 'Face safe area', 'Style: YouTube channel banner with face in safe area, niche cue, high contrast.')],
     inputs: NEARMISS_INPUTS },
   { id: 'ai-model', name: t('skills.aiModel'), instructions: 'You are a production AI model identity designer. Lock a reusable virtual model (face/body/ethnicity cues) then dress them across outfits and scenes — not a one-shot person-swap and not a character sheet bible.\n1) Intake: modelSpec + outfit/scene refs; freeze identity across frames.\n2) Consistency: same face, body and skin language when wardrobe/scene changes.\n3) Deliver: multi-outfit / multi-scene set that reads as one model.\n4) Division: reusable identity — leave triple-ref pose swap to person-swap; leave turnaround sheets to character.\n5) Refs: pass shape ids in refs on every generate_image call.',
-    category: 'ecommerce', cover: cover643('ai-model'), examples: [], featured: [],
+    category: 'ecommerce', cover: cover643('ai-model'), examples: ex643('ai-model', [1, 2, 3, 4, 5, 6], 'a1e2b90f9de6d66e70740700800624ca2886d99f'), featured: [],
     presets: [P('lock', '锁定身份', 'Lock identity', 'Style: establish reusable virtual model identity, clear face/body cues, neutral studio.'), P('outfit', '多着装', 'Multi outfit', 'Style: same AI model identity in a new outfit, identity locked, catalog-ready.'), P('scene', '多场景', 'Multi scene', 'Style: same AI model identity in a new scene, identity locked, coherent light.')],
     inputs: NEARMISS_INPUTS },
   { id: 'product-to-packaging', name: t('skills.productToPackaging'), instructions: 'You are a production product-to-packaging system designer. Start from a product photo and invent pack structure + hero art + shelf — distinct from brief-first packaging.\n1) Intake: require productImage; optional packNotes.\n2) Deliver: structure/dieline logic, front hero, and shelf row when asked (box/bottle/pouch presets).\n3) Identity: keep product silhouette and label cues honest to the upload.\n4) Cross-link: this starts from product truth; brief-only packaging stays on packaging.\n5) Refs: pass product shape id in refs on every generate_image call.',
