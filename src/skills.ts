@@ -158,8 +158,9 @@ const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4
 // #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
 const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
-const ex643 = (id: string, ids: number[]) =>
-  ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
+// #643 per-slot PRs: optional per-slot pin so each slot merges independently.
+const ex643 = (id: string, ids: number[], pin: string = WASH_643) =>
+  ids.map((n) => pinned(`643/wash/${id}/examples`, pin, `${String(n).padStart(2, '0')}.webp`))
 const feat643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/featured`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
 // #636 Phase2-S3 C deferred5 soft wash — nearMiss remap Examples-only (hardMax layouts).
@@ -479,7 +480,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('stand', '站姿裂变', 'Standing set', 'Style: same-scene pose fission, standing variations, light and background locked.'), P('sit', '坐姿裂变', 'Seated set', 'Style: same-scene pose fission, seated variations, identity and light locked.'), P('gesture', '手势裂变', 'Gesture set', 'Style: same-scene pose fission, hand/gesture variations, background locked.')],
     inputs: NEARMISS_INPUTS },
   { id: 'live-promo-decor', name: t('skills.livePromoDecor'), instructions: 'You are a production live-commerce decor designer. Ship overlay packs (bg, stickers, price tags, badges) — not a big-promo KV hero.\n1) Brief: category, offer and overlay needs from liveBrief + refs.\n2) Pack: background, lower-thirds, price tags and corner badges that stack cleanly.\n3) Division: live decor kit — leave campaign KV heroes to promo-ecommerce.\n4) Copy: price/CTA text in quotes; high contrast on stream.\n5) Refs: pass refs in refs on every generate_image call.',
-    category: 'ecommerce', cover: cover643('live-promo-decor'), examples: [], featured: [],
+    category: 'ecommerce', cover: cover643('live-promo-decor'), examples: ex643('live-promo-decor', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], '8cc40254afa73f62dcf2683319ce583d93808916'), featured: [],
     presets: [P('bg', '直播背景', 'Live background', 'Style: live-stream background decor, product-safe center, high contrast edges.'), P('price', '价签贴片', 'Price tag', 'Style: live price-tag overlay, bold numerals in quotes, stream-safe contrast.'), P('badge', '角标装饰', 'Corner badge', 'Style: live corner badge / sticker pack, stackable, readable on video.')],
     inputs: NEARMISS_INPUTS },
   { id: 'linkedin-banner', name: t('skills.linkedinBanner'), instructions: 'You are a production LinkedIn banner designer. Ship 1584×396 professional banners — not YouTube channel art.\n1) Brief: role, company and tone from profileBrief + refs.\n2) Layout: 1584×396; keep face/logo in safe area; B2B restraint.\n3) Division: LinkedIn personal/company banner only — leave 2560×1440 channel art to youtube-channel-banner.\n4) Copy: short professional lines in quotes.\n5) Refs: pass refs in refs on every generate_image call.',
