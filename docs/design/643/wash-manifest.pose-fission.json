@@ -1,0 +1,35 @@
+{
+ "skill_id": "pose-fission",
+ "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+ "assets": [
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+  },
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+  },
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+  },
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+  }
+ ],
+ "postprocess": "WaveSpeed google/nano-banana-pro/edit (2k) local edit, layout kept: ex04 (coat regenerated with ex01-03 as refs)."
+}
