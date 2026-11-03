@@ -1,6 +1,6 @@
 {
  "skill_id": "game-art",
- "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+ "note": "#643 game-art examples (20). ex14–20 rewashed kie-only 4 Nov 2026 (flare + ex19 sunburst chain). Gold not committed.",
  "assets": [
   {
    "skill_id": "game-art",
@@ -124,7 +124,7 @@
    "slot": "examples",
    "index": 14,
    "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the Lovart gold (prior soft autumn remixes of this slot were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout skeleton and use-slot — do NOT change topic (still a mobile Go/weiqi game UI). No brand marks, watermarks, competitor logos or celebrity likeness. Brand the whole suite as invented game 「奔秋围棋」 with vermilion maple + deep indigo night art direction (NOT pale ink-wash bamboo/grey-green; NOT a near-recolor of gold). Redraw all illustrations, icons, frames and backgrounds. Screen type: daily Go tsumego / kill-puzzle board UI. Keep board+HUD layout family. REPLACE marketing title 「每日一题·黑先杀白」 with invented 「枫叶残局·白先活棋」 (not a paraphrase of 黑先杀白). Change date to 10月24日, streak to 12天, difficulty stars layout may stay. Functional chrome 落子/提示/重置 may stay. Invent reward copy (e.g. 通关可得 / +80 / +5). Redraw board stones in a DIFFERENT legal-looking puzzle position. Strong maple/indigo chrome, not green ink.",
    "aspect_ratio": "auto",
    "resolution": "2K"
   },
@@ -133,7 +133,7 @@
    "slot": "examples",
    "index": 15,
    "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the Lovart gold (prior soft autumn remixes of this slot were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout skeleton and use-slot — do NOT change topic (still a mobile Go/weiqi game UI). No brand marks, watermarks, competitor logos or celebrity likeness. Brand the whole suite as invented game 「奔秋围棋」 with vermilion maple + deep indigo night art direction (NOT pale ink-wash bamboo/grey-green; NOT a near-recolor of gold). Redraw all illustrations, icons, frames and backgrounds. Screen type: online friends / matchmaking list. Keep list+avatar card layout family. REPLACE title 「棋友」/「在线棋友」 with invented 「弈友」/「在线弈友」. Invent ALL player nicknames — do NOT reuse 半山, 奔心, 墨染江南, 清风奔客, 奔心如水 or near-synonyms. Use e.g. 丹枫居士, 霜叶知秋, 青石一子, 晚亭对坐, 赤壁闲敲. Change online count and ranks. Keep 约局/申请 as functional chrome. Strong maple/indigo palette.",
    "aspect_ratio": "auto",
    "resolution": "2K"
   },
@@ -142,7 +142,7 @@
    "slot": "examples",
    "index": 16,
    "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the Lovart gold (prior soft autumn remixes of this slot were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout skeleton and use-slot — do NOT change topic (still a mobile Go/weiqi game UI). No brand marks, watermarks, competitor logos or celebrity likeness. Brand the whole suite as invented game 「奔秋围棋」 with vermilion maple + deep indigo night art direction (NOT pale ink-wash bamboo/grey-green; NOT a near-recolor of gold). Redraw all illustrations, icons, frames and backgrounds. Screen type: player profile / me tab. Keep avatar+stats+menu layout family. REPLACE nickname 「我心如竹」 with invented 「霜叶知秋」; tagline 「手谈天下」→「一子定秋」. Change ID to 87362045. REPLACE progress line 「距六段还需2颗星」 with invented 「距六段还差3枚枫叶」 (not a paraphrase). Keep functional tabs 棋谱/棋院/商城/我的. Redraw avatar art fully. Strong maple/indigo, not green ink.",
    "aspect_ratio": "auto",
    "resolution": "2K"
   },
@@ -151,7 +151,7 @@
    "slot": "examples",
    "index": 17,
    "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the Lovart gold (prior soft autumn remixes of this slot were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout skeleton and use-slot — do NOT change topic (still a mobile Go/weiqi game UI). No brand marks, watermarks, competitor logos or celebrity likeness. Brand the whole suite as invented game 「奔秋围棋」 with vermilion maple + deep indigo night art direction (NOT pale ink-wash bamboo/grey-green; NOT a near-recolor of gold). Redraw all illustrations, icons, frames and backgrounds. Screen type: 7-day check-in / login reward calendar. Keep 7-day grid layout family. REPLACE title 「七日棋缘」 with invented 「枫叶七日」. REPLACE subtitle 「每日签到·连签领取好礼」 with invented 「每日打卡·连签解锁秋礼」 (not a paraphrase). REPLACE reward item 「张棋灵券」 with invented 「枚枫叶券」. Invent footer tip text. Keep day numbers 第1天…第7天 and CTA 今日签到 as functional. Strong maple/indigo celebration art, not green.",
    "aspect_ratio": "auto",
    "resolution": "2K"
   },
@@ -160,7 +160,7 @@
    "slot": "examples",
    "index": 18,
    "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the Lovart gold (prior soft autumn remixes of this slot were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout skeleton and use-slot — do NOT change topic (still a mobile Go/weiqi game UI). No brand marks, watermarks, competitor logos or celebrity likeness. Brand the whole suite as invented game 「奔秋围棋」 with vermilion maple + deep indigo night art direction (NOT pale ink-wash bamboo/grey-green; NOT a near-recolor of gold). Redraw all illustrations, icons, frames and backgrounds. Screen type: in-match Go board with bottom action bar and top mode chips. Keep board+chrome layout family. REPLACE mode chips 「排位赛/残局挑战/每日一题」 with invented 「段位赛/绝境破局/今日残题」 (not paraphrases of the gold set). Functional actions 认输/悔棋/数子/封盘/设置 may stay. Redraw board with DIFFERENT stone configuration. Strong maple-wood board + indigo HUD, not pale green ink.",
    "aspect_ratio": "auto",
    "resolution": "2K"
   },
@@ -169,7 +169,7 @@
    "slot": "examples",
    "index": 19,
    "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "prompt": "TRUE WASH + HARD DELTA REWASH (kie flare then sunburst chain, 4 Nov 2026 Asia/Shanghai). Three-up logo sheet. Brand calligraphy 「奔秋围棋」; labels 「朱墨版」「夜色版」「应用图标」. NEW emblem: vermilion maple leaf with Go-board veins + black/white stones + indigo ink splash — NOT gold mountain+birds silhouette. Center night gold-line card; right app-icon crop. Prior soft mountain-recolors rejected (meanAbs~11–25).",
    "aspect_ratio": "auto",
    "resolution": "2K"
   },
@@ -178,9 +178,10 @@
    "slot": "examples",
    "index": 20,
    "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the Lovart gold (prior soft autumn remixes of this slot were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout skeleton and use-slot — do NOT change topic (still a mobile Go/weiqi game UI). No brand marks, watermarks, competitor logos or celebrity likeness. Brand the whole suite as invented game 「奔秋围棋」 with vermilion maple + deep indigo night art direction (NOT pale ink-wash bamboo/grey-green; NOT a near-recolor of gold). Redraw all illustrations, icons, frames and backgrounds. Screen type: ranked / ladder lobby with board-size and time controls. Keep settings+CTA layout family. REPLACE title 「排位赛」 with invented 「段位赛」. REPLACE 「距六段还需2颗星」 with invented 「距六段还差3枚枫叶」. REPLACE event 「秋季棋院赛」 with invented 「丹枫擂台赛」 (not a paraphrase). REPLACE CTA 「开始排位」 with invented 「开始匹配」. Functional controls 9路/13路/19路 and minute timers may stay. Strong maple/indigo chrome, not green ink.",
    "aspect_ratio": "auto",
    "resolution": "2K"
   }
- ]
+ ],
+ "postprocess": "ex14–20 kie gpt-image-2-5-flare i2i true-wash from gold; ex19 additional sunburst chain to maple-leaf emblem. Credits this round ~90 (1817→1717 incl. #671 ex02 + retries). Brand suite 奔秋围棋 / maple+indigo."
 }
