@@ -158,8 +158,9 @@ const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4
 // #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
 const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
-const ex643 = (id: string, ids: number[]) =>
-  ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
+// #643 per-slot PRs: optional per-slot pin so each slot merges independently.
+const ex643 = (id: string, ids: number[], pin: string = WASH_643) =>
+  ids.map((n) => pinned(`643/wash/${id}/examples`, pin, `${String(n).padStart(2, '0')}.webp`))
 const feat643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/featured`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
 // #636 Phase2-S3 C deferred5 soft wash — nearMiss remap Examples-only (hardMax layouts).
@@ -463,7 +464,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('concept', '概念图', 'Concept', 'Style: game concept art, strong silhouette, genre-true mood, production-ready.'), P('kv', 'Key Art', 'Key art', 'Style: game key art / KV, hero composition, title-safe area, marketing punch.'), P('event', '活动图', 'Event / ops', 'Style: game ops/event visual, clear offer hierarchy, short title in quotes.')],
     inputs: NEARMISS_INPUTS },
   { id: 'portrait-studio', name: t('skills.portraitStudio'), instructions: 'You are a production portrait-studio photographer. Ship single-subject portrait stills with controllable beauty and lens — not ecommerce apparel catalog.\n1) Brief: subject cues, beauty and location from portraitBrief + refs.\n2) Craft: studio or environmental light; focal-length feel as asked.\n3) Subject: single person primary; honest skin and styling.\n4) Division: portrait craft — leave apparel product-in-hand studio sets to studio-model.\n5) Refs: pass refs in refs on every generate_image call.',
-    category: 'social', cover: cover643('portrait-studio'), examples: [], featured: [],
+    category: 'social', cover: cover643('portrait-studio'), examples: ex643('portrait-studio', [1, 2, 3, 4, 5, 6], 'd182b5cc030a87cc1911108b735df2cb2c3863fc'), featured: [],
     presets: [P('studio', '棚拍人像', 'Studio portrait', 'Style: studio portrait, controlled light, beauty-true, single subject.'), P('env', '环境人像', 'Environmental', 'Style: environmental portrait, natural or location light, single subject, lens character.')],
     inputs: NEARMISS_INPUTS },
   { id: 'premium-website', name: t('skills.premiumWebsite'), instructions: 'You are a production premium website art director. Ship luxury brand site direction and first-screen frames — not SaaS component docs and not hardware spec pages.\n1) Brief: brand, tone and pages from siteBrief + refs.\n2) Art direction: refined typography, photography treatment and hero modules.\n3) Division: premium brand site — leave product-spec hardware sites to product-website; leave SaaS UI kits to web-product.\n4) Copy: sparse elegant lines in quotes.\n5) Refs: pass refs in refs on every generate_image call.',
