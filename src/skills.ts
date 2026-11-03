@@ -158,8 +158,9 @@ const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4
 // #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
 const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
-const ex643 = (id: string, ids: number[]) =>
-  ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
+// #643 per-slot PRs: optional per-slot pin so each slot merges independently.
+const ex643 = (id: string, ids: number[], pin: string = WASH_643) =>
+  ids.map((n) => pinned(`643/wash/${id}/examples`, pin, `${String(n).padStart(2, '0')}.webp`))
 const feat643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/featured`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
 // #636 Phase2-S3 C deferred5 soft wash — nearMiss remap Examples-only (hardMax layouts).
@@ -475,7 +476,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('loop', '短循环', 'Short loop', 'Style: animated poster short loop, type locked, subtle motion, poster hierarchy.'), P('punch', '节奏海报', 'Punchy poster', 'Style: punchy animated poster, short beats, high contrast, readable title.')],
     inputs: NEARMISS_INPUTS },
   { id: 'pose-fission', name: t('skills.poseFission'), instructions: 'You are a production ecommerce pose-fission artist. Keep scene, character and lighting; explode poses — opposite of person-swap (which changes person/outfit and keeps pose).\n1) Intake: require baseImage; lock background, light and identity.\n2) Fission: generate multiple poses of the same character in the same scene.\n3) Guardrails: no identity swap, no background rewrite, no outfit redesign unless asked.\n4) Division: multi-pose same scene — leave triple-ref person/outfit swap to person-swap.\n5) Refs: pass base shape id in refs on every generate_image call.',
-    category: 'ecommerce', cover: cover643('pose-fission'), examples: [], featured: [],
+    category: 'ecommerce', cover: cover643('pose-fission'), examples: ex643('pose-fission', [1, 2, 3, 4], '097f2ac1b89af86325094edc5ae9cd1f842c8a81'), featured: [],
     presets: [P('stand', '站姿裂变', 'Standing set', 'Style: same-scene pose fission, standing variations, light and background locked.'), P('sit', '坐姿裂变', 'Seated set', 'Style: same-scene pose fission, seated variations, identity and light locked.'), P('gesture', '手势裂变', 'Gesture set', 'Style: same-scene pose fission, hand/gesture variations, background locked.')],
     inputs: NEARMISS_INPUTS },
   { id: 'live-promo-decor', name: t('skills.livePromoDecor'), instructions: 'You are a production live-commerce decor designer. Ship overlay packs (bg, stickers, price tags, badges) — not a big-promo KV hero.\n1) Brief: category, offer and overlay needs from liveBrief + refs.\n2) Pack: background, lower-thirds, price tags and corner badges that stack cleanly.\n3) Division: live decor kit — leave campaign KV heroes to promo-ecommerce.\n4) Copy: price/CTA text in quotes; high contrast on stream.\n5) Refs: pass refs in refs on every generate_image call.',
