@@ -1,35 +1,40 @@
 {
- "skill_id": "pose-fission",
- "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
- "assets": [
-  {
-   "skill_id": "pose-fission",
-   "slot": "examples",
-   "index": 1,
-   "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
-  },
-  {
-   "skill_id": "pose-fission",
-   "slot": "examples",
-   "index": 2,
-   "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
-  },
-  {
-   "skill_id": "pose-fission",
-   "slot": "examples",
-   "index": 3,
-   "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
-  },
-  {
-   "skill_id": "pose-fission",
-   "slot": "examples",
-   "index": 4,
-   "source_path": "<lovart-gold, not committed>",
-   "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
-  }
- ],
- "postprocess": "WaveSpeed google/nano-banana-pro/edit (2k) local edit, layout kept: ex04 (coat regenerated with ex01-03 as refs)."
+  "skill_id": "pose-fission",
+  "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+  "assets": [
+    {
+      "skill_id": "pose-fission",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "<lovart-gold, not committed>",
+      "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+    },
+    {
+      "skill_id": "pose-fission",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "<lovart-gold, not committed>",
+      "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+    },
+    {
+      "skill_id": "pose-fission",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "<lovart-gold, not committed>",
+      "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+    },
+    {
+      "skill_id": "pose-fission",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "<lovart-gold, not committed>",
+      "prompt": "TRUE WASH — original photo, NEW pixels. Image 1 is the POSE and FRAMING reference; Image 2 is the IDENTITY + OUTFIT + LOCATION reference. Output: a close half-body fashion portrait, 3:4, framed from the top of the head down to just below the waist belt (chest-up/half-body, NOT full body, legs not visible), exactly like Image 1's camera distance. Pose from Image 1: body slightly angled, head tilted, one hand raised touching the side of her head/hair, the other hand resting at the coat collar/lapel near the chest, gentle direct gaze. Person and outfit EXACTLY as Image 2: the same woman — short platinum-blonde pixie cut, light freckles, small gold hoop earrings, white knit top — wearing the same rust-red / terracotta double-breasted belted trench coat with dark buttons and tied belt. Location as Image 2: sunny pastel-pink Mediterranean alley with magenta bougainvillea and a rough stone wall she leans near. Do NOT copy Image 1's person, brown curly hair, camel blazer or dark city street. Photoreal commercial fashion editorial, beautiful refined features, polished natural makeup, soft natural sunlight, real skin texture without plastic smoothing. No text, logos, watermarks or celebrity likeness.",
+      "refs": [
+        "<lovart-gold ex04, not committed>",
+        "643/wash/pose-fission/examples/01.webp (identity/outfit/location)"
+      ],
+      "model": "gpt-image-2-5-flare-image-to-image"
+    }
+  ],
+  "postprocess": "WaveSpeed google/nano-banana-pro/edit (2k) local edit, layout kept: ex04 (coat regenerated with ex01-03 as refs)."
 }
