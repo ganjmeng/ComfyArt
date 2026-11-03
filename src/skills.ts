@@ -158,8 +158,9 @@ const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4
 // #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
 const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
-const ex643 = (id: string, ids: number[]) =>
-  ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
+// #643 per-slot PRs: optional per-slot pin so each slot merges independently.
+const ex643 = (id: string, ids: number[], pin: string = WASH_643) =>
+  ids.map((n) => pinned(`643/wash/${id}/examples`, pin, `${String(n).padStart(2, '0')}.webp`))
 const feat643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/featured`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
 // #636 Phase2-S3 C deferred5 soft wash — nearMiss remap Examples-only (hardMax layouts).
@@ -487,7 +488,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('personal', '个人横幅', 'Personal', 'Style: LinkedIn personal banner 1584×396, face safe area, B2B tone.'), P('company', '公司横幅', 'Company', 'Style: LinkedIn company banner 1584×396, logo safe, professional restraint.')],
     inputs: NEARMISS_INPUTS },
   { id: 'logo-animation', name: t('skills.logoAnimation'), instructions: 'You are a production logo-animation designer. Animate a logo into a short brand intro or loop — not a static material study and not a geometric mark redesign.\n1) Intake: require logoImage; confirm intro vs loop.\n2) Motion: clean entrance or seamless loop; keep geometry identical to the mark.\n3) Division: motion logo — leave material stills to logo-material; leave abstract mark invention to logo-abstract.\n4) Finish: safe margins; no redesign of paths.\n5) Refs: pass logo shape id in refs on every generate_image / animate call.',
-    category: 'branding', cover: cover643('logo-animation'), examples: [], featured: [],
+    category: 'branding', cover: cover643('logo-animation'), examples: ex643('logo-animation', [1, 2, 3, 4], '65f6a16d8ce7b817aa7f025f99cc6eaafa2f019d'), featured: [],
     presets: [P('intro', '入场动画', 'Intro', 'Style: logo intro animation, clean entrance, geometry locked to the mark.'), P('loop', '循环动画', 'Loop', 'Style: logo loop animation, seamless cycle, mark paths unchanged.')],
     inputs: NEARMISS_INPUTS },
   { id: 'restaurant-website', name: t('skills.restaurantWebsite'), instructions: 'You are a production restaurant website designer. Ship landing visuals for menu, atmosphere and reserve modules — not a generic SaaS product site.\n1) Brief: cuisine, tone and modules from restaurantBrief + refs.\n2) Modules: hero mood, menu board and reserve/CTA section sharing one look.\n3) Division: restaurant hospitality site — leave SaaS kits to web-product.\n4) Copy: dish/CTA lines in quotes.\n5) Refs: pass refs in refs on every generate_image call.',
