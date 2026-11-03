@@ -36,14 +36,20 @@ def test_thumbnail_yt_presets_at_least_two():
     e = _entries()["thumbnail"]
     presets = re.findall(r"\bP\('([^']+)',\s*'([^']*)',\s*'([^']*)'", e)
     assert len(presets) >= 2, presets
-    ids = {p[0] for p in presets}
+    ids = [p[0] for p in presets]
     ens = {p[2] for p in presets}
-    blob = " ".join(ids | ens).lower()
+    blob = " ".join(set(ids) | ens).lower()
     assert "yt" in blob or "youtube" in blob or "face" in blob or "type" in blob or "contrast" in blob, blob
+    # yt-face is the default: first preset, then type, then contrast.
+    assert ids[:3] == ["yt-face", "yt-type", "yt-contrast"], ids
+    assert "presetChips: true" in e
     assert any("16:9" in p or "youtube" in p.lower() or "thumb" in p.lower() for p in re.findall(r"Style: ([^']*)", e)), e
     body = e.split("presets:", 1)[1].split("inputs:", 1)[0]
     assert len(re.findall(r"Style: ", body)) >= 2
     assert "16:9" in body
+    assert re.search(r"I\('file', \[[^\]]+\], 'image'\)", e)
+    assert re.search(r"I\('titleCopy', \[[^\]]+\], 'text', true,", e)
+    assert re.search(r"I\('note', \[[^\]]+\], 'textarea', false,", e)
 
 
 def test_thumbnail_instructions_yt_ctr_triad():
@@ -86,3 +92,34 @@ def test_locales_desc_mentions_youtube():
     assert "YouTube" in ZH or "youtube" in ZH.lower()
     assert "YouTube" in EN
     assert "skills.desc.thumbnail" in ZH and "skills.desc.thumbnail" in EN
+
+
+def test_thumbnail_dialog_states_and_shelf_ratio():
+    """Design lock: preset chips, required titleCopy inline error, four dialog states, 16:9 shelf cover."""
+    dlg = (ROOT / "src/ui/SkillRunDialog.tsx").read_text()
+    ex = (ROOT / "src/ui/SkillExamples.tsx").read_text()
+    css = (ROOT / "src/styles/home.css").read_text()
+    wall = (ROOT / "src/home/Skills.tsx").read_text()
+    assert 'data-testid="skill-run-preset-chips"' in dlg
+    assert 'data-testid="skill-run-preset-chip"' in dlg
+    assert "setPreset(p.id)" in dlg  # chip switch stays in the dialog
+    assert 'data-testid="skill-run-field-error"' in dlg
+    assert "missing.includes(f.key)" in dlg
+    assert 'disabled={missing.length > 0 || !!uploading}' in dlg
+    close = next(ln for ln in dlg.splitlines() if "skill-run-close" in ln)
+    assert "disabled" not in close
+    assert 'data-testid="skill-run-run-error"' in dlg
+    assert 'data-testid="skill-run-upload-retry"' in dlg
+    assert 'data-testid="skill-run-examples-empty"' in ex
+    assert "skillRun.noExamples" in ex
+    assert 'data-testid="skill-run-example-loading"' in ex
+    assert 'data-testid="skill-run-example-retry"' in ex
+    assert 'data-count={examples.length}' in ex
+    assert '"skillRun.noExamples": "暂无示例"' in ZH
+    assert '"skillRun.noExamples": "No examples yet"' in EN
+    assert "aspect-ratio: 231 / 173" in css
+    assert '.ca-swall__card[data-skill="thumbnail"] .ca-swall__cover { aspect-ratio: 16 / 9; }' in css
+    assert 'data-skill={skill.id}' in wall
+    assert "skills-card-author" in wall and "skills-card-usage" in wall and "skills-card-video" in wall
+    assert "Lovart" not in dlg and "lovart" not in dlg
+    assert "Lovart" not in ex and "lovart" not in ex
