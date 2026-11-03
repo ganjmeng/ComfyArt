@@ -1,0 +1,42 @@
+{
+ "skill_id": "pose-fission",
+ "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+ "assets": [
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep an e-commerce same-scene multi-pose fashion shot: same model wardrobe category (tailored blazer + skirt), same street scene type, same framing family. STRONG DELTA: a clearly different model (different face, hair), different blazer color, different time of day/lighting and colour grade, different street details, different pose.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep an e-commerce same-scene multi-pose fashion shot: same model wardrobe category (tailored blazer + skirt), same street scene type, same framing family. STRONG DELTA: a clearly different model (different face, hair), different blazer color, different time of day/lighting and colour grade, different street details, different pose.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep an e-commerce same-scene multi-pose fashion shot: same model wardrobe category (tailored blazer + skirt), same street scene type, same framing family. STRONG DELTA: a clearly different model (different face, hair), different blazer color, different time of day/lighting and colour grade, different street details, different pose.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep an e-commerce same-scene multi-pose fashion shot: same model wardrobe category (tailored blazer + skirt), same street scene type, same framing family. STRONG DELTA: a clearly different model (different face, hair), different blazer color, different time of day/lighting and colour grade, different street details, different pose.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  }
+ ]
+}
