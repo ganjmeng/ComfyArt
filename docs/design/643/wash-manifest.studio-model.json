@@ -1,0 +1,20 @@
+{
+ "skill_id": "studio-model",
+ "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+ "assets": [
+  {
+   "skill_id": "studio-model",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — original photo with NEW pixels, clearly distinguishable from the reference at half-screen. No brand marks, watermarks, or celebrity likeness. GARMENT LOCK: the model wears EXACTLY the same garment as reference — the same sleeveless cream/ivory lace-bodice dress with tiered flowing cream chiffon maxi skirt, same silhouette, length, neckline, lace pattern and color. Do NOT recolor or restyle the dress. Same full-body standing studio fashion e-commerce shot, same framing. CHANGE ONLY: a different model (different ethnicity, face, hairstyle — e.g. short dark bob), different pose (one hand at waist), a warm sage-green seamless studio backdrop instead of white, and soft directional golden side lighting with visible floor shadow."
+  },
+  {
+   "skill_id": "studio-model",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — original photo with NEW pixels, clearly distinguishable from the reference at half-screen. No brand marks, watermarks, or celebrity likeness. PRODUCT-ONLY: the SAME cream/ivory sleeveless lace-bodice dress with tiered chiffon maxi skirt shown ALONE as an invisible-mannequin / ghost-mannequin product shot, same front view, same centered full-length framing. ABSOLUTELY NO PERSON, no model, no face, no arms, no legs — dress only. Keep the garment identical (shape, lace, color). CHANGE: a dusty-rose / terracotta plaster backdrop with soft gradient, a pale stone plinth floor, a dried pampas-grass vase prop at one side, and warm late-afternoon window-light with a soft shadow."
+  }
+ ]
+}
