@@ -36,7 +36,8 @@ async def _page(p, app_url, lang):
 async def _shot(pg, name):
     if SHOTS:
         Path(SHOTS).mkdir(parents=True, exist_ok=True)
-        await pg.screenshot(path=str(Path(SHOTS) / f"{name}.png"))
+        await pg.wait_for_timeout(300)  # let the caret rotation finish
+        await pg.screenshot(path=str(Path(SHOTS) / f"{name}.png"), animations="disabled")
 
 
 @pytest.mark.parametrize("lang", ["en", "zh"])
@@ -66,7 +67,8 @@ async def test_creator_title_pills_placeholder_650(app_url, lang):  # noqa: F811
         assert (await pg.get_by_test_id("creator-landing-title").inner_text()).strip() == title
         assert [s.strip() for s in await pg.locator("[data-creator] .ca-chat__start").all_inner_texts()] == pills
         assert await pg.locator(".ca-composer__input").get_attribute("placeholder") == ""
-        await pg.wait_for_timeout(300)
+        await pg.wait_for_timeout(1500)
+        await pg.get_by_test_id("creator-landing-title").wait_for()
         await _shot(pg, f"ours-creator-initial-{lang}")
         await browser.close()
 
