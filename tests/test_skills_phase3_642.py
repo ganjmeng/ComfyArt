@@ -60,6 +60,7 @@ def test_new19_present_production_copy_dialog_inputs():
         # #643 cover pins; batch1 examples wired, featured stays empty; no video
         BATCH1_EX = {
             "taobao-product", "before-after", "product-website", "linkedin-banner", "clothing-swap",
+            "ai-model", "premium-website", "logo-animation",
             "anim-2d", "creator-identity", "youtube-channel-banner",  # #643 batch2a
         }
         head = e.split("inputs:", 1)[0]
