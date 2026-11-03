@@ -104,8 +104,9 @@ FEED_EXPECTED = frozenset({
     "animated-poster",  # #643 per-slot PR (examples wired => in feed)
     "premium-website",  # #643 per-slot PR (examples wired => in feed)
     "studio-model",  # #643 per-slot PR (examples wired => in feed)
+    "product-to-packaging",  # #643 per-slot PR (examples wired => in feed)
 })
-FEED_MIN = 38  # +#677/#682/#674/#678 + #643 animated-poster + premium-website + studio-model
+FEED_MIN = 39  # +#643 animated-poster + premium-website + studio-model + product-to-packaging
 
 
 FEATURED_DIRS = ("/580/featured-v1/", "/580/featured-v2/", "/637/wash/", "/636/wash/", "/643/wash/")
