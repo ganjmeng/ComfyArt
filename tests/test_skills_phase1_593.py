@@ -44,7 +44,7 @@ def test_new6_production_instructions_and_presets():
         assert "quickStartCoverFit: 'contain'" in head and "examples: ex594(" in head, sid
         if sid == "multi-angle":
             # #691/#687: reference-card parity → Upload + Additional only, no presets
-            assert "presets:" not in head and "inputs: EFFECT_INPUTS }" in e, sid
+            assert "presets:" not in head and "inputs: MULTI_ANGLE_INPUTS }" in e, sid
         else:
             assert "presets:" in head, sid
             body = head.split("presets:", 1)[1]
@@ -81,7 +81,7 @@ def test_website_chip_still_lit():
 def test_multi_angle_upload_additional_parity_691():
     # #691/#687: right pane exactly Upload then Additional; prompt defaults live in instructions, notes feed the ask
     e = _entries()["multi-angle"]
-    assert "inputs: EFFECT_INPUTS }" in e and "presets:" not in e
+    assert "inputs: MULTI_ANGLE_INPUTS }" in e and "presets:" not in e and "pure 90° side profile" in e
     assert "angleBrief" not in e and "subjectImage" not in e and "VISUAL" not in e
     assert "Additional notes" in e and "neutral seamless" in e
     assert "examples: ex594('multi-angle', [1, 2, 3, 4])" in e  # example media untouched

@@ -1,6 +1,7 @@
 """#595 Phase1-S5 mount e2e (mock only, $0): home quick-start hot order, website chip, new6 dialog→Agent project."""
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -55,7 +56,7 @@ async def test_multi_angle_carousel_and_brand_dialog_to_agent(app_url):  # noqa:
         assert await pg.get_by_test_id("skill-run-preset-chips").count() == 0
         fields = pg.get_by_test_id("skill-run-field")
         assert await fields.evaluate_all("fs => fs.map(f => [f.dataset.key, f.dataset.type])") == [["file", "image"], ["note", "textarea"]]
-        assert await pg.locator('[data-key="note"]').get_attribute("placeholder") == "Anything you want to add?"
+        assert await pg.locator('[data-key="note"]').get_attribute("placeholder") == "Anything you want to add? Uploading a reference image is recommended"
         await pg.keyboard.press("Escape")
         await dlg.wait_for(state="hidden")
         # Phase1 upgrade skill: dialog → new Agent project (AC ≥1)
@@ -78,6 +79,11 @@ async def test_multi_angle_upload_reaches_handoff_ref_691(app_url):  # noqa: F81
         await dlg.wait_for()
         await dlg.locator('input[type="file"]').set_input_files(str(Path(__file__).parent / "fixtures/ma_subject_691.png"))
         await pg.wait_for_function("() => !document.querySelector('[data-testid=skill-run-go]').disabled")
+        thumb = dlg.locator(".ca-gen__ref")
+        await thumb.hover()
+        assert await thumb.locator("img").count() == 1 and await thumb.get_by_title("Remove").count() == 1  # thumbnail + delete
+        if os.environ.get("SHOTS_691"):
+            await dlg.locator(".ca-skillrun__right").screenshot(path=os.environ["SHOTS_691"] + "/05-right-pane-after-upload-en.png")
         await pg.locator('[data-key="note"]').fill("PDP, white seamless")
         navs: list[str] = []
         pg.on("framenavigated", lambda f: navs.append(f.url))
