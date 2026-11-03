@@ -724,3 +724,10 @@ span.arti-mascot { cursor: default; pointer-events: none; }
   }
 }
 .ca-agentlogo--loomi { color: var(--ca-strong); }
+
+/* #650 follow-up: Skill Creator user turn = full-width light-gray block, chip inline with the text (wraps under it), 13px */
+.ca-chat__user--creator { align-self: stretch; max-width: none; align-items: stretch; }
+.ca-chat__user--creator .ca-chat__bubble--skill { display: block; padding: 6px 10px; border-radius: 10px; font-size: 11px; line-height: 19px; font-weight: 500; text-align: left; }
+.ca-chat__user--creator .ca-chat__bubble--skill > .ca-chip--skill { display: inline-flex; vertical-align: top; box-sizing: border-box; height: 19px; padding: 0 5px; margin-right: 6px; border-radius: 6px; font-size: 11px; gap: 3px; }
+.ca-chat__user--creator .ca-chat__bubble--skill > .ca-chip--skill .ca-icon { width: 11px; height: 11px; }
+.ca-chat__user--creator .ca-chat__bubble--skill > .ca-chat__text { max-width: none; }

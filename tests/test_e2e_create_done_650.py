@@ -77,5 +77,64 @@ def test_creation_complete_matches_lovart(browser, bundle, lang):
     }""")
     assert order == [True, True, True, True], order
     if os.environ.get("SHOT_650_DONE"):
-        page.screenshot(path=f"{os.environ['SHOT_650_DONE']}/create-done-loomi-{lang}.png")
+        page.screenshot(path=f"{os.environ['SHOT_650_DONE']}/create-done-v2-loomi-{lang}.png")
+    page.close()
+
+
+FB = {"en": ("Helpful", "Not helpful"), "zh": ("有帮助", "没帮助")}
+
+
+@pytest.mark.parametrize("lang", ["en", "zh"])
+def test_creator_bubble_sizes_and_feedback_match_gold(browser, bundle, lang):
+    """v2: creator user block full-width/left/inline 11px; rows, card, buttons and prose at the gold capture's sizes;
+    👍/👎 under the prose, mutually exclusive, local state only."""
+    page = browser.new_page(viewport={"width": 1280, "height": 800})
+    page.route("**/*", lambda r: r.continue_() if r.request.url.startswith(bundle) else r.abort())
+    page.goto(f"{bundle}/index.html?lang={lang}")
+    page.wait_for_function("window.__ready")
+    page.wait_for_timeout(200)
+    g = page.evaluate("""() => {
+      const q = s => document.querySelector(s), r = el => el.getBoundingClientRect(), cs = el => getComputedStyle(el)
+      const chat = q('[data-testid=chat]'), bub = q('[data-testid=user-bubble]'), chip = q('[data-testid=user-skill-chip]')
+      const txt = q('[data-testid=user-bubble-text]'), card = q('[data-testid=skill-created-card]')
+      const prose = [...document.querySelectorAll('#done .ca-md')].at(-1), fb = q('[data-testid=chat-done-feedback]')
+      const cr = r(chat), br = r(bub), chr = r(chip), tr = txt.getClientRects()
+      return {
+        userCls: q('.ca-chat__user').className, bubW: Math.round(br.width), chatW: Math.round(cr.width - parseFloat(cs(chat).paddingLeft) - parseFloat(cs(chat).paddingRight)),
+        bubLeft: Math.round(br.left - cr.left - parseFloat(cs(chat).paddingLeft)), align: cs(bub).textAlign, display: cs(bub).display,
+        bubFont: cs(bub).fontSize, bubLH: cs(bub).lineHeight, txtFont: cs(txt).fontSize,
+        chipInline: Math.abs(r(chip).top - tr[0].top) <= 2 && chr.right <= tr[0].left, wrapsUnderChip: [...tr].filter(x => x.width > 0 && x.top > tr[0].top + 5).every(x => Math.round(x.left) < Math.round(chr.right)), lines: tr.length,
+        chipBorder: cs(chip).borderTopStyle, chipH: Math.round(chr.height),
+        rowFont: [...document.querySelectorAll('#done .ca-process__label')].map(e => cs(e).fontSize),
+        rowStep: Math.round(r(document.querySelectorAll('#done .ca-process__row')[1]).top - r(document.querySelectorAll('#done .ca-process__row')[0]).top),
+        cardH: Math.round(r(card).height), thumb: [Math.round(r(q('.ca-chat__skillcard-thumb')).width), Math.round(r(q('.ca-chat__skillcard-thumb')).height)],
+        name: cs(q('[data-testid=skill-created-name]')).fontSize, desc: cs(q('[data-testid=skill-created-desc]')).fontSize,
+        btn: [...card.querySelectorAll('button')].map(b => [cs(b).fontSize, Math.round(r(b).height)]),
+        prose: cs(prose).fontSize, proseBubSame: cs(prose).fontSize === cs(bub).fontSize,
+        fbBelow: r(fb).top >= r(prose).bottom, fbLeft: Math.round(r(fb).left - r(prose).left),
+        icons: [...fb.querySelectorAll('.ca-icon')].map(i => Math.round(r(i).width)),
+      }
+    }""")
+    assert "ca-chat__user--creator" in g["userCls"]
+    assert g["bubW"] == g["chatW"] and g["bubLeft"] == 0, g
+    assert g["align"] == "left" and g["display"] == "block", g
+    assert (g["bubFont"], g["bubLH"], g["txtFont"]) == ("11px", "19px", "11px"), g
+    assert g["chipInline"] and g["wrapsUnderChip"], g
+    assert g["chipBorder"] == "solid" and g["chipH"] == 19, g
+    assert g["rowFont"] == ["11px", "11px"] and g["rowStep"] == 20, g
+    assert g["cardH"] == 46 and g["thumb"] == [50, 36], g
+    assert (g["name"], g["desc"]) == ("11px", "10px"), g
+    assert g["btn"] == [["10px", 18], ["10px", 18]], g
+    assert g["prose"] == "11px" and g["proseBubSame"], g
+    assert g["fbBelow"] and g["fbLeft"] == 0 and g["icons"] == [12, 12], g
+    up, down = page.get_by_test_id("chat-feedback-up"), page.get_by_test_id("chat-feedback-down")
+    assert (up.get_attribute("aria-label"), down.get_attribute("aria-label")) == FB[lang]
+    color = lambda el: el.evaluate("e => getComputedStyle(e).color")
+    idle = color(up)
+    assert color(down) == idle
+    state = lambda: [up.get_attribute("aria-pressed"), down.get_attribute("aria-pressed")]
+    assert state() == ["false", "false"]
+    up.click(); assert state() == ["true", "false"] and color(up) != idle
+    down.click(); assert state() == ["false", "true"] and color(up) == idle
+    down.click(); assert state() == ["false", "false"]
     page.close()

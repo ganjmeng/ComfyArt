@@ -1251,3 +1251,24 @@
 .ca-chat__skillcard-desc { font-size: 12px; color: var(--ca-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ca-chat__skillcard-btn { height: 24px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--ca-border); background: transparent; font-size: 12px; cursor: pointer; flex: none; }
 .ca-chat__skillcard-btn[data-variant="primary"] { background: var(--ca-btn-primary-bg); color: var(--ca-btn-primary-fg); border-color: transparent; }
+
+/* #650 follow-up: creation-complete 👍/👎 — 14px gray line icons, left-aligned under the prose; hover darker, selected highlighted */
+.ca-chat__feedback[data-variant="creator"] { gap: 2px; margin-top: 0; }
+.ca-chat__feedback[data-variant="creator"] .ca-chat__fb { width: 22px; height: 22px; border-radius: 6px; color: var(--ca-muted); }
+.ca-chat__feedback[data-variant="creator"] .ca-chat__fb .ca-icon { width: 14px; height: 14px; }
+.ca-chat__feedback[data-variant="creator"] .ca-chat__fb:hover { background: transparent; color: var(--ca-text); }
+.ca-chat__feedback[data-variant="creator"] .ca-chat__fb[data-on] { color: var(--ca-text); background: var(--ca-active); }
+
+/* #650 follow-up: creation-complete turn sized to the reference capture (1280×800): rows 11px on a 20px step,
+   card ~47px tall (thumb 50×36, name 11px, desc 10px, buttons 10px/18px), prose 11px. Scoped to turns holding the card. */
+.ca-chat__bot:has(.ca-chat__skillcard) .ca-process { --ca-process-ico: 12px; --ca-process-row-gap: 8px; }
+.ca-chat__bot:has(.ca-chat__skillcard) .ca-process__row { height: 12px; }
+.ca-chat__bot:has(.ca-chat__skillcard) .ca-process__label { font-size: 11px; }
+.ca-chat__bot:has(.ca-chat__skillcard) .ca-md { font-size: 11px; }
+.ca-chat__bot .ca-chat__skillcard { gap: 10px; padding: 4px 8px 4px 2px; border-radius: 8px; }
+.ca-chat__bot .ca-chat__skillcard-thumb { width: 50px; height: 36px; }
+.ca-chat__bot .ca-chat__skillcard-name { font-size: 11px; }
+.ca-chat__bot .ca-chat__skillcard-desc { font-size: 10px; }
+.ca-chat__bot .ca-chat__skillcard-btn { height: 18px; padding: 0 7px; border-radius: 5px; font-size: 10px; }
+.ca-chat__bot .ca-chat__skillcard-btn + .ca-chat__skillcard-btn { margin-left: -4px; }
+.ca-chat__feedback[data-variant="creator"] .ca-chat__fb .ca-icon { width: 12px; height: 12px; }

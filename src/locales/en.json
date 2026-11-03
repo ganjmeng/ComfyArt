@@ -367,6 +367,8 @@
   "chatMessage.memoryUpdating": "Updating memory",
   "chatMessage.memorySavedCount": "Saved {0}",
   "chatMessage.memoryRetrieved": "Memory retrieved",
+  "chatMessage.helpful": "Helpful",
+  "chatMessage.notHelpful": "Not helpful",
   "chatMessage.thumbsDown": "Thumbs down",
   "chatMessage.thumbsUp": "Thumbs up",
   "chatMessage.timedOut": "Timed out",

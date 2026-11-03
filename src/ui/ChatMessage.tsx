@@ -952,7 +952,8 @@ function readMsgFeedback(messageId: string): MsgFeedback {
 }
 
 /** #360: quiet outline 👍/👎 under Done summary — never suggestion chips. */
-function DoneFeedback({ messageId }: { messageId: string }) {
+function DoneFeedback({ messageId, variant }: { messageId: string; variant?: 'creator' }) {
+  const creator = variant === 'creator'
   const [value, setValue] = useState<MsgFeedback>(() => readMsgFeedback(messageId))
   const pick = (v: 'up' | 'down') => {
     const next: MsgFeedback = value === v ? null : v
@@ -960,12 +961,13 @@ function DoneFeedback({ messageId }: { messageId: string }) {
     writeLocal(`comfyart.msgFeedback.${messageId}`, next ?? '')
   }
   return (
-    <div className="ca-chat__feedback" data-value={value || undefined} data-testid="chat-done-feedback">
+    <div className="ca-chat__feedback" data-value={value || undefined} data-variant={variant} data-testid="chat-done-feedback">
       <button
         type="button"
         className="ca-chat__fb"
         data-on={value === 'up' || undefined}
-        aria-label={t('chatMessage.thumbsUp')}
+        data-testid="chat-feedback-up"
+        aria-label={t(creator ? 'chatMessage.helpful' : 'chatMessage.thumbsUp')}
         aria-pressed={value === 'up'}
         onClick={() => pick('up')}
       >
@@ -975,7 +977,8 @@ function DoneFeedback({ messageId }: { messageId: string }) {
         type="button"
         className="ca-chat__fb"
         data-on={value === 'down' || undefined}
-        aria-label={t('chatMessage.thumbsDown')}
+        data-testid="chat-feedback-down"
+        aria-label={t(creator ? 'chatMessage.notHelpful' : 'chatMessage.thumbsDown')}
         aria-pressed={value === 'down'}
         onClick={() => pick('down')}
       >
@@ -1002,6 +1005,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   }
   let genAt = -1
   let created: CreatedSkill[] = []
+  let hasCreated = false
   const flushProc = () => {
     if (!proc.length) return
     const onlyThought = proc.every((s) => s.kind === 'thought')
@@ -1091,7 +1095,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
             live: false,
           })
         }
-        if (kindResolved === 'skill_created') { const c = skillCreatedOf(b, result); if (c) created.push(c) }
+        if (kindResolved === 'skill_created') { const c = skillCreatedOf(b, result); if (c) { created.push(c); hasCreated = true } }
         const pages = kindResolved === 'search_pages' ? searchResultCount(b, result) : undefined
         const model = (kindResolved === 'image' || kindResolved === 'video') ? processModelName(b.input) : undefined
         const aspectRatio = (kindResolved === 'image' || kindResolved === 'video') ? processAspectRatio(b.input) : undefined
@@ -1190,6 +1194,9 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
   // #360: under Done summary — thumbs only; NEVER a suggestion chip/pill row on media Done
   if (m.status === 'done' && isMediaDoneMessage(m)) {
     items.push(<DoneFeedback key="feedback" messageId={m.id} />)
+  } else if (m.status === 'done' && hasCreated) {
+    // #650 follow-up: creation-complete turn ends with the same quiet 👍/👎 (14px, left-aligned) under the prose
+    items.push(<DoneFeedback key="feedback" messageId={m.id} variant="creator" />)
   }
   return <>{items}</>
 }
@@ -1198,8 +1205,10 @@ export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMes
   const text = textOf(m)
   const media = m.blocks.filter((b) => b.type === 'image' || b.type === 'video' || b.type === 'audio')
   const skills = m.blocks.filter((b) => b.type === 'skill')
+  // #650 follow-up: a Skill Creator turn renders as the full-width, left-aligned block (chip inline with 13px text)
+  const creator = skills.some((b) => b.name === t('composer.skillCreator') || b.name === 'Skill Creator' || b.name === '技能创建器')
   return (
-    <div className="ca-chat__user" data-queued={m.status === 'queued' || undefined}>
+    <div className={creator ? 'ca-chat__user ca-chat__user--creator' : 'ca-chat__user'} data-queued={m.status === 'queued' || undefined}>
       <div className="ca-chat__acts">
         <button type="button" className="ca-history__del" title={t('chatMessage.editAgain')} onClick={() => draftAtom.set(text)}>{Icons.textTool}</button>
         <CopyButton text={text} />
