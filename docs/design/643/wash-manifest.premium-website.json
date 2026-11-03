@@ -1,0 +1,66 @@
+{
+ "skill_id": "premium-website",
+ "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+ "assets": [
+  {
+   "skill_id": "premium-website",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TEXT EDIT ONLY. Keep this website screenshot identical in layout, imagery, colors. Replace the hero headline with 'Golden crusts, slow sunrises.' and rewrite all other copy (nav, buttons, subheads, brand name) with new invented wording, no old text verbatim."
+  },
+  {
+   "skill_id": "premium-website",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide bakery interior photograph: saturated yellow feature wall with window-shadow + potted plant on left; marble counter with sourdough boules + croissants, glass pastry case, wood shelves on white subway tile on right. Same premium bakery brand photography use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): re-shoot the bakery/food scene with a different arrangement, a different camera angle (e.g. top-down or low 3/4), a different dominant background color (e.g. deep teal, terracotta, or cream instead of the reference color), different lighting mood and different props. Keep the same artisanal bakery product category and premium website hero/section image use-slot.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "premium-website",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a square commercial food shot: artisan scored sourdough boule floating on saturated yellow with grain/flour burst and soft ground shadow. Same premium bakery product-hero use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): re-shoot the bakery/food scene with a different arrangement, a different camera angle (e.g. top-down or low 3/4), a different dominant background color (e.g. deep teal, terracotta, or cream instead of the reference color), different lighting mood and different props. Keep the same artisanal bakery product category and premium website hero/section image use-slot.",
+   "aspect_ratio": "1:1",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "premium-website",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a warm pastry still life: stacked croissants + pains au chocolat with torn honeycomb crumb, small bowl of raspberry jam, burgundy napkin, cream negative space on the left. Same premium bakery product photography use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): re-shoot the bakery/food scene with a different arrangement, a different camera angle (e.g. top-down or low 3/4), a different dominant background color (e.g. deep teal, terracotta, or cream instead of the reference color), different lighting mood and different props. Keep the same artisanal bakery product category and premium website hero/section image use-slot.",
+   "aspect_ratio": "4:3",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "premium-website",
+   "slot": "examples",
+   "index": 5,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the same premium bakery website section layout (nav, heading, product grid/arrangement positions, buttons). REARRANGE AND CHANGE THE PRODUCTS: replace the cookies/bread with different baked goods (e.g. glazed fruit tarts, pistachio croissants, cinnamon knots) in a different arrangement and on different props/plates; new lighting and palette. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+  },
+  {
+   "skill_id": "premium-website",
+   "slot": "examples",
+   "index": 6,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a tall berry-topped layer cake + tall slice on matching red plates against solid red backdrop with hard side light; cherries in foreground. Same premium bakery celebration-cake photography use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): re-shoot the bakery/food scene with a different arrangement, a different camera angle (e.g. top-down or low 3/4), a different dominant background color (e.g. deep teal, terracotta, or cream instead of the reference color), different lighting mood and different props. Keep the same artisanal bakery product category and premium website hero/section image use-slot.",
+   "aspect_ratio": "4:3",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "premium-website",
+   "slot": "examples",
+   "index": 7,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a vertical warm bakery craft photo: flour-dusted hands shaping a dough boule on wood bench, wicker banneton, bowls, midground dough rounds on couche with light steam, soft window-lit kitchen bokeh. Same premium bakery craft/process photography use-slot — stay bakery craft, not cleaning before/after. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): re-shoot the bakery/food scene with a different arrangement, a different camera angle (e.g. top-down or low 3/4), a different dominant background color (e.g. deep teal, terracotta, or cream instead of the reference color), different lighting mood and different props. Keep the same artisanal bakery product category and premium website hero/section image use-slot.",
+   "aspect_ratio": "3:4",
+   "resolution": "2K"
+  }
+ ],
+ "postprocess": "WaveSpeed google/nano-banana-pro/edit (2k) local edit, layout kept: ex01."
+}
