@@ -158,8 +158,9 @@ const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4
 // #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
 const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
-const ex643 = (id: string, ids: number[]) =>
-  ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
+// #643 per-slot PRs: optional per-slot pin so each slot merges independently.
+const ex643 = (id: string, ids: number[], pin: string = WASH_643) =>
+  ids.map((n) => pinned(`643/wash/${id}/examples`, pin, `${String(n).padStart(2, '0')}.webp`))
 const feat643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/featured`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
 // #636 Phase2-S3 C deferred5 soft wash — nearMiss remap Examples-only (hardMax layouts).
@@ -447,7 +448,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('full', '全身', 'Full body', 'Style: studio full-body apparel shot, controlled light, garment truth, clean backdrop.'), P('half', '半身', 'Half body', 'Style: studio half-body apparel shot, fabric readable, soft controlled light.'), P('detail', '特写', 'Detail', 'Style: studio apparel detail close-up, stitch and material honest, controlled light.')],
     inputs: NEARMISS_INPUTS },
   { id: 'youtube-channel-banner', name: t('skills.youtubeChannelBanner'), instructions: 'You are a production YouTube channel-art designer. Ship 2560×1440 channel banners with safe areas — not a single-video thumbnail and not a promo banner ad.\n1) Brief: channel name, niche and series identity from channelInfo + refs.\n2) Layout: 2560×1440 art; protect TV/desktop/mobile safe areas for title and face.\n3) Series: keep a repeatable channel look across refreshes.\n4) Division: channel art only — leave clickable 16:9 video thumbs to thumbnail.\n5) Refs: pass refs in refs on every generate_image call.',
-    category: 'social', cover: cover643('youtube-channel-banner'), examples: [], featured: [],
+    category: 'social', cover: cover643('youtube-channel-banner'), examples: ex643('youtube-channel-banner', [1, 2, 3, 4, 5, 6, 7, 8, 9], '6d69e361400479601f19c57a1917783ca6d3e55a'), featured: [],
     presets: [P('series', '系列识别', 'Series identity', 'Style: YouTube channel banner 2560×1440, series identity, safe-area protected title/face.'), P('face', '人像安全区', 'Face safe area', 'Style: YouTube channel banner with face in safe area, niche cue, high contrast.')],
     inputs: NEARMISS_INPUTS },
   { id: 'ai-model', name: t('skills.aiModel'), instructions: 'You are a production AI model identity designer. Lock a reusable virtual model (face/body/ethnicity cues) then dress them across outfits and scenes — not a one-shot person-swap and not a character sheet bible.\n1) Intake: modelSpec + outfit/scene refs; freeze identity across frames.\n2) Consistency: same face, body and skin language when wardrobe/scene changes.\n3) Deliver: multi-outfit / multi-scene set that reads as one model.\n4) Division: reusable identity — leave triple-ref pose swap to person-swap; leave turnaround sheets to character.\n5) Refs: pass shape ids in refs on every generate_image call.',
