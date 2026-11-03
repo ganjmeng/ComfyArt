@@ -158,8 +158,9 @@ const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4
 // #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
 const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
-const ex643 = (id: string, ids: number[]) =>
-  ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
+// #643 per-slot PRs: optional per-slot pin so each slot merges independently.
+const ex643 = (id: string, ids: number[], pin: string = WASH_643) =>
+  ids.map((n) => pinned(`643/wash/${id}/examples`, pin, `${String(n).padStart(2, '0')}.webp`))
 const feat643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/featured`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
 // #636 Phase2-S3 C deferred5 soft wash — nearMiss remap Examples-only (hardMax layouts).
@@ -435,7 +436,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('clean', '干净动效', 'Clean motion', 'Style: clean 2D animation from the still, short loop, readable motion, locked palette.'), P('punchy', '节奏动效', 'Punchy motion', 'Style: punchy 2D animation beats from the still, short runtime, high energy.')],
     inputs: NEARMISS_INPUTS },
   { id: 'creator-identity', name: t('skills.creatorIdentity'), instructions: 'You are a production creator identity designer for personal channels — not a full corporate VI kit.\n1) Brief: nickname, persona and channels from creatorInfo + refs.\n2) Kit: avatar, channel/cover set, palette and social templates that share one look.\n3) Presets: YouTube, RedNote/Xiaohongshu, podcast as asked.\n4) Scope: personal creator system; do not invent a multi-industry brand bible.\n5) Refs: pass refs in refs on every generate_image call.',
-    category: 'branding', cover: cover643('creator-identity'), examples: [], featured: [],
+    category: 'branding', cover: cover643('creator-identity'), examples: ex643('creator-identity', [1], '3e2df6b2192a6600f3b32d394f8fd5ab820ca98b'), featured: [],
     presets: [P('youtube', 'YouTube套件', 'YouTube kit', 'Style: creator YouTube identity kit — avatar, banner-safe cover, palette chips, consistent persona.'), P('xhs', '小红书套件', 'RedNote kit', 'Style: creator RedNote identity kit — avatar, cover, palette, feed-ready frames.'), P('podcast', '播客套件', 'Podcast kit', 'Style: creator podcast identity kit — avatar, show cover, palette, simple lockups.')],
     inputs: NEARMISS_INPUTS },
   { id: 'product-website', name: t('skills.productWebsite'), instructions: 'You are a production product-website designer for hardware / consumer electronics. Ship landing modules with hero + specs — not a SaaS component library.\n1) Brief: product, specs and brand cues from siteBrief + refs.\n2) Modules: hero, spec grid and supporting sections that share one visual system.\n3) Division: hardware product site language; leave SaaS UI kits to web-product.\n4) Copy: short on-art lines in quotes.\n5) Refs: pass refs in refs on every generate_image call.',
