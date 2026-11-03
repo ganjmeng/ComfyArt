@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS_TS = (ROOT / "src/skills.ts").read_text()
 
 UPGRADE = ["brand", "packaging", "poster", "product", "character", "social", "motion", "banner", "thumbnail"]
-EFFECT = {"poster", "banner"}  # #641: thumbnail gains YT CTR presets
+EFFECT = {"poster", "banner", "thumbnail"}  # #641: thumbnail dialog parity → EFFECT_INPUTS
 TEMPLATE_COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2}
 
 
@@ -44,8 +44,14 @@ def test_upgrade9_presets_examples_inputs_complete():
         assert "inputs:" in e, sid
         if sid in EFFECT:
             assert "inputs: EFFECT_INPUTS" in e, sid
-            assert ("examples: ex541(" in e) or ("examples: [video(" in e and "ex541(" in e), sid  # #575 video lead ok
             assert len(re.findall(r"\bP\('", e)) == 0, sid
+            if sid == "thumbnail":
+                assert "titleCopy" not in e, sid
+                assert "cover641(" in e and "ex641(" in e and "feat641(" in e, sid
+                assert "video: video('thumbnail')" in e, sid
+                assert ("examples: [video(" in e and "ex641(" in e), sid
+            else:
+                assert ("examples: ex541(" in e) or ("examples: [video(" in e and "ex541(" in e), sid  # #575 video lead ok
         elif sid == "social":
             # #635 Phase2-S2: Fashion UGC presets coexist with RedNote examples; custom inputs
             assert "examples: ex541(" in e, sid
@@ -53,15 +59,6 @@ def test_upgrade9_presets_examples_inputs_complete():
             assert len(re.findall(r"\bP\('", e)) >= 2, sid
             body = e.split("presets:", 1)[1].split("inputs:", 1)[0]
             assert len(re.findall(r"Style: |Focus on |Template: ", body)) >= 2, sid
-        elif sid == "thumbnail":
-            # #641 Phase3-S2: YT CTR presets + titleCopy; soft-wash cover641/ex641/feat641; Phase1 video hover kept
-            assert "inputs: EFFECT_INPUTS" not in e, sid
-            assert "titleCopy" in e, sid
-            assert "cover641(" in e and "ex641(" in e and "feat641(" in e, sid
-            assert "video: video('thumbnail')" in e, sid
-            assert len(re.findall(r"\bP\('", e)) >= 2, sid
-            body = e.split("presets:", 1)[1].split("inputs:", 1)[0]
-            assert len(re.findall(r"Style: ", body)) >= 2, sid
         else:
             n = TEMPLATE_COUNTS[sid]
             assert len(re.findall(r"\bP\('", e)) == n, sid

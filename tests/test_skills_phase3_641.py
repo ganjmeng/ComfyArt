@@ -1,4 +1,5 @@
-"""#641 Phase3-S2: deepen upgrade `thumbnail` for YouTube 16:9 CTR covers.
+"""#641 Phase3-S2: upgrade `thumbnail` for YouTube 16:9 CTR covers.
+Dialog parity: Upload + Additional only (no presets / no required titleCopy).
 PRODUCT-LOCK-PHASE3 thumbnail row. No new skill id. $0 static reads; no network."""
 from __future__ import annotations
 
@@ -32,24 +33,14 @@ def test_no_youtube_thumbnail_id_and_thumbnail_present():
     assert "#641" in SKILLS_TS and "WASH_641" in SKILLS_TS and "cover641" in SKILLS_TS
 
 
-def test_thumbnail_yt_presets_at_least_two():
+def test_thumbnail_dialog_parity_upload_additional():
     e = _entries()["thumbnail"]
-    presets = re.findall(r"\bP\('([^']+)',\s*'([^']*)',\s*'([^']*)'", e)
-    assert len(presets) >= 2, presets
-    ids = [p[0] for p in presets]
-    ens = {p[2] for p in presets}
-    blob = " ".join(set(ids) | ens).lower()
-    assert "yt" in blob or "youtube" in blob or "face" in blob or "type" in blob or "contrast" in blob, blob
-    # yt-face is the default: first preset, then type, then contrast.
-    assert ids[:3] == ["yt-face", "yt-type", "yt-contrast"], ids
-    assert "presetChips: true" in e
-    assert any("16:9" in p or "youtube" in p.lower() or "thumb" in p.lower() for p in re.findall(r"Style: ([^']*)", e)), e
-    body = e.split("presets:", 1)[1].split("inputs:", 1)[0]
-    assert len(re.findall(r"Style: ", body)) >= 2
-    assert "16:9" in body
-    assert re.search(r"I\('file', \[[^\]]+\], 'image'\)", e)
-    assert re.search(r"I\('titleCopy', \[[^\]]+\], 'text', true,", e)
-    assert re.search(r"I\('note', \[[^\]]+\], 'textarea', false,", e)
+    assert len(re.findall(r"\bP\('", e)) == 0, e
+    assert "presets:" not in e
+    assert "presetChips" not in e
+    assert "titleCopy" not in e
+    assert "inputs: EFFECT_INPUTS" in e
+    assert "yt-face" not in e and "yt-type" not in e and "yt-contrast" not in e
 
 
 def test_thumbnail_instructions_yt_ctr_triad():
@@ -64,10 +55,10 @@ def test_thumbnail_instructions_yt_ctr_triad():
     assert "lovart" not in low
 
 
-def test_thumbnail_inputs_media_and_no_effect():
+def test_thumbnail_inputs_media_and_effect_inputs():
     e = _entries()["thumbnail"]
-    assert "titleCopy" in e
-    assert "inputs: EFFECT_INPUTS" not in e
+    assert "titleCopy" not in e
+    assert "inputs: EFFECT_INPUTS" in e
     assert "cover: cover641('thumbnail')" in e
     assert "feat641('thumbnail'" in e
     assert "ex641('thumbnail'" in e
@@ -95,7 +86,7 @@ def test_locales_desc_mentions_youtube():
 
 
 def test_thumbnail_dialog_states_and_shelf_ratio():
-    """Design lock: preset chips, required titleCopy inline error, four dialog states, 16:9 shelf cover."""
+    """Design lock: dialog state hooks + 16:9 shelf cover (chips infra kept for other skills; thumbnail uses EFFECT_INPUTS)."""
     dlg = (ROOT / "src/ui/SkillRunDialog.tsx").read_text()
     ex = (ROOT / "src/ui/SkillExamples.tsx").read_text()
     css = (ROOT / "src/styles/home.css").read_text()
