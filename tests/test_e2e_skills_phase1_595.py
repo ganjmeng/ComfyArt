@@ -66,3 +66,27 @@ async def test_multi_angle_carousel_and_brand_dialog_to_agent(app_url):  # noqa:
         await pg.wait_for_url(re.compile(r"[?&]skill=brand"), timeout=10_000)
         assert "mode=agent" in pg.url
         await browser.close()
+
+
+async def test_multi_angle_upload_reaches_handoff_ref_691(app_url):  # noqa: F811
+    # #691/#693: the Upload block (key `file`) feeds the same `ref` handoff param the old 主体图片 field did
+    from pathlib import Path
+    async with pw.async_playwright() as p:
+        browser, pg = await _open_home(p, app_url, "en")
+        await pg.locator('[data-testid="home-skill-card"][data-skill="multi-angle"]').click()
+        dlg = pg.get_by_test_id("skill-run-dialog")
+        await dlg.wait_for()
+        await dlg.locator('input[type="file"]').set_input_files(str(Path(__file__).parent / "fixtures/ma_subject_691.png"))
+        await pg.wait_for_function("() => !document.querySelector('[data-testid=skill-run-go]').disabled")
+        await pg.locator('[data-key="note"]').fill("PDP, white seamless")
+        navs: list[str] = []
+        pg.on("framenavigated", lambda f: navs.append(f.url))
+        await pg.get_by_test_id("skill-run-go").click()
+        for _ in range(50):
+            if any("skill=multi-angle" in u for u in navs):
+                break
+            await pg.wait_for_timeout(200)
+        u = next(u for u in navs if "skill=multi-angle" in u)
+        assert re.search(r"[?&]ref=[^&]*skill-multi-angle-ma_subject_691\.png", u), u
+        assert "mode=agent" in u and "PDP" in u
+        await browser.close()
