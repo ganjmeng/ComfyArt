@@ -1,56 +1,42 @@
-# #642 → #78 tip-pin — Phase3-S3 full copy + dialog (NEW19)
+# #642 → #78 tip-pin — Phase3-S3 thumbnail shell (shell-only split)
 
 **Branch:** `feat/642-skills-phase3-s3-copy-dialog` · **Asia/Shanghai** · Issue #642  
-**Base tip:** `567967b7` (main after #657)  
+**Base tip:** `a042575e` (main after #659)  
 **SSOT:** `PRODUCT-LOCK-PHASE3.md` · `PHASE3-HARDEN-DIFF.md` · design Page Phase3 S2/S3  
 **Comments chain to:** `#642` + locks. Soft mainline Phase3 / **#490 HOLD**. Media wash → **#643**. Skill Creator → **#650**.
 
-## Scope (this issue)
+## Product split (this tip)
 
-Phase3-S3 = **全文案 + 弹框** for the 19 NEW ids landed as skeletons in #640.
-
-| In | Out |
+| In (mergeable now) | Deferred (follow-up tip/PR) |
 |---|---|
-| Production instructions / presets / inputs deepen for NEW19 | Soft-wash or near-original product art |
-| Dialog data/schema parity per skill (Upload / notes / category fields as gold requires) | New skill ids; dropped-13 |
-| Shared SkillRunDialog shell (Header → MediaGallery → optional PresetChips → FormFields → FooterCTA) | Homepage mount (S5) |
-| Design L/R gate (card + dialog) before merge | Competitor CDN / verbatim copy under `src/` |
-| Empty `examples`/`featured`/`cover` until #643 wash pins | Treating #643 wash as required to open this PR |
+| Shared SkillRunDialog **thumbnail shell** Lovart parity — Upload + Additional only | NEW19 sample L/R (empty cover / multi-field S1 skeleton) |
+| Card + dialog L/R embeds for `thumbnail` | Per-id NEW19 field map → Upload+Additional |
+| Scaffold markers / gold STATUS stubs / static contract tests | Production deepen of NEW19 copy; true gold L for NEW19 |
 
-## NEW19 (hard lock)
+**Parity, not deepen.** Design signed thumbnail shell **PASS**; NEW19 sample was **HOLD** → stripped from this tip.
+
+## Dialog parity rules (shell)
+
+- Gold site = external Explore dual-column SkillRunDialog; **never** name that brand under `src/`.
+- Right column for thumbnail = Upload + Additional notes only (`file`,`note`).
+- Shared IA: top → main visual → inputs → primary CTA.
+- Do **not** invent Title / Preset chips when gold has none.
+
+## NEW19 (hard lock — deferred out of this tip)
 
 `taobao-product` · `before-after` · `anim-2d` · `creator-identity` · `product-website` · `studio-model` · `youtube-channel-banner` · `ai-model` · `product-to-packaging` · `game-art` · `portrait-studio` · `premium-website` · `animated-poster` · `pose-fission` · `live-promo-decor` · `linkedin-banner` · `logo-animation` · `restaurant-website` · `clothing-swap`
 
-Do **not** re-land dropped-13 (`app-listing-kit`, …). Upgrade `thumbnail` stays on #641 path (already merged via #657).
+Do **not** re-land dropped-13. Upgrade `thumbnail` path already via #641/#657; this tip only documents shell L/R + S3 scaffold pin.
 
-## Dialog parity rules
+## AC (this tip = shell)
 
-- Gold site = external Explore dual-column SkillRunDialog; **never** name that brand under `src/`.
-- **Parity, not deepen:** right-column fields follow each skill's gold (Upload / notes / category). Do not invent required Title copy or Preset chips when gold has none.
-- Left rail: production Examples (≥1, prefer ≈6) once #643 pins land; empty examples OK in S3 tip until wash.
-- Shared IA: top → main visual → (optional) preset chips → inputs → primary CTA.
-
-## Pack tips (optional)
-
-May land as ecommerce / website / social·ads / motion sub-tips; keep one branch tip for review unless PM splits.
-
-## AC (issue)
-
-- [ ] 19 open SkillRunDialog; production-grade fields; no demo shrinkage
-- [ ] No competitor CDN / verbatim; no gray placeholders as product art
-- [ ] Per-skill card L/R + dialog L/R in PR body (design sign → test → tech merge)
-- [ ] Tests: `tests/test_skills_phase3_642.py` green; no `Lovart`/`lovart` under `src/`
-
-## Next concrete code steps
-
-1. Per-skill field map from design L/R (which keep `P()` chips vs EFFECT_INPUTS-style Upload+notes).
-2. Deepen instructions/locales where S1 skeleton is thin vs PRODUCT-LOCK rows.
-3. After #643 wash: pin `cover` / `examples` / `featured` (same pattern as `cover643` / `ex643`).
-4. Design L/R screenshots into `docs/design/642/78/lr/<id>/` then PR body embeds.
+- [x] Thumbnail card L/R + dialog L/R in PR body (Upload+Additional)
+- [x] Tests: `tests/test_skills_phase3_642.py` green; no `Lovart`/`lovart` under `src/`
+- [ ] NEW19 per-skill L/R + field map → **follow-up**
+- [ ] After #643: pin cover/examples/featured for NEW19 → follow-up
 
 ## L/R (this tip)
 
-- `docs/design/642/78/lr/01-lr-shelf-card-thumbnail.png` — Lovart gold card vs tip thumbnail card
-- `docs/design/642/78/lr/02-lr-skill-dialog-thumbnail.png` — Lovart dialog vs tip SkillRunDialog **Upload+Additional only** (`file`,`note`)
-- `03`/`04` — NEW19 `youtube-channel-banner` honest scaffold (empty cover; multi-field S1 skeleton). **No deepen** in this tip; field map to Upload+Additional still pending.
-- Tip interactive UI for shared shell == main `a042575e` (scaffold markers only).
+- `docs/design/642/78/lr/01-lr-shelf-card-thumbnail.png` — gold card vs tip thumbnail card
+- `docs/design/642/78/lr/02-lr-skill-dialog-thumbnail.png` — gold dialog vs tip SkillRunDialog **Upload+Additional only**
+- NEW19 `03`/`04` sample **removed** (deferred).
