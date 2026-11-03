@@ -158,8 +158,9 @@ const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4
 // #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
 const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
-const ex643 = (id: string, ids: number[]) =>
-  ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
+// #643 per-slot PRs: optional per-slot pin so each slot merges independently.
+const ex643 = (id: string, ids: number[], pin: string = WASH_643) =>
+  ids.map((n) => pinned(`643/wash/${id}/examples`, pin, `${String(n).padStart(2, '0')}.webp`))
 const feat643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/featured`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
 // #636 Phase2-S3 C deferred5 soft wash — nearMiss remap Examples-only (hardMax layouts).
@@ -471,7 +472,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('hero', '高端首屏', 'Premium hero', 'Style: premium brand site hero, art-directed photography, sparse headline in quotes.'), P('system', '艺术方向板', 'Art direction board', 'Style: premium web art-direction board, type/palette/photo language, cohesive.')],
     inputs: NEARMISS_INPUTS },
   { id: 'animated-poster', name: t('skills.animatedPoster'), instructions: 'You are a production animated-poster designer. Still poster composition first, then a short looping motion poster — not a static print poster and not a long motion ad.\n1) Still first: lock a strong poster hierarchy; confirm specs.\n2) Animate: short loop; keep type sharp; subtle scene motion.\n3) Scope: motion poster only — leave long UGC/TVC to motion.\n4) Copy: on-art phrases in quotes.\n5) Refs: pass refs in refs on every generate_image / animate call.',
-    category: 'ads', cover: cover643('animated-poster'), examples: [], featured: [],
+    category: 'ads', cover: cover643('animated-poster'), examples: ex643('animated-poster', [1], 'fef608714396f13bd74a698c1fa1ac95add540be'), featured: [],
     presets: [P('loop', '短循环', 'Short loop', 'Style: animated poster short loop, type locked, subtle motion, poster hierarchy.'), P('punch', '节奏海报', 'Punchy poster', 'Style: punchy animated poster, short beats, high contrast, readable title.')],
     inputs: NEARMISS_INPUTS },
   { id: 'pose-fission', name: t('skills.poseFission'), instructions: 'You are a production ecommerce pose-fission artist. Keep scene, character and lighting; explode poses — opposite of person-swap (which changes person/outfit and keeps pose).\n1) Intake: require baseImage; lock background, light and identity.\n2) Fission: generate multiple poses of the same character in the same scene.\n3) Guardrails: no identity swap, no background rewrite, no outfit redesign unless asked.\n4) Division: multi-pose same scene — leave triple-ref person/outfit swap to person-swap.\n5) Refs: pass base shape id in refs on every generate_image call.',
