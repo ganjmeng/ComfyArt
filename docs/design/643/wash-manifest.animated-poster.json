@@ -1,0 +1,14 @@
+{
+ "skill_id": "animated-poster",
+ "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+ "assets": [
+  {
+   "skill_id": "animated-poster",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TEXT EDIT ONLY. Keep this image identical in layout, art and people. In all 3 poster frames, replace every credit/name line (e.g. 'AS DR. ...' or actor name lines) with new invented names: actor 'LENA ORTIZ', credit line 'AS DR. NADIA ROURKE'. Keep title 'THE CHRONOS PROJECT' style but rename it to 'THE TEMPORAL RIFT'. Change all dates/numbers and network names to new invented ones."
+  }
+ ],
+ "postprocess": "WaveSpeed google/nano-banana-pro/edit (2k) local edit, layout kept: ex01."
+}
