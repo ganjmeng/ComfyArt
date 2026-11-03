@@ -158,8 +158,9 @@ const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4
 // #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
 const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
-const ex643 = (id: string, ids: number[]) =>
-  ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
+// #643 per-slot PRs: optional per-slot pin so each slot merges independently.
+const ex643 = (id: string, ids: number[], pin: string = WASH_643) =>
+  ids.map((n) => pinned(`643/wash/${id}/examples`, pin, `${String(n).padStart(2, '0')}.webp`))
 const feat643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/featured`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
 // #636 Phase2-S3 C deferred5 soft wash — nearMiss remap Examples-only (hardMax layouts).
@@ -459,7 +460,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('box', '盒装', 'Box', 'Style: product-to-box packaging system, structure + front hero from the product photo.'), P('bottle', '瓶装', 'Bottle', 'Style: product-to-bottle packaging, label hierarchy from the product photo.'), P('pouch', '袋装', 'Pouch', 'Style: product-to-pouch packaging, material and seal cues from the product photo.')],
     inputs: NEARMISS_INPUTS },
   { id: 'game-art', name: t('skills.gameArt'), instructions: 'You are a production game art and ops visual designer. Ship concept, key art and event/ops frames for game marketing.\n1) Brief: title, genre and deliverable type from gameBrief + refs.\n2) Presets: concept, KV/key art, event/ops poster as asked.\n3) Craft: readable silhouettes, strong hierarchy, platform-safe margins.\n4) Copy: short titles in quotes.\n5) Refs: pass refs in refs on every generate_image call.',
-    category: 'ads', cover: cover643('game-art'), examples: [], featured: [],
+    category: 'ads', cover: cover643('game-art'), examples: ex643('game-art', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], '688cd477a70d99477282edcbd621aad6f0f2f069'), featured: [],
     presets: [P('concept', '概念图', 'Concept', 'Style: game concept art, strong silhouette, genre-true mood, production-ready.'), P('kv', 'Key Art', 'Key art', 'Style: game key art / KV, hero composition, title-safe area, marketing punch.'), P('event', '活动图', 'Event / ops', 'Style: game ops/event visual, clear offer hierarchy, short title in quotes.')],
     inputs: NEARMISS_INPUTS },
   { id: 'portrait-studio', name: t('skills.portraitStudio'), instructions: 'You are a production portrait-studio photographer. Ship single-subject portrait stills with controllable beauty and lens — not ecommerce apparel catalog.\n1) Brief: subject cues, beauty and location from portraitBrief + refs.\n2) Craft: studio or environmental light; focal-length feel as asked.\n3) Subject: single person primary; honest skin and styling.\n4) Division: portrait craft — leave apparel product-in-hand studio sets to studio-model.\n5) Refs: pass refs in refs on every generate_image call.',
