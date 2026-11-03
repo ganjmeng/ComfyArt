@@ -1,0 +1,186 @@
+{
+ "skill_id": "game-art",
+ "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+ "assets": [
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 5,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 6,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 7,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 8,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 9,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 10,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 11,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 12,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 13,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 14,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 15,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 16,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 17,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 18,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 19,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "game-art",
+   "slot": "examples",
+   "index": 20,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a mobile Go (weiqi) board game UI / marketing visual in Chinese, same screen type and layout (board, buttons, menus, cards, icons). STRONG DELTA: invent a new game name in Chinese, change the art direction from pale ink-wash bamboo/grey-green to a clearly different palette (e.g. warm vermilion-and-gold autumn or deep indigo night), redraw all illustrations, icons and frames; keep it a Go game UI.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  }
+ ]
+}
