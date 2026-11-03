@@ -1,0 +1,109 @@
+{
+ "items": [
+  {
+   "skill": "anim-2d",
+   "index": 1,
+   "path": "643/wash/anim-2d/examples/01.webp",
+   "lr": "docs/design/643/lr/batch2/anim-2d-ex01-lr.webp",
+   "meanAbs": 57.46,
+   "wash_src": "soft-rewash"
+  },
+  {
+   "skill": "anim-2d",
+   "index": 2,
+   "path": "643/wash/anim-2d/examples/02.webp",
+   "lr": "docs/design/643/lr/batch2/anim-2d-ex02-lr.webp",
+   "meanAbs": 71.56,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "anim-2d",
+   "index": 3,
+   "path": "643/wash/anim-2d/examples/03.webp",
+   "lr": "docs/design/643/lr/batch2/anim-2d-ex03-lr.webp",
+   "meanAbs": 48.75,
+   "wash_src": "soft-rewash"
+  },
+  {
+   "skill": "creator-identity",
+   "index": 1,
+   "path": "643/wash/creator-identity/examples/01.webp",
+   "lr": "docs/design/643/lr/batch2/creator-identity-ex01-lr.webp",
+   "meanAbs": 58.67,
+   "wash_src": "01.png"
+  },
+  {
+   "skill": "youtube-channel-banner",
+   "index": 1,
+   "path": "643/wash/youtube-channel-banner/examples/01.webp",
+   "lr": "docs/design/643/lr/batch2/youtube-channel-banner-ex01-lr.webp",
+   "meanAbs": 42.73,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "youtube-channel-banner",
+   "index": 2,
+   "path": "643/wash/youtube-channel-banner/examples/02.webp",
+   "lr": "docs/design/643/lr/batch2/youtube-channel-banner-ex02-lr.webp",
+   "meanAbs": 66.86,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "youtube-channel-banner",
+   "index": 3,
+   "path": "643/wash/youtube-channel-banner/examples/03.webp",
+   "lr": "docs/design/643/lr/batch2/youtube-channel-banner-ex03-lr.webp",
+   "meanAbs": 43.98,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "youtube-channel-banner",
+   "index": 4,
+   "path": "643/wash/youtube-channel-banner/examples/04.webp",
+   "lr": "docs/design/643/lr/batch2/youtube-channel-banner-ex04-lr.webp",
+   "meanAbs": 26.04,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "youtube-channel-banner",
+   "index": 5,
+   "path": "643/wash/youtube-channel-banner/examples/05.webp",
+   "lr": "docs/design/643/lr/batch2/youtube-channel-banner-ex05-lr.webp",
+   "meanAbs": 32.12,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "youtube-channel-banner",
+   "index": 6,
+   "path": "643/wash/youtube-channel-banner/examples/06.webp",
+   "lr": "docs/design/643/lr/batch2/youtube-channel-banner-ex06-lr.webp",
+   "meanAbs": 19.75,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "youtube-channel-banner",
+   "index": 7,
+   "path": "643/wash/youtube-channel-banner/examples/07.webp",
+   "lr": "docs/design/643/lr/batch2/youtube-channel-banner-ex07-lr.webp",
+   "meanAbs": 64.9,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "youtube-channel-banner",
+   "index": 8,
+   "path": "643/wash/youtube-channel-banner/examples/08.webp",
+   "lr": "docs/design/643/lr/batch2/youtube-channel-banner-ex08-lr.webp",
+   "meanAbs": 37.14,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "youtube-channel-banner",
+   "index": 9,
+   "path": "643/wash/youtube-channel-banner/examples/09.webp",
+   "lr": "docs/design/643/lr/batch2/youtube-channel-banner-ex09-lr.webp",
+   "meanAbs": 63.52,
+   "wash_src": "strong-rewash"
+  }
+ ],
+ "missing": []
+}

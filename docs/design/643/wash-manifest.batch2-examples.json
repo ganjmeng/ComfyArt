@@ -1,0 +1,275 @@
+{
+  "_comment": "#643 batch2+3 examples TRUE wash — identity-lock to gold (Angela gate). Stills only; gold video mp4 not washed (no kie video path) — residual note for anim-2d/creator-identity/logo-animation videos. Featured omitted (INDEX: no separate Featured). HOLD slots untouched.",
+  "assets": [
+    {
+      "skill_id": "anim-2d",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "docs/design/643/78/gold/anim-2d/examples/ex-01-poster.jpg",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a vertical cel-shaded 2D animation still of a South-Asian spiritual speaker seated cross-legged with mic stand, mustard kurta + red dhoti + patterned yellow stole + deity pendant, orange horizontal tilak with red bindi, colorful stage backdrop. Same 2D-animation converter use-slot — stay on illustrated spiritual speaker, never photo-real or unrelated topics.",
+      "aspect_ratio": "9:16",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "anim-2d",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "docs/design/643/78/gold/anim-2d/examples/ex-02.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a vertical flat 2D animation close-up of a young man with black-rim glasses and orange tilak speaking into a handheld mic, plaid shirt, soft orange/cream cel background. Same 2D-animation converter use-slot — stay on illustrated speaker portrait.",
+      "aspect_ratio": "9:16",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "anim-2d",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "docs/design/643/78/gold/anim-2d/examples/ex-03.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a vertical cel-shaded 2D portrait of a long-haired South-Asian spiritual speaker in yellow patterned kurta with pink floral shawl, bead malas + deity pendant + gold amulet, blue/black mic in foreground, soft vertical color-block backdrop. Same 2D-animation converter use-slot.",
+      "aspect_ratio": "9:16",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "creator-identity",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "docs/design/643/78/gold/creator-identity/examples/ex-01-poster.jpg",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a horizontal 3-panel creator identity story-set of the SAME young woman language-teacher persona across three cream vertical cards with bold black headlines, orange footers, and language-tip callouts; red/yellow tee + jeans wardrobe. Generic channel name only (no real brand). Same personal creator visual-identity kit use-slot — do not drift into corporate VI or product packaging.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-01.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide cinematic food flat-lay channel banner: dark rustic wood table with steaming bowls, citrus, herbs, olives, salt; centered elegant serif title + gold script tagline (generic studio name). Same YouTube channel-art food-studio use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-02.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide epic outdoor adventure channel banner: silhouetted hiker on rocky peak overlooking snow peaks + glacial lake at golden sunrise, centered bold title + short tagline. Same YouTube travel/adventure channel-art use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-03.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide deep-space channel banner: cyan/magenta nebulae, spiral galaxy, crescent planet, dense stars; centered futuristic title + short tagline. Same YouTube space/science channel-art use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-04.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup (gray wireframe chrome) with a dark green finance banner: upward glowing line charts, East-Asian man in suit+green tie on the right, stacked bold title + gold investing tagline on the left. Same YouTube finance channel-art use-slot — stay on banner-in-channel-page mockup.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 5,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-05.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with a soft peach lifestyle banner: smiling East-Asian woman (hair bun, peach cardigan) on the left, rounded peach title + life/travel tagline, leaf shadows. Same YouTube lifestyle channel-art use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 6,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-06.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with a navy travel banner: map/compass motifs + bold title + travel tagline on left/center; young man with backpack against sunlit mountains on the right. Same YouTube travel channel-art use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 7,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-07.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with a black/neon-green gaming banner: bold green title + live/reviews tagline, curly-haired young man in hoodie+headphones celebrating on the right, lightning accents. Same YouTube gaming channel-art use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 8,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-08.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with an organic brand banner: split forest-green / sunlit gold botanical leaf illustrations, centered elegant serif title + organic/crafted tagline. Same YouTube organic-lifestyle channel-art use-slot — no people required.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 9,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-09.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with a dark navy tech enterprise banner: circuit/light streaks, interlocking geometric mark, bold white title + enterprise/cloud/AI tagline. Same YouTube B2B tech channel-art use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "docs/design/643/78/gold/ai-model/examples/ex-01.png",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered studio head-and-shoulders portrait of a young woman with dark brown hair in a soft updo with face-framing tendrils, mauve square-neck top, soft even light on plain off-white backdrop. Same reusable AI-model identity headshot use-slot — DIFFERENT face from reference (new identity), stay beauty/model portrait.",
+      "aspect_ratio": "3:4",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "docs/design/643/78/gold/ai-model/examples/ex-02.png",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered studio ID-style headshot of a young woman with light-brown bob + wispy bangs, cream Peter-Pan collar blouse, soft makeup, plain white backdrop. Same AI-model identity headshot use-slot — DIFFERENT face; stay clean beauty portrait.",
+      "aspect_ratio": "3:4",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "docs/design/643/78/gold/ai-model/examples/ex-03.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered studio portrait of a young East-Asian woman with shoulder-length dark hair + wispy bangs, subtle freckles, navy racerback tank, plain white backdrop. Same AI-model identity headshot use-slot — DIFFERENT face; stay clean beauty portrait.",
+      "aspect_ratio": "3:4",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "docs/design/643/78/gold/ai-model/examples/ex-04.png",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered studio headshot of a young woman with dark brown soft waves + see-through bangs, dusty-rose ribbed puff-sleeve top, small cheek mole, plain off-white backdrop. Same AI-model identity headshot use-slot — DIFFERENT face; stay clean beauty portrait.",
+      "aspect_ratio": "3:4",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 5,
+      "source_path": "docs/design/643/78/gold/ai-model/examples/ex-05.png",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a three-quarter studio portrait of a young East-Asian woman with freckles, high dark ponytail with wisps, light gray ribbed tank, gaze off-camera, plain white backdrop. Same AI-model identity portrait use-slot — DIFFERENT face; stay clean beauty portrait.",
+      "aspect_ratio": "3:4",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 6,
+      "source_path": "docs/design/643/78/gold/ai-model/examples/ex-06.png",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a studio close-up of a young East-Asian woman with short black shag/wolf cut with electric-blue underlayers, freckles, high-collar gray/black athletic zip jacket, plain white backdrop. Same AI-model identity portrait use-slot — DIFFERENT face; keep distinctive short blue-tipped hair category.",
+      "aspect_ratio": "3:4",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-01.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide premium bakery website hero mockup: cream page, dark top ticker, serif logo + nav + red Order CTA, large serif headline with italic accent word, mustard circular hero graphic with artisan sourdough photo tile + hand-shaped badge, bottom product ticker. Generic bakery name only. Same premium brand-site art-direction use-slot — stay bakery website, not SaaS UI kit.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-02.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide bakery interior photograph: saturated yellow feature wall with window-shadow + potted plant on left; marble counter with sourdough boules + croissants, glass pastry case, wood shelves on white subway tile on right. Same premium bakery brand photography use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-03.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a square commercial food shot: artisan scored sourdough boule floating on saturated yellow with grain/flour burst and soft ground shadow. Same premium bakery product-hero use-slot.",
+      "aspect_ratio": "1:1",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-04.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a warm pastry still life: stacked croissants + pains au chocolat with torn honeycomb crumb, small bowl of raspberry jam, burgundy napkin, cream negative space on the left. Same premium bakery product photography use-slot.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 5,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-05.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a commercial food still on saturated yellow: stack of chunky chocolate-chip cookies beside iced cinnamon/pistachio rolls on crumpled parchment with hard side light. Same premium bakery product photography use-slot.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 6,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-06.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a tall berry-topped layer cake + tall slice on matching red plates against solid red backdrop with hard side light; cherries in foreground. Same premium bakery celebration-cake photography use-slot.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 7,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-07.webp",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a vertical warm bakery craft photo: flour-dusted hands shaping a dough boule on wood bench, wicker banneton, bowls, midground dough rounds on couche with light steam, soft window-lit kitchen bokeh. Same premium bakery craft/process photography use-slot — stay bakery craft, not cleaning before/after.",
+      "aspect_ratio": "3:4",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "logo-animation",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "docs/design/643/78/gold/logo-animation/examples/ex-01-poster.jpg",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered logo lockup on white: circular teal-to-navy brush ring with play-triangle + line-eye mark, dark-blue Chinese wordmark beneath. Generic institute mark only. Same logo-animation still/poster use-slot — stay logo mark, do not invent a website or person.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "logo-animation",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "docs/design/643/78/gold/logo-animation/examples/ex-02-poster.jpg",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a horizontal logo lockup on white: rainbow translucent circle of interlocking human figures on the left, black English stacked title WORLD / INTANGIBLE CULTURAL HERITAGE / EXPO + Chinese wordmark on the right, thin vertical divider. Same logo-animation still/poster use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "logo-animation",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "docs/design/643/78/gold/logo-animation/examples/ex-03-poster.jpg",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered logo lockup on white: seven red vertical bars forming a stylized heritage icon above black English CHINESE INTANGIBLE CULTURAL HERITAGE + Chinese calligraphy wordmark. Same logo-animation still/poster use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "logo-animation",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "docs/design/643/78/gold/logo-animation/examples/ex-04-poster.jpg",
+      "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered circular brand mark on white: lime-green disc with yellow cow + blue horse cartoon characters integrated with bold yellow bubble lettering, footer Chinese 牛马生活 | N&M CULTURAL CREATIVITY. Same logo-animation still/poster use-slot — stay cartoon logo mark.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    }
+  ]
+}
