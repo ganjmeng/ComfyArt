@@ -109,6 +109,7 @@ def test_new_skills_cut2_skeleton_categories_and_website_chip_sources():
         assert "presets:" in e, sid
         BATCH1_EX = {
             "taobao-product", "before-after", "product-website", "linkedin-banner", "clothing-swap",
+            "anim-2d", "creator-identity", "youtube-channel-banner",  # #643 batch2a
         }
         head = e.split("inputs:", 1)[0]
         assert f"cover: cover643('{sid}')" in head, sid  # #643 NEW19 cover pins

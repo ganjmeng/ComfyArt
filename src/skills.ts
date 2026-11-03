@@ -155,8 +155,8 @@ const ex637 = (id: string, ids: number[]) =>
 const feat637 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`637/wash/${id}/featured`, WASH_637, `${String(n).padStart(2, '0')}.webp`))
 const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4')
-// #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
-const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
+// #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1+batch2a examples wired (featured empty).
+const WASH_643 = '787c1809e8824669c1287c6d537696f38895f288'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
 const ex643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
@@ -431,11 +431,11 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('beauty', '美妆对比', 'Beauty', 'Style: beauty before/after, same crop and lighting, clear dual-state split, readable faces.'), P('home', '家装对比', 'Home remodel', 'Style: interior remodel before/after, matched camera, dual-state layout.'), P('fitness', '身材对比', 'Body / fitness', 'Style: fitness before/after, matched pose and crop, dual-state comparison.')],
     inputs: NEARMISS_INPUTS },
   { id: 'anim-2d', name: t('skills.anim2d'), instructions: 'You are a production 2D animation converter. Pipeline: still or layered art → short 2D animated clip. Not UGC/TVC motion and not flash-cut screenshot video.\n1) Intake: require primary visual; optional layers or styleNotes.\n2) Confirm duration and ratio with the user before animating.\n3) Animate with readable 2D motion (loops OK); keep line and color honest to the still.\n4) Scope: short 2D piece only — no long narrative TVC, no flash-cut UI beats.\n5) Refs: pass shape ids in refs on every generate_image / animate call.',
-    category: 'ads', cover: cover643('anim-2d'), examples: [], featured: [],
+    category: 'ads', cover: cover643('anim-2d'), examples: ex643('anim-2d', [1, 2, 3]), featured: [],
     presets: [P('clean', '干净动效', 'Clean motion', 'Style: clean 2D animation from the still, short loop, readable motion, locked palette.'), P('punchy', '节奏动效', 'Punchy motion', 'Style: punchy 2D animation beats from the still, short runtime, high energy.')],
     inputs: NEARMISS_INPUTS },
   { id: 'creator-identity', name: t('skills.creatorIdentity'), instructions: 'You are a production creator identity designer for personal channels — not a full corporate VI kit.\n1) Brief: nickname, persona and channels from creatorInfo + refs.\n2) Kit: avatar, channel/cover set, palette and social templates that share one look.\n3) Presets: YouTube, RedNote/Xiaohongshu, podcast as asked.\n4) Scope: personal creator system; do not invent a multi-industry brand bible.\n5) Refs: pass refs in refs on every generate_image call.',
-    category: 'branding', cover: cover643('creator-identity'), examples: [], featured: [],
+    category: 'branding', cover: cover643('creator-identity'), examples: ex643('creator-identity', [1]), featured: [],
     presets: [P('youtube', 'YouTube套件', 'YouTube kit', 'Style: creator YouTube identity kit — avatar, banner-safe cover, palette chips, consistent persona.'), P('xhs', '小红书套件', 'RedNote kit', 'Style: creator RedNote identity kit — avatar, cover, palette, feed-ready frames.'), P('podcast', '播客套件', 'Podcast kit', 'Style: creator podcast identity kit — avatar, show cover, palette, simple lockups.')],
     inputs: NEARMISS_INPUTS },
   { id: 'product-website', name: t('skills.productWebsite'), instructions: 'You are a production product-website designer for hardware / consumer electronics. Ship landing modules with hero + specs — not a SaaS component library.\n1) Brief: product, specs and brand cues from siteBrief + refs.\n2) Modules: hero, spec grid and supporting sections that share one visual system.\n3) Division: hardware product site language; leave SaaS UI kits to web-product.\n4) Copy: short on-art lines in quotes.\n5) Refs: pass refs in refs on every generate_image call.',
@@ -447,7 +447,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('full', '全身', 'Full body', 'Style: studio full-body apparel shot, controlled light, garment truth, clean backdrop.'), P('half', '半身', 'Half body', 'Style: studio half-body apparel shot, fabric readable, soft controlled light.'), P('detail', '特写', 'Detail', 'Style: studio apparel detail close-up, stitch and material honest, controlled light.')],
     inputs: NEARMISS_INPUTS },
   { id: 'youtube-channel-banner', name: t('skills.youtubeChannelBanner'), instructions: 'You are a production YouTube channel-art designer. Ship 2560×1440 channel banners with safe areas — not a single-video thumbnail and not a promo banner ad.\n1) Brief: channel name, niche and series identity from channelInfo + refs.\n2) Layout: 2560×1440 art; protect TV/desktop/mobile safe areas for title and face.\n3) Series: keep a repeatable channel look across refreshes.\n4) Division: channel art only — leave clickable 16:9 video thumbs to thumbnail.\n5) Refs: pass refs in refs on every generate_image call.',
-    category: 'social', cover: cover643('youtube-channel-banner'), examples: [], featured: [],
+    category: 'social', cover: cover643('youtube-channel-banner'), examples: ex643('youtube-channel-banner', [1, 2, 3, 4, 5, 6, 7, 8, 9]), featured: [],
     presets: [P('series', '系列识别', 'Series identity', 'Style: YouTube channel banner 2560×1440, series identity, safe-area protected title/face.'), P('face', '人像安全区', 'Face safe area', 'Style: YouTube channel banner with face in safe area, niche cue, high contrast.')],
     inputs: NEARMISS_INPUTS },
   { id: 'ai-model', name: t('skills.aiModel'), instructions: 'You are a production AI model identity designer. Lock a reusable virtual model (face/body/ethnicity cues) then dress them across outfits and scenes — not a one-shot person-swap and not a character sheet bible.\n1) Intake: modelSpec + outfit/scene refs; freeze identity across frames.\n2) Consistency: same face, body and skin language when wardrobe/scene changes.\n3) Deliver: multi-outfit / multi-scene set that reads as one model.\n4) Division: reusable identity — leave triple-ref pose swap to person-swap; leave turnaround sheets to character.\n5) Refs: pass shape ids in refs on every generate_image call.',
