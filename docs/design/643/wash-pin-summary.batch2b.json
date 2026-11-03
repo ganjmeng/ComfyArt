@@ -1,0 +1,141 @@
+{
+ "items": [
+  {
+   "skill": "ai-model",
+   "index": 1,
+   "path": "643/wash/ai-model/examples/01.webp",
+   "lr": "docs/design/643/lr/batch2/ai-model-ex01-lr.webp",
+   "meanAbs": 81.8,
+   "wash_src": "strong2-rewash"
+  },
+  {
+   "skill": "ai-model",
+   "index": 2,
+   "path": "643/wash/ai-model/examples/02.webp",
+   "lr": "docs/design/643/lr/batch2/ai-model-ex02-lr.webp",
+   "meanAbs": 77.73,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "ai-model",
+   "index": 3,
+   "path": "643/wash/ai-model/examples/03.webp",
+   "lr": "docs/design/643/lr/batch2/ai-model-ex03-lr.webp",
+   "meanAbs": 62.74,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "ai-model",
+   "index": 4,
+   "path": "643/wash/ai-model/examples/04.webp",
+   "lr": "docs/design/643/lr/batch2/ai-model-ex04-lr.webp",
+   "meanAbs": 72.98,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "ai-model",
+   "index": 5,
+   "path": "643/wash/ai-model/examples/05.webp",
+   "lr": "docs/design/643/lr/batch2/ai-model-ex05-lr.webp",
+   "meanAbs": 97.54,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "ai-model",
+   "index": 6,
+   "path": "643/wash/ai-model/examples/06.webp",
+   "lr": "docs/design/643/lr/batch2/ai-model-ex06-lr.webp",
+   "meanAbs": 83.01,
+   "wash_src": "strong2-rewash"
+  },
+  {
+   "skill": "premium-website",
+   "index": 1,
+   "path": "643/wash/premium-website/examples/01.webp",
+   "lr": "docs/design/643/lr/batch2/premium-website-ex01-lr.webp",
+   "meanAbs": 56.64,
+   "wash_src": "strong2-rewash"
+  },
+  {
+   "skill": "premium-website",
+   "index": 2,
+   "path": "643/wash/premium-website/examples/02.webp",
+   "lr": "docs/design/643/lr/batch2/premium-website-ex02-lr.webp",
+   "meanAbs": 64.29,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "premium-website",
+   "index": 3,
+   "path": "643/wash/premium-website/examples/03.webp",
+   "lr": "docs/design/643/lr/batch2/premium-website-ex03-lr.webp",
+   "meanAbs": 105.86,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "premium-website",
+   "index": 4,
+   "path": "643/wash/premium-website/examples/04.webp",
+   "lr": "docs/design/643/lr/batch2/premium-website-ex04-lr.webp",
+   "meanAbs": 113.51,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "premium-website",
+   "index": 5,
+   "path": "643/wash/premium-website/examples/05.webp",
+   "lr": "docs/design/643/lr/batch2/premium-website-ex05-lr.webp",
+   "meanAbs": 74.17,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "premium-website",
+   "index": 6,
+   "path": "643/wash/premium-website/examples/06.webp",
+   "lr": "docs/design/643/lr/batch2/premium-website-ex06-lr.webp",
+   "meanAbs": 95.95,
+   "wash_src": "strong2-rewash"
+  },
+  {
+   "skill": "premium-website",
+   "index": 7,
+   "path": "643/wash/premium-website/examples/07.webp",
+   "lr": "docs/design/643/lr/batch2/premium-website-ex07-lr.webp",
+   "meanAbs": 63.37,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "logo-animation",
+   "index": 1,
+   "path": "643/wash/logo-animation/examples/01.webp",
+   "lr": "docs/design/643/lr/batch2/logo-animation-ex01-lr.webp",
+   "meanAbs": 54.12,
+   "wash_src": "strong2-rewash"
+  },
+  {
+   "skill": "logo-animation",
+   "index": 2,
+   "path": "643/wash/logo-animation/examples/02.webp",
+   "lr": "docs/design/643/lr/batch2/logo-animation-ex02-lr.webp",
+   "meanAbs": 34.06,
+   "wash_src": "strong-rewash"
+  },
+  {
+   "skill": "logo-animation",
+   "index": 3,
+   "path": "643/wash/logo-animation/examples/03.webp",
+   "lr": "docs/design/643/lr/batch2/logo-animation-ex03-lr.webp",
+   "meanAbs": 80.35,
+   "wash_src": "strong2-rewash"
+  },
+  {
+   "skill": "logo-animation",
+   "index": 4,
+   "path": "643/wash/logo-animation/examples/04.webp",
+   "lr": "docs/design/643/lr/batch2/logo-animation-ex04-lr.webp",
+   "meanAbs": 71.06,
+   "wash_src": "strong-rewash"
+  }
+ ],
+ "missing": []
+}
