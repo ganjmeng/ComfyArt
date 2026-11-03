@@ -1272,3 +1272,9 @@
 .ca-chat__bot .ca-chat__skillcard-btn { height: 18px; padding: 0 7px; border-radius: 5px; font-size: 10px; }
 .ca-chat__bot .ca-chat__skillcard-btn + .ca-chat__skillcard-btn { margin-left: -4px; }
 .ca-chat__feedback[data-variant="creator"] .ca-chat__fb .ca-icon { width: 12px; height: 12px; }
+/* #650 v2: status rows + icons and card description share one medium gray (gold: both ≈ #858585 on white ≈ rgba(0,0,0,.5)) */
+.ca-chat__bot:has(.ca-chat__skillcard) { --ca-skill-sub: rgba(0,0,0,.5); }
+:root[data-theme="dark"] .ca-chat__bot:has(.ca-chat__skillcard) { --ca-skill-sub: rgba(255,255,255,.55); }
+.ca-chat__bot:has(.ca-chat__skillcard) .ca-process__label:not(.ca-process__label--active),
+.ca-chat__bot:has(.ca-chat__skillcard) .ca-process__icon,
+.ca-chat__bot .ca-chat__skillcard-desc { color: var(--ca-skill-sub); }

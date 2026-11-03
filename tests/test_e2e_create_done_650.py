@@ -105,6 +105,8 @@ def test_creator_bubble_sizes_and_feedback_match_gold(browser, bundle, lang):
         bubFont: cs(bub).fontSize, bubLH: cs(bub).lineHeight, txtFont: cs(txt).fontSize,
         chipInline: Math.abs(r(chip).top - tr[0].top) <= 2 && chr.right <= tr[0].left, wrapsUnderChip: [...tr].filter(x => x.width > 0 && x.top > tr[0].top + 5).every(x => Math.round(x.left) < Math.round(chr.right)), lines: tr.length,
         chipBorder: cs(chip).borderTopStyle, chipH: Math.round(chr.height),
+        rowColor: [...document.querySelectorAll('#done .ca-process__label'), ...document.querySelectorAll('#done .ca-process__icon')].map(e => cs(e).color),
+        descColor: cs(q('[data-testid=skill-created-desc]')).color,
         rowFont: [...document.querySelectorAll('#done .ca-process__label')].map(e => cs(e).fontSize),
         rowStep: Math.round(r(document.querySelectorAll('#done .ca-process__row')[1]).top - r(document.querySelectorAll('#done .ca-process__row')[0]).top),
         cardH: Math.round(r(card).height), thumb: [Math.round(r(q('.ca-chat__skillcard-thumb')).width), Math.round(r(q('.ca-chat__skillcard-thumb')).height)],
@@ -121,6 +123,8 @@ def test_creator_bubble_sizes_and_feedback_match_gold(browser, bundle, lang):
     assert (g["bubFont"], g["bubLH"], g["txtFont"]) == ("11px", "19px", "11px"), g
     assert g["chipInline"] and g["wrapsUnderChip"], g
     assert g["chipBorder"] == "solid" and g["chipH"] == 19, g
+    assert len(g["rowColor"]) == 4 and all(c == g["descColor"] for c in g["rowColor"]), g
+    assert g["descColor"] == "rgba(0, 0, 0, 0.5)", g
     assert g["rowFont"] == ["11px", "11px"] and g["rowStep"] == 20, g
     assert g["cardH"] == 46 and g["thumb"] == [50, 36], g
     assert (g["name"], g["desc"]) == ("11px", "10px"), g
