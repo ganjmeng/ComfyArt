@@ -158,8 +158,9 @@ const video637 = (id: string) => pinned(`637/wash/${id}`, WASH_637, 'example.mp4
 // #643 Phase3-S4 true wash (kie offline) — thumbnail + NEW19 covers; batch1 examples wired (featured empty).
 const WASH_643 = '0be4350be224066cccf5e2929bfcb02e0bf8f7a9'
 const cover643 = (id: string) => pinned(`643/wash/${id}`, WASH_643, 'cover.webp')
-const ex643 = (id: string, ids: number[]) =>
-  ids.map((n) => pinned(`643/wash/${id}/examples`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
+// #643 per-slot PRs: optional per-slot pin so each slot merges independently.
+const ex643 = (id: string, ids: number[], pin: string = WASH_643) =>
+  ids.map((n) => pinned(`643/wash/${id}/examples`, pin, `${String(n).padStart(2, '0')}.webp`))
 const feat643 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`643/wash/${id}/featured`, WASH_643, `${String(n).padStart(2, '0')}.webp`))
 // #636 Phase2-S3 C deferred5 soft wash — nearMiss remap Examples-only (hardMax layouts).
@@ -491,7 +492,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('intro', '入场动画', 'Intro', 'Style: logo intro animation, clean entrance, geometry locked to the mark.'), P('loop', '循环动画', 'Loop', 'Style: logo loop animation, seamless cycle, mark paths unchanged.')],
     inputs: NEARMISS_INPUTS },
   { id: 'restaurant-website', name: t('skills.restaurantWebsite'), instructions: 'You are a production restaurant website designer. Ship landing visuals for menu, atmosphere and reserve modules — not a generic SaaS product site.\n1) Brief: cuisine, tone and modules from restaurantBrief + refs.\n2) Modules: hero mood, menu board and reserve/CTA section sharing one look.\n3) Division: restaurant hospitality site — leave SaaS kits to web-product.\n4) Copy: dish/CTA lines in quotes.\n5) Refs: pass refs in refs on every generate_image call.',
-    category: 'website', cover: cover643('restaurant-website'), examples: [], featured: [],
+    category: 'website', cover: cover643('restaurant-website'), examples: ex643('restaurant-website', [1, 2, 3, 4, 5, 6, 7], 'd49e8ce17bcc962c31804a213a30cdc2f8846379'), featured: [],
     presets: [P('mood', '氛围首屏', 'Mood hero', 'Style: restaurant site mood hero, hospitality photography, sparse headline in quotes.'), P('menu', '菜单模块', 'Menu module', 'Style: restaurant menu module visual, readable dishes, coherent with hero.')],
     inputs: NEARMISS_INPUTS },
   { id: 'clothing-swap', name: t('skills.clothingSwap'), instructions: 'You are a production AI clothing-swap artist. Keep the person; swap garments from a dual ref (person + clothing) — not a triple-ref person-swap.\n1) Intake: require an uploaded person ref + garment cue in Additional Details when needed.\n2) Lock: face, body and pose from the person; only wardrobe changes.\n3) Deliver: try-on stills with fabric truth and clean edges.\n4) Division: outfit swap on fixed person — leave scene+face+outfit triple swap to person-swap.\n5) Refs: pass both shape ids in refs on every generate_image call.',
