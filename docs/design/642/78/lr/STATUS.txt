@@ -1,0 +1,5 @@
+issue=#642
+tip=ac9a6654 (will bump after this docs tip)
+lr=01 shelf card + 02 SkillRunDialog shell via thumbnail (Upload+Additional ONLY)
+new19_sample=03/04 youtube-channel-banner honest scaffold (empty cover; multi-field S1 — NOT deepened)
+parity_note=per-id field map → Upload+Additional pending; media waits #643; tip interactive shell == main for thumbnail

@@ -47,3 +47,10 @@ May land as ecommerce / website / social·ads / motion sub-tips; keep one branch
 2. Deepen instructions/locales where S1 skeleton is thin vs PRODUCT-LOCK rows.
 3. After #643 wash: pin `cover` / `examples` / `featured` (same pattern as `cover643` / `ex643`).
 4. Design L/R screenshots into `docs/design/642/78/lr/<id>/` then PR body embeds.
+
+## L/R (this tip)
+
+- `docs/design/642/78/lr/01-lr-shelf-card-thumbnail.png` — Lovart gold card vs tip thumbnail card
+- `docs/design/642/78/lr/02-lr-skill-dialog-thumbnail.png` — Lovart dialog vs tip SkillRunDialog **Upload+Additional only** (`file`,`note`)
+- `03`/`04` — NEW19 `youtube-channel-banner` honest scaffold (empty cover; multi-field S1 skeleton). **No deepen** in this tip; field map to Upload+Additional still pending.
+- Tip interactive UI for shared shell == main `a042575e` (scaffold markers only).
