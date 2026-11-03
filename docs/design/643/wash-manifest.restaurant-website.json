@@ -1,0 +1,69 @@
+{
+ "skill_id": "restaurant-website",
+ "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+ "assets": [
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 5,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 6,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 7,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  }
+ ]
+}
