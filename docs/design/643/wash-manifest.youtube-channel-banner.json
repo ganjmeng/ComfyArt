@@ -1,0 +1,88 @@
+{
+ "skill_id": "youtube-channel-banner",
+ "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+ "assets": [
+  {
+   "skill_id": "youtube-channel-banner",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide cinematic food flat-lay channel banner: dark rustic wood table with steaming bowls, citrus, herbs, olives, salt; centered elegant serif title + gold script tagline (generic studio name). Same YouTube channel-art food-studio use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): repaint the banner artwork with a clearly different scene arrangement, different dominant color palette and time-of-day/lighting, a different person (if any person appears) in a different pose, and a different title typeface style; keep the same channel title text, same niche, and the same YouTube channel page mockup layout if the reference shows one.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "youtube-channel-banner",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide epic outdoor adventure channel banner: silhouetted hiker on rocky peak overlooking snow peaks + glacial lake at golden sunrise, centered bold title + short tagline. Same YouTube travel/adventure channel-art use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): repaint the banner artwork with a clearly different scene arrangement, different dominant color palette and time-of-day/lighting, a different person (if any person appears) in a different pose, and a different title typeface style; keep the same channel title text, same niche, and the same YouTube channel page mockup layout if the reference shows one.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "youtube-channel-banner",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide deep-space channel banner: cyan/magenta nebulae, spiral galaxy, crescent planet, dense stars; centered futuristic title + short tagline. Same YouTube space/science channel-art use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): repaint the banner artwork with a clearly different scene arrangement, different dominant color palette and time-of-day/lighting, a different person (if any person appears) in a different pose, and a different title typeface style; keep the same channel title text, same niche, and the same YouTube channel page mockup layout if the reference shows one.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "youtube-channel-banner",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup (gray wireframe chrome) with a dark green finance banner: upward glowing line charts, East-Asian man in suit+green tie on the right, stacked bold title + gold investing tagline on the left. Same YouTube finance channel-art use-slot — stay on banner-in-channel-page mockup. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): repaint the banner artwork with a clearly different scene arrangement, different dominant color palette and time-of-day/lighting, a different person (if any person appears) in a different pose, and a different title typeface style; keep the same channel title text, same niche, and the same YouTube channel page mockup layout if the reference shows one.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "youtube-channel-banner",
+   "slot": "examples",
+   "index": 5,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with a soft peach lifestyle banner: smiling East-Asian woman (hair bun, peach cardigan) on the left, rounded peach title + life/travel tagline, leaf shadows. Same YouTube lifestyle channel-art use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): repaint the banner artwork with a clearly different scene arrangement, different dominant color palette and time-of-day/lighting, a different person (if any person appears) in a different pose, and a different title typeface style; keep the same channel title text, same niche, and the same YouTube channel page mockup layout if the reference shows one.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "youtube-channel-banner",
+   "slot": "examples",
+   "index": 6,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with a navy travel banner: map/compass motifs + bold title + travel tagline on left/center; young man with backpack against sunlit mountains on the right. Same YouTube travel channel-art use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): repaint the banner artwork with a clearly different scene arrangement, different dominant color palette and time-of-day/lighting, a different person (if any person appears) in a different pose, and a different title typeface style; keep the same channel title text, same niche, and the same YouTube channel page mockup layout if the reference shows one.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "youtube-channel-banner",
+   "slot": "examples",
+   "index": 7,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with a black/neon-green gaming banner: bold green title + live/reviews tagline, curly-haired young man in hoodie+headphones celebrating on the right, lightning accents. Same YouTube gaming channel-art use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): repaint the banner artwork with a clearly different scene arrangement, different dominant color palette and time-of-day/lighting, a different person (if any person appears) in a different pose, and a different title typeface style; keep the same channel title text, same niche, and the same YouTube channel page mockup layout if the reference shows one.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "youtube-channel-banner",
+   "slot": "examples",
+   "index": 8,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with an organic brand banner: split forest-green / sunlit gold botanical leaf illustrations, centered elegant serif title + organic/crafted tagline. Same YouTube organic-lifestyle channel-art use-slot — no people required. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): repaint the banner artwork with a clearly different scene arrangement, different dominant color palette and time-of-day/lighting, a different person (if any person appears) in a different pose, and a different title typeface style; keep the same channel title text, same niche, and the same YouTube channel page mockup layout if the reference shows one.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "youtube-channel-banner",
+   "slot": "examples",
+   "index": 9,
+   "source_path": "<lovart-gold, not committed>",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with a dark navy tech enterprise banner: circuit/light streaks, interlocking geometric mark, bold white title + enterprise/cloud/AI tagline. Same YouTube B2B tech channel-art use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): repaint the banner artwork with a clearly different scene arrangement, different dominant color palette and time-of-day/lighting, a different person (if any person appears) in a different pose, and a different title typeface style; keep the same channel title text, same niche, and the same YouTube channel page mockup layout if the reference shows one.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  }
+ ],
+ "postprocess": "ex05-ex09: washed banner art re-composited into the gold page skeleton at the gold banner rect (same position/aspect); ex01/02 recompressed <400KB."
+}
