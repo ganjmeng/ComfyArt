@@ -381,6 +381,12 @@ CARD_COPY = {
 PENDING_CONFIRM_LABEL = {"zh": "等待确认", "en": "Awaiting confirmation"}
 # primary button action: continue the run from its checkpoint | rephrase (focus the composer) | retry
 _PRIMARY_ACTION = {"stuck": "rephrase", "error": "retry"}
+# #709: every paused card names WHY it paused (one plain line) and stuck cards also offer 继续, which resumes
+# the same run from its checkpoint (agent_loop resume: fresh progress window for stuck, +1 budget for budget).
+_BUDGET_REASON = {"zh": {"tokens": "模型用量达到本次上限", "credits": "积分达到本次上限", "time": "用时达到本次上限"},
+                  "en": {"tokens": "model usage reached this run's limit", "credits": "credits reached this run's limit",
+                         "time": "time reached this run's limit"}}
+_CONTINUE_LABEL = {"zh": "继续", "en": "Continue"}
 
 
 # 「详情」 token line label: ONE copy key, design picks the final Chinese word (placeholder 用量).
@@ -509,6 +515,12 @@ def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: i
                    "body": _card_body(key, lk, n=n, m=m, x=x, kind=kind, step=step, miss=miss,
                                       reason=(reason[0] if reason else "")[:160]),
                    "primary": primary, "secondary": secondary}
+        if stop.reason == StopReason.BUDGET:
+            out[lk]["reason"] = _BUDGET_REASON[lk].get(stop.dimension, "")
+        elif stop.reason == StopReason.STUCK:
+            out[lk]["reason"] = _STALL_LABEL[lk].get(stop.sub, "")
+            if primary != _CONTINUE_LABEL[lk]:
+                out[lk]["continue"] = _CONTINUE_LABEL[lk]
     return out
 
 
