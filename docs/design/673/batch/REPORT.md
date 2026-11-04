@@ -51,3 +51,10 @@ tesseract was not installable (apt mirror down), so RapidOCR (chi_sim+eng models
 2. ppt p07: design FAIL; redo with a style reference, subject: a study or tea room, person seen from behind sitting at the window. Then re-stitch to 5 pages (/05, 5 dots).
 3. taobao-product.
 (logo cover redo dropped: ex06 is final.)
+
+### Round 3 local fixes (free)
+- ppt cover: the 4 page dots at bottom centre were removed (blurred fill), and the left-panel caption under the big title (Cedar Hot Tub / 雪松温泉 / 露天汤池 · 户外平台 · 森林环绕) was cleared; the title was not moved. RapidOCR on the cover: only 山野/栖居, VOL.02, SLOW STAYS / IN THE WILD and the middle and right captions remain.
+- promo ex02: re-checked all 6 badges. THE PROTEIN CORRECTION and the ring Chinese 「好原料值得信赖」 are gone (they were already replaced in c73a78bf; QA had reviewed e7410825). RapidOCR finds no PROTEIN, CORRECTION, 信赖, SALON or HAIR. The unreadable text on the red ribbon at the top right of the ¥120 coupon was cleared (ribbon repainted plain red).
+- promo ex02 柔润/不紧绷 badge: the white patch under the text had a faint rectangular edge. The badge was rebuilt locally: ring refilled with its own colour (200,166,176), a clean round white centre, 柔润 / 不紧绷 redrawn in Noto Sans CJK Bold, and the rim lines DAILY GLOW / GENTLE CARE redrawn. 100% crop, before | after: `lr/promo-ex02-badge-rourun-100pct-before-after.png`
+
+![badge before/after](lr/promo-ex02-badge-rourun-100pct-before-after.png)
