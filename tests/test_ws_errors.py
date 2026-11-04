@@ -80,10 +80,26 @@ def test_top_up_link_clickable_in_card():
 
 def test_174_timeout_copy_zh_en(js):
     zh, en = js["zh"], js["en"]
-    assert zh["timeout"] == "WaveSpeed 任务超时，可能已扣费约 $0.32。请先到 WaveSpeed 后台确认结果，再决定要不要重试。"
+    assert zh["timeout"] == "WaveSpeed 任务超时，可能已扣费约 $0.32。请先到 WaveSpeed 控制台确认结果，再决定要不要重试。"
     assert en["timeout"] == "The WaveSpeed task timed out and may have been charged about $0.32. Please check the result in your WaveSpeed dashboard before retrying."
     # amount unknown: the 「约 $…」 / 'about $…' half is dropped cleanly
-    assert zh["timeoutNoAmount"] == "WaveSpeed 任务超时，可能已扣费。请先到 WaveSpeed 后台确认结果，再决定要不要重试。"
+    assert zh["timeoutNoAmount"] == "WaveSpeed 任务超时，可能已扣费。请先到 WaveSpeed 控制台确认结果，再决定要不要重试。"
     assert en["timeoutNoAmount"] == "The WaveSpeed task timed out and may have been charged. Please check the result in your WaveSpeed dashboard before retrying."
-    assert "约 $1.5。" in zh["timeoutBody"] and "about $1.5." in en["timeoutBody"]
+    assert "约 $1.50。" in zh["timeoutBody"] and "about $1.50." in en["timeoutBody"]
     assert "quoted price" not in zh["timeoutBody"] + en["timeoutBody"]
+
+
+def test_712_fmt_usd_two_decimals_and_sub_cent(js):
+    assert js["fmtUsd"][:4] == ["$0.10", "$0.14", "$1.50", "$0.32"]
+    assert js["fmtUsd"][4:6] == ["< $0.01", "< $0.01"]
+    assert js["fmtUsd"][6:8] == ["$0.00", "$0.01"] and js["fmtUsd"][9] == "$12.00"
+    assert "约 < $0.01。" in js["zh"]["tiny"] and "about < $0.01." in js["en"]["tiny"]
+
+
+def test_712_unregistered_and_task_id_copy(js):
+    assert js["zh"]["unregisteredModel"] == "所选模型暂不可用，未发送、未扣费。请换一个模型再试。"
+    assert js["en"]["unregisteredModel"] == "The selected model isn't available right now. Nothing was sent or charged. Please try another model."
+    assert "没有拿到 WaveSpeed 任务编号，无法取回结果" in js["zh"]["noTaskId"] and "$0.10" in js["zh"]["noTaskId"]
+    assert "task ID" in js["en"]["noTaskId"] and "task id" not in js["en"]["noTaskId"]
+    zh = json.loads((ROOT / "src/locales/zh.json").read_text(encoding="utf-8"))
+    assert not [k for k, v in zh.items() if k.startswith("wsErr.") and "后台" in v]

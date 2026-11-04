@@ -3,7 +3,7 @@
 `scripts/gate.sh <slug>` is the source of truth for PR gating; manual pytest runs don't count.
 Worktree = `$GATE_ROOT/wt_<slug without '-'>` (default root `/workspace`).
 
-Stages: `tsc` → UNIT (`-k "not e2e"`, the whole unit suite since #712) → `vite build` (local only) → pre-checks → E2E (`-k "(skill and e2e) or 650 or creator"`).
+Stages: `tsc` → UNIT (`-k "not e2e"`, the whole unit suite since #712) → `vite build` (local only) → pre-checks → E2E (`-k "(skill and e2e) or 650 or creator or (e2e and 712)"`).
 
 ## Excluded tests (`gate_skip`)
 Every stage runs with `-m "not gate_skip"`. A test that fails on clean main for a reason outside the PR is marked

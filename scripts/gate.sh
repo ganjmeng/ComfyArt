@@ -59,4 +59,4 @@ npx vite build >"$LOGDIR/build.log" 2>&1 && echo "$S BUILD_OK(local, not committ
 gate_check_no_pytest || { fail "pytest already running"; exit; }
 # shellcheck disable=SC2086
 gate_check_ports_free ${GATE_PORTS:-9392} || { fail "ports busy"; exit; }
-stage E2E "(skill and e2e) or 650 or creator"
+stage E2E "(skill and e2e) or 650 or creator or (e2e and 712)"

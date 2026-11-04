@@ -72,6 +72,7 @@ def test_missing_model_raises_unregistered(monkeypatch, caplog):
     n = len(SENT)
     out = run("generate_image", prompt="logo for a cafe")
     assert out["status"] == "failed" and out["kind"] == "unregisteredModel" and out["generation_succeeded"] is False
+    assert "所选模型暂不可用" in out["user_message"] and "isn't available right now" in out["user_message"]
     assert "nope/not-in-catalog" in out["error"] and len(SENT) == n  # nothing was sent, nothing charged
 
 

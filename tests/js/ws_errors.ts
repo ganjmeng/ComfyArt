@@ -1,6 +1,6 @@
 // #155: WaveSpeed error kinds -> readable zh/en messages (never the raw WaveSpeed text).
 import { setLang } from './i18n_stub'
-import { agentError, agentErrorText, wsBodyError, wsErrorText } from '../../src/wsErrors'
+import { agentError, agentErrorText, fmtUsd, wsBodyError, wsErrorText } from '../../src/wsErrors'
 
 const kinds = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed']
 const raw = { error: { message: 'WaveSpeed request failed (500) Internal Error xyz', kind: 'failed' } }
@@ -17,7 +17,11 @@ for (const lang of ['zh', 'en'] as const) {
     agentThrown: agentErrorText(wsErrorText('insufficientCredit')!),
     timeout: wsErrorText('timeout', 0.32),
     timeoutNoAmount: wsErrorText('timeout'),
+    unregisteredModel: wsErrorText('unregisteredModel'),
+    noTaskId: wsErrorText('noTaskId', 0.1),
+    tiny: wsErrorText('noOutput', 0.004),
     timeoutBody: wsBodyError({ error: { message: 'WaveSpeed task timed out, may have been charged about (quoted price) $1.5', kind: 'timeout', charged_usd: 1.5 } }, 'x'),
   }
 }
+out.fmtUsd = [0.1, 0.14, 1.5, 0.32, 0.004, 0.009, 0, 0.01, 2.005, 12].map(fmtUsd)
 console.log(JSON.stringify(out))

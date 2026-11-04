@@ -66,3 +66,49 @@ async def test_712_charged_no_output_shows_reason_and_amount(ws, bundle, lang, t
         SHOT_DIR.mkdir(parents=True, exist_ok=True)
         await page.locator(".ca-root").screenshot(path=str(SHOT_DIR / f"failure-cost-{lang}-{theme}.png"))
         await b.close()
+
+
+async def _shot(bundle, lang, theme, kind, charged, name):
+    async with apw.async_playwright() as p:
+        try:
+            b = await p.chromium.launch()
+        except Exception as e:
+            pytest.skip(f"no chromium: {e}")
+        page = await b.new_page(viewport={"width": 560, "height": 300}, device_scale_factor=2)
+        await page.route("**/*", lambda r: r.continue_() if r.request.url.startswith(bundle) else r.abort())
+        q = {"lang": lang, "theme": theme, "kind": kind, "model": MODEL}
+        if charged is not None:
+            q["charged"] = charged
+        await page.goto(f"{bundle}/index.html?{urlencode(q)}")
+        await page.wait_for_function("window.__ready")
+        await page.wait_for_timeout(200)
+        body = await page.locator("[data-testid=ws-failure]").inner_text()
+        SHOT_DIR.mkdir(parents=True, exist_ok=True)
+        await page.locator(".ca-root").screenshot(path=str(SHOT_DIR / f"{name}-{lang}-{theme}.png"))
+        await b.close()
+        return body
+
+
+# (kind, charged, file stem, zh text, en text); amounts are the mock quote, None = amount unknown
+CASES = [
+    ("noTaskId", 0.32, "failure-notaskid", "没有拿到 WaveSpeed 任务编号", "did not return a task ID"),
+    ("noOutput", None, "failure-nooutput-noamount", "没有返回图片，可能已扣费。", "returned no image, and it may have been charged."),
+    ("noTaskId", None, "failure-notaskid-noamount", "无法取回结果，可能已扣费。", "cannot be fetched, and it may have been charged."),
+    ("unregisteredModel", None, "failure-unregistered", "所选模型暂不可用，未发送、未扣费", "isn't available right now. Nothing was sent or charged"),
+]
+
+
+@pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
+@pytest.mark.parametrize("kind,charged,stem,zh,en", CASES)
+async def test_712_failure_kinds_shown(ws, bundle, lang, theme, kind, charged, stem, zh, en):  # noqa: F811
+    if kind == "noTaskId":  # the kind + amount come from the mocked backend
+        ws["no_id"] = True
+        if charged is not None:
+            ws["prices"][MODEL] = charged
+        with pytest.raises(wavespeed.WaveSpeedError) as e:
+            await wavespeed.submit({"feature": "text_to_video", "model": MODEL, "prompt": "x", "duration": 5, "confirmed": True})
+        assert e.value.kind == "noTaskId"
+        charged = e.value.charged if charged is not None else None
+    body = await _shot(bundle, lang, theme, kind, charged, stem)
+    assert (zh if lang == "zh" else en) in body
+    assert "$0.32" in body if charged is not None else "$" not in body

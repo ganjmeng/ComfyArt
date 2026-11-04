@@ -43,8 +43,16 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
             # #712: an unregistered table model is an explicit error, never a silent swap to another model
             log.error("%s", e)
             return {"status": "failed", "generation_succeeded": False, "error": str(e), "kind": "unregisteredModel",
-                    "user_message": f"模型未登记，已停止，没有扣费。/ Model not registered; stopped before any charge. ({e})"}
+                    "user_message": _unregistered_copy()}
     return handler
+
+
+def _unregistered_copy() -> str:
+    """#712: the same zh/en copy as src/locales wsErr.unregisteredModel (the UI shows it for kind=unregisteredModel)."""
+    import json as _json
+    from pathlib import Path as _P
+    loc = _P(__file__).resolve().parents[2] / "src" / "locales"
+    return " / ".join(_json.loads((loc / f"{l}.json").read_text(encoding="utf-8"))["wsErr.unregisteredModel"] for l in ("zh", "en"))
 
 
 async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float) -> dict:

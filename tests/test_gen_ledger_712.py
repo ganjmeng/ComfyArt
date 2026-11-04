@@ -77,7 +77,7 @@ def test_ui_shows_reason_and_amount():
     for lang in ("en", "zh"):
         loc = json.loads((root / "locales" / f"{lang}.json").read_text())
         for k in ("noOutput", "noTaskId"):
-            assert "${0}" in loc[f"wsErr.{k}"] and f"wsErr.{k}NoAmount" in loc
+            assert "{0}" in loc[f"wsErr.{k}"] and "${0}" not in loc[f"wsErr.{k}"] and f"wsErr.{k}NoAmount" in loc
 
 
 def test_unregistered_model_raises():

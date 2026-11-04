@@ -2,7 +2,7 @@
 import { t } from './i18n'
 
 export const TOP_UP_URL = 'https://wavespeed.ai/top-up'
-const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany', 'noOutput', 'noTaskId'] as const
+const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany', 'noOutput', 'noTaskId', 'unregisteredModel'] as const
 export type WsErrorKind = typeof KINDS[number]
 
 /** The readable message for a backend error kind, or null when the error is not a tagged WaveSpeed failure. */
@@ -15,7 +15,8 @@ export function wsErrorText(kind: unknown, charged?: unknown): string | null {
 }
 
 /** `{ error: { message, kind } }` bodies from /comfyart/wavespeed/* and /comfyart/ocr. */
-const fmtUsd = (n: number) => String(Math.round(n * 1e4) / 1e4)
+/** #712: always 2 decimals ($0.10, $0.14); a positive amount under one cent reads '< $0.01'. */
+export const fmtUsd = (n: number) => (n > 0 && n < 0.01 ? '< $0.01' : `$${n.toFixed(2)}`)
 
 export function wsBodyError(body: any, fallback: string): string {
   const err = body?.error
