@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
-import { TOP_UP_URL } from '../wsErrors'
+import { TOP_UP_URL, isTaskRefCode } from '../wsErrors'
 import {
   BaseBoxShapeUtil,
   createShapePropsMigrationIds,
@@ -48,7 +48,10 @@ const versions = createShapePropsMigrationIds(GENERATOR, { AddDuration: 1, AddOp
 /** #163: the top-up URL in the insufficient-balance copy is clickable; same text, no new wording. */
 export function withTopUpLink(text: string): ReactNode {
   // #715 design: a `task id` renders as a nowrap, copyable <code> (full id in title); its own line via pre-line CSS
-  if (/`[^`\n]+`/.test(text)) return <>{text.split(/(`[^`\n]+`)/).map((p, k) => (k % 2 ? <code key={k} title={p.slice(1, -1)}>{p.slice(1, -1)}</code> : <Fragment key={k}>{linkTopUp(p)}</Fragment>))}</>
+  if (/`[^`\n]+`/.test(text)) {
+    const ps = text.split(/(`[^`\n]+`)/)
+    return <>{ps.map((p, k) => (k % 2 ? (isTaskRefCode(ps[k - 1]) ? <code key={k} className="ca-task-id" title={p.slice(1, -1)}>{p.slice(1, -1)}</code> : <code key={k}>{p.slice(1, -1)}</code>) : <Fragment key={k}>{linkTopUp(p)}</Fragment>))}</>
+  }
   return linkTopUp(text)
 }
 

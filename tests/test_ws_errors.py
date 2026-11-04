@@ -131,3 +131,14 @@ def test_712_task_id_shown_when_obtained(js):
     assert "ws-abc123" in zh["bodyId"] and "ws-abc123" in en["bodyId"]
     assert "ws-abc123" not in zh["noTaskIdWithId"] + en["noTaskIdWithId"]  # noTaskId never shows an id
     assert "ws-abc123" not in zh["timeout"] + en["timeout"]  # no id -> no ref line
+
+
+def test_715_task_ref_prefixes_match_locales():
+    # .ca-task-id is chosen by the text before the code span; keep it in sync with wsErr.taskRef
+    src = (ROOT / "src/wsErrors.ts").read_text(encoding="utf-8")
+    for lang in ("zh", "en"):
+        ref = json.loads((ROOT / f"src/locales/{lang}.json").read_text(encoding="utf-8"))["wsErr.taskRef"]
+        assert f"'{ref.split('{0}')[0]}'" in src, (lang, ref)
+    css = (ROOT / "src/styles/overlays.css").read_text(encoding="utf-8")
+    md = [l for l in css.splitlines() if l.startswith(".ca-md code")]
+    assert md == [".ca-md code { padding: 1px 4px; border-radius: 4px; background: var(--ca-field); font-size: 12px; }"]  # main's rule, unchanged

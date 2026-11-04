@@ -72,7 +72,7 @@ async def test_712_charged_no_output_shows_reason_and_amount(ws, bundle, lang, t
         await b.close()
 
 
-async def _shot(bundle, lang, theme, kind, charged, name, task=None):
+async def _shot(bundle, lang, theme, kind, charged, name, task=None, code=None):
     async with apw.async_playwright() as p:
         try:
             b = await p.chromium.launch()
@@ -85,12 +85,14 @@ async def _shot(bundle, lang, theme, kind, charged, name, task=None):
             q["charged"] = charged
         if task:
             q["task"] = task
+        if code:
+            q["code"] = code
         await page.goto(f"{bundle}/index.html?{urlencode(q)}")
         await page.wait_for_function("window.__ready")
         await page.wait_for_timeout(200)
         body = await page.locator("[data-testid=ws-failure]").inner_text()
         if task:  # #715 design: id never wraps mid-string, stays selectable, full id in title
-            st = await page.evaluate("""() => [...document.querySelectorAll('.ca-md code')].map(c => {
+            st = await page.evaluate("""() => [...document.querySelectorAll('.ca-md .ca-task-id')].map(c => {
                 const s = getComputedStyle(c); return [c.textContent, c.title, s.whiteSpace, s.userSelect, c.getClientRects().length] })""")
             assert [x[0] for x in st].count(task) >= 1, st
             for txt, title, ws_, sel, rects in st:
@@ -138,3 +140,27 @@ async def test_712_failure_kinds_shown(ws, bundle, lang, theme, kind, charged, s
         assert "任务编号：" not in body and "Task ID:" not in body
     assert (zh if lang == "zh" else en) in body and not re.search(r"wavespeed|kie|控制台|后台|console|dashboard|生成记录|历史记录|generation history", body, re.I)
     assert "$0.32" in body if charged is not None else "$" not in body
+
+
+PLAIN_CODE = "comfyart/api/mcp_tools/canvas.py::generate_image(model=google/nano-banana-pro/edit,size=2k,aspect=3:4,retries=2)"
+
+
+async def test_715_plain_inline_code_still_wraps(ws, bundle):  # noqa: F811
+    # #715 team: nowrap/ellipsis/title only on .ca-task-id; ordinary inline code keeps main's wrapping
+    body = await _shot(bundle, "zh", "light", "timeout", 0.32, "failure-timeout-plaincode", LONG_ID, PLAIN_CODE)
+    assert PLAIN_CODE in body and f"任务编号：{LONG_ID}" in body
+    async with apw.async_playwright() as p:
+        b = await p.chromium.launch()
+        page = await b.new_page(viewport={"width": 560, "height": 300})
+        await page.route("**/*", lambda r: r.continue_() if r.request.url.startswith(bundle) else r.abort())
+        await page.goto(f"{bundle}/index.html?" + urlencode({"lang": "zh", "kind": "timeout", "charged": 0.32, "model": MODEL, "task": LONG_ID, "code": PLAIN_CODE}))
+        await page.wait_for_function("window.__ready")
+        info = await page.evaluate("""() => [...document.querySelectorAll('.ca-md code')].map(c => {
+            const s = getComputedStyle(c); return {t: c.textContent, cls: c.className, title: c.title, ws: s.whiteSpace, to: s.textOverflow,
+              rects: c.getClientRects().length, clipped: c.scrollWidth > c.clientWidth + 1} })""")
+        await b.close()
+    plain = [x for x in info if x["t"] == PLAIN_CODE][0]
+    tid = [x for x in info if x["t"] == LONG_ID][0]
+    assert plain["cls"] == "" and plain["title"] == "" and plain["ws"] != "nowrap" and plain["to"] != "ellipsis", plain
+    assert plain["rects"] > 1 and not plain["clipped"], plain  # wraps, full text visible
+    assert tid["cls"] == "ca-task-id" and tid["title"] == LONG_ID and tid["ws"] == "nowrap" and tid["to"] == "ellipsis" and tid["rects"] == 1, tid

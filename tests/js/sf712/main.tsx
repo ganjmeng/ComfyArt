@@ -20,6 +20,8 @@ const m: any = {
     { type: 'tool_result', id: 'g1', name: 'mcp__comfyart__generate_image', status: 'error',
       text: JSON.stringify({ status: 'failed', generation_succeeded: false, error: msg, user_message: msg, model }) },
     { type: 'text', text: msg },
+    // #715: an ordinary long inline code next to the task id must keep main's wrapping (no ellipsis)
+    ...(q.get('code') ? [{ type: 'text', text: `\n\n${lang === 'zh' ? '普通代码：' : 'Plain code: '}\`${q.get('code')}\`` }] : []),
   ],
 }
 createRoot(document.getElementById('root')!).render(
