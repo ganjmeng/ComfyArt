@@ -6,7 +6,7 @@
 
 - 模型：WaveSpeed `google/nano-banana-2.1/edit`，1K，$0.0378/次；输出本地放大到 2K（按金标宽高比），然后拼回 2560×2214
 - 预算：6 格 × 1 次 = $0.2268；同一格失败 2 次就停；总上限 ≈ $0.45
-- 顺序：p6 先试跑 → UIUX设计师 确认 prompt → 技术经理 批预算 → Angela 看 p6 L/R → 再跑其余 5 格
+- 顺序：p4（焕新了！我的家）先试跑 → UIUX设计师 确认 prompt → 技术经理 批预算 → Angela 看 p4 L/R → 再跑其余 5 格
 - 金标底图：`/workspace/next673/gold_ex01.png`（2560×2214）；按 3×2 网格切，每格约 853×1107：
   p1 x0-853/y0-1107，p2 x853-1706/y0-1107，p3 x1706-2560/y0-1107，p4 x0-853/y1107-2214，p5 x853-1706/y1107-2214，p6 x1706-2560/y1107-2214
 - 保留（Angela 豁免）：双11、天猫、淘宝 logo 与角标、价签框形状、11.11 / 11月1日0点 这类大促时间节点
@@ -50,7 +50,7 @@
 | *天猫生意参谋2026年双11彩妆品类唇釉商品交易总量排名 (1964,1024) | *数据来源：velle品牌内部统计，2026年秋冬唇部新品 | 底部极小注释字 |
 | 产品瓶身 glossa 字样 | velle | 瓶身印字 |
 
-### p4 家居（LYSEN 丽森 → ARDEN 雅登家居）
+### p4 家居（LYSEN 丽森 → ARDEN 雅墩家居）
 | 金标 | 我们 | 字效 |
 |---|---|---|
 | LYSEN (36,1167) | ARDEN | 白色小 logo |
@@ -94,8 +94,6 @@ Every replaced line must stay at the same size and position as the original line
 负向要求写在正文里（nano-banana edit 无 negative 参数）。
 
 ## 逐格 prompt
-### p6（试跑格，需 UIUX 先确认）
-见下一节「p6 试跑 prompt（精确文本）」。
 
 ### p1
 ```
@@ -134,7 +132,7 @@ Edit this poster panel. Keep everything identical — product photo, colours, la
 Any "glossa" printed on the product -> "velle".
 Each replaced line keeps the same size and position; do not delete any text, do not add grey boxes or translucent panels, do not add new text.
 ```
-### p4
+### p4（试跑格，需 UIUX 先确认；底图 gold_ex01.png crop (0,1107)-(853,2214)）
 ```
 Edit this poster panel. Keep everything identical — room photo, furniture, colours, layout, and every font's typeface, weight, size, colour, dark outline stroke, italic slant and exact position. Only change the text content, line by line:
 "LYSEN" -> "ARDEN"
@@ -158,7 +156,7 @@ Keep the red "双11" logo and the 天猫 / 淘宝 icons exactly as they are.
 Each replaced line keeps the same size and position; do not delete any text, do not add grey boxes or translucent panels, do not add new text.
 ```
 
-## p6 试跑 prompt（精确文本，未运行）
+### p6
 底图：金标 p6 格 `gold_ex01.png` crop (1706,1107)-(2560,2214)，1K。
 ```
 Edit this poster panel. Keep everything identical — the yellow background, cookies, packaging boxes, crumbs, colours, layout, and every font's typeface, weight, size, colour, outline stroke, shadow, stacking and exact position. Only change the text content, line by line:
@@ -173,11 +171,11 @@ On the packaging: "BONBUN" -> "CRUMBO", "MILK" -> "CREAM", "COOCKIES" -> "BISCUI
 "买2盒加赠新品试吃" -> "下单再送限定小包装"
 Keep the yellow background and the red corner badge. Each replaced line keeps the same size and position; do not delete any text, do not add boxes, mint/green backgrounds, or grey/translucent panels behind text, do not add any new text.
 ```
-试跑后验收：双向 OCR（金标原文不得命中）+ 小字计数（金标 p6 共 3 行要点 + 竖排 + 角标 + 包装 3 处，必须全部存在）+ 2× L/R。
+试跑（p4）后验收：双向 OCR（金标原文不得命中）+ 小字计数（p4 金标 logo、顶栏小字、津贴小字共 3 处必须都在）+ 字效 2× L/R。
 
 ## 交接
 - 分支 `docs/673-audit`；本文件是 promo ex01 返工的唯一依据，表内金标坐标来自 RapidOCR 全图识别
 - 金标底图 `/workspace/next673/gold_ex01.png`（不在仓库，交接时按 `docs/design/673/batch/pulled/` 同源路径重新拉取）
-- **尚未花费任何钱**；下一步：UIUX 确认 p6 prompt → 技术经理批 $0.45 上限 → 跑 p6（1 次 $0.0378）→ Angela 看 L/R → 其余 5 格
+- **尚未花费任何钱**；下一步：UIUX 确认 p4 prompt → 技术经理批 $0.45 上限 → 跑 p4（1 次 $0.0378）→ Angela 看 L/R → 其余 5 格
 - 每次调用按 prediction id 记入 PAID-LIST；余额 < $20 停；同格失败 2 次停
 - 本地排字方案（promo_type.py）已废弃，不要再用灰框
