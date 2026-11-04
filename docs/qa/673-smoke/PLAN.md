@@ -1,9 +1,9 @@
 # #673 C 组 5 个 skill 真实链路冒烟计划（1K，每个 1 次）
 
 - 基线：main `b47b6671`；skill 定义 `src/skills.ts`（5 个都在 `HIDDEN_BUILTIN_SKILL_IDS`）。
-- 链路：composer → `generate_image` → `api/mcp_tools/canvas._auto_choice` 选模型 → `api/wavespeed.submit`（WaveSpeed，不走 ComfyUI）。
+- 链路（app 真实链路，和 UI 点 skill 一致，见 `src/bot.ts`）：`POST /comfyart/bot/chats` → `POST /comfyart/bot/chats/{id}/send {text, skill, refs, lang, run_mode}`（`api/bot.py bot_send`）→ 服务端开轮次 `paid_guard.begin_turn`（#142/#709，文本写「出 1 张」→ 守卫上限 1）→ agent 调 MCP `generate_image`（`api/mcp.py _tools_call` → `paid_guard.before_call`）→ `api/mcp_tools/canvas._auto_choice` Auto 选模型 → 页面执行 → `/comfyart/wavespeed/run`。
 - 尺寸：`src/generate.ts targetSize`，1K = 短边 1024，snap16。
-- 脚本：`run_smoke.py`，默认 dry-run 只打印请求；`--live` 才花钱，key 从 `/home/box/.secrets/comfyart-test.env` 读、不回显；每张先查免费 `/api/v3/model/price`，超估价即停；前后记余额。
+- 脚本：`run_smoke.py`，默认 dry-run，逐个打印会打到 app 的完整请求（estimate / 建 chat / send / poll）；`--live` 不再直连 WaveSpeed，只打 app 接口。每次调用前先查免费 `POST /comfyart/wavespeed/estimate`，超估价即停；累计已花 + 本次报价 > $0.8 即停；同一 skill 连续失败 2 次即停；每次调用前后记 WaveSpeed 余额（key 从 `/home/box/.secrets/comfyart-test.env` 读、不回显），结果写 `runs.json`。
 
 | skill | preset | 样例输入（用户填写） | refs | model（Auto 实际选中） | 尺寸 | 估价 |
 |---|---|---|---|---|---|---|
@@ -28,7 +28,9 @@ prompt = 用户输入 + 换行 + 所选 preset 的 Style 句（原文见 `src/sk
 6. 余额差 = 各张 quote 之和（误差 ≤$0.001），总计不超过 $0.8。
 
 ## 交接
-- 状态：计划和 dry-run 脚本已完成，dry-run 已跑通 5 个请求；**未做任何付费生成**。
-- 下一步：设计+技术 prompt 预审 → 上传 3 张 ref → 技术经理 GO 后 `--live`。
+- 状态：`--live` 已改为走 app 真实链路（bot chat send → paid_guard → generate_image → Auto 路由），dry-run 跑通 5 个 skill；**未做任何付费生成**。
+- 本地起 app 跑 live：`WAVESPEED_API_KEY` 从 secrets env 导入后 `./scripts/start.sh`（http://127.0.0.1:8188/comfyart/）；Agent Settings 打开 MCP 和 Agent，配好 agent provider（默认 `local-llm`，需 LLM key）；新建一个项目并保持该 Loomi 标签页打开（画布工具在页面里执行）；然后 `python3 docs/qa/673-smoke/run_smoke.py --live --project <id> --ref logo-abstract=URL --ref photo-split-poster=URL --ref promo-ecommerce=URL`。
+- 阻塞：`paid_gen_guard` P0 查清前不跑 live（技术经理定）；3 张 ref 公开 URL 待上传；#727 待合并。
+- 注意：守卫只在 bot 轮次里生效（直接调 `/comfyart/mcp` 没有轮次时 `before_call` 放行），所以脚本必须走 `/send`，不能直调 MCP；agent 本身的 LLM 调用费用不在 WaveSpeed 余额里。
 - 已花费：$0。
-- 余额：$44.285449（开发工程师在 #727 报的最新值，本次未查询）。
+- 余额：$44.134249（开发工程师在 #687 报的最新值，本次未查询）。
