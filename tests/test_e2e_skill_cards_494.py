@@ -81,7 +81,7 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
         assert "637/wash/style-transfer/cover.webp" in (await cw.get_by_test_id("skills-card-cover").get_attribute("src") or "")
         # #494/#529 — kind badge on every Explore card (bottom-left). Built-ins with `video` → data-kind=video;
         # style-transfer (no video) stays image. Never invent a video badge without data.
-        assert await cards.locator(".ca-swall__cover [data-testid=skills-card-kind]").count() == 49
+        assert await cards.locator(".ca-swall__cover [data-testid=skills-card-kind]").count() == 40  # #673
         box, badge = await cw.locator(".ca-swall__cover").bounding_box(), await cw.get_by_test_id("skills-card-kind").bounding_box()
         assert badge["x"] - box["x"] < 16 and (box["y"] + box["height"]) - (badge["y"] + badge["height"]) < 16
         assert await cw.get_by_test_id("skills-card-kind").get_attribute("data-kind") == "image"
