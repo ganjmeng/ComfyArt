@@ -44,7 +44,7 @@ Left as is: the CSV hits 200 / 300 / 1500 / 1200 / ¥300 (the gold's numbers; ou
 #16 promo cover, ppt p01, ppt p10, the stitch seams, and the photo-split slogan/top-note change.
 
 ## OCR check (free, local)
-tesseract was not installable (apt mirror down), so RapidOCR (chi_sim+eng models) was run on every changed page: ppt p01/p02/p08/p10, the cover and promo ex02. No garbled captions or coupon text remain. Known leftover: the tiny decorative circular rim text on the promo ex02 stamp badges (gold-style pseudo-English) is still unreadable; flag if design wants it cleared.
+tesseract was not installable (apt mirror down), so RapidOCR (chi_sim+eng models) was run on every changed page: ppt p01/p02/p08/p10, the cover and promo ex02. No garbled captions or coupon text remain. promo ex02 follow-up: all gold rim text on the six circular badges (SALON SPA LEVEL CARE, GOOD RAW MATERIALS, THE PROTEIN COLORFUL, MAKE HAIR MORE COLORFUL and the Chinese pseudo-text arc) was filled over with the ring colour and replaced with our own arc lines (GENTLE CARE / DAILY GLOW, PURE FORMULA / SOFT TOUCH, DAILY GLOW / GENTLE CARE, HERBAL ESSENCE / PURE FORMULA, WINTER PICKS / SOFT TOUCH, PURE FORMULA / DAILY GLOW; DejaVu Sans Bold). The stray NO at top left of the first pink coupon was removed. RapidOCR re-run: no gold rim phrase (SALON, RAW, MATERIALS, PROTEIN, COLORFUL, HAIR) is detected; only our words remain.
 
 ## Next round (to be quoted; no budget left in C)
 1. promo ex01: pulled; needs new models and products (style-ref route).
