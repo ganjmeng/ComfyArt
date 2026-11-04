@@ -1,13 +1,13 @@
 {
   "skill_id": "pose-fission",
-  "note": "#643 #670 final: face/hair + one small scene detail inpainted onto gold; clothing, pose, light, grade and grain are gold pixels. Same new model (dark-brown chin-length bob with bangs) across all 4. Gold not committed.",
+  "note": "#643 #670 final: face/hair (clipped above collar line, zero clothing pixels) + ONE small scene box (touches no clothing) inpainted onto gold; every clothing pixel, pose, light, grade and grain = gold. Same new model (dark-brown chin-length bob with bangs) across all 4. Gold not committed.",
   "assets": [
     {
       "skill_id": "pose-fission",
       "slot": "examples",
       "index": 1,
       "source_path": "<lovart-gold ex01, not committed>",
-      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite (GaussianBlur) of face/hair ellipse + one scene rect; all other pixels = gold",
+      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite: face/hair ellipse x ramp-to-0 at collar line (no clothing) + ONE small scene box (feather inside box, touches no clothing); all other pixels = gold",
       "model": "gpt-image-2-5-flare-image-to-image",
       "refs": [
         "<lovart-gold ex01, not committed>"
@@ -21,25 +21,35 @@
           960,
           560
         ],
-        "scene_rect": [
+        "face_blur": 28,
+        "collar_clip_y": 430,
+        "collar_ramp_px": 40,
+        "scene_box": [
           0,
-          1440,
-          440,
-          1720
+          1480,
+          480,
+          1800
         ],
-        "blur": 28,
-        "scene": "round manhole cover -> rectangular drain grate"
+        "box_feather": 14,
+        "scene": "round manhole cover -> rectangular drain grate",
+        "clothing_pixels": "100% gold",
+        "area_pct_of_frame": {
+          "face_pct": 3.9,
+          "scene_pct": 4.89,
+          "total_pct": 8.79,
+          "weighted_pct": 6.53
+        }
       },
       "path": "643/wash/pose-fission/examples/01.webp",
-      "sha256": "dde3563b2baaed526c4ba54a6e797f4a9cf396d3613ab2b207c12d4d68c1b7ef",
-      "meanAbs_vs_gold_report_only": 2.5
+      "sha256": "90786865d116b4cf9087e9692887a89ad9cfd187250190309408e662176ed774",
+      "meanAbs_vs_gold_report_only": 3.17
     },
     {
       "skill_id": "pose-fission",
       "slot": "examples",
       "index": 2,
       "source_path": "<lovart-gold ex02, not committed>",
-      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite (GaussianBlur) of face/hair ellipse + one scene rect; all other pixels = gold",
+      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite: face/hair ellipse x ramp-to-0 at collar line (no clothing) + ONE small scene box (feather inside box, touches no clothing); all other pixels = gold",
       "model": "gpt-image-2-5-flare-image-to-image",
       "refs": [
         "<lovart-gold ex02, not committed>",
@@ -54,25 +64,35 @@
           980,
           390
         ],
-        "scene_rect": [
+        "face_blur": 24,
+        "collar_clip_y": 345,
+        "collar_ramp_px": 40,
+        "scene_box": [
           60,
           1320,
-          620,
+          600,
           1545
         ],
-        "blur": 26,
-        "scene": "round manhole cover -> square drain grate"
+        "box_feather": 14,
+        "scene": "ground detail swap (edit pass)",
+        "clothing_pixels": "100% gold",
+        "area_pct_of_frame": {
+          "face_pct": 3.39,
+          "scene_pct": 3.87,
+          "total_pct": 7.26,
+          "weighted_pct": 5.3
+        }
       },
       "path": "643/wash/pose-fission/examples/02.webp",
-      "sha256": "748611cd738a7f7371827c32fa4e93a9c15da72400b38019eb592f2b7671e5d5",
-      "meanAbs_vs_gold_report_only": 1.61
+      "sha256": "7c3258e8bf55ff2c365e3ce05da7356e0d3c13a258b83634cf0fbf70ada7305f",
+      "meanAbs_vs_gold_report_only": 2.47
     },
     {
       "skill_id": "pose-fission",
       "slot": "examples",
       "index": 3,
       "source_path": "<lovart-gold ex03, not committed>",
-      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite (GaussianBlur) of face/hair ellipse + one scene rect; all other pixels = gold",
+      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite: face/hair ellipse x ramp-to-0 at collar line (no clothing) + ONE small scene box (feather inside box, touches no clothing); all other pixels = gold",
       "model": "gpt-image-2-5-flare-image-to-image",
       "refs": [
         "<lovart-gold ex03, not committed>",
@@ -87,25 +107,40 @@
           775,
           420
         ],
-        "scene_rect": [
-          775,
-          1490,
-          975,
-          2048
+        "face_blur": 24,
+        "collar_clip_y": 360,
+        "collar_ramp_px": 40,
+        "scene_box": [
+          30,
+          1385,
+          250,
+          1505
         ],
-        "blur": 26,
-        "scene": "yellow curb paint segment near feet -> plain grey curb"
+        "box_feather": 16,
+        "scene": "rectangular drain cover (lower-left sidewalk) -> round cast-iron drain cover",
+        "clothing_pixels": "100% gold",
+        "area_pct_of_frame": {
+          "face_pct": 3.06,
+          "scene_pct": 0.83,
+          "total_pct": 3.89,
+          "weighted_pct": 2.35
+        }
       },
       "path": "643/wash/pose-fission/examples/03.webp",
-      "sha256": "98354e641404d17cd90db0ed8cea4c389c7b93ef285958d4352505c7aeb20265",
-      "meanAbs_vs_gold_report_only": 2.19
+      "sha256": "2844adcbe40fd040196df7d3ed7f8bbb1ef18915f70d60b51d68f9020595b758",
+      "meanAbs_vs_gold_report_only": 1.68,
+      "scene_pass": {
+        "model": "gpt-image-2-5-flare-image-to-image",
+        "input": "gold",
+        "prompt": "Edit this exact photo minimally; keep every other pixel... ONLY change: the small rectangular drain cover in the sidewalk at the lower-left becomes a small round cast-iron drain cover. No text."
+      }
     },
     {
       "skill_id": "pose-fission",
       "slot": "examples",
       "index": 4,
       "source_path": "<lovart-gold ex04, not committed>",
-      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite (GaussianBlur) of face/hair ellipse + one scene rect; all other pixels = gold",
+      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite: face/hair ellipse x ramp-to-0 at collar line (no clothing) + ONE small scene box (feather inside box, touches no clothing); all other pixels = gold",
       "model": "gpt-image-2-5-flare-image-to-image",
       "refs": [
         "<lovart-gold ex04, not committed>",
@@ -120,18 +155,39 @@
           1110,
           560
         ],
-        "scene_rect": [
-          0,
-          0,
-          500,
-          1450
+        "face_blur": 30,
+        "collar_clip_y": 480,
+        "collar_ramp_px": 40,
+        "cuff_exclude": [
+          1050,
+          420,
+          1529,
+          2048
         ],
-        "blur": 34,
-        "scene": "left background wall -> warmer ochre with window"
+        "scene_box": [
+          1255,
+          85,
+          1515,
+          375
+        ],
+        "box_feather": 22,
+        "scene": "small wrought-iron wall lamp on far facade, top-right (blur 2.5 to match DOF)",
+        "clothing_pixels": "100% gold",
+        "area_pct_of_frame": {
+          "face_pct": 8.11,
+          "scene_pct": 2.38,
+          "total_pct": 10.48,
+          "weighted_pct": 7.35
+        }
       },
       "path": "643/wash/pose-fission/examples/04.webp",
-      "sha256": "43f3e15efe2c5fe75b34e703ced8243cd3c5a72672ed36ea2e9b16cda35fe3ad",
-      "meanAbs_vs_gold_report_only": 7.71
+      "sha256": "13087617a0e20830a9cdbe35d80da8431fdb0e392170fd1cbe204e60f0c64ee2",
+      "meanAbs_vs_gold_report_only": 3.38,
+      "scene_pass": {
+        "model": "gpt-image-2-5-flare-image-to-image",
+        "input": "gold",
+        "prompt": "Edit this exact photo minimally; keep every other pixel... ONLY change: add one small black wrought-iron wall-mounted street lamp on the far facade at top-right. No text."
+      }
     }
   ]
 }
