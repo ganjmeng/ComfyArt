@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401
-from test_skills_hide_673 import HIDDEN, MAIN_ORDER_40
+from test_skills_hide_673 import HIDDEN, LISTED_ORDER
 
 pw = pytest.importorskip("playwright.async_api")
 ROOT = Path(__file__).resolve().parent.parent
@@ -69,9 +69,9 @@ async def test_composer_slash_picker_hides_deferred(app_url, lang, theme):  # no
                 await pg.keyboard.press("Escape")
                 await pg.wait_for_timeout(300)
         first = await _slash(pg, "")
-        assert first == MAIN_ORDER_40[:8], first  # '/' lists listed skills only, main order
-        assert "ppt-visual" not in await _slash(pg, "ppt")
-        assert "ppt-visual" not in await _slash(pg, "PPT")
+        assert first == LISTED_ORDER[:8], first  # '/' lists listed skills only, main order
+        assert "crayon-sketch" not in await _slash(pg, "crayon")
+        assert "crayon-sketch" not in await _slash(pg, "Crayon")
         for h in HIDDEN:  # searching a hidden skill by its own name never offers it
             got = await _slash(pg, names[h].split()[0])
             assert not set(got) & set(HIDDEN), (h, got)
@@ -107,14 +107,14 @@ async def test_hidden_skills_absent_home_and_skills_page(app_url, lang, theme): 
         rows = pg.get_by_test_id("home-skill-row")
         await rows.first.wait_for()
         ids = [await r.get_attribute("data-skill") for r in await rows.all()]
-        assert ids == MAIN_ORDER_40, ids
+        assert ids == LISTED_ORDER, ids
         await pg.keyboard.press("Escape")
 
         await pg.get_by_test_id("rail-skills").click()
         await pg.get_by_test_id("skills-wall").wait_for()
         await pg.wait_for_timeout(400)
         wall = [await c.get_attribute("data-skill") for c in await pg.locator('[data-testid="skills-wall"] [data-testid="skills-wall-card"]').all()]
-        assert wall == MAIN_ORDER_40, wall
+        assert wall == LISTED_ORDER, wall
         await _shot(pg, f"skills-page-{lang}-{theme}")
         await _full_shot(pg, f"skills-page-full-{lang}-{theme}")
         for chip in await pg.locator('[data-testid^="skills-chip-"]').all():

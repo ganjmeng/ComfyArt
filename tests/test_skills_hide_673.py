@@ -19,8 +19,8 @@ needs_node = pytest.mark.skipif(not (ROOT / "node_modules/.bin/rolldown").exists
 
 HIDDEN = ["naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual", "promo-ecommerce",
           "yingzao", "crt-interface", "crayon-sketch", "fabric-collage"]
-# BUILTIN_SKILLS order on main eb0d60b1 with the 9 removed — the 40 must keep exactly this order.
-MAIN_ORDER_40 = [
+# Listed order (main eb0d60b1 order minus HIDDEN). Re-listing a skill (#673 unhide) inserts it here and drops it from HIDDEN.
+LISTED_ORDER = [
     "product", "multi-angle", "brand", "character", "logo-material", "packaging", "motion", "meta-ads", "poster",
     "thumbnail", "mobile-ui", "social", "marketing-campaign", "web-product", "banner", "flash-cut-video",
     "style-transfer", "person-swap", "commerce-strategist", "lifestyle-scene", "taobao-product", "before-after",
@@ -39,16 +39,16 @@ def report() -> dict:
 
 
 @needs_node
-def test_hide_list_is_the_9_and_builtins_keep_all_49() -> None:
+def test_hide_list_matches_and_builtins_keep_all_49() -> None:
     r = report()
     assert r["hidden"] == HIDDEN
     assert len(r["builtinAll"]) == 49 and set(HIDDEN) <= set(r["builtinAll"])  # nothing deleted
-    assert [i for i in r["builtinAll"] if i not in HIDDEN] == MAIN_ORDER_40
+    assert [i for i in r["builtinAll"] if i not in HIDDEN] == LISTED_ORDER
 
 
 @needs_node
-def test_listed_is_the_other_40_in_main_order() -> None:
-    assert report()["listed"] == MAIN_ORDER_40
+def test_listed_is_the_rest_in_main_order() -> None:
+    assert report()["listed"] == LISTED_ORDER
 
 
 @needs_node
@@ -56,10 +56,10 @@ def test_category_chips_never_contain_hidden() -> None:
     r = report()
     for chip, ids in r["byChip"].items():
         assert not set(ids) & set(HIDDEN), (chip, ids)
-    assert r["byChip"]["forYou"] == MAIN_ORDER_40
+    assert r["byChip"]["forYou"] == LISTED_ORDER
     # every listed skill still lands in some category chip, in order
     for chip, ids in r["byChip"].items():
-        assert ids == [i for i in MAIN_ORDER_40 if i in ids], chip
+        assert ids == [i for i in LISTED_ORDER if i in ids], chip
 
 
 @needs_node
@@ -70,7 +70,7 @@ def test_home_featured_never_contains_hidden() -> None:
 
 @needs_node
 def test_agent_list_excludes_hidden_and_keeps_order() -> None:
-    assert report()["agentList"] == MAIN_ORDER_40
+    assert report()["agentList"] == LISTED_ORDER
 
 
 @needs_node
@@ -105,7 +105,7 @@ COPY = {
 
 @needs_node
 @pytest.mark.parametrize("lang", ["zh", "en"])
-@pytest.mark.parametrize("sid", ["yingzao", "ppt-visual"])
+@pytest.mark.parametrize("sid", ["yingzao", "crayon-sketch"])
 def test_hidden_skill_refused_at_attach_with_plain_copy_and_no_submit(lang, sid) -> None:
     g = report()["guard"][lang][sid]
     # deep link ?skill= / try-it: no chip (the previous chip is cleared too), the copy is shown
@@ -150,7 +150,7 @@ def test_three_attach_paths_use_the_guard_before_any_send() -> None:
 def test_agent_tool_error_never_leaks_ids_or_retry_hints(lang) -> None:
     err = report()["guard"][lang]["readErr"]
     assert err == "[non-retryable] " + COPY[lang]
-    for leak in ("ppt-visual", "do not retry", "action=", "list"):
+    for leak in ("crayon-sketch", "do not retry", "action=", "list"):
         assert leak not in err.split("] ", 1)[1], leak
 
 
