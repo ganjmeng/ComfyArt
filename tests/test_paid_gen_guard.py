@@ -328,6 +328,14 @@ def test_turn_cap_formula():
     assert _three_by_three() == 11
 
 
+def test_huge_n_is_capped_at_30():
+    # rule: per-item cap = N if the user named N, else 4; the 30 hard ceiling always applies
+    g = paid_guard.TurnGuard(lang="zh", cap=100, planned=100)
+    assert g.turn_cap() == paid_guard.TURN_HARD_MAX == 30
+    assert _drive("画 100 张猫", [("gen", True)] * 40) == 30
+    assert _drive("poster", [("gen", True)] * 10) == 4  # no N -> 4
+
+
 def test_failed_calls_do_not_count():
     assert _failed_then_ok() == 4  # 6 failed ($0) never eat the cap
 
