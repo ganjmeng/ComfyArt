@@ -1,25 +1,21 @@
 {
  "2": {
-  "face_lum_new": 85.66,
-  "face_lum_prev": 85.37,
-  "face_lum_gold": 89.74,
-  "delta_vs_prev": 0.29,
-  "delta_vs_gold": -4.08,
-  "outside_mask_max": 0,
-  "outside_px_changed": 0,
-  "mask_area_pct": 0.379,
-  "face670mask_delta_vs_gold": 0.39
+  "webp_quality": 90,
+  "bytes": 345706,
+  "outside_mask_meanAbs_vs_main": 0.443,
+  "outside_mask_max_vs_main": 14,
+  "face_lum_delta_vs_main": 0.07,
+  "face_lum_delta_vs_gold": 0.39,
+  "mask_area_pct": 0.379
  },
  "3": {
-  "face_lum_new": 85.46,
-  "face_lum_prev": 85.33,
-  "face_lum_gold": 94.76,
-  "delta_vs_prev": 0.13,
-  "delta_vs_gold": -9.3,
-  "outside_mask_max": 0,
-  "outside_px_changed": 0,
-  "mask_area_pct": 0.54,
-  "face670mask_delta_vs_gold": 0.59
+  "webp_quality": 90,
+  "bytes": 262394,
+  "outside_mask_meanAbs_vs_main": 0.454,
+  "outside_mask_max_vs_main": 12,
+  "face_lum_delta_vs_main": 0.3,
+  "face_lum_delta_vs_gold": 0.61,
+  "mask_area_pct": 0.54
  },
  "method": {
   "model": "kie gpt-image-2-5-flare-image-to-image",
@@ -58,7 +54,7 @@
    ]
   },
   "feather_gaussian_px": 9,
-  "encode": "webp lossless"
+  "encode": "webp lossy q90 method6 (tech lead decision on #714)"
  },
  "prompts": {
   "2": "Edit this exact close-up photo minimally. Keep the same woman, identity, face shape, nose, eyes, skin tone, hair, light direction, color grade and film grain identical. ONLY fix the mouth: the lips are deformed (doubled lip line, smeared upper lip). Redraw a natural, attractive, closed relaxed mouth with a clean single lip line, natural upper and lower lip shape matching her face and the hard side light, realistic photographic lip and skin texture. No text, no makeup change.",
