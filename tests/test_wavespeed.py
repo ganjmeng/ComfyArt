@@ -117,7 +117,8 @@ async def ws(monkeypatch, fresh_user_dir):
         state["submits"].append((request.match_info["model"], await request.json()))
         if state.get("no_id"):  # #712: charged, but the reply lost its task id
             return web.json_response({"code": 200, "data": {"status": "created"}})
-        return web.json_response({"code": 200, "data": {"id": f"task{len(state['submits'])}", "status": "created"}})
+        tid = state["task_id"] if state.get("task_id") else f"task{len(state['submits'])}"  # #715: realistic long ids on demand
+        return web.json_response({"code": 200, "data": {"id": tid, "status": "created"}})
 
     async def result(request):
         state["polls"] += 1

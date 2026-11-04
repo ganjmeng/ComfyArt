@@ -1,3 +1,4 @@
+import { Fragment, type ReactNode } from 'react'
 import { TOP_UP_URL } from '../wsErrors'
 import {
   BaseBoxShapeUtil,
@@ -45,7 +46,13 @@ export type GeneratorShape = TLShape<typeof GENERATOR>
 const versions = createShapePropsMigrationIds(GENERATOR, { AddDuration: 1, AddOptions: 2 })
 
 /** #163: the top-up URL in the insufficient-balance copy is clickable; same text, no new wording. */
-export function withTopUpLink(text: string) {
+export function withTopUpLink(text: string): ReactNode {
+  // #715 design: a `task id` renders as a nowrap, copyable <code> (full id in title); its own line via pre-line CSS
+  if (/`[^`\n]+`/.test(text)) return <>{text.split(/(`[^`\n]+`)/).map((p, k) => (k % 2 ? <code key={k} title={p.slice(1, -1)}>{p.slice(1, -1)}</code> : <Fragment key={k}>{linkTopUp(p)}</Fragment>))}</>
+  return linkTopUp(text)
+}
+
+function linkTopUp(text: string): ReactNode {
   const i = text.indexOf(TOP_UP_URL)
   if (i < 0) return text
   return <>{text.slice(0, i)}<a href={TOP_UP_URL} target="_blank" rel="noreferrer" onPointerDown={(e) => e.stopPropagation()}>{TOP_UP_URL}</a>{text.slice(i + TOP_UP_URL.length)}</>

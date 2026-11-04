@@ -7,7 +7,7 @@ const INLINE = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g
 function inline(text: string): ReactNode[] {
   return text.split(INLINE).map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**') && part.length > 4) return <strong key={i}>{part.slice(2, -2)}</strong>
-    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) return <code key={i}>{part.slice(1, -1)}</code>
+    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) return <code key={i} title={part.slice(1, -1)}>{part.slice(1, -1)}</code>
     const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part)
     if (link) return <a key={i} href={link[2]} target="_blank" rel="noreferrer">{link[1]}</a>
     return part

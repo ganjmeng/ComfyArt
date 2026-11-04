@@ -13,7 +13,7 @@ export function wsErrorText(kind: unknown, charged?: unknown, taskId?: unknown):
   if (kind === 'timeout' || kind === 'noOutput' || kind === 'noTaskId') {
     const base = typeof charged === 'number' && Number.isFinite(charged) ? t(`wsErr.${kind}`, fmtUsd(charged)) : t(`wsErr.${kind}NoAmount`)
     // #712: when a task id was obtained (timeout / noOutput) show it for feedback or refunds; noTaskId has none
-    return kind !== 'noTaskId' && typeof taskId === 'string' && taskId.trim() ? `${base} ${t('wsErr.taskRef', taskId.trim())}` : base
+    return kind !== 'noTaskId' && typeof taskId === 'string' && taskId.trim() ? `${base}\n\n${t('wsErr.taskRef', `\`${taskId.trim()}\``)}` : base  // #715 design: own line; id as `code` (nowrap, copyable)
   }
   return kind === 'insufficientCredit' ? t('wsErr.insufficientCredit', TOP_UP_URL) : t(`wsErr.${kind}`)
 }

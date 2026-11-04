@@ -44,6 +44,7 @@ def bundle(tmp_path_factory):
 async def test_712_charged_no_output_shows_reason_and_amount(ws, bundle, lang, theme):  # noqa: F811
     ws["no_outputs"] = True
     ws["prices"][MODEL] = 0.32
+    ws["task_id"] = LONG_ID  # #715 design: realistic 32-hex WaveSpeed-like id, not task1
     task = await wavespeed.submit({"feature": "text_to_video", "model": MODEL, "prompt": "x", "duration": 5, "confirmed": True})
     hist = await wavespeed.poll(task)
     info = hist[f"ws:{task}"]["status"]["messages"][0][1]
@@ -88,10 +89,22 @@ async def _shot(bundle, lang, theme, kind, charged, name, task=None):
         await page.wait_for_function("window.__ready")
         await page.wait_for_timeout(200)
         body = await page.locator("[data-testid=ws-failure]").inner_text()
+        if task:  # #715 design: id never wraps mid-string, stays selectable, full id in title
+            st = await page.evaluate("""() => [...document.querySelectorAll('.ca-md code')].map(c => {
+                const s = getComputedStyle(c); return [c.textContent, c.title, s.whiteSpace, s.userSelect, c.getClientRects().length] })""")
+            assert [x[0] for x in st].count(task) >= 1, st
+            for txt, title, ws_, sel, rects in st:
+                if txt == task:
+                    assert title == task and ws_ == "nowrap" and sel != "none" and rects == 1, (txt, ws_, sel, rects)
         SHOT_DIR.mkdir(parents=True, exist_ok=True)
         await page.locator(".ca-root").screenshot(path=str(SHOT_DIR / f"{name}-{lang}-{theme}.png"))
         await b.close()
         return body
+
+
+# #715 design: realistic ids (WaveSpeed ids are 32 hex); XLONG overflows the card -> ellipsis, full id in title
+LONG_ID = "8f3c2a9e4b1d4c7fa6e05b2d9c13f7a4"
+XLONG_ID = "8f3c2a9e4b1d4c7fa6e05b2d9c13f7a4-retry-2-0b6e91d3c5a84f27"
 
 
 # (kind, charged, file stem, zh text, en text); amounts are the mock quote, None = amount unknown
@@ -101,6 +114,7 @@ CASES = [
     ("noTaskId", None, "failure-notaskid-noamount", "无法取回结果，可能已扣费。", "cannot be fetched, and it may have been charged."),
     ("timeout", 0.32, "failure-timeout", "任务超时，可能已扣费约 $0.32。重试前请注意可能重复扣费。", "may have been charged about $0.32. Retrying may charge again."),
     ("timeout", None, "failure-timeout-noamount", "任务超时，可能已扣费。重试前请注意可能重复扣费。", "may have been charged. Retrying may charge again."),
+    ("timeout", 0.32, "failure-timeout-longid", "任务超时，可能已扣费约 $0.32。重试前请注意可能重复扣费。", "may have been charged about $0.32. Retrying may charge again."),
     ("unregisteredModel", None, "failure-unregistered", "所选模型暂不可用，未发送、未扣费", "isn't available right now. Nothing was sent or charged"),
 ]
 
@@ -116,10 +130,10 @@ async def test_712_failure_kinds_shown(ws, bundle, lang, theme, kind, charged, s
             await wavespeed.submit({"feature": "text_to_video", "model": MODEL, "prompt": "x", "duration": 5, "confirmed": True})
         assert e.value.kind == "noTaskId"
         charged = e.value.charged if charged is not None else None
-    task = "ws-7f3a9c21" if kind in ("timeout", "noOutput") else None  # mock id; noTaskId has none
+    task = (LONG_ID if stem != "failure-timeout-longid" else XLONG_ID) if kind in ("timeout", "noOutput") else None  # noTaskId has none
     body = await _shot(bundle, lang, theme, kind, charged, stem, task)
     if task:
-        assert (f"任务编号：{task}（反馈或退款时请提供）" if lang == "zh" else f"Task ID: {task} (share it if you contact us about a refund)") in body
+        assert (f"\n任务编号：{task}（反馈或退款时请提供）" if lang == "zh" else f"\nTask ID: {task} (include it in feedback or refund requests)") in body  # own line, no stray space
     else:
         assert "任务编号：" not in body and "Task ID:" not in body
     assert (zh if lang == "zh" else en) in body and not re.search(r"wavespeed|kie|控制台|后台|console|dashboard|生成记录|历史记录|generation history", body, re.I)

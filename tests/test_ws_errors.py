@@ -124,9 +124,10 @@ def test_712_no_vendor_or_console_in_wserr_copy():
 
 def test_712_task_id_shown_when_obtained(js):
     zh, en = js["zh"], js["en"]
-    assert zh["timeoutId"].endswith("重试前请注意可能重复扣费。 任务编号：ws-abc123（反馈或退款时请提供）")
-    assert en["timeoutId"].endswith("Retrying may charge again. Task ID: ws-abc123 (share it if you contact us about a refund)")
-    assert "任务编号：ws-abc123" in zh["noOutputId"] and "Task ID: ws-abc123" in en["noOutputId"]
+    assert zh["timeoutId"].endswith("重试前请注意可能重复扣费。\n\n任务编号：`ws-abc123`（反馈或退款时请提供）")  # #715: own line, id as code
+    assert en["timeoutId"].endswith("Retrying may charge again.\n\nTask ID: `ws-abc123` (include it in feedback or refund requests)")
+    assert " 任务编号" not in zh["timeoutId"] and " Task ID" not in en["timeoutId"]  # no stray space before the ref line
+    assert "任务编号：`ws-abc123`" in zh["noOutputId"] and "Task ID: `ws-abc123`" in en["noOutputId"]
     assert "ws-abc123" in zh["bodyId"] and "ws-abc123" in en["bodyId"]
     assert "ws-abc123" not in zh["noTaskIdWithId"] + en["noTaskIdWithId"]  # noTaskId never shows an id
     assert "ws-abc123" not in zh["timeout"] + en["timeout"]  # no id -> no ref line
