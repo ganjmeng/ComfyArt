@@ -43,3 +43,31 @@ Cover (1390×1040): local crop/collage of ex01+ex02+ex06 outputs, $0.
 
 ### Social + character subtotal
 11 × $0.0378 = **$0.4158**; with the max 2 extra retries: $0.4914 ≤ $0.50 cap. Run as one batch; if any retry pushes the projection over $0.50, stop and re-review.
+
+## 3. youtube-channel-banner — re-wash to mockup (cover)
+Gold cover (`docs/design/640/78/gold/youtube-channel-banner/cover.webp`, 1600×1200) = tilted browser/phone mockups of YouTube channel pages on an orange backdrop. Our current cover is a flat banner floating on white and still carries the gold copy "FAMILY FIRST / PARENTING · KIDS · REAL LIFE" → must change.
+Route: gold = style reference, new composition. Model: nano-banana-2.1/edit @1K, 4:3, upscale to 1600×1200.
+Prompt: `Use the reference only for its colour, lighting and mockup style. New composition: three blank laptop and tablet screens showing empty video-channel page layouts (grey placeholder blocks, a wide empty banner strip at the top of each), fanned diagonally from lower left to upper right on a deep coral-to-magenta gradient backdrop, soft shadows, slight perspective, the banner strips left completely blank flat white.` + no-text line.
+Mask: none. Local post: perspective-warp three of our own washed banners (new copy, e.g. "SLOW SUNDAYS", "CODE & COFFEE", "TRAIL NOTES" — no gold strings) into the blank strips; OCR check; upscale; webp.
+Cost: 1 × $0.0378 = **$0.0378** (up to $0.1134 with 2 retries). Not part of the social+character cap — needs a cap from 技术经理 (suggest $0.12).
+
+## 4. Fixes without generation ($0)
+- clothing-swap: cover crop only — `object-position` so the face is not cut off.
+- premium-website: cover crop only — `object-position` so the title is not clipped.
+- Remaining #687 FIX cards (product, brand, logo-material, web-product, mobile-ui, banner) per audit rev 3: no prompts in this doc; scope to be confirmed.
+
+## Totals
+| item | images | base | worst case |
+|---|---|---|---|
+| social | 5 | $0.1890 | |
+| character | 6 | $0.2268 | |
+| social+character | 11 | $0.4158 | $0.4914 (cap $0.50) |
+| youtube-channel-banner | 1 | $0.0378 | $0.1134 |
+| clothing-swap, premium-website | 0 | $0 | $0 |
+| **total** | **12** | **$0.4536** | **$0.6048** |
+
+## 交接
+- Done: prompt pre-check drafted for social (5), character (6), youtube-channel-banner (1); crop fixes listed. No generation run.
+- Next: UIUX + 技术经理 review this file; confirm the "6 re-wash + 7 fix" list (only social, character, youtube-channel-banner and the 2 crops are pinned here) and a cap for youtube-channel-banner; then 1K pilot (1 per new slot to Angela), then batch.
+- Spend: $0 in this task.
+- Balance: WaveSpeed $44.285449 (last logged before the promo ex01 / p07 / taobao-product run; not re-queried, no paid calls here).
