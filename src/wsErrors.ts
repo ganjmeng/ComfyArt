@@ -6,11 +6,15 @@ const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'n
 export type WsErrorKind = typeof KINDS[number]
 
 /** The readable message for a backend error kind, or null when the error is not a tagged WaveSpeed failure. */
-export function wsErrorText(kind: unknown, charged?: unknown): string | null {
+export function wsErrorText(kind: unknown, charged?: unknown, taskId?: unknown): string | null {
   if (typeof kind !== 'string' || !(KINDS as readonly string[]).includes(kind)) return null
   // #174: a timed-out task may still be billed; show the quoted amount when known, never auto-retry
   // #712: a run that may be billed with no image (no output / no task id) states the reason and the amount
-  if (kind === 'timeout' || kind === 'noOutput' || kind === 'noTaskId') return typeof charged === 'number' && Number.isFinite(charged) ? t(`wsErr.${kind}`, fmtUsd(charged)) : t(`wsErr.${kind}NoAmount`)
+  if (kind === 'timeout' || kind === 'noOutput' || kind === 'noTaskId') {
+    const base = typeof charged === 'number' && Number.isFinite(charged) ? t(`wsErr.${kind}`, fmtUsd(charged)) : t(`wsErr.${kind}NoAmount`)
+    // #712: when a task id was obtained (timeout / noOutput) show it for feedback or refunds; noTaskId has none
+    return kind !== 'noTaskId' && typeof taskId === 'string' && taskId.trim() ? `${base} ${t('wsErr.taskRef', taskId.trim())}` : base
+  }
   return kind === 'insufficientCredit' ? t('wsErr.insufficientCredit', TOP_UP_URL) : t(`wsErr.${kind}`)
 }
 
@@ -21,7 +25,7 @@ export const fmtUsd = (n: number) => (n > 0 && n < 0.01 ? '< $0.01' : `$${n.toFi
 export function wsBodyError(body: any, fallback: string): string {
   const err = body?.error
   // never stringify an object into "[object Object]": only string text passes through, otherwise the localized fallback
-  return wsErrorText(err?.kind, err?.charged_usd) ?? (typeof err === 'string' && err.trim() ? err : typeof err?.message === 'string' && err.message.trim() ? err.message : fallback)
+  return wsErrorText(err?.kind, err?.charged_usd, err?.task_id) ?? (typeof err === 'string' && err.trim() ? err : typeof err?.message === 'string' && err.message.trim() ? err.message : fallback)
 }
 
 export const RELAY_NOTE = 'user_message is already in the user\'s language; reply with it word for word (keep any link), do not paraphrase or quote a raw error'

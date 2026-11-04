@@ -12,7 +12,7 @@ setLang(lang)
 if (q.get('theme') === 'dark') document.documentElement.dataset.theme = 'dark'
 TOOL_LABELS.generate_image = t('bot.generateImage')
 const charged = q.get('charged') ? Number(q.get('charged')) : undefined
-const msg = wsErrorText(q.get('kind'), charged) ?? 'unknown kind'
+const msg = wsErrorText(q.get('kind'), charged, q.get('task') ?? undefined) ?? 'unknown kind'
 const model = q.get('model') || ''
 const m: any = {
   id: 'f', role: 'assistant', status: 'done', blocks: [

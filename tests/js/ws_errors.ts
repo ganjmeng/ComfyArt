@@ -20,6 +20,10 @@ for (const lang of ['zh', 'en'] as const) {
     unregisteredModel: wsErrorText('unregisteredModel'),
     noTaskId: wsErrorText('noTaskId', 0.1),
     tiny: wsErrorText('noOutput', 0.004),
+    timeoutId: wsErrorText('timeout', 0.32, 'ws-abc123'),
+    noOutputId: wsErrorText('noOutput', undefined, 'ws-abc123'),
+    noTaskIdWithId: wsErrorText('noTaskId', 0.32, 'ws-abc123'),
+    bodyId: wsBodyError({ error: { message: 'x', kind: 'timeout', charged_usd: 0.32, task_id: 'ws-abc123' } }, 'x'),
     timeoutBody: wsBodyError({ error: { message: 'WaveSpeed task timed out, may have been charged about (quoted price) $1.5', kind: 'timeout', charged_usd: 1.5 } }, 'x'),
   }
 }

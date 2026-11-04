@@ -29,6 +29,7 @@ async def test_completed_without_output_is_failed_with_cost(ws):  # noqa: F811
     hist = await wavespeed.poll(task)
     info = _info(hist, task)
     assert info["ws_kind"] == "noOutput" and info["ws_charged"] == pytest.approx(0.32)
+    assert info["ws_task_id"] == task  # #712: the UI shows it
     assert hist[f"ws:{task}"]["generation_succeeded"] is False
     fail = [f for f in gen_ledger.failures() if f["task_id"] == task]
     assert len(fail) == 1 and fail[0]["cost_usd"] == pytest.approx(0.32) and fail[0]["generation_succeeded"] is False

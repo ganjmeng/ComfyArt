@@ -57,12 +57,13 @@ async def test_712_charged_no_output_shows_reason_and_amount(ws, bundle, lang, t
             pytest.skip(f"no chromium: {e}")
         page = await b.new_page(viewport={"width": 560, "height": 300}, device_scale_factor=2)
         await page.route("**/*", lambda r: r.continue_() if r.request.url.startswith(bundle) else r.abort())
-        qs = urlencode({"lang": lang, "theme": theme, "kind": info["ws_kind"], "charged": info["ws_charged"], "model": MODEL})
+        qs = urlencode({"lang": lang, "theme": theme, "kind": info["ws_kind"], "charged": info["ws_charged"], "model": MODEL, "task": info["ws_task_id"]})
         await page.goto(f"{bundle}/index.html?{qs}")
         await page.wait_for_function("window.__ready")
         await page.wait_for_timeout(200)
         body = await page.locator("[data-testid=ws-failure]").inner_text()
         assert "$0.32" in body
+        assert ((f"任务编号：{task}" if lang == "zh" else f"Task ID: {task}") in body)
         assert "WaveSpeed" not in body
         assert ("没有返回图片" in body) if lang == "zh" else ("returned no image" in body)
         SHOT_DIR.mkdir(parents=True, exist_ok=True)
@@ -70,7 +71,7 @@ async def test_712_charged_no_output_shows_reason_and_amount(ws, bundle, lang, t
         await b.close()
 
 
-async def _shot(bundle, lang, theme, kind, charged, name):
+async def _shot(bundle, lang, theme, kind, charged, name, task=None):
     async with apw.async_playwright() as p:
         try:
             b = await p.chromium.launch()
@@ -81,6 +82,8 @@ async def _shot(bundle, lang, theme, kind, charged, name):
         q = {"lang": lang, "theme": theme, "kind": kind, "model": MODEL}
         if charged is not None:
             q["charged"] = charged
+        if task:
+            q["task"] = task
         await page.goto(f"{bundle}/index.html?{urlencode(q)}")
         await page.wait_for_function("window.__ready")
         await page.wait_for_timeout(200)
@@ -113,6 +116,11 @@ async def test_712_failure_kinds_shown(ws, bundle, lang, theme, kind, charged, s
             await wavespeed.submit({"feature": "text_to_video", "model": MODEL, "prompt": "x", "duration": 5, "confirmed": True})
         assert e.value.kind == "noTaskId"
         charged = e.value.charged if charged is not None else None
-    body = await _shot(bundle, lang, theme, kind, charged, stem)
+    task = "ws-7f3a9c21" if kind in ("timeout", "noOutput") else None  # mock id; noTaskId has none
+    body = await _shot(bundle, lang, theme, kind, charged, stem, task)
+    if task:
+        assert (f"任务编号：{task}（反馈或退款时请提供）" if lang == "zh" else f"Task ID: {task} (share it if you contact us about a refund)") in body
+    else:
+        assert "任务编号：" not in body and "Task ID:" not in body
     assert (zh if lang == "zh" else en) in body and not re.search(r"wavespeed|kie|控制台|后台|console|dashboard", body, re.I)
     assert "$0.32" in body if charged is not None else "$" not in body

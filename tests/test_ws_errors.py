@@ -120,3 +120,13 @@ def test_712_no_vendor_or_console_in_wserr_copy():
         # no pointer to a vendor console / back office in any wsErr copy
         bad = [k for k, v in loc.items() if k.startswith("wsErr.") and re.search(r"控制台|后台|console|dashboard", v, re.I)]
         assert not bad, (lang, bad)
+
+
+def test_712_task_id_shown_when_obtained(js):
+    zh, en = js["zh"], js["en"]
+    assert zh["timeoutId"].endswith("再决定要不要重试。 任务编号：ws-abc123（反馈或退款时请提供）")
+    assert en["timeoutId"].endswith("before retrying. Task ID: ws-abc123 (share it if you contact us about a refund)")
+    assert "任务编号：ws-abc123" in zh["noOutputId"] and "Task ID: ws-abc123" in en["noOutputId"]
+    assert "ws-abc123" in zh["bodyId"] and "ws-abc123" in en["bodyId"]
+    assert "ws-abc123" not in zh["noTaskIdWithId"] + en["noTaskIdWithId"]  # noTaskId never shows an id
+    assert "ws-abc123" not in zh["timeout"] + en["timeout"]  # no id -> no ref line

@@ -90,6 +90,7 @@ class WaveSpeedError(Exception):
         self.status = status
         # #155: what the UI shows instead of the raw WaveSpeed text (insufficientCredit, moderation, rateLimit, invalidKey, failed)
         self.kind = kind
+        self.task_id: str | None = None  # #712: set when a task id was obtained (shown in the UI copy)
         self.confirm = confirm
         self.seg_splits = seg_splits  # #135: 「识别加最多 N 次分割」 in the confirm dialog
         self.seg_capped = seg_capped  # True: N is the upper bound (nothing recognised yet, caption included)
@@ -2076,6 +2077,8 @@ def _fail(task: str, message: "str | WaveSpeedError") -> dict:
         info["ws_kind"] = message.kind  # #155: the UI shows a readable zh/en message for this kind
         if message.charged is not None:
             info["ws_charged"] = message.charged  # #174: 「可能已扣费约 $…」
+        if message.kind in ("timeout", "noOutput"):
+            info["ws_task_id"] = task  # #712: the UI shows the task id for feedback / refunds
     job = _jobs.get(task)
     if job and job.get("model"):
         charged = message.charged if isinstance(message, WaveSpeedError) else None
@@ -2322,6 +2325,8 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
         body["kind"] = e.kind
     if e.charged is not None:
         body["charged_usd"] = e.charged  # #174
+    if getattr(e, "task_id", None) and e.kind in ("timeout", "noOutput"):
+        body["task_id"] = e.task_id  # #712
     if e.confirm is not None:
         body["confirm_usd"] = e.confirm
         if e.seg_splits is not None:
