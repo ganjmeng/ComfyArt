@@ -1,0 +1,20 @@
+image,gold,pr,gold_blocks,our_blocks,dropped,typo_candidates,ocr_verdict,dropped_items
+673/wash/logo-abstract/cover.webp,673/gold/logo-abstract/cover.webp,#727,2,1,0,0,PASS,
+673/wash/naive-illustration/cover.webp,673/gold/naive-illustration/cover.webp,#727,2,2,1,1,FAIL,A+
+673/wash/photo-split-poster/cover.webp,673/gold/photo-split-poster-v2/cover.png,#727,12,9,0,0,PASS,
+673/wash/ppt-visual/cover.webp,673/gold/ppt-visual/cover.png,#727,55,10,24,0,FAIL,FOR MODERN CREATORS；DESIGN TOOLKIT；PRESENTATIONS；COMPATIBLE；GOOGLE SLIDES；PROFESSIONAL；POWERPOINT；TEMPLATES；AESTHETIC；KEYNOTE；MINIMAL；INSPIRE；BETTER；DESIGN；CANVA；SOLID COATES；WITH；Strategy；THAT；Identity；Brand；Visual；02；01
+673/wash/promo-ecommerce/cover.webp,673/gold/promo-ecommerce/cover.webp,#727,0,0,0,0,PASS,
+673/wash/logo-abstract/examples/01.webp,673/gold/logo-abstract/ex02.webp,#727,4,2,2,0,FAIL,TOWEF；PEARL
+673/wash/logo-abstract/examples/02.webp,673/gold/logo-abstract/ex06.webp,#727,2,1,0,0,PASS,
+673/wash/logo-abstract/examples/03.webp,673/gold/logo-abstract/ex09.webp,#727,2,2,0,0,PASS,
+673/wash/logo-abstract/examples/04.webp,673/gold/logo-abstract/ex10.webp,#727,4,2,0,0,PASS,
+673/wash/naive-illustration/examples/01.webp,673/gold/naive-illustration/ex01.png,#727,0,0,0,0,PASS,
+673/wash/naive-illustration/examples/02.webp,673/gold/naive-illustration/ex02.png,#727,1,0,1,0,FAIL,A+
+673/wash/naive-illustration/examples/03.webp,673/gold/naive-illustration/ex03.png,#727,0,0,0,0,PASS,
+673/wash/naive-illustration/examples/04.webp,673/gold/naive-illustration/ex04.webp,#727,1,0,1,0,FAIL,333
+673/wash/photo-split-poster/examples/01.webp,673/gold/photo-split-poster-v2/ex01.webp,#727,13,13,0,1,PASS,
+673/wash/ppt-visual/examples/01.webp,673/gold/ppt-visual/ex01.jpg,#727+#736,108,28,64,0,FAIL,无外放音乐、无强制服务时间、无视觉广告；ARCHITECTURＡL mOmEnTS；建筑密度控制在最低限度，保留地形原貌；材料、气味、声音均来自本地自然环境；夜间仅保留功能性照明，还原暗夜星空；Let architecture become a pause im mature；MARKET POSITIONING；CAPE CLOUD RETREAT；62 m?；CAPE CLOUD RETREAT；传统度假酒店；BRAND PILLARS；云度假酒店一品牌提案2026；低密度；低照度；高感知；低干扰；自然融合/非建筑优先；2%；36间低密度布局；云体验；宽裕比例/单层布局；自然景观占72%；2028；平均客房面积；公共景观占比；ENUMBERS；场所精神优先；68%；目标入住率；在地化体验；精品运营模型；高密度客房；品牌统一化；MOUNTAIN；标准化服务；流通与感知；开阔与流动；时间与温度；预计开业；无干扰停留；仪式感进入；感官刺激；人造景观；BYTHE；EXPLORE；感知静默；自然探索；OCEAN；带走宁静；DEPART；ENTER；LIGHT；离开；WIND；停留；进入；探索；STAY；春季；02；03；2026；WOOD
+673/wash/promo-ecommerce/examples/01.webp,673/gold/promo-ecommerce/ex02.webp,#727+#736,90,89,12,2,FAIL,10.20 20:00-11.11 23:59；（官方立减15%/可叠加会员券）；10/31 - 11/11；每满3000减300；会员专享优惠券×2；立即领取；LYSEN DOUBLE ELEVEN；BONBUN镇店；热销推荐；立省30%；店铺券  [人工目检覆盖OCR，见 dropped.jpg]
+643/wash/taobao-product/cover.webp,/workspace/ComfyArt/docs/design/643/78/gold/taobao-product/cover.webp,#736,,,,,NO_GOLD,
+643/wash/taobao-product/examples/07.webp,ComfyArt/docs/design/643/78/gold/taobao-product/examples/ex-07.webp,#736,16,16,0,4,PASS,
+643/wash/taobao-product/cover.webp,(仓库内无金标),#736,,,,,NO_GOLD,需补金标后再审
