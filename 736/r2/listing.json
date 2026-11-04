@@ -1,0 +1,99 @@
+{
+  "pr": 736,
+  "folder": "736/r2",
+  "tip": "65aa95e1a3281fa934d8408e259eef3babc1497b",
+  "branch": "docs/673-redone-images",
+  "note": "L/R compare gold|tip wash (not next/). All 4 wash slots differ from main.",
+  "tip_wash": {
+    "673/wash/ppt-visual/examples/01.webp": {
+      "size": [
+        1920,
+        5235
+      ],
+      "sha256": "ac1695c5887b088954a645a6473b9d9c28783bc93d72d0265942e0f1539cdc60"
+    },
+    "673/wash/promo-ecommerce/examples/01.webp": {
+      "size": [
+        1690,
+        2560
+      ],
+      "sha256": "5ded62f9601833056a3153d19167502fbfcf2cd4345b7a3b3228097e365314c2"
+    },
+    "643/wash/taobao-product/cover.webp": {
+      "size": [
+        1600,
+        1198
+      ],
+      "sha256": "653fb5e8f279eee270793d3321f79886c90d2b03c7cbfd9f3664b5a69afe0a50"
+    },
+    "643/wash/taobao-product/examples/07.webp": {
+      "size": [
+        2560,
+        487
+      ],
+      "sha256": "5c23898b422fb3a48906171f5d299211e45b78745d1f2521970b338eba18fb4c"
+    }
+  },
+  "files": [
+    {
+      "name": "LR-ppt-p07.jpg",
+      "path": "736/r2/LR-ppt-p07.jpg",
+      "size": 533531,
+      "sha256": "9b4611862b8d7e21f3cba817b78910b82639f1a7d974c349c61da196a10f8f61"
+    },
+    {
+      "name": "LR-promo-ex02-platform.jpg",
+      "path": "736/r2/LR-promo-ex02-platform.jpg",
+      "size": 673438,
+      "sha256": "63495c7ba0f95cc9e411ef108ae9d7e3f699ed68f584833be4e864f547d68816"
+    },
+    {
+      "name": "LR-taobao-ex07-brand.jpg",
+      "path": "736/r2/LR-taobao-ex07-brand.jpg",
+      "size": 206981,
+      "sha256": "66b6ad2a13fc610c48ab2dc73f93d54d40c4a55fb57145657783e870ad1a114a"
+    },
+    {
+      "name": "LR-taobao-product.jpg",
+      "path": "736/r2/LR-taobao-product.jpg",
+      "size": 438950,
+      "sha256": "8a0de48207c280aac0ba635990291f54e85df7ac2668ba3e66f1297d333446bf"
+    },
+    {
+      "name": "ex07-bot-p1.jpg",
+      "path": "736/r2/ex07-bot-p1.jpg",
+      "size": 19496,
+      "sha256": "ab9bd7ed734da80c1067bb708cb86913b09e900611bc77ca60b89bfca644d816"
+    },
+    {
+      "name": "ex07-top-p1.jpg",
+      "path": "736/r2/ex07-top-p1.jpg",
+      "size": 20881,
+      "sha256": "8e27fdb429f455a1967f02fcf1cbec3f2695ac5e8416ce470e9f8bec168e6b64"
+    },
+    {
+      "name": "ppt-labels.jpg",
+      "path": "736/r2/ppt-labels.jpg",
+      "size": 17978,
+      "sha256": "b6f72544204eb96c9d01e8a6ffc3b7cffb75055bd7291d06154e41e7f9510712"
+    },
+    {
+      "name": "promo-left.jpg",
+      "path": "736/r2/promo-left.jpg",
+      "size": 226346,
+      "sha256": "52dbb074a23043062a066174a4449b60a587fa6510aae08db62d558482b5d211"
+    },
+    {
+      "name": "promo-mid.jpg",
+      "path": "736/r2/promo-mid.jpg",
+      "size": 217809,
+      "sha256": "1c4edb7fac265bbd608a26764a544a23ca08a7812390fa6a92f0570fce48b8fd"
+    },
+    {
+      "name": "promo-right.jpg",
+      "path": "736/r2/promo-right.jpg",
+      "size": 219711,
+      "sha256": "f5a4a2b5ef50c8fc7a22512b008da07bc7da58752473df9814109f83c7a0d7be"
+    }
+  ]
+}
