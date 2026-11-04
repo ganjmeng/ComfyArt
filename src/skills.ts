@@ -56,7 +56,7 @@ const WASH_594 = 'cc76d743d416c3d9a9a6852d811a7a80caf40319'
 const COVER_V4 = WASH_594
 const COVERS_581: Record<string, readonly [string, string]> = {
   poster: ['494/covers-v3', COVER_V3], social: ['494/covers-v3', COVER_V3], brand: ['494/covers-v3', COVER_V3],
-  packaging: ['687/local', 'b84a057980a6aa00ad25f7ee7e1c1b88e264b312'] /* #687: LUMIERE ARTISAN erased, assets/687-local */, thumbnail: ['494/covers-v3', COVER_V3],
+  packaging: ['687/local', '240d6d8b707433252cb13e995af7dd6f56beb16c'] /* #687: all box faces + card relabelled BOTANICA LAB, assets/687-local */, thumbnail: ['494/covers-v3', COVER_V3],
   banner: ['494/covers-v3.1', '9b23a3e8e3ca2f6b64dc16c0cf36fbf9c41fcaf4'],
   character: ['494/covers-v3.2', 'dc335056e81e0350e2f98487fb680e22ffb14bb9'],
   product: ['494/covers-v3', COVER_V3], motion: ['494/covers-v3', COVER_V3], interior: ['494/covers-v3', COVER_V3],
@@ -81,7 +81,7 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   thumbnail: ['580/featured-v1/thumbnail', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   banner: ['580/featured-v1/banner', FEED_V1, ['01.webp']],  // #687: off-topic / other-brand picks removed
   character: ['580/featured-v1/character', FEED_V1, ['03.webp']],  // #687: off-topic / other-brand picks removed
-  // #687: product featured removed (off-topic, multi-brand) → falls back to presets
+  product: ['580/featured-v1/product', FEED_V1, ['04.webp']],  // #687: only 04 (watch, washed, no gold text/brand) kept; presets fallback rendered grey
   motion: ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '04.webp']],  // #687: 03 removed (competitor original face)
   interior: ['580/featured-v1/interior', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'multi-angle': ['580/featured-v2/multi-angle', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],

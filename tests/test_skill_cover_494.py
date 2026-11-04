@@ -43,7 +43,7 @@ def test_builtin_covers(got):
     v3, pin = "3c9b87e7eae72164efdd1fe30e00f576144475f4", {
         "banner": ("494/covers-v3.1", "9b23a3e8e3ca2f6b64dc16c0cf36fbf9c41fcaf4"),
         "character": ("494/covers-v3.2", "dc335056e81e0350e2f98487fb680e22ffb14bb9"),
-        "packaging": ("687/local", "b84a057980a6aa00ad25f7ee7e1c1b88e264b312"),  # #687 de-branded locally
+        "packaging": ("687/local", "240d6d8b707433252cb13e995af7dd6f56beb16c"),  # #687 de-branded locally
     }
     v4 = "cc76d743d416c3d9a9a6852d811a7a80caf40319"
     assert len(covers) == 49 and "custom-workflow" not in covers  # #640 Phase3-S1 +19 NEW (null covers)
