@@ -1,4 +1,306 @@
-# ppt-visual 01 — full-page replacement table (DRAFT for design review)
+# ppt-visual examples/01 — 金标整页文字替换表（山野栖居 / MISTVALE RETREAT）
+
+底图：`docs/design/673/gold/ppt-visual/ex01.jpg` @ docs/673-audit（1920×10470，10 页 × 1047）。设计：UIUX设计师。花费 $0，未跑付费调用。**DRAFT for design review — authoritative table by UIUX设计师.**
+
+品牌：CAPE CLOUD RETREAT / 云岬 → **MISTVALE RETREAT / 雾栖**（不含 MOUNTAIN，不以 SOL 开头）。K=照金标保留（结构标签/页码/通用 UI），R=替换。
+
+
+## S1
+
+| # | 金标原文 | 我们 | K/R |
+|---|---|---|---|
+| 1 | CAPE CLOUD RETREAT (top-left boxed tag) | MISTVALE RETREAT | replace |
+| 2 | 住进山海之间 | 栖居山野之间 | replace |
+| 3 | CAPE CLOUD RETREAT — Brand Proposal | MISTVALE RETREAT — Brand Proposal | replace |
+| 4 | 2026 (vertical, right edge) | 2026 | keep |
+
+## S2
+
+| # | 金标原文 | 我们 | K/R |
+|---|---|---|---|
+| 1 | MARKET POSITIONING | MARKET POSITIONING | keep |
+| 2 | 传统度假酒店 | 城市连锁酒店 | replace |
+| 3 | 云岬体验 | 雾栖体验 | replace |
+| 4 | 高密度客房 | 密集型客房 | replace |
+| 5 | 标准化服务 | 流程化接待 | replace |
+| 6 | 人造景观 | 人工造景 | replace |
+| 7 | 感官刺激 | 喧闹娱乐 | replace |
+| 8 | 品牌统一化 | 千店一面化 | replace |
+| 9 | 36间低密度布局 | 28栋散落式山居 | replace |
+| 10 | 在地化体验 | 山野四季体验 | replace |
+| 11 | 自然景观占72% | 森林覆盖占80% | replace |
+| 12 | 感知静默 | 五感留白 | replace |
+| 13 | 场所精神优先 | 山林节律优先 | replace |
+| 14 | 03 / 10 | 03 / 10 | keep |
+
+## S3
+
+| # | 金标原文 | 我们 | K/R |
+|---|---|---|---|
+| 1 | MARKET POSITIONING | MARKET POSITIONING | keep |
+| 2 | 传统度假酒店 | 城市连锁酒店 | replace |
+| 3 | 云岬体验 | 雾栖体验 | replace |
+| 4 | 高密度客房 | 密集型客房 | replace |
+| 5 | 标准化服务 | 流程化接待 | replace |
+| 6 | 人造景观 | 人工造景 | replace |
+| 7 | 感官刺激 | 喧闹娱乐 | replace |
+| 8 | 品牌统一化 | 千店一面化 | replace |
+| 9 | 36间低密度布局 | 28栋散落式山居 | replace |
+| 10 | 在地化体验 | 山野四季体验 | replace |
+| 11 | 自然景观占72% | 森林覆盖占80% | replace |
+| 12 | 感知静默 | 五感留白 | replace |
+| 13 | 场所精神优先 | 山林节律优先 | replace |
+| 14 | 03 / 10 | 03 / 10 | keep |
+
+## S4
+
+| # | 金标原文 | 我们 | K/R |
+|---|---|---|---|
+| 1 | BRAND PILLARS | BRAND PILLARS | keep |
+| 2 | 山 | 林 | replace |
+| 3 | MOUNTAIN | FOREST | replace |
+| 4 | 稳定与庇护 | 静谧与庇护 | replace |
+| 5 | 海 | 泉 | replace |
+| 6 | OCEAN | SPRING | replace |
+| 7 | 开阔与流动 | 清澈与流淌 | replace |
+| 8 | 风 | 雾 | replace |
+| 9 | WIND | MIST | replace |
+| 10 | 流通与感知 | 轻盈与呼吸 | replace |
+| 11 | 光 | 月 | replace |
+| 12 | LIGHT | MOON | replace |
+| 13 | 时间与温度 | 夜色与温柔 | replace |
+
+## S5
+
+| # | 金标原文 | 我们 | K/R |
+|---|---|---|---|
+| 1 | GUEST JOURNEY | GUEST JOURNEY | keep |
+| 2 | 抵达 | 入山 | replace |
+| 3 | 进入 | 穿林 | replace |
+| 4 | 停留 | 栖居 | replace |
+| 5 | 探索 | 漫游 | replace |
+| 6 | 离开 | 归途 | replace |
+| 7 | ARRIVE | ASCEND | replace |
+| 8 | ENTER | WANDER | replace |
+| 9 | STAY | REST | replace |
+| 10 | EXPLORE | ROAM | replace |
+| 11 | DEPART | RETURN | replace |
+| 12 | 山路抵达 | 云径入山 | replace |
+| 13 | 仪式感进入 | 林间穿行 | replace |
+| 14 | 无干扰停留 | 慢节奏栖居 | replace |
+| 15 | 自然探索 | 溪谷漫游 | replace |
+| 16 | 带走宁静 | 带回清新 | replace |
+
+## S6
+
+| # | 金标原文 | 我们 | K/R |
+|---|---|---|---|
+| 1 | BY THE NUMBERS | BY THE NUMBERS | keep |
+| 2 | 36 | 28 | replace |
+| 3 | 间客房 | 栋山居 | replace |
+| 4 | 低密度布局 / 每间独立景观 | 散落式布局 / 每栋独享林景 | replace |
+| 5 | 72% | 80% | replace |
+| 6 | 公共景观占比 | 森林覆盖占比 | replace |
+| 7 | 自然融合 / 非建筑优先 | 原生植被 / 少建多留 | replace |
+| 8 | 62 m² | 85 m² | replace |
+| 9 | 平均客房面积 | 平均山居面积 | replace |
+| 10 | 宽裕比例 / 单层布局 | 挑高木构 / 双面开窗 | replace |
+| 11 | 8,600 m² | 12,000 m² | replace |
+| 12 | 建筑总占地 | 园区总占地 | replace |
+| 13 | 东南沿海山谷 | 西南高山林谷 | replace |
+| 14 | 2028 | 2027 | replace |
+| 15 | 预计开业 | 计划开放 | replace |
+| 16 | 春季 | 秋季 | replace |
+| 17 | 68% | 75% | replace |
+| 18 | 目标入住率 | 目标复访率 | replace |
+| 19 | 精品运营模型 | 会员制运营 | replace |
+
+## S7
+
+| # | 金标原文 | 我们 | K/R |
+|---|---|---|---|
+| 1 | SPATIAL PRINCIPLES | SLOW LIVING NOTES | replace |
+| 2 | 01 | 01 | keep |
+| 3 | 低密度 | 少建造 | replace |
+| 4 | 建筑密度控制在最低限度，保留地形原貌 | 木屋沿等高线散落，不砍一棵老树 | replace |
+| 5 | 02 | 02 | keep |
+| 6 | 低照度 | 慢节奏 | replace |
+| 7 | 夜间仅保留功能性照明，还原暗夜星空 | 无固定行程安排，随日出日落作息 | replace |
+| 8 | 03 | 03 | keep |
+| 9 | 低干扰 | 少打扰 | replace |
+| 10 | 无外放音乐、无强制服务时间、无视觉广告 | 无电视屏幕、无前台排队、无促销海报 | replace |
+| 11 | 04 | 04 | keep |
+| 12 | 高感知 | 多亲近 | replace |
+| 13 | 材料、气味、声音均来自本地自然环境 | 溪声、松香、雾气都来自身边的山林 | replace |
+
+## S8
+
+| # | 金标原文 | 我们 | K/R |
+|---|---|---|---|
+| 1 | ARCHITECTURAL MOMENTS | WILD HIDEAWAYS | replace |
+| 2 | Guest Room | Forest Cabin | replace |
+| 3 | 客房 — 36间 | 山居 — 28栋 | replace |
+| 4 | 石材墙体 · 木格天花 · 全景森林 | 夯土墙面 · 原木梁架 · 落地林窗 | replace |
+| 5 | Restaurant | Kitchen | replace |
+| 6 | 餐厅 — 开放式海景 | 食堂 — 半户外林景 | replace |
+| 7 | 日落时分开放 · 在地食材 · 无菜单 | 柴火慢炖 · 当季山货 · 共享长桌 | replace |
+| 8 | Hot Spring & Deck | Cedar Soak Pool | replace |
+| 9 | 温泉与观景台 | 松木汤池与平台 | replace |
+| 10 | 岩石离别 · 自然水温 · 藏雾环境 (first word partly unclear) | 溪石围合 · 恒温山泉 · 雾林环抱 | replace |
+
+## S9
+
+| # | 金标原文 | 我们 | K/R |
+|---|---|---|---|
+| 1 | MATERIAL & LANDSCAPE | MATERIAL & LANDSCAPE | keep |
+| 2 | 4种在地材料：石、木、竹、土 (top-right, faint) | 4种山野材料：岩、杉、藤、泥 | replace |
+| 3 | STONE · WOOD · BAMBOO · EARTH (vertical, left) | ROCK · CEDAR · RATTAN · CLAY | replace |
+
+## S10
+
+| # | 金标原文 | 我们 | K/R |
+|---|---|---|---|
+| 1 | 让建筑成为 | 让山居成为 | replace |
+| 2 | 自然的停顿 | 林间的呼吸 | replace |
+| 3 | Let architecture become a pause in nature | Let a cabin become a breath in the woods | replace |
+| 4 | CAPE CLOUD RETREAT | MISTVALE RETREAT | replace |
+| 5 | 云岬度假酒店 — 品牌提案 2026 | 雾栖山居 — 品牌提案 2026 | replace |
+
+## 计数
+- 本表列出 111 块（替换 98，保留 13）；测试审计口径 108 块。差 3 块是因为 OCR 拆分和合并的方式不同（例如 BYTHE/ENUMBERS、竖排文字），没有漏掉的块。
+- S2 与 S3 金标完全相同（重复页），两页按同一套替换。
+- 页码：只有 S2/S3 左下读到「03 / 10」，其他页未见页码，保持金标原状。
+
+## 无法完全读清 / 需留意
+- S8 温泉卡第 3 行首词低清（读作「岩石离别」可能为「岩石围合」），整行替换故不影响。
+- S9 右上「4种在地材料：石、木、竹、土」字极淡，后半为推断；S9 左侧竖排首词被裁（读作 STONE）。
+- 简报里给的已定标题 A RETREAT ABOVE THE CLOUDS / QUIET PRINCIPLES / NATURAL RETREATS 在金标上**不存在**（来自被否的「山野栖居」重设计版）。已映射：SPATIAL PRINCIPLES→SLOW LIVING NOTES、ARCHITECTURAL MOMENTS→WILD HIDEAWAYS、Hot Spring & Deck→Cedar Soak Pool；A HAVEN ABOVE THE MIST 未使用（金标封面主标题为中文）。如技术想保留 SPATIAL PRINCIPLES/ARCHITECTURAL MOMENTS 作结构标签也可，改 K 即可。
+
+## Model-edit prompts (DRAFT, no paid run)
+
+Two passes: pass 1 = slides 1–5 on the gold; pass 2 = slides 6–10 with the pass-1 output as base.
+
+### Pass 1 (S1–S5, base = gold)
+
+```
+Edit this image. Base = the provided 10-slide presentation (gold). Keep every photo, the layout, colours, dividers, navigation dots and arrows exactly. Edit ONLY slides 1–5; leave slides 6–10 completely unchanged. Replace text in place, line by line, A→B:
+[S1] "CAPE CLOUD RETREAT" → "MISTVALE RETREAT"
+[S1] "住进山海之间" → "栖居山野之间"
+[S1] "CAPE CLOUD RETREAT — Brand Proposal" → "MISTVALE RETREAT — Brand Proposal"
+[S2] "传统度假酒店" → "城市连锁酒店"
+[S2] "云岬体验" → "雾栖体验"
+[S2] "高密度客房" → "密集型客房"
+[S2] "标准化服务" → "流程化接待"
+[S2] "人造景观" → "人工造景"
+[S2] "感官刺激" → "喧闹娱乐"
+[S2] "品牌统一化" → "千店一面化"
+[S2] "36间低密度布局" → "28栋散落式山居"
+[S2] "在地化体验" → "山野四季体验"
+[S2] "自然景观占72%" → "森林覆盖占80%"
+[S2] "感知静默" → "五感留白"
+[S2] "场所精神优先" → "山林节律优先"
+[S3] "传统度假酒店" → "城市连锁酒店"
+[S3] "云岬体验" → "雾栖体验"
+[S3] "高密度客房" → "密集型客房"
+[S3] "标准化服务" → "流程化接待"
+[S3] "人造景观" → "人工造景"
+[S3] "感官刺激" → "喧闹娱乐"
+[S3] "品牌统一化" → "千店一面化"
+[S3] "36间低密度布局" → "28栋散落式山居"
+[S3] "在地化体验" → "山野四季体验"
+[S3] "自然景观占72%" → "森林覆盖占80%"
+[S3] "感知静默" → "五感留白"
+[S3] "场所精神优先" → "山林节律优先"
+[S4] "山" → "林"
+[S4] "MOUNTAIN" → "FOREST"
+[S4] "稳定与庇护" → "静谧与庇护"
+[S4] "海" → "泉"
+[S4] "OCEAN" → "SPRING"
+[S4] "开阔与流动" → "清澈与流淌"
+[S4] "风" → "雾"
+[S4] "WIND" → "MIST"
+[S4] "流通与感知" → "轻盈与呼吸"
+[S4] "光" → "月"
+[S4] "LIGHT" → "MOON"
+[S4] "时间与温度" → "夜色与温柔"
+[S5] "抵达" → "入山"
+[S5] "进入" → "穿林"
+[S5] "停留" → "栖居"
+[S5] "探索" → "漫游"
+[S5] "离开" → "归途"
+[S5] "ARRIVE" → "ASCEND"
+[S5] "ENTER" → "WANDER"
+[S5] "STAY" → "REST"
+[S5] "EXPLORE" → "ROAM"
+[S5] "DEPART" → "RETURN"
+[S5] "山路抵达" → "云径入山"
+[S5] "仪式感进入" → "林间穿行"
+[S5] "无干扰停留" → "慢节奏栖居"
+[S5] "自然探索" → "溪谷漫游"
+[S5] "带走宁静" → "带回清新"
+Keep unchanged: MARKET POSITIONING, BRAND PILLARS, GUEST JOURNEY, 03 / 10, 2026 (vertical, slide 1).
+Each replaced block keeps the original block's font, weight, stroke, letter-spacing, colour, size, line count and position. Do not delete any text. Do not add any text elsewhere.
+All Chinese/English characters must be correct and crisp; no garbled or extra characters; do not overlay new text boxes.
+```
+
+### Pass 2 (S6–S10, base = pass-1 output)
+
+```
+Edit this image. Base = the provided image (pass-1 output; slides 1–5 are already final). Keep every photo, the layout, colours, dividers, navigation dots and arrows exactly. Edit ONLY slides 6–10; leave slides 1–5 completely unchanged, including their text. Replace text in place, line by line, A→B:
+[S6] "36" → "28"
+[S6] "间客房" → "栋山居"
+[S6] "低密度布局 / 每间独立景观" → "散落式布局 / 每栋独享林景"
+[S6] "72%" → "80%"
+[S6] "公共景观占比" → "森林覆盖占比"
+[S6] "自然融合 / 非建筑优先" → "原生植被 / 少建多留"
+[S6] "62 m²" → "85 m²"
+[S6] "平均客房面积" → "平均山居面积"
+[S6] "宽裕比例 / 单层布局" → "挑高木构 / 双面开窗"
+[S6] "8,600 m²" → "12,000 m²"
+[S6] "建筑总占地" → "园区总占地"
+[S6] "东南沿海山谷" → "西南高山林谷"
+[S6] "2028" → "2027"
+[S6] "预计开业" → "计划开放"
+[S6] "春季" → "秋季"
+[S6] "68%" → "75%"
+[S6] "目标入住率" → "目标复访率"
+[S6] "精品运营模型" → "会员制运营"
+[S7] "SPATIAL PRINCIPLES" → "SLOW LIVING NOTES"
+[S7] "低密度" → "少建造"
+[S7] "建筑密度控制在最低限度，保留地形原貌" → "木屋沿等高线散落，不砍一棵老树"
+[S7] "低照度" → "慢节奏"
+[S7] "夜间仅保留功能性照明，还原暗夜星空" → "无固定行程安排，随日出日落作息"
+[S7] "低干扰" → "少打扰"
+[S7] "无外放音乐、无强制服务时间、无视觉广告" → "无电视屏幕、无前台排队、无促销海报"
+[S7] "高感知" → "多亲近"
+[S7] "材料、气味、声音均来自本地自然环境" → "溪声、松香、雾气都来自身边的山林"
+[S8] "ARCHITECTURAL MOMENTS" → "WILD HIDEAWAYS"
+[S8] "Guest Room" → "Forest Cabin"
+[S8] "客房 — 36间" → "山居 — 28栋"
+[S8] "石材墙体 · 木格天花 · 全景森林" → "夯土墙面 · 原木梁架 · 落地林窗"
+[S8] "Restaurant" → "Kitchen"
+[S8] "餐厅 — 开放式海景" → "食堂 — 半户外林景"
+[S8] "日落时分开放 · 在地食材 · 无菜单" → "柴火慢炖 · 当季山货 · 共享长桌"
+[S8] "Hot Spring & Deck" → "Cedar Soak Pool"
+[S8] "温泉与观景台" → "松木汤池与平台"
+[S8] "岩石离别 · 自然水温 · 藏雾环境" → "溪石围合 · 恒温山泉 · 雾林环抱"
+[S9] "4种在地材料：石、木、竹、土" → "4种山野材料：岩、杉、藤、泥"
+[S9] "STONE · WOOD · BAMBOO · EARTH" → "ROCK · CEDAR · RATTAN · CLAY"
+[S10] "让建筑成为" → "让山居成为"
+[S10] "自然的停顿" → "林间的呼吸"
+[S10] "Let architecture become a pause in nature" → "Let a cabin become a breath in the woods"
+[S10] "CAPE CLOUD RETREAT" → "MISTVALE RETREAT"
+[S10] "云岬度假酒店 — 品牌提案 2026" → "雾栖山居 — 品牌提案 2026"
+Keep unchanged: BY THE NUMBERS, MATERIAL & LANDSCAPE, 01/02/03/04.
+Each replaced block keeps the original block's font, weight, stroke, letter-spacing, colour, size, line count and position. Do not delete any text. Do not add any text elsewhere.
+All Chinese/English characters must be correct and crisp; no garbled or extra characters; do not overlay new text boxes.
+```
+
+---
+
+## Appendix — dev OCR draft (superseded, reference only)
+
+### ppt-visual 01 — full-page replacement table (DRAFT for design review)
 
 Status: **DRAFT — not run, $0 spent.** Gold: `docs/design/673/gold/ppt-visual/ex01.jpg` (1920×10470). OCR: RapidOCR, same tiling/filter as tester `docs/qa/736/audit.py` @f99f87f4 → **108 blocks** (matches audit).
 
@@ -116,7 +418,7 @@ Design titles placed at #3, #91, #101, #96. Gold OCR text shown verbatim (some O
 | 107 | 1632,10382,1810,10394 | CAPE CLOUD RETREAT | MIST RIDGE LODGE |
 | 108 | 1667,10404,1814,10416 | 云度假酒店一品牌提案2026 | 雾岭山居—品牌手册2026 |
 
-## Model-edit prompt (DRAFT, gold as base image)
+#### Model-edit prompt (DRAFT, gold as base image)
 
 ```
 Edit this image. Use it as the base and keep the layout, photos, graphics, every font, weight, size, colour, letter-spacing and position exactly as they are. Replace only the following text, line by line, in place (same style as the original line; where a line repeats on the page, replace every occurrence). Do not delete any other text, and keep page numbers, section labels and other structural labels unchanged:
