@@ -189,3 +189,18 @@ Keep the yellow background and the red corner badge. Each replaced line keeps th
 - 另外：沙发款式略有变化（扶手更方），不只是换了颜色
 - 按指令只跑 1 次，未重试；该格还剩 1 次重试机会
 - **技术经理改口径（23:39，晚于试跑）**：底部两行黄色大斜体要改成「11.11 0点抢先购」（字效不变）。本次试跑仍是旧的两行（「11月1日0点」「抢6折！」），日期行需要修；按指令未重跑。下次重试时 prompt 改为：`"11月1日0点" + "抢半价！" -> "11.11 0点抢先购" (same big yellow italic, same position)`
+
+## p4 第 2 次（最后一次，设计+技术经理批准）
+- 底图：第 1 次输出 `raw/p4_pilot_raw.png`；prediction `6795c6c7621145e8b08e976bf59f8661`；余额 $43.635906 → $43.560306（差 $0.0756，单价 $0.0378，可能夹了别的并发调用，待按 prediction id 核对）
+- prompt：
+```
+Edit only three text lines in this poster; keep everything else pixel-identical (photo, sofa, furniture, colours, layout, all other text). Spell exactly:
+"被冬！" -> "过冬！"
+"暖家减贴" -> "暖家补贴"
+"抢6折！" -> "低至6折！" (white bold italic, dark stroke, white slanted bar below, same style as the current line; it has one extra character, so shrink it slightly but stay within the original line area, not over the stool)
+Keep "11月1日0点" exactly as it is.
+All Chinese characters must be correct and crisp; no garbled or extra characters; do not overlay new text boxes.
+```
+- OCR 读出：ARDEN雅登家居丨双11狂欢购 / 换个心情 / 过冬！ / 先领3000元暖家补贴 / 11月1日0点 / 低至6折！ —— 3 处错字全部修正；金标品牌名和卖点 0 命中
+- 沙发、茶几、矮凳和其余画面与第 1 次一致；L/R：`lr/p4pilot/p4b_LR_full.jpg`、`p4b_LR_title_2x.jpg`、`p4b_LR_bottom_2x.jpg`
+- 未处理：技术经理 23:39 的「11.11 0点抢先购」日期行口径；本次按批准的 prompt 保留了「11月1日0点」。p4 的 2 次机会已用完，不再调用
