@@ -15,12 +15,19 @@ archive() {
   local a="$LOGDIR.failure.tar.gz"; tar -czf "$a" -C "$LOGDIR" . 2>/dev/null
   echo "$S FAILURE_LOGS: $a (tracebacks in $LOGDIR)"
 }
-cleanup() { cd "$W" 2>/dev/null && { git checkout -q -- dist 2>/dev/null; git clean -fdq dist; rm -rf node_modules; git status --porcelain | head -2; }; archive; echo "$S GATE_EXIT=$RC"; exit $RC; }
+cleanup() {
+  # Only touch the worktree if this run owns it (marker written after pre-checks passed).
+  if [ -f "$W/.gate_owned" ] && [ "$(cat "$W/.gate_owned" 2>/dev/null)" = "$$" ]; then
+    cd "$W" && { git checkout -q -- dist 2>/dev/null; git clean -fdq dist; rm -rf node_modules; rm -f .gate_owned; git status --porcelain | head -2; }
+  fi
+  archive; echo "$S GATE_EXIT=$RC"; exit $RC; }
 trap cleanup EXIT
+trap 'RC=130; exit 130' INT TERM
 
 gate_check_wt_name "$W" || { RC=2; exit 2; }
-gate_check_no_node_modules "$W" || { RC=2; W=/nonexistent; exit 2; }
-cd "$W"; cp -al "$MAIN/node_modules" node_modules
+gate_check_no_node_modules "$W" || { RC=2; exit 2; }
+[ -e "$W/.gate_owned" ] && { echo "GATE_FAIL: $W/.gate_owned exists (another gate run, or stale marker: remove it)" >&2; RC=2; exit 2; }
+cd "$W"; echo "$$" > .gate_owned; cp -al "$MAIN/node_modules" node_modules
 
 npx tsc --noEmit -p . >"$LOGDIR/tsc.log" 2>&1 && echo "$S TSC_OK" || fail "tsc (see $LOGDIR/tsc.log)"
 

@@ -54,3 +54,40 @@ def test_log_error_lines(tmp_path):
     bad = tmp_path / "b.log"; bad.write_text("ERROR tests/test_x.py - ImportError\n1 error in 0.1s\n")
     r = _run("gate_check_log_errors", str(bad))
     assert r.returncode == 1 and "error lines" in r.stderr
+
+
+GATE = LIB.parent / "gate.sh"
+
+
+def _gate_env(tmp_path, wt):
+    import os
+    return {**os.environ, "GATE_WT": str(wt), "GATE_MAIN": str(tmp_path / "main"),
+            "GATE_PY": "/bin/false", "PATH": os.environ["PATH"]}
+
+
+def test_rejected_worktree_keeps_sentinel_node_modules(tmp_path):
+    wt = tmp_path / "wt_sent"; (wt / "node_modules").mkdir(parents=True)
+    (wt / "node_modules" / "SENTINEL").write_text("keep")
+    r = subprocess.run(["bash", str(GATE), "sent"], capture_output=True, text=True, env=_gate_env(tmp_path, wt))
+    assert r.returncode == 2 and "already exists" in r.stderr
+    assert (wt / "node_modules" / "SENTINEL").read_text() == "keep"
+    assert not (wt / ".gate_owned").exists()
+
+
+def test_unowned_interrupted_run_keeps_sentinel(tmp_path):
+    # Stale marker from another run (not ours): gate must refuse and must not clean anything.
+    import signal, time
+    wt = tmp_path / "wt_unowned"; wt.mkdir()
+    (wt / ".gate_owned").write_text("999999")
+    (wt / "dist").mkdir(); (wt / "dist" / "SENTINEL").write_text("keep")
+    r = subprocess.run(["bash", str(GATE), "unowned"], capture_output=True, text=True, env=_gate_env(tmp_path, wt))
+    assert r.returncode == 2 and ".gate_owned exists" in r.stderr
+    assert (wt / "dist" / "SENTINEL").exists() and (wt / ".gate_owned").read_text() == "999999"
+    # Interrupt (SIGTERM) a run that is rejected before owning: sentinel node_modules survives.
+    wt2 = tmp_path / "wt_intr"; (wt2 / "node_modules").mkdir(parents=True)
+    (wt2 / "node_modules" / "SENTINEL").write_text("keep")
+    p = subprocess.Popen(["bash", str(GATE), "intr"], env=_gate_env(tmp_path, wt2),
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    time.sleep(0.05); p.send_signal(signal.SIGTERM); p.wait(10)
+    assert (wt2 / "node_modules" / "SENTINEL").read_text() == "keep"
+    assert not (wt2 / ".gate_owned").exists()
