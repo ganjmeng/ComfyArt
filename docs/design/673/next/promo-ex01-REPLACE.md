@@ -50,16 +50,16 @@
 | *天猫生意参谋2026年双11彩妆品类唇釉商品交易总量排名 (1964,1024) | *数据来源：velle品牌内部统计，2026年秋冬唇部新品 | 底部极小注释字 |
 | 产品瓶身 glossa 字样 | velle | 瓶身印字 |
 
-### p4 家居（LYSEN 丽森 → ARDEN 雅墩家居）
+### p4 家居（LYSEN 丽森 → ARDEN 雅登家居）
 | 金标 | 我们 | 字效 |
 |---|---|---|
 | LYSEN (36,1167) | ARDEN | 白色小 logo |
-| 丽森家居丨双11狂欢购 (127,1166) | 雅墩家居丨双11狂欢购 | 白色小字，双11狂欢购保留 |
+| 丽森家居丨双11狂欢购 (127,1166) | 雅登家居丨双11狂欢购 | 白色小字，双11狂欢购保留 |
 | 焕新了！(18,1266) | 换个心情 | 白色粗斜体 + 深色描边，大字 |
 | 我的家 (81,1392) | 过冬！ | 同上，第二行，错位缩进照金标 |
 | 立抢5000元大额津贴 (56,1913) | 先领3000元暖家补贴 | 白色/黄色小字 |
 | 11月1日0点 (52,1952) | 11月1日0点 | 黄色大斜体（时间节点保留） |
-| 抢半价！(112,2026) | 低至5折！ | 黄色大斜体 |
+| 抢半价！(112,2026) | 低至6折！ | 黄色大斜体 |
 
 ### p5 相机（LUMVEX → KORAX）
 | 金标 | 我们 | 字效 |
@@ -132,17 +132,17 @@ Edit this poster panel. Keep everything identical — product photo, colours, la
 Any "glossa" printed on the product -> "velle".
 Each replaced line keeps the same size and position; do not delete any text, do not add grey boxes or translucent panels, do not add new text.
 ```
-### p4（试跑格，需 UIUX 先确认；底图 gold_ex01.png crop (0,1107)-(853,2214)）
+### p4（试跑格；UIUX 已批 3 处修改，技术经理批上限 $0.45；底图 gold_ex01.png crop (0,1107)-(853,2214)）
 ```
-Edit this poster panel. Keep everything identical — room photo, furniture, colours, layout, and every font's typeface, weight, size, colour, dark outline stroke, italic slant and exact position. Only change the text content, line by line:
+Edit this poster panel. Keep the room photo, layout, lighting and colours identical, except recolour the leather sofa to a light dusty-blue velvet sofa (same shape, same position). Keep every font's typeface, weight, size, colour, dark outline stroke, italic slant and exact position. Only change the text content, line by line:
 "LYSEN" -> "ARDEN"
-"丽森家居丨双11狂欢购" -> "雅墩家居丨双11狂欢购"
+"丽森家居丨双11狂欢购" -> "雅登家居丨双11狂欢购"
 "焕新了！" -> "换个心情" (same white bold italic with dark stroke)
 "我的家" -> "过冬！" (same white bold italic with dark stroke, same indent)
 "立抢5000元大额津贴" -> "先领3000元暖家补贴"
 "11月1日0点" -> keep as is
-"抢半价！" -> "低至5折！" (same big yellow italic)
-Each replaced line keeps the same size and position; do not delete any text, do not add grey boxes or translucent panels, do not add new text.
+"抢半价！" -> "低至6折！" (same big yellow italic)
+Each replaced line keeps the same size and position; do not delete any text, do not add grey boxes or translucent panels, do not add new text. All Chinese characters must be correct and crisp; no garbled or extra characters.
 ```
 ### p5
 ```
@@ -179,3 +179,12 @@ Keep the yellow background and the red corner badge. Each replaced line keeps th
 - **尚未花费任何钱**；下一步：UIUX 确认 p4 prompt → 技术经理批 $0.45 上限 → 跑 p4（1 次 $0.0378）→ Angela 看 L/R → 其余 5 格
 - 每次调用按 prediction id 记入 PAID-LIST；余额 < $20 停；同格失败 2 次停
 - 本地排字方案（promo_type.py）已废弃，不要再用灰框
+
+## p4 试跑结果（2026-11-04 23:4x UTC+8，1 次调用）
+- prediction `080985f535a44cb18e0a3bbee733bafc`，$0.0378，余额 $43.673706 → $43.635906；原图 `raw/p4_pilot_raw.png`（896×1200），本地 LANCZOS 缩放到 853×1107，无任何本地叠字
+- L/R：`lr/p4pilot/p4_LR_full.jpg`、`p4_LR_title_2x.jpg`、`p4_LR_bottom_2x.jpg`；OCR：`lr/p4pilot/ocr_both_ways.txt`
+- 字效：白色粗斜体 + 深色描边、斜向白条、顶栏、底部斜体都与金标一致，无灰框；沙发改成浅雾蓝丝绒，茶几、矮凳、地毯没有串色
+- 双向 OCR：金标品牌名和卖点原文 0 命中（只剩豁免的「双11狂欢购」「11月1日0点」）；小字 3 处都在
+- **错字 3 处（判 FAIL，第 1 次）**：「过冬！」写成了「被冬！」；「暖家补贴」写成了「暖家减贴」；「低至6折！」写成了「抢6折！」（漏掉「低至」，留了金标的「抢」）
+- 另外：沙发款式略有变化（扶手更方），不只是换了颜色
+- 按指令只跑 1 次，未重试；该格还剩 1 次重试机会
