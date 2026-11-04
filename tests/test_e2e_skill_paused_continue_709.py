@@ -152,6 +152,22 @@ def test_stuck_timeout_plain_reason_and_primary_continue_resumes_same_run(monkey
     resume_to_done(monkeypatch, store, rid)
 
 
+def test_hard_cap_unified_title_plain_body_primary_continue(monkeypatch, store, page):
+    r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})), policy={"hard_cap_steps": 3},
+            store=store)
+    res, ev = arun(r.send("加字", goal=""))
+    s, rid = stop_of(res), res.run["run_id"]
+    assert s["reason"] == "hard_cap" and store.get_run(rid)["status"] == "paused"
+    b = card(ev)
+    want = "已达到单次步数上限，已生成的图会保留。"
+    assert (b["copy"]["zh"]["title"], b["copy"]["zh"]["body"]) == ("已自动暂停", want)
+    assert (b["copy"]["zh"]["primary"], b["copy"]["zh"]["secondary"]) == ("继续生成", "先到这里")
+    shot = str(Path(SHOT) / "paused_hard_cap_zh.png") if SHOT else None
+    card_el, got = ui_continue(page, b, want, shot, title="已自动暂停")
+    assert got == rid and card_el.locator("button.ca-panel__secondary").inner_text() == "先到这里"
+    resume_to_done(monkeypatch, store, rid)
+
+
 def arun(coro):
     """The scripted backend runs on its own loop in a worker thread (sync Playwright owns this thread's loop)."""
     with ThreadPoolExecutor(1) as ex:
