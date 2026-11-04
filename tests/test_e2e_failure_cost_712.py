@@ -62,6 +62,7 @@ async def test_712_charged_no_output_shows_reason_and_amount(ws, bundle, lang, t
         await page.wait_for_timeout(200)
         body = await page.locator("[data-testid=ws-failure]").inner_text()
         assert "$0.32" in body
+        assert "WaveSpeed" not in body
         assert ("没有返回图片" in body) if lang == "zh" else ("returned no image" in body)
         SHOT_DIR.mkdir(parents=True, exist_ok=True)
         await page.locator(".ca-root").screenshot(path=str(SHOT_DIR / f"failure-cost-{lang}-{theme}.png"))
@@ -91,7 +92,7 @@ async def _shot(bundle, lang, theme, kind, charged, name):
 
 # (kind, charged, file stem, zh text, en text); amounts are the mock quote, None = amount unknown
 CASES = [
-    ("noTaskId", 0.32, "failure-notaskid", "没有拿到 WaveSpeed 任务编号", "did not return a task ID"),
+    ("noTaskId", 0.32, "failure-notaskid", "没有拿到任务编号，无法取回结果", "No task ID came back"),
     ("noOutput", None, "failure-nooutput-noamount", "没有返回图片，可能已扣费。", "returned no image, and it may have been charged."),
     ("noTaskId", None, "failure-notaskid-noamount", "无法取回结果，可能已扣费。", "cannot be fetched, and it may have been charged."),
     ("unregisteredModel", None, "failure-unregistered", "所选模型暂不可用，未发送、未扣费", "isn't available right now. Nothing was sent or charged"),
@@ -110,5 +111,5 @@ async def test_712_failure_kinds_shown(ws, bundle, lang, theme, kind, charged, s
         assert e.value.kind == "noTaskId"
         charged = e.value.charged if charged is not None else None
     body = await _shot(bundle, lang, theme, kind, charged, stem)
-    assert (zh if lang == "zh" else en) in body
+    assert (zh if lang == "zh" else en) in body and "wavespeed" not in body.lower()
     assert "$0.32" in body if charged is not None else "$" not in body
