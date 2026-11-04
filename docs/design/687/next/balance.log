@@ -15,3 +15,9 @@ running total 0.0756 / 0.50 (2 of 12 calls). PAUSED for design PASS on ex02 pilo
 running total 0.2646 / 0.50 (7 calls, 6 ok, 0 retries); balance 43.907449. STOPPED: character ex02-06 wait for design PASS on ex01 pilot (5 x 0.0378 = 0.189 -> projected 0.4536, 1 retry fits).
 2026-11-04 23:01 CST  character ex01 rev2  id ee20445d2680415e8db00dc01c641be3  before 43.900506 after 43.862706 cost 0.0378 ok. (43.907449 -> 43.900506 between runs = $0.006943 smoke, not ours)
 running total attributed 0.3024 / 0.50 (8 calls); balance 43.862706. ex02-06 HELD.
+c_ex02_raw.png cddacd24d2e44f7181aab78df2d388e9 before=43.862706 after=43.824906 delta=0.0378 attributed=0.0378
+c_ex03_raw.png a23c7cca4e204b21b343c8919990ecd6 before=43.824906 after=43.787106 delta=0.0378 attributed=0.0378
+c_ex04_raw.png 7769d4d8cdc54342bf059af7831d684d before=43.787106 after=43.749306 delta=0.0378 attributed=0.0378
+c_ex05_raw.png df31f6abaeaf447480d049b846484924 before=43.749306 after=43.711506 delta=0.0378 attributed=0.0378
+c_ex06_raw.png aebb21d6d41f4d5cba36dc48eda5fc2b before=43.711506 after=43.673706 delta=0.0378 attributed=0.0378
+running total attributed 0.4914 / 0.50 (13 calls); balance 43.673706 (23:2x CST). Each of the 5 deltas exactly 0.0378, no foreign spend between calls → reconciled (diff 0.0000).
