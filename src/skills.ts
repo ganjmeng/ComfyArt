@@ -79,7 +79,7 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   brand: ['580/featured-v1/brand', FEED_V1, ['01.webp']],  // #687: off-topic / other-brand picks removed
   packaging: ['580/featured-v1/packaging', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   thumbnail: ['580/featured-v1/thumbnail', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
-  banner: ['580/featured-v1/banner', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  banner: ['580/featured-v1/banner', FEED_V1, ['01.webp']],  // #687: off-topic / other-brand picks removed
   character: ['580/featured-v1/character', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   // #687: product featured removed (off-topic, multi-brand) → falls back to presets
   motion: ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '04.webp']],  // #687: 03 removed (Lovart original face)
