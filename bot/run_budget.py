@@ -46,7 +46,7 @@ class StopReason(str, Enum):
 SUB_REASONS: dict[StopReason, frozenset[str]] = {
     StopReason.DONE: frozenset({""}),
     StopReason.BUDGET: frozenset({"paused", "exhausted", "unattended_skipped"}),
-    StopReason.STUCK: frozenset({"no_progress", "repeat", "tool_error", "readonly_limit", "self_check_failed", "same_tool", "non_retryable", "budget"}),
+    StopReason.STUCK: frozenset({"no_progress", "repeat", "tool_error", "readonly_limit", "self_check_failed", "same_tool", "non_retryable", "budget", "timeout"}),
     StopReason.HARD_CAP: frozenset({""}),
     StopReason.USER_STOP: frozenset({"", "quote_declined"}),
     StopReason.AWAITING_CONFIRM: frozenset({"not_approved"}),
@@ -486,6 +486,11 @@ class ProgressTracker:
     planned_images: int = 0
     total_calls: int = 0
     gen_calls: int = 0
+    # #705: wait_generation is outside the 30 cap but each task gets max 10 min OR 120 polls -> stuck:timeout
+    wait_max_s: float = 600.0
+    wait_max_polls: int = 120
+    wait_first: dict = field(default_factory=dict)   # task id -> wall time of first poll
+    wait_polls: dict = field(default_factory=dict)   # task id -> polls so far
     last_tool: str = ""
     same_tool_run: int = 0
     nudged: bool = False
@@ -560,6 +565,26 @@ class ProgressTracker:
         self.gen_calls += sum(1 for o in obs if o.tool == "generate_image")
         return (self.paid_calls > self.tool_calls_max or self.total_calls > self.all_calls_max
                 or self.gen_calls > self.gen_cap())
+
+    def wait_timeout(self, obs: list[StepObservation], now: Optional[float] = None) -> bool:
+        """#705: True once any task polled by wait_generation passes wait_max_s since its first poll or wait_max_polls."""
+        now = time.time() if now is None else now
+        hit = False
+        for o in obs:
+            if re.sub(r"^mcp__\w+__", "", o.tool or "") != "wait_generation":
+                continue
+            try:
+                args = json.loads(o.args_key.split("\x00", 1)[1])
+            except (IndexError, ValueError):
+                args = {}
+            ids = args.get("ids") if isinstance(args, dict) else None
+            ids = [str(i) for i in ids] if isinstance(ids, list) and ids else ["*"]
+            for i in ids:
+                self.wait_first.setdefault(i, now)
+                self.wait_polls[i] = self.wait_polls.get(i, 0) + 1
+                if self.wait_polls[i] > self.wait_max_polls or now - self.wait_first[i] > self.wait_max_s:
+                    hit = True
+        return hit
 
     def reset_after_nudge(self) -> None:
         self.nudged = True

@@ -118,3 +118,18 @@ def test_autofill_skill_read_uses_current_skill_only() -> None:
     assert ctx.skill_autofills == 2
     none = SimpleNamespace(current_skill="", skill_autofills=0, run_id="r", store=None)
     assert autofill_skill_read(none, "skill", {"action": "read"}) == {"action": "read"}
+
+
+def test_wait_generation_own_limit_timeout() -> None:
+    from ComfyArt.bot.run_budget import SUB_REASONS, StopReason
+    assert "timeout" in SUB_REASONS[StopReason.STUCK]
+    w = lambda ids: [StepObservation("wait_generation", "wait_generation\x00" + json.dumps({"ids": ids}), "pending")]
+    t = ProgressTracker()  # 120 polls ok, 121st trips; polls never touch the 30 cap
+    assert [t.wait_timeout(w(["job1"]), now=1000.0 + i) for i in range(1, 122)] == [False] * 120 + [True]
+    assert not t.over_budget(w(["job1"]))
+    t = ProgressTracker()  # 10 minutes from the first poll of that task
+    assert t.wait_timeout(w(["a"]), now=0.0) is False
+    assert t.wait_timeout(w(["a"]), now=600.0) is False
+    assert t.wait_timeout(w(["b"]), now=601.0) is False      # a new task has its own clock
+    assert t.wait_timeout(w(["a"]), now=600.5) is True
+    assert ProgressTracker.restore(t.snapshot()).wait_polls == {"a": 3, "b": 1}
