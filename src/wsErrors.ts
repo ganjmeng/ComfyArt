@@ -15,7 +15,10 @@ export function wsErrorText(kind: unknown, charged?: unknown, taskId?: unknown):
   // #174: a timed-out task may still be billed; show the quoted amount when known, never auto-retry
   // #712: a run that may be billed with no image (no output / no task id) states the reason and the amount
   if (kind === 'timeout' || kind === 'noOutput' || kind === 'noTaskId') {
-    const base = typeof charged === 'number' && Number.isFinite(charged) ? t(`wsErr.${kind}`, fmtUsd(charged)) : t(`wsErr.${kind}NoAmount`)
+    const amt = typeof charged === 'number' && Number.isFinite(charged) ? fmtUsd(charged) : null
+    // #715: '$0.00' / '< $0.01' are not estimates -> drop 「约」/'about' in front of them
+    const base = amt === null ? t(`wsErr.${kind}NoAmount`)
+      : charged as number < 0.01 ? t(`wsErr.${kind}`, amt).replace(`约 ${amt}`, ` ${amt}`).replace(`about ${amt}`, amt) : t(`wsErr.${kind}`, amt)
     // #712: when a task id was obtained (timeout / noOutput) show it for feedback or refunds; noTaskId has none
     return kind !== 'noTaskId' && typeof taskId === 'string' && taskId.trim() ? `${base}\n\n${t('wsErr.taskRef', `\`${taskId.trim()}\``)}` : base  // #715 design: own line; id as `code` (nowrap, copyable)
   }

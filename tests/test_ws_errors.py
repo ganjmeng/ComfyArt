@@ -93,7 +93,13 @@ def test_712_fmt_usd_two_decimals_and_sub_cent(js):
     assert js["fmtUsd"][:4] == ["$0.10", "$0.14", "$1.50", "$0.32"]
     assert js["fmtUsd"][4:6] == ["< $0.01", "< $0.01"]
     assert js["fmtUsd"][6:8] == ["$0.00", "$0.01"] and js["fmtUsd"][9] == "$12.00"
-    assert "约 < $0.01。" in js["zh"]["tiny"] and "about < $0.01." in js["en"]["tiny"]
+    # #715: exact-ish amounts ($0.00, < $0.01) drop 约/about; >= 1 cent keeps it
+    assert js["zh"]["tiny"].startswith("任务已结束但没有返回图片，可能已扣费 < $0.01。") and "约" not in js["zh"]["tiny"]
+    assert "may have been charged < $0.01." in js["en"]["tiny"] and "about" not in js["en"]["tiny"]
+    assert js["zh"]["zero"] == "任务超时，可能已扣费 $0.00。重试前请注意可能重复扣费。"
+    assert js["en"]["zero"] == "The task timed out and may have been charged $0.00. Retrying may charge again."
+    assert "可能已扣费 $0.00。" in js["zh"]["zeroNoTaskId"] and "charged $0.00." in js["en"]["zeroNoTaskId"]
+    assert "约 $0.01。" in js["zh"]["cent"] and "about $0.01." in js["en"]["cent"]
 
 
 def test_712_unregistered_and_task_id_copy(js):

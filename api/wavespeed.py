@@ -2303,6 +2303,7 @@ async def run_raw(inputs: dict, timeout: float = 120.0) -> list:
                     return outs
         raise await _timeout_error(task)
     except WaveSpeedError as e:
+        e.task_id = e.task_id or task  # #715: submit returned an id -> timeout/noOutput error bodies carry it
         job = _jobs.get(task) or {}
         gen_ledger.record_failure(task, "wavespeed", job.get("model") or "", str(e), kind=e.kind or "failed",
                                   cost_usd=e.charged, feature=job.get("feature") or "")  # #712
