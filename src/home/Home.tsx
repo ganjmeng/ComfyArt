@@ -143,7 +143,7 @@ function HomeSkillCard({ skill, onTry }: { skill: Skill; onTry: () => void }) {
       <span className="ca-skillcard__cover" data-testid="home-skill-cover" data-fit={skillQuickStartCoverFit(skill)}>
         {src && cover?.own === 'video'
           ? <video src={`${src}#t=0.001`} muted playsInline preload="metadata" data-testid="home-skill-cover-frame" />
-          : src ? <img src={src} alt="" draggable={false} /> : <span className="ca-icon">{Icons.skill}</span>}
+          : src ? <img src={src} alt="" draggable={false} style={skill.coverPos ? { objectPosition: skill.coverPos } : undefined} /> : <span className="ca-icon">{Icons.skill}</span>}
         {videoSrc && (
           <video
             ref={videoRef}

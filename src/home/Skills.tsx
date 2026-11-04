@@ -84,7 +84,7 @@ function SkillWallCard({
       <div className="ca-swall__cover" data-fit={skillQuickStartCoverFit(skill)} role="button" tabIndex={0} aria-label={skill.name} onClick={row ? undefined : onTry}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTry() } }}>
         {showImg
-          ? <img src={src} alt={skill.name} loading="lazy" data-testid="skills-card-cover" onError={() => setFailedSrc(src)} />
+          ? <img src={src} alt={skill.name} loading="lazy" style={skill.coverPos ? { objectPosition: skill.coverPos } : undefined} data-testid="skills-card-cover" onError={() => setFailedSrc(src)} />
           : <span className="ca-swall__placeholder" data-testid="skills-card-placeholder"><span className="ca-icon">{Icons.skill}</span></span>}
         {videoSrc && !row && (
           <video

@@ -33,6 +33,8 @@ export interface Skill {
   quickStartCover?: string
   /** #602 — home quick-start cover object-fit. Default `cover` (full-bleed). Set `contain` for letterbox on the card plate. */
   quickStartCoverFit?: 'cover' | 'contain'
+  /** #687 — CSS object-position for the cover crop on Skills wall + home quick-start cards (default center). */
+  coverPos?: string
   featured?: string[]
   /** #580 P2 — preset id shown first for this skill in home 「Skill 案例」 (fallback path only). */
   featuredPreset?: string
@@ -484,7 +486,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('studio', '棚拍人像', 'Studio portrait', 'Style: studio portrait, controlled light, beauty-true, single subject.'), P('env', '环境人像', 'Environmental', 'Style: environmental portrait, natural or location light, single subject, lens character.')],
     inputs: NEARMISS_INPUTS },
   { id: 'premium-website', name: t('skills.premiumWebsite'), instructions: 'You are a production premium website art director. Ship luxury brand site direction and first-screen frames — not SaaS component docs and not hardware spec pages.\n1) Brief: brand, tone and pages from siteBrief + refs.\n2) Art direction: refined typography, photography treatment and hero modules.\n3) Division: premium brand site — leave product-spec hardware sites to product-website; leave SaaS UI kits to web-product.\n4) Copy: sparse elegant lines in quotes.\n5) Refs: pass refs in refs on every generate_image call.',
-    category: 'website', cover: cover643('premium-website'), examples: ex643('premium-website', [1, 2, 3, 4, 5, 6, 7], '4ccecac30c1cdf3e79826de5614edc5514e150a4'), featured: [],
+    category: 'website', cover: cover643('premium-website'), coverPos: '15% center', examples: ex643('premium-website', [1, 2, 3, 4, 5, 6, 7], '4ccecac30c1cdf3e79826de5614edc5514e150a4'), featured: [],
     presets: [P('hero', '高端首屏', 'Premium hero', 'Style: premium brand site hero, art-directed photography, sparse headline in quotes.'), P('system', '艺术方向板', 'Art direction board', 'Style: premium web art-direction board, type/palette/photo language, cohesive.')],
     inputs: NEARMISS_INPUTS },
   { id: 'animated-poster', name: t('skills.animatedPoster'), instructions: 'You are a production animated-poster designer. Still poster composition first, then a short looping motion poster — not a static print poster and not a long motion ad.\n1) Still first: lock a strong poster hierarchy; confirm specs.\n2) Animate: short loop; keep type sharp; subtle scene motion.\n3) Scope: motion poster only — leave long UGC/TVC to motion.\n4) Copy: on-art phrases in quotes.\n5) Refs: pass refs in refs on every generate_image / animate call.',
@@ -512,7 +514,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('mood', '氛围首屏', 'Mood hero', 'Style: restaurant site mood hero, hospitality photography, sparse headline in quotes.'), P('menu', '菜单模块', 'Menu module', 'Style: restaurant menu module visual, readable dishes, coherent with hero.')],
     inputs: NEARMISS_INPUTS },
   { id: 'clothing-swap', name: t('skills.clothingSwap'), instructions: 'You are a production AI clothing-swap artist. Keep the person; swap garments from a dual ref (person + clothing) — not a triple-ref person-swap.\n1) Intake: require an uploaded person ref + garment cue in Additional Details when needed.\n2) Lock: face, body and pose from the person; only wardrobe changes.\n3) Deliver: try-on stills with fabric truth and clean edges.\n4) Division: outfit swap on fixed person — leave scene+face+outfit triple swap to person-swap.\n5) Refs: pass both shape ids in refs on every generate_image call.',
-    category: 'ecommerce', cover: cover643('clothing-swap'), examples: ex643('clothing-swap', [1, 2]), featured: [],
+    category: 'ecommerce', cover: cover643('clothing-swap'), coverPos: 'center 8%', examples: ex643('clothing-swap', [1, 2]), featured: [],
     presets: [P('casual', '日常换装', 'Casual', 'Style: AI clothing swap casual look, person locked, garment from ref, clean edges.'), P('formal', '正装换装', 'Formal', 'Style: AI clothing swap formal look, person locked, fabric honest.'), P('street', '街头换装', 'Street', 'Style: AI clothing swap streetwear look, person locked, outfit from ref.')],
     inputs: NEARMISS_INPUTS },
   { id: 'interior', name: t('skills.interiorArchitecturalVisualization'), instructions: 'Produce photoreal interior or architecture renders: eye-level wide shot, natural light, accurate materials, 16:9. Add a detail vignette at 4:3.',
