@@ -217,6 +217,14 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const typing = content
 
   return (
+    <>
+    {/* #644: the #673 notice sits in normal flow ABOVE the composer (clear of the mascot peek), so it never overlaps the chat's start buttons */}
+    {skillNotice && (
+        <div className="ca-chat__hint ca-composer__notice" role="status" data-testid="skill-hidden-notice">
+          <span className="ca-menu__grow">{skillNotice}</span>
+          <button type="button" className="ca-history__del" title={t('common.close')} data-testid="skill-hidden-notice-close" onClick={() => skillNoticeAtom.set(null)}>{Icons.close}</button>
+        </div>
+      )}
     <div
       className="ca-composer"
       data-drop={drop || undefined}
@@ -226,12 +234,6 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
     >
       {/* #371 P1-mascot: left-top peek; idle static frame 0; --play/--typing animate */}
       <ArtiMascot busy={busy} typing={typing} />
-      {skillNotice && (
-        <div className="ca-chat__hint ca-composer__notice" role="status" data-testid="skill-hidden-notice">
-          <span className="ca-menu__grow">{skillNotice}</span>
-          <button type="button" className="ca-history__del" title={t('common.close')} data-testid="skill-hidden-notice-close" onClick={() => skillNoticeAtom.set(null)}>{Icons.close}</button>
-        </div>
-      )}
       {(slash && filtered.length > 0) && (
         <div className="ca-menu ca-composer__suggest" data-testid="slash-menu">
           {filtered.slice(0, 8).map((s) => (
@@ -482,5 +484,6 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           onText={(t) => draftAtom.set(`${draftAtom.get()}${draftAtom.get() ? ' ' : ''}${t}`)} />
       </div>
     </div>
+    </>
   )
 }

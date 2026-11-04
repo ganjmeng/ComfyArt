@@ -175,6 +175,8 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   const skill = found && withPreset(found, presetId)
   if (skill && !attachSkill(skill)) {  // #673: hidden skill from an old link — no chip, notice shown, nothing sent
     if (text) draftAtom.set(text)
+    // #644: the link's reference images stay too — placed on the canvas and attached to the draft, like a text-less link
+    if (refs.length) extraRefsAtom.set((await placeRefs(editor, refs)).map((s) => s.id))
     return
   }
   const shapes = await placeRefs(editor, refs)
