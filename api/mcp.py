@@ -11,7 +11,8 @@ from .mcp_tools._context import BOT_CHAT_ID, PROJECT
 import hmac
 import secrets
 
-from .settings import mcp_enabled
+from .settings import mcp_enabled, mcp_token
+from ..bot.guide import PAID_TOOLS
 
 _log = logging.getLogger(__name__)
 
@@ -73,6 +74,10 @@ async def _tools_call(params: dict, *, external: bool = False) -> dict | None:
     if not isinstance(arguments, dict):
         arguments = {}
     chat_id = BOT_CHAT_ID.get()
+    # #P0 mcp-guard-bypass: a paid tool needs a live chat turn (known bot_chat + open paid_guard turn); without one
+    # the cap/ref/confirm guard has nothing to count against, so the call is refused before any submit.
+    if name in PAID_TOOLS and not paid_guard.has_turn(chat_id):
+        return {"content": [{"type": "text", "text": paid_guard.NO_TURN_TEXT}], "isError": True}
     # #142: paid cap + product-reference check, for every provider, before the run is submitted.
     # #238: external CLIs also hit the shared step cap here. The built-in agent sends the
     # internal header and keeps counting steps in its own loop.
@@ -130,10 +135,26 @@ def internal_request(request: web.Request) -> bool:
     return hmac.compare_digest(request.headers.get(INTERNAL_HEADER, ""), INTERNAL_TOKEN)
 
 
+def external_auth_error(request: web.Request) -> str:
+    """'' when an external caller may use MCP; else why not. enable-mcp on + no token configured = refuse (fail closed)."""
+    if not mcp_enabled():
+        return "ComfyArt MCP is off: turn it on in Agent settings"
+    want = mcp_token()
+    if not want:
+        return "ComfyArt MCP needs a token: set one in Agent settings (mcp-token) before turning MCP on"
+    auth = request.headers.get("Authorization", "")
+    got = auth[7:].strip() if auth.lower().startswith("bearer ") else str(request.query.get("mcp_token") or "")
+    if not got or not hmac.compare_digest(got.encode(), want.encode()):
+        return "ComfyArt MCP: missing or wrong token"
+    return ""
+
+
 @routes.post("/comfyart/mcp")
 async def mcp_post(request: web.Request) -> web.Response:
-    if not mcp_enabled() and not internal_request(request):
-        return web.json_response(_error(None, -32000, "ComfyArt MCP is off: turn it on in Agent settings"), status=403)
+    if not internal_request(request):
+        why = external_auth_error(request)
+        if why:
+            return web.json_response(_error(None, -32000, why), status=403)
     try:
         msg = await request.json()
     except ValueError:

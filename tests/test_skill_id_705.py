@@ -78,10 +78,14 @@ def test_tracker_budget_cap_tool_calls_and_generate_image() -> None:
     t = ProgressTracker()
     assert t.gen_cap() == DEFAULT_PLANNED_IMAGES + 2 == 6
     # every step lands a NEW image (so no_progress/same_tool never fire) but never finishes
+    # P0 #729: the image cap is pre-checked per call in api/paid_guard (turn_cap); the post-step tracker no longer
+    # stops on gen_cap (that let cap+1 through). It only counts generate_image calls that actually ran.
     hits = [t.over_budget([StepObservation("generate_image", f"g{i}", json.dumps({"id": f"shape:{i}"}))]) for i in range(1, 8)]
-    assert hits == [False] * 6 + [True]
+    assert hits == [False] * 7 and t.gen_calls == 7
     t = ProgressTracker(planned_images=1)
-    assert [t.over_budget(_obs("generate_image", i)) for i in range(1, 5)] == [False, False, False, True]
+    failed = StepObservation("generate_image", "gx", "[tool error] refused before submitting", failed=True)
+    assert failed.failed
+    assert not t.over_budget([failed]) and t.gen_calls == 0
     t = ProgressTracker()  # local tools never hit the paid cap, only the 300 backstop
     assert not any(t.over_budget(_obs("add_text", i)) for i in range(1, 301))
     assert t.over_budget(_obs("add_text", 301)) is True

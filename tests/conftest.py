@@ -133,9 +133,14 @@ def fresh_user_dir(tmp_path):
     yield tmp_path
 
 
+TEST_MCP_TOKEN = "test-mcp-token"  # P0 #730: enable-mcp needs a token; tests that turn MCP on get this one
+
+
 def write_settings(**values) -> None:
     from ComfyArt.api import settings
     current = settings.all_settings()
+    if values.get("enable-mcp") is True and "mcp-token" not in values and not current.get("mcp-token"):
+        values = {**values, "mcp-token": TEST_MCP_TOKEN}
     current.update(values)
     settings.write_json(settings.app_path("settings.json"), current)
 
@@ -213,6 +218,15 @@ async def bot_client():
     app.router.add_routes(server.PromptServer.instance.routes)
     client = TestClient(TestServer(app))
     await client.start_server()
+    _post = client.post
+
+    def post(path, *a, **kw):  # #730: external MCP calls carry the bearer token unless the test sets its own
+        if str(path).split("?")[0] == "/comfyart/mcp":
+            headers = dict(kw.get("headers") or {})
+            headers.setdefault("Authorization", f"Bearer {TEST_MCP_TOKEN}")
+            kw["headers"] = headers
+        return _post(path, *a, **kw)
+    client.post = post
     yield client
     ACTIVE_TURNS.clear()
     QUEUED.clear()

@@ -12,6 +12,12 @@ before a paid tool runs, so the rules hold for all of them:
 * after the user declines a cost confirm on a plan item, further paid calls for
   that same item are refused without opening another dialog (#127); the tool
   result tells the agent to reply as normal chat text (not the #137 red stop);
+* run-wide cap (技术经理, P0 paid-guard): turn total <= min(planned + 2,
+  4 x plan items, 30). Only submitted+charged calls count; calls refused
+  before submit ($0) never do. Checked BEFORE every paid call
+  (charged + this call > cap -> refused), never after the fact;
+* a paid tool with no live turn (no / unknown bot_chat) is always refused
+  (api/mcp.py, has_turn) so a direct /comfyart/mcp call cannot skip the guard;
 * in a product task where the user supplied an image, generate_image /
   generate_video calls that don't pass it are refused before submitting.
 """
@@ -37,7 +43,10 @@ from ..bot.local_llm import (
 
 _log = logging.getLogger(__name__)
 
-DEFAULT_CAP = 4
+DEFAULT_CAP = 4          # per plan item (or exactly N when the user named a count)
+TURN_HARD_MAX = 30       # hard ceiling of paid images in one turn
+NO_TURN_TEXT = ("refused before submitting (nothing was charged): paid tools only run inside a ComfyArt chat "
+                "turn; call them through the agent (bot_chat) instead of the MCP endpoint directly.")
 CAP_TEXT = {
     "zh": "已生成 {n} 张仍未完成，已停止，未继续扣费，请告诉我怎么调整",
     "en": "Generated {n} images and still not done, so I stopped; no further "
@@ -166,33 +175,60 @@ class TurnGuard:
     # #238: external CLIs only. The built-in agent counts steps in its own loop.
     external_steps: int = 0
     screenshots_sent: int = 0
+    planned: int = 0         # images the user asked for this turn (0 = not stated)
+    plan_items: int = 0      # most update_plan steps seen this turn (0 = no plan -> 1 item)
+    charged_total: int = 0   # paid units actually submitted and charged this turn
 
-    def summary(self) -> str:
+    def turn_cap(self) -> int:
+        """min(planned + 2, 4 x items, 30); planned + 2 only applies when a count was stated."""
+        terms = [self.cap * max(1, self.plan_items), TURN_HARD_MAX]
+        if self.planned:
+            terms.append(self.planned + 2)
+        return min(terms)
+
+    def summary(self, n: Optional[int] = None) -> str:
         counts: dict[str, int] = {}
         for label in self.done:
             counts[label] = counts.get(label, 0) + 1
         items = [k + (f" ×{c}" if c > 1 else "") for k, c in counts.items()]
         if self.lang == "zh":
-            return (CAP_TEXT["zh"].format(n=self.cap) + "。已完成："
+            return (CAP_TEXT["zh"].format(n=self.cap if n is None else n) + "。已完成："
                     + ("、".join(items) if items else "无") + "。")
-        return (CAP_TEXT["en"].format(n=self.cap) + " Done so far: "
+        return (CAP_TEXT["en"].format(n=self.cap if n is None else n) + " Done so far: "
                 + (", ".join(items) if items else "nothing") + ".")
 
 
 TURNS: dict[str, TurnGuard] = {}
 
 
+def _over_cap(guard: TurnGuard, units: int) -> str:
+    """Checked BEFORE a paid call: '' if it may run, else 'item' / 'turn' (which cap it would pass).
+    Counts only what was already charged plus this call (rule 1 + rule 2, P0 #729)."""
+    if guard.used.get(guard.plan_item, 0) + units > guard.cap:
+        return "item"
+    if guard.charged_total + units > guard.turn_cap():
+        return "turn"
+    return ""
+
+
 def begin_turn(chat_id: str, *, text: str, provider_text: str, lang: str = "",
                on_stop: Optional[Callable[[], None]] = None) -> TurnGuard:
     """Open the guard for one turn. ``text`` is what the user typed (the count
     comes from it); ``provider_text`` also carries attached-image lines."""
+    n = requested_count(text)
     guard = TurnGuard(
         lang=lang if lang in ("zh", "en") else _reply_lang(text),
-        cap=requested_count(text) or DEFAULT_CAP,
+        cap=n or DEFAULT_CAP,
+        planned=n,
         refs=product_refs(provider_text),
         on_stop=on_stop)
     TURNS[chat_id] = guard
     return guard
+
+
+def has_turn(chat_id: str) -> bool:
+    """True only for a chat with an open guarded turn (begin_turn called, end_turn not yet)."""
+    return bool(chat_id) and chat_id in TURNS
 
 
 def end_turn(chat_id: str) -> str:
@@ -241,8 +277,7 @@ def fallback_allowed(chat_id: str, name: str, args: dict) -> bool:
         return False
     if not passes_ref(name, args, guard.refs):
         return False
-    used = guard.used.get(guard.plan_item, 0)
-    return used + gen_units(name, args) <= guard.cap
+    return not _over_cap(guard, gen_units(name, args))
 
 
 def before_call(chat_id: str, name: str, args: dict, *, external: bool = False) -> Optional[str]:
@@ -264,12 +299,12 @@ def before_call(chat_id: str, name: str, args: dict, *, external: bool = False) 
     if not passes_ref(name, args, guard.refs):
         return REF_BLOCK_TEXT.format(ids=", ".join(guard.refs), tool=name,
                                      field=REF_FIELDS[name][0])
-    used = guard.used.get(guard.plan_item, 0)
-    if used + gen_units(name, args) > guard.cap:
+    which = _over_cap(guard, gen_units(name, args))
+    if which:
         _log.warning("[ComfyArt/paid-guard] chat %s: %s on plan item %r used "
-                     "%d of %d, stopping", chat_id, name, guard.plan_item,
-                     used, guard.cap)
-        guard.stopped = guard.summary()
+                     "%d of %d (turn %d of %d), %s cap, stopping", chat_id, name, guard.plan_item,
+                     guard.used.get(guard.plan_item, 0), guard.cap, guard.charged_total, guard.turn_cap(), which)
+        guard.stopped = guard.summary(None if which == "item" else guard.charged_total)
         if guard.on_stop:
             guard.on_stop()
         return guard.stopped
@@ -289,10 +324,14 @@ def after_call(chat_id: str, name: str, args: dict, payload: Any,
         item = active_plan_item(args)
         if item is not None:
             guard.plan_item = item
+        steps = args.get("steps")
+        if isinstance(steps, list):
+            guard.plan_items = max(guard.plan_items, len(steps))
     elif name in PAID_TOOLS:
         if charged(payload):
             guard.used[guard.plan_item] = (guard.used.get(guard.plan_item, 0)
                                            + gen_units(name, args))
+            guard.charged_total += gen_units(name, args)
         elif user_declined(payload):
             # At most one cost-confirm dialog per plan item this turn (#127).
             guard.declined_items.add(guard.plan_item)
