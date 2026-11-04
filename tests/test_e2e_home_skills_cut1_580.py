@@ -113,8 +113,9 @@ FEED_EXPECTED = frozenset({  # #673: 9 deferred ids hidden
     "live-promo-decor",  # #643 per-slot PR (examples wired => in feed)
     "ai-model",  # #643 per-slot PR (examples wired => in feed)
     "pose-fission",  # #643 per-slot PR (examples wired => in feed)
+    "naive-illustration",  # #673 unhide (C group washed, smoke PASS)
 })
-FEED_MIN = 40  # #673: 45 minus 5 hidden deferred; +#643 … + live-promo-decor + ai-model + pose-fission
+FEED_MIN = 41  # #673: 45 minus 5 hidden deferred; +#643 … + live-promo-decor + ai-model + pose-fission
 
 
 FEATURED_DIRS = ("/580/featured-v1/", "/580/featured-v2/", "/637/wash/", "/636/wash/", "/643/wash/")
