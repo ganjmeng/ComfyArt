@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 LIB = Path(__file__).resolve().parents[1] / "scripts" / "gate_lib.sh"
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _run(fn: str, *args: str, env=None):
@@ -121,3 +122,25 @@ def test_collection_error_tail_drops_pytest_count_line(tmp_path):
     assert r.returncode == 0
     assert "SyntaxError" in r.stdout and "collected" not in r.stdout
     assert "gate_collect_err_tail" in (LIB.parent / "gate.sh").read_text()
+
+
+# --- #712: UNIT runs the whole unit suite; only gate_skip tests (with reason + issue) drop out ---
+def test_gate_unit_stage_runs_all_unit_tests():
+    sh = (ROOT / "scripts" / "gate.sh").read_text()
+    assert 'stage UNIT "not e2e"' in sh
+    assert sh.count('-m "not gate_skip"') == 2  # collect + run
+
+
+def test_gate_skip_marker_registered():
+    assert "gate_skip(reason)" in (ROOT / "pyproject.toml").read_text()
+
+
+def test_every_gate_skip_names_reason_and_issue():
+    import re
+    hits = []
+    for p in (ROOT / "tests").glob("test_*.py"):
+        for m in re.finditer(r"@pytest\.mark\.gate_skip\((.*?)\)\n", p.read_text()):
+            hits.append((p.name, m.group(1)))
+    assert hits, "expected the known main failures to be marked"
+    for name, args in hits:
+        assert 'reason="' in args and re.search(r"#\d+", args), (name, args)

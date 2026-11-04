@@ -42,7 +42,7 @@ def used_ids() -> dict[str, str]:
     return out
 
 
-def test_skill_paths_use_only_registered_models():
+def test_builtin_paths_use_only_registered_models():
     cat = _catalog()
     every = set().union(*cat.values())
     missing = {m: where for m, where in used_ids().items() if m not in every}
@@ -50,7 +50,7 @@ def test_skill_paths_use_only_registered_models():
 
 
 @pytest.mark.parametrize("feature", ["text_to_image", "image_edit"])
-def test_skill_auto_rows_registered_for_their_feature(feature):
+def test_auto_rows_registered_for_their_feature(feature):
     cat = _catalog()[feature]
     spec = auto_models.load_table()[feature]
     for r in [*spec.get("categories", []), *[spec[k] for k in ("masked", "multi_reference") if spec.get(k)]]:
