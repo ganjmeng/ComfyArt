@@ -67,11 +67,12 @@ _STOP_TEXT = {
 }
 _DIM = {"zh": {"tokens": "token ", "credits": "积分", "time": "时长"},
         "en": {"tokens": "token", "credits": "credit", "time": "time"}}
+NON_RETRYABLE_MARK = "[non-retryable]"  # #705: keep in sync with SKILL_NON_RETRYABLE (src/skills.ts)
 _STALL_LABEL = {
     "zh": {"no_progress": "连续多步没有新产出", "repeat": "同一调用反复出现", "tool_error": "工具连续失败",
-           "readonly_limit": "连续只读步骤过多", "self_check_failed": "结果未通过自检"},
+           "readonly_limit": "连续只读步骤过多", "same_tool": "同一工具连续调用超过 3 次", "non_retryable": "工具返回不可重试的错误", "self_check_failed": "结果未通过自检"},
     "en": {"no_progress": "no new output for several steps", "repeat": "the same call repeated",
-           "tool_error": "tool failed repeatedly", "readonly_limit": "too many read-only steps in a row",
+           "tool_error": "tool failed repeatedly", "readonly_limit": "too many read-only steps in a row", "same_tool": "the same tool was called more than 3 times in a row", "non_retryable": "a tool returned a non-retryable error",
            "self_check_failed": "the result failed the self-check"},
 }
 _SELF_CHECK_NUDGE = {
@@ -813,9 +814,13 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     for a in sorted(artifact_ids(o.result)):
                         if a not in ctx.artifacts:
                             ctx.artifacts.append(a)
+            fatal = next((o for o in obs if o.failed and NON_RETRYABLE_MARK in o.result), None)
+            if fatal is not None:  # #705: never let the model retry a call the tool says cannot succeed
+                _log.warning("[ComfyArt/agent] run %s non-retryable %s error, stopping", ctx.run_id, fatal.tool)
+                return await finish(Stop(StopReason.STUCK, "non_retryable", step=ctx.budget.used.steps))
             stall = ctx.tracker.observe(ctx.budget.used.steps, obs, canvas_fp="|".join(ctx.artifacts[-200:]))
             if stall:
-                if not ctx.tracker.nudged:
+                if not ctx.tracker.nudged and stall != "same_tool":
                     ctx.tracker.reset_after_nudge()
                     lk = "zh" if ctx.lang == "zh" else "en"
                     messages.append({"role": "user", "content": TRY_ANOTHER_APPROACH[lk].format(

@@ -46,7 +46,7 @@ class StopReason(str, Enum):
 SUB_REASONS: dict[StopReason, frozenset[str]] = {
     StopReason.DONE: frozenset({""}),
     StopReason.BUDGET: frozenset({"paused", "exhausted", "unattended_skipped"}),
-    StopReason.STUCK: frozenset({"no_progress", "repeat", "tool_error", "readonly_limit", "self_check_failed"}),
+    StopReason.STUCK: frozenset({"no_progress", "repeat", "tool_error", "readonly_limit", "self_check_failed", "same_tool", "non_retryable"}),
     StopReason.HARD_CAP: frozenset({""}),
     StopReason.USER_STOP: frozenset({"", "quote_declined"}),
     StopReason.AWAITING_CONFIRM: frozenset({"not_approved"}),
@@ -464,6 +464,9 @@ class ProgressTracker:
     fail_run: int = 0
     last_call: str = ""
     repeat_run: int = 0
+    same_tool_max: int = 3   # #705 P1: >3 consecutive steps calling only the same tool = hard stop
+    last_tool: str = ""
+    same_tool_run: int = 0
     nudged: bool = False
     seen_artifacts: list = field(default_factory=list)
     stuck_at: int = 0
@@ -506,6 +509,17 @@ class ProgressTracker:
             if self.unchanged >= self.stall_steps:
                 return self._stall(step, "no_progress")
         self.last_fp = fp
+        # #705 P1: one step = one assistant message, so a parallel batch (4x generate_image) counts once;
+        # a step that lands a new artifact (shape / job id) is progress and resets the run.
+        tools = {o.tool for o in obs if o.tool not in READ_ONLY_TOOLS}
+        step_tool = next(iter(tools)) if len(tools) == 1 else ""
+        if new_ids or not step_tool:
+            self.same_tool_run = 0
+        else:
+            self.same_tool_run = self.same_tool_run + 1 if step_tool == self.last_tool else 1
+        self.last_tool = step_tool
+        if self.same_tool_run > self.same_tool_max:
+            return self._stall(step, "same_tool")
         return None
 
     def _stall(self, step: int, sub: str) -> str:
@@ -514,7 +528,7 @@ class ProgressTracker:
 
     def reset_after_nudge(self) -> None:
         self.nudged = True
-        self.unchanged = self.readonly_run = self.fail_run = self.repeat_run = 0
+        self.unchanged = self.readonly_run = self.fail_run = self.repeat_run = self.same_tool_run = 0
         self.last_call = ""
 
     def snapshot(self) -> dict:
