@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { AssistantBlocks } from '../../../src/ui/ChatMessage'
 import { TOOL_LABELS } from '../../../src/bot'
 import { wsErrorText } from '../../../src/wsErrors'
+import { withTopUpLink } from '../../../src/shapes/GeneratorShape'
 import { setLang, t } from '../i18n_stub'
 
 const q = new URLSearchParams(location.search)
@@ -24,8 +25,13 @@ const m: any = {
     ...(q.get('code') ? [{ type: 'text', text: `\n\n${lang === 'zh' ? '普通代码：' : 'Plain code: '}\`${q.get('code')}\`` }] : []),
   ],
 }
-createRoot(document.getElementById('root')!).render(
-  <div className="ca-root" style={{ width: 520, padding: 16, background: 'var(--ca-bg)' }}>
+const width = Number(q.get('w')) || 520  // #715: narrow (360px) long-id shots
+createRoot(document.getElementById('root')!).render(q.get('surface') === 'card'
+  // #715: the canvas generator card's error overlay (same markup as GeneratorShape)
+  ? <div className="ca-root" style={{ width, padding: 16, background: 'var(--ca-bg)', ...(q.get('w') ? { boxSizing: 'border-box' as const } : {}) }}>
+      <div className="ca-gen-card" data-testid="ws-card" style={{ width: width - 32, height: 200 }}>
+        <div className="ca-gen-card__error" role="alert" data-testid="ws-failure">{withTopUpLink(msg)}</div></div></div>
+  : <div className="ca-root" style={{ width, padding: 16, background: 'var(--ca-bg)', ...(q.get('w') ? { boxSizing: 'border-box' as const } : {}) }}>
     <div className="ca-chat"><div className="ca-chat__bot" id="ours" data-testid="ws-failure"><AssistantBlocks editor={null as any} m={m} /></div></div>
   </div>)
 ;(globalThis as any).__ready = true
