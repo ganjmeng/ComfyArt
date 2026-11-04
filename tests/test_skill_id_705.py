@@ -71,3 +71,16 @@ def test_tracker_same_tool_reset_by_artifacts_other_tool_or_parallel_batch() -> 
     t = ProgressTracker()  # one step with 4 parallel generate_image calls counts once
     batch = [StepObservation("generate_image", f"g{k}", json.dumps({"id": f"job:{k}"})) for k in range(4)]
     assert t.observe(1, batch) is None
+
+
+def test_tracker_budget_cap_tool_calls_and_generate_image() -> None:
+    from ComfyArt.bot.run_budget import DEFAULT_PLANNED_IMAGES
+    t = ProgressTracker()
+    assert t.gen_cap() == DEFAULT_PLANNED_IMAGES + 2 == 6
+    # every step lands a NEW image (so no_progress/same_tool never fire) but never finishes
+    hits = [t.over_budget([StepObservation("generate_image", f"g{i}", json.dumps({"id": f"shape:{i}"}))]) for i in range(1, 8)]
+    assert hits == [False] * 6 + [True]
+    t = ProgressTracker(planned_images=1)
+    assert [t.over_budget(_obs("generate_image", i)) for i in range(1, 5)] == [False, False, False, True]
+    t = ProgressTracker()
+    assert [t.over_budget(_obs("add_text", i)) for i in range(1, 32)] == [False] * 30 + [True]

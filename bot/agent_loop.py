@@ -70,9 +70,9 @@ _DIM = {"zh": {"tokens": "token ", "credits": "积分", "time": "时长"},
 NON_RETRYABLE_MARK = "[non-retryable]"  # #705: keep in sync with SKILL_NON_RETRYABLE (src/skills.ts)
 _STALL_LABEL = {
     "zh": {"no_progress": "连续多步没有新产出", "repeat": "同一调用反复出现", "tool_error": "工具连续失败",
-           "readonly_limit": "连续只读步骤过多", "same_tool": "同一工具连续调用超过 3 次", "non_retryable": "工具返回不可重试的错误", "self_check_failed": "结果未通过自检"},
+           "readonly_limit": "连续只读步骤过多", "same_tool": "同一工具连续调用超过 3 次", "non_retryable": "工具返回不可重试的错误", "budget": "超过单次运行的工具调用上限", "self_check_failed": "结果未通过自检"},
     "en": {"no_progress": "no new output for several steps", "repeat": "the same call repeated",
-           "tool_error": "tool failed repeatedly", "readonly_limit": "too many read-only steps in a row", "same_tool": "the same tool was called more than 3 times in a row", "non_retryable": "a tool returned a non-retryable error",
+           "tool_error": "tool failed repeatedly", "readonly_limit": "too many read-only steps in a row", "same_tool": "the same tool was called more than 3 times in a row", "non_retryable": "a tool returned a non-retryable error", "budget": "the run hit its tool-call cap",
            "self_check_failed": "the result failed the self-check"},
 }
 _SELF_CHECK_NUDGE = {
@@ -546,6 +546,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         elif prev == "stuck":         # a fresh progress window (and one more nudge) for the user's retry
             tracker = ProgressTracker(policy["stall_steps"], policy["readonly_max"], policy["tool_fail_max"],
                                       policy["repeat_max"], seen_artifacts=tracker.seen_artifacts)
+            tracker.tool_calls_max = int(policy["max_tool_calls"])  # #705
         ctx = RunContext(run_id=resumed["id"], store=store, lease_owner=lease_owner, policy=policy, budget=budget,
                          tracker=tracker, mode=turn.run_mode or resumed["mode"], goal=resumed["goal"], lang=st.get("lang") or lang,
                          owner_id=resumed["owner_id"], workspace_id=resumed["workspace_id"],
@@ -566,6 +567,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         budget = RunBudget(limits, k=k, soft_fraction=policy["soft_fraction"], clock=clock)
         tracker = ProgressTracker(policy["stall_steps"], policy["readonly_max"], policy["tool_fail_max"],
                                   policy["repeat_max"])
+        tracker.tool_calls_max = int(policy["max_tool_calls"])  # #705
         run_id = f"run-{uuid.uuid4().hex[:16]}"
         ctx = RunContext(run_id=run_id, store=store, lease_owner=lease_owner, policy=policy, budget=budget,
                          tracker=tracker, mode=turn.run_mode or "interactive", goal=turn.user_text, lang=lang,
@@ -818,6 +820,10 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             if fatal is not None:  # #705: never let the model retry a call the tool says cannot succeed
                 _log.warning("[ComfyArt/agent] run %s non-retryable %s error, stopping", ctx.run_id, fatal.tool)
                 return await finish(Stop(StopReason.STUCK, "non_retryable", step=ctx.budget.used.steps))
+            if ctx.tracker.over_budget(obs):  # #705: hard cap, no nudge (e.g. every step a new image, never done)
+                _log.warning("[ComfyArt/agent] run %s over budget: %d calls, %d generate_image (cap %d/%d)", ctx.run_id,
+                             ctx.tracker.total_calls, ctx.tracker.gen_calls, ctx.tracker.tool_calls_max, ctx.tracker.gen_cap())
+                return await finish(Stop(StopReason.STUCK, "budget", step=ctx.budget.used.steps))
             stall = ctx.tracker.observe(ctx.budget.used.steps, obs, canvas_fp="|".join(ctx.artifacts[-200:]))
             if stall:
                 if not ctx.tracker.nudged and stall != "same_tool":

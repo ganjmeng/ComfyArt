@@ -46,7 +46,7 @@ class StopReason(str, Enum):
 SUB_REASONS: dict[StopReason, frozenset[str]] = {
     StopReason.DONE: frozenset({""}),
     StopReason.BUDGET: frozenset({"paused", "exhausted", "unattended_skipped"}),
-    StopReason.STUCK: frozenset({"no_progress", "repeat", "tool_error", "readonly_limit", "self_check_failed", "same_tool", "non_retryable"}),
+    StopReason.STUCK: frozenset({"no_progress", "repeat", "tool_error", "readonly_limit", "self_check_failed", "same_tool", "non_retryable", "budget"}),
     StopReason.HARD_CAP: frozenset({""}),
     StopReason.USER_STOP: frozenset({"", "quote_declined"}),
     StopReason.AWAITING_CONFIRM: frozenset({"not_approved"}),
@@ -91,6 +91,7 @@ LEGACY_MAX_STEPS_ENV = "COMFYART_AGENT_MAX_STEPS"
 SYSTEM_DEFAULTS: dict[str, Any] = {
     FEATURE_FLAG: True,
     "hard_cap_steps": 300,
+    "max_tool_calls": 30,           # #705: total tool calls per run (generate_image: planned images + 2)
     "token_window_multiple": 40,    # per-run token cap = 40 x model window; every request's re-sent input counts
     "wall_time_s": 15 * 60,
     "credits_usd": 5.0,             # paid ceiling per run; every paid call is also capped by its quote
@@ -452,6 +453,9 @@ class StepObservation:
     failed: bool = False
 
 
+DEFAULT_PLANNED_IMAGES = 4  # generate_image page clamp (plan_quote.units_of)
+
+
 @dataclass
 class ProgressTracker:
     stall_steps: int = 4
@@ -465,6 +469,12 @@ class ProgressTracker:
     last_call: str = ""
     repeat_run: int = 0
     same_tool_max: int = 3   # #705 P1: >3 consecutive steps calling only the same tool = hard stop
+    # #705 total budget cap (tech lead): <= 30 tool calls per run; generate_image calls <= planned images + 2.
+    # No per-run plan count exists yet and skills declare none, so planned falls back to the page's max batch (4).
+    tool_calls_max: int = 30
+    planned_images: int = 0
+    total_calls: int = 0
+    gen_calls: int = 0
     last_tool: str = ""
     same_tool_run: int = 0
     nudged: bool = False
@@ -525,6 +535,15 @@ class ProgressTracker:
     def _stall(self, step: int, sub: str) -> str:
         self.stuck_at = step
         return sub
+
+    def gen_cap(self) -> int:
+        return (self.planned_images or DEFAULT_PLANNED_IMAGES) + 2
+
+    def over_budget(self, obs: list[StepObservation]) -> bool:
+        """#705: count this step's calls; True once the run exceeds the tool-call or generate_image cap (never reset)."""
+        self.total_calls += len(obs)
+        self.gen_calls += sum(1 for o in obs if o.tool == "generate_image")
+        return self.total_calls > self.tool_calls_max or self.gen_calls > self.gen_cap()
 
     def reset_after_nudge(self) -> None:
         self.nudged = True
