@@ -18,7 +18,7 @@ import pytest
 
 from conftest import write_settings
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401  (fixtures)
-from test_skills_hide_673 import COPY, HIDDEN, MAIN_ORDER_40
+from test_skills_hide_673 import COPY, HIDDEN, LISTED_ORDER
 
 pw = pytest.importorskip("playwright.async_api")
 ROOT = Path(__file__).resolve().parent.parent
@@ -110,7 +110,7 @@ async def test_live_home_and_skills_regression_20(app_url, lang, theme):  # noqa
         await pg.get_by_test_id("skills-wall").wait_for()
         await pg.wait_for_timeout(400)
         wall = [await c.get_attribute("data-skill") for c in await pg.locator('[data-testid="skills-wall"] [data-testid="skills-wall-card"]').all()]
-        assert wall == MAIN_ORDER_40, wall
+        assert wall == LISTED_ORDER, wall
         assert [s for s in wall if s in HARDLOCK_20] == HARDLOCK_20  # hard-lock 20: all present, table order
         assert not set(wall) & set(HIDDEN)
         await _shot(pg, f"skills-{lang}-{theme}")
@@ -149,7 +149,8 @@ async def _assert_template_label(pg, dlg, lang):
 
 # hard-lock table: source = #640 (locked 11-02); PHASE3-HARDEN-DIFF.md was never committed: category per id → Skills chip counts
 HARDLOCK_CHIP = {"ecommerce": 7, "branding": 2, "social": 4, "website": 3, "ads": 4}
-WALL_CHIP_TOTAL = {"forYou": 40, "ecommerce": 13, "branding": 5, "social": 5, "website": 5, "ads": 10}
+# #673 unhide: C-group 5 back on the wall ; totals = byChip of the listed set
+WALL_CHIP_TOTAL = {"forYou": 45, "ecommerce": 14, "branding": 6, "social": 6, "website": 6, "ads": 11}
 
 
 async def _ids(pg, sel):
