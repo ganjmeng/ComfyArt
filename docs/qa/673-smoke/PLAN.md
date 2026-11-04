@@ -37,6 +37,7 @@ prompt = 用户输入 + 换行 + 所选 preset 的 Style 句（原文见 `src/sk
 2. 图片能下载并解码（PIL 打开），在画布/composer 正常显示（本地构建 app 截图核对）。
 3. 输出尺寸 = 上表尺寸（或同比例，误差 ≤1%）。
 4. RapidOCR 不出现 Lovart 金标文字（对照 docs/design/673/gold 的 OCR 词表）；只允许 prompt 里引号内的文案。
+   - Angela 22:59 定：平台/购物节词（双11/双十一、天猫、淘宝、抖音、京东、618）允许出现，不算金标；只有金标品牌名和金标特有营销文案算失败。
 5. 产物落在画布 frame 上，composer 回显 skill 与 prompt。
 6. 余额差 − 各 turn 记录的 LLM 估算费 = 各张 quote 之和（误差 ≤$0.001）；图片总计不超过 $0.8（LLM 费单列，不计入）。
 
