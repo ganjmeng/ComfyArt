@@ -6,3 +6,10 @@ running total 0.0378 / 0.50
 running total 0.0378 / 0.50; balance 44.134249
 2026-11-04 22:43 CST  social ex02 pilot (base64)  id c5333e1dc6114370a98a4c9f8d7a5474  before 44.134249  after 44.096449  cost 0.0378  ok
 running total 0.0756 / 0.50 (2 of 12 calls). PAUSED for design PASS on ex02 pilot. CDN probing stopped.
+2026-11-04 22:48 CST  scope: social ex01 regen + ex03-05, character ex01 PILOT only (ex02-06 held for design PASS). pre-check $0.0378/call.
+2026-11-04 22:48 CST  social ex01  id 384a284655e64cb1b5450107cffabf6c  before 44.096449 after 44.058649 cost 0.0378 ok (base64)
+2026-11-04 22:49 CST  social ex03  id dda876b76dc44d468be2acb78b1b7c83  before 44.058649 after 44.020849 cost 0.0378 ok
+2026-11-04 22:50 CST  social ex04  id e8e8d2f0d7174d15a0f7802c36845dbb  before 44.020849 after 43.983049 cost 0.0378 ok
+2026-11-04 22:51 CST  social ex05  id 97a15490d28f4b73888aae3b059b2593  before 43.983049 after 43.945249 cost 0.0378 ok
+2026-11-04 22:51 CST  character ex01 PILOT  id 48ac50dd4ec642b8bbbdc2efb1047502  before 43.945249 after 43.907449 cost 0.0378 ok
+running total 0.2646 / 0.50 (7 calls, 6 ok, 0 retries); balance 43.907449. STOPPED: character ex02-06 wait for design PASS on ex01 pilot (5 x 0.0378 = 0.189 -> projected 0.4536, 1 retry fits).
