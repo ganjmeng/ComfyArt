@@ -476,7 +476,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     presets: [P('loop', '短循环', 'Short loop', 'Style: animated poster short loop, type locked, subtle motion, poster hierarchy.'), P('punch', '节奏海报', 'Punchy poster', 'Style: punchy animated poster, short beats, high contrast, readable title.')],
     inputs: NEARMISS_INPUTS },
   { id: 'pose-fission', name: t('skills.poseFission'), instructions: 'You are a production ecommerce pose-fission artist. Keep scene, character and lighting; explode poses — opposite of person-swap (which changes person/outfit and keeps pose).\n1) Intake: require baseImage; lock background, light and identity.\n2) Fission: generate multiple poses of the same character in the same scene.\n3) Guardrails: no identity swap, no background rewrite, no outfit redesign unless asked.\n4) Division: multi-pose same scene — leave triple-ref person/outfit swap to person-swap.\n5) Refs: pass base shape id in refs on every generate_image call.',
-    category: 'ecommerce', cover: cover643('pose-fission'), examples: ex643('pose-fission', [1, 2, 3, 4], '4e420c3207526d9b9c4f626dc6209f8255f7357e'), featured: [],
+    category: 'ecommerce', cover: cover643('pose-fission'), examples: ex643('pose-fission', [1, 2, 3, 4], '48f1d942e90d8f5106c771f35b0c658a48a667c0'), featured: [],
     presets: [P('stand', '站姿裂变', 'Standing set', 'Style: same-scene pose fission, standing variations, light and background locked.'), P('sit', '坐姿裂变', 'Seated set', 'Style: same-scene pose fission, seated variations, identity and light locked.'), P('gesture', '手势裂变', 'Gesture set', 'Style: same-scene pose fission, hand/gesture variations, background locked.')],
     inputs: NEARMISS_INPUTS },
   { id: 'live-promo-decor', name: t('skills.livePromoDecor'), instructions: 'You are a production live-commerce decor designer. Ship overlay packs (bg, stickers, price tags, badges) — not a big-promo KV hero.\n1) Brief: category, offer and overlay needs from liveBrief + refs.\n2) Pack: background, lower-thirds, price tags and corner badges that stack cleanly.\n3) Division: live decor kit — leave campaign KV heroes to promo-ecommerce.\n4) Copy: price/CTA text in quotes; high contrast on stream.\n5) Refs: pass refs in refs on every generate_image call.',
@@ -724,6 +724,9 @@ export function skillEditToolHint(skill: Pick<Skill, 'id' | 'name'>): string {
 /** The agent `skill` tool (#463). Skills are addressed by `id` when given: "Edit in chat" passes the id and a save with
  *  an id updates exactly that skill. A save by name updates the one custom skill with that name; when the name is
  *  ambiguous (duplicates from import) or new, a new skill is created and no existing one is touched. */
+/** #705: marker the agent loop treats as a hard stop (bot/agent_loop.py NON_RETRYABLE_MARK). */
+export const SKILL_NON_RETRYABLE = '[non-retryable]'
+
 export async function skillTool(args: Record<string, unknown>): Promise<unknown> {
   const skills = await loadSkills()
   if (args.action === 'list') return { skills: skills.map((s) => ({ id: s.id, name: s.name, description: s.description ?? '', custom: !!s.custom })) }
@@ -749,6 +752,10 @@ export async function skillTool(args: Record<string, unknown>): Promise<unknown>
     return { saved: name, id: skill.id, description: description ?? '' }
   }
   if (args.action !== 'read') throw new Error('action must be list, read or save')
+  // #705: an empty read used to fall through to `unknown skill undefined` and the agent retried it in a loop.
+  if (!id && !(typeof args.name === 'string' && args.name.trim())) {
+    throw new Error(`${SKILL_NON_RETRYABLE} skill read needs a non-empty id or name (e.g. id="linkedin-banner"); do not retry this call — use action="list" for ids`)
+  }
   const skill = id ? skills.find((s) => s.id === id) : skills.find((s) => s.name === args.name)
   if (!skill) throw new Error(`unknown skill ${JSON.stringify(id || args.name)} — available: ${skills.map((s) => `${s.name} (${s.id})`).join(', ')}`)
   if (args.path) {
