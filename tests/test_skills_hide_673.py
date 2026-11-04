@@ -17,17 +17,17 @@ ROOT = Path(__file__).resolve().parents[1]
 needs_node = pytest.mark.skipif(not (ROOT / "node_modules/.bin/rolldown").exists() or not shutil.which("node"),
                                 reason="needs node + npm install")
 
-HIDDEN = ["ppt-visual", "promo-ecommerce",
+HIDDEN = ["promo-ecommerce",
           "yingzao", "crt-interface", "crayon-sketch", "fabric-collage"]
 # Listed order (main eb0d60b1 order minus HIDDEN). Re-listing a skill (#673 unhide) inserts it here and drops it from HIDDEN.
 LISTED_ORDER = [
     "product", "multi-angle", "brand", "character", "logo-material", "packaging", "motion", "meta-ads", "poster",
     "thumbnail", "mobile-ui", "social", "marketing-campaign", "web-product", "banner", "flash-cut-video",
     "style-transfer", "person-swap", "commerce-strategist", "lifestyle-scene", "naive-illustration", "logo-abstract",
-    "photo-split-poster", "taobao-product", "before-after", "anim-2d", "creator-identity", "product-website",
-    "studio-model", "youtube-channel-banner", "ai-model", "product-to-packaging", "game-art", "portrait-studio",
-    "premium-website", "animated-poster", "pose-fission", "live-promo-decor", "linkedin-banner", "logo-animation",
-    "restaurant-website", "clothing-swap", "interior",
+    "photo-split-poster", "ppt-visual", "taobao-product", "before-after", "anim-2d", "creator-identity",
+    "product-website", "studio-model", "youtube-channel-banner", "ai-model", "product-to-packaging", "game-art",
+    "portrait-studio", "premium-website", "animated-poster", "pose-fission", "live-promo-decor", "linkedin-banner",
+    "logo-animation", "restaurant-website", "clothing-swap", "interior",
 ]
 
 
