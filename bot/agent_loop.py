@@ -353,11 +353,11 @@ def _remaining_steps(ctx: RunContext) -> int:
 CARD_COPY = {
     "done": {"zh": ("已完成", "生成了 {n} 张，已放到画布上", None, None),
              "en": ("Done", "Made {n}, placed on the canvas", None, None)},
-    "budget": {"zh": ("预算用完了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续", "先到这里"),
-               "en": ("Budget used up", "{n}/{m} done; continuing needs about {x} credits", "Continue",
+    "budget": {"zh": ("预算用完了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续生成", "先到这里"),
+               "en": ("Budget used up", "{n}/{m} done; continuing needs about {x} credits", "Continue generating",
                       "Stop here")},
-    "hard_cap": {"zh": ("先停在这里了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续", "先到这里"),
-                 "en": ("Paused here for now", "{n}/{m} done; continuing needs about {x} credits", "Continue",
+    "hard_cap": {"zh": ("先停在这里了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续生成", "先到这里"),
+                 "en": ("Paused here for now", "{n}/{m} done; continuing needs about {x} credits", "Continue generating",
                         "Stop here")},
     "stuck": {"zh": ("卡住了", "卡在：{step}", "换个说法再试", None),
               "en": ("Stuck", "Stuck at: {step}", "Try rephrasing", None)},
@@ -383,10 +383,38 @@ PENDING_CONFIRM_LABEL = {"zh": "等待确认", "en": "Awaiting confirmation"}
 _PRIMARY_ACTION = {"stuck": "rephrase", "error": "retry"}
 # #709: every paused card names WHY it paused (one plain line) and stuck cards also offer 继续, which resumes
 # the same run from its checkpoint (agent_loop resume: fresh progress window for stuck, +1 budget for budget).
-_BUDGET_REASON = {"zh": {"tokens": "模型用量达到本次上限", "credits": "积分达到本次上限", "time": "用时达到本次上限"},
-                  "en": {"tokens": "model usage reached this run's limit", "credits": "credits reached this run's limit",
-                         "time": "time reached this run's limit"}}
-_CONTINUE_LABEL = {"zh": "继续", "en": "Continue"}
+# #709 UIUX: the card's reason is a plain sentence (never stuck:* / budget:* codes).
+_STUCK_REASON = {
+    "zh": {"no_progress": "连续几步都没有新产出，自动暂停", "repeat": "同一个操作反复出现，自动暂停",
+           "tool_error": "工具连续出错，自动暂停", "readonly_limit": "连续多步只在查看、没有生成，自动暂停",
+           "same_tool": "同一个工具连续用了 3 次以上，自动暂停", "non_retryable": "工具返回了无法重试的错误，已暂停",
+           "budget": "生成和工具调用次数到了本次上限，自动暂停",
+           "timeout": "等待生成结果超过 10 分钟（或已查询 120 次），自动暂停"},
+    "en": {"no_progress": "No new output for several steps, paused automatically",
+           "repeat": "The same action kept repeating, paused automatically",
+           "tool_error": "A tool failed several times in a row, paused automatically",
+           "readonly_limit": "Several steps only looked and made nothing, paused automatically",
+           "same_tool": "The same tool ran more than 3 times in a row, paused automatically",
+           "non_retryable": "A tool returned an error that can't be retried, paused",
+           "budget": "Generation and tool calls reached this run's limit, paused automatically",
+           "timeout": "Waited over 10 minutes (or 120 checks) for a result, paused automatically"},
+}
+_CONTINUE_LABEL = {"zh": "继续生成", "en": "Continue generating"}
+
+
+def _budget_reason(ctx: "RunContext", dim: str, lk: str) -> str:
+    """#709 UIUX: one plain sentence with the run's real numbers; never an internal code."""
+    u = ctx.budget.used
+    if dim == "time":
+        mins = max(1, int(round(u.wall_s / 60)))
+        return f"已运行 {mins} 分钟，自动暂停" if lk == "zh" else f"Ran for {mins} min, paused automatically"
+    if dim == "credits":
+        c = ui_credits(u.credits)
+        return f"已用 {c} 积分，自动暂停" if lk == "zh" else f"Used {c} credits, paused automatically"
+    if dim == "tokens":
+        t = _fmt_tokens(u.tokens)
+        return f"模型用量已达 {t}，自动暂停" if lk == "zh" else f"Model usage reached {t}, paused automatically"
+    return "已自动暂停" if lk == "zh" else "Paused automatically"
 
 
 # 「详情」 token line label: ONE copy key, design picks the final Chinese word (placeholder 用量).
@@ -516,10 +544,10 @@ def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: i
                                       reason=(reason[0] if reason else "")[:160]),
                    "primary": primary, "secondary": secondary}
         if stop.reason == StopReason.BUDGET:
-            out[lk]["reason"] = _BUDGET_REASON[lk].get(stop.dimension, "")
+            out[lk]["reason"] = _budget_reason(ctx, stop.dimension, lk)
         elif stop.reason == StopReason.STUCK:
-            out[lk]["reason"] = _STALL_LABEL[lk].get(stop.sub, "")
-            if primary != _CONTINUE_LABEL[lk]:
+            out[lk]["reason"] = _STUCK_REASON[lk].get(stop.sub, "已自动暂停" if lk == "zh" else "Paused automatically")
+            if primary not in ("继续", "Continue"):
                 out[lk]["continue"] = _CONTINUE_LABEL[lk]
     return out
 

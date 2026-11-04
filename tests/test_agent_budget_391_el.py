@@ -187,8 +187,8 @@ def test_stop_enum_is_locked():
 
 LOCKED = {
     "done": ("已完成", "生成了 {n} 张，已放到画布上", None, None),
-    "budget": ("预算用完了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续", "先到这里"),
-    "hard_cap": ("先停在这里了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续", "先到这里"),
+    "budget": ("预算用完了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续生成", "先到这里"),
+    "hard_cap": ("先停在这里了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续生成", "先到这里"),
     "stuck": ("卡住了", "卡在：{step}", "换个说法再试", None),
     "stuck:self_check_failed": ("结果未通过自检", "已交付 {n} 张，还差：{miss}", "继续", None),
     "user_stop": ("已停止", "已保留生成的 {n} 张", "继续", None),
@@ -273,8 +273,8 @@ async def test_no_estimate_means_no_credits_sentence_and_keeps_both_buttons(monk
     res, ev = await r.send("画 4 张猫")
     c = card(ev)["copy"]
     assert c["zh"]["body"] == "已完成 0/4" and "积分" not in c["zh"]["body"] and "credits" not in c["en"]["body"]
-    assert (c["zh"]["primary"], c["zh"]["secondary"]) == ("继续", "先到这里")
-    assert (c["en"]["primary"], c["en"]["secondary"]) == ("Continue", "Stop here")
+    assert (c["zh"]["primary"], c["zh"]["secondary"]) == ("继续生成", "先到这里")
+    assert (c["en"]["primary"], c["en"]["secondary"]) == ("Continue generating", "Stop here")
 
 
 async def test_real_estimate_keeps_the_locked_sentence(monkeypatch, store):
@@ -283,7 +283,7 @@ async def test_real_estimate_keeps_the_locked_sentence(monkeypatch, store):
     res, ev = await r.send("画 4 张猫")
     c = card(ev)["copy"]["zh"]
     assert re.fullmatch(r"已完成 \d/4，继续大约需要 [1-9]\d* 积分", c["body"]), c["body"]
-    assert (c["primary"], c["secondary"]) == ("继续", "先到这里")
+    assert (c["primary"], c["secondary"]) == ("继续生成", "先到这里")
 
 
 async def test_no_image_target_budget_card_asks(monkeypatch, store):
@@ -293,7 +293,7 @@ async def test_no_image_target_budget_card_asks(monkeypatch, store):
     zh = card(ev)["copy"]["zh"]["body"]
     assert zh == "预算到了，要继续吗？" and "/" not in zh
     c = card(ev)["copy"]["zh"]
-    assert (c["primary"], c["secondary"]) == ("继续", "先到这里")
+    assert (c["primary"], c["secondary"]) == ("继续生成", "先到这里")
 
 
 async def test_chat_done_body_is_neutral(monkeypatch, store):
