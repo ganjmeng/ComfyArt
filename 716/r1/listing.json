@@ -1,0 +1,41 @@
+{
+  "pr": 716,
+  "tip": "dd99b256",
+  "files": [
+    {
+      "name": "compare_posepro.jpg",
+      "bytes": 381382,
+      "sha256_16": "7c98789b5ce14868"
+    },
+    {
+      "name": "face_crops_posepro.jpg",
+      "bytes": 227896,
+      "sha256_16": "61e9c83a4a00683e"
+    },
+    {
+      "name": "pro_01.jpg",
+      "bytes": 821157,
+      "sha256_16": "b53fa86597dee739"
+    },
+    {
+      "name": "pro_02.jpg",
+      "bytes": 667499,
+      "sha256_16": "7b83525f3112689d"
+    },
+    {
+      "name": "pro_03.jpg",
+      "bytes": 785749,
+      "sha256_16": "39668d0d04d973aa"
+    },
+    {
+      "name": "pro_04.jpg",
+      "bytes": 799206,
+      "sha256_16": "70d44acc7984ce7a"
+    },
+    {
+      "name": "ref_single.jpg",
+      "bytes": 209088,
+      "sha256_16": "9b44ba5d17285d01"
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "pr": 726,
+  "tip": "c5dd6239",
+  "files": [
+    {
+      "name": "lr-12-right-pane-lovart-vs-ours-en-light.png",
+      "bytes": 242128,
+      "sha256_16": "2cac85ae7cf8e1f7"
+    },
+    {
+      "name": "lr-motion-lovart-vs-ours-en-light.png",
+      "bytes": 554586,
+      "sha256_16": "0a15fbbc4cbc8372"
+    },
+    {
+      "name": "skill-fields-banner-en-dark.png",
+      "bytes": 658800,
+      "sha256_16": "6c2e6e928709fe11"
+    },
+    {
+      "name": "skill-fields-banner-zh-light.png",
+      "bytes": 651080,
+      "sha256_16": "8d36eb7dc7d09687"
+    },
+    {
+      "name": "skill-fields-brand-en-dark.png",
+      "bytes": 298089,
+      "sha256_16": "0eeb4fb3b74d4318"
+    },
+    {
+      "name": "skill-fields-brand-zh-light.png",
+      "bytes": 293251,
+      "sha256_16": "b9473c66525f961b"
+    },
+    {
+      "name": "skill-fields-character-en-dark.png",
+      "bytes": 468178,
+      "sha256_16": "41b48c5885fc1200"
+    },
+    {
+      "name": "skill-fields-character-zh-light.png",
+      "bytes": 464785,
+      "sha256_16": "fbed9af4443c9d84"
+    },
+    {
+      "name": "skill-fields-interior-en-dark.png",
+      "bytes": 432881,
+      "sha256_16": "639a5ebe5ffb8425"
+    },
+    {
+      "name": "skill-fields-interior-zh-light.png",
+      "bytes": 431097,
+      "sha256_16": "9b4120a1ea7620d4"
+    },
+    {
+      "name": "skill-fields-logo-material-en-dark.png",
+      "bytes": 276842,
+      "sha256_16": "0adb32c9926ae1ec"
+    },
+    {
+      "name": "skill-fields-logo-material-zh-light.png",
+      "bytes": 273899,
+      "sha256_16": "8d6536d1170db6c9"
+    },
+    {
+      "name": "skill-fields-marketing-campaign-en-dark.png",
+      "bytes": 498733,
+      "sha256_16": "e68537d15474e275"
+    },
+    {
+      "name": "skill-fields-marketing-campaign-zh-light.png",
+      "bytes": 490216,
+      "sha256_16": "4e0a8c7de949dd1f"
+    },
+    {
+      "name": "skill-fields-meta-ads-en-dark.png",
+      "bytes": 625689,
+      "sha256_16": "d133de1a93b3efd7"
+    },
+    {
+      "name": "skill-fields-meta-ads-zh-light.png",
+      "bytes": 627605,
+      "sha256_16": "ac1f1688000164ec"
+    },
+    {
+      "name": "skill-fields-mobile-ui-en-dark.png",
+      "bytes": 230407,
+      "sha256_16": "0016385e03b62283"
+    },
+    {
+      "name": "skill-fields-mobile-ui-zh-light.png",
+      "bytes": 227154,
+      "sha256_16": "9ce59c56213753ec"
+    },
+    {
+      "name": "skill-fields-motion-after-start-zh-light.png",
+      "bytes": 362943,
+      "sha256_16": "f9efbfb87fe953e5"
+    },
+    {
+      "name": "skill-fields-motion-en-dark.png",
+      "bytes": 415107,
+      "sha256_16": "1316b496d904d666"
+    },
+    {
+      "name": "skill-fields-motion-real-mp4-upload-en-light.png",
+      "bytes": 400899,
+      "sha256_16": "2872aa85d2831e39"
+    },
+    {
+      "name": "skill-fields-motion-zh-light.png",
+      "bytes": 404599,
+      "sha256_16": "1ac0149041e4c2dc"
+    },
+    {
+      "name": "skill-fields-packaging-en-dark.png",
+      "bytes": 380411,
+      "sha256_16": "dd3b09412f37e508"
+    },
+    {
+      "name": "skill-fields-packaging-zh-light.png",
+      "bytes": 377928,
+      "sha256_16": "8d69d4cf1e951b19"
+    },
+    {
+      "name": "skill-fields-poster-en-dark.png",
+      "bytes": 454639,
+      "sha256_16": "3fbe508e9d4d73a0"
+    },
+    {
+      "name": "skill-fields-poster-zh-light.png",
+      "bytes": 449582,
+      "sha256_16": "67516fee4c32086d"
+    },
+    {
+      "name": "skill-fields-social-en-dark.png",
+      "bytes": 453396,
+      "sha256_16": "b899d1eeea029551"
+    },
+    {
+      "name": "skill-fields-social-zh-light.png",
+      "bytes": 450259,
+      "sha256_16": "aff8226b6a612085"
+    },
+    {
+      "name": "skill-fields-web-product-en-dark.png",
+      "bytes": 500405,
+      "sha256_16": "92ddeec88e693b4e"
+    },
+    {
+      "name": "skill-fields-web-product-zh-light.png",
+      "bytes": 493044,
+      "sha256_16": "00e7cdd3fc989914"
+    }
+  ]
+}
