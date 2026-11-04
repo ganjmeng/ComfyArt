@@ -3,8 +3,8 @@ import numpy as np
 B='/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc';R='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 im=Image.open('tb_base.png').convert('RGB')
 # soft scrim over the hero top (covers the pre-clean smear)
-a=np.array(im).astype(float);m=np.zeros(a.shape[:2]);m[110:340,930:1500]=1
-m=np.array(Image.fromarray((m*255).astype('uint8')).filter(ImageFilter.GaussianBlur(45))).astype(float)/255
+a=np.array(im).astype(float);m=np.zeros(a.shape[:2]);m[80:370,890:1540]=1
+m=np.array(Image.fromarray((m*255).astype('uint8')).filter(ImageFilter.GaussianBlur(95))).astype(float)/255
 blur=np.array(im.filter(ImageFilter.GaussianBlur(18))).astype(float)*0.55
 a=a*(1-m[...,None])+blur*m[...,None];im=Image.fromarray(a.astype('uint8'))
 d=ImageDraw.Draw(im);cx=1215
