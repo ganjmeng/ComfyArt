@@ -1,3 +1,4 @@
+# SUPERSEDED step 2 (gold cookie pixels) by p6_fix2.py per tech-lead wash ruling: top-left cookie now comes from our own washed promo-ex01.webp chocolate cookie (2270,1836), not gold.
 # poster6 only: restore a complete domed top-left cookie from gold pixels (cookie only, no gold copy), mirror-clone soft cookie edges
 import numpy as np,cv2;from PIL import Image
 a=np.array(Image.open('promo_ex01_fixed.png').convert('RGB')).astype(np.float32);g=np.array(Image.open('gold_ex01.png').convert('RGB'))
