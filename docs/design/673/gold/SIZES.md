@@ -88,3 +88,10 @@
 - naive-illustration、logo-abstract、ppt 封面、promo ex04 与金图的差异 <3：**不是洗过的图，是金图原样缩小**（连 JIANYUE、飞行员猫、LENO/LUMVEX 都在）。#636 的 soft wash 在这几张上等于没洗。
 - 我们所有的图都比金图分辨率低（金图 1254–2560px，我们 768–1360px；logo 例图只有 8–21KB）。
 - photo-split-poster 的金图要重抓。
+
+### photo-split-poster（金图 v2 = Lovart「half-collage-poster」，ex01 与弹框里的「丰收」海报一致）
+
+| 我们的 | 尺寸 | 字节 | 最接近金图 | 金图尺寸 | 金图字节 | 差异 | 低于金图 |
+|---|---|---|---|---|---|---|---|
+| cover.webp | 924x692 | 37552 | cover.png | 2016x1344 | 3800016 | 11.0（裁切后的同一张，肉眼未洗） | ⚠️ 是 |
+| examples_01.webp | 880x1184 | 185428 | ex01.webp | 1200x1600 | 420944 | 2.6 | ⚠️ 是 |
