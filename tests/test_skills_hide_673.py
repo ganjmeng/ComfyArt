@@ -78,7 +78,7 @@ def test_agent_list_excludes_hidden_and_keeps_order() -> None:
 def test_agent_read_of_hidden_is_not_available_non_retryable(sid) -> None:
     for how in ("byId", "byName"):
         err = report()["hiddenReads"][sid][how]["error"]
-        assert err.startswith("[non-retryable]") and "is not available" in err, err
+        assert err == "[non-retryable] " + COPY["zh"], err  # user-facing copy only
 
 
 @needs_node
@@ -95,6 +95,63 @@ def test_saved_session_or_card_still_resolves_hidden_by_id(sid) -> None:
     res = report()["resolved"][sid]
     assert "error" not in res, res
     assert res["found"] is True and res["name"] and res["params"] is True
+
+
+COPY = {
+    "zh": "该技能暂时下线，旧对话仍可查看；如需继续，请换一个技能。",
+    "en": "This skill is temporarily unavailable. You can still view this conversation; pick another skill to continue.",
+}
+
+
+@needs_node
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("sid", ["yingzao", "ppt-visual"])
+def test_hidden_skill_refused_at_attach_with_plain_copy_and_no_submit(lang, sid) -> None:
+    g = report()["guard"][lang][sid]
+    # deep link ?skill= / try-it: no chip (the previous chip is cleared too), the copy is shown
+    assert g["attached"] is False and g["linkChip"] is None and g["linkNotice"] == COPY[lang]
+    # resend of an old session / sendToAgent safety net: blocked before sendMessage, same copy, no submit
+    assert g["blocked"] is True and g["resendNotice"] == COPY[lang] and g["submits"] == 0
+
+
+@needs_node
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_listed_skill_still_attaches_and_clears_notice(lang) -> None:
+    g = report()["guard"][lang]
+    assert g["notice"] == COPY[lang]
+    assert g["listed"] == {"attached": True, "chip": "poster", "notice": None, "blocked": False}
+
+
+@needs_node
+def test_hidden_skill_guard_makes_zero_network_requests() -> None:
+    assert report()["guard"]["requests"] == 0
+
+
+def test_three_attach_paths_use_the_guard_before_any_send() -> None:
+    handoff = (ROOT / "src/home/handoff.ts").read_text()
+    h = handoff[handoff.index("const found = skillId"):]
+    assert "attachSkill(skill)" in h and h.index("attachSkill(skill)") < h.index("sendToAgent(")
+    assert h.index("return\n", h.index("attachSkill(skill)")) < h.index("refreshBot()")  # deep link stops before any request
+    panel = (ROOT / "src/ui/AgentPanel.tsx").read_text()
+    r = panel[panel.index("async function resend"):]
+    assert r.index("blockHiddenSkill(skill)) return") < r.index("sendToAgent(")
+    chat = (ROOT / "src/ui/ChatMessage.tsx").read_text()
+    t = chat[chat.index("const tryIt"):chat.index("return (", chat.index("const tryIt"))]
+    assert "attachSkill(s)" in t and "skillAtom.set" not in t
+    agent = (ROOT / "src/agent.ts").read_text()
+    body = agent[agent.index("export async function sendToAgent"):]
+    assert body.index("blockHiddenSkill(skill)) return") < body.index("sendMessage(")
+    comp = (ROOT / "src/ui/Composer.tsx").read_text()
+    assert 'data-testid="skill-hidden-notice"' in comp and "useValue(skillNoticeAtom)" in comp
+
+
+@needs_node
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_agent_tool_error_never_leaks_ids_or_retry_hints(lang) -> None:
+    err = report()["guard"][lang]["readErr"]
+    assert err == "[non-retryable] " + COPY[lang]
+    for leak in ("ppt-visual", "do not retry", "action=", "list"):
+        assert leak not in err.split("] ", 1)[1], leak
 
 
 SRC = ROOT / "src"

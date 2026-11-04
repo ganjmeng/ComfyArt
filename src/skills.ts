@@ -250,6 +250,9 @@ export const HIDDEN_BUILTIN_SKILL_ID_SET: ReadonlySet<string> = new Set(HIDDEN_B
 /** #673 — true when a skill may be offered for NEW selection. Personal (custom) skills are always listed. */
 export const isListedSkill = (s: Pick<Skill, 'id' | 'custom'>): boolean => !!s.custom || !HIDDEN_BUILTIN_SKILL_ID_SET.has(s.id)
 export const listedSkills = <T extends Pick<Skill, 'id' | 'custom'>>(skills: T[]): T[] => skills.filter(isListedSkill)
+/** #673 — the plain sentence a user sees when an old session / card / link starts a hidden skill. */
+export const hiddenSkillNotice = (skill: Pick<Skill, 'id' | 'custom'> | null | undefined): string | null =>
+  skill && !isListedSkill(skill) ? t('skills.hiddenUnavailable') : null
 
 /** #640 Phase3-S1 — 19 NEW ids (upgrade `thumbnail` is not listed here). PRODUCT-LOCK-PHASE3 + PHASE3-HARDEN-DIFF. Skill Creator → #650.
  *  #642 Phase3-S3 — NEW19 field parity Upload+Additional (NEARMISS_INPUTS); media wash → #643; no competitor strings in src). */
@@ -518,6 +521,22 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
 ])
 
 export const skillAtom = atom<Skill | null>('skill', null)
+/** #673 — the plain sentence shown in the composer when a hidden skill is attached from an old session / card / link. */
+export const skillNoticeAtom = atom<string | null>('skill notice', null)
+/** #673 — the one place a skill reaches the composer from saved work (deep link, resend, try-it). A hidden skill is
+ *  refused: no chip, the notice is shown, and the caller must not send (no agent turn, no paid submit, no request). */
+export function attachSkill(s: Skill | null): boolean {
+  if (s && hiddenSkillNotice(s)) { skillAtom.set(null); skillNoticeAtom.set(hiddenSkillNotice(s)); return false }
+  skillNoticeAtom.set(null)
+  skillAtom.set(s)
+  return true
+}
+/** #673 — same refusal for a send that already holds a skill (safety net in sendToAgent). True = blocked. */
+export function blockHiddenSkill(s: Pick<Skill, 'id' | 'custom'> | null | undefined): boolean {
+  const notice = hiddenSkillNotice(s)
+  if (notice) skillNoticeAtom.set(notice)
+  return !!notice
+}
 
 const listFiles = (dir: string) => listUserFiles(`${ROOT}/${dir}`.replace(/\/$/, ''), true)
 const read = (path: string) => readUserText(`${ROOT}/${path}`)
@@ -777,7 +796,7 @@ export async function skillTool(args: Record<string, unknown>): Promise<unknown>
   }
   const hit = id ? skills.find((s) => s.id === id) : skills.find((s) => s.name === args.name)
   // #673: a hidden built-in is not available for new selection (still resolvable by id for saved sessions via loadSkills).
-  if (hit && !isListedSkill(hit)) throw new Error(`${SKILL_NON_RETRYABLE} skill ${JSON.stringify(id || args.name)} is not available; do not retry — use action="list" for available ids`)
+  if (hit && !isListedSkill(hit)) throw new Error(`${SKILL_NON_RETRYABLE} ${t('skills.hiddenUnavailable')}`)  // #673 design: user-facing copy only — no id, no retry hints
   const skill = hit
   if (!skill) throw new Error(`unknown skill ${JSON.stringify(id || args.name)} — available: ${listed.map((s) => `${s.name} (${s.id})`).join(', ')}`)
   if (args.path) {
