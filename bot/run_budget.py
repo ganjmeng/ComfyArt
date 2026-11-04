@@ -91,7 +91,8 @@ LEGACY_MAX_STEPS_ENV = "COMFYART_AGENT_MAX_STEPS"
 SYSTEM_DEFAULTS: dict[str, Any] = {
     FEATURE_FLAG: True,
     "hard_cap_steps": 300,
-    "max_tool_calls": 30,           # #705: total tool calls per run (generate_image: planned images + 2)
+    "max_tool_calls": 30,           # #705: paid/external tool calls per run (generate_image: planned images + 2)
+    "max_all_tool_calls": 300,      # #705: backstop, tool calls of any kind per run
     "token_window_multiple": 40,    # per-run token cap = 40 x model window; every request's re-sent input counts
     "wall_time_s": 15 * 60,
     "credits_usd": 5.0,             # paid ceiling per run; every paid call is also capped by its quote
@@ -469,9 +470,12 @@ class ProgressTracker:
     last_call: str = ""
     repeat_run: int = 0
     same_tool_max: int = 3   # #705 P1: >3 consecutive steps calling only the same tool = hard stop
-    # #705 total budget cap (tech lead): <= 30 tool calls per run; generate_image calls <= planned images + 2.
+    # #705 budget caps (tech lead): <= 30 PAID/external calls (guide.PAID_TOOLS: WaveSpeed generate/edit/video/...;
+    # local tools like add_text do not count), <= 300 calls of any tool (backstop), generate_image <= planned + 2.
     # No per-run plan count exists yet and skills declare none, so planned falls back to the page's max batch (4).
     tool_calls_max: int = 30
+    all_calls_max: int = 300
+    paid_calls: int = 0
     planned_images: int = 0
     total_calls: int = 0
     gen_calls: int = 0
@@ -541,9 +545,12 @@ class ProgressTracker:
 
     def over_budget(self, obs: list[StepObservation]) -> bool:
         """#705: count this step's calls; True once the run exceeds the tool-call or generate_image cap (never reset)."""
+        from .guide import PAID_TOOLS
         self.total_calls += len(obs)
+        self.paid_calls += sum(1 for o in obs if o.tool in PAID_TOOLS)
         self.gen_calls += sum(1 for o in obs if o.tool == "generate_image")
-        return self.total_calls > self.tool_calls_max or self.gen_calls > self.gen_cap()
+        return (self.paid_calls > self.tool_calls_max or self.total_calls > self.all_calls_max
+                or self.gen_calls > self.gen_cap())
 
     def reset_after_nudge(self) -> None:
         self.nudged = True

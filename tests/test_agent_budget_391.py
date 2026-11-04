@@ -229,7 +229,7 @@ async def test_hard_cap_stops_and_says_so(monkeypatch, store):
 
 async def test_default_hard_cap_is_not_80(monkeypatch, store):
     r = Rig(monkeypatch, lambda m, n: calls(("add_text", {"text": f"x{n}"})) if n < 120 else reply("120 条都加好了"),
-            store=store, policy={"max_tool_calls": 500})  # #705: the 30-call default cap is opted out here
+            store=store)
     res, _ = await r.send("把 120 条标语加到画布上")
     assert stop_of(res)["reason"] == "done" and len([c for c in r.mcp if c[0] == "add_text"]) == 120
 
@@ -404,7 +404,7 @@ async def test_long_runs_never_overflow_the_window(monkeypatch, store):
     window = 16_000
     for steps in (150, 200):
         r = Rig(monkeypatch, lambda m, n, steps=steps: calls(("add_text", {"text": f"x{n}"})) if n < steps
-                else reply("好了"), store=store, window=window, policy={"token_window_multiple": 200, "max_tool_calls": 500},
+                else reply("好了"), store=store, window=window, policy={"token_window_multiple": 200},
                 mcp=lambda name, a, i: (json.dumps({"id": f"s{i}", "note": "y" * 600}), [IMG]))
         res, ev = await r.send("把标语逐条加到画布上")
         assert stop_of(res)["reason"] == "done", stop_of(res)
@@ -417,7 +417,7 @@ async def test_long_runs_never_overflow_the_window(monkeypatch, store):
 async def test_defaults_pass_single_batch_long(monkeypatch, store):
     single = [calls(("generate_image", {"prompt": "a"})), calls(("wait_generation", {"ids": ["j1"]})), reply("好了")]
     batch = [calls(("generate_image", {"prompt": f"a{i}"})) for i in range(4)] + [reply("好了")]
-    long = [calls(("add_text", {"text": f"x{i}"})) for i in range(30)] + [reply("好了")]  # #705: 30-call run cap
+    long = [calls(("add_text", {"text": f"x{i}"})) for i in range(60)] + [reply("好了")]
     for script in (single, batch, long):
         r = Rig(monkeypatch, script, store=store)
         res, _ = await r.send("做一下")  # no deliverable count: just the budget defaults

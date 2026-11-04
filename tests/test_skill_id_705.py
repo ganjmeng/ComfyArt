@@ -82,5 +82,8 @@ def test_tracker_budget_cap_tool_calls_and_generate_image() -> None:
     assert hits == [False] * 6 + [True]
     t = ProgressTracker(planned_images=1)
     assert [t.over_budget(_obs("generate_image", i)) for i in range(1, 5)] == [False, False, False, True]
-    t = ProgressTracker()
-    assert [t.over_budget(_obs("add_text", i)) for i in range(1, 32)] == [False] * 30 + [True]
+    t = ProgressTracker()  # local tools never hit the paid cap, only the 300 backstop
+    assert not any(t.over_budget(_obs("add_text", i)) for i in range(1, 301))
+    assert t.over_budget(_obs("add_text", 301)) is True
+    t = ProgressTracker(planned_images=100)  # 30 paid (non-generate_image here) calls max
+    assert [t.over_budget(_obs("edit_image", i)) for i in range(1, 32)] == [False] * 30 + [True]
