@@ -76,7 +76,7 @@ const FEED_V2 = WASH_594  // #594 new6 featured-v2
 const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> = {
   poster: ['580/featured-v1/poster', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   social: ['580/featured-v1/social', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
-  brand: ['580/featured-v1/brand', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  brand: ['580/featured-v1/brand', FEED_V1, ['01.webp']],  // #687: off-topic / other-brand picks removed
   packaging: ['580/featured-v1/packaging', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   thumbnail: ['580/featured-v1/thumbnail', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   banner: ['580/featured-v1/banner', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
