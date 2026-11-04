@@ -8,7 +8,7 @@ Nothing here has been generated. All images are 1K, **$0.0378** each (google/nan
 
 | # | slug | type | count | unit | subtotal | reason |
 |---|------|------|------:|-----:|---------:|--------|
-| 1 | packaging | re-wash (featured) | 8 | $0.0378 | $0.3024 | featured lifestyle multi-brand, count 5 vs 8 (cover is already fixed locally: every box and the card read BOTANICA LAB, fc1c2785) |
+| 1 | packaging | re-wash (cover + featured), generated at 1K, upscaled locally to a 2K long side at the gold aspect ratio | 9 | $0.0378 | $0.3402 | featured lifestyle multi-brand, count 5 vs 8. The cover is only 462px; tonight's BOTANICA LAB relabel is a stopgap |
 | 2 | meta-ads | re-wash | 4 | $0.0378 | $0.1512 | different layout family, no gold base |
 | 3 | marketing-campaign | re-wash | 8 | $0.0378 | $0.3024 | gold has 8 multi-frame strips, ours has 4 single frames |
 | 4 | interior | re-wash | 2 | $0.0378 | $0.0756 | different rooms, count 4 vs 2 |
@@ -16,15 +16,18 @@ Nothing here has been generated. All images are 1K, **$0.0378** each (google/nan
 | 6 | web-product | supplement | 5 | $0.0378 | $0.1890 | count 4 vs 9 |
 | 7 | mobile-ui | supplement | 9 | $0.0378 | $0.3402 | count 4 vs 13 |
 | 8 | youtube-channel-banner | re-wash (cover) **new** | 1 | $0.0378 | $0.0378 | still shows the gold copy "FAMILY FIRST"; cropping cannot fix a 4:3 cover |
-|   | **total** | | **40** | | **$1.5120** | |
+|   | **total** | | **41** | | **$1.5498** | |
 
-- **Retry cap:** at most 1 retry per image, so the worst case is 80 calls = **$3.0240**.
+- **Retry cap:** at most 1 retry per image, so the worst case is 82 calls = **$3.0996**.
 - **Not in this list:** the social + character remainder, character ex02–06 = 5 × $0.0378 = **$0.1890** (up to $0.3780 with one retry each). It runs under the #687 $0.50 cap (spent so far $0.3024) only after design PASSes ex01 rev2.
 - **Tonight:** this list does not run. It is over the approved $0.50 (技术经理, 23:0x). Angela decides in the morning.
 
+## Known issues
+- The packaging cover is still low-res (462px). Tonight's local ARTISAN→BOTANICA LAB relabel is a stopgap. The 2K re-wash is row 1 above, on the morning paid list.
+
 ## 交接
 - **Tip:** fix/687-local (see the commit that adds this file). assets/687-local = 240d6d8b. review-assets = df85d080 (has the 240d6d8b merge).
-- **Done:** recount (40 images / $1.512, retry cap $3.024), the packaging cover fully relabelled, and product featured restored to 04 only.
+- **Done:** recount (41 images / $1.5498, retry cap $3.0996), the packaging cover fully relabelled, and product featured restored to 04 only.
 - **Next:** Angela approves or trims the list. Then the paid run at 1K, and a PR once design and test pass the L/R images.
 - **Spend:** $0 on this work.
 - **Balance:** $43.86 (last known value, not re-queried).
