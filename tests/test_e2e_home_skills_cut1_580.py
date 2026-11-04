@@ -94,12 +94,12 @@ def _featured_from_data():
 
 # Fixed expectation (#689 follow-up): pinned id list so a skill silently dropping out of the
 # feed fails here; _featured_from_data() is only a drift guard against src/skills.ts.
-FEED_EXPECTED = frozenset({
+FEED_EXPECTED = frozenset({  # #673: 9 deferred ids hidden
     "anim-2d", "banner", "before-after", "brand", "character", "clothing-swap", "commerce-strategist", "creator-identity",
-    "flash-cut-video", "interior", "lifestyle-scene", "linkedin-banner", "logo-abstract",
+    "flash-cut-video", "interior", "lifestyle-scene", "linkedin-banner",
     "logo-material", "marketing-campaign", "meta-ads", "mobile-ui", "motion", "multi-angle",
-    "naive-illustration", "packaging", "person-swap", "photo-split-poster", "portrait-studio", "poster",
-    "ppt-visual", "product", "product-website", "promo-ecommerce", "social", "style-transfer",
+    "packaging", "person-swap", "portrait-studio", "poster",
+    "product", "product-website", "social", "style-transfer",
     "taobao-product", "thumbnail", "web-product", "youtube-channel-banner",
     "animated-poster",  # #643 per-slot PR (examples wired => in feed)
     "premium-website",  # #643 per-slot PR (examples wired => in feed)

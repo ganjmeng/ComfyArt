@@ -11,7 +11,7 @@ import { botEnabledAtom, loadProviders, loadSettings, messagesAtom, providerLabe
 import { errorText } from '../jobs'
 import { KIND_LABELS, libraryAtom } from '../library'
 import type { AudioShape } from '../shapes/EmbedShapes'
-import { loadSkills, saveSkill, skillAtom, skillCreatorAtom, type Skill } from '../skills'
+import { loadListedSkills, saveSkill, skillAtom, skillCreatorAtom, type Skill } from '../skills'
 import { AssetGrid } from './AssetPicker'
 import { schedulesOpenAtom } from '../schedules'
 import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPicker'
@@ -118,7 +118,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const at = /(?:^|\s)@(\S*)$/.exec(draft)
 
   useEffect(() => {
-    if (menu === 'skills' || slash) void loadSkills().then(setSkills)
+    if (menu === 'skills' || slash) void loadListedSkills().then(setSkills)
   }, [menu, !!slash])
 
   // #362: load 素材 for @ menu (no model group). Fail soft → empty 素材 group.
