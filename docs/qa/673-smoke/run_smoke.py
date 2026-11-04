@@ -13,7 +13,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "tests")); sys.path.insert(0, str(REPO.parent))
 ENV = "/home/box/.secrets/comfyart-test.env"
-CAP = 0.8
+CAP = 0.8          # combined hard cap: image_spent + llm_spent + next_quote must stay <= CAP (tech lead)
+LLM_CAP = 0.2      # LLM sub-cap across the 5 turns; after turn 1 stop if first-turn LLM cost x 5 > LLM_CAP
+LLM_MODEL = "deepseek/deepseek-v4.1-flash-1017"  # via llm.wavespeed.ai; no price in repo/docs ->
+# LLM cost method: optional env SMOKE_LLM_USD_PER_M_IN / _OUT (token price) else balance delta - image quote.
 MAX_FAILS = 2
 EST = {"openai/gpt-image-2.5-flare/text-to-image": 0.0378, "openai/gpt-image-2.5-flare/edit": 0.0378}  # 1K, #673 C-group logs
 EST_UNKNOWN = 0.10  # conservative cap for models without a recorded price (e.g. midjourney); --live checks free /model/price first
@@ -63,6 +66,24 @@ def images_of(messages, after_id):
 CDN_HOST = "d2h7xmz5gqybh9.cloudfront.net"  # WaveSpeed output CDN (#687 ex01 download died with TLS EOF)
 
 
+def llm_usage(messages, after_id):
+    """Sum token usage of assistant messages after the user message (chat_store 'usage' field)."""
+    pin = pout = 0; seen = after_id is None
+    for m in messages:
+        if not seen: seen = m.get("id") == after_id; continue
+        u = m.get("usage") or {}
+        pin += int(u.get("prompt_tokens") or u.get("input_tokens") or 0)
+        pout += int(u.get("completion_tokens") or u.get("output_tokens") or 0)
+    return pin, pout
+
+
+def llm_cost(pin, pout, delta, quote):
+    pi, po = os.environ.get("SMOKE_LLM_USD_PER_M_IN"), os.environ.get("SMOKE_LLM_USD_PER_M_OUT")
+    if pi and po: return round(pin * float(pi) / 1e6 + pout * float(po) / 1e6, 6), "token_price_env"
+    if delta is not None: return round(max(delta - quote, 0.0), 6), "balance_delta_minus_quote"
+    return None, "unknown"
+
+
 def cdn_preflight(out, host=CDN_HOST, timeout=15):
     """Free TLS handshake probe of the result CDN; a paid image we cannot download is wasted money."""
     import socket, ssl
@@ -79,11 +100,14 @@ def cdn_preflight(out, host=CDN_HOST, timeout=15):
 
 
 async def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--live", action="store_true"); ap.add_argument("--only")
+    ap = argparse.ArgumentParser(); ap.add_argument("--live", action="store_true"); ap.add_argument("--cdn-probe", action="store_true"); ap.add_argument("--only")
     ap.add_argument("--ref", action="append", default=[]); ap.add_argument("--out", default="/workspace/smoke673/out")
     ap.add_argument("--base", default="http://127.0.0.1:8188"); ap.add_argument("--project", default="PROJECT_ID")
     ap.add_argument("--provider", default="local-llm"); ap.add_argument("--turn-timeout", type=int, default=600)
-    a = ap.parse_args(); import conftest; conftest._install_stubs()
+    a = ap.parse_args()
+    if a.cdn_probe:
+        os.makedirs(a.out, exist_ok=True); sys.exit(0 if cdn_preflight(a.out)["ok"] else 2)
+    import conftest; conftest._install_stubs()
     refmap = dict(SAMPLE_REF, **dict(r.split("=", 1) for r in a.ref))
     slugs = a.only.split(",") if a.only else list(SK)
     plan = []
@@ -98,7 +122,7 @@ async def main():
               {"method": "POST", "url": f"{a.base}/comfyart/bot/chats/{{chat_id}}/send", "body": send, "note": "paid when --live (paid_guard cap 1)"},
               {"method": "GET", "url": f"{a.base}/comfyart/bot/chats/{{chat_id}}", "note": "poll until chat.busy=false"}]},
             ensure_ascii=False, indent=1))
-    total = sum(p[3] for p in plan); print(f"TOTAL est ${total:.4f} (cap ${CAP})")
+    total = sum(p[3] for p in plan); print(f"TOTAL image est ${total:.4f}; combined cap ${CAP} (image+LLM), LLM sub-cap ${LLM_CAP} ({LLM_MODEL})")
     if total > CAP: sys.exit("over cap")
     if not a.live: print("DRY RUN — nothing submitted. Use --live to spend."); return
     if a.project == "PROJECT_ID": sys.exit("--project <id> required (open that project in the Loomi tab)")
@@ -106,14 +130,15 @@ async def main():
     if not cdn_preflight(a.out)["ok"]: sys.exit("abort: WaveSpeed CDN TLS preflight failed; no paid call made")
     load_env(); from ComfyArt.api import wavespeed as ws
     key = os.environ["WAVESPEED_API_KEY"]; out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    spent, log = 0.0, []
+    spent, llm_spent, log = 0.0, 0.0, []
     for sl, inp, send, est in plan:
         fails = 0
         while fails < MAX_FAILS:
             q = http(a.base, "POST", "/comfyart/wavespeed/estimate", {"inputs": inp})
             price = q.get("price") if isinstance(q, dict) else None
             if price is None or price > est: sys.exit(f"{sl}: quote {q} over estimate ${est}, stop")
-            if spent + price > CAP: sys.exit(f"{sl}: spent ${spent:.4f} + ${price} > cap ${CAP}, stop")
+            if spent + llm_spent + price > CAP: sys.exit(f"{sl}: image ${spent:.4f} + LLM ${llm_spent:.4f} + ${price} > combined cap ${CAP}, stop")
+            if llm_spent > LLM_CAP: sys.exit(f"LLM ${llm_spent:.4f} > LLM cap ${LLM_CAP}, stop")
             b0 = await ws.fetch_balance(key)
             chat = http(a.base, "POST", "/comfyart/bot/chats", {"project": a.project, "provider": a.provider, "title": f"smoke673 {sl}", "run_mode": "auto"})["chat"]
             r = http(a.base, "POST", f"/comfyart/bot/chats/{chat['id']}/send", send)
@@ -123,14 +148,24 @@ async def main():
                 if not st["chat"].get("busy") or time.time() - t0 > a.turn_timeout: break
             if st["chat"].get("busy"): http(a.base, "POST", f"/comfyart/bot/chats/{chat['id']}/stop", {})
             await asyncio.sleep(5); b1 = await ws.fetch_balance(key)
-            charged = round(b0 - b1, 6) if b0 is not None and b1 is not None else price; spent += max(charged, 0)
+            charged = round(b0 - b1, 6) if b0 is not None and b1 is not None else None
             imgs = images_of(st["messages"], uid); ok = bool(imgs)
+            img_cost = price if ok else 0.0; spent += img_cost
+            pin, pout = llm_usage(st["messages"], uid); lc, method = llm_cost(pin, pout, charged, img_cost)
+            llm_spent += lc or 0.0
             rec = {"skill": sl, "chat": chat["id"], "quote": price, "balance_before": b0, "balance_after": b1,
-                   "charged": charged, "spent": round(spent, 6), "images": imgs, "ok": ok}
+                   "charged": charged, "image_cost": img_cost, "image_spent": round(spent, 6),
+                   "llm_model": LLM_MODEL, "llm_prompt_tokens": pin, "llm_completion_tokens": pout,
+                   "llm_cost_est": lc, "llm_cost_method": method, "llm_spent": round(llm_spent, 6),
+                   "combined_spent": round(spent + llm_spent, 6), "caps": {"combined": CAP, "llm": LLM_CAP},
+                   "images": imgs, "ok": ok}
             log.append(rec); print(json.dumps(rec, ensure_ascii=False))
             json.dump(log, open(out / "runs.json", "w"), ensure_ascii=False, indent=1, default=str)
+            if len(log) == 1 and (lc or 0) * 5 > LLM_CAP:
+                sys.exit(f"stop: first-turn LLM ${lc} x 5 = ${(lc or 0) * 5:.4f} > LLM cap ${LLM_CAP} (method {method})")
+            if llm_spent > LLM_CAP: sys.exit(f"stop: LLM ${llm_spent:.4f} > LLM cap ${LLM_CAP}")
             if ok: break
             fails += 1
         if fails >= MAX_FAILS: sys.exit(f"{sl}: {MAX_FAILS} consecutive failures, stop")
-    print(f"DONE spent ${spent:.4f} (est ${total:.4f}, cap ${CAP})")
+    print(f"DONE image ${spent:.4f} + LLM ${llm_spent:.4f} = ${spent + llm_spent:.4f} (image est ${total:.4f}, combined cap ${CAP}, LLM cap ${LLM_CAP})")
 if __name__ == "__main__": asyncio.run(main())

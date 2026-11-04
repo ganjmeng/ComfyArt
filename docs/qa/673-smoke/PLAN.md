@@ -46,5 +46,8 @@ prompt = 用户输入 + 换行 + 所选 preset 的 Style 句（原文见 `src/sk
 - 阻塞：#727 合并后即可跑 live（技术经理定：守卫 bug 不会超支，$0.8 兜底，不等守卫 PR）。refs 已就绪。
 - 注意：守卫只在 bot 轮次里生效（直接调 `/comfyart/mcp` 没有轮次时 `before_call` 放行），所以脚本必须走 `/send`，不能直调 MCP；agent 的 LLM 调用默认也走 WaveSpeed，费用在同一余额里，单独记账。
 - CDN 预检（新增）：`--live` 在任何付费调用前先对 WaveSpeed 出图 CDN `d2h7xmz5gqybh9.cloudfront.net:443` 做免费 TLS 握手，失败即中止并写 `out/cdn_preflight.json`。2026-11-04 22:41（UTC+8）本机实测：**失败**，`SSLEOFError: UNEXPECTED_EOF_WHILE_READING`（curl 同样 exit 35）；同时 `api.wavespeed.ai` 200、GitHub 正常，问题只在这台机器到该 CDN 的链路。CDN 不通前 live 会自动中止，不花钱。
+- 预算（技术经理更新）：**合计硬顶 $0.8 = 图片 + LLM**。每次付费调用前检查 `image_spent + llm_spent + 下一张 quote > $0.8` 即停。LLM 单列子上限 5 个 turn 合计 ≤$0.2：第 1 个 turn 后按「首 turn LLM 费 × 5」预测，超 $0.2 即停并报告；之后累计超 $0.2 也停。
+- LLM 记账：每 turn 记 prompt/completion token（取 assistant 消息的 `usage`）和估算费，写进 `runs.json`（`llm_*`、`image_*`、`combined_spent` 字段）。模型 `deepseek/deepseek-v4.1-flash-1017`（WaveSpeed LLM）。仓库/文档里没有它的单价，所以默认方法是「该 turn 余额差 − 图片 quote」（`llm_cost_method=balance_delta_minus_quote`）；若设了 `SMOKE_LLM_USD_PER_M_IN/OUT` 则按 token 单价算。
+- `--cdn-probe`：只跑免费 CDN 预检并打印结果（通过退出码 0，不通 2），不读 key、不起 app。
 - 已花费：$0。
 - 余额：$44.134249（开发工程师在 #687 报的最新值，本次未查询）。
