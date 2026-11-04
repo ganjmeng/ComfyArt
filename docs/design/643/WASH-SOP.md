@@ -43,9 +43,9 @@
 - 场景框的羽化要留在框内；贴回的内容要与周围景深一致，必要时对场景源做轻微模糊。
 
 ### 参考：#670 pose-fission ex04
-![#670 ex04 L/R](https://raw.githubusercontent.com/ganjmeng/ComfyArt/3d13f7fbf7b38ac317929661527f65b3f06b459c/docs/design/643/lr/670/pose-fission-ex04-lr.webp)
+![#670 ex04 L/R](https://raw.githubusercontent.com/ganjmeng/ComfyArt/f31a0b1cc3cef1023982673508eb9dfd51f6d3c6/docs/design/643/lr/670/pose-fission-ex04-lr.webp)
 
-#670 的结果：重绘面积 3.9%–10.6%；脸部亮度差 −1.26 到 +0.27；暗部颗粒与金标相差不超过 0.4；衣服 100% 是金标原像素。遮罩参数记在 `docs/design/643/wash-manifest.pose-fission.json`。
+（图为 f31a0b1c 版 ex04，Angela 偏好此版。）#670 最终合并版的结果：重绘面积 3.9%–10.6%；脸部亮度差 −1.26 到 +0.27；暗部颗粒与金标相差不超过 0.4；衣服 100% 是金标原像素。遮罩参数记在 `docs/design/643/wash-manifest.pose-fission.json`。
 
 ---
 
