@@ -32,8 +32,13 @@ def test_tokens_and_full_bleed_css():
 def test_featured_v1_and_collages_pinned_590():
     c = "0e92302302de2102ab6f66aa7633a40945a381c7"
     assert f"const FEED_V1 = '{c}'" in SKILLS
-    for sid in ("poster", "social", "brand", "packaging", "thumbnail", "banner", "character", "product", "motion", "interior"):
-        assert f"{sid}: ['580/featured-v1/{sid}', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']]" in SKILLS
+    four = ['01', '02', '03', '04']
+    # #687: brand/banner/character/motion trimmed (off-topic, other-brand or competitor picks); product removed (presets fallback)
+    keep = {"brand": ['01'], "banner": ['01'], "character": ['03'], "motion": ['01', '02', '04']}
+    for sid in ("poster", "social", "brand", "packaging", "thumbnail", "banner", "character", "motion", "interior"):
+        files = ", ".join(f"'{f}.webp'" for f in keep.get(sid, four))
+        assert f"{sid}: ['580/featured-v1/{sid}', FEED_V1, [{files}]]" in SKILLS
+    assert "  product: ['580/featured-v1/product'" not in SKILLS
     assert "inspiration@thumb.webp" in SKILLS and "connector@thumb.webp" in SKILLS
 
 

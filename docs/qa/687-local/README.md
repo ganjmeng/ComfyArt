@@ -7,7 +7,7 @@ Each fix has an L/R before/after image in this folder (`lr-*.jpg`).
 | clothing-swap | `coverPos: 'center 8%'` (crop only) |
 | premium-website | `coverPos: '15% center'` (crop only; keeps the title and the candle) |
 | youtube-channel-banner | **crop does not work**: the cover is 4:3, the same as the card, so object-position does nothing. It still has the gold "FAMILY FIRST" copy and still looks empty/floating on white. Logged only; it needs a re-wash. |
-| motion | featured 03 removed (Lovart original face) |
+| motion | featured 03 removed (competitor original face) |
 | product | featured set removed (all 4 off-topic and multi-brand), so it falls back to presets |
 | brand | featured keeps only 01 ARC RIDE (02 ARC LABS, 03 MERIDIAN and 04 AUTUMN EDIT are other brands) |
 | banner | featured keeps only 01 Lumo (HELIO, HEARTH KITCHEN and DESIGN WEEK are other brands) |

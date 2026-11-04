@@ -82,7 +82,7 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   banner: ['580/featured-v1/banner', FEED_V1, ['01.webp']],  // #687: off-topic / other-brand picks removed
   character: ['580/featured-v1/character', FEED_V1, ['03.webp']],  // #687: off-topic / other-brand picks removed
   // #687: product featured removed (off-topic, multi-brand) → falls back to presets
-  motion: ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '04.webp']],  // #687: 03 removed (Lovart original face)
+  motion: ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '04.webp']],  // #687: 03 removed (competitor original face)
   interior: ['580/featured-v1/interior', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'multi-angle': ['580/featured-v2/multi-angle', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'logo-material': ['580/featured-v2/logo-material', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
