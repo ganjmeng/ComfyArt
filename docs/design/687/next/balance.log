@@ -2,3 +2,5 @@
 2026-11-04 22:2x CST  social ex01 pilot  before 44.172049  after 44.134249  cost 0.0378  status: generated server-side, DOWNLOAD FAILED (CDN TLS EOF), image not on box
 running total 0.0378 / 0.50
 2026-11-04 22:32 CST  PAUSED by 技术经理 order (paid_gen_guard tests failing). No further calls.
+2026-11-04 22:34–22:40 CST  ex01 free download retry x3 via /predictions/c4277cf81cff4915a5bcc6df475513ac/result: all TLS EOF from d2h7xmz5gqybh9.cloudfront.net -> logged as 1 failure (cost counted). Not regenerated. STOPPED.
+running total 0.0378 / 0.50; balance 44.134249
