@@ -19,19 +19,24 @@ def consec_fail(out):
         if r.get('out')!=out: continue
         n=0 if r.get('ok') else n+1
     return n
+import base64
+def b64(o,out):
+    if not isinstance(o,str) or o.startswith('http'): print('NO BASE64 (url or empty):',str(o)[:60]);return False
+    if o.startswith('data:'): o=o.split(',',1)[1]
+    open(out,'wb').write(base64.b64decode(o));return True
 def run(src,prompt,out,ar):
     if spent()+UNIT>CAP+1e-9: print('CAP STOP spent',spent());sys.exit(3)
     if consec_fail(out)>=2: print('2 CONSEC FAILS STOP',out);sys.exit(4)
     b0=bal()
     if b0<20: print('BALANCE<20 STOP');sys.exit(2)
     u=[ws.up(src)]
-    r=requests.post(f'{B}/google/nano-banana-2.1/edit',headers=H,json={'images':u,'prompt':prompt,'output_format':'png','resolution':'1k','aspect_ratio':ar},timeout=60).json()
+    r=requests.post(f'{B}/google/nano-banana-2.1/edit',headers=H,json={'images':u,'prompt':prompt,'output_format':'png','resolution':'1k','aspect_ratio':ar,'enable_base64_output':True},timeout=60).json()
     ok=False;rid=None
     if r.get('code')==200:
         rid=r['data']['id']
         for _ in range(90):
             time.sleep(4);g=requests.get(f'{B}/predictions/{rid}/result',headers=H,timeout=30).json()['data']
-            if g['status']=='completed': ok=dl(g['outputs'][0],out);print('URL',g['outputs'][0]);break
+            if g['status']=='completed': ok=b64(g['outputs'][0],out);break
             if g['status']=='failed': print('FAIL',g.get('error'));break
     else: print('ERR',{k:v for k,v in r.items() if k!='data'})
     time.sleep(3);b1=bal()
