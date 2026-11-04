@@ -1,40 +1,137 @@
 {
   "skill_id": "pose-fission",
-  "note": "#643 final per-example wash prompts (latest round per index). Gold not committed.",
+  "note": "#643 #670 final: face/hair + one small scene detail inpainted onto gold; clothing, pose, light, grade and grain are gold pixels. Same new model (dark-brown chin-length bob with bangs) across all 4. Gold not committed.",
   "assets": [
     {
       "skill_id": "pose-fission",
       "slot": "examples",
       "index": 1,
-      "source_path": "<lovart-gold, not committed>",
-      "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+      "source_path": "<lovart-gold ex01, not committed>",
+      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite (GaussianBlur) of face/hair ellipse + one scene rect; all other pixels = gold",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "refs": [
+        "<lovart-gold ex01, not committed>"
+      ],
+      "prompt": "Edit this exact photo minimally. KEEP EVERYTHING identical: same pose, framing, camel blazer with belt, black shorts, sandals, hard low sun, shadows, color grade and film grain. CHANGE ONLY: (1) her face and hair to a different, equally attractive fashion model — e.g. a woman with sleek dark-brown chin-length bob, different eye shape, nose, lips and jaw, refined natural makeup, same head angle and gaze — clearly a different person at a glance; (2) small scene details: the background building walls slightly warmer ochre instead of grey, swap the street manhole cover for a plain drain grate, replace any sign with plain wall. No text, letters, logos or numbers anywhere. Photoreal, real skin texture.",
+      "mask": {
+        "coords": "gold px 1529x2048",
+        "face_ellipse": [
+          640,
+          140,
+          960,
+          560
+        ],
+        "scene_rect": [
+          0,
+          1440,
+          440,
+          1720
+        ],
+        "blur": 28,
+        "scene": "round manhole cover -> rectangular drain grate"
+      },
+      "path": "643/wash/pose-fission/examples/01.webp",
+      "sha256": "dde3563b2baaed526c4ba54a6e797f4a9cf396d3613ab2b207c12d4d68c1b7ef",
+      "meanAbs_vs_gold_report_only": 2.5
     },
     {
       "skill_id": "pose-fission",
       "slot": "examples",
       "index": 2,
-      "source_path": "<lovart-gold, not committed>",
-      "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+      "source_path": "<lovart-gold ex02, not committed>",
+      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite (GaussianBlur) of face/hair ellipse + one scene rect; all other pixels = gold",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "refs": [
+        "<lovart-gold ex02, not committed>",
+        "ex01 composite (identity ref, Image 2)"
+      ],
+      "prompt": "Edit Image 1 minimally. KEEP EVERYTHING in Image 1 identical: pose (walking mid-stride, head turned toward camera over the shoulder), framing, camel blazer, black shorts/skirt, sandals, hands, hard low sun direction, shadows on face and body, color grade and film grain. CHANGE ONLY: (1) replace her face and hair with the woman from Image 2 — same face, sleek dark-brown chin-length bob with bangs, refined natural makeup, beautiful fashion-model features — but keep Image 1's exact head angle, gaze direction and the same hard side lighting falling on the face; clean hair edges against the dark background; (2) one small scene detail: replace the round manhole cover in the street with a plain square drain grate. No text, letters, logos or numbers. Photoreal, real skin texture.",
+      "mask": {
+        "coords": "gold px 1529x2048",
+        "face_ellipse": [
+          690,
+          60,
+          980,
+          390
+        ],
+        "scene_rect": [
+          60,
+          1320,
+          620,
+          1545
+        ],
+        "blur": 26,
+        "scene": "round manhole cover -> square drain grate"
+      },
+      "path": "643/wash/pose-fission/examples/02.webp",
+      "sha256": "748611cd738a7f7371827c32fa4e93a9c15da72400b38019eb592f2b7671e5d5",
+      "meanAbs_vs_gold_report_only": 1.61
     },
     {
       "skill_id": "pose-fission",
       "slot": "examples",
       "index": 3,
-      "source_path": "<lovart-gold, not committed>",
-      "prompt": "TRUE WASH — original artwork, NEW pixels, clearly distinguishable from the reference at half-screen. Keep the pose-fission format: a full-body / three-quarter fashion photo of a single model on a sunny European city street, same pose and camera framing as the reference. CONSISTENT ACROSS SET (all 4 images same person + same outfit): a different model from the reference — a tall woman with a short platinum-blonde pixie cut, light freckles, wearing a cobalt-blue double-breasted tailored trench coat belted at the waist over a white knit top, white wide-leg trousers and white loafers, small gold hoop earrings. Change background street to a pastel Mediterranean alley with bougainvillea. TEXT RULE: no text, brand, name, number or price from the reference may survive verbatim — every word and numeral must be newly invented. No watermarks, real brands or celebrity likeness."
+      "source_path": "<lovart-gold ex03, not committed>",
+      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite (GaussianBlur) of face/hair ellipse + one scene rect; all other pixels = gold",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "refs": [
+        "<lovart-gold ex03, not committed>",
+        "ex01 composite (identity ref, Image 2)"
+      ],
+      "prompt": "Edit Image 1 minimally. KEEP EVERYTHING in Image 1 identical: pose (leaning on the dark pole, head turned/looking off to the side), framing, camel blazer, black shorts/skirt, sandals, hands, hard low sun direction, shadows on face and body, color grade and film grain. CHANGE ONLY: (1) replace her face and hair with the woman from Image 2 — same face, sleek dark-brown chin-length bob with bangs, refined natural makeup, beautiful fashion-model features — but keep Image 1's exact head angle, gaze direction and the same hard side lighting falling on the face; clean hair edges against the dark background; (2) one small scene detail: remove the yellow curb line segment near her feet, plain grey curb instead. No text, letters, logos or numbers. Photoreal, real skin texture.",
+      "mask": {
+        "coords": "gold px 1529x2048",
+        "face_ellipse": [
+          500,
+          95,
+          775,
+          420
+        ],
+        "scene_rect": [
+          775,
+          1490,
+          975,
+          2048
+        ],
+        "blur": 26,
+        "scene": "yellow curb paint segment near feet -> plain grey curb"
+      },
+      "path": "643/wash/pose-fission/examples/03.webp",
+      "sha256": "98354e641404d17cd90db0ed8cea4c389c7b93ef285958d4352505c7aeb20265",
+      "meanAbs_vs_gold_report_only": 2.19
     },
     {
       "skill_id": "pose-fission",
       "slot": "examples",
       "index": 4,
-      "source_path": "<lovart-gold, not committed>",
-      "prompt": "TRUE WASH — original photo, NEW pixels. Image 1 is the POSE and FRAMING reference; Image 2 is the IDENTITY + OUTFIT + LOCATION reference. Output: a close half-body fashion portrait, 3:4, framed from the top of the head down to just below the waist belt (chest-up/half-body, NOT full body, legs not visible), exactly like Image 1's camera distance. Pose from Image 1: body slightly angled, head tilted, one hand raised touching the side of her head/hair, the other hand resting at the coat collar/lapel near the chest, gentle direct gaze. Person and outfit EXACTLY as Image 2: the same woman — short platinum-blonde pixie cut, light freckles, small gold hoop earrings, white knit top — wearing the same rust-red / terracotta double-breasted belted trench coat with dark buttons and tied belt. Location as Image 2: sunny pastel-pink Mediterranean alley with magenta bougainvillea and a rough stone wall she leans near. Do NOT copy Image 1's person, brown curly hair, camel blazer or dark city street. Photoreal commercial fashion editorial, beautiful refined features, polished natural makeup, soft natural sunlight, real skin texture without plastic smoothing. No text, logos, watermarks or celebrity likeness.",
+      "source_path": "<lovart-gold ex04, not committed>",
+      "method": "local inpaint: kie i2i edit of gold, then Pillow feathered-mask composite (GaussianBlur) of face/hair ellipse + one scene rect; all other pixels = gold",
+      "model": "gpt-image-2-5-flare-image-to-image",
       "refs": [
         "<lovart-gold ex04, not committed>",
-        "643/wash/pose-fission/examples/01.webp (identity/outfit/location)"
+        "ex01 composite (identity ref, Image 2)"
       ],
-      "model": "gpt-image-2-5-flare-image-to-image"
+      "prompt": "Edit Image 1 minimally. KEEP EVERYTHING in Image 1 identical: pose (close half-body, one hand in her hair at the side of the head, head slightly tilted, direct gaze), framing, camel blazer, black shorts/skirt, sandals, hands, hard low sun direction, shadows on face and body, color grade and film grain. CHANGE ONLY: (1) replace her face and hair with the woman from Image 2 — same face, sleek dark-brown chin-length bob with bangs, refined natural makeup, beautiful fashion-model features — but keep Image 1's exact head angle, gaze direction and the same hard side lighting falling on the face; clean hair edges against the dark background; (2) one small scene detail: make the blurred background building wall slightly warmer ochre. No text, letters, logos or numbers. Photoreal, real skin texture.",
+      "mask": {
+        "coords": "gold px 1529x2048",
+        "face_ellipse": [
+          600,
+          45,
+          1110,
+          560
+        ],
+        "scene_rect": [
+          0,
+          0,
+          500,
+          1450
+        ],
+        "blur": 34,
+        "scene": "left background wall -> warmer ochre with window"
+      },
+      "path": "643/wash/pose-fission/examples/04.webp",
+      "sha256": "43f3e15efe2c5fe75b34e703ced8243cd3c5a72672ed36ea2e9b16cda35fe3ad",
+      "meanAbs_vs_gold_report_only": 7.71
     }
-  ],
-  "postprocess": "WaveSpeed google/nano-banana-pro/edit (2k) local edit, layout kept: ex04 (coat regenerated with ex01-03 as refs)."
+  ]
 }
