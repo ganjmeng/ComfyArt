@@ -3,6 +3,7 @@ reason and the amount (zh light / en dark). Mock WaveSpeed only, $0. COMFYART_71
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import threading
@@ -95,6 +96,8 @@ CASES = [
     ("noTaskId", 0.32, "failure-notaskid", "没有拿到任务编号，无法取回结果", "No task ID came back"),
     ("noOutput", None, "failure-nooutput-noamount", "没有返回图片，可能已扣费。", "returned no image, and it may have been charged."),
     ("noTaskId", None, "failure-notaskid-noamount", "无法取回结果，可能已扣费。", "cannot be fetched, and it may have been charged."),
+    ("timeout", 0.32, "failure-timeout", "任务超时，可能已扣费约 $0.32。请稍后在生成记录里查看", "check your generation history later"),
+    ("timeout", None, "failure-timeout-noamount", "任务超时，可能已扣费。请稍后在生成记录里查看", "check your generation history later"),
     ("unregisteredModel", None, "failure-unregistered", "所选模型暂不可用，未发送、未扣费", "isn't available right now. Nothing was sent or charged"),
 ]
 
@@ -111,5 +114,5 @@ async def test_712_failure_kinds_shown(ws, bundle, lang, theme, kind, charged, s
         assert e.value.kind == "noTaskId"
         charged = e.value.charged if charged is not None else None
     body = await _shot(bundle, lang, theme, kind, charged, stem)
-    assert (zh if lang == "zh" else en) in body and "wavespeed" not in body.lower()
+    assert (zh if lang == "zh" else en) in body and not re.search(r"wavespeed|kie|控制台|后台|console|dashboard", body, re.I)
     assert "$0.32" in body if charged is not None else "$" not in body
