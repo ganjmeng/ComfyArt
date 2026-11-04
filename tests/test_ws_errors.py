@@ -80,11 +80,11 @@ def test_top_up_link_clickable_in_card():
 
 def test_174_timeout_copy_zh_en(js):
     zh, en = js["zh"], js["en"]
-    assert zh["timeout"] == "任务超时，可能已扣费约 $0.32。请稍后在生成记录里查看，再决定要不要重试。"
-    assert en["timeout"] == "The task timed out and may have been charged about $0.32. Please check your generation history later before retrying."
+    assert zh["timeout"] == "任务超时，可能已扣费约 $0.32。重试前请注意可能重复扣费。"
+    assert en["timeout"] == "The task timed out and may have been charged about $0.32. Retrying may charge again."
     # amount unknown: the 「约 $…」 / 'about $…' half is dropped cleanly
-    assert zh["timeoutNoAmount"] == "任务超时，可能已扣费。请稍后在生成记录里查看，再决定要不要重试。"
-    assert en["timeoutNoAmount"] == "The task timed out and may have been charged. Please check your generation history later before retrying."
+    assert zh["timeoutNoAmount"] == "任务超时，可能已扣费。重试前请注意可能重复扣费。"
+    assert en["timeoutNoAmount"] == "The task timed out and may have been charged. Retrying may charge again."
     assert "约 $1.50。" in zh["timeoutBody"] and "about $1.50." in en["timeoutBody"]
     assert "quoted price" not in zh["timeoutBody"] + en["timeoutBody"]
 
@@ -117,15 +117,15 @@ def test_712_no_vendor_or_console_in_wserr_copy():
         loc = json.loads((ROOT / f"src/locales/{lang}.json").read_text(encoding="utf-8"))
         hits = {k for k, v in loc.items() if k.startswith("wsErr.") and re.search(r"wavespeed|kie", v, re.I)}
         assert hits == PRE_712_VENDOR_KEYS, (lang, sorted(hits ^ PRE_712_VENDOR_KEYS))
-        # no pointer to a vendor console / back office in any wsErr copy
-        bad = [k for k, v in loc.items() if k.startswith("wsErr.") and re.search(r"控制台|后台|console|dashboard", v, re.I)]
+        # no pointer to a vendor console / back office, nor to a generation history UI that doesn't exist yet (#715 option a)
+        bad = [k for k, v in loc.items() if k.startswith("wsErr.") and re.search(r"控制台|后台|console|dashboard|生成记录|历史记录|generation history", v, re.I)]
         assert not bad, (lang, bad)
 
 
 def test_712_task_id_shown_when_obtained(js):
     zh, en = js["zh"], js["en"]
-    assert zh["timeoutId"].endswith("再决定要不要重试。 任务编号：ws-abc123（反馈或退款时请提供）")
-    assert en["timeoutId"].endswith("before retrying. Task ID: ws-abc123 (share it if you contact us about a refund)")
+    assert zh["timeoutId"].endswith("重试前请注意可能重复扣费。 任务编号：ws-abc123（反馈或退款时请提供）")
+    assert en["timeoutId"].endswith("Retrying may charge again. Task ID: ws-abc123 (share it if you contact us about a refund)")
     assert "任务编号：ws-abc123" in zh["noOutputId"] and "Task ID: ws-abc123" in en["noOutputId"]
     assert "ws-abc123" in zh["bodyId"] and "ws-abc123" in en["bodyId"]
     assert "ws-abc123" not in zh["noTaskIdWithId"] + en["noTaskIdWithId"]  # noTaskId never shows an id

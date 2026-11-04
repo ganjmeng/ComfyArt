@@ -99,8 +99,8 @@ CASES = [
     ("noTaskId", 0.32, "failure-notaskid", "没有拿到任务编号，无法取回结果", "No task ID came back"),
     ("noOutput", None, "failure-nooutput-noamount", "没有返回图片，可能已扣费。", "returned no image, and it may have been charged."),
     ("noTaskId", None, "failure-notaskid-noamount", "无法取回结果，可能已扣费。", "cannot be fetched, and it may have been charged."),
-    ("timeout", 0.32, "failure-timeout", "任务超时，可能已扣费约 $0.32。请稍后在生成记录里查看", "check your generation history later"),
-    ("timeout", None, "failure-timeout-noamount", "任务超时，可能已扣费。请稍后在生成记录里查看", "check your generation history later"),
+    ("timeout", 0.32, "failure-timeout", "任务超时，可能已扣费约 $0.32。重试前请注意可能重复扣费。", "may have been charged about $0.32. Retrying may charge again."),
+    ("timeout", None, "failure-timeout-noamount", "任务超时，可能已扣费。重试前请注意可能重复扣费。", "may have been charged. Retrying may charge again."),
     ("unregisteredModel", None, "failure-unregistered", "所选模型暂不可用，未发送、未扣费", "isn't available right now. Nothing was sent or charged"),
 ]
 
@@ -122,5 +122,5 @@ async def test_712_failure_kinds_shown(ws, bundle, lang, theme, kind, charged, s
         assert (f"任务编号：{task}（反馈或退款时请提供）" if lang == "zh" else f"Task ID: {task} (share it if you contact us about a refund)") in body
     else:
         assert "任务编号：" not in body and "Task ID:" not in body
-    assert (zh if lang == "zh" else en) in body and not re.search(r"wavespeed|kie|控制台|后台|console|dashboard", body, re.I)
+    assert (zh if lang == "zh" else en) in body and not re.search(r"wavespeed|kie|控制台|后台|console|dashboard|生成记录|历史记录|generation history", body, re.I)
     assert "$0.32" in body if charged is not None else "$" not in body
