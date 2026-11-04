@@ -1,0 +1,21 @@
+# #687 local fixes (fix/687-local), no paid calls
+
+Each fix has an L/R before/after image in this folder (`lr-*.jpg`).
+
+| item | change |
+|------|--------|
+| clothing-swap | `coverPos: 'center 8%'` (crop only) |
+| premium-website | `coverPos: '15% center'` (crop only; keeps the title and the candle) |
+| youtube-channel-banner | **crop does not work**: the cover is 4:3, the same as the card, so object-position does nothing. It still has the gold "FAMILY FIRST" copy and still looks empty/floating on white. Logged only; it needs a re-wash. |
+| motion | featured 03 removed (Lovart original face) |
+| product | featured set removed (all 4 off-topic and multi-brand), so it falls back to presets |
+| brand | featured keeps only 01 ARC RIDE (02 ARC LABS, 03 MERIDIAN and 04 AUTUMN EDIT are other brands) |
+| banner | featured keeps only 01 Lumo (HELIO, HEARTH KITCHEN and DESIGN WEEK are other brands) |
+| character | featured keeps only 03 AVENTYR sheet (01 lineup, 02 VALOUR, 04 AURA poster) |
+| packaging | Both LUMIERE ARTISAN labels were erased with PIL and re-set as BOTANICA LAB. The image is on branch `assets/687-local` @ b84a0579 at `687/local/packaging.webp`. RapidOCR at 3x and 6x finds no LUMIERE/ARTISAN. |
+
+## 交接
+- **Done so far:** all of the items above, each committed and pushed separately. PAID-LIST.md is written. Gate was run on the affected slugs (see the commit message / report).
+- **Next step:** Angela reviews PAID-LIST.md ($1.4742 / 39 images), and design reviews PROMPTS.md for social+character. After that come the paid re-wash, the youtube-channel-banner re-wash, and the PR. `assets/687-local` needs to merge into review-assets so the packaging pin stays reachable.
+- **Spend:** $0 (no paid calls, no cloud agents).
+- **Balance:** $44.285449 (last known value; not re-queried, because querying is free but was not needed).
