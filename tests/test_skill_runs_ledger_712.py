@@ -84,3 +84,10 @@ def test_unregistered_model_raises():
     from ComfyArt.api import auto_models
     with pytest.raises(auto_models.UnregisteredModel):
         auto_models.registered({"model": "nope/x"}, {"a"}, "text_to_image/x")
+
+
+def test_explicit_fallback_switches_with_log_line(caplog):
+    from ComfyArt.api import auto_models
+    with caplog.at_level("WARNING"):
+        assert auto_models.registered({"model": "nope/x", "fallback": ["nope/y", "a"]}, {"a"}, "text_to_image/x") == ("a", "nope/x")
+    assert "registered fallback a" in caplog.text and "nope/x" in caplog.text
