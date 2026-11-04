@@ -112,7 +112,7 @@ async def test_live_home_and_skills_regression_20(app_url, lang, theme):  # noqa
 
 
 @pytest.mark.parametrize("lang,theme", COMBOS)
-async def test_hidden_notice_clear_of_brand_kit_button(app_url, fake_agent, lang, theme):  # noqa: F811
+async def test_hidden_skill_notice_clear_of_brand_kit_button(app_url, fake_agent, lang, theme):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _page(p, lang, theme)
         await pg.goto(app_url + f"?project=p644gap{lang}{theme}&new=1&skill=yingzao&mode=agent")
@@ -135,7 +135,7 @@ async def test_hidden_notice_clear_of_brand_kit_button(app_url, fake_agent, lang
 
 
 @pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
-async def test_hidden_deep_link_keeps_text_and_refs(app_url, mock_ws, fake_agent, lang, theme):  # noqa: F811
+async def test_hidden_skill_deep_link_keeps_text_and_refs(app_url, mock_ws, fake_agent, lang, theme):  # noqa: F811
     import folder_paths
     (folder_paths.STATE["base"] / "input" / "r644.png").write_bytes(PNG)
     reqs: list[str] = []
