@@ -353,14 +353,14 @@ def _remaining_steps(ctx: RunContext) -> int:
 CARD_COPY = {
     "done": {"zh": ("已完成", "生成了 {n} 张，已放到画布上", None, None),
              "en": ("Done", "Made {n}, placed on the canvas", None, None)},
-    "budget": {"zh": ("预算用完了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续生成", "先到这里"),
-               "en": ("Budget used up", "{n}/{m} done; continuing needs about {x} credits", "Continue generating",
+    "budget": {"zh": ("已自动暂停", "{reason}", "继续生成", "先到这里"),
+               "en": ("Paused automatically", "{reason}", "Continue generating",
                       "Stop here")},
     "hard_cap": {"zh": ("先停在这里了", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续生成", "先到这里"),
                  "en": ("Paused here for now", "{n}/{m} done; continuing needs about {x} credits", "Continue generating",
                         "Stop here")},
-    "stuck": {"zh": ("卡住了", "卡在：{step}", "换个说法再试", None),
-              "en": ("Stuck", "Stuck at: {step}", "Try rephrasing", None)},
+    "stuck": {"zh": ("已暂停", "{reason}", "继续生成", "先到这里"),
+              "en": ("Paused", "{reason}", "Continue generating", "Stop here")},
     "stuck:self_check_failed": {"zh": ("结果未通过自检", "已交付 {n} 张，还差：{miss}", "继续", None),
                                 "en": ("Result failed the self-check", "Delivered {n}; still missing: {miss}",
                                        "Continue", None)},
@@ -380,24 +380,24 @@ CARD_COPY = {
 # awaiting_confirm:not_approved stop title so a pending card and an unapproved one never read the same.
 PENDING_CONFIRM_LABEL = {"zh": "等待确认", "en": "Awaiting confirmation"}
 # primary button action: continue the run from its checkpoint | rephrase (focus the composer) | retry
-_PRIMARY_ACTION = {"stuck": "rephrase", "error": "retry"}
+_PRIMARY_ACTION = {"error": "retry"}  # #709: stuck primary = 继续生成 (continue)
 # #709: every paused card names WHY it paused (one plain line) and stuck cards also offer 继续, which resumes
 # the same run from its checkpoint (agent_loop resume: fresh progress window for stuck, +1 budget for budget).
 # #709 UIUX: the card's reason is a plain sentence (never stuck:* / budget:* codes).
 _STUCK_REASON = {
     "zh": {"no_progress": "连续几步都没有新产出，自动暂停", "repeat": "同一个操作反复出现，自动暂停",
            "tool_error": "工具连续出错，自动暂停", "readonly_limit": "连续多步只在查看、没有生成，自动暂停",
-           "same_tool": "同一个工具连续用了 3 次以上，自动暂停", "non_retryable": "工具返回了无法重试的错误，已暂停",
+           "same_tool": "连续重复同一步，已停下", "non_retryable": "工具返回了无法重试的错误，已暂停",
            "budget": "生成和工具调用次数到了本次上限，自动暂停",
-           "timeout": "等待生成结果超过 10 分钟（或已查询 120 次），自动暂停"},
+           "timeout": "等待生成结果超过 {N} 分钟"},
     "en": {"no_progress": "No new output for several steps, paused automatically",
            "repeat": "The same action kept repeating, paused automatically",
            "tool_error": "A tool failed several times in a row, paused automatically",
            "readonly_limit": "Several steps only looked and made nothing, paused automatically",
-           "same_tool": "The same tool ran more than 3 times in a row, paused automatically",
+           "same_tool": "Repeated the same step in a row, stopped",
            "non_retryable": "A tool returned an error that can't be retried, paused",
            "budget": "Generation and tool calls reached this run's limit, paused automatically",
-           "timeout": "Waited over 10 minutes (or 120 checks) for a result, paused automatically"},
+           "timeout": "Waited over {N} min for the result"},
 }
 _CONTINUE_LABEL = {"zh": "继续生成", "en": "Continue generating"}
 
@@ -407,14 +407,25 @@ def _budget_reason(ctx: "RunContext", dim: str, lk: str) -> str:
     u = ctx.budget.used
     if dim == "time":
         mins = max(1, int(round(u.wall_s / 60)))
-        return f"已运行 {mins} 分钟，自动暂停" if lk == "zh" else f"Ran for {mins} min, paused automatically"
+        return (f"已运行 {mins} 分钟，达到单次时长上限。已生成的图保留在画布上。" if lk == "zh" else
+                f"Ran for {mins} min, reaching the per-run time limit. Images already made stay on the canvas.")
     if dim == "credits":
         c = ui_credits(u.credits)
-        return f"已用 {c} 积分，自动暂停" if lk == "zh" else f"Used {c} credits, paused automatically"
+        return (f"已用 {c} 积分，达到单次积分上限。已生成的图保留在画布上。" if lk == "zh" else
+                f"Used {c} credits, reaching the per-run credit limit. Images already made stay on the canvas.")
     if dim == "tokens":
         t = _fmt_tokens(u.tokens)
-        return f"模型用量已达 {t}，自动暂停" if lk == "zh" else f"Model usage reached {t}, paused automatically"
+        return (f"模型用量已达 {t}，达到单次上限。已生成的图保留在画布上。" if lk == "zh" else
+                f"Model usage reached {t}, the per-run limit. Images already made stay on the canvas.")
     return "已自动暂停" if lk == "zh" else "Paused automatically"
+
+
+def _stuck_reason(ctx: "RunContext", sub: str, lk: str) -> str:
+    t = _STUCK_REASON[lk].get(sub, "已自动暂停" if lk == "zh" else "Paused automatically")
+    if "{N}" in t:
+        tr = ctx.tracker
+        t = t.replace("{N}", str(max(1, int((max(tr.wait_waited_s, 0) or tr.wait_max_s) // 60))))
+    return t
 
 
 # 「详情」 token line label: ONE copy key, design picks the final Chinese word (placeholder 用量).
@@ -443,7 +454,11 @@ def _card_body(key: str, lk: str, *, n: int, m: Optional[int], x: Optional[int],
     image = kind == "image" and m is not None
     u = _UNIT[lk].get(kind, _UNIT[lk][""])
     sep = "，" if lk == "zh" else "; "
-    if key in ("budget", "hard_cap"):
+    if key == "budget" and x is not None:   # #709: plain sentence + the real cost to continue
+        return kw["reason"] + (f"继续大约需要 {x} 积分。" if lk == "zh" else f" Continuing needs about {x} credits.")
+    if key in ("budget", "stuck"):
+        return kw["reason"]          # #709: one plain sentence, no separate duplicated reason line
+    if key == "hard_cap":
         if not image:
             return f["ask"]
         return f["progress"].format(n=n, m=m) + (f["est"].format(x=x) if x is not None else "")
@@ -539,16 +554,16 @@ def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: i
         miss = (f"{check.missing} {sc_mod._KIND_LABEL[lk][goal.kind]}" if lk == "en" else
                 f"{check.missing} {dict(image='张', video='段', text='条')[goal.kind]}{sc_mod._KIND_LABEL[lk][goal.kind]}") if goal else ""
         reason = (stop.detail or _STALL_LABEL[lk].get(stop.sub, "") or stop.code).strip().splitlines()
+        plain = (_budget_reason(ctx, stop.dimension, lk) if key == "budget" else
+                 _stuck_reason(ctx, stop.sub, lk) if key == "stuck" else (reason[0] if reason else "")[:160])
         out[lk] = {"title": title,
-                   "body": _card_body(key, lk, n=n, m=m, x=x, kind=kind, step=step, miss=miss,
-                                      reason=(reason[0] if reason else "")[:160]),
+                   "body": _card_body(key, lk, n=n, m=m, x=x, kind=kind, step=step, miss=miss, reason=plain),
                    "primary": primary, "secondary": secondary}
-        if stop.reason == StopReason.BUDGET:
-            out[lk]["reason"] = _budget_reason(ctx, stop.dimension, lk)
-        elif stop.reason == StopReason.STUCK:
-            out[lk]["reason"] = _STUCK_REASON[lk].get(stop.sub, "已自动暂停" if lk == "zh" else "Paused automatically")
-            if primary not in ("继续", "Continue"):
-                out[lk]["continue"] = _CONTINUE_LABEL[lk]
+        if stop.reason in (StopReason.BUDGET, StopReason.STUCK) and key not in ("budget", "stuck"):
+            r = (_budget_reason(ctx, stop.dimension, lk) if stop.reason == StopReason.BUDGET
+                 else _stuck_reason(ctx, stop.sub, lk))
+            if r != out[lk]["body"]:
+                out[lk]["reason"] = r
     return out
 
 
@@ -911,7 +926,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 _log.warning("[ComfyArt/agent] run %s over budget: %d calls, %d generate_image (cap %d/%d)", ctx.run_id,
                              ctx.tracker.total_calls, ctx.tracker.gen_calls, ctx.tracker.tool_calls_max, ctx.tracker.gen_cap())
                 return await finish(Stop(StopReason.STUCK, "budget", step=ctx.budget.used.steps))
-            if ctx.tracker.wait_timeout(obs):  # #705: one generation task waited > 10 min or > 120 polls
+            if ctx.tracker.wait_timeout(obs, now=clock()):  # #705: one generation task waited > 10 min or > 120 polls
                 _log.warning("[ComfyArt/agent] run %s wait_generation timeout: %s", ctx.run_id, ctx.tracker.wait_polls)
                 return await finish(Stop(StopReason.STUCK, "timeout", step=ctx.budget.used.steps))
             stall = ctx.tracker.observe(ctx.budget.used.steps, obs, canvas_fp="|".join(ctx.artifacts[-200:]))

@@ -306,8 +306,9 @@ async def test_soft_limit_exceeded_pauses_interactive(monkeypatch, store):
     c = card(ev)
     assert c["can_continue"] and c["estimate"]["credits"] > 0 and c["remaining"]["deliverables"] >= 1
     zh = c["copy"]["zh"]
-    assert zh["title"] == "预算用完了" and zh["primary"] == "继续生成" and zh["secondary"] == "先到这里"
-    assert zh["body"].startswith("已完成 ") and "/4" in zh["body"] and "继续大约需要" in zh["body"] and "积分" in zh["body"]
+    assert zh["title"] == "已自动暂停" and zh["primary"] == "继续生成" and zh["secondary"] == "先到这里"
+    assert zh["body"].startswith("已用 ") and "达到单次积分上限。已生成的图保留在画布上。继续大约需要" in zh["body"]
+    assert "预算" not in zh["body"] and "reason" not in zh
     assert store.get_run(res.run["run_id"])["status"] == "paused"
 
 

@@ -489,7 +489,8 @@ class ProgressTracker:
     # #705: wait_generation is outside the 30 cap but each task gets max 10 min OR 120 polls -> stuck:timeout
     wait_max_s: float = 600.0
     wait_max_polls: int = 120
-    wait_first: dict = field(default_factory=dict)   # task id -> wall time of first poll
+    wait_first: dict = field(default_factory=dict)   # task id -> run-clock time of first poll
+    wait_waited_s: float = 0.0                       # #709: longest wait so far (run clock), for the card copy
     wait_polls: dict = field(default_factory=dict)   # task id -> polls so far
     last_tool: str = ""
     same_tool_run: int = 0
@@ -568,7 +569,8 @@ class ProgressTracker:
 
     def wait_timeout(self, obs: list[StepObservation], now: Optional[float] = None) -> bool:
         """#705: True once any task polled by wait_generation passes wait_max_s since its first poll or wait_max_polls."""
-        now = time.time() if now is None else now
+        # #709: callers pass the run's clock (time.monotonic-based, same as the other loop caps)
+        now = time.monotonic() if now is None else now
         hit = False
         for o in obs:
             if re.sub(r"^mcp__\w+__", "", o.tool or "") != "wait_generation":
@@ -582,6 +584,7 @@ class ProgressTracker:
             for i in ids:
                 self.wait_first.setdefault(i, now)
                 self.wait_polls[i] = self.wait_polls.get(i, 0) + 1
+                self.wait_waited_s = max(self.wait_waited_s, now - self.wait_first[i])
                 if self.wait_polls[i] > self.wait_max_polls or now - self.wait_first[i] > self.wait_max_s:
                     hit = True
         return hit

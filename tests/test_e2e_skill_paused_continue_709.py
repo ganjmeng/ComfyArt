@@ -48,14 +48,22 @@ def page(tmp_path_factory):
 CODES = re.compile(r"budget:|stuck:|hard_cap|exhausted|_limit|non_retryable|self_check|timeout|no_progress|same_tool")
 
 
-def ui_continue(page, block, reason_text, shot=None):
+def ui_continue(page, block, reason_text, shot=None, title=None):
     """Render the real card: plain reason + PRIMARY 继续生成; clicking it POSTs /runs/<same id>/continue."""
     page.evaluate("([b]) => { window.__calls = []; window.__render(b, 'zh', 'light') }", [[block]])
     page.wait_for_selector(".ca-run")
     r = page.locator(".ca-run").first
     text = r.inner_text()
-    assert reason_text in text and page.locator("[data-run-reason]").first.inner_text() == reason_text
+    assert reason_text in text and text.count(reason_text) == 1
+    if title:
+        assert r.locator(".ca-run__title").first.inner_text().strip() == title, text
+    lines = [x.strip() for x in text.splitlines() if x.strip()]
+    assert len(lines) == len(set(lines)), lines             # no duplicated line
+    for gone in ("预算用完了", "预算到了，要继续吗？", "换个说法再试", "卡住了"):
+        assert gone not in text, text
     assert not CODES.search(text), text                     # no internal code in visible text
+    assert [b.inner_text() for b in r.locator("button:not(.ca-run__details button)").all()
+            if b.inner_text() in ("先到这里", "继续生成", "换个说法再试", "继续")] == ["先到这里", "继续生成"], text
     if shot:
         Path(shot).parent.mkdir(parents=True, exist_ok=True)
         r.screenshot(path=shot)
@@ -102,9 +110,9 @@ def test_budget_exhausted_plain_reason_primary_continue_keeps_images(monkeypatch
     b = card(ev)
     assert b["can_continue"] and b["run_id"] == rid
     mins = max(1, round(res.run["log"]["wall_s"] / 60))
-    want = f"已运行 {mins} 分钟，自动暂停"
+    want = f"已运行 {mins} 分钟，达到单次时长上限。已生成的图保留在画布上。"
     shot = str(Path(SHOT) / "paused_budget_time_zh.png") if SHOT else None
-    card_el, got = ui_continue(page, b, want, shot)
+    card_el, got = ui_continue(page, b, want, shot, title="已自动暂停")
     assert got == rid
     assert card_el.locator("button.ca-panel__secondary").inner_text() == "先到这里"
     assert len(images(store, rid)) == len(made) and store.get_run(rid)["state"]["artifacts"] == art  # unchanged while paused
@@ -114,31 +122,33 @@ def test_budget_exhausted_plain_reason_primary_continue_keeps_images(monkeypatch
 
 
 def test_stuck_plain_reason_and_primary_continue_resumes_same_run(monkeypatch, store, page):
-    r = Rig(monkeypatch, lambda m, n: calls(("get_canvas", {})), store=store)
-    res, ev = arun(r.send("加字", goal=""))
+    r = Rig(monkeypatch, lambda m, n: calls(("generate_image", {"prompt": f"v{n}"})), store=store,
+            mcp=lambda name, a, i: f"queued attempt {i}", prices={"generate_image": 0.01})
+    res, ev = arun(r.send("Banner", goal=""))
     s, rid = stop_of(res), res.run["run_id"]
     assert s["reason"] == "stuck" and store.get_run(rid)["status"] == "paused"
     b = card(ev)
-    want = agent_loop._STUCK_REASON["zh"][s["sub"]]
-    assert b["copy"]["zh"]["reason"] == want
-    assert ui_continue(page, b, want)[1] == rid
+    assert s["sub"] == "same_tool", s
+    want = "连续重复同一步，已停下"
+    assert b["copy"]["zh"]["body"] == want and "reason" not in b["copy"]["zh"] and b["copy"]["action"] == "continue"
+    shot = str(Path(SHOT) / "paused_stuck_same_tool_zh.png") if SHOT else None
+    assert ui_continue(page, b, want, shot, title="已暂停")[1] == rid
     resume_to_done(monkeypatch, store, rid)
 
 
 def test_stuck_timeout_plain_reason_and_primary_continue_resumes_same_run(monkeypatch, store, page):
-    orig = run_budget.ProgressTracker.wait_timeout
+    clk = Clock()   # the run's own (monotonic-style) clock drives wait_timeout, not time.time()
 
-    def small(self, obs, now=None):
-        self.wait_max_polls = 2
-        return orig(self, obs, now)
-    monkeypatch.setattr(run_budget.ProgressTracker, "wait_timeout", small)
-    r = Rig(monkeypatch, lambda m, n: calls(("wait_generation", {"ids": ["job1"]})), store=store,
-            mcp=lambda name, a, i: json.dumps({"status": "pending"}))
+    def mcp(name, a, i):
+        clk.t += 330
+        return json.dumps({"status": "pending"})
+    r = Rig(monkeypatch, lambda m, n: calls(("wait_generation", {"ids": ["job1"]})), store=store, clock=clk, mcp=mcp,
+            policy={"wall_time_s": 10**6})
     res, ev = arun(r.send("加字", goal=""))
     s, rid = stop_of(res), res.run["run_id"]
     assert (s["reason"], s["sub"]) == ("stuck", "timeout") and store.get_run(rid)["status"] == "paused"
-    assert ui_continue(page, card(ev), "等待生成结果超过 10 分钟（或已查询 120 次），自动暂停")[1] == rid
-    monkeypatch.setattr(run_budget.ProgressTracker, "wait_timeout", orig)
+    shot = str(Path(SHOT) / "paused_wait_timeout_zh.png") if SHOT else None
+    assert ui_continue(page, card(ev), "等待生成结果超过 11 分钟", shot, title="已暂停")[1] == rid
     resume_to_done(monkeypatch, store, rid)
 
 

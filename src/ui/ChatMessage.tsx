@@ -321,8 +321,7 @@ export function RunStop({ b, latest }: { b: BotBlock; latest: boolean }) {
         <div className="ca-panel__foot">
           {copy.secondary && <button type="button" className="ca-panel__secondary" disabled={busy} onClick={() => setClosed(true)}>{copy.secondary}</button>}
           {/* #709: when the card offers 继续生成, it is THE primary action; the locked primary steps back */}
-          <button type="button" className={copy.continue ? 'ca-panel__secondary' : 'ca-panel__primary'} data-action={b.copy?.action} disabled={busy} onClick={go}>{copy.primary}</button>
-          {copy.continue && <button type="button" className="ca-panel__primary" data-action="continue" disabled={busy} onClick={go}>{copy.continue}</button>}
+          <button type="button" className="ca-panel__primary" data-action={b.copy?.action} disabled={busy} onClick={go}>{copy.primary}</button>
         </div>
       )}
     </div>
