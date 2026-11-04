@@ -18,6 +18,6 @@ items=[('01','静','少即是多，留白安放心绪'),('02','茶','一壶慢�
 y=600
 for n,k,c in items:
     d.text((70,y+6),n,font=f(R,22),fill=GOLD);d.text((115,y-8),k,font=f(B,44),fill=(235,230,215));d.text((180,y+6),c,font=f(R,24),fill=(200,196,185));y+=82
-d.text((50,999),'/07',font=f(R,24),fill=(200,196,185))
+d.text((50,999),'03/05',font=f(R,24),fill=(200,196,185))
 pager(d,1028,2)
 im.save('p07_final.png')

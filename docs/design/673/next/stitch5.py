@@ -8,13 +8,17 @@ def repager(im,cy,active):
     for i in range(5):
         x=960+21*(i-2);d.ellipse((x-6,cy-6,x+6,cy+6),fill=GOLD if i==active else GREY)
     return im
-p01=Image.open(B+'ppt-p01.webp').convert('RGB')
-p02=repager(Image.open(B+'ppt-p02.webp').convert('RGB'),1028,1)
-a=np.array(p02);m=np.zeros(a.shape[:2],np.uint8);m[996:1028,46:120]=255;a=cv2.inpaint(a,m,5,cv2.INPAINT_TELEA);p02=Image.fromarray(a)
-ImageDraw.Draw(p02).text((50,999),'02/05',font=ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',24),fill=(200,196,185))
-p07=Image.open('p07_final.png').convert('RGB')
-p08=repager(Image.open(B+'ppt-p08.webp').convert('RGB'),1030,3)
-p10=Image.open(B+'ppt-p10.webp').convert('RGB')
+FNT=ImageFont.truetype('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',24)
+def num(im,t,y=999,clear=False):
+    if clear:
+        a=np.array(im);m=np.zeros(a.shape[:2],np.uint8);m[996:1028,46:120]=255;im=Image.fromarray(cv2.inpaint(a,m,5,cv2.INPAINT_TELEA))
+    ImageDraw.Draw(im).text((50,y),t,font=FNT,fill=(200,196,185));return im
+# page number = position in the 5-page long image; 5 pager dots on every page
+p01=num(repager(Image.open(B+'ppt-p01.webp').convert('RGB'),1028,0),'01/05')
+p02=num(repager(Image.open(B+'ppt-p02.webp').convert('RGB'),1028,1),'02/05',clear=True)
+p07=Image.open('p07_final.png').convert('RGB')  # 03/05 drawn in p07_type.py
+p08=num(repager(Image.open(B+'ppt-p08.webp').convert('RGB'),1030,3),'04/05',y=1010)
+p10=num(repager(Image.open(B+'ppt-p10.webp').convert('RGB'),1028,4),'05/05')
 pages=[p01,p02,p07,p08,p10]
 for n,p in zip(['p01','p02','p07','p08','p10'],pages): p.save(f'page_{n}.png')
 s=np.concatenate([np.array(p) for p in pages]).astype(float)
