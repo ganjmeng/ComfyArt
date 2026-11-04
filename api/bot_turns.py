@@ -43,7 +43,13 @@ def broadcast(event: str, payload: dict) -> None:
 
 
 def _mcp_endpoint(chat_id: str) -> str:
-    return f"http://127.0.0.1:{PromptServer.instance.port}/comfyart/mcp?bot_chat={chat_id}"
+    # #P0 mcp-guard-bypass: external CLIs carry the MCP token in the (loopback-only) URL; their config formats
+    # (claude/codex/qwen/deepseek) have no common header field.
+    from urllib.parse import quote
+    from .settings import mcp_token
+    tok = mcp_token()
+    url = f"http://127.0.0.1:{PromptServer.instance.port}/comfyart/mcp?bot_chat={chat_id}"
+    return f"{url}&mcp_token={quote(tok)}" if tok else url
 
 
 def _comfy_mcp_argv() -> list[str]:

@@ -563,9 +563,11 @@ class ProgressTracker:
         # #705: paid/external calls AND read-only calls (skill reads, views; not wait_generation polls) share the
         # 30 cap, so a read-only loop (stuck:repeat style) cannot run past it either.
         self.paid_calls += sum(1 for o in obs if o.tool in PAID_TOOLS or _capped_readonly(o.tool))
-        self.gen_calls += sum(1 for o in obs if o.tool == "generate_image")
-        return (self.paid_calls > self.tool_calls_max or self.total_calls > self.all_calls_max
-                or self.gen_calls > self.gen_cap())
+        # P0 paid-guard (技术经理): only generate_image calls that actually ran count; a call refused before submit
+        # ($0, e.g. missing product ref) is failed and never counts. The image cap itself is enforced BEFORE each
+        # paid call by api/paid_guard (turn_cap); this post-step check is no longer a cap (no after-the-fact stop).
+        self.gen_calls += sum(1 for o in obs if o.tool == "generate_image" and not o.failed)
+        return self.paid_calls > self.tool_calls_max or self.total_calls > self.all_calls_max
 
     def wait_timeout(self, obs: list[StepObservation], now: Optional[float] = None) -> bool:
         """#705: True once any task polled by wait_generation passes wait_max_s since its first poll or wait_max_polls."""

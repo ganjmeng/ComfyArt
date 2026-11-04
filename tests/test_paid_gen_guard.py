@@ -225,7 +225,6 @@ async def test_decline_on_one_plan_item_does_not_block_another(monkeypatch, subm
     assert not error
 
 
-@pytest.mark.gate_skip(reason="stale on main: per-plan-item cap now yields 7 calls, test expects 9 (paid-gen guard, #717)")
 async def test_each_plan_item_gets_its_own_four(monkeypatch, submits):
     def plan(active):
         return ("update_plan", {"steps": [{"text": t, "status": "active" if t == active else "pending"}
@@ -251,12 +250,105 @@ async def test_declined_runs_do_not_count(monkeypatch, submits):
     assert all(s[1]["prompt"].startswith("b") for s in _paid(submits))
 
 
-async def test_no_guard_outside_a_bot_turn(submits):
-    # plain MCP clients (no bot chat) are not turn-scoped
+async def test_paid_call_without_a_turn_is_refused(submits):
+    # #730: no bot_chat -> no guard -> refused before submit, nothing charged
     for i in range(6):
         out = await mcp._tools_call({"name": "generate_image", "arguments": {"prompt": str(i)}})
-        assert not out["isError"]
-    assert len(_paid(submits)) == 6
+        assert out["isError"] and out["content"][0]["text"] == paid_guard.NO_TURN_TEXT
+    assert _paid(submits) == []
+    # free tools still work without a turn
+    assert not (await mcp._tools_call({"name": "update_plan", "arguments": {"steps": []}}))["isError"]
+
+
+async def test_unknown_bot_chat_is_refused_over_http(bot_client, submits):
+    # #730: a forged / stale bot_chat has no open turn -> refused, nothing charged
+    for chat_id in ("nope", "c-local"):
+        resp = await bot_client.post(f"/comfyart/mcp?bot_chat={chat_id}", json={
+            "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+            "params": {"name": "generate_image", "arguments": {"prompt": "x"}}})
+        assert resp.status == 200
+        res = (await resp.json())["result"]
+        assert res["isError"] and res["content"][0]["text"] == paid_guard.NO_TURN_TEXT
+    assert _paid(submits) == []
+
+
+async def test_external_mcp_needs_a_token(bot_client):
+    from conftest import write_settings
+    rpc = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
+    write_settings(**{"enable-mcp": True, "mcp-token": ""})
+    resp = await bot_client.post("/comfyart/mcp", json=rpc)
+    assert resp.status == 403 and "token" in (await resp.text())
+    write_settings(**{"enable-mcp": True, "mcp-token": "right"})
+    for headers in ({"Authorization": "Bearer wrong"}, {"Authorization": ""}):
+        assert (await bot_client.post("/comfyart/mcp", json=rpc, headers=headers)).status == 403
+    assert (await bot_client.post("/comfyart/mcp", json=rpc, headers={"Authorization": "Bearer right"})).status == 200
+    assert (await bot_client.post("/comfyart/mcp?mcp_token=right", json=rpc, headers={"Authorization": ""})).status == 200
+
+
+# ---- run-wide cap (#729): min(planned + 2, 4 x items, 30), pre-checked, charged only -------------
+
+def _drive(text: str, calls: list, chat_id: str = "c-cap") -> int:
+    """Drive the guard directly: calls are ('plan', item, n_items) / ('gen', ok). Returns charged submits."""
+    paid_guard.begin_turn(chat_id, text=text, provider_text=text, lang="zh")
+    submitted = 0
+    try:
+        for c in calls:
+            if c[0] == "plan":
+                args = {"steps": [{"text": f"i{k}", "status": "active" if f"i{k}" == c[1] else "pending"}
+                                  for k in range(c[2])]}
+                paid_guard.after_call(chat_id, "update_plan", args, {"ok": True})
+                continue
+            args = {"prompt": "x"}
+            if paid_guard.before_call(chat_id, "generate_image", args) is not None:
+                continue
+            payload = {"ids": ["g"]} if c[1] else {"error": "failed", "status": "failed"}
+            paid_guard.after_call(chat_id, "generate_image", args, payload)
+            submitted += 1 if c[1] else 0
+    finally:
+        paid_guard.end_turn(chat_id)
+    return submitted
+
+
+def _three_by_three():
+    calls = []
+    for k in range(3):
+        calls += [("plan", f"i{k}", 3)] + [("gen", True)] * 4
+    return _drive("做 3 套，每套 3 张，一共 9 张图", calls)
+
+
+def _failed_then_ok():
+    return _drive("poster", [("gen", False)] * 6 + [("gen", True)] * 6)
+
+
+def test_turn_cap_formula():
+    g = paid_guard.TurnGuard(lang="zh", cap=9, planned=9, plan_items=3)
+    assert g.turn_cap() == 11  # 3 items x 3 images: min(9 + 2, 12... , 30)
+    assert paid_guard.TurnGuard(lang="zh", cap=4, plan_items=20).turn_cap() == 30
+    assert paid_guard.TurnGuard(lang="zh", cap=4, plan_items=2).turn_cap() == 8
+    assert _three_by_three() == 11
+
+
+def test_failed_calls_do_not_count():
+    assert _failed_then_ok() == 4  # 6 failed ($0) never eat the cap
+
+
+def test_mutation_rule1_counting_failed_calls_is_caught(monkeypatch):
+    monkeypatch.setattr(paid_guard, "charged", lambda payload: True)  # mutant: every call counts
+    assert _failed_then_ok() != 4
+
+
+def test_mutation_rule2_after_the_fact_check_is_caught(monkeypatch):
+    def late(guard, units):  # mutant: only notices once the cap is already passed
+        if guard.used.get(guard.plan_item, 0) > guard.cap:
+            return "item"
+        return "turn" if guard.charged_total > guard.turn_cap() else ""
+    monkeypatch.setattr(paid_guard, "_over_cap", late)
+    assert _three_by_three() != 11
+
+
+def test_mutation_rule3_dropping_the_turn_cap_is_caught(monkeypatch):
+    monkeypatch.setattr(paid_guard.TurnGuard, "turn_cap", lambda self: paid_guard.TURN_HARD_MAX)
+    assert _three_by_three() != 11
 
 
 def test_charged_reads_cancel_and_errors():
@@ -304,7 +396,6 @@ async def test_generation_without_reference_is_blocked_before_submit(monkeypatch
     assert not error
 
 
-@pytest.mark.gate_skip(reason="stale on main: guard returns no paid calls in this path (paid-gen guard, #717)")
 async def test_blocked_calls_do_not_count_toward_cap(monkeypatch, submits):
     steps = [_s8_gen(i) for i in range(6)] + [_s8_gen(9, refs=["shape:src"])]
     error, *_ = await _local(monkeypatch, steps)

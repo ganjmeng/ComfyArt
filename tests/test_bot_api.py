@@ -73,7 +73,7 @@ async def test_send_streams_blocks_and_titles_the_chat(bot_client, fake_provider
     assert "MEM\n\nmake a poster" in ut
     assert ut.endswith("[CTX]")
     assert [b["text"] for b in data["messages"][0]["blocks"] if b["type"] == "text"] == ["make a poster"]
-    assert fake_provider.last_turn.mcp_endpoint.endswith(f"/comfyart/mcp?bot_chat={chat['id']}")
+    assert f"/comfyart/mcp?bot_chat={chat['id']}" in fake_provider.last_turn.mcp_endpoint  # + &mcp_token= (#730)
     assert any(event == "comfyart-bot" and data["event"] == "turn_done" for event, data in SENT)
 
 

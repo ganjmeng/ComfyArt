@@ -7,6 +7,8 @@ from ._common import app_path, error, json_body, read_json, routes, write_json
 SETTINGS_SPEC: dict[str, object] = {
     # #219: the built-in agent works out of the box (only a WaveSpeed key is needed)
     "enable-mcp": False,
+    # #P0 mcp-guard-bypass: external MCP needs this bearer token; enable-mcp without it = MCP refuses every external call
+    "mcp-token": "",
     "enable-bot": True,
     "bot-provider": "local-llm",
     "bot-model-claude-code": "",
@@ -38,7 +40,7 @@ SETTINGS_SPEC: dict[str, object] = {
     "proactive-daily": 5,
 }
 
-SECRET_KEYS = ("bot-local-llm-key",)
+SECRET_KEYS = ("bot-local-llm-key", "mcp-token")
 MASK = "********"
 
 CHOICES: dict[str, tuple[str, ...]] = {"ocr-engine": ("local", "agent")}
@@ -59,6 +61,11 @@ def get_setting(key: str):
 
 def mcp_enabled() -> bool:
     return bool(get_setting("enable-mcp"))
+
+
+def mcp_token() -> str:
+    """External MCP bearer token (setting ``mcp-token``). Empty = external MCP refuses to start."""
+    return str(get_setting("mcp-token") or "").strip()
 
 
 def bot_enabled() -> bool:

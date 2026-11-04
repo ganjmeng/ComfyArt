@@ -6,7 +6,7 @@ from . import bot_asks, chat_store
 from . import bot_send as send_core
 from ._common import error, json_body, request_user, routes
 from .bot_turns import ACTIVE_TURNS, QUEUED, broadcast
-from .settings import bot_disabled, bot_enabled, get_setting, mcp_enabled
+from .settings import bot_disabled, bot_enabled, get_setting, mcp_enabled, mcp_token
 
 EXTERNAL_NEEDS_MCP = "external agents need MCP: turn on MCP in Agent settings"
 
@@ -153,8 +153,8 @@ async def bot_send(request: web.Request) -> web.Response:
         return error("text, refs or docs required", 400)
     provider = get_provider(chat["provider"])
     # #219: external tools reach the canvas through the external MCP endpoint, which stays closed while the switch is off
-    if provider is not None and chat["provider"] != "local-llm" and not mcp_enabled():
-        return error(EXTERNAL_NEEDS_MCP, 403)
+    if provider is not None and chat["provider"] != "local-llm" and not (mcp_enabled() and mcp_token()):
+        return error(EXTERNAL_NEEDS_MCP, 403)  # P0 mcp-guard-bypass: switch on AND a token set
     if provider is None:
         return error(f"unknown provider {chat['provider']!r}", 400)
     can_see = provider.capabilities().attachments
