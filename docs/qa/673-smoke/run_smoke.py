@@ -60,6 +60,24 @@ def images_of(messages, after_id):
             out += [b.get("url") for b in m.get("blocks") or [] if b.get("type") == "image" and b.get("url")]
         if m.get("id") == after_id: seen = True
     return out
+CDN_HOST = "d2h7xmz5gqybh9.cloudfront.net"  # WaveSpeed output CDN (#687 ex01 download died with TLS EOF)
+
+
+def cdn_preflight(out, host=CDN_HOST, timeout=15):
+    """Free TLS handshake probe of the result CDN; a paid image we cannot download is wasted money."""
+    import socket, ssl
+    rec = {"host": host, "t": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+    try:
+        with socket.create_connection((host, 443), timeout=timeout) as raw:
+            with ssl.create_default_context().wrap_socket(raw, server_hostname=host) as tls:
+                rec.update(ok=True, tls=tls.version())
+    except Exception as e:  # SSLEOFError / handshake / timeout
+        rec.update(ok=False, error=f"{type(e).__name__}: {e}")
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "cdn_preflight.json"), "w") as f: json.dump(rec, f, indent=1)
+    print("CDN preflight:", json.dumps(rec)); return rec
+
+
 async def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--live", action="store_true"); ap.add_argument("--only")
     ap.add_argument("--ref", action="append", default=[]); ap.add_argument("--out", default="/workspace/smoke673/out")
@@ -85,6 +103,7 @@ async def main():
     if not a.live: print("DRY RUN — nothing submitted. Use --live to spend."); return
     if a.project == "PROJECT_ID": sys.exit("--project <id> required (open that project in the Loomi tab)")
     if any(str(r).startswith("REF_") for _, i, _, _ in plan for r in i.get("images", [])): sys.exit("replace REF_ placeholders via --ref")
+    if not cdn_preflight(a.out)["ok"]: sys.exit("abort: WaveSpeed CDN TLS preflight failed; no paid call made")
     load_env(); from ComfyArt.api import wavespeed as ws
     key = os.environ["WAVESPEED_API_KEY"]; out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     spent, log = 0.0, []

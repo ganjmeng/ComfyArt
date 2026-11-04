@@ -45,5 +45,6 @@ prompt = 用户输入 + 换行 + 所选 preset 的 Style 句（原文见 `src/sk
 - 本地起 app 跑 live：`WAVESPEED_API_KEY` 从 secrets env 导入后 `./scripts/start.sh`（http://127.0.0.1:8188/comfyart/）；Agent Settings 打开 MCP 和 Agent，agent provider 保持默认 `local-llm`（WaveSpeed LLM，回落用 `WAVESPEED_API_KEY`）；新建一个项目并保持该 Loomi 标签页打开（画布工具在页面里执行）；然后 `python3 docs/qa/673-smoke/run_smoke.py --live --project <id>`（refs 已是默认值）。
 - 阻塞：#727 合并后即可跑 live（技术经理定：守卫 bug 不会超支，$0.8 兜底，不等守卫 PR）。refs 已就绪。
 - 注意：守卫只在 bot 轮次里生效（直接调 `/comfyart/mcp` 没有轮次时 `before_call` 放行），所以脚本必须走 `/send`，不能直调 MCP；agent 的 LLM 调用默认也走 WaveSpeed，费用在同一余额里，单独记账。
+- CDN 预检（新增）：`--live` 在任何付费调用前先对 WaveSpeed 出图 CDN `d2h7xmz5gqybh9.cloudfront.net:443` 做免费 TLS 握手，失败即中止并写 `out/cdn_preflight.json`。2026-11-04 22:41（UTC+8）本机实测：**失败**，`SSLEOFError: UNEXPECTED_EOF_WHILE_READING`（curl 同样 exit 35）；同时 `api.wavespeed.ai` 200、GitHub 正常，问题只在这台机器到该 CDN 的链路。CDN 不通前 live 会自动中止，不花钱。
 - 已花费：$0。
 - 余额：$44.134249（开发工程师在 #687 报的最新值，本次未查询）。
