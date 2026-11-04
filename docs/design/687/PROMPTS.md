@@ -26,3 +26,20 @@ Common local post: rembg product cutout → draw giant word behind product → p
 | ex05 | 1088×1456 | cold-pressed juice bottle (orange), word ZEST, CTA "Try now" | `A hand holding a clear glass bottle of orange cold-pressed juice from the lower right, halved oranges and mint leaves on a pale yellow surface below, bright citrus-yellow backdrop with soft shadows, empty upper half for a headline. Fresh lifestyle product photography, 3:4.` + no-text line |
 
 Cover (1088×1360): local only — reuse ex03 output with the cover copy layout, $0.
+
+## 2. character — re-wash, 6 examples ("Character Sheet Design")
+Each sheet = one character, identical across every view in that sheet. Keep each gold's ethnicity/age/style (diversity rule). Cost: 6 × $0.0378 = **$0.2268**.
+
+| ex | gold size | route | mask plan | prompt | local post |
+|---|---|---|---|---|---|
+| ex01 real man turnaround (front/side/back) | 2048×1152 | gold base, head inpaint | feathered ellipse on the 2 visible heads (front, side); back head untouched except hair tone | `Replace only the masked heads with a different Caucasian man in his late 40s, short salt-and-pepper hair, trimmed beard, handsome, real skin texture. The same man in both views. Keep exact head angle, gaze, lighting, navy jacket, pose, white background and grain. Change the shoe colour to dark brown.` + no-text line | colour-match back-view hair; upscale 2048×1152 |
+| ex02 anime schoolgirl sheet | 1536×1024 | style reference, new character | none | `Use the reference only for anime line style, colouring and sheet layout. New character: girl with a shoulder-length chestnut bob and green eyes, grey blazer school uniform with plaid green skirt and red ribbon, front/side/back full body on the left, six head expressions grid on the right, white background.` + no-text line | upscale 1536×1024 |
+| ex03 businessman sheet + close-ups | 1536×2048 | gold base, head inpaint | feathered masks on every face (3 full-body + 3 portrait tiles), one person | `Replace only the masked faces with one different Caucasian man in his early 60s, neat silver side-parted hair, clean-shaven, distinguished and attractive, real skin texture, identical in every view. Keep exact head angles, gaze, light, black suit, poses, white background and grain. Change the tie from patterned to plain burgundy and the cufflinks to silver.` + no-text line | check tie tweak in close-up tiles too; upscale |
+| ex04 cellist sheet | 2048×1152 | gold base, head inpaint | feathered masks on all faces (turnaround + playing shots); hands/cello untouched | `Replace only the masked faces with one different South Asian woman in her mid 20s, long dark hair in a low bun, beautiful, real skin texture, the same woman in every view. Keep exact head angles, downward gaze toward the cello, lighting, black dress, poses and grain. Change her earrings to small gold hoops.` + no-text line | upscale |
+| ex05 hooded rogue sheet | 2048×1152 | style reference, new character (face hidden → soft-wash risk) | none | `Use the reference only for realistic concept-art rendering, sheet layout (front/side/back plus detail tiles) and muted earthy grade. New character: a desert ranger in a sand-coloured hooded cloak with a teal scarf over the face, leather bracers, curved short bow on the back; detail tiles of bracer, boots and quiver. Plain light background.` + no-text line | upscale |
+| ex06 magical girls lineup | 2048×1152 | style reference, new characters | none | `Use the reference only for anime magical-girl style, pastel colouring and three-in-a-row lineup. New trio: a mint-haired girl in a white-and-teal sailor dress, a lavender-haired girl in a starry violet gown, a red-haired girl in a gold-trimmed crimson outfit, full body, white background.` + no-text line | gold name plates replaced by new local labels (Mira / Lyra / Rinne) or removed |
+
+Cover (1390×1040): local crop/collage of ex01+ex02+ex06 outputs, $0.
+
+### Social + character subtotal
+11 × $0.0378 = **$0.4158**; with the max 2 extra retries: $0.4914 ≤ $0.50 cap. Run as one batch; if any retry pushes the projection over $0.50, stop and re-review.
