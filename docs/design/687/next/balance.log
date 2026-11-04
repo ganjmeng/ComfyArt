@@ -13,3 +13,5 @@ running total 0.0756 / 0.50 (2 of 12 calls). PAUSED for design PASS on ex02 pilo
 2026-11-04 22:51 CST  social ex05  id 97a15490d28f4b73888aae3b059b2593  before 43.983049 after 43.945249 cost 0.0378 ok
 2026-11-04 22:51 CST  character ex01 PILOT  id 48ac50dd4ec642b8bbbdc2efb1047502  before 43.945249 after 43.907449 cost 0.0378 ok
 running total 0.2646 / 0.50 (7 calls, 6 ok, 0 retries); balance 43.907449. STOPPED: character ex02-06 wait for design PASS on ex01 pilot (5 x 0.0378 = 0.189 -> projected 0.4536, 1 retry fits).
+2026-11-04 23:01 CST  character ex01 rev2  id ee20445d2680415e8db00dc01c641be3  before 43.900506 after 43.862706 cost 0.0378 ok. (43.907449 -> 43.900506 between runs = $0.006943 smoke, not ours)
+running total attributed 0.3024 / 0.50 (8 calls); balance 43.862706. ex02-06 HELD.
