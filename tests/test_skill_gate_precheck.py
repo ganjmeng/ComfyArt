@@ -1,6 +1,7 @@
 """Pre-check helpers of scripts/gate_lib.sh (gate hardening)."""
 import socket
 import subprocess
+import sys
 from pathlib import Path
 
 LIB = Path(__file__).resolve().parents[1] / "scripts" / "gate_lib.sh"
@@ -144,3 +145,27 @@ def test_every_gate_skip_names_reason_and_issue():
     assert hits, "expected the known main failures to be marked"
     for name, args in hits:
         assert 'reason="' in args and re.search(r"#\d+", args), (name, args)
+
+
+# --- #712 no-spend: gate stages unset paid keys and block outbound network ---
+def test_gate_stages_unset_paid_keys_and_enable_guard():
+    sh = (ROOT / "scripts" / "gate.sh").read_text()
+    assert sh.count("env -u WAVESPEED_API_KEY -u KIE_API_KEY GATE=1") == 2  # collect + run
+    assert "duration=" in sh
+
+
+def test_gate_guard_blocks_outbound_allows_localhost():
+    code = (
+        "import os, socket, sys; os.environ['WAVESPEED_API_KEY']='x'; os.environ['GATE']='1';"
+        "sys.path.insert(0, 'tests'); import conftest;"
+        "assert 'WAVESPEED_API_KEY' not in os.environ;"
+        "s=socket.socket(); s.settimeout(1)\n"
+        "try:\n s.connect(('8.8.8.8', 443)); print('OPEN')\n"
+        "except conftest.GateNetworkBlocked: print('BLOCKED')\n"
+        "try:\n socket.getaddrinfo('api.wavespeed.ai', 443); print('DNS')\n"
+        "except conftest.GateNetworkBlocked: print('DNSBLOCKED')\n"
+        "srv=socket.socket(); srv.bind(('127.0.0.1',0)); srv.listen(1);"
+        "c=socket.socket(); c.connect(srv.getsockname()); print('LOCAL')"
+    )
+    out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, timeout=60)
+    assert out.stdout.split() == ["BLOCKED", "DNSBLOCKED", "LOCAL"], out.stderr[-800:]

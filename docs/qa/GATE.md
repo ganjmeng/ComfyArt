@@ -21,3 +21,8 @@ The reason must name the issue tracking the fix; remove the marker in that fix. 
 
 Env overrides: `GATE_ROOT`, `GATE_MAIN` (node_modules source), `GATE_PY`, `GATE_WT`, `GATE_PORTS`.
 Helpers live in `scripts/gate_lib.sh`; tests in `tests/test_skill_gate_precheck.py`.
+
+## No spend (#712)
+Every pytest stage runs under `env -u WAVESPEED_API_KEY -u KIE_API_KEY GATE=1`. With `GATE=1`, `tests/conftest.py`
+removes the paid keys and patches `socket.connect`/`getaddrinfo` so only localhost (mock servers, vite, playwright) is reachable;
+any other host raises `GateNetworkBlocked`. Each stage prints `duration=Ns`; parallelize (xdist by dir) if UNIT exceeds 5 min.
