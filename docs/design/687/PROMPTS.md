@@ -75,3 +75,9 @@ Cost: 1 × $0.0378 = **$0.0378** (up to $0.1134 with 2 retries). Not part of the
 - Next: UIUX + 技术经理 review this file; confirm the "6 re-wash + 7 fix" list (only social, character, youtube-channel-banner and the 2 crops are pinned here) and a cap for youtube-channel-banner; then 1K pilot (1 per new slot to Angela), then batch.
 - Spend: $0 in this task.
 - Balance: WaveSpeed $44.285449 (last logged before the promo ex01 / p07 / taobao-product run; not re-queried, no paid calls here).
+
+### character ex01 — rev 2 (design HOLD 22:56: pilot still read as the same man; NOT run, awaiting pre-review + smoke done)
+Route: gold base → generate → `next/character/composite_head.py` pastes only head+hair ellipses (front/side/back) onto gold, so outfit/shoes/pose/bg stay gold pixels.
+Prompt:
+`Replace only the heads in all three views (front, side and back) with a clearly different Caucasian man in his early 40s: short dark brown, almost black hair with a straight, slightly higher squared-off hairline and a neat short side part, clean-shaven with a strong defined jawline, handsome and campaign-grade, real skin texture. He must not resemble the original man: no grey hair, no beard. The same new man in every view, including matching dark hair colour and cut on the back of the head in the back view. Keep exact head angles, gaze, lighting, neck position, navy jacket, trousers, shoes, pose, white background and grain unchanged. No text, no letters, no logos, no numbers, no watermark anywhere in the image.`
+Cost if approved: 1 × $0.0378 (ar 16:9, 1K), local composite $0.
