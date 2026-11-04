@@ -89,7 +89,7 @@ def _featured_from_data():
         # skillFeaturedCases: featured[] first, else still examples (e.g. #643 NEW19 ex643)
         if (m and m.group(1) != "[]") or re.search(r"examples: ex\d+\(", p):
             out.add(p.split("'", 1)[0])
-    h = src[src.index("export const HIDDEN_BUILTIN_SKILL_IDS"):]
+    h = src[src.index("= [", src.index("export const HIDDEN_BUILTIN_SKILL_IDS")) + 3:]
     hidden = set(re.findall(r"'([a-z0-9-]+)'", h[:h.index("]")]))  # #673 hide list
     return out - hidden
 
