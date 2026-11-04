@@ -56,7 +56,7 @@ const WASH_594 = 'cc76d743d416c3d9a9a6852d811a7a80caf40319'
 const COVER_V4 = WASH_594
 const COVERS_581: Record<string, readonly [string, string]> = {
   poster: ['494/covers-v3', COVER_V3], social: ['494/covers-v3', COVER_V3], brand: ['494/covers-v3', COVER_V3],
-  packaging: ['494/covers-v3', COVER_V3], thumbnail: ['494/covers-v3', COVER_V3],
+  packaging: ['687/local', 'b84a057980a6aa00ad25f7ee7e1c1b88e264b312'] /* #687: LUMIERE ARTISAN erased, assets/687-local */, thumbnail: ['494/covers-v3', COVER_V3],
   banner: ['494/covers-v3.1', '9b23a3e8e3ca2f6b64dc16c0cf36fbf9c41fcaf4'],
   character: ['494/covers-v3.2', 'dc335056e81e0350e2f98487fb680e22ffb14bb9'],
   product: ['494/covers-v3', COVER_V3], motion: ['494/covers-v3', COVER_V3], interior: ['494/covers-v3', COVER_V3],
