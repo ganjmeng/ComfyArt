@@ -243,7 +243,7 @@ export const PHASE2_DEFERRED_SKILL_ID_SET: ReadonlySet<string> = new Set(PHASE2_
  *  composer 「/」 picker, and the agent `skill` tool (list + read).
  *  TO RE-LIST A SKILL: once it is washed in #673 and Angela gives PASS, delete its id from this array. Nothing else to change. */
 export const HIDDEN_BUILTIN_SKILL_IDS: readonly string[] = [
-  'photo-split-poster', 'ppt-visual', 'promo-ecommerce',
+  'ppt-visual', 'promo-ecommerce',
   'yingzao', 'crt-interface', 'crayon-sketch', 'fabric-collage',
 ]
 export const HIDDEN_BUILTIN_SKILL_ID_SET: ReadonlySet<string> = new Set(HIDDEN_BUILTIN_SKILL_IDS)
