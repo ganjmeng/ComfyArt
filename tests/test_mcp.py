@@ -5,7 +5,7 @@ import asyncio
 from conftest import SENT, write_settings
 from server import PromptServer
 
-from ComfyArt.api import chat_store, mcp_commands
+from ComfyArt.api import chat_store, mcp_commands, paid_guard
 from ComfyArt.api.mcp_tools import bot_tools
 from ComfyArt.api.bot_turns import ACTIVE_TURNS, _TurnState
 from ComfyArt.bot.guide import CORE_MCP_TOOLS
@@ -137,6 +137,8 @@ async def test_generation_asks_first_when_the_chat_runs_in_ask_mode(bot_client):
     chat = chat_store.create_chat(user="default", project="p", provider="codex", run_mode="ask")
     msg = chat_store.create_message(chat_id=chat["id"], role="assistant", blocks=[], status="streaming")
     ACTIVE_TURNS[chat["id"]] = _TurnState(TurnHandle(), chat["id"], msg["id"])
+    # #730: paid tools only run inside an open guarded turn (as bot_turns does before the agent starts)
+    paid_guard.begin_turn(chat["id"], text="a cat", provider_text="a cat", lang="en")
     call = asyncio.create_task(bot_client.post(f"/comfyart/mcp?bot_chat={chat['id']}", json=_rpc(
         "tools/call", {"name": "generate_image", "arguments": {"prompt": "a cat"}})))
     for _ in range(200):
@@ -149,4 +151,5 @@ async def test_generation_asks_first_when_the_chat_runs_in_ask_mode(bot_client):
     result = (await (await call).json())["result"]
     assert '"declined"' in result["content"][0]["text"]
     assert not [d for e, d in SENT if e == "comfyart-mcp-command"]
+    paid_guard.end_turn(chat["id"])
     ACTIVE_TURNS.clear()
