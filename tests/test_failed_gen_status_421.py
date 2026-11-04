@@ -49,6 +49,26 @@ def _clear_guard():
 @pytest.mark.asyncio
 async def test_generate_image_failure_marks_is_error(monkeypatch) -> None:
     """Backend: WaveSpeed/model failure on generate_image sets tool_result.is_error (not only transport)."""
+    events, _calls = await _run_421(monkeypatch, _free_price)
+    tr = next(e for e in events if e.t == "tool_result" and e.name == "generate_image")
+    assert tr.is_error is True
+    assert "failed" in tr.text
+
+
+@pytest.mark.asyncio
+async def test_generate_image_pricer_raising_is_skipped_732(monkeypatch) -> None:
+    """#732 reverse of the _price_one stub: a raising pricer means generate_image is never sent (fail closed)."""
+    async def broken(model, inputs):
+        raise ModuleNotFoundError("No module named 'ComfyArt'")
+
+    events, calls = await _run_421(monkeypatch, broken)
+    assert "generate_image" not in calls
+    tr = next(e for e in events if e.t == "tool_result" and e.name == "generate_image")
+    assert "[non-retryable]" in tr.text
+
+
+async def _run_421(monkeypatch, price):
+    calls: list[str] = []
     provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
     responses = [
         {"choices": [{"message": {"content": "", "tool_calls": [{
@@ -68,6 +88,7 @@ async def test_generate_image_failure_marks_is_error(monkeypatch) -> None:
         ]}}
 
     async def fake_call(session, endpoint, name, arguments):
+        calls.append(name)
         if name == "ask_user":
             return json.dumps({"status": "answered", "selected": ["no"]}), []
         return FAIL_JSON, []
@@ -77,7 +98,7 @@ async def test_generate_image_failure_marks_is_error(monkeypatch) -> None:
 
     monkeypatch.setattr(provider, "_request_json", fake_request)
     monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
-    monkeypatch.setattr(provider, "_price_one", _free_price)  # #732: pricing fails closed; no key here
+    monkeypatch.setattr(provider, "_price_one", price)  # #732: pricing fails closed; no key here
     monkeypatch.setattr(LocalLlmProvider, "_confirm_fallback", no_fallback)
 
     events: list[BotEvent] = []
@@ -93,10 +114,7 @@ async def test_generate_image_failure_marks_is_error(monkeypatch) -> None:
                     mcp_endpoint="http://x/mcp", model="m1"),
         emit, TurnHandle())
     paid_guard.end_turn(chat_id)
-
-    tr = next(e for e in events if e.t == "tool_result" and e.name == "generate_image")
-    assert tr.is_error is True
-    assert "failed" in tr.text
+    return events, calls
 
 
 @pytest.mark.asyncio

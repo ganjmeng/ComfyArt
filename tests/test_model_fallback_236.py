@@ -131,7 +131,7 @@ def _gens(sent):
     return [a for action, a in sent if action == "generate_image"]
 
 
-async def _turn(monkeypatch, steps, *, user_text="画一张写实人像", lang="zh", agree=True):
+async def _turn(monkeypatch, steps, *, user_text="画一张写实人像", lang="zh", agree=True, price_raises=False):
     """Built-in agent loop with the real MCP tool handlers and a fake page. No WaveSpeed."""
     chat_id = "c-236"
     provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
@@ -167,6 +167,8 @@ async def _turn(monkeypatch, steps, *, user_text="画一张写实人像", lang="
     monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
 
     async def free_price(model, inputs):  # #732: pricing now fails closed, so stub it (no WaveSpeed key here)
+        if price_raises:
+            raise ModuleNotFoundError("No module named 'ComfyArt'")
         return 0.0
 
     monkeypatch.setattr(provider, "_price_one", free_price)
@@ -354,3 +356,12 @@ async def test_handler_submit_uses_fallback_and_names_it(page):
     assert note.startswith(f"用了 {FLARE}，因为") and f"Used {FLARE} because" in note and SEEDREAM in note
     assert "费用规则" in _cost_block_note(SEEDREAM, FLARE, "zh")
     assert "cost rules" in _cost_block_note(SEEDREAM, FLARE, "en")
+
+
+async def test_pricer_raising_sends_no_generation_732(monkeypatch, page):
+    """#732 reverse of the _price_one stub: a raising pricer skips the paid call, nothing reaches the page."""
+    _result, events, _seen, _asked = await _turn(
+        monkeypatch, [("generate_image", {"prompt": PORTRAIT, "model": SEEDREAM})], price_raises=True)
+    assert _gens(page) == []
+    rows = [e for e in events if e.t == "tool_result" and e.name == "generate_image"]
+    assert rows and "[non-retryable]" in rows[0].text

@@ -189,7 +189,8 @@ def _provider():
     return LocalLlmProvider(base_url=lambda: "http://x/v1")
 
 
-async def _run(monkeypatch, responses, *, lang="zh", quote=None, confirm="start", user_text="做两张"):
+async def _run(monkeypatch, responses, *, lang="zh", quote=None, confirm="start", user_text="做两张",
+               price_raises=False):
     provider = _provider()
     mcp = []
     quoted = []
@@ -217,6 +218,8 @@ async def _run(monkeypatch, responses, *, lang="zh", quote=None, confirm="start"
     monkeypatch.setattr(provider, "_quote_steps", fake_quote)
 
     async def free_price(model, inputs):  # #732: per-call pricing now fails closed; no WaveSpeed key here
+        if price_raises:
+            raise ModuleNotFoundError("No module named 'ComfyArt'")
         return 0.0
 
     monkeypatch.setattr(provider, "_price_one", free_price)
@@ -385,3 +388,22 @@ def test_card_reuses_the_confirm_component_and_skips_the_second_dialog():
     assert "已取消，没有扣费。" in step and "Cancelled\\. Nothing was charged\\." in step
     # the per-job dialog keeps its own copy; the plan card does not reuse 继续生成
     assert "jobs.confirmOk" not in chat
+
+
+async def test_start_with_pricer_raising_sends_no_paid_call_732(monkeypatch):
+    """#732 reverse of the _price_one stub: if per-call pricing raises, paid calls are skipped (fail closed)."""
+    responses = [
+        {"choices": [{"message": {"content": "", "tool_calls": [
+            _tc(1, "quote_plan", {"steps": [
+                {"text": "生成海报", "tool": "generate_image", "model": POSTER, "arguments": {"prompt": "a"}},
+                {"text": "生成视频", "tool": "generate_video", "model": VIDEO, "arguments": {"prompt": "b", "duration": 5}},
+            ]}),
+            _tc(2, "generate_image", {"prompt": "a", "model": POSTER}),
+            _tc(3, "generate_video", {"prompt": "b", "duration": 5, "model": VIDEO}),
+        ]}}]},
+        {"choices": [{"message": {"content": "好了", "tool_calls": []}}]},
+    ]
+    _r, events, mcp, _q, _c = await _run(monkeypatch, responses, quote=_over(), confirm="start", price_raises=True)
+    assert [n for n, _ in mcp if n in ("generate_image", "generate_video")] == []
+    rows = [e for e in events if e.t == "tool_result" and e.name in ("generate_image", "generate_video")]
+    assert rows and all("[non-retryable]" in e.text for e in rows)
