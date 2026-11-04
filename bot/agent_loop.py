@@ -11,6 +11,7 @@ import asyncio
 
 import aiohttp
 import json
+import re
 import logging
 import time
 import uuid
@@ -91,6 +92,49 @@ _PAID_PENDING_NOTE = {
 }
 
 
+
+_SKILL_START_RE = re.compile(r"Use the ComfyArt skill (['\"])(.+?)\1 for this task")
+
+
+def current_skill_from_messages(messages: list) -> str:
+    """#705: the skill a run was started from (api/bot_send.compose_provider_text puts it in the first user turn)."""
+    for m in messages or []:
+        if m.get("role") != "user":
+            continue
+        c = m.get("content")
+        if isinstance(c, list):
+            c = " ".join(str(p.get("text") or "") for p in c if isinstance(p, dict))
+        hit = _SKILL_START_RE.search(str(c or ""))
+        if hit:
+            return hit.group(2).strip()
+    return ""
+
+
+def autofill_skill_read(ctx: Optional["RunContext"], name: str, args: dict) -> dict:
+    """#705: `skill {"action":"read"}` with no id/name inside a skill run reads the run's skill; logged in the run log."""
+    if ctx is None or name != "skill" or str(args.get("action") or "").lower() != "read" or not ctx.current_skill:
+        return args
+    if str(args.get("id") or "").strip() or str(args.get("name") or "").strip():
+        return args
+    ctx.skill_autofills += 1
+    record = {"event": "skill_autofill", "run_id": ctx.run_id, "filled": {"name": ctx.current_skill},
+              "detail": f"skill read had no id/name; filled name={ctx.current_skill!r} from the run's skill"}
+    _log.info("[ComfyArt/agent] %s", json.dumps(record, ensure_ascii=False))
+    if ctx.store:
+        try:
+            ctx.store.add_run_log(run_id=ctx.run_id, record=record, owner_id=ctx.owner_id,
+                                  workspace_id=ctx.workspace_id, project_id=ctx.project_id)
+        except Exception:  # noqa: BLE001 — logging must never break the run
+            _log.debug("skill_autofill run log failed", exc_info=True)
+    return {**args, "name": ctx.current_skill}
+
+
+def _result_failed(b: dict) -> bool:
+    """#705: a tool result failed if status=error or its text starts with [error] / [tool error]
+    (mirror bot/local_llm.py). Real tools return status=success + "[tool error] ValueError: ..."."""
+    t = str(b.get("text") or "").lstrip()
+    return b.get("status") == "error" or t.startswith("[error]") or t.startswith("[tool error]")
+
 def _key_str(name: str, args: dict) -> str:
     return json.dumps(canon_key(name, args), ensure_ascii=False)
 
@@ -122,6 +166,8 @@ class RunContext:
     messages: list = field(default_factory=list)  # live transcript (same list the loop appends to)
     pricer: Any = None
     confirmer: Any = None
+    current_skill: str = ""                         # #705: skill the run was started from (auto-fills empty reads)
+    skill_autofills: int = 0
 
     # -- persistence -------------------------------------------------------------
     def state(self, messages: Optional[list] = None) -> dict:
@@ -581,6 +627,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                              state=ctx.state(messages))
             store.acquire_lease(run_id, lease_owner, policy["lease_s"])
     ctx.messages = messages
+    ctx.current_skill = ctx.current_skill or current_skill_from_messages(messages)
     ctx.pricer = getattr(provider, "_price_call", None)
     ctx.confirmer = getattr(provider, "_confirm_paid_over_quote", None)
     t_start = clock()
@@ -642,7 +689,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             "wall_s": round(ctx.budget.used.wall_s, 2), "turn_s": round(clock() - t_start, 2),
             "stop_reason": stop.reason.value, "stop_sub": stop.sub, "stop_code": stop.code,
             "dimension": stop.dimension, "compressions": ctx.compressions, "paid_calls": ctx.paid_calls,
-            "self_check": check.to_dict(), "status": status,
+            "skill_autofills": ctx.skill_autofills, "self_check": check.to_dict(), "status": status,
         }
         _log.info("[ComfyArt/agent] %s", json.dumps(record, ensure_ascii=False))
         if ctx.store:
@@ -810,7 +857,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                 obs.append(StepObservation(tool=str(b.get("name") or ""),
                                            args_key=_call_key(str(b.get("name") or ""), u.get("input") or {}),
                                            result=str(b.get("text") or ""),
-                                           failed=b.get("status") == "error" or str(b.get("text") or "").startswith("[error]")))
+                                           failed=_result_failed(b)))
             for o in obs:
                 if not o.failed:
                     for a in sorted(artifact_ids(o.result)):

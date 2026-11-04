@@ -87,3 +87,34 @@ def test_tracker_budget_cap_tool_calls_and_generate_image() -> None:
     assert t.over_budget(_obs("add_text", 301)) is True
     t = ProgressTracker(planned_images=100)  # 30 paid (non-generate_image here) calls max
     assert [t.over_budget(_obs("edit_image", i)) for i in range(1, 32)] == [False] * 30 + [True]
+
+
+def test_tracker_readonly_skill_reads_count_toward_30_cap() -> None:
+    t = ProgressTracker(planned_images=100)  # #705: a read-only loop cannot bypass the 30 cap
+    assert [t.over_budget(_obs("skill", i)) for i in range(1, 32)] == [False] * 30 + [True]
+    t = ProgressTracker()
+    assert not any(t.over_budget(_obs("wait_generation", i)) for i in range(1, 60))  # polls are not capped
+
+
+def test_tool_error_prefix_is_a_failure() -> None:
+    from ComfyArt.bot.agent_loop import _result_failed
+    assert _result_failed({"status": "success", "text": "[tool error] ValueError: [non-retryable] x"})
+    assert _result_failed({"status": "error", "text": "x"}) and _result_failed({"text": "[error] x"})
+    assert not _result_failed({"status": "success", "text": '{"id": "shape:1"}'})
+
+
+def test_autofill_skill_read_uses_current_skill_only() -> None:
+    from types import SimpleNamespace
+    from ComfyArt.api.bot_send import compose_provider_text
+    from ComfyArt.bot.agent_loop import autofill_skill_read, current_skill_from_messages
+    msgs = [{"role": "user", "content": compose_provider_text("go", skill_name="LinkedIn Banner")}]
+    assert current_skill_from_messages(msgs) == "LinkedIn Banner"
+    assert current_skill_from_messages([{"role": "user", "content": "go"}]) == ""
+    ctx = SimpleNamespace(current_skill="LinkedIn Banner", skill_autofills=0, run_id="r", store=None)
+    assert autofill_skill_read(ctx, "skill", {"action": "read"}) == {"action": "read", "name": "LinkedIn Banner"}
+    assert autofill_skill_read(ctx, "skill", {"action": "read", "id": " "})["name"] == "LinkedIn Banner"
+    assert autofill_skill_read(ctx, "skill", {"action": "read", "id": "x"}) == {"action": "read", "id": "x"}
+    assert autofill_skill_read(ctx, "skill", {"action": "list"}) == {"action": "list"}
+    assert ctx.skill_autofills == 2
+    none = SimpleNamespace(current_skill="", skill_autofills=0, run_id="r", store=None)
+    assert autofill_skill_read(none, "skill", {"action": "read"}) == {"action": "read"}

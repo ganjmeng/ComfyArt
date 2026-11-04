@@ -410,6 +410,13 @@ READ_ONLY_TOOLS = frozenset({
     "ToolSearch", "tool_search", "read_skill", "list_skills", "memory_read", "read_memory",
     "web_search", "web_fetch", "search", "get_shape", "list_shapes", "wait_generation",
 })
+
+
+def _capped_readonly(tool: str) -> bool:
+    base = re.sub(r"^mcp__\w+__", "", tool or "")
+    return base == "skill" or (base in READ_ONLY_TOOLS and base != "wait_generation")
+
+
 _VOLATILE_RE = re.compile(
     r'"(?:elapsed[_a-z]*|duration[_a-z]*|time|timestamp|ts|until|updated_at|created_at|now|request_id)"\s*:\s*[^,}\]]+')
 _NUM_TS_RE = re.compile(r"\b1[6-9]\d{8,11}\b")
@@ -547,7 +554,9 @@ class ProgressTracker:
         """#705: count this step's calls; True once the run exceeds the tool-call or generate_image cap (never reset)."""
         from .guide import PAID_TOOLS
         self.total_calls += len(obs)
-        self.paid_calls += sum(1 for o in obs if o.tool in PAID_TOOLS)
+        # #705: paid/external calls AND read-only calls (skill reads, views; not wait_generation polls) share the
+        # 30 cap, so a read-only loop (stuck:repeat style) cannot run past it either.
+        self.paid_calls += sum(1 for o in obs if o.tool in PAID_TOOLS or _capped_readonly(o.tool))
         self.gen_calls += sum(1 for o in obs if o.tool == "generate_image")
         return (self.paid_calls > self.tool_calls_max or self.total_calls > self.all_calls_max
                 or self.gen_calls > self.gen_cap())
