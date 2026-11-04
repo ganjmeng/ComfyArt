@@ -1,0 +1,4 @@
+# #687 paid re-wash (social+character), WaveSpeed google/nano-banana-2.1/edit @1K, cap $0.50
+2026-11-04 22:2x CST  social ex01 pilot  before 44.172049  after 44.134249  cost 0.0378  status: generated server-side, DOWNLOAD FAILED (CDN TLS EOF), image not on box
+running total 0.0378 / 0.50
+2026-11-04 22:32 CST  PAUSED by 技术经理 order (paid_gen_guard tests failing). No further calls.
