@@ -1,0 +1,28 @@
+{
+ "logo-abstract-cover": 8.3,
+ "logo-abstract-ex02": 5.3,
+ "logo-abstract-ex09": 19.0,
+ "logo-abstract-ex06": 13.6,
+ "logo-abstract-ex10": 10.2,
+ "ppt-visual-cover": 17.3,
+ "ppt-p01": 6.1,
+ "ppt-p02": 26.4,
+ "ppt-p07": 6.4,
+ "ppt-p08": 23.7,
+ "ppt-p10": 2.0,
+ "naive-cover": 29.2,
+ "naive-ex02": 32.4,
+ "naive-ex03": 38.3,
+ "naive-ex04": 31.2,
+ "promo-cover": 1.4,
+ "promo-ex01": 38.9,
+ "promo-ex02": 22.3,
+ "photo-split-cover": 15.6,
+ "photo-split-ex01": 22.4,
+ "seams_lumdiff": {
+  "1": 73.6,
+  "2": 12.6,
+  "3": 7.0,
+  "4": 9.1
+ }
+}
