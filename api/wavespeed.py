@@ -26,7 +26,7 @@ import aiohttp
 import folder_paths
 from aiohttp import web
 
-from . import refprep
+from . import gen_ledger, refprep
 from ._common import app_path, error, json_body, routes
 
 log = logging.getLogger("comfyart.wavespeed")
@@ -1607,15 +1607,22 @@ async def submit(inputs: dict) -> str:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())
         # never auto-retry a submit: a retry could be charged twice
-        async with session.post(f"{_base()}/api/v3/{model}", json=payload) as res:
-            body = await _json(res)
-            if res.status >= 400:
-                raise _status_error(res.status, body)
+        try:
+            async with session.post(f"{_base()}/api/v3/{model}", json=payload) as res:
+                body = await _json(res)
+                if res.status >= 400:
+                    raise _status_error(res.status, body)
+        except (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError, OSError) as e:
+            # #712: the request may have reached WaveSpeed (and been charged) but no request id came back
+            raise await _no_task_id(model, feature, inputs, f"submit interrupted ({type(e).__name__})") from e
     task = ((body or {}).get("data") or {}).get("id")
     if not task:
-        raise WaveSpeedError("WaveSpeed did not return a task id")
+        raise await _no_task_id(model, feature, inputs, "WaveSpeed did not return a task id")
+    quoted = await _quoted(model, inputs)
+    # #712: persist the request id before the first poll, so a lost poll can be retried with the same id
+    gen_ledger.record_submit(task, "wavespeed", model, feature, quoted)
     _jobs[task] = {"model": model, "feature": feature, "started": time.time(), "next_poll": time.time() + POLL_MIN,
-                   "inputs": _price_inputs(inputs)}
+                   "inputs": _price_inputs(inputs), "quoted": quoted}
     log.info("WaveSpeed task %s submitted (%s)", task, model)
     await _record_submit_usage(task, model, feature, inputs)  # #498 Usage ledger (submit quote)
     return task
@@ -2057,7 +2064,10 @@ async def _download(session: aiohttp.ClientSession, task: str, index: int, url: 
 
 def _history(task: str, status: str, messages: list, outputs: dict) -> dict:
     done = status in ("completed", "failed")
-    return {f"ws:{task}": {"status": {"completed": done, "status_str": "error" if status == "failed" else status, "messages": messages}, "outputs": outputs}}
+    entry = {"status": {"completed": done, "status_str": "error" if status == "failed" else status, "messages": messages}, "outputs": outputs}
+    if done:
+        entry["generation_succeeded"] = status == "completed"  # #712
+    return {f"ws:{task}": entry}
 
 
 def _fail(task: str, message: "str | WaveSpeedError") -> dict:
@@ -2067,6 +2077,10 @@ def _fail(task: str, message: "str | WaveSpeedError") -> dict:
         if message.charged is not None:
             info["ws_charged"] = message.charged  # #174: 「可能已扣费约 $…」
     job = _jobs.get(task)
+    if job and job.get("model"):
+        charged = message.charged if isinstance(message, WaveSpeedError) else None
+        gen_ledger.record_failure(task, "wavespeed", job["model"], str(message), kind=info.get("ws_kind") or "failed",
+                                  cost_usd=charged, feature=job.get("feature") or "")
     if job:
         job["done"] = True
         job["result"] = _history(task, "failed", [["execution_error", info]], {})
@@ -2077,7 +2091,13 @@ def _fail(task: str, message: "str | WaveSpeedError") -> dict:
 async def poll(task: str) -> dict:
     job = _jobs.get(task)
     if job is None:
+        saved = gen_ledger.run(task) or {}
         job = _jobs[task] = {"started": time.time(), "next_poll": 0.0}
+        if saved.get("status") == "submitted" and saved.get("provider") == "wavespeed":
+            # #712: a restart lost the in-memory job; resume polling with the saved request id (never resubmit)
+            job.update(model=saved.get("model"), feature=saved.get("feature") or "", quoted=saved.get("quoted_usd"),
+                       started=float(saved.get("submitted_at") or time.time()))
+            log.info("#712: resuming WaveSpeed task %s from the saved request id", task)
     if job.get("result"):
         return job["result"]
     if job.get("group"):
@@ -2088,6 +2108,18 @@ async def poll(task: str) -> dict:
         return await _poll_wrapped(task, job)
     now = time.time()
     if now - job["started"] > JOB_TIMEOUT:
+        if job.get("model") and not job.get("recovery_tried"):
+            # #712: one last poll with the saved request id before calling it failed (the result GET is free)
+            job["recovery_tried"] = True
+            try:
+                got = await _poll_once(task, job, now)
+                if job.get("result"):
+                    log.info("#712: WaveSpeed task %s recovered after the poll timeout via its saved id", task)
+                    return got
+            except (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError, OSError, _Transient) as e:
+                log.warning("#712: recovery poll for %s failed (%s)", task, type(e).__name__)
+        if job.get("result"):
+            return job["result"]
         if job.get("model"):
             return _fail(task, await _timeout_error(task))
         return _fail(task, WaveSpeedError(f"WaveSpeed task timed out after {int(JOB_TIMEOUT)}s", 504, kind="timeout"))
@@ -2142,11 +2174,16 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
         outputs = [o for o in (data.get("outputs") or []) if isinstance(o, str) and o.startswith(("http://", "https://"))]
         if not outputs:
             # #120: text-only results (or nothing) can't be saved as files; never report an empty success
-            return _fail(task, NO_OUTPUT)
+            # #712: the job ran, so it was charged: say so and record the quoted cost
+            cost = job.get("quoted")
+            return _fail(task, WaveSpeedError(NO_OUTPUT + (f", charged about (quoted price) ${cost:g}" if cost is not None else ""),
+                                              502, kind="noOutput", charged=cost))
         # CDN URLs expire after 7 days: keep a local copy right away
         refs = [await _download(session, task, i, url) for i, url in enumerate(outputs) if isinstance(url, str)]
     job["done"] = True
     job["result"] = _history(task, "completed", [], {"ws": {"images": refs}})
+    if job.get("model"):
+        gen_ledger.mark_succeeded(task, len(refs))
     log.info("WaveSpeed task %s completed (%d output%s)", task, len(refs), "" if len(refs) == 1 else "s")
     return job["result"]
 
@@ -2155,6 +2192,26 @@ FAILED_STATUSES = ("failed", "cancelled", "timeout", "deleted")
 TEXT_KEYS = ("text", "transcription", "caption", "result", "output", "content")
 NO_OUTPUT = "WaveSpeed task finished without output"
 NO_TEXT = "WaveSpeed task finished without text"
+
+
+async def _quoted(model: str, inputs: dict) -> float | None:
+    """Free price quote for the ledger; None when unknown (never invented)."""
+    try:
+        price, _ = await quote(model, dict(inputs or {}))
+    except Exception:  # noqa: BLE001
+        return None
+    return None if price is None else round(float(price), 6)
+
+
+NO_TASK_ID = "WaveSpeed did not return a request id, so the result cannot be fetched"
+
+
+async def _no_task_id(model: str, feature: str, inputs: dict, reason: str) -> "WaveSpeedError":
+    """#712: submit sent but no request id: recorded as a failure with the quoted cost, shown to the user."""
+    cost = await _quoted(model, inputs)
+    gen_ledger.record_failure(None, "wavespeed", model, reason, kind="noTaskId", cost_usd=cost, feature=feature)
+    msg = f"{NO_TASK_ID} ({reason})" + (f"; may have been charged about (quoted price) ${cost:g}" if cost is not None else "")
+    return WaveSpeedError(msg, 502, kind="noTaskId", charged=cost)
 
 
 async def _timeout_error(task: str) -> "WaveSpeedError":
@@ -2166,6 +2223,8 @@ async def _timeout_error(task: str) -> "WaveSpeedError":
             price, _ = await quote(job["model"], dict(job.get("inputs") or {}))
         except Exception:  # noqa: BLE001 - the message is still useful without a price
             price = None
+    if price is None and job.get("model"):
+        price = job.get("quoted")
     if price is None:
         return WaveSpeedError("WaveSpeed task timed out", 504, kind="timeout")
     amount = round(float(price), 6)
@@ -2235,9 +2294,16 @@ async def run_raw(inputs: dict, timeout: float = 120.0) -> list:
                         # some text models put the result next to outputs instead of inside it
                         outs = [data[k] for k in TEXT_KEYS if isinstance(data.get(k), (str, dict, list)) and data.get(k)]
                     if not outs:
-                        raise WaveSpeedError(NO_OUTPUT, 502)
+                        cost = (_jobs.get(task) or {}).get("quoted")
+                        raise WaveSpeedError(NO_OUTPUT, 502, kind="noOutput", charged=cost)
+                    gen_ledger.mark_succeeded(task, len(outs))
                     return outs
         raise await _timeout_error(task)
+    except WaveSpeedError as e:
+        job = _jobs.get(task) or {}
+        gen_ledger.record_failure(task, "wavespeed", job.get("model") or "", str(e), kind=e.kind or "failed",
+                                  cost_usd=e.charged, feature=job.get("feature") or "")  # #712
+        raise
     finally:
         if task in _jobs:
             _jobs[task]["done"] = True

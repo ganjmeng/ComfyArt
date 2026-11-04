@@ -2,14 +2,15 @@
 import { t } from './i18n'
 
 export const TOP_UP_URL = 'https://wavespeed.ai/top-up'
-const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany'] as const
+const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany', 'noOutput', 'noTaskId'] as const
 export type WsErrorKind = typeof KINDS[number]
 
 /** The readable message for a backend error kind, or null when the error is not a tagged WaveSpeed failure. */
 export function wsErrorText(kind: unknown, charged?: unknown): string | null {
   if (typeof kind !== 'string' || !(KINDS as readonly string[]).includes(kind)) return null
   // #174: a timed-out task may still be billed; show the quoted amount when known, never auto-retry
-  if (kind === 'timeout') return typeof charged === 'number' && Number.isFinite(charged) ? t('wsErr.timeout', fmtUsd(charged)) : t('wsErr.timeoutNoAmount')
+  // #712: a run that may be billed with no image (no output / no task id) states the reason and the amount
+  if (kind === 'timeout' || kind === 'noOutput' || kind === 'noTaskId') return typeof charged === 'number' && Number.isFinite(charged) ? t(`wsErr.${kind}`, fmtUsd(charged)) : t(`wsErr.${kind}NoAmount`)
   return kind === 'insufficientCredit' ? t('wsErr.insufficientCredit', TOP_UP_URL) : t(`wsErr.${kind}`)
 }
 

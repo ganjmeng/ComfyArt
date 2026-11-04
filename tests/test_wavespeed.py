@@ -115,6 +115,8 @@ async def ws(monkeypatch, fresh_user_dir):
         if state["submit_status"] != 200:
             return web.json_response({"code": state.get("submit_code", state["submit_status"]), "message": state.get("submit_message", "nope")}, status=state["submit_status"])
         state["submits"].append((request.match_info["model"], await request.json()))
+        if state.get("no_id"):  # #712: charged, but the reply lost its task id
+            return web.json_response({"code": 200, "data": {"status": "created"}})
         return web.json_response({"code": 200, "data": {"id": f"task{len(state['submits'])}", "status": "created"}})
 
     async def result(request):
@@ -127,6 +129,8 @@ async def ws(monkeypatch, fresh_user_dir):
             tid = request.match_info["id"]
             model = state["submits"][int(tid[4:]) - 1][0] if tid.startswith("task") and tid[4:].isdigit() and int(tid[4:]) <= len(state["submits"]) else None
             data["outputs"] = state.get("by_model", {}).get(model) or state.get("outputs") or [str(request.url.with_path("/cdn/out.png"))]
+            if state.get("no_outputs"):  # #712: completed (billed) with no image
+                data["outputs"] = []
         if st == "failed":
             data["error"] = state.get("task_error", "content flagged")
             if "task_code" in state:

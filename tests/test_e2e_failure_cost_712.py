@@ -1,0 +1,68 @@
+"""#712 e2e: a mocked WaveSpeed run that completes with no image is marked failed with its cost, and the UI shows the
+reason and the amount (zh light / en dark). Mock WaveSpeed only, $0. COMFYART_712_SHOTS=<dir> keeps the shots."""
+from __future__ import annotations
+
+import os
+import shutil
+import subprocess
+import threading
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import urlencode
+
+import pytest
+
+from ComfyArt.api import gen_ledger, wavespeed
+from test_wavespeed import ws  # noqa: F401  (mocked WaveSpeed API)
+
+ROOT = Path(__file__).resolve().parent.parent
+apw = pytest.importorskip("playwright.async_api")
+pytestmark = pytest.mark.skipif(
+    not (ROOT / "node_modules" / ".bin" / "rolldown").exists() or not shutil.which("node"),
+    reason="needs node + npm install")
+SHOT_DIR = Path(os.environ.get("COMFYART_712_SHOTS", str(ROOT / "tmp-712-shots")))
+MODEL = "wavespeed-ai/minimax-h3/text-to-video"
+
+
+@pytest.fixture(scope="module")
+def bundle(tmp_path_factory):
+    d = tmp_path_factory.mktemp("sf712")
+    subprocess.run([str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/sf712/rolldown.config.mjs"],
+                   cwd=ROOT, check=True, capture_output=True, env={**os.environ, "OUT": str(d / "app.js")})
+    css = "\n".join((ROOT / "src/styles" / f).read_text() for f in ("base.css", "canvas.css", "shell.css", "overlays.css"))
+    (d / "index.html").write_text(f"<!doctype html><meta charset=utf-8><style>html,body{{margin:0}}{css}</style>"
+                                  f"<div id=root></div><script src=app.js></script>")
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=str(d)))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{srv.server_port}"
+    srv.shutdown()
+
+
+@pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
+async def test_712_charged_no_output_shows_reason_and_amount(ws, bundle, lang, theme):  # noqa: F811
+    ws["no_outputs"] = True
+    ws["prices"][MODEL] = 0.32
+    task = await wavespeed.submit({"feature": "text_to_video", "model": MODEL, "prompt": "x", "duration": 5, "confirmed": True})
+    hist = await wavespeed.poll(task)
+    info = hist[f"ws:{task}"]["status"]["messages"][0][1]
+    assert hist[f"ws:{task}"]["generation_succeeded"] is False
+    fail = [f for f in gen_ledger.failures() if f["task_id"] == task][0]
+    assert fail["cost_usd"] == pytest.approx(0.32)
+    async with apw.async_playwright() as p:
+        try:
+            b = await p.chromium.launch()
+        except Exception as e:
+            pytest.skip(f"no chromium: {e}")
+        page = await b.new_page(viewport={"width": 560, "height": 300}, device_scale_factor=2)
+        await page.route("**/*", lambda r: r.continue_() if r.request.url.startswith(bundle) else r.abort())
+        qs = urlencode({"lang": lang, "theme": theme, "kind": info["ws_kind"], "charged": info["ws_charged"], "model": MODEL})
+        await page.goto(f"{bundle}/index.html?{qs}")
+        await page.wait_for_function("window.__ready")
+        await page.wait_for_timeout(200)
+        body = await page.locator("[data-testid=ws-failure]").inner_text()
+        assert "$0.32" in body
+        assert ("没有返回图片" in body) if lang == "zh" else ("returned no image" in body)
+        SHOT_DIR.mkdir(parents=True, exist_ok=True)
+        await page.locator(".ca-root").screenshot(path=str(SHOT_DIR / f"failure-cost-{lang}-{theme}.png"))
+        await b.close()
