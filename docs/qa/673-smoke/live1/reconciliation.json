@@ -1,0 +1,14 @@
+{
+ "note": "Tech rule: image cost = each submitted prediction id at its quoted price; LLM = usage tokens x price else unattributed; per-call balance deltas not relied on (dev #687 batch may run concurrently); balance start/end with timestamps is for the combined reconciliation only.",
+ "start_ts": "2026-11-04T22:56:18+0800",
+ "start_balance": 43.907449,
+ "end_balance": "error RuntimeError",
+ "end_ts": "2026-11-04T22:59:15+0800",
+ "attributed": {
+  "image": 0.0,
+  "llm": 0.0,
+  "total": 0.0,
+  "llm_unattributed_turns": 0,
+  "predictions": []
+ }
+}

@@ -1,0 +1,9 @@
+TOTAL image est $0.2512; combined cap $0.8 (image+LLM), LLM sub-cap $0.2 (deepseek/deepseek-v4.1-flash-1017)
+CDN preflight: {"host": "d2h7xmz5gqybh9.cloudfront.net", "t": "2026-11-04T22:56:16+0800", "ok": true, "tls": "TLSv1.3"}
+Traceback (most recent call last):
+asyncio.exceptions.CancelledError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+KeyboardInterrupt

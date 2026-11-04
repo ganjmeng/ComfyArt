@@ -80,8 +80,29 @@ def llm_usage(messages, after_id):
 def llm_cost(pin, pout, delta, quote):
     pi, po = os.environ.get("SMOKE_LLM_USD_PER_M_IN"), os.environ.get("SMOKE_LLM_USD_PER_M_OUT")
     if pi and po: return round(pin * float(pi) / 1e6 + pout * float(po) / 1e6, 6), "token_price_env"
-    if delta is not None: return round(max(delta - quote, 0.0), 6), "balance_delta_minus_quote"
-    return None, "unknown"
+    if pin or pout:  # WaveSpeed LLM /v1/models price for deepseek-v4.1-flash-1017: $0.15/M in, $0.60/M out
+        return round(pin * 0.15 / 1e6 + pout * 0.60 / 1e6, 6), "usage_tokens_x_v1_models_price"
+    return None, "unattributable (concurrent spend)"  # never derived from balance delta (#687 spends concurrently)
+CONCURRENT_NOTE = ("Tech rule: image cost = each submitted prediction id at its quoted price; LLM = usage tokens x price else unattributed; "
+                   "per-call balance deltas not relied on (dev #687 batch may run concurrently); balance start/end with timestamps is for the combined reconciliation only.")
+NOTE2 = ("#687 batch paused during this run (parent all-clear); per-call balance delta is clean. Image cost per prediction id = app gen_ledger quote "
+                   "(WaveSpeed predictions carry no cost field); LLM cost = balance delta - image cost; token x price kept as cross-check. "
+                   "Pre-call drift check: stop if balance moved > $0.01 since last reading.")
+OLD_NOTE = ("#687 batch spent from the same WaveSpeed balance concurrently: balance before/after is a reconciliation "
+                   "reference only. Image spend = per-prediction billing (app gen_ledger quoted_usd per WaveSpeed prediction id); "
+                   "LLM spend = usage tokens x price. Caps enforced on these attributed numbers.")
+LEDGER = os.environ.get("SMOKE_LEDGER", "")
+def ledger_since(t0):
+    try: runs = json.load(open(LEDGER)).get("runs", {})
+    except Exception: return []
+    return [r for r in runs.values() if (r.get("submitted_at") or 0) >= t0]
+def prediction_billing(task, key):
+    """WaveSpeed prediction result: keep status and any cost/price fields it carries."""
+    try:
+        req = urllib.request.Request(f"https://api.wavespeed.ai/api/v3/predictions/{task}/result", headers={"Authorization": f"Bearer {key}"})
+        d = json.loads(urllib.request.urlopen(req, timeout=30).read()).get("data") or {}
+        return {k: d.get(k) for k in d if k in ("status", "model", "cost", "price", "billing", "amount", "created_at")}
+    except Exception as e: return {"error": type(e).__name__}
 
 
 def cdn_preflight(out, host=CDN_HOST, timeout=15):
@@ -130,7 +151,22 @@ async def main():
     if not cdn_preflight(a.out)["ok"]: sys.exit("abort: WaveSpeed CDN TLS preflight failed; no paid call made")
     load_env(); from ComfyArt.api import wavespeed as ws
     key = os.environ["WAVESPEED_API_KEY"]; out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    spent, llm_spent, log = 0.0, 0.0, []
+    spent, llm_spent, log = 0.0, 0.0, []; last_bal = None
+    recon = {"note": CONCURRENT_NOTE, "start_ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "start_balance": await ws.fetch_balance(key)}
+    def save_recon():
+        json.dump(recon, open(out / "reconciliation.json", "w"), ensure_ascii=False, indent=1)
+    save_recon()
+    import atexit
+    def _end():
+        import asyncio as _a
+        try: recon["end_balance"] = _a.new_event_loop().run_until_complete(ws.fetch_balance(key))
+        except Exception as e: recon["end_balance"] = f"error {type(e).__name__}"
+        recon["end_ts"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+        recon["attributed"] = {"image": round(spent_box[0], 6), "llm": round(spent_box[1], 6), "total": round(sum(spent_box), 6),
+                               "llm_unattributed_turns": sum(1 for r in log if r.get("llm_cost_est") is None),
+                               "predictions": [b["prediction_id"] for r in log for b in r["predictions"]]}
+        save_recon()
+    spent_box = [0.0, 0.0]; atexit.register(_end)
     for sl, inp, send, est in plan:
         fails = 0
         while fails < MAX_FAILS:
@@ -141,7 +177,7 @@ async def main():
             if llm_spent > LLM_CAP: sys.exit(f"LLM ${llm_spent:.4f} > LLM cap ${LLM_CAP}, stop")
             b0 = await ws.fetch_balance(key)
             chat = http(a.base, "POST", "/comfyart/bot/chats", {"project": a.project, "provider": a.provider, "title": f"smoke673 {sl}", "run_mode": "auto"})["chat"]
-            r = http(a.base, "POST", f"/comfyart/bot/chats/{chat['id']}/send", send)
+            t_send = time.time() - 1; r = http(a.base, "POST", f"/comfyart/bot/chats/{chat['id']}/send", send)
             uid = (r.get("user_message") or {}).get("id"); t0 = time.time()
             while True:
                 await asyncio.sleep(5); st = http(a.base, "GET", f"/comfyart/bot/chats/{chat['id']}")
@@ -150,17 +186,24 @@ async def main():
             await asyncio.sleep(5); b1 = await ws.fetch_balance(key)
             charged = round(b0 - b1, 6) if b0 is not None and b1 is not None else None
             imgs = images_of(st["messages"], uid); ok = bool(imgs)
-            img_cost = price if ok else 0.0; spent += img_cost
-            pin, pout = llm_usage(st["messages"], uid); lc, method = llm_cost(pin, pout, charged, img_cost)
+            preds = ledger_since(t_send)
+            billing = [dict(prediction_id=p["task_id"], model=p.get("model"), status=p.get("status"), cost_usd=p.get("quoted_usd") if p.get("quoted_usd") is not None else p.get("cost_usd"),
+                            ws=prediction_billing(p["task_id"], key)) for p in preds]
+            img_cost = round(sum(b["cost_usd"] or 0 for b in billing), 6); spent += img_cost
+            pin, pout = llm_usage(st["messages"], uid); lc_tok, _ = llm_cost(pin, pout, None, img_cost)
+            last_bal = b1
+            lc, method = (lc_tok, "usage_tokens_x_price ($0.15/M in, $0.60/M out)") if lc_tok is not None else (None, "unattributed")
             llm_spent += lc or 0.0
             rec = {"skill": sl, "chat": chat["id"], "quote": price, "balance_before": b0, "balance_after": b1,
-                   "charged": charged, "image_cost": img_cost, "image_spent": round(spent, 6),
+                   "balance_delta_unreliable": charged, "note": CONCURRENT_NOTE, "predictions": billing, "image_cost": img_cost, "image_spent": round(spent, 6),
                    "llm_model": LLM_MODEL, "llm_prompt_tokens": pin, "llm_completion_tokens": pout,
-                   "llm_cost_est": lc, "llm_cost_method": method, "llm_spent": round(llm_spent, 6),
+                   "llm_cost_est": lc, "llm_cost_tokens_x_price": lc_tok, "llm_cost_method": method, "llm_spent": round(llm_spent, 6),
                    "combined_spent": round(spent + llm_spent, 6), "caps": {"combined": CAP, "llm": LLM_CAP},
                    "images": imgs, "ok": ok}
-            log.append(rec); print(json.dumps(rec, ensure_ascii=False))
+            spent_box[:] = [spent, llm_spent]; log.append(rec); print(json.dumps(rec, ensure_ascii=False))
             json.dump(log, open(out / "runs.json", "w"), ensure_ascii=False, indent=1, default=str)
+            if ok and not billing: sys.exit(f"stop: {sl} produced an image but no prediction billing record was found; spend unattributed")
+            if len(log) == 1 and lc is None: sys.exit("stop: first-turn LLM usage unattributed; cannot apply LLM sub-cap projection")
             if len(log) == 1 and (lc or 0) * 5 > LLM_CAP:
                 sys.exit(f"stop: first-turn LLM ${lc} x 5 = ${(lc or 0) * 5:.4f} > LLM cap ${LLM_CAP} (method {method})")
             if llm_spent > LLM_CAP: sys.exit(f"stop: LLM ${llm_spent:.4f} > LLM cap ${LLM_CAP}")

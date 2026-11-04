@@ -51,3 +51,13 @@ prompt = 用户输入 + 换行 + 所选 preset 的 Style 句（原文见 `src/sk
 - `--cdn-probe`：只跑免费 CDN 预检并打印结果（通过退出码 0，不通 2），不读 key、不起 app。
 - 已花费：$0。
 - 余额：$44.134249（开发工程师在 #687 报的最新值，本次未查询）。
+
+## 交接（live 第 1 次，2026-11-04 22:56–22:59 UTC+8，main `5b5657b3`）
+- tip：本提交（见 git log docs/673-smoke）。app 从 main 5b5657b3 起（本机 ComfyUI + Loomi 标签页，项目 `75d416b0`，enable-mcp=on），CDN 预检 22:56 通过。
+- 结果：**中止于第 1 个 skill naive-illustration，0 张图提交，0 个 prediction id**。其余 4 个未跑。
+  1. agent `skill read` 用 id `naive-illustration` 两次报 unknown skill（隐藏 skill 只能按显示名读到）。
+  2. `generate_image` 被 agent 传了不存在的 model `gpt-image-1.5` → ValueError，未走 Auto（`_auto_choice` 应选 midjourney）；随后 agent 发 ask_user 问是否换 midjourney，turn 挂起。按规则未代答，停止脚本并 stop chat。
+  3. app 日志：`bot/local_llm.py` 里 `from ComfyArt.api.wavespeed import quote/confirm_usd` → ModuleNotFoundError（ComfyUI 下 custom_nodes 包名不是 `ComfyArt`），plan quote 与 paid_gate 定价失败。见 `live1/app_errors.log`。
+- 记账（技术经理最终规则）：图片 = 每个已提交 prediction id × 报价 → $0；LLM = usage token × 价（$0.15/M in，$0.60/M out）：46962 in + 588 out = **$0.0074**；合计 attributed **$0.0074**。余额 22:56:18 $43.907449 → 22:59:18 $43.900506（仅供与开发 #687 合并对账，#687 可能并发）。
+- 脚本改动：图片按 gen_ledger 的 prediction id × quoted_usd；LLM 按 token×价，无 usage 标 unattributed；不再用余额差；记 start/end 余额+时间到 `reconciliation.json`。
+- 下一步：开发修 1–3（或技术经理定 2 是否 agent 提示问题）后重跑；剩余预算 $0.79。

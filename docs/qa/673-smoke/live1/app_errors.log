@@ -1,0 +1,30 @@
+[32m[INFO][0m 
+[32m[INFO][0m Using RAM pressure cache.
+[32m[INFO][0m ComfyUI is developed by Comfy Org. We also offer commercial products to deploy ComfyUI as scalable cloud endpoints. Visit platform.comfy.org/ascii for more information.
+[32m[INFO][0m Starting server
+
+[32m[INFO][0m To see the GUI go to: http://127.0.0.1:8188
+[32m[INFO][0m [ComfyArt] WaveSpeed key check passed
+[1m[31m[ERROR][0m [ComfyArt/local-llm] plan quote failed
+Traceback (most recent call last):
+  File "/workspace/smkrt/ComfyUI/custom_nodes/ComfyArt/bot/local_llm.py", line 1754, in _dispatch_tools
+    quote = await self._quote_steps(steps if isinstance(steps, list) else [], lang)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/smkrt/ComfyUI/custom_nodes/ComfyArt/bot/local_llm.py", line 1553, in _quote_steps
+    return await build_quote(steps, lang, threshold=self._threshold(),
+                                                    ~~~~~~~~~~~~~~~^^
+  File "/workspace/smkrt/ComfyUI/custom_nodes/ComfyArt/bot/local_llm.py", line 1532, in _threshold
+    from ComfyArt.api.wavespeed import confirm_usd
+ModuleNotFoundError: No module named 'ComfyArt'
+[1m[31m[ERROR][0m [ComfyArt/agent] pricing generate_image failed
+Traceback (most recent call last):
+  File "/workspace/smkrt/ComfyUI/custom_nodes/ComfyArt/bot/agent_loop.py", line 990, in paid_gate
+    p = await ctx.pricer(name, args)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/smkrt/ComfyUI/custom_nodes/ComfyArt/bot/local_llm.py", line 1416, in _price_call
+    return await self._price_one(model, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/smkrt/ComfyUI/custom_nodes/ComfyArt/bot/local_llm.py", line 1536, in _price_one
+    from ComfyArt.api.wavespeed import quote
+ModuleNotFoundError: No module named 'ComfyArt'
+[32m[INFO][0m [ComfyArt/agent] {"event": "agent_run", "run_id": "run-34cb96e6025a4043", "owner_id": "local", "workspace_id": "local", "project_id": "75d416b0", "mode": "unattended", "steps": 4, "steps_this_turn": 4, "tokens": 47405, "credits_usd": 0.0, "wall_s": 171.84, "turn_s": 171.84, "stop_reason": "user_stop", "stop_sub": "", "stop_code": "user_stop", "dimension": "", "compressions": 0, "paid_calls": 1, "skill_autofills": 0, "self_check": {"self_check": "skip"}, "status": "paused"}
