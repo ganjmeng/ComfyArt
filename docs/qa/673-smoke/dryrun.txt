@@ -1,0 +1,275 @@
+{
+ "skill": "naive-illustration",
+ "auto_model": "midjourney/text-to-image",
+ "auto_reason": "this is an anime, illustration or art-style task",
+ "est_usd": 0.1,
+ "requests": [
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/wavespeed/estimate",
+   "body": {
+    "inputs": {
+     "feature": "text_to_image",
+     "model": "midjourney/text-to-image",
+     "prompt": "一个巨大的咖啡杯，旁边一个小小的上班族在搬方糖，配一句俏皮短语\"今日续命\"\nStyle: naive B/W line illustration, giant object vs tiny person, witty cafe/worker energy, clean strokes.",
+     "width": 1024,
+     "height": 1360
+    }
+   },
+   "note": "free quote"
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats",
+   "body": {
+    "project": "PROJECT_ID",
+    "provider": "local-llm",
+    "title": "smoke673 naive-illustration",
+    "run_mode": "auto"
+   }
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats/{chat_id}/send",
+   "body": {
+    "text": "一个巨大的咖啡杯，旁边一个小小的上班族在搬方糖，配一句俏皮短语\"今日续命\"，出 1 张，1024x1360",
+    "skill": "naive-illustration",
+    "lang": "zh",
+    "run_mode": "unattended"
+   },
+   "note": "paid when --live (paid_guard cap 1)"
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats/{chat_id}",
+   "note": "poll until chat.busy=false"
+  }
+ ]
+}
+{
+ "skill": "logo-abstract",
+ "auto_model": "openai/gpt-image-2.5-flare/edit",
+ "auto_reason": "there is one reference (or base) image, which the image-edit default model handles",
+ "est_usd": 0.0378,
+ "requests": [
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/wavespeed/estimate",
+   "body": {
+    "inputs": {
+     "feature": "image_edit",
+     "model": "openai/gpt-image-2.5-flare/edit",
+     "prompt": "把这个辫子面包提炼成一个圆形几何 logo，双色，小尺寸也能认出\nStyle: minimal circular geometric logo mark distilled from the photo, two-color, scalable silhouette.",
+     "width": 1024,
+     "height": 1024,
+     "images": [
+      "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b47b6671368581f54d8a5c9e26fd0f3548010ffc/643/wash/premium-website/examples/03.webp"
+     ]
+    }
+   },
+   "note": "free quote"
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats",
+   "body": {
+    "project": "PROJECT_ID",
+    "provider": "local-llm",
+    "title": "smoke673 logo-abstract",
+    "run_mode": "auto"
+   }
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats/{chat_id}/send",
+   "body": {
+    "text": "把这个辫子面包提炼成一个圆形几何 logo，双色，小尺寸也能认出，出 1 张，1024x1024",
+    "skill": "logo-abstract",
+    "lang": "zh",
+    "run_mode": "unattended",
+    "refs": [
+     {
+      "id": "ref-logo-abstract",
+      "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b47b6671368581f54d8a5c9e26fd0f3548010ffc/643/wash/premium-website/examples/03.webp",
+      "name": "logo-abstract-ref",
+      "kind": "image"
+     }
+    ]
+   },
+   "note": "paid when --live (paid_guard cap 1)"
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats/{chat_id}",
+   "note": "poll until chat.busy=false"
+  }
+ ]
+}
+{
+ "skill": "photo-split-poster",
+ "auto_model": "openai/gpt-image-2.5-flare/edit",
+ "auto_reason": "there is one reference (or base) image, which the image-edit default model handles",
+ "est_usd": 0.0378,
+ "requests": [
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/wavespeed/estimate",
+   "body": {
+    "inputs": {
+     "feature": "image_edit",
+     "model": "openai/gpt-image-2.5-flare/edit",
+     "prompt": "上半部分保留这张街景照片，下半部分用照片里的颜色做几何抽象，标题\"CITY WALK\"\nStyle: hard horizontal split poster, photo above, geometric abstract below, palette sampled from the photo.",
+     "width": 1024,
+     "height": 1360,
+     "images": [
+      "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b47b6671368581f54d8a5c9e26fd0f3548010ffc/643/wash/pose-fission/examples/01.webp"
+     ]
+    }
+   },
+   "note": "free quote"
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats",
+   "body": {
+    "project": "PROJECT_ID",
+    "provider": "local-llm",
+    "title": "smoke673 photo-split-poster",
+    "run_mode": "auto"
+   }
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats/{chat_id}/send",
+   "body": {
+    "text": "上半部分保留这张街景照片，下半部分用照片里的颜色做几何抽象，标题\"CITY WALK\"，出 1 张，1024x1360",
+    "skill": "photo-split-poster",
+    "lang": "zh",
+    "run_mode": "unattended",
+    "refs": [
+     {
+      "id": "ref-photo-split-poster",
+      "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b47b6671368581f54d8a5c9e26fd0f3548010ffc/643/wash/pose-fission/examples/01.webp",
+      "name": "photo-split-poster-ref",
+      "kind": "image"
+     }
+    ]
+   },
+   "note": "paid when --live (paid_guard cap 1)"
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats/{chat_id}",
+   "note": "poll until chat.busy=false"
+  }
+ ]
+}
+{
+ "skill": "ppt-visual",
+ "auto_model": "openai/gpt-image-2.5-flare/text-to-image",
+ "auto_reason": "this is a poster, infographic or text-heavy task",
+ "est_usd": 0.0378,
+ "requests": [
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/wavespeed/estimate",
+   "body": {
+    "inputs": {
+     "feature": "text_to_image",
+     "model": "openai/gpt-image-2.5-flare/text-to-image",
+     "prompt": "AI 创作工具年度发布会的封面页，标题\"2027 创作新范式\"，深色科技风\nStyle: premium deck cover slide 16:9, strong hierarchy, short title in quotes, shared module system.",
+     "width": 1824,
+     "height": 1024
+    }
+   },
+   "note": "free quote"
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats",
+   "body": {
+    "project": "PROJECT_ID",
+    "provider": "local-llm",
+    "title": "smoke673 ppt-visual",
+    "run_mode": "auto"
+   }
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats/{chat_id}/send",
+   "body": {
+    "text": "AI 创作工具年度发布会的封面页，标题\"2027 创作新范式\"，深色科技风，出 1 张，1824x1024",
+    "skill": "ppt-visual",
+    "lang": "zh",
+    "run_mode": "unattended"
+   },
+   "note": "paid when --live (paid_guard cap 1)"
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats/{chat_id}",
+   "note": "poll until chat.busy=false"
+  }
+ ]
+}
+{
+ "skill": "promo-ecommerce",
+ "auto_model": "openai/gpt-image-2.5-flare/edit",
+ "auto_reason": "there is one reference (or base) image, which the image-edit default model handles",
+ "est_usd": 0.0378,
+ "requests": [
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/wavespeed/estimate",
+   "body": {
+    "inputs": {
+     "feature": "image_edit",
+     "model": "openai/gpt-image-2.5-flare/edit",
+     "prompt": "双十一大促主视觉，产品是这组罐装气泡饮，主文案\"限时直降\"，日期\"11.11\"\nStyle: ecommerce promo key visual, bold sale hierarchy, product hero locked from ref, claims in quotes.",
+     "width": 1024,
+     "height": 1360,
+     "images": [
+      "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b47b6671368581f54d8a5c9e26fd0f3548010ffc/643/wash/product-to-packaging/examples/05.webp"
+     ]
+    }
+   },
+   "note": "free quote"
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats",
+   "body": {
+    "project": "PROJECT_ID",
+    "provider": "local-llm",
+    "title": "smoke673 promo-ecommerce",
+    "run_mode": "auto"
+   }
+  },
+  {
+   "method": "POST",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats/{chat_id}/send",
+   "body": {
+    "text": "双十一大促主视觉，产品是这组罐装气泡饮，主文案\"限时直降\"，日期\"11.11\"，出 1 张，1024x1360",
+    "skill": "promo-ecommerce",
+    "lang": "zh",
+    "run_mode": "unattended",
+    "refs": [
+     {
+      "id": "ref-promo-ecommerce",
+      "src": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b47b6671368581f54d8a5c9e26fd0f3548010ffc/643/wash/product-to-packaging/examples/05.webp",
+      "name": "promo-ecommerce-ref",
+      "kind": "image"
+     }
+    ]
+   },
+   "note": "paid when --live (paid_guard cap 1)"
+  },
+  {
+   "method": "GET",
+   "url": "http://127.0.0.1:8188/comfyart/bot/chats/{chat_id}",
+   "note": "poll until chat.busy=false"
+  }
+ ]
+}
+TOTAL est $0.2512 (cap $0.8)
+DRY RUN — nothing submitted. Use --live to spend.

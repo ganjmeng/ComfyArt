@@ -17,18 +17,20 @@ CAP = 0.8
 MAX_FAILS = 2
 EST = {"openai/gpt-image-2.5-flare/text-to-image": 0.0378, "openai/gpt-image-2.5-flare/edit": 0.0378}  # 1K, #673 C-group logs
 EST_UNKNOWN = 0.10  # conservative cap for models without a recorded price (e.g. midjourney); --live checks free /model/price first
-SAMPLE_REF = {  # placeholder public refs; replace with box-uploaded test photos before --live
-    "logo-abstract": "REF_PHOTO_CAT", "photo-split-poster": "REF_PHOTO_STREET", "promo-ecommerce": "REF_PRODUCT_BOTTLE"}
+SAMPLE_REF = {  # our own washed assets on main b47b6671 (not Lovart gold, not web); all verified HTTP 200 image/webp
+    "logo-abstract": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b47b6671368581f54d8a5c9e26fd0f3548010ffc/643/wash/premium-website/examples/03.webp",  # braided bread loaf, single object
+    "photo-split-poster": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b47b6671368581f54d8a5c9e26fd0f3548010ffc/643/wash/pose-fission/examples/01.webp",  # city street, sunlit sidewalk
+    "promo-ecommerce": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b47b6671368581f54d8a5c9e26fd0f3548010ffc/643/wash/product-to-packaging/examples/05.webp"}  # 3 KOIRA cans product shot (no serum in washed assets)
 SK = {
  "naive-illustration": dict(preset="line", ratio=(1024, 1360), refs=False, user="一个巨大的咖啡杯，旁边一个小小的上班族在搬方糖，配一句俏皮短语\"今日续命\"",
    style="Style: naive B/W line illustration, giant object vs tiny person, witty cafe/worker energy, clean strokes."),
- "logo-abstract": dict(preset="circle", ratio=(1024, 1024), refs=True, user="把这只橘猫提炼成一个圆形几何 logo，双色，小尺寸也能认出",
+ "logo-abstract": dict(preset="circle", ratio=(1024, 1024), refs=True, user="把这个辫子面包提炼成一个圆形几何 logo，双色，小尺寸也能认出",
    style="Style: minimal circular geometric logo mark distilled from the photo, two-color, scalable silhouette."),
  "photo-split-poster": dict(preset="hard", ratio=(1024, 1360), refs=True, user="上半部分保留这张街景照片，下半部分用照片里的颜色做几何抽象，标题\"CITY WALK\"",
    style="Style: hard horizontal split poster, photo above, geometric abstract below, palette sampled from the photo."),
  "ppt-visual": dict(preset="cover", ratio=(1824, 1024), refs=False, user="AI 创作工具年度发布会的封面页，标题\"2027 创作新范式\"，深色科技风",
    style="Style: premium deck cover slide 16:9, strong hierarchy, short title in quotes, shared module system."),
- "promo-ecommerce": dict(preset="kv", ratio=(1024, 1360), refs=True, user="双十一大促主视觉，产品是这瓶精华液，主文案\"限时直降\"，日期\"11.11\"",
+ "promo-ecommerce": dict(preset="kv", ratio=(1024, 1360), refs=True, user="双十一大促主视觉，产品是这组罐装气泡饮，主文案\"限时直降\"，日期\"11.11\"",
    style="Style: ecommerce promo key visual, bold sale hierarchy, product hero locked from ref, claims in quotes."),
 }
 def load_env():
