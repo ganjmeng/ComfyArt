@@ -1,0 +1,472 @@
+{
+  "cover-design-director": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  },
+  "poster-differentiated-compiler": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  },
+  "meta-ads-creative-director": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  },
+  "marketing-campaign-generator": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  },
+  "banner-design-director": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  },
+  "character-sheet-design": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 8,
+    "card_ok": true,
+    "bad": [],
+    "summary": [
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      }
+    ]
+  },
+  "logo-material-explorer": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  },
+  "mobile-app-visual-design": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  },
+  "web-product-visual-design": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  },
+  "universal-multi-angle-grid": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  },
+  "interior-architectural-visualization": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  },
+  "packaging-design-director": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 5,
+    "card_ok": true,
+    "bad": [],
+    "summary": [
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": true,
+        "n": 3,
+        "orient": "landscape",
+        "fits": [
+          "contain"
+        ],
+        "layerFits": [
+          "contain",
+          "contain",
+          "contain"
+        ]
+      },
+      {
+        "stack": true,
+        "n": 4,
+        "orient": "portrait",
+        "fits": [
+          "contain"
+        ],
+        "layerFits": [
+          "cover",
+          "cover",
+          "cover",
+          "cover"
+        ]
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      }
+    ]
+  },
+  "motion-poster-generator": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 2,
+    "card_ok": true,
+    "bad": [],
+    "summary": [
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      }
+    ]
+  },
+  "product-tvc-advertisement-generator": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 7,
+    "card_ok": true,
+    "bad": [],
+    "summary": [
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [
+          "contain"
+        ],
+        "layerFits": []
+      },
+      {
+        "stack": false,
+        "n": null,
+        "orient": null,
+        "fits": [],
+        "layerFits": []
+      }
+    ]
+  },
+  "brand-identity-director": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 6,
+    "card_ok": true,
+    "bad": [],
+    "summary": [
+      {
+        "stack": true,
+        "n": 4,
+        "orient": "landscape",
+        "fits": [
+          "contain"
+        ],
+        "layerFits": [
+          "contain",
+          "contain",
+          "contain",
+          "contain"
+        ]
+      },
+      {
+        "stack": true,
+        "n": 4,
+        "orient": "landscape",
+        "fits": [
+          "contain"
+        ],
+        "layerFits": [
+          "contain",
+          "contain",
+          "contain",
+          "contain"
+        ]
+      },
+      {
+        "stack": true,
+        "n": 4,
+        "orient": "portrait",
+        "fits": [
+          "contain"
+        ],
+        "layerFits": [
+          "cover",
+          "cover",
+          "cover",
+          "cover"
+        ]
+      },
+      {
+        "stack": true,
+        "n": 4,
+        "orient": "landscape",
+        "fits": [
+          "contain"
+        ],
+        "layerFits": [
+          "contain",
+          "contain",
+          "contain",
+          "contain"
+        ]
+      },
+      {
+        "stack": true,
+        "n": 4,
+        "orient": "landscape",
+        "fits": [
+          "contain"
+        ],
+        "layerFits": [
+          "contain",
+          "contain",
+          "contain",
+          "contain"
+        ]
+      },
+      {
+        "stack": true,
+        "n": 4,
+        "orient": "landscape",
+        "fits": [
+          "contain"
+        ],
+        "layerFits": [
+          "contain",
+          "contain",
+          "contain",
+          "contain"
+        ]
+      }
+    ]
+  },
+  "rednote-cover-maker": {
+    "dlg": [
+      1112,
+      820
+    ],
+    "dlg_ok": true,
+    "nTiles": 0,
+    "card_ok": true,
+    "bad": [],
+    "summary": []
+  }
+}
