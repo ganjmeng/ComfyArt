@@ -577,3 +577,13 @@ QA hints checked: naive-editorial-character (character sheet, not scale joke), h
 | fashion-unified-outfit-change-v2-<masked>-<masked> | clothing-swap | cover | image | 1792x2400 |
 | fashion-unified-outfit-change-v2-<masked>-<masked> | clothing-swap | highlight | image | 1792x2400 |
 | fashion-unified-outfit-change-v2-<masked>-<masked> | clothing-swap | highlight | image | 1084x1451 |
+
+## ComfyArt extensions
+
+Files under `own/` are ComfyArt additions, not Lovart data. They are kept apart from the Lovart captures and contain no Lovart URLs.
+
+| file | extends | adds | why |
+|---|---|---|---|
+| `own/character-sheet-design.ext.json` | `character-sheet-design.json` (7 Lovart collection members) | 1 member: 08 时装大片角色板 / Fashion Editorial Character Board (`source: "comfyart"`, preset `editorial`), same `template.questions` as the raw members, media = our washed slot `569/wash/character/templates/v3/08-luxury-editorial-character-sheet` | Jingmeng's 2026-11-01 ruling: character has 8 templates. The 8th (a fictional Western supermodel fashion-editorial board) is our own, not from Lovart. |
+
+Rule: every count = raw count + ext count. Example: character = 7 (raw) + 1 (ext) = 8 templates.

@@ -1,0 +1,198 @@
+{
+  "skillKey": "character-sheet-design",
+  "source": "comfyart",
+  "extends": "character-sheet-design.json",
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "comfyart-character-08-editorial",
+      "title": "时装大片角色板",
+      "description": "时装大片角色板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "时装大片角色板",
+            "description": "时装大片角色板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Fashion Editorial Character Board",
+            "description": "1 fashion editorial character board",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/08-luxury-editorial-character-sheet@thumb.webp",
+            "placeholder": true,
+            "note": "ComfyArt washed asset slot (WASH_569 character[7]); not a Lovart asset"
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "COMFYART",
+          "skillKey": "character-sheet-design"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色参考图片"
+                },
+                "en": {
+                  "title": "Character reference images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "character_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色资料",
+                  "placeholder": "说明角色外观及本次需要保留的设定；已提供清晰参考图时可留空，信息不足再补问。"
+                },
+                "en": {
+                  "title": "Character information",
+                  "placeholder": "Describe the character and details to preserve. Leave blank if clear references are supplied; missing essentials will be clarified later."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张成人真人角色时装大片角色板：以参考角色为主角的奢侈品牌时装大片风格，包含同一人的全身站姿、半身与面部特写，保持五官、发型和体型一致；柔和影棚光，干净浅色背景，无文字或标志。\n\n{{character_info}}\n{{visual_direction}}",
+            "en": "Template: editorial fashion sheet, the reference character as the lead in a luxury-brand fashion campaign style; full-body standing pose, half-body and face close-ups of the same person, keeping facial features, hairstyle and body shape consistent, soft studio lighting, clean light background, no text or logos.\n\n{{character_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/08-luxury-editorial-character-sheet@thumb.webp",
+        "coverWidth": 2048,
+        "coverHeight": 2048
+      },
+      "extra": null,
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": null,
+      "publisher": null,
+      "stats": null,
+      "userStatus": null,
+      "tags": [
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFd79qB1i8",
+              "tagName": "ads_creative",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Ads & Creative",
+              "extra": {
+                "tagName": "ads_creative",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Ads & Creative"
+                }
+              },
+              "createTime": "2026-03-20T06:57:53",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": null,
+      "spacePinned": false,
+      "source": "comfyart",
+      "comfyart": {
+        "presetId": "editorial",
+        "name": {
+          "zh": "时装大片角色板",
+          "en_main": "Editorial Fashion Sheet"
+        },
+        "prompt": "Template: editorial fashion sheet, the reference character as the lead in a luxury-brand fashion campaign style; full-body standing pose, half-body and face close-ups of the same person, keeping facial features, hairstyle and body shape consistent, soft studio lighting, clean light background, no text or logos.",
+        "image": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3/08-luxury-editorial-character-sheet@thumb.webp",
+        "featuredPreset": true,
+        "sourceRef": "ComfyArt main 0df2136f src/skills.ts character presets[7]",
+        "ruling": "Jingmeng 2026-11-01: character has 8 templates"
+      }
+    }
+  ],
+  "collectionMemberCount": 1
+}
