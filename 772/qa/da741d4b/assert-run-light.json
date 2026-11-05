@@ -1,0 +1,96 @@
+{
+  "ok": true,
+  "fail": [],
+  "notes": [
+    "body 14px/400/22.4px rgba(0, 0, 0, 0.9)",
+    "expanded Thought 13px/400/20.8px rgba(0, 0, 0, 0.55)",
+    "dedicated Thought row 13px/400/lh 24px rgba(0, 0, 0, 0.9) (engineer also .9; CSS think .55)",
+    "user 14px/500/24px rgba(0, 0, 0, 0.9)",
+    "list pad=12px gap=3.9999847412109375",
+    "strong/title 14px/400",
+    "composer cover at max scroll=0 (eng crop only)"
+  ],
+  "body": {
+    "tag": "P",
+    "cls": "",
+    "fontFamily": "CA Enclosed",
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "lineHeight": "22.4px",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "paddingLeft": "0px",
+    "height": "22.4px",
+    "text": "Moka — Coffee Shop Logo Plan"
+  },
+  "expanded": {
+    "tag": "DIV",
+    "cls": "ca-chat__io ca-chat__thoughttext",
+    "fontFamily": "Inter",
+    "fontSize": "13px",
+    "fontWeight": "400",
+    "lineHeight": "20.8px",
+    "color": "rgba(0, 0, 0, 0.55)",
+    "paddingLeft": "10px",
+    "height": "240px",
+    "text": "The user says: reply with TEXT ONLY, no tools... but then says \"Then call ask_user once wi"
+  },
+  "row": {
+    "tag": "BUTTON",
+    "cls": "ca-chat__step",
+    "fontFamily": "Inter",
+    "fontSize": "13px",
+    "fontWeight": "400",
+    "lineHeight": "24px",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "paddingLeft": "0px",
+    "height": "24px",
+    "text": "Thought\nNote memory says ask style preference before designing. Good."
+  },
+  "user": {
+    "tag": "DIV",
+    "cls": "ca-chat__bubble",
+    "fontFamily": "Inter",
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "lineHeight": "24px",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "paddingLeft": "14px",
+    "height": "216px",
+    "text": "IMPORTANT: Do NOT use any tools, canvas, View canvas, or image generation. Reply with TEXT"
+  },
+  "ul": {
+    "tag": "UL",
+    "cls": "",
+    "fontFamily": "CA Enclosed",
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "lineHeight": "22.4px",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "paddingLeft": "12px",
+    "height": "93.6px",
+    "text": "Style: A clean, minimal wordmark with a simple icon (cup, bean, or steam) that stays legib"
+  },
+  "strong": {
+    "tag": "STRONG",
+    "cls": "",
+    "fontFamily": "CA Enclosed",
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "lineHeight": "22.4px",
+    "color": "rgba(0, 0, 0, 0.9)",
+    "paddingLeft": "0px",
+    "height": "auto",
+    "text": "Moka — Coffee Shop Logo Plan"
+  },
+  "liGap": 3.9999847412109375,
+  "overlap": {
+    "coveredAtMaxScroll": 0,
+    "theme": "light",
+    "bodyBg": "rgba(0, 0, 0, 0)"
+  },
+  "ask": {
+    "body": false,
+    "collapsed": false
+  },
+  "tip": "da741d4bc799abe169f9ba92a6a40df9577a67d5"
+}
