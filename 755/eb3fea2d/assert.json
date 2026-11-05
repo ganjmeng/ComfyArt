@@ -1,0 +1,13 @@
+{
+  "tip": "eb3fea2db308c81fce6f710d9fcd249861cc9849",
+  "issue": 755,
+  "shots": {
+    "settings_connected_zh": "ours/settings-hermes-connected-zh-light.png",
+    "botsettings_connected_zh": "ours/botsettings-hermes-connected-zh-light.png",
+    "picker_available_zh": "picker/picker-hermes-available-zh-light.png",
+    "mode_selected_zh": "picker/mode-hermes-selected-zh-light.png",
+    "conversation_full_zh": "conversation/conversation-full-zh-light.png",
+    "conversation_panel_zh": "conversation/conversation-panel-zh-light.png"
+  },
+  "notes": "Real Hermes App conversation: profile comfyart + WaveSpeed model; user prompt 'Reply with exactly one word: HERMES_OK' → assistant HERMES_OK. Hermes selected in composer; Agent Settings chip 已连接. Install via uv python 3.14 + uv sync --extra acp (official hermes pm SSL WRONG_VERSION_NUMBER on this box)."
+}
