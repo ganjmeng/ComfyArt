@@ -13,8 +13,8 @@ Sources: _har_quarantine/{lovart,lovart-official,lovart-missing}.masked.har. Two
 | character-sheet-design | 真人角色设定与参考板 | 2quhxlmeufi8 | collection_card (template) | feed/get | 7 | yes | media 0 | `character-sheet-design.json` |
 | character-sheet-design | 角色设定表设计 | pdZIplhfHO | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 6, coverList 0 | `character-sheet-design.plaza.json` |
 | cover-design-director | 封面设计总监 | pj7436Pnjy | skill_plaza_card (example) | feed/plaza/for-you/homepage, feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 1, coverList 0 | `cover-design-director.json` |
-| interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a | 室内与建筑可视化 | 2q24865beubk | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 4, coverList 1 | `interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a.json` |
-| interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5 | 毛坯房直出室内效果 | 2pyna75bgv0g | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 2, coverList 3 | `interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5.json` |
+| interior-architectural-visualization-<masked>-<masked> | 室内与建筑可视化 | 2q24865beubk | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 4, coverList 1 | `interior-architectural-visualization.json` |
+| interior-design-rough-to-render-<masked>-<masked> | 毛坯房直出室内效果 | 2pyna75bgv0g | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 2, coverList 3 | `interior-design-rough-to-render.json` |
 | logo-material-explorer | 徽标材质探索器 | pweyUNiCPe | skill_plaza_card (example) | feed/recall | - | no (none fires) | highlights 3, coverList 0 | `logo-material-explorer.plaza.json` |
 | manga-character-sheet | 动漫角色设定与参考板 | 2quhxl3m47b5 | collection_card (template) | feed/get | 7 | yes | media 0 | `manga-character-sheet.json` |
 | manga-character-sheet | 漫画角色设定表 | pj8GMcJHag | skill_plaza_card (example) | feed/plaza/for-you/homepage, feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 3, coverList 0 | `manga-character-sheet.plaza.json` |
@@ -23,12 +23,12 @@ Sources: _har_quarantine/{lovart,lovart-official,lovart-missing}.masked.har. Two
 | mobile-app-visual-design | App 核心页面 | 2quhxkaesxs0 | collection_card (template) | feed/get | 5 | yes | media 0 | `mobile-app-visual-design.json` |
 | mobile-app-visual-design | 移动应用视觉设计 | pkzaYTV27u | skill_plaza_card (example) | feed/plaza/for-you/homepage, feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 13, coverList 0 | `mobile-app-visual-design.plaza.json` |
 | motion-poster-generator | 动态海报 | 2sf3x9tciiv4 | collection_card (template) | feed/get | 2 | yes | media 1 | `motion-poster-generator.json` |
-| multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41 | 参考图片多角度摄影 | 2porqzqzmeww | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 6, coverList 0 | `multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41.json` |
+| multi-angle-photo-from-references-<masked>-<masked> | 参考图片多角度摄影 | 2porqzqzmeww | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 6, coverList 0 | `multi-angle-photo-from-references.json` |
 | packaging-design-director | 品牌包装设计系统 | 2quhxk9auark | collection_card (template) | feed/get | 5 | yes | media 0 | `packaging-design-director.json` |
 | poster-differentiated-compiler | 海报设计 | pdVO0ozfGM | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 5, coverList 0 | `poster-differentiated-compiler.json` |
 | product-tvc-advertisement-generator | 产品广告片 | 2sf3x9tcisch | collection_card (template) | feed/recall | 7 | no | media 1 | `product-tvc-advertisement-generator.json` |
 | rednote-cover-maker | 小红书封面制作器 | pjj7diI7v2 | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 10, coverList 0 | `rednote-cover-maker.json` |
-| scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07 | 场景图美化效果图 | 2orgsqbkdvcw | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 2, coverList 0 | `scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07.json` |
+| scene-photo-to-rendering-<masked>-<masked> | 场景图美化效果图 | 2orgsqbkdvcw | skill_plaza_card (example) | feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 2, coverList 0 | `scene-photo-to-rendering.json` |
 | taobao | 淘宝商品详情页 | 2quhxj75e4n4 | collection_card (template) | feed/recall | 6 | no | media 0 | `taobao.json` |
 | ugc-ad-video | UGC 广告视频导演 | 2sf3x9tciscg | collection_card (template) | feed/recall | 1 | no | media 1 | `ugc-ad-video.json` |
 | universal-multi-angle-grid | 多角度图像生成器 | pj7ljezKxy | skill_plaza_card (example) | feed/plaza/for-you/homepage, feed/plaza/for-you/list, feed/recall | - | no (none fires) | highlights 11, coverList 6 | `universal-multi-angle-grid.json` |
@@ -49,7 +49,7 @@ Sources: _har_quarantine/{lovart,lovart-official,lovart-missing}.masked.har. Two
 | mobile-ui | mobile-app-visual-design | `mobile-app-visual-design.plaza.json` | example | 移动应用视觉设计 | Mobile APP Visual Design |
 | web-product | web-product-visual-design | `web-product-visual-design.json` | example | Web产品视觉设计 | Web Product Visual Design |
 | multi-angle | universal-multi-angle-grid | `universal-multi-angle-grid.json` | example | 多角度图像生成器 | Multi-Angle Image Generator |
-| interior | interior-architectural-visualization | `interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a.json` (source key `interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a`) | example | 室内与建筑可视化 | Interior & Architectural Visualization |
+| interior | interior-architectural-visualization | `interior-architectural-visualization.json` (source key `interior-architectural-visualization-<masked>-<masked>`) | example | 室内与建筑可视化 | Interior & Architectural Visualization |
 | packaging | packaging-design-director | `packaging-design-director.json` | template | 品牌包装设计系统 | Brand Packaging Design System |
 | motion | motion-poster-generator | `motion-poster-generator.json` | template | 动态海报 | Motion Poster |
 | product | product-tvc-advertisement-generator | `product-tvc-advertisement-generator.json` | template | 产品广告片 | Product Commercial |
@@ -173,18 +173,18 @@ URLs stay in raw/ only and must never go into skills.ts.
 | character-sheet-design | (highlights #5) | highlight | image | 2048x1152 |
 | cover-design-director | (cover) | cover | video | 960x720 |
 | cover-design-director | (highlights #0) | highlight | video | 960x720 |
-| interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a | (cover) | cover | image | 2048x2048 |
-| interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a | (coverList) | coverList | image | 2048x2048 |
-| interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a | (highlights #0) | highlight | image | 1600x2000 |
-| interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a | (highlights #1) | highlight | image | 1600x2000 |
-| interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a | (highlights #2) | highlight | image | 1600x2000 |
-| interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a | (highlights #3) | highlight | image | 2048x2048 |
-| interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5 | (cover) | cover | image | 1841x2279 |
-| interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5 | (coverList) | coverList | image | 1841x2279 |
-| interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5 | (coverList) | coverList | image | 1600x2000 |
-| interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5 | (coverList) | coverList | image | 1600x2000 |
-| interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5 | (highlights #0) | highlight | image | 928x1152 |
-| interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5 | (highlights #1) | highlight | image | 1600x2000 |
+| interior-architectural-visualization-<masked>-<masked> | (cover) | cover | image | 2048x2048 |
+| interior-architectural-visualization-<masked>-<masked> | (coverList) | coverList | image | 2048x2048 |
+| interior-architectural-visualization-<masked>-<masked> | (highlights #0) | highlight | image | 1600x2000 |
+| interior-architectural-visualization-<masked>-<masked> | (highlights #1) | highlight | image | 1600x2000 |
+| interior-architectural-visualization-<masked>-<masked> | (highlights #2) | highlight | image | 1600x2000 |
+| interior-architectural-visualization-<masked>-<masked> | (highlights #3) | highlight | image | 2048x2048 |
+| interior-design-rough-to-render-<masked>-<masked> | (cover) | cover | image | 1841x2279 |
+| interior-design-rough-to-render-<masked>-<masked> | (coverList) | coverList | image | 1841x2279 |
+| interior-design-rough-to-render-<masked>-<masked> | (coverList) | coverList | image | 1600x2000 |
+| interior-design-rough-to-render-<masked>-<masked> | (coverList) | coverList | image | 1600x2000 |
+| interior-design-rough-to-render-<masked>-<masked> | (highlights #0) | highlight | image | 928x1152 |
+| interior-design-rough-to-render-<masked>-<masked> | (highlights #1) | highlight | image | 1600x2000 |
 | manga-character-sheet | 角色转身板 | RESULT | image (png) | 1024x1024 |
 | manga-character-sheet | 建模细节参考板 | RESULT | image (png) | 2048x2048 |
 | manga-character-sheet | 道具互动板 | RESULT | image (png) | 1024x1024 |
@@ -251,13 +251,13 @@ URLs stay in raw/ only and must never go into skills.ts.
 | motion-poster-generator | (collection) | RESULT | video (mp4) | 1324x992 |
 | motion-poster-generator | 海报动效 | RESULT | video (mp4) | 1324x992 |
 | motion-poster-generator | 首尾帧动画 | RESULT | video (mp4) | 1080x1920 |
-| multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41 | (cover) | cover | video | 1920x1080 |
-| multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41 | (highlights #0) | highlight | image | 1088x1920 |
-| multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41 | (highlights #1) | highlight | image | 1088x1920 |
-| multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41 | (highlights #2) | highlight | image | 1088x1920 |
-| multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41 | (highlights #3) | highlight | image | 1088x1920 |
-| multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41 | (highlights #4) | highlight | image | 1088x1920 |
-| multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41 | (highlights #5) | highlight | image | 1088x1920 |
+| multi-angle-photo-from-references-<masked>-<masked> | (cover) | cover | video | 1920x1080 |
+| multi-angle-photo-from-references-<masked>-<masked> | (highlights #0) | highlight | image | 1088x1920 |
+| multi-angle-photo-from-references-<masked>-<masked> | (highlights #1) | highlight | image | 1088x1920 |
+| multi-angle-photo-from-references-<masked>-<masked> | (highlights #2) | highlight | image | 1088x1920 |
+| multi-angle-photo-from-references-<masked>-<masked> | (highlights #3) | highlight | image | 1088x1920 |
+| multi-angle-photo-from-references-<masked>-<masked> | (highlights #4) | highlight | image | 1088x1920 |
+| multi-angle-photo-from-references-<masked>-<masked> | (highlights #5) | highlight | image | 1088x1920 |
 | packaging-design-director | 主款包装设计 | RESULT | image (png) | 270x360 |
 | packaging-design-director | 包装视觉方向 | RESULT | image (png) | 360x202 |
 | packaging-design-director | 包装视觉方向 | RESULT | image (png) | 1280x720 |
@@ -293,9 +293,9 @@ URLs stay in raw/ only and must never go into skills.ts.
 | rednote-cover-maker | (highlights #7) | highlight | image | 1536x2048 |
 | rednote-cover-maker | (highlights #8) | highlight | image | 1536x2048 |
 | rednote-cover-maker | (highlights #9) | highlight | image | 1536x2048 |
-| scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07 | (cover) | cover | image | 1536x2048 |
-| scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07 | (highlights #0) | highlight | image | 1792x2400 |
-| scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07 | (highlights #1) | highlight | image | 1792x2400 |
+| scene-photo-to-rendering-<masked>-<masked> | (cover) | cover | image | 1536x2048 |
+| scene-photo-to-rendering-<masked>-<masked> | (highlights #0) | highlight | image | 1792x2400 |
+| scene-photo-to-rendering-<masked>-<masked> | (highlights #1) | highlight | image | 1792x2400 |
 | taobao | 家居 | RESULT | image (png) | 750x8000 |
 | taobao | 女装 | RESULT | image (png) | 750x8125 |
 | taobao | 男装 | RESULT | image (png) | 750x9000 |
@@ -345,36 +345,36 @@ Ruling: lovart.ai only, no .art. Source: rebuilt `feed-list.json` (671 recall ca
 
 | our id | new id (Lovart skillKey) | type | zh / en name | raw file |
 |---|---|---|---|---|
-| flash-cut-video | `screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787` | UGC | Screenshot → Flash-Cut Video / Screenshot → Flash-Cut Video | `screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787.plaza.json` |
+| flash-cut-video | `screenshot-flashcut-video-<masked>-<masked>` | UGC | Screenshot → Flash-Cut Video / Screenshot → Flash-Cut Video | `screenshot-flashcut-video.plaza.json` |
 | style-transfer | `adaptive-style-transfer-director` | official | Adaptive Style Transfer Director /  | `adaptive-style-transfer-director.plaza.json` |
-| person-swap | `fashion-portrait-multi-reference-1787711071-024472f1546b4fd09dd91d48aea17803` | UGC | 电商3图换人 /  | `fashion-portrait-multi-reference-1787711071-024472f1546b4fd09dd91d48aea17803.plaza.json` |
+| person-swap | `fashion-portrait-multi-reference-<masked>-<masked>` | UGC | 电商3图换人 /  | `fashion-portrait-multi-reference.plaza.json` |
 | commerce-strategist | `commerce-visual-strategist` | official | Commerce Visual Strategist /  | `commerce-visual-strategist.plaza.json` |
 | lifestyle-scene | `marketing-style-lifestyle-scene` | official | E-commerce Lifestyle Scene Designer /  | `marketing-style-lifestyle-scene.plaza.json` |
-| logo-abstract | `photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5` | UGC | 照片转几何极简LOGO /  | `photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5.plaza.json` |
-| photo-split-poster | `half-collage-poster-1789010091-7d87342595e0438b9d34b00713cacfa8` | UGC | half-collage-poster / half-collage-poster | `half-collage-poster-1789010091-7d87342595e0438b9d34b00713cacfa8.plaza.json` |
-| ppt-visual | `modular-web-ppt-skill-1787063776-32aaae3fc4f94621b6f17762e9df06ec` | UGC | Senior‑Sense PPT Visual Director / Senior‑Sense PPT Visual Director | `modular-web-ppt-skill-1787063776-32aaae3fc4f94621b6f17762e9df06ec.plaza.json` |
+| logo-abstract | `photo-to-geometric-minimal-logo-<masked>-<masked>` | UGC | 照片转几何极简LOGO /  | `photo-to-geometric-minimal-logo.plaza.json` |
+| photo-split-poster | `half-collage-poster-<masked>-<masked>` | UGC | half-collage-poster / half-collage-poster | `half-collage-poster.plaza.json` |
+| ppt-visual | `modular-web-ppt-skill-<masked>-<masked>` | UGC | Senior‑Sense PPT Visual Director / Senior‑Sense PPT Visual Director | `modular-web-ppt-skill.plaza.json` |
 | promo-ecommerce | `ecommerce-promotion-brand-design` | official | Ecommerce Promotional Branding /  | `ecommerce-promotion-brand-design.plaza.json` |
-| crt-interface | `crt-interface-pixel-illustration-1788248311-afafde0e782247efb235976e7236c3da` | UGC | CRT复古界面像素插画 / CRT复古界面像素插画 | `crt-interface-pixel-illustration-1788248311-afafde0e782247efb235976e7236c3da.plaza.json` |
-| crayon-sketch | `retro-childrens-book-crayon-1788076872-0ca68b46cffa481a962166b118fa6514` | UGC | 复古极简线条插画风 /  | `retro-childrens-book-crayon-1788076872-0ca68b46cffa481a962166b118fa6514.plaza.json` |
+| crt-interface | `crt-interface-pixel-illustration-<masked>-<masked>` | UGC | CRT复古界面像素插画 / CRT复古界面像素插画 | `crt-interface-pixel-illustration.plaza.json` |
+| crayon-sketch | `retro-childrens-book-crayon-<masked>-<masked>` | UGC | 复古极简线条插画风 /  | `retro-childrens-book-crayon.plaza.json` |
 | taobao-product | `taobao` | official | Taobao Product Visuals /  | `taobao.plaza.json` |
 | before-after | `before-after-visual` | official | Before & After Visual /  | `before-after-visual.plaza.json` |
-| anim-2d | `video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31` | UGC | 2D Animation Converter / 2D Animation Converter | `video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31.plaza.json` |
+| anim-2d | `video-to-2d-cartoon-<masked>-<masked>` | UGC | 2D Animation Converter / 2D Animation Converter | `video-to-2d-cartoon.plaza.json` |
 | creator-identity | `creator-visual-identity-system` | official | Creator Visual Identity System /  | `creator-visual-identity-system.plaza.json` |
-| product-website | `premium-tech-saas-landing-page-1787063733-6647cf9c516b4f1d876e3dd0986ea908` | UGC | Product Website Designer / Product Website Designer | `premium-tech-saas-landing-page-1787063733-6647cf9c516b4f1d876e3dd0986ea908.plaza.json` |
+| product-website | `premium-tech-saas-landing-page-<masked>-<masked>` | UGC | Product Website Designer / Product Website Designer | `premium-tech-saas-landing-page.plaza.json` |
 | studio-model | `marketing-style-studio-apparel` | official | E-commerce Premium Studio On-Body Shot Designer /  | `marketing-style-studio-apparel.plaza.json` |
 | youtube-channel-banner | `youtube-channel-banner-design` | official | YouTube Channel Banner / YouTube Channel Banner | `youtube-channel-banner-design.plaza.json` |
-| ai-model | `e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d` | UGC | AI模特定制生成 /  | `e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d.plaza.json` |
-| product-to-packaging | `product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423` | UGC | Product to Packaging System /  | `product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423.plaza.json` |
-| game-art | `game-visual-design-1789826679-aec2dca739db479d887cddeb83633527` | UGC | 游戏美术与运营视觉设计 / 游戏美术与运营视觉设计 | `game-visual-design-1789826679-aec2dca739db479d887cddeb83633527.plaza.json` |
-| portrait-studio | `photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d` | UGC | 摄影级人像生图工具 /  | `photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d.plaza.json` |
-| premium-website | `deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423` | UGC | Premium Website Art Director / Premium Website Art Director | `deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423.plaza.json` |
-| animated-poster | `animated-poster-maker-1788937137-48a31ef320b445a6808ea9f72b46d423` | UGC | Animated Poster Maker / Animated Poster Maker | `animated-poster-maker-1788937137-48a31ef320b445a6808ea9f72b46d423.plaza.json` |
-| pose-fission | `character-angle-prompts-1788487305-024472f1546b4fd09dd91d48aea17803` | UGC | 电商同场景角色姿势裂变 /  | `character-angle-prompts-1788487305-024472f1546b4fd09dd91d48aea17803.plaza.json` |
+| ai-model | `e-commerce-fashion-model-portrait-generator-<masked>-<masked>` | UGC | AI模特定制生成 /  | `e-commerce-fashion-model-portrait-generator.plaza.json` |
+| product-to-packaging | `product-to-packaging-system-<masked>-<masked>` | UGC | Product to Packaging System /  | `product-to-packaging-system.plaza.json` |
+| game-art | `game-visual-design-<masked>-<masked>` | UGC | 游戏美术与运营视觉设计 / 游戏美术与运营视觉设计 | `game-visual-design.plaza.json` |
+| portrait-studio | `photography-portrait-generator-<masked>-<masked>` | UGC | 摄影级人像生图工具 /  | `photography-portrait-generator.plaza.json` |
+| premium-website | `deliver-client-brand-<masked>-<masked>` | UGC | Premium Website Art Director / Premium Website Art Director | `deliver-client-brand.plaza.json` |
+| animated-poster | `animated-poster-maker-<masked>-<masked>` | UGC | Animated Poster Maker / Animated Poster Maker | `animated-poster-maker.plaza.json` |
+| pose-fission | `character-angle-prompts-<masked>-<masked>` | UGC | 电商同场景角色姿势裂变 /  | `character-angle-prompts.plaza.json` |
 | live-promo-decor | `livestream-promo-decor` | official | Livestream Promo Decoration /  | `livestream-promo-decor.plaza.json` |
 | linkedin-banner | `linkedin-banner-design` | official | LinkedIn Banner / LinkedIn Banner | `linkedin-banner-design.plaza.json` |
-| logo-animation | `logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033` | UGC | LOGO animation video /  | `logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033.plaza.json` |
-| restaurant-website | `restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68` | UGC | Restaurant Website Creator / Restaurant Website Creator | `restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68.plaza.json` |
-| clothing-swap | `fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831` | UGC | AI服装换装skill /  | `fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831.plaza.json` |
+| logo-animation | `logo-5s-motion-video-<masked>-<masked>` | UGC | LOGO animation video /  | `logo-5s-motion-video.plaza.json` |
+| restaurant-website | `restaurant-skill-<masked>-<masked>` | UGC | Restaurant Website Creator / Restaurant Website Creator | `restaurant-skill.plaza.json` |
+| clothing-swap | `fashion-unified-outfit-change-v2-<masked>-<masked>` | UGC | AI服装换装skill /  | `fashion-unified-outfit-change-v2.plaza.json` |
 
 Notes:
 - photo-split-poster → half-collage-poster (top half photo, bottom half abstract geometry sampled from photo colors); split-photo-naive-illustration-poster was the runner-up.
@@ -397,46 +397,46 @@ QA hints checked: naive-editorial-character (character sheet, not scale joke), h
 
 | skillKey | our id | role | kind | WxH |
 |---|---|---|---|---|
-| screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787 | flash-cut-video | cover | image | 2528x1424 |
-| screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787 | flash-cut-video | highlight | video | 1920x1080 |
+| screenshot-flashcut-video-<masked>-<masked> | flash-cut-video | cover | image | 2528x1424 |
+| screenshot-flashcut-video-<masked>-<masked> | flash-cut-video | highlight | video | 1920x1080 |
 | adaptive-style-transfer-director | style-transfer | cover | video | 960x720 |
 | adaptive-style-transfer-director | style-transfer | highlight | image | 1254x1254 |
 | adaptive-style-transfer-director | style-transfer | highlight | image | 1254x1254 |
 | adaptive-style-transfer-director | style-transfer | highlight | image | 1254x1254 |
 | adaptive-style-transfer-director | style-transfer | highlight | image | 1254x1254 |
-| fashion-portrait-multi-reference-1787711071-024472f1546b4fd09dd91d48aea17803 | person-swap | cover | image | 2560x1896 |
-| fashion-portrait-multi-reference-1787711071-024472f1546b4fd09dd91d48aea17803 | person-swap | highlight | image | 1536x2048 |
+| fashion-portrait-multi-reference-<masked>-<masked> | person-swap | cover | image | 2560x1896 |
+| fashion-portrait-multi-reference-<masked>-<masked> | person-swap | highlight | image | 1536x2048 |
 | commerce-visual-strategist | commerce-strategist | cover | video | 1440x1080 |
 | commerce-visual-strategist | commerce-strategist | highlight | video | 640x480 |
 | marketing-style-lifestyle-scene | lifestyle-scene | cover | video | 960x720 |
 | marketing-style-lifestyle-scene | lifestyle-scene | highlight | image | 1536x2048 |
 | marketing-style-lifestyle-scene | lifestyle-scene | highlight | image | 800x800 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | cover | image | 2048x2048 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 2048x2048 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 2048x2048 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 2048x2048 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 1254x1254 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 1254x1254 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 2048x2048 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 2048x2048 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 2048x2048 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 2048x2048 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 2048x2048 |
-| photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5 | logo-abstract | highlight | image | 2048x2048 |
-| half-collage-poster-1789010091-7d87342595e0438b9d34b00713cacfa8 | photo-split-poster | cover | image | 2016x1344 |
-| half-collage-poster-1789010091-7d87342595e0438b9d34b00713cacfa8 | photo-split-poster | highlight | image | 1200x1600 |
-| modular-web-ppt-skill-1787063776-32aaae3fc4f94621b6f17762e9df06ec | ppt-visual | cover | image | 2048x1536 |
-| modular-web-ppt-skill-1787063776-32aaae3fc4f94621b6f17762e9df06ec | ppt-visual | highlight | image | 1920x10470 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | cover | image | 2048x2048 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 2048x2048 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 2048x2048 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 2048x2048 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 1254x1254 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 1254x1254 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 2048x2048 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 2048x2048 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 2048x2048 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 2048x2048 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 2048x2048 |
+| photo-to-geometric-minimal-logo-<masked>-<masked> | logo-abstract | highlight | image | 2048x2048 |
+| half-collage-poster-<masked>-<masked> | photo-split-poster | cover | image | 2016x1344 |
+| half-collage-poster-<masked>-<masked> | photo-split-poster | highlight | image | 1200x1600 |
+| modular-web-ppt-skill-<masked>-<masked> | ppt-visual | cover | image | 2048x1536 |
+| modular-web-ppt-skill-<masked>-<masked> | ppt-visual | highlight | image | 1920x10470 |
 | ecommerce-promotion-brand-design | promo-ecommerce | cover | video | 960x720 |
 | ecommerce-promotion-brand-design | promo-ecommerce | highlight | image | 2560x2214 |
 | ecommerce-promotion-brand-design | promo-ecommerce | highlight | image | 2560x1464 |
 | ecommerce-promotion-brand-design | promo-ecommerce | highlight | image | 1519x2560 |
 | ecommerce-promotion-brand-design | promo-ecommerce | highlight | image | 1690x2560 |
-| crt-interface-pixel-illustration-1788248311-afafde0e782247efb235976e7236c3da | crt-interface | cover | image | 738x814 |
-| crt-interface-pixel-illustration-1788248311-afafde0e782247efb235976e7236c3da | crt-interface | highlight | image | 1536x2048 |
-| retro-childrens-book-crayon-1788076872-0ca68b46cffa481a962166b118fa6514 | crayon-sketch | cover | video | 858x858 |
-| retro-childrens-book-crayon-1788076872-0ca68b46cffa481a962166b118fa6514 | crayon-sketch | highlight | image | 1600x1600 |
-| retro-childrens-book-crayon-1788076872-0ca68b46cffa481a962166b118fa6514 | crayon-sketch | highlight | video | 858x858 |
+| crt-interface-pixel-illustration-<masked>-<masked> | crt-interface | cover | image | 738x814 |
+| crt-interface-pixel-illustration-<masked>-<masked> | crt-interface | highlight | image | 1536x2048 |
+| retro-childrens-book-crayon-<masked>-<masked> | crayon-sketch | cover | video | 858x858 |
+| retro-childrens-book-crayon-<masked>-<masked> | crayon-sketch | highlight | image | 1600x1600 |
+| retro-childrens-book-crayon-<masked>-<masked> | crayon-sketch | highlight | video | 858x858 |
 | taobao | taobao-product | cover | video | 1442x1080 |
 | taobao | taobao-product | highlight | image | 2005x497 |
 | taobao | taobao-product | highlight | image | 236x2560 |
@@ -455,16 +455,16 @@ QA hints checked: naive-editorial-character (character sheet, not scale joke), h
 | before-after-visual | before-after | highlight | image | 1600x2000 |
 | before-after-visual | before-after | highlight | image | 1122x1402 |
 | before-after-visual | before-after | highlight | image | 1600x2000 |
-| video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31 | anim-2d | cover | image | 1672x941 |
-| video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31 | anim-2d | highlight | video | 1080x1920 |
-| video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31 | anim-2d | highlight | image | 541x979 |
-| video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31 | anim-2d | highlight | image | 542x979 |
+| video-to-2d-cartoon-<masked>-<masked> | anim-2d | cover | image | 1672x941 |
+| video-to-2d-cartoon-<masked>-<masked> | anim-2d | highlight | video | 1080x1920 |
+| video-to-2d-cartoon-<masked>-<masked> | anim-2d | highlight | image | 541x979 |
+| video-to-2d-cartoon-<masked>-<masked> | anim-2d | highlight | image | 542x979 |
 | creator-visual-identity-system | creator-identity | cover | video | 640x480 |
 | creator-visual-identity-system | creator-identity | highlight | video | 1440x1078 |
-| premium-tech-saas-landing-page-1787063733-6647cf9c516b4f1d876e3dd0986ea908 | product-website | cover | image | 1536x1024 |
-| premium-tech-saas-landing-page-1787063733-6647cf9c516b4f1d876e3dd0986ea908 | product-website | highlight | video | 3360x1530 |
-| premium-tech-saas-landing-page-1787063733-6647cf9c516b4f1d876e3dd0986ea908 | product-website | highlight | video | 3360x1530 |
-| premium-tech-saas-landing-page-1787063733-6647cf9c516b4f1d876e3dd0986ea908 | product-website | highlight | video | 3360x1530 |
+| premium-tech-saas-landing-page-<masked>-<masked> | product-website | cover | image | 1536x1024 |
+| premium-tech-saas-landing-page-<masked>-<masked> | product-website | highlight | video | 3360x1530 |
+| premium-tech-saas-landing-page-<masked>-<masked> | product-website | highlight | video | 3360x1530 |
+| premium-tech-saas-landing-page-<masked>-<masked> | product-website | highlight | video | 3360x1530 |
 | marketing-style-studio-apparel | studio-model | cover | video | 960x720 |
 | marketing-style-studio-apparel | studio-model | highlight | image | 1536x2048 |
 | marketing-style-studio-apparel | studio-model | highlight | image | 750x1000 |
@@ -478,74 +478,74 @@ QA hints checked: naive-editorial-character (character sheet, not scale joke), h
 | youtube-channel-banner-design | youtube-channel-banner | highlight | image | 3840x1916 |
 | youtube-channel-banner-design | youtube-channel-banner | highlight | image | 3840x1916 |
 | youtube-channel-banner-design | youtube-channel-banner | highlight | image | 3840x1916 |
-| e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d | ai-model | cover | image | 3584x4800 |
-| e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d | ai-model | highlight | image | 1856x2304 |
-| e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d | ai-model | highlight | image | 1856x2304 |
-| e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d | ai-model | highlight | image | 3676x4564 |
-| e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d | ai-model | highlight | image | 1856x2304 |
-| e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d | ai-model | highlight | image | 1600x2000 |
-| e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d | ai-model | highlight | image | 1600x2000 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | cover | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 1536x2048 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2048x1152 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2016x1344 |
-| product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423 | product-to-packaging | highlight | image | 2016x1344 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | cover | image | 1254x1254 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 2048x2048 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1152x2048 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 2560x1440 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 2560x1440 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| game-visual-design-1789826679-aec2dca739db479d887cddeb83633527 | game-art | highlight | image | 1088x1920 |
-| photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d | portrait-studio | cover | image | 800x600 |
-| photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d | portrait-studio | highlight | image | 1242x1656 |
-| photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d | portrait-studio | highlight | image | 1242x1656 |
-| photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d | portrait-studio | highlight | image | 1242x1656 |
-| photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d | portrait-studio | highlight | image | 1242x1656 |
-| photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d | portrait-studio | highlight | image | 1242x1656 |
-| photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d | portrait-studio | highlight | image | 1242x1656 |
-| deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423 | premium-website | cover | image | 2560x1440 |
-| deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423 | premium-website | highlight | image | 2560x1440 |
-| deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423 | premium-website | highlight | image | 2048x1152 |
-| deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423 | premium-website | highlight | image | 2048x2048 |
-| deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423 | premium-website | highlight | image | 2048x1536 |
-| deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423 | premium-website | highlight | image | 2048x1536 |
-| deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423 | premium-website | highlight | image | 2048x1536 |
-| deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423 | premium-website | highlight | image | 1536x2048 |
-| animated-poster-maker-1788937137-48a31ef320b445a6808ea9f72b46d423 | animated-poster | cover | video | 834x1112 |
-| animated-poster-maker-1788937137-48a31ef320b445a6808ea9f72b46d423 | animated-poster | highlight | video | 834x1112 |
-| animated-poster-maker-1788937137-48a31ef320b445a6808ea9f72b46d423 | animated-poster | highlight | video | 834x1112 |
-| animated-poster-maker-1788937137-48a31ef320b445a6808ea9f72b46d423 | animated-poster | highlight | video | 834x1112 |
-| animated-poster-maker-1788937137-48a31ef320b445a6808ea9f72b46d423 | animated-poster | highlight | video | 834x1112 |
-| character-angle-prompts-1788487305-024472f1546b4fd09dd91d48aea17803 | pose-fission | cover | image | 1600x1200 |
-| character-angle-prompts-1788487305-024472f1546b4fd09dd91d48aea17803 | pose-fission | highlight | image | 3584x4800 |
-| character-angle-prompts-1788487305-024472f1546b4fd09dd91d48aea17803 | pose-fission | highlight | image | 3584x4800 |
-| character-angle-prompts-1788487305-024472f1546b4fd09dd91d48aea17803 | pose-fission | highlight | image | 3584x4800 |
-| character-angle-prompts-1788487305-024472f1546b4fd09dd91d48aea17803 | pose-fission | highlight | image | 3584x4800 |
+| e-commerce-fashion-model-portrait-generator-<masked>-<masked> | ai-model | cover | image | 3584x4800 |
+| e-commerce-fashion-model-portrait-generator-<masked>-<masked> | ai-model | highlight | image | 1856x2304 |
+| e-commerce-fashion-model-portrait-generator-<masked>-<masked> | ai-model | highlight | image | 1856x2304 |
+| e-commerce-fashion-model-portrait-generator-<masked>-<masked> | ai-model | highlight | image | 3676x4564 |
+| e-commerce-fashion-model-portrait-generator-<masked>-<masked> | ai-model | highlight | image | 1856x2304 |
+| e-commerce-fashion-model-portrait-generator-<masked>-<masked> | ai-model | highlight | image | 1600x2000 |
+| e-commerce-fashion-model-portrait-generator-<masked>-<masked> | ai-model | highlight | image | 1600x2000 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | cover | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 1536x2048 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2048x1152 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2016x1344 |
+| product-to-packaging-system-<masked>-<masked> | product-to-packaging | highlight | image | 2016x1344 |
+| game-visual-design-<masked>-<masked> | game-art | cover | image | 1254x1254 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 2048x2048 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1152x2048 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 2560x1440 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 2560x1440 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| game-visual-design-<masked>-<masked> | game-art | highlight | image | 1088x1920 |
+| photography-portrait-generator-<masked>-<masked> | portrait-studio | cover | image | 800x600 |
+| photography-portrait-generator-<masked>-<masked> | portrait-studio | highlight | image | 1242x1656 |
+| photography-portrait-generator-<masked>-<masked> | portrait-studio | highlight | image | 1242x1656 |
+| photography-portrait-generator-<masked>-<masked> | portrait-studio | highlight | image | 1242x1656 |
+| photography-portrait-generator-<masked>-<masked> | portrait-studio | highlight | image | 1242x1656 |
+| photography-portrait-generator-<masked>-<masked> | portrait-studio | highlight | image | 1242x1656 |
+| photography-portrait-generator-<masked>-<masked> | portrait-studio | highlight | image | 1242x1656 |
+| deliver-client-brand-<masked>-<masked> | premium-website | cover | image | 2560x1440 |
+| deliver-client-brand-<masked>-<masked> | premium-website | highlight | image | 2560x1440 |
+| deliver-client-brand-<masked>-<masked> | premium-website | highlight | image | 2048x1152 |
+| deliver-client-brand-<masked>-<masked> | premium-website | highlight | image | 2048x2048 |
+| deliver-client-brand-<masked>-<masked> | premium-website | highlight | image | 2048x1536 |
+| deliver-client-brand-<masked>-<masked> | premium-website | highlight | image | 2048x1536 |
+| deliver-client-brand-<masked>-<masked> | premium-website | highlight | image | 2048x1536 |
+| deliver-client-brand-<masked>-<masked> | premium-website | highlight | image | 1536x2048 |
+| animated-poster-maker-<masked>-<masked> | animated-poster | cover | video | 834x1112 |
+| animated-poster-maker-<masked>-<masked> | animated-poster | highlight | video | 834x1112 |
+| animated-poster-maker-<masked>-<masked> | animated-poster | highlight | video | 834x1112 |
+| animated-poster-maker-<masked>-<masked> | animated-poster | highlight | video | 834x1112 |
+| animated-poster-maker-<masked>-<masked> | animated-poster | highlight | video | 834x1112 |
+| character-angle-prompts-<masked>-<masked> | pose-fission | cover | image | 1600x1200 |
+| character-angle-prompts-<masked>-<masked> | pose-fission | highlight | image | 3584x4800 |
+| character-angle-prompts-<masked>-<masked> | pose-fission | highlight | image | 3584x4800 |
+| character-angle-prompts-<masked>-<masked> | pose-fission | highlight | image | 3584x4800 |
+| character-angle-prompts-<masked>-<masked> | pose-fission | highlight | image | 3584x4800 |
 | livestream-promo-decor | live-promo-decor | cover | video | 960x720 |
 | livestream-promo-decor | live-promo-decor | highlight | image | 1280x574 |
 | livestream-promo-decor | live-promo-decor | highlight | image | 1280x574 |
@@ -561,19 +561,19 @@ QA hints checked: naive-editorial-character (character sheet, not scale joke), h
 | livestream-promo-decor | live-promo-decor | highlight | image | 1280x430 |
 | linkedin-banner-design | linkedin-banner | cover | video | 1440x1080 |
 | linkedin-banner-design | linkedin-banner | highlight | video | 960x720 |
-| logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033 | logo-animation | cover | video | 1280x720 |
-| logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033 | logo-animation | highlight | video | 1280x720 |
-| logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033 | logo-animation | highlight | video | 1280x720 |
-| logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033 | logo-animation | highlight | video | 1280x720 |
-| logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033 | logo-animation | highlight | video | 1280x720 |
-| restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68 | restaurant-website | cover | video | 960x720 |
-| restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68 | restaurant-website | highlight | image | 1280x708 |
-| restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68 | restaurant-website | highlight | image | 1280x706 |
-| restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68 | restaurant-website | highlight | image | 1280x627 |
-| restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68 | restaurant-website | highlight | image | 1280x635 |
-| restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68 | restaurant-website | highlight | image | 1280x694 |
-| restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68 | restaurant-website | highlight | image | 1280x707 |
-| restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68 | restaurant-website | highlight | image | 1280x701 |
-| fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831 | clothing-swap | cover | image | 1792x2400 |
-| fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831 | clothing-swap | highlight | image | 1792x2400 |
-| fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831 | clothing-swap | highlight | image | 1084x1451 |
+| logo-5s-motion-video-<masked>-<masked> | logo-animation | cover | video | 1280x720 |
+| logo-5s-motion-video-<masked>-<masked> | logo-animation | highlight | video | 1280x720 |
+| logo-5s-motion-video-<masked>-<masked> | logo-animation | highlight | video | 1280x720 |
+| logo-5s-motion-video-<masked>-<masked> | logo-animation | highlight | video | 1280x720 |
+| logo-5s-motion-video-<masked>-<masked> | logo-animation | highlight | video | 1280x720 |
+| restaurant-skill-<masked>-<masked> | restaurant-website | cover | video | 960x720 |
+| restaurant-skill-<masked>-<masked> | restaurant-website | highlight | image | 1280x708 |
+| restaurant-skill-<masked>-<masked> | restaurant-website | highlight | image | 1280x706 |
+| restaurant-skill-<masked>-<masked> | restaurant-website | highlight | image | 1280x627 |
+| restaurant-skill-<masked>-<masked> | restaurant-website | highlight | image | 1280x635 |
+| restaurant-skill-<masked>-<masked> | restaurant-website | highlight | image | 1280x694 |
+| restaurant-skill-<masked>-<masked> | restaurant-website | highlight | image | 1280x707 |
+| restaurant-skill-<masked>-<masked> | restaurant-website | highlight | image | 1280x701 |
+| fashion-unified-outfit-change-v2-<masked>-<masked> | clothing-swap | cover | image | 1792x2400 |
+| fashion-unified-outfit-change-v2-<masked>-<masked> | clothing-swap | highlight | image | 1792x2400 |
+| fashion-unified-outfit-change-v2-<masked>-<masked> | clothing-swap | highlight | image | 1084x1451 |

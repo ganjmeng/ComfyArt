@@ -118,13 +118,13 @@
     "prevExtra": {
       "skillAssetId": "2puhi8be69kw",
       "versionAssetId": "2puhi8jfuhog",
-      "skillKey": "video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31",
+      "skillKey": "video-to-2d-cartoon-<masked>-<masked>",
       "sourceVersion": "1.0.0",
-      "linkUrl": "lovart://skill/video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31",
+      "linkUrl": "lovart://skill/video-to-2d-cartoon-<masked>-<masked>",
       "namespace": "user-generated",
       "type": "ugc",
       "versionId": "c7bf8906-b901-45e7-9b69-dff2c8109930",
-      "skillId": "user-generated/video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31/c7bf8906-b901-45e7-9b69-dff2c8109930",
+      "skillId": "user-generated/video-to-2d-cartoon-<masked>-<masked>/c7bf8906-b901-45e7-9b69-dff2c8109930",
       "i18n_title": {
         "en": "2D Animation ",
         "ja": "2Dアニメーション ",
@@ -194,13 +194,13 @@
   "extra": {
     "skillAssetId": "2puhi8be69kw",
     "versionAssetId": "2puhi8jfuhog",
-    "skillKey": "video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31",
+    "skillKey": "video-to-2d-cartoon-<masked>-<masked>",
     "sourceVersion": "1.0.0",
-    "linkUrl": "lovart://skill/video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31",
+    "linkUrl": "lovart://skill/video-to-2d-cartoon-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "c7bf8906-b901-45e7-9b69-dff2c8109930",
-    "skillId": "user-generated/video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31/c7bf8906-b901-45e7-9b69-dff2c8109930",
+    "skillId": "user-generated/video-to-2d-cartoon-<masked>-<masked>/c7bf8906-b901-45e7-9b69-dff2c8109930",
     "i18n_title": {
       "en": "2D Animation Converter",
       "ja": "2Dアニメーション変換",

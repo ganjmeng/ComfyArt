@@ -132,13 +132,13 @@
   "extra": {
     "skillAssetId": "2piccz14qgw0",
     "versionAssetId": "2piccz9behog",
-    "skillKey": "multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41",
+    "skillKey": "multi-angle-photo-from-references-<masked>-<masked>",
     "sourceVersion": "1.0.0",
-    "linkUrl": "lovart://skill/multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41",
+    "linkUrl": "lovart://skill/multi-angle-photo-from-references-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "fd6515e2-1581-4026-9753-a19746c408a8",
-    "skillId": "user-generated/multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41/fd6515e2-1581-4026-9753-a19746c408a8",
+    "skillId": "user-generated/multi-angle-photo-from-references-<masked>-<masked>/fd6515e2-1581-4026-9753-a19746c408a8",
     "i18n_title": {
       "en": "Multi-Angle Photography from References",
       "ja": "参考画像から多角度撮影",

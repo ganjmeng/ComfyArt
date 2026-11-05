@@ -222,13 +222,13 @@
   "extra": {
     "skillAssetId": "2q5xmo2ushz4",
     "versionAssetId": "2q5z9xs9dtkw",
-    "skillKey": "product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423",
+    "skillKey": "product-to-packaging-system-<masked>-<masked>",
     "sourceVersion": "1.0.1",
-    "linkUrl": "lovart://skill/product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423",
+    "linkUrl": "lovart://skill/product-to-packaging-system-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "7d8dc503-a8b4-409e-b4a1-c07cdad58edc",
-    "skillId": "user-generated/product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423/7d8dc503-a8b4-409e-b4a1-c07cdad58edc",
+    "skillId": "user-generated/product-to-packaging-system-<masked>-<masked>/7d8dc503-a8b4-409e-b4a1-c07cdad58edc",
     "i18n_title": {
       "en": "Product to Packaging System",
       "ja": "製品からパッケージングシステムへ",

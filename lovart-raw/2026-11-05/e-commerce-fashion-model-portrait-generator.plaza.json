@@ -126,13 +126,13 @@
   "extra": {
     "skillAssetId": "2non1tf5cdfk",
     "versionAssetId": "2noqo67rzls0",
-    "skillKey": "e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d",
+    "skillKey": "e-commerce-fashion-model-portrait-generator-<masked>-<masked>",
     "sourceVersion": "1.0.4",
-    "linkUrl": "lovart://skill/e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d",
+    "linkUrl": "lovart://skill/e-commerce-fashion-model-portrait-generator-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "6c32471c-bd65-40f2-b275-02e3d336d014",
-    "skillId": "user-generated/e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d/6c32471c-bd65-40f2-b275-02e3d336d014",
+    "skillId": "user-generated/e-commerce-fashion-model-portrait-generator-<masked>-<masked>/6c32471c-bd65-40f2-b275-02e3d336d014",
     "i18n_title": {
       "en": "AI Model Customization Generator",
       "ja": "AIモデルカスタム生成",

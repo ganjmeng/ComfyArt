@@ -90,13 +90,13 @@
     "prevExtra": {
       "skillAssetId": "2q4916ewb0n4",
       "versionAssetId": "2qt0nt5qpzwg",
-      "skillKey": "screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787",
+      "skillKey": "screenshot-flashcut-video-<masked>-<masked>",
       "sourceVersion": "1.0.3",
-      "linkUrl": "lovart://skill/screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787",
+      "linkUrl": "lovart://skill/screenshot-flashcut-video-<masked>-<masked>",
       "namespace": "user-generated",
       "type": "ugc",
       "versionId": "243fb2f2-065e-4336-bd1e-159ac627a7b5",
-      "skillId": "user-generated/screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787/243fb2f2-065e-4336-bd1e-159ac627a7b5",
+      "skillId": "user-generated/screenshot-flashcut-video-<masked>-<masked>/243fb2f2-065e-4336-bd1e-159ac627a7b5",
       "i18n_title": {
         "en": "Screenshot → Flash-Cut Video",
         "ja": "スクリーンショット → フラッシュカット動画",
@@ -166,13 +166,13 @@
   "extra": {
     "skillAssetId": "2q4916ewb0n4",
     "versionAssetId": "2qwh77ocoydc",
-    "skillKey": "screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787",
+    "skillKey": "screenshot-flashcut-video-<masked>-<masked>",
     "sourceVersion": "1.0.4",
-    "linkUrl": "lovart://skill/screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787",
+    "linkUrl": "lovart://skill/screenshot-flashcut-video-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "4d8b1e07-50c7-443b-a3d8-69178015ea6a",
-    "skillId": "user-generated/screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787/4d8b1e07-50c7-443b-a3d8-69178015ea6a",
+    "skillId": "user-generated/screenshot-flashcut-video-<masked>-<masked>/4d8b1e07-50c7-443b-a3d8-69178015ea6a",
     "i18n_title": {
       "en": "Screenshot → Flash-Cut Video",
       "ja": "スクリーンショット → フラッシュカット動画",

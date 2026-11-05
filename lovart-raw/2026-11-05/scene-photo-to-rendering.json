@@ -98,13 +98,13 @@
   "extra": {
     "skillAssetId": "2oqzqphjnr40",
     "versionAssetId": "2oqzqpqua5fk",
-    "skillKey": "scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07",
+    "skillKey": "scene-photo-to-rendering-<masked>-<masked>",
     "sourceVersion": "1.0.0",
-    "linkUrl": "lovart://skill/scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07",
+    "linkUrl": "lovart://skill/scene-photo-to-rendering-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "e8c5bacc-01a6-4eb1-8ce6-b2873009a3a1",
-    "skillId": "user-generated/scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07/e8c5bacc-01a6-4eb1-8ce6-b2873009a3a1",
+    "skillId": "user-generated/scene-photo-to-rendering-<masked>-<masked>/e8c5bacc-01a6-4eb1-8ce6-b2873009a3a1",
     "i18n_title": {
       "en": "Scene Photo to Interior Rendering",
       "ja": "シーン写真を美化レンダリング",

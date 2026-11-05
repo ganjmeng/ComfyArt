@@ -133,13 +133,13 @@
   "extra": {
     "skillAssetId": "2o21i8vbh98g",
     "versionAssetId": "2o21i8w0g8ow",
-    "skillKey": "photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d",
+    "skillKey": "photography-portrait-generator-<masked>-<masked>",
     "sourceVersion": "1.0.0",
-    "linkUrl": "lovart://skill/photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d",
+    "linkUrl": "lovart://skill/photography-portrait-generator-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "efa84cdb-4d74-4199-ac8c-ea11a5116a07",
-    "skillId": "user-generated/photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d/efa84cdb-4d74-4199-ac8c-ea11a5116a07",
+    "skillId": "user-generated/photography-portrait-generator-<masked>-<masked>/efa84cdb-4d74-4199-ac8c-ea11a5116a07",
     "i18n_title": {
       "en": "Professional Portrait Generation Tool",
       "ja": "プロフェッショナルポートレート生成ツール",

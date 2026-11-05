@@ -123,13 +123,13 @@
   "extra": {
     "skillAssetId": "2n7nm8srlvy8",
     "versionAssetId": "2n7nm9jeizuo",
-    "skillKey": "logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033",
+    "skillKey": "logo-5s-motion-video-<masked>-<masked>",
     "sourceVersion": "1.0.0",
-    "linkUrl": "lovart://skill/logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033",
+    "linkUrl": "lovart://skill/logo-5s-motion-video-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "7cc2e8e7-8dfb-440e-b696-0208a7feaa2f",
-    "skillId": "user-generated/logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033/7cc2e8e7-8dfb-440e-b696-0208a7feaa2f",
+    "skillId": "user-generated/logo-5s-motion-video-<masked>-<masked>/7cc2e8e7-8dfb-440e-b696-0208a7feaa2f",
     "i18n_title": {
       "en": "LOGO animation video",
       "ja": "ロゴアニメーション動画",

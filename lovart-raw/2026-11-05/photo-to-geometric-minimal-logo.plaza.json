@@ -200,13 +200,13 @@
   "extra": {
     "skillAssetId": "2ns4zj3wdw5c",
     "versionAssetId": "2ns4zjo0kge8",
-    "skillKey": "photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5",
+    "skillKey": "photo-to-geometric-minimal-logo-<masked>-<masked>",
     "sourceVersion": "1.0.0",
-    "linkUrl": "lovart://skill/photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5",
+    "linkUrl": "lovart://skill/photo-to-geometric-minimal-logo-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "38eb82c7-9d7a-4f40-83ea-78d19fc47a86",
-    "skillId": "user-generated/photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5/38eb82c7-9d7a-4f40-83ea-78d19fc47a86",
+    "skillId": "user-generated/photo-to-geometric-minimal-logo-<masked>-<masked>/38eb82c7-9d7a-4f40-83ea-78d19fc47a86",
     "i18n_title": {
       "en": "Photo to Geometric Minimalist Logo",
       "ja": "写真をジオメトリックミニマルロゴに変換",

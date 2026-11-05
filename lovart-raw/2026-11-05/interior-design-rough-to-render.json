@@ -121,13 +121,13 @@
   "extra": {
     "skillAssetId": "2pw4vy1ad3b4",
     "versionAssetId": "2pw9v7ziszcw",
-    "skillKey": "interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5",
+    "skillKey": "interior-design-rough-to-render-<masked>-<masked>",
     "sourceVersion": "1.0.5",
-    "linkUrl": "lovart://skill/interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5",
+    "linkUrl": "lovart://skill/interior-design-rough-to-render-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "8cdbc3d5-efac-45ae-8744-10a283147681",
-    "skillId": "user-generated/interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5/8cdbc3d5-efac-45ae-8744-10a283147681",
+    "skillId": "user-generated/interior-design-rough-to-render-<masked>-<masked>/8cdbc3d5-efac-45ae-8744-10a283147681",
     "i18n_title": {
       "en": "Bare Room to Interior Rendering",
       "ja": "スケルトン物件から室内効果図へ",

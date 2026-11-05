@@ -8,9 +8,9 @@
   "content": {
     "skillPreset": {
       "i18n_title": {
-        "en": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734",
-        "ja": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734",
-        "zh": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734"
+        "en": "restaurant-skill-<masked>-<masked>",
+        "ja": "restaurant-skill-<masked>-<masked>",
+        "zh": "restaurant-skill-<masked>-<masked>"
       },
       "i18n_description": {
         "en": "Creates restaurant, cafe, bar, and bakery brand showcase pages with menu systems, reservation forms, chef teams, and gallery. Features warm appetite-stimulating color palettes, serif typography, full-bleed food photography. For fine dining restaurants, cafes, bars, bakeries, pastry shops, and private kitchens.",
@@ -134,13 +134,13 @@
   "extra": {
     "skillAssetId": "2n7ntpk0tbls",
     "versionAssetId": "2n7ntqfg1fcw",
-    "skillKey": "restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68",
+    "skillKey": "restaurant-skill-<masked>-<masked>",
     "sourceVersion": "1.0.0",
-    "linkUrl": "lovart://skill/restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68",
+    "linkUrl": "lovart://skill/restaurant-skill-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "a4b92ba6-291a-424b-af1e-b66af4651ce0",
-    "skillId": "user-generated/restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68/a4b92ba6-291a-424b-af1e-b66af4651ce0",
+    "skillId": "user-generated/restaurant-skill-<masked>-<masked>/a4b92ba6-291a-424b-af1e-b66af4651ce0",
     "i18n_title": {
       "en": "Restaurant Website Creator",
       "ja": "レストランウェブサイト作成ツール",
@@ -345,9 +345,9 @@
     "content": {
       "skillPreset": {
         "i18n_title": {
-          "en": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734",
-          "ja": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734",
-          "zh": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734"
+          "en": "restaurant-skill-<masked>-<masked>",
+          "ja": "restaurant-skill-<masked>-<masked>",
+          "zh": "restaurant-skill-<masked>-<masked>"
         },
         "i18n_description": {
           "en": "Creates restaurant, cafe, bar, and bakery brand showcase pages with menu systems, reservation forms, chef teams, and gallery. Features warm appetite-stimulating color palettes, serif typography, full-bleed food photography. For fine dining restaurants, cafes, bars, bakeries, pastry shops, and private kitchens.",

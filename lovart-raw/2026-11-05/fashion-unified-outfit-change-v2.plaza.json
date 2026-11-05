@@ -114,13 +114,13 @@
   "extra": {
     "skillAssetId": "2oo0mawme0hs",
     "versionAssetId": "2oo0wphvqeps",
-    "skillKey": "fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831",
+    "skillKey": "fashion-unified-outfit-change-v2-<masked>-<masked>",
     "sourceVersion": "1.0.1",
-    "linkUrl": "lovart://skill/fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831",
+    "linkUrl": "lovart://skill/fashion-unified-outfit-change-v2-<masked>-<masked>",
     "namespace": "user-generated",
     "type": "ugc",
     "versionId": "7f8baed9-789b-4898-833b-f8a37da547de",
-    "skillId": "user-generated/fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831/7f8baed9-789b-4898-833b-f8a37da547de",
+    "skillId": "user-generated/fashion-unified-outfit-change-v2-<masked>-<masked>/7f8baed9-789b-4898-833b-f8a37da547de",
     "i18n_title": {
       "en": "AI Clothing Swap Skill",
       "ja": "AI服装換装スキル",
