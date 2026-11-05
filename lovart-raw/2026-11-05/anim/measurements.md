@@ -76,6 +76,23 @@ Published: `lovart-1280x1072-static.masked.png`, `lovart-1280x1072-hover.masked.
 - `sheets/stack-*-modal-contact.masked.png` — full-modal contact sheets (0/100/200/400)
 - `stack-static.modal.masked.png` / `stack-expanded.modal.masked.png`
 - `lovart-1280x1072-static.masked.png` / `lovart-1280x1072-hover.masked.png`
+- `multisku-1280-static.masked.png` / `multisku-1280-hover.masked.png`
 - `stack-expand-on.masked.mp4` / `.gif` — ~0.5 s expand clip (masked)
 - `stack-expand-off.masked.mp4` — collapse clip (masked)
 - `manifest.json` — frame indices + duration dump
+
+## Multi-SKU (4 media) @1280
+
+Source stills: `multisku-1280-static.png` / `multisku-1280-hover.png` (viewport **1280×1072**).  
+Card: **Multi-SKU Packaging Series** (Brand Packaging Design System modal). DOM has **4** media layers; the **4th layer has opacity 0** (not visible).
+
+| State | Value |
+|---|---|
+| Static layers | size **181.5×242**, `translateX(73.25px)` `scale(0.805697)`, rotate **5° / −5° / 10° / −5°**, z **3 / 2 / 1 / 0**; 4th opacity **0** |
+| Hover | **2×2** grid cells **161×118**, offsets **(0,0) / (167,0) / (0,124) / (167,124)**; 4th opacity **0** |
+
+### Master Packaging Design (same modal, 1280)
+
+Single image (no stack): aspect **270/360** → laid out **181.5×242**, centered in the thumb.
+
+Published: `multisku-1280-static.masked.png`, `multisku-1280-hover.masked.png`.
