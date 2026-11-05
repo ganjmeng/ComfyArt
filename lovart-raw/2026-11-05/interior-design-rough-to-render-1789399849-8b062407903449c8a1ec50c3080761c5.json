@@ -1,0 +1,329 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2pyna75bgv0g",
+  "title": "毛坯房直出室内效果",
+  "description": "当用户上传毛坯房照片、家具产品图、可选的小摆件/盆栽/挂画、可选的墙面/地板/天花板材质图、可选的硬装造型参考图（天花挖洞/灯槽/弧形墙等）、可选的色块布局图（完整或部分）和室内风格参考图，希望生成室内设计效果图时，必须调用本技能。支持部分色块图：只标注硬装造型或部分家具时，Agent 会落实已标注内容并自行推理其余布局。无尺寸时默认视觉推理；只向用户展示色块布局图和最终成图。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Bare Room Interior Rendering Generation",
+        "ja": "スケルトン住宅室内レンダリング生成",
+        "zh": "毛坯房室内效果图生成"
+      },
+      "i18n_description": {
+        "en": "This skill must be invoked when users upload photos of bare rooms, furniture product images, optional small accessories/plants/wall art, optional wall/floor/ceiling material images, optional structural reference images (ceiling recesses/light troughs/curved walls, etc.), optional color block layout diagrams (complete or partial), and interior style reference images, wishing to generate interior design renderings. Supports partial color block diagrams: when only structural elements or some furniture are marked, the Agent will implement the marked content and infer the remaining layout autonomously. Defaults to visual inference when dimensions are unavailable; only the color block layout diagram and final rendering are shown to users.",
+        "ja": "ユーザーがスケルトン住宅の写真、家具商品画像、オプションの小物/観葉植物/壁掛けアート、オプションの壁面/床/天井素材画像、オプションのハード内装造形参考画像（天井くり抜き/間接照明溝/曲線壁など）、オプションの色ブロックレイアウト図（完全または部分）、室内スタイル参考画像をアップロードし、インテリアデザインレンダリングを生成したい場合、本スキルを必ず呼び出してください。部分色ブロック図対応：ハード内装造形や一部の家具のみをマークした場合、Agentはマークされた内容を実装し、残りのレイアウトを自律的に推論します。寸法がない場合はデフォルトで視覚的推論を行い、ユーザーには色ブロックレイアウト図と最終レンダリングのみを表示します。",
+        "zh": "当用户上传毛坯房照片、家具产品图、可选的小摆件/盆栽/挂画、可选的墙面/地板/天花板材质图、可选的硬装造型参考图（天花挖洞/灯槽/弧形墙等）、可选的色块布局图（完整或部分）和室内风格参考图，希望生成室内设计效果图时，必须调用本技能。支持部分色块图：只标注硬装造型或部分家具时，Agent 会落实已标注内容并自行推理其余布局。无尺寸时默认视觉推理；只向用户展示色块布局图和最终成图。"
+      },
+      "i18n_prompt": {
+        "en": "Based on this bare room photo [bare room image], these furniture items [furniture images], this color block layout (may only mark structural elements or some furniture) [color block diagram], these wall/floor/ceiling materials [material images], these small accessories/plants/wall art [decoration images], this structural reference [structural image], and this style reference [style image], please first generate a complete color block bare room layout diagram for confirmation, then generate the final interior rendering.",
+        "ja": "このスケルトン住宅写真 [スケルトン画像]、これらの家具 [家具画像]、この色ブロックレイアウト（ハード内装造形や一部の家具のみをマークする場合もある）[色ブロック図]、これらの壁面/床/天井素材 [素材画像]、これらの小物/観葉植物/壁掛けアート [装飾画像]、このハード内装造形参考 [造形画像]、このスタイル参考 [スタイル画像] に基づいて、まず完全な色ブロックスケルトンレイアウト図を生成して確認後、最終的な室内レンダリングを生成してください。",
+        "zh": "根据这张毛坯房照片 [毛坯图]、这些家具 [家具图]、这个色块布局（可以只标注硬装造型或部分家具）[色块图]、这些墙面/地板/天花板材质 [材质图]、这些小摆件/盆栽/挂画 [装饰图]、这个硬装造型参考 [造型图] 和这张风格参考 [风格图]，先帮我生成一张完整的色块毛坯布局图，确认后再生成最终室内效果图。"
+      }
+    },
+    "coverMode": "carousel",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/696EPjgqAWCXHAUo.webp",
+      "width": 1841,
+      "height": 2279
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/bZ6zQKKmTrCMulIY.webp",
+        "width": 928,
+        "height": 1152,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/ZFG90dIqs3KPRsUo.webp",
+        "width": 1600,
+        "height": 2000,
+        "order": 1
+      }
+    ],
+    "bestFor": [
+      "室内设计",
+      "装修"
+    ],
+    "showMarkdown": false,
+    "coverList": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/696EPjgqAWCXHAUo.webp",
+        "width": 1841,
+        "height": 2279
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/b6BrWSMefD4H5idp.webp",
+        "width": 1600,
+        "height": 2000
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/ZFG90dIqs3KPRsUo.webp",
+        "width": 1600,
+        "height": 2000
+      }
+    ],
+    "coverMotion": "fade",
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2pw4vy1ad3b4",
+    "versionAssetId": "2pw9v7ziszcw",
+    "skillKey": "interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5",
+    "sourceVersion": "1.0.5",
+    "linkUrl": "lovart://skill/interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "8cdbc3d5-efac-45ae-8744-10a283147681",
+    "skillId": "user-generated/interior-design-rough-to-render-1789399849-8b062407903449c8a1ec50c3080761c5/8cdbc3d5-efac-45ae-8744-10a283147681",
+    "i18n_title": {
+      "en": "Bare Room to Interior Rendering",
+      "ja": "スケルトン物件から室内効果図へ",
+      "zh": "毛坯房直出室内效果"
+    },
+    "i18n_description": {
+      "en": "When users upload bare room photos, furniture product images, optional small decorations/plants/wall art, optional wall/floor/ceiling material images, optional hard decoration reference images (ceiling cutouts/light troughs/curved walls, etc.), optional color block layout diagrams (complete or partial), and interior style reference images, and want to generate interior design renderings, this skill must be invoked. Supports partial color block diagrams: when only hard decoration or some furniture is marked, the Agent will implement the marked content and infer the remaining layout. Default to visual reasoning when dimensions are not provided; only show users the color block layout diagram and the final rendering.",
+      "ja": "ユーザーがスケルトン物件の写真、家具製品画像、オプションの小物/観葉植物/壁掛けアート、オプションの壁面/床/天井素材画像、オプションのハード装飾参考画像（天井くり抜き/間接照明溝/曲面壁など）、オプションの色ブロックレイアウト図（完全または部分）、室内スタイル参考画像をアップロードし、インテリアデザインのレンダリング画像を生成したい場合、このスキルを必ず呼び出す必要があります。部分的な色ブロック図に対応：ハード装飾または一部の家具のみがマークされている場合、Agentはマークされた内容を実装し、残りのレイアウトを自動推論します。寸法がない場合はデフォルトで視覚推論を行います。ユーザーには色ブロックレイアウト図と最終レンダリング画像のみを表示します。",
+      "zh": "当用户上传毛坯房照片、家具产品图、可选的小摆件/盆栽/挂画、可选的墙面/地板/天花板材质图、可选的硬装造型参考图（天花挖洞/灯槽/弧形墙等）、可选的色块布局图（完整或部分）和室内风格参考图，希望生成室内设计效果图时，必须调用本技能。支持部分色块图：只标注硬装造型或部分家具时，Agent 会落实已标注内容并自行推理其余布局。无尺寸时默认视觉推理；只向用户展示色块布局图和最终成图。"
+    },
+    "i18n_prompts": {
+      "en": "Based on this bare room photo [bare room image], these furniture items [furniture images], this color block layout (may only mark structural elements or some furniture) [color block diagram], these wall/floor/ceiling materials [material images], these small accessories/plants/wall art [decoration images], this structural reference [structural image], and this style reference [style image], please first generate a complete color block bare room layout diagram for confirmation, then generate the final interior rendering.",
+      "ja": "このスケルトン住宅写真 [スケルトン画像]、これらの家具 [家具画像]、この色ブロックレイアウト（ハード内装造形や一部の家具のみをマークする場合もある）[色ブロック図]、これらの壁面/床/天井素材 [素材画像]、これらの小物/観葉植物/壁掛けアート [装飾画像]、このハード内装造形参考 [造形画像]、このスタイル参考 [スタイル画像] に基づいて、まず完全な色ブロックスケルトンレイアウト図を生成して確認後、最終的な室内レンダリングを生成してください。",
+      "zh": "根据这张毛坯房照片 [毛坯图]、这些家具 [家具图]、这个色块布局（可以只标注硬装造型或部分家具）[色块图]、这些墙面/地板/天花板材质 [材质图]、这些小摆件/盆栽/挂画 [装饰图]、这个硬装造型参考 [造型图] 和这张风格参考 [风格图]，先帮我生成一张完整的色块毛坯布局图，确认后再生成最终室内效果图。"
+    },
+    "i18n_source_hash": "7f18238b6a60c1e803390bfc2565e1a909c4d10498da71f56bacf10ad809092d",
+    "i18n_source_locale": "zh",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-15T08:24:11",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 69,
+    "viewCount": 0,
+    "tryCount": 63,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "毛坯房直出室内效果",
+  "skillCover": "https://a.lovart.ai/artifacts/user/696EPjgqAWCXHAUo.webp",
+  "publishTime": "2026-09-15T08:24:11",
+  "spacePinned": false,
+  "score": 0
+}

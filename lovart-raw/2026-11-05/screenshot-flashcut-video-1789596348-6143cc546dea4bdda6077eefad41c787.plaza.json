@@ -1,0 +1,441 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2q49x2z00mww",
+  "title": "Screenshot → Flash-Cut Video",
+  "description": "Transforms one landscape 16:9 screenshot into two experimental flash-cut videos by first generating four style options with GPT Image 2.5, letting the user pick one, then animating the selected still into a 3-second Gemini Omni Flash clip and a 4-second Seedance 2.5 clip.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/oCt4RR5ZE9DyV6FH.webp",
+      "width": 2528,
+      "height": 1424
+    },
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/artifacts/user/Ej76iOV9316dM6US.mp4",
+        "width": 1920,
+        "height": 1080,
+        "order": 0
+      }
+    ],
+    "bestFor": [
+      "video",
+      "flashcuts",
+      "dynamic video"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Screenshot → Flash-Cut Video",
+        "ja": "スクリーンショット → フラッシュカット動画",
+        "zh": "截图 → 快闪剪辑视频"
+      },
+      "i18n_description": {
+        "en": "Transforms one landscape 16:9 screenshot into two experimental flash-cut videos by first generating four style options with GPT Image 2.5, letting the user pick one, then animating the selected still into a 3-second Gemini Omni Flash clip and a 4-second Seedance 2.5 clip.",
+        "ja": "1枚の横長16:9スクリーンショットを2つの実験的なフラッシュカット動画に変換します。まずGPT Image 2.5で4つのスタイルオプションを生成し、ユーザーが1つを選択した後、選択された静止画を3秒のGemini Omni Flashクリップと4秒のSeedance 2.5クリップにアニメーション化します。",
+        "zh": "将一张16:9横向截图转换为两个实验性快闪剪辑视频，首先使用GPT Image 2.5生成四个风格选项，让用户选择其中一个，然后将所选静态图像制作成3秒的Gemini Omni Flash片段和4秒的Seedance 2.5片段。"
+      },
+      "i18n_prompt": {
+        "en": "Turn this landscape 16:9 video screenshot into an experimental flash-cut video: [upload one 16:9 screenshot]. Generate the four style options (Receipt/Xerox, Solarized, Sepia X-Ray, Point-Cloud), let me pick one, then animate it in ultra-slow motion and finish with the 3-second rapid flash-cut.",
+        "ja": "この横長16:9の動画スクリーンショットを実験的なフラッシュカット動画に変換してください：[16:9スクリーンショットを1枚アップロード]。4つのスタイルオプション（Receipt/Xerox、Solarized、Sepia X-Ray、Point-Cloud）を生成し、1つ選ばせてから、超スローモーションでアニメーション化し、3秒の高速フラッシュカットで仕上げてください。",
+        "zh": "将这张16:9横向视频截图转换为实验性快闪剪辑视频：[上传一张16:9截图]。生成四个风格选项（Receipt/Xerox、Solarized、Sepia X-Ray、Point-Cloud），让我选择一个，然后以超慢动作对其进行动画处理，并以3秒快速快闪剪辑完成。"
+      }
+    },
+    "prevContent": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "Screenshot → Flash-Cut Video",
+          "ja": "スクリーンショット → フラッシュカット動画",
+          "zh": "截图 → 快闪视频"
+        },
+        "i18n_description": {
+          "en": "Transforms one landscape 16:9 video screenshot into four experimental style stills, then turns the chosen still into two fast flash-cut videos.",
+          "ja": "1枚の横向き16:9動画スクリーンショットを4つの実験的なスタイルの静止画に変換し、選択した静止画を2つの高速フラッシュカット動画に仕上げます。",
+          "zh": "将一张横向16:9视频截图转换为四种实验风格的静态图像,然后将选定的静态图像制作成两个快速快闪视频。"
+        },
+        "i18n_prompt": {
+          "en": "Turn this landscape 16:9 video screenshot into an experimental flash-cut video: [upload one 16:9 screenshot]. Generate the four style options (Receipt/Xerox, Solarized, Sepia X-Ray, Point-Cloud), let me pick one, then animate it in ultra-slow motion and finish with the 3-second rapid flash-cut.",
+          "ja": "この横向き16:9動画スクリーンショットを実験的なフラッシュカット動画に変換してください:[16:9スクリーンショットを1枚アップロード]。4つのスタイルオプション(Receipt/Xerox、Solarized、Sepia X-Ray、Point-Cloud)を生成し、1つを選ばせてから、超スローモーションでアニメーション化し、3秒間の高速フラッシュカットで仕上げてください。",
+          "zh": "将这张横向16:9视频截图转换为实验性快闪视频:[上传一张16:9截图]。生成四种风格选项(Receipt/Xerox、Solarized、Sepia X-Ray、Point-Cloud),让我选择一种,然后以超慢动作制作动画,最后以3秒快速快闪结束。"
+        }
+      },
+      "coverMode": "single",
+      "cover": {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/oCt4RR5ZE9DyV6FH.webp",
+        "width": 2528,
+        "height": 1424
+      },
+      "coverAutoPlay": false,
+      "highlights": [
+        {
+          "mediaType": "video",
+          "url": "https://a.lovart.ai/artifacts/user/Ej76iOV9316dM6US.mp4",
+          "width": 1920,
+          "height": 1080,
+          "order": 0
+        }
+      ],
+      "bestFor": [
+        "video",
+        "flashcuts",
+        "dynamic video"
+      ],
+      "showMarkdown": false
+    },
+    "prevExtra": {
+      "skillAssetId": "2q4916ewb0n4",
+      "versionAssetId": "2qt0nt5qpzwg",
+      "skillKey": "screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787",
+      "sourceVersion": "1.0.3",
+      "linkUrl": "lovart://skill/screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787",
+      "namespace": "user-generated",
+      "type": "ugc",
+      "versionId": "243fb2f2-065e-4336-bd1e-159ac627a7b5",
+      "skillId": "user-generated/screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787/243fb2f2-065e-4336-bd1e-159ac627a7b5",
+      "i18n_title": {
+        "en": "Screenshot → Flash-Cut Video",
+        "ja": "スクリーンショット → フラッシュカット動画",
+        "zh": "截图 → 快闪视频"
+      },
+      "i18n_description": {
+        "en": "Transforms one landscape 16:9 video screenshot into four experimental style stills, then turns the chosen still into two fast flash-cut videos.",
+        "ja": "1枚の横向き16:9動画スクリーンショットを4つの実験的なスタイルの静止画に変換し、選択した静止画を2つの高速フラッシュカット動画に仕上げます。",
+        "zh": "将一张横向16:9视频截图转换为四种实验风格的静态图像,然后将选定的静态图像制作成两个快速快闪视频。"
+      },
+      "i18n_prompts": {
+        "en": "Turn this landscape 16:9 video screenshot into an experimental flash-cut video: [upload one 16:9 screenshot]. Generate the four style options (Receipt/Xerox, Solarized, Sepia X-Ray, Point-Cloud), let me pick one, then animate it in ultra-slow motion and finish with the 3-second rapid flash-cut.",
+        "ja": "この横向き16:9動画スクリーンショットを実験的なフラッシュカット動画に変換してください:[16:9スクリーンショットを1枚アップロード]。4つのスタイルオプション(Receipt/Xerox、Solarized、Sepia X-Ray、Point-Cloud)を生成し、1つを選ばせてから、超スローモーションでアニメーション化し、3秒間の高速フラッシュカットで仕上げてください。",
+        "zh": "将这张横向16:9视频截图转换为实验性快闪视频:[上传一张16:9截图]。生成四种风格选项(Receipt/Xerox、Solarized、Sepia X-Ray、Point-Cloud),让我选择一种,然后以超慢动作制作动画,最后以3秒快速快闪结束。"
+      },
+      "i18n_source_hash": "22575a13a903844fa3dd62b5d2b88d34ab3df9f90d116fd5798dac3a739db583",
+      "i18n_source_locale": "en",
+      "level": "B"
+    },
+    "prevArchivedAt": 1790284249541,
+    "overriddenFromItemId": "2qwhcwwlu680",
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2q4916ewb0n4",
+    "versionAssetId": "2qwh77ocoydc",
+    "skillKey": "screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787",
+    "sourceVersion": "1.0.4",
+    "linkUrl": "lovart://skill/screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "4d8b1e07-50c7-443b-a3d8-69178015ea6a",
+    "skillId": "user-generated/screenshot-flashcut-video-1789596348-6143cc546dea4bdda6077eefad41c787/4d8b1e07-50c7-443b-a3d8-69178015ea6a",
+    "i18n_title": {
+      "en": "Screenshot → Flash-Cut Video",
+      "ja": "スクリーンショット → フラッシュカット動画",
+      "zh": "截图 → 快闪剪辑视频"
+    },
+    "i18n_description": {
+      "en": "Transforms one landscape 16:9 screenshot into two experimental flash-cut videos by first generating four style options with GPT Image 2.5, letting the user pick one, then animating the selected still into a 3-second Gemini Omni Flash clip and a 4-second Seedance 2.5 clip.",
+      "ja": "1枚の横長16:9スクリーンショットを2つの実験的なフラッシュカット動画に変換します。まずGPT Image 2.5で4つのスタイルオプションを生成し、ユーザーが1つを選択した後、選択された静止画を3秒のGemini Omni Flashクリップと4秒のSeedance 2.5クリップにアニメーション化します。",
+      "zh": "将一张16:9横向截图转换为两个实验性快闪剪辑视频，首先使用GPT Image 2.5生成四个风格选项，让用户选择其中一个，然后将所选静态图像制作成3秒的Gemini Omni Flash片段和4秒的Seedance 2.5片段。"
+    },
+    "i18n_prompts": {
+      "en": "Turn this landscape 16:9 video screenshot into an experimental flash-cut video: [upload one 16:9 screenshot]. Generate the four style options (Receipt/Xerox, Solarized, Sepia X-Ray, Point-Cloud), let me pick one, then animate it in ultra-slow motion and finish with the 3-second rapid flash-cut.",
+      "ja": "この横長16:9の動画スクリーンショットを実験的なフラッシュカット動画に変換してください：[16:9スクリーンショットを1枚アップロード]。4つのスタイルオプション（Receipt/Xerox、Solarized、Sepia X-Ray、Point-Cloud）を生成し、1つ選ばせてから、超スローモーションでアニメーション化し、3秒の高速フラッシュカットで仕上げてください。",
+      "zh": "将这张16:9横向视频截图转换为实验性快闪剪辑视频：[上传一张16:9截图]。生成四个风格选项（Receipt/Xerox、Solarized、Sepia X-Ray、Point-Cloud），让我选择一个，然后以超慢动作对其进行动画处理，并以3秒快速快闪剪辑完成。"
+    },
+    "i18n_source_hash": "db4930ecbe3beb214209deeccb6e4a8c7e22c5f8caf0c86749bf09b36f850588",
+    "i18n_source_locale": "en",
+    "level": "B"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-16T22:15:44",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 145,
+    "viewCount": 0,
+    "tryCount": 1619,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Screenshot → Flash-Cut Video",
+  "skillCover": "https://a.lovart.ai/artifacts/user/oCt4RR5ZE9DyV6FH.webp",
+  "publishTime": "2026-09-16T22:15:44",
+  "spacePinned": false,
+  "score": 0,
+  "_en": {
+    "title": "Screenshot → Flash-Cut Video",
+    "description": "Transforms one landscape 16:9 screenshot into two experimental flash-cut videos by first generating four style options with GPT Image 2.5, letting the user pick one, then animating the selected still into a 3-second Gemini Omni Flash clip and a 4-second Seedance 2.5 clip.",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "Screenshot → Flash-Cut Video",
+          "ja": "スクリーンショット → フラッシュカット動画",
+          "zh": "截图 → 快闪剪辑视频"
+        },
+        "i18n_description": {
+          "en": "Transforms one landscape 16:9 screenshot into two experimental flash-cut videos by first generating four style options with GPT Image 2.5, letting the user pick one, then animating the selected still into a 3-second Gemini Omni Flash clip and a 4-second Seedance 2.5 clip.",
+          "ja": "1枚の横長16:9スクリーンショットを2つの実験的なフラッシュカット動画に変換します。まずGPT Image 2.5で4つのスタイルオプションを生成し、ユーザーが1つを選択した後、選択された静止画を3秒のGemini Omni Flashクリップと4秒のSeedance 2.5クリップにアニメーション化します。",
+          "zh": "将一张16:9横向截图转换为两个实验性快闪剪辑视频，首先使用GPT Image 2.5生成四个风格选项，让用户选择其中一个，然后将所选静态图像制作成3秒的Gemini Omni Flash片段和4秒的Seedance 2.5片段。"
+        },
+        "i18n_prompt": {
+          "en": "Turn this landscape 16:9 video screenshot into an experimental flash-cut video: [upload one 16:9 screenshot]. Generate the four style options (Receipt/Xerox, Solarized, Sepia X-Ray, Point-Cloud), let me pick one, then animate it in ultra-slow motion and finish with the 3-second rapid flash-cut.",
+          "ja": "この横長16:9の動画スクリーンショットを実験的なフラッシュカット動画に変換してください：[16:9スクリーンショットを1枚アップロード]。4つのスタイルオプション（Receipt/Xerox、Solarized、Sepia X-Ray、Point-Cloud）を生成し、1つ選ばせてから、超スローモーションでアニメーション化し、3秒の高速フラッシュカットで仕上げてください。",
+          "zh": "将这张16:9横向视频截图转换为实验性快闪剪辑视频：[上传一张16:9截图]。生成四个风格选项（Receipt/Xerox、Solarized、Sepia X-Ray、Point-Cloud），让我选择一个，然后以超慢动作对其进行动画处理，并以3秒快速快闪剪辑完成。"
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

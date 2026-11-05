@@ -1,0 +1,1676 @@
+{
+  "itemType": "collection_card",
+  "itemId": "2quhxjqd40e8",
+  "title": "Amazon A+ 内容页",
+  "description": "用连贯的图文模块，讲清商品与品牌价值",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "i18n": {
+      "zh": {
+        "title": "Amazon A+ 内容页",
+        "description": "用连贯的图文模块，讲清商品与品牌价值",
+        "ctaText": "开始制作"
+      },
+      "en": {
+        "title": "Amazon A+ Content",
+        "description": "Tell your product and brand story through coordinated visual modules.",
+        "ctaText": "Create now"
+      }
+    },
+    "bind": {
+      "type": "SKILL",
+      "source": "PLAZA",
+      "skillKey": "amazon-product-a-plus-content",
+      "skillAssetId": "piKXKOA6Vq",
+      "skillType": "pgc",
+      "namespace": "industry",
+      "skillId": "industry/amazon-product-a-plus-content/c9596897-3a0d-4d36-b049-2b9340c2bd24",
+      "sourceVersion": "1.0.4",
+      "versionAssetId": "piUY093NMA",
+      "versionId": "c9596897-3a0d-4d36-b049-2b9340c2bd24",
+      "linkUrl": "lovart://skill/amazon-product-a-plus-content",
+      "plazaItemId": "piUY0csSWY"
+    },
+    "cover": "https://a.lovart.ai/asset/showcase-cover/202609/39391e24fb764f6ea80b8ba205a2c355.png",
+    "coverWidth": 1280,
+    "coverHeight": 960
+  },
+  "extra": {
+    "i18n_title": {
+      "en": "Amazon A+ Content",
+      "ja": "Amazon A+コンテンツ",
+      "zh": "Amazon A+ 内容"
+    },
+    "i18n_description": {
+      "en": "Tell your product and brand story through coordinated visual modules.",
+      "ja": "統合されたビジュアルモジュールを通じて、製品とブランドのストーリーを伝えます。",
+      "zh": "通过协调的可视化模块讲述您的产品和品牌故事。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "f1f7a5d07b881a9f5c4d200539833cc4d38ff27341df3aac1ac512694b242fb1"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-24T06:38:12",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 87,
+    "viewCount": 0,
+    "tryCount": 0,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": null,
+  "skillCover": null,
+  "publishTime": "2026-09-24T06:38:12",
+  "spacePinned": false,
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxzedon40",
+      "title": "食品",
+      "description": "Amazon A+ 图片模块 5 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "食品",
+            "description": "Amazon A+ 图片模块 5 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Food",
+            "description": "5 Amazon A+ image modules",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/45dde39bf1ce4347b64267f01a7c828a.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/c8749b5f273043c8ac5beb7c935a70f9.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/039b537d1906422fa2b85308c5f2d0a3.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/96fc5b6b6ea0464889b9d9ca7158f84a.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/1ee9c0936bfd4a70b120818508cfcebb.png",
+            "coverWidth": 1472,
+            "coverHeight": 608
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-a-plus-content",
+          "skillAssetId": "piKXKOA6Vq",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-a-plus-content/c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "sourceVersion": "1.0.4",
+          "versionAssetId": "piUY093NMA",
+          "versionId": "c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "linkUrl": "lovart://skill/amazon-product-a-plus-content",
+          "plazaItemId": "piUY0csSWY"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 套食品 Amazon A+ 内容，包含 5 张独立图片模块。按确认的 A+ 类型及模块规格排版，统一整页的视觉与叙事，保持商品真实。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon A+ content set for Food, containing 5 separate image modules. Follow the confirmed A+ type and module specifications. Maintain a consistent visual system and narrative across the page, and represent the product faithfully.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/35fd7c8607aa4f9486c4349fa4305cbe.png",
+        "coverWidth": 1280,
+        "coverHeight": 528
+      },
+      "extra": {
+        "collectionId": "2quhxjqd40e8",
+        "collectionTitle": "Amazon A+ 内容页",
+        "i18n_title": {
+          "en": "Food",
+          "ja": "食品",
+          "zh": "食品"
+        },
+        "i18n_description": {
+          "en": "Amazon A+ Image Module 5 Images",
+          "ja": "Amazon A+ 画像モジュール 5枚",
+          "zh": "Amazon A+ 图片模块 5 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "69910fd61ab3c2e62023c640d4fac14a0ed97218c3cbd9d2a9e2ed36b72a977b"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:20",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 72,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:20",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxzeb6qrk",
+      "title": "男装",
+      "description": "Amazon A+ 图片模块 5 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "男装",
+            "description": "Amazon A+ 图片模块 5 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Men's Fashion",
+            "description": "5 Amazon A+ image modules",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/73cb1afcde554160abc94e87fdf18f8a.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/9218e1f79aa44cd2a4c9cda794a7b577.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/78ef0467f3d44cad8bb3ed91b2692300.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/5190aefd1b034ae3891f2b876210e2a2.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/f67fc5d4dab54e639feb9da255e3639f.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-a-plus-content",
+          "skillAssetId": "piKXKOA6Vq",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-a-plus-content/c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "sourceVersion": "1.0.4",
+          "versionAssetId": "piUY093NMA",
+          "versionId": "c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "linkUrl": "lovart://skill/amazon-product-a-plus-content",
+          "plazaItemId": "piUY0csSWY"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 套男装 Amazon A+ 内容，包含 5 张独立图片模块。按确认的 A+ 类型及模块规格排版，统一整页的视觉与叙事，保持商品真实。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon A+ content set for Men's Fashion, containing 5 separate image modules. Follow the confirmed A+ type and module specifications. Maintain a consistent visual system and narrative across the page, and represent the product faithfully.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/41e40a4458b84e00af70e6b0be4cfef4.png",
+        "coverWidth": 1280,
+        "coverHeight": 528
+      },
+      "extra": {
+        "collectionId": "2quhxjqd40e8",
+        "collectionTitle": "Amazon A+ 内容页",
+        "i18n_title": {
+          "en": "Men's Clothing",
+          "ja": "メンズ服",
+          "zh": "男装"
+        },
+        "i18n_description": {
+          "en": "Amazon A+ Image Module 5 Images",
+          "ja": "Amazon A+ 画像モジュール 5枚",
+          "zh": "Amazon A+ 图片模块 5 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "ef4df57f8562fb9218702fab712f27f7f25f5b9661f66d6841d82f0bffe43b30"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:20",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 11,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:20",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxze8p3wg",
+      "title": "女装",
+      "description": "Amazon A+ 图片模块 5 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "女装",
+            "description": "Amazon A+ 图片模块 5 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Women's Fashion",
+            "description": "5 Amazon A+ image modules",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/8fc99694608541a0a8f60dc183f4c648.png",
+            "coverWidth": 1040,
+            "coverHeight": 640
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/aefce7c986d84d19a44fdd9308946f33.png",
+            "coverWidth": 1040,
+            "coverHeight": 640
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/bad7c401eaef483b876087ae08dd5053.png",
+            "coverWidth": 1040,
+            "coverHeight": 640
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/15af178d6f0e4f729a4252d0a6749ede.png",
+            "coverWidth": 1040,
+            "coverHeight": 640
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/28bcc588ba594822b3b0230b590cfc22.png",
+            "coverWidth": 1040,
+            "coverHeight": 640
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-a-plus-content",
+          "skillAssetId": "piKXKOA6Vq",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-a-plus-content/c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "sourceVersion": "1.0.4",
+          "versionAssetId": "piUY093NMA",
+          "versionId": "c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "linkUrl": "lovart://skill/amazon-product-a-plus-content",
+          "plazaItemId": "piUY0csSWY"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 套女装 Amazon A+ 内容，包含 5 张独立图片模块。按确认的 A+ 类型及模块规格排版，统一整页的视觉与叙事，保持商品真实。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon A+ content set for Women's Fashion, containing 5 separate image modules. Follow the confirmed A+ type and module specifications. Maintain a consistent visual system and narrative across the page, and represent the product faithfully.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/704c3a04c93d4638889ec8ae51863ad3.png",
+        "coverWidth": 1040,
+        "coverHeight": 640
+      },
+      "extra": {
+        "collectionId": "2quhxjqd40e8",
+        "collectionTitle": "Amazon A+ 内容页",
+        "i18n_title": {
+          "en": "Women's Clothing",
+          "ja": "婦人服",
+          "zh": "女装"
+        },
+        "i18n_description": {
+          "en": "Amazon A+ Image Module 5 Images",
+          "ja": "Amazon A+ 画像モジュール 5枚",
+          "zh": "Amazon A+ 图片模块 5 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "ce825144b64cd50d3bcbf9877b8b3a0204989b40672a759a4404c47241e0ef61"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:20",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 69,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFcUzQIgKs",
+              "tagName": "website",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Website",
+              "extra": {
+                "tagName": "website",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Website"
+                }
+              },
+              "createTime": "2026-03-20T06:55:03",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:20",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxzedowlc",
+      "title": "家居",
+      "description": "Amazon A+ 图片模块 5 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "家居",
+            "description": "Amazon A+ 图片模块 5 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Home & Living",
+            "description": "5 Amazon A+ image modules",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/026d69efa7e3458da96140eeee1bcfd1.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/4efc41fd9c1e4aa685674047602013e5.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/08a87ae2140248639ae16929156d48d7.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/d50543a5aec2439992736a9cda708f16.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/2a9d9e25d468445a9839602ffcea5940.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-a-plus-content",
+          "skillAssetId": "piKXKOA6Vq",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-a-plus-content/c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "sourceVersion": "1.0.4",
+          "versionAssetId": "piUY093NMA",
+          "versionId": "c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "linkUrl": "lovart://skill/amazon-product-a-plus-content",
+          "plazaItemId": "piUY0csSWY"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 套家居 Amazon A+ 内容，包含 5 张独立图片模块。按确认的 A+ 类型及模块规格排版，统一整页的视觉与叙事，保持商品真实。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon A+ content set for Home & Living, containing 5 separate image modules. Follow the confirmed A+ type and module specifications. Maintain a consistent visual system and narrative across the page, and represent the product faithfully.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/9a4f32efc65c49558b2661a27c173b52.png",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2quhxjqd40e8",
+        "collectionTitle": "Amazon A+ 内容页",
+        "i18n_title": {
+          "en": "Home & Living",
+          "ja": "ホーム・リビング",
+          "zh": "家居"
+        },
+        "i18n_description": {
+          "en": "Amazon A+ Image Module 5 Images",
+          "ja": "Amazon A+ 画像モジュール 5枚",
+          "zh": "Amazon A+ 图片模块 5 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "72c3aa7e9ad9b163d1d160de805c20dd3ea3927a52a00ce6d8c2b7f97dd1bb94"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:20",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 85,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:20",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy0h0md4w",
+      "title": "数码",
+      "description": "Amazon A+ 图片模块 5 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "数码",
+            "description": "Amazon A+ 图片模块 5 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Consumer Electronics",
+            "description": "5 Amazon A+ image modules",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/07b747b23c5c42458ef4b567c5ee1e67.png",
+            "coverWidth": 2048,
+            "coverHeight": 1152
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/dfd80b17c658424381e7d77d0e43a6fd.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/31f4b7f4144b4b6f8814b7651beefd0d.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/673d4ffc25574b349ed3e589a2f983c6.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/c7ccc5afba0c4259992abc6fa81a0d35.png",
+            "coverWidth": 2048,
+            "coverHeight": 1152
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-a-plus-content",
+          "skillAssetId": "piKXKOA6Vq",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-a-plus-content/c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "sourceVersion": "1.0.4",
+          "versionAssetId": "piUY093NMA",
+          "versionId": "c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "linkUrl": "lovart://skill/amazon-product-a-plus-content",
+          "plazaItemId": "piUY0csSWY"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 套数码 Amazon A+ 内容，包含 5 张独立图片模块。按确认的 A+ 类型及模块规格排版，统一整页的视觉与叙事，保持商品真实。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon A+ content set for Consumer Electronics, containing 5 separate image modules. Follow the confirmed A+ type and module specifications. Maintain a consistent visual system and narrative across the page, and represent the product faithfully.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/ef467b062100486abe82eb93627f8128.png",
+        "coverWidth": 2048,
+        "coverHeight": 1152
+      },
+      "extra": {
+        "collectionId": "2quhxjqd40e8",
+        "collectionTitle": "Amazon A+ 内容页",
+        "i18n_title": {
+          "en": "Digital",
+          "ja": "デジタル",
+          "zh": "数码"
+        },
+        "i18n_description": {
+          "en": "Amazon A+ Image Module 5 Images",
+          "ja": "Amazon A+ 画像モジュール 5枚",
+          "zh": "Amazon A+ 图片模块 5 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "f18678fda3b7435a20935a081ef2c08603728fcd8c7e2185265aa8c6f7d51037"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:21",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 82,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:21",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy0h0md4x",
+      "title": "美妆",
+      "description": "Amazon A+ 图片模块 5 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "美妆",
+            "description": "Amazon A+ 图片模块 5 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Beauty",
+            "description": "5 Amazon A+ image modules",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/a886ea2203574c5daa136d24829b7241.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/935b28d5e3a9422ba1d14824e570efee.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/8ccb534d004c43d1a7bfc3feb6c79e7d.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/bcff8920557343b8b4d9d3180b919a1c.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/b27345aa129f4892b25f9c38c9cd14d1.png",
+            "coverWidth": 1280,
+            "coverHeight": 528
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-a-plus-content",
+          "skillAssetId": "piKXKOA6Vq",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-a-plus-content/c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "sourceVersion": "1.0.4",
+          "versionAssetId": "piUY093NMA",
+          "versionId": "c9596897-3a0d-4d36-b049-2b9340c2bd24",
+          "linkUrl": "lovart://skill/amazon-product-a-plus-content",
+          "plazaItemId": "piUY0csSWY"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 套美妆 Amazon A+ 内容，包含 5 张独立图片模块。按确认的 A+ 类型及模块规格排版，统一整页的视觉与叙事，保持商品真实。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon A+ content set for Beauty, containing 5 separate image modules. Follow the confirmed A+ type and module specifications. Maintain a consistent visual system and narrative across the page, and represent the product faithfully.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/78a224ba0d124e028aa72d75cae5d273.png",
+        "coverWidth": 1280,
+        "coverHeight": 528
+      },
+      "extra": {
+        "collectionId": "2quhxjqd40e8",
+        "collectionTitle": "Amazon A+ 内容页",
+        "i18n_title": {
+          "en": "Beauty & Makeup",
+          "ja": "美容・メイクアップ",
+          "zh": "美妆"
+        },
+        "i18n_description": {
+          "en": "Amazon A+ Image Module 5 Images",
+          "ja": "Amazon A+ 画像モジュール 5枚",
+          "zh": "Amazon A+ 图片模块 5 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "1dc2c5320e51216b4ea084958f1a0263fe0ad3eb7958906fe8360aa381ff2187"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:21",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 11,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:21",
+      "spacePinned": false
+    }
+  ],
+  "collectionMemberCount": 6,
+  "collectionHasMoreMembers": false,
+  "score": 1000000004100
+}

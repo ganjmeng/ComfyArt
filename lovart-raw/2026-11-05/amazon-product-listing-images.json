@@ -1,0 +1,1532 @@
+{
+  "itemType": "collection_card",
+  "itemId": "2quhxj84cyyo",
+  "title": "Amazon 规格说明图",
+  "description": "清晰标注尺寸、参数与套装内容",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "i18n": {
+      "zh": {
+        "title": "Amazon 规格说明图",
+        "description": "清晰标注尺寸、参数与套装内容",
+        "ctaText": "开始制作"
+      },
+      "en": {
+        "title": "Amazon Product Specifications Image",
+        "description": "Present dimensions, specifications and set contents clearly.",
+        "ctaText": "Create now"
+      }
+    },
+    "bind": {
+      "type": "SKILL",
+      "source": "PLAZA",
+      "skillKey": "amazon-product-listing-images",
+      "skillAssetId": "piKW6lFGve",
+      "skillType": "pgc",
+      "namespace": "industry",
+      "skillId": "industry/amazon-product-listing-images/7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+      "sourceVersion": "1.0.3",
+      "versionAssetId": "piYUrDK8OA",
+      "versionId": "7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+      "linkUrl": "lovart://skill/amazon-product-listing-images",
+      "plazaItemId": "piYUrGA87e"
+    },
+    "cover": "https://a.lovart.ai/asset/showcase-cover/202609/91ed5455c61e4c6998d8ded711218a29.png",
+    "coverWidth": 1280,
+    "coverHeight": 960
+  },
+  "extra": {
+    "i18n_title": {
+      "en": "Amazon Specification Diagram",
+      "ja": "Amazon仕様説明図",
+      "zh": "Amazon 规格说明图"
+    },
+    "i18n_description": {
+      "en": "Clearly label dimensions, parameters, and package contents",
+      "ja": "寸法、パラメータ、セット内容を明確に表示",
+      "zh": "清晰标注尺寸、参数与套装内容"
+    },
+    "i18n_source_locale": "zh",
+    "i18n_source_hash": "005b7e08be7905c28a0c074ea36f9aa0d3e09f95549e14ce6f67ee0f75fa3cba"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-24T06:38:12",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 22,
+    "viewCount": 0,
+    "tryCount": 0,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": null,
+  "skillCover": null,
+  "publishTime": "2026-09-24T06:38:12",
+  "spacePinned": false,
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxx2nlfcx",
+      "title": "女装",
+      "description": "Amazon 规格说明图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "女装",
+            "description": "Amazon 规格说明图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Women's Fashion",
+            "description": "1 Amazon product specifications image",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/6eda92dba8c848cda406227a8c56b0a1.png",
+            "coverWidth": 360,
+            "coverHeight": 360
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-listing-images",
+          "skillAssetId": "piKW6lFGve",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-listing-images/7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "sourceVersion": "1.0.3",
+          "versionAssetId": "piYUrDK8OA",
+          "versionId": "7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "linkUrl": "lovart://skill/amazon-product-listing-images",
+          "plazaItemId": "piYUrGA87e"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张女装 Amazon 规格说明图，采用清楚的结构视图、尺寸引线或套装清单，仅标注用户提供并确认的数值、单位及售卖构成。重要参数不足时先定向补问，不根据图片猜测。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon product specifications image for Women's Fashion. Use clear structural views, dimension callouts, or a package contents list. Include only user-provided and confirmed values, units, and sale contents. If essential specifications are missing, ask a targeted follow-up question first; do not infer them from images.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/bc94c6be8601482d874a684a01fbbe7c.png",
+        "coverWidth": 360,
+        "coverHeight": 360
+      },
+      "extra": {
+        "collectionId": "2quhxj84cyyo",
+        "collectionTitle": "Amazon 规格说明图",
+        "i18n_title": {
+          "en": "Women's Clothing",
+          "ja": "レディースファッション",
+          "zh": "女装"
+        },
+        "i18n_description": {
+          "en": "1 Amazon specification image",
+          "ja": "Amazon規格説明図1枚",
+          "zh": "Amazon 规格说明图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "4970f226b43dbc2b4e077fd79061fd83a2f40598159e41e25bb20a28939ef803"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:19",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 1,
+        "viewCount": 0,
+        "tryCount": 9,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:19",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxx3ck5c0",
+      "title": "男装",
+      "description": "Amazon 规格说明图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "男装",
+            "description": "Amazon 规格说明图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Men's Fashion",
+            "description": "1 Amazon product specifications image",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/aca2ee6a049a4472b6ff62df4f70509c.png",
+            "coverWidth": 360,
+            "coverHeight": 360
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-listing-images",
+          "skillAssetId": "piKW6lFGve",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-listing-images/7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "sourceVersion": "1.0.3",
+          "versionAssetId": "piYUrDK8OA",
+          "versionId": "7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "linkUrl": "lovart://skill/amazon-product-listing-images",
+          "plazaItemId": "piYUrGA87e"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张男装 Amazon 规格说明图，采用清楚的结构视图、尺寸引线或套装清单，仅标注用户提供并确认的数值、单位及售卖构成。重要参数不足时先定向补问，不根据图片猜测。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon product specifications image for Men's Fashion. Use clear structural views, dimension callouts, or a package contents list. Include only user-provided and confirmed values, units, and sale contents. If essential specifications are missing, ask a targeted follow-up question first; do not infer them from images.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/8c8fea44e7094d2fb1a32e793d8ae918.png",
+        "coverWidth": 360,
+        "coverHeight": 360
+      },
+      "extra": {
+        "collectionId": "2quhxj84cyyo",
+        "collectionTitle": "Amazon 规格说明图",
+        "i18n_title": {
+          "en": "Men's Clothing",
+          "ja": "メンズ服",
+          "zh": "男装"
+        },
+        "i18n_description": {
+          "en": "1 Amazon specification image",
+          "ja": "Amazon仕様説明図1枚",
+          "zh": "Amazon 规格说明图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "55eb85701a6fe9eeefbf94bdbe548069e6ed7ced26551ddcf041948a32956a10"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:19",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 4,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:19",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxybj9hj5",
+      "title": "美妆",
+      "description": "Amazon 规格说明图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "美妆",
+            "description": "Amazon 规格说明图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Beauty",
+            "description": "1 Amazon product specifications image",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/e4282e9fa2c04d1880cc4aab90643648.png",
+            "coverWidth": 1280,
+            "coverHeight": 1280
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-listing-images",
+          "skillAssetId": "piKW6lFGve",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-listing-images/7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "sourceVersion": "1.0.3",
+          "versionAssetId": "piYUrDK8OA",
+          "versionId": "7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "linkUrl": "lovart://skill/amazon-product-listing-images",
+          "plazaItemId": "piYUrGA87e"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张美妆 Amazon 规格说明图，采用清楚的结构视图、尺寸引线或套装清单，仅标注用户提供并确认的数值、单位及售卖构成。重要参数不足时先定向补问，不根据图片猜测。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon product specifications image for Beauty. Use clear structural views, dimension callouts, or a package contents list. Include only user-provided and confirmed values, units, and sale contents. If essential specifications are missing, ask a targeted follow-up question first; do not infer them from images.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/df752bc56b1d46018b0b779240050799.png",
+        "coverWidth": 1280,
+        "coverHeight": 1280
+      },
+      "extra": {
+        "collectionId": "2quhxj84cyyo",
+        "collectionTitle": "Amazon 规格说明图",
+        "i18n_title": {
+          "en": "Beauty & Makeup",
+          "ja": "美容・メイクアップ",
+          "zh": "美妆"
+        },
+        "i18n_description": {
+          "en": "1 Amazon specification diagram",
+          "ja": "Amazon仕様説明図1枚",
+          "zh": "Amazon 规格说明图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "284ddb9ec5186ef1bfa3ed981cb3dcce61ab7f0915501790305ae7e481768934"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:20",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 4,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:20",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxybj9hj4",
+      "title": "数码",
+      "description": "Amazon 规格说明图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "数码",
+            "description": "Amazon 规格说明图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Consumer Electronics",
+            "description": "1 Amazon product specifications image",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/132903c4d1d84b00b621cf5848e3f7f2.png",
+            "coverWidth": 1280,
+            "coverHeight": 1280
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-listing-images",
+          "skillAssetId": "piKW6lFGve",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-listing-images/7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "sourceVersion": "1.0.3",
+          "versionAssetId": "piYUrDK8OA",
+          "versionId": "7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "linkUrl": "lovart://skill/amazon-product-listing-images",
+          "plazaItemId": "piYUrGA87e"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张数码 Amazon 规格说明图，采用清楚的结构视图、尺寸引线或套装清单，仅标注用户提供并确认的数值、单位及售卖构成。重要参数不足时先定向补问，不根据图片猜测。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon product specifications image for Consumer Electronics. Use clear structural views, dimension callouts, or a package contents list. Include only user-provided and confirmed values, units, and sale contents. If essential specifications are missing, ask a targeted follow-up question first; do not infer them from images.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/3682fe141fad46808a3fe46fefff5f45.png",
+        "coverWidth": 1280,
+        "coverHeight": 1280
+      },
+      "extra": {
+        "collectionId": "2quhxj84cyyo",
+        "collectionTitle": "Amazon 规格说明图",
+        "i18n_title": {
+          "en": "Digital Products",
+          "ja": "デジタル製品",
+          "zh": "数码"
+        },
+        "i18n_description": {
+          "en": "1 Amazon specification diagram",
+          "ja": "Amazon仕様説明図1枚",
+          "zh": "Amazon 规格说明图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "4b073e31de82988ac32bef90e4864b4334431e619f95667941a995ecb47883b1"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:20",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 5,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:20",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxyblrncx",
+      "title": "食品",
+      "description": "Amazon 规格说明图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "食品",
+            "description": "Amazon 规格说明图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Food",
+            "description": "1 Amazon product specifications image",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/37459c63b859471b88d4ab843f5f157b.png",
+            "coverWidth": 1280,
+            "coverHeight": 1280
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-listing-images",
+          "skillAssetId": "piKW6lFGve",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-listing-images/7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "sourceVersion": "1.0.3",
+          "versionAssetId": "piYUrDK8OA",
+          "versionId": "7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "linkUrl": "lovart://skill/amazon-product-listing-images",
+          "plazaItemId": "piYUrGA87e"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张食品 Amazon 规格说明图，采用清楚的结构视图、尺寸引线或套装清单，仅标注用户提供并确认的数值、单位及售卖构成。重要参数不足时先定向补问，不根据图片猜测。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon product specifications image for Food. Use clear structural views, dimension callouts, or a package contents list. Include only user-provided and confirmed values, units, and sale contents. If essential specifications are missing, ask a targeted follow-up question first; do not infer them from images.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/2160ed39c879460889eb5ec8f7429cd4.png",
+        "coverWidth": 1280,
+        "coverHeight": 1280
+      },
+      "extra": {
+        "collectionId": "2quhxj84cyyo",
+        "collectionTitle": "Amazon 规格说明图",
+        "i18n_title": {
+          "en": "Food",
+          "ja": "食品",
+          "zh": "食品"
+        },
+        "i18n_description": {
+          "en": "1 Amazon specification diagram",
+          "ja": "Amazon 仕様説明図 1枚",
+          "zh": "Amazon 规格说明图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "142df1f135508f82c7ee23bdb659c7d5a0653c4b3810449058274c50f2fe5e5c"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:20",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 0,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:20",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxyblrncw",
+      "title": "家居",
+      "description": "Amazon 规格说明图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "家居",
+            "description": "Amazon 规格说明图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Home & Living",
+            "description": "1 Amazon product specifications image",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/8fbd89e02ba94577965c1c306fb826e4.png",
+            "coverWidth": 1280,
+            "coverHeight": 1280
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "amazon-product-listing-images",
+          "skillAssetId": "piKW6lFGve",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/amazon-product-listing-images/7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "sourceVersion": "1.0.3",
+          "versionAssetId": "piYUrDK8OA",
+          "versionId": "7d705ae2-d3fc-4125-b860-2e074f35f7e7",
+          "linkUrl": "lovart://skill/amazon-product-listing-images",
+          "plazaItemId": "piYUrGA87e"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张家居 Amazon 规格说明图，采用清楚的结构视图、尺寸引线或套装清单，仅标注用户提供并确认的数值、单位及售卖构成。重要参数不足时先定向补问，不根据图片猜测。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 Amazon product specifications image for Home & Living. Use clear structural views, dimension callouts, or a package contents list. Include only user-provided and confirmed values, units, and sale contents. If essential specifications are missing, ask a targeted follow-up question first; do not infer them from images.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/a18dc055efd34abe8fe65a5671872fe6.png",
+        "coverWidth": 1280,
+        "coverHeight": 1280
+      },
+      "extra": {
+        "collectionId": "2quhxj84cyyo",
+        "collectionTitle": "Amazon 规格说明图",
+        "i18n_title": {
+          "en": "Home & Living",
+          "ja": "ホーム用品",
+          "zh": "家居"
+        },
+        "i18n_description": {
+          "en": "1 Amazon specification diagram",
+          "ja": "Amazon仕様説明図1枚",
+          "zh": "Amazon 规格说明图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "2029e6ddb9e63549ba6f006b6d45670a4ef05899e8e2f85a02e5d08e51ae0bc9"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:20",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 11,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:20",
+      "spacePinned": false
+    }
+  ],
+  "collectionMemberCount": 6,
+  "collectionHasMoreMembers": false,
+  "score": 1000000002900
+}

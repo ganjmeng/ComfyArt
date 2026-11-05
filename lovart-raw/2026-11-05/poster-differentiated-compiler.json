@@ -1,0 +1,313 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pdVO0ozfGM",
+  "title": "Poster Design",
+  "description": "Create posters from concept to delivery",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/e7/e7c9952d16e6f8f1fa039ca557bf092e80c07093a9e45277f0a3c92f58e0ec6d.mp4",
+      "mediaType": "video",
+      "width": 640,
+      "height": 480
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/74/74e1eb67a74563f24a0ee419bb66cceb125854f3dcee7f90ad487b7bd32e3b08.webp",
+        "width": 1344,
+        "height": 2016,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/cd/cdcf341d228803e6d5ddc149d3ef1f979bf0548614303ec63513d25780300776.webp",
+        "width": 960,
+        "height": 1280,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/99/994f1d828e9cd49445835055fdacb9ed84dad1289e9bfdd1909140d885d27868.webp",
+        "width": 853,
+        "height": 1280,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/12/124e143ed9c8d54c06d5ea2adf8740bae4ca08d290df0776d596c827df85396f.webp",
+        "width": 240,
+        "height": 360,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/f5/f5383f9878c4934d608cd76d5f0806212fc1dc0c7375d89a47f13144259e45f5.webp",
+        "width": 1152,
+        "height": 2048,
+        "order": 4
+      }
+    ],
+    "bestFor": [
+      "Poster Design",
+      "Key Visual",
+      "Campaign Poster",
+      "Advertising Poster",
+      "Marketing Poster",
+      "Movie Poster",
+      "Typography Poster"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "orOBu5yEHS",
+    "versionAssetId": "pdVO0lrEc0",
+    "skillKey": "poster-differentiated-compiler",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/poster-differentiated-compiler",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "b6b1770e-6b5c-4cfc-913a-4ca2dfc4a037",
+    "skillId": "industry/poster-differentiated-compiler/b6b1770e-6b5c-4cfc-913a-4ca2dfc4a037",
+    "level": "S",
+    "i18n_title": {
+      "en": "Poster Design",
+      "ja": "ポスターデザイン",
+      "zh": "海报设计"
+    },
+    "i18n_description": {
+      "en": "Create posters from concept to delivery",
+      "ja": "コンセプトから納品までポスターを制作",
+      "zh": "从概念到交付创作海报"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "ee6f45b666e4e2dbe46c3682c92410433db16fc7d0d48844b3f91668650001a7",
+    "version": "1.0.30"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-07-31T06:36:31",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 863,
+    "viewCount": 0,
+    "tryCount": 2578,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Poster Design",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/e7/e7c9952d16e6f8f1fa039ca557bf092e80c07093a9e45277f0a3c92f58e0ec6d.mp4",
+  "publishTime": "2026-07-31T06:36:31",
+  "spacePinned": false,
+  "score": 1000000001000
+}

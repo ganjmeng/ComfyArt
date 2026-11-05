@@ -1,0 +1,331 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2n7nm9kxghz4",
+  "title": "LOGO animation video",
+  "description": "Based on the provided logo, brand information, usage scenarios and output specifications, we will first clarify requirements, then deliver customized brand storyboard plans, production guidelines and sound design. After user confirmation, a 4–15 second logo animation video with synchronized background music and sound effects will be generated. The default duration is 8 seconds",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "LOGO animation video",
+        "ja": "ロゴアニメーション動画",
+        "zh": "LOGO动画视频"
+      },
+      "i18n_description": {
+        "en": "Based on the provided logo, brand information, usage scenarios and output specifications, we will first clarify requirements, then deliver customized brand storyboard plans, production guidelines and sound design. After user confirmation, a 4–15 second logo animation video with synchronized background music and sound effects will be generated. The default duration is 8 seconds",
+        "ja": "提供されたロゴ、ブランド情報、使用シナリオ、出力仕様に基づき、まず要件を明確化し、カスタマイズされたブランドストーリーボードプラン、制作ガイドライン、サウンドデザインを提供します。ユーザー確認後、背景音楽と効果音が同期した4〜15秒のロゴアニメーション動画を生成します。デフォルトの長さは8秒です",
+        "zh": "根据提供的logo、品牌信息、使用场景和输出规格,我们将首先明确需求,然后交付定制化的品牌故事板方案、制作指南和声音设计。经用户确认后,将生成一个4-15秒的logo动画视频,配有同步的背景音乐和音效。默认时长为8秒"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "video",
+      "url": "https://a.lovart.ai/asset/skill-plaza/99/99ad9f2e7d8f0f128146cf503fbbd7b86da1a61322670eb0f5c50e6451f6c974.mp4",
+      "width": 1280,
+      "height": 720,
+      "posterUrl": "https://a.lovart.ai/asset/skill-plaza/b2/b2ce840e31a612cd7a9945aafb42e1b6008feb2f5a07faea34ebb9f17eb90f5e.png"
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/asset/skill-plaza/19/19196547a58315ac8fcdd2dd505c8fee66b59fb631187f68edf2511906230948.mp4",
+        "width": 1280,
+        "height": 720,
+        "order": 0
+      },
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/asset/skill-plaza/45/45e50d90bbb76ebe4e78da4b04410b7ff04fdb493ee492fade1cfe97fbf1d500.mp4",
+        "width": 1280,
+        "height": 720,
+        "order": 1
+      },
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/asset/skill-plaza/70/701d941281616ffe05e6356a78dfd6b6fef1dad552cb2c27389a88464257a2f4.mp4",
+        "width": 1280,
+        "height": 720,
+        "order": 2
+      },
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/asset/skill-plaza/0c/0c53a479af9481e45ecd783127b49e9c28f415a652384836594f2d7f4b5581f3.mp4",
+        "width": 1280,
+        "height": 720,
+        "order": 3
+      }
+    ],
+    "bestFor": [
+      "Logo animation",
+      "Logo motion design",
+      "Logo reveal video",
+      "Brand motion identity",
+      "Logo intro animation",
+      "Logo stinger",
+      "Brand logo motion video",
+      "Motion logo storyboard",
+      "Corporate logo animation",
+      "Logo opening sequence"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2n7nm8srlvy8",
+    "versionAssetId": "2n7nm9jeizuo",
+    "skillKey": "logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "7cc2e8e7-8dfb-440e-b696-0208a7feaa2f",
+    "skillId": "user-generated/logo-5s-motion-video-1787063709-b40ea3f0305a489da736d7ca04dcc033/7cc2e8e7-8dfb-440e-b696-0208a7feaa2f",
+    "i18n_title": {
+      "en": "LOGO animation video",
+      "ja": "ロゴアニメーション動画",
+      "zh": "LOGO动画视频"
+    },
+    "i18n_description": {
+      "en": "Based on the provided logo, brand information, usage scenarios and output specifications, we will first clarify requirements, then deliver customized brand storyboard plans, production guidelines and sound design. After user confirmation, a 4–15 second logo animation video with synchronized background music and sound effects will be generated. The default duration is 8 seconds",
+      "ja": "提供されたロゴ、ブランド情報、使用シナリオ、出力仕様に基づき、まず要件を明確化し、カスタマイズされたブランドストーリーボードプラン、制作ガイドライン、サウンドデザインを提供します。ユーザー確認後、背景音楽と効果音が同期した4〜15秒のロゴアニメーション動画を生成します。デフォルトの長さは8秒です",
+      "zh": "根据提供的logo、品牌信息、使用场景和输出规格,我们将首先明确需求,然后交付定制化的品牌故事板方案、制作指南和声音设计。经用户确认后,将生成一个4-15秒的logo动画视频,配有同步的背景音乐和音效。默认时长为8秒"
+    },
+    "i18n_prompts": {
+      "en": "",
+      "ja": "",
+      "zh": ""
+    },
+    "i18n_source_hash": "8eae071b659d3b9eba680e568baff65b89b4fa0c570d1fa554197aa0ba7dcb3e",
+    "i18n_source_locale": "en",
+    "level": "B"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-18T14:35:12",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 149,
+    "viewCount": 0,
+    "tryCount": 299,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "kEw9xRyJEY",
+      "tagName": "branding",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Branding",
+      "extra": {
+        "tagName": "branding",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Branding"
+        }
+      },
+      "createTime": "2026-02-10T12:25:09",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "LOGO animation video",
+  "skillCover": "https://a.lovart.ai/asset/skill-plaza/99/99ad9f2e7d8f0f128146cf503fbbd7b86da1a61322670eb0f5c50e6451f6c974.mp4",
+  "publishTime": "2026-08-18T14:35:12",
+  "spacePinned": null,
+  "score": 0
+}

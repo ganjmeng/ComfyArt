@@ -1,0 +1,331 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pofOuM75Vm",
+  "title": "E-commerce Premium Studio On-Body Shot Designer",
+  "description": "Creates controlled, high-end studio on-body shots for apparel and accessories to showcase real fit and texture with zero added text.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "E-commerce Premium Studio On-Body Shot Designer",
+        "ja": "EC高級スタジオ着用・棚撮り画像デザイナー",
+        "zh": "电商棚拍上身图设计"
+      },
+      "i18n_description": {
+        "en": "Creates controlled, high-end studio on-body shots for apparel and accessories to showcase real fit and texture with zero added text.",
+        "ja": "アパレルや小物向けに、リアルなシルエットと素材感を際立たせるスタジオ着用画像を文字なしで生成します。",
+        "zh": "专为服饰与配饰打造的受控商业棚拍上身图，展现真实版型与材质细节，无多余文字，提升商品价格感。"
+      },
+      "prompts": [
+        {
+          "title": "服饰穿搭：裙子高级棚拍上身图",
+          "content": "帮我为这款裙子设计一张高级棚拍上身图。展现真实的穿着版型与面料质感，画面无多余文字，适合手机端快速浏览。"
+        }
+      ],
+      "i18n_prompts": {
+        "en": [
+          {
+            "title": "服饰穿搭：裙子高级棚拍上身图",
+            "content": "帮我为这款裙子设计一张高级棚拍上身图。展现真实的穿着版型与面料质感，画面无多余文字，适合手机端快速浏览。"
+          }
+        ],
+        "ja": [
+          {
+            "title": "アパレル：ドレスの高級スタジオ着用画像",
+            "content": "このドレスの高級スタジオ着用画像を作成してください。リアルな着用シルエットと生地の素材感を表現し、余計な文字は入れず、スマホでの閲覧に最適化されたレイアウトにしてください。"
+          }
+        ],
+        "zh": [
+          {
+            "title": "服饰穿搭：裙子高级棚拍上身图",
+            "content": "帮我为这款裙子设计一张高级棚拍上身图。展现真实的穿着版型与面料质感，画面无多余文字，适合手机端快速浏览。"
+          }
+        ]
+      },
+      "i18n_prompt": {
+        "en": "帮我为这款裙子设计一张高级棚拍上身图。展现真实的穿着版型与面料质感，画面无多余文字，适合手机端快速浏览。",
+        "ja": "このドレスの高級スタジオ着用画像を作成してください。リアルな着用シルエットと生地の素材感を表現し、余計な文字は入れず、スマホでの閲覧に最適化されたレイアウトにしてください。",
+        "zh": "帮我为这款裙子设计一张高级棚拍上身图。展现真实的穿着版型与面料质感，画面无多余文字，适合手机端快速浏览。"
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/ab/abeb3f71329a44ebf81350ce55fc05008747545cb41a7411478f656c0c6e9cc3.mp4",
+      "mediaType": "video",
+      "width": 960,
+      "height": 720,
+      "posterUrl": ""
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/fe/fe47a49d80071d96c73e1f2227501e8e8187610d1ae54ab999491a28f3943db6.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/f2/f2a8ac2f0275b7dadf373535f57d64cffbc0aa4e4eab773cd01843720ef4eff3.webp",
+        "width": 750,
+        "height": 1000,
+        "order": 1
+      }
+    ],
+    "bestFor": [
+      "studio shoot",
+      "product hero",
+      "high-end campaign look"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "otz3pTJDy0",
+    "versionAssetId": "pofI6H9Zok",
+    "skillKey": "marketing-style-studio-apparel",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/marketing-style-studio-apparel",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "32643853-bda8-4ce1-adce-4f3bb21539b6",
+    "skillId": "industry/marketing-style-studio-apparel/32643853-bda8-4ce1-adce-4f3bb21539b6",
+    "level": "B",
+    "i18n_title": {
+      "en": "E-commerce Premium Studio On-Body Shot Designer",
+      "ja": "Eコマース プレミアム スタジオ着用撮影デザイナー",
+      "zh": "电商高端工作室模特着装摄影设计师"
+    },
+    "i18n_description": {
+      "en": "Creates controlled, high-end studio on-body shots for apparel and accessories to showcase real fit and texture with zero added text.",
+      "ja": "アパレルやアクセサリーの実際のフィット感と質感を、テキストを一切追加せずに表現する、コントロールされたハイエンドなスタジオ着用撮影を制作します。",
+      "zh": "为服装和配饰创建可控的高端工作室模特着装照片，真实展现服装合身度和质感，完全不添加任何文字。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "8903a0e2fb344db88a70781694a1edb07574930e8c3cfedfbf2142f4c80caf41",
+    "version": "1.0.46"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-06T11:52:34",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 243,
+    "viewCount": 0,
+    "tryCount": 545,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "E-commerce Premium Studio On-Body Shot Designer",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/ab/abeb3f71329a44ebf81350ce55fc05008747545cb41a7411478f656c0c6e9cc3.mp4",
+  "publishTime": "2026-08-06T11:52:34",
+  "spacePinned": null,
+  "score": 0
+}

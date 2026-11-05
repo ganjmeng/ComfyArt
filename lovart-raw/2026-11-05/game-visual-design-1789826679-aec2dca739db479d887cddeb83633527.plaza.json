@@ -1,0 +1,716 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2qdthubdyps0",
+  "title": "游戏美术与运营视觉设计",
+  "description": "游戏美术与运营视觉一体化设计技能：覆盖 Style Bible 视觉规范、UI 设计规范、组件拆解与切图、游戏主界面/HUD 生成、场景原画、技能/装备图标、角色立绘与三视图、游戏 Logo、运营视觉（开屏/Banner/活动页/海报/拉新素材），内建模块路由（M0–M9）、Asset Card、Checkpoint 确认机制与交付目录规范，可输出中英双语、可直接投喂 Midjourney / SD / Nano-banana 的 Prompt。只要用户提到游戏 UI、主界面、HUD、弹窗、游戏图标、技能图标、装备图标、角色立绘、三视图、Q版、游戏 Logo、标题字、开屏、Banner、活动页、游戏海报、场景原画、关卡背景、Style Bible、游戏视觉体系、视觉规范，或要求\"从零搭一套游戏美术/视觉\"，即使没有明确说\"技能\"，也一定要使用本技能。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Game Art & Marketing Visual Design",
+        "ja": "ゲームアート&運営ビジュアルデザイン",
+        "zh": "游戏美术与运营视觉设计"
+      },
+      "i18n_description": {
+        "en": "Integrated game art and marketing visual design skill: covers Style Bible visual guidelines, UI design specifications, component breakdown and slicing, game main interface/HUD generation, environment concept art, skill/equipment icons, character illustrations and three-view drawings, game logos, marketing visuals (splash screens/banners/event pages/posters/user acquisition materials), built-in module routing (M0–M9), Asset Card, Checkpoint confirmation mechanism and delivery directory specifications. Outputs bilingual Chinese-English prompts ready for direct use in Midjourney / SD / Nano-banana. Activate this skill whenever users mention game UI, main interface, HUD, pop-ups, game icons, skill icons, equipment icons, character illustrations, three-view drawings, chibi/Q-version, game logos, title fonts, splash screens, banners, event pages, game posters, environment concept art, level backgrounds, Style Bible, game visual system, visual guidelines, or request to \"build a complete game art/visual system from scratch\"—even without explicitly saying \"skill\".",
+        "ja": "ゲームアート&運営ビジュアル統合デザインスキル：Style Bibleビジュアル規範、UIデザイン仕様、コンポーネント分解とスライス、ゲームメインインターフェース/HUD生成、シーンコンセプトアート、スキル/装備アイコン、キャラクターイラスト&三面図、ゲームロゴ、運営ビジュアル(起動画面/バナー/イベントページ/ポスター/獲得素材)、組み込みモジュールルーティング(M0–M9)、Asset Card、Checkpoint確認メカニズム&納品ディレクトリ仕様をカバー。中英バイリンガル出力可能で、Midjourney / SD / Nano-bananaに直接投入できるPromptを生成。ユーザーがゲームUI、メインインターフェース、HUD、ポップアップ、ゲームアイコン、スキルアイコン、装備アイコン、キャラクターイラスト、三面図、Qバージョン、ゲームロゴ、タイトルフォント、起動画面、バナー、イベントページ、ゲームポスター、シーンコンセプトアート、ステージ背景、Style Bible、ゲームビジュアルシステム、ビジュアル規範に言及するか、「ゼロからゲームアート/ビジュアルシステムを構築」を要求した場合、「スキル」と明示されなくても必ず本スキルを使用します。",
+        "zh": "游戏美术与运营视觉一体化设计技能：覆盖 Style Bible 视觉规范、UI 设计规范、组件拆解与切图、游戏主界面/HUD 生成、场景原画、技能/装备图标、角色立绘与三视图、游戏 Logo、运营视觉（开屏/Banner/活动页/海报/拉新素材），内建模块路由（M0–M9）、Asset Card、Checkpoint 确认机制与交付目录规范，可输出中英双语、可直接投喂 Midjourney / SD / Nano-banana 的 Prompt。只要用户提到游戏 UI、主界面、HUD、弹窗、游戏图标、技能图标、装备图标、角色立绘、三视图、Q版、游戏 Logo、标题字、开屏、Banner、活动页、游戏海报、场景原画、关卡背景、Style Bible、游戏视觉体系、视觉规范，或要求\"从零搭一套游戏美术/视觉\"，即使没有明确说\"技能\"，也一定要使用本技能。"
+      },
+      "i18n_prompt": {
+        "en": "Help me create [specific module, e.g., main interface/a set of skill icons/character three-view drawings/splash screen banner] for a [genre/category, e.g., anime-style card game/xianxia/SLG] mobile game. The worldview keywords are [keywords or reference images], portrait orientation 1080×1920. Please generate Style Bible and Asset Card for my confirmation before creating the final assets.",
+        "ja": "【ジャンル、例：二次元カードゲーム/仙俠/SLG】スマホゲームの【具体的なモジュール、例：メインインターフェース/スキルアイコン一式/キャラクター三面図/起動画面バナー】を作成してください。世界観キーワードは【キーワードまたは参考画像】、縦画面1080×1920です。まずStyle BibleとAsset Cardを出して確認してから画像を生成してください。",
+        "zh": "帮我做一款【玩法品类，如二次元卡牌/仙侠/SLG】手游的【具体模块，如主界面/一套技能图标/角色三视图/开屏Banner】，世界观关键词是【关键词或参考图】，竖屏 1080×1920，先出 Style Bible 和 Asset Card 给我确认再出图。"
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/F4WpwpiigF3yCVaa.webp",
+      "width": 1254,
+      "height": 1254
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/9d2HL0RAW3H1J6Ld.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/x4uL3lewU2CneL39.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/Y2jM5gXAk29Y0KYF.webp",
+        "width": 1152,
+        "height": 2048,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/gx5k6bp3TKDc1VZD.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/y2gVxjpdELK1IKPU.webp",
+        "width": 2560,
+        "height": 1440,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/BKwC2grUkAHEkbmA.webp",
+        "width": 2560,
+        "height": 1440,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/MqACvihOM0LVQqM1.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/XDzN2Kk3z1Lt3ghF.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 7
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/cr7ZrTHXIw7KASbS.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 8
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/lRiNhzhWODaCAzZd.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 9
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/zU1CYabbk1DT4dLV.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 10
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/vFZXr3spGv76Ppdq.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 11
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/as7yXBkt5BGnREGr.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 12
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/991Du00SQM4Fozdc.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 13
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/sZFWd2cPa68GHpE3.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 14
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/gwE9ZCYztqJhJfXl.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 15
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/iclPRriqsOKFmTVG.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 16
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/kWWSf0HBfxFwTLzw.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 17
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/uE0ETE8VVZ3KNngJ.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 18
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/i0MOC67KRfBiHpWb.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 19
+      }
+    ],
+    "bestFor": [
+      "游戏美术",
+      "二次元",
+      "视觉设计",
+      "游戏UI",
+      "美术运营设计",
+      "休闲游戏",
+      "游戏logo"
+    ],
+    "showMarkdown": false,
+    "prevContent": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "Game Art & Marketing Visual Design",
+          "ja": "ゲームアート&運営ビジュアルデザイン",
+          "zh": "游戏美术与运营视觉设计"
+        },
+        "i18n_description": {
+          "en": "Integrated game art and marketing visual design skill: covers Style Bible visual guidelines, UI design specifications, component breakdown and slicing, game main interface/HUD generation, environment concept art, skill/equipment icons, character illustrations and three-view drawings, game logos, marketing visuals (splash screens/banners/event pages/posters/user acquisition materials), built-in module routing (M0–M9), Asset Card, Checkpoint confirmation mechanism and delivery directory specifications. Outputs bilingual Chinese-English prompts ready for direct use in Midjourney / SD / Nano-banana. Activate this skill whenever users mention game UI, main interface, HUD, pop-ups, game icons, skill icons, equipment icons, character illustrations, three-view drawings, chibi/Q-version, game logos, title fonts, splash screens, banners, event pages, game posters, environment concept art, level backgrounds, Style Bible, game visual system, visual guidelines, or request to \"build a complete game art/visual system from scratch\"—even without explicitly saying \"skill\".",
+          "ja": "ゲームアート&運営ビジュアル統合デザインスキル：Style Bibleビジュアル規範、UIデザイン仕様、コンポーネント分解とスライス、ゲームメインインターフェース/HUD生成、シーンコンセプトアート、スキル/装備アイコン、キャラクターイラスト&三面図、ゲームロゴ、運営ビジュアル(起動画面/バナー/イベントページ/ポスター/獲得素材)、組み込みモジュールルーティング(M0–M9)、Asset Card、Checkpoint確認メカニズム&納品ディレクトリ仕様をカバー。中英バイリンガル出力可能で、Midjourney / SD / Nano-bananaに直接投入できるPromptを生成。ユーザーがゲームUI、メインインターフェース、HUD、ポップアップ、ゲームアイコン、スキルアイコン、装備アイコン、キャラクターイラスト、三面図、Qバージョン、ゲームロゴ、タイトルフォント、起動画面、バナー、イベントページ、ゲームポスター、シーンコンセプトアート、ステージ背景、Style Bible、ゲームビジュアルシステム、ビジュアル規範に言及するか、「ゼロからゲームアート/ビジュアルシステムを構築」を要求した場合、「スキル」と明示されなくても必ず本スキルを使用します。",
+          "zh": "游戏美术与运营视觉一体化设计技能：覆盖 Style Bible 视觉规范、UI 设计规范、组件拆解与切图、游戏主界面/HUD 生成、场景原画、技能/装备图标、角色立绘与三视图、游戏 Logo、运营视觉（开屏/Banner/活动页/海报/拉新素材），内建模块路由（M0–M9）、Asset Card、Checkpoint 确认机制与交付目录规范，可输出中英双语、可直接投喂 Midjourney / SD / Nano-banana 的 Prompt。只要用户提到游戏 UI、主界面、HUD、弹窗、游戏图标、技能图标、装备图标、角色立绘、三视图、Q版、游戏 Logo、标题字、开屏、Banner、活动页、游戏海报、场景原画、关卡背景、Style Bible、游戏视觉体系、视觉规范，或要求\"从零搭一套游戏美术/视觉\"，即使没有明确说\"技能\"，也一定要使用本技能。"
+        },
+        "i18n_prompt": {
+          "en": "Help me create [specific module, e.g., main interface/a set of skill icons/character three-view drawings/splash screen banner] for a [genre/category, e.g., anime-style card game/xianxia/SLG] mobile game. The worldview keywords are [keywords or reference images], portrait orientation 1080×1920. Please generate Style Bible and Asset Card for my confirmation before creating the final assets.",
+          "ja": "【ジャンル、例：二次元カードゲーム/仙俠/SLG】スマホゲームの【具体的なモジュール、例：メインインターフェース/スキルアイコン一式/キャラクター三面図/起動画面バナー】を作成してください。世界観キーワードは【キーワードまたは参考画像】、縦画面1080×1920です。まずStyle BibleとAsset Cardを出して確認してから画像を生成してください。",
+          "zh": "帮我做一款【玩法品类，如二次元卡牌/仙侠/SLG】手游的【具体模块，如主界面/一套技能图标/角色三视图/开屏Banner】，世界观关键词是【关键词或参考图】，竖屏 1080×1920，先出 Style Bible 和 Asset Card 给我确认再出图。"
+        }
+      },
+      "coverMode": "single",
+      "cover": {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/F4WpwpiigF3yCVaa.webp",
+        "width": 1254,
+        "height": 1254
+      },
+      "coverAutoPlay": false,
+      "highlights": [
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/9d2HL0RAW3H1J6Ld.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 0
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/x4uL3lewU2CneL39.webp",
+          "width": 2048,
+          "height": 2048,
+          "order": 1
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/Y2jM5gXAk29Y0KYF.webp",
+          "width": 1152,
+          "height": 2048,
+          "order": 2
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/gx5k6bp3TKDc1VZD.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 3
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/y2gVxjpdELK1IKPU.webp",
+          "width": 2560,
+          "height": 1440,
+          "order": 4
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/BKwC2grUkAHEkbmA.webp",
+          "width": 2560,
+          "height": 1440,
+          "order": 5
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/MqACvihOM0LVQqM1.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 6
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/XDzN2Kk3z1Lt3ghF.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 7
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/cr7ZrTHXIw7KASbS.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 8
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/lRiNhzhWODaCAzZd.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 9
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/zU1CYabbk1DT4dLV.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 10
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/vFZXr3spGv76Ppdq.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 11
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/as7yXBkt5BGnREGr.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 12
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/991Du00SQM4Fozdc.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 13
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/sZFWd2cPa68GHpE3.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 14
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/gwE9ZCYztqJhJfXl.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 15
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/iclPRriqsOKFmTVG.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 16
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/kWWSf0HBfxFwTLzw.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 17
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/uE0ETE8VVZ3KNngJ.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 18
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/i0MOC67KRfBiHpWb.webp",
+          "width": 1088,
+          "height": 1920,
+          "order": 19
+        }
+      ],
+      "bestFor": [
+        "游戏美术",
+        "二次元",
+        "视觉设计",
+        "游戏UI",
+        "美术运营设计",
+        "休闲游戏",
+        "游戏logo"
+      ],
+      "showMarkdown": false
+    },
+    "prevExtra": {
+      "skillAssetId": "2qdrh9iihurk",
+      "versionAssetId": "2qdrh9qho6io",
+      "skillKey": "game-visual-design-1789826679-aec2dca739db479d887cddeb83633527",
+      "sourceVersion": "1.0.0",
+      "linkUrl": "lovart://skill/game-visual-design-1789826679-aec2dca739db479d887cddeb83633527",
+      "namespace": "user-generated",
+      "type": "ugc",
+      "versionId": "f2916e41-5d2d-43e3-aa9a-f6cbb20e2e8a",
+      "skillId": "user-generated/game-visual-design-1789826679-aec2dca739db479d887cddeb83633527/f2916e41-5d2d-43e3-aa9a-f6cbb20e2e8a",
+      "i18n_title": {
+        "en": "Game Art & Marketing Visual Design",
+        "ja": "ゲームアート&運営ビジュアルデザイン",
+        "zh": "游戏美术与运营视觉设计"
+      },
+      "i18n_description": {
+        "en": "Integrated game art and marketing visual design skill: covers Style Bible visual guidelines, UI design specifications, component breakdown and slicing, game main interface/HUD generation, environment concept art, skill/equipment icons, character illustrations and three-view drawings, game logos, marketing visuals (splash screens/banners/event pages/posters/user acquisition materials), built-in module routing (M0–M9), Asset Card, Checkpoint confirmation mechanism and delivery directory specifications. Outputs bilingual Chinese-English prompts ready for direct use in Midjourney / SD / Nano-banana. Activate this skill whenever users mention game UI, main interface, HUD, pop-ups, game icons, skill icons, equipment icons, character illustrations, three-view drawings, chibi/Q-version, game logos, title fonts, splash screens, banners, event pages, game posters, environment concept art, level backgrounds, Style Bible, game visual system, visual guidelines, or request to \"build a complete game art/visual system from scratch\"—even without explicitly saying \"skill\".",
+        "ja": "ゲームアート&運営ビジュアル統合デザインスキル：Style Bibleビジュアル規範、UIデザイン仕様、コンポーネント分解とスライス、ゲームメインインターフェース/HUD生成、シーンコンセプトアート、スキル/装備アイコン、キャラクターイラスト&三面図、ゲームロゴ、運営ビジュアル(起動画面/バナー/イベントページ/ポスター/獲得素材)、組み込みモジュールルーティング(M0–M9)、Asset Card、Checkpoint確認メカニズム&納品ディレクトリ仕様をカバー。中英バイリンガル出力可能で、Midjourney / SD / Nano-bananaに直接投入できるPromptを生成。ユーザーがゲームUI、メインインターフェース、HUD、ポップアップ、ゲームアイコン、スキルアイコン、装備アイコン、キャラクターイラスト、三面図、Qバージョン、ゲームロゴ、タイトルフォント、起動画面、バナー、イベントページ、ゲームポスター、シーンコンセプトアート、ステージ背景、Style Bible、ゲームビジュアルシステム、ビジュアル規範に言及するか、「ゼロからゲームアート/ビジュアルシステムを構築」を要求した場合、「スキル」と明示されなくても必ず本スキルを使用します。",
+        "zh": "游戏美术与运营视觉一体化设计技能：覆盖 Style Bible 视觉规范、UI 设计规范、组件拆解与切图、游戏主界面/HUD 生成、场景原画、技能/装备图标、角色立绘与三视图、游戏 Logo、运营视觉（开屏/Banner/活动页/海报/拉新素材），内建模块路由（M0–M9）、Asset Card、Checkpoint 确认机制与交付目录规范，可输出中英双语、可直接投喂 Midjourney / SD / Nano-banana 的 Prompt。只要用户提到游戏 UI、主界面、HUD、弹窗、游戏图标、技能图标、装备图标、角色立绘、三视图、Q版、游戏 Logo、标题字、开屏、Banner、活动页、游戏海报、场景原画、关卡背景、Style Bible、游戏视觉体系、视觉规范，或要求\"从零搭一套游戏美术/视觉\"，即使没有明确说\"技能\"，也一定要使用本技能。"
+      },
+      "i18n_prompts": {
+        "en": "Help me create [specific module, e.g., main interface/a set of skill icons/character three-view drawings/splash screen banner] for a [genre/category, e.g., anime-style card game/xianxia/SLG] mobile game. The worldview keywords are [keywords or reference images], portrait orientation 1080×1920. Please generate Style Bible and Asset Card for my confirmation before creating the final assets.",
+        "ja": "【ジャンル、例：二次元カードゲーム/仙俠/SLG】スマホゲームの【具体的なモジュール、例：メインインターフェース/スキルアイコン一式/キャラクター三面図/起動画面バナー】を作成してください。世界観キーワードは【キーワードまたは参考画像】、縦画面1080×1920です。まずStyle BibleとAsset Cardを出して確認してから画像を生成してください。",
+        "zh": "帮我做一款【玩法品类，如二次元卡牌/仙侠/SLG】手游的【具体模块，如主界面/一套技能图标/角色三视图/开屏Banner】，世界观关键词是【关键词或参考图】，竖屏 1080×1920，先出 Style Bible 和 Asset Card 给我确认再出图。"
+      },
+      "i18n_source_hash": "de7ffb3282274d1ae8987f555bd8c59a105509241ff617ee6c291e1287fd921d",
+      "i18n_source_locale": "zh",
+      "level": "B"
+    },
+    "prevArchivedAt": 1789848999530,
+    "overriddenFromItemId": "2qdyv18bsgzk",
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2qdrh9iihurk",
+    "versionAssetId": "2qdrh9qho6io",
+    "skillKey": "game-visual-design-1789826679-aec2dca739db479d887cddeb83633527",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/game-visual-design-1789826679-aec2dca739db479d887cddeb83633527",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "f2916e41-5d2d-43e3-aa9a-f6cbb20e2e8a",
+    "skillId": "user-generated/game-visual-design-1789826679-aec2dca739db479d887cddeb83633527/f2916e41-5d2d-43e3-aa9a-f6cbb20e2e8a",
+    "i18n_title": {
+      "en": "Game Art & Marketing Visual Design",
+      "ja": "ゲームアート&運営ビジュアルデザイン",
+      "zh": "游戏美术与运营视觉设计"
+    },
+    "i18n_description": {
+      "en": "Integrated game art and marketing visual design skill: covers Style Bible visual guidelines, UI design specifications, component breakdown and slicing, game main interface/HUD generation, environment concept art, skill/equipment icons, character illustrations and three-view drawings, game logos, marketing visuals (splash screens/banners/event pages/posters/user acquisition materials), built-in module routing (M0–M9), Asset Card, Checkpoint confirmation mechanism and delivery directory specifications. Outputs bilingual Chinese-English prompts ready for direct use in Midjourney / SD / Nano-banana. Activate this skill whenever users mention game UI, main interface, HUD, pop-ups, game icons, skill icons, equipment icons, character illustrations, three-view drawings, chibi/Q-version, game logos, title fonts, splash screens, banners, event pages, game posters, environment concept art, level backgrounds, Style Bible, game visual system, visual guidelines, or request to \"build a complete game art/visual system from scratch\"—even without explicitly saying \"skill\".",
+      "ja": "ゲームアート&運営ビジュアル統合デザインスキル：Style Bibleビジュアル規範、UIデザイン仕様、コンポーネント分解とスライス、ゲームメインインターフェース/HUD生成、シーンコンセプトアート、スキル/装備アイコン、キャラクターイラスト&三面図、ゲームロゴ、運営ビジュアル(起動画面/バナー/イベントページ/ポスター/獲得素材)、組み込みモジュールルーティング(M0–M9)、Asset Card、Checkpoint確認メカニズム&納品ディレクトリ仕様をカバー。中英バイリンガル出力可能で、Midjourney / SD / Nano-bananaに直接投入できるPromptを生成。ユーザーがゲームUI、メインインターフェース、HUD、ポップアップ、ゲームアイコン、スキルアイコン、装備アイコン、キャラクターイラスト、三面図、Qバージョン、ゲームロゴ、タイトルフォント、起動画面、バナー、イベントページ、ゲームポスター、シーンコンセプトアート、ステージ背景、Style Bible、ゲームビジュアルシステム、ビジュアル規範に言及するか、「ゼロからゲームアート/ビジュアルシステムを構築」を要求した場合、「スキル」と明示されなくても必ず本スキルを使用します。",
+      "zh": "游戏美术与运营视觉一体化设计技能：覆盖 Style Bible 视觉规范、UI 设计规范、组件拆解与切图、游戏主界面/HUD 生成、场景原画、技能/装备图标、角色立绘与三视图、游戏 Logo、运营视觉（开屏/Banner/活动页/海报/拉新素材），内建模块路由（M0–M9）、Asset Card、Checkpoint 确认机制与交付目录规范，可输出中英双语、可直接投喂 Midjourney / SD / Nano-banana 的 Prompt。只要用户提到游戏 UI、主界面、HUD、弹窗、游戏图标、技能图标、装备图标、角色立绘、三视图、Q版、游戏 Logo、标题字、开屏、Banner、活动页、游戏海报、场景原画、关卡背景、Style Bible、游戏视觉体系、视觉规范，或要求\"从零搭一套游戏美术/视觉\"，即使没有明确说\"技能\"，也一定要使用本技能。"
+    },
+    "i18n_prompts": {
+      "en": "Help me create [specific module, e.g., main interface/a set of skill icons/character three-view drawings/splash screen banner] for a [genre/category, e.g., anime-style card game/xianxia/SLG] mobile game. The worldview keywords are [keywords or reference images], portrait orientation 1080×1920. Please generate Style Bible and Asset Card for my confirmation before creating the final assets.",
+      "ja": "【ジャンル、例：二次元カードゲーム/仙俠/SLG】スマホゲームの【具体的なモジュール、例：メインインターフェース/スキルアイコン一式/キャラクター三面図/起動画面バナー】を作成してください。世界観キーワードは【キーワードまたは参考画像】、縦画面1080×1920です。まずStyle BibleとAsset Cardを出して確認してから画像を生成してください。",
+      "zh": "帮我做一款【玩法品类，如二次元卡牌/仙侠/SLG】手游的【具体模块，如主界面/一套技能图标/角色三视图/开屏Banner】，世界观关键词是【关键词或参考图】，竖屏 1080×1920，先出 Style Bible 和 Asset Card 给我确认再出图。"
+    },
+    "i18n_source_hash": "de7ffb3282274d1ae8987f555bd8c59a105509241ff617ee6c291e1287fd921d",
+    "i18n_source_locale": "zh",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-19T14:27:16",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 176,
+    "viewCount": 0,
+    "tryCount": 429,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFcUzQIgKs",
+      "tagName": "website",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Website",
+      "extra": {
+        "tagName": "website",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Website"
+        }
+      },
+      "createTime": "2026-03-20T06:55:03",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "游戏美术与运营视觉设计",
+  "skillCover": "https://a.lovart.ai/artifacts/user/F4WpwpiigF3yCVaa.webp",
+  "publishTime": "2026-09-19T14:27:16",
+  "spacePinned": false,
+  "score": 0,
+  "_en": {
+    "title": "游戏美术与运营视觉设计",
+    "description": "游戏美术与运营视觉一体化设计技能：覆盖 Style Bible 视觉规范、UI 设计规范、组件拆解与切图、游戏主界面/HUD 生成、场景原画、技能/装备图标、角色立绘与三视图、游戏 Logo、运营视觉（开屏/Banner/活动页/海报/拉新素材），内建模块路由（M0–M9）、Asset Card、Checkpoint 确认机制与交付目录规范，可输出中英双语、可直接投喂 Midjourney / SD / Nano-banana 的 Prompt。只要用户提到游戏 UI、主界面、HUD、弹窗、游戏图标、技能图标、装备图标、角色立绘、三视图、Q版、游戏 Logo、标题字、开屏、Banner、活动页、游戏海报、场景原画、关卡背景、Style Bible、游戏视觉体系、视觉规范，或要求\"从零搭一套游戏美术/视觉\"，即使没有明确说\"技能\"，也一定要使用本技能。",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "Game Art & Marketing Visual Design",
+          "ja": "ゲームアート&運営ビジュアルデザイン",
+          "zh": "游戏美术与运营视觉设计"
+        },
+        "i18n_description": {
+          "en": "Integrated game art and marketing visual design skill: covers Style Bible visual guidelines, UI design specifications, component breakdown and slicing, game main interface/HUD generation, environment concept art, skill/equipment icons, character illustrations and three-view drawings, game logos, marketing visuals (splash screens/banners/event pages/posters/user acquisition materials), built-in module routing (M0–M9), Asset Card, Checkpoint confirmation mechanism and delivery directory specifications. Outputs bilingual Chinese-English prompts ready for direct use in Midjourney / SD / Nano-banana. Activate this skill whenever users mention game UI, main interface, HUD, pop-ups, game icons, skill icons, equipment icons, character illustrations, three-view drawings, chibi/Q-version, game logos, title fonts, splash screens, banners, event pages, game posters, environment concept art, level backgrounds, Style Bible, game visual system, visual guidelines, or request to \"build a complete game art/visual system from scratch\"—even without explicitly saying \"skill\".",
+          "ja": "ゲームアート&運営ビジュアル統合デザインスキル：Style Bibleビジュアル規範、UIデザイン仕様、コンポーネント分解とスライス、ゲームメインインターフェース/HUD生成、シーンコンセプトアート、スキル/装備アイコン、キャラクターイラスト&三面図、ゲームロゴ、運営ビジュアル(起動画面/バナー/イベントページ/ポスター/獲得素材)、組み込みモジュールルーティング(M0–M9)、Asset Card、Checkpoint確認メカニズム&納品ディレクトリ仕様をカバー。中英バイリンガル出力可能で、Midjourney / SD / Nano-bananaに直接投入できるPromptを生成。ユーザーがゲームUI、メインインターフェース、HUD、ポップアップ、ゲームアイコン、スキルアイコン、装備アイコン、キャラクターイラスト、三面図、Qバージョン、ゲームロゴ、タイトルフォント、起動画面、バナー、イベントページ、ゲームポスター、シーンコンセプトアート、ステージ背景、Style Bible、ゲームビジュアルシステム、ビジュアル規範に言及するか、「ゼロからゲームアート/ビジュアルシステムを構築」を要求した場合、「スキル」と明示されなくても必ず本スキルを使用します。",
+          "zh": "游戏美术与运营视觉一体化设计技能：覆盖 Style Bible 视觉规范、UI 设计规范、组件拆解与切图、游戏主界面/HUD 生成、场景原画、技能/装备图标、角色立绘与三视图、游戏 Logo、运营视觉（开屏/Banner/活动页/海报/拉新素材），内建模块路由（M0–M9）、Asset Card、Checkpoint 确认机制与交付目录规范，可输出中英双语、可直接投喂 Midjourney / SD / Nano-banana 的 Prompt。只要用户提到游戏 UI、主界面、HUD、弹窗、游戏图标、技能图标、装备图标、角色立绘、三视图、Q版、游戏 Logo、标题字、开屏、Banner、活动页、游戏海报、场景原画、关卡背景、Style Bible、游戏视觉体系、视觉规范，或要求\"从零搭一套游戏美术/视觉\"，即使没有明确说\"技能\"，也一定要使用本技能。"
+        },
+        "i18n_prompt": {
+          "en": "Help me create [specific module, e.g., main interface/a set of skill icons/character three-view drawings/splash screen banner] for a [genre/category, e.g., anime-style card game/xianxia/SLG] mobile game. The worldview keywords are [keywords or reference images], portrait orientation 1080×1920. Please generate Style Bible and Asset Card for my confirmation before creating the final assets.",
+          "ja": "【ジャンル、例：二次元カードゲーム/仙俠/SLG】スマホゲームの【具体的なモジュール、例：メインインターフェース/スキルアイコン一式/キャラクター三面図/起動画面バナー】を作成してください。世界観キーワードは【キーワードまたは参考画像】、縦画面1080×1920です。まずStyle BibleとAsset Cardを出して確認してから画像を生成してください。",
+          "zh": "帮我做一款【玩法品类，如二次元卡牌/仙侠/SLG】手游的【具体模块，如主界面/一套技能图标/角色三视图/开屏Banner】，世界观关键词是【关键词或参考图】，竖屏 1080×1920，先出 Style Bible 和 Asset Card 给我确认再出图。"
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

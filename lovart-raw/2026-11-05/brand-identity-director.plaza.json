@@ -1,0 +1,353 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pe2OsxQJfW",
+  "title": "Brand Identity",
+  "description": "Build immersive brand worlds",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/64/64925f8a49af6482e392a018d987fcb85a2a2ffd36c6c8638e415ad8b02047ed.mp4",
+      "mediaType": "video",
+      "width": 640,
+      "height": 480
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/fc/fc1bfa475fd2c5d56c7775e3f28cf3d9dbae0c879cf70a941ec7a01fed38b388.mp4",
+        "width": 1440,
+        "height": 1080,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/4a/4ad80d86007554c5da996f5a458424b6a5e096087710a0e0a9399e03de5801f2.webp",
+        "width": 2048,
+        "height": 1536,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/df/df17c3fb70cda968b06785366532a87880c6155eb14093d726c239b69af0de70.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/2f/2fe50defc527b66b38b2a43445bc1a2fbe851c3793ee84f60ce002704015ed60.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/20/20743bcd9d1d500b10af2d0a82ed14cbb5d4cbaf62eb89c12e7b21db1b77e839.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/5f/5fea68b15f2633a1c434bb65bf8dba46be77132546aeadb67a66af42a9c3cef2.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/55/55207f7a1469e529aaebdd63ab94016b6ee6e65eeff0b352503d576ab0a4320b.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/81/8178294ca5aa6bb7b888626761b36c5843aee1389b753587170a868296b2cfdb.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 7
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/a5/a52b4f887014de0c45809ae6427119edc7f873d43baf82be3eb62b35bed3e09e.webp",
+        "width": 2048,
+        "height": 1536,
+        "order": 8
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/09/0943326e38ab6fa470e7a9399976855d8103dc216b4f7294e3f8a558007120d7.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 9
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/bf/bf4f97485b0eebe70ca3ed61275df3c8b28f8cd0e923ba86e219d9da414ab13d.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 10
+      }
+    ],
+    "bestFor": [
+      "Brand Identity",
+      "Visual Identity",
+      "Brand Guidelines",
+      "Brand Kit",
+      "Brand Design"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "oyheOOcIo0",
+    "versionAssetId": "pe2Osrk2AM",
+    "skillKey": "brand-identity-director",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/brand-identity-director",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "f33cdffb-0dea-4d08-a48c-19686dac61ed",
+    "skillId": "industry/brand-identity-director/f33cdffb-0dea-4d08-a48c-19686dac61ed",
+    "level": "S",
+    "i18n_title": {
+      "en": "Brand Identity",
+      "ja": "ブランドアイデンティティ",
+      "zh": "品牌识别"
+    },
+    "i18n_description": {
+      "en": "Build immersive brand worlds",
+      "ja": "没入感のあるブランドの世界を構築",
+      "zh": "构建沉浸式品牌世界"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "46d1e1351b7718b1eff078aa8dde76dad6cc73be104d40921dbc8bd5aa0b7c5d",
+    "version": "1.0.29"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-07-31T08:14:35",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 775,
+    "viewCount": 0,
+    "tryCount": 3604,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEw9xRyJEY",
+      "tagName": "branding",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Branding",
+      "extra": {
+        "tagName": "branding",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Branding"
+        }
+      },
+      "createTime": "2026-02-10T12:25:09",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Brand Identity",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/64/64925f8a49af6482e392a018d987fcb85a2a2ffd36c6c8638e415ad8b02047ed.mp4",
+  "publishTime": "2026-07-31T08:14:35",
+  "spacePinned": false,
+  "score": 1000000001600
+}

@@ -1,0 +1,300 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pj9HEGLCkE",
+  "title": "Creator Visual Identity System",
+  "description": "Build consistent creator branding",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Creator Visual Identity System",
+        "ja": "クリエイター・ビジュアル識別システム",
+        "zh": "创作者视觉识别系统"
+      },
+      "i18n_description": {
+        "en": "Builds a reusable creator visual identity system with locked brand DNA, subject consistency, and multi-platform cover templates.",
+        "ja": "クリエイター、ポッドキャスト、チャンネル、個人ブランド向けに、ブランドDNA・人物一貫性・多平台カバーテンプレートを固定した再利用可能なビジュアル識別システムを構築します。",
+        "zh": "为创作者、播客、频道或个人品牌建立可长期复用的视觉识别系统，锁定品牌DNA、人物一致性与多平台封面模板。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/11/119ee67a96d95d05320471ad4eea028b9d191052e8f65cca0469014fe05557d8.mp4",
+      "mediaType": "video",
+      "width": 640,
+      "height": 480,
+      "posterUrl": ""
+    },
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/05/05175e1426e00887864e66f3e23e27b43d1b9170f28fc1aba2b6ef19a7a7b4f7.mp4",
+        "width": 1440,
+        "height": 1078,
+        "order": 0
+      }
+    ],
+    "bestFor": [
+      "Creator Visual Identity",
+      "Creator Brand",
+      "YouTube Creator",
+      "TikTok Creator",
+      "RedNote Creator"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "oZ2D67HkYg",
+    "versionAssetId": "pe3QaXCRCU",
+    "skillKey": "creator-visual-identity-system",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/creator-visual-identity-system",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "f2e70368-5f35-4b01-95f1-2e7525297aad",
+    "skillId": "industry/creator-visual-identity-system/f2e70368-5f35-4b01-95f1-2e7525297aad",
+    "level": "S",
+    "i18n_title": {
+      "en": "Creator Visual Identity System",
+      "ja": "クリエイター向けビジュアルアイデンティティシステム",
+      "zh": "创作者视觉识别系统"
+    },
+    "i18n_description": {
+      "en": "Build consistent creator branding",
+      "ja": "一貫性のあるクリエイターブランディングを構築",
+      "zh": "构建一致的创作者品牌形象"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "5423766b366d408f22ed146cc34f61236445e3e86aec941ead7369e8f50367fb",
+    "version": "1.0.40"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-03T10:09:02",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 219,
+    "viewCount": 0,
+    "tryCount": 585,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEw9xRyJEY",
+      "tagName": "branding",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Branding",
+      "extra": {
+        "tagName": "branding",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Branding"
+        }
+      },
+      "createTime": "2026-02-10T12:25:09",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Creator Visual Identity System",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/11/119ee67a96d95d05320471ad4eea028b9d191052e8f65cca0469014fe05557d8.mp4",
+  "publishTime": "2026-08-03T10:09:02",
+  "spacePinned": null,
+  "score": 1000000000000
+}

@@ -1,0 +1,514 @@
+{
+  "itemType": "collection_card",
+  "itemId": "2sf3x9ta0mio",
+  "title": "爆款视频复刻",
+  "description": "参考原片的镜头与节奏，按需求替换指定内容",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "i18n": {
+      "zh": {
+        "title": "爆款视频复刻",
+        "description": "参考原片的镜头与节奏，按需求替换指定内容",
+        "ctaText": "复刻参考视频"
+      },
+      "en": {
+        "title": "Reference Video Remake",
+        "description": "Adapt a reference video with your content while preserving its shot structure and pacing.",
+        "ctaText": "Remake video"
+      }
+    },
+    "media": [
+      {
+        "role": "RESULT",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/29/293ba1c0bf75ef67d6ae4446da24718c7aadc545c0128e357685a2aff3176699.mp4",
+        "coverWidth": 1440,
+        "coverHeight": 1920
+      },
+      {
+        "role": "RESULT",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/87/878440f4f5e34b0d8b940a58ae65684669c5d58d133e69dbcf42f2fa57e5847c.mp4",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      {
+        "role": "RESULT",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/0c/0c7fa0cf2c6ae75c269f7296cce1f6c3a5b71819a5af1ccf58db3b7dc694b100.mp4",
+        "coverWidth": 1440,
+        "coverHeight": 2560
+      },
+      {
+        "role": "RESULT",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/9f/9fc2bb306dd597129eefbd81d8359526395144523701075d27f07159a8eb219d.mp4",
+        "coverWidth": 1440,
+        "coverHeight": 810
+      },
+      {
+        "role": "RESULT",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/96/9663475bd5da01da5534499e1ef4cc23eba704791ca231fdb08e8daefdaba8db.mp4",
+        "coverWidth": 1440,
+        "coverHeight": 810
+      }
+    ],
+    "bind": {
+      "type": "SKILL",
+      "source": "MANUAL",
+      "skillKey": "video-remake",
+      "skillAssetId": "pnFlBbT0Zy",
+      "versionId": "8c027ab4-ba6b-4faa-9052-7c131749ef03",
+      "skillId": "industry/video-remake/8c027ab4-ba6b-4faa-9052-7c131749ef03",
+      "namespace": "industry",
+      "sourceVersion": "1.0.19"
+    },
+    "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/0d/0dd2bbdcdfb73dbdb88a6b0af922d2c6c301d0926b3d0a75f73a809497cab9f3.mp4",
+    "coverWidth": 640,
+    "coverHeight": 480
+  },
+  "extra": {
+    "i18n_title": {
+      "en": "Reference Video Remake",
+      "ja": "参考動画リメイク",
+      "zh": "参考视频重制"
+    },
+    "i18n_description": {
+      "en": "Adapt a reference video with your content while preserving its shot structure and pacing.",
+      "ja": "ショット構成とペーシングを保ちながら、参考動画をあなたのコンテンツで再構成します。",
+      "zh": "在保留镜头结构和节奏的同时，用您的内容改编参考视频。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "714a113bd3f1e0f2c2f5676664cde5142e8001b84b0efeabc5ef8a6021143ae4"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-10-10T03:24:16",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 69,
+    "viewCount": 0,
+    "tryCount": 0,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": null,
+  "skillCover": null,
+  "publishTime": "2026-10-10T03:24:16",
+  "spacePinned": false,
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "2sf3xbqpp0jk",
+      "title": "自定义复刻",
+      "description": "完整视频复刻成片 1 条",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "自定义复刻",
+            "description": "完整视频复刻成片 1 条",
+            "ctaText": "复刻参考视频"
+          },
+          "en": {
+            "title": "Custom Remake",
+            "description": "1 finished reference-video remake",
+            "ctaText": "Remake video"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/29/293ba1c0bf75ef67d6ae4446da24718c7aadc545c0128e357685a2aff3176699.mp4",
+            "coverWidth": 1440,
+            "coverHeight": 1920
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "MANUAL",
+          "skillKey": "video-remake",
+          "skillAssetId": "pnFlBbT0Zy",
+          "versionId": "8c027ab4-ba6b-4faa-9052-7c131749ef03",
+          "skillId": "industry/video-remake/8c027ab4-ba6b-4faa-9052-7c131749ef03",
+          "namespace": "industry",
+          "sourceVersion": "1.0.19"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "reference_video",
+              "type": "VIDEO_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "参考视频",
+                  "placeholder": "上传视频文件"
+                },
+                "en": {
+                  "title": "Reference video file",
+                  "placeholder": "Upload your source video."
+                }
+              },
+              "limits": {
+                "maxCount": 3,
+                "maxSizeMb": 100
+              }
+            },
+            {
+              "key": "replacement_brief",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "复刻要求",
+                  "placeholder": "希望替换或保留哪些内容？可同时描述商品、人物、品牌、文案等多项改动。"
+                },
+                "en": {
+                  "title": "Remake brief",
+                  "placeholder": "What should change or stay? Combine product, person, brand, copy or other requested changes."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "replacement_assets",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "替换素材图片（选填）"
+                },
+                "en": {
+                  "title": "Replacement images (optional)"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "asset_links",
+              "type": "FILE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "其他素材",
+                  "placeholder": "其他文件或素材可填在这里；没有可留空。"
+                },
+                "en": {
+                  "title": "Other asset",
+                  "placeholder": "Add other file or asset here. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxCount": 3,
+                "maxSizeMb": 20
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "描述希望的视觉效果或提供参考；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "根据用户提供的参考视频和复刻要求，制作 1 条完整复刻视频。可在同一次任务中组合替换商品、人物、品牌、文案或其他明确指定内容；先确认各项替换目标、素材对应、作用范围及必要联动。保留未要求改变的原片镜头结构、节奏和内容关系；画幅、清晰度与音轨处理确认后制作，不默认把所有元素都替换。\n\n参考视频链接: {{reference_video}}\n复刻要求: {{replacement_brief}}\n其他素材链接: {{asset_links}}\n视觉呈现方式: {{visual_direction}}",
+            "en": "Create 1 complete remake from the supplied reference video and brief. Combine product, person, brand, copy or other explicitly requested changes in one task. Confirm targets, asset mappings, scope and necessary dependent changes. Preserve unspecified shot structure, pacing and relationships; confirm ratio, resolution and audio treatment before production. Do not replace every element by default.\n\nReference video URL: {{reference_video}}\nRemake brief: {{replacement_brief}}\nOther asset URLs: {{asset_links}}\nVisual direction: {{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/29/293ba1c0bf75ef67d6ae4446da24718c7aadc545c0128e357685a2aff3176699.mp4",
+        "coverWidth": 1440,
+        "coverHeight": 1920
+      },
+      "extra": {
+        "collectionId": "2sf3x9ta0mio",
+        "collectionTitle": "爆款视频复刻",
+        "i18n_title": {
+          "en": "Custom Remake",
+          "ja": "カスタムリメイク",
+          "zh": "定制重制"
+        },
+        "i18n_description": {
+          "en": "1 finished reference-video remake",
+          "ja": "1つの完成したリファレンス動画リメイク",
+          "zh": "1个完成的参考视频重制"
+        },
+        "i18n_source_locale": "en",
+        "i18n_source_hash": "a7c8e130f72f724fe86dcc85e1ae8134d063fa6bc150c8b336ec8f52e4908617"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-10-10T03:24:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 76,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEwbXcylvq",
+              "tagName": "social_media",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Social Media",
+              "extra": {
+                "tagName": "social_media",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Social Media"
+                }
+              },
+              "createTime": "2026-02-10T12:25:42",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-10-10T03:24:17",
+      "spacePinned": false
+    }
+  ],
+  "collectionMemberCount": 1,
+  "collectionHasMoreMembers": false,
+  "score": 1000000003300
+}

@@ -1,0 +1,366 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pjkAQhZ0ys",
+  "title": "LinkedIn Banner",
+  "description": "Design avatar-safe LinkedIn banners",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "LinkedIn Banner",
+        "ja": "LinkedInバナー",
+        "zh": "领英封面"
+      },
+      "i18n_description": {
+        "en": "Create platform-safe LinkedIn profile and company page banners with professional positioning, brand clarity, and avatar/logo obstruction-safe layouts.",
+        "ja": "LinkedInの個人プロフィールや会社ページ向けに、職業的な印象、ブランド認知、アバター/ロゴの重なりを考慮した安全なバナーを作成します。",
+        "zh": "为 LinkedIn 个人主页和公司主页设计专业封面，兼顾职业定位、品牌识别、头像/Logo 遮挡安全区与平台展示适配。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/53/53b9d137121ff7bc5951ee6cfa8b1e57c196e7c764c764500b59a38011688883.mp4",
+      "mediaType": "video",
+      "width": 1440,
+      "height": 1080
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/2a/2a38e2088fd6807cfb906265d2394649f925f0daad3afc736f0f1f6d67f6d604.mp4",
+        "width": 960,
+        "height": 720,
+        "order": 0
+      }
+    ],
+    "bestFor": [
+      "LinkedIn Banner",
+      "LinkedIn",
+      "Profile Banner",
+      "Banner Design"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "pjk3w65Iys",
+    "versionAssetId": "pjkAQfqKUo",
+    "skillKey": "linkedin-banner-design",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/linkedin-banner-design",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "ab429bf2-3a44-4241-9cd2-f389d95989c7",
+    "skillId": "industry/linkedin-banner-design/ab429bf2-3a44-4241-9cd2-f389d95989c7",
+    "level": "S",
+    "i18n_title": {
+      "en": "LinkedIn Banner",
+      "ja": "LinkedInバナー",
+      "zh": "LinkedIn横幅"
+    },
+    "i18n_description": {
+      "en": "Design avatar-safe LinkedIn banners",
+      "ja": "アバター対応のLinkedInバナーをデザイン",
+      "zh": "设计适配头像的LinkedIn横幅"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "73e1f9a0d90f5573e456ab163b3c843304fd28bc76637107b30ca57fd1477fa5",
+    "version": "1.0.2"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-03T12:41:25",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 82,
+    "viewCount": 0,
+    "tryCount": 301,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "LinkedIn Banner",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/53/53b9d137121ff7bc5951ee6cfa8b1e57c196e7c764c764500b59a38011688883.mp4",
+  "publishTime": "2026-08-03T12:41:25",
+  "spacePinned": null,
+  "score": 0,
+  "_en": {
+    "title": "LinkedIn Banner",
+    "description": "Design avatar-safe LinkedIn banners",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "LinkedIn Banner",
+          "ja": "LinkedInバナー",
+          "zh": "领英封面"
+        },
+        "i18n_description": {
+          "en": "Create platform-safe LinkedIn profile and company page banners with professional positioning, brand clarity, and avatar/logo obstruction-safe layouts.",
+          "ja": "LinkedInの個人プロフィールや会社ページ向けに、職業的な印象、ブランド認知、アバター/ロゴの重なりを考慮した安全なバナーを作成します。",
+          "zh": "为 LinkedIn 个人主页和公司主页设计专业封面，兼顾职业定位、品牌识别、头像/Logo 遮挡安全区与平台展示适配。"
+        },
+        "i18n_prompt": {
+          "en": "",
+          "ja": "",
+          "zh": ""
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

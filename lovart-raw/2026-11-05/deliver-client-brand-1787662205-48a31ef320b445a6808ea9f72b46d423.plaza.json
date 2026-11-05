@@ -1,0 +1,408 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2oz9rjetpce8",
+  "title": "Premium Website Art Director",
+  "description": "Art-directs premium websites via a mandatory two-stage gate: a visual HTML prototype (direction boards/hero mockup) for explicit approval, then a production-ready build preserving the approved Visual DNA.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/xDokFVafesFDOmRR.webp",
+      "width": 2560,
+      "height": 1440
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/xDokFVafesFDOmRR.webp",
+        "width": 2560,
+        "height": 1440,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/wvmjoi4iboDgwhTW.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/xkIwbIpQgYLAox5O.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/ekdCTRuhdGKFcfXN.webp",
+        "width": 2048,
+        "height": 1536,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/Ona61mYRDxLMuscq.webp",
+        "width": 2048,
+        "height": 1536,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/MRVKDLfLCd1pTqh9.webp",
+        "width": 2048,
+        "height": 1536,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/k5JgAMZLHx5jgizc.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 6
+      }
+    ],
+    "bestFor": [
+      "Web designer"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Premium Website Art Director",
+        "ja": "プレミアムウェブサイト アートディレクター",
+        "zh": "高端网站艺术总监"
+      },
+      "i18n_description": {
+        "en": "Art-directs premium websites via a mandatory two-stage gate: a visual HTML prototype (direction boards/hero mockup) for explicit approval, then a production-ready build preserving the approved Visual DNA.",
+        "ja": "必須の2段階ゲートを通じてプレミアムウェブサイトをアートディレクション：明示的な承認のためのビジュアルHTMLプロトタイプ(ディレクションボード/ヒーローモックアップ)、その後承認されたビジュアルDNAを保持した本番環境対応のビルド。",
+        "zh": "通过强制性两阶段审核流程对高端网站进行艺术指导：首先制作视觉HTML原型(方向板/主视觉模型)以获得明确批准,然后构建保留已批准视觉基因的生产就绪版本。"
+      },
+      "i18n_prompt": {
+        "en": "Design a premium, art-directed website for [brand/product/purpose] targeting [audience]. First produce a visual HTML prototype (hero mockup or 2–3 direction boards) for my approval, and only after I approve the direction, build the complete production-ready responsive site.",
+        "ja": "[audience]をターゲットとする[brand/product/purpose]のためのプレミアムでアートディレクションされたウェブサイトをデザインしてください。まず私の承認のためにビジュアルHTMLプロトタイプ(ヒーローモックアップまたは2〜3つのディレクションボード)を作成し、私がディレクションを承認した後にのみ、完全な本番環境対応のレスポンシブサイトを構築してください。",
+        "zh": "为面向[audience]的[brand/product/purpose]设计一个高端艺术指导网站。首先制作一个视觉HTML原型(主视觉模型或2-3个方向板)供我审批,只有在我批准方向后,才构建完整的生产就绪响应式网站。"
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2nwdflggkt1c",
+    "versionAssetId": "2oz6dzks8g74",
+    "skillKey": "deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423",
+    "sourceVersion": "1.0.3",
+    "linkUrl": "lovart://skill/deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "df5e12c0-3b79-4b5e-a025-e2c10c7df1e9",
+    "skillId": "user-generated/deliver-client-brand-1787662205-48a31ef320b445a6808ea9f72b46d423/df5e12c0-3b79-4b5e-a025-e2c10c7df1e9",
+    "i18n_title": {
+      "en": "Premium Website Art Director",
+      "ja": "プレミアムウェブサイト アートディレクター",
+      "zh": "高端网站艺术总监"
+    },
+    "i18n_description": {
+      "en": "Art-directs premium websites via a mandatory two-stage gate: a visual HTML prototype (direction boards/hero mockup) for explicit approval, then a production-ready build preserving the approved Visual DNA.",
+      "ja": "必須の2段階ゲートを通じてプレミアムウェブサイトをアートディレクション：明示的な承認のためのビジュアルHTMLプロトタイプ(ディレクションボード/ヒーローモックアップ)、その後承認されたビジュアルDNAを保持した本番環境対応のビルド。",
+      "zh": "通过强制性两阶段审核流程对高端网站进行艺术指导：首先制作视觉HTML原型(方向板/主视觉模型)以获得明确批准,然后构建保留已批准视觉基因的生产就绪版本。"
+    },
+    "i18n_prompts": {
+      "en": "Design a premium, art-directed website for [brand/product/purpose] targeting [audience]. First produce a visual HTML prototype (hero mockup or 2–3 direction boards) for my approval, and only after I approve the direction, build the complete production-ready responsive site.",
+      "ja": "[audience]をターゲットとする[brand/product/purpose]のためのプレミアムでアートディレクションされたウェブサイトをデザインしてください。まず私の承認のためにビジュアルHTMLプロトタイプ(ヒーローモックアップまたは2〜3つのディレクションボード)を作成し、私がディレクションを承認した後にのみ、完全な本番環境対応のレスポンシブサイトを構築してください。",
+      "zh": "为面向[audience]的[brand/product/purpose]设计一个高端艺术指导网站。首先制作一个视觉HTML原型(主视觉模型或2-3个方向板)供我审批,只有在我批准方向后,才构建完整的生产就绪响应式网站。"
+    },
+    "i18n_source_hash": "69641e48acdb89744deb492cb7fc8390a4a4efae28b567f1a33626d19c38d19c",
+    "i18n_source_locale": "en",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-05T10:27:56",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 137,
+    "viewCount": 0,
+    "tryCount": 426,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFcUzQIgKs",
+      "tagName": "website",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Website",
+      "extra": {
+        "tagName": "website",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Website"
+        }
+      },
+      "createTime": "2026-03-20T06:55:03",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Premium Website Art Director",
+  "skillCover": "https://a.lovart.ai/artifacts/user/xDokFVafesFDOmRR.webp",
+  "publishTime": "2026-09-05T10:27:56",
+  "spacePinned": null,
+  "score": 0,
+  "_en": {
+    "title": "Premium Website Art Director",
+    "description": "Art-directs premium websites via a mandatory two-stage gate: a visual HTML prototype (direction boards/hero mockup) for explicit approval, then a production-ready build preserving the approved visual DNA.",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "Premium Website Art Director",
+          "ja": "プレミアムウェブサイト アートディレクター",
+          "zh": "高端网站艺术总监"
+        },
+        "i18n_description": {
+          "en": "Art-directs premium websites via a mandatory two-stage gate: a visual HTML prototype (direction boards/hero mockup) for explicit approval, then a production-ready build preserving the approved visual DNA.",
+          "ja": "必須の2段階ゲートを通じてプレミアムウェブサイトをアートディレクション：明示的な承認のためのビジュアルHTMLプロトタイプ(ディレクションボード/ヒーローモックアップ)、その後承認されたビジュアルDNAを保持した本番環境対応のビルド。",
+          "zh": "通过强制性两阶段审核流程对高端网站进行艺术指导：首先制作视觉HTML原型(方向板/主视觉模型)以获得明确批准,然后构建保留已批准视觉基因的生产就绪版本。"
+        },
+        "i18n_prompt": {
+          "en": "Design a premium, art-directed website for [brand/product/purpose] targeting [audience]. First produce a visual HTML prototype (hero mockup or 2–3 direction boards) for my approval, and only after I approve the direction, build the complete production-ready responsive site.",
+          "ja": "[audience]をターゲットとする[brand/product/purpose]のためのプレミアムでアートディレクションされたウェブサイトをデザインしてください。まず私の承認のためにビジュアルHTMLプロトタイプ(ヒーローモックアップまたは2〜3つのディレクションボード)を作成し、私がディレクションを承認した後にのみ、完全な本番環境対応のレスポンシブサイトを構築してください。",
+          "zh": "为面向[audience]的[brand/product/purpose]设计一个高端艺术指导网站。首先制作一个视觉HTML原型(主视觉模型或2-3个方向板)供我审批,只有在我批准方向后,才构建完整的生产就绪响应式网站。"
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

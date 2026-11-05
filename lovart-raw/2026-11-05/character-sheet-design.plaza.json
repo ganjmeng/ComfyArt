@@ -1,0 +1,318 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pdZIplhfHO",
+  "title": "Character Sheet Design",
+  "description": "Create turnarounds, poses, and variants",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/5d/5d14f1d149fb031d4f29e7da6a656bde7d5f7edec20e8ab8be3f4820ef67218b.mp4",
+      "mediaType": "video",
+      "width": 960,
+      "height": 718
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/21/217d23c37176c6690675d776259f3637d9d3dd0c350c3bec01113331bf80170e.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/41/412bd0480dc4f5e69b13510d64d6b3c59b941416e9a49a50fb5dd5677420e20e.webp",
+        "width": 1536,
+        "height": 1024,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/19/19bb01a6164f5f62f1b234ca33fcb87e866c08d7e6ca70b81e07a921dff0e3e0.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/a6/a669ff97f74ea4a39df49a79b599518d906d0b51103248333473dda3b13f231b.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/23/23284681cce003eaec7363d59fa30745ca386d64d90258030525e648f5b585f7.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/8e/8e391058393f4b8b6c73420b1be32279cd6bfd5e47fc1609c95339fd7b9218a5.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 5
+      }
+    ],
+    "bestFor": [
+      "Character Design",
+      "Character Turnaround",
+      "Character Concept Art",
+      "Character Sheet",
+      "Character Reference"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "oDBuEFVFU4",
+    "versionAssetId": "pdZIpebpYI",
+    "skillKey": "character-sheet-design",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/character-sheet-design",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "ca82d5a7-ac14-4365-848e-bb6bbf6c1e5c",
+    "skillId": "industry/character-sheet-design/ca82d5a7-ac14-4365-848e-bb6bbf6c1e5c",
+    "level": "S",
+    "i18n_title": {
+      "en": "Character Sheet Design",
+      "ja": "キャラクターシートデザイン",
+      "zh": "角色设定表设计"
+    },
+    "i18n_description": {
+      "en": "Create turnarounds, poses, and variants",
+      "ja": "ターンアラウンド、ポーズ、バリエーションを作成",
+      "zh": "创建角色转身图、姿势和变体"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "d367168649d6ce467f0f53aaaf0323996551ef96b207bce370ae3a805e4799c2",
+    "version": "1.0.13"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-07-31T07:31:14",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 872,
+    "viewCount": 0,
+    "tryCount": 2913,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Character Sheet Design",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/5d/5d14f1d149fb031d4f29e7da6a656bde7d5f7edec20e8ab8be3f4820ef67218b.mp4",
+  "publishTime": "2026-07-31T07:31:14",
+  "spacePinned": false,
+  "score": 1000000000010
+}

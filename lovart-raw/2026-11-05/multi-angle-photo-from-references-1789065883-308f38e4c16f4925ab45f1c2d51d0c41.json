@@ -1,0 +1,340 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2porqzqzmeww",
+  "title": "Multi-Angle Photography from References",
+  "description": "Turn reference images of people, characters, cars, or products into a consistent photography series. Explore close-ups, wide shots, overhead views, low angles, and creative editorial perspectives while preserving identity, clothing, and product details.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Multi-Angle Photography from References",
+        "ja": "参考画像からのマルチアングル撮影",
+        "zh": "基于参考图的多角度摄影"
+      },
+      "i18n_description": {
+        "en": "Generate consistent multi-angle product, automotive, or human editorial photographs from a few reference images, preserving identity and details across every viewpoint.",
+        "ja": "数枚の参考画像から、アイデンティティとディテールをすべての視点で保持した、一貫性のあるマルチアングルの製品、自動車、または人物のエディトリアル写真を生成します。",
+        "zh": "从少量参考图像生成一致的多角度产品、汽车或人物编辑摄影作品，在每个视角中保持身份特征和细节。"
+      },
+      "i18n_prompt": {
+        "en": "Upload your reference images of a [product / car / person], then I will generate [six] consistent [camera angles / editorial shots] preserving identity and details across every frame.",
+        "ja": "[製品 / 車 / 人物]の参考画像をアップロードしてください。その後、アイデンティティとディテールをすべてのフレームで保持した[6つ]の一貫性のある[カメラアングル / エディトリアルショット]を生成します。",
+        "zh": "上传您的[产品 / 汽车 / 人物]参考图像，然后我将生成[六个]一致的[相机角度 / 编辑拍摄]，在每一帧中保持身份特征和细节。"
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "video",
+      "url": "https://a.lovart.ai/artifacts/user/JtnvF37N43LwS91S.mp4",
+      "width": 1920,
+      "height": 1080
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/I3z9CMnBURLUxnms.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/edc5qduKZrCmMgOZ.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/7RK2FNHl9q4AC0hP.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/86IsG7kW8p5Zxj65.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/EQY8Kgkpy6Eh9vSh.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/mgheje3cUiHiIRZW.webp",
+        "width": 1088,
+        "height": 1920,
+        "order": 5
+      }
+    ],
+    "bestFor": [
+      "Multi-angle photography",
+      "Reference-based imagery",
+      "Character consistency",
+      "Product photography",
+      "Editorial portraits",
+      "Automotive photography"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2piccz14qgw0",
+    "versionAssetId": "2piccz9behog",
+    "skillKey": "multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "fd6515e2-1581-4026-9753-a19746c408a8",
+    "skillId": "user-generated/multi-angle-photo-from-references-1789065883-308f38e4c16f4925ab45f1c2d51d0c41/fd6515e2-1581-4026-9753-a19746c408a8",
+    "i18n_title": {
+      "en": "Multi-Angle Photography from References",
+      "ja": "参考画像から多角度撮影",
+      "zh": "参考图片多角度摄影"
+    },
+    "i18n_description": {
+      "en": "Turn reference images of people, characters, cars, or products into a consistent photography series. Explore close-ups, wide shots, overhead views, low angles, and creative editorial perspectives while preserving identity, clothing, and product details.",
+      "ja": "人物、キャラクター、車、製品の参考画像を一貫性のある写真シリーズに変換します。クローズアップ、ワイドショット、俯瞰、ローアングル、クリエイティブなエディトリアル視点を探求しながら、アイデンティティ、衣服、製品の詳細を保持します。",
+      "zh": "将人物、角色、汽车或产品的参考图片转换为一致的摄影系列。探索特写、广角、俯拍、低角度和创意编辑视角,同时保留身份、服装和产品细节。"
+    },
+    "i18n_prompts": {
+      "en": "Upload your reference images of a [product / car / person], then I will generate [six] consistent [camera angles / editorial shots] preserving identity and details across every frame.",
+      "ja": "[製品 / 車 / 人物]の参考画像をアップロードしてください。その後、アイデンティティとディテールをすべてのフレームで保持した[6つ]の一貫性のある[カメラアングル / エディトリアルショット]を生成します。",
+      "zh": "上传您的[产品 / 汽车 / 人物]参考图像，然后我将生成[六个]一致的[相机角度 / 编辑拍摄]，在每一帧中保持身份特征和细节。"
+    },
+    "i18n_source_hash": "4dd2daacf30e5da7461807a96f188f43dbcb34aafbeac6ebc93f7023e118b881",
+    "i18n_source_locale": "en",
+    "level": "B"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-12T13:58:37",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 44,
+    "viewCount": 0,
+    "tryCount": 38,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Multi-Angle Photography from References",
+  "skillCover": "https://a.lovart.ai/artifacts/user/JtnvF37N43LwS91S.mp4",
+  "publishTime": "2026-09-12T13:58:37",
+  "spacePinned": false,
+  "score": 0
+}

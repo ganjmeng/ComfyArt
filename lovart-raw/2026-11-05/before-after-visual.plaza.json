@@ -1,0 +1,342 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "piJzhKn9U4",
+  "title": "Before & After Visual",
+  "description": "Turn changes into compelling proof",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Before & After Visual",
+        "ja": "ビフォー・アフター・ビジュアル",
+        "zh": "前后对比"
+      },
+      "i18n_description": {
+        "en": "Create credible image-first Before/After visuals for products, people, skin, spaces, materials, emotions, and competitors, with fair comparisons, clear proof, and optional slider videos.",
+        "ja": "商品、人物、肌、空間、素材、感情の変化、または競合比較を対象に、信頼性の高い画像中心のビフォー・アフター表現を制作します。公平で一貫した比較、明確な変化の根拠、オプションのスライダー動画によって、改善・修復・違いを直感的に伝えます。",
+        "zh": "为产品、人物、皮肤、空间、材质、情绪状态或竞品生成可信的图片型前后对比视觉，通过公平一致的对照方式、清晰的变化证据和可选滑动视频，直观展示优化、修复或差异。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/05/05797152cbd6d4b2f9fdc4359556ca8c4037f163e18caadb74aebb8ae39e7168.mp4",
+      "mediaType": "video",
+      "width": 640,
+      "height": 480
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/58/58aef6534f1515522e1b0c52ef68fe22bb6cc0dfde4abd186fff39ab33606695.webp",
+        "width": 1600,
+        "height": 2000,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/79/79a86396c7dfc3094ccbd18c0e7a1eccace3f23ebd7a4a6ca6505e22f894e79c.webp",
+        "width": 1600,
+        "height": 2000,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/46/46bc242e00bc28ef9a2b2f5c1e815c71f53c9413918f35218a33eca356a111a8.webp",
+        "width": 1600,
+        "height": 2000,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/93/939456aa18c0f59b71f0ac5c83fadb86bccce78ad91909e16eac4410882046b8.webp",
+        "width": 1600,
+        "height": 2000,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/bb/bb6bd116a1fc3b7896a248d248b0dbcc927cab4fca2db0dbe4f6d41846b7bb46.webp",
+        "width": 1600,
+        "height": 2000,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/12/12f56ff0cc4f0b386465d71b7f14c87ba24c092c3dcf90af2b7a062e480e8d9f.webp",
+        "width": 1600,
+        "height": 2000,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/22/22bc8f5edc7675843fd25923b04298fbd70a41c7d2c7121f7b0f46d637525d83.webp",
+        "width": 1122,
+        "height": 1402,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/da/da78a41f54fab7f6895029f9f63f337f5fa0695c472c7d3a06456b23bdada98a.webp",
+        "width": 1600,
+        "height": 2000,
+        "order": 7
+      }
+    ],
+    "bestFor": [],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "oVVJBPaN0Y",
+    "versionAssetId": "piJzhGXXhe",
+    "skillKey": "before-after-visual",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/before-after-visual",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "0a5d5311-a95b-419e-87ce-e1c8e5b7ab32",
+    "skillId": "industry/before-after-visual/0a5d5311-a95b-419e-87ce-e1c8e5b7ab32",
+    "level": "S",
+    "i18n_title": {
+      "en": "Before & After Visual",
+      "ja": "ビフォー＆アフタービジュアル",
+      "zh": "前后对比视觉"
+    },
+    "i18n_description": {
+      "en": "Turn changes into compelling proof",
+      "ja": "変化を説得力のある証拠に変える",
+      "zh": "将变化转化为有力证明"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "5c7a49b71cfa057465a2181b35fd98f0e4f7ba4a7cafc01fb2406525a37c40e7",
+    "version": "1.0.15"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-03T04:03:18",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 238,
+    "viewCount": 0,
+    "tryCount": 730,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Before & After Visual",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/05/05797152cbd6d4b2f9fdc4359556ca8c4037f163e18caadb74aebb8ae39e7168.mp4",
+  "publishTime": "2026-08-03T04:03:18",
+  "spacePinned": null,
+  "score": 0
+}

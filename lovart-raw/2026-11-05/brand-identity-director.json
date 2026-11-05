@@ -1,0 +1,1639 @@
+{
+  "itemType": "collection_card",
+  "itemId": "2quhxjqfm680",
+  "title": "Logo 系统",
+  "description": "探索标志方向，完善统一的品牌标识",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "i18n": {
+      "zh": {
+        "title": "Logo 系统",
+        "description": "探索标志方向，完善统一的品牌标识",
+        "ctaText": "开始制作"
+      },
+      "en": {
+        "title": "Logo System",
+        "description": "Explore logo concepts and develop a consistent brand identity.",
+        "ctaText": "Create now"
+      }
+    },
+    "bind": {
+      "type": "SKILL",
+      "source": "PLAZA",
+      "skillKey": "brand-identity-director",
+      "skillAssetId": "oyheOOcIo0",
+      "sourceVersion": "1.0.29",
+      "skillId": "industry/brand-identity-director/f33cdffb-0dea-4d08-a48c-19686dac61ed",
+      "namespace": "industry",
+      "skillType": "pgc",
+      "linkUrl": "lovart://skill/brand-identity-director",
+      "versionId": "f33cdffb-0dea-4d08-a48c-19686dac61ed",
+      "versionAssetId": "pe2Osrk2AM",
+      "plazaItemId": "pe2OsxQJfW"
+    },
+    "cover": "https://a.lovart.ai/asset/showcase-cover/202609/9ce473776fd94d2d968a258d69c2acc6.png",
+    "coverWidth": 1280,
+    "coverHeight": 960
+  },
+  "extra": {
+    "i18n_title": {
+      "en": "Logo System",
+      "ja": "ロゴシステム",
+      "zh": "标志系统"
+    },
+    "i18n_description": {
+      "en": "Explore logo concepts and develop a consistent brand identity.",
+      "ja": "ロゴのコンセプトを探求し、一貫したブランドアイデンティティを構築します。",
+      "zh": "探索标志概念并建立一致的品牌形象。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "787b3183aa56f1c52e98ad6b8759e2d81c4c8fae60ec4a2bcde630a564bb7acb"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-24T06:38:12",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 125,
+    "viewCount": 0,
+    "tryCount": 0,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEw9xRyJEY",
+      "tagName": "branding",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Branding",
+      "extra": {
+        "tagName": "branding",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Branding"
+        }
+      },
+      "createTime": "2026-02-10T12:25:09",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": null,
+  "skillCover": null,
+  "publishTime": "2026-09-24T06:38:12",
+  "spacePinned": false,
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy2r7rta8",
+      "title": "餐饮服务",
+      "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "餐饮服务",
+            "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Food Service",
+            "description": "3 logo concept proposal boards + 1 selected logo system board",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/8ed4cdc1559c4a9f9b2e44c95f24dd90.png",
+            "coverWidth": 360,
+            "coverHeight": 360
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/7447769c773444d59eede56c61bc769a.png",
+            "coverWidth": 360,
+            "coverHeight": 360
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/c6c429a5f5794168b7ecbaf3d1456338.png",
+            "coverWidth": 360,
+            "coverHeight": 360
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/d18cf5f0cc0e4cbea23e588043df059a.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "brand-identity-director",
+          "skillAssetId": "oyheOOcIo0",
+          "sourceVersion": "1.0.29",
+          "skillId": "industry/brand-identity-director/f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/brand-identity-director",
+          "versionId": "f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "versionAssetId": "pe2Osrk2AM",
+          "plazaItemId": "pe2OsxQJfW"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "brand_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "品牌资料",
+                  "placeholder": "简要说明品牌名称与主要业务；已有品牌定位或确认文案可一并补充。"
+                },
+                "en": {
+                  "title": "Brand information",
+                  "placeholder": "Briefly state the brand name and business. Add existing positioning or approved copy if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材"
+                },
+                "en": {
+                  "title": "Brand assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 3 张餐饮服务品牌 Logo 方向提案，依据已确认的品牌方向展开；选定其一后制作 1 张 Logo 系统板，展示主标志、组合关系、黑白版本和基本使用关系。准确保留品牌文字，已有标志须按授权范围继承。 品牌名称与资料以实际制作对象为准。\n\n{{brand_info}}\n{{visual_direction}}",
+            "en": "Create 3 logo concept proposal boards for a Food Service brand, based on the confirmed brand direction. After one concept is selected, create 1 logo system board showing the primary mark, lockups, black-and-white versions, and basic usage relationships. Preserve the exact brand wording. Reuse any existing logo only within the authorized scope. Use the actual brand name and information for the project.\n\n{{brand_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/496ef56160fe41bf84d48833688f1582.png",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2quhxjqfm680",
+        "collectionTitle": "Logo 系统",
+        "i18n_title": {
+          "en": "Food & Beverage Services",
+          "ja": "飲食サービス",
+          "zh": "餐饮服务"
+        },
+        "i18n_description": {
+          "en": "3 Logo direction proposals + 1 selected Logo system board",
+          "ja": "ロゴ方向提案3案+選定ロゴシステムボード1案",
+          "zh": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "ea2881bdc1385c4cc86c3f9b54cf3efa65d14b50feb5d65b00e827dfd6f3cb6b"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:22",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 2,
+        "viewCount": 0,
+        "tryCount": 145,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:22",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy2ra9pmo",
+      "title": "服装配饰",
+      "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "服装配饰",
+            "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Fashion & Accessories",
+            "description": "3 logo concept proposal boards + 1 selected logo system board",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/591542822b21495382a811b4a7f65153.png",
+            "coverWidth": 1280,
+            "coverHeight": 1280
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/189cce329b97428f9004fc077780a213.png",
+            "coverWidth": 1280,
+            "coverHeight": 1280
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/f03caa20511d4eab88d4e44d92767e92.png",
+            "coverWidth": 1280,
+            "coverHeight": 1280
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/05e6f826e618439ba02da0aa6b57b8d5.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "brand-identity-director",
+          "skillAssetId": "oyheOOcIo0",
+          "sourceVersion": "1.0.29",
+          "skillId": "industry/brand-identity-director/f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/brand-identity-director",
+          "versionId": "f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "versionAssetId": "pe2Osrk2AM",
+          "plazaItemId": "pe2OsxQJfW"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "brand_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "品牌资料",
+                  "placeholder": "简要说明品牌名称与主要业务；已有品牌定位或确认文案可一并补充。"
+                },
+                "en": {
+                  "title": "Brand information",
+                  "placeholder": "Briefly state the brand name and business. Add existing positioning or approved copy if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材"
+                },
+                "en": {
+                  "title": "Brand assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 3 张服装配饰品牌 Logo 方向提案，依据已确认的品牌方向展开；选定其一后制作 1 张 Logo 系统板，展示主标志、组合关系、黑白版本和基本使用关系。准确保留品牌文字，已有标志须按授权范围继承。 品牌名称与资料以实际制作对象为准。\n\n{{brand_info}}\n{{visual_direction}}",
+            "en": "Create 3 logo concept proposal boards for a Fashion & Accessories brand, based on the confirmed brand direction. After one concept is selected, create 1 logo system board showing the primary mark, lockups, black-and-white versions, and basic usage relationships. Preserve the exact brand wording. Reuse any existing logo only within the authorized scope. Use the actual brand name and information for the project.\n\n{{brand_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/dcf02dd8f9214b038116191fb6bc350a.png",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2quhxjqfm680",
+        "collectionTitle": "Logo 系统",
+        "i18n_title": {
+          "en": "Apparel & Accessories",
+          "ja": "アパレル・アクセサリー",
+          "zh": "服装配饰"
+        },
+        "i18n_description": {
+          "en": "3 Logo direction proposals + 1 selected Logo system board",
+          "ja": "ロゴ方向性提案3案＋選定ロゴシステムボード1案",
+          "zh": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "125d8f3b36c45549b181dd41dcd45fab35c6250be0dc74c4efc3fb3157881998"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:22",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 1,
+        "viewCount": 0,
+        "tryCount": 127,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:22",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy2ra9z40",
+      "title": "美妆个护",
+      "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "美妆个护",
+            "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Beauty & Personal Care",
+            "description": "3 logo concept proposal boards + 1 selected logo system board",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/baaeacd18fc44bfdad993ba1110db137.png",
+            "coverWidth": 679,
+            "coverHeight": 725
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/325f6e0afa69483289df31932da6fccf.png",
+            "coverWidth": 565,
+            "coverHeight": 738
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/75600b1436f34a169499b7012114c15e.png",
+            "coverWidth": 641,
+            "coverHeight": 719
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/0fdf5e4bd9674d09b8bb04603a59bac0.jpeg",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "brand-identity-director",
+          "skillAssetId": "oyheOOcIo0",
+          "sourceVersion": "1.0.29",
+          "skillId": "industry/brand-identity-director/f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/brand-identity-director",
+          "versionId": "f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "versionAssetId": "pe2Osrk2AM",
+          "plazaItemId": "pe2OsxQJfW"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "brand_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "品牌资料",
+                  "placeholder": "简要说明品牌名称与主要业务；已有品牌定位或确认文案可一并补充。"
+                },
+                "en": {
+                  "title": "Brand information",
+                  "placeholder": "Briefly state the brand name and business. Add existing positioning or approved copy if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材"
+                },
+                "en": {
+                  "title": "Brand assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 3 张美妆个护品牌 Logo 方向提案，依据已确认的品牌方向展开；选定其一后制作 1 张 Logo 系统板，展示主标志、组合关系、黑白版本和基本使用关系。准确保留品牌文字，已有标志须按授权范围继承。 品牌名称与资料以实际制作对象为准。\n\n{{brand_info}}\n{{visual_direction}}",
+            "en": "Create 3 logo concept proposal boards for a Beauty & Personal Care brand, based on the confirmed brand direction. After one concept is selected, create 1 logo system board showing the primary mark, lockups, black-and-white versions, and basic usage relationships. Preserve the exact brand wording. Reuse any existing logo only within the authorized scope. Use the actual brand name and information for the project.\n\n{{brand_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/c7ca1da64d7541da9496b2a076812501.jpeg",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2quhxjqfm680",
+        "collectionTitle": "Logo 系统",
+        "i18n_title": {
+          "en": "Beauty & Personal Care",
+          "ja": "美容・パーソナルケア",
+          "zh": "美妆个护"
+        },
+        "i18n_description": {
+          "en": "3 Logo direction proposals + 1 selected Logo system board",
+          "ja": "ロゴ方向性提案3枚＋選定ロゴシステムボード1枚",
+          "zh": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "c96c42fead5cf81333b2f4483582925690ec3e4a88bdc000b1769dcdaa91353c"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:22",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 45,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:22",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy2rcrvgg",
+      "title": "食品饮料",
+      "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "食品饮料",
+            "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Food & Beverage",
+            "description": "3 logo concept proposal boards + 1 selected logo system board",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/4bd8436151f6483fa7686dc258d89235.png",
+            "coverWidth": 1280,
+            "coverHeight": 1280
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/5750e983ba7145d685f5c960a743918e.png",
+            "coverWidth": 360,
+            "coverHeight": 360
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/ef28538216fe48b296e4ebc3a43e4d69.png",
+            "coverWidth": 360,
+            "coverHeight": 360
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/f2b385aad39f4ef1b9331f8481b95365.png",
+            "coverWidth": 360,
+            "coverHeight": 202
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "brand-identity-director",
+          "skillAssetId": "oyheOOcIo0",
+          "sourceVersion": "1.0.29",
+          "skillId": "industry/brand-identity-director/f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/brand-identity-director",
+          "versionId": "f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "versionAssetId": "pe2Osrk2AM",
+          "plazaItemId": "pe2OsxQJfW"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "brand_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "品牌资料",
+                  "placeholder": "简要说明品牌名称与主要业务；已有品牌定位或确认文案可一并补充。"
+                },
+                "en": {
+                  "title": "Brand information",
+                  "placeholder": "Briefly state the brand name and business. Add existing positioning or approved copy if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材"
+                },
+                "en": {
+                  "title": "Brand assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 3 张食品饮料品牌 Logo 方向提案，依据已确认的品牌方向展开；选定其一后制作 1 张 Logo 系统板，展示主标志、组合关系、黑白版本和基本使用关系。准确保留品牌文字，已有标志须按授权范围继承。 品牌名称与资料以实际制作对象为准。\n\n{{brand_info}}\n{{visual_direction}}",
+            "en": "Create 3 logo concept proposal boards for a Food & Beverage brand, based on the confirmed brand direction. After one concept is selected, create 1 logo system board showing the primary mark, lockups, black-and-white versions, and basic usage relationships. Preserve the exact brand wording. Reuse any existing logo only within the authorized scope. Use the actual brand name and information for the project.\n\n{{brand_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/a3c306bb52f4426fac6ab020a14805c2.png",
+        "coverWidth": 360,
+        "coverHeight": 202
+      },
+      "extra": {
+        "collectionId": "2quhxjqfm680",
+        "collectionTitle": "Logo 系统",
+        "i18n_title": {
+          "en": "Food & Beverage",
+          "ja": "食品飲料",
+          "zh": "食品饮料"
+        },
+        "i18n_description": {
+          "en": "3 Logo direction proposals + 1 selected Logo system board",
+          "ja": "ロゴ方向提案3案＋選定ロゴシステムボード1案",
+          "zh": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "5ccfa04a9be7aa938986c8a76552fdaaa4237f6edc74a33752da3c21cb5f78fc"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:22",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 56,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:22",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy40zwtfk",
+      "title": "宠物用品",
+      "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "宠物用品",
+            "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Pet Supplies",
+            "description": "3 logo concept proposal boards + 1 selected logo system board",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/ce7bfb3d907c49beb95527118811a624.png",
+            "coverWidth": 360,
+            "coverHeight": 360
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/76ba73bb04e744a69c7e4eae262698ea.png",
+            "coverWidth": 1254,
+            "coverHeight": 1254
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/70f16cb2cb1c440baca2287eb2249dd5.png",
+            "coverWidth": 1254,
+            "coverHeight": 1254
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/c897ce69cbf74289895411ec526d5b90.png",
+            "coverWidth": 1280,
+            "coverHeight": 1280
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "brand-identity-director",
+          "skillAssetId": "oyheOOcIo0",
+          "sourceVersion": "1.0.29",
+          "skillId": "industry/brand-identity-director/f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/brand-identity-director",
+          "versionId": "f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "versionAssetId": "pe2Osrk2AM",
+          "plazaItemId": "pe2OsxQJfW"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "brand_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "品牌资料",
+                  "placeholder": "简要说明品牌名称与主要业务；已有品牌定位或确认文案可一并补充。"
+                },
+                "en": {
+                  "title": "Brand information",
+                  "placeholder": "Briefly state the brand name and business. Add existing positioning or approved copy if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材"
+                },
+                "en": {
+                  "title": "Brand assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 3 张宠物用品品牌 Logo 方向提案，依据已确认的品牌方向展开；选定其一后制作 1 张 Logo 系统板，展示主标志、组合关系、黑白版本和基本使用关系。准确保留品牌文字，已有标志须按授权范围继承。 品牌名称与资料以实际制作对象为准。\n\n{{brand_info}}\n{{visual_direction}}",
+            "en": "Create 3 logo concept proposal boards for a Pet Supplies brand, based on the confirmed brand direction. After one concept is selected, create 1 logo system board showing the primary mark, lockups, black-and-white versions, and basic usage relationships. Preserve the exact brand wording. Reuse any existing logo only within the authorized scope. Use the actual brand name and information for the project.\n\n{{brand_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/8d42bc26060540d2a096c1f0167752d8.png",
+        "coverWidth": 1280,
+        "coverHeight": 1280
+      },
+      "extra": {
+        "collectionId": "2quhxjqfm680",
+        "collectionTitle": "Logo 系统",
+        "i18n_title": {
+          "en": "Pet Supplies",
+          "ja": "ペット用品",
+          "zh": "宠物用品"
+        },
+        "i18n_description": {
+          "en": "3 Logo direction proposals + 1 selected Logo system board",
+          "ja": "ロゴ方向提案3案 + 選定ロゴシステムボード1案",
+          "zh": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "4379a09f1cff12f626f0703864610b22b2685a41890a8fac3751a650bfbc025c"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:23",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 44,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:23",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy40xf6kg",
+      "title": "家居生活",
+      "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "家居生活",
+            "description": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Home & Lifestyle",
+            "description": "3 logo concept proposal boards + 1 selected logo system board",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/a3c3884f58564614a243a408f6f6cf68.png",
+            "coverWidth": 360,
+            "coverHeight": 240
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/707773424a4a446a94db43d1c41cbab1.png",
+            "coverWidth": 360,
+            "coverHeight": 240
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/c2c8c0fd6105467eae2cb111542317a0.png",
+            "coverWidth": 360,
+            "coverHeight": 240
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/3245dd6a185f4a96bad05259f41b73d2.png",
+            "coverWidth": 360,
+            "coverHeight": 202
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "brand-identity-director",
+          "skillAssetId": "oyheOOcIo0",
+          "sourceVersion": "1.0.29",
+          "skillId": "industry/brand-identity-director/f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/brand-identity-director",
+          "versionId": "f33cdffb-0dea-4d08-a48c-19686dac61ed",
+          "versionAssetId": "pe2Osrk2AM",
+          "plazaItemId": "pe2OsxQJfW"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "brand_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "品牌资料",
+                  "placeholder": "简要说明品牌名称与主要业务；已有品牌定位或确认文案可一并补充。"
+                },
+                "en": {
+                  "title": "Brand information",
+                  "placeholder": "Briefly state the brand name and business. Add existing positioning or approved copy if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材"
+                },
+                "en": {
+                  "title": "Brand assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 3 张家居生活品牌 Logo 方向提案，依据已确认的品牌方向展开；选定其一后制作 1 张 Logo 系统板，展示主标志、组合关系、黑白版本和基本使用关系。准确保留品牌文字，已有标志须按授权范围继承。 品牌名称与资料以实际制作对象为准。\n\n{{brand_info}}\n{{visual_direction}}",
+            "en": "Create 3 logo concept proposal boards for a Home & Lifestyle brand, based on the confirmed brand direction. After one concept is selected, create 1 logo system board showing the primary mark, lockups, black-and-white versions, and basic usage relationships. Preserve the exact brand wording. Reuse any existing logo only within the authorized scope. Use the actual brand name and information for the project.\n\n{{brand_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/b26aea3eb93c49ff91d71534c323c9e2.png",
+        "coverWidth": 360,
+        "coverHeight": 202
+      },
+      "extra": {
+        "collectionId": "2quhxjqfm680",
+        "collectionTitle": "Logo 系统",
+        "i18n_title": {
+          "en": "Home Living",
+          "ja": "ホームリビング",
+          "zh": "家居生活"
+        },
+        "i18n_description": {
+          "en": "3 Logo Direction Proposals + 1 Selected Logo System Board",
+          "ja": "ロゴ方向提案3点＋選定ロゴシステムボード1点",
+          "zh": "Logo 方向提案 3 张＋选定 Logo 系统板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "37e6ebc215ee4b94fd7e450f0ef8f27b150264d6c77f0576bb16a256ad031c89"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:23",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 86,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:23",
+      "spacePinned": false
+    }
+  ],
+  "collectionMemberCount": 6,
+  "collectionHasMoreMembers": false
+}

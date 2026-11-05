@@ -1,0 +1,387 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2pd1riq0c8w0",
+  "title": "Animated Poster Maker",
+  "description": "Turn a written concept, reference image, static poster, photograph, illustration, or brand assets into one finished animated poster — establish a strong static composition first, then add restrained, purposeful motion (one primary motion + up to two supporting) through subject movement, depth/camera, typography reveals, and light/material effects. Use whenever the user wants an animated / motion / looping / cinemagraph-style poster, event visual, title card, social cover, exhibition graphic, music artwork, or editorial motion poster, even if they don't say \"poster\" (e.g. \"make this poster move\", \"animate this cover\", \"looping motion graphic of this design\"). Do not use for narrative short films, talking-head videos, complex character animation, or random image movement.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "video",
+      "url": "https://a.lovart.ai/artifacts/agent/cE4BXL3ZraL26oZD.mp4",
+      "width": 834,
+      "height": 1112
+    },
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/artifacts/agent/yOqSHnaULk4Hj9Ea.mp4",
+        "width": 834,
+        "height": 1112,
+        "order": 0
+      },
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/artifacts/agent/ZBgzGX2prz5gM2P1.mp4",
+        "width": 834,
+        "height": 1112,
+        "order": 1
+      },
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/artifacts/agent/cE4BXL3ZraL26oZD.mp4",
+        "width": 834,
+        "height": 1112,
+        "order": 2
+      },
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/artifacts/agent/kexNImfd7xLrE2Lt.mp4",
+        "width": 834,
+        "height": 1112,
+        "order": 3
+      }
+    ],
+    "bestFor": [
+      "Animated Poster"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Animated Poster Maker",
+        "ja": "アニメーションポスター作成",
+        "zh": "动态海报制作器"
+      },
+      "i18n_description": {
+        "en": "Turn a written concept, reference image, static poster, photograph, illustration, or brand assets into one finished animated poster — establish a strong static composition first, then add restrained, purposeful motion (one primary motion + up to two supporting) through subject movement, depth/camera, typography reveals, and light/material effects. Use whenever the user wants an animated / motion / looping / cinemagraph-style poster, event visual, title card, social cover, exhibition graphic, music artwork, or editorial motion poster, even if they don't say \"poster\" (e.g. \"make this poster move\", \"animate this cover\", \"looping motion graphic of this design\"). Do not use for narrative short films, talking-head videos, complex character animation, or random image movement.",
+        "ja": "文章によるコンセプト、参考画像、静止ポスター、写真、イラスト、ブランド資産を1つの完成したアニメーションポスターに変換します — まず強力な静止構図を確立し、次に被写体の動き、奥行き/カメラ、タイポグラフィの表示、光/素材エフェクトを通じて抑制された目的のある動き(1つの主要な動き+最大2つの補助)を追加します。ユーザーがアニメーション/モーション/ループ/シネマグラフ風のポスター、イベントビジュアル、タイトルカード、ソーシャルカバー、展示グラフィック、音楽アートワーク、エディトリアルモーションポスターを求めている場合は常に使用してください。「ポスター」と言わなくても構いません(例:「このポスターを動かして」、「このカバーをアニメーション化して」、「このデザインのループモーショングラフィック」)。ナラティブ短編映画、トーキングヘッド動画、複雑なキャラクターアニメーション、ランダムな画像の動きには使用しないでください。",
+        "zh": "将文字概念、参考图像、静态海报、照片、插图或品牌资产转换为一个完成的动态海报 — 首先建立强有力的静态构图,然后通过主体运动、景深/镜头、文字显示和光影/材质效果添加克制的、有目的的动作(一个主要动作+最多两个辅助动作)。当用户想要动画/运动/循环/电影图风格的海报、活动视觉、标题卡、社交封面、展览图形、音乐艺术作品或编辑运动海报时使用,即使他们没有说\"海报\"(例如:\"让这张海报动起来\"、\"为这个封面添加动画\"、\"这个设计的循环动态图形\")。不要用于叙事短片、说话头视频、复杂角色动画或随机图像运动。"
+      },
+      "i18n_prompt": {
+        "en": "Turn [this poster / this concept: …] into an animated poster: keep the design and text intact, add [one primary motion, e.g. slow push-in / drifting fabric / light sweep], 3:4 portrait, 6-second seamless loop, silent MP4.",
+        "ja": "[このポスター / このコンセプト: …]をアニメーションポスターに変換:デザインとテキストをそのまま保ち、[1つの主要な動き、例:ゆっくりなプッシュイン / 漂う布 / 光のスイープ]を追加、3:4縦向き、6秒のシームレスループ、無音MP4。",
+        "zh": "将[这张海报 / 这个概念:…]转换为动态海报:保持设计和文字不变,添加[一个主要动作,例如:缓慢推进 / 飘动的布料 / 光线扫过],3:4竖版,6秒无缝循环,静音MP4。"
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2pd0y2fufklc",
+    "versionAssetId": "2pd0y2ntlwcg",
+    "skillKey": "animated-poster-maker-1788937137-48a31ef320b445a6808ea9f72b46d423",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/animated-poster-maker-1788937137-48a31ef320b445a6808ea9f72b46d423",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "32f5c58f-420d-4cd1-85d9-cc5a5c19b413",
+    "skillId": "user-generated/animated-poster-maker-1788937137-48a31ef320b445a6808ea9f72b46d423/32f5c58f-420d-4cd1-85d9-cc5a5c19b413",
+    "i18n_title": {
+      "en": "Animated Poster Maker",
+      "ja": "アニメーションポスター作成",
+      "zh": "动态海报制作器"
+    },
+    "i18n_description": {
+      "en": "Turn a written concept, reference image, static poster, photograph, illustration, or brand assets into one finished animated poster — establish a strong static composition first, then add restrained, purposeful motion (one primary motion + up to two supporting) through subject movement, depth/camera, typography reveals, and light/material effects. Use whenever the user wants an animated / motion / looping / cinemagraph-style poster, event visual, title card, social cover, exhibition graphic, music artwork, or editorial motion poster, even if they don't say \"poster\" (e.g. \"make this poster move\", \"animate this cover\", \"looping motion graphic of this design\"). Do not use for narrative short films, talking-head videos, complex character animation, or random image movement.",
+      "ja": "文章によるコンセプト、参考画像、静止ポスター、写真、イラスト、ブランド資産を1つの完成したアニメーションポスターに変換します — まず強力な静止構図を確立し、次に被写体の動き、奥行き/カメラ、タイポグラフィの表示、光/素材エフェクトを通じて抑制された目的のある動き(1つの主要な動き+最大2つの補助)を追加します。ユーザーがアニメーション/モーション/ループ/シネマグラフ風のポスター、イベントビジュアル、タイトルカード、ソーシャルカバー、展示グラフィック、音楽アートワーク、エディトリアルモーションポスターを求めている場合は常に使用してください。「ポスター」と言わなくても構いません(例:「このポスターを動かして」、「このカバーをアニメーション化して」、「このデザインのループモーショングラフィック」)。ナラティブ短編映画、トーキングヘッド動画、複雑なキャラクターアニメーション、ランダムな画像の動きには使用しないでください。",
+      "zh": "将文字概念、参考图像、静态海报、照片、插图或品牌资产转换为一个完成的动态海报 — 首先建立强有力的静态构图,然后通过主体运动、景深/镜头、文字显示和光影/材质效果添加克制的、有目的的动作(一个主要动作+最多两个辅助动作)。当用户想要动画/运动/循环/电影图风格的海报、活动视觉、标题卡、社交封面、展览图形、音乐艺术作品或编辑运动海报时使用,即使他们没有说\"海报\"(例如:\"让这张海报动起来\"、\"为这个封面添加动画\"、\"这个设计的循环动态图形\")。不要用于叙事短片、说话头视频、复杂角色动画或随机图像运动。"
+    },
+    "i18n_prompts": {
+      "en": "Turn [this poster / this concept: …] into an animated poster: keep the design and text intact, add [one primary motion, e.g. slow push-in / drifting fabric / light sweep], 3:4 portrait, 6-second seamless loop, silent MP4.",
+      "ja": "[このポスター / このコンセプト: …]をアニメーションポスターに変換:デザインとテキストをそのまま保ち、[1つの主要な動き、例:ゆっくりなプッシュイン / 漂う布 / 光のスイープ]を追加、3:4縦向き、6秒のシームレスループ、無音MP4。",
+      "zh": "将[这张海报 / 这个概念:…]转换为动态海报:保持设计和文字不变,添加[一个主要动作,例如:缓慢推进 / 飘动的布料 / 光线扫过],3:4竖版,6秒无缝循环,静音MP4。"
+    },
+    "i18n_source_hash": "af8b7c37164a304dc9d40cf0a764afc8248b6dd4636beae14ca75a61ebfabecb",
+    "i18n_source_locale": "en",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-09T07:08:08",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 60,
+    "viewCount": 0,
+    "tryCount": 66,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Animated Poster Maker",
+  "skillCover": "https://a.lovart.ai/artifacts/agent/cE4BXL3ZraL26oZD.mp4",
+  "publishTime": "2026-09-09T07:08:08",
+  "spacePinned": null,
+  "score": 0,
+  "_en": {
+    "title": "Animated Poster Maker",
+    "description": "Turn a written concept, reference image, static poster, photograph, illustration, or brand assets into one finished animated poster — establish a strong static composition first, then add restrained, purposeful motion (one primary motion + up to two supporting) through subject movement, depth/camera, typography reveals, and light/material effects. Use whenever the user wants an animated / motion / looping / cinemagraph-style poster, event visual, title card, social cover, exhibition graphic, music artwork, or editorial motion poster, even if they don't say \"poster\" (e.g. \"make this poster move\", \"animate this cover\", \"looping motion graphic of this design\"). Do not use for narrative short films, talking-head videos, complex character animation, or random image movement.",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "Animated Poster Maker",
+          "ja": "アニメーションポスター作成",
+          "zh": "动态海报制作器"
+        },
+        "i18n_description": {
+          "en": "Turn a written concept, reference image, static poster, photograph, illustration, or brand assets into one finished animated poster — establish a strong static composition first, then add restrained, purposeful motion (one primary motion + up to two supporting) through subject movement, depth/camera, typography reveals, and light/material effects. Use whenever the user wants an animated / motion / looping / cinemagraph-style poster, event visual, title card, social cover, exhibition graphic, music artwork, or editorial motion poster, even if they don't say \"poster\" (e.g. \"make this poster move\", \"animate this cover\", \"looping motion graphic of this design\"). Do not use for narrative short films, talking-head videos, complex character animation, or random image movement.",
+          "ja": "文章によるコンセプト、参考画像、静止ポスター、写真、イラスト、ブランド資産を1つの完成したアニメーションポスターに変換します — まず強力な静止構図を確立し、次に被写体の動き、奥行き/カメラ、タイポグラフィの表示、光/素材エフェクトを通じて抑制された目的のある動き(1つの主要な動き+最大2つの補助)を追加します。ユーザーがアニメーション/モーション/ループ/シネマグラフ風のポスター、イベントビジュアル、タイトルカード、ソーシャルカバー、展示グラフィック、音楽アートワーク、エディトリアルモーションポスターを求めている場合は常に使用してください。「ポスター」と言わなくても構いません(例:「このポスターを動かして」、「このカバーをアニメーション化して」、「このデザインのループモーショングラフィック」)。ナラティブ短編映画、トーキングヘッド動画、複雑なキャラクターアニメーション、ランダムな画像の動きには使用しないでください。",
+          "zh": "将文字概念、参考图像、静态海报、照片、插图或品牌资产转换为一个完成的动态海报 — 首先建立强有力的静态构图,然后通过主体运动、景深/镜头、文字显示和光影/材质效果添加克制的、有目的的动作(一个主要动作+最多两个辅助动作)。当用户想要动画/运动/循环/电影图风格的海报、活动视觉、标题卡、社交封面、展览图形、音乐艺术作品或编辑运动海报时使用,即使他们没有说\"海报\"(例如:\"让这张海报动起来\"、\"为这个封面添加动画\"、\"这个设计的循环动态图形\")。不要用于叙事短片、说话头视频、复杂角色动画或随机图像运动。"
+        },
+        "i18n_prompt": {
+          "en": "Turn [this poster / this concept: …] into an animated poster: keep the design and text intact, add [one primary motion, e.g. slow push-in / drifting fabric / light sweep], 3:4 portrait, 6-second seamless loop, silent MP4.",
+          "ja": "[このポスター / このコンセプト: …]をアニメーションポスターに変換:デザインとテキストをそのまま保ち、[1つの主要な動き、例:ゆっくりなプッシュイン / 漂う布 / 光のスイープ]を追加、3:4縦向き、6秒のシームレスループ、無音MP4。",
+          "zh": "将[这张海报 / 这个概念:…]转换为动态海报:保持设计和文字不变,添加[一个主要动作,例如:缓慢推进 / 飘动的布料 / 光线扫过],3:4竖版,6秒无缝循环,静音MP4。"
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

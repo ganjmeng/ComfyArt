@@ -1,0 +1,371 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2n7npu8pocu8",
+  "title": "Senior‑Sense PPT Visual Director",
+  "description": "This is a modular web‑based PPT building tool. Its core workflow is completely decoupled from visual styles. You first plan content using semantic page types, and then select styles from a pluggable style library. It helps you rapidly produce well‑structured, stylistically consistent, and quality‑controlled horizontal HTML presentations.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Senior‑Sense PPT Visual Director",
+        "ja": "Senior‑Sense PPT ビジュアルディレクター",
+        "zh": "Senior‑Sense PPT 视觉导演"
+      },
+      "i18n_description": {
+        "en": "This is a modular web‑based PPT building tool. Its core workflow is completely decoupled from visual styles. You first plan content using semantic page types, and then select styles from a pluggable style library. It helps you rapidly produce well‑structured, stylistically consistent, and quality‑controlled horizontal HTML presentations.",
+        "ja": "これはモジュール式のウェブベースPPT構築ツールです。コアワークフローは視覚スタイルから完全に分離されています。まず意味的なページタイプを使用してコンテンツを計画し、次にプラガブルなスタイルライブラリからスタイルを選択します。構造が整い、スタイルが一貫した、品質管理された横型HTMLプレゼンテーションを迅速に作成できます。",
+        "zh": "这是一个模块化的网页版PPT构建工具。其核心工作流程与视觉样式完全解耦。您首先使用语义页面类型规划内容,然后从可插拔的样式库中选择样式。它帮助您快速生成结构良好、风格一致、质量可控的横向HTML演示文稿。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://models-test-persist.shakker.cloud/img/b40ab1fac3584c5cb745c12081ec50c3/cd3debb0387deb9fb1e80cea6cd8b0b61d76e83a.png",
+      "posterUrl": "https://a.lovart.ai/asset/skill-plaza/b2/b2ce840e31a612cd7a9945aafb42e1b6008feb2f5a07faea34ebb9f17eb90f5e.png",
+      "width": 2048,
+      "height": 1536
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/asset/skill-plaza/9a/9a7fed9720cd512a292742ad6f7c71ac689d6d7eaa1045aa95eadec4791e8033.jpg",
+        "width": 1920,
+        "height": 10470,
+        "order": 0
+      }
+    ],
+    "bestFor": [
+      "Brand slides",
+      "product slides",
+      "promotional slides",
+      "courseware slides"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2n7nptgotmo0",
+    "versionAssetId": "2n7npu7t80zk",
+    "skillKey": "modular-web-ppt-skill-1787063776-32aaae3fc4f94621b6f17762e9df06ec",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/modular-web-ppt-skill-1787063776-32aaae3fc4f94621b6f17762e9df06ec",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "00da81d1-c15c-4666-a382-92a7f3655cfb",
+    "skillId": "user-generated/modular-web-ppt-skill-1787063776-32aaae3fc4f94621b6f17762e9df06ec/00da81d1-c15c-4666-a382-92a7f3655cfb",
+    "i18n_title": {
+      "en": "Senior‑Sense PPT Visual Director",
+      "ja": "Senior‑Sense PPT ビジュアルディレクター",
+      "zh": "Senior‑Sense PPT 视觉导演"
+    },
+    "i18n_description": {
+      "en": "This is a modular web‑based PPT building tool. Its core workflow is completely decoupled from visual styles. You first plan content using semantic page types, and then select styles from a pluggable style library. It helps you rapidly produce well‑structured, stylistically consistent, and quality‑controlled horizontal HTML presentations.",
+      "ja": "これはモジュール式のウェブベースPPT構築ツールです。コアワークフローは視覚スタイルから完全に分離されています。まず意味的なページタイプを使用してコンテンツを計画し、次にプラガブルなスタイルライブラリからスタイルを選択します。構造が整い、スタイルが一貫した、品質管理された横型HTMLプレゼンテーションを迅速に作成できます。",
+      "zh": "这是一个模块化的网页版PPT构建工具。其核心工作流程与视觉样式完全解耦。您首先使用语义页面类型规划内容,然后从可插拔的样式库中选择样式。它帮助您快速生成结构良好、风格一致、质量可控的横向HTML演示文稿。"
+    },
+    "i18n_prompts": {
+      "en": "",
+      "ja": "",
+      "zh": ""
+    },
+    "i18n_source_hash": "5f3480f0d99d207edfde746344efd4e6c04755e527264673e9a3ca3f6d5aaafa",
+    "i18n_source_locale": "en",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-18T14:36:19",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 178,
+    "viewCount": 0,
+    "tryCount": 209,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Senior‑Sense PPT Visual Director",
+  "skillCover": "https://models-test-persist.shakker.cloud/img/b40ab1fac3584c5cb745c12081ec50c3/cd3debb0387deb9fb1e80cea6cd8b0b61d76e83a.png",
+  "publishTime": "2026-08-18T14:36:19",
+  "spacePinned": null,
+  "score": 0,
+  "_en": {
+    "title": "Senior‑Sense PPT Visual Director",
+    "description": "This is a modular web‑based PPT building tool. Its core workflow is completely decoupled from visual styles. You first plan content using semantic page types, and then select styles from a pluggable style library. It helps you rapidly produce well‑structured, stylistically consistent, and quality‑controlled horizontal HTML presentations.",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "Senior‑Sense PPT Visual Director",
+          "ja": "Senior‑Sense PPT ビジュアルディレクター",
+          "zh": "Senior‑Sense PPT 视觉导演"
+        },
+        "i18n_description": {
+          "en": "This is a modular web‑based PPT building tool. Its core workflow is completely decoupled from visual styles. You first plan content using semantic page types, and then select styles from a pluggable style library. It helps you rapidly produce well‑structured, stylistically consistent, and quality‑controlled horizontal HTML presentations.",
+          "ja": "これはモジュール式のウェブベースPPT構築ツールです。コアワークフローは視覚スタイルから完全に分離されています。まず意味的なページタイプを使用してコンテンツを計画し、次にプラガブルなスタイルライブラリからスタイルを選択します。構造が整い、スタイルが一貫した、品質管理された横型HTMLプレゼンテーションを迅速に作成できます。",
+          "zh": "这是一个模块化的网页版PPT构建工具。其核心工作流程与视觉样式完全解耦。您首先使用语义页面类型规划内容,然后从可插拔的样式库中选择样式。它帮助您快速生成结构良好、风格一致、质量可控的横向HTML演示文稿。"
+        },
+        "i18n_prompt": {
+          "en": "",
+          "ja": "",
+          "zh": ""
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

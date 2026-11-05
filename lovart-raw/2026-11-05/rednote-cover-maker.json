@@ -1,0 +1,362 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pjj7diI7v2",
+  "title": "RedNote Cover Maker",
+  "description": "Built for clicks, saves, and follows",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "RedNote Cover Maker",
+        "ja": "小紅書カバーメーカー",
+        "zh": "小红书封面生成器"
+      },
+      "i18n_description": {
+        "en": "Creates platform-native RedNote/Xiaohongshu covers for notes, posts, guides, seeding content, and account cover systems.",
+        "ja": "RedNote/小紅書向けの投稿カバー、ノートカバー、ガイド系カバー、訴求型カバー、アカウント用カバー体系を制作します。",
+        "zh": "用于小红书笔记封面、图文封面、攻略封面、种草封面和账号封面体系设计。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/f8/f8661bc2b2b11a6ab40648a0fffde4ecb69f41a80a557f8d88709e0a9ff98d63.mp4",
+      "mediaType": "video",
+      "width": 640,
+      "height": 480
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/3a/3ada2c942577382f8e6e465fe51e2db0c8613340f0b5df43554d1086f23958ea.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/c8/c8a981182cf3ed32cc4068c615aa88e3cf33e0a5aeba1056a3211a415c3672bb.webp",
+        "width": 1086,
+        "height": 1448,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/81/816d6e608c332f97a30a088064271c3203745ecc14281d9c8d16aa98efa3e3bc.webp",
+        "width": 1086,
+        "height": 1448,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/3d/3d6c023ac3588b56a978cc2612fa3e48af32b5cbe025f4976786e6246d65b3d8.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/9d/9dfd84d7e6c3f194a081eb54eaed2a65bb25c489fb51ccad9878d37f1fbc4d76.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/93/93c58723a6b06c21ae3d74c9d85d9c9f20d8fafffb18c665329f272942945ff9.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/3d/3dcd272e1e3ddd163dcf05f1e2993e166488204281c39d3707312cb1e4489104.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/6e/6ee25114a0fd142bf850dbad5876c22e136e952c3a485f1caae21d00a3ad226a.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 7
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/9b/9bcd2cea404aab5dbd55ccb9ff9986992309ba0f1a3c8a1ca02e1d03dec896bd.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 8
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/c1/c14548ede6464de7057a76c6a445516c9b5c4ca4e2459f4a86d4df752e39f104.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 9
+      }
+    ],
+    "bestFor": [
+      "RedNote",
+      "小红书",
+      "Cover Design",
+      "小红书封面"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "pj5udGIOeQ",
+    "versionAssetId": "pjj7dfSgIU",
+    "skillKey": "rednote-cover-maker",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/rednote-cover-maker",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "c9a30544-ef62-4fc6-a060-b06e9bf2831b",
+    "skillId": "industry/rednote-cover-maker/c9a30544-ef62-4fc6-a060-b06e9bf2831b",
+    "level": "A",
+    "i18n_title": {
+      "en": "RedNote Cover Maker",
+      "ja": "RedNoteカバーメーカー",
+      "zh": "小红书封面制作器"
+    },
+    "i18n_description": {
+      "en": "Built for clicks, saves, and follows",
+      "ja": "クリック、保存、フォローを獲得するために設計",
+      "zh": "专为点击、收藏和关注而打造"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "c19276ae8e2a7c83fc367203280810a74c05108edd4881b27f266e0da131bb2c",
+    "version": "1.0.6"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-03T12:20:44",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 871,
+    "viewCount": 0,
+    "tryCount": 1697,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "RedNote Cover Maker",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/f8/f8661bc2b2b11a6ab40648a0fffde4ecb69f41a80a557f8d88709e0a9ff98d63.mp4",
+  "publishTime": "2026-08-03T12:20:44",
+  "spacePinned": false,
+  "score": 1000000000000
+}

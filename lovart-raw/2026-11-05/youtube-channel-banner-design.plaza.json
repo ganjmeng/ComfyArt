@@ -1,0 +1,421 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pkBguW4KoU",
+  "title": "YouTube Channel Banner",
+  "description": "Upload-ready YouTube banners for every crop",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "YouTube Channel Banner",
+        "ja": "YouTubeチャンネルバナー",
+        "zh": "YouTube频道封面"
+      },
+      "i18n_description": {
+        "en": "Create upload-ready YouTube channel banners with full-canvas visual identity, safe-area text survival, desktop/mobile crop checks, and channel-brand consistency.",
+        "ja": "YouTubeチャンネル向けに、アップロード可能なバナーを作成します。全体のビジュアル設計、安全領域での文字可読性、デスクトップ/モバイル表示、チャンネルブランドの一貫性を考慮します。",
+        "zh": "为 YouTube 频道设计可上传的频道封面，兼顾完整画面识别、全设备安全区文字可见性、桌面/移动裁切适配与频道品牌一致性。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/2c/2c5fa32c3975ce81bee6aa4957b1905f92c2088c6c0567267c706263ffdf942b.mp4",
+      "mediaType": "video",
+      "width": 640,
+      "height": 480,
+      "posterUrl": ""
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/ff/ffbe418ccc24a8211ed5570eaa0da54325ef872e8888a91afc15e79a33f2c363.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/3b/3b2bbcd4660dd5f41862d32b2b72ec06ce0e2463af583420172c5fe6bc07414b.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/b3/b3a720579589333334c9a74259b1697e59cea77428c2f0adfa7ec8b816545a8f.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/60/60de0f1f8a88c9714459c9a7ee4d223d93acff60d682637fea4070cbe8921363.webp",
+        "width": 3840,
+        "height": 1916,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/65/65b7870c216ad6ce7d68f4a050f9dfe5f5b486fa8ef2e45f876b198ab8d4a8dd.webp",
+        "width": 3840,
+        "height": 1916,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/8f/8f269c028cc15248f7cb71010e323613757c577dc619ee35643e730022ab70f4.webp",
+        "width": 3840,
+        "height": 1916,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/50/5020ceb5032b109363ceb76a962262e0c71a472d3b1a7f9319c064a4fd436795.webp",
+        "width": 3840,
+        "height": 1916,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/62/6245fce299cde2bb580311b799942f01435c42615c7d54f69dc87c3a78e0bbe2.webp",
+        "width": 3840,
+        "height": 1916,
+        "order": 7
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/ec/eccff89849966e7a59e98d0ec25fab2119fdb7d12bb70ad4d0bffb701d9a7265.webp",
+        "width": 3840,
+        "height": 1916,
+        "order": 8
+      }
+    ],
+    "bestFor": [
+      "YouTube",
+      "YouTube Channel",
+      "Channel Art"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "pkANed55Is",
+    "versionAssetId": "pkBguTeSyI",
+    "skillKey": "youtube-channel-banner-design",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/youtube-channel-banner-design",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "9f9d5a4f-bf83-4bd1-8af7-bec7121b03cc",
+    "skillId": "industry/youtube-channel-banner-design/9f9d5a4f-bf83-4bd1-8af7-bec7121b03cc",
+    "level": "S",
+    "i18n_title": {
+      "en": "YouTube Channel Banner",
+      "ja": "YouTubeチャンネルバナー",
+      "zh": "YouTube频道横幅"
+    },
+    "i18n_description": {
+      "en": "Upload-ready YouTube banners for every crop",
+      "ja": "すべてのクロップに対応したアップロード可能なYouTubeバナー",
+      "zh": "适用于各种裁剪的可直接上传YouTube横幅"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "4becc354d1693d9b46106a4bbdebafd797b8556cb96868fedbefbcf16a9c137f",
+    "version": "1.0.3"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-04T07:02:20",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 147,
+    "viewCount": 0,
+    "tryCount": 514,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "YouTube Channel Banner",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/2c/2c5fa32c3975ce81bee6aa4957b1905f92c2088c6c0567267c706263ffdf942b.mp4",
+  "publishTime": "2026-08-04T07:02:20",
+  "spacePinned": null,
+  "score": 1000000000000,
+  "_en": {
+    "title": "YouTube Channel Banner",
+    "description": "Upload-ready YouTube banners for every crop",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "YouTube Channel Banner",
+          "ja": "YouTubeチャンネルバナー",
+          "zh": "YouTube频道封面"
+        },
+        "i18n_description": {
+          "en": "Create upload-ready YouTube channel banners with full-canvas visual identity, safe-area text survival, desktop/mobile crop checks, and channel-brand consistency.",
+          "ja": "YouTubeチャンネル向けに、アップロード可能なバナーを作成します。全体のビジュアル設計、安全領域での文字可読性、デスクトップ/モバイル表示、チャンネルブランドの一貫性を考慮します。",
+          "zh": "为 YouTube 频道设计可上传的频道封面，兼顾完整画面识别、全设备安全区文字可见性、桌面/移动裁切适配与频道品牌一致性。"
+        },
+        "i18n_prompt": {
+          "en": "",
+          "ja": "",
+          "zh": ""
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

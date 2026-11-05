@@ -1,0 +1,320 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2ouy4hiipxj4",
+  "title": "电商同场景角色姿势裂变",
+  "description": "模特姿势裂变。输入一张图，随机4条提示词、选择你的提示词并进行生图。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/IDaBR0QqBEGSKgqK.webp",
+      "width": 1600,
+      "height": 1200
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/zWOcRtku0SA2YQvq.png",
+        "width": 3584,
+        "height": 4800,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/FZz3jtj0D32f7NKb.png",
+        "width": 3584,
+        "height": 4800,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/xhjJaaNKng47GTGH.png",
+        "width": 3584,
+        "height": 4800,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/1Nnc01bTLQ1Usccm.png",
+        "width": 3584,
+        "height": 4800,
+        "order": 3
+      }
+    ],
+    "bestFor": [
+      "电商"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "E-commerce Same-scene Character Pose Variation",
+        "ja": "EC同一シーン役柄ポーズバリエーション",
+        "zh": "电商同场景角色姿势裂变"
+      },
+      "i18n_description": {
+        "en": "Model pose variation. Input an image, generate 4 random prompts, select your prompt and generate images.",
+        "ja": "モデルポーズバリエーション。画像を1枚入力し、ランダムに4つのプロンプトを生成、プロンプトを選択して画像生成。",
+        "zh": "模特姿势裂变。输入一张图，随机4条提示词、选择你的提示词并进行生图。"
+      },
+      "i18n_prompt": {
+        "en": "Based on this character image, first generate 4 image-to-image prompts that change angles and poses while keeping the character unchanged (use fewer back views and close-ups, arrange perspective/shot type/pose/composition on separate lines), then let me click to refresh or start generating. After confirmation, use nano banana pro with 3:4 ratio at 4K to produce 4 images, strictly following the lighting, texture, and color tone of the reference image: [Attach a character image]",
+        "ja": "この役柄画像に基づき、まず角度とポーズを変えて役柄は変えない画像生成プロンプトを4つ生成します(背面と特写は控えめに、視点/ショットタイプ/ポーズ/構図を改行して配置)。次に「別のバッチ」または「生成開始」をクリックさせます。確認後、nano banana proを使用して3:4比率、4Kで4枚の画像を生成し、参照画像の光影、質感、色調を厳格に踏襲します:[役柄画像を1枚添付]",
+        "zh": "根据这张角色图，先生成 4 条换角度和姿势、角色保持不变的图生图提示词（少用背面和特写，视角/景别/姿势/构图分行排版），再让我点选换一批或开始生图，确认后用 nano banana pro 按 3:4、4K 出 4 张图，并严格沿用参考图的光影、质感与色调：[附上一张角色图片]"
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2oug5lpv38cg",
+    "versionAssetId": "2ouxd1kfh7nk",
+    "skillKey": "character-angle-prompts-1788487305-024472f1546b4fd09dd91d48aea17803",
+    "sourceVersion": "1.0.12",
+    "linkUrl": "lovart://skill/character-angle-prompts-1788487305-024472f1546b4fd09dd91d48aea17803",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "c29f6039-4775-4343-9549-a8c20047a7d3",
+    "skillId": "user-generated/character-angle-prompts-1788487305-024472f1546b4fd09dd91d48aea17803/c29f6039-4775-4343-9549-a8c20047a7d3",
+    "i18n_title": {
+      "en": "E-commerce Same-scene Character Pose Variation",
+      "ja": "EC同一シーン役柄ポーズバリエーション",
+      "zh": "电商同场景角色姿势裂变"
+    },
+    "i18n_description": {
+      "en": "Model pose variation. Input an image, generate 4 random prompts, select your prompt and generate images.",
+      "ja": "モデルポーズバリエーション。画像を1枚入力し、ランダムに4つのプロンプトを生成、プロンプトを選択して画像生成。",
+      "zh": "模特姿势裂变。输入一张图，随机4条提示词、选择你的提示词并进行生图。"
+    },
+    "i18n_prompts": {
+      "en": "Based on this character image, first generate 4 image-to-image prompts that change angles and poses while keeping the character unchanged (use fewer back views and close-ups, arrange perspective/shot type/pose/composition on separate lines), then let me click to refresh or start generating. After confirmation, use nano banana pro with 3:4 ratio at 4K to produce 4 images, strictly following the lighting, texture, and color tone of the reference image: [Attach a character image]",
+      "ja": "この役柄画像に基づき、まず角度とポーズを変えて役柄は変えない画像生成プロンプトを4つ生成します(背面と特写は控えめに、視点/ショットタイプ/ポーズ/構図を改行して配置)。次に「別のバッチ」または「生成開始」をクリックさせます。確認後、nano banana proを使用して3:4比率、4Kで4枚の画像を生成し、参照画像の光影、質感、色調を厳格に踏襲します:[役柄画像を1枚添付]",
+      "zh": "根据这张角色图，先生成 4 条换角度和姿势、角色保持不变的图生图提示词（少用背面和特写，视角/景别/姿势/构图分行排版），再让我点选换一批或开始生图，确认后用 nano banana pro 按 3:4、4K 出 4 张图，并严格沿用参考图的光影、质感与色调：[附上一张角色图片]"
+    },
+    "i18n_source_hash": "ffa7a37c03d28576c638b05de58b69bfc604156d12b3ab2faefc5fc2fdd7d3e6",
+    "i18n_source_locale": "zh",
+    "level": "B"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-04T05:23:11",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 253,
+    "viewCount": 0,
+    "tryCount": 403,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "电商同场景角色姿势裂变",
+  "skillCover": "https://a.lovart.ai/artifacts/user/IDaBR0QqBEGSKgqK.webp",
+  "publishTime": "2026-09-04T05:23:11",
+  "spacePinned": null,
+  "score": 0
+}

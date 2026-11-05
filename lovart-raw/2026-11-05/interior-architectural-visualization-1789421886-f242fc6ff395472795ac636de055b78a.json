@@ -1,0 +1,331 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2q24865beubk",
+  "title": "Interior & Architectural Visualization",
+  "description": "Transform architectural and interior-design concepts into realistic, consistent visual presentations. Use whenever the user asks to visualize a space, room, building interior, exterior, floor plan, material study, furniture layout, lighting concept, or architectural render — including residential, office, restaurant, hotel, retail, studio, public, and commercial spaces. Trigger even if the request is vague or partial; gather the missing context through structured questions before generating.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Interior & Architectural Visualization",
+        "ja": "インテリア・建築ビジュアライゼーション",
+        "zh": "室内与建筑可视化"
+      },
+      "i18n_description": {
+        "en": "Transform architectural and interior-design concepts into realistic, consistent visual presentations. Use whenever the user asks to visualize a space, room, building interior, exterior, floor plan, material study, furniture layout, lighting concept, or architectural render — including residential, office, restaurant, hotel, retail, studio, public, and commercial spaces. Trigger even if the request is vague or partial; gather the missing context through structured questions before generating.",
+        "ja": "建築およびインテリアデザインのコンセプトを、リアルで一貫性のあるビジュアルプレゼンテーションに変換します。ユーザーが空間、部屋、建物の内装、外装、平面図、素材研究、家具レイアウト、照明コンセプト、または建築レンダリングの可視化を依頼した際に使用してください。住宅、オフィス、レストラン、ホテル、小売店、スタジオ、公共施設、商業施設を含みます。リクエストが曖昧または部分的であっても起動し、生成前に構造化された質問を通じて不足している情報を収集します。",
+        "zh": "将建筑和室内设计概念转化为逼真、一致的视觉呈现。当用户要求可视化空间、房间、建筑内部、外部、平面图、材料研究、家具布局、照明概念或建筑渲染时使用——包括住宅、办公室、餐厅、酒店、零售、工作室、公共和商业空间。即使请求模糊或不完整也触发；在生成之前通过结构化问题收集缺失的上下文。"
+      },
+      "i18n_prompt": {
+        "en": "Visualize a [modern minimalist residential living room] with [open plan layout, 5m x 6m, north-facing windows]. Create [a photorealistic interior perspective + a floor plan + a material mood board] in [warm neutral tones with oak and terrazzo]. Maintain consistency across all views.",
+        "ja": "[モダンミニマリストの住宅リビングルーム]を[オープンプランレイアウト、5m x 6m、北向きの窓]で可視化してください。[温かみのあるニュートラルトーン、オーク材とテラゾー]で[フォトリアリスティックな内観パース + 平面図 + マテリアルムードボード]を作成してください。すべてのビューで一貫性を保ってください。",
+        "zh": "可视化一个[现代简约住宅客厅],配有[开放式布局,5米 x 6米,朝北窗户]。创建[逼真的室内透视图 + 平面图 + 材料情绪板],采用[温暖中性色调搭配橡木和水磨石]。在所有视图中保持一致性。"
+      }
+    },
+    "coverMode": "carousel",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/agent/wh6tbKqs4nHmS5cG.png",
+      "width": 2048,
+      "height": 2048
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/vidaOX0R2ABggH53.png",
+        "width": 1600,
+        "height": 2000,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/yzeAQcf5VEJta9WH.png",
+        "width": 1600,
+        "height": 2000,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/mSNkZSm0PK2ZQ2U5.png",
+        "width": 1600,
+        "height": 2000,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/c8Oqcr6ZrE69SLg4.png",
+        "width": 2048,
+        "height": 2048,
+        "order": 3
+      }
+    ],
+    "bestFor": [
+      "Interior",
+      "decoration"
+    ],
+    "showMarkdown": false,
+    "coverList": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/wh6tbKqs4nHmS5cG.png",
+        "width": 2048,
+        "height": 2048
+      }
+    ],
+    "coverMotion": "fade",
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2px1nf35rwu8",
+    "versionAssetId": "2px1nfbwf4e8",
+    "skillKey": "interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "2487201f-ba46-4936-a3d7-9e59d3b7c5e5",
+    "skillId": "user-generated/interior-architectural-visualization-1789421886-f242fc6ff395472795ac636de055b78a/2487201f-ba46-4936-a3d7-9e59d3b7c5e5",
+    "i18n_title": {
+      "en": "Interior & Architectural Visualization",
+      "ja": "インテリア・建築ビジュアライゼーション",
+      "zh": "室内与建筑可视化"
+    },
+    "i18n_description": {
+      "en": "Transform architectural and interior-design concepts into realistic, consistent visual presentations. Use whenever the user asks to visualize a space, room, building interior, exterior, floor plan, material study, furniture layout, lighting concept, or architectural render — including residential, office, restaurant, hotel, retail, studio, public, and commercial spaces. Trigger even if the request is vague or partial; gather the missing context through structured questions before generating.",
+      "ja": "建築およびインテリアデザインのコンセプトを、リアルで一貫性のあるビジュアルプレゼンテーションに変換します。ユーザーが空間、部屋、建物の内装、外装、平面図、素材研究、家具レイアウト、照明コンセプト、または建築レンダリングの可視化を依頼した際に使用してください。住宅、オフィス、レストラン、ホテル、小売店、スタジオ、公共施設、商業施設を含みます。リクエストが曖昧または部分的であっても起動し、生成前に構造化された質問を通じて不足している情報を収集します。",
+      "zh": "将建筑和室内设计概念转化为逼真、一致的视觉呈现。当用户要求可视化空间、房间、建筑内部、外部、平面图、材料研究、家具布局、照明概念或建筑渲染时使用——包括住宅、办公室、餐厅、酒店、零售、工作室、公共和商业空间。即使请求模糊或不完整也触发；在生成之前通过结构化问题收集缺失的上下文。"
+    },
+    "i18n_prompts": {
+      "en": "Visualize a [modern minimalist residential living room] with [open plan layout, 5m x 6m, north-facing windows]. Create [a photorealistic interior perspective + a floor plan + a material mood board] in [warm neutral tones with oak and terrazzo]. Maintain consistency across all views.",
+      "ja": "[モダンミニマリストの住宅リビングルーム]を[オープンプランレイアウト、5m x 6m、北向きの窓]で可視化してください。[温かみのあるニュートラルトーン、オーク材とテラゾー]で[フォトリアリスティックな内観パース + 平面図 + マテリアルムードボード]を作成してください。すべてのビューで一貫性を保ってください。",
+      "zh": "可视化一个[现代简约住宅客厅],配有[开放式布局,5米 x 6米,朝北窗户]。创建[逼真的室内透视图 + 平面图 + 材料情绪板],采用[温暖中性色调搭配橡木和水磨石]。在所有视图中保持一致性。"
+    },
+    "i18n_source_hash": "4216b9d5be90b7b78d66b1672b666306e4a0029e02f0653e1dd249d7a69cf68e",
+    "i18n_source_locale": "en",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-16T07:44:48",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 59,
+    "viewCount": 0,
+    "tryCount": 68,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Interior & Architectural Visualization",
+  "skillCover": "https://a.lovart.ai/artifacts/agent/wh6tbKqs4nHmS5cG.png",
+  "publishTime": "2026-09-16T07:44:48",
+  "spacePinned": false,
+  "score": 0
+}

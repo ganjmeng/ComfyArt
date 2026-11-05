@@ -1,0 +1,366 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2pg3z0ftueww",
+  "title": "half-collage-poster",
+  "description": "对半分割概念海报（剪纸拼贴风）。基于用户上传的一张照片（人像/风景/街拍/生活场景），产出「上半区原图完整保留 + 下半区剪纸质感抽象几何转译」的极简艺术海报，全部色彩取自原图，结合手绘与纸张印刷肌理，以诗意隐喻完成意象表达，并附发布文案。触发词：对半海报、剪纸海报、照片转插画、概念海报、上半照片下半插画、艺术海报、照片转剪纸。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/agent/swxO4WPoee978V2N.png",
+      "width": 2016,
+      "height": 1344
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/tGaZ4XavIo9tyAg8.webp",
+        "width": 1200,
+        "height": 1600,
+        "order": 0
+      }
+    ],
+    "bestFor": [
+      "选择技能，输入图片直接创作成品"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "half-collage-poster",
+        "ja": "half-collage-poster",
+        "zh": "half-collage-poster"
+      },
+      "i18n_description": {
+        "en": "Half-split concept poster (paper-cut collage style). Based on a user-uploaded photo (portrait/landscape/street photography/life scene), produces a minimalist art poster with \"upper half preserving the original photo intact + lower half translating into abstract geometric forms with paper-cut texture,\" all colors extracted from the original image, combining hand-drawn and paper printing textures to complete poetic metaphorical expression, with accompanying publication copy. Trigger words: half poster, paper-cut poster, photo to illustration, concept poster, photo top illustration bottom, art poster, photo to paper-cut.",
+        "ja": "半分分割コンセプトポスター(切り絵コラージュ風)。ユーザーがアップロードした1枚の写真(ポートレート/風景/ストリートフォト/生活シーン)をもとに、「上半分は原画像を完全に保持+下半分は切り絵質感の抽象幾何学的変換」のミニマルアートポスターを生成します。すべての色は原画像から抽出され、手描きと紙の印刷テクスチャを組み合わせ、詩的な隠喩でイメージ表現を完成させ、投稿用コピーも付属します。トリガーワード:半分ポスター、切り絵ポスター、写真をイラストに、コンセプトポスター、上半分写真下半分イラスト、アートポスター、写真を切り絵に。",
+        "zh": "对半分割概念海报（剪纸拼贴风）。基于用户上传的一张照片（人像/风景/街拍/生活场景），产出「上半区原图完整保留 + 下半区剪纸质感抽象几何转译」的极简艺术海报，全部色彩取自原图，结合手绘与纸张印刷肌理，以诗意隐喻完成意象表达，并附发布文案。触发词：对半海报、剪纸海报、照片转插画、概念海报、上半照片下半插画、艺术海报、照片转剪纸。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2pg1f2vthy4g",
+    "versionAssetId": "2pg1f2wpymm8",
+    "skillKey": "half-collage-poster-1789010091-7d87342595e0438b9d34b00713cacfa8",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/half-collage-poster-1789010091-7d87342595e0438b9d34b00713cacfa8",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "50f5ca4d-e986-4a16-943b-9e97f54edb55",
+    "skillId": "user-generated/half-collage-poster-1789010091-7d87342595e0438b9d34b00713cacfa8/50f5ca4d-e986-4a16-943b-9e97f54edb55",
+    "i18n_title": {
+      "en": "half-collage-poster",
+      "ja": "half-collage-poster",
+      "zh": "half-collage-poster"
+    },
+    "i18n_description": {
+      "en": "Half-split concept poster (paper-cut collage style). Based on a user-uploaded photo (portrait/landscape/street photography/life scene), produces a minimalist art poster with \"upper half preserving the original photo intact + lower half translating into abstract geometric forms with paper-cut texture,\" all colors extracted from the original image, combining hand-drawn and paper printing textures to complete poetic metaphorical expression, with accompanying publication copy. Trigger words: half poster, paper-cut poster, photo to illustration, concept poster, photo top illustration bottom, art poster, photo to paper-cut.",
+      "ja": "半分分割コンセプトポスター(切り絵コラージュ風)。ユーザーがアップロードした1枚の写真(ポートレート/風景/ストリートフォト/生活シーン)をもとに、「上半分は原画像を完全に保持+下半分は切り絵質感の抽象幾何学的変換」のミニマルアートポスターを生成します。すべての色は原画像から抽出され、手描きと紙の印刷テクスチャを組み合わせ、詩的な隠喩でイメージ表現を完成させ、投稿用コピーも付属します。トリガーワード:半分ポスター、切り絵ポスター、写真をイラストに、コンセプトポスター、上半分写真下半分イラスト、アートポスター、写真を切り絵に。",
+      "zh": "对半分割概念海报（剪纸拼贴风）。基于用户上传的一张照片（人像/风景/街拍/生活场景），产出「上半区原图完整保留 + 下半区剪纸质感抽象几何转译」的极简艺术海报，全部色彩取自原图，结合手绘与纸张印刷肌理，以诗意隐喻完成意象表达，并附发布文案。触发词：对半海报、剪纸海报、照片转插画、概念海报、上半照片下半插画、艺术海报、照片转剪纸。"
+    },
+    "i18n_prompts": {
+      "en": "",
+      "ja": "",
+      "zh": ""
+    },
+    "i18n_source_hash": "321bd824069b33fff8ee6013e99956d58ae4abbd77eb3de0eb9f732f71ced1fd",
+    "i18n_source_locale": "zh",
+    "level": "B"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-10T03:43:34",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 56,
+    "viewCount": 0,
+    "tryCount": 16,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "half-collage-poster",
+  "skillCover": "https://a.lovart.ai/artifacts/agent/swxO4WPoee978V2N.png",
+  "publishTime": "2026-09-10T03:43:34",
+  "spacePinned": null,
+  "score": 0,
+  "_en": {
+    "title": "half-collage-poster",
+    "description": "对半分割概念海报（剪纸拼贴风）。基于用户上传的一张照片（人像/风景/街拍/生活场景），产出「上半区原图完整保留 + 下半区剪纸质感抽象几何转译」的极简艺术海报，全部色彩取自原图，结合手绘与纸张印刷肌理，以诗意隐喻完成意象表达，并附发布文案。触发词：对半海报、剪纸海报、照片转插画、概念海报、上半照片下半插画、艺术海报、照片转剪纸。",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "half-collage-poster",
+          "ja": "half-collage-poster",
+          "zh": "half-collage-poster"
+        },
+        "i18n_description": {
+          "en": "Half-split concept poster (paper-cut collage style). Based on a user-uploaded photo (portrait/landscape/street photography/life scene), produces a minimalist art poster with \"upper half preserving the original photo intact + lower half translating into abstract geometric forms with paper-cut texture,\" all colors extracted from the original image, combining hand-drawn and paper printing textures to complete poetic metaphorical expression, with accompanying publication copy. Trigger words: half poster, paper-cut poster, photo to illustration, concept poster, photo top illustration bottom, art poster, photo to paper-cut.",
+          "ja": "半分分割コンセプトポスター(切り絵コラージュ風)。ユーザーがアップロードした1枚の写真(ポートレート/風景/ストリートフォト/生活シーン)をもとに、「上半分は原画像を完全に保持+下半分は切り絵質感の抽象幾何学的変換」のミニマルアートポスターを生成します。すべての色は原画像から抽出され、手描きと紙の印刷テクスチャを組み合わせ、詩的な隠喩でイメージ表現を完成させ、投稿用コピーも付属します。トリガーワード:半分ポスター、切り絵ポスター、写真をイラストに、コンセプトポスター、上半分写真下半分イラスト、アートポスター、写真を切り絵に。",
+          "zh": "对半分割概念海报（剪纸拼贴风）。基于用户上传的一张照片（人像/风景/街拍/生活场景），产出「上半区原图完整保留 + 下半区剪纸质感抽象几何转译」的极简艺术海报，全部色彩取自原图，结合手绘与纸张印刷肌理，以诗意隐喻完成意象表达，并附发布文案。触发词：对半海报、剪纸海报、照片转插画、概念海报、上半照片下半插画、艺术海报、照片转剪纸。"
+        },
+        "i18n_prompt": {
+          "en": "",
+          "ja": "",
+          "zh": ""
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

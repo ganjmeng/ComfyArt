@@ -1,0 +1,2004 @@
+{
+  "itemType": "collection_card",
+  "itemId": "2sf3x9tcisch",
+  "title": "产品广告片",
+  "description": "从真实商品与卖点出发，制作完整商业广告片",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "i18n": {
+      "zh": {
+        "title": "产品广告片",
+        "description": "从真实商品与卖点出发，制作完整商业广告片",
+        "ctaText": "制作广告片"
+      },
+      "en": {
+        "title": "Product Commercial",
+        "description": "Turn your product and confirmed selling points into a finished commercial.",
+        "ctaText": "Create commercial"
+      }
+    },
+    "media": [
+      {
+        "role": "RESULT",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/03/03065bc4252d3821d43706a9bc73a3f9990bd9057995a2e5bd402006ea815365.mp4",
+        "coverWidth": 640,
+        "coverHeight": 480
+      }
+    ],
+    "bind": {
+      "type": "SKILL",
+      "source": "MANUAL",
+      "skillKey": "product-tvc-advertisement-generator",
+      "skillAssetId": "pnFc3lFCdq",
+      "versionId": "e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+      "skillId": "industry/product-tvc-advertisement-generator/e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+      "namespace": "industry",
+      "sourceVersion": "1.0.46"
+    },
+    "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/03/03065bc4252d3821d43706a9bc73a3f9990bd9057995a2e5bd402006ea815365.mp4",
+    "coverWidth": 640,
+    "coverHeight": 480
+  },
+  "extra": {
+    "i18n_title": {
+      "en": "Product Commercial",
+      "ja": "製品コマーシャル",
+      "zh": "产品广告"
+    },
+    "i18n_description": {
+      "en": "Turn your product and confirmed selling points into a finished commercial.",
+      "ja": "製品と確認済みのセールスポイントを完成したコマーシャルに変換します。",
+      "zh": "将您的产品和确定的卖点转化为完整的广告。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "81931337f4603e18f9e7556715061cde8ae14c3722988b6aa9ade9c57887a1b9"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-10-10T03:24:16",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 85,
+    "viewCount": 0,
+    "tryCount": 0,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": null,
+  "skillCover": null,
+  "publishTime": "2026-10-10T03:24:16",
+  "spacePinned": false,
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "2sf3xahcjny8",
+      "title": "美妆",
+      "description": "产品广告片 1 条",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "美妆",
+            "description": "产品广告片 1 条",
+            "ctaText": "制作广告片"
+          },
+          "en": {
+            "title": "Beauty",
+            "description": "1 finished product commercial",
+            "ctaText": "Create commercial"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/fe/fe4d79ef2b0502c1dd0b5a431aaa1e1e4ccc9b8aee89dcd2f4e13f717c7eefd2.mp4",
+            "coverWidth": 1920,
+            "coverHeight": 1080
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "MANUAL",
+          "skillKey": "product-tvc-advertisement-generator",
+          "skillAssetId": "pnFc3lFCdq",
+          "versionId": "e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "skillId": "industry/product-tvc-advertisement-generator/e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "namespace": "industry",
+          "sourceVersion": "1.0.46"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_images",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、已确认卖点和实际使用方式；没有可留空。"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, confirmed selling points and actual usage. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "brand_assets",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材（选填）"
+                },
+                "en": {
+                  "title": "Brand assets (optional)"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "brief",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "补充要求",
+                  "placeholder": "补充用途、文案、时长或声音要求；不确定可留空，后续确认。"
+                },
+                "en": {
+                  "title": "Additional requirements",
+                  "placeholder": "Add placement, copy, duration or audio requirements. Leave undecided details blank for later confirmation."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "描述希望的视觉效果或提供参考；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 条美妆的产品广告片，围绕真实商品及已确认卖点完成商业叙事与成片。保持商品结构、标识和实际使用方式一致；不编造性能或隐藏结构。围绕包装外观、可见质地与有依据的使用方式展开，不编造功效或前后变化。\n\n商品资料: {{product_info}}\n补充要求: {{brief}}\n视觉呈现方式: {{visual_direction}}",
+            "en": "Create 1 product commercial for Beauty using confirmed product facts and selling points. Preserve its structure, branding and supported usage; do not invent performance or hidden features. Show packaging, visible texture and supported usage without invented efficacy or before/after results.\n\nProduct information: {{product_info}}\nAdditional requirements: {{brief}}\nVisual direction: {{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/fe/fe4d79ef2b0502c1dd0b5a431aaa1e1e4ccc9b8aee89dcd2f4e13f717c7eefd2.mp4",
+        "coverWidth": 1920,
+        "coverHeight": 1080
+      },
+      "extra": {
+        "collectionId": "2sf3x9tcisch",
+        "i18n_title": {
+          "en": "Beauty",
+          "ja": "ビューティー",
+          "zh": "美妆"
+        },
+        "i18n_description": {
+          "en": "1 finished product commercial",
+          "ja": "完成品コマーシャル1本",
+          "zh": "1个成品商业广告"
+        },
+        "i18n_source_locale": "en",
+        "i18n_source_hash": "55dbdda794c36c89997644891e868680125b6c9e9181291d0bd1a7b83f6726dd",
+        "collectionTitle": "Product Commercial"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-10-10T03:24:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 22,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEwbXcylvq",
+              "tagName": "social_media",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Social Media",
+              "extra": {
+                "tagName": "social_media",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Social Media"
+                }
+              },
+              "createTime": "2026-02-10T12:25:42",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-10-10T03:24:17",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2sf3xahcjegx",
+      "title": "服装",
+      "description": "产品广告片 1 条",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "服装",
+            "description": "产品广告片 1 条",
+            "ctaText": "制作广告片"
+          },
+          "en": {
+            "title": "Fashion",
+            "description": "1 finished product commercial",
+            "ctaText": "Create commercial"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/2d/2d397f861cf860deeeff4e6689c82eea181109fd4a2f1fdc26e2885ea29342a4.mp4",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "MANUAL",
+          "skillKey": "product-tvc-advertisement-generator",
+          "skillAssetId": "pnFc3lFCdq",
+          "versionId": "e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "skillId": "industry/product-tvc-advertisement-generator/e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "namespace": "industry",
+          "sourceVersion": "1.0.46"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_images",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、已确认卖点和实际使用方式；没有可留空。"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, confirmed selling points and actual usage. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "brand_assets",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材（选填）"
+                },
+                "en": {
+                  "title": "Brand assets (optional)"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "brief",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "补充要求",
+                  "placeholder": "补充用途、文案、时长或声音要求；不确定可留空，后续确认。"
+                },
+                "en": {
+                  "title": "Additional requirements",
+                  "placeholder": "Add placement, copy, duration or audio requirements. Leave undecided details blank for later confirmation."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "描述希望的视觉效果或提供参考；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 条服装的产品广告片，围绕真实商品及已确认卖点完成商业叙事与成片。保持商品结构、标识和实际使用方式一致；不编造性能或隐藏结构。表现服装版型、图案与经确认的穿着方式，保持同一服装款式，不推断面料成分。\n\n商品资料: {{product_info}}\n补充要求: {{brief}}\n视觉呈现方式: {{visual_direction}}",
+            "en": "Create 1 product commercial for Fashion using confirmed product facts and selling points. Preserve its structure, branding and supported usage; do not invent performance or hidden features. Show the garment cut, pattern and approved wearing context; preserve the item and do not infer fiber composition.\n\nProduct information: {{product_info}}\nAdditional requirements: {{brief}}\nVisual direction: {{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/2d/2d397f861cf860deeeff4e6689c82eea181109fd4a2f1fdc26e2885ea29342a4.mp4",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2sf3x9tcisch",
+        "i18n_title": {
+          "en": "Fashion",
+          "ja": "ファッション",
+          "zh": "时尚"
+        },
+        "i18n_description": {
+          "en": "1 finished product commercial",
+          "ja": "完成品コマーシャル1本",
+          "zh": "1个成品商业广告"
+        },
+        "i18n_source_locale": "en",
+        "i18n_source_hash": "6db952e77da6e62a618f09b603f636da240ba0eb76c86cf0115698144e479d73",
+        "collectionTitle": "Product Commercial"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-10-10T03:24:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 38,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFd79qB1i8",
+              "tagName": "ads_creative",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Ads & Creative",
+              "extra": {
+                "tagName": "ads_creative",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Ads & Creative"
+                }
+              },
+              "createTime": "2026-03-20T06:57:53",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-10-10T03:24:17",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2sf3xahcjegw",
+      "title": "食品饮料",
+      "description": "产品广告片 1 条",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "食品饮料",
+            "description": "产品广告片 1 条",
+            "ctaText": "制作广告片"
+          },
+          "en": {
+            "title": "Food & Beverage",
+            "description": "1 finished product commercial",
+            "ctaText": "Create commercial"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/10/10d5a77fd92e9f603cd8372c31412a0222e5e79ef8fa0d65525595c4994cfa67.mp4",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "MANUAL",
+          "skillKey": "product-tvc-advertisement-generator",
+          "skillAssetId": "pnFc3lFCdq",
+          "versionId": "e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "skillId": "industry/product-tvc-advertisement-generator/e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "namespace": "industry",
+          "sourceVersion": "1.0.46"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_images",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、已确认卖点和实际使用方式；没有可留空。"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, confirmed selling points and actual usage. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "brand_assets",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材（选填）"
+                },
+                "en": {
+                  "title": "Brand assets (optional)"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "brief",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "补充要求",
+                  "placeholder": "补充用途、文案、时长或声音要求；不确定可留空，后续确认。"
+                },
+                "en": {
+                  "title": "Additional requirements",
+                  "placeholder": "Add placement, copy, duration or audio requirements. Leave undecided details blank for later confirmation."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "描述希望的视觉效果或提供参考；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 条食品饮料的产品广告片，围绕真实商品及已确认卖点完成商业叙事与成片。保持商品结构、标识和实际使用方式一致；不编造性能或隐藏结构。表现真实包装、食品外观与有依据的食用场景，不编造成分、营养或健康结论。\n\n商品资料: {{product_info}}\n补充要求: {{brief}}\n视觉呈现方式: {{visual_direction}}",
+            "en": "Create 1 product commercial for Food & Beverage using confirmed product facts and selling points. Preserve its structure, branding and supported usage; do not invent performance or hidden features. Show actual packaging, food appearance and supported serving context; do not invent ingredients, nutrition or health claims.\n\nProduct information: {{product_info}}\nAdditional requirements: {{brief}}\nVisual direction: {{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/10/10d5a77fd92e9f603cd8372c31412a0222e5e79ef8fa0d65525595c4994cfa67.mp4",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2sf3x9tcisch",
+        "i18n_title": {
+          "en": "Food & Beverage",
+          "ja": "食品・飲料",
+          "zh": "食品饮料"
+        },
+        "i18n_description": {
+          "en": "1 finished product commercial",
+          "ja": "完成品コマーシャル1本",
+          "zh": "1个成品广告"
+        },
+        "i18n_source_locale": "en",
+        "i18n_source_hash": "2f17474cc73fd703eb09221032bdbdd76c567512ce631d7a0ab1acfaa96beb82",
+        "collectionTitle": "Product Commercial"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-10-10T03:24:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 44,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEwbXcylvq",
+              "tagName": "social_media",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Social Media",
+              "extra": {
+                "tagName": "social_media",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Social Media"
+                }
+              },
+              "createTime": "2026-02-10T12:25:42",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-10-10T03:24:17",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2sf3xahcjny9",
+      "title": "数码",
+      "description": "产品广告片 1 条",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "数码",
+            "description": "产品广告片 1 条",
+            "ctaText": "制作广告片"
+          },
+          "en": {
+            "title": "Electronics",
+            "description": "1 finished product commercial",
+            "ctaText": "Create commercial"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/cd/cd384428f78b7d5aa29827c4e9b06b063eb87e4f0db528cc4a202e545454e1fb.mp4",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "MANUAL",
+          "skillKey": "product-tvc-advertisement-generator",
+          "skillAssetId": "pnFc3lFCdq",
+          "versionId": "e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "skillId": "industry/product-tvc-advertisement-generator/e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "namespace": "industry",
+          "sourceVersion": "1.0.46"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_images",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、已确认卖点和实际使用方式；没有可留空。"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, confirmed selling points and actual usage. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "brand_assets",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材（选填）"
+                },
+                "en": {
+                  "title": "Brand assets (optional)"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "brief",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "补充要求",
+                  "placeholder": "补充用途、文案、时长或声音要求；不确定可留空，后续确认。"
+                },
+                "en": {
+                  "title": "Additional requirements",
+                  "placeholder": "Add placement, copy, duration or audio requirements. Leave undecided details blank for later confirmation."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "描述希望的视觉效果或提供参考；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 条数码的产品广告片，围绕真实商品及已确认卖点完成商业叙事与成片。保持商品结构、标识和实际使用方式一致；不编造性能或隐藏结构。呈现已证实的外观、控件与功能演示，屏幕内容、接口与动作须有素材依据。\n\n商品资料: {{product_info}}\n补充要求: {{brief}}\n视觉呈现方式: {{visual_direction}}",
+            "en": "Create 1 product commercial for Consumer Tech using confirmed product facts and selling points. Preserve its structure, branding and supported usage; do not invent performance or hidden features. Show verified appearance, controls and functions; screens, ports and actions must be supported by assets.\n\nProduct information: {{product_info}}\nAdditional requirements: {{brief}}\nVisual direction: {{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/cd/cd384428f78b7d5aa29827c4e9b06b063eb87e4f0db528cc4a202e545454e1fb.mp4",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2sf3x9tcisch",
+        "i18n_title": {
+          "en": "Electronics",
+          "ja": "エレクトロニクス",
+          "zh": "电子产品"
+        },
+        "i18n_description": {
+          "en": "1 finished product commercial",
+          "ja": "1つの完成品コマーシャル",
+          "zh": "1个成品商业广告"
+        },
+        "i18n_source_locale": "en",
+        "i18n_source_hash": "c3a090143ed1c5340ec2593efe444821d2bc1b082346fd7be2d7c4b9c91a046c",
+        "collectionTitle": "Product Commercial"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-10-10T03:24:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 49,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEwbXcylvq",
+              "tagName": "social_media",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Social Media",
+              "extra": {
+                "tagName": "social_media",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Social Media"
+                }
+              },
+              "createTime": "2026-02-10T12:25:42",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-10-10T03:24:17",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2spviwicdl34",
+      "title": "家居",
+      "description": "产品广告片 1 条",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "家居",
+            "description": "产品广告片 1 条",
+            "ctaText": "制作广告片"
+          },
+          "en": {
+            "title": "Home Decor",
+            "description": "1 finished product commercial",
+            "ctaText": "Create commercial"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/ab/ab9b81d8039df400449610ff51072740cb46db133ef06edbc506e561d9bb799b.mp4",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "MANUAL",
+          "skillKey": "product-tvc-advertisement-generator",
+          "skillAssetId": "pnFc3lFCdq",
+          "versionId": "e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "skillId": "industry/product-tvc-advertisement-generator/e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "namespace": "industry",
+          "sourceVersion": "1.0.46"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_images",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、已确认卖点和实际使用方式；没有可留空。"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, confirmed selling points and actual usage. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "brand_assets",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材（选填）"
+                },
+                "en": {
+                  "title": "Brand assets (optional)"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "brief",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "补充要求",
+                  "placeholder": "补充用途、文案、时长或声音要求；不确定可留空，后续确认。"
+                },
+                "en": {
+                  "title": "Additional requirements",
+                  "placeholder": "Add placement, copy, duration or audio requirements. Leave undecided details blank for later confirmation."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "描述希望的视觉效果或提供参考；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 条家居产品的产品广告片，围绕真实商品及已确认卖点完成商业叙事与成片。保持商品结构、标识和实际使用方式一致；不编造性能或隐藏结构。围绕包装外观、可见质地与有依据的使用方式展开，不编造功效或前后变化。\n\n商品资料: {{product_info}}\n补充要求: {{brief}}\n视觉呈现方式: {{visual_direction}}",
+            "en": "Create 1 product commercial for Home decor using confirmed product facts and selling points. Preserve its structure, branding and supported usage; do not invent performance or hidden features. Show packaging, visible texture and supported usage without invented efficacy or before/after results.\n\nProduct information: {{product_info}}\nAdditional requirements: {{brief}}\nVisual direction: {{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/ab/ab9b81d8039df400449610ff51072740cb46db133ef06edbc506e561d9bb799b.mp4",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2sf3x9tcisch",
+        "i18n_title": {
+          "en": "Home Decor",
+          "ja": "ホームデコレーション",
+          "zh": "家居装饰"
+        },
+        "i18n_description": {
+          "en": "1 finished product commercial",
+          "ja": "1つの完成品コマーシャル",
+          "zh": "1个成品商业广告"
+        },
+        "i18n_source_locale": "en",
+        "i18n_source_hash": "377b164f5b5af624f3ada1b5366e83625ca20ab9b850e3454ac0ccf7c3100af4",
+        "collectionTitle": "Product Commercial"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-10-13T03:49:18",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 32,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEwbXcylvq",
+              "tagName": "social_media",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Social Media",
+              "extra": {
+                "tagName": "social_media",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Social Media"
+                }
+              },
+              "createTime": "2026-02-10T12:25:42",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-10-13T03:49:18",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2spwu2x8y9ds",
+      "title": "户外",
+      "description": "产品广告片 1 条",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "户外",
+            "description": "产品广告片 1 条",
+            "ctaText": "制作广告片"
+          },
+          "en": {
+            "title": "Outdoor",
+            "description": "1 finished product commercial",
+            "ctaText": "Create commercial"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/21/21e805901649fc1a53c6db92f679b5c634e68249560194918a8422836701491e.mp4",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "MANUAL",
+          "skillKey": "product-tvc-advertisement-generator",
+          "skillAssetId": "pnFc3lFCdq",
+          "versionId": "e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "skillId": "industry/product-tvc-advertisement-generator/e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "namespace": "industry",
+          "sourceVersion": "1.0.46"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_images",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、已确认卖点和实际使用方式；没有可留空。"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, confirmed selling points and actual usage. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "brand_assets",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材（选填）"
+                },
+                "en": {
+                  "title": "Brand assets (optional)"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "brief",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "补充要求",
+                  "placeholder": "补充用途、文案、时长或声音要求；不确定可留空，后续确认。"
+                },
+                "en": {
+                  "title": "Additional requirements",
+                  "placeholder": "Add placement, copy, duration or audio requirements. Leave undecided details blank for later confirmation."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "描述希望的视觉效果或提供参考；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 条户外产品的产品广告片，围绕真实商品及已确认卖点完成商业叙事与成片。保持商品结构、标识和实际使用方式一致；不编造性能或隐藏结构。围绕包装外观、可见质地与有依据的使用方式展开，不编造功效或前后变化。\n\n商品资料: {{product_info}}\n补充要求: {{brief}}\n视觉呈现方式: {{visual_direction}}",
+            "en": "Create 1 product commercial for outdoor product using confirmed product facts and selling points. Preserve its structure, branding and supported usage; do not invent performance or hidden features. Show packaging, visible texture and supported usage without invented efficacy or before/after results.\n\nProduct information: {{product_info}}\nAdditional requirements: {{brief}}\nVisual direction: {{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/21/21e805901649fc1a53c6db92f679b5c634e68249560194918a8422836701491e.mp4",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2sf3x9tcisch",
+        "i18n_title": {
+          "en": "Outdoor",
+          "ja": "アウトドア",
+          "zh": "户外"
+        },
+        "i18n_description": {
+          "en": "1 finished product commercial",
+          "ja": "完成品コマーシャル1本",
+          "zh": "1个成品商业广告"
+        },
+        "i18n_source_locale": "en",
+        "i18n_source_hash": "5caa6ef9c32b856ea17cf2344d50743bed714237b6e930617b9b9a355d187e63",
+        "collectionTitle": "Product Commercial"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-10-13T04:04:00",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 26,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEwbXcylvq",
+              "tagName": "social_media",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Social Media",
+              "extra": {
+                "tagName": "social_media",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Social Media"
+                }
+              },
+              "createTime": "2026-02-10T12:25:42",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-10-13T04:04:00",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2spvswe9q5mo",
+      "title": "软件",
+      "description": "产品广告片 1 条",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "软件",
+            "description": "产品广告片 1 条",
+            "ctaText": "制作广告片"
+          },
+          "en": {
+            "title": "SaaS",
+            "description": "1 finished product commercial",
+            "ctaText": "Create commercial"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/00/00dbddf36fe8721e93dc6e3a1ad151ff6cf2acc33e206434f38784a12fe79863.mp4",
+            "coverWidth": 1920,
+            "coverHeight": 1080
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "MANUAL",
+          "skillKey": "product-tvc-advertisement-generator",
+          "skillAssetId": "pnFc3lFCdq",
+          "versionId": "e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "skillId": "industry/product-tvc-advertisement-generator/e0928b0f-6fa3-46e5-a850-e547ae29c7a0",
+          "namespace": "industry",
+          "sourceVersion": "1.0.46"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_images",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、已确认卖点和实际使用方式；没有可留空。"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, confirmed selling points and actual usage. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "brand_assets",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "品牌素材（选填）"
+                },
+                "en": {
+                  "title": "Brand assets (optional)"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "brief",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "补充要求",
+                  "placeholder": "补充用途、文案、时长或声音要求；不确定可留空，后续确认。"
+                },
+                "en": {
+                  "title": "Additional requirements",
+                  "placeholder": "Add placement, copy, duration or audio requirements. Leave undecided details blank for later confirmation."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "描述希望的视觉效果或提供参考；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 条SaaS 的产品广告片，围绕真实商品及已确认卖点完成商业叙事与成片。保持商品结构、标识和实际使用方式一致；不编造性能或隐藏结构。呈现已证实的外观、控件与功能演示，屏幕内容、接口与动作须有素材依据。\n\n商品资料: {{product_info}}\n补充要求: {{brief}}\n视觉呈现方式: {{visual_direction}}",
+            "en": "Create 1 product commercial for SaaS using confirmed product facts and selling points. Preserve its structure, branding and supported usage; do not invent performance or hidden features. Show verified appearance, controls and functions; screens, ports and actions must be supported by assets.\n\nProduct information: {{product_info}}\nAdditional requirements: {{brief}}\nVisual direction: {{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/00/00dbddf36fe8721e93dc6e3a1ad151ff6cf2acc33e206434f38784a12fe79863.mp4",
+        "coverWidth": 1920,
+        "coverHeight": 1080
+      },
+      "extra": {
+        "collectionId": "2sf3x9tcisch",
+        "i18n_title": {
+          "en": "SaaS",
+          "ja": "SaaS",
+          "zh": "SaaS"
+        },
+        "i18n_description": {
+          "en": "1 finished product commercial",
+          "ja": "1つの完成品コマーシャル",
+          "zh": "1个成品商业广告"
+        },
+        "i18n_source_locale": "en",
+        "i18n_source_hash": "ec6ac3cfdbbc948f0dcbad4868fcf9f90231ee0795939b3431f6654ef526f8b3",
+        "collectionTitle": "Product Commercial"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-10-13T03:52:25",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 4,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEwbXcylvq",
+              "tagName": "social_media",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Social Media",
+              "extra": {
+                "tagName": "social_media",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Social Media"
+                }
+              },
+              "createTime": "2026-02-10T12:25:42",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-10-13T03:52:25",
+      "spacePinned": false
+    }
+  ],
+  "collectionMemberCount": 7,
+  "collectionHasMoreMembers": false,
+  "score": 1000000003900
+}

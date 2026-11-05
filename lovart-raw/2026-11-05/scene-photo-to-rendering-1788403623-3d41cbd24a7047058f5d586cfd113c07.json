@@ -1,0 +1,312 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2orgsqbkdvcw",
+  "title": "场景图美化效果图",
+  "description": "把用户随手拍的室内/空间场景照片（客厅、卧室、办公室、店铺、样板间等）美化升级成专业室内设计/建筑效果图。只要用户说\"美化场景图\"\"出一张场景效果图\"\"把这个房间/空间做成效果图\"\"室内效果图\"\"空间渲染图\"，或上传一张空间实拍照片要求变高级、变精致、做成设计方案效果，即使没有明确说\"效果图\"，也一定要使用本技能。核心原则：保留原空间的结构与布局（墙体、门窗、窗景、家具方位、地板材质关系）不变，只提升渲染质感、光影、色调与软装陈设，不把空间改成另一个房间。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/agent/XfXSBRI7w58dozFG.png",
+      "width": 1536,
+      "height": 2048
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/Xmte7TZQas1xUb6I.png",
+        "width": 1792,
+        "height": 2400,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/W3966zakgiEBVamV.png",
+        "width": 1792,
+        "height": 2400,
+        "order": 1
+      }
+    ],
+    "bestFor": [
+      "客厅"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Scene Photo to Interior Rendering",
+        "ja": "シーン写真を美化レンダリング",
+        "zh": "场景图美化效果图"
+      },
+      "i18n_description": {
+        "en": "Transform casual interior/space photos (living rooms, bedrooms, offices, shops, showrooms, etc.) into professional interior design/architectural renderings. Activate this skill whenever users say \"beautify scene photo,\" \"create a scene rendering,\" \"turn this room/space into a rendering,\" \"interior rendering,\" \"space visualization,\" or upload a space photo requesting it to look more premium, refined, or turned into a design proposal—even if they don't explicitly say \"rendering.\" Core principle: Preserve the original spatial structure and layout (walls, doors, windows, window views, furniture positions, flooring material relationships) unchanged, only enhance rendering quality, lighting, color tone, and soft furnishings—do not transform the space into a different room.",
+        "ja": "ユーザーが撮影した室内・空間シーン写真（リビング、寝室、オフィス、店舗、モデルルームなど）を、プロの室内デザイン・建築レンダリングに美化・アップグレードします。ユーザーが「シーン写真を美化」「シーンレンダリングを作成」「この部屋・空間をレンダリングにして」「室内レンダリング」「空間ビジュアライゼーション」と言ったり、空間の実写写真をアップロードして高級感・洗練・デザイン提案効果を求めた場合、明確に「レンダリング」と言わなくても必ずこのスキルを使用してください。核心原則：元の空間構造とレイアウト（壁、ドア、窓、窓からの景色、家具の配置、床材の関係）を保持し、レンダリング質感・光・色調・ソフトファニシングのみを向上させ、空間を別の部屋に変えないこと。",
+        "zh": "把用户随手拍的室内/空间场景照片（客厅、卧室、办公室、店铺、样板间等）美化升级成专业室内设计/建筑效果图。只要用户说\"美化场景图\"\"出一张场景效果图\"\"把这个房间/空间做成效果图\"\"室内效果图\"\"空间渲染图\"，或上传一张空间实拍照片要求变高级、变精致、做成设计方案效果，即使没有明确说\"效果图\"，也一定要使用本技能。核心原则：保留原空间的结构与布局（墙体、门窗、窗景、家具方位、地板材质关系）不变，只提升渲染质感、光影、色调与软装陈设，不把空间改成另一个房间。"
+      },
+      "i18n_prompt": {
+        "en": "Please beautify this [living room/bedroom/shop] scene photo into a professional interior design rendering, preserving the original spatial structure and furniture layout, enhancing texture, lighting, and soft furnishings, with a [Scandinavian/luxury/creamy/etc.] style.",
+        "ja": "この[リビング/寝室/店舗]のシーン写真を、元の空間構造と家具レイアウトを保持しながら、質感・照明・ソフトファニシングを向上させた、プロの室内デザインレンダリングに美化してください。スタイルは[北欧/ラグジュアリー/クリーミー/など]寄りでお願いします。",
+        "zh": "帮我把这张[客厅/卧室/店铺]场景照片美化成一张专业室内设计效果图，保留原有空间结构和家具布局，提升质感、光影和软装陈设，风格偏[北欧/轻奢/奶油风等]。"
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2oqzqphjnr40",
+    "versionAssetId": "2oqzqpqua5fk",
+    "skillKey": "scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "e8c5bacc-01a6-4eb1-8ce6-b2873009a3a1",
+    "skillId": "user-generated/scene-photo-to-rendering-1788403623-3d41cbd24a7047058f5d586cfd113c07/e8c5bacc-01a6-4eb1-8ce6-b2873009a3a1",
+    "i18n_title": {
+      "en": "Scene Photo to Interior Rendering",
+      "ja": "シーン写真を美化レンダリング",
+      "zh": "场景图美化效果图"
+    },
+    "i18n_description": {
+      "en": "Transform casual interior/space photos (living rooms, bedrooms, offices, shops, showrooms, etc.) into professional interior design/architectural renderings. Activate this skill whenever users say \"beautify scene photo,\" \"create a scene rendering,\" \"turn this room/space into a rendering,\" \"interior rendering,\" \"space visualization,\" or upload a space photo requesting it to look more premium, refined, or turned into a design proposal—even if they don't explicitly say \"rendering.\" Core principle: Preserve the original spatial structure and layout (walls, doors, windows, window views, furniture positions, flooring material relationships) unchanged, only enhance rendering quality, lighting, color tone, and soft furnishings—do not transform the space into a different room.",
+      "ja": "ユーザーが撮影した室内・空間シーン写真（リビング、寝室、オフィス、店舗、モデルルームなど）を、プロの室内デザイン・建築レンダリングに美化・アップグレードします。ユーザーが「シーン写真を美化」「シーンレンダリングを作成」「この部屋・空間をレンダリングにして」「室内レンダリング」「空間ビジュアライゼーション」と言ったり、空間の実写写真をアップロードして高級感・洗練・デザイン提案効果を求めた場合、明確に「レンダリング」と言わなくても必ずこのスキルを使用してください。核心原則：元の空間構造とレイアウト（壁、ドア、窓、窓からの景色、家具の配置、床材の関係）を保持し、レンダリング質感・光・色調・ソフトファニシングのみを向上させ、空間を別の部屋に変えないこと。",
+      "zh": "把用户随手拍的室内/空间场景照片（客厅、卧室、办公室、店铺、样板间等）美化升级成专业室内设计/建筑效果图。只要用户说\"美化场景图\"\"出一张场景效果图\"\"把这个房间/空间做成效果图\"\"室内效果图\"\"空间渲染图\"，或上传一张空间实拍照片要求变高级、变精致、做成设计方案效果，即使没有明确说\"效果图\"，也一定要使用本技能。核心原则：保留原空间的结构与布局（墙体、门窗、窗景、家具方位、地板材质关系）不变，只提升渲染质感、光影、色调与软装陈设，不把空间改成另一个房间。"
+    },
+    "i18n_prompts": {
+      "en": "Please beautify this [living room/bedroom/shop] scene photo into a professional interior design rendering, preserving the original spatial structure and furniture layout, enhancing texture, lighting, and soft furnishings, with a [Scandinavian/luxury/creamy/etc.] style.",
+      "ja": "この[リビング/寝室/店舗]のシーン写真を、元の空間構造と家具レイアウトを保持しながら、質感・照明・ソフトファニシングを向上させた、プロの室内デザインレンダリングに美化してください。スタイルは[北欧/ラグジュアリー/クリーミー/など]寄りでお願いします。",
+      "zh": "帮我把这张[客厅/卧室/店铺]场景照片美化成一张专业室内设计效果图，保留原有空间结构和家具布局，提升质感、光影和软装陈设，风格偏[北欧/轻奢/奶油风等]。"
+    },
+    "i18n_source_hash": "8b7b756d80adcae566676bc24dbc6f41779e97fe898f73aaa09e7fbc7e05a9a8",
+    "i18n_source_locale": "zh",
+    "level": "B",
+    "syncedJaCards": [
+      {
+        "itemId": "2orxsguokzcw",
+        "syncTime": "2026-09-03T09:08:44.689Z"
+      }
+    ]
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-03T05:58:16",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 193,
+    "viewCount": 0,
+    "tryCount": 290,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "场景图美化效果图",
+  "skillCover": "https://a.lovart.ai/artifacts/agent/XfXSBRI7w58dozFG.png",
+  "publishTime": "2026-09-03T05:58:16",
+  "spacePinned": false,
+  "score": 0
+}

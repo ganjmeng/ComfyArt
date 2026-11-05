@@ -1,0 +1,332 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pofwo5s4kE",
+  "title": "E-commerce Lifestyle Scene Designer",
+  "description": "Blends products into realistic lifestyle scenes, home decors, or daily outfits to create highly immersive, textless visuals.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "E-commerce Lifestyle Scene Designer",
+        "ja": "EC文字なしライフスタイルシーン画像デザイナー",
+        "zh": "电商场景氛围图设计"
+      },
+      "i18n_description": {
+        "en": "Blends products into realistic lifestyle scenes, home decors, or daily outfits to create highly immersive, textless visuals.",
+        "ja": "商品をリアルな生活シーンやインテリア、日常のコーディネートに溶け込ませ、購買意欲をそそる文字なし画像を生成します。",
+        "zh": "将商品完美融入真实的生活场景、居家氛围或日常穿搭中，生成极具购买代入感的无字大片。"
+      },
+      "prompts": [
+        {
+          "title": "Home & Decor: Desk Lamp Lifestyle Scene",
+          "content": "Help me design a textless lifestyle scene image for this desk lamp. The visual should feel immersive, blending into a warm and cozy home environment, optimized for mobile viewing."
+        }
+      ],
+      "i18n_prompts": {
+        "en": [
+          {
+            "title": "Home & Decor: Desk Lamp Lifestyle Scene",
+            "content": "Help me design a textless lifestyle scene image for this desk lamp. The visual should feel immersive, blending into a warm and cozy home environment, optimized for mobile viewing."
+          }
+        ],
+        "ja": [
+          {
+            "title": "ホーム＆デコ：デスクライトのライフスタイルシーン",
+            "content": "このデスクライトの文字なしライフスタイルシーン画像を作成してください。温かみのある心地よいホーム環境に溶け込ませ、生活感と代入感のあるビジュアルにし、スマホでの閲覧に最適化されたレイアウトにしてください。"
+          }
+        ],
+        "zh": [
+          {
+            "title": "家居生活：台灯场景图设计",
+            "content": "帮我为这款台灯设计一张无文字场景氛围图。画面需要有生活代入感，融入温馨舒适的居家环境，适合手机端快速浏览。"
+          }
+        ]
+      },
+      "i18n_prompt": {
+        "en": "Help me design a textless lifestyle scene image for this desk lamp. The visual should feel immersive, blending into a warm and cozy home environment, optimized for mobile viewing.",
+        "ja": "このデスクライトの文字なしライフスタイルシーン画像を作成してください。温かみのある心地よいホーム環境に溶け込ませ、生活感と代入感のあるビジュアルにし、スマホでの閲覧に最適化されたレイアウトにしてください。",
+        "zh": "帮我为这款台灯设计一张无文字场景氛围图。画面需要有生活代入感，融入温馨舒适的居家环境，适合手机端快速浏览。"
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/b2/b2c57be9251419d367a0b6ada7c7f519f69dd195eb379a01ff342d753741fc1b.mp4",
+      "mediaType": "video",
+      "width": 960,
+      "height": 720,
+      "posterUrl": ""
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/cd/cd9c1a3ba18a2865b7be0835c9b2fd79ab41f0fcbaab4f27cf7399f4eb0f5c4e.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/6a/6ae6a74d1cca68027b8b97eacfd7e8bf7507da74a20f2480fd3eb776092f7995.webp",
+        "width": 800,
+        "height": 800,
+        "order": 1
+      }
+    ],
+    "bestFor": [
+      "lifestyle",
+      "natural use",
+      "street style",
+      "mood/authenticity"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "otySkl0Cl2",
+    "versionAssetId": "pofwo1Lp6g",
+    "skillKey": "marketing-style-lifestyle-scene",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/marketing-style-lifestyle-scene",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "0c52b84f-b914-4ec0-8cf3-70967de6b591",
+    "skillId": "industry/marketing-style-lifestyle-scene/0c52b84f-b914-4ec0-8cf3-70967de6b591",
+    "level": "A",
+    "i18n_title": {
+      "en": "E-commerce Lifestyle Scene Designer",
+      "ja": "Eコマース ライフスタイルシーンデザイナー",
+      "zh": "电商生活场景设计师"
+    },
+    "i18n_description": {
+      "en": "Blends products into realistic lifestyle scenes, home decors, or daily outfits to create highly immersive, textless visuals.",
+      "ja": "商品をリアルなライフスタイルシーン、ホームデコレーション、または日常の服装に自然に溶け込ませ、テキストなしの没入感の高いビジュアルを作成します。",
+      "zh": "将产品融入真实的生活场景、家居装饰或日常穿搭中，创造高度沉浸式的无文字视觉效果。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "d03dc00000aacf7a1ab5a0e79b154834d0d9aad7d71b7532fa7e01b6a4371514",
+    "version": "1.0.46"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-06T11:48:28",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 370,
+    "viewCount": 0,
+    "tryCount": 794,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "E-commerce Lifestyle Scene Designer",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/b2/b2c57be9251419d367a0b6ada7c7f519f69dd195eb379a01ff342d753741fc1b.mp4",
+  "publishTime": "2026-08-06T11:48:28",
+  "spacePinned": null,
+  "score": 0
+}

@@ -1,0 +1,391 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2n7nnihfquio",
+  "title": "Product Website Designer",
+  "description": "Design professional product websites from a single idea, not from templates.\nThis Skill follows a real product design workflow to infer product positioning, target audience, information architecture, visual direction, and page structure before generating high-quality website designs. Instead of simply assembling predefined sections, it builds cohesive, production-ready websites with consistent branding, user experience, and conversion-focused layouts.\nSuitable for AI products, SaaS, enterprise software, consumer brands, hospitality, lifestyle, and more.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Premium Tech SaaS Landing Page",
+        "ja": "プレミアムテックSaaSランディングページ",
+        "zh": "高端科技SaaS落地页"
+      },
+      "i18n_description": {
+        "en": "Generate premium-quality landing pages for AI, SaaS, and technology products using professional product design workflows and built-in quality validation.",
+        "ja": "プロフェッショナルなプロダクトデザインワークフローと組み込み品質検証を使用して、AI、SaaS、テクノロジー製品向けのプレミアム品質のランディングページを生成します。",
+        "zh": "使用专业产品设计工作流程和内置质量验证，为AI、SaaS和科技产品生成高品质落地页。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://models-test-persist.shakker.cloud/img/1742caec5a9e4e5c974e3699a231bbed/62cbfb2430927e1a0c05346726bb7fa19db56b10.png",
+      "width": 1536,
+      "height": 1024,
+      "posterUrl": "https://a.lovart.ai/asset/skill-plaza/b2/b2ce840e31a612cd7a9945aafb42e1b6008feb2f5a07faea34ebb9f17eb90f5e.png"
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://models-test-persist.shakker.cloud/img/1742caec5a9e4e5c974e3699a231bbed/5a633c8c38d0d4680657648c6e07c5238b62591e.mov",
+        "width": 3360,
+        "height": 1530,
+        "order": 0
+      },
+      {
+        "mediaType": "video",
+        "url": "https://models-test-persist.shakker.cloud/img/1742caec5a9e4e5c974e3699a231bbed/7599426792de3f7f099c52d8fea3bd3f8a5ae5ae.mov",
+        "width": 3360,
+        "height": 1530,
+        "order": 1
+      },
+      {
+        "mediaType": "video",
+        "url": "https://models-test-persist.shakker.cloud/img/1742caec5a9e4e5c974e3699a231bbed/5970455868353e5858dee8f7e61f8b6e22e95a39.mov",
+        "width": 3360,
+        "height": 1530,
+        "order": 2
+      }
+    ],
+    "bestFor": [
+      "Website Design",
+      "Landing Page",
+      "Product Design",
+      "SaaS",
+      "AI",
+      "Brand Website",
+      "UI Design",
+      "Web Design",
+      "Minimal",
+      "Modern"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2n7nnh8a36yo",
+    "versionAssetId": "2n7nnigeapz4",
+    "skillKey": "premium-tech-saas-landing-page-1787063733-6647cf9c516b4f1d876e3dd0986ea908",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/premium-tech-saas-landing-page-1787063733-6647cf9c516b4f1d876e3dd0986ea908",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "b0aa2edf-604c-421e-ac95-9e33a29f6c4f",
+    "skillId": "user-generated/premium-tech-saas-landing-page-1787063733-6647cf9c516b4f1d876e3dd0986ea908/b0aa2edf-604c-421e-ac95-9e33a29f6c4f",
+    "i18n_title": {
+      "en": "Product Website Designer",
+      "ja": "製品ウェブサイトデザイナー",
+      "zh": "产品网站设计师"
+    },
+    "i18n_description": {
+      "en": "Design professional product websites from a single idea, not from templates.\nThis Skill follows a real product design workflow to infer product positioning, target audience, information architecture, visual direction, and page structure before generating high-quality website designs. Instead of simply assembling predefined sections, it builds cohesive, production-ready websites with consistent branding, user experience, and conversion-focused layouts.\nSuitable for AI products, SaaS, enterprise software, consumer brands, hospitality, lifestyle, and more.",
+      "ja": "テンプレートではなく、1つのアイデアからプロフェッショナルな製品ウェブサイトをデザインします。\nこのスキルは、実際の製品デザインワークフローに従い、製品ポジショニング、ターゲットオーディエンス、情報アーキテクチャ、ビジュアルディレクション、ページ構造を推測した上で、高品質なウェブサイトデザインを生成します。事前定義されたセクションを単に組み合わせるのではなく、一貫したブランディング、ユーザーエクスペリエンス、コンバージョン重視のレイアウトを持つ、統一性のある本番環境対応のウェブサイトを構築します。\nAI製品、SaaS、エンタープライズソフトウェア、消費者ブランド、ホスピタリティ、ライフスタイルなどに適しています。",
+      "zh": "从单一创意设计专业产品网站,而非使用模板。\n本技能遵循真实的产品设计工作流程,在生成高质量网站设计之前,先推断产品定位、目标受众、信息架构、视觉方向和页面结构。它不是简单地组装预定义的部分,而是构建具有一致品牌、用户体验和转化导向布局的连贯、可投入生产的网站。\n适用于AI产品、SaaS、企业软件、消费品牌、酒店、生活方式等领域。"
+    },
+    "i18n_prompts": {
+      "en": "",
+      "ja": "",
+      "zh": ""
+    },
+    "i18n_source_hash": "5c84aae5abcaa4e52ec5b1879029f93e0d62e4164e940825625027a1f91928b7",
+    "i18n_source_locale": "en",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-18T14:35:35",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 217,
+    "viewCount": 0,
+    "tryCount": 579,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFcUzQIgKs",
+      "tagName": "website",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Website",
+      "extra": {
+        "tagName": "website",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Website"
+        }
+      },
+      "createTime": "2026-03-20T06:55:03",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Product Website Designer",
+  "skillCover": "https://models-test-persist.shakker.cloud/img/1742caec5a9e4e5c974e3699a231bbed/62cbfb2430927e1a0c05346726bb7fa19db56b10.png",
+  "publishTime": "2026-08-18T14:35:35",
+  "spacePinned": null,
+  "score": 0,
+  "_en": {
+    "title": "Product Website Designer",
+    "description": "Design professional product websites from a single idea, not from templates.\nThis Skill follows a real product design workflow to infer product positioning, target audience, information architecture, visual direction, and page structure before generating high-quality website designs. Instead of simply assembling predefined sections, it builds cohesive, production-ready websites with consistent branding, user experience, and conversion-focused layouts.\nSuitable for AI products, SaaS, enterprise software, consumer brands, hospitality, lifestyle, and more.",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "Premium Tech SaaS Landing Page",
+          "ja": "プレミアムテックSaaSランディングページ",
+          "zh": "高端科技SaaS落地页"
+        },
+        "i18n_description": {
+          "en": "Generate premium-quality landing pages for AI, SaaS, and technology products using professional product design workflows and built-in quality validation.",
+          "ja": "プロフェッショナルなプロダクトデザインワークフローと組み込み品質検証を使用して、AI、SaaS、テクノロジー製品向けのプレミアム品質のランディングページを生成します。",
+          "zh": "使用专业产品设计工作流程和内置质量验证，为AI、SaaS和科技产品生成高品质落地页。"
+        },
+        "i18n_prompt": {
+          "en": "",
+          "ja": "",
+          "zh": ""
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

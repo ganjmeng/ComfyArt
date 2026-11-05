@@ -1,0 +1,410 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pj7ljezKxy",
+  "title": "Multi-Angle Image Generator",
+  "description": "Multi-angle images for products and people.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "universal-multi-angle-grid",
+        "ja": "universal-multi-angle-grid",
+        "zh": "多角度多宫格"
+      },
+      "i18n_description": {
+        "en": "Controlled Planning, Generation, Frame-by-Frame Verification, and Single-Frame Exporting Skill for Multi-Angle Product Grid Layouts",
+        "ja": "多角度商品グリッドレイアウトのための制御された計画、生成、フレーム単位の検証、および単一フレームエクスポートスキル",
+        "zh": "产品多角度宫格的受控规划、生成、逐格校验与单格导出 Skill。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "carousel",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/d0/d09e23b14dd4cfcd5b3c532196a4720bfd9430388cc9ba4737771bb3ea2aad78.webp",
+      "width": 640,
+      "height": 480
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/48/48b262f4d7856394e72ebf0b24f939da9e9fd7b13fd3cdcda2a5f8ea4d53e45e.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/0e/0e236e97e2c1fa216bba6f905fc653350683755c0273761e66166419af07c02b.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/d7/d73f8426cef422b45ac81cb02fc86bd2c8abb1dbb82f49b0828863a490cc7fac.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/cf/cf27b66d1e6f47357f2b1c303be4f7f6d0580f6f5918544ea954d8ceace4940a.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/df/dfa379bd89adf5621d6cc08ec841af8c42ded232deb2886c23b0b0f12fa3a3f2.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/32/326d0110ef7cc9eb8c3bbf9ad7243978d80ce293e896b054f3470cd455bf741e.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/cd/cdfb27d5e10e49a647b63886f5406a2ccfb4714336016811f01572f96ab0dff8.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/02/0272bca693378e417de2239d891cb88214f7e4d83cf2f932e1229b714ca74503.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 7
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/30/30b591b5b973a2f984aad8f44365f31ffa98f953558aec5c89e563fd180ca626.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 8
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/2c/2c3c5102b3073202c0ebcfa7b77207828159304327b15c0a8534b929f3a4167d.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 9
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/0a/0afc8976272d904619a63bcdf61e625bb5b9a52f095c3b1f1cc9019f4c98ed73.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 10
+      }
+    ],
+    "bestFor": [
+      "Multi-Angle Grid",
+      "Product Photography",
+      "Portrait",
+      "Editorial",
+      "Character Sheet",
+      "Commercial",
+      "Campaign"
+    ],
+    "showMarkdown": false,
+    "coverList": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/d0/d09e23b14dd4cfcd5b3c532196a4720bfd9430388cc9ba4737771bb3ea2aad78.webp",
+        "width": 640,
+        "height": 480
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/1e/1ea2e53e25ec768208278c675e233f4446d9b23cc7359912907b5b616a0b5e2b.webp",
+        "width": 1536,
+        "height": 1152
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/b6/b66ef2fc6638f3e88737d1371d3e0dcc52483478108ecf9b68732a558989d4d9.webp",
+        "width": 1062,
+        "height": 796
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/32/3227d0c9d5ffee39d93afc662bf598b0fbee9b5b476be62d624fcde60940871f.webp",
+        "width": 1816,
+        "height": 1362
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/b2/b26e5d805e73d0cd767b2182ee9f0181918fd45934ed2a84d2344476945243c8.webp",
+        "width": 1536,
+        "height": 1152
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/06/061680ec77b18e63cb5c276599d1612e073373ae58ef7680de5e0767adf9fab8.webp",
+        "width": 1536,
+        "height": 1152
+      }
+    ],
+    "coverMotion": "slide",
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "p109uHtbiM",
+    "versionAssetId": "pj7ljaT12U",
+    "skillKey": "universal-multi-angle-grid",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/universal-multi-angle-grid",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "c0ee5222-0594-4cf7-a7d8-bb63545faeb4",
+    "skillId": "industry/universal-multi-angle-grid/c0ee5222-0594-4cf7-a7d8-bb63545faeb4",
+    "level": "S",
+    "i18n_title": {
+      "en": "Multi-Angle Image Generator",
+      "ja": "マルチアングル画像ジェネレーター",
+      "zh": "多角度图像生成器"
+    },
+    "i18n_description": {
+      "en": "Multi-angle images for products and people.",
+      "ja": "製品や人物のマルチアングル画像を生成します。",
+      "zh": "为产品和人物生成多角度图像。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "55fa4bdb7dc7afbb1b76ec83789a9ef214471b124ffabd694f4cdfbeda117090",
+    "version": "1.0.25"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-03T09:36:00",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 1214,
+    "viewCount": 0,
+    "tryCount": 3897,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Multi-Angle Image Generator",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/d0/d09e23b14dd4cfcd5b3c532196a4720bfd9430388cc9ba4737771bb3ea2aad78.webp",
+  "publishTime": "2026-08-03T09:36:00",
+  "spacePinned": false,
+  "score": 0
+}

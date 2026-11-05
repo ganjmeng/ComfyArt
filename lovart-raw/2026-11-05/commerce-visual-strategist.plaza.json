@@ -1,0 +1,324 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pwfbX8ld0k",
+  "title": "Commerce Visual Strategist",
+  "description": "Selling points into a confirmed visual strategy",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Commerce Visual Strategist",
+        "ja": "Commerce Visual Strategist",
+        "zh": "Commerce Visual Strategist"
+      },
+      "i18n_description": {
+        "en": "全品类商品视觉定位与生图策略 Skill。用户上传或描述女装、男装、配饰、家居、运动户外、数码家电、美妆、食品、母婴、宠物等电商商品，并要求视觉定位、创意方向、商品拍摄策略、种草视觉方向、广告创意方向、GPT Image 2 提示词或高转化视觉方案时使用。先按品类建立 category_lock，读取对应品类 playbook，把视觉主承载体和证明逻辑翻译成清晰的“卖点可视化逻辑”，输出差异化视觉定位、多样性策略和目标市场语言锁并停顿等待确认；确认后才进入提示词与生图执行。平台只作为定位线索，不在第一阶段提前套平台化产出模板。",
+        "ja": "全品类商品视觉定位与生图策略 Skill。用户上传或描述女装、男装、配饰、家居、运动户外、数码家电、美妆、食品、母婴、宠物等电商商品，并要求视觉定位、创意方向、商品拍摄策略、种草视觉方向、广告创意方向、GPT Image 2 提示词或高转化视觉方案时使用。先按品类建立 category_lock，读取对应品类 playbook，把视觉主承载体和证明逻辑翻译成清晰的“卖点可视化逻辑”，输出差异化视觉定位、多样性策略和目标市场语言锁并停顿等待确认；确认后才进入提示词与生图执行。平台只作为定位线索，不在第一阶段提前套平台化产出模板。",
+        "zh": "全品类商品视觉定位与生图策略 Skill。用户上传或描述女装、男装、配饰、家居、运动户外、数码家电、美妆、食品、母婴、宠物等电商商品，并要求视觉定位、创意方向、商品拍摄策略、种草视觉方向、广告创意方向、GPT Image 2 提示词或高转化视觉方案时使用。先按品类建立 category_lock，读取对应品类 playbook，把视觉主承载体和证明逻辑翻译成清晰的“卖点可视化逻辑”，输出差异化视觉定位、多样性策略和目标市场语言锁并停顿等待确认；确认后才进入提示词与生图执行。平台只作为定位线索，不在第一阶段提前套平台化产出模板。"
+      },
+      "prompts": [
+        {
+          "title": "",
+          "content": ""
+        }
+      ],
+      "i18n_prompts": {
+        "en": [
+          {
+            "title": "",
+            "content": ""
+          }
+        ],
+        "ja": [
+          {
+            "title": "",
+            "content": ""
+          }
+        ],
+        "zh": [
+          {
+            "title": "",
+            "content": ""
+          }
+        ]
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/fb/fb939a880e575104b9679c83fcd18b96a4c7f88314c2e363e08c46e1dd24a022.mp4",
+      "mediaType": "video",
+      "width": 1440,
+      "height": 1080
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/31/31f7ff910172624e9c562da6d49c7ab304558104659324a3097ff1f9574f9c91.mp4",
+        "width": 640,
+        "height": 480,
+        "order": 0
+      }
+    ],
+    "bestFor": [
+      "Visual strategy",
+      "creative direction",
+      "pre-production, positioning"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "pm31I3zPk4",
+    "versionAssetId": "po4oLuqtTa",
+    "skillKey": "commerce-visual-strategist",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/commerce-visual-strategist",
+    "namespace": "industry",
+    "type": "PGC",
+    "versionId": "bfbeb11c-9be3-4dc5-9e5e-34da5a3db993",
+    "skillId": "industry/commerce-visual-strategist/bfbeb11c-9be3-4dc5-9e5e-34da5a3db993",
+    "level": "A",
+    "i18n_title": {
+      "en": "Commerce Visual Strategist",
+      "ja": "コマースビジュアルストラテジスト",
+      "zh": "电商视觉策略师"
+    },
+    "i18n_description": {
+      "en": "Selling points into a confirmed visual strategy",
+      "ja": "セールスポイントを確立されたビジュアル戦略に変換",
+      "zh": "将卖点转化为确定的视觉策略"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "4386ed31535cabfcc915c38dee416da13386edab45da96aa8d9359ff8b511dea",
+    "version": "1.0.5"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-11T07:24:42",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 315,
+    "viewCount": 0,
+    "tryCount": 951,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Commerce Visual Strategist",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/fb/fb939a880e575104b9679c83fcd18b96a4c7f88314c2e363e08c46e1dd24a022.mp4",
+  "publishTime": "2026-08-11T07:24:42",
+  "spacePinned": null,
+  "score": 0
+}

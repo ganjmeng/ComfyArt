@@ -1,0 +1,372 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2okmcgt2bgu8",
+  "title": "CRT复古界面像素插画",
+  "description": "把上传照片（人物/合影/生物/物品）重绘成一张 1980s CRT 复古电脑界面硬方块像素插画：照片仅作身份锚点，独立创作夸张的终端吉祥物式卡通 + 层级复古窗口 + 强制桶形畸变与固定签名；生成前先采集配色与画幅。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/VBroaCZpqN2RG58v.webp",
+      "width": 738,
+      "height": 814
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/24lX2U7S0LGQM3CM.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 0
+      }
+    ],
+    "bestFor": [
+      "图像处理"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "CRT Retro Interface Pixel Illustration",
+        "ja": "CRTレトロインターフェースピクセルイラスト",
+        "zh": "CRT复古界面像素插画"
+      },
+      "i18n_description": {
+        "en": "Redraw uploaded photos (people/group photos/creatures/objects) into a 1980s CRT retro computer interface hard-block pixel illustration: the photo serves only as an identity anchor, independently creating exaggerated terminal mascot-style cartoons + layered retro windows + enforced barrel distortion and fixed signature; collect color scheme and aspect ratio before generation.",
+        "ja": "アップロードした写真（人物/集合写真/生物/物品）を1980年代CRTレトロコンピュータインターフェースのハードブロックピクセルイラストに再描画：写真はアイデンティティアンカーとしてのみ機能し、誇張されたターミナルマスコット風カートゥーン+階層化されたレトロウィンドウ+強制樽型歪みと固定署名を独立して作成；生成前に配色とアスペクト比を収集。",
+        "zh": "把上传照片（人物/合影/生物/物品）重绘成一张 1980s CRT 复古电脑界面硬方块像素插画：照片仅作身份锚点，独立创作夸张的终端吉祥物式卡通 + 层级复古窗口 + 强制桶形畸变与固定签名；生成前先采集配色与画幅。"
+      },
+      "i18n_prompt": {
+        "en": "Convert this photo into a 1980s CRT retro computer interface hard-block pixel illustration (ask me about color scheme and aspect ratio first): [image to process]. Optional color schemes: classic/pink/geek01/geek02/retro01/retro02/game01/game02/as-shown.",
+        "ja": "この写真を1980年代CRTレトロコンピュータインターフェースのハードブロックピクセルイラストに変換（まず配色とアスペクト比を聞いてください）：[処理する画像]。選択可能な配色：クラシック/ピンク/ギーク01/ギーク02/レトロ01/レトロ02/ゲーム01/ゲーム02/画像通り。",
+        "zh": "把这张照片转成 1980s CRT 复古电脑界面的硬方块像素插画（先问我配色和画幅）：[待处理图片]。可选配色：经典/粉黛/极客01/极客02/复古01/复古02/游戏01/游戏02/如图。"
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2okktvo837cw",
+    "versionAssetId": "2okktvwtqm80",
+    "skillKey": "crt-interface-pixel-illustration-1788248311-afafde0e782247efb235976e7236c3da",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/crt-interface-pixel-illustration-1788248311-afafde0e782247efb235976e7236c3da",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "81971589-5184-4971-a8e1-3888bf80a299",
+    "skillId": "user-generated/crt-interface-pixel-illustration-1788248311-afafde0e782247efb235976e7236c3da/81971589-5184-4971-a8e1-3888bf80a299",
+    "i18n_title": {
+      "en": "CRT Retro Interface Pixel Illustration",
+      "ja": "CRTレトロインターフェースピクセルイラスト",
+      "zh": "CRT复古界面像素插画"
+    },
+    "i18n_description": {
+      "en": "Redraw uploaded photos (people/group photos/creatures/objects) into a 1980s CRT retro computer interface hard-block pixel illustration: the photo serves only as an identity anchor, independently creating exaggerated terminal mascot-style cartoons + layered retro windows + enforced barrel distortion and fixed signature; collect color scheme and aspect ratio before generation.",
+      "ja": "アップロードした写真（人物/集合写真/生物/物品）を1980年代CRTレトロコンピュータインターフェースのハードブロックピクセルイラストに再描画：写真はアイデンティティアンカーとしてのみ機能し、誇張されたターミナルマスコット風カートゥーン+階層化されたレトロウィンドウ+強制樽型歪みと固定署名を独立して作成；生成前に配色とアスペクト比を収集。",
+      "zh": "把上传照片（人物/合影/生物/物品）重绘成一张 1980s CRT 复古电脑界面硬方块像素插画：照片仅作身份锚点，独立创作夸张的终端吉祥物式卡通 + 层级复古窗口 + 强制桶形畸变与固定签名；生成前先采集配色与画幅。"
+    },
+    "i18n_prompts": {
+      "en": "Convert this photo into a 1980s CRT retro computer interface hard-block pixel illustration (ask me about color scheme and aspect ratio first): [image to process]. Optional color schemes: classic/pink/geek01/geek02/retro01/retro02/game01/game02/as-shown.",
+      "ja": "この写真を1980年代CRTレトロコンピュータインターフェースのハードブロックピクセルイラストに変換（まず配色とアスペクト比を聞いてください）：[処理する画像]。選択可能な配色：クラシック/ピンク/ギーク01/ギーク02/レトロ01/レトロ02/ゲーム01/ゲーム02/画像通り。",
+      "zh": "把这张照片转成 1980s CRT 复古电脑界面的硬方块像素插画（先问我配色和画幅）：[待处理图片]。可选配色：经典/粉黛/极客01/极客02/复古01/复古02/游戏01/游戏02/如图。"
+    },
+    "i18n_source_hash": "c2aad5aafb1cd42cbe031e1e5f94a33f4060f8cbe34d58f3f58fe1e037e2e64f",
+    "i18n_source_locale": "zh",
+    "level": "B",
+    "syncedJaCards": [
+      {
+        "itemId": "2orxv0ydsutc",
+        "syncTime": "2026-09-03T09:09:32.570Z"
+      }
+    ]
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-01T07:55:31",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 129,
+    "viewCount": 0,
+    "tryCount": 88,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "CRT复古界面像素插画",
+  "skillCover": "https://a.lovart.ai/artifacts/user/VBroaCZpqN2RG58v.webp",
+  "publishTime": "2026-09-01T07:55:31",
+  "spacePinned": null,
+  "score": 0,
+  "_en": {
+    "title": "CRT复古界面像素插画",
+    "description": "把上传照片（人物/合影/生物/物品）重绘成一张 1980s CRT 复古电脑界面硬方块像素插画：照片仅作身份锚点，独立创作夸张的终端吉祥物式卡通 + 层级复古窗口 + 强制桶形畸变与固定签名；生成前先采集配色与画幅。",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "CRT Retro Interface Pixel Illustration",
+          "ja": "CRTレトロインターフェースピクセルイラスト",
+          "zh": "CRT复古界面像素插画"
+        },
+        "i18n_description": {
+          "en": "Redraw uploaded photos (people/group photos/creatures/objects) into a 1980s CRT retro computer interface hard-block pixel illustration: the photo serves only as an identity anchor, independently creating exaggerated terminal mascot-style cartoons + layered retro windows + enforced barrel distortion and fixed signature; collect color scheme and aspect ratio before generation.",
+          "ja": "アップロードした写真（人物/集合写真/生物/物品）を1980年代CRTレトロコンピュータインターフェースのハードブロックピクセルイラストに再描画：写真はアイデンティティアンカーとしてのみ機能し、誇張されたターミナルマスコット風カートゥーン+階層化されたレトロウィンドウ+強制樽型歪みと固定署名を独立して作成；生成前に配色とアスペクト比を収集。",
+          "zh": "把上传照片（人物/合影/生物/物品）重绘成一张 1980s CRT 复古电脑界面硬方块像素插画：照片仅作身份锚点，独立创作夸张的终端吉祥物式卡通 + 层级复古窗口 + 强制桶形畸变与固定签名；生成前先采集配色与画幅。"
+        },
+        "i18n_prompt": {
+          "en": "Convert this photo into a 1980s CRT retro computer interface hard-block pixel illustration (ask me about color scheme and aspect ratio first): [image to process]. Optional color schemes: classic/pink/geek01/geek02/retro01/retro02/game01/game02/as-shown.",
+          "ja": "この写真を1980年代CRTレトロコンピュータインターフェースのハードブロックピクセルイラストに変換（まず配色とアスペクト比を聞いてください）：[処理する画像]。選択可能な配色：クラシック/ピンク/ギーク01/ギーク02/レトロ01/レトロ02/ゲーム01/ゲーム02/画像通り。",
+          "zh": "把这张照片转成 1980s CRT 复古电脑界面的硬方块像素插画（先问我配色和画幅）：[待处理图片]。可选配色：经典/粉黛/极客01/极客02/复古01/复古02/游戏01/游戏02/如图。"
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

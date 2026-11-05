@@ -1,0 +1,328 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2oo2xnrezl6o",
+  "title": "AI服装换装skill",
+  "description": "基于多张原图模特图与统一服装参考，批量替换同款服装并保持模特面容、姿势、场景一致，支持脸部高清重绘与场景替换/保留，适用于电商主图、详情页套图与社媒穿搭内容。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "AI Clothing Swap Skill",
+        "ja": "AI服装換装スキル",
+        "zh": "AI服装换装skill"
+      },
+      "i18n_description": {
+        "en": "Based on multiple original model images and a unified clothing reference, batch replace with the same clothing while maintaining model's face, pose, and scene consistency. Supports high-definition face redrawing and scene replacement/preservation. Suitable for e-commerce main images, detail page image sets, and social media outfit content.",
+        "ja": "複数の元モデル画像と統一された服装参照に基づき、モデルの顔・ポーズ・シーンの一貫性を保ちながら同じ服装を一括置換。顔の高精細再描画とシーンの置換/保持をサポート。EC商品メイン画像、詳細ページ画像セット、SNSコーディネートコンテンツに適用。",
+        "zh": "基于多张原图模特图与统一服装参考，批量替换同款服装并保持模特面容、姿势、场景一致，支持脸部高清重绘与场景替换/保留，适用于电商主图、详情页套图与社媒穿搭内容。"
+      },
+      "i18n_prompt": {
+        "en": "Original images are the [1-N]th images, change clothing to the clothing and accessories in the [N+1]th image; refer to the [X]th image for top details, refer to the [Y]th image for pants details; redraw model's face in high definition; keep the original scene (or change to the [Z]th scene reference image).",
+        "ja": "元画像は第[1-N]枚目、服装を第[N+1]枚目の服装とアクセサリーに変更；トップスの詳細は第[X]枚目を参考、パンツの詳細は第[Y]枚目を参考；モデルの顔を高精細に再描画；シーンは元画像を保持（または第[Z]枚目のシーン参照画像に変更）。",
+        "zh": "原图为第[1-N]张，服装改为第[N+1]张中的服装和配饰；上衣细节参考第[X]张，裤子细节参考第[Y]张；模特脸部重绘高清；场景保持原图（或改为第[Z]张场景参考图）。"
+      }
+    },
+    "coverMode": "carousel",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/PTmPs9pR2PDgR2M3.webp",
+      "width": 1792,
+      "height": 2400
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/PTmPs9pR2PDgR2M3.webp",
+        "width": 1792,
+        "height": 2400,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/cTobjPebIvESzimz.webp",
+        "width": 1084,
+        "height": 1451,
+        "order": 1
+      }
+    ],
+    "bestFor": [
+      "服装换装 模特换装"
+    ],
+    "showMarkdown": false,
+    "coverList": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/PTmPs9pR2PDgR2M3.webp",
+        "width": 1792,
+        "height": 2400
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/cTobjPebIvESzimz.webp",
+        "width": 1084,
+        "height": 1451
+      }
+    ],
+    "coverMotion": "fade",
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2oo0mawme0hs",
+    "versionAssetId": "2oo0wphvqeps",
+    "skillKey": "fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831",
+    "sourceVersion": "1.0.1",
+    "linkUrl": "lovart://skill/fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "7f8baed9-789b-4898-833b-f8a37da547de",
+    "skillId": "user-generated/fashion-unified-outfit-change-v2-1788331572-47031b165c8a4a039f41f8b454834831/7f8baed9-789b-4898-833b-f8a37da547de",
+    "i18n_title": {
+      "en": "AI Clothing Swap Skill",
+      "ja": "AI服装換装スキル",
+      "zh": "AI服装换装skill"
+    },
+    "i18n_description": {
+      "en": "Based on multiple original model images and a unified clothing reference, batch replace with the same clothing while maintaining model's face, pose, and scene consistency. Supports high-definition face redrawing and scene replacement/preservation. Suitable for e-commerce main images, detail page image sets, and social media outfit content.",
+      "ja": "複数の元モデル画像と統一された服装参照に基づき、モデルの顔・ポーズ・シーンの一貫性を保ちながら同じ服装を一括置換。顔の高精細再描画とシーンの置換/保持をサポート。EC商品メイン画像、詳細ページ画像セット、SNSコーディネートコンテンツに適用。",
+      "zh": "基于多张原图模特图与统一服装参考，批量替换同款服装并保持模特面容、姿势、场景一致，支持脸部高清重绘与场景替换/保留，适用于电商主图、详情页套图与社媒穿搭内容。"
+    },
+    "i18n_prompts": {
+      "en": "Original images are the [1-N]th images, change clothing to the clothing and accessories in the [N+1]th image; refer to the [X]th image for top details, refer to the [Y]th image for pants details; redraw model's face in high definition; keep the original scene (or change to the [Z]th scene reference image).",
+      "ja": "元画像は第[1-N]枚目、服装を第[N+1]枚目の服装とアクセサリーに変更；トップスの詳細は第[X]枚目を参考、パンツの詳細は第[Y]枚目を参考；モデルの顔を高精細に再描画；シーンは元画像を保持（または第[Z]枚目のシーン参照画像に変更）。",
+      "zh": "原图为第[1-N]张，服装改为第[N+1]张中的服装和配饰；上衣细节参考第[X]张，裤子细节参考第[Y]张；模特脸部重绘高清；场景保持原图（或改为第[Z]张场景参考图）。"
+    },
+    "i18n_source_hash": "419c72627c166d0bdb3599c735c4d5379da7ee9943137ee3d3b156af0b67fd14",
+    "i18n_source_locale": "zh",
+    "level": "B",
+    "syncedJaCards": [
+      {
+        "itemId": "2orxtosprv9c",
+        "syncTime": "2026-09-03T09:09:07.434Z"
+      }
+    ]
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-02T07:12:10",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 231,
+    "viewCount": 0,
+    "tryCount": 296,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "AI服装换装skill",
+  "skillCover": "https://a.lovart.ai/artifacts/user/PTmPs9pR2PDgR2M3.webp",
+  "publishTime": "2026-09-02T07:12:10",
+  "spacePinned": null,
+  "score": 0
+}

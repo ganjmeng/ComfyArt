@@ -1,0 +1,314 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2nz4fasot3pc",
+  "title": "电商3图换人",
+  "description": "基于AI拍摄图、AI模特脸、真实服装搭配三张参考图，合成姿势与场景不变、仅换人换装的时尚大片。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "carousel",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/PsLDyLVkTxLcCnw6.webp",
+      "width": 2560,
+      "height": 1896
+    },
+    "coverList": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/PsLDyLVkTxLcCnw6.webp",
+        "width": 2560,
+        "height": 1896
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/OohQOKIbOA4YvGNG.webp",
+        "width": 2560,
+        "height": 1896
+      }
+    ],
+    "coverMotion": "slide",
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/Okeh61lxs62hYwvB.webp",
+        "width": 1536,
+        "height": 2048,
+        "order": 0
+      }
+    ],
+    "bestFor": [
+      "电商"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "E-commerce 3-Image Person Swap",
+        "ja": "Eコマース3枚画像人物交換",
+        "zh": "电商3图换人"
+      },
+      "i18n_description": {
+        "en": "Based on three reference images—AI photography, AI model face, and real outfit coordination—synthesize a fashion blockbuster with unchanged pose and scene, only swapping the person and outfit.",
+        "ja": "AI撮影画像、AIモデルの顔、実際の服装コーディネートの3枚の参考画像に基づき、ポーズとシーンは変えず、人物と服装のみを入れ替えたファッション大作を合成します。",
+        "zh": "基于AI拍摄图、AI模特脸、真实服装搭配三张参考图，合成姿势与场景不变、仅换人换装的时尚大片。"
+      },
+      "i18n_prompt": {
+        "en": "Upload reference image 1 (scene + pose + composition), reference image 2 (model face), reference image 3 (outfit), to generate a 2K/3:4 vertical fashion blockbuster; by default outputs a half-body shot consistent with reference image 1 composition, or you can specify \"full body\" in requirements to switch composition.",
+        "ja": "参考画像1（シーン+ポーズ+構図）、参考画像2（モデルの顔）、参考画像3（服装）をアップロードし、2K/3:4縦画像のファッション大作を生成します。デフォルトでは参考画像1の構図と一致するバストショットを出力しますが、要件で「全身」を指定して構図を切り替えることもできます。",
+        "zh": "上传参考图1（场景+姿势+构图）、参考图2（模特脸）、参考图3（服装），生成一张2K/3:4竖图的时尚大片；默认输出与参考图1构图一致的半身图，也可在需求中指定“全身”切换构图。"
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2nye325v5ybk",
+    "versionAssetId": "2nz233zj2adc",
+    "skillKey": "fashion-portrait-multi-reference-1787711071-024472f1546b4fd09dd91d48aea17803",
+    "sourceVersion": "1.0.9",
+    "linkUrl": "lovart://skill/fashion-portrait-multi-reference-1787711071-024472f1546b4fd09dd91d48aea17803",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "ffc05e48-f5b2-4ade-8d65-b110dec9299a",
+    "skillId": "user-generated/fashion-portrait-multi-reference-1787711071-024472f1546b4fd09dd91d48aea17803/ffc05e48-f5b2-4ade-8d65-b110dec9299a",
+    "i18n_title": {
+      "en": "E-commerce 3-Image Person Swap",
+      "ja": "Eコマース3枚画像人物交換",
+      "zh": "电商3图换人"
+    },
+    "i18n_description": {
+      "en": "Based on three reference images—AI photography, AI model face, and real outfit coordination—synthesize a fashion blockbuster with unchanged pose and scene, only swapping the person and outfit.",
+      "ja": "AI撮影画像、AIモデルの顔、実際の服装コーディネートの3枚の参考画像に基づき、ポーズとシーンは変えず、人物と服装のみを入れ替えたファッション大作を合成します。",
+      "zh": "基于AI拍摄图、AI模特脸、真实服装搭配三张参考图，合成姿势与场景不变、仅换人换装的时尚大片。"
+    },
+    "i18n_prompts": {
+      "en": "Upload reference image 1 (scene + pose + composition), reference image 2 (model face), reference image 3 (outfit), to generate a 2K/3:4 vertical fashion blockbuster; by default outputs a half-body shot consistent with reference image 1 composition, or you can specify \"full body\" in requirements to switch composition.",
+      "ja": "参考画像1（シーン+ポーズ+構図）、参考画像2（モデルの顔）、参考画像3（服装）をアップロードし、2K/3:4縦画像のファッション大作を生成します。デフォルトでは参考画像1の構図と一致するバストショットを出力しますが、要件で「全身」を指定して構図を切り替えることもできます。",
+      "zh": "上传参考图1（场景+姿势+构图）、参考图2（模特脸）、参考图3（服装），生成一张2K/3:4竖图的时尚大片；默认输出与参考图1构图一致的半身图，也可在需求中指定“全身”切换构图。"
+    },
+    "i18n_source_hash": "3ca68acc66736287594e2c17324e0393967da9e524ddfd791ad1d622a769ae49",
+    "i18n_source_locale": "zh",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-26T07:19:48",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 321,
+    "viewCount": 0,
+    "tryCount": 980,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "电商3图换人",
+  "skillCover": "https://a.lovart.ai/artifacts/user/PsLDyLVkTxLcCnw6.webp",
+  "publishTime": "2026-08-26T07:19:48",
+  "spacePinned": null,
+  "score": 0
+}

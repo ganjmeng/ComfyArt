@@ -1,0 +1,351 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2pckfj3t4lq8",
+  "title": "Taobao Product Visuals",
+  "description": "Create gallery images, clean product shots, and detail pages—individually or as one cohesive set.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Taobao Product Visuals",
+        "ja": "淘宝商品ビジュアル",
+        "zh": "淘宝商品视觉"
+      },
+      "i18n_description": {
+        "en": "Create gallery images, clean product shots, and detail pages—individually or as one cohesive set.",
+        "ja": "商品画像、白背景・透過画像、カルーセル、商品詳細ページを単体または統一された一式で制作。",
+        "zh": "生成主图、轮播图、白底或透明图与商品详情页，支持单项制作或整套统一交付。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "video",
+      "url": "https://a.lovart.ai/artifacts/user/DXY5ZK3TSC1rznDh.mp4",
+      "width": 1442,
+      "height": 1080
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/TIHnZWAla6JGgkpK.webp",
+        "width": 2005,
+        "height": 497,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/kv3lZXF9Q3FbatwJ.webp",
+        "width": 236,
+        "height": 2560,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/4MH7f2rzpA8u49Uq.webp",
+        "width": 2005,
+        "height": 497,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/HmmklabABFAzc7jY.webp",
+        "width": 240,
+        "height": 2560,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/Xg1lPVHRAUGxpSRn.webp",
+        "width": 2560,
+        "height": 487,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/CnYIjZhMgwCjYzW5.webp",
+        "width": 320,
+        "height": 2560,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/U7vO38ypB23DL3wD.webp",
+        "width": 2560,
+        "height": 487,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/C0PZUczjxC9qe5ZL.webp",
+        "width": 240,
+        "height": 2560,
+        "order": 7
+      }
+    ],
+    "bestFor": [
+      "Taobao",
+      "e-commerce"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2o5r68t50e0w",
+    "versionAssetId": "2pckfj2p5p8g",
+    "skillKey": "taobao",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/taobao",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "71953edd-6f9e-43ce-af61-b405f61f1b42",
+    "skillId": "industry/taobao/71953edd-6f9e-43ce-af61-b405f61f1b42",
+    "i18n_title": {
+      "en": "Taobao Product Visuals",
+      "ja": "淘宝商品ビジュアル",
+      "zh": "淘宝商品视觉"
+    },
+    "i18n_description": {
+      "en": "Create gallery images, clean product shots, and detail pages—individually or as one cohesive set.",
+      "ja": "商品画像、白背景・透過画像、カルーセル、商品詳細ページを単体または統一された一式で制作。",
+      "zh": "生成主图、轮播图、白底或透明图与商品详情页，支持单项制作或整套统一交付。"
+    },
+    "i18n_prompts": {
+      "en": "",
+      "ja": "",
+      "zh": ""
+    },
+    "i18n_source_hash": "b2035371af3461cee6125941ab7144da9f5a2d473abca21b76ed2ecdf3c9e942",
+    "i18n_source_locale": "en",
+    "level": "B",
+    "version": "1.0.34"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-09T03:53:49",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 303,
+    "viewCount": 0,
+    "tryCount": 780,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Taobao Product Visuals",
+  "skillCover": "https://a.lovart.ai/artifacts/user/DXY5ZK3TSC1rznDh.mp4",
+  "publishTime": "2026-09-09T03:53:49",
+  "spacePinned": null,
+  "score": 1000000001300
+}

@@ -1,0 +1,382 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2q1uj6xonwg0",
+  "title": "Livestream Promo Decoration",
+  "description": "Create shopping livestream backgrounds, overlays, covers, and promo signs.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "video",
+      "url": "https://a.lovart.ai/artifacts/user/WMPgKjDg3HCbghwk.mp4",
+      "width": 960,
+      "height": 720
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/eCSO6i10112oTRfi.webp",
+        "width": 1280,
+        "height": 574,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/g8HPTl20ZI1KE8An.webp",
+        "width": 1280,
+        "height": 574,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/XYJVqFS02CAXPb9s.webp",
+        "width": 1280,
+        "height": 574,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/xURvt8IFyICYkQxl.webp",
+        "width": 1280,
+        "height": 574,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/GVV9qkgw5D8AiOvt.webp",
+        "width": 1280,
+        "height": 574,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/dqyfdYAqFuGllmqp.webp",
+        "width": 1280,
+        "height": 574,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/lNiPP2eV0ON2G6Cx.webp",
+        "width": 2228,
+        "height": 750,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/3hSPqeRQJBAXfoCS.webp",
+        "width": 2228,
+        "height": 750,
+        "order": 7
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/QZgUmBzh8G4peYnV.webp",
+        "width": 1280,
+        "height": 430,
+        "order": 8
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/THvZgnTub41540zV.webp",
+        "width": 1280,
+        "height": 430,
+        "order": 9
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/QYrCkHWrToGZYAku.webp",
+        "width": 1280,
+        "height": 430,
+        "order": 10
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/LIEqjqKSEu8MYK0u.webp",
+        "width": 1280,
+        "height": 430,
+        "order": 11
+      }
+    ],
+    "bestFor": [
+      "Live Shopping Design",
+      "Livestream Backgrounds",
+      "Livestream Overlays",
+      "Livestream Covers",
+      "Livestream Announcement Poster",
+      "Promotional Handheld Signs"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Livestream Promo Decoration",
+        "ja": "ライブ配信プロモ装飾",
+        "zh": "电商直播素材"
+      },
+      "i18n_description": {
+        "en": "Create shopping livestream backgrounds, overlays, covers, and promo signs.",
+        "ja": "ショッピングライブ配信の背景、オーバーレイ、カバー、プロモーションサインを作成します。",
+        "zh": "生成电商直播背景、贴片、封面与促销手举牌。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2pgw3iut2ygw",
+    "versionAssetId": "2pypd26vm328",
+    "skillKey": "livestream-promo-decor",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/livestream-promo-decor",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "e58e09dc-add9-418a-aea1-02966a439498",
+    "skillId": "industry/livestream-promo-decor/e58e09dc-add9-418a-aea1-02966a439498",
+    "i18n_title": {
+      "en": "Livestream Promo Decoration",
+      "ja": "ライブ配信プロモ装飾",
+      "zh": "电商直播素材"
+    },
+    "i18n_description": {
+      "en": "Create shopping livestream backgrounds, overlays, covers, and promo signs.",
+      "ja": "ショッピングライブ配信の背景、オーバーレイ、カバー、プロモーションサインを作成します。",
+      "zh": "生成电商直播背景、贴片、封面与促销手举牌。"
+    },
+    "i18n_prompts": {
+      "en": "",
+      "ja": "",
+      "zh": ""
+    },
+    "i18n_source_hash": "0484f9cee537bbcca2f287771c5b6a4023a53932da920ea3174b6c0bb1072a59",
+    "i18n_source_locale": "en",
+    "level": "B",
+    "version": "1.0.17"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-16T05:56:08",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 101,
+    "viewCount": 0,
+    "tryCount": 342,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Livestream Promo Decoration",
+  "skillCover": "https://a.lovart.ai/artifacts/user/WMPgKjDg3HCbghwk.mp4",
+  "publishTime": "2026-09-16T05:56:08",
+  "spacePinned": null,
+  "score": 1000000001700
+}

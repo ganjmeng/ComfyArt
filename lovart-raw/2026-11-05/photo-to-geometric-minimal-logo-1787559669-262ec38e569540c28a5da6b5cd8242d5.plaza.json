@@ -1,0 +1,408 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2ns5q6jxbyf4",
+  "title": "照片转几何极简LOGO",
+  "description": "将任意照片（建筑、产品、场景等）转换为纯白底色的几何极简抽象LOGO，保留核心空间关系与识别结构，适用于品牌标识与视觉符号提炼。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "carousel",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/9NdgZCC2AXERkkZF.webp",
+      "width": 2048,
+      "height": 2048
+    },
+    "coverList": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/9NdgZCC2AXERkkZF.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/kx084ovNOr3qnpo2.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/YkQiuqfxHTFYIQCr.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/EzXmZvOSFGGSuNqO.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/AnizSj6CI85TkNPg.png",
+        "width": 1254,
+        "height": 1254
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/wBYGSe2TdhimKrNh.png",
+        "width": 1254,
+        "height": 1254
+      }
+    ],
+    "coverMotion": "slide",
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/EzXmZvOSFGGSuNqO.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/L0NhaVTabJIY2oBt.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/9NdgZCC2AXERkkZF.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/AnizSj6CI85TkNPg.png",
+        "width": 1254,
+        "height": 1254,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/wBYGSe2TdhimKrNh.png",
+        "width": 1254,
+        "height": 1254,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/kx084ovNOr3qnpo2.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/M4EK7UPGctKMZWNW.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/z9CtIiDXKu8UEHme.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 7
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/a1WtCcI8vl5mOA76.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 8
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/dvEwULTpza3ywt93.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 9
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/YkQiuqfxHTFYIQCr.webp",
+        "width": 2048,
+        "height": 2048,
+        "order": 10
+      }
+    ],
+    "bestFor": [
+      "logo设计、矢量插画"
+    ],
+    "showMarkdown": true,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Photo to Geometric Minimalist Logo",
+        "ja": "写真をジオメトリックミニマルロゴに変換",
+        "zh": "照片转几何极简LOGO"
+      },
+      "i18n_description": {
+        "en": "Transform any photo (architecture, product, scene, etc.) into a geometric minimalist abstract logo with pure white background, preserving core spatial relationships and recognizable structure, suitable for brand identity and visual symbol extraction.",
+        "ja": "任意の写真（建築、製品、シーンなど）を純白背景のジオメトリックミニマル抽象ロゴに変換し、コアとなる空間関係と認識可能な構造を保持します。ブランドアイデンティティとビジュアルシンボルの抽出に最適です。",
+        "zh": "将任意照片（建筑、产品、场景等）转换为纯白底色的几何极简抽象LOGO，保留核心空间关系与识别结构，适用于品牌标识与视觉符号提炼。"
+      },
+      "i18n_prompt": {
+        "en": "Reference this photo [upload photo URL], generate a pure white background geometric minimalist abstract logo following these rules: extract spatial relationships and hierarchy, strip away texture details, simplify into basic geometric color blocks, retain only 1 primary color + 1 dark structural color + 1 neutral color + maximum 2 small accent colors, and use minimalist sans-serif typography.",
+        "ja": "この写真を参考に [写真URLをアップロード]、ルールに従って純白背景のジオメトリックミニマル抽象ロゴを生成：空間関係と階層を抽出し、テクスチャの詳細を削ぎ落とし、基本的な幾何学的色ブロックに簡略化し、1つの主色+1つの濃い構造色+1つの中性色+最大2箇所の小面積アクセントカラーのみを保持し、ミニマルなサンセリフフォントで配置します。",
+        "zh": "参考这张照片 [上传照片URL]，按规则生成纯白底色几何极简抽象LOGO：提取空间关系与层级，剥离纹理细节，简化为基础几何色块，仅保留1主色+1深色结构色+1中性色+最多2处小面积强调色，并使用极简无衬线字体排版。"
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2ns4zj3wdw5c",
+    "versionAssetId": "2ns4zjo0kge8",
+    "skillKey": "photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "38eb82c7-9d7a-4f40-83ea-78d19fc47a86",
+    "skillId": "user-generated/photo-to-geometric-minimal-logo-1787559669-262ec38e569540c28a5da6b5cd8242d5/38eb82c7-9d7a-4f40-83ea-78d19fc47a86",
+    "i18n_title": {
+      "en": "Photo to Geometric Minimalist Logo",
+      "ja": "写真をジオメトリックミニマルロゴに変換",
+      "zh": "照片转几何极简LOGO"
+    },
+    "i18n_description": {
+      "en": "Transform any photo (architecture, product, scene, etc.) into a geometric minimalist abstract logo with pure white background, preserving core spatial relationships and recognizable structure, suitable for brand identity and visual symbol extraction.",
+      "ja": "任意の写真（建築、製品、シーンなど）を純白背景のジオメトリックミニマル抽象ロゴに変換し、コアとなる空間関係と認識可能な構造を保持します。ブランドアイデンティティとビジュアルシンボルの抽出に最適です。",
+      "zh": "将任意照片（建筑、产品、场景等）转换为纯白底色的几何极简抽象LOGO，保留核心空间关系与识别结构，适用于品牌标识与视觉符号提炼。"
+    },
+    "i18n_prompts": {
+      "en": "Reference this photo [upload photo URL], generate a pure white background geometric minimalist abstract logo following these rules: extract spatial relationships and hierarchy, strip away texture details, simplify into basic geometric color blocks, retain only 1 primary color + 1 dark structural color + 1 neutral color + maximum 2 small accent colors, and use minimalist sans-serif typography.",
+      "ja": "この写真を参考に [写真URLをアップロード]、ルールに従って純白背景のジオメトリックミニマル抽象ロゴを生成：空間関係と階層を抽出し、テクスチャの詳細を削ぎ落とし、基本的な幾何学的色ブロックに簡略化し、1つの主色+1つの濃い構造色+1つの中性色+最大2箇所の小面積アクセントカラーのみを保持し、ミニマルなサンセリフフォントで配置します。",
+      "zh": "参考这张照片 [上传照片URL]，按规则生成纯白底色几何极简抽象LOGO：提取空间关系与层级，剥离纹理细节，简化为基础几何色块，仅保留1主色+1深色结构色+1中性色+最多2处小面积强调色，并使用极简无衬线字体排版。"
+    },
+    "i18n_source_hash": "7c938089af03a2a05d23cf246ca64f34e361bb67499ce485b1f740b961320951",
+    "i18n_source_locale": "zh",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-24T08:29:28",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 555,
+    "viewCount": 0,
+    "tryCount": 633,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEw9xRyJEY",
+      "tagName": "branding",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Branding",
+      "extra": {
+        "tagName": "branding",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Branding"
+        }
+      },
+      "createTime": "2026-02-10T12:25:09",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "照片转几何极简LOGO",
+  "skillCover": "https://a.lovart.ai/artifacts/user/9NdgZCC2AXERkkZF.webp",
+  "publishTime": "2026-08-24T08:29:28",
+  "spacePinned": null,
+  "score": 0
+}

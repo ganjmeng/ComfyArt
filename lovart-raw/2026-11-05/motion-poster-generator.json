@@ -1,0 +1,877 @@
+{
+  "itemType": "collection_card",
+  "itemId": "2sf3x9tciiv4",
+  "title": "动态海报",
+  "description": "让已有海报动起来，保留主体、文字与构图",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "i18n": {
+      "zh": {
+        "title": "动态海报",
+        "description": "让已有海报动起来，保留主体、文字与构图",
+        "ctaText": "让海报动起来"
+      },
+      "en": {
+        "title": "Motion Poster",
+        "description": "Animate your artwork while preserving its subject, text and composition.",
+        "ctaText": "Animate poster"
+      }
+    },
+    "media": [
+      {
+        "role": "RESULT",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/f8/f8f529f174414c41c5de2cf28b814cb5629a278e9f17c9140d13710d0b6e6e4d.mp4",
+        "coverWidth": 1324,
+        "coverHeight": 992
+      }
+    ],
+    "bind": {
+      "type": "SKILL",
+      "source": "MANUAL",
+      "skillKey": "motion-poster-generator",
+      "skillAssetId": "pnFhIjfU8U",
+      "versionId": "b01db827-fee9-4f9e-88d4-ed75a7cf7c84",
+      "skillId": "industry/motion-poster-generator/b01db827-fee9-4f9e-88d4-ed75a7cf7c84",
+      "namespace": "industry",
+      "sourceVersion": "1.0.9"
+    },
+    "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/f8/f8f529f174414c41c5de2cf28b814cb5629a278e9f17c9140d13710d0b6e6e4d.mp4",
+    "coverWidth": 1324,
+    "coverHeight": 992
+  },
+  "extra": {
+    "i18n_title": {
+      "en": "Motion Poster",
+      "ja": "モーションポスター",
+      "zh": "动态海报"
+    },
+    "i18n_description": {
+      "en": "Animate your artwork while preserving its subject, text and composition.",
+      "ja": "被写体、テキスト、構図を保持したまま、アートワークをアニメーション化します。",
+      "zh": "在保留主题、文字和构图的同时为您的作品添加动画效果。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "fbb6f6b047472a6fe4a1d071b33aefe7ce3fdb99d4c542387525e81b5d3aae86"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-10-10T03:24:16",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 52,
+    "viewCount": 0,
+    "tryCount": 0,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": null,
+  "skillCover": null,
+  "publishTime": "2026-10-10T03:24:16",
+  "spacePinned": false,
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "2sf3xbocsq9s",
+      "title": "海报动效",
+      "description": "动态海报视频 1 条",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "海报动效",
+            "description": "动态海报视频 1 条",
+            "ctaText": "让海报动起来"
+          },
+          "en": {
+            "title": "Poster Animation",
+            "description": "1 motion poster video",
+            "ctaText": "Animate poster"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/3b/3b1494cfb8ddfac9d39f0e3b42709160490a52105dddd5fd598843a2b64f31ef.mp4",
+            "coverWidth": 1324,
+            "coverHeight": 992
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "MANUAL",
+          "skillKey": "motion-poster-generator",
+          "skillAssetId": "pnFhIjfU8U",
+          "versionId": "b01db827-fee9-4f9e-88d4-ed75a7cf7c84",
+          "skillId": "industry/motion-poster-generator/b01db827-fee9-4f9e-88d4-ed75a7cf7c84",
+          "namespace": "industry",
+          "sourceVersion": "1.0.9"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "source_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "静态原稿"
+                },
+                "en": {
+                  "title": "Source artwork"
+                }
+              },
+              "limits": {
+                "maxCount": 1,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "motion_brief",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "动态要求",
+                  "placeholder": "说明希望运动或保持不动的内容；没有要求可留空，由 Skill 规划。"
+                },
+                "en": {
+                  "title": "Motion requirements",
+                  "placeholder": "Describe what should move or stay still. Leave blank to let the Skill plan."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "描述希望的视觉效果或提供参考；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "依据上传的静态原稿制作 1 条海报动效视频。分析可安全运动的元素，提出方案供确认；用户指定时精细控制，否则由 Skill 规划，不要求逐层配置。保留构图、主体、文字、Logo 和信息层级，确认时长、画幅与声音后制作，结尾完整清晰定格。\n\n动态要求: {{motion_brief}}\n视觉呈现方式: {{visual_direction}}",
+            "en": "Create 1 animated-poster video from the supplied artwork. Analyze safe motion opportunities and approve a plan. Use precise control when requested; otherwise let the Skill plan the motion without layer-by-layer intake. Preserve composition, identity, text, logos and hierarchy. Confirm duration, ratio and audio, then end on a complete readable freeze frame.\n\nMotion requirements: {{motion_brief}}\nVisual direction: {{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/3b/3b1494cfb8ddfac9d39f0e3b42709160490a52105dddd5fd598843a2b64f31ef.mp4",
+        "coverWidth": 1324,
+        "coverHeight": 992
+      },
+      "extra": {
+        "collectionId": "2sf3x9tciiv4",
+        "collectionTitle": "动态海报",
+        "i18n_title": {
+          "en": "Poster Animation",
+          "ja": "ポスターアニメーション",
+          "zh": "海报动画"
+        },
+        "i18n_description": {
+          "en": "1 motion poster video",
+          "ja": "1つのモーションポスター動画",
+          "zh": "1个动态海报视频"
+        },
+        "i18n_source_locale": "en",
+        "i18n_source_hash": "c451127aeafee21d19f8ba16b74ef202a26e24fe64277a033f64e3b60f773e32"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-10-10T03:24:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 133,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEwbXcylvq",
+              "tagName": "social_media",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Social Media",
+              "extra": {
+                "tagName": "social_media",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Social Media"
+                }
+              },
+              "createTime": "2026-02-10T12:25:42",
+              "path": null
+            }
+          ]
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": [
+            {
+              "tagId": "p0PKTBqFMs",
+              "tagName": "Creator Type Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "Skill Creator Type Tag 配置",
+              "extra": {
+                "tagType": "creator_type_tag"
+              },
+              "createTime": "2026-07-23T09:12:59",
+              "path": null
+            },
+            {
+              "tagId": "p0PRfsqQyA",
+              "tagName": "official",
+              "parentId": "p0PKTBqFMs",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "",
+              "extra": {
+                "tagName": "Official",
+                "tagType": "creator_type_tag",
+                "tagLabel": {
+                  "en": "Official"
+                }
+              },
+              "createTime": "2026-07-23T09:14:25",
+              "path": null
+            }
+          ]
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": [
+            {
+              "tagId": "p0QedLSLBK",
+              "tagName": "Output Type Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "Skill Output Type Tag 配置",
+              "extra": {
+                "tagType": "output_type_tag"
+              },
+              "createTime": "2026-07-23T09:19:36",
+              "path": null
+            },
+            {
+              "tagId": "p0QfrmRln2",
+              "tagName": "image",
+              "parentId": "p0QedLSLBK",
+              "level": 2,
+              "sortOrder": 0,
+              "description": null,
+              "extra": {
+                "tagName": "Image",
+                "tagType": "output_type_tag",
+                "tagLabel": {
+                  "en": "Image"
+                }
+              },
+              "createTime": "2026-07-23T09:19:53",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-10-10T03:24:17",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2sf3xboz9jwg",
+      "title": "首尾帧动画",
+      "description": "首尾帧控制的动态海报视频 1 条",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "首尾帧动画",
+            "description": "首尾帧控制的动态海报视频 1 条",
+            "ctaText": "让海报动起来"
+          },
+          "en": {
+            "title": "First-to-Last Frame Animation",
+            "description": "1 endpoint-controlled motion poster video",
+            "ctaText": "Animate poster"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/c8/c847840474003f7c58291512b9784d63769d13864f93581ed9589df801bb6a5b.mp4",
+            "coverWidth": 1080,
+            "coverHeight": 1920
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "MANUAL",
+          "skillKey": "motion-poster-generator",
+          "skillAssetId": "pnFhIjfU8U",
+          "versionId": "b01db827-fee9-4f9e-88d4-ed75a7cf7c84",
+          "skillId": "industry/motion-poster-generator/b01db827-fee9-4f9e-88d4-ed75a7cf7c84",
+          "namespace": "industry",
+          "sourceVersion": "1.0.9"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "source_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "静态原稿（最终定格画面）"
+                },
+                "en": {
+                  "title": "Source artwork (final frame)"
+                }
+              },
+              "limits": {
+                "maxCount": 1,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "start_frame",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "首帧图片（选填）"
+                },
+                "en": {
+                  "title": "First-frame image (optional)"
+                }
+              },
+              "limits": {
+                "maxCount": 1,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "motion_brief",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "动态要求",
+                  "placeholder": "说明希望运动或保持不动的内容；没有要求可留空，由 Skill 规划。"
+                },
+                "en": {
+                  "title": "Motion requirements",
+                  "placeholder": "Describe what should move or stay still. Leave blank to let the Skill plan."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "描述希望的视觉效果或提供参考；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 条首尾帧控制的动态海报视频。先锁定原稿的最终定格，再使用或规划同一镜头的较早状态作为首帧。两帧保持主体、视角逻辑、风格及色彩系统一致；先确认两端、必要适配、时长、画幅和声音，再生成连续运动。保留文字、Logo 与层级，不连接无关图片，结尾完整定格。\n\n动态要求: {{motion_brief}}\n视觉呈现方式: {{visual_direction}}",
+            "en": "Create 1 endpoint-controlled motion-poster video. Lock the final composition, then use or develop an earlier state of the same shot. Preserve identity, framing logic, style and color system. Approve endpoints, adaptations, duration, ratio and audio before rendering continuous motion. Preserve text, logos and hierarchy, avoid unrelated-image transitions, and end on a complete freeze frame.\n\nMotion requirements: {{motion_brief}}\nVisual direction: {{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://web-static3.lovart.ai/static-assets/v1/sha256/c8/c847840474003f7c58291512b9784d63769d13864f93581ed9589df801bb6a5b.mp4",
+        "coverWidth": 1080,
+        "coverHeight": 1920
+      },
+      "extra": {
+        "collectionId": "2sf3x9tciiv4",
+        "collectionTitle": "动态海报",
+        "i18n_title": {
+          "en": "First-to-Last Frame Animation",
+          "ja": "最初から最後のフレームアニメーション",
+          "zh": "首帧到末帧动画"
+        },
+        "i18n_description": {
+          "en": "1 endpoint-controlled motion poster video",
+          "ja": "1つのエンドポイント制御モーションポスタービデオ",
+          "zh": "1个端点控制的动态海报视频"
+        },
+        "i18n_source_locale": "en",
+        "i18n_source_hash": "085cbc4c59f5b92b49f68f576fb0a72e25f3a519984f09459b3aea5dd9699eb4"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-10-10T03:24:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 13,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEwbXcylvq",
+              "tagName": "social_media",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Social Media",
+              "extra": {
+                "tagName": "social_media",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Social Media"
+                }
+              },
+              "createTime": "2026-02-10T12:25:42",
+              "path": null
+            }
+          ]
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": [
+            {
+              "tagId": "p0QedLSLBK",
+              "tagName": "Output Type Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "Skill Output Type Tag 配置",
+              "extra": {
+                "tagType": "output_type_tag"
+              },
+              "createTime": "2026-07-23T09:19:36",
+              "path": null
+            },
+            {
+              "tagId": "p0QfrmRln2",
+              "tagName": "image",
+              "parentId": "p0QedLSLBK",
+              "level": 2,
+              "sortOrder": 0,
+              "description": null,
+              "extra": {
+                "tagName": "Image",
+                "tagType": "output_type_tag",
+                "tagLabel": {
+                  "en": "Image"
+                }
+              },
+              "createTime": "2026-07-23T09:19:53",
+              "path": null
+            }
+          ]
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": [
+            {
+              "tagId": "p0PKTBqFMs",
+              "tagName": "Creator Type Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "Skill Creator Type Tag 配置",
+              "extra": {
+                "tagType": "creator_type_tag"
+              },
+              "createTime": "2026-07-23T09:12:59",
+              "path": null
+            },
+            {
+              "tagId": "p0PRfsqQyA",
+              "tagName": "official",
+              "parentId": "p0PKTBqFMs",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "",
+              "extra": {
+                "tagName": "Official",
+                "tagType": "creator_type_tag",
+                "tagLabel": {
+                  "en": "Official"
+                }
+              },
+              "createTime": "2026-07-23T09:14:25",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-10-10T03:24:17",
+      "spacePinned": false
+    }
+  ],
+  "collectionMemberCount": 2,
+  "collectionHasMoreMembers": false
+}

@@ -1,0 +1,354 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pjo9VdVZok",
+  "title": "Web Product Visual Design",
+  "description": "Establishes a unified, scalable visual direction for web products, then validates it across core pages and components.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Web Product Visual Design",
+        "ja": "Webプロダクトビジュアルデザイン",
+        "zh": "Web产品视觉设计"
+      },
+      "i18n_description": {
+        "en": "Establishes a unified, scalable visual direction for web products, then validates it across core pages and components.",
+        "ja": "Webプロダクトの統一された拡張可能なビジュアル方向性を設計し、主要ページとコンポーネントで検証します。",
+        "zh": "为 Web 产品建立统一、可扩展的视觉方向，覆盖 SaaS、工作台、仪表盘、电商、后台、内容平台等场景，并验证到核心页面与组件。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/4b/4bc66e3624af14f7292a71a3369050d1179facea2e77afe3871ab676916007b9.mp4",
+      "mediaType": "video",
+      "width": 640,
+      "height": 480
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/5d/5dfb09949b28117e79b75c57e957d03cfaefe1d2b746fc085321b19a077e1b7a.webp",
+        "width": 2048,
+        "height": 1280,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/b2/b219509689a24a380afcb7a4ce93eeae773c6e9fcb1f5ec6cb2d14d2e6338e55.webp",
+        "width": 1152,
+        "height": 2048,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/89/8952d3434fe5b29df15affa22b73abcab3d2552081b79713c5da834ec3956170.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/55/55397118aa94356a9b4fd8ac7877d124bac642c3d0879d277021f2192c42851c.webp",
+        "width": 1536,
+        "height": 1024,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/d0/d0adc39c04cbd96bdad256d5a80af9ba8c3d2ced914477224bc1ac514ddb105b.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/16/161706216a2c6963719075030812c928d1f9a1349f5f92f79dfd1061d3222cee.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/ec/ec54c8f839505f0d97f8e0b9a381fa1117f0f179616cf91172c89b9fb3163dc7.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/85/85ebe6d744400444423358d5f719daf32c10a085fa1cdb2c95c84a0f3b6134e3.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 7
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/e0/e0af836c526e83804e21b86ede6ee1cb1fde891d13cd4031ce268b0c10f4da70.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 8
+      }
+    ],
+    "bestFor": [
+      "Web Design",
+      "Website",
+      "Main Visual"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "p63igS0wtq",
+    "versionAssetId": "pjo9V0jilq",
+    "skillKey": "web-product-visual-design",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/web-product-visual-design",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "edd0dd45-f983-4479-a20f-6935504a5f02",
+    "skillId": "industry/web-product-visual-design/edd0dd45-f983-4479-a20f-6935504a5f02",
+    "level": "S",
+    "i18n_title": {
+      "en": "Web Product Visual Design",
+      "ja": "Webプロダクトビジュアルデザイン",
+      "zh": "Web产品视觉设计"
+    },
+    "i18n_description": {
+      "en": "Establishes a unified, scalable visual direction for web products, then validates it across core pages and components.",
+      "ja": "Webプロダクトのための統一されたスケーラブルなビジュアル方向性を確立し、主要なページとコンポーネント全体で検証します。",
+      "zh": "为Web产品建立统一、可扩展的视觉方向，然后在核心页面和组件中进行验证。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "2c5f5188000fac80c923b37fc4cb36f492891120a8ba95b9b927aefee736f838",
+    "version": "1.0.9"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-03T13:31:19",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 327,
+    "viewCount": 0,
+    "tryCount": 1132,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFcUzQIgKs",
+      "tagName": "website",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Website",
+      "extra": {
+        "tagName": "website",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Website"
+        }
+      },
+      "createTime": "2026-03-20T06:55:03",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Web Product Visual Design",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/4b/4bc66e3624af14f7292a71a3369050d1179facea2e77afe3871ab676916007b9.mp4",
+  "publishTime": "2026-08-03T13:31:19",
+  "spacePinned": false,
+  "score": 1000000000000
+}

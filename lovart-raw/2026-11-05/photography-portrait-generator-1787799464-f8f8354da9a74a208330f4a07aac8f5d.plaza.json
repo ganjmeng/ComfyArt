@@ -1,0 +1,341 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2o222a07opvk",
+  "title": "摄影级人像生图工具",
+  "description": "融合《完美摄影摆姿》、《拍出绝世光线》与《50张人像摄影背后的故事与技法》三部名著摄影理论，适用于各大主流AI生图平台。默认不加载，仅在用户主动提及生成人像图片、撰写摄影Prompt、优化生图质感或分析参考图时启用。【升级优化：上传参考图时，姿态/光影/风格优先严格遵循参考图】",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Professional Portrait Generation Tool",
+        "ja": "プロフェッショナルポートレート生成ツール",
+        "zh": "摄影级人像生图工具"
+      },
+      "i18n_description": {
+        "en": "Integrates photographic theory from three renowned works: \"Perfect Portrait Posing\", \"Capturing Extraordinary Light\", and \"50 Portraits: Stories and Techniques Behind the Images\". Compatible with all major mainstream AI image generation platforms. Not loaded by default—activated only when users explicitly mention generating portrait images, writing photography prompts, optimizing image quality, or analyzing reference images. [Upgrade Optimization: When reference images are uploaded, pose/lighting/style strictly follows the reference image as priority]",
+        "ja": "『完璧な写真ポーズ』『絶世の光を撮る』『50枚のポートレート写真の裏にあるストーリーとテクニック』という3つの名著の写真理論を融合。すべての主流AI画像生成プラットフォームに対応。デフォルトでは読み込まれず、ユーザーがポートレート画像の生成、撮影プロンプトの作成、画像品質の最適化、または参考画像の分析に言及した場合にのみ有効化されます。【アップグレード最適化：参考画像をアップロードする際、ポーズ/ライティング/スタイルは参考画像に厳密に従うことを優先】",
+        "zh": "融合《完美摄影摆姿》、《拍出绝世光线》与《50张人像摄影背后的故事与技法》三部名著摄影理论，适用于各大主流AI生图平台。默认不加载，仅在用户主动提及生成人像图片、撰写摄影Prompt、优化生图质感或分析参考图时启用。【升级优化：上传参考图时，姿态/光影/风格优先严格遵循参考图】"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/eNVj7NVCWD2wdYNa.webp",
+      "width": 800,
+      "height": 600
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/UmtdkgXQQw2BZ6aH.webp",
+        "width": 1242,
+        "height": 1656,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/MU10VswNes31102L.webp",
+        "width": 1242,
+        "height": 1656,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/bL3inG6oPnEjmwwT.webp",
+        "width": 1242,
+        "height": 1656,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/Ln4K7SAOjKEgVZEJ.webp",
+        "width": 1242,
+        "height": 1656,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/TMV6z1uxDN4wuCq8.webp",
+        "width": 1242,
+        "height": 1656,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/M9OD6DwNnLKwxXJo.webp",
+        "width": 1242,
+        "height": 1656,
+        "order": 5
+      }
+    ],
+    "bestFor": [
+      "人像生图",
+      "人像skill",
+      "摄影",
+      "人像",
+      "portrait photography",
+      "portrait",
+      "Photography"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2o21i8vbh98g",
+    "versionAssetId": "2o21i8w0g8ow",
+    "skillKey": "photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "efa84cdb-4d74-4199-ac8c-ea11a5116a07",
+    "skillId": "user-generated/photography-portrait-generator-1787799464-f8f8354da9a74a208330f4a07aac8f5d/efa84cdb-4d74-4199-ac8c-ea11a5116a07",
+    "i18n_title": {
+      "en": "Professional Portrait Generation Tool",
+      "ja": "プロフェッショナルポートレート生成ツール",
+      "zh": "摄影级人像生图工具"
+    },
+    "i18n_description": {
+      "en": "Integrates photographic theory from three renowned works: \"Perfect Portrait Posing\", \"Capturing Extraordinary Light\", and \"50 Portraits: Stories and Techniques Behind the Images\". Compatible with all major mainstream AI image generation platforms. Not loaded by default—activated only when users explicitly mention generating portrait images, writing photography prompts, optimizing image quality, or analyzing reference images. [Upgrade Optimization: When reference images are uploaded, pose/lighting/style strictly follows the reference image as priority]",
+      "ja": "『完璧な写真ポーズ』『絶世の光を撮る』『50枚のポートレート写真の裏にあるストーリーとテクニック』という3つの名著の写真理論を融合。すべての主流AI画像生成プラットフォームに対応。デフォルトでは読み込まれず、ユーザーがポートレート画像の生成、撮影プロンプトの作成、画像品質の最適化、または参考画像の分析に言及した場合にのみ有効化されます。【アップグレード最適化：参考画像をアップロードする際、ポーズ/ライティング/スタイルは参考画像に厳密に従うことを優先】",
+      "zh": "融合《完美摄影摆姿》、《拍出绝世光线》与《50张人像摄影背后的故事与技法》三部名著摄影理论，适用于各大主流AI生图平台。默认不加载，仅在用户主动提及生成人像图片、撰写摄影Prompt、优化生图质感或分析参考图时启用。【升级优化：上传参考图时，姿态/光影/风格优先严格遵循参考图】"
+    },
+    "i18n_prompts": {
+      "en": "",
+      "ja": "",
+      "zh": ""
+    },
+    "i18n_source_hash": "baec4d8c215275b598e76cd0688ca02860ebc60b90c00a7a7b40b14ae2cab883",
+    "i18n_source_locale": "zh",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-27T03:04:01",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 323,
+    "viewCount": 0,
+    "tryCount": 437,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "摄影级人像生图工具",
+  "skillCover": "https://a.lovart.ai/artifacts/user/eNVj7NVCWD2wdYNa.webp",
+  "publishTime": "2026-08-27T03:04:01",
+  "spacePinned": null,
+  "score": 0
+}

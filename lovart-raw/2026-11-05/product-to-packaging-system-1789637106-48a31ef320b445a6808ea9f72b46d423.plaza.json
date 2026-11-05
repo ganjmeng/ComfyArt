@@ -1,0 +1,430 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2q60dfulue4g",
+  "title": "Product to Packaging System",
+  "description": "Turn a product image, name, or description into a coordinated packaging family delivered as multi-angle 3D mockups, dimension-annotated structure drawings, and flat dieline artwork: primary package, labels, cartons, sleeves, gift boxes, mailers, carriers, variants, and shelf context. Use for any full packaging system or product-line request, not a single product render. Do not call a concept render or AI-generated dieline print-ready without dimensions, a vendor dieline, verified copy, and production requirements.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Product to Packaging System",
+        "ja": "製品からパッケージングシステムへ",
+        "zh": "产品到包装系统"
+      },
+      "i18n_description": {
+        "en": "Turn a product image, name, or description into a coordinated packaging family delivered as multi-angle 3D mockups, dimension-annotated structure drawings, and flat dieline artwork: primary package, labels, cartons, sleeves, gift boxes, mailers, carriers, variants, and shelf context. Use for any full packaging system or product-line request, not a single product render. Do not call a concept render or AI-generated dieline print-ready without dimensions, a vendor dieline, verified copy, and production requirements.",
+        "ja": "製品画像、製品名、または説明を、多角度3Dモックアップ、寸法注釈付き構造図、フラットダイライン アートワークとして提供される統合パッケージファミリーに変換します：プライマリパッケージ、ラベル、カートン、スリーブ、ギフトボックス、メーラー、キャリア、バリエーション、棚陳列コンテクスト。単一製品のレンダリングではなく、完全なパッケージングシステムまたは製品ラインの要求に使用してください。寸法、ベンダーダイライン、検証済みコピー、製造要件なしに、コンセプトレンダリングやAI生成ダイラインを印刷可能とは呼ばないでください。",
+        "zh": "将产品图像、产品名称或描述转换为协调的包装系列，以多角度3D模型、标注尺寸的结构图和平面刀版图形式交付：主包装、标签、纸箱、套筒、礼品盒、邮寄袋、提袋、变体和货架陈列场景。用于任何完整的包装系统或产品线需求，而非单一产品渲染。在没有尺寸、供应商刀版图、经过验证的文案和生产要求的情况下，不要将概念渲染或AI生成的刀版图称为可印刷文件。"
+      },
+      "i18n_prompt": {
+        "en": "Turn [product image, product name, or description] into a coordinated packaging family: multi-angle mockups, dimension drawings, and flat dieline artwork for the primary package, supporting packaging, and variants.",
+        "ja": "[製品画像、製品名、または説明]を統合パッケージファミリーに変換：プライマリパッケージ、サポートパッケージング、バリエーションのための多角度モックアップ、寸法図、フラットダイライン アートワーク。",
+        "zh": "将[产品图像、产品名称或描述]转换为协调的包装系列：主包装、辅助包装和变体的多角度模型、尺寸图和平面刀版图。"
+      }
+    },
+    "coverMode": "carousel",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/agent/zVeZDclsF74yHLX8.png",
+      "width": 2048,
+      "height": 1152
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/AzDrknj1197WpEAA.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/ZyrBICrHbKFJtBuk.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/H5iK7wWmtX1ch7Dc.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/ahnSGNKdlFDtVgO2.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/Fwrjg84ZvE4iEOOo.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/1Zs6CWhFSlB8aX22.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/Vdg5De14URCWnOd0.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/KhMG6GHBM02z3mkd.png",
+        "width": 1536,
+        "height": 2048,
+        "order": 7
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/JssCchMbnzJErsmG.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 8
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/hTdXc05WveFlRlCC.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 9
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/zVeZDclsF74yHLX8.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 10
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/mFZdayI1xYKzdr8E.png",
+        "width": 2048,
+        "height": 1152,
+        "order": 11
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/sal8e8D0tL8RWmHH.png",
+        "width": 2016,
+        "height": 1344,
+        "order": 12
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/Jdk0IGGqOw3wKN0L.png",
+        "width": 2016,
+        "height": 1344,
+        "order": 13
+      }
+    ],
+    "bestFor": [
+      "Packaging"
+    ],
+    "showMarkdown": false,
+    "coverList": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/zVeZDclsF74yHLX8.png",
+        "width": 2048,
+        "height": 1152
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/JssCchMbnzJErsmG.png",
+        "width": 2048,
+        "height": 1152
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/KhMG6GHBM02z3mkd.png",
+        "width": 1536,
+        "height": 2048
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/Vdg5De14URCWnOd0.png",
+        "width": 2048,
+        "height": 1152
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/1Zs6CWhFSlB8aX22.png",
+        "width": 2048,
+        "height": 1152
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/hTdXc05WveFlRlCC.png",
+        "width": 2048,
+        "height": 1152
+      }
+    ],
+    "coverMotion": "fade",
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2q5xmo2ushz4",
+    "versionAssetId": "2q5z9xs9dtkw",
+    "skillKey": "product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423",
+    "sourceVersion": "1.0.1",
+    "linkUrl": "lovart://skill/product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "7d8dc503-a8b4-409e-b4a1-c07cdad58edc",
+    "skillId": "user-generated/product-to-packaging-system-1789637106-48a31ef320b445a6808ea9f72b46d423/7d8dc503-a8b4-409e-b4a1-c07cdad58edc",
+    "i18n_title": {
+      "en": "Product to Packaging System",
+      "ja": "製品からパッケージングシステムへ",
+      "zh": "产品到包装系统"
+    },
+    "i18n_description": {
+      "en": "Turn a product image, name, or description into a coordinated packaging family delivered as multi-angle 3D mockups, dimension-annotated structure drawings, and flat dieline artwork: primary package, labels, cartons, sleeves, gift boxes, mailers, carriers, variants, and shelf context. Use for any full packaging system or product-line request, not a single product render. Do not call a concept render or AI-generated dieline print-ready without dimensions, a vendor dieline, verified copy, and production requirements.",
+      "ja": "製品画像、製品名、または説明を、多角度3Dモックアップ、寸法注釈付き構造図、フラットダイライン アートワークとして提供される統合パッケージファミリーに変換します：プライマリパッケージ、ラベル、カートン、スリーブ、ギフトボックス、メーラー、キャリア、バリエーション、棚陳列コンテクスト。単一製品のレンダリングではなく、完全なパッケージングシステムまたは製品ラインの要求に使用してください。寸法、ベンダーダイライン、検証済みコピー、製造要件なしに、コンセプトレンダリングやAI生成ダイラインを印刷可能とは呼ばないでください。",
+      "zh": "将产品图像、产品名称或描述转换为协调的包装系列，以多角度3D模型、标注尺寸的结构图和平面刀版图形式交付：主包装、标签、纸箱、套筒、礼品盒、邮寄袋、提袋、变体和货架陈列场景。用于任何完整的包装系统或产品线需求，而非单一产品渲染。在没有尺寸、供应商刀版图、经过验证的文案和生产要求的情况下，不要将概念渲染或AI生成的刀版图称为可印刷文件。"
+    },
+    "i18n_prompts": {
+      "en": "Turn [product image, product name, or description] into a coordinated packaging family: multi-angle mockups, dimension drawings, and flat dieline artwork for the primary package, supporting packaging, and variants.",
+      "ja": "[製品画像、製品名、または説明]を統合パッケージファミリーに変換：プライマリパッケージ、サポートパッケージング、バリエーションのための多角度モックアップ、寸法図、フラットダイライン アートワーク。",
+      "zh": "将[产品图像、产品名称或描述]转换为协调的包装系列：主包装、辅助包装和变体的多角度模型、尺寸图和平面刀版图。"
+    },
+    "i18n_source_hash": "38858a3106e73c19136d136261cf70bc95e97ef20f685f71e42ed1bc608fe7f1",
+    "i18n_source_locale": "en",
+    "level": "A"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-17T09:55:52",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 143,
+    "viewCount": 0,
+    "tryCount": 470,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Product to Packaging System",
+  "skillCover": "https://a.lovart.ai/artifacts/agent/zVeZDclsF74yHLX8.png",
+  "publishTime": "2026-09-17T09:55:52",
+  "spacePinned": false,
+  "score": 0
+}

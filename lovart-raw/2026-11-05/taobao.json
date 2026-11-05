@@ -1,0 +1,1532 @@
+{
+  "itemType": "collection_card",
+  "itemId": "2quhxj75e4n4",
+  "title": "淘宝商品详情页",
+  "description": "串联卖点、细节与场景，呈现完整商品信息",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "i18n": {
+      "zh": {
+        "title": "淘宝商品详情页",
+        "description": "串联卖点、细节与场景，呈现完整商品信息",
+        "ctaText": "开始制作"
+      },
+      "en": {
+        "title": "Taobao Product Detail Page",
+        "description": "Bring selling points, details and usage scenes into one complete product page.",
+        "ctaText": "Create now"
+      }
+    },
+    "bind": {
+      "type": "SKILL",
+      "source": "PLAZA",
+      "skillKey": "taobao",
+      "skillAssetId": "2o5r68t50e0w",
+      "skillType": "pgc",
+      "namespace": "industry",
+      "skillId": "industry/taobao/71953edd-6f9e-43ce-af61-b405f61f1b42",
+      "sourceVersion": "1.0.34",
+      "versionAssetId": "2pckfj2p5p8g",
+      "versionId": "71953edd-6f9e-43ce-af61-b405f61f1b42",
+      "linkUrl": "lovart://skill/taobao",
+      "plazaItemId": "2pckfj3t4lq8"
+    },
+    "cover": "https://a.lovart.ai/asset/showcase-cover/202609/49f8ff6e59da41c6afe1987c3416e5da.png",
+    "coverWidth": 1280,
+    "coverHeight": 960
+  },
+  "extra": {
+    "i18n_title": {
+      "en": "Taobao Product Detail Page",
+      "ja": "淘宝網商品詳細ページ",
+      "zh": "淘宝商品详情页"
+    },
+    "i18n_description": {
+      "en": "Connect selling points, details, and scenarios to present complete product information",
+      "ja": "セールスポイント、詳細、シーンを連携させ、完全な商品情報を提示",
+      "zh": "串联卖点、细节与场景，呈现完整商品信息"
+    },
+    "i18n_source_locale": "zh",
+    "i18n_source_hash": "865d77ad0e6654d02e6715f6a2f6f8c5065c629c168c50408c2a84994caa3001"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-24T06:38:12",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 65,
+    "viewCount": 0,
+    "tryCount": 0,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": null,
+  "skillCover": null,
+  "publishTime": "2026-09-24T06:38:12",
+  "spacePinned": false,
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxsqxfbb4",
+      "title": "家居",
+      "description": "完整淘宝详情长图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "家居",
+            "description": "完整淘宝详情长图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Home & Living",
+            "description": "1 complete Taobao product detail page image (long format)",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/4caf43fd90294054abc24c6096d56103.png",
+            "coverWidth": 750,
+            "coverHeight": 8000
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "taobao",
+          "skillAssetId": "2o5r68t50e0w",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/taobao/71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "sourceVersion": "1.0.34",
+          "versionAssetId": "2pckfj2p5p8g",
+          "versionId": "71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "linkUrl": "lovart://skill/taobao",
+          "plazaItemId": "2pckfj3t4lq8"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张家居淘宝商品完整详情长图，按商品总览、已确认卖点、细节证据、使用场景和规格信息组织内容。各模块保持同一视觉系统；文字清晰可读，不用缩小整套内容的方式冒充完整详情页。缺失的规格不补造。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 complete Taobao product detail page for Home & Living as a long-format image. Organize the content into a product overview, confirmed selling points, supporting details, usage scenarios, and specifications. Keep all modules within one visual system and ensure the text is legible. Do not shrink the entire set of content into a miniature overview and call it a complete detail page. Do not invent missing specifications.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/d355d1c3d2ec435a9c0dbc8dbadeb973.png",
+        "coverWidth": 750,
+        "coverHeight": 8000
+      },
+      "extra": {
+        "collectionId": "2quhxj75e4n4",
+        "collectionTitle": "淘宝商品详情页",
+        "i18n_title": {
+          "en": "Home & Living",
+          "ja": "ホームリビング",
+          "zh": "家居"
+        },
+        "i18n_description": {
+          "en": "1 complete Taobao detail long image",
+          "ja": "タオバオ詳細ロング画像1枚",
+          "zh": "完整淘宝详情长图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "06280a9ff52cb4260fdf3e96f06b1795170874494518cf5ad32e43a427f13030"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 34,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:17",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxsqnfpxc",
+      "title": "女装",
+      "description": "完整淘宝详情长图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "女装",
+            "description": "完整淘宝详情长图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Women's Fashion",
+            "description": "1 complete Taobao product detail page image (long format)",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/073e1f54629147779ba5aff5c1776b37.png",
+            "coverWidth": 750,
+            "coverHeight": 8125
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "taobao",
+          "skillAssetId": "2o5r68t50e0w",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/taobao/71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "sourceVersion": "1.0.34",
+          "versionAssetId": "2pckfj2p5p8g",
+          "versionId": "71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "linkUrl": "lovart://skill/taobao",
+          "plazaItemId": "2pckfj3t4lq8"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张女装淘宝商品完整详情长图，按商品总览、已确认卖点、细节证据、使用场景和规格信息组织内容。各模块保持同一视觉系统；文字清晰可读，不用缩小整套内容的方式冒充完整详情页。缺失的规格不补造。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 complete Taobao product detail page for Women's Fashion as a long-format image. Organize the content into a product overview, confirmed selling points, supporting details, usage scenarios, and specifications. Keep all modules within one visual system and ensure the text is legible. Do not shrink the entire set of content into a miniature overview and call it a complete detail page. Do not invent missing specifications.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/049b444fd2284acb921fe9447d3e4385.png",
+        "coverWidth": 750,
+        "coverHeight": 8125
+      },
+      "extra": {
+        "collectionId": "2quhxj75e4n4",
+        "collectionTitle": "淘宝商品详情页",
+        "i18n_title": {
+          "en": "Women's Clothing",
+          "ja": "婦人服",
+          "zh": "女装"
+        },
+        "i18n_description": {
+          "en": "1 complete Taobao detail long image",
+          "ja": "完全なTaobao詳細ロング画像1枚",
+          "zh": "完整淘宝详情长图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "fe30e8c910f389811bf7961875a1f3e4c79aec05135f990dc413d8bba48efb85"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 1,
+        "viewCount": 0,
+        "tryCount": 27,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:17",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxsqsf94w",
+      "title": "男装",
+      "description": "完整淘宝详情长图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "男装",
+            "description": "完整淘宝详情长图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Men's Fashion",
+            "description": "1 complete Taobao product detail page image (long format)",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/ab7b3db7ffaf4405ad965f410c7ffedc.png",
+            "coverWidth": 750,
+            "coverHeight": 9000
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "taobao",
+          "skillAssetId": "2o5r68t50e0w",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/taobao/71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "sourceVersion": "1.0.34",
+          "versionAssetId": "2pckfj2p5p8g",
+          "versionId": "71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "linkUrl": "lovart://skill/taobao",
+          "plazaItemId": "2pckfj3t4lq8"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张男装淘宝商品完整详情长图，按商品总览、已确认卖点、细节证据、使用场景和规格信息组织内容。各模块保持同一视觉系统；文字清晰可读，不用缩小整套内容的方式冒充完整详情页。缺失的规格不补造。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 complete Taobao product detail page for Men's Fashion as a long-format image. Organize the content into a product overview, confirmed selling points, supporting details, usage scenarios, and specifications. Keep all modules within one visual system and ensure the text is legible. Do not shrink the entire set of content into a miniature overview and call it a complete detail page. Do not invent missing specifications.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/7a9747257b5f43c5bd0d49d8b72c88e4.png",
+        "coverWidth": 750,
+        "coverHeight": 9000
+      },
+      "extra": {
+        "collectionId": "2quhxj75e4n4",
+        "collectionTitle": "淘宝商品详情页",
+        "i18n_title": {
+          "en": "Men's Clothing",
+          "ja": "メンズ服",
+          "zh": "男装"
+        },
+        "i18n_description": {
+          "en": "1 complete Taobao detail long image",
+          "ja": "完全なタオバオ詳細ロング画像1枚",
+          "zh": "完整淘宝详情长图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "2af216b75c8f603ea2340025c65a07a88f192ca66d31813d61e17a5e34d01669"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 10,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:17",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxsugrvgg",
+      "title": "食品",
+      "description": "完整淘宝详情长图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "食品",
+            "description": "完整淘宝详情长图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Food",
+            "description": "1 complete Taobao product detail page image (long format)",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/b127d23ff84d428bbd0fa5b928c16d68.png",
+            "coverWidth": 1536,
+            "coverHeight": 20480
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "taobao",
+          "skillAssetId": "2o5r68t50e0w",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/taobao/71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "sourceVersion": "1.0.34",
+          "versionAssetId": "2pckfj2p5p8g",
+          "versionId": "71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "linkUrl": "lovart://skill/taobao",
+          "plazaItemId": "2pckfj3t4lq8"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张食品淘宝商品完整详情长图，按商品总览、已确认卖点、细节证据、使用场景和规格信息组织内容。各模块保持同一视觉系统；文字清晰可读，不用缩小整套内容的方式冒充完整详情页。缺失的规格不补造。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 complete Taobao product detail page for Food as a long-format image. Organize the content into a product overview, confirmed selling points, supporting details, usage scenarios, and specifications. Keep all modules within one visual system and ensure the text is legible. Do not shrink the entire set of content into a miniature overview and call it a complete detail page. Do not invent missing specifications.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/dfa50ee569304e2a950fbb4b9adf40fa.png",
+        "coverWidth": 1536,
+        "coverHeight": 20480
+      },
+      "extra": {
+        "collectionId": "2quhxj75e4n4",
+        "collectionTitle": "淘宝商品详情页",
+        "i18n_title": {
+          "en": "Food Products",
+          "ja": "食品",
+          "zh": "食品"
+        },
+        "i18n_description": {
+          "en": "Complete Taobao product detail long image, 1 piece",
+          "ja": "完全なタオバオ詳細ロング画像1枚",
+          "zh": "完整淘宝详情长图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "e0ee554c2fbaa8188972c58b425d05d2b099c1177cf7c8a2111e4f01994abc46"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:17",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 33,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:17",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxttucd8g",
+      "title": "数码",
+      "description": "完整淘宝详情长图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "数码",
+            "description": "完整淘宝详情长图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Consumer Electronics",
+            "description": "1 complete Taobao product detail page image (long format)",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/99eab03da9b54f4a9814d4e29a6433bd.png",
+            "coverWidth": 750,
+            "coverHeight": 6000
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "taobao",
+          "skillAssetId": "2o5r68t50e0w",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/taobao/71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "sourceVersion": "1.0.34",
+          "versionAssetId": "2pckfj2p5p8g",
+          "versionId": "71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "linkUrl": "lovart://skill/taobao",
+          "plazaItemId": "2pckfj3t4lq8"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张数码淘宝商品完整详情长图，按商品总览、已确认卖点、细节证据、使用场景和规格信息组织内容。各模块保持同一视觉系统；文字清晰可读，不用缩小整套内容的方式冒充完整详情页。缺失的规格不补造。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 complete Taobao product detail page for Consumer Electronics as a long-format image. Organize the content into a product overview, confirmed selling points, supporting details, usage scenarios, and specifications. Keep all modules within one visual system and ensure the text is legible. Do not shrink the entire set of content into a miniature overview and call it a complete detail page. Do not invent missing specifications.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/7931fadfeb1548b3b193771f14c7098e.png",
+        "coverWidth": 750,
+        "coverHeight": 6000
+      },
+      "extra": {
+        "collectionId": "2quhxj75e4n4",
+        "collectionTitle": "淘宝商品详情页",
+        "i18n_title": {
+          "en": "Digital Products",
+          "ja": "デジタル製品",
+          "zh": "数码"
+        },
+        "i18n_description": {
+          "en": "1 complete Taobao detailed long image",
+          "ja": "完全なTaobao詳細ロング画像1枚",
+          "zh": "完整淘宝详情长图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "52db6643159d393060752c08cc874950e13f30142d41817ca2ba92fa280d8c46"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:18",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 26,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:18",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhxtu1tssg",
+      "title": "美妆",
+      "description": "完整淘宝详情长图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "美妆",
+            "description": "完整淘宝详情长图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Beauty",
+            "description": "1 complete Taobao product detail page image (long format)",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/49207a05f34c4c4dbb40183b1c71c8cb.png",
+            "coverWidth": 1536,
+            "coverHeight": 20479
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "taobao",
+          "skillAssetId": "2o5r68t50e0w",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/taobao/71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "sourceVersion": "1.0.34",
+          "versionAssetId": "2pckfj2p5p8g",
+          "versionId": "71953edd-6f9e-43ce-af61-b405f61f1b42",
+          "linkUrl": "lovart://skill/taobao",
+          "plazaItemId": "2pckfj3t4lq8"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品图片"
+                },
+                "en": {
+                  "title": "Product images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品资料",
+                  "placeholder": "补充商品名称、实际售卖内容及需要上图的已确认文案；没有可留空"
+                },
+                "en": {
+                  "title": "Product information",
+                  "placeholder": "Add the product name, actual sale contents and confirmed copy to display. Leave blank if unavailable."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张美妆淘宝商品完整详情长图，按商品总览、已确认卖点、细节证据、使用场景和规格信息组织内容。各模块保持同一视觉系统；文字清晰可读，不用缩小整套内容的方式冒充完整详情页。缺失的规格不补造。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 complete Taobao product detail page for Beauty as a long-format image. Organize the content into a product overview, confirmed selling points, supporting details, usage scenarios, and specifications. Keep all modules within one visual system and ensure the text is legible. Do not shrink the entire set of content into a miniature overview and call it a complete detail page. Do not invent missing specifications.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/58137aeabbcc429392a5c4e5e690f9a1.png",
+        "coverWidth": 1536,
+        "coverHeight": 20479
+      },
+      "extra": {
+        "collectionId": "2quhxj75e4n4",
+        "collectionTitle": "淘宝商品详情页",
+        "i18n_title": {
+          "en": "Beauty & Makeup",
+          "ja": "美容・メイクアップ",
+          "zh": "美妆"
+        },
+        "i18n_description": {
+          "en": "Complete Taobao detail long image 1 piece",
+          "ja": "完全なタオバオ詳細ロング画像1枚",
+          "zh": "完整淘宝详情长图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "32928cb2527e90f5bef7acb59d764aeb845b9878deaece86091c56a959b61ad7"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:18",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 27,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEvXLzV2BW",
+              "tagName": "e_commerce",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "E-commerce",
+              "extra": {
+                "tagName": "e_commerce",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "E-commerce"
+                }
+              },
+              "createTime": "2026-02-10T12:22:30",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:18",
+      "spacePinned": false
+    }
+  ],
+  "collectionMemberCount": 6,
+  "collectionHasMoreMembers": false,
+  "score": 1000000003500
+}

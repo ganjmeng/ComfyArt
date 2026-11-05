@@ -1,0 +1,361 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pogiadDfAQ",
+  "title": "Adaptive Style Transfer Director",
+  "description": "Analyze, transfer, and control reference styles",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "adaptive-style-transfer-director",
+        "ja": "万能スタイル再現",
+        "zh": "万能风格复刻"
+      },
+      "i18n_description": {
+        "en": "An adaptive reference image style transfer tool that can identify the user's intention and the reference purpose, analyze and extract visual styles, generate reusable prompts, mood boards, style image solutions and series plans. It is applicable to the style analysis, replication, transfer and controlled variant creation of reference images such as graphic designs, illustrations, and UI.",
+        "ja": "リファレンス画像に適応するスタイルマイグレーションツール。ユーザーの意図と参考目的を認識し、視覚的なスタイルを分析・抽出して、再利用可能なプロンプト、ムードボード、同スタイルの画像案およびシリーズ企画を生成します。グラフィックビジュアル、イラスト、UIなどの参考画像のスタイル解析、再現、転移、および制御可能なバリエーション創作に対応。",
+        "zh": "自适应参考图风格迁移工具，可识别用户意图与参考目的，分析并提炼视觉风格，生成可复用提示词、情绪板、同风格图像方案及系列规划。适用于平面视觉、插画、UI 等参考图的风格解析、复刻、迁移与可控变体创作。"
+      },
+      "prompts": [
+        {
+          "title": "One-Click Precise Style Replication",
+          "content": "Refer to the attached image and generate a new image with the identical style."
+        },
+        {
+          "title": "Deep Style Prompt Reverse Engineering",
+          "content": "Analyze and describe the artistic style of the attached image."
+        }
+      ],
+      "i18n_prompts": {
+        "en": [
+          {
+            "title": "One-Click Precise Style Replication",
+            "content": "Refer to the attached image and generate a new image with the identical style."
+          },
+          {
+            "title": "Deep Style Prompt Reverse Engineering",
+            "content": "Analyze and describe the artistic style of the attached image."
+          }
+        ],
+        "ja": [
+          {
+            "title": "スタイルをワンクリックで正確に再現",
+            "content": "添付画像を参考に、同じスタイルの新しい画像を生成してください。"
+          },
+          {
+            "title": "深層スタイルプロンプト逆推定",
+            "content": "添付画像のスタイルを詳細に説明してください。"
+          }
+        ],
+        "zh": [
+          {
+            "title": "风格一键精准复刻",
+            "content": "参考附件图像，生成相同风格的新图像"
+          },
+          {
+            "title": "深度风格提示词反推",
+            "content": "描述附件图像的风格"
+          }
+        ]
+      },
+      "i18n_prompt": {
+        "en": "Refer to the attached image and generate a new image with the identical style.",
+        "ja": "添付画像を参考に、同じスタイルの新しい画像を生成してください。",
+        "zh": "参考附件图像，生成相同风格的新图像"
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/a5/a51d476d92f6c75b6b8fcc8db7d2aaeed2a81faab246de82ba98e257399363a4.mp4",
+      "mediaType": "video",
+      "width": 960,
+      "height": 720,
+      "posterUrl": ""
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/e7/e704d89e3614378ec1598d8897bc90d414be21f7497a942087d433e79d9ac889.webp",
+        "width": 1254,
+        "height": 1254,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/c3/c332488844519b6f9c2e4484a553907d55632cc86df6a10c9021d66f995f9149.webp",
+        "width": 1254,
+        "height": 1254,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/51/51d5a0f5c965bfb925e7ddb71ba54b07e9b874e7c4d9407129aaab94e00ceaf6.webp",
+        "width": 1254,
+        "height": 1254,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/f5/f5817b8cbee5b6499a913dc36d6b21da47d21e0741b078eefdd65003e797f6b4.webp",
+        "width": 1254,
+        "height": 1254,
+        "order": 3
+      }
+    ],
+    "bestFor": [
+      "style extraction",
+      "moodboard",
+      "style transfer"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "os9J0n0v9C",
+    "versionAssetId": "pogiaaNhmg",
+    "skillKey": "adaptive-style-transfer-director",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/adaptive-style-transfer-director",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "7cd6f588-8529-4a46-8128-47d46a1e33bd",
+    "skillId": "industry/adaptive-style-transfer-director/7cd6f588-8529-4a46-8128-47d46a1e33bd",
+    "level": "S",
+    "i18n_title": {
+      "en": "Adaptive Style Transfer Director",
+      "ja": "適応型スタイル転送ディレクター",
+      "zh": "自适应风格迁移总监"
+    },
+    "i18n_description": {
+      "en": "Analyze, transfer, and control reference styles",
+      "ja": "参照スタイルの分析、転送、制御",
+      "zh": "分析、迁移和控制参考风格"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "0f1e2c3e4a00a7d8eeb78bb3073e682b69f6d472f323bf42d73c2b756893a7b7",
+    "version": "1.0.15"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-06T11:59:15",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 560,
+    "viewCount": 0,
+    "tryCount": 1251,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEw9xRyJEY",
+      "tagName": "branding",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Branding",
+      "extra": {
+        "tagName": "branding",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Branding"
+        }
+      },
+      "createTime": "2026-02-10T12:25:09",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Adaptive Style Transfer Director",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/a5/a51d476d92f6c75b6b8fcc8db7d2aaeed2a81faab246de82ba98e257399363a4.mp4",
+  "publishTime": "2026-08-06T11:59:15",
+  "spacePinned": null,
+  "score": 0
+}

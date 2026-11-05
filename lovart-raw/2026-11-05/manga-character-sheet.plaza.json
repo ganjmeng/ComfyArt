@@ -1,0 +1,312 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pj8GMcJHag",
+  "title": "Manga Character Sheet",
+  "description": "Create clean production reference sheets for anime, manga, webtoon, chibi, mascot, anthropomorphic, creature, and stylized IP characters.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Manga Character Sheet",
+        "ja": "漫画キャラクター設定シート",
+        "zh": "动漫角色设定板"
+      },
+      "i18n_description": {
+        "en": "Create clean production reference sheets for anime, manga, webtoon, chibi, mascot, anthropomorphic, creature, and stylized IP characters.",
+        "ja": "アニメ、漫画、Webtoon、ちびキャラ、マスコット、擬人化、クリーチャー、スタイル化されたIPキャラクター向けの制作参考用キャラクター設定シートを作成します。",
+        "zh": "为二次元、漫画、网漫、Q版、吉祥物、拟人、怪物与风格化 IP 角色生成清晰的生产级角色设定板。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/00/00aae214694c56a4f1526efc6f2eb9bb1927e7f83338cd4a4ca1bf19576448ff.mp4",
+      "mediaType": "video",
+      "width": 640,
+      "height": 480
+    },
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/04/049c47debd2db21bc9e02d921b7ddba10299497b234d38c56d11891ce0e5377b.mp4",
+        "width": 1112,
+        "height": 834,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/41/412bd0480dc4f5e69b13510d64d6b3c59b941416e9a49a50fb5dd5677420e20e.webp",
+        "width": 1536,
+        "height": 1024,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/8e/8e391058393f4b8b6c73420b1be32279cd6bfd5e47fc1609c95339fd7b9218a5.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 2
+      }
+    ],
+    "bestFor": [
+      "Anime Character",
+      "Chibi Character",
+      "Manga Character",
+      "IP Design"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "pj8rFOC1H2",
+    "versionAssetId": "pj8GM9kwFy",
+    "skillKey": "manga-character-sheet",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/manga-character-sheet",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "18f166a9-318a-4ed3-90be-02673f11b95b",
+    "skillId": "industry/manga-character-sheet/18f166a9-318a-4ed3-90be-02673f11b95b",
+    "level": "S",
+    "i18n_title": {
+      "en": "Manga Character Sheet",
+      "ja": "マンガキャラクターシート",
+      "zh": "漫画角色设定表"
+    },
+    "i18n_description": {
+      "en": "Create clean production reference sheets for anime, manga, webtoon, chibi, mascot, anthropomorphic, creature, and stylized IP characters.",
+      "ja": "アニメ、マンガ、ウェブトゥーン、ちびキャラ、マスコット、擬人化、クリーチャー、スタイライズドIPキャラクターのためのクリーンな制作用リファレンスシートを作成します。",
+      "zh": "为动漫、漫画、网络漫画、Q版、吉祥物、拟人化、生物和风格化IP角色创建清晰的制作参考表。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "a9486517acb64a444f85a047705592c0ebad6c6138a44a85359e5d919f6dc69e",
+    "version": "1.0.2"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-03T09:54:50",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 772,
+    "viewCount": 0,
+    "tryCount": 3109,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Manga Character Sheet",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/00/00aae214694c56a4f1526efc6f2eb9bb1927e7f83338cd4a4ca1bf19576448ff.mp4",
+  "publishTime": "2026-08-03T09:54:50",
+  "spacePinned": false,
+  "score": 0
+}

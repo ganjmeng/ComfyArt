@@ -1,0 +1,421 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pe9nryLm8M",
+  "title": "Banner Design",
+  "description": "Platform-ready, crop-safe layouts",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_description": {
+        "en": "Used to design and optimize commercial banners, such as website hero banners, campaign banners, e-commerce promotion visuals, display ads, channel headers, and platform promotional graphics.\nIt generates a style board with three distinct creative directions based on the brand, product, key selling points, CTA, size, and usage scenario, helping you quickly choose a visual direction. Once a direction is confirmed, it can continue to create the final banner or provide production-ready specifications.",
+        "ja": "Webサイトのファーストビュー、キャンペーンバナー、ECプロモーション画像、ディスプレイ広告、チャンネルヘッダー、プラットフォーム向けプロモーション画像など、各種商用バナーのデザインと最適化に使用します。\nブランド、商品、訴求ポイント、CTA、サイズ、使用シーンに基づいて、3つの異なる方向性を含むスタイルボードを生成し、視覚的な方向性をすばやく判断できるようにします。方向性が決まった後は、最終バナーの制作や、実制作に使える仕様の出力まで対応できます。",
+        "zh": "用于设计和优化各类商业 Banner，例如官网首屏、活动横幅、电商促销图、展示广告、频道头图和平台推广图。\n它会根据品牌、产品、卖点、CTA、尺寸和使用场景生成一张包含 3 个不同方向的风格板，帮助快速判断视觉路线；确认方向后，可继续制作最终 Banner 或输出可落地的制作规格。"
+      },
+      "prompts": [
+        {
+          "title": "Create an e-commerce promotion banner",
+          "content": "Create an e-commerce promotion banner for {product/brand} and its {offer/campaign}. Emphasize {key selling point}, {promotion message}, product visibility, and {CTA}, while keeping the layout clean and readable for {target platform/size} and mobile viewing."
+        },
+        {
+          "title": "Design a website hero banner",
+          "content": "Design a website hero banner for {product/brand/campaign}. Use {brand assets} and {product visuals}, make {value proposition} clear within 3 seconds, and keep {CTA} visually prominent."
+        },
+        {
+          "title": "Design a YouTube channel banner",
+          "content": "Design a YouTube channel banner for {brand/creator}. Keep {logo}, {channel identity}, {slogan}, and {key message} inside the safe zone so the banner remains readable across desktop, tablet, TV, and mobile crops."
+        },
+        {
+          "title": "Design a LinkedIn banner",
+          "content": "Design a LinkedIn profile or company banner for {brand/founder/professional identity}. Create a polished business-facing layout with strong {identity}, clear {positioning}, and safe spacing around profile-image overlap areas."
+        },
+        {
+          "title": "Optimize an existing banner",
+          "content": "Review and optimize this {existing banner} for stronger visual hierarchy, clearer {selling point}, better {CTA} visibility, safer cropping, and improved mobile readability, while keeping {brand style} and {core message} intact."
+        }
+      ],
+      "i18n_prompts": {
+        "en": [
+          {
+            "title": "Create an e-commerce promotion banner",
+            "content": "Create an e-commerce promotion banner for {product/brand} and its {offer/campaign}. Emphasize {key selling point}, {promotion message}, product visibility, and {CTA}, while keeping the layout clean and readable for {target platform/size} and mobile viewing."
+          },
+          {
+            "title": "Design a website hero banner",
+            "content": "Design a website hero banner for {product/brand/campaign}. Use {brand assets} and {product visuals}, make {value proposition} clear within 3 seconds, and keep {CTA} visually prominent."
+          },
+          {
+            "title": "Design a YouTube channel banner",
+            "content": "Design a YouTube channel banner for {brand/creator}. Keep {logo}, {channel identity}, {slogan}, and {key message} inside the safe zone so the banner remains readable across desktop, tablet, TV, and mobile crops."
+          },
+          {
+            "title": "Design a LinkedIn banner",
+            "content": "Design a LinkedIn profile or company banner for {brand/founder/professional identity}. Create a polished business-facing layout with strong {identity}, clear {positioning}, and safe spacing around profile-image overlap areas."
+          },
+          {
+            "title": "Optimize an existing banner",
+            "content": "Review and optimize this {existing banner} for stronger visual hierarchy, clearer {selling point}, better {CTA} visibility, safer cropping, and improved mobile readability, while keeping {brand style} and {core message} intact."
+          }
+        ],
+        "ja": [
+          {
+            "title": "ECプロモーションバナーを作成",
+            "content": "{商品/ブランド} の {オファー/キャンペーン} に合わせたECプロモーションバナーを作成してください。{主要な訴求ポイント}、{プロモーション内容}、商品の視認性、{CTA} を強調しつつ、{対象プラットフォーム/サイズ} とモバイル表示でも読みやすい、すっきりしたレイアウトにしてください。"
+          },
+          {
+            "title": "Webサイトのヒーローバナーをデザイン",
+            "content": "{商品/ブランド/キャンペーン} のWebサイト用ヒーローバナーをデザインしてください。{ブランド素材} と {商品ビジュアル} を使用し、{価値提案} が3秒以内に伝わるようにし、{CTA} を目立たせてください。"
+          },
+          {
+            "title": "YouTubeチャンネルバナーをデザイン",
+            "content": "{ブランド/クリエイター} 向けのYouTubeチャンネルバナーをデザインしてください。{ロゴ}、{チャンネルアイデンティティ}、{スローガン}、{重要なメッセージ} をセーフゾーン内に収め、デスクトップ、タブレット、テレビ、モバイルでの切り抜き後も読みやすくしてください。"
+          },
+          {
+            "title": "LinkedInバナーをデザイン",
+            "content": "{ブランド/創業者/プロフェッショナルイメージ} 向けに、LinkedInプロフィールまたは会社ページ用バナーをデザインしてください。ビジネス向けの洗練されたレイアウトにし、{アイデンティティ}、{ポジショニング} を明確に表現し、プロフィール画像との重なりを避けてください。"
+          },
+          {
+            "title": "既存バナーを最適化",
+            "content": "この {既存バナー} を確認し、視覚的階層、{訴求ポイント}、{CTA} の視認性、安全なトリミング、モバイルでの読みやすさを改善してください。{ブランドスタイル} と {中心メッセージ} は維持してください。"
+          }
+        ],
+        "zh": [
+          {
+            "title": "制作电商促销 Banner",
+            "content": "为 {产品/品牌} 的 {优惠/活动} 制作电商促销 Banner。突出 {核心卖点}、{促销信息}、产品展示和 {CTA}，同时保持版面清爽，并适合 {目标平台/尺寸} 和移动端阅读。"
+          },
+          {
+            "title": "设计官网首屏 Banner",
+            "content": "为 {产品/品牌/活动} 设计官网首屏 Banner。使用 {品牌素材} 和 {产品视觉}，让 {价值主张} 在 3 秒内被看懂，并突出 {CTA}。"
+          },
+          {
+            "title": "设计 YouTube 频道 Banner",
+            "content": "为 {品牌/创作者} 设计 YouTube 频道 Banner。将 {Logo}、{频道识别}、{标语} 和 {关键信息} 放在安全区内，确保在桌面、平板、电视和移动端裁切下都清晰可读。"
+          },
+          {
+            "title": "设计 LinkedIn Banner",
+            "content": "为 {品牌/创始人/职业形象} 设计 LinkedIn 个人主页或公司主页 Banner。做出专业、商务感强的版面，突出 {身份识别}、{定位表达}，并避开头像遮挡区域。"
+          },
+          {
+            "title": "优化现有 Banner",
+            "content": "检查并优化这张 {现有Banner}，提升视觉层级、{卖点表达}、{CTA} 可见度、安全裁切和移动端可读性，同时保留 {品牌风格} 和 {核心信息}。"
+          }
+        ]
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/92/92f62f81f2f384938e6f6a6d64df2328310234b8af69568c888ad56021c4a42f.mp4",
+      "mediaType": "video",
+      "width": 960,
+      "height": 720
+    },
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/b1/b155cabfee3f40cd4d54124af710cec48e7fbd68f3efdbc4b71e134050981db9.mp4",
+        "width": 960,
+        "height": 720,
+        "order": 0
+      }
+    ],
+    "bestFor": [],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "osdfJtG7Ac",
+    "versionAssetId": "pe9nrvmj6w",
+    "skillKey": "banner-design-director",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/banner-design-director",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "b689b699-755e-40c2-8ac8-2ab8a13be45f",
+    "skillId": "industry/banner-design-director/b689b699-755e-40c2-8ac8-2ab8a13be45f",
+    "level": "S",
+    "i18n_title": {
+      "en": "Banner Design",
+      "ja": "バナーデザイン",
+      "zh": "横幅设计"
+    },
+    "i18n_description": {
+      "en": "Platform-ready, crop-safe layouts",
+      "ja": "プラットフォーム対応、トリミングセーフなレイアウト",
+      "zh": "平台就绪、裁剪安全的布局"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "42d1f4aae8fb8bf731241a8e20cd630efe876913ec334fb8d80b8800bab55fd3",
+    "version": "1.0.40"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-07-31T09:46:26",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 304,
+    "viewCount": 0,
+    "tryCount": 624,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "lFcUzQIgKs",
+      "tagName": "website",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Website",
+      "extra": {
+        "tagName": "website",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Website"
+        }
+      },
+      "createTime": "2026-03-20T06:55:03",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Banner Design",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/92/92f62f81f2f384938e6f6a6d64df2328310234b8af69568c888ad56021c4a42f.mp4",
+  "publishTime": "2026-07-31T09:46:26",
+  "spacePinned": false,
+  "score": 1000000000004
+}

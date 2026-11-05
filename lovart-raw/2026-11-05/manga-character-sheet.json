@@ -1,0 +1,1747 @@
+{
+  "itemType": "collection_card",
+  "itemId": "2quhxl3m47b5",
+  "title": "动漫角色设定与参考板",
+  "description": "梳理角色外观与设定，让多视图保持一致",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "i18n": {
+      "zh": {
+        "title": "动漫角色设定与参考板",
+        "description": "梳理角色外观与设定，让多视图保持一致",
+        "ctaText": "开始制作"
+      },
+      "en": {
+        "title": "Anime Character Design & Reference Sheets",
+        "description": "Define your character’s appearance and keep it consistent across views.",
+        "ctaText": "Create now"
+      }
+    },
+    "bind": {
+      "type": "SKILL",
+      "source": "PLAZA",
+      "skillKey": "manga-character-sheet",
+      "skillAssetId": "pj8rFOC1H2",
+      "versionAssetId": "pj8GM9kwFy",
+      "sourceVersion": "1.0.2",
+      "skillId": "industry/manga-character-sheet/18f166a9-318a-4ed3-90be-02673f11b95b",
+      "namespace": "industry",
+      "skillType": "pgc",
+      "linkUrl": "lovart://skill/manga-character-sheet",
+      "versionId": "18f166a9-318a-4ed3-90be-02673f11b95b",
+      "plazaItemId": "pj8GMcJHag"
+    },
+    "cover": "https://a.lovart.ai/asset/showcase-cover/202609/3ca885f019be42e2b1aa52ecf805cd6f.png",
+    "coverWidth": 1280,
+    "coverHeight": 960
+  },
+  "extra": {
+    "i18n_title": {
+      "en": "Anime Character Design & Reference Sheet",
+      "ja": "アニメキャラクター設定と参考ボード",
+      "zh": "动漫角色设定与参考板"
+    },
+    "i18n_description": {
+      "en": "Organize character appearance and settings to maintain consistency across multiple views",
+      "ja": "キャラクターの外見と設定を整理し、複数のビューで一貫性を保つ",
+      "zh": "梳理角色外观与设定，让多视图保持一致"
+    },
+    "i18n_source_locale": "zh",
+    "i18n_source_hash": "1a5a2baed5bde02f506a5614597565f4a3326920642d39184e3feccf2b082fe8"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-24T06:38:13",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 65,
+    "viewCount": 0,
+    "tryCount": 0,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": null,
+  "skillCover": null,
+  "publishTime": "2026-09-24T06:38:13",
+  "spacePinned": false,
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyg6hmv40",
+      "title": "角色转身板",
+      "description": "角色转身板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "角色转身板",
+            "description": "角色转身板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Character Turnaround Sheet",
+            "description": "1 character turnaround sheet",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/230712028b3f435daee3b420ae3205a1.png",
+            "coverWidth": 1024,
+            "coverHeight": 1024
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "manga-character-sheet",
+          "skillAssetId": "pj8rFOC1H2",
+          "versionAssetId": "pj8GM9kwFy",
+          "sourceVersion": "1.0.2",
+          "skillId": "industry/manga-character-sheet/18f166a9-318a-4ed3-90be-02673f11b95b",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/manga-character-sheet",
+          "versionId": "18f166a9-318a-4ed3-90be-02673f11b95b",
+          "plazaItemId": "pj8GMcJHag"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色参考图片"
+                },
+                "en": {
+                  "title": "Character reference images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "character_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色资料",
+                  "placeholder": "说明角色外观及本次需要保留的设定；已提供清晰参考图时可留空，信息不足再补问。"
+                },
+                "en": {
+                  "title": "Character information",
+                  "placeholder": "Describe the character and details to preserve. Leave blank if clear references are supplied; missing essentials will be clarified later."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张动漫角色转身板，包含正面、侧面和背面的完整全身。沿用同一已批准角色锚点，保持身份、比例及未授权修改的服饰一致；多个视图只计一张板。\n\n{{character_info}}\n{{visual_direction}}",
+            "en": "Create 1 character turnaround sheet for an anime character, containing complete full-body front, side, and back views. Use the same approved character reference throughout. Keep the identity, proportions, and any clothing not authorized for change consistent. Multiple views count as one sheet.\n\n{{character_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/7f875c60224041abb90f576e38cf5ecd.png",
+        "coverWidth": 1024,
+        "coverHeight": 1024
+      },
+      "extra": {
+        "collectionId": "2quhxl3m47b5",
+        "collectionTitle": "动漫角色设定与参考板",
+        "i18n_title": {
+          "en": "Character Turnaround Sheet",
+          "ja": "キャラクターターンアラウンドシート",
+          "zh": "角色转身板"
+        },
+        "i18n_description": {
+          "en": "1 Character Turnaround Sheet",
+          "ja": "キャラクターターンアラウンドシート 1枚",
+          "zh": "角色转身板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "f0008a844125a6b7b1d79574937dc5579bf752619de4b993cc702be79c71aa34"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:29",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 1,
+        "viewCount": 0,
+        "tryCount": 34,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFd79qB1i8",
+              "tagName": "ads_creative",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Ads & Creative",
+              "extra": {
+                "tagName": "ads_creative",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Ads & Creative"
+                }
+              },
+              "createTime": "2026-03-20T06:57:53",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:29",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyg6f4pa8",
+      "title": "建模细节参考板",
+      "description": "建模细节参考板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "建模细节参考板",
+            "description": "建模细节参考板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Modeling Detail Reference Sheet",
+            "description": "1 modeling detail reference sheet",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/2a63bf2cb4594154a03fe6501bd1073a.png",
+            "coverWidth": 2048,
+            "coverHeight": 2048
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "manga-character-sheet",
+          "skillAssetId": "pj8rFOC1H2",
+          "versionAssetId": "pj8GM9kwFy",
+          "sourceVersion": "1.0.2",
+          "skillId": "industry/manga-character-sheet/18f166a9-318a-4ed3-90be-02673f11b95b",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/manga-character-sheet",
+          "versionId": "18f166a9-318a-4ed3-90be-02673f11b95b",
+          "plazaItemId": "pj8GMcJHag"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色参考图片"
+                },
+                "en": {
+                  "title": "Character reference images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "character_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色资料",
+                  "placeholder": "说明角色外观及本次需要保留的设定；已提供清晰参考图时可留空，信息不足再补问。"
+                },
+                "en": {
+                  "title": "Character information",
+                  "placeholder": "Describe the character and details to preserve. Leave blank if clear references are supplied; missing essentials will be clarified later."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张动漫角色的建模细节参考板，包含转身锚点以及造型结构、材质、连接部位特写。沿用同一已批准角色锚点，保持身份、比例及未授权修改的服饰一致；多个视图只计一张板。\n\n{{character_info}}\n{{visual_direction}}",
+            "en": "Create 1 modeling detail reference sheet for an anime character, containing a turnaround reference plus close-ups of form, structure, materials, and connection points. Use the same approved character reference throughout. Keep the identity, proportions, and any clothing not authorized for change consistent. Multiple views count as one sheet.\n\n{{character_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/9dd30ea19726415bbc5b5302a0fadd40.png",
+        "coverWidth": 2048,
+        "coverHeight": 2048
+      },
+      "extra": {
+        "collectionId": "2quhxl3m47b5",
+        "collectionTitle": "动漫角色设定与参考板",
+        "i18n_title": {
+          "en": "Modeling Detail Reference Board",
+          "ja": "モデリングディテールリファレンスボード",
+          "zh": "建模细节参考板"
+        },
+        "i18n_description": {
+          "en": "Modeling Detail Reference Board 1 sheet",
+          "ja": "モデリングディテールリファレンスボード 1枚",
+          "zh": "建模细节参考板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "debe31d01bb460ba4bddd71d7ff595b0b91574bb3a5e0084760c24656390a359"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:29",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 3,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFd79qB1i8",
+              "tagName": "ads_creative",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Ads & Creative",
+              "extra": {
+                "tagName": "ads_creative",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Ads & Creative"
+                }
+              },
+              "createTime": "2026-03-20T06:57:53",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:29",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyg6hmlmo",
+      "title": "道具互动板",
+      "description": "道具互动板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "道具互动板",
+            "description": "道具互动板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Prop Interaction Sheet",
+            "description": "1 prop interaction sheet",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/c95b67f032c34d4d961d6490486e4583.png",
+            "coverWidth": 1024,
+            "coverHeight": 1024
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "manga-character-sheet",
+          "skillAssetId": "pj8rFOC1H2",
+          "versionAssetId": "pj8GM9kwFy",
+          "sourceVersion": "1.0.2",
+          "skillId": "industry/manga-character-sheet/18f166a9-318a-4ed3-90be-02673f11b95b",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/manga-character-sheet",
+          "versionId": "18f166a9-318a-4ed3-90be-02673f11b95b",
+          "plazaItemId": "pj8GMcJHag"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色参考图片"
+                },
+                "en": {
+                  "title": "Character reference images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "character_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色资料",
+                  "placeholder": "说明角色外观及本次需要保留的设定；已提供清晰参考图时可留空，信息不足再补问。"
+                },
+                "en": {
+                  "title": "Character information",
+                  "placeholder": "Describe the character and details to preserve. Leave blank if clear references are supplied; missing essentials will be clarified later."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张动漫角色的道具互动板，包含角色握持和使用同一指定道具的典型动作。沿用同一已批准角色锚点，保持身份、比例及未授权修改的服饰一致；多个视图只计一张板。 道具根据已确认的角色设定选择，结构与使用关系需连续。\n\n{{character_info}}\n{{visual_direction}}",
+            "en": "Create 1 prop interaction sheet for an anime character, containing typical poses showing the character holding and using the same specified prop. Use the same approved character reference throughout. Keep the identity, proportions, and any clothing not authorized for change consistent. Multiple views count as one sheet. Choose the prop based on the confirmed character description, and maintain continuity in its structure and use.\n\n{{character_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/9e07bba20a0c43f4b768d8b4d1ed5f30.png",
+        "coverWidth": 1024,
+        "coverHeight": 1024
+      },
+      "extra": {
+        "collectionId": "2quhxl3m47b5",
+        "collectionTitle": "动漫角色设定与参考板",
+        "i18n_title": {
+          "en": "Props Interactive Board",
+          "ja": "小道具インタラクティブボード",
+          "zh": "道具互动板"
+        },
+        "i18n_description": {
+          "en": "Props Interactive Board 1 piece",
+          "ja": "小道具インタラクティブボード 1枚",
+          "zh": "道具互动板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "41dbdc056c356d87267ed977fb0da6b3ea4f5b5286156011ce5dc7941d0aa8c7"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:29",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 3,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFd79qB1i8",
+              "tagName": "ads_creative",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Ads & Creative",
+              "extra": {
+                "tagName": "ads_creative",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Ads & Creative"
+                }
+              },
+              "createTime": "2026-03-20T06:57:53",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:29",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyg6hmv41",
+      "title": "表情动作板",
+      "description": "表情动作板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "表情动作板",
+            "description": "表情动作板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Expression & Pose Sheet",
+            "description": "1 expression & pose sheet",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/2b24e4a5fe49471fba1fda228ecfefbd.png",
+            "coverWidth": 1024,
+            "coverHeight": 1024
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "manga-character-sheet",
+          "skillAssetId": "pj8rFOC1H2",
+          "versionAssetId": "pj8GM9kwFy",
+          "sourceVersion": "1.0.2",
+          "skillId": "industry/manga-character-sheet/18f166a9-318a-4ed3-90be-02673f11b95b",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/manga-character-sheet",
+          "versionId": "18f166a9-318a-4ed3-90be-02673f11b95b",
+          "plazaItemId": "pj8GMcJHag"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色参考图片"
+                },
+                "en": {
+                  "title": "Character reference images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "character_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色资料",
+                  "placeholder": "说明角色外观及本次需要保留的设定；已提供清晰参考图时可留空，信息不足再补问。"
+                },
+                "en": {
+                  "title": "Character information",
+                  "placeholder": "Describe the character and details to preserve. Leave blank if clear references are supplied; missing essentials will be clarified later."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张动漫角色的表情动作板，包含身份锚点、6 个表情与3个动作。沿用同一已批准角色锚点，保持身份、比例及未授权修改的服饰一致；多个视图只计一张板。\n\n{{character_info}}\n{{visual_direction}}",
+            "en": "Create 1 expression & pose sheet for an anime character, containing an identity reference, 6 expressions, and 3 poses. Use the same approved character reference throughout. Keep the identity, proportions, and any clothing not authorized for change consistent. Multiple views count as one sheet.\n\n{{character_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/01c4994556d6476b9ddab826db4abf11.png",
+        "coverWidth": 1024,
+        "coverHeight": 1024
+      },
+      "extra": {
+        "collectionId": "2quhxl3m47b5",
+        "collectionTitle": "动漫角色设定与参考板",
+        "i18n_title": {
+          "en": "Expression Action Board",
+          "ja": "表情アクションボード",
+          "zh": "表情动作板"
+        },
+        "i18n_description": {
+          "en": "Expression Action Board 1 sheet",
+          "ja": "表情アクションボード 1枚",
+          "zh": "表情动作板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "b0a5dac3eaf4e1f792f1e25f03b9006fb1947e094b9650008154992fe9c9a2ad"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:29",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 7,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFd79qB1i8",
+              "tagName": "ads_creative",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Ads & Creative",
+              "extra": {
+                "tagName": "ads_creative",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Ads & Creative"
+                }
+              },
+              "createTime": "2026-03-20T06:57:53",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:29",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyh8pko3k",
+      "title": "基础角色板",
+      "description": "基础角色板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "基础角色板",
+            "description": "基础角色板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Basic Character Sheet",
+            "description": "1 basic character sheet",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/bf14b20d2086444bab2493ece7293eb2.png",
+            "coverWidth": 1024,
+            "coverHeight": 1024
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "manga-character-sheet",
+          "skillAssetId": "pj8rFOC1H2",
+          "versionAssetId": "pj8GM9kwFy",
+          "sourceVersion": "1.0.2",
+          "skillId": "industry/manga-character-sheet/18f166a9-318a-4ed3-90be-02673f11b95b",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/manga-character-sheet",
+          "versionId": "18f166a9-318a-4ed3-90be-02673f11b95b",
+          "plazaItemId": "pj8GMcJHag"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色参考图片"
+                },
+                "en": {
+                  "title": "Character reference images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "character_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色资料",
+                  "placeholder": "说明角色外观及本次需要保留的设定；已提供清晰参考图时可留空，信息不足再补问。"
+                },
+                "en": {
+                  "title": "Character information",
+                  "placeholder": "Describe the character and details to preserve. Leave blank if clear references are supplied; missing essentials will be clarified later."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张动漫角色的基础角色板，包含转身视图、标准半身与4个表情。沿用同一已批准角色锚点，保持身份、比例及未授权修改的服饰一致；多个视图只计一张板。\n\n{{character_info}}\n{{visual_direction}}",
+            "en": "Create 1 basic character sheet for an anime character, containing turnaround views, a standard half-body view, and 4 expressions. Use the same approved character reference throughout. Keep the identity, proportions, and any clothing not authorized for change consistent. Multiple views count as one sheet.\n\n{{character_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/234b29a390794096b81799185a49a5b0.png",
+        "coverWidth": 1024,
+        "coverHeight": 1024
+      },
+      "extra": {
+        "collectionId": "2quhxl3m47b5",
+        "collectionTitle": "动漫角色设定与参考板",
+        "i18n_title": {
+          "en": "Basic Character Card",
+          "ja": "基本キャラクターカード",
+          "zh": "基础角色板"
+        },
+        "i18n_description": {
+          "en": "1 Basic Character Card",
+          "ja": "基本キャラクターカード1枚",
+          "zh": "基础角色板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "b1c8edf7548530be188d10d202e151953353707b17a70421d15488e2bca0c1f0"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:30",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 6,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFd79qB1i8",
+              "tagName": "ads_creative",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Ads & Creative",
+              "extra": {
+                "tagName": "ads_creative",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Ads & Creative"
+                }
+              },
+              "createTime": "2026-03-20T06:57:53",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:30",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyh8s2txd",
+      "title": "服装/形态变体板",
+      "description": "服装/形态变体板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "服装/形态变体板",
+            "description": "服装/形态变体板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Outfit / Form Variation Sheet",
+            "description": "1 outfit / form variation sheet",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/4d34187d879c44f3ab54de0bbc2cfa56.png",
+            "coverWidth": 1024,
+            "coverHeight": 1024
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "manga-character-sheet",
+          "skillAssetId": "pj8rFOC1H2",
+          "versionAssetId": "pj8GM9kwFy",
+          "sourceVersion": "1.0.2",
+          "skillId": "industry/manga-character-sheet/18f166a9-318a-4ed3-90be-02673f11b95b",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/manga-character-sheet",
+          "versionId": "18f166a9-318a-4ed3-90be-02673f11b95b",
+          "plazaItemId": "pj8GMcJHag"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色参考图片"
+                },
+                "en": {
+                  "title": "Character reference images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "character_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色资料",
+                  "placeholder": "说明角色外观及本次需要保留的设定；已提供清晰参考图时可留空，信息不足再补问。"
+                },
+                "en": {
+                  "title": "Character information",
+                  "placeholder": "Describe the character and details to preserve. Leave blank if clear references are supplied; missing essentials will be clarified later."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张动漫角色的服装/形态变体板，包含3款服装或形态变体。沿用同一已批准角色锚点，保持身份、比例及未授权修改的服饰一致；多个视图只计一张板。\n\n{{character_info}}\n{{visual_direction}}",
+            "en": "Create 1 outfit / form variation sheet for an anime character, containing 3 outfit or form variations. Use the same approved character reference throughout. Keep the identity, proportions, and any clothing not authorized for change consistent. Multiple views count as one sheet.\n\n{{character_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/2a17abeb7e284ec8941a6afc4729f5aa.png",
+        "coverWidth": 1024,
+        "coverHeight": 1024
+      },
+      "extra": {
+        "collectionId": "2quhxl3m47b5",
+        "collectionTitle": "动漫角色设定与参考板",
+        "i18n_title": {
+          "en": "Clothing/Form Variation Sheet",
+          "ja": "服装/形態バリエーションシート",
+          "zh": "服装/形态变体板"
+        },
+        "i18n_description": {
+          "en": "1 Clothing/Form Variation Sheet",
+          "ja": "服装/形態バリエーションシート 1枚",
+          "zh": "服装/形态变体板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "21b1ed3fd4701f69a794ef2bf4aac350ce80559e901a9ecd1a67997872a36b01"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:30",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 3,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFd79qB1i8",
+              "tagName": "ads_creative",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Ads & Creative",
+              "extra": {
+                "tagName": "ads_creative",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Ads & Creative"
+                }
+              },
+              "createTime": "2026-03-20T06:57:53",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:30",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyh8s2txc",
+      "title": "完整技术角色板",
+      "description": "完整技术角色板 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "完整技术角色板",
+            "description": "完整技术角色板 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Complete Technical Character Sheet",
+            "description": "1 complete technical character sheet",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/08125f43f4b74796b53a17636811585b.png",
+            "coverWidth": 2048,
+            "coverHeight": 1152
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "manga-character-sheet",
+          "skillAssetId": "pj8rFOC1H2",
+          "versionAssetId": "pj8GM9kwFy",
+          "sourceVersion": "1.0.2",
+          "skillId": "industry/manga-character-sheet/18f166a9-318a-4ed3-90be-02673f11b95b",
+          "namespace": "industry",
+          "skillType": "pgc",
+          "linkUrl": "lovart://skill/manga-character-sheet",
+          "versionId": "18f166a9-318a-4ed3-90be-02673f11b95b",
+          "plazaItemId": "pj8GMcJHag"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色参考图片"
+                },
+                "en": {
+                  "title": "Character reference images"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "character_info",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "角色资料",
+                  "placeholder": "说明角色外观及本次需要保留的设定；已提供清晰参考图时可留空，信息不足再补问。"
+                },
+                "en": {
+                  "title": "Character information",
+                  "placeholder": "Describe the character and details to preserve. Leave blank if clear references are supplied; missing essentials will be clarified later."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张动漫角色的完整技术角色板，包含主视图、档案、配色、轮廓、表情、头部、姿势、服装细节与手势。沿用同一已批准角色锚点，保持身份、比例及未授权修改的服饰一致；多个视图只计一张板。\n\n{{character_info}}\n{{visual_direction}}",
+            "en": "Create 1 complete technical character sheet for an anime character, containing a primary view, profile information, color palette, silhouette, expressions, head details, poses, clothing details, and hand gestures. Use the same approved character reference throughout. Keep the identity, proportions, and any clothing not authorized for change consistent. Multiple views count as one sheet.\n\n{{character_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/c6d6c0b58aad4561a559db51f67c1177.png",
+        "coverWidth": 2048,
+        "coverHeight": 1152
+      },
+      "extra": {
+        "collectionId": "2quhxl3m47b5",
+        "collectionTitle": "动漫角色设定与参考板",
+        "i18n_title": {
+          "en": "Complete Technical Role Board",
+          "ja": "完全な技術役割ボード",
+          "zh": "完整技术角色板"
+        },
+        "i18n_description": {
+          "en": "Complete Technical Role Board - 1 sheet",
+          "ja": "完全な技術役割ボード 1枚",
+          "zh": "完整技术角色板 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "ddd8d40482fc6e8517cee9c6b72f0a002fd70cf6ef908c43b969028dea16f825"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:30",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 21,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFd79qB1i8",
+              "tagName": "ads_creative",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Ads & Creative",
+              "extra": {
+                "tagName": "ads_creative",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Ads & Creative"
+                }
+              },
+              "createTime": "2026-03-20T06:57:53",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:30",
+      "spacePinned": false
+    }
+  ],
+  "collectionMemberCount": 7,
+  "collectionHasMoreMembers": false
+}

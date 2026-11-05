@@ -1,0 +1,469 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2pv4wts7b0u8",
+  "title": "2D Animation Converter",
+  "description": "Convert any uploaded video into a flat 2D cartoon / cel-animation style. Trigger whenever the user uploads a video and asks to turn it into a cartoon, 2D animation, toon style, or animated look—especially when they want the result to match the flat-cel reference style without writing a custom prompt.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/jmlR466NRS9vp4ES.webp",
+      "width": 1672,
+      "height": 941
+    },
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/artifacts/agent/bARb17DEq4JZkfIo.mp4",
+        "width": 1080,
+        "height": 1920,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/AsGzqeNIWg6PPVdd.webp",
+        "width": 541,
+        "height": 979,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/5bXRdL6BZE2N2MV6.webp",
+        "width": 542,
+        "height": 979,
+        "order": 2
+      }
+    ],
+    "bestFor": [
+      "anime",
+      "2nd",
+      "2d animation"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "2D Animation Converter",
+        "ja": "2Dアニメーション変換",
+        "zh": "2D动画转换器"
+      },
+      "i18n_description": {
+        "en": "Convert any uploaded video into a flat 2D cartoon / cel-animation style. Trigger whenever the user uploads a video and asks to turn it into a cartoon, 2D animation, toon style, or animated look—especially when they want the result to match the flat-cel reference style without writing a custom prompt.",
+        "ja": "アップロードされた動画をフラットな2D漫画/セルアニメーションスタイルに変換します。ユーザーが動画をアップロードし、漫画、2Dアニメーション、トゥーンスタイル、またはアニメ風に変換したいと依頼した場合に起動します。特に、カスタムプロンプトを書かずにフラットセル参照スタイルに合わせた結果を求める場合に最適です。",
+        "zh": "将任何上传的视频转换为扁平2D卡通/赛璐珞动画风格。当用户上传视频并要求将其转换为卡通、2D动画、卡通风格或动画效果时触发——特别是当他们希望结果与扁平赛璐珞参考风格匹配而无需编写自定义提示词时。"
+      },
+      "i18n_prompt": {
+        "en": "Convert my uploaded video into a flat 2D cartoon animation in the same cel-animation style as the reference. Use Seedance and keep the original action and audio.",
+        "ja": "アップロードした動画を、参照と同じセルアニメーションスタイルのフラットな2D漫画アニメーションに変換してください。Seedanceを使用し、元のアクションとオーディオを保持してください。",
+        "zh": "将我上传的视频转换为与参考相同的赛璐珞动画风格的扁平2D卡通动画。使用Seedance并保留原始动作和音频。"
+      }
+    },
+    "prevContent": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "2D Animation Converter",
+          "ja": "2Dアニメーション変換",
+          "zh": "2D动画转换器"
+        },
+        "i18n_description": {
+          "en": "Convert any uploaded video into a flat 2D cartoon / cel-animation style. Trigger whenever the user uploads a video and asks to turn it into a cartoon, 2D animation, toon style, or animated look—especially when they want the result to match the flat-cel reference style without writing a custom prompt.",
+          "ja": "アップロードされた動画をフラットな2D漫画/セルアニメーションスタイルに変換します。ユーザーが動画をアップロードし、漫画、2Dアニメーション、トゥーンスタイル、またはアニメ風に変換したいと依頼した場合に起動します。特に、カスタムプロンプトを書かずにフラットセル参照スタイルに合わせた結果を求める場合に最適です。",
+          "zh": "将任何上传的视频转换为扁平2D卡通/赛璐珞动画风格。当用户上传视频并要求将其转换为卡通、2D动画、卡通风格或动画效果时触发——特别是当他们希望结果与扁平赛璐珞参考风格匹配而无需编写自定义提示词时。"
+        },
+        "i18n_prompt": {
+          "en": "Convert my uploaded video into a flat 2D cartoon animation in the same cel-animation style as the reference. Use Seedance and keep the original action and audio.",
+          "ja": "アップロードした動画を、参照と同じセルアニメーションスタイルのフラットな2D漫画アニメーションに変換してください。Seedanceを使用し、元のアクションとオーディオを保持してください。",
+          "zh": "将我上传的视频转换为与参考相同的赛璐珞动画风格的扁平2D卡通动画。使用Seedance并保留原始动作和音频。"
+        }
+      },
+      "coverMode": "single",
+      "cover": {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/qegCyZtX1bErczD3.webp",
+        "width": 1672,
+        "height": 941
+      },
+      "coverAutoPlay": false,
+      "highlights": [
+        {
+          "mediaType": "video",
+          "url": "https://a.lovart.ai/artifacts/agent/bARb17DEq4JZkfIo.mp4",
+          "width": 1080,
+          "height": 1920,
+          "order": 0
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/AsGzqeNIWg6PPVdd.webp",
+          "width": 541,
+          "height": 979,
+          "order": 1
+        },
+        {
+          "mediaType": "image",
+          "url": "https://a.lovart.ai/artifacts/user/5bXRdL6BZE2N2MV6.webp",
+          "width": 542,
+          "height": 979,
+          "order": 2
+        }
+      ],
+      "bestFor": [
+        "anime",
+        "2nd",
+        "2d animation"
+      ],
+      "showMarkdown": false
+    },
+    "prevExtra": {
+      "skillAssetId": "2puhi8be69kw",
+      "versionAssetId": "2puhi8jfuhog",
+      "skillKey": "video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31",
+      "sourceVersion": "1.0.0",
+      "linkUrl": "lovart://skill/video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31",
+      "namespace": "user-generated",
+      "type": "ugc",
+      "versionId": "c7bf8906-b901-45e7-9b69-dff2c8109930",
+      "skillId": "user-generated/video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31/c7bf8906-b901-45e7-9b69-dff2c8109930",
+      "i18n_title": {
+        "en": "2D Animation ",
+        "ja": "2Dアニメーション ",
+        "zh": "2D动画 "
+      },
+      "i18n_description": {
+        "en": "Convert any uploaded video into a flat 2D cartoon / animation style. Trigger whenever the user uploads a video and asks to turn it into a cartoon, 2D animation, toon style, or animated look—especially when they want the result to match the flat-cel reference style without writing a custom prompt.",
+        "ja": "アップロードされた動画をフラットな2Dカートゥーン/アニメーションスタイルに変換します。ユーザーが動画をアップロードして、カートゥーン、2Dアニメーション、トゥーンスタイル、またはアニメ調の外観に変換したいと依頼した際に起動します。特に、カスタムプロンプトを書かずにフラットセルのリファレンススタイルに合わせた結果を求める場合に適しています。",
+        "zh": "将任何上传的视频转换为扁平的2D卡通/动画风格。当用户上传视频并要求将其转换为卡通、2D动画、卡通风格或动画外观时触发，特别是当他们希望结果符合扁平赛璐璐参考风格而无需编写自定义提示词时。"
+      },
+      "i18n_prompts": {
+        "en": "Convert my uploaded video into a flat 2D cartoon animation in the same cel-animation style as the reference. Use Seedance and keep the original action and audio.",
+        "ja": "アップロードした動画を、参照と同じセルアニメーションスタイルのフラットな2D漫画アニメーションに変換してください。Seedanceを使用し、元のアクションとオーディオを保持してください。",
+        "zh": "将我上传的视频转换为与参考相同的赛璐珞动画风格的扁平2D卡通动画。使用Seedance并保留原始动作和音频。"
+      },
+      "i18n_source_hash": "07c19378fae9389329d8526dfc0a5fb024ccac35fbc7026f82cd135de70ee9d0",
+      "i18n_source_locale": "en",
+      "level": "B"
+    },
+    "prevArchivedAt": 1790157514153,
+    "overriddenFromItemId": "2qrez842lbls",
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2puhi8be69kw",
+    "versionAssetId": "2puhi8jfuhog",
+    "skillKey": "video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "c7bf8906-b901-45e7-9b69-dff2c8109930",
+    "skillId": "user-generated/video-to-2d-cartoon-1789359909-dd568c68860c40e095af55e8c9dcbd31/c7bf8906-b901-45e7-9b69-dff2c8109930",
+    "i18n_title": {
+      "en": "2D Animation Converter",
+      "ja": "2Dアニメーション変換",
+      "zh": "2D动画转换器"
+    },
+    "i18n_description": {
+      "en": "Convert any uploaded video into a flat 2D cartoon / cel-animation style. Trigger whenever the user uploads a video and asks to turn it into a cartoon, 2D animation, toon style, or animated look—especially when they want the result to match the flat-cel reference style without writing a custom prompt.",
+      "ja": "アップロードされた動画をフラットな2D漫画/セルアニメーションスタイルに変換します。ユーザーが動画をアップロードし、漫画、2Dアニメーション、トゥーンスタイル、またはアニメ風に変換したいと依頼した場合に起動します。特に、カスタムプロンプトを書かずにフラットセル参照スタイルに合わせた結果を求める場合に最適です。",
+      "zh": "将任何上传的视频转换为扁平2D卡通/赛璐珞动画风格。当用户上传视频并要求将其转换为卡通、2D动画、卡通风格或动画效果时触发——特别是当他们希望结果与扁平赛璐珞参考风格匹配而无需编写自定义提示词时。"
+    },
+    "i18n_prompts": {
+      "en": "Convert my uploaded video into a flat 2D cartoon animation in the same cel-animation style as the reference. Use Seedance and keep the original action and audio.",
+      "ja": "アップロードした動画を、参照と同じセルアニメーションスタイルのフラットな2D漫画アニメーションに変換してください。Seedanceを使用し、元のアクションとオーディオを保持してください。",
+      "zh": "将我上传的视频转换为与参考相同的赛璐珞动画风格的扁平2D卡通动画。使用Seedance并保留原始动作和音频。"
+    },
+    "i18n_source_hash": "aafcf86e0c8b7350261fcdf9ade705f3c6888e082de9bf8e80d171600b596581",
+    "i18n_source_locale": "en",
+    "level": "B"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-14T08:47:33",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 33,
+    "viewCount": 0,
+    "tryCount": 619,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "2D Animation Converter",
+  "skillCover": "https://a.lovart.ai/artifacts/user/jmlR466NRS9vp4ES.webp",
+  "publishTime": "2026-09-14T08:47:33",
+  "spacePinned": false,
+  "score": 0,
+  "_en": {
+    "title": "2D Animation Converter",
+    "description": "Convert any uploaded video into a flat 2D cartoon / cel-animation style. Trigger whenever the user uploads a video and asks to turn it into a cartoon, 2D animation, toon style, or animated look—especially when they want the result to match the flat-cel reference style without writing a custom prompt.",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "2D Animation Converter",
+          "ja": "2Dアニメーション変換",
+          "zh": "2D动画转换器"
+        },
+        "i18n_description": {
+          "en": "Convert any uploaded video into a flat 2D cartoon / cel-animation style. Trigger whenever the user uploads a video and asks to turn it into a cartoon, 2D animation, toon style, or animated look—especially when they want the result to match the flat-cel reference style without writing a custom prompt.",
+          "ja": "アップロードされた動画をフラットな2D漫画/セルアニメーションスタイルに変換します。ユーザーが動画をアップロードし、漫画、2Dアニメーション、トゥーンスタイル、またはアニメ風に変換したいと依頼した場合に起動します。特に、カスタムプロンプトを書かずにフラットセル参照スタイルに合わせた結果を求める場合に最適です。",
+          "zh": "将任何上传的视频转换为扁平2D卡通/赛璐珞动画风格。当用户上传视频并要求将其转换为卡通、2D动画、卡通风格或动画效果时触发——特别是当他们希望结果与扁平赛璐珞参考风格匹配而无需编写自定义提示词时。"
+        },
+        "i18n_prompt": {
+          "en": "Convert my uploaded video into a flat 2D cartoon animation in the same cel-animation style as the reference. Use Seedance and keep the original action and audio.",
+          "ja": "アップロードした動画を、参照と同じセルアニメーションスタイルのフラットな2D漫画アニメーションに変換してください。Seedanceを使用し、元のアクションとオーディオを保持してください。",
+          "zh": "将我上传的视频转换为与参考相同的赛璐珞动画风格的扁平2D卡通动画。使用Seedance并保留原始动作和音频。"
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

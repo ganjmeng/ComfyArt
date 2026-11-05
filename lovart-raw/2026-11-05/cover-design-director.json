@@ -1,0 +1,297 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pj7436Pnjy",
+  "title": "Cover Design Director",
+  "description": "Create covers and thumbnails",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Cover Design Director",
+        "ja": "カバーデザインディレクター",
+        "zh": "封面设计"
+      },
+      "i18n_description": {
+        "en": "Creates cross-platform covers and thumbnails for YouTube, Bilibili, RedNote, short drama, TikTok/Reels/Shorts, podcasts, courses, and other content surfaces.",
+        "ja": "YouTube、Bilibili、RedNote、ショートドラマ、TikTok/Reels/Shorts、ポッドキャスト、講座などのカバーやサムネイルを制作します。",
+        "zh": "用于跨平台封面与缩略图设计，覆盖 YouTube、B站、小红书、短剧、TikTok/Reels/Shorts、播客、课程等内容场景。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/86/86272143d60b14604994448a9d436210c0a48d22f89fa5a8f7eca15ed4ea05d4.mp4",
+      "mediaType": "video",
+      "width": 960,
+      "height": 720
+    },
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/86/86272143d60b14604994448a9d436210c0a48d22f89fa5a8f7eca15ed4ea05d4.mp4",
+        "width": 960,
+        "height": 720,
+        "order": 0
+      }
+    ],
+    "bestFor": [
+      "Cover Design",
+      "Thumbnail Design",
+      "Covers"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "pj5q65dFSw",
+    "versionAssetId": "pj7433qcOQ",
+    "skillKey": "cover-design-director",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/cover-design-director",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "bc3461ec-dd4d-46b8-9909-3df51baca731",
+    "skillId": "industry/cover-design-director/bc3461ec-dd4d-46b8-9909-3df51baca731",
+    "level": "S",
+    "i18n_title": {
+      "en": "Cover Design Director",
+      "ja": "カバーデザインディレクター",
+      "zh": "封面设计总监"
+    },
+    "i18n_description": {
+      "en": "Create covers and thumbnails",
+      "ja": "カバーとサムネイルを作成",
+      "zh": "创建封面和缩略图"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "0afadb3fbfca4154fd3a5d8c8c5b05396fc6a580acaaa4835a2091deb90b54aa",
+    "version": "1.0.51"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-03T09:32:06",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 864,
+    "viewCount": 0,
+    "tryCount": 2168,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Cover Design Director",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/86/86272143d60b14604994448a9d436210c0a48d22f89fa5a8f7eca15ed4ea05d4.mp4",
+  "publishTime": "2026-08-03T09:32:06",
+  "spacePinned": false,
+  "score": 1000000001500
+}

@@ -1,0 +1,327 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pweyUNiCPe",
+  "title": "Logo Material Explorer",
+  "description": "Premium 3D logo materials, identity preserved",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Logo Material Explorer",
+        "ja": "ロゴマテリアルエクスプローラー",
+        "zh": "标志材质探索器"
+      },
+      "i18n_description": {
+        "en": "Explore premium 3D materials for uploaded logos through a controlled C4D-style workflow. The skill helps confirm the logo target, generate neutral white-model previews, create preset or reference-driven material studies, and apply confirmed materials while preserving the original logo identity.",
+        "ja": "アップロードされたロゴに対して、C4Dスタイルの制御されたワークフローを通じてプレミアム3Dマテリアルを探索します。このスキルは、ロゴターゲットの確認、ニュートラルなホワイトモデルプレビューの生成、プリセットまたはリファレンス駆動のマテリアルスタディの作成、オリジナルのロゴアイデンティティを保持したまま確定したマテリアルの適用を支援します。",
+        "zh": "通过受控的C4D风格工作流程，为上传的标志探索高级3D材质。该技能帮助确认标志目标、生成中性白色模型预览、创建预设或参考驱动的材质研究，并在保留原始标志特征的同时应用确认的材质。"
+      },
+      "prompts": [
+        {
+          "title": "Explore preset materials",
+          "content": "I uploaded a logo. Please help me explore preset 3D materials for it."
+        }
+      ],
+      "i18n_prompts": {
+        "en": [
+          {
+            "title": "Explore preset materials",
+            "content": "I uploaded a logo. Please help me explore preset 3D materials for it."
+          }
+        ]
+      },
+      "i18n_prompt": {
+        "en": "I uploaded a logo. Please help me explore preset 3D materials for it.",
+        "ja": "ロゴをアップロードしました。プリセットの3Dマテリアルを探索するのを手伝ってください。",
+        "zh": "我上传了一个标志。请帮我探索预设的3D材质。"
+      }
+    },
+    "coverAutoPlay": false,
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/4a/4ac7fb2dd6420a18ac7a66590303d4cd8d439e0475b43f2afb65bf2d6a79f037.mp4",
+      "mediaType": "video",
+      "width": 960,
+      "height": 720,
+      "posterUrl": ""
+    },
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/4a/4ac7fb2dd6420a18ac7a66590303d4cd8d439e0475b43f2afb65bf2d6a79f037.mp4",
+        "width": 960,
+        "height": 720,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/f3/f3462b3b5d8967513fe01279e0d19b3b33e416c483e3937a0e68504c5818593d.webp",
+        "width": 1254,
+        "height": 1254,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/0c/0c377a04a17c2f8b362e54e0386c3e26e642bd8f6be0a3bd374c26a54f30a5c1.webp",
+        "width": 1254,
+        "height": 1254,
+        "order": 2
+      }
+    ],
+    "bestFor": [
+      "logo restyle",
+      "C4D render",
+      "3D material"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "osbWYZiFDG",
+    "versionAssetId": "pweyUJC0N2",
+    "skillKey": "logo-material-explorer",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/logo-material-explorer",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "cd1ea5f8-8cae-4b61-bf29-6c0afcf686a6",
+    "skillId": "industry/logo-material-explorer/cd1ea5f8-8cae-4b61-bf29-6c0afcf686a6",
+    "level": "S",
+    "i18n_title": {
+      "en": "Logo Material Explorer",
+      "ja": "ロゴマテリアルエクスプローラー",
+      "zh": "徽标材质探索器"
+    },
+    "i18n_description": {
+      "en": "Premium 3D logo materials, identity preserved",
+      "ja": "プレミアム3Dロゴマテリアル、アイデンティティを保持",
+      "zh": "高级3D徽标材质，保留品牌标识"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "4087fc703a3ba5dfeeedcb781fd0315151dfe9f13dcebed07262a0af1945e9f0",
+    "version": "1.0.11"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-11T07:15:54",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 942,
+    "viewCount": 0,
+    "tryCount": 3046,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEw9xRyJEY",
+      "tagName": "branding",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Branding",
+      "extra": {
+        "tagName": "branding",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Branding"
+        }
+      },
+      "createTime": "2026-02-10T12:25:09",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Logo Material Explorer",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/4a/4ac7fb2dd6420a18ac7a66590303d4cd8d439e0475b43f2afb65bf2d6a79f037.mp4",
+  "publishTime": "2026-08-11T07:15:54",
+  "spacePinned": null,
+  "score": 0
+}

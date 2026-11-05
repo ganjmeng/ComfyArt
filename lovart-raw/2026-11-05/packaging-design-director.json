@@ -1,0 +1,1345 @@
+{
+  "itemType": "collection_card",
+  "itemId": "2quhxk9auark",
+  "title": "品牌包装设计系统",
+  "description": "从视觉方向到系列延展，按需完成包装设计",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "i18n": {
+      "zh": {
+        "title": "品牌包装设计系统",
+        "description": "从视觉方向到系列延展，按需完成包装设计",
+        "ctaText": "开始制作"
+      },
+      "en": {
+        "title": "Brand Packaging Design System",
+        "description": "Create the packaging you need, from visual concepts to product ranges.",
+        "ctaText": "Create now"
+      }
+    },
+    "bind": {
+      "type": "SKILL",
+      "source": "PLAZA",
+      "skillKey": "packaging-design-director",
+      "skillAssetId": "oyje2wcZb2",
+      "skillType": "pgc",
+      "namespace": "industry",
+      "skillId": "industry/packaging-design-director/6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+      "sourceVersion": "1.0.41",
+      "versionAssetId": "pj9f4wbuJW",
+      "versionId": "6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+      "linkUrl": "lovart://skill/packaging-design-director",
+      "plazaItemId": "pj9f4zAFeE"
+    },
+    "cover": "https://a.lovart.ai/asset/showcase-cover/202609/4e1ddd62404b4363a8d3623c7d0cc9d4.png",
+    "coverWidth": 1280,
+    "coverHeight": 960
+  },
+  "extra": {
+    "i18n_title": {
+      "en": "Brand Packaging Design System",
+      "ja": "ブランドパッケージデザインシステム",
+      "zh": "品牌包装设计系统"
+    },
+    "i18n_description": {
+      "en": "From visual direction to series extension, complete packaging design on demand",
+      "ja": "ビジュアル方向性からシリーズ展開まで、オンデマンドでパッケージデザインを完成",
+      "zh": "从视觉方向到系列延展，按需完成包装设计"
+    },
+    "i18n_source_locale": "zh",
+    "i18n_source_hash": "7371e357455d9b42afb166c5aa0f53ad54a2119b2c54edbcac745ffaecd7af57"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-24T06:38:13",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 62,
+    "viewCount": 0,
+    "tryCount": 0,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEw9xRyJEY",
+      "tagName": "branding",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Branding",
+      "extra": {
+        "tagName": "branding",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Branding"
+        }
+      },
+      "createTime": "2026-02-10T12:25:09",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": null,
+  "skillCover": null,
+  "publishTime": "2026-09-24T06:38:13",
+  "spacePinned": false,
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy7bc3wn4",
+      "title": "主款包装设计",
+      "description": "主展示面设计 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "主款包装设计",
+            "description": "主展示面设计 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Master Packaging Design",
+            "description": "1 primary display panel design",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/52f34e8febe046948512d28e0d059307.png",
+            "coverWidth": 270,
+            "coverHeight": 360
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "packaging-design-director",
+          "skillAssetId": "oyje2wcZb2",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/packaging-design-director/6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+          "sourceVersion": "1.0.41",
+          "versionAssetId": "pj9f4wbuJW",
+          "versionId": "6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+          "linkUrl": "lovart://skill/packaging-design-director",
+          "plazaItemId": "pj9f4zAFeE"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品与包装资料",
+                  "placeholder": "简要说明包装什么商品及包装形式；已有品牌文字、尺寸或主款要求可补充。"
+                },
+                "en": {
+                  "title": "Product and packaging information",
+                  "placeholder": "Briefly describe the product and packaging format. Add existing brand copy, dimensions or master-design requirements if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品与包装素材"
+                },
+                "en": {
+                  "title": "Product and packaging assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张以主展示面为重点的包装设计确认图。依据已确认的包装结构，清晰展示消费者识别品牌与产品的主要画面，突出品牌标识、产品名称、核心图形、配色与信息层级，供用户确认主款视觉方案。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 packaging design approval image focused on the primary display panel. Use the confirmed packaging structure and clearly present the main view through which customers identify the brand and product. Highlight the brand mark, product name, core graphics, colors, and information hierarchy so the user can approve the master visual design.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/f0e0d503f4f645c98c8e15d2759e928a.png",
+        "coverWidth": 270,
+        "coverHeight": 360
+      },
+      "extra": {
+        "collectionId": "2quhxk9auark",
+        "collectionTitle": "品牌包装设计系统",
+        "i18n_title": {
+          "en": "Main Product Packaging Design",
+          "ja": "メイン商品パッケージデザイン",
+          "zh": "主款包装设计"
+        },
+        "i18n_description": {
+          "en": "Main display face design - 1 piece",
+          "ja": "メイン展示面デザイン 1点",
+          "zh": "主展示面设计 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "0d4117c5e1591c35c22e8207780d5ba2d9479b36e5b1bacb52be8e97d147bdfe"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:25",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 1,
+        "viewCount": 0,
+        "tryCount": 43,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:25",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy7bc3n5s",
+      "title": "包装视觉方向",
+      "description": "包装视觉方向板 3 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "包装视觉方向",
+            "description": "包装视觉方向板 3 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Packaging Visual Direction",
+            "description": "3 packaging visual direction boards",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/a0e3ecfe72ff425eb63310d10692602c.png",
+            "coverWidth": 360,
+            "coverHeight": 202
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/ca53248065c047d8899a868153c127c5.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/28a907e28f044e56be779aa65343d28c.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "packaging-design-director",
+          "skillAssetId": "oyje2wcZb2",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/packaging-design-director/6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+          "sourceVersion": "1.0.41",
+          "versionAssetId": "pj9f4wbuJW",
+          "versionId": "6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+          "linkUrl": "lovart://skill/packaging-design-director",
+          "plazaItemId": "pj9f4zAFeE"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品与包装资料",
+                  "placeholder": "简要说明包装什么商品及包装形式；已有品牌文字、尺寸或主款要求可补充。"
+                },
+                "en": {
+                  "title": "Product and packaging information",
+                  "placeholder": "Briefly describe the product and packaging format. Add existing brand copy, dimensions or master-design requirements if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品与包装素材"
+                },
+                "en": {
+                  "title": "Product and packaging assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 3 张包装视觉方向板，画幅为 16:9，每张以九宫格展示一套策略，涵盖包装结构、正背面信息、标志、配色、材质和场景。三张方向使用同一产品资料。 本系列示例品牌与包装资料只用于样例生产，用户复用时不自动带入。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 3 packaging visual direction boards in a 16:9 aspect ratio. Each board should present one strategy in a nine-panel grid covering packaging structure, front and back information, logo, color, materials, and context. Use the same product information for all three directions. The sample brand and packaging information in this series are for sample production only and must not be imported automatically when a user reuses the Case.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/8269426c6a68435abba714c24321bc48.png",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2quhxk9auark",
+        "collectionTitle": "品牌包装设计系统",
+        "i18n_title": {
+          "en": "Packaging Visual Direction",
+          "ja": "パッケージビジュアル方向性",
+          "zh": "包装视觉方向"
+        },
+        "i18n_description": {
+          "en": "3 packaging visual direction boards",
+          "ja": "パッケージビジュアル方向性ボード3枚",
+          "zh": "包装视觉方向板 3 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "608b0d3d55df83242e108fe8a93f81442ff76e984a671e82854cb85f7985e7c2"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:25",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 1,
+        "viewCount": 0,
+        "tryCount": 24,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:25",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy8f0hkw0",
+      "title": "多 SKU 包装系列",
+      "description": "单款 SKU 图 3 张＋系列合影 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "多 SKU 包装系列",
+            "description": "单款 SKU 图 3 张＋系列合影 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Multi-SKU Packaging Series",
+            "description": "3 individual SKU packaging images + 1 group image",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/6c9f71e122924ce9a7eaddf29782edc3.png",
+            "coverWidth": 270,
+            "coverHeight": 360
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/8e832ec43f6347eaa688fee9c06dc963.png",
+            "coverWidth": 960,
+            "coverHeight": 1280
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/d4e704b02d474ed8842cc5689354c830.png",
+            "coverWidth": 960,
+            "coverHeight": 1280
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/af0ecc3b3e8745199d754fd254509b6b.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "packaging-design-director",
+          "skillAssetId": "oyje2wcZb2",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/packaging-design-director/6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+          "sourceVersion": "1.0.41",
+          "versionAssetId": "pj9f4wbuJW",
+          "versionId": "6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+          "linkUrl": "lovart://skill/packaging-design-director",
+          "plazaItemId": "pj9f4zAFeE"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品与包装资料",
+                  "placeholder": "简要说明包装什么商品及包装形式；已有品牌文字、尺寸或主款要求可补充。"
+                },
+                "en": {
+                  "title": "Product and packaging information",
+                  "placeholder": "Briefly describe the product and packaging format. Add existing brand copy, dimensions or master-design requirements if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品与包装素材"
+                },
+                "en": {
+                  "title": "Product and packaging assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 3 款 SKU 包装图，各 1 张，加 1 张系列合影，共 4 张。SKU 名称和商品信息以确认清单为准；仅改变批准的 SKU 变量，原主款如纳入三款也须记录复用。 本系列示例品牌与包装资料只用于样例生产，用户复用时不自动带入。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 packaging image for each of 3 SKUs, plus 1 group image, for a total of 4 images. Use confirmed SKU names and product information. Change only approved SKU variables. If the original master is included among the three, record its reuse. The sample brand and packaging information in this series are for sample production only and must not be imported automatically when a user reuses the Case.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/258e4b62b6d24e19b6aa461f5f525507.png",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2quhxk9auark",
+        "collectionTitle": "品牌包装设计系统",
+        "i18n_title": {
+          "en": "Multi-SKU Packaging Series",
+          "ja": "マルチSKUパッケージシリーズ",
+          "zh": "多 SKU 包装系列"
+        },
+        "i18n_description": {
+          "en": "3 images per SKU + 1 group photo of the series",
+          "ja": "各SKUの画像3枚＋シリーズ集合写真1枚",
+          "zh": "单款 SKU 图 3 张＋系列合影 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "bdc45df3b9f5412deb77c157f92239a8645799b32b40197e2b235982322c272b"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:25",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 13,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:25",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy8f2zqps",
+      "title": "包装面板与结构示意",
+      "description": "包装概念面板／结构示意 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "包装面板与结构示意",
+            "description": "包装概念面板／结构示意 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Packaging Panels & Structural Diagram",
+            "description": "1 packaging concept panel / structural diagram",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/aa2a0eefb2d0477dac3a67458a7cd23e.png",
+            "coverWidth": 1280,
+            "coverHeight": 720
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "packaging-design-director",
+          "skillAssetId": "oyje2wcZb2",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/packaging-design-director/6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+          "sourceVersion": "1.0.41",
+          "versionAssetId": "pj9f4wbuJW",
+          "versionId": "6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+          "linkUrl": "lovart://skill/packaging-design-director",
+          "plazaItemId": "pj9f4zAFeE"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品与包装资料",
+                  "placeholder": "简要说明包装什么商品及包装形式；已有品牌文字、尺寸或主款要求可补充。"
+                },
+                "en": {
+                  "title": "Product and packaging information",
+                  "placeholder": "Briefly describe the product and packaging format. Add existing brand copy, dimensions or master-design requirements if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品与包装素材"
+                },
+                "en": {
+                  "title": "Product and packaging assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张包装概念面板或展开关系图，沿用已批准主款，说明正背面、折边、开口及信息分区。未验证尺寸标注待供应商确认，附交接说明，不承诺可直接印刷刀模。 本系列示例品牌与包装资料只用于样例生产，用户复用时不自动带入。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 packaging concept panel or unfolding diagram based on the approved master. Explain the front, back, folds, openings, and information zones. Mark unverified dimensions as subject to supplier confirmation and include handoff notes. Do not claim the diagram is a print-ready dieline. The sample brand and packaging information in this series are for sample production only and must not be imported automatically when a user reuses the Case.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/84812a2ff6da4652a6a490a2845ca6ee.png",
+        "coverWidth": 1280,
+        "coverHeight": 720
+      },
+      "extra": {
+        "collectionId": "2quhxk9auark",
+        "collectionTitle": "品牌包装设计系统",
+        "i18n_title": {
+          "en": "Packaging Panel and Structure Diagram",
+          "ja": "パッケージパネルと構造図",
+          "zh": "包装面板与结构示意"
+        },
+        "i18n_description": {
+          "en": "Packaging concept panel / Structure diagram 1 sheet",
+          "ja": "パッケージコンセプトパネル／構造図 1枚",
+          "zh": "包装概念面板／结构示意 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "60ebc3306b2fceefe5b5cea112ecdec14ea745db18943b64fe7fa7e99d252f7c"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:25",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 25,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:25",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhy8f5hn28",
+      "title": "包装货架展示",
+      "description": "包装货架展示图 1 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "包装货架展示",
+            "description": "包装货架展示图 1 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Packaging Shelf Display",
+            "description": "1 packaging shelf display image",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/a46d2370156e447cbced89c79d9c9e15.png",
+            "coverWidth": 360,
+            "coverHeight": 202
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "packaging-design-director",
+          "skillAssetId": "oyje2wcZb2",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/packaging-design-director/6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+          "sourceVersion": "1.0.41",
+          "versionAssetId": "pj9f4wbuJW",
+          "versionId": "6b8141a4-6497-4fb8-a86b-a370eefc81e5",
+          "linkUrl": "lovart://skill/packaging-design-director",
+          "plazaItemId": "pj9f4zAFeE"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "product_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "商品与包装资料",
+                  "placeholder": "简要说明包装什么商品及包装形式；已有品牌文字、尺寸或主款要求可补充。"
+                },
+                "en": {
+                  "title": "Product and packaging information",
+                  "placeholder": "Briefly describe the product and packaging format. Add existing brand copy, dimensions or master-design requirements if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "商品与包装素材"
+                },
+                "en": {
+                  "title": "Product and packaging assets"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 1 张包装货架展示图，使用已批准主款与 SKU 包装，按真实包装结构、容量和陈列方式布置，不在渲染中改变 Logo、版式、开口或包装形态。 本系列示例品牌与包装资料只用于样例生产，用户复用时不自动带入。\n\n{{product_info}}\n{{visual_direction}}",
+            "en": "Create 1 packaging shelf display image using the approved master and SKU packaging. Arrange the products according to their actual packaging structure, capacity, and display method. Do not alter the logo, layout, openings, or packaging form during rendering. The sample brand and packaging information in this series are for sample production only and must not be imported automatically when a user reuses the Case.\n\n{{product_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/c55fd962b3734e26b3e104e3bba6676d.png",
+        "coverWidth": 360,
+        "coverHeight": 202
+      },
+      "extra": {
+        "collectionId": "2quhxk9auark",
+        "collectionTitle": "品牌包装设计系统",
+        "i18n_title": {
+          "en": "Packaging Shelf Display",
+          "ja": "パッケージ棚ディスプレイ",
+          "zh": "包装货架展示"
+        },
+        "i18n_description": {
+          "en": "Packaging shelf display image, 1 piece",
+          "ja": "パッケージ棚ディスプレイ画像 1枚",
+          "zh": "包装货架展示图 1 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "0ae71712a737acf292c75d30a1d597d19e2e2cabb42f9d984de0c16a5273fd35"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:25",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 9,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "kEw9xRyJEY",
+              "tagName": "branding",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Branding",
+              "extra": {
+                "tagName": "branding",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Branding"
+                }
+              },
+              "createTime": "2026-02-10T12:25:09",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:25",
+      "spacePinned": false
+    }
+  ],
+  "collectionMemberCount": 5,
+  "collectionHasMoreMembers": false
+}

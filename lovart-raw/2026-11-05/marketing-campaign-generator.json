@@ -1,0 +1,397 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pj0hKQ225i",
+  "title": "Marketing Campaign Generator",
+  "description": "Create platform-native campaigns. Go beyond Instagram.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Marketing Campaign Generator",
+        "ja": "マーケティングキャンペーンジェネレーター",
+        "zh": "营销轮播图"
+      },
+      "i18n_description": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/e4/e4abd63aa40195a5128ad28c566322f763cf588278562a8570b51b48719891e1.mp4",
+      "mediaType": "video",
+      "width": 1440,
+      "height": 1080,
+      "posterUrl": ""
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "video",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/e4/e4abd63aa40195a5128ad28c566322f763cf588278562a8570b51b48719891e1.mp4",
+        "width": 1440,
+        "height": 1080,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/b5/b5b4434316217087ad97d496ddcb7afa466e63b3fb00493b022e1192c5ff9a7b.webp",
+        "width": 4605,
+        "height": 900,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/a2/a25d48595cc3ea17899f95b7e9f9146681623351000eb6d1844d1579c42824f5.webp",
+        "width": 4106,
+        "height": 480,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/f3/f39f618c9ece470c2fd6029d340ae594134e7f9294e9716ae4fbac1da690d78d.webp",
+        "width": 3070,
+        "height": 480,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/5a/5af116b84cb0241dadc794befab5a70b055d8fb2d18bc38104d3a065e091611e.webp",
+        "width": 3070,
+        "height": 600,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/48/48c8cc5b6ebb933479a72de38994eb254f1252e3f320787d086ffd372bca1320.webp",
+        "width": 3070,
+        "height": 600,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/fd/fd370557d9f47661ce5d1f708eaa320f1e1f59632f09a6c1e876a6f1c0c1ba62.webp",
+        "width": 3588,
+        "height": 480,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/c3/c3304d538945540051caa1ac8826e2d5ffc9040faae52a8c8a0d24b93653cbe0.webp",
+        "width": 3588,
+        "height": 854,
+        "order": 7
+      }
+    ],
+    "bestFor": [
+      "Marketing Campaign",
+      "Instagram Campaign",
+      "RedNote Campaign",
+      "Campaign Carousel"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "oKufVqLEHK",
+    "versionAssetId": "pj0hKMCRAA",
+    "skillKey": "marketing-campaign-generator",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/marketing-campaign-generator",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "e5b2400f-6c8f-4fcc-920c-b21dc142ddee",
+    "skillId": "industry/marketing-campaign-generator/e5b2400f-6c8f-4fcc-920c-b21dc142ddee",
+    "level": "S",
+    "i18n_title": {
+      "en": "Marketing Campaign Generator",
+      "ja": "マーケティングキャンペーンジェネレーター",
+      "zh": "营销活动生成器"
+    },
+    "i18n_description": {
+      "en": "Create platform-native campaigns. Go beyond Instagram.",
+      "ja": "プラットフォームネイティブなキャンペーンを作成。Instagramを超えて。",
+      "zh": "创建平台原生营销活动。超越Instagram。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "ad44197b1eceb951901e6a97765d644a4c956e803d9461577e35e13acb9b2903",
+    "version": "1.0.21"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-03T07:57:14",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 425,
+    "viewCount": 0,
+    "tryCount": 1321,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "kEwbXcylvq",
+      "tagName": "social_media",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Social Media",
+      "extra": {
+        "tagName": "social_media",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Social Media"
+        }
+      },
+      "createTime": "2026-02-10T12:25:42",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEwbXcylvq",
+          "tagName": "social_media",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Social Media",
+          "extra": {
+            "tagName": "social_media",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Social Media"
+            }
+          },
+          "createTime": "2026-02-10T12:25:42",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Marketing Campaign Generator",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/e4/e4abd63aa40195a5128ad28c566322f763cf588278562a8570b51b48719891e1.mp4",
+  "publishTime": "2026-08-03T07:57:14",
+  "spacePinned": false,
+  "score": 1000000001000
+}

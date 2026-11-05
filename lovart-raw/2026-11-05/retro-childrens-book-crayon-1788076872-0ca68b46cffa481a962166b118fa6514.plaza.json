@@ -1,0 +1,309 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2odlchy21p8g",
+  "title": "复古极简线条插画风",
+  "description": "生成或把图片转换成复古儿童绘本插画的极简线条主义风格：黑色松散手绘线条、最符号化的稚拙几何造型、奶油纸底大留白、仅 1~2 个柔和低饱和色块点缀、色块与轮廓轻微错位、丝网印漏色感、二维平面无光影。所有输出默认极简、符号化、留白最多；只有用户明确要彩色/丰富时才加色块。只要用户想要绘本感、蜡笔画、儿童插画、稚拙手绘、极简线描、留白、贴纸、海报、品牌插画，或要把照片/参考图转成这种风格，即使没说全关键词，也一定要使用本技能。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "video",
+      "url": "https://a.lovart.ai/artifacts/user/2C3RuqliKs37x2u7.mp4",
+      "width": 858,
+      "height": 858
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/FoKDm1pJMY8YzdVh.jpg",
+        "width": 1600,
+        "height": 1600,
+        "order": 0
+      },
+      {
+        "mediaType": "video",
+        "url": "https://a.lovart.ai/artifacts/user/2C3RuqliKs37x2u7.mp4",
+        "width": 858,
+        "height": 858,
+        "order": 1
+      }
+    ],
+    "bestFor": [
+      "IP"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Retro Minimalist Line Illustration Style",
+        "ja": "レトロミニマルライン画風",
+        "zh": "复古极简线条插画风"
+      },
+      "i18n_description": {
+        "en": "Generate or convert images into a retro children's picture book illustration style with minimalist line art: black loose hand-drawn lines, highly symbolic and naive geometric shapes, cream paper base with ample white space, only 1-2 soft low-saturation color blocks as accents, slight misalignment between color blocks and outlines, screen printing bleed effect, flat 2D without shadows. All outputs default to minimalist, symbolic, with maximum white space; color blocks are only added when the user explicitly requests colorful/rich visuals. Use this skill whenever the user wants a picture book feel, crayon drawing, children's illustration, naive hand-drawn art, minimalist line drawing, white space, sticker, poster, brand illustration, or wants to convert photos/reference images into this style, even if they don't mention all the keywords.",
+        "ja": "レトロな児童絵本イラストの極簡線画スタイルで画像を生成または変換：黒いゆるい手描き線、最も記号化された稚拙な幾何学的造形、クリーム色の紙ベースに余白たっぷり、柔らかい低彩度の色ブロックを1〜2個だけ点在、色ブロックと輪郭のわずかなズレ、シルクスクリーン印刷のにじみ感、陰影のない2Dフラット。すべての出力はデフォルトで極簡、記号化、余白最大；ユーザーが明確にカラフル/豊かな表現を求めた時のみ色ブロックを追加。絵本感、クレヨン画、児童イラスト、稚拙な手描き、極簡線描、余白、ステッカー、ポスター、ブランドイラスト、または写真/参考画像をこのスタイルに変換したい場合、すべてのキーワードを言わなくても、必ずこのスキルを使用してください。",
+        "zh": "生成或把图片转换成复古儿童绘本插画的极简线条主义风格：黑色松散手绘线条、最符号化的稚拙几何造型、奶油纸底大留白、仅 1~2 个柔和低饱和色块点缀、色块与轮廓轻微错位、丝网印漏色感、二维平面无光影。所有输出默认极简、符号化、留白最多；只有用户明确要彩色/丰富时才加色块。只要用户想要绘本感、蜡笔画、儿童插画、稚拙手绘、极简线描、留白、贴纸、海报、品牌插画，或要把照片/参考图转成这种风格，即使没说全关键词，也一定要使用本技能。"
+      },
+      "i18n_prompt": {
+        "en": "Using minimalist line art in a retro children's picture book crayon style, draw [subject: e.g. \"a penguin watering flowers in a garden\" / \"a person reading on the grass with a small cat, a beam of light shining on the cat\"], with black minimalist lines, ample white space, and only one or two soft color blocks. You can also directly send me an image and say \"convert this into this minimalist picture book line drawing style\".",
+        "ja": "極簡線画主義のレトロ児童絵本クレヨン風で、【テーマ：例「庭で水やりをするペンギン」/「草原で本を読む人と小さな猫、猫に光が当たっている」】を描いてください。黒い極簡線、余白たっぷり、柔らかい色ブロックを1〜2個だけ追加。または、画像を直接送って「この画像をこの極簡絵本線描風に変換して」と言ってもOKです。",
+        "zh": "用极简线条主义的复古儿童绘本蜡笔风，帮我画【主题：如\"一只花园里浇花的企鹅\"/\"草地上看书的人和一只小猫，一束光打在猫身上\"】，黑色极简线条、大留白、只加一两个柔和色块。也可以直接发我一张图，说\"把这张转成这种极简绘本线描风\"。"
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2odhxx5fmpz4",
+    "versionAssetId": "2odiwkp80mww",
+    "skillKey": "retro-childrens-book-crayon-1788076872-0ca68b46cffa481a962166b118fa6514",
+    "sourceVersion": "1.0.2",
+    "linkUrl": "lovart://skill/retro-childrens-book-crayon-1788076872-0ca68b46cffa481a962166b118fa6514",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "97c06cc0-9875-4a35-9dfa-80ea3451afbd",
+    "skillId": "user-generated/retro-childrens-book-crayon-1788076872-0ca68b46cffa481a962166b118fa6514/97c06cc0-9875-4a35-9dfa-80ea3451afbd",
+    "i18n_title": {
+      "en": "Retro Minimalist Line Illustration Style",
+      "ja": "レトロミニマルライン画風",
+      "zh": "复古极简线条插画风"
+    },
+    "i18n_description": {
+      "en": "Generate or convert images into a retro children's picture book illustration style with minimalist line art: black loose hand-drawn lines, highly symbolic and naive geometric shapes, cream paper base with ample white space, only 1-2 soft low-saturation color blocks as accents, slight misalignment between color blocks and outlines, screen printing bleed effect, flat 2D without shadows. All outputs default to minimalist, symbolic, with maximum white space; color blocks are only added when the user explicitly requests colorful/rich visuals. Use this skill whenever the user wants a picture book feel, crayon drawing, children's illustration, naive hand-drawn art, minimalist line drawing, white space, sticker, poster, brand illustration, or wants to convert photos/reference images into this style, even if they don't mention all the keywords.",
+      "ja": "レトロな児童絵本イラストの極簡線画スタイルで画像を生成または変換：黒いゆるい手描き線、最も記号化された稚拙な幾何学的造形、クリーム色の紙ベースに余白たっぷり、柔らかい低彩度の色ブロックを1〜2個だけ点在、色ブロックと輪郭のわずかなズレ、シルクスクリーン印刷のにじみ感、陰影のない2Dフラット。すべての出力はデフォルトで極簡、記号化、余白最大；ユーザーが明確にカラフル/豊かな表現を求めた時のみ色ブロックを追加。絵本感、クレヨン画、児童イラスト、稚拙な手描き、極簡線描、余白、ステッカー、ポスター、ブランドイラスト、または写真/参考画像をこのスタイルに変換したい場合、すべてのキーワードを言わなくても、必ずこのスキルを使用してください。",
+      "zh": "生成或把图片转换成复古儿童绘本插画的极简线条主义风格：黑色松散手绘线条、最符号化的稚拙几何造型、奶油纸底大留白、仅 1~2 个柔和低饱和色块点缀、色块与轮廓轻微错位、丝网印漏色感、二维平面无光影。所有输出默认极简、符号化、留白最多；只有用户明确要彩色/丰富时才加色块。只要用户想要绘本感、蜡笔画、儿童插画、稚拙手绘、极简线描、留白、贴纸、海报、品牌插画，或要把照片/参考图转成这种风格，即使没说全关键词，也一定要使用本技能。"
+    },
+    "i18n_prompts": {
+      "en": "Using minimalist line art in a retro children's picture book crayon style, draw [subject: e.g. \"a penguin watering flowers in a garden\" / \"a person reading on the grass with a small cat, a beam of light shining on the cat\"], with black minimalist lines, ample white space, and only one or two soft color blocks. You can also directly send me an image and say \"convert this into this minimalist picture book line drawing style\".",
+      "ja": "極簡線画主義のレトロ児童絵本クレヨン風で、【テーマ：例「庭で水やりをするペンギン」/「草原で本を読む人と小さな猫、猫に光が当たっている」】を描いてください。黒い極簡線、余白たっぷり、柔らかい色ブロックを1〜2個だけ追加。または、画像を直接送って「この画像をこの極簡絵本線描風に変換して」と言ってもOKです。",
+      "zh": "用极简线条主义的复古儿童绘本蜡笔风，帮我画【主题：如\"一只花园里浇花的企鹅\"/\"草地上看书的人和一只小猫，一束光打在猫身上\"】，黑色极简线条、大留白、只加一两个柔和色块。也可以直接发我一张图，说\"把这张转成这种极简绘本线描风\"。"
+    },
+    "i18n_source_hash": "b937fb0468c40e66315cd7f54b38e5084db7df3d3b6b9d37d5bca2a05223f010",
+    "i18n_source_locale": "zh",
+    "level": "B",
+    "forYouPin": false,
+    "forYouPinPriority": 4,
+    "forYouPinAt": 1788162829317
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-30T08:39:23",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 271,
+    "viewCount": 0,
+    "tryCount": 230,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEw9xRyJEY",
+      "tagName": "branding",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Branding",
+      "extra": {
+        "tagName": "branding",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Branding"
+        }
+      },
+      "createTime": "2026-02-10T12:25:09",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEw9xRyJEY",
+          "tagName": "branding",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Branding",
+          "extra": {
+            "tagName": "branding",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Branding"
+            }
+          },
+          "createTime": "2026-02-10T12:25:09",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "复古极简线条插画风",
+  "skillCover": "https://a.lovart.ai/artifacts/user/2C3RuqliKs37x2u7.mp4",
+  "publishTime": "2026-08-30T08:39:23",
+  "spacePinned": null,
+  "score": 0
+}

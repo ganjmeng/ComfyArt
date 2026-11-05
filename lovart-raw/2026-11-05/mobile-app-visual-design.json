@@ -1,0 +1,1405 @@
+{
+  "itemType": "collection_card",
+  "itemId": "2quhxkaesxs0",
+  "title": "App 核心页面",
+  "description": "围绕核心功能，设计风格一致的手机界面",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "i18n": {
+      "zh": {
+        "title": "App 核心页面",
+        "description": "围绕核心功能，设计风格一致的手机界面",
+        "ctaText": "开始制作"
+      },
+      "en": {
+        "title": "App Core Screens",
+        "description": "Design consistent mobile screens around your app’s core features.",
+        "ctaText": "Create now"
+      }
+    },
+    "bind": {
+      "type": "SKILL",
+      "source": "PLAZA",
+      "skillKey": "mobile-app-visual-design",
+      "skillAssetId": "p7E6WvFtni",
+      "linkUrl": "lovart://skill/mobile-app-visual-design",
+      "skillType": "pgc",
+      "namespace": "industry",
+      "skillId": "industry/mobile-app-visual-design/2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+      "sourceVersion": "1.0.14",
+      "versionAssetId": "pkzaYQehyM",
+      "versionId": "2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+      "plazaItemId": "pkzaYTV27u"
+    },
+    "cover": "https://a.lovart.ai/asset/showcase-cover/202609/ef7f6f6e22f44ad3a4869eb6ef44011d.jpeg",
+    "coverWidth": 1280,
+    "coverHeight": 960
+  },
+  "extra": {
+    "i18n_title": {
+      "en": "App Core Pages",
+      "ja": "アプリのコアページ",
+      "zh": "App 核心页面"
+    },
+    "i18n_description": {
+      "en": "Design mobile interfaces with consistent style centered around core functionality",
+      "ja": "コア機能を中心に、一貫性のあるスタイルのモバイルインターフェースをデザインする",
+      "zh": "围绕核心功能，设计风格一致的手机界面"
+    },
+    "i18n_source_locale": "zh",
+    "i18n_source_hash": "43c47f54e3a13d2a1b4dd488cc410c61da9ce63f8376fec4b98f8003832a7be5"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-24T06:38:13",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 22,
+    "viewCount": 0,
+    "tryCount": 0,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFcUzQIgKs",
+      "tagName": "website",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Website",
+      "extra": {
+        "tagName": "website",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Website"
+        }
+      },
+      "createTime": "2026-03-20T06:55:03",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": null,
+  "skillCover": null,
+  "publishTime": "2026-09-24T06:38:13",
+  "spacePinned": false,
+  "collectionMembers": [
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyak7uv40",
+      "title": "电商零售",
+      "description": "App 核心页面设计图 4 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "电商零售",
+            "description": "App 核心页面设计图 4 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "E-commerce & Retail",
+            "description": "4 app core screen designs",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/7aeb7a67c2bf420a941a34beca3d5b9d.png",
+            "coverWidth": 960,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/7202982527ea42a6a363e2e372c6d81d.png",
+            "coverWidth": 960,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/3471eceb480d44518182f2182e8ba0ea.png",
+            "coverWidth": 960,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/39e9a3f5aa29475bae72f1ff6ab8e77d.png",
+            "coverWidth": 960,
+            "coverHeight": 2048
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "mobile-app-visual-design",
+          "skillAssetId": "p7E6WvFtni",
+          "linkUrl": "lovart://skill/mobile-app-visual-design",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/mobile-app-visual-design/2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+          "sourceVersion": "1.0.14",
+          "versionAssetId": "pkzaYQehyM",
+          "versionId": "2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+          "plazaItemId": "pkzaYTV27u"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "app_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "App 与页面资料",
+                  "placeholder": "简要说明 App 用途与本次页面或功能；已有页面文案、平台要求可补充。"
+                },
+                "en": {
+                  "title": "App and screen information",
+                  "placeholder": "Briefly describe the app purpose and relevant screens or features. Add existing UI copy or platform requirements if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "界面与参考图片"
+                },
+                "en": {
+                  "title": "UI images and references"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 4 张电商零售 App 核心页面设计图，对应本 Case 指定的 4 个页面，各 1 张。保持已确认的导航、信息结构和交互逻辑，四页共享配色、字体、间距和组件规则，不承诺可运行 App。\n\n{{app_info}}\n{{visual_direction}}",
+            "en": "Create 4 core screen designs for an E-commerce & Retail app, 1 image for each of the 4 screens specified in this Case. Preserve the confirmed navigation, information architecture, and interaction logic. All four screens must share color, typography, spacing, and component rules. The deliverable is a visual design, not a working app.\n\n{{app_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/c33a8a39f1744796a6e0fd20d7e8097c.png",
+        "coverWidth": 960,
+        "coverHeight": 2048
+      },
+      "extra": {
+        "collectionId": "2quhxkaesxs0",
+        "collectionTitle": "App 核心页面",
+        "i18n_title": {
+          "en": "E-commerce Retail",
+          "ja": "Eコマース小売",
+          "zh": "电商零售"
+        },
+        "i18n_description": {
+          "en": "4 core page design mockups for App",
+          "ja": "アプリのコアページデザイン図4枚",
+          "zh": "App 核心页面设计图 4 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "7a2508d7224e6f61b9a2ea0a7c1cea0cb87f2d7820a85982616783a7fddb1d68"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:26",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 7,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFcUzQIgKs",
+              "tagName": "website",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Website",
+              "extra": {
+                "tagName": "website",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Website"
+                }
+              },
+              "createTime": "2026-03-20T06:55:03",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:26",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyakkc3cw",
+      "title": "健康运动",
+      "description": "App 核心页面设计图 4 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "健康运动",
+            "description": "App 核心页面设计图 4 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Health & Fitness",
+            "description": "4 app core screen designs",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/ad6e10193bd6417f8ab97699fd71c4ac.png",
+            "coverWidth": 1152,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/5bb2f52b44c5423ca39d9f77b53c20e2.png",
+            "coverWidth": 1152,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/29f22f8234a64a82bd0a6690be25e86e.png",
+            "coverWidth": 1152,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/6436c776669f460f90c9d891104c9dea.png",
+            "coverWidth": 1152,
+            "coverHeight": 2048
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "mobile-app-visual-design",
+          "skillAssetId": "p7E6WvFtni",
+          "linkUrl": "lovart://skill/mobile-app-visual-design",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/mobile-app-visual-design/2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+          "sourceVersion": "1.0.14",
+          "versionAssetId": "pkzaYQehyM",
+          "versionId": "2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+          "plazaItemId": "pkzaYTV27u"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "app_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "App 与页面资料",
+                  "placeholder": "简要说明 App 用途与本次页面或功能；已有页面文案、平台要求可补充。"
+                },
+                "en": {
+                  "title": "App and screen information",
+                  "placeholder": "Briefly describe the app purpose and relevant screens or features. Add existing UI copy or platform requirements if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "界面与参考图片"
+                },
+                "en": {
+                  "title": "UI images and references"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 4 张健康运动 App 核心页面设计图，对应本 Case 指定的 4 个页面，各 1 张。保持已确认的导航、信息结构和交互逻辑，四页共享配色、字体、间距和组件规则，不承诺可运行 App。\n\n{{app_info}}\n{{visual_direction}}",
+            "en": "Create 4 core screen designs for a Health & Fitness app, 1 image for each of the 4 screens specified in this Case. Preserve the confirmed navigation, information architecture, and interaction logic. All four screens must share color, typography, spacing, and component rules. The deliverable is a visual design, not a working app.\n\n{{app_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/72c5ba314fbc4810992c1e8b4dd3ba4e.png",
+        "coverWidth": 1152,
+        "coverHeight": 2048
+      },
+      "extra": {
+        "collectionId": "2quhxkaesxs0",
+        "collectionTitle": "App 核心页面",
+        "i18n_title": {
+          "en": "Health & Fitness",
+          "ja": "健康運動",
+          "zh": "健康运动"
+        },
+        "i18n_description": {
+          "en": "4 core app page designs",
+          "ja": "アプリのコアページデザイン4枚",
+          "zh": "App 核心页面设计图 4 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "c2af63141bb6914fdd5ae70fe13556be0f11fb799b15f6a790622455a4b23ff6"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:26",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 8,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFcUzQIgKs",
+              "tagName": "website",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Website",
+              "extra": {
+                "tagName": "website",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Website"
+                }
+              },
+              "createTime": "2026-03-20T06:55:03",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:26",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyak5cyrk",
+      "title": "效率工具",
+      "description": "App 核心页面设计图 4 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "效率工具",
+            "description": "App 核心页面设计图 4 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Productivity",
+            "description": "4 app core screen designs",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/56524824ed6943e5a25cb52ca575c35d.png",
+            "coverWidth": 1152,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/3e7cfe16222e4a7b952095e76da3801f.png",
+            "coverWidth": 1152,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/441c35aee5e74f47a6b3e6695bbc1029.png",
+            "coverWidth": 1152,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/cbd8bcc470e84d58b701e16e13f79b41.png",
+            "coverWidth": 1152,
+            "coverHeight": 2048
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "mobile-app-visual-design",
+          "skillAssetId": "p7E6WvFtni",
+          "linkUrl": "lovart://skill/mobile-app-visual-design",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/mobile-app-visual-design/2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+          "sourceVersion": "1.0.14",
+          "versionAssetId": "pkzaYQehyM",
+          "versionId": "2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+          "plazaItemId": "pkzaYTV27u"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "app_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "App 与页面资料",
+                  "placeholder": "简要说明 App 用途与本次页面或功能；已有页面文案、平台要求可补充。"
+                },
+                "en": {
+                  "title": "App and screen information",
+                  "placeholder": "Briefly describe the app purpose and relevant screens or features. Add existing UI copy or platform requirements if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "界面与参考图片"
+                },
+                "en": {
+                  "title": "UI images and references"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 4 张效率工具 App 核心页面设计图，对应本 Case 指定的 4 个页面，各 1 张。保持已确认的导航、信息结构和交互逻辑，四页共享配色、字体、间距和组件规则，不承诺可运行 App。\n\n{{app_info}}\n{{visual_direction}}",
+            "en": "Create 4 core screen designs for a Productivity app, 1 image for each of the 4 screens specified in this Case. Preserve the confirmed navigation, information architecture, and interaction logic. All four screens must share color, typography, spacing, and component rules. The deliverable is a visual design, not a working app.\n\n{{app_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/124d9edd05584e13916355ba7858f888.png",
+        "coverWidth": 1152,
+        "coverHeight": 2048
+      },
+      "extra": {
+        "collectionId": "2quhxkaesxs0",
+        "collectionTitle": "App 核心页面",
+        "i18n_title": {
+          "en": "Efficiency Tools",
+          "ja": "効率ツール",
+          "zh": "效率工具"
+        },
+        "i18n_description": {
+          "en": "4 core app page design diagrams",
+          "ja": "アプリコアページのデザイン図4枚",
+          "zh": "App 核心页面设计图 4 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "d24351bdc3180ad0cf35fe1df69d4e0dacf73b2fa263ce00b8dc92ab153e5b86"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:26",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 8,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFcUzQIgKs",
+              "tagName": "website",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Website",
+              "extra": {
+                "tagName": "website",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Website"
+                }
+              },
+              "createTime": "2026-03-20T06:55:03",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:26",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhyak5cpa8",
+      "title": "金融支付",
+      "description": "App 核心页面设计图 4 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "金融支付",
+            "description": "App 核心页面设计图 4 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Finance & Payments",
+            "description": "4 app core screen designs",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/2aef0883b07e4c33b0d8ffc1ebf947f2.png",
+            "coverWidth": 693,
+            "coverHeight": 1413
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/010e91059e6d46688ecb3c5b3069b72b.png",
+            "coverWidth": 685,
+            "coverHeight": 1404
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/a1caf73e8b9f41168294c6a1216f6f21.png",
+            "coverWidth": 685,
+            "coverHeight": 1477
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/0edd79ca0e7d4b5b8cc98486158bd0aa.png",
+            "coverWidth": 685,
+            "coverHeight": 1432
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "mobile-app-visual-design",
+          "skillAssetId": "p7E6WvFtni",
+          "linkUrl": "lovart://skill/mobile-app-visual-design",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/mobile-app-visual-design/2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+          "sourceVersion": "1.0.14",
+          "versionAssetId": "pkzaYQehyM",
+          "versionId": "2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+          "plazaItemId": "pkzaYTV27u"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "app_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "App 与页面资料",
+                  "placeholder": "简要说明 App 用途与本次页面或功能；已有页面文案、平台要求可补充。"
+                },
+                "en": {
+                  "title": "App and screen information",
+                  "placeholder": "Briefly describe the app purpose and relevant screens or features. Add existing UI copy or platform requirements if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "界面与参考图片"
+                },
+                "en": {
+                  "title": "UI images and references"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 4 张金融支付 App 核心页面设计图，对应本 Case 指定的 4 个页面，各 1 张。保持已确认的导航、信息结构和交互逻辑，四页共享配色、字体、间距和组件规则，不承诺可运行 App。\n\n{{app_info}}\n{{visual_direction}}",
+            "en": "Create 4 core screen designs for a Finance & Payments app, 1 image for each of the 4 screens specified in this Case. Preserve the confirmed navigation, information architecture, and interaction logic. All four screens must share color, typography, spacing, and component rules. The deliverable is a visual design, not a working app.\n\n{{app_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/1536377906c04f3aa5901b4d46f952bf.png",
+        "coverWidth": 693,
+        "coverHeight": 1413
+      },
+      "extra": {
+        "collectionId": "2quhxkaesxs0",
+        "collectionTitle": "App 核心页面",
+        "i18n_title": {
+          "en": "Financial Payment",
+          "ja": "金融決済",
+          "zh": "金融支付"
+        },
+        "i18n_description": {
+          "en": "4 core page design mockups for the App",
+          "ja": "アプリのコアページデザイン図4枚",
+          "zh": "App 核心页面设计图 4 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "3d3703ef344d357f62d7513b288b24a060b6cb5c8d6afdb5a47873d351be6776"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:26",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 4,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFcUzQIgKs",
+              "tagName": "website",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Website",
+              "extra": {
+                "tagName": "website",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Website"
+                }
+              },
+              "createTime": "2026-03-20T06:55:03",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:26",
+      "spacePinned": false
+    },
+    {
+      "itemType": "showcase_card",
+      "itemId": "2quhybnc9m2o",
+      "title": "内容娱乐",
+      "description": "App 核心页面设计图 4 张",
+      "status": "passed",
+      "visibility": "PUBLIC",
+      "content": {
+        "i18n": {
+          "zh": {
+            "title": "内容娱乐",
+            "description": "App 核心页面设计图 4 张",
+            "ctaText": "开始制作"
+          },
+          "en": {
+            "title": "Content & Entertainment",
+            "description": "4 app core screen designs",
+            "ctaText": "Create now"
+          }
+        },
+        "media": [
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/eb4817cfdf1545e4b707c9fad6f6b7e6.jpg",
+            "coverWidth": 960,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/2e1efda092d54960b7cce4e0cd3a4499.jpg",
+            "coverWidth": 960,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/b52c27bda0b840e089e72e7856ec947b.jpg",
+            "coverWidth": 960,
+            "coverHeight": 2048
+          },
+          {
+            "role": "RESULT",
+            "url": "https://a.lovart.ai/asset/showcase-media/202609/86b738cfd3c64d25a2e7c032430f0bc2.jpg",
+            "coverWidth": 960,
+            "coverHeight": 2048
+          }
+        ],
+        "bind": {
+          "type": "SKILL",
+          "source": "PLAZA",
+          "skillKey": "mobile-app-visual-design",
+          "skillAssetId": "p7E6WvFtni",
+          "linkUrl": "lovart://skill/mobile-app-visual-design",
+          "skillType": "pgc",
+          "namespace": "industry",
+          "skillId": "industry/mobile-app-visual-design/2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+          "sourceVersion": "1.0.14",
+          "versionAssetId": "pkzaYQehyM",
+          "versionId": "2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+          "plazaItemId": "pkzaYTV27u"
+        },
+        "template": {
+          "version": 1,
+          "questions": [
+            {
+              "key": "app_info",
+              "type": "TEXT",
+              "required": true,
+              "i18n": {
+                "zh": {
+                  "title": "App 与页面资料",
+                  "placeholder": "简要说明 App 用途与本次页面或功能；已有页面文案、平台要求可补充。"
+                },
+                "en": {
+                  "title": "App and screen information",
+                  "placeholder": "Briefly describe the app purpose and relevant screens or features. Add existing UI copy or platform requirements if available."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            },
+            {
+              "key": "subject_image",
+              "type": "IMAGE_UPLOAD",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "界面与参考图片"
+                },
+                "en": {
+                  "title": "UI images and references"
+                }
+              },
+              "limits": {
+                "maxCount": 9,
+                "maxSizeMb": 10,
+                "accept": [
+                  "image/jpeg",
+                  "image/png",
+                  "image/webp"
+                ]
+              }
+            },
+            {
+              "key": "visual_direction",
+              "type": "TEXT",
+              "required": false,
+              "i18n": {
+                "zh": {
+                  "title": "视觉呈现方式",
+                  "placeholder": "补充希望保留或避免的视觉要求；没有要求可留空。"
+                },
+                "en": {
+                  "title": "Visual direction",
+                  "placeholder": "Add visual requirements to retain or avoid. Leave blank if you have no preference."
+                }
+              },
+              "limits": {
+                "maxLength": 200
+              }
+            }
+          ],
+          "inputTemplate": {
+            "zh": "制作 4 张内容娱乐 App 核心页面设计图，对应本 Case 指定的 4 个页面，各 1 张。保持已确认的导航、信息结构和交互逻辑，四页共享配色、字体、间距和组件规则，不承诺可运行 App。\n\n{{app_info}}\n{{visual_direction}}",
+            "en": "Create 4 core screen designs for a Content & Entertainment app, 1 image for each of the 4 screens specified in this Case. Preserve the confirmed navigation, information architecture, and interaction logic. All four screens must share color, typography, spacing, and component rules. The deliverable is a visual design, not a working app.\n\n{{app_info}}\n{{visual_direction}}"
+          },
+          "renderRules": {
+            "joinSeparator": "、",
+            "omitEmptyLine": true
+          }
+        },
+        "cover": "https://a.lovart.ai/asset/showcase-cover/202609/84eb15176a384854a59cea16d1934ea7.jpg",
+        "coverWidth": 960,
+        "coverHeight": 2048
+      },
+      "extra": {
+        "collectionId": "2quhxkaesxs0",
+        "collectionTitle": "App 核心页面",
+        "i18n_title": {
+          "en": "Content Entertainment",
+          "ja": "コンテンツエンターテインメント",
+          "zh": "内容娱乐"
+        },
+        "i18n_description": {
+          "en": "4 core page design images for the App",
+          "ja": "アプリのコアページデザイン画像4枚",
+          "zh": "App 核心页面设计图 4 张"
+        },
+        "i18n_source_locale": "zh",
+        "i18n_source_hash": "3eb1363d26f5adc7964ed5bcebb9625a665781b0d594443e3556900e9fcdc546"
+      },
+      "filters": null,
+      "snapshotId": null,
+      "conversationSnapshot": null,
+      "metadata": null,
+      "sourceAssetMeta": null,
+      "skillAssetMeta": null,
+      "level": null,
+      "isNew": null,
+      "createTime": "2026-09-24T06:38:27",
+      "publisher": {
+        "id": "<masked>",
+        "name": "<masked>",
+        "avatar": "<masked>"
+      },
+      "stats": {
+        "likeCount": 0,
+        "dislikeCount": 0,
+        "favoriteCount": 0,
+        "viewCount": 0,
+        "tryCount": 3,
+        "shareCount": null
+      },
+      "userStatus": {
+        "isLike": false,
+        "isDislike": false,
+        "isFavorite": false
+      },
+      "tags": [
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": [
+            {
+              "tagId": "kB1y0mGNSo",
+              "tagName": "Home Feed Tag",
+              "parentId": "",
+              "level": 1,
+              "sortOrder": 0,
+              "description": "home feed 页面配置",
+              "extra": {
+                "tagType": "home_feed_tag"
+              },
+              "createTime": "2026-02-08T09:54:03",
+              "path": null
+            },
+            {
+              "tagId": "lFcUzQIgKs",
+              "tagName": "website",
+              "parentId": "kB1y0mGNSo",
+              "level": 2,
+              "sortOrder": 0,
+              "description": "Website",
+              "extra": {
+                "tagName": "website",
+                "tagType": "home_feed_tag",
+                "tagLabel": {
+                  "en": "Website"
+                }
+              },
+              "createTime": "2026-03-20T06:55:03",
+              "path": null
+            }
+          ]
+        }
+      ],
+      "skillTags": null,
+      "skillName": null,
+      "skillCover": null,
+      "publishTime": "2026-09-24T06:38:27",
+      "spacePinned": false
+    }
+  ],
+  "collectionMemberCount": 5,
+  "collectionHasMoreMembers": false
+}

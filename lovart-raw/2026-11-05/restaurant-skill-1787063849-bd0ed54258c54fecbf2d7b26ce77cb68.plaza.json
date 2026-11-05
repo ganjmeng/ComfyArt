@@ -1,0 +1,409 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2n7ntqgeznk0",
+  "title": "Restaurant Website Creator",
+  "description": "Creates restaurant, cafe, bar, and bakery brand showcase pages with menu systems, reservation forms, chef teams, and gallery. Features warm appetite-stimulating color palettes, serif typography, full-bleed food photography. For fine dining restaurants, cafes, bars, bakeries, pastry shops, and private kitchens.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734",
+        "ja": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734",
+        "zh": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734"
+      },
+      "i18n_description": {
+        "en": "Creates restaurant, cafe, bar, and bakery brand showcase pages with menu systems, reservation forms, chef teams, and gallery. Features warm appetite-stimulating color palettes, serif typography, full-bleed food photography. For fine dining restaurants, cafes, bars, bakeries, pastry shops, and private kitchens.",
+        "ja": "レストラン、カフェ、バー、ベーカリーのブランドショーケースページを作成します。メニューシステム、予約フォーム、シェフチーム、ギャラリーを搭載。食欲をそそる暖色系カラーパレット、セリフ体タイポグラフィ、全面食品写真を特徴とします。高級レストラン、カフェ、バー、ベーカリー、パティスリー、プライベートキッチン向け。",
+        "zh": "创建餐厅、咖啡馆、酒吧和烘焙店品牌展示页面，配备菜单系统、预订表单、厨师团队和画廊。特色包括温暖刺激食欲的调色板、衬线字体、全出血食物摄影。适用于高级餐厅、咖啡馆、酒吧、面包店、糕点店和私房菜。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/ff/ff9a68001a0b8fa4dc9172ee643604253acfbaf1b2b76df2880f8fc500f89b7e.mp4",
+      "mediaType": "video",
+      "width": 960,
+      "height": 720
+    },
+    "coverAutoPlay": false,
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/asset/skill-plaza/8b/8be8fe6779920763f27ce0382f80eff05ee57e724fca3b7475773529372ec8a6.png",
+        "width": 1280,
+        "height": 708,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/asset/skill-plaza/b0/b0475c75d4adade0f16c453615cbcaf64f224a27b9d299ae4de262bd2dd6ba18.png",
+        "width": 1280,
+        "height": 706,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/asset/skill-plaza/1a/1ab590bd27d3dc5bfa0746abdd50ccf9a061101f53947e27327f967fee5e86b0.png",
+        "width": 1280,
+        "height": 627,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/asset/skill-plaza/04/04f755592749a93d96a44ac73d6166b07f926215627b34bdeeee198ba0f84731.png",
+        "width": 1280,
+        "height": 635,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/asset/skill-plaza/0d/0da2b80b259aaa501ad6cdf08ff499836add2364d994344b11271c1e240c6cf8.png",
+        "width": 1280,
+        "height": 694,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/asset/skill-plaza/8c/8ca5396b7fe29028eeab84d4bfaff4a5b4334ea1a19808e7dbd778003ecff565.png",
+        "width": 1280,
+        "height": 707,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/asset/skill-plaza/66/66b2e7fd8bf4a734ca5b5fe78eddb48d7946ba3701a82a114a89f29d2ccad148.png",
+        "width": 1280,
+        "height": 701,
+        "order": 6
+      }
+    ],
+    "bestFor": [
+      "restaurant"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2n7ntpk0tbls",
+    "versionAssetId": "2n7ntqfg1fcw",
+    "skillKey": "restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68",
+    "sourceVersion": "1.0.0",
+    "linkUrl": "lovart://skill/restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "a4b92ba6-291a-424b-af1e-b66af4651ce0",
+    "skillId": "user-generated/restaurant-skill-1787063849-bd0ed54258c54fecbf2d7b26ce77cb68/a4b92ba6-291a-424b-af1e-b66af4651ce0",
+    "i18n_title": {
+      "en": "Restaurant Website Creator",
+      "ja": "レストランウェブサイト作成ツール",
+      "zh": "餐厅网站创建器"
+    },
+    "i18n_description": {
+      "en": "Creates restaurant, cafe, bar, and bakery brand showcase pages with menu systems, reservation forms, chef teams, and gallery. Features warm appetite-stimulating color palettes, serif typography, full-bleed food photography. For fine dining restaurants, cafes, bars, bakeries, pastry shops, and private kitchens.",
+      "ja": "レストラン、カフェ、バー、ベーカリーのブランドショーケースページを作成します。メニューシステム、予約フォーム、シェフチーム、ギャラリーを搭載。食欲をそそる温かみのあるカラーパレット、セリフ体のタイポグラフィ、全面表示のフード写真が特徴です。高級レストラン、カフェ、バー、ベーカリー、パティスリー、プライベートキッチン向け。",
+      "zh": "为餐厅、咖啡馆、酒吧和面包店创建品牌展示页面，配备菜单系统、预订表单、厨师团队和画廊。特色包括温暖的促进食欲色调、衬线字体、全出血美食摄影。适用于高级餐厅、咖啡馆、酒吧、面包店、甜品店和私厨。"
+    },
+    "i18n_prompts": {
+      "en": "",
+      "ja": "",
+      "zh": ""
+    },
+    "i18n_source_hash": "a51df7d3570140f55764a0ac27f94433e8056ca008a8f6b7ef79b3700756cd56",
+    "i18n_source_locale": "en",
+    "level": "S"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-18T14:37:31",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 68,
+    "viewCount": 0,
+    "tryCount": 293,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFcUzQIgKs",
+      "tagName": "website",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Website",
+      "extra": {
+        "tagName": "website",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Website"
+        }
+      },
+      "createTime": "2026-03-20T06:55:03",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Restaurant Website Creator",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/ff/ff9a68001a0b8fa4dc9172ee643604253acfbaf1b2b76df2880f8fc500f89b7e.mp4",
+  "publishTime": "2026-08-18T14:37:31",
+  "spacePinned": null,
+  "score": 0,
+  "_en": {
+    "title": "Restaurant Website Creator",
+    "description": "Creates restaurant, cafe, bar, and bakery brand showcase pages with menu systems, reservation forms, chef teams, and gallery. Features warm appetite-stimulating color palettes, serif typography, full-bleed food photography. For fine dining restaurants, cafes, bars, bakeries, pastry shops, and private kitchens.",
+    "content": {
+      "skillPreset": {
+        "i18n_title": {
+          "en": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734",
+          "ja": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734",
+          "zh": "restaurant-skill-1786026414-d125e660b45c42c4adf34bd184308734"
+        },
+        "i18n_description": {
+          "en": "Creates restaurant, cafe, bar, and bakery brand showcase pages with menu systems, reservation forms, chef teams, and gallery. Features warm appetite-stimulating color palettes, serif typography, full-bleed food photography. For fine dining restaurants, cafes, bars, bakeries, pastry shops, and private kitchens.",
+          "ja": "レストラン、カフェ、バー、ベーカリーのブランドショーケースページを作成します。メニューシステム、予約フォーム、シェフチーム、ギャラリーを搭載。食欲をそそる暖色系カラーパレット、セリフ体タイポグラフィ、全面食品写真を特徴とします。高級レストラン、カフェ、バー、ベーカリー、パティスリー、プライベートキッチン向け。",
+          "zh": "创建餐厅、咖啡馆、酒吧和烘焙店品牌展示页面，配备菜单系统、预订表单、厨师团队和画廊。特色包括温暖刺激食欲的调色板、衬线字体、全出血食物摄影。适用于高级餐厅、咖啡馆、酒吧、面包店、糕点店和私房菜。"
+        },
+        "i18n_prompt": {
+          "en": "",
+          "ja": "",
+          "zh": ""
+        }
+      },
+      "template": {
+        "inputTemplate": {
+          "zh": "{{user_requirement}}",
+          "en": "{{user_requirement}}"
+        },
+        "questions": [
+          {
+            "i18n": {
+              "zh": {
+                "title": "上传文件"
+              },
+              "en": {
+                "title": "Upload Files"
+              }
+            },
+            "key": "user_image",
+            "limits": {
+              "maxCount": 1,
+              "maxSizeMb": 10
+            },
+            "required": true,
+            "type": "IMAGE_UPLOAD"
+          },
+          {
+            "i18n": {
+              "zh": {
+                "placeholder": "有什么想补充的吗？",
+                "title": "补充描述"
+              },
+              "en": {
+                "placeholder": "Anything else to add?",
+                "title": "Additional Details"
+              }
+            },
+            "key": "user_requirement",
+            "limits": {
+              "maxLength": 500
+            },
+            "required": true,
+            "type": "TEXT"
+          }
+        ],
+        "version": 2
+      }
+    }
+  }
+}

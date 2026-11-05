@@ -1,0 +1,325 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2q1txsahwp34",
+  "title": "Ecommerce Promotional Branding",
+  "description": "Create e-commerce campaign visuals, posters, and promo graphics in one place.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "video",
+      "url": "https://a.lovart.ai/artifacts/user/uMuBmUTHov9wZ8AY.mp4",
+      "width": 960,
+      "height": 720
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/9oXktXTLr2DX8VgY.webp",
+        "width": 2560,
+        "height": 2214,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/0siRwhZzg6H4LjsC.webp",
+        "width": 2560,
+        "height": 1464,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/r1fztaGfKA7xp1Dg.webp",
+        "width": 1519,
+        "height": 2560,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/user/ptO2CoRRmGFm5YDZ.webp",
+        "width": 1690,
+        "height": 2560,
+        "order": 3
+      }
+    ],
+    "bestFor": [
+      "Campaign Branding",
+      "Campaign Key Visuals",
+      "Promotional Posters",
+      "Product Image Frames",
+      "Promotional Badges"
+    ],
+    "showMarkdown": false,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Ecommerce Promotional Branding",
+        "ja": "Eコマースプロモーションブランディング",
+        "zh": "电商促销品牌设计"
+      },
+      "i18n_description": {
+        "en": "Create e-commerce campaign visuals, posters, and promo graphics in one place.",
+        "ja": "Eコマースキャンペーンのビジュアル、ポスター、プロモーショングラフィックを一か所で作成できます。",
+        "zh": "一站式生成电商大促主视觉、海报与促销组件。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2pgwocwehb0g",
+    "versionAssetId": "2pyp7ub22134",
+    "skillKey": "ecommerce-promotion-brand-design",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/ecommerce-promotion-brand-design",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "e5b6f224-3572-4cf1-9de8-8706a50d3aba",
+    "skillId": "industry/ecommerce-promotion-brand-design/e5b6f224-3572-4cf1-9de8-8706a50d3aba",
+    "i18n_title": {
+      "en": "Ecommerce Promotional Branding",
+      "ja": "Eコマースプロモーションブランディング",
+      "zh": "电商促销品牌设计"
+    },
+    "i18n_description": {
+      "en": "Create e-commerce campaign visuals, posters, and promo graphics in one place.",
+      "ja": "Eコマースキャンペーンのビジュアル、ポスター、プロモーショングラフィックを一か所で作成できます。",
+      "zh": "一站式生成电商大促主视觉、海报与促销组件。"
+    },
+    "i18n_prompts": {
+      "en": "",
+      "ja": "",
+      "zh": ""
+    },
+    "i18n_source_hash": "28da74e7e1f6b5a043353fb005ed300fbf1fea1e56d5509a17753622c74f5094",
+    "i18n_source_locale": "en",
+    "level": "B",
+    "version": "1.0.21"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-09-16T05:49:28",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 207,
+    "viewCount": 0,
+    "tryCount": 788,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PRfsqQyA",
+      "tagName": "official",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "",
+      "extra": {
+        "tagName": "Official",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Official"
+        }
+      },
+      "createTime": "2026-07-23T09:14:25",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PRfsqQyA",
+          "tagName": "official",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "",
+          "extra": {
+            "tagName": "Official",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Official"
+            }
+          },
+          "createTime": "2026-07-23T09:14:25",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Ecommerce Promotional Branding",
+  "skillCover": "https://a.lovart.ai/artifacts/user/uMuBmUTHov9wZ8AY.mp4",
+  "publishTime": "2026-09-16T05:49:28",
+  "spacePinned": null,
+  "score": 1000000001800
+}

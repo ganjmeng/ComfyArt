@@ -1,0 +1,383 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pkzaYTV27u",
+  "title": "Mobile APP Visual Design",
+  "description": "Visual systems for iOS, Android, and more",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Mobile APP Visual Design",
+        "ja": "モバイルアプリビジュアルデザイン",
+        "zh": "移动端应用视觉设计"
+      },
+      "i18n_description": {
+        "en": "Creates or audits phone-first mobile app visual systems for iOS, Android, and cross-platform screen sets.",
+        "ja": "iOS、Android、クロスプラットフォーム向けに、スマートフォン優先のアプリ画面ビジュアル体系を設計・監査します。",
+        "zh": "面向 iOS、Android 与跨平台移动应用，建立手机优先的界面视觉体系，锁定字体、色彩、间距、组件、导航、触控与状态规则。"
+      },
+      "i18n_prompt": {
+        "en": "",
+        "ja": "",
+        "zh": ""
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/e3/e3a6fabc37986be389a585de4301c3ec4cc6c2ca5fc062ef5b0997d9110648e0.mp4",
+      "mediaType": "video",
+      "width": 640,
+      "height": 480,
+      "posterUrl": ""
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/8c/8cf199ecec0fcd29b71be4a5f5ed870c68a75f7c1c3f0748030f1182eea2b7c4.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/0e/0e5ea300e6a927b674ac35976e8bea12e036edff635b22c6752911c91f8ac0e0.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/b8/b87ab7680715c1a929b7fd2eeed2c015dd7141b0b9e929b8338dba884fe86de9.webp",
+        "width": 2048,
+        "height": 688,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/33/33a05a66f460891cd91f1409a9da4e0f7a50a5ed805904330acbb0cc846162e7.webp",
+        "width": 2048,
+        "height": 1024,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/e7/e7cc1ea3785e21850acd70b12dbb9789be658cb4328a18dc6d606a0b552004e5.webp",
+        "width": 2048,
+        "height": 1024,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/2c/2c923132ebe0ca962ae48a8cf6db399bf3ce7813e69e1d09b068992c43671b8b.webp",
+        "width": 2048,
+        "height": 1024,
+        "order": 5
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/63/630b2d9159b0560cbd8888da0e707da47298beba71f5034fdafd4d7fdea542af.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 6
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/8c/8c44a425886fd96467acf89ce0c98d6032e13dd0a2a7c8d75784ec2469fec62d.webp",
+        "width": 2048,
+        "height": 1024,
+        "order": 7
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/66/66431d7640c62ad18f0c4fc9bcd39624502906ad2d97ae7584ea929fbf81212a.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 8
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/38/382a4605c0b135664dafaf50fcfd4d895147d530cf07b68e892f2e667f3a5938.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 9
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/ca/ca333715b7eb826f01baf42f6ae42cff374f0a5f785c4b4f208296300dfe8d1e.webp",
+        "width": 2048,
+        "height": 1024,
+        "order": 10
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/a1/a1c7f66ea4c62ae81bc2803b99ac5c69a31cf06d0ec91b55b9ebf76df45ae872.webp",
+        "width": 2016,
+        "height": 1344,
+        "order": 11
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/f0/f0e4ea2340a7abecb83f81f856c23306ff53ef51a9fa1888e43a49651a2b9438.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 12
+      }
+    ],
+    "bestFor": [
+      "Mobile APP",
+      "APP Design",
+      "Mobile Visual",
+      "APP"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "p7E6WvFtni",
+    "versionAssetId": "pkzaYQehyM",
+    "skillKey": "mobile-app-visual-design",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/mobile-app-visual-design",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+    "skillId": "industry/mobile-app-visual-design/2e7cc4da-4aad-4d36-99aa-b7e0e6f8950e",
+    "level": "S",
+    "i18n_title": {
+      "en": "Mobile APP Visual Design",
+      "ja": "モバイルアプリビジュアルデザイン",
+      "zh": "移动应用视觉设计"
+    },
+    "i18n_description": {
+      "en": "Visual systems for iOS, Android, and more",
+      "ja": "iOS、Android などのビジュアルシステム",
+      "zh": "适用于 iOS、Android 等平台的视觉系统"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "60f8e1d69e4f1f5ece0341a36f20db7222db29f91c24db9f75e6a6d7cb26b2f9",
+    "version": "1.0.14"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-04T06:33:06",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 433,
+    "viewCount": 0,
+    "tryCount": 1948,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFcUzQIgKs",
+      "tagName": "website",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Website",
+      "extra": {
+        "tagName": "website",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Website"
+        }
+      },
+      "createTime": "2026-03-20T06:55:03",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFcUzQIgKs",
+          "tagName": "website",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Website",
+          "extra": {
+            "tagName": "website",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Website"
+            }
+          },
+          "createTime": "2026-03-20T06:55:03",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Mobile APP Visual Design",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/e3/e3a6fabc37986be389a585de4301c3ec4cc6c2ca5fc062ef5b0997d9110648e0.mp4",
+  "publishTime": "2026-08-04T06:33:06",
+  "spacePinned": false,
+  "score": 1000000000000
+}

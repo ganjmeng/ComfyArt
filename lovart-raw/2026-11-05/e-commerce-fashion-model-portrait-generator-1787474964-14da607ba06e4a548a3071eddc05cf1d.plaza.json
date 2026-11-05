@@ -1,0 +1,334 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "2nos12pl80zk",
+  "title": "AI模特定制生成",
+  "description": "当用户需要生成电商服装模特头肩半身参考图、模特基底图或服装搭配模特形象时触发。先收集1-3张模特面部风格参考图，再收集气质关键词、背景、日晒雀斑、商业/创意风格、单一朝向，生成4张同朝向且同气质但全新人脸的参考图；选定后直接输出该模特正面/半侧面/全侧面三视图拼成的一张图。",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "coverMode": "single",
+    "cover": {
+      "mediaType": "image",
+      "url": "https://a.lovart.ai/artifacts/user/36bNwWEo4lEPO0KU.png",
+      "width": 3584,
+      "height": 4800
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/Ka54mHHg75Dqx6Z2.png",
+        "width": 1856,
+        "height": 2304,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/bTs3moJ06U3Aojer.png",
+        "width": 1856,
+        "height": 2304,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/dQQPJTUPag2G8NM7.webp",
+        "width": 3676,
+        "height": 4564,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/xNDwKtWKWCAscx7x.png",
+        "width": 1856,
+        "height": 2304,
+        "order": 3
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/pFznSgGRbL6p5i0k.png",
+        "width": 1600,
+        "height": 2000,
+        "order": 4
+      },
+      {
+        "mediaType": "image",
+        "url": "https://a.lovart.ai/artifacts/agent/mJb3GEQTH2IUMbIk.png",
+        "width": 1600,
+        "height": 2000,
+        "order": 5
+      }
+    ],
+    "bestFor": [
+      "定制AI模特"
+    ],
+    "showMarkdown": true,
+    "skillPreset": {
+      "i18n_title": {
+        "en": "E-commerce Fashion Model Image Generator",
+        "ja": "EC向けファッションモデル画像生成",
+        "zh": "电商服装模特图生成"
+      },
+      "i18n_description": {
+        "en": "Triggered when users need to generate e-commerce fashion model head-and-shoulder reference images, model base images, or outfit styling model figures. First collects 1-3 model facial style reference images, then gathers temperament keywords, background, sun-kissed freckles, commercial/creative style, and single orientation to generate 4 reference images with the same orientation and temperament but entirely new faces; after selection, directly outputs a single composite image with front/half-side/full-side three-view angles of the selected model.",
+        "ja": "ユーザーがEC向けファッションモデルの頭肩半身参考画像、モデルベース画像、または服装コーディネートモデルイメージの生成を必要とする際にトリガーされます。まず1～3枚のモデル顔風参考画像を収集し、次に気質キーワード、背景、日焼けそばかす、商業/クリエイティブスタイル、単一方向を収集して、同じ方向と気質だが全く新しい顔の参考画像4枚を生成。選定後、そのモデルの正面/半側面/全側面の三面図を1枚の画像に合成して直接出力します。",
+        "zh": "当用户需要生成电商服装模特头肩半身参考图、模特基底图或服装搭配模特形象时触发。先收集1-3张模特面部风格参考图，再收集气质关键词、背景、日晒雀斑、商业/创意风格、单一朝向，生成4张同朝向且同气质但全新人脸的参考图；选定后直接输出该模特正面/半侧面/全侧面三视图拼成的一张图。"
+      },
+      "i18n_prompt": {
+        "en": "Help me generate e-commerce fashion model head-and-shoulder reference images. Reference images [upload 1-3 images/none], temperament keywords [e.g., sweet girl/cool oriental], background [pure white/light gray/beige/other], [enable/disable] subtle sun-kissed freckles, style preference [A standard e-commerce commercial/B fashion personalized creative], unified orientation [A frontal/B slight side/C obvious side], final output as three-view composite.",
+        "ja": "EC向けファッションモデルの頭肩半身参考画像を生成してください。参考画像[1～3枚アップロード/なし]、気質キーワード[例：スイートガール/クールなオリエンタル]、背景[純白/ライトグレー/ベージュ/その他]、淡い日焼けそばかすを[有効化/無効化]、スタイル傾向[A通常のEC商業向け/Bファッション個性的クリエイティブ向け]、統一方向[A正面/B軽い側面/C明らかな側面]、最終的に三面図として出力。",
+        "zh": "帮我生成电商服装模特头肩半身参考图，参考图[上传1-3张/无]，气质关键词[例如甜美少女/清冷东方]，背景[纯白/浅灰/米白/其他]，[开启/不开启]淡淡日晒雀斑，风格倾向[A普通电商商业款/B时装个性化创意款]，统一朝向[A正脸/B轻微侧脸/C明显侧脸]，最终输出三视图。"
+      }
+    },
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "2non1tf5cdfk",
+    "versionAssetId": "2noqo67rzls0",
+    "skillKey": "e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d",
+    "sourceVersion": "1.0.4",
+    "linkUrl": "lovart://skill/e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d",
+    "namespace": "user-generated",
+    "type": "ugc",
+    "versionId": "6c32471c-bd65-40f2-b275-02e3d336d014",
+    "skillId": "user-generated/e-commerce-fashion-model-portrait-generator-1787474964-14da607ba06e4a548a3071eddc05cf1d/6c32471c-bd65-40f2-b275-02e3d336d014",
+    "i18n_title": {
+      "en": "AI Model Customization Generator",
+      "ja": "AIモデルカスタム生成",
+      "zh": "AI模特定制生成"
+    },
+    "i18n_description": {
+      "en": "Triggered when users need to generate reference images for e-commerce fashion model head-and-shoulder shots, model base images, or styling model portraits. First collects 1-3 facial style reference images, then gathers temperament keywords, background, sun-kissed freckles, commercial/creative style, and single orientation to generate 4 reference images with the same orientation and temperament but entirely new faces; after selection, directly outputs a single image combining front view/half-profile/full-profile three-view layout of the chosen model.",
+      "ja": "ユーザーがECファッションモデルの頭部・肩の半身参考画像、モデルベース画像、またはコーディネートモデル画像を生成する必要があるときにトリガーされます。まず1〜3枚のモデル顔スタイル参考画像を収集し、次に雰囲気キーワード、背景、日焼けそばかす、商業/クリエイティブスタイル、単一方向を収集して、同じ方向と雰囲気だが全く新しい顔の参考画像を4枚生成します。選択後、そのモデルの正面/半側面/全側面の三面図を1枚の画像にまとめて直接出力します。",
+      "zh": "当用户需要生成电商服装模特头肩半身参考图、模特基底图或服装搭配模特形象时触发。先收集1-3张模特面部风格参考图，再收集气质关键词、背景、日晒雀斑、商业/创意风格、单一朝向，生成4张同朝向且同气质但全新人脸的参考图；选定后直接输出该模特正面/半侧面/全侧面三视图拼成的一张图。"
+    },
+    "i18n_prompts": {
+      "en": "Help me generate e-commerce fashion model head-and-shoulder reference images. Reference images [upload 1-3 images/none], temperament keywords [e.g., sweet girl/cool oriental], background [pure white/light gray/beige/other], [enable/disable] subtle sun-kissed freckles, style preference [A standard e-commerce commercial/B fashion personalized creative], unified orientation [A frontal/B slight side/C obvious side], final output as three-view composite.",
+      "ja": "EC向けファッションモデルの頭肩半身参考画像を生成してください。参考画像[1～3枚アップロード/なし]、気質キーワード[例：スイートガール/クールなオリエンタル]、背景[純白/ライトグレー/ベージュ/その他]、淡い日焼けそばかすを[有効化/無効化]、スタイル傾向[A通常のEC商業向け/Bファッション個性的クリエイティブ向け]、統一方向[A正面/B軽い側面/C明らかな側面]、最終的に三面図として出力。",
+      "zh": "帮我生成电商服装模特头肩半身参考图，参考图[上传1-3张/无]，气质关键词[例如甜美少女/清冷东方]，背景[纯白/浅灰/米白/其他]，[开启/不开启]淡淡日晒雀斑，风格倾向[A普通电商商业款/B时装个性化创意款]，统一朝向[A正脸/B轻微侧脸/C明显侧脸]，最终输出三视图。"
+    },
+    "i18n_source_hash": "39c025a212e32f45541883bf98bd71ca825fcda4d1e6862e89dc4d734f3659b4",
+    "i18n_source_locale": "zh",
+    "level": "B"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-23T09:45:13",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 372,
+    "viewCount": 0,
+    "tryCount": 520,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "kEvXLzV2BW",
+      "tagName": "e_commerce",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "E-commerce",
+      "extra": {
+        "tagName": "e_commerce",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "E-commerce"
+        }
+      },
+      "createTime": "2026-02-10T12:22:30",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "kEvXLzV2BW",
+          "tagName": "e_commerce",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "E-commerce",
+          "extra": {
+            "tagName": "e_commerce",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "E-commerce"
+            }
+          },
+          "createTime": "2026-02-10T12:22:30",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PYi2DiiQ",
+      "tagName": "community",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Community",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Community"
+        }
+      },
+      "createTime": "2026-07-23T09:16:00",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PYi2DiiQ",
+          "tagName": "community",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Community",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Community"
+            }
+          },
+          "createTime": "2026-07-23T09:16:00",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QfrmRln2",
+      "tagName": "image",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Image",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Image"
+        }
+      },
+      "createTime": "2026-07-23T09:19:53",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QfrmRln2",
+          "tagName": "image",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Image",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Image"
+            }
+          },
+          "createTime": "2026-07-23T09:19:53",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "AI模特定制生成",
+  "skillCover": "https://a.lovart.ai/artifacts/user/36bNwWEo4lEPO0KU.png",
+  "publishTime": "2026-08-23T09:45:13",
+  "spacePinned": null,
+  "score": 0
+}

@@ -1,0 +1,377 @@
+{
+  "itemType": "skill_plaza_card",
+  "itemId": "pkDx6GTC6c",
+  "title": "Meta Ads Creative",
+  "description": "Creates and optimizes ecommerce paid-social visual assets for Meta, Facebook, and Instagram campaigns.",
+  "status": "passed",
+  "visibility": "PUBLIC",
+  "content": {
+    "skillPreset": {
+      "i18n_title": {
+        "en": "Meta Ads Creative",
+        "ja": "Meta広告クリエイティブ",
+        "zh": "Meta广告创意"
+      },
+      "i18n_description": {
+        "en": "Creates and optimizes ecommerce paid-social visual assets for Meta, Facebook, and Instagram campaigns.",
+        "ja": "Meta、Facebook、Instagram向けに、EC商品の広告ビジュアル、テスト案、配信用バリエーションを制作します。",
+        "zh": "为电商产品生成 Meta、Facebook、Instagram 投放视觉素材，包括 Feed、Stories、Reels 静态广告、轮播卡片、测试方向与批量变体。"
+      },
+      "prompts": [
+        {
+          "title": "Create Meta Ad Creative Directions",
+          "content": "Create Meta ad creative directions for this product, suitable for Facebook and Instagram campaigns. Use my uploaded product images and brand information to generate 3 distinct visual directions first."
+        },
+        {
+          "title": "Design a Meta Feed Ad",
+          "content": "Design a Meta Feed ad for this product, highlighting the key selling point, offer, and call to action. The layout should work well on mobile and have a clear conversion-focused hierarchy."
+        },
+        {
+          "title": "Create an Instagram Stories Ad",
+          "content": "Create a vertical Instagram Stories ad for this product in a 9:16 format. Highlight the product, main selling point, and CTA, with text that stays clear and readable on mobile screens."
+        }
+      ],
+      "i18n_prompts": {
+        "en": [
+          {
+            "title": "Create Meta Ad Creative Directions",
+            "content": "Create Meta ad creative directions for this product, suitable for Facebook and Instagram campaigns. Use my uploaded product images and brand information to generate 3 distinct visual directions first."
+          },
+          {
+            "title": "Design a Meta Feed Ad",
+            "content": "Design a Meta Feed ad for this product, highlighting the key selling point, offer, and call to action. The layout should work well on mobile and have a clear conversion-focused hierarchy."
+          },
+          {
+            "title": "Create an Instagram Stories Ad",
+            "content": "Create a vertical Instagram Stories ad for this product in a 9:16 format. Highlight the product, main selling point, and CTA, with text that stays clear and readable on mobile screens."
+          }
+        ],
+        "ja": [
+          {
+            "title": "Meta広告のクリエイティブ方向を作成",
+            "content": "この商品のMeta広告クリエイティブ方向を作成してください。FacebookとInstagramでの配信に適した内容にし、アップロードした商品画像とブランド情報をもとに、まず3つの異なるビジュアル方向を提案してください。"
+          },
+          {
+            "title": "Meta Feed広告画像をデザイン",
+            "content": "この商品のMeta Feed広告画像をデザインしてください。主な訴求点、オファー、CTAを目立たせ、モバイルで見やすく、広告として伝わりやすい構成にしてください。"
+          },
+          {
+            "title": "Instagram Stories広告を作成",
+            "content": "この商品のInstagram Stories向け縦型広告画像を作成してください。9:16の全画面表示に適した構成で、商品、主な訴求点、CTAを強調し、スマートフォンでも文字が読みやすいようにしてください。"
+          }
+        ],
+        "zh": [
+          {
+            "title": "制作 Meta 广告创意方向",
+            "content": "请为这个产品制作 Meta 广告创意方向，适用于 Facebook 和 Instagram 投放。请基于我上传的产品图和品牌信息，先生成 3 个不同的广告视觉方向。"
+          },
+          {
+            "title": "设计 Meta Feed 广告图",
+            "content": "请为这个产品设计 Meta Feed 广告图，突出核心卖点、优惠信息和行动号召，画面需要适合移动端浏览，并保持清晰的广告转化层级。"
+          },
+          {
+            "title": "创建 Instagram Stories 广告",
+            "content": "请为这个产品创建 Instagram Stories 竖版广告图，适合 9:16 全屏展示，突出产品、卖点和 CTA，并保证文字在手机屏幕上清晰可读。"
+          }
+        ]
+      },
+      "i18n_prompt": {
+        "en": "Create Meta ad creative directions for this product, suitable for Facebook and Instagram campaigns. Use my uploaded product images and brand information to generate 3 distinct visual directions first.",
+        "ja": "この商品のMeta広告クリエイティブ方向を作成してください。FacebookとInstagramでの配信に適した内容にし、アップロードした商品画像とブランド情報をもとに、まず3つの異なるビジュアル方向を提案してください。",
+        "zh": "请为这个产品制作 Meta 广告创意方向，适用于 Facebook 和 Instagram 投放。请基于我上传的产品图和品牌信息，先生成 3 个不同的广告视觉方向。"
+      }
+    },
+    "coverMode": "single",
+    "cover": {
+      "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/eb/eb2d09abc28560b4a15857cb9f87fe286d1dc82ed227cadeb13d3dfffbad3b79.mp4",
+      "mediaType": "video",
+      "width": 640,
+      "height": 480
+    },
+    "highlights": [
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/86/864885e33c45a93f664593f300a9332d6e1a125e72f67956ab5a6f1b0948cf65.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 0
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/4e/4e5e771024e4f24e32b5cb291afd4ac934c7fb067506a3211c43ebf1671cc86a.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 1
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/a5/a521fa19b70b6a5ce1a5e119a68a77719fbd7561d8a09f7e954354acc1b9ce9b.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 2
+      },
+      {
+        "mediaType": "image",
+        "url": "https://web-static3.lovart.ai/static-assets/v1/sha256/2c/2c140cd5f1ce53cfacc753d4e7d72e4c2d426d37db5bd469ae5f15dd20426bb5.webp",
+        "width": 2048,
+        "height": 1152,
+        "order": 3
+      }
+    ],
+    "bestFor": [
+      "META",
+      "Ads",
+      "Instagram Carousel",
+      "Story Ads"
+    ],
+    "showMarkdown": false,
+    "template": {
+      "inputTemplate": {
+        "zh": "{{user_requirement}}",
+        "en": "{{user_requirement}}"
+      },
+      "questions": [
+        {
+          "i18n": {
+            "zh": {
+              "title": "上传文件"
+            },
+            "en": {
+              "title": "Upload Files"
+            }
+          },
+          "key": "user_image",
+          "limits": {
+            "maxCount": 1,
+            "maxSizeMb": 10
+          },
+          "required": true,
+          "type": "IMAGE_UPLOAD"
+        },
+        {
+          "i18n": {
+            "zh": {
+              "placeholder": "有什么想补充的吗？",
+              "title": "补充描述"
+            },
+            "en": {
+              "placeholder": "Anything else to add?",
+              "title": "Additional Details"
+            }
+          },
+          "key": "user_requirement",
+          "limits": {
+            "maxLength": 500
+          },
+          "required": true,
+          "type": "TEXT"
+        }
+      ],
+      "version": 2
+    }
+  },
+  "extra": {
+    "skillAssetId": "orEPgsBldK",
+    "versionAssetId": "pkDx6DcJ0Y",
+    "skillKey": "meta-ads-creative-director",
+    "sourceVersion": "latest",
+    "linkUrl": "lovart://skill/meta-ads-creative-director",
+    "namespace": "industry",
+    "type": "pgc",
+    "versionId": "c9d10e72-90bd-478b-98a7-37a699558246",
+    "skillId": "industry/meta-ads-creative-director/c9d10e72-90bd-478b-98a7-37a699558246",
+    "level": "S",
+    "i18n_title": {
+      "en": "Meta Ads Creative",
+      "ja": "Meta広告クリエイティブ",
+      "zh": "Meta广告创意"
+    },
+    "i18n_description": {
+      "en": "Creates and optimizes ecommerce paid-social visual assets for Meta, Facebook, and Instagram campaigns.",
+      "ja": "Meta、Facebook、Instagramキャンペーン向けのeコマース有料ソーシャルビジュアルアセットを作成・最適化します。",
+      "zh": "为Meta、Facebook和Instagram营销活动创建和优化电商付费社交视觉素材。"
+    },
+    "i18n_source_locale": "en",
+    "i18n_source_hash": "6c9a24cfae851fb1bf1bf35b9015ee3ef9a235f30e8f11e20dea9c66445ddf39",
+    "version": "1.0.15"
+  },
+  "filters": null,
+  "snapshotId": null,
+  "conversationSnapshot": null,
+  "metadata": null,
+  "sourceAssetMeta": null,
+  "skillAssetMeta": null,
+  "level": null,
+  "isNew": null,
+  "createTime": "2026-08-04T07:34:04",
+  "publisher": {
+    "id": "<masked>",
+    "name": "<masked>",
+    "avatar": "<masked>"
+  },
+  "stats": {
+    "likeCount": 0,
+    "dislikeCount": 0,
+    "favoriteCount": 540,
+    "viewCount": 0,
+    "tryCount": 2697,
+    "shareCount": null
+  },
+  "userStatus": {
+    "isLike": false,
+    "isDislike": false,
+    "isFavorite": false
+  },
+  "tags": [
+    {
+      "tagId": "lFd79qB1i8",
+      "tagName": "ads_creative",
+      "parentId": "kB1y0mGNSo",
+      "level": 2,
+      "sortOrder": 0,
+      "description": "Ads & Creative",
+      "extra": {
+        "tagName": "ads_creative",
+        "tagType": "home_feed_tag",
+        "tagLabel": {
+          "en": "Ads & Creative"
+        }
+      },
+      "createTime": "2026-03-20T06:57:53",
+      "path": [
+        {
+          "tagId": "kB1y0mGNSo",
+          "tagName": "Home Feed Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "home feed 页面配置",
+          "extra": {
+            "tagType": "home_feed_tag"
+          },
+          "createTime": "2026-02-08T09:54:03",
+          "path": null
+        },
+        {
+          "tagId": "lFd79qB1i8",
+          "tagName": "ads_creative",
+          "parentId": "kB1y0mGNSo",
+          "level": 2,
+          "sortOrder": 0,
+          "description": "Ads & Creative",
+          "extra": {
+            "tagName": "ads_creative",
+            "tagType": "home_feed_tag",
+            "tagLabel": {
+              "en": "Ads & Creative"
+            }
+          },
+          "createTime": "2026-03-20T06:57:53",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0PVT0nd2E",
+      "tagName": "verified_creator",
+      "parentId": "p0PKTBqFMs",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Verified Creator",
+        "tagType": "creator_type_tag",
+        "tagLabel": {
+          "en": "Verified Creator"
+        }
+      },
+      "createTime": "2026-07-23T09:15:28",
+      "path": [
+        {
+          "tagId": "p0PKTBqFMs",
+          "tagName": "Creator Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Creator Type Tag 配置",
+          "extra": {
+            "tagType": "creator_type_tag"
+          },
+          "createTime": "2026-07-23T09:12:59",
+          "path": null
+        },
+        {
+          "tagId": "p0PVT0nd2E",
+          "tagName": "verified_creator",
+          "parentId": "p0PKTBqFMs",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Verified Creator",
+            "tagType": "creator_type_tag",
+            "tagLabel": {
+              "en": "Verified Creator"
+            }
+          },
+          "createTime": "2026-07-23T09:15:28",
+          "path": null
+        }
+      ]
+    },
+    {
+      "tagId": "p0QjaW8isg",
+      "tagName": "video",
+      "parentId": "p0QedLSLBK",
+      "level": 2,
+      "sortOrder": 0,
+      "description": null,
+      "extra": {
+        "tagName": "Video",
+        "tagType": "output_type_tag",
+        "tagLabel": {
+          "en": "Video"
+        }
+      },
+      "createTime": "2026-07-23T09:20:43",
+      "path": [
+        {
+          "tagId": "p0QedLSLBK",
+          "tagName": "Output Type Tag",
+          "parentId": "",
+          "level": 1,
+          "sortOrder": 0,
+          "description": "Skill Output Type Tag 配置",
+          "extra": {
+            "tagType": "output_type_tag"
+          },
+          "createTime": "2026-07-23T09:19:36",
+          "path": null
+        },
+        {
+          "tagId": "p0QjaW8isg",
+          "tagName": "video",
+          "parentId": "p0QedLSLBK",
+          "level": 2,
+          "sortOrder": 0,
+          "description": null,
+          "extra": {
+            "tagName": "Video",
+            "tagType": "output_type_tag",
+            "tagLabel": {
+              "en": "Video"
+            }
+          },
+          "createTime": "2026-07-23T09:20:43",
+          "path": null
+        }
+      ]
+    }
+  ],
+  "skillTags": null,
+  "skillName": "Meta Ads Creative",
+  "skillCover": "https://web-static3.lovart.ai/static-assets/v1/sha256/eb/eb2d09abc28560b4a15857cb9f87fe286d1dc82ed227cadeb13d3dfffbad3b79.mp4",
+  "publishTime": "2026-08-04T07:34:04",
+  "spacePinned": false,
+  "score": 1000000001000
+}
