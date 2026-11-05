@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "verdict": "PASS",
+  "tip": "91749c7c",
+  "tip_full": "91749c7c36605be78f83ad81bffcb7c01241c172",
+  "pr": 771,
+  "refs": 687,
+  "closes": null,
+  "how": "real full App http://127.0.0.1:8199/comfyart/ Home→Skills rail; tip rebuilt (npm run build) so dist pins WASH_687=5c954dbc; Playwright Firefox; also inspected 687/wash/* media + engineer SBS 17e3bae6 (not rubber-stamp)",
+  "skills": {
+    "social": {
+      "ok": true,
+      "id": "rednote-cover-maker",
+      "examples": 5,
+      "wired": "687/wash/social @5c954dbc cover+video+01..05",
+      "note": "5 Instagram/RedNote product posts; distinct; no Lovart watermark/logo/domain in dialog"
+    },
+    "interior": {
+      "ok": true,
+      "id": "interior-architectural-visualization",
+      "examples": 2,
+      "wired": "687/wash/interior @5c954dbc cover+video+01..02",
+      "note": "2 same-room photo→render style previews; distinct"
+    },
+    "meta-ads": {
+      "ok": true,
+      "id": "meta-ads-creative-director",
+      "examples": 4,
+      "wired": "687/wash/meta-ads @5c954dbc cover+video+01..04",
+      "note": "4 multi-option ad boards (~16:9); MIXLY etc washed brands; no Lovart chrome"
+    },
+    "marketing-campaign": {
+      "ok": true,
+      "id": "marketing-campaign-generator",
+      "frames": 8,
+      "wired": "highlights[0]=cover.mp4 + examples 01..07.webp",
+      "strip_ratio": "washed strips all 3072×1024 ≈3:1 (gold highlights ~5–8:1); still multi-grid bars — accepted by product 5788900067 / design 5788913704; not HOLD",
+      "cover_video": "cover.mp4 Ken Burns / still-derived hover (frame diffs present but still-based); accepted by product/design; not HOLD",
+      "note": "Dialog shows thumbs 01–08; slot0 video + 7 strips"
+    }
+  },
+  "thumbnail_poster": "untouched — poster uses cover()/feedCovers; thumbnail(cover-design-director) uses cover643/feat643 — not cover687",
+  "checks": {
+    "lovart_src_leak": false,
+    "distinct_previews": true,
+    "wired_changes_ui": true,
+    "counts_match": true
+  },
+  "hold_reasons": []
+}
