@@ -1,0 +1,44 @@
+{
+  "chip": "Connected",
+  "chipOn": true,
+  "labels": [
+    "Hermes SSH host",
+    "Hermes profile"
+  ],
+  "ssh": {
+    "tag": "textarea",
+    "placeholder": "Host alias or user@host (key login); empty = use local Hermes",
+    "value": "",
+    "clientWidth": 494,
+    "clientHeight": 56,
+    "innerWidth": 474,
+    "nowrapTextWidth": 412.316650390625,
+    "neededHeight": 36,
+    "wraps": true,
+    "heightOk": true,
+    "clippedHoriz": false,
+    "whiteSpace": "pre-wrap",
+    "resize": "none",
+    "endsAtLiuKongEquals": false
+  },
+  "profile": {
+    "tag": "input",
+    "placeholder": "Profile made for ComfyArt (hermes -p <name>), see the Agent guide. Empty = Hermes default profile",
+    "value": "comfyart",
+    "clientWidth": 474,
+    "clientHeight": 20,
+    "innerWidth": 454,
+    "nowrapTextWidth": 669.88330078125,
+    "neededHeight": 40,
+    "wraps": true,
+    "heightOk": true,
+    "clippedHoriz": false,
+    "whiteSpace": "normal",
+    "resize": "none",
+    "endsAtLiuKongEquals": false
+  },
+  "expectedMatch": true,
+  "labelBlockGapPx": 8,
+  "sshScrollWidth": 494,
+  "sshClientWidth": 494
+}

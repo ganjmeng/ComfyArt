@@ -1,0 +1,99 @@
+{
+  "tip": "81f4718cd4eae91a375c3b03787448dbb54fbb22",
+  "fail": [],
+  "notes": [
+    "live HERMES_OK"
+  ],
+  "settings_zh": {
+    "chip": "已连接",
+    "chipOn": true,
+    "labels": [
+      "Hermes SSH 主机",
+      "Hermes 配置档"
+    ],
+    "ssh": {
+      "tag": "textarea",
+      "placeholder": "主机别名或 user@host（密钥登录）；留空 = 使用本机 Hermes",
+      "value": "",
+      "clientWidth": 494,
+      "clientHeight": 56,
+      "innerWidth": 474,
+      "nowrapTextWidth": 400.1333312988281,
+      "neededHeight": 36,
+      "wraps": true,
+      "heightOk": true,
+      "clippedHoriz": false,
+      "whiteSpace": "pre-wrap",
+      "resize": "none",
+      "endsAtLiuKongEquals": false
+    },
+    "profile": {
+      "tag": "input",
+      "placeholder": "给 ComfyArt 专用的配置档（hermes -p <名字>），见 Agent 文档。留空 = Hermes 默认配置档",
+      "value": "comfyart",
+      "clientWidth": 474,
+      "clientHeight": 20,
+      "innerWidth": 454,
+      "nowrapTextWidth": 603.816650390625,
+      "neededHeight": 40,
+      "wraps": true,
+      "heightOk": true,
+      "clippedHoriz": false,
+      "whiteSpace": "normal",
+      "resize": "none",
+      "endsAtLiuKongEquals": false
+    },
+    "expectedMatch": true,
+    "labelBlockGapPx": 8,
+    "sshScrollWidth": 494,
+    "sshClientWidth": 494
+  },
+  "provider": "hermes",
+  "mode_label": "Hermes",
+  "reply": "HERMES_OK",
+  "settings_en": {
+    "chip": "Connected",
+    "chipOn": true,
+    "labels": [
+      "Hermes SSH host",
+      "Hermes profile"
+    ],
+    "ssh": {
+      "tag": "textarea",
+      "placeholder": "Host alias or user@host (key login); empty = use local Hermes",
+      "value": "",
+      "clientWidth": 494,
+      "clientHeight": 56,
+      "innerWidth": 474,
+      "nowrapTextWidth": 412.316650390625,
+      "neededHeight": 36,
+      "wraps": true,
+      "heightOk": true,
+      "clippedHoriz": false,
+      "whiteSpace": "pre-wrap",
+      "resize": "none",
+      "endsAtLiuKongEquals": false
+    },
+    "profile": {
+      "tag": "input",
+      "placeholder": "Profile made for ComfyArt (hermes -p <name>), see the Agent guide. Empty = Hermes default profile",
+      "value": "comfyart",
+      "clientWidth": 474,
+      "clientHeight": 20,
+      "innerWidth": 454,
+      "nowrapTextWidth": 669.88330078125,
+      "neededHeight": 40,
+      "wraps": true,
+      "heightOk": true,
+      "clippedHoriz": false,
+      "whiteSpace": "normal",
+      "resize": "none",
+      "endsAtLiuKongEquals": false
+    },
+    "expectedMatch": true,
+    "labelBlockGapPx": 8,
+    "sshScrollWidth": 494,
+    "sshClientWidth": 494
+  },
+  "ok": true
+}
