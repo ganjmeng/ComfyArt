@@ -31,3 +31,10 @@
 
 ## Crop method
 RIGHT = full viewport screenshot @1920×1072 with dialog open (same frame as LEFT masked refs).
+
+## Multi-SKU SBS (LEFT = ca67e71c @1280×1072)
+- LEFT static: `lovart-raw/2026-11-05/anim/multisku-1280-static.masked.png`
+- LEFT hover: `lovart-raw/2026-11-05/anim/multisku-1280-hover.masked.png`
+- RIGHT: `ours-multisku-static-1280.png` / `ours-multisku-hover-1280.png` (same 1280×1072 viewport)
+- Composites: `sbs-multisku-static.png` / `sbs-multisku-hover.png`
+- Hover 2×2 measured: cells ≈182.6×134.1 gap ~6 (49.085%/48.76% of inset at 388×291 well); 4th opacity 0
