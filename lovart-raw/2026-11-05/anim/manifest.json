@@ -1,0 +1,135 @@
+{
+  "manifest": {
+    "expand_on": [
+      {
+        "ms": 0,
+        "frame": 49,
+        "file": "stack-on-000ms.masked.png"
+      },
+      {
+        "ms": 33,
+        "frame": 50,
+        "file": "stack-on-033ms.masked.png"
+      },
+      {
+        "ms": 67,
+        "frame": 51,
+        "file": "stack-on-067ms.masked.png"
+      },
+      {
+        "ms": 100,
+        "frame": 52,
+        "file": "stack-on-100ms.masked.png"
+      },
+      {
+        "ms": 133,
+        "frame": 53,
+        "file": "stack-on-133ms.masked.png"
+      },
+      {
+        "ms": 200,
+        "frame": 55,
+        "file": "stack-on-200ms.masked.png"
+      },
+      {
+        "ms": 267,
+        "frame": 57,
+        "file": "stack-on-267ms.masked.png"
+      },
+      {
+        "ms": 333,
+        "frame": 59,
+        "file": "stack-on-333ms.masked.png"
+      },
+      {
+        "ms": 400,
+        "frame": 61,
+        "file": "stack-on-400ms.masked.png"
+      },
+      {
+        "ms": 500,
+        "frame": 64,
+        "file": "stack-on-500ms.masked.png"
+      }
+    ],
+    "expand_off": [
+      {
+        "ms": 0,
+        "frame": 115,
+        "file": "stack-off-000ms.masked.png"
+      },
+      {
+        "ms": 33,
+        "frame": 116,
+        "file": "stack-off-033ms.masked.png"
+      },
+      {
+        "ms": 67,
+        "frame": 117,
+        "file": "stack-off-067ms.masked.png"
+      },
+      {
+        "ms": 100,
+        "frame": 118,
+        "file": "stack-off-100ms.masked.png"
+      },
+      {
+        "ms": 133,
+        "frame": 119,
+        "file": "stack-off-133ms.masked.png"
+      },
+      {
+        "ms": 200,
+        "frame": 121,
+        "file": "stack-off-200ms.masked.png"
+      },
+      {
+        "ms": 267,
+        "frame": 123,
+        "file": "stack-off-267ms.masked.png"
+      },
+      {
+        "ms": 333,
+        "frame": 125,
+        "file": "stack-off-333ms.masked.png"
+      },
+      {
+        "ms": 400,
+        "frame": 127,
+        "file": "stack-off-400ms.masked.png"
+      },
+      {
+        "ms": 500,
+        "frame": 130,
+        "file": "stack-off-500ms.masked.png"
+      }
+    ],
+    "ms_list": [
+      0,
+      33,
+      67,
+      100,
+      133,
+      200,
+      267,
+      333,
+      400,
+      500
+    ],
+    "expand_start_frame": 49,
+    "collapse_start_frame": 115
+  },
+  "durations": {
+    "stack_expand_hover_on_ms": 400,
+    "stack_expand_hover_off_ms": 400,
+    "stack_expand_method": "frame-diff mean abs in Packaging Visual Direction card region; start=first frame above thresh; end=last frame above quiet thresh within 45f",
+    "modal_open_ms": 200,
+    "modal_close_ms": 167,
+    "modal_open_close_note": "Two open (~200ms) and two close (~167-200ms) cycles in modal-open-close.mp4",
+    "hover_skills_wall_ms": 33,
+    "hover_note": "Skills-wall card hover: Try-this-skill chrome appears in 1 frame (33ms at 30fps). Small residual diffs ~10 frames later (~330ms) may be video fade; not a stack expand.",
+    "pill_category_ms": 200,
+    "pill_template_select_ms": 0,
+    "pill_note": "Category pill changes: ~167-200ms (grid+bar). Template/card select state changes are single-frame (~0-33ms), matching 0ms outline."
+  }
+}
