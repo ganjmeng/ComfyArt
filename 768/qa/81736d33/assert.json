@@ -1,0 +1,57 @@
+{
+  "ok": true,
+  "verdict": "PASS",
+  "tip": "81736d33",
+  "tip_full": "81736d338590fc27d2ee607c2116ef1ff9b5b438",
+  "pr": 768,
+  "closes": 766,
+  "how": "real full App http://127.0.0.1:8199/comfyart/ + canvas + composer; ComfyUI --cpu --listen 127.0.0.1 --port 8199; Playwright Firefox (not ask763 harness); independent recapture, not engineer RA rubber-stamp",
+  "product_lock": "no standalone pre-gen Got it/知道了 on no-wait; Q/A then generate; restate in completion; wait-seeded MUST use pinned Got it/知道了 and must not generate",
+  "cases": {
+    "A_mid_submit_en": {
+      "ok": true,
+      "bubble": "Q: … / A: 极简",
+      "pre_gen_confirm_detected": false,
+      "generation_continued": true,
+      "completion_restates_choice": true,
+      "invites_adjust": true,
+      "note": "No standalone Got it/知道了 before generate; left completion restates 极简 and offers next-step adjustments."
+    },
+    "A_mid_submit_zh": {
+      "ok": true,
+      "pre_gen_confirm_detected": false,
+      "generation_continued": true,
+      "completion_restates_choice": true,
+      "note": "First pass stalled on plan_quote (confirm_credits=50). After raising threshold to 50000, mid-zh completed: no pre-gen 知道了; completion restates 极简 and offers 下一步建议. Shot agent-final-mid-submit-zh.png."
+    },
+    "B_wait_submit_en": {
+      "ok": true,
+      "got_it_wait": "Got it — your preferred logo style is minimal. I'll wait for your next instructions before creating any images.",
+      "images_generated": false,
+      "note": "Jingmeng Q: yes — when user explicitly asks to wait, Got it wait copy still appears; no images."
+    },
+    "B_wait_submit_zh": {
+      "ok": true,
+      "got_it_wait": "知道了 — 你希望的 logo 风格是极简。在你给出下一步指示之前，我先不生成图片。",
+      "images_generated": false
+    }
+  },
+  "checks": {
+    "pre_gen_confirm_on_no_wait": false,
+    "wait_default": false,
+    "no_wait_continues_generate": true,
+    "completion_restates_choice": true,
+    "bubble_767_ok": true,
+    "ask_user_leak": false,
+    "wait_seeded_has_got_it": true
+  },
+  "sbs": [
+    "sbs-mid-after-bubble-en.png",
+    "sbs-mid-early-en.png",
+    "sbs-mid-completion-en.png",
+    "sbs-mid-after-bubble-zh.png",
+    "sbs-wait-en.png",
+    "sbs-wait-zh.png"
+  ],
+  "hold_reasons": []
+}
