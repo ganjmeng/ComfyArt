@@ -1,0 +1,153 @@
+{
+  "ok": true,
+  "verdict": "PASS",
+  "tip": "ae601b6f",
+  "tip_full": "ae601b6ff09b0657708d42eb4fa6ed888a831d55",
+  "pr": 770,
+  "closes": 769,
+  "how": "real full App /comfyart/ + canvas + composer; tip npm run build; ComfyUI --cpu :8199; Playwright Firefox @1920×1072",
+  "items": {
+    "hash_not_frame": true,
+    "no_ref_label": true,
+    "hash_cube_same_weight": true,
+    "hit_32_glyph_16_stroke_match": true,
+    "c2c_40_gap_8": true,
+    "badge_no_widen": true,
+    "link_unlink_at_ok": true,
+    "no_leftover_outputting_wait": true
+  },
+  "results": {
+    "idle-en": {
+      "tag": "idle-en",
+      "ok": true,
+      "fail": [],
+      "metrics": {
+        "ref": {
+          "x": 269,
+          "y": 1020,
+          "w": 32,
+          "h": 32,
+          "cx": 285,
+          "on": false,
+          "title": "Create a reference frame on the canvas and link it: the Agent reads it with every message",
+          "text": ""
+        },
+        "pref": {
+          "x": 307,
+          "y": 1020,
+          "w": 32,
+          "h": 32,
+          "cx": 323
+        },
+        "send": {
+          "x": 347,
+          "y": 1020,
+          "w": 32,
+          "h": 32,
+          "cx": 363,
+          "cls": "ca-gen__send ca-composer__slot"
+        },
+        "hashIcon": {
+          "w": 16,
+          "h": 16,
+          "cx": 285
+        },
+        "cubeIcon": {
+          "w": 16,
+          "h": 16,
+          "cx": 323
+        },
+        "hashStroke": "2.5",
+        "cubeStroke": "2.5",
+        "hashClass": "lucide lucide-hash",
+        "cubeClass": "lucide lucide-box",
+        "labelText": "",
+        "hasCountBadge": false,
+        "countText": null,
+        "gap": 8,
+        "c2c": 40,
+        "outRows": 0,
+        "outputtingVisible": []
+      },
+      "flow": {
+        "linked": true,
+        "unlinked": true,
+        "badge_w_linked": 32
+      },
+      "at_ok": true
+    },
+    "idle-zh": {
+      "tag": "idle-zh",
+      "ok": true,
+      "fail": [],
+      "metrics": {
+        "ref": {
+          "x": 269,
+          "y": 1020,
+          "w": 32,
+          "h": 32,
+          "cx": 285,
+          "on": false,
+          "title": "在画布上建一个参考区并链接：每条消息 Agent 都会读取它",
+          "text": ""
+        },
+        "pref": {
+          "x": 307,
+          "y": 1020,
+          "w": 32,
+          "h": 32,
+          "cx": 323
+        },
+        "send": {
+          "x": 347,
+          "y": 1020,
+          "w": 32,
+          "h": 32,
+          "cx": 363,
+          "cls": "ca-gen__send ca-composer__slot"
+        },
+        "hashIcon": {
+          "w": 16,
+          "h": 16,
+          "cx": 285
+        },
+        "cubeIcon": {
+          "w": 16,
+          "h": 16,
+          "cx": 323
+        },
+        "hashStroke": "2.5",
+        "cubeStroke": "2.5",
+        "hashClass": "lucide lucide-hash",
+        "cubeClass": "lucide lucide-box",
+        "labelText": "",
+        "hasCountBadge": false,
+        "countText": null,
+        "gap": 8,
+        "c2c": 40,
+        "outRows": 0,
+        "outputtingVisible": []
+      },
+      "flow": {
+        "linked": true,
+        "unlinked": true,
+        "badge_w_linked": 32
+      },
+      "at_ok": true
+    },
+    "wait-en": {
+      "ok": true,
+      "fail": [],
+      "bodies": [
+        "Got it — your preferred logo style is minimal. I'll wait for your next instructions before creating any images."
+      ],
+      "metrics": {
+        "outRows": 0,
+        "outputtingVisible": [],
+        "hashClass": "lucide lucide-hash",
+        "c2c": 40
+      }
+    }
+  },
+  "hold_reasons": []
+}
