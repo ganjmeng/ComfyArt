@@ -1,0 +1,326 @@
+{
+  "viewport": [
+    1280,
+    1072
+  ],
+  "dialog": {
+    "w": 1112,
+    "h": 820,
+    "leftW": 752,
+    "rightW": 360
+  },
+  "t1_rest": {
+    "cardOuterW": 344,
+    "cardOuterH": 288,
+    "wellW": 344,
+    "wellH": 258,
+    "nameH": 22,
+    "imgOrient": "portrait",
+    "dataN": null,
+    "dataOrient": null,
+    "nLayers": 0,
+    "cover": {
+      "objectFit": "cover",
+      "naturalW": 1024,
+      "naturalH": 768,
+      "boxW": 181.48,
+      "boxH": 242,
+      "opacity": "1",
+      "left": 81.23,
+      "top": 8,
+      "src": "packaging/packaging__eco.webp"
+    }
+  },
+  "t2_rest": {
+    "cardOuterW": 344,
+    "cardOuterH": 288,
+    "wellW": 344,
+    "wellH": 258,
+    "nameH": 22,
+    "imgOrient": "landscape",
+    "dataN": "3",
+    "dataOrient": "landscape",
+    "nLayers": 3,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1024,
+      "naturalH": 768,
+      "boxW": 344,
+      "boxH": 258,
+      "opacity": "0",
+      "left": 0,
+      "top": 0,
+      "src": "packaging/packaging__gold.webp"
+    },
+    "stackInset": {
+      "w": 328,
+      "h": 242
+    },
+    "layers": [
+      {
+        "i": 0,
+        "w": 259.55,
+        "h": 160.42,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "matrix(0.754297, 0.0659924, -0.0659924, 0.754297, 0, 28.9775)",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__gold.webp"
+      },
+      {
+        "i": 1,
+        "w": 259.55,
+        "h": 160.42,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "matrix(0.754297, -0.0659924, 0.0659924, 0.754297, 0, 28.9775)",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__playful.webp"
+      },
+      {
+        "i": 2,
+        "w": 268.77,
+        "h": 180.32,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "matrix(0.745675, 0.131483, -0.131483, 0.745675, 0, 28.9775)",
+        "naturalW": 1024,
+        "naturalH": 765,
+        "src": "packaging__panels.webp"
+      }
+    ]
+  },
+  "t3_rest": {
+    "cardOuterW": 344,
+    "cardOuterH": 288,
+    "wellW": 344,
+    "wellH": 258,
+    "nameH": 22,
+    "imgOrient": "portrait",
+    "dataN": "4",
+    "dataOrient": "portrait",
+    "nLayers": 4,
+    "cover": {
+      "objectFit": "cover",
+      "naturalW": 1024,
+      "naturalH": 768,
+      "boxW": 181.48,
+      "boxH": 242,
+      "opacity": "0",
+      "left": 81.23,
+      "top": 8,
+      "src": "packaging/packaging__playful.webp"
+    },
+    "stackInset": {
+      "w": 328,
+      "h": 242
+    },
+    "layers": [
+      {
+        "i": 0,
+        "w": 162.66,
+        "h": 206.98,
+        "opacity": "1",
+        "objectFit": "cover",
+        "transform": "matrix(0.802634, 0.0702214, -0.0702214, 0.802634, 0, 0)",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__eco.webp"
+      },
+      {
+        "i": 1,
+        "w": 162.66,
+        "h": 206.98,
+        "opacity": "1",
+        "objectFit": "cover",
+        "transform": "matrix(0.802634, -0.0702214, 0.0702214, 0.802634, 0, 0)",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__gold.webp"
+      },
+      {
+        "i": 2,
+        "w": 177.86,
+        "h": 217.41,
+        "opacity": "1",
+        "objectFit": "cover",
+        "transform": "matrix(0.79346, 0.139908, -0.139908, 0.79346, 0, 0)",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__playful.webp"
+      },
+      {
+        "i": 3,
+        "w": 146.22,
+        "h": 194.98,
+        "opacity": "0",
+        "objectFit": "cover",
+        "transform": "matrix(0.8057, 0, 0, 0.8057, 0, 0)",
+        "naturalW": 1024,
+        "naturalH": 765,
+        "src": "packaging__panels.webp"
+      }
+    ]
+  },
+  "t2_hover": {
+    "cardOuterW": 344,
+    "cardOuterH": 288,
+    "wellW": 344,
+    "wellH": 258,
+    "nameH": 22,
+    "imgOrient": "landscape",
+    "dataN": "3",
+    "dataOrient": "landscape",
+    "nLayers": 3,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1024,
+      "naturalH": 768,
+      "boxW": 344,
+      "boxH": 258,
+      "opacity": "0",
+      "left": 0,
+      "top": 0,
+      "src": "packaging/packaging__gold.webp"
+    },
+    "stackInset": {
+      "w": 328,
+      "h": 242
+    },
+    "layers": [
+      {
+        "i": 0,
+        "w": 105.31,
+        "h": 242,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__gold.webp"
+      },
+      {
+        "i": 1,
+        "w": 105.31,
+        "h": 242,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__playful.webp"
+      },
+      {
+        "i": 2,
+        "w": 105.31,
+        "h": 242,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 765,
+        "src": "packaging__panels.webp"
+      }
+    ]
+  },
+  "t3_hover": {
+    "cardOuterW": 344,
+    "cardOuterH": 288,
+    "wellW": 344,
+    "wellH": 258,
+    "nameH": 22,
+    "imgOrient": "portrait",
+    "dataN": "4",
+    "dataOrient": "portrait",
+    "nLayers": 4,
+    "cover": {
+      "objectFit": "cover",
+      "naturalW": 1024,
+      "naturalH": 768,
+      "boxW": 181.48,
+      "boxH": 242,
+      "opacity": "0",
+      "left": 81.23,
+      "top": 8,
+      "src": "packaging/packaging__playful.webp"
+    },
+    "stackInset": {
+      "w": 328,
+      "h": 242
+    },
+    "layers": [
+      {
+        "i": 0,
+        "w": 160.98,
+        "h": 117.98,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__eco.webp"
+      },
+      {
+        "i": 1,
+        "w": 160.98,
+        "h": 117.98,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__gold.webp"
+      },
+      {
+        "i": 2,
+        "w": 160.98,
+        "h": 117.98,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__playful.webp"
+      },
+      {
+        "i": 3,
+        "w": 160.98,
+        "h": 117.98,
+        "opacity": "0",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 765,
+        "src": "packaging__panels.webp"
+      }
+    ]
+  },
+  "motion_t2": {
+    "cardOuterW": 344,
+    "cardOuterH": 288,
+    "wellW": 344,
+    "wellH": 258,
+    "nameH": 22,
+    "imgOrient": null,
+    "dataN": null,
+    "dataOrient": null,
+    "nLayers": 0,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1536,
+      "naturalH": 2752,
+      "boxW": 144,
+      "boxH": 258,
+      "opacity": "1",
+      "left": 100,
+      "top": 0,
+      "src": "templates/02-first-to-last-frame-animation.webp"
+    }
+  },
+  "motion_dialog": {
+    "w": 1112,
+    "h": 820
+  }
+}
