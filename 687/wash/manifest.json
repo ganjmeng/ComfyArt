@@ -1,0 +1,143 @@
+{
+  "issue": 687,
+  "phase": "phase1-rewash-4",
+  "skills": [
+    "social",
+    "interior",
+    "meta-ads",
+    "marketing-campaign"
+  ],
+  "note": "Instagram product posts x5; interior photo-to-render x2; meta multi-option boards x4; marketing multi-frame strips x8 (video+7). Brands rewritten.",
+  "files": [
+    {
+      "path": "687/wash/interior/cover.mp4",
+      "bytes": 523805,
+      "sha256_16": "8adbf99f6279ad60"
+    },
+    {
+      "path": "687/wash/interior/cover.webp",
+      "bytes": 594416,
+      "sha256_16": "44169e3f7661c99c"
+    },
+    {
+      "path": "687/wash/interior/examples/01.webp",
+      "bytes": 511456,
+      "sha256_16": "2a1601817cf2673d"
+    },
+    {
+      "path": "687/wash/interior/examples/02.webp",
+      "bytes": 449180,
+      "sha256_16": "a9965cda4d6461ec"
+    },
+    {
+      "path": "687/wash/marketing-campaign/cover.mp4",
+      "bytes": 447677,
+      "sha256_16": "6683a20fe2fed653"
+    },
+    {
+      "path": "687/wash/marketing-campaign/cover.webp",
+      "bytes": 232214,
+      "sha256_16": "6aa2ece953a89710"
+    },
+    {
+      "path": "687/wash/marketing-campaign/examples/01.webp",
+      "bytes": 107734,
+      "sha256_16": "fadf482f48de09e5"
+    },
+    {
+      "path": "687/wash/marketing-campaign/examples/02.webp",
+      "bytes": 201214,
+      "sha256_16": "0b0e7b99443c299d"
+    },
+    {
+      "path": "687/wash/marketing-campaign/examples/03.webp",
+      "bytes": 285834,
+      "sha256_16": "783295db63a0b579"
+    },
+    {
+      "path": "687/wash/marketing-campaign/examples/04.webp",
+      "bytes": 333822,
+      "sha256_16": "ac00eee9293da127"
+    },
+    {
+      "path": "687/wash/marketing-campaign/examples/05.webp",
+      "bytes": 160896,
+      "sha256_16": "c01abbaac8deda20"
+    },
+    {
+      "path": "687/wash/marketing-campaign/examples/06.webp",
+      "bytes": 177788,
+      "sha256_16": "09f17f70609f48a8"
+    },
+    {
+      "path": "687/wash/marketing-campaign/examples/07.webp",
+      "bytes": 266248,
+      "sha256_16": "0e203aa006721074"
+    },
+    {
+      "path": "687/wash/meta-ads/cover.mp4",
+      "bytes": 688870,
+      "sha256_16": "01913e5e5be4e05c"
+    },
+    {
+      "path": "687/wash/meta-ads/cover.webp",
+      "bytes": 265388,
+      "sha256_16": "bf7f8a8df9f6bc81"
+    },
+    {
+      "path": "687/wash/meta-ads/examples/01.webp",
+      "bytes": 328190,
+      "sha256_16": "7e47c91ea4f70d15"
+    },
+    {
+      "path": "687/wash/meta-ads/examples/02.webp",
+      "bytes": 260194,
+      "sha256_16": "cbc7ecbe62b165e6"
+    },
+    {
+      "path": "687/wash/meta-ads/examples/03.webp",
+      "bytes": 278568,
+      "sha256_16": "2b4dd7068c716fdb"
+    },
+    {
+      "path": "687/wash/meta-ads/examples/04.webp",
+      "bytes": 373156,
+      "sha256_16": "950439c3c54bcda9"
+    },
+    {
+      "path": "687/wash/social/cover.mp4",
+      "bytes": 257713,
+      "sha256_16": "994db54d447fcbd1"
+    },
+    {
+      "path": "687/wash/social/cover.webp",
+      "bytes": 138012,
+      "sha256_16": "0baff90d78092e8b"
+    },
+    {
+      "path": "687/wash/social/examples/01.webp",
+      "bytes": 278486,
+      "sha256_16": "3489b331340179e0"
+    },
+    {
+      "path": "687/wash/social/examples/02.webp",
+      "bytes": 577120,
+      "sha256_16": "e3dd0301ee934f91"
+    },
+    {
+      "path": "687/wash/social/examples/03.webp",
+      "bytes": 138012,
+      "sha256_16": "0baff90d78092e8b"
+    },
+    {
+      "path": "687/wash/social/examples/04.webp",
+      "bytes": 187636,
+      "sha256_16": "496ee34381423986"
+    },
+    {
+      "path": "687/wash/social/examples/05.webp",
+      "bytes": 182006,
+      "sha256_16": "5c9f31aa221bc259"
+    }
+  ]
+}
