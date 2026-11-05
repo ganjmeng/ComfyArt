@@ -1,0 +1,309 @@
+{
+  "packaging_tile_count": 5,
+  "pkg_t1_rest": {
+    "cardW": 388,
+    "cardH": 291,
+    "dataN": null,
+    "dataOrient": null,
+    "nLayers": 0,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1024,
+      "naturalH": 768,
+      "boxW": 388,
+      "boxH": 291,
+      "opacity": "1",
+      "src": "packaging/packaging__eco.webp"
+    }
+  },
+  "pkg_t2_rest": {
+    "cardW": 388,
+    "cardH": 291,
+    "dataN": "3",
+    "dataOrient": "landscape",
+    "nLayers": 3,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1024,
+      "naturalH": 768,
+      "boxW": 388,
+      "boxH": 291,
+      "opacity": "0",
+      "src": "packaging/packaging__gold.webp"
+    },
+    "layers": [
+      {
+        "i": 0,
+        "w": 294.4,
+        "h": 182.26,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "matrix(0.754297, 0.0659924, -0.0659924, 0.754297, 0, 32.9298)",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__gold.webp"
+      },
+      {
+        "i": 1,
+        "w": 294.4,
+        "h": 182.26,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "matrix(0.754297, -0.0659924, 0.0659924, 0.754297, 0, 32.9298)",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__playful.webp"
+      },
+      {
+        "i": 2,
+        "w": 304.88,
+        "h": 204.82,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "matrix(0.745675, 0.131483, -0.131483, 0.745675, 0, 32.9298)",
+        "naturalW": 1024,
+        "naturalH": 765,
+        "src": "packaging__panels.webp"
+      }
+    ],
+    "pileWpct": 78.58,
+    "pileHpct": 70.38
+  },
+  "pkg_t3_rest": {
+    "cardW": 388,
+    "cardH": 291,
+    "dataN": "4",
+    "dataOrient": "portrait",
+    "nLayers": 4,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1024,
+      "naturalH": 768,
+      "boxW": 388,
+      "boxH": 291,
+      "opacity": "0",
+      "src": "packaging/packaging__playful.webp"
+    },
+    "layers": [
+      {
+        "i": 0,
+        "w": 184.53,
+        "h": 235.18,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "matrix(0.802634, 0.0702214, -0.0702214, 0.802634, 0, 0)",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__eco.webp"
+      },
+      {
+        "i": 1,
+        "w": 184.53,
+        "h": 235.18,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "matrix(0.802634, -0.0702214, 0.0702214, 0.802634, 0, 0)",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__gold.webp"
+      },
+      {
+        "i": 2,
+        "w": 201.8,
+        "h": 247,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "matrix(0.79346, 0.139908, -0.139908, 0.79346, 0, 0)",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__playful.webp"
+      },
+      {
+        "i": 3,
+        "w": 165.85,
+        "h": 221.57,
+        "opacity": "0",
+        "objectFit": "contain",
+        "transform": "matrix(0.8057, 0, 0, 0.8057, 0, 0)",
+        "naturalW": 1024,
+        "naturalH": 765,
+        "src": "packaging__panels.webp"
+      }
+    ],
+    "pileWpct": 52.01,
+    "pileHpct": 84.88
+  },
+  "pkg_t4_rest": {
+    "cardW": 388,
+    "cardH": 291,
+    "dataN": null,
+    "dataOrient": null,
+    "nLayers": 0,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1024,
+      "naturalH": 765,
+      "boxW": 387.98,
+      "boxH": 289.86,
+      "opacity": "1",
+      "src": "packaging/packaging__panels.webp"
+    }
+  },
+  "pkg_t2_hover": {
+    "cardW": 388,
+    "cardH": 291,
+    "dataN": "3",
+    "dataOrient": "landscape",
+    "nLayers": 3,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1024,
+      "naturalH": 768,
+      "boxW": 388,
+      "boxH": 291,
+      "opacity": "0",
+      "src": "packaging/packaging__gold.webp"
+    },
+    "layers": [
+      {
+        "i": 0,
+        "w": 119.44,
+        "h": 275,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__gold.webp"
+      },
+      {
+        "i": 1,
+        "w": 119.44,
+        "h": 275,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__playful.webp"
+      },
+      {
+        "i": 2,
+        "w": 119.44,
+        "h": 275,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 765,
+        "src": "packaging__panels.webp"
+      }
+    ],
+    "pileWpct": 95.86,
+    "pileHpct": 94.5
+  },
+  "pkg_t3_hover": {
+    "cardW": 388,
+    "cardH": 291,
+    "dataN": "4",
+    "dataOrient": "portrait",
+    "nLayers": 4,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1024,
+      "naturalH": 768,
+      "boxW": 388,
+      "boxH": 291,
+      "opacity": "0",
+      "src": "packaging/packaging__playful.webp"
+    },
+    "layers": [
+      {
+        "i": 0,
+        "w": 182.59,
+        "h": 134.08,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__eco.webp"
+      },
+      {
+        "i": 1,
+        "w": 182.59,
+        "h": 134.08,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__gold.webp"
+      },
+      {
+        "i": 2,
+        "w": 182.59,
+        "h": 134.08,
+        "opacity": "1",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 768,
+        "src": "packaging__playful.webp"
+      },
+      {
+        "i": 3,
+        "w": 182.59,
+        "h": 134.08,
+        "opacity": "0",
+        "objectFit": "contain",
+        "transform": "none",
+        "naturalW": 1024,
+        "naturalH": 765,
+        "src": "packaging__panels.webp"
+      }
+    ],
+    "pileWpct": 95.87,
+    "pileHpct": 94.5
+  },
+  "packaging_dialog": {
+    "w": 1200,
+    "h": 820
+  },
+  "motion_t2_selected": {
+    "cardW": 388,
+    "cardH": 291,
+    "dataN": null,
+    "dataOrient": null,
+    "nLayers": 0,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1536,
+      "naturalH": 2752,
+      "boxW": 162.41,
+      "boxH": 291,
+      "opacity": "1",
+      "src": "templates/02-first-to-last-frame-animation.webp"
+    }
+  },
+  "motion_t2_unselected_hover": {
+    "cardW": 388,
+    "cardH": 291,
+    "dataN": null,
+    "dataOrient": null,
+    "nLayers": 0,
+    "cover": {
+      "objectFit": "contain",
+      "naturalW": 1536,
+      "naturalH": 2752,
+      "boxW": 162.41,
+      "boxH": 291,
+      "opacity": "1",
+      "src": "templates/02-first-to-last-frame-animation.webp"
+    }
+  },
+  "motion_dialog": {
+    "w": 1200,
+    "h": 820
+  }
+}
