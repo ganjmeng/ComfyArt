@@ -1,0 +1,84 @@
+{
+  "rest": {
+    "cardW": 344,
+    "cardH": 258,
+    "pileWpct": 78.13,
+    "pileHpct": 69.89,
+    "n": 3,
+    "layers": [
+      {
+        "i": 0,
+        "w": "328px",
+        "h": "183.984px",
+        "fit": "cover",
+        "origin": "164px 91.9922px",
+        "src": "packaging__gold@thumb.webp",
+        "brW": 259.6,
+        "brH": 160.4
+      },
+      {
+        "i": 1,
+        "w": "328px",
+        "h": "183.984px",
+        "fit": "cover",
+        "origin": "164px 91.9922px",
+        "src": "packaging__playful@thumb.webp",
+        "brW": 259.6,
+        "brH": 160.4
+      },
+      {
+        "i": 2,
+        "w": "328px",
+        "h": "183.984px",
+        "fit": "cover",
+        "origin": "164px 91.9922px",
+        "src": "packaging__panels@thumb.webp",
+        "brW": 268.8,
+        "brH": 180.3
+      }
+    ]
+  },
+  "expanded": {
+    "n": 3,
+    "srcs": [
+      "packaging__gold@thumb.webp",
+      "packaging__playful@thumb.webp",
+      "packaging__panels@thumb.webp"
+    ],
+    "cells": [
+      {
+        "w": "105.312px",
+        "h": "242px",
+        "fit": "contain",
+        "transform": "none"
+      },
+      {
+        "w": "105.312px",
+        "h": "242px",
+        "fit": "contain",
+        "transform": "none"
+      },
+      {
+        "w": "105.312px",
+        "h": "242px",
+        "fit": "contain",
+        "transform": "none"
+      }
+    ]
+  },
+  "motion": {
+    "fit": "contain",
+    "pos": "50% 50%",
+    "bg": "rgb(244, 244, 244)",
+    "well": [
+      344,
+      258
+    ],
+    "natural": [
+      357,
+      640
+    ]
+  },
+  "chip_transition": "background-color 0.2s, color 0.2s, border-color 0.2s",
+  "hover_dur": ".1s"
+}
