@@ -1,0 +1,30 @@
+{
+  "tile_count": 5,
+  "master_rest": {
+    "imgOrient": "portrait",
+    "stackMounted": false,
+    "nLayers": 0,
+    "directImgCount": 1,
+    "allImgCountInWell": 1,
+    "beforeContent": "none",
+    "afterContent": "\"\"",
+    "afterBoxShadow": "rgb(120, 120, 120) 0px 0px 0px 1px inset",
+    "cover": {
+      "objectFit": "contain",
+      "objectPosition": "50% 50%",
+      "naturalW": 270,
+      "naturalH": 360,
+      "boxW": 181.48,
+      "boxH": 242,
+      "ratio": 0.75,
+      "src": "http://127.0.0.1:4173/comfyart/skills/packaging/master.webp",
+      "transform": "none"
+    }
+  },
+  "zoom": {
+    "imgCount": 1,
+    "naturalW": 270,
+    "naturalH": 360,
+    "src": "http://127.0.0.1:4173/comfyart/skills/packaging/master.webp"
+  }
+}
