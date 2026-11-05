@@ -1,0 +1,60 @@
+{
+  "idle-zh": {
+    "c2c": 40,
+    "gap": 8,
+    "pref": {
+      "x": 307,
+      "w": 32,
+      "h": 32,
+      "cx": 323
+    },
+    "slot": {
+      "x": 347,
+      "w": 32,
+      "h": 32,
+      "cx": 363
+    },
+    "icon": {
+      "x": 315,
+      "w": 16,
+      "h": 16,
+      "cx": 323
+    },
+    "stroke": 2.5,
+    "hasHash": true
+  },
+  "wait-zh": {
+    "outRows": 0,
+    "statusBoxes": 0,
+    "footers": 0
+  },
+  "idle-en": {
+    "c2c": 40,
+    "gap": 8,
+    "pref": {
+      "x": 307,
+      "w": 32,
+      "h": 32,
+      "cx": 323
+    },
+    "slot": {
+      "x": 347,
+      "w": 32,
+      "h": 32,
+      "cx": 363
+    },
+    "icon": {
+      "x": 315,
+      "w": 16,
+      "h": 16,
+      "cx": 323
+    },
+    "stroke": 2.5,
+    "hasHash": true
+  },
+  "wait-en": {
+    "outRows": 0,
+    "statusBoxes": 0,
+    "footers": 0
+  }
+}
