@@ -1,0 +1,15 @@
+{
+  "tag": "submit-en-light",
+  "mode": "submit",
+  "lang": "en",
+  "theme": "light",
+  "prompt_has_ask_user": false,
+  "bubble": "Q: What logo style would you like for Moka?\nA: Minimal",
+  "tip": "The user wants me to ask one multiple-choice question about logo style, then continue based on the answer. Memory says ask first, then generate. Let me check canvas quickly? Empty canvas. Let me ask the question.",
+  "tip_leak": false,
+  "pre_gen_confirm_detected": false,
+  "early_bot": "",
+  "generation_continued": true,
+  "completion_excerpt": "Generation complete: a minimal single-color line logo for Moka — a thin-stroke cup with steam swirls and a small heart on the cup, sitting on a saucer, with a clean wide-tracked \"MOKA\" wordmark below, all in black on a warm cream background. It was made with recraft-ai/recraft-v3, since this is a logo/vector-style task.\n\nNext step: I can drop the thin square border for a fully open composition, remove the heart for a more neutral mark, or produce a horizontal lockup and a one-color version for cups and signage — just say which and I'll refine it.",
+  "qmemo": 0
+}
