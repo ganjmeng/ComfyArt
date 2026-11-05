@@ -1,0 +1,13 @@
+{
+  "tip": "13f9558d9664083f73a604df8b03d47ba689d7f0",
+  "issue": 755,
+  "shots": {
+    "hermes_card_zh": "ours/hermes-card-zh-light.png",
+    "hermes_card_en": "ours/hermes-card-en-light.png",
+    "botsettings_zh": "ours/botsettings-hermes-zh-light.png",
+    "botsettings_en": "ours/botsettings-hermes-en-light.png",
+    "picker_zh": "picker/picker-with-hermes-zh-light.png",
+    "picker_en": "picker/picker-with-hermes-en-light.png"
+  },
+  "notes": "Hermes appears in Agent Settings and mode picker (not hidden). Unavailable when hermes not on PATH. SSH host + profile fields on hermes card. Real conversation: pending Hermes install/API key on this box."
+}
