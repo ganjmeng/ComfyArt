@@ -1,0 +1,16 @@
+thumbnail ok
+poster ok
+packaging ok
+meta-ads ok
+marketing-campaign ok
+interior ok
+social ok
+banner ok
+product ok
+brand ok
+character ok
+logo-material ok
+mobile-ui ok
+web-product ok
+multi-angle ok
+motion ok
