@@ -1,0 +1,7 @@
+{
+  "placeholder": "Run Hermes on another machine (host alias or user@host, key login). Empty = local hermes",
+  "match": true,
+  "clipped": true,
+  "tw": 605.25,
+  "inner": 454
+}

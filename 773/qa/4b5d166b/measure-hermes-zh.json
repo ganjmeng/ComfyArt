@@ -1,0 +1,32 @@
+{
+  "chip": "已连接",
+  "chipOn": true,
+  "labels": [
+    "Hermes SSH 主机",
+    "Hermes 配置档"
+  ],
+  "ssh": {
+    "placeholder": "在另一台机器上运行 Hermes（主机别名或 user@host，密钥登录）。留空 = 本机 hermes",
+    "value": "",
+    "clientWidth": 474,
+    "innerWidth": 454,
+    "placeholderTextWidth": 565.816650390625,
+    "clippedByWidth": true,
+    "textOverflow": "clip",
+    "height": "20px",
+    "endsAtLiuKongEquals": false
+  },
+  "profile": {
+    "placeholder": "给 ComfyArt 专用的配置档（hermes -p <名字>），见 Agent 文档。留空 = Hermes 默认配置档",
+    "value": "comfyart",
+    "clientWidth": 474,
+    "innerWidth": 454,
+    "placeholderTextWidth": 603.816650390625,
+    "clippedByWidth": true,
+    "textOverflow": "clip",
+    "height": "20px",
+    "endsAtLiuKongEquals": false
+  },
+  "expectedMatch": true,
+  "labelBlockGapPx": 0
+}
