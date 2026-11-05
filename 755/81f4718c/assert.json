@@ -1,0 +1,9 @@
+{
+  "tip": "81f4718cd4eae91a375c3b03787448dbb54fbb22",
+  "issue": 755,
+  "shots": {
+    "settings_connected_zh": "ours/settings-hermes-connected-zh-light.png",
+    "botsettings_connected_zh": "ours/botsettings-hermes-connected-zh-light.png"
+  },
+  "notes": "Design HOLD recut: Hermes SSH host placeholder complete (留空 = 使用本机 Hermes) and wraps in textarea; labels unchanged; card 已连接."
+}
