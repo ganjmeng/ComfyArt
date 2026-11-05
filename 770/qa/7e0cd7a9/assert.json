@@ -1,0 +1,72 @@
+{
+  "ok": true,
+  "verdict": "PASS",
+  "tip": "7e0cd7a9",
+  "tip_full": "7e0cd7a95d67f9ef6636d54a74352cc812d9495e",
+  "pr": 770,
+  "closes": 769,
+  "how": "real full App http://127.0.0.1:8199/comfyart/ + canvas + composer; ComfyUI --cpu --listen 127.0.0.1 --port 8199; Playwright Firefox @1920×1072 (chrome) and 1440×900 (wait/completion); independent recapture",
+  "items": {
+    "1_hash_ref_button": {
+      "ok": true,
+      "note": "ca-refbtn (#) on composer right; click creates+links; second click unlinks. @ Add menu unchanged (EN Add Assets / ZH 添加素材). Lovart missing # is not a defect."
+    },
+    "2_cube_metrics": {
+      "ok": true,
+      "viewport": "1920×1072",
+      "pref": {
+        "x": 307,
+        "y": 1020,
+        "w": 32,
+        "h": 32,
+        "cx": 323,
+        "cy": 1036
+      },
+      "primary_send": {
+        "x": 347,
+        "y": 1020,
+        "w": 32,
+        "h": 32,
+        "cx": 363,
+        "cy": 1036
+      },
+      "icon": {
+        "w": 16,
+        "h": 16,
+        "cx": 323
+      },
+      "gap": 8,
+      "c2c": 40,
+      "strokeAttr": 2.5,
+      "svg": "lucide-box (equilateral wireframe Cube, 3 faces; not Cuboid)",
+      "lovart_lock_note": "Lovart entry ~[1239,1023] / primary ~[1279,1023]; ours agent-panel composer y≈1020, c2c/gap/32/16 match."
+    },
+    "3_no_leftover_outputting": {
+      "ok": true,
+      "wait_en": {
+        "outRows": 0,
+        "statusBoxes": 0,
+        "emptyFooters": 0,
+        "body": "Got it — … I'll wait … before creating any images."
+      },
+      "wait_zh": {
+        "outRows": 0,
+        "statusBoxes": 0,
+        "emptyFooters": 0,
+        "body": "知道了 — …先不生成图片。"
+      },
+      "completion_en": {
+        "outRows": 0,
+        "statusBoxes": 0,
+        "emptyFooters": 0,
+        "body": "已生成完成：Moka…"
+      }
+    }
+  },
+  "sbs": [
+    "sbs-cube-en.png",
+    "sbs-cube-zh.png",
+    "sbs-idle-band-en.png"
+  ],
+  "hold_reasons": []
+}
