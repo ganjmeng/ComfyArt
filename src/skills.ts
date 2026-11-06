@@ -96,8 +96,8 @@ const WASH_786 = '8ab5aa8044d71e9518ae5f054eb2f8c7e77dd127'
 const WASH_788 = '1f66faf48e8dbd625b4acf79505adb320586ad14'
 /** #788 r2: featured 03 ELINA VOS rewash (tank-neck jumpsuit; review-assets 788/wash-r2). Other featured stay WASH_788. */
 const WASH_788_F03 = '03cd43443ea200d8c372fe083245b67ef13c7d27'
-/** logo-material rewash: cover VELA (+hero mp4), examples VELA/KAIO/LUMORA, featured HALO/QUILL/PRISM/TERRA (review-assets wash-lm, kie I2I). */
-const WASH_LM = 'ac63ee7025e10a34202cc1bcb658a86df9f16136'
+/** logo-material rewash: cover VELA (+hero mp4), examples VELA/KAIO/LUMORA, featured HALO/QUILL/PRISM/TERRA (review-assets wash-lm @b72f119a, featured-r2 QUILL=Q; kie I2I). */
+const WASH_LM = 'b72f119af80013b2dc6119e94713b8a2354ac6c4'
 const WASH_786_R2 = 'f5c9d7770df7a8ef92cd4411371ff5b552b83eee'
 const COVERS_581: Record<string, readonly [string, string]> = {
   'poster-differentiated-compiler': ['494/covers-v3', COVER_V3], 'rednote-cover-maker': ['494/covers-v3', COVER_V3], 'brand-identity-director': ['786/wash', WASH_786], /* #786 SOLENNE */
@@ -130,7 +130,7 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   'motion-poster-generator': ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'interior-architectural-visualization': ['580/featured-v1/interior', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'universal-multi-angle-grid': ['580/featured-v2/multi-angle', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
-  'logo-material-explorer': ['wash-lm/logo-material/featured', WASH_LM, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'logo-material-explorer': ['wash-lm/logo-material/featured-r2', WASH_LM, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'meta-ads-creative-director': ['580/featured-v2/meta-ads', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'mobile-app-visual-design': ['580/featured-v2/mobile-ui', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'web-product-visual-design': ['580/featured-v2/web-product', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],

@@ -40,7 +40,7 @@ def test_builtin_covers(got):
     """#581 washed covers stay pinned; #594 Phase1 new 6 covers-v4 @ WASH_594."""
     covers = got["builtinCovers"]
     washed = ["poster-differentiated-compiler", "rednote-cover-maker", "brand-identity-director", "packaging-design-director", "banner-design-director", "character-sheet-design", "product-tvc-advertisement-generator", "motion-poster-generator", "interior-architectural-visualization"]
-    assert covers["logo-material-explorer"] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/ac63ee7025e10a34202cc1bcb658a86df9f16136/wash-lm/logo-material.webp"  # VELA rewash
+    assert covers["logo-material-explorer"] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/b72f119af80013b2dc6119e94713b8a2354ac6c4/wash-lm/logo-material.webp"  # VELA rewash
     phase1_new = ["universal-multi-angle-grid", "meta-ads-creative-director", "mobile-app-visual-design", "web-product-visual-design", "marketing-campaign-generator"]
     v3, pin = "3c9b87e7eae72164efdd1fe30e00f576144475f4", {
         "banner-design-director": ("778/wash", "79bf01dc6342363348671c368fa1d467706a0e0f"),  # #778 fintech cover
@@ -96,7 +96,7 @@ def test_builtin_videos_unique(got):
     assert "custom-workflow" not in vids
     tip = "1bbb3f208f18b26ef95c8d9f16efeea111c43ac7"
     pin623 = "d03ea7938877d084c201a94ef51f943dd0e061b9"
-    assert vids.pop("logo-material-explorer") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/ac63ee7025e10a34202cc1bcb658a86df9f16136/wash-lm/logo-material/hero.mp4"  # VELA hero
+    assert vids.pop("logo-material-explorer") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b72f119af80013b2dc6119e94713b8a2354ac6c4/wash-lm/logo-material/hero.mp4"  # VELA hero
     new6 = ("universal-multi-angle-grid", "meta-ads-creative-director", "mobile-app-visual-design", "web-product-visual-design", "marketing-campaign-generator")
     for sid in new6:
         assert vids.pop(sid) == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{pin623}/594/wash/videos/{asset_dir(sid)}.mp4"
