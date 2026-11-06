@@ -96,6 +96,8 @@ const WASH_786 = '8ab5aa8044d71e9518ae5f054eb2f8c7e77dd127'
 const WASH_788 = '1f66faf48e8dbd625b4acf79505adb320586ad14'
 /** #788 r2: featured 03 ELINA VOS rewash (tank-neck jumpsuit; review-assets 788/wash-r2). Other featured stay WASH_788. */
 const WASH_788_F03 = '03cd43443ea200d8c372fe083245b67ef13c7d27'
+/** logo-material rewash: cover VELA (+hero mp4), examples VELA/KAIO/LUMORA, featured HALO/QUILL/PRISM/TERRA (review-assets wash-lm @b72f119a, featured-r2 QUILL=Q; kie I2I). */
+const WASH_LM = 'b72f119af80013b2dc6119e94713b8a2354ac6c4'
 const WASH_786_R2 = 'f5c9d7770df7a8ef92cd4411371ff5b552b83eee'
 const COVERS_581: Record<string, readonly [string, string]> = {
   'poster-differentiated-compiler': ['494/covers-v3', COVER_V3], 'rednote-cover-maker': ['494/covers-v3', COVER_V3], 'brand-identity-director': ['786/wash', WASH_786], /* #786 SOLENNE */
@@ -103,7 +105,7 @@ const COVERS_581: Record<string, readonly [string, string]> = {
   'banner-design-director': ['778/wash', WASH_778], // #778: fintech hero cover (was VENTUR brand board)
   'character-sheet-design': ['788/wash', WASH_788], // #788 SIENNA VALE
   'product-tvc-advertisement-generator': ['784/wash', WASH_784], /* #784: BR lip-tube wash; featured stays 779 */ 'motion-poster-generator': ['494/covers-v3', COVER_V3], 'interior-architectural-visualization': ['494/covers-v3', COVER_V3],
-  'universal-multi-angle-grid': ['494/covers-v4', COVER_V4], 'logo-material-explorer': ['494/covers-v4', COVER_V4],
+  'universal-multi-angle-grid': ['494/covers-v4', COVER_V4], 'logo-material-explorer': ['wash-lm', WASH_LM], // VELA
   'meta-ads-creative-director': ['494/covers-v4', COVER_V4], 'mobile-app-visual-design': ['494/covers-v4', COVER_V4],
   'web-product-visual-design': ['494/covers-v4', COVER_V4], 'marketing-campaign-generator': ['494/covers-v4', COVER_V4],
 }
@@ -128,7 +130,7 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   'motion-poster-generator': ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'interior-architectural-visualization': ['580/featured-v1/interior', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'universal-multi-angle-grid': ['580/featured-v2/multi-angle', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
-  'logo-material-explorer': ['580/featured-v2/logo-material', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'logo-material-explorer': ['wash-lm/logo-material/featured-r2', WASH_LM, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'meta-ads-creative-director': ['580/featured-v2/meta-ads', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'mobile-app-visual-design': ['580/featured-v2/mobile-ui', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'web-product-visual-design': ['580/featured-v2/web-product', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
@@ -393,7 +395,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
   { id: 'logo-material-explorer', name: t('skills.logoMaterialExplorer'), instructions: 'You are a production 3D material artist for logo finish studies. Explore materials only — never redesign the mark.\n1) Lock geometry: keep logo paths, proportions and negative space identical to the provided file.\n2) Materials: vary finish only (metal, glass, plastic, fabric, ceramic) per selected preset or Additional Details.\n3) Stage: neutral studio turntable or soft gradient; soft product lighting; no busy brand scenes.\n4) Scope: one material study per frame; do not invent a full VI kit or packaging system.\n5) Refs: pass the logo shape id in refs (ref_modes content) on every generate_image call.',
     category: 'branding',
     cover: cover('logo-material-explorer'), quickStartCover: quickStartCover('logo-material-explorer'), quickStartCoverFit: 'contain',
-    featured: feedCovers('logo-material-explorer'), video: video594('logo-material-explorer'),  // #748 product: left = 1 video cover + 3 examples
+    featured: feedCovers('logo-material-explorer'), video: pinned('wash-lm/logo-material', WASH_LM, 'hero.mp4'), /* VELA hero (was 594 mp4) */  // #748 product: left = 1 video cover + 3 examples
     presets: [P('metal', '金属拉丝', 'Brushed metal', 'Style: brushed metal 3D logo material study on a neutral turntable, identical mark geometry, soft studio light, no redesign.'), P('glass', '透明玻璃', 'Clear glass', 'Style: clear glass 3D logo material study with soft refraction, identical mark geometry, soft gradient backdrop.'), P('fabric', '织物绣章', 'Fabric emblem', 'Style: woven fabric or embroidered emblem material study of the same logo, identical geometry, soft studio light.'), P('ceramic', '陶瓷釉面', 'Ceramic glaze', 'Style: glazed ceramic 3D logo material study, identical mark geometry, soft highlight, neutral seamless set.')],
     inputs: REF_CARD_INPUTS_687 },
   { id: 'meta-ads-creative-director', name: t('skills.metaAdsCreative'), instructions: 'You are a production Meta paid-social creative director. Ship a ratio pack that shares one idea.\n1) Brief: pull product, audience, offer and CTA from Additional Details; put every on-art phrase in quotes.\n2) Ratios: deliver 1:1 feed, 4:5 feed and 9:16 story/reel that share motif, palette and CTA.\n3) Treatment: prefer photo-led UGC or product-hero; avoid static website-banner layouts.\n4) Mobile: short high-contrast type; safe margins for UI chrome; one clear CTA.\n5) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
