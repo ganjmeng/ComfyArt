@@ -1,0 +1,76 @@
+{
+  "assets": [
+    {
+      "skill_id": "logo-material",
+      "slot": "cover",
+      "index": 1,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Pure black background, split composition: LEFT half shows an original radial abstract mark: five curved petal-like blades swirling around a small circular center, rotational symmetry as a flat solid white 2D graphic; RIGHT half shows the EXACT SAME shape as a glossy mirror-chrome 3D object with reflections, same size and orientation. Minimal, premium. No grid, no letter N. Original abstract design, not any real company logo. Absolutely NO text, NO letters except where specified, NO words, NO watermark. One single mark only. Completely new design versus the input image."
+    },
+    {
+      "skill_id": "logo-material",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "src/hero.png",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Material showcase of an original radial abstract mark: five curved petal-like blades swirling around a small circular center, rotational symmetry: the same mark rendered three times side by side in brushed metal, clear glass and glazed ceramic on a dark seamless studio. No letter N. Original abstract design, not any real company logo. Absolutely NO text, NO letters except where specified, NO words, NO watermark. One single mark only. Completely new design versus the input image."
+    },
+    {
+      "skill_id": "logo-material",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "src/feat02.webp",
+      "aspect_ratio": "1:1",
+      "resolution": "1K",
+      "prompt": "Iridescent inflatable puffy 3D balloon letterforms spelling 'KAIO' (only these four letters), holographic pearlescent shimmer, floating on a soft dark gradient studio background. No other text. Original abstract design, not any real company logo. Absolutely NO text, NO letters except where specified, NO words, NO watermark. One single mark only. Completely new design versus the input image."
+    },
+    {
+      "skill_id": "logo-material",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "src/feat03.webp",
+      "aspect_ratio": "1:1",
+      "resolution": "1K",
+      "prompt": "A single iridescent sphere wrapped in brushed holographic ribbon bands, pearlescent rainbow sheen, centered on a soft neutral studio background. No bow, no letters, no text. Original abstract design, not any real company logo. Absolutely NO text, NO letters except where specified, NO words, NO watermark. One single mark only. Completely new design versus the input image."
+    },
+    {
+      "skill_id": "logo-material",
+      "slot": "featured",
+      "index": 1,
+      "source_path": "src/feat01.webp",
+      "aspect_ratio": "1:1",
+      "resolution": "1K",
+      "prompt": "An original abstract 3D mark shaped like an open ring halo with a crescent cut, liquid mirror-chrome material, isolated in a dark studio with subtle rim light. No letters. Original abstract design, not any real company logo. Absolutely NO text, NO letters except where specified, NO words, NO watermark. One single mark only. Completely new design versus the input image."
+    },
+    {
+      "skill_id": "logo-material",
+      "slot": "featured",
+      "index": 2,
+      "source_path": "src/feat02.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "An original single abstract letterform-like glyph shaped like a quill stroke, iridescent inflatable puffy material with holographic sheen, isolated on a black background. No readable words. Original abstract design, not any real company logo. Absolutely NO text, NO letters except where specified, NO words, NO watermark. One single mark only. Completely new design versus the input image."
+    },
+    {
+      "skill_id": "logo-material",
+      "slot": "featured",
+      "index": 3,
+      "source_path": "src/feat03.webp",
+      "aspect_ratio": "3:4",
+      "resolution": "1K",
+      "prompt": "An original monumental geometric 3D mark shaped like a faceted triangular prism, frosted glass material with soft refraction, standing in a bright light-grey studio. No letters. Original abstract design, not any real company logo. Absolutely NO text, NO letters except where specified, NO words, NO watermark. One single mark only. Completely new design versus the input image."
+    },
+    {
+      "skill_id": "logo-material",
+      "slot": "featured",
+      "index": 4,
+      "source_path": "src/feat04.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "An original circular badge with an abstract leaf-and-sun emblem, made as glazed terracotta ceramic, isolated product shot on a seamless warm-grey studio background. NOT on a desk, no props, no lifestyle scene, no letters. Original abstract design, not any real company logo. Absolutely NO text, NO letters except where specified, NO words, NO watermark. One single mark only. Completely new design versus the input image."
+    }
+  ]
+}
