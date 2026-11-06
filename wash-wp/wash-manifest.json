@@ -1,0 +1,132 @@
+{
+  "model": "openai/gpt-image-2.5-flare/edit",
+  "note": "WaveSpeed fallback — kie 402 Credits insufficient. I2I from current Northboard stills.",
+  "assets": [
+    {
+      "id": "cover",
+      "slot": "cover",
+      "index": 1,
+      "source": "src/cover.webp",
+      "aspect_ratio": "4:3",
+      "out": "wash/web-product/cover.png",
+      "prompt": "Completely redesign this into a Web Product Visual Design cover presentation. Soft blue-to-purple gradient background. Exactly THREE browser windows in a horizontal row, evenly spaced, each with a light chrome top bar (dots + URL). LEFT browser: fictional travel booking site ORIVA — coastal destination photo hero, destination search bar (place / check-in / check-out / guests), recommended destination cards; short original marketing copy, never write Wanderly or 'The world is waiting.'. MIDDLE browser: fictional fitness landing KINLO — original photo of a person exercising plus class cards and schedule chips; never write FitLife or 'Stronger every day. Better in every way.'; original short slogans only. RIGHT browser: fictional light wallet/asset overview AYRA — soft cream/white UI, balance cards, spending chart, account list. All brands fictional and clearly readable as ORIVA / KINLO / AYRA in the browser chrome or page header. No Lovart wordmark, no Northboard, no real trademarks, no App Store badges, no watermark, no caption text outside the browser windows. Photoreal UI mockups, crisp typography, premium product-design portfolio look."
+    },
+    {
+      "id": "ex01",
+      "slot": "examples",
+      "index": 1,
+      "source": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "out": "wash/web-product/examples/01.png",
+      "prompt": "Full-bleed wide desktop screenshot of a fictional travel booking website ORIVA. Top navigation with ORIVA wordmark, Links: Destinations, Stays, Experiences, Sign in. Large hero with original coastal photography. Prominent destination search strip with fields Place, Check-in, Check-out, Guests and a search button. Below: a row of recommended destination cards with soft photos and short original labels. Clean modern travel UI, airy spacing, soft blues and sand tones. Original copy only — never Wanderly, never 'The world is waiting.', never Lovart, never Northboard. No watermark. Looks like a real production landing page, not a poster."
+    },
+    {
+      "id": "ex02",
+      "slot": "examples",
+      "index": 2,
+      "source": "src/feat02.webp",
+      "aspect_ratio": "9:16",
+      "out": "wash/web-product/examples/02.png",
+      "prompt": "Tall vertical product-detail webpage for fictional jewelry brand AUREN. Large hero photo of an elegant necklace on a soft neutral backdrop. Below: product title, material/spec/size chips, price, Add to bag button. Sections for Pair with and You may also like with smaller jewelry thumbnails. Refined serif + sans typography, cream and charcoal palette, luxury ecommerce feel. Never write MAISON, Lovart, or Northboard. Original copy only. No watermark. Mobile-web portrait composition."
+    },
+    {
+      "id": "ex03",
+      "slot": "examples",
+      "index": 3,
+      "source": "src/feat03.webp",
+      "aspect_ratio": "16:9",
+      "out": "wash/web-product/examples/03.png",
+      "prompt": "Wide desktop admin dashboard for fictional supply-chain analytics product NEXARA. Top filter bar (date range, region, SKU). Four KPI metric cards with sparkline accents. Large line chart for shipment volume. Regional performance table below with status pills. Cool slate + teal data-viz palette, dense but readable enterprise UI. Never write SCM Control Tower, TailAdmin, Lovart, or Northboard. Original labels only. No watermark."
+    },
+    {
+      "id": "ex04",
+      "slot": "examples",
+      "index": 4,
+      "source": "src/feat01.webp",
+      "aspect_ratio": "3:2",
+      "out": "wash/web-product/examples/04.png",
+      "prompt": "Desktop project workbench UI for fictional product ARKO. Dark charcoal sidebar with nav icons. Main area: Good morning greeting with user first name, project progress bars, a task completion donut chart, recent activity feed, and upcoming due dates list. Modern productivity SaaS, soft violet accents on dark UI. Never write Flowstack, Lovart, or Northboard. Original copy only. No watermark."
+    },
+    {
+      "id": "ex05",
+      "slot": "examples",
+      "index": 5,
+      "source": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "out": "wash/web-product/examples/05.png",
+      "prompt": "Wide split login experience for the same fictional supply-chain company NEXARA. LEFT half: clean login card with NEXARA logo, Email, Password, Sign in button, and SSO options (Continue with Google / Microsoft style but generic). RIGHT half: world shipping-route map with glowing arcs, plus KPI chips for In transit, Inventory, Exceptions. Professional logistics aesthetic, deep navy and cyan. Never write SCM Control Tower, Lovart, or Northboard. No watermark."
+    },
+    {
+      "id": "ex06",
+      "slot": "examples",
+      "index": 6,
+      "source": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "out": "wash/web-product/examples/06.png",
+      "prompt": "Light medical patient portal webpage for fictional brand AELEN. Soft white/teal UI. Top nav: Appointments, Find a doctor, Health records, Billing. Main: Upcoming visit card with doctor avatar and time, Health summary tiles (vitals, meds, messages). Calm trustworthy healthcare design. Never write MediCare, SAELIN, FitLife, Lovart, or Northboard. Do not reuse any prior health slogan. Original short copy only. No watermark."
+    },
+    {
+      "id": "ex07",
+      "slot": "examples",
+      "index": 7,
+      "source": "src/feat03.webp",
+      "aspect_ratio": "16:9",
+      "out": "wash/web-product/examples/07.png",
+      "prompt": "Operations analytics admin dashboard for fictional brand TORVA. KPI row: Browse, Visitors, Bounce, Duration, Conversion. Large traffic area chart. Traffic sources list and conversion funnel panel. Clean indigo/gray analytics UI. Never write TailAdmin (off-the-shelf template name), Lovart, or Northboard. Original labels only. No watermark."
+    },
+    {
+      "id": "ex08",
+      "slot": "examples",
+      "index": 8,
+      "source": "src/feat04.webp",
+      "aspect_ratio": "16:9",
+      "out": "wash/web-product/examples/08.png",
+      "prompt": "Design system / style board webpage for fictional brand VARDA. Sections arranged on a light board: typography scale, color palette swatches, spacing ruler, UI components (buttons, inputs, cards), icon grid, shadow elevation samples, state chips (default/hover/disabled), and a column grid overlay diagram. Professional design-ops presentation. Never write Flowly, Lovart, or Northboard. Brand name VARDA visible once in the header. No watermark."
+    },
+    {
+      "id": "ex09",
+      "slot": "examples",
+      "index": 9,
+      "source": "src/feat04.webp",
+      "aspect_ratio": "16:9",
+      "out": "wash/web-product/examples/09.png",
+      "prompt": "Travel design-system board for the same fictional brand ORIVA. Left/top: type specimens, color tokens, spacing scale, search-field component anatomy, icon set, grid rules, empty-state and loading-state samples. Lower-right: a small page-proof mock showing the ORIVA destination search bar on a travel page. Soft sand and ocean palette. Original copy only — never write 'Your Journey Starts Here.', Wanderly, Lovart, or Northboard. No watermark."
+    },
+    {
+      "id": "f01",
+      "slot": "featured",
+      "index": 1,
+      "source": "src/feat01.webp",
+      "aspect_ratio": "16:9",
+      "out": "wash/web-product/featured/01.png",
+      "prompt": "Featured masonry still: full-page wide hero of fictional travel booking site ORIVA. Coastal photography, destination search (place/check-in/check-out/guests), destination cards. Premium travel landing page, soft light. Never Wanderly, never 'The world is waiting.', never Lovart/Northboard. No watermark."
+    },
+    {
+      "id": "f02",
+      "slot": "featured",
+      "index": 2,
+      "source": "src/feat02.webp",
+      "aspect_ratio": "3:4",
+      "out": "wash/web-product/featured/02.png",
+      "prompt": "Featured masonry still with vertical-shot feel for fictional jewelry brand AUREN product detail page. Large necklace photo, specs, Add to bag, pair-with recommendations. Luxury ecommerce, cream palette. Never MAISON, Lovart, Northboard. No watermark."
+    },
+    {
+      "id": "f03",
+      "slot": "featured",
+      "index": 3,
+      "source": "src/feat03.webp",
+      "aspect_ratio": "16:9",
+      "out": "wash/web-product/featured/03.png",
+      "prompt": "Featured masonry still: supply-chain analytics report admin for fictional NEXARA — filter bar, four KPI cards, line chart, regional performance table. Enterprise slate/teal UI. Never SCM Control Tower, TailAdmin, Lovart, Northboard. No watermark."
+    },
+    {
+      "id": "f04",
+      "slot": "featured",
+      "index": 4,
+      "source": "src/feat04.webp",
+      "aspect_ratio": "16:9",
+      "out": "wash/web-product/featured/04.png",
+      "prompt": "Featured masonry still: full design-system board for fictional brand VARDA — type, palette, spacing, components, icons, shadows, states, grid. Clean light board. Never Flowly, Lovart, Northboard. No watermark."
+    }
+  ]
+}

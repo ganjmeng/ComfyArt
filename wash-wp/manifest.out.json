@@ -1,0 +1,146 @@
+{
+  "model": "openai/gpt-image-2.5-flare/edit",
+  "assets": [
+    {
+      "id": "cover",
+      "slot": "cover",
+      "index": 1,
+      "path": "wash/web-product/cover.png",
+      "sha256": "61957aa3e7158e0f9cd14f4ba3a5a2861cf96edc624b15263ce03e7f14b47b35",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "0dcb9c82af3f4d47a0a9a2073043fd8a",
+      "aspect_ratio": "4:3"
+    },
+    {
+      "id": "ex01",
+      "slot": "examples",
+      "index": 1,
+      "path": "wash/web-product/examples/01.png",
+      "sha256": "0220ff17bac6f706eefae99965f7da6548f1e7f0e8fe3191fbcc9acab333ef6e",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "f3bfa125caf74a8892c27ce39ae69ed2",
+      "aspect_ratio": "16:9"
+    },
+    {
+      "id": "ex02",
+      "slot": "examples",
+      "index": 2,
+      "path": "wash/web-product/examples/02.png",
+      "sha256": "9d53552346c7e229ddb05963d0ee71278d89d0ebc1ebe924c8e5812a5a232b24",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "5197a0463579424882a08e7b061add4b",
+      "aspect_ratio": "9:16"
+    },
+    {
+      "id": "ex03",
+      "slot": "examples",
+      "index": 3,
+      "path": "wash/web-product/examples/03.png",
+      "sha256": "b3f430de954c152d4d5e91616331af58e5330b68f9c14ba04c1b102ca35381e5",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "9c1b5b26d5a34762b1bf4ccc76ff16e0",
+      "aspect_ratio": "16:9"
+    },
+    {
+      "id": "ex04",
+      "slot": "examples",
+      "index": 4,
+      "path": "wash/web-product/examples/04.png",
+      "sha256": "fa108427f2cc6febea3f21d8682a4d8b13d5e02887248067b17df1f3e2f1ca26",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "030ef29c429d491994883c0999d3f31c",
+      "aspect_ratio": "3:2"
+    },
+    {
+      "id": "ex05",
+      "slot": "examples",
+      "index": 5,
+      "path": "wash/web-product/examples/05.png",
+      "sha256": "e75a40c19e0490025b15084c8f2b46c9c89dce42f4db01dcda3ed416d3b556bf",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "00f2cf881953421e809e4d493658edaa",
+      "aspect_ratio": "16:9"
+    },
+    {
+      "id": "ex06",
+      "slot": "examples",
+      "index": 6,
+      "path": "wash/web-product/examples/06.png",
+      "sha256": "7e668493021262354e0739357805714e05a936eaa2110f37778367225ce7c32f",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "7054cbf6b866426fade1dbce03529f17",
+      "aspect_ratio": "16:9"
+    },
+    {
+      "id": "ex07",
+      "slot": "examples",
+      "index": 7,
+      "path": "wash/web-product/examples/07.png",
+      "sha256": "98bc54f2978d44eb35a87ca343233ddda9b9e3de64c2b0ab915e4f7dda4e66d3",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "ce1d681ff8d645ed9449930e1e8c47f9",
+      "aspect_ratio": "16:9"
+    },
+    {
+      "id": "ex08",
+      "slot": "examples",
+      "index": 8,
+      "path": "wash/web-product/examples/08.png",
+      "sha256": "3294a2b4466640bba4315995999d39a7fb36352fe0d041787dbecd35b6ac55f0",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "b8d30302ba00474ea2cdd4e7f5a00459",
+      "aspect_ratio": "16:9"
+    },
+    {
+      "id": "ex09",
+      "slot": "examples",
+      "index": 9,
+      "path": "wash/web-product/examples/09.png",
+      "sha256": "8a0bf3220d224b7ceb3c5b406dd62617aab7c3bf9c27521b0278be23df6c7d2f",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "4b475b2f0867494f9c4de81e7c7bb8ab",
+      "aspect_ratio": "16:9"
+    },
+    {
+      "id": "f01",
+      "slot": "featured",
+      "index": 1,
+      "path": "wash/web-product/featured/01.png",
+      "sha256": "b5fcfc99e0b8723b08521e856cf5404cef309b3b3c99911eb379dc2230554ed1",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "45026d9e95094d518ab56aabead25ed6",
+      "aspect_ratio": "16:9"
+    },
+    {
+      "id": "f02",
+      "slot": "featured",
+      "index": 2,
+      "path": "wash/web-product/featured/02.png",
+      "sha256": "b5d7abdb7752315e1a15848018225a977aa5a3bc746ed0acdcf1834503063050",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "de1e583340454f669079f8c6b47e82d1",
+      "aspect_ratio": "3:4"
+    },
+    {
+      "id": "f03",
+      "slot": "featured",
+      "index": 3,
+      "path": "wash/web-product/featured/03.png",
+      "sha256": "83583c76a952aabcdfef5af5f693d2dcf5f4362457218b5375d44bae514868ac",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "d60eea73ccc144fab0314c5f06c0ec98",
+      "aspect_ratio": "16:9"
+    },
+    {
+      "id": "f04",
+      "slot": "featured",
+      "index": 4,
+      "path": "wash/web-product/featured/04.png",
+      "sha256": "526a202d9de6bb9d1ad95acb4c8cfcff40a8cbbed7311fa054877fe897a93ecb",
+      "model": "openai/gpt-image-2.5-flare/edit",
+      "task_id": "7acad8335b204053a91f0a93888a6e9b",
+      "aspect_ratio": "16:9"
+    }
+  ],
+  "errors": []
+}
