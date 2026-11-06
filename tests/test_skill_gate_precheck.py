@@ -1,4 +1,5 @@
 """Pre-check helpers of scripts/gate_lib.sh (gate hardening)."""
+import os
 import socket
 import subprocess
 import sys
@@ -129,7 +130,7 @@ def test_collection_error_tail_drops_pytest_count_line(tmp_path):
 def test_gate_unit_stage_runs_all_unit_tests():
     sh = (ROOT / "scripts" / "gate.sh").read_text()
     assert 'stage UNIT "not e2e"' in sh
-    assert sh.count('-m "not gate_skip"') == 2  # collect + run
+    assert sh.count('-m "not gate_skip"') == 3  # #724 preflight collection + collect + run
 
 
 def test_gate_skip_marker_registered():
@@ -150,7 +151,10 @@ def test_every_gate_skip_names_reason_and_issue():
 # --- #712 no-spend: gate stages unset paid keys and block outbound network ---
 def test_gate_stages_unset_paid_keys_and_enable_guard():
     sh = (ROOT / "scripts" / "gate.sh").read_text()
-    assert sh.count("env -u WAVESPEED_API_KEY -u KIE_API_KEY GATE=1") == 2  # collect + run
+    # #712 no-spend: every pytest invocation unsets the paid keys and runs with GATE=1. #724 added the node-unit
+    # preflight collection, so there are three: preflight, stage collect, stage run.
+    lines = [ln for ln in sh.splitlines() if "env -u WAVESPEED_API_KEY -u KIE_API_KEY" in ln]
+    assert len(lines) == 3 and all("GATE=1" in ln for ln in lines), lines
     assert "duration=" in sh
 
 
@@ -169,3 +173,150 @@ def test_gate_guard_blocks_outbound_allows_localhost():
     )
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, timeout=60)
     assert out.stdout.split() == ["BLOCKED", "DNSBLOCKED", "LOCAL"], out.stderr[-800:]
+
+
+# --- #724: node-unit tests are counted, and a missing node/node_modules is never a pass ---
+def _free_port() -> int:
+    s = socket.socket(); s.bind(("127.0.0.1", 0)); port = s.getsockname()[1]; s.close()
+    return port
+
+
+def _stub_py(tmp_path, total: int = 22):
+    """Fake GATE_PY: answers the gate's --co collection with a node-unit report and a pytest-ish summary line."""
+    p = tmp_path / "stubpy"
+    p.write_text(f'''#!/usr/bin/env bash
+case "$*" in
+  *--co*)
+    printf '%s\\n' '{{"ready": true, "total": {total}, "items": []}}' > "$GATE_NODE_UNIT_JSON"
+    echo "{total} tests collected in 0.01s" ;;
+  *) echo "{total} passed in 0.01s" ;;
+esac
+''')
+    p.chmod(0o755)
+    return p
+
+
+def _gate_env_724(tmp_path, wt, py, *, path=None, extra=None):
+    """Env for a real gate.sh run against a throwaway worktree: no inherited GATE flag, no real pytest pre-check."""
+    env = {k: v for k, v in os.environ.items()
+           if k not in ("GATE", "GATE_PORTS", "GATE_PYTEST_PATTERN", "COMFYART_SKIP_NODE_TESTS")}
+    env.update({"GATE_WT": str(wt), "GATE_MAIN": str(tmp_path / "main"), "GATE_PY": str(py),
+                "GATE_PORTS": str(_free_port()), "GATE_PYTEST_PATTERN": "comfyart-no-such-pytest-724"})
+    (tmp_path / "main").mkdir(exist_ok=True)
+    if path:
+        env["PATH"] = path
+    if extra:
+        env.update(extra)
+    return env
+
+
+def _fake_npx(tmp_path):
+    """PATH with a no-op npx so tsc/vite build do not run for real in the gate.sh tests."""
+    import shutil
+    binp = tmp_path / "bin"; binp.mkdir(exist_ok=True)
+    npx = binp / "npx"
+    npx.write_text("#!/bin/sh\nexit 0\n"); npx.chmod(0o755)
+    return str(binp) + os.pathsep + os.environ["PATH"], shutil
+
+
+def test_gate_node_ready_needs_node_modules_rolldown(tmp_path):
+    r = _run("gate_node_ready", str(tmp_path))
+    assert r.returncode == 1 and "rolldown" in r.stderr and "npm ci" in r.stderr
+
+
+def test_gate_node_ready_accepts_node_and_rolldown(tmp_path):
+    import shutil
+    if not shutil.which("node"):
+        pytest.skip("node is not installed here")
+    b = tmp_path / "node_modules" / ".bin" / "rolldown"
+    b.parent.mkdir(parents=True); b.write_text("#!/bin/sh\n"); b.chmod(0o755)
+    assert _run("gate_node_ready", str(tmp_path)).returncode == 0
+
+
+def test_gate_node_unit_total_reads_report(tmp_path):
+    j = tmp_path / "node-unit.json"
+    assert _run("gate_node_unit_total", str(j)).returncode == 1
+    j.write_text('{"ready": true, "total": 22, "items": ["tests/x.py::t"]}')
+    r = _run("gate_node_unit_total", str(j))
+    assert r.returncode == 0 and r.stdout.strip() == "22"
+
+
+def test_gate_node_unit_ready_reads_report(tmp_path):
+    j = tmp_path / "node-unit.json"
+    assert _run("gate_node_unit_ready", str(j)).returncode == 1
+    j.write_text('{"ready": false, "total": 22, "items": []}')
+    assert _run("gate_node_unit_ready", str(j)).returncode == 1
+    j.write_text('{"ready": true, "total": 22, "items": []}')
+    assert _run("gate_node_unit_ready", str(j)).returncode == 0
+
+
+def test_conftest_writes_node_unit_report(tmp_path):
+    """conftest counts the node tests of the *selected* collection (#724) and reports 0 for a Python-only file."""
+    import json
+    for target, want in (("tests/test_skill_modal_541.py", 6), ("tests/test_brand_399.py", 0)):
+        rep = tmp_path / (want and "node.json" or "py.json")
+        env = {k: v for k, v in os.environ.items() if k != "WAVESPEED_API_KEY"}
+        env["GATE_NODE_UNIT_JSON"] = str(rep)
+        r = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--co", target],
+                           cwd=ROOT, capture_output=True, text=True, env=env)
+        assert r.returncode == 0, r.stdout[-800:] + r.stderr[-800:]
+        data = json.loads(rep.read_text())
+        assert data["total"] == want and data["ready"] is True, (target, data)
+
+
+def test_gate_without_node_modules_fails_loudly(tmp_path):
+    """Removing node_modules must never be a green gate: loud SKIPPED + count + non-zero exit."""
+    wt = tmp_path / "wt_nonode"; wt.mkdir()
+    py = _stub_py(tmp_path, 22)
+    r = subprocess.run(["bash", str(GATE), "nonode"], capture_output=True, text=True,
+                       env=_gate_env_724(tmp_path, wt, py))
+    assert r.returncode == 1, (r.returncode, r.stdout, r.stderr)
+    assert "node-unit: SKIPPED 22 tests" in r.stdout, r.stdout
+    assert "GATE_FAIL: node-unit" in r.stdout, r.stdout
+    assert "GATE_EXIT=1" in r.stdout, r.stdout
+
+
+def test_gate_allow_missing_node_is_loud_but_not_fatal(tmp_path):
+    """--allow-missing-node is the deliberate Python-only local mode: SKIPPED is printed, the parse of the count stays."""
+    wt = tmp_path / "wt_allow"; wt.mkdir()
+    py = _stub_py(tmp_path, 22)
+    path, _ = _fake_npx(tmp_path)
+    r = subprocess.run(["bash", str(GATE), "allow", "--allow-missing-node"], capture_output=True, text=True,
+                       env=_gate_env_724(tmp_path, wt, py, path=path))
+    assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
+    assert "node-unit: SKIPPED 22 tests" in r.stdout and "GATE_EXIT=0" in r.stdout, r.stdout
+
+
+def test_gate_env_gate_1_forces_strict_even_with_allow(tmp_path):
+    """GATE=1 in the caller env is strict (#724): a missing node is fatal even with --allow-missing-node."""
+    wt = tmp_path / "wt_strict"; wt.mkdir()
+    py = _stub_py(tmp_path, 22)
+    r = subprocess.run(["bash", str(GATE), "strict", "--allow-missing-node"], capture_output=True, text=True,
+                       env=_gate_env_724(tmp_path, wt, py, extra={"GATE": "1"}))
+    assert r.returncode == 1, (r.returncode, r.stdout, r.stderr)
+    assert "node-unit: SKIPPED 22 tests" in r.stdout and "GATE_EXIT=1" in r.stdout, r.stdout
+
+
+def test_gate_prints_node_unit_count_when_node_ready(tmp_path):
+    """When node is available the gate prints how many node unit tests the UNIT stage selected."""
+    import shutil
+    if not shutil.which("node"):
+        pytest.skip("node is not installed here")
+    wt = tmp_path / "wt_ready"; wt.mkdir()
+    ro = tmp_path / "main" / "node_modules" / ".bin" / "rolldown"
+    ro.parent.mkdir(parents=True); ro.write_text("#!/bin/sh\nexit 0\n"); ro.chmod(0o755)
+    py = _stub_py(tmp_path, 22)
+    path, _ = _fake_npx(tmp_path)
+    r = subprocess.run(["bash", str(GATE), "ready"], capture_output=True, text=True,
+                       env=_gate_env_724(tmp_path, wt, py, path=path))
+    assert r.returncode == 0, (r.returncode, r.stdout, r.stderr)
+    assert "UNIT: collected=22" in r.stdout, r.stdout
+    assert "UNIT node-unit: 22 tests" in r.stdout, r.stdout
+    assert "GATE_EXIT=0" in r.stdout, r.stdout
+
+
+def test_gate_node_unit_preflight_runs_before_tsc():
+    sh = (ROOT / "scripts" / "gate.sh").read_text()
+    assert sh.index("gate_node_ready") < sh.index("npx tsc")
+    assert "node-unit: SKIPPED" in sh and "--allow-missing-node" in sh and "--require-node" in sh
+    assert "-u COMFYART_SKIP_NODE_TESTS" in sh  # an inherited skip flag cannot fake a green gate
