@@ -1,0 +1,7 @@
+{
+  "skill": "logo-material-explorer",
+  "rewash": "r2-liquid-chrome",
+  "model": "openai/gpt-image-2.5-flare/edit",
+  "note": "Jingmeng bar: form/reflection/material close to lovart.ai liquid chrome. Rewashed: cover VELA, chrome-hero, ex01 trio, ex03 LUMORA. Unchanged: ex02 KAIO, featured 01-04.",
+  "assets": ["chrome-hero.webp", "cover.webp", "examples/01.webp", "examples/03.webp", "hero.mp4"]
+}
