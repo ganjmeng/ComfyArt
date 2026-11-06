@@ -1052,7 +1052,7 @@ async def test_170_image_task_failed_is_readable(ws):
     hist = (await wavespeed.poll(task))[f"ws:{task}"]
     info = hist["status"]["messages"][0][1]
     assert hist["status"]["completed"] is True and hist["status"]["status_str"] == "error"
-    assert info["ws_kind"] == "failed" and _shown("failed")[0] == "WaveSpeed 没能完成这次任务，请检查输入后再试。"
+    assert info["ws_kind"] == "failed" and _shown("failed")[0] == "任务没能完成，请检查输入后再试。"  # #719: no vendor name
     assert (await wavespeed.poll(task)) == {f"ws:{task}": hist} and len(ws["submits"]) == 1  # cached, not resubmitted
 
 
