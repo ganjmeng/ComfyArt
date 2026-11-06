@@ -4,11 +4,23 @@
   "assetDir": "packaging",
   "model": "gpt-image-2-5-flare-image-to-image",
   "brand": "AURELIA ATELIER",
-  "note": "Cover rewash: remove LUMIERE ARTISAN; single brand; half-screen distinguishable from Lovart gold. Featured/presets unchanged (already single-brand; example count 5 per Lovart collection + #541).",
+  "note": "Cover + master/\u4e3b\u6b3e template rewash: drop LUMIERE ARTISAN; single brand AURELIA ATELIER. Keep 5 templates (do not expand to 8). Other 4 preset images unchanged (already single-brand).",
   "files": {
     "cover.webp": {
       "sha256": "cb5013d075d18c8ccc29e4cb089ae2817f5a940448bcad1f5d0fbb5dd8fbd2f6",
       "bytes": 428162
+    },
+    "packaging/cover.webp": {
+      "sha256": "cb5013d075d18c8ccc29e4cb089ae2817f5a940448bcad1f5d0fbb5dd8fbd2f6",
+      "bytes": 428162
+    },
+    "packaging/cover@thumb.webp": {
+      "sha256": "199b5dba994a6d9dddd52c2d22ca62fe5a61399e07befbcae4ffbd342efbe2b6",
+      "bytes": 22432
+    },
+    "packaging/examples/01.webp": {
+      "sha256": "8fbf1c8b83ca3369ad77b2751ad6ad5e18c3bba6f4f5313d98ba26ce32592f04",
+      "bytes": 112904
     }
   }
 }
