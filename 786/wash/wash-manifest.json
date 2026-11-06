@@ -1,0 +1,103 @@
+{
+  "assets": [
+    {
+      "skill_id": "brand",
+      "slot": "cover",
+      "index": 1,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Logo-system specification board for the artisan bakery & coffee brand 'SOLENNE' (Parisian feel). Beige spec pages laid on a rich CHOCOLATE-brown background, photographed flat-lay. Pages show: primary mark (elegant serif wordmark 'SOLENNE' with a small wheat-and-coffee-bean emblem), horizontal and stacked lockups, black/white versions, basic usage do's, and a warm color palette of swatches (cream, crust brown, espresso, butter yellow). Refined editorial design. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    },
+    {
+      "skill_id": "brand",
+      "slot": "featured",
+      "index": 1,
+      "source_path": "src/feat01.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Fitness / training brand identity board for 'ALIGN STUDIO': logo lockup, color palette, typography specimen, grid system, material swatches, icon set, one gym interior photo tile, short slogan 'MOVE WITH INTENT', and a front-desk standee mockup. Bold athletic modern design. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    },
+    {
+      "skill_id": "brand",
+      "slot": "featured",
+      "index": 2,
+      "source_path": "src/feat02.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Milk-tea shop brand identity board for 'CIRCA TEA': logo, palette of warm beige, coffee brown and peach pink, cup sleeve application on a takeaway cup, and a storefront sign mockup. Soft, friendly, cozy. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    },
+    {
+      "skill_id": "brand",
+      "slot": "featured",
+      "index": 3,
+      "source_path": "src/feat03.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Logistics company identity master board for 'NORTHSPAN': wordmark plus an arrow-shaped single-letter 'N' monogram, color palette (deep navy, signal orange, grey), typography hierarchy specimen, clear-space diagram. Clean corporate Swiss layout. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    },
+    {
+      "skill_id": "brand",
+      "slot": "featured",
+      "index": 4,
+      "source_path": "src/feat04.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Dark tech / data-product identity board for 'NOVUM': node-constellation logo mark (connected dots), palette of near-black, electric violet and cyan, icon set, a business card and a social post mockup, UI components (buttons, toggles, chart card). Dark background. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "src/t_geometric.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Menswear brand logo-system board for 'LINTEL': architectural arch-shaped monogram 'L' plus wordmark; primary mark, horizontal and vertical lockups, black/white versions, clear-space diagram; bottom row of applications: woven label, hangtag, metal hardware, business card. Minimal, stone and charcoal palette. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "src/t_handmade.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Logo-system specification board for the artisan bakery & coffee brand 'SOLENNE' (Parisian feel). Warm beige board: primary mark (serif wordmark 'SOLENNE' with small wheat-and-coffee-bean emblem), lockups, black/white versions, basic usage, palette (cream, crust brown, espresso, butter). Hand-crafted warmth, kraft paper texture. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "src/t_tech.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Dark technology identity board for 'NOVUM': node-constellation logo mark of connected dots, wordmark, palette of near-black, electric violet and cyan, icon grid, UI component samples. Futuristic, precise linework, dark background. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "src/t_beauty.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Beauty & body-care logo-system board for 'MIRRA BODY': a mark shaped like a water drop merging into a soft flame, plus elegant wordmark; lockups, color and black/white versions, clear-space diagram, and the logo applied on three colored grounds (blush, sand, deep plum). Soft refined layout. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 5,
+      "source_path": "src/t_foodbev.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Food & beverage logo-system board for 'PESCA': hand-script wordmark 'Pesca' with a watercolor peach icon; lockups, black/white version, clear-space diagram, and a row of wrong-usage examples (stretched, recolored, rotated) marked with red X. Fresh juicy palette. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 6,
+      "source_path": "src/t_pet.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Pet-supplies retro pop logo-system board for 'RIDLEY': sitting dog mascot mark with paw print and star, orange and navy palette; primary mark, icon set, horizontal and stacked lockups, color variants, minimum-size specimen. Playful vintage pop style. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; the input is only a loose canvas reference."
+    }
+  ]
+}
