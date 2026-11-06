@@ -96,8 +96,8 @@ const WASH_786 = '8ab5aa8044d71e9518ae5f054eb2f8c7e77dd127'
 const WASH_788 = '1f66faf48e8dbd625b4acf79505adb320586ad14'
 /** #788 r2: featured 03 ELINA VOS rewash (tank-neck jumpsuit; review-assets 788/wash-r2). Other featured stay WASH_788. */
 const WASH_788_F03 = '03cd43443ea200d8c372fe083245b67ef13c7d27'
-/** logo-material rewash: cover VELA (+hero mp4), examples VELA/KAIO/LUMORA, featured HALO/QUILL/PRISM/TERRA (review-assets wash-lm @b72f119a, featured-r2 QUILL=Q; kie I2I). */
-const WASH_LM = 'b72f119af80013b2dc6119e94713b8a2354ac6c4'
+/** logo-material r2: cover VELA liquid-chrome (+Seedance hero mp4), examples VELA/KAIO/LUMORA, featured HALO/QUILL/PRISM/TERRA (review-assets wash-lm @58f1e3e9; WaveSpeed edit+I2V; Jingmeng bar). */
+const WASH_LM = '58f1e3e9ebe225e61363f0e7688149c0c6a49813'
 /** mobile-ui rewash: cover SAELIN (+hero mp4), 13 examples, featured LUNEL/KIPLET/DAYOR/SYNRA (review-assets wash-mu, kie I2I). */
 const WASH_MU = '4ef9ce65c6aef5afa6490c3835b80a6f925382c6'
 /** web-product rewash: cover ORIVA/KINLO/AYRA (+hero mp4), 9 examples, featured ORIVA/AUREN/NEXARA/VARDA (review-assets wash-wp, WaveSpeed I2I; kie 402). */
@@ -400,7 +400,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
   { id: 'logo-material-explorer', name: t('skills.logoMaterialExplorer'), instructions: 'You are a production 3D material artist for logo finish studies. Explore materials only — never redesign the mark.\n1) Lock geometry: keep logo paths, proportions and negative space identical to the provided file.\n2) Materials: vary finish only (metal, glass, plastic, fabric, ceramic) per selected preset or Additional Details.\n3) Stage: neutral studio turntable or soft gradient; soft product lighting; no busy brand scenes.\n4) Scope: one material study per frame; do not invent a full VI kit or packaging system.\n5) Refs: pass the logo shape id in refs (ref_modes content) on every generate_image call.',
     category: 'branding',
     cover: cover('logo-material-explorer'), quickStartCover: quickStartCover('logo-material-explorer'), quickStartCoverFit: 'contain',
-    featured: feedCovers('logo-material-explorer'), video: pinned('wash-lm/logo-material', WASH_LM, 'hero.mp4'), /* VELA hero (was 594 mp4) */  // #748 product: left = 1 video cover + 3 examples
+    featured: feedCovers('logo-material-explorer'), video: pinned('wash-lm/logo-material', WASH_LM, 'hero.mp4'), /* VELA liquid-chrome hero I2V (r2; was ffmpeg cover push-in) */  // #748: left = 1 video + 3 examples; hl0=video → this mp4
     presets: [P('metal', '金属拉丝', 'Brushed metal', 'Style: brushed metal 3D logo material study on a neutral turntable, identical mark geometry, soft studio light, no redesign.'), P('glass', '透明玻璃', 'Clear glass', 'Style: clear glass 3D logo material study with soft refraction, identical mark geometry, soft gradient backdrop.'), P('fabric', '织物绣章', 'Fabric emblem', 'Style: woven fabric or embroidered emblem material study of the same logo, identical geometry, soft studio light.'), P('ceramic', '陶瓷釉面', 'Ceramic glaze', 'Style: glazed ceramic 3D logo material study, identical mark geometry, soft highlight, neutral seamless set.')],
     inputs: REF_CARD_INPUTS_687 },
   { id: 'meta-ads-creative-director', name: t('skills.metaAdsCreative'), instructions: 'You are a production Meta paid-social creative director. Ship a ratio pack that shares one idea.\n1) Brief: pull product, audience, offer and CTA from Additional Details; put every on-art phrase in quotes.\n2) Ratios: deliver 1:1 feed, 4:5 feed and 9:16 story/reel that share motif, palette and CTA.\n3) Treatment: prefer photo-led UGC or product-hero; avoid static website-banner layouts.\n4) Mobile: short high-contrast type; safe margins for UI chrome; one clear CTA.\n5) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
