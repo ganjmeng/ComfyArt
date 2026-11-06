@@ -44,6 +44,7 @@ def test_builtin_covers(got):
     v3, pin = "3c9b87e7eae72164efdd1fe30e00f576144475f4", {
         "banner-design-director": ("778/wash", "79bf01dc6342363348671c368fa1d467706a0e0f"),  # #778 fintech cover
         "product-tvc-advertisement-generator": ("784/wash", "d17ae7c9a27b84ab0f0781bccee100778a9f1e18"),  # #784 BR lip-tube wash
+        "brand-identity-director": ("786/wash", "8ab5aa8044d71e9518ae5f054eb2f8c7e77dd127"),  # #786 SOLENNE
         "character-sheet-design": ("494/covers-v3.2", "dc335056e81e0350e2f98487fb680e22ffb14bb9"),
     }
     v4 = "cc76d743d416c3d9a9a6852d811a7a80caf40319"
@@ -51,7 +52,7 @@ def test_builtin_covers(got):
     expected = {
         "poster-differentiated-compiler": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v3}/494/covers-v3/poster.webp",
         "rednote-cover-maker": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5c954dbcefb8bd50edef69688b303122debb4ffb/687/wash/social/cover.webp",
-        "brand-identity-director": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v3}/494/covers-v3/brand.webp",
+        "brand-identity-director": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/8ab5aa8044d71e9518ae5f054eb2f8c7e77dd127/786/wash/brand.webp",  # #786 SOLENNE
         "packaging-design-director": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e270088ea1695f5200669649e6e832057e9c8a6a/777/wash/packaging/cover.webp",
         "banner-design-director": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/79bf01dc6342363348671c368fa1d467706a0e0f/778/wash/banner.webp",
         "character-sheet-design": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/dc335056e81e0350e2f98487fb680e22ffb14bb9/494/covers-v3.2/character.webp",
