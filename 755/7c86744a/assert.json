@@ -1,0 +1,12 @@
+{
+  "tip": "7c86744a52a2182e4a229ae5a406b6afaae5cc4c",
+  "issue": 755,
+  "follow_up": "official Hermes icon (PR fix/hermes-official-icon)",
+  "shots": {
+    "settings_zh": "ours/settings-hermes-zh-light.png",
+    "botsettings_zh": "ours/botsettings-hermes-zh-light.png",
+    "picker_zh": "picker/picker-hermes-zh-light.png",
+    "mode_zh": "picker/mode-hermes-zh-light.png"
+  },
+  "notes": "Official Nous Hermes Agent icon-master in AgentLogo (picker, composer, settings card). No generic cube."
+}
