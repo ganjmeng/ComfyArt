@@ -22,6 +22,86 @@
       "model": "gpt-image-2-5-flare-image-to-image",
       "task_id": "2c0816f3378ab5e9f784bf92ae5acbe1",
       "source": "master.png"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "examples",
+      "index": 2,
+      "path": "packaging/examples/02.png",
+      "sha256": "ac4ba0f10c24669d5a10e716676feeba75e3358582bdfadce2d1d7034584eda6",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "7b9dd7893c37ad9da8f0f7f3d710af07",
+      "source": "ours-gold.png"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "examples",
+      "index": 3,
+      "path": "packaging/examples/03.png",
+      "sha256": "57728b00c0199cef67bf257f8dce163e76ed4055c0928b4ecc2e610fda3cd17a",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "c32e780be09dc26762da1fd1d688d126",
+      "source": "ours-playful.png"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "examples",
+      "index": 4,
+      "path": "packaging/examples/04.png",
+      "sha256": "91ed4d2808fcfdfcd37eab6495cad7b00579671118662f2cb25d4b608cb91249",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "662eab3489cf43987bd619a6679ea715",
+      "source": "ours-panels.png"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "examples",
+      "index": 5,
+      "path": "packaging/examples/05.png",
+      "sha256": "83c949f08d50da5e5ab44beee57211c56bbb6e864dcbedafe12abd3311696df7",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "52542d275f2304b7957b7be4bdc3a1c2",
+      "source": "05-shelf.png"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "featured",
+      "index": 1,
+      "path": "packaging/featured/01.png",
+      "sha256": "4f1958b9545d078e7bcacb7138583e74834f664ecc102acfcfaa8b82833c1822",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "8ca0b9e3ee68c2503f93a563bbd2ffd4",
+      "source": "feat-01.png"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "featured",
+      "index": 2,
+      "path": "packaging/featured/02.png",
+      "sha256": "9bd4ee3451668eabc0bee8ff2a68ae774134b3496d04d153cae3ec7e3326382e",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "949440447389eaed8ada0e3a86280819",
+      "source": "feat-02.png"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "featured",
+      "index": 3,
+      "path": "packaging/featured/03.png",
+      "sha256": "ceb25c185a43263b1579c46343cce6945f4652f5678365f028f314328cfdfa3d",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "8732515563102dd2ddb5a925abbc086f",
+      "source": "feat-03.png"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "featured",
+      "index": 4,
+      "path": "packaging/featured/04.png",
+      "sha256": "53770194a95467bc834105843b45e3a3be9f62eb29b773ce5c4bd17be0a35a12",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "90cf0d9fe8bf43a799d54d00fbea0bc8",
+      "source": "feat-04.png"
     }
   ],
   "errors": []

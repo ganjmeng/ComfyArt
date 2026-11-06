@@ -1,0 +1,77 @@
+{
+  "_comment": "#777 remaining 4 templates + featured → AURELIA ATELIER (cover+主款 already done)",
+  "assets": [
+    {
+      "skill_id": "packaging",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "docs/design/777/gold/ours-gold.png",
+      "prompt": "Recreate as ORIGINAL luxury packaging presentation. Keep the SAME layout, structure, colors, foil/finish treatment and composition as the reference. Replace ALL brand text with single brand 'AURELIA ATELIER' only (never LUMIERE, never LUMIERE ARTISAN, never MOSSFIELD, never TIDAL TEA, never NORDELLE, never HELIO, never Lovart logo/watermark). No other brand names. Photoreal packaging board, 4:3.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "docs/design/777/gold/ours-playful.png",
+      "prompt": "Recreate as ORIGINAL multi-SKU / playful packaging series board. Keep the SAME layout, structure, color/effect and composition as the reference. Replace ALL brand text with single brand 'AURELIA ATELIER' only (never LUMIERE, never LUMIERE ARTISAN, never MOSSFIELD, never TIDAL TEA, never NORDELLE, never HELIO, never Lovart logo/watermark). Photoreal, 4:3.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "docs/design/777/gold/ours-panels.png",
+      "prompt": "Recreate as ORIGINAL packaging panels and structure/dieline board. Keep the SAME layout, dieline structure, colors and composition as the reference. Replace ALL brand text with single brand 'AURELIA ATELIER' only (never LUMIERE, never LUMIERE ARTISAN, never MOSSFIELD, never TIDAL TEA, never NORDELLE, never HELIO, never Lovart logo/watermark). Photoreal, 4:3.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "examples",
+      "index": 5,
+      "source_path": "docs/design/777/gold/05-shelf.png",
+      "prompt": "Recreate as ORIGINAL retail shelf packaging display. Keep the SAME shelf layout, lighting, row structure and composition as the reference. Replace ALL brand text on packs with single brand 'AURELIA ATELIER' only (never LUMIERE, never LUMIERE ARTISAN, never MOSSFIELD, never TIDAL TEA, never NORDELLE, never HELIO, never Lovart logo/watermark). Photoreal, 4:3.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "featured",
+      "index": 1,
+      "source_path": "docs/design/777/gold/feat-01.png",
+      "prompt": "Recreate as ORIGINAL product packaging hero photo. Keep the SAME composition, lighting, props and product silhouette as the reference. Replace ALL brand text with single brand 'AURELIA ATELIER' only (never LUMIERE, never LUMIERE ARTISAN, never MOSSFIELD, never TIDAL TEA, never NORDELLE, never HELIO, never Lovart logo/watermark). One brand only. Photoreal, 4:3.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "featured",
+      "index": 2,
+      "source_path": "docs/design/777/gold/feat-02.png",
+      "prompt": "Recreate as ORIGINAL product packaging photo. Keep the SAME composition, lighting and structure as the reference. Replace ALL brand text with single brand 'AURELIA ATELIER' only (never LUMIERE, never LUMIERE ARTISAN, never MOSSFIELD, never TIDAL TEA, never NORDELLE, never HELIO, never Lovart logo/watermark). One brand only. Photoreal, 3:4.",
+      "aspect_ratio": "3:4",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "featured",
+      "index": 3,
+      "source_path": "docs/design/777/gold/feat-03.png",
+      "prompt": "Recreate as ORIGINAL product packaging photo. Keep the SAME composition, lighting and structure as the reference. Replace ALL brand text with single brand 'AURELIA ATELIER' only (never LUMIERE, never LUMIERE ARTISAN, never MOSSFIELD, never TIDAL TEA, never NORDELLE, never HELIO, never Lovart logo/watermark). One brand only. Photoreal, 4:3.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "packaging",
+      "slot": "featured",
+      "index": 4,
+      "source_path": "docs/design/777/gold/feat-04.png",
+      "prompt": "Recreate as ORIGINAL product packaging photo. Keep the SAME composition, lighting and structure as the reference. Replace ALL brand text with single brand 'AURELIA ATELIER' only (never LUMIERE, never LUMIERE ARTISAN, never MOSSFIELD, never TIDAL TEA, never NORDELLE, never HELIO, never Lovart logo/watermark). One brand only. Photoreal, 1:1.",
+      "aspect_ratio": "1:1",
+      "resolution": "2K"
+    }
+  ]
+}

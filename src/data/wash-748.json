@@ -96,16 +96,18 @@
     "packaging-design-director": [
       null,
       [
-        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/c26cfaddc5e12c8652b151ef09ad12c47b2062a0/541/wash/packaging/packaging__gold.webp",
-        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/c26cfaddc5e12c8652b151ef09ad12c47b2062a0/541/wash/packaging/packaging__playful.webp",
-        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/c26cfaddc5e12c8652b151ef09ad12c47b2062a0/541/wash/packaging/packaging__panels.webp"
+        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e270088ea1695f5200669649e6e832057e9c8a6a/777/wash/packaging/examples/02.webp",
+        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e270088ea1695f5200669649e6e832057e9c8a6a/777/wash/packaging/examples/03.webp",
+        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e270088ea1695f5200669649e6e832057e9c8a6a/777/wash/packaging/examples/04.webp"
       ],
       [
-        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/c26cfaddc5e12c8652b151ef09ad12c47b2062a0/541/wash/packaging/packaging__eco.webp",
-        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/c26cfaddc5e12c8652b151ef09ad12c47b2062a0/541/wash/packaging/packaging__gold.webp",
-        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/c26cfaddc5e12c8652b151ef09ad12c47b2062a0/541/wash/packaging/packaging__playful.webp",
-        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/c26cfaddc5e12c8652b151ef09ad12c47b2062a0/541/wash/packaging/packaging__panels.webp"
-      ]
+        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e270088ea1695f5200669649e6e832057e9c8a6a/777/wash/packaging/examples/01.webp",
+        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e270088ea1695f5200669649e6e832057e9c8a6a/777/wash/packaging/examples/02.webp",
+        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e270088ea1695f5200669649e6e832057e9c8a6a/777/wash/packaging/examples/03.webp",
+        "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e270088ea1695f5200669649e6e832057e9c8a6a/777/wash/packaging/examples/04.webp"
+      ],
+      null,
+      null
     ],
     "brand-identity-director": [
       [
