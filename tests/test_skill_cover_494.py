@@ -42,7 +42,8 @@ def test_builtin_covers(got):
     washed = ["poster-differentiated-compiler", "rednote-cover-maker", "brand-identity-director", "packaging-design-director", "banner-design-director", "character-sheet-design", "product-tvc-advertisement-generator", "motion-poster-generator", "interior-architectural-visualization"]
     assert covers["logo-material-explorer"] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/b72f119af80013b2dc6119e94713b8a2354ac6c4/wash-lm/logo-material.webp"  # VELA rewash
     assert covers["mobile-app-visual-design"] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/4ef9ce65c6aef5afa6490c3835b80a6f925382c6/wash-mu/mobile-ui.webp"  # SAELIN rewash
-    phase1_new = ["universal-multi-angle-grid", "meta-ads-creative-director", "web-product-visual-design", "marketing-campaign-generator"]
+    assert covers["web-product-visual-design"] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/ca326aede1749ed67952d020e9a28545059e97d0/wash-wp/web-product.webp"  # ORIVA/KINLO/AYRA rewash
+    phase1_new = ["universal-multi-angle-grid", "meta-ads-creative-director", "marketing-campaign-generator"]
     v3, pin = "3c9b87e7eae72164efdd1fe30e00f576144475f4", {
         "banner-design-director": ("778/wash", "79bf01dc6342363348671c368fa1d467706a0e0f"),  # #778 fintech cover
         "product-tvc-advertisement-generator": ("784/wash", "d17ae7c9a27b84ab0f0781bccee100778a9f1e18"),  # #784 BR lip-tube wash
@@ -99,7 +100,8 @@ def test_builtin_videos_unique(got):
     pin623 = "d03ea7938877d084c201a94ef51f943dd0e061b9"
     assert vids.pop("logo-material-explorer") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b72f119af80013b2dc6119e94713b8a2354ac6c4/wash-lm/logo-material/hero.mp4"  # VELA hero
     assert vids.pop("mobile-app-visual-design") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/4ef9ce65c6aef5afa6490c3835b80a6f925382c6/wash-mu/mobile-ui/hero.mp4"  # SAELIN hero
-    new6 = ("universal-multi-angle-grid", "meta-ads-creative-director", "web-product-visual-design", "marketing-campaign-generator")
+    assert vids.pop("web-product-visual-design") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/ca326aede1749ed67952d020e9a28545059e97d0/wash-wp/web-product/hero.mp4"  # ORIVA hero
+    new6 = ("universal-multi-angle-grid", "meta-ads-creative-director", "marketing-campaign-generator")
     for sid in new6:
         assert vids.pop(sid) == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{pin623}/594/wash/videos/{asset_dir(sid)}.mp4"
     pin637 = "2109c085aa74c617cd34517f99626f357062c81c"
