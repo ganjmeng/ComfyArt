@@ -125,7 +125,7 @@ def test_575_video_contract(got):
     assert got["pendingNew6"] == []  # #623 wired → empty pending
     tip = "1bbb3f208f18b26ef95c8d9f16efeea111c43ac7"
     assert got["thumbEx"][0] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/thumbnail.mp4"
-    assert got["bannerEx"][0] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/banner.mp4"
+    assert got["bannerEx"][0] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e9c0f21959787a9c7401fa95927db3e3e6931bcd/778/wash/banner/examples/01.mp4"  # #778 ex01 fintech wash
     assert len(got["thumbEx"]) == 1 and len(got["bannerEx"]) == 1  # #748 raw highlights: 1 video each (convert)
     motion_tip = "5a8d22ed88f732d38f8709a2c0740f074a400a89"
     assert got["motionPresetVideos"] == [None, None]  # #751 HOLD: skill-level video no longer shared onto template cards (each card keeps its OWN cover)  # #748 raw: 2 templates; our wash video is the placeholder (WASH-TODO)
