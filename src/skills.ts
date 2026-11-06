@@ -101,7 +101,7 @@ const WASH_LM = 'b72f119af80013b2dc6119e94713b8a2354ac6c4'
 /** mobile-ui rewash: cover SAELIN (+hero mp4), 13 examples, featured LUNEL/KIPLET/DAYOR/SYNRA (review-assets wash-mu, kie I2I). */
 const WASH_MU = '4ef9ce65c6aef5afa6490c3835b80a6f925382c6'
 /** web-product rewash: cover ORIVA/KINLO/AYRA (+hero mp4), 9 examples, featured ORIVA/AUREN/NEXARA/VARDA (review-assets wash-wp, WaveSpeed I2I; kie 402). */
-const WASH_WP = 'ca326aede1749ed67952d020e9a28545059e97d0'
+const WASH_WP = '2438e1d8245b720d560d72a3b659551af0e95db9'
 const WASH_786_R2 = 'f5c9d7770df7a8ef92cd4411371ff5b552b83eee'
 const COVERS_581: Record<string, readonly [string, string]> = {
   'poster-differentiated-compiler': ['494/covers-v3', COVER_V3], 'rednote-cover-maker': ['494/covers-v3', COVER_V3], 'brand-identity-director': ['786/wash', WASH_786], /* #786 SOLENNE */
