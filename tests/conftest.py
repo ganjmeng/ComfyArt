@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
+import re
 import sys
 import tempfile
 import types
@@ -249,6 +251,32 @@ def node_ready() -> bool:
 def pytest_sessionstart(session):
     if not node_ready() and os.environ.get("COMFYART_SKIP_NODE_TESTS") != "1":
         raise pytest.UsageError(NODE_HINT)
+
+
+# #724: the merge gate counts the unit tests that need node and never lets a missing node look like a pass.
+# A test needs node when it carries a skipif whose reason names node / node_modules / npm / rolldown — exactly the
+# conditions node_ready() checks (the reason is how the test files express `needs_node`). When the gate sets
+# GATE_NODE_UNIT_JSON the final collection (after -k/-m deselection) is written there, so gate.sh can print the count
+# for the stage it actually selected instead of guessing from source.
+NODE_SKIP_RE = re.compile(r"\bnode\b|node_modules|\bnpm\b|rolldown", re.IGNORECASE)
+
+
+def node_unit_nodeids(items) -> list[str]:
+    out = []
+    for item in items:
+        for mark in item.iter_markers("skipif"):
+            if NODE_SKIP_RE.search(str(mark.kwargs.get("reason", "") or "")):
+                out.append(item.nodeid)
+                break
+    return out
+
+
+def pytest_collection_finish(session):
+    path = os.environ.get("GATE_NODE_UNIT_JSON")
+    if not path:
+        return
+    nodeids = node_unit_nodeids(session.items)
+    Path(path).write_text(json.dumps({"ready": node_ready(), "total": len(nodeids), "items": nodeids}))
 
 
 # --- #712 no-spend: under scripts/gate.sh (GATE=1) paid keys are unset and outbound network is blocked ---
