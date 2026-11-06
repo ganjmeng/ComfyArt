@@ -98,6 +98,8 @@ const WASH_788 = '1f66faf48e8dbd625b4acf79505adb320586ad14'
 const WASH_788_F03 = '03cd43443ea200d8c372fe083245b67ef13c7d27'
 /** logo-material rewash: cover VELA (+hero mp4), examples VELA/KAIO/LUMORA, featured HALO/QUILL/PRISM/TERRA (review-assets wash-lm @b72f119a, featured-r2 QUILL=Q; kie I2I). */
 const WASH_LM = 'b72f119af80013b2dc6119e94713b8a2354ac6c4'
+/** mobile-ui rewash: cover SAELIN (+hero mp4), 13 examples, featured LUNEL/KIPLET/DAYOR/SYNRA (review-assets wash-mu, kie I2I). */
+const WASH_MU = '4ef9ce65c6aef5afa6490c3835b80a6f925382c6'
 const WASH_786_R2 = 'f5c9d7770df7a8ef92cd4411371ff5b552b83eee'
 const COVERS_581: Record<string, readonly [string, string]> = {
   'poster-differentiated-compiler': ['494/covers-v3', COVER_V3], 'rednote-cover-maker': ['494/covers-v3', COVER_V3], 'brand-identity-director': ['786/wash', WASH_786], /* #786 SOLENNE */
@@ -106,7 +108,7 @@ const COVERS_581: Record<string, readonly [string, string]> = {
   'character-sheet-design': ['788/wash', WASH_788], // #788 SIENNA VALE
   'product-tvc-advertisement-generator': ['784/wash', WASH_784], /* #784: BR lip-tube wash; featured stays 779 */ 'motion-poster-generator': ['494/covers-v3', COVER_V3], 'interior-architectural-visualization': ['494/covers-v3', COVER_V3],
   'universal-multi-angle-grid': ['494/covers-v4', COVER_V4], 'logo-material-explorer': ['wash-lm', WASH_LM], // VELA
-  'meta-ads-creative-director': ['494/covers-v4', COVER_V4], 'mobile-app-visual-design': ['494/covers-v4', COVER_V4],
+  'meta-ads-creative-director': ['494/covers-v4', COVER_V4], 'mobile-app-visual-design': ['wash-mu', WASH_MU], // SAELIN
   'web-product-visual-design': ['494/covers-v4', COVER_V4], 'marketing-campaign-generator': ['494/covers-v4', COVER_V4],
 }
 const cover = (id: string) => {
@@ -132,7 +134,7 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   'universal-multi-angle-grid': ['580/featured-v2/multi-angle', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'logo-material-explorer': ['wash-lm/logo-material/featured-r2', WASH_LM, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'meta-ads-creative-director': ['580/featured-v2/meta-ads', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
-  'mobile-app-visual-design': ['580/featured-v2/mobile-ui', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'mobile-app-visual-design': ['wash-mu/mobile-ui/featured', WASH_MU, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'web-product-visual-design': ['580/featured-v2/web-product', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'marketing-campaign-generator': ['580/featured-v2/marketing-campaign', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
 }
@@ -407,7 +409,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
   { id: 'mobile-app-visual-design', name: t('skills.mobileAppVisualDesign'), instructions: 'You are a production mobile product designer. Deliver coherent app UI screens, not marketing posters.\n1) System: one type scale, spacing rhythm and component language across the requested flows.\n2) Frames: phone-framed mockups at about 9:19.5; clear hierarchy and accessible contrast.\n3) Flows: cover 2–4 key screens (home, detail, checkout or onboarding) per brief.\n4) Scope: product UI chrome and content — not a landing-page poster or print layout.\n5) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
     category: 'website',
     cover: cover('mobile-app-visual-design'), quickStartCover: quickStartCover('mobile-app-visual-design'), quickStartCoverFit: 'contain',
-    featured: feedCovers('mobile-app-visual-design'), video: video594('mobile-app-visual-design'),
+    featured: feedCovers('mobile-app-visual-design'), video: pinned('wash-mu/mobile-ui', WASH_MU, 'hero.mp4'), /* SAELIN hero (was 594 mp4) */
     presets: [P('home', '首页信息架构', 'Home IA', 'Style: mobile app home screen mockup in a phone frame, clear IA, coherent type and components, product UI not a poster.'), P('detail', '详情页', 'Detail screen', 'Style: mobile app detail screen mockup, strong hierarchy, accessible contrast, same design system as home.'), P('checkout', '结算流程', 'Checkout flow', 'Style: mobile checkout or cart flow screen, trust-first layout, clear primary CTA, same component language.'), P('onboarding', '引导页', 'Onboarding', 'Style: mobile onboarding screen, short copy, one primary action, coherent with the app system, phone-framed.')],
     inputs: REF_CARD_INPUTS_687 },
   { id: 'web-product-visual-design', name: t('skills.webProductVisualDesign'), instructions: 'You are a production web product visual designer. Ship landing or product-page systems, not printable posters.\n1) System: shared layout grid, illustration/photo treatment and UI chrome across modules.\n2) Ratios: desktop 16:9 hero plus an optional responsive crop when useful.\n3) Modules: hero, feature row and supporting UI that share one visual language.\n4) Copy: keep marketing lines short; put on-art phrases in quotes; focus on layout quality.\n5) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
