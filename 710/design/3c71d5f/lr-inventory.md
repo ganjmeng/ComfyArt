@@ -150,3 +150,30 @@ QA 用仓库自带 `tests/js/ask763` harness 渲染**真实 `ChatMessage` 组件
 4. 运行中右图未含「停止按钮」证据（QA harness 未渲染 composer）；#710 差异 4「状态行 + 停止入口」需真 app 路径补图。
 
 补图后 #710 只剩 **computed 精确值** 一项硬 HOLD（需登录态 DOM）；其余六态金标+L/R 已齐。
+
+---
+
+## 十、更正与新增证据（2026-11-07 03:24，QA 溯源后修订）
+
+### 10.1 「状态 05 已选」金标更正 —— 没有金标（此前误用，已修正）
+- `followup_card_selected.png`（760×280）= **状态 06「提交后灰气泡」的局部裁图**，不是「卡内 A 高亮未提交」。
+- 溯源（以 GitHub API 为准）：该文件与 `followup_card_submitted.png` 由**同一个 commit `821762885248abef007feb308e09d5132ade7fe1`**（2026-11-04T01:45:49Z，msg「qa: Lovart follow-up card submitted state」）加入；`1bb191ba`（01:38:40Z）只加 4 个文件（skill_dialog_default / skill_dialog_filled_with_upload / followup_question_card / run_loading_outputting），**没有 selected**。
+  （QA 口述「1bb191ba 加入」与 API 不符，已按 API 更正；**语义结论一致**：这张不是选中态。）
+- #710 评论 01:46Z 原话仍成立：「05 选中态仍待补」。→ **05 金标 = 缺失（HOLD 等 lovart.ai 通道）**。
+- 修正动作：`lr-710-followup-selected-zh-light.png` 已重制 = 左「LOVART GOLD MISSING」占位 + 右 QA 选中态右图，**不冒充金标**；06 完整金标仍用 `followup_card_submitted.png`（1920×1072），`followup_card_selected.png` 降级为 06 的细节裁图。
+- 更正后 #710 六态金标状态：1 ✅ / 2 ✅ / 3 ✅ / 4 ✅ / **5 ❌ 缺失（HOLD）** / 6 ✅。
+
+### 10.2 新增 #710 差异 #2 硬证据（4 张方案「每张一段」）
+- QA 用同款组件级 mock 渲染了 main `3c71d5f` 的 `QuestionCard`（4 条方案 + A 开始生成 / B 换一组方案 / C 其他（自行填写）+ Skip/Submit 置灰），实测 **`prompt_newlines_in_dom = 0`** → **4 条方案在 DOM 里仍被合并成一整段**，正是 #710 差异 #2 的现状证据（Lovart 每张一段）。
+- L/R：`lr-710-followup-4plans-zh-light.png`（左 Lovart `followup_question_card.png` 裁切｜右我们 4plans；右图原图 `right-710-followup-4plans-zh-light.png`）。
+- 结论：**差异 #2 在 main 3c71d5f 仍未实现 → #710 尚不可验收**；全栈按 AC 分行实现后重截即可闭环。此图可直接嵌 #710 issue 作现状证据。
+
+### 10.3 运行中「停止按钮」证据（HOLD）
+QA 不建议在 harness 硬渲染 composer/AgentPanel（依赖 tiptap/tldraw 与真实会话状态，会失真）；同意。
+→ #710 差异 #4「状态行 + 停止入口」的权威右图需 **fullstack 起 agent provider mock 后走真 app 路径**（:8392 + `RV_MODE=timeout`），现 running L/R 仅结构对照，标 HOLD。
+
+### 10.4 本轮新增/修正文件 pinned URL（sha `fc4c649c52d1295203204c03cbacd09de3340bf6`；**旧 sha `b2dea74` 里的 selected 图已作废，请用此 sha**）
+- 4 plans 证据 L/R：https://raw.githubusercontent.com/ganjmeng/ComfyArt/fc4c649c52d1295203204c03cbacd09de3340bf6/710/design/3c71d5f/lr-710-followup-4plans-zh-light.png
+- 4 plans 右图原图：https://raw.githubusercontent.com/ganjmeng/ComfyArt/fc4c649c52d1295203204c03cbacd09de3340bf6/710/design/3c71d5f/right-710-followup-4plans-zh-light.png
+- 修正后 05（左=GOLD MISSING）：https://raw.githubusercontent.com/ganjmeng/ComfyArt/fc4c649c52d1295203204c03cbacd09de3340bf6/710/design/3c71d5f/lr-710-followup-selected-zh-light.png
+- 本文档最新版：见 Lead 消息 / review-assets `710/design/3c71d5f/lr-inventory.md` 最新 sha。
