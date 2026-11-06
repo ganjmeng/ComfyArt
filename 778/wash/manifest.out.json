@@ -1,0 +1,28 @@
+{
+  "issue": 643,
+  "tool": "scripts/kie_wash_phase3.py",
+  "model": "gpt-image-2-5-flare-image-to-image",
+  "assets": [
+    {
+      "skill_id": "banner",
+      "slot": "cover",
+      "index": 1,
+      "path": "banner/cover/cover.png",
+      "sha256": "7cdb51ea88006f1a51d04625debc26f112672e12aacfcf5e09f2e90bff6358a2",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "c9fdaad80939f9c6605ec3a25cabfe1c",
+      "source": "gold-cover.png"
+    },
+    {
+      "skill_id": "banner",
+      "slot": "featured",
+      "index": 3,
+      "path": "banner/featured/03.png",
+      "sha256": "7f7331c65902d468222a6e399c4f4ae9793f09f081044ac8835ff1d52ec17e3d",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "fde659c37b0eb8ad8d16832ed357d1d4",
+      "source": "src-feat03.png"
+    }
+  ],
+  "errors": []
+}
