@@ -198,7 +198,7 @@ const cover687 = (id: string) => pinned(`687/wash/${assetDir(id)}`, WASH_687, 'c
 const video687 = (id: string) => pinned(`687/wash/${assetDir(id)}`, WASH_687, 'cover.mp4')
 const feat687 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`687/wash/${assetDir(id)}/examples`, WASH_687, `${String(n).padStart(2, '0')}.webp`))
-// #777 packaging cover rewash — drop LUMIERE ARTISAN; single brand AURELIA ATELIER. Featured/presets stay 5 (#541 / Lovart collection).
+// #777 packaging cover rewash — drop LUMIERE ARTISAN; single brand AURELIA ATELIER. Featured/presets stay 5 (#541 ref collection).
 const WASH_777 = 'e270088ea1695f5200669649e6e832057e9c8a6a'
 const cover777 = (id: string) => pinned(`777/wash/${assetDir(id)}`, WASH_777, 'cover.webp')
 // #673 C group re-wash; #743 pin → main merge 15e9bdad (#736 wash: ppt p07, promo ex01 platform, taobao cover+ex07).
