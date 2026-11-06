@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent
 pytestmark = pytest.mark.skipif(not (ROOT / "node_modules" / ".bin" / "rolldown").exists() or not shutil.which("node"), reason="needs node + npm install")
 SITES = ("elements", "projects", "bot", "llm")
 OBJECT_BODIES = ("tagged", "untagged", "nested")
-WS_FAILED = {"zh": "WaveSpeed 没能完成这次任务，请检查输入后再试。", "en": "WaveSpeed could not finish this job. Check the inputs and try again."}
+WS_FAILED = {"zh": "任务没能完成，请检查输入后再试。", "en": "This job could not finish. Check the inputs and try again."}  # #719: no vendor name
 FALLBACK = {
     "elements": WS_FAILED,
     "projects": {"zh": "请求失败（500），请稍后再试。", "en": "Request failed (500). Please try again."},
