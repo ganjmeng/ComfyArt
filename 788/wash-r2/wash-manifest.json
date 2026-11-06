@@ -1,0 +1,13 @@
+{
+  "assets": [
+    {
+      "skill_id": "character",
+      "slot": "featured",
+      "index": 3,
+      "source_path": "./wash/character/featured/03.png",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Keep the same young woman (same face, hair) and the same cello character-board layout: full-body front/side/back turnaround, one view seated playing the cello, plus close-up cells of her hands on the strings and bow and of the cello scroll. CHANGE HER GARMENT to a concert-appropriate opaque black tank/vest jumpsuit: high round tank neckline close to the collarbone, wide shoulder straps, chest fully covered, NO zipper, NOT a V-neck, NOT plunging, NOT revealing, no cleavage. Elegant concert-performer look. Clean light studio background. Fictional person, not a celebrity. NO text, NO names, NO logos, NO watermark."
+    }
+  ]
+}
