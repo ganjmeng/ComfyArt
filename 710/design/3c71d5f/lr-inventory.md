@@ -177,3 +177,9 @@ QA 不建议在 harness 硬渲染 composer/AgentPanel（依赖 tiptap/tldraw 与
 - 4 plans 右图原图：https://raw.githubusercontent.com/ganjmeng/ComfyArt/fc4c649c52d1295203204c03cbacd09de3340bf6/710/design/3c71d5f/right-710-followup-4plans-zh-light.png
 - 修正后 05（左=GOLD MISSING）：https://raw.githubusercontent.com/ganjmeng/ComfyArt/fc4c649c52d1295203204c03cbacd09de3340bf6/710/design/3c71d5f/lr-710-followup-selected-zh-light.png
 - 本文档最新版：见 Lead 消息 / review-assets `710/design/3c71d5f/lr-inventory.md` 最新 sha。
+
+### 10.5 追认（issue 留痕）
+- QA 已于 2026-11-06T19:23Z 在 #710 补发「金标口径」评论，并于 2026-11-06T19:25Z 发**更正评论**修正入库 commit（`followup_card_selected.png` 属 commit `82176288`，与 submitted 同 commit；`1bb191ba` 不含它）：
+  - 口径评论：https://github.com/ganjmeng/ComfyArt/issues/710#issuecomment-6693438072
+  - 溯源更正：https://github.com/ganjmeng/ComfyArt/issues/710#issuecomment-6693472149
+- 结论与本清单第十节一致：`followup_card_selected.png` → 归 **06 提交态（局部裁图）**；**#710 状态 05「卡内 A 高亮、未提交」无权威金标，HOLD 等 lovart.ai 通道**。
