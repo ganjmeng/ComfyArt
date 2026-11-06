@@ -100,6 +100,8 @@ const WASH_788_F03 = '03cd43443ea200d8c372fe083245b67ef13c7d27'
 const WASH_LM = 'b72f119af80013b2dc6119e94713b8a2354ac6c4'
 /** mobile-ui rewash: cover SAELIN (+hero mp4), 13 examples, featured LUNEL/KIPLET/DAYOR/SYNRA (review-assets wash-mu, kie I2I). */
 const WASH_MU = '4ef9ce65c6aef5afa6490c3835b80a6f925382c6'
+/** web-product rewash: cover ORIVA/KINLO/AYRA (+hero mp4), 9 examples, featured ORIVA/AUREN/NEXARA/VARDA (review-assets wash-wp, WaveSpeed I2I; kie 402). */
+const WASH_WP = 'ca326aede1749ed67952d020e9a28545059e97d0'
 const WASH_786_R2 = 'f5c9d7770df7a8ef92cd4411371ff5b552b83eee'
 const COVERS_581: Record<string, readonly [string, string]> = {
   'poster-differentiated-compiler': ['494/covers-v3', COVER_V3], 'rednote-cover-maker': ['494/covers-v3', COVER_V3], 'brand-identity-director': ['786/wash', WASH_786], /* #786 SOLENNE */
@@ -109,7 +111,8 @@ const COVERS_581: Record<string, readonly [string, string]> = {
   'product-tvc-advertisement-generator': ['784/wash', WASH_784], /* #784: BR lip-tube wash; featured stays 779 */ 'motion-poster-generator': ['494/covers-v3', COVER_V3], 'interior-architectural-visualization': ['494/covers-v3', COVER_V3],
   'universal-multi-angle-grid': ['494/covers-v4', COVER_V4], 'logo-material-explorer': ['wash-lm', WASH_LM], // VELA
   'meta-ads-creative-director': ['494/covers-v4', COVER_V4], 'mobile-app-visual-design': ['wash-mu', WASH_MU], // SAELIN
-  'web-product-visual-design': ['494/covers-v4', COVER_V4], 'marketing-campaign-generator': ['494/covers-v4', COVER_V4],
+  'web-product-visual-design': ['wash-wp', WASH_WP], // ORIVA/KINLO/AYRA
+  'marketing-campaign-generator': ['494/covers-v4', COVER_V4],
 }
 const cover = (id: string) => {
   const [dir, commit] = COVERS_581[id]
@@ -135,7 +138,7 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   'logo-material-explorer': ['wash-lm/logo-material/featured-r2', WASH_LM, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'meta-ads-creative-director': ['580/featured-v2/meta-ads', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'mobile-app-visual-design': ['wash-mu/mobile-ui/featured', WASH_MU, ['01.webp', '02.webp', '03.webp', '04.webp']],
-  'web-product-visual-design': ['580/featured-v2/web-product', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'web-product-visual-design': ['wash-wp/web-product/featured', WASH_WP, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'marketing-campaign-generator': ['580/featured-v2/marketing-campaign', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
 }
 const pinned = (dir: string, commit: string, file: string) => `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${commit}/${dir}/${file}`
@@ -415,7 +418,7 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
   { id: 'web-product-visual-design', name: t('skills.webProductVisualDesign'), instructions: 'You are a production web product visual designer. Ship landing or product-page systems, not printable posters.\n1) System: shared layout grid, illustration/photo treatment and UI chrome across modules.\n2) Ratios: desktop 16:9 hero plus an optional responsive crop when useful.\n3) Modules: hero, feature row and supporting UI that share one visual language.\n4) Copy: keep marketing lines short; put on-art phrases in quotes; focus on layout quality.\n5) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
     category: 'website',
     cover: cover('web-product-visual-design'), quickStartCover: quickStartCover('web-product-visual-design'), quickStartCoverFit: 'contain',
-    featured: feedCovers('web-product-visual-design'), video: video594('web-product-visual-design'),
+    featured: feedCovers('web-product-visual-design'), video: pinned('wash-wp/web-product', WASH_WP, 'hero.mp4'), /* ORIVA hero (was 594 mp4) */
     presets: [P('hero', '落地页主视觉', 'Landing hero', 'Style: web product landing hero at 16:9, strong hierarchy, short headline in quotes, coherent UI chrome.'), P('features', '功能模块', 'Feature modules', 'Style: web product feature modules row, shared grid and illustration treatment, desktop product page language.'), P('pricing', '定价区', 'Pricing section', 'Style: web pricing section visual, clear cards, accessible contrast, same system as the hero.'), P('responsive', '响应式裁切', 'Responsive crop', 'Style: responsive crop of the same web product system for a narrower viewport, layout reflowed not letterboxed.')],
     inputs: REF_CARD_INPUTS_687 },
   { id: 'marketing-campaign-generator', name: t('skills.marketingCampaignGenerator'), instructions: 'You are a production campaign art director. One big idea, then keyed frames across platforms.\n1) Idea: lock brand/product, goal and lead slogan from Additional Details; put slogans in quotes.\n2) System: shared motif, palette and typography across hero KV, social and display frames.\n3) Adapt: show how the system reflows across ratios without collapsing into a single poster or a Meta-only set.\n4) Deliverables: at least a hero key visual plus social and display adaptations that stay on-system.\n5) Refs: when files are uploaded, pass each shape id in refs (ref_modes content) on every generate_image call.',
