@@ -90,7 +90,7 @@ def test_rev2_cells_pinned(got):
     for i, pid in enumerate(["beauty", "fashion", "foodbev", "electronics", "home", "outdoor", "software"], start=1):
         assert p[pid] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/d17ae7c9a27b84ab0f0781bccee100778a9f1e18/784/wash/product/examples/{i:02d}.webp"
     assert list(b) == ["geometric", "handmade", "tech", "beauty", "foodbev", "pet"]
-    assert all(u == R541.replace("/541/", "/786/").format("8ab5aa8044d71e9518ae5f054eb2f8c7e77dd127", asset_dir("brand-identity-director"), asset_dir("brand-identity-director"), i) for i, u in b.items())  # #786
+    assert all(u == R541.replace("/541/wash/", "/786/wash-r2/").format("f5c9d7770df7a8ef92cd4411371ff5b552b83eee", asset_dir("brand-identity-director"), asset_dir("brand-identity-director"), i) for i, u in b.items())  # #786
     assert list(k) == ["eco", "gold", "playful", "panels", "shelf"] and "mockup" not in k
     # #777: packaging examples pinned under 777/wash (AURELIA); shelf included
     for i, pid in enumerate(["eco", "gold", "playful", "panels", "shelf"], start=1):
