@@ -85,12 +85,12 @@ R541 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/{}/541/wash/{}/{}__{
 
 @needs_node
 def test_rev2_cells_pinned(got):
-    """AC rev 2 + #784: product 7 RESULT videos @d17ae7c9; brand 6 @f204502; packaging 5 @777/#541."""
+    """AC rev 2 + #784: product 7 RESULT videos @d17ae7c9; brand 6 @786 rewash; packaging 5 @777/#541."""
     p, b, k = got["imgs"]["product-tvc-advertisement-generator"], got["imgs"]["brand-identity-director"], got["imgs"]["packaging-design-director"]
     for i, pid in enumerate(["beauty", "fashion", "foodbev", "electronics", "home", "outdoor", "software"], start=1):
         assert p[pid] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/d17ae7c9a27b84ab0f0781bccee100778a9f1e18/784/wash/product/examples/{i:02d}.webp"
     assert list(b) == ["geometric", "handmade", "tech", "beauty", "foodbev", "pet"]
-    assert all(u == R541.format("f2045022727c73e24bd6d5ebcb3815bedb7b8797", asset_dir("brand-identity-director"), asset_dir("brand-identity-director"), i) for i, u in b.items())
+    assert all(u == R541.replace("/541/wash/", "/786/wash-r2/").format("f5c9d7770df7a8ef92cd4411371ff5b552b83eee", asset_dir("brand-identity-director"), asset_dir("brand-identity-director"), i) for i, u in b.items())  # #786
     assert list(k) == ["eco", "gold", "playful", "panels", "shelf"] and "mockup" not in k
     # #777: packaging examples pinned under 777/wash (AURELIA); shelf included
     for i, pid in enumerate(["eco", "gold", "playful", "panels", "shelf"], start=1):

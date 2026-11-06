@@ -89,8 +89,12 @@ const WASH_778_EX01 = 'e9c0f21959787a9c7401fa95927db3e3e6931bcd'
 const WASH_779 = '47bd97529fffde96a515b0eb44a45b41284deba0'
 /** #784 product cover BR lip-tube wash + 7 RESULT video templates (review-assets 784/wash). Featured stays WASH_779. */
 const WASH_784 = 'd17ae7c9a27b84ab0f0781bccee100778a9f1e18'
+/** #786 brand-identity rewash: cover SOLENNE + featured 01-04 + 6 templates (review-assets 786/wash, kie I2I). */
+const WASH_786 = '8ab5aa8044d71e9518ae5f054eb2f8c7e77dd127'
+/** #786 r2 template remap to collection titles (餐饮服务=SOLENNE, 服装配饰=LINTEL, 家居生活=ROWAN HOUSE); review-assets 786/wash-r2. */
+const WASH_786_R2 = 'f5c9d7770df7a8ef92cd4411371ff5b552b83eee'
 const COVERS_581: Record<string, readonly [string, string]> = {
-  'poster-differentiated-compiler': ['494/covers-v3', COVER_V3], 'rednote-cover-maker': ['494/covers-v3', COVER_V3], 'brand-identity-director': ['494/covers-v3', COVER_V3],
+  'poster-differentiated-compiler': ['494/covers-v3', COVER_V3], 'rednote-cover-maker': ['494/covers-v3', COVER_V3], 'brand-identity-director': ['786/wash', WASH_786], /* #786 SOLENNE */
   'packaging-design-director': ['494/covers-v3', COVER_V3], 'cover-design-director': ['494/covers-v3', COVER_V3],
   'banner-design-director': ['778/wash', WASH_778], // #778: fintech hero cover (was VENTUR brand board)
   'character-sheet-design': ['494/covers-v3.2', 'dc335056e81e0350e2f98487fb680e22ffb14bb9'],
@@ -111,7 +115,7 @@ const FEED_V2 = WASH_594  // #594 new6 featured-v2
 const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> = {
   'poster-differentiated-compiler': ['580/featured-v1/poster', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'rednote-cover-maker': ['580/featured-v1/social', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
-  'brand-identity-director': ['580/featured-v1/brand', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'brand-identity-director': ['786/wash/brand/featured', WASH_786, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'packaging-design-director': ['777/wash/packaging/featured', 'e270088ea1695f5200669649e6e832057e9c8a6a', ['01.webp', '02.webp', '03.webp', '04.webp']], /* #777: featured → AURELIA */
   'cover-design-director': ['580/featured-v1/thumbnail', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'banner-design-director': ['580/featured-v1/banner', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
@@ -153,7 +157,7 @@ const video594 = (id: string) =>
 // #687: motion's off-topic poster-animation / first-last templates (and their #622 wash-v1 mp4s) were removed.
 /** #541 AC rev 2 washes on review-assets (541/wash/<skill>/<skill>__<preset>.webp; each pinned to its own commit). */
 const WASH_541 = {
-  brand: 'f2045022727c73e24bd6d5ebcb3815bedb7b8797', // 4:3 stacked, 品牌视觉识别
+  brand: WASH_786_R2, // #786 r2 rewash (was f2045022); 4:3 stacked, 品牌视觉识别
   packaging: 'c26cfaddc5e12c8652b151ef09ad12c47b2062a0', // 4:3, 品牌包装设计系统 (5); manifest c26cfad (mockup dropped, same 5 images as 1014ef2)
   packagingShelf: '35c819e64b38cc7d64dcd814ae8b86133976fc8a', // shelf re-wash: retail shelf rows (manifest d574dda6)
 }
@@ -195,7 +199,7 @@ const ex673 = (id: string, ids: number[]) =>
 const feat673 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`673/wash/${id}/featured`, WASH_673, `${String(n).padStart(2, '0')}.webp`))
 const wash541 = (commit: string, skillId: string, presetId: string) =>
-  `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${commit}/541/wash/${assetDir(skillId)}/${assetDir(skillId)}__${presetId}.webp`
+  `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${commit}/${commit === WASH_786_R2 ? '786/wash-r2' : '541/wash'}/${assetDir(skillId)}/${assetDir(skillId)}__${presetId}.webp`
 const washProduct784 = (n: string, kind: 'image' | 'video' = 'image') =>
   pinned(`784/wash/product/examples`, WASH_784, `${n}.${kind === 'video' ? 'mp4' : 'webp'}`)
 /** #569 character (7) + motion (2) template washes, from review-assets manifest 881494ff (assets pinned to bd043d4c). */
