@@ -1,26 +1,52 @@
 {
   "issue": 777,
   "skill": "packaging-design-director",
-  "assetDir": "packaging",
-  "model": "gpt-image-2-5-flare-image-to-image",
   "brand": "AURELIA ATELIER",
-  "note": "Cover + master/\u4e3b\u6b3e template rewash: drop LUMIERE ARTISAN; single brand AURELIA ATELIER. Keep 5 templates (do not expand to 8). Other 4 preset images unchanged (already single-brand).",
+  "note": "All 5 template images + cover + featured\u2192AURELIA. Keep count 5. Cover+01 prior; 02-05 + featured this tip.",
   "files": {
-    "cover.webp": {
-      "sha256": "cb5013d075d18c8ccc29e4cb089ae2817f5a940448bcad1f5d0fbb5dd8fbd2f6",
-      "bytes": 428162
+    "packaging/cover@thumb.webp": {
+      "sha256": "199b5dba994a6d9dddd52c2d22ca62fe5a61399e07befbcae4ffbd342efbe2b6",
+      "bytes": 22432
     },
     "packaging/cover.webp": {
       "sha256": "cb5013d075d18c8ccc29e4cb089ae2817f5a940448bcad1f5d0fbb5dd8fbd2f6",
       "bytes": 428162
     },
-    "packaging/cover@thumb.webp": {
-      "sha256": "199b5dba994a6d9dddd52c2d22ca62fe5a61399e07befbcae4ffbd342efbe2b6",
-      "bytes": 22432
+    "packaging/featured/03.webp": {
+      "sha256": "b557712edaa251235870090574149244b44c670be42a9055fb53ad1284a675e1",
+      "bytes": 710454
+    },
+    "packaging/featured/01.webp": {
+      "sha256": "cb7892d1a49fd731449131e33e57cd29733ccc0478d91fd5891d7e8c121b8991",
+      "bytes": 574374
+    },
+    "packaging/featured/04.webp": {
+      "sha256": "8db1fa29a4026026e0196befc3748bd8325acdd033a76f28e8f17a220d8db14e",
+      "bytes": 395154
+    },
+    "packaging/featured/02.webp": {
+      "sha256": "1d66344f67bddac6129f8afa41c0520797702d903cc7a83f34d1202cc33462e2",
+      "bytes": 313014
+    },
+    "packaging/examples/03.webp": {
+      "sha256": "8116ca4a8e41a97e8c475be400f1289e37ada33f8897c25c168a5be281690225",
+      "bytes": 233506
     },
     "packaging/examples/01.webp": {
       "sha256": "8fbf1c8b83ca3369ad77b2751ad6ad5e18c3bba6f4f5313d98ba26ce32592f04",
       "bytes": 112904
+    },
+    "packaging/examples/04.webp": {
+      "sha256": "0d997e8c0d68673e2bff8a426658d30344bb5da2362d793c7bc477b768681095",
+      "bytes": 364230
+    },
+    "packaging/examples/02.webp": {
+      "sha256": "bc47eaee5147275c2fd33e71e2aa18dff117ad1edcbb219bb99c6d2e890d41b1",
+      "bytes": 317752
+    },
+    "packaging/examples/05.webp": {
+      "sha256": "3ef5bf4f511a8d6f711ea637b68fa86842804e795190d6a321f90de2eefbeca7",
+      "bytes": 312728
     }
   }
 }
