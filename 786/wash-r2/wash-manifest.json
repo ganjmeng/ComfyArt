@@ -1,0 +1,13 @@
+{
+  "assets": [
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 7,
+      "source_path": "src/t_tech.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Home & living brand logo-system board for 'ROWAN HOUSE': a simple cottage / house-outline mark with a rowan-leaf detail plus a refined wordmark 'ROWAN HOUSE'; primary mark, horizontal and stacked lockups, black/white versions, clear-space diagram, warm palette (linen, sage, terracotta, walnut), and small applications (cushion tag, candle label, tote). Calm warm interior feel, light background. Use ONLY the brand name given; no other brand names, no watermark, no UI chrome. Completely new layout and subject versus the input image; no dark tech look, no constellation nodes."
+    }
+  ]
+}

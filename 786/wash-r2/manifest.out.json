@@ -1,0 +1,128 @@
+{
+  "issue": 643,
+  "tool": "scripts/kie_wash_phase3.py",
+  "model": "gpt-image-2-5-flare-image-to-image",
+  "assets": [
+    {
+      "skill_id": "brand",
+      "slot": "cover",
+      "index": 1,
+      "path": "brand/cover/cover.png",
+      "sha256": "bbb0d3d97d2e363bbf2039a4edb36c0cf4827ca50c55eb7ceb6b164e724262fd",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "c0337d5a8d1d176d12e258cedbcd02fe",
+      "source": "cover.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 1,
+      "path": "brand/examples/01.png",
+      "sha256": "18b2100fe4fd3dcf9a3a85a1515829414fe7d745bfd10beb759b8f048b7ac870",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "cd8bc9b5c533677a6b2902a88d3f9669",
+      "source": "t_geometric.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 2,
+      "path": "brand/examples/02.png",
+      "sha256": "26c3ac072b2a87229b2c645e64a229ebcfe83d0887a5ac99b94f259961a05335",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "f64ba2684ee157abdbce9016d07e29cc",
+      "source": "t_handmade.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 3,
+      "path": "brand/examples/03.png",
+      "sha256": "b0669cb30edf7cff1d6cb550453a63c7abb7e264eef166a6ef7d5d89e3e00165",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "f31198c753669926242af8ef4fc6a322",
+      "source": "t_tech.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 4,
+      "path": "brand/examples/04.png",
+      "sha256": "799fd8a1f89992bf660b4066e926c5418d28fc5312d9a069da65a6f86c2165bd",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "5502f25cc00ca4dc04ac5b4dbd32f9f9",
+      "source": "t_beauty.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 5,
+      "path": "brand/examples/05.png",
+      "sha256": "3c0c22c954bcfd16fcd7d062cc5d45fb775f750cd914555aa632838c2ca8fefe",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "bc47cfc43d355884e189bc07c755bad7",
+      "source": "t_foodbev.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 6,
+      "path": "brand/examples/06.png",
+      "sha256": "98d52b07281ab6a4d0e4a02df204c83756d45de6d679b40d84c407e4d2f8ef28",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "77b2b9ca2bf7141e951c9049e85dbbf0",
+      "source": "t_pet.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "examples",
+      "index": 7,
+      "path": "brand/examples/07.png",
+      "sha256": "50cfd9092d80306e6d3b9cde91e42b9e416d2d94b944046c24dbbbb05ae6fb1b",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "c67a3c7d8aae15537656085ea8895cd2",
+      "source": "t_tech.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "featured",
+      "index": 1,
+      "path": "brand/featured/01.png",
+      "sha256": "08abfae93519f5f8e557103da7e80abacd5bb370d2ded5c8a3eaf6cb49416247",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "4cf2b80c48de3be89f59218577e88db5",
+      "source": "feat01.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "featured",
+      "index": 2,
+      "path": "brand/featured/02.png",
+      "sha256": "a27b7f68cb7439db6a9512ff073d729088c44e92b2880b09db829776a5934f6b",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "41186cead8ff3968ec63dfdbbba02d8a",
+      "source": "feat02.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "featured",
+      "index": 3,
+      "path": "brand/featured/03.png",
+      "sha256": "7e862669e2f910200633fb516a1c7371c6c06e54575095a989d6070a5e80edd9",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "22aac24fca09e7b4f990d3956936bfee",
+      "source": "feat03.webp"
+    },
+    {
+      "skill_id": "brand",
+      "slot": "featured",
+      "index": 4,
+      "path": "brand/featured/04.png",
+      "sha256": "bf70e5e5fa34396adad7faf5482657975af8355abed9d774273b10bd8845814b",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "4068af486f48b05c7417240b2face59f",
+      "source": "feat04.webp"
+    }
+  ],
+  "errors": []
+}
