@@ -1,0 +1,88 @@
+{
+  "issue": 643,
+  "tool": "scripts/kie_wash_phase3.py",
+  "model": "gpt-image-2-5-flare-image-to-image",
+  "assets": [
+    {
+      "skill_id": "product",
+      "slot": "cover",
+      "index": 1,
+      "path": "product/cover/cover.png",
+      "sha256": "73b19dfbd50d7641169b47874f42a431fa49450797c3898a67a7caecfdb0fa97",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "df317103002ab546d3516d349e7dca08",
+      "source": "lip_ref.png"
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 1,
+      "path": "product/examples/01.png",
+      "sha256": "cc7c7a29862d4ee076db61381556bf37c6e247c99fc72f7e804a3cead2375d19",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "197a1267d80d86448227ff3640bfc382",
+      "source": "01_beauty.png"
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 2,
+      "path": "product/examples/02.png",
+      "sha256": "c67c7ba69c65807b5359960fcf1d00e0a6f65af9193d694b185a47cf5ffc58dc",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "a45035b0271e0b796f310d3ec1585623",
+      "source": "02_fashion.png"
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 3,
+      "path": "product/examples/03.png",
+      "sha256": "bfc12d465378488637c78f34fd20f4076ad6d4e053c05def354b28456db1fabd",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "48652ac8a9bfd947653d67c2572d852c",
+      "source": "03_foodbev.png"
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 4,
+      "path": "product/examples/04.png",
+      "sha256": "bf921cf33df15d89724192647bcf27ba492e2bd3631e755d40542cab4fee6627",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "256540eadaab93568e65b5a779ece418",
+      "source": "04_electronics.png"
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 5,
+      "path": "product/examples/05.png",
+      "sha256": "d4c0a74f3e9cfd1e26fdc1f18111ee566e63278df1b7c70dd6224bab2e735a72",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "5fcf45e2460f7f14647cdaf09d87fe8b",
+      "source": "05_home.png"
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 6,
+      "path": "product/examples/06.png",
+      "sha256": "a27d9eecedf8da49bf451e1389b82b4d4d4f15c386395bd93c447a0bca38c19a",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "846eadf13ae96490293c5d2a7aa45812",
+      "source": "06_outdoor.png"
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 7,
+      "path": "product/examples/07.png",
+      "sha256": "eef899dcdd96adbd3e2eea48f2a152addd5d85f4fefa68cb278037cfd7cbf629",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "5937d159a0b13246da79adacbbfa7ad2",
+      "source": "07_software.png"
+    }
+  ],
+  "errors": []
+}

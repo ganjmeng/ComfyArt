@@ -1,0 +1,76 @@
+{
+  "assets": [
+    {
+      "skill_id": "product",
+      "slot": "cover",
+      "index": 1,
+      "source_path": "/workspace/wt784/docs/design/784/src/lip_ref.png",
+      "aspect_ratio": "1:1",
+      "resolution": "1K",
+      "prompt": "Recreate as an ORIGINAL Amazon listing product photo on pure white seamless background. Single tall slender pink lipstick / lip-balm TUBE (cylindrical soft-pink body, matching cap), standing upright, soft studio shadow. Brand wordmark only: vertical 'MAREN' in clean white sans-serif letters on the tube. Do NOT write glossa or any other brand. No dropper bottle, no serum bottle, no water cup, no people, no extra props, no watermark."
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "/workspace/wt784/docs/design/784/src/01_beauty.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Recreate as an ORIGINAL beauty product commercial still, 16:9. A stylish woman holds an open classic red lipstick near her face in a bright modern studio with concrete walls and strong directional light. She wears a sleek black sleeveless top. Keep the advertisement-film mood (not a white-bottle product shot). No competitor logos, no watermark, no on-screen UI."
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "/workspace/wt784/docs/design/784/src/02_fashion.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Recreate as an ORIGINAL fashion commercial still, 16:9. A woman seen from behind walks in a bright studio: yellow-and-white check short-sleeve top, light denim shorts, bright blue shoulder bag with chain strap, blonde bun. Fashion film energy, not a printed water bottle. No competitor logos, no watermark."
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "/workspace/wt784/docs/design/784/src/03_foodbev.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Recreate as an ORIGINAL food-and-beverage commercial still, 16:9. A clear glass bottle of natural mineral water held by a hand on a mossy rock beside a mountain stream at golden hour, fresh condensation, forest bokeh. Advertisement film, not a studio still-life pack shot. Invent an original bottle label (not ALPINE). No watermark."
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "/workspace/wt784/docs/design/784/src/04_electronics.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Recreate as an ORIGINAL electronics commercial still, 16:9. Extreme close-up of premium over-ear headphones: brushed silver earcup plate with fine lines, soft grey fabric pads, studio bokeh. Advertisement film detail shot. No brand logos, no watermark."
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 5,
+      "source_path": "/workspace/wt784/docs/design/784/src/05_home.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Recreate as an ORIGINAL home-decor commercial still, 16:9. Warm sunset living room: cream sectional sofa, dark wood coffee table, city view through floor-to-ceiling windows, paper lantern glow. High-end interior advertisement film mood. No people, no watermark."
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 6,
+      "source_path": "/workspace/wt784/docs/design/784/src/06_outdoor.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Recreate as an ORIGINAL outdoor sports commercial still, 16:9. First-person mountain-bike POV racing a forest road: gloved hands on handlebars, motion blur, sun flare through pines. Adventure advertisement film energy. No logos, no watermark."
+    },
+    {
+      "skill_id": "product",
+      "slot": "examples",
+      "index": 7,
+      "source_path": "/workspace/wt784/docs/design/784/src/07_software.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Recreate as an ORIGINAL SaaS / software commercial still, 16:9. Confident professional in a navy suit seated in a leather office chair holding a phone, city dusk skyline through a wide window behind. Corporate software advertisement film mood. No competitor logos, no watermark."
+    }
+  ]
+}
