@@ -82,12 +82,14 @@ const COVER_V3 = '3c9b87e7eae72164efdd1fe30e00f576144475f4'
 /** #594 Phase1 new6 covers (494/covers-v4) + featured-v2 + 594/wash examples — eye PASS 6/6 incl. mobile-ui cover regen. */
 const WASH_594 = 'cc76d743d416c3d9a9a6852d811a7a80caf40319'
 const COVER_V4 = WASH_594
+/** #779 product cover (white-bg grid) + single-brand featured (review-assets 779/wash, kie I2I). */
+const WASH_779 = '47bd97529fffde96a515b0eb44a45b41284deba0'
 const COVERS_581: Record<string, readonly [string, string]> = {
   'poster-differentiated-compiler': ['494/covers-v3', COVER_V3], 'rednote-cover-maker': ['494/covers-v3', COVER_V3], 'brand-identity-director': ['494/covers-v3', COVER_V3],
   'packaging-design-director': ['494/covers-v3', COVER_V3], 'cover-design-director': ['494/covers-v3', COVER_V3],
   'banner-design-director': ['494/covers-v3.1', '9b23a3e8e3ca2f6b64dc16c0cf36fbf9c41fcaf4'],
   'character-sheet-design': ['494/covers-v3.2', 'dc335056e81e0350e2f98487fb680e22ffb14bb9'],
-  'product-tvc-advertisement-generator': ['494/covers-v3', COVER_V3], 'motion-poster-generator': ['494/covers-v3', COVER_V3], 'interior-architectural-visualization': ['494/covers-v3', COVER_V3],
+  'product-tvc-advertisement-generator': ['779/wash', WASH_779], /* #779: was A+ lifestyle strip */ 'motion-poster-generator': ['494/covers-v3', COVER_V3], 'interior-architectural-visualization': ['494/covers-v3', COVER_V3],
   'universal-multi-angle-grid': ['494/covers-v4', COVER_V4], 'logo-material-explorer': ['494/covers-v4', COVER_V4],
   'meta-ads-creative-director': ['494/covers-v4', COVER_V4], 'mobile-app-visual-design': ['494/covers-v4', COVER_V4],
   'web-product-visual-design': ['494/covers-v4', COVER_V4], 'marketing-campaign-generator': ['494/covers-v4', COVER_V4],
@@ -109,7 +111,7 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   'cover-design-director': ['580/featured-v1/thumbnail', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'banner-design-director': ['580/featured-v1/banner', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'character-sheet-design': ['580/featured-v1/character', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
-  'product-tvc-advertisement-generator': ['580/featured-v1/product', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'product-tvc-advertisement-generator': ['779/wash/product/featured', WASH_779, ['01.webp', '02.webp', '03.webp', '04.webp']], // #779 NODAL single brand, no portraits
   'motion-poster-generator': ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'interior-architectural-visualization': ['580/featured-v1/interior', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'universal-multi-angle-grid': ['580/featured-v2/multi-angle', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
