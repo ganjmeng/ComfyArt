@@ -12,14 +12,13 @@ SHELL = (ROOT / "src/styles/shell.css").read_text()
 ICONS = (ROOT / "src/ui/icons.tsx").read_text()
 
 
-@pytest.mark.gate_skip(reason="stale on main: think icon path changed with the Lucide swap (#323, #608)")
 def test_icons_think_brain() -> None:
     assert "think:" in ICONS
-    # Lucide Brain outline paths (current lucide main icons/brain.svg)
+    # #731: the thinking glyph is the #627 in-house top-down brain double-leaf outline, not Lucide Brain.
     block = ICONS.split("think:")[1].split(",\n")[0]
-    assert 'd="M12 18V5"' in block
-    assert 'd="M15 13a4.17 4.17 0 01-3-4 4.17 4.17 0 01-3 4"' in block
-    assert 'd="M19.967 17.482a4 4 0 11-7.967.517 4 4 0 11-7.967-.517"' in block
+    assert "strokeWidth={1.75}" in block
+    assert 'd="M12 4c-1.8 0-3.2.9-3.9 2.2' in block   # brain outline
+    assert 'd="M12 4.8v12.4"' in block                # centre line between the two leaves
     assert "circle" not in block  # no clock circle
     assert "ca-spin" not in block
 

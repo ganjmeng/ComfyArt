@@ -1,0 +1,4 @@
+# Test-only Python deps (the ComfyUI plugin runtime stays on requirements.txt = pypdfium2 only).
+# #437/#731: test_md_circled_437 opens the bundled WOFF2 with fontTools; the [woff] extra pulls in brotli.
+# The test skips with a clear reason when these are missing (never a silent pass).
+fonttools[woff]>=4.40

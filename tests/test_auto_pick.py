@@ -1,11 +1,13 @@
 """#133: Auto picks a model by task type from api/auto_models.json (product table v1); user-named wins;
 the tool result says which model and why (zh + en). All mocked: no page, no WaveSpeed call."""
 import asyncio
+import uuid
 
 import pytest
 
-from ComfyArt.api import auto_models
+from ComfyArt.api import auto_models, paid_guard
 from ComfyArt.api.mcp_tools import canvas
+from ComfyArt.api.mcp_tools._context import GUARD_CHAT_ID
 
 SENT = []
 
@@ -25,7 +27,17 @@ def mocked(monkeypatch):
 
 
 def run(tool, **args):
-    return asyncio.run(canvas.TOOLS[tool]["handler"](args))
+    """#731: #730 wraps direct handler() calls in the paid guard. With no agent turn every call shares the
+    process-wide ``__noturn__:anonymous`` turn, so its 4-image cap leaked across tests (and across the 5
+    runs of test_same_prompt_many_turns_same_model). Each run gets its own throwaway noturn chat = its own
+    turn; the production per-turn cap is untouched (see tests/test_mcp_paid_guard_730.py)."""
+    chat = paid_guard.noturn_key(f"auto-pick-{uuid.uuid4().hex}")
+    token = GUARD_CHAT_ID.set(chat)
+    try:
+        return asyncio.run(canvas.TOOLS[tool]["handler"](args))
+    finally:
+        GUARD_CHAT_ID.reset(token)
+        paid_guard.TURNS.pop(chat, None)
 
 
 def default(feature):
@@ -183,3 +195,9 @@ def test_default_reason_wording():
 def test_named_model_with_refs_says_why():
     note = run("generate_image", prompt="p", refs=["shape:a", "shape:b"], model="openai/gpt-image-2/text-to-image")["model_choice"]["note"]
     assert "你指定了 openai/gpt-image-2/text-to-image" in note and "you named openai/gpt-image-2/text-to-image" in note
+
+
+def test_runs_do_not_share_the_noturn_cap():
+    """#731 isolation regression: 6 direct handler runs (each its own turn) are never refused by a shared cap."""
+    picks = [run("generate_image", prompt="the same prompt")["model_choice"]["model"] for _ in range(6)]
+    assert picks == [default("text_to_image")] * 6

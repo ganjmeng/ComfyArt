@@ -115,7 +115,6 @@ def test_ac5_memory_row_before_second_thought(got):
     assert o["withTools"].count("memory_updated") == 1
 
 
-@pytest.mark.gate_skip(reason="stale on main: memory row rail markup changed since the test was written (#382)")
 def test_memory_row_same_rail_structure():
     """#382 fix: history icon, no separate --memory button/label override."""
     src = (ROOT / "src/ui/ChatMessage.tsx").read_text()
@@ -124,7 +123,7 @@ def test_memory_row_same_rail_structure():
     assert "memory_updated: Icons.memoryHead" in src  # #435: reference icon
     assert "rowbtn--memory" not in src and "rowbtn--memory" not in css
     assert 'data-kind="memory_updated"] .ca-process__label' not in css
-    assert "history: <Svg strokeWidth={2}>" in icons
+    assert "history: L(History, 2)" in icons  # #731: Lucide swap (§#608), was an inline <Svg strokeWidth={2}>.
 
 
 def test_mut_ac5_after_reply_fails_placement(got):
