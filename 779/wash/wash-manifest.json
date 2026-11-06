@@ -1,0 +1,49 @@
+{
+ "assets": [
+  {
+   "skill_id": "product",
+   "slot": "cover",
+   "index": 1,
+   "source_path": "gold-cover.png",
+   "aspect_ratio": "4:3",
+   "resolution": "2K",
+   "prompt": "Recreate as an ORIGINAL Amazon product main-image grid. Keep the exact layout: flat mid-grey background, a neat 3x2 grid of six square white-background product tiles with equal gaps, each tile one product centered on pure white with a soft shadow, listing-ready. Use six DIFFERENT products than the reference, all from ONE single brand 'MAREN' (small 'MAREN' wordmark on each product only): top row a linen button shirt on a hanger, a ceramic pour-over coffee set, a folded waffle-knit throw blanket; bottom row a kraft gift box of granola bars, a matte black wireless earbuds case, an amber glass serum bottle. No people, no models, no other brand names, no extra text, no watermark."
+  },
+  {
+   "skill_id": "product",
+   "slot": "featured",
+   "index": 1,
+   "source_path": "src-feat01.png",
+   "aspect_ratio": "4:3",
+   "resolution": "2K",
+   "prompt": "Keep this layout of tilted rounded product tiles on white with the center tile showing silver-and-black over-ear headphones and the 'NODAL' wordmark. Replace the left tile that shows a woman with a close-up of the headphone's leather ear cushion and steel hinge. Every tile shows only the NODAL headphones (product angles, materials, details). No people, no faces, no other brands, no watermark."
+  },
+  {
+   "skill_id": "product",
+   "slot": "featured",
+   "index": 2,
+   "source_path": "src-feat02.png",
+   "aspect_ratio": "3:4",
+   "resolution": "2K",
+   "prompt": "Create an Amazon-style listing image in 3:4: the same silver-and-black over-ear headphones brand 'NODAL' standing upright on pure white, soft shadow, with three thin call-out lines and short labels 'Active Noise Cancelling', '40h Battery', 'Memory-foam Cushions', and a small 'NODAL' wordmark top. Replace the street scene and the walking woman entirely. No people, no faces, no other brands, no watermark."
+  },
+  {
+   "skill_id": "product",
+   "slot": "featured",
+   "index": 3,
+   "source_path": "src-feat03.png",
+   "aspect_ratio": "4:3",
+   "resolution": "2K",
+   "prompt": "Keep the warm beige interior, vanity and gold tray lighting, but REMOVE the woman entirely. Place the silver-and-black over-ear headphones brand 'NODAL' resting on the gold tray as the single hero product, with headline top-left 'NODAL' and subline 'STUDIO WIRELESS · ANC'. Replace AURA jewelry text. No people, no faces, no other brands, no watermark."
+  },
+  {
+   "skill_id": "product",
+   "slot": "featured",
+   "index": 4,
+   "source_path": "src-feat04.png",
+   "aspect_ratio": "4:3",
+   "resolution": "2K",
+   "prompt": "Keep the dramatic dark volcanic rock scene with mist and moody rim light, but replace the wristwatch with the silver-and-black over-ear headphones brand 'NODAL' resting on the rock as the single hero product, small 'NODAL' engraved on the headband. No people, no other brands, no watermark."
+  }
+ ]
+}
