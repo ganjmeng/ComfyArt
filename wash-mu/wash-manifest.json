@@ -1,0 +1,166 @@
+{
+  "assets": [
+    {
+      "skill_id": "mobile-ui",
+      "slot": "cover",
+      "index": 1,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Mobile app UI presentation for a teal medical telehealth app whose wordmark is 'SAELIN': charcoal dark background, four white rounded presentation boards in a horizontal row each holding a phone screen: (1) welcome screen with an original friendly doctor illustration and a teal 'Get started' button, (2) login screen with email/password fields, (3) home screen with an upcoming-visit card and a video-call entry button, (4) find-a-doctor list with avatars, specialties and ratings. Clean teal and white UI. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Warm wooden desktop scene with three phones lying side by side showing a pet-care app 'LUNEL': (1) welcome screen with an original photo of a happy dog, (2) login screen, (3) today dashboard with food and walk progress cards. Warm cozy lighting. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "White background, three phones in a row showing calendar app 'DAYOR' onboarding with blue primary color: (1) welcome screen with calendar illustration, (2) smartwatch sync permission screen, (3) notification settings with toggles. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "21:9",
+      "resolution": "1K",
+      "prompt": "Three round cycling smartwatch faces in a horizontal row for a cycling app 'ARCEN' on dark background: (1) ride home with pace, speed and heart rate, (2) turn-by-turn navigation arrow with distance, (3) in-ride controls pause/lap/end buttons. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Three tablets in a row showing kids education app 'KIPLET' onboarding: (1) welcome with an original cute round mascot character illustration, (2) choose age band buttons 3-5 / 6-8 / 9-12, (3) create child profile with avatar picker. Bright playful colors. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 5,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Dark moody background, three phones showing furniture AR app 'ATELIO' onboarding: (1) welcome with a modern armchair photo, (2) camera view placing a 3D sofa in a living room with AR grid, (3) choose your style cards (Minimal, Warm wood, Industrial). Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 6,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Three phones side by side showing a museum guide app 'LANTERN' artwork detail screen in three states: Default (an original abstract landscape painting titled 'Quiet Harbor' at the fictional 'Ostrava Hall of Art'), Loading (skeleton placeholders), Empty (no artwork found illustration). No famous paintings. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 7,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Mobile app UI presentation for a teal medical telehealth app whose wordmark is 'SAELIN': charcoal dark background, four white rounded presentation boards in a horizontal row each holding a phone screen: (1) welcome screen with an original friendly doctor illustration and a teal 'Get started' button, (2) login screen with email/password fields, (3) home screen with an upcoming-visit card and a video-call entry button, (4) find-a-doctor list with avatars, specialties and ratings. Clean teal and white UI. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 8,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Three phones showing password vault app 'KEYORA' unlock states on dark navy UI: (1) biometric fingerprint/face unlock prompt, (2) master password numeric keypad, (3) wrong entry error with red lock warning and attempts remaining. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 9,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "One phone in the center showing the 'DAYOR' blue calendar app, surrounded by numbered accessibility annotation callouts with thin leader lines: touch target size, color contrast, focus order, screen reader label, dynamic type, reduce motion, safe area. Clean white design-spec board. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 10,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Three phones showing green-primary cooking app 'NOLEN' onboarding: (1) welcome screen with an appetizing original food photo, (2) taste preference multi-select chips, (3) dietary restriction toggles (vegetarian, gluten-free, nut allergy). Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 11,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Three phones on dark background showing reading app 'VELLUM' bookshelf screen in three states: Default (grid of original fictional book covers like 'The Salt Orchard', 'Paper Comets'), Loading (skeleton), Empty (empty shelf illustration). No real books. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 12,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "3:2",
+      "resolution": "1K",
+      "prompt": "Two phones side by side showing podcast app 'PULSECAST' home screen, left in Dark mode and right in Light mode, with original fictional show cover art tiles and show names like 'Night Signals' and 'Small Hours Lab'. No real podcasts. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "examples",
+      "index": 13,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Light lavender purple multi-screen productivity app 'SYNRA' presentation: wordmark splash, feature intro screen, register/login with Face ID prompt, goal selection screen, and a dark-mode home dashboard, five phones arranged on a soft purple background. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "featured",
+      "index": 1,
+      "source_path": "src/feat01.webp",
+      "aspect_ratio": "9:16",
+      "resolution": "1K",
+      "prompt": "Lifestyle photo: a single phone held at an angle on a warm beige linen surface with soft window light, showing pet-care app 'LUNEL' home screen with pet profile, feeding and walk cards. Warm beige palette. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "featured",
+      "index": 2,
+      "source_path": "src/feat02.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Three tablets in a row showing kids education app 'KIPLET' onboarding: welcome with original mascot, age band selection, create profile. Bright playful. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "featured",
+      "index": 3,
+      "source_path": "src/feat03.webp",
+      "aspect_ratio": "1:1",
+      "resolution": "1K",
+      "prompt": "Accessibility annotation design board: a realistic phone in the center showing the blue calendar app 'DAYOR', with numbered circular callouts and leader lines around it explaining touch targets, contrast, focus order, screen reader labels and dynamic type. White board. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    },
+    {
+      "skill_id": "mobile-ui",
+      "slot": "featured",
+      "index": 4,
+      "source_path": "src/feat04.webp",
+      "aspect_ratio": "3:4",
+      "resolution": "1K",
+      "prompt": "Light purple background with two overlapping phones for productivity app 'SYNRA': front phone shows the splash screen with the SYNRA wordmark, back phone shows the dark-mode home dashboard. Fictional original app; all UI copy short, original and generic. No real brands, no Apple/Google logos or store buttons, no real artworks, books, podcasts or celebrities. No caption or title text outside the device screens. No watermark. Completely new design versus the input image; nothing mint-green, no habit-tracker."
+    }
+  ]
+}
