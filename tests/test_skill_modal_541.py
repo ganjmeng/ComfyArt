@@ -76,8 +76,8 @@ def test_tiles_from_presets_and_zoom_is_sibling_button():
 @needs_node
 def test_product_has_six_presets(got):
     assert got["presets"]["product-tvc-advertisement-generator"] == 7 and got["meta"]["product-tvc-advertisement-generator"] == {"templates": 7, "usage": 0}  # #748 raw: 7 (+SaaS)
-    assert got["productIds"] == ["white", "lifestyle", "detail", "electronics", "food", "beauty", "t7"]
-    assert all("/688a702a1f322082cde4e5ed46200c3593db9c43/541/wash/product/product__" in u for u in got["productNew"][:3])  # t7 (SaaS) = placeholder, WASH-TODO
+    assert got["productIds"] == ["beauty", "fashion", "foodbev", "electronics", "home", "outdoor", "software"]
+    assert all("/d17ae7c9a27b84ab0f0781bccee100778a9f1e18/784/wash/product/examples/" in u and u.endswith(".webp") for u in got["productNew"])  # #784: 7 RESULT stills
 
 
 R541 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/{}/541/wash/{}/{}__{}.webp"
@@ -85,18 +85,16 @@ R541 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/{}/541/wash/{}/{}__{
 
 @needs_node
 def test_rev2_cells_pinned(got):
-    """AC rev 2 (6546010130): product 6 (detail @2422dc5), brand 6 @f204502, packaging 5 @c26cfad (no mockup)."""
+    """AC rev 2 + #784: product 7 RESULT videos @d17ae7c9; brand 6 @f204502; packaging 5 @777/#541."""
     p, b, k = got["imgs"]["product-tvc-advertisement-generator"], got["imgs"]["brand-identity-director"], got["imgs"]["packaging-design-director"]
-    for pid in ("white", "lifestyle", "electronics", "food", "beauty"):
-        assert p[pid] == R541.format("688a702a1f322082cde4e5ed46200c3593db9c43", asset_dir("product-tvc-advertisement-generator"), asset_dir("product-tvc-advertisement-generator"), pid)
-    assert p["detail"] == R541.format("2422dc53d37b8f4437a7f9f7986440d2ea79bbf1", asset_dir("product-tvc-advertisement-generator"), asset_dir("product-tvc-advertisement-generator"), "detail")
+    for i, pid in enumerate(["beauty", "fashion", "foodbev", "electronics", "home", "outdoor", "software"], start=1):
+        assert p[pid] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/d17ae7c9a27b84ab0f0781bccee100778a9f1e18/784/wash/product/examples/{i:02d}.webp"
     assert list(b) == ["geometric", "handmade", "tech", "beauty", "foodbev", "pet"]
     assert all(u == R541.format("f2045022727c73e24bd6d5ebcb3815bedb7b8797", asset_dir("brand-identity-director"), asset_dir("brand-identity-director"), i) for i, u in b.items())
     assert list(k) == ["eco", "gold", "playful", "panels", "shelf"] and "mockup" not in k
-    # #760 r7: Master (eco) = single 3:4 local wash (Lovart packaging media); rest still @c26cfad / shelf @35c819e
-    assert k["eco"] == "/comfyart/skills/packaging/master.webp"
-    assert all(u == R541.format("c26cfaddc5e12c8652b151ef09ad12c47b2062a0", asset_dir("packaging-design-director"), asset_dir("packaging-design-director"), i) for i, u in k.items() if i not in ("shelf", "eco"))
-    assert k["shelf"] == R541.format("35c819e64b38cc7d64dcd814ae8b86133976fc8a", asset_dir("packaging-design-director"), asset_dir("packaging-design-director"), "shelf")  # retail-shelf re-wash
+    # #777: packaging examples pinned under 777/wash (AURELIA); shelf included
+    for i, pid in enumerate(["eco", "gold", "playful", "panels", "shelf"], start=1):
+        assert k[pid] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/e270088ea1695f5200669649e6e832057e9c8a6a/777/wash/packaging/examples/{i:02d}.webp"
     assert got["presets"]["motion-poster-generator"] == 2 and got["presets"]["poster-differentiated-compiler"] == 0  # #748 raw: 2 motion templates (overrides #687 removal); poster effect-only
 
 
