@@ -86,7 +86,7 @@ def test_builtin_preset_images_unique(got):
     covers = [u for u in imgs if "494/covers-v4/" in u]
     assert len(washed) == 26  # #760 r7: packaging Master moved off 541/wash → local master.webp (was 27)
     assert all("raw.githubusercontent.com/ganjmeng/ComfyArt/" in u for u in washed)
-    assert sum("569/wash/character/templates/" in u for u in washed) == 8 and sum("569/wash/motion/templates/" in u for u in washed) == 2  # #751 HOLD: own covers
+    assert sum("788/wash/character/templates/" in u for u in imgs) == 8 and sum("569/wash/motion/templates/" in u for u in washed) == 2  # #751 HOLD: own covers
     assert sum("541/wash/product/" in u for u in washed) == 6
     assert sum("541/wash/brand/" in u for u in washed) == 6 and sum("541/wash/packaging/" in u for u in washed) == 4  # #760 r7 Master off 541
     assert sum("/comfyart/skills/packaging/master.webp" in u for u in imgs) == 1  # #760 r7 Master single 3:4

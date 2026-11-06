@@ -134,7 +134,7 @@ def _check_tiles(tiles):
     n = len(PHASE1_FEATURED)
     assert len(set(skills[:n])) == n  # first round: one per skill
     first_char = next(t for t in tiles if t["skill"] == "character-sheet-design")
-    assert "/580/featured-v1/character/01.webp" in first_char["img"]  # #588 featured[] supersedes featuredPreset
+    assert "/788/wash/character/featured/01.webp" in first_char["img"]  # #588 featured[] supersedes featuredPreset
     # #595 hot mount: first featured tile is the first Phase1 hot id with featured (product)
     assert skills[0] == "product-tvc-advertisement-generator"
 

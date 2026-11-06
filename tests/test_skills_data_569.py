@@ -29,9 +29,9 @@ CHARACTER = [("角色转身板", "Character Turnaround Sheet", "01-character-tur
              ("完整技术角色板", "Complete Technical Character Sheet", "07-complete-technical-character-sheet"),
              ("时装大片角色板", "Editorial Fashion Sheet", "08-luxury-editorial-character-sheet")]  # #748: raw 7 + own ext 1
 PINNED = {}  # motion only; character follows manifest f81ce12a below
-V31 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/9024565c9857c5cb79e3bce85e636f5f102ad181/569/wash/character/templates/v3.1"
+V31 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1f66faf48e8dbd625b4acf79505adb320586ad14/788/wash/character/templates/v4"
 V31_FILES = ("04-outfit-form-variation-sheet", "05-prop-interaction-sheet")  # re-washed 04/05
-CHARACTER_V2 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b63d44ea61085a77a1c990605c31ae552db36c71/569/wash/character/templates/v3"
+CHARACTER_V2 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1f66faf48e8dbd625b4acf79505adb320586ad14/788/wash/character/templates/v4"
 MOTION = [("海报动画", "Poster Animation", "01-poster-animation"),
           ("首帧到末帧动画", "First-to-Last Frame Animation", "02-first-to-last-frame-animation")]
 # (zh label, type, required) — 当前模板 is the dialog's own preset row, so each template skill has 3 data inputs.
