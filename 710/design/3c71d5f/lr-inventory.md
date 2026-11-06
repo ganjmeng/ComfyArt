@@ -128,3 +128,25 @@ L/R 拼接图（sha `10bcbbd255a60bf9b9452fcf463923fb17b14187`）：
 文档：`lovart-access.md` / `lr-inventory.md` / `capture-lovart.mjs`（sha `10bcbbd255a60bf9b9452fcf463923fb17b14187`，目录 `710/design/3c71d5f/`）。
 
 **#725 右图现状**：本轮 probe（main 3c71d5f mock env）显示：`?skill=pose-fission&ref=<http 图片>` 直接打开 → composer 无参考图缩略图、无 skill chip 渲染证据（canvas 0）；home 的 prompt box 刷新后草稿不保留（`.ca-composer__input` 在 home 不存在，需先建项目/进 chat）。→ #725 右图需 QA fake data 或真实旧会话，标 HOLD；不编造。
+
+---
+
+## 九、补充：状态 3-6 的 L/R 已补齐（QA 右图到齐，2026-11-07 03:17）
+
+QA 用仓库自带 `tests/js/ask763` harness 渲染**真实 `ChatMessage` 组件 + 真实 CSS**（chat 数据 mock，$0，与 #710 原右图「本机 Playwright, chat 接口 mock」同口径）；截图 808×912 / 808×1200 @2x、zh-light。脚本：`/tmp/team/qa/lr-right-shots.py`、`/tmp/team/qa/lr-running-harness.py`。
+本轮已拼 4 张 L/R（左 Lovart 金标 @82176288｜右 Loomi 组件级渲染，main `3c71d5f`），review-assets sha `b2dea747fe57c8af3e3f3e2b21d6fb922dece847`：
+
+| # | 状态 | L/R 图（pinned） | 右图原图 |
+|---|---|---|---|
+| 3 | 运行中（Outputting…） | https://raw.githubusercontent.com/ganjmeng/ComfyArt/b2dea747fe57c8af3e3f3e2b21d6fb922dece847/710/design/3c71d5f/lr-710-running-zh-light.png | .../right-710-running-zh-light.png |
+| 4 | 追问卡未选 | https://raw.githubusercontent.com/ganjmeng/ComfyArt/b2dea747fe57c8af3e3f3e2b21d6fb922dece847/710/design/3c71d5f/lr-710-followup-unselected-zh-light.png | .../right-710-question-unselected-zh-light.png |
+| 5 | 追问卡已选 A | https://raw.githubusercontent.com/ganjmeng/ComfyArt/b2dea747fe57c8af3e3f3e2b21d6fb922dece847/710/design/3c71d5f/lr-710-followup-selected-zh-light.png | .../right-710-question-selected-zh-light.png |
+| 6 | 提交后折叠气泡 | https://raw.githubusercontent.com/ganjmeng/ComfyArt/b2dea747fe57c8af3e3f3e2b21d6fb922dece847/710/design/3c71d5f/lr-710-followup-submitted-zh-light.png | .../right-710-question-submitted-zh-light.png |
+
+### 重要口径 / 限制（写 PR 时必须带上）
+1. **右侧是组件级 mock 渲染**（真实 ChatMessage + CSS；chat/agent 数据 mock），不是 :8392 真 app 的点击路径 —— mock server 只 mock WaveSpeed、不 mock agent provider，真点「开始制作」需要 fullstack 起 agent provider mock。若要「真 app 路径」截图需另派 fullstack。
+2. **内容/语言不同**：Lovart 金标是英文 4 张方案（电商同场景换人），QA 右图是中文 logo 风格问题（ask763 harness 固定场景）。本轮 L/R 只能证明**结构/状态一致**（卡片结构、A/B/C 字母单选、Skip/Submit、提交后折叠气泡），不能证明 #710 差异 1「逐张方案分行」的正文内容 —— 该项仍以 **A 组 `followup_question_card.png` 金标 + #710 AC 文字规格**为准，由全栈按规格实现、QA 断言。
+3. **状态 5 金标存疑**：#710 评论 11-04 曾写「05 选中态仍待补」；现 `followup_card_selected.png` 是 **760×280 裁图**，内容显示问题句 + `A: Start generating` + 右下复制图标，语义更像「已选答案/提交后气泡」的一部分，与「选中高亮」未必同态。本轮按仓库文件标签使用，**下轮网络恢复后补一张真·选中态整页金标**（或由 QA 明确该文件语义）。
+4. 运行中右图未含「停止按钮」证据（QA harness 未渲染 composer）；#710 差异 4「状态行 + 停止入口」需真 app 路径补图。
+
+补图后 #710 只剩 **computed 精确值** 一项硬 HOLD（需登录态 DOM）；其余六态金标+L/R 已齐。
