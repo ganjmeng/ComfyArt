@@ -1,0 +1,5 @@
+FF                                                                       [100%]
+=========================== short test summary info ============================
+FAILED tests/test_paid_gen_guard.py::test_each_plan_item_gets_its_own_four - ...
+FAILED tests/test_paid_gen_guard.py::test_blocked_calls_do_not_count_toward_cap
+2 failed in 0.08s

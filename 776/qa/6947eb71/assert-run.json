@@ -1,0 +1,24 @@
+{
+  "verdict": "PASS",
+  "tip": "6947eb71493e18d214eb36745918d1f5267659e5",
+  "issue": "#730",
+  "item3_not_required": true,
+  "tests": {
+    "test_mcp_paid_guard_730.py": "3 passed (unknown→403/-32000; missing→__noturn__ capped; handler-level guard)",
+    "test_mcp.py": "11 passed",
+    "test_paid_gen_guard.py": "24 passed, 2 failed — SAME 2 failures on base main 22f15858 (agent_loop over-budget), not tip regression"
+  },
+  "behavior": {
+    "unknown_bot_chat": "403 + JSON-RPC -32000 unknown bot_chat (test_unknown_bot_chat_rejected)",
+    "missing_bot_chat": "__noturn__:<Mcp-Session-Id> bucket; 5th generate_image refused with cap text; 4 submits (test_paid_call_without_turn_is_guarded)",
+    "direct_PAID_TOOLS": "handler wrap hits before_call; 5th raises PaidRefused (test_guard_runs_at_handler_level)"
+  },
+  "hold_checks_cleared": [
+    "head matches",
+    "730 tests pass independently",
+    "unknown not silent degrade",
+    "missing does not skip paid guard",
+    "direct PAID_TOOLS guarded",
+    "item 3 absence OK"
+  ]
+}
