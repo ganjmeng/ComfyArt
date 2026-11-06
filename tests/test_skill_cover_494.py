@@ -42,7 +42,7 @@ def test_builtin_covers(got):
     washed = ["poster-differentiated-compiler", "rednote-cover-maker", "brand-identity-director", "packaging-design-director", "banner-design-director", "character-sheet-design", "product-tvc-advertisement-generator", "motion-poster-generator", "interior-architectural-visualization"]
     phase1_new = ["universal-multi-angle-grid", "logo-material-explorer", "meta-ads-creative-director", "mobile-app-visual-design", "web-product-visual-design", "marketing-campaign-generator"]
     v3, pin = "3c9b87e7eae72164efdd1fe30e00f576144475f4", {
-        "banner-design-director": ("494/covers-v3.1", "9b23a3e8e3ca2f6b64dc16c0cf36fbf9c41fcaf4"),
+        "banner-design-director": ("778/wash", "79bf01dc6342363348671c368fa1d467706a0e0f"),  # #778 fintech cover
         "product-tvc-advertisement-generator": ("779/wash", "47bd97529fffde96a515b0eb44a45b41284deba0"),  # #779 white-bg grid cover
         "character-sheet-design": ("494/covers-v3.2", "dc335056e81e0350e2f98487fb680e22ffb14bb9"),
     }
@@ -126,7 +126,7 @@ def test_575_video_contract(got):
     assert got["pendingNew6"] == []  # #623 wired → empty pending
     tip = "1bbb3f208f18b26ef95c8d9f16efeea111c43ac7"
     assert got["thumbEx"][0] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/thumbnail.mp4"
-    assert got["bannerEx"][0] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/banner.mp4"
+    assert got["bannerEx"][0] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e9c0f21959787a9c7401fa95927db3e3e6931bcd/778/wash/banner/examples/01.mp4"  # #778 ex01 fintech wash
     assert len(got["thumbEx"]) == 1 and len(got["bannerEx"]) == 1  # #748 raw highlights: 1 video each (convert)
     motion_tip = "5a8d22ed88f732d38f8709a2c0740f074a400a89"
     assert got["motionPresetVideos"] == [None, None]  # #751 HOLD: skill-level video no longer shared onto template cards (each card keeps its OWN cover)  # #748 raw: 2 templates; our wash video is the placeholder (WASH-TODO)
