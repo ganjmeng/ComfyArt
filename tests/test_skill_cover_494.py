@@ -43,17 +43,25 @@ def test_builtin_covers(got):
     phase1_new = ["universal-multi-angle-grid", "logo-material-explorer", "meta-ads-creative-director", "mobile-app-visual-design", "web-product-visual-design", "marketing-campaign-generator"]
     v3, pin = "3c9b87e7eae72164efdd1fe30e00f576144475f4", {
         "banner-design-director": ("778/wash", "79bf01dc6342363348671c368fa1d467706a0e0f"),  # #778 fintech cover
-        "product-tvc-advertisement-generator": ("779/wash", "47bd97529fffde96a515b0eb44a45b41284deba0"),  # #779 white-bg grid cover
+        "product-tvc-advertisement-generator": ("784/wash", "d17ae7c9a27b84ab0f0781bccee100778a9f1e18"),  # #784 BR lip-tube wash
         "character-sheet-design": ("494/covers-v3.2", "dc335056e81e0350e2f98487fb680e22ffb14bb9"),
     }
     v4 = "cc76d743d416c3d9a9a6852d811a7a80caf40319"
     assert len(covers) == 49 and "custom-workflow" not in covers  # #640 Phase3-S1 +19 NEW (null covers)
-    assert {k: covers[k] for k in washed} == {
-        k: "https://raw.githubusercontent.com/ganjmeng/ComfyArt/{1}/{0}/{2}.webp".format(*pin.get(k, ("494/covers-v3", v3)), asset_dir(k))
-        for k in washed
+    expected = {
+        "poster-differentiated-compiler": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v3}/494/covers-v3/poster.webp",
+        "rednote-cover-maker": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5c954dbcefb8bd50edef69688b303122debb4ffb/687/wash/social/cover.webp",
+        "brand-identity-director": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v3}/494/covers-v3/brand.webp",
+        "packaging-design-director": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e270088ea1695f5200669649e6e832057e9c8a6a/777/wash/packaging/cover.webp",
+        "banner-design-director": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/79bf01dc6342363348671c368fa1d467706a0e0f/778/wash/banner.webp",
+        "character-sheet-design": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/dc335056e81e0350e2f98487fb680e22ffb14bb9/494/covers-v3.2/character.webp",
+        "product-tvc-advertisement-generator": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d17ae7c9a27b84ab0f0781bccee100778a9f1e18/784/wash/product.webp",
+        "motion-poster-generator": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v3}/494/covers-v3/motion.webp",
+        "interior-architectural-visualization": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5c954dbcefb8bd50edef69688b303122debb4ffb/687/wash/interior/cover.webp",
     }
+    assert {k: covers[k] for k in washed} == expected
     # #643 (#659) thumbnail true wash re-pinned cover to WASH_643
-    assert covers["cover-design-director"] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/0be4350be224066cccf5e2929bfcb02e0bf8f7a9/643/wash/thumbnail/cover.webp"
+    assert covers["cover-design-director"] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/15e9bdad271dc2cb0ac1a1c8621927c161ca9299/643/wash/thumbnail/cover.webp"
     assert {k: covers[k] for k in phase1_new} == {
         k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v4}/494/covers-v4/{k}.webp"
         for k in phase1_new
