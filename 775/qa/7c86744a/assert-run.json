@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "fail": [],
+  "tip": "7c86744a52a2182e4a229ae5a406b6afaae5cc4c",
+  "mode": {
+    "tag": "IMG",
+    "className": "ca-agentlogo__light",
+    "w": 16,
+    "h": 16,
+    "srcName": "hermes-DSWXVa-C.svg",
+    "srcIncludesHermes": true,
+    "hasCubeGeneric": false,
+    "naturalW": 300,
+    "display": "block",
+    "opacity": "1"
+  },
+  "settings": {
+    "tag": "IMG",
+    "className": "ca-agentlogo__light",
+    "w": 16,
+    "h": 16,
+    "srcName": "hermes-DSWXVa-C.svg",
+    "srcIncludesHermes": true,
+    "hasCubeGeneric": false,
+    "naturalW": 300,
+    "display": "block",
+    "opacity": "1"
+  },
+  "notes": [
+    "LOGOS.hermes=[hermes.svg, hermes-dark.svg] — no Icons.cube fallback",
+    "picker Hermes src hermes-DSWXVa-C.svg 16×16; siblings Claude/Codex/Qwen/DeepSeek also 16×16 imgs",
+    "settings card AgentLogo hermes 16×16 next to name",
+    "composer mode button hermes 16×16 when selected",
+    "official icon-master vs shipped: SVGO minify (NOTICE); raster MAD@64≈0.013 — same Nous girl mark, not redraw/recolor",
+    "dark: hermes-dark.svg wired in LOGOS; light ZH required shots complete"
+  ],
+  "sizes": "16×16 at picker row, settings head, composer mode",
+  "not_cube": true,
+  "matches_official_visually": true
+}

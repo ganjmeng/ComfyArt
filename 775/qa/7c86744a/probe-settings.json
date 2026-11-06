@@ -1,0 +1,53 @@
+{
+  "after_select": {
+    "modeLogo": {
+      "tag": "IMG",
+      "className": "ca-agentlogo__light",
+      "w": 16,
+      "h": 16,
+      "srcName": "hermes-DSWXVa-C.svg",
+      "srcIncludesHermes": true,
+      "hasCubeGeneric": false,
+      "naturalW": 300,
+      "display": "block",
+      "opacity": "1"
+    },
+    "modeText": "Hermes",
+    "modeDataAgent": "hermes",
+    "pickerRows": [],
+    "settingsLogo": null,
+    "settingsHead": null,
+    "anyHermesCube": false
+  },
+  "settings": {
+    "modeLogo": {
+      "tag": "IMG",
+      "className": "ca-agentlogo__light",
+      "w": 16,
+      "h": 16,
+      "srcName": "hermes-DSWXVa-C.svg",
+      "srcIncludesHermes": true,
+      "hasCubeGeneric": false,
+      "naturalW": 300,
+      "display": "block",
+      "opacity": "1"
+    },
+    "modeText": "Hermes",
+    "modeDataAgent": "hermes",
+    "pickerRows": [],
+    "settingsLogo": {
+      "tag": "IMG",
+      "className": "ca-agentlogo__light",
+      "w": 16,
+      "h": 16,
+      "srcName": "hermes-DSWXVa-C.svg",
+      "srcIncludesHermes": true,
+      "hasCubeGeneric": false,
+      "naturalW": 300,
+      "display": "block",
+      "opacity": "1"
+    },
+    "settingsHead": "Hermes\n已连接",
+    "anyHermesCube": false
+  }
+}
