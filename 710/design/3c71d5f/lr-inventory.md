@@ -115,3 +115,16 @@ node /tmp/team/design/capture-lovart.mjs --out /tmp/team/design/lovart-capture -
 | #687 motion | 字段 L/R 有；L/R 本轮补弹框 | cover/featured 媒体金标 NEED-SHOT | 网络通道（Next: `capture-lovart.mjs`） |
 | #725 | 无 Lovart 视觉金标（非必需） | 现状基线右图（composer/canvas/刷新） | QA fake data 或 UI 可复现 |
 | #783 | LEFT 已有（B 组，authed masked） | 同输入冻结参考图 | 网络通道 / 上游同步 |
+
+---
+
+## 八、固定 sha 链接（review-assets）
+
+L/R 拼接图（sha `10bcbbd255a60bf9b9452fcf463923fb17b14187`）：
+- #710 弹框默认：https://raw.githubusercontent.com/ganjmeng/ComfyArt/10bcbbd255a60bf9b9452fcf463923fb17b14187/710/design/3c71d5f/lr-710-skill-dialog-default-en-light.png
+- #710 弹框已上传+填写：https://raw.githubusercontent.com/ganjmeng/ComfyArt/10bcbbd255a60bf9b9452fcf463923fb17b14187/710/design/3c71d5f/lr-710-skill-dialog-filled-en-light.png
+- #687 motion 弹框（sha `98c1e190bcd5ba7ea6bfe79c5966213a8458f93e`）：https://raw.githubusercontent.com/ganjmeng/ComfyArt/98c1e190bcd5ba7ea6bfe79c5966213a8458f93e/687/design/3c71d5f/lr-687-motion-skill-dialog-en-light.png
+右图原图（同上 sha）：`right-710-dialog-default-en-light.png` / `right-710-dialog-filled-en-light.png` / `right-687-motion-dialog-default-en-light.png`。
+文档：`lovart-access.md` / `lr-inventory.md` / `capture-lovart.mjs`（sha `10bcbbd255a60bf9b9452fcf463923fb17b14187`，目录 `710/design/3c71d5f/`）。
+
+**#725 右图现状**：本轮 probe（main 3c71d5f mock env）显示：`?skill=pose-fission&ref=<http 图片>` 直接打开 → composer 无参考图缩略图、无 skill chip 渲染证据（canvas 0）；home 的 prompt box 刷新后草稿不保留（`.ca-composer__input` 在 home 不存在，需先建项目/进 chat）。→ #725 右图需 QA fake data 或真实旧会话，标 HOLD；不编造。

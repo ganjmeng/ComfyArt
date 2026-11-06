@@ -88,3 +88,14 @@ TLS  SNI = www.lovart.ai                          -> SSLEOFError: UNEXPECTED_EOF
 /tmp/team/design/lovart-access.md                              # 本文件
 ```
 （上传 review-assets 的固定 sha 链接见文末更新 / Lead 消息。）
+
+---
+
+## 固定 sha 链接（review-assets，可直接引用）
+
+- 本文档：https://raw.githubusercontent.com/ganjmeng/ComfyArt/10bcbbd255a60bf9b9452fcf463923fb17b14187/710/design/3c71d5f/lovart-access.md
+- 可访问性证据图（sha `cd14149d0b2fdc72c79f770701ed4393ec1fcb51`）：
+  - https://raw.githubusercontent.com/ganjmeng/ComfyArt/cd14149d0b2fdc72c79f770701ed4393ec1fcb51/710/design/3c71d5f/access/lovart-ai-blocked-chrome-profile-copy.png
+  - https://raw.githubusercontent.com/ganjmeng/ComfyArt/cd14149d0b2fdc72c79f770701ed4393ec1fcb51/710/design/3c71d5f/access/lovart-ai-thirdparty-render-NON-GOLD.png
+  - https://raw.githubusercontent.com/ganjmeng/ComfyArt/cd14149d0b2fdc72c79f770701ed4393ec1fcb51/710/design/3c71d5f/access/lovart-art-reachable-NON-GOLD.png
+- 补抓脚本：https://raw.githubusercontent.com/ganjmeng/ComfyArt/10bcbbd255a60bf9b9452fcf463923fb17b14187/710/design/3c71d5f/capture-lovart.mjs
