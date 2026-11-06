@@ -1,0 +1,13 @@
+{
+  "assets": [
+    {
+      "skill_id": "logo-material",
+      "slot": "featured",
+      "index": 2,
+      "source_path": "wash/logo-material/featured/02.png",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "A single puffy inflatable 3D capital letter 'Q' with a feather-like quill tail, iridescent holographic pearlescent balloon material, isolated and centered on a pure black background with soft reflection. Only this one letter, no other letters or words, no watermark. Original design, not a real company logo."
+    }
+  ]
+}
