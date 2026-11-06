@@ -92,12 +92,14 @@ const WASH_784 = 'd17ae7c9a27b84ab0f0781bccee100778a9f1e18'
 /** #786 brand-identity rewash: cover SOLENNE + featured 01-04 + 6 templates (review-assets 786/wash, kie I2I). */
 const WASH_786 = '8ab5aa8044d71e9518ae5f054eb2f8c7e77dd127'
 /** #786 r2 template remap to collection titles (餐饮服务=SOLENNE, 服装配饰=LINTEL, 家居生活=ROWAN HOUSE); review-assets 786/wash-r2. */
+/** #788 character rewash: cover SIENNA VALE + featured 01-04 + 8 templates (review-assets 788/wash, kie I2I). */
+const WASH_788 = '1f66faf48e8dbd625b4acf79505adb320586ad14'
 const WASH_786_R2 = 'f5c9d7770df7a8ef92cd4411371ff5b552b83eee'
 const COVERS_581: Record<string, readonly [string, string]> = {
   'poster-differentiated-compiler': ['494/covers-v3', COVER_V3], 'rednote-cover-maker': ['494/covers-v3', COVER_V3], 'brand-identity-director': ['786/wash', WASH_786], /* #786 SOLENNE */
   'packaging-design-director': ['494/covers-v3', COVER_V3], 'cover-design-director': ['494/covers-v3', COVER_V3],
   'banner-design-director': ['778/wash', WASH_778], // #778: fintech hero cover (was VENTUR brand board)
-  'character-sheet-design': ['494/covers-v3.2', 'dc335056e81e0350e2f98487fb680e22ffb14bb9'],
+  'character-sheet-design': ['788/wash', WASH_788], // #788 SIENNA VALE
   'product-tvc-advertisement-generator': ['784/wash', WASH_784], /* #784: BR lip-tube wash; featured stays 779 */ 'motion-poster-generator': ['494/covers-v3', COVER_V3], 'interior-architectural-visualization': ['494/covers-v3', COVER_V3],
   'universal-multi-angle-grid': ['494/covers-v4', COVER_V4], 'logo-material-explorer': ['494/covers-v4', COVER_V4],
   'meta-ads-creative-director': ['494/covers-v4', COVER_V4], 'mobile-app-visual-design': ['494/covers-v4', COVER_V4],
@@ -119,7 +121,7 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   'packaging-design-director': ['777/wash/packaging/featured', 'e270088ea1695f5200669649e6e832057e9c8a6a', ['01.webp', '02.webp', '03.webp', '04.webp']], /* #777: featured → AURELIA */
   'cover-design-director': ['580/featured-v1/thumbnail', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'banner-design-director': ['580/featured-v1/banner', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
-  'character-sheet-design': ['580/featured-v1/character', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  'character-sheet-design': ['788/wash/character/featured', WASH_788, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'product-tvc-advertisement-generator': ['779/wash/product/featured', WASH_779, ['01.webp', '02.webp', '03.webp', '04.webp']], // #779 NODAL single brand, no portraits
   'motion-poster-generator': ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'interior-architectural-visualization': ['580/featured-v1/interior', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
@@ -204,12 +206,10 @@ const washProduct784 = (n: string, kind: 'image' | 'video' = 'image') =>
   pinned(`784/wash/product/examples`, WASH_784, `${n}.${kind === 'video' ? 'mp4' : 'webp'}`)
 /** #569 character (7) + motion (2) template washes, from review-assets manifest 881494ff (assets pinned to bd043d4c). */
 const WASH_569_COMMIT = 'bd043d4cff5019fc4117b5b2f3a33ae437015a28'
-// character final (manifest review-assets f81ce12a): v3 @b63d44ea under templates/v3/, 04/05 v3.1 @9024565c under templates/v3.1/
-const CHARACTER_V2 = 'b63d44ea61085a77a1c990605c31ae552db36c71'
-const CHARACTER_V3_1 = '9024565c9857c5cb79e3bce85e636f5f102ad181' // 04 + 05 re-washed under templates/v3.1/
+// character: #788 rewash under 788/wash/character/templates/v4 (superseded 569 v3 @b63d44ea / v3.1 @9024565c)
 type Wash569 = string | readonly [string, string, string]
 const WASH_569: Record<'character-sheet-design' | 'motion-poster-generator', readonly Wash569[]> = {
-  'character-sheet-design': [['v3/01-character-turnaround-sheet', '569/wash', CHARACTER_V2], ['v3/02-expression-pose-sheet', '569/wash', CHARACTER_V2], ['v3/03-modeling-detail-reference-sheet', '569/wash', CHARACTER_V2], ['v3.1/04-outfit-form-variation-sheet', '569/wash', CHARACTER_V3_1], ['v3.1/05-prop-interaction-sheet', '569/wash', CHARACTER_V3_1], ['v3/06-basic-character-sheet', '569/wash', CHARACTER_V2], ['v3/07-complete-technical-character-sheet', '569/wash', CHARACTER_V2], ['v3/08-luxury-editorial-character-sheet', '569/wash', CHARACTER_V2]],
+  'character-sheet-design': [['v4/01-character-turnaround-sheet', '788/wash', WASH_788], ['v4/02-expression-pose-sheet', '788/wash', WASH_788], ['v4/03-modeling-detail-reference-sheet', '788/wash', WASH_788], ['v4/04-outfit-form-variation-sheet', '788/wash', WASH_788], ['v4/05-prop-interaction-sheet', '788/wash', WASH_788], ['v4/06-basic-character-sheet', '788/wash', WASH_788], ['v4/07-complete-technical-character-sheet', '788/wash', WASH_788], ['v4/08-luxury-editorial-character-sheet', '788/wash', WASH_788]], // #788 AVERY LANG (was 569 v3/v3.1)
   'motion-poster-generator': ['01-poster-animation', '02-first-to-last-frame-animation'],
 }
 // Manifest-driven (review-assets 569/wash/manifest.json @f81ce12a): an entry is a file name at WASH_569_COMMIT, or
