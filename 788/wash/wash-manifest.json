@@ -1,0 +1,130 @@
+{
+  "assets": [
+    {
+      "skill_id": "character",
+      "slot": "cover",
+      "index": 1,
+      "source_path": "src/cover.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Character reference sheet of a young woman with blonde hair, wearing a black graffiti-print hoodie, gold chain necklace, black baseball cap worn backwards, blue jeans and white sneakers, on a pure white cyclorama studio. LEFT: a large close-up portrait of her face and upper body. RIGHT: full-body front, side and back turnaround views in a row. Completely different from the input layout: no olive green, no grid of six, no warehouse loft. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "featured",
+      "index": 1,
+      "source_path": "src/feat01.webp",
+      "aspect_ratio": "3:4",
+      "resolution": "1K",
+      "prompt": "Character turnaround of a rugged middle-aged man with a salt-and-pepper beard, dark navy work jacket, navy work pants and brown work boots, full-body front, side and back views on a plain white background. Not blonde, no warehouse. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "featured",
+      "index": 2,
+      "source_path": "src/feat02.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Original anime-style character design sheet (illustration, not photoreal) of a short-haired girl in a dark navy school uniform with pleated skirt: front/side/back turnaround plus a grid of 6 facial expressions. Original design, not any existing anime character. Clean white background. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "featured",
+      "index": 3,
+      "source_path": "src/feat03.webp",
+      "aspect_ratio": "4:3",
+      "resolution": "1K",
+      "prompt": "Prop-interaction character sheet of a young woman in a black sleeveless jumpsuit with a cello: full-body front/side/back turnaround, one view seated playing the cello, plus close-up cells of her hands on the strings and bow and of the cello scroll. Clean light studio background. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "featured",
+      "index": 4,
+      "source_path": "src/feat04.webp",
+      "aspect_ratio": "1:2",
+      "resolution": "1K",
+      "prompt": "Character design sheet of an original desert scout in a sand-colored hooded cloak and layered sand-toned outfit with a single circular monocular lens over one eye: full-body front/side/back turnaround plus close-ups of the head/hood and clothing details. Plain light background. No Assassin's Creed symbols or any franchise insignia, no leather jacket. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "src/t01@thumb.webp",
+      "aspect_ratio": "1:1",
+      "resolution": "1K",
+      "prompt": "Character turnaround sheet: the same fictional young woman model with light blonde long curly hair, soft oval face, warm brown eyes, no freckles, wearing a white tank top, black straight-leg jeans and white sneakers; full-body front, side and back views evenly spaced in one row on a pure white background. Give her a NEW face clearly different from the input person. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "featured",
+      "index": 4,
+      "source_path": "src/feat04.webp",
+      "aspect_ratio": "9:16",
+      "resolution": "1K",
+      "prompt": "Character design sheet of an original desert scout in a sand-colored hooded cloak and layered sand-toned outfit with a single circular monocular lens over one eye: full-body front/side/back turnaround plus close-ups of the head/hood and clothing details. Plain light background. No Assassin's Creed symbols or any franchise insignia, no leather jacket. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "wash/character/examples/01.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Expression and pose sheet of the same fictional young woman model with light blonde long curly hair, soft oval face, warm brown eyes, no freckles, wearing a white tank top, black straight-leg jeans and white sneakers: a row of head-shot expressions (happy, laughing, surprised, thoughtful, angry) above full-body poses standing, walking and sitting on a stool. White background. Keep exactly the face, hair and body of the woman in the input image; new layout. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "wash/character/examples/01.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Modeling detail reference sheet of the same fictional young woman model with light blonde long curly hair, soft oval face, warm brown eyes, no freckles, wearing a white tank top, black straight-leg jeans and white sneakers: full-body front/side/back on the left, close-up cells on the right of face, eyes, lips, hair curls, tank top fabric, jeans detail and sneakers. White background. Keep exactly the face, hair and body of the woman in the input image; new layout. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "wash/character/examples/01.png",
+      "aspect_ratio": "1:1",
+      "resolution": "1K",
+      "prompt": "Outfit variation sheet of the same fictional young woman model with light blonde long curly hair, soft oval face, warm brown eyes, no freckles: the same woman shown full body three times side by side in three outfits: (1) cream cardigan with blue pleated skirt, (2) black turtleneck with khaki midi skirt and ankle boots, (3) white hoodie under black leather jacket with a small silver bag. White background. Keep exactly the face, hair and body of the woman in the input image; new layout. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "examples",
+      "index": 5,
+      "source_path": "wash/character/examples/01.png",
+      "aspect_ratio": "1:1",
+      "resolution": "1K",
+      "prompt": "Prop interaction sheet of the same fictional young woman model with light blonde long curly hair, soft oval face, warm brown eyes, no freckles, wearing a white tank top, black straight-leg jeans and white sneakers with a black smartphone: top row full-body poses making a call, looking at the screen, taking a photo, putting the phone in her pocket; bottom row close-ups of her hands holding the phone. White background. Keep exactly the face, hair and body of the woman in the input image; new layout. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "examples",
+      "index": 6,
+      "source_path": "wash/character/examples/01.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Basic character sheet of the same fictional young woman model with light blonde long curly hair, soft oval face, warm brown eyes, no freckles, wearing a white tank top, black straight-leg jeans and white sneakers: full-body front, side and back views on the left and four head-shot expressions on the right. White background. Keep exactly the face, hair and body of the woman in the input image; new layout. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "examples",
+      "index": 7,
+      "source_path": "wash/character/examples/01.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Complete technical character sheet of the same fictional young woman model with light blonde long curly hair, soft oval face, warm brown eyes, no freckles, wearing a white tank top, black straight-leg jeans and white sneakers: multi-angle full-body views, an expression grid, close-ups of the tank top, jeans and sneakers, and color swatch chips. Clean white background. Keep exactly the face, hair and body of the woman in the input image; new layout. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    },
+    {
+      "skill_id": "character",
+      "slot": "examples",
+      "index": 8,
+      "source_path": "wash/character/examples/01.png",
+      "aspect_ratio": "16:9",
+      "resolution": "1K",
+      "prompt": "Luxury editorial fashion character sheet of the same fictional young woman model with light blonde long curly hair, soft oval face, warm brown eyes, no freckles in a cream draped blouse, black tailored trousers and black heels: three full-body views (front, side, back) plus half-body and face close-ups, soft studio light, clean light ground, western high-fashion campaign look. No logo, no brand name. Keep exactly the face, hair and body of the woman in the input image; new layout. Fictional original person, not a celebrity, not resembling any real star. NO text, NO names, NO logos, NO watermark anywhere on the image. One single person/identity in the whole image. Photoreal studio character reference sheet."
+    }
+  ]
+}
