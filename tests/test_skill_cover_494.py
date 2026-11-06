@@ -43,6 +43,7 @@ def test_builtin_covers(got):
     phase1_new = ["universal-multi-angle-grid", "logo-material-explorer", "meta-ads-creative-director", "mobile-app-visual-design", "web-product-visual-design", "marketing-campaign-generator"]
     v3, pin = "3c9b87e7eae72164efdd1fe30e00f576144475f4", {
         "banner-design-director": ("778/wash", "79bf01dc6342363348671c368fa1d467706a0e0f"),  # #778 fintech cover
+        "product-tvc-advertisement-generator": ("779/wash", "47bd97529fffde96a515b0eb44a45b41284deba0"),  # #779 white-bg grid cover
         "character-sheet-design": ("494/covers-v3.2", "dc335056e81e0350e2f98487fb680e22ffb14bb9"),
     }
     v4 = "cc76d743d416c3d9a9a6852d811a7a80caf40319"
