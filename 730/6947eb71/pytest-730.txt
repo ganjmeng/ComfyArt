@@ -1,0 +1,14 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.1.1, pluggy-1.7.0 -- /workspace/.venv-review/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/ComfyArt
+configfile: pyproject.toml
+plugins: asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collecting ... collected 3 items
+
+tests/test_mcp_paid_guard_730.py::test_paid_call_without_turn_is_guarded PASSED [ 33%]
+tests/test_mcp_paid_guard_730.py::test_unknown_bot_chat_rejected PASSED  [ 66%]
+tests/test_mcp_paid_guard_730.py::test_guard_runs_at_handler_level PASSED [100%]
+
+============================== 3 passed in 0.08s ===============================

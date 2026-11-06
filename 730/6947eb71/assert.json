@@ -1,0 +1,8 @@
+{
+  "tip": "6947eb71493e18d214eb36745918d1f5267659e5",
+  "issue": 730,
+  "shots": {
+    "pytest": "pytest-730.png"
+  },
+  "notes": "Mock -- evidence: test_paid_call_without_turn_is_guarded, test_unknown_bot_chat_rejected, test_guard_runs_at_handler_level — 3 passed."
+}
