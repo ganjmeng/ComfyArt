@@ -1,0 +1,23 @@
+{
+  "started": "2026-11-07T22:02:26+0800",
+  "balance_start": 35.610499,
+  "gold": "https://d2h7xmz5gqybh9.cloudfront.net/media/images/cd086048-ad08-45d9-b925-9dbb6bba28c8.webp",
+  "sot": "pr-817 78/49",
+  "passes": [
+    {
+      "name": "A-E",
+      "tid": "016e00f96dbf4881a0c784c395595f3d",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/9538a48c-bbf2-4e1d-a532-bba5994de303.webp",
+      "file": "/workspace/promo01/wash745-gold/raw/pass1-AE.webp"
+    },
+    {
+      "name": "F-H",
+      "tid": "429933dc343841458699894105cd357f",
+      "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/de9f583a-c3e4-4c73-9e83-717f9a45e5b8.webp",
+      "file": "/workspace/promo01/wash745-gold/out/promo01-washed-gold-2k.webp"
+    }
+  ],
+  "balance_end": 35.403499,
+  "spent_approx": 0.207,
+  "finished": "2026-11-07T22:05:48+0800"
+}
