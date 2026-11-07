@@ -215,7 +215,7 @@ const ex673 = (id: string, ids: number[]) =>
 const feat673 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`673/wash/${id}/featured`, WASH_673, `${String(n).padStart(2, '0')}.webp`))
 // #812 D-group wash (yingzao / crt-interface / crayon-sketch / fabric-collage); pin → assets tip.
-const WASH_812 = 'beb0fb439c874cec84cc657edfd427757dd6c906'
+const WASH_812 = 'b84ab51b402b2e2ef0102c5b97d7bca8f41ea0a1'
 const cover812 = (id: string) => pinned(`812/wash/${id}`, WASH_812, 'cover.webp')
 const ex812 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`812/wash/${id}/examples`, WASH_812, `${String(n).padStart(2, '0')}.webp`))
