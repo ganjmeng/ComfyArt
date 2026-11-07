@@ -1858,6 +1858,7 @@ class LocalLlmProvider(AgentProvider):
         """One assistant message. A multi-step paid batch is priced before any paid tool_use."""
         parsed = []
         tripped = False
+        accepted_single = 0  # #707: a second generate in the same step is still the extra call
         for tool_call in tool_calls:
             if handle.stop_requested:
                 return TurnResult(aborted=True, usage=usage)
@@ -1871,12 +1872,23 @@ class LocalLlmProvider(AgentProvider):
                 args = {}
             if not isinstance(args, dict):
                 args = {}
-            if loop.get("run") is not None:  # #705: empty skill read in a skill run -> the run's skill
+            run = loop.get("run")
+            current_skill = getattr(run, "current_skill", "") if run is not None else ""
+            if run is not None:  # #705: empty skill read in a skill run -> the run's skill
                 from .agent_loop import autofill_skill_read
-                filled = autofill_skill_read(loop["run"], name, args)
+                filled = autofill_skill_read(run, name, args)
                 if filled is not args:
                     args = filled
-                    fn["arguments"] = json.dumps(args, ensure_ascii=False)
+            if _tool_base(name) == "generate_image":
+                # #707: declared skill pixels, then the shot prompt, before the #706 identity check
+                # so multi-shot calls differ by angle and a repeated placeholder does not look identical.
+                from .shot_plan import bind_generate
+                from .skill_output import apply_generate
+                args = apply_generate(args, current_skill)
+                preview, early_refuse = bind_generate(run, args, consume=False)
+                if not early_refuse:
+                    args = preview
+            fn["arguments"] = json.dumps(args, ensure_ascii=False)
             key = _call_key(name, args)
             loop["repeat"] = loop["repeat"] + 1 if key == loop["last_key"] else 1
             loop["last_key"] = key
@@ -1903,8 +1915,14 @@ class LocalLlmProvider(AgentProvider):
             if not _known_tool(name):
                 from .run_budget import unknown_tool_message
                 reject = "[tool error] " + unknown_tool_message(name, args, known=_KNOWN_TOOLS, lang=lang)
+            from .skill_output import is_single, single_image_skip
+            base_gens = int(getattr(run, "single_image_gens", 0) or 0) if run is not None else 0
+            skip = single_image_skip(_tool_base(name), args.get("skill") or current_skill, lang, base_gens + accepted_single)
+            if skip is None and _tool_base(name) == "generate_image" and is_single(args.get("skill") or current_skill):
+                accepted_single += 1
             parsed.append({"name": name, "args": args, "id": tc_id,
-                           "skill_key": skill_key, "cached": cached, "reject": reject})
+                           "skill_key": skill_key, "cached": cached, "reject": reject,
+                           **({"skip": skip} if skip else {})})
 
         from .shot_plan import bind_generate
         run_for_plan = loop.get("run")
@@ -1915,7 +1933,7 @@ class LocalLlmProvider(AgentProvider):
             if refuse:
                 it["refuse"] = refuse
         quote_item = next((it for it in parsed if it["name"] == QUOTE_TOOL), None)
-        paid = [it for it in parsed if it["name"] in PAID_TOOLS and not it.get("refuse")]
+        paid = [it for it in parsed if it["name"] in PAID_TOOLS and not it.get("refuse") and not it.get("skip")]
         chunks: list[Optional[list]] = [None] * len(parsed)
 
         ran: list[int] = []
@@ -1933,6 +1951,10 @@ class LocalLlmProvider(AgentProvider):
                 chunks[i] = await self._emit_result(
                     it, it["reject"], emit=emit, done=done, lang=lang, is_error=True)
                 await emit(BotEvent(t="notify", text=it["reject"].removeprefix("[tool error] ").strip()))
+                continue
+            if it.get("skip"):
+                # #707: single-image skills do not list models, expand, or generate twice.
+                chunks[i] = await self._emit_result(it, it["skip"], emit=emit, done=done, lang=lang)
                 continue
             if it["name"] not in PAID_TOOLS and it["name"] != QUOTE_TOOL:
                 await run_mcp(i)
@@ -2017,6 +2039,9 @@ class LocalLlmProvider(AgentProvider):
                         it, refuse, emit=emit, done=done, lang=lang, is_error=True)
                     continue
                 it["args"] = bound
+                from .skill_output import is_single
+                if run_for_plan is not None and is_single(bound.get("skill")):
+                    run_for_plan.single_image_gens = int(getattr(run_for_plan, "single_image_gens", 0) or 0) + 1
             await run_mcp(i)
 
         for ch in chunks:

@@ -50,6 +50,17 @@ export function targetSize({ ratio, resolution, workflow, cw, ch }: GeneratorSha
   return r >= 1 ? [snap16(short * r), short] : [short, snap16(short / r)]
 }
 
+/** #707: a skill canvas (1584×396 and other exact pixels) is not snapped to a multiple of 16. */
+export function pixelSizeOf(shape: { props: GeneratorShape['props']; meta?: { pixelSize?: unknown } }): [number, number] {
+  const raw = shape.meta?.pixelSize
+  if (Array.isArray(raw) && raw.length >= 2) {
+    const w = Math.round(Number(raw[0]))
+    const h = Math.round(Number(raw[1]))
+    if (w > 0 && h > 0) return [w, h]
+  }
+  return targetSize(shape.props)
+}
+
 /** #159: a video card never carries the image default '1K': the model's default/first tier (480p when unknown). */
 export function videoResOf(p: Pick<GeneratorShape['props'], 'resolution' | 'workflow'>): string {
   const m = modelOf(p.workflow)
@@ -186,7 +197,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     return wsBuilt({ ...base, feature: 'text_to_video', custom: 'video', model: modelIn('text_to_video', workflow) })
   }
   if (isVideo(workflow)) throw new Error(t('jobs.notInCloud'))
-  const [width, height] = targetSize(shape.props)
+  const [width, height] = pixelSizeOf(shape)
   if (model?.id === CUSTOM_GENERATE) {
     // custom text-to-image: @image/@image2 get the first two refs; @base/@strength get the base image
     const start = baseOf(shape)
@@ -249,7 +260,7 @@ function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
   }
   const model = modelOf(workflow) ?? agentModels(false)[0]
   if (!model || !isCloudModel(model.id)) return null
-  const [width, height] = targetSize(shape.props)
+  const [width, height] = pixelSizeOf(shape)
   return refs.length || baseOf(shape) ? { feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined }
 }
 
