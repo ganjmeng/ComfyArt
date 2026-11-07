@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import { copyText } from '../clipboard'
 import { Icons } from './icons'
@@ -6,7 +6,7 @@ import { t } from '../i18n'
 
 const DONE_MS = 1500
 
-export function CopyButton({ text, className = 'ca-history__del' }: { text: string; className?: string }) {
+export function CopyButton({ text, className = 'ca-history__del', testId, icon }: { text: string; className?: string; testId?: string; icon?: ReactNode }) {
   const [done, setDone] = useState(false)
   useEffect(() => {
     if (!done) return
@@ -14,8 +14,8 @@ export function CopyButton({ text, className = 'ca-history__del' }: { text: stri
     return () => clearTimeout(timer)
   }, [done])
   return (
-    <button type="button" className={className} title={done ? t('common.copied') : t('common.copy')} onClick={() => void copyText(text).then(() => setDone(true))}>
-      {done ? Icons.check : Icons.page}
+    <button type="button" className={className} data-testid={testId} title={done ? t('common.copied') : t('common.copy')} onClick={() => void copyText(text).then(() => setDone(true))}>
+      {done ? Icons.check : (icon ?? Icons.page)}
     </button>
   )
 }

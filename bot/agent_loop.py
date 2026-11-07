@@ -168,6 +168,10 @@ class RunContext:
     confirmer: Any = None
     current_skill: str = ""                         # #705: skill the run was started from (auto-fills empty reads)
     skill_autofills: int = 0
+    plan_gate_active: bool = False                  # #710: multi-shot plan card is open or confirmed
+    shot_confirmed: bool = False
+    shots: list = field(default_factory=list)
+    shot_cursor: int = 0
 
     # -- persistence -------------------------------------------------------------
     def state(self, messages: Optional[list] = None) -> dict:
@@ -777,6 +781,11 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
     gate = _PlanGate()
     reason_next = False  # #413: set after a step that wrote memory; consumed by the next request
     try:
+        if resumed is None:
+            from .shot_plan import run_plan_card
+            plan_stop = await run_plan_card(ctx, turn, handle, messages)
+            if plan_stop == "stopped" or handle.stop_requested:
+                return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
         while True:
             if handle.stop_requested:
                 return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
