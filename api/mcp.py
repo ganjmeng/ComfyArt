@@ -12,7 +12,8 @@ import hmac
 import secrets
 
 from .settings import mcp_enabled
-from ..bot.guide import PAID_TOOLS
+from ..bot.guide import CORE_MCP_TOOLS, PAID_TOOLS
+from ..bot.run_budget import unknown_tool_message
 
 _log = logging.getLogger(__name__)
 
@@ -146,7 +147,10 @@ async def _dispatch(msg: dict, *, external: bool = False) -> dict | None:
     if method == "tools/call":
         outcome = await _tools_call(params, external=external)
         if outcome is None:
-            return _error(msg_id, -32602, f"unknown tool {params.get('name')!r}")
+            # #706: garbled / missing tool names name a real tool (action=read → skill) instead of
+            # a bare "unknown tool" that the agent used to retry.
+            return _error(msg_id, -32602, unknown_tool_message(
+                params.get("name"), params.get("arguments"), known=CORE_MCP_TOOLS))
         return _result(msg_id, outcome)
     if method == "resources/list":
         return _result(msg_id, {"resources": []})

@@ -453,6 +453,90 @@ def _h(*parts: str) -> str:
     return hashlib.sha256("\x1f".join(parts).encode()).hexdigest()[:16]
 
 
+# #706: polling the same job is not a dead loop. Every other tool is.
+_LOOP_POLL_TOOLS = frozenset({"wait_generation"})
+_SKILL_ACTIONS = frozenset({"read", "list", "save", "file", "read_file", "file_read"})
+
+
+def call_identity(tool: str, args: object) -> str:
+    """Stable key for one tool call. Key order does not matter; wait polls are excluded by the guard."""
+    base = re.sub(r"^mcp__\w+__", "", tool or "")
+    payload = args if isinstance(args, dict) else {}
+    return base + "\x00" + json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
+
+
+@dataclass
+class IdenticalCallGuard:
+    """#706: the 4th consecutive call with the same tool and the same arguments must not run.
+
+    Three identical calls are allowed. The next one (the 4th) is the stop. A different call, or a
+    wait_generation poll, breaks the streak. The counter is not reset by the one-time "try another
+    approach" nudge — that nudge is what used to let the same call run a second set of three (×6).
+    """
+
+    max_same: int = 3
+    last: str = ""
+    run: int = 0
+
+    def blocks(self, tool: str, args: object) -> bool:
+        base = re.sub(r"^mcp__\w+__", "", tool or "")
+        if base in _LOOP_POLL_TOOLS:
+            self.run = 0
+            self.last = ""
+            return False
+        key = call_identity(tool, args)
+        self.run = self.run + 1 if key == self.last else 1
+        self.last = key
+        return self.run > self.max_same
+
+
+def suggest_tool_name(name: str, args: object = None, known: Optional[Iterable[str]] = None) -> str:
+    """Best real tool for a garbled or missing name. Skill reads (action=read/list + a name) hint `skill`."""
+    import difflib
+
+    payload = args if isinstance(args, dict) else {}
+    known_list = [str(k) for k in (known or ()) if k]
+    known_set = set(known_list)
+    base = re.sub(r"^mcp__\w+__", "", str(name or "")).strip()
+    if base in known_set:
+        return base
+    action = str(payload.get("action") or "").lower()
+    if action in _SKILL_ACTIONS and (not known_set or "skill" in known_set):
+        return "skill"
+    leaf = base.split(".")[-1].replace("-", "_")
+    for candidate in (leaf, base):
+        if not candidate or not known_list:
+            continue
+        match = difflib.get_close_matches(candidate, known_list, n=1, cutoff=0.6)
+        if match:
+            return match[0]
+    return ""
+
+
+def unknown_tool_message(name: str, args: object = None, *, known: Optional[Iterable[str]] = None,
+                         lang: str = "zh") -> str:
+    """#706: a garbled or missing tool name. Readable, and it names the tool to call instead."""
+    suggestion = suggest_tool_name(name, args, known)
+    shown = ", ".join(list(known or ())[:8])
+    if lang == "zh":
+        if suggestion == "skill":
+            hint = "读取技能请调用 `skill`，action 用 `read`，name 或 id 填技能名。"
+        elif suggestion:
+            hint = f"请改用 `{suggestion}`。"
+        else:
+            hint = "请从可用工具里选一个正确的名字。"
+        tail = f"可用工具包括：{shown}。" if shown else ""
+        return f"没有名为 `{name}` 的工具，这次调用没有执行。{hint}{tail}"
+    if suggestion == "skill":
+        hint = "To read a skill, call `skill` with action `read` and the skill name or id."
+    elif suggestion:
+        hint = f"Call `{suggestion}` instead."
+    else:
+        hint = "Pick one of the real tool names."
+    tail = f" Tools include: {shown}." if shown else ""
+    return f"There is no tool named `{name}`; this call did not run. {hint}{tail}"
+
+
 @dataclass
 class StepObservation:
     tool: str

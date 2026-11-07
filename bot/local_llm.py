@@ -287,6 +287,13 @@ def _tool_base(name: str) -> str:
     return re.sub(r"^mcp__\w+__", "", name or "")
 
 
+_KNOWN_TOOLS = frozenset((*CORE_MCP_TOOLS, QUOTE_TOOL))
+
+
+def _known_tool(name: str) -> bool:
+    return _tool_base(name) in _KNOWN_TOOLS
+
+
 def _json_obj(text: str) -> Optional[dict]:
     body = text or ""
     for prefix in ("[tool error] ", "[error] "):
@@ -319,7 +326,11 @@ def model_call_failed(name: str, args: dict, text: str) -> Optional[str]:
 
     '' means the caller should use the id from the call that started the job. A cost-confirm
     decline and a paid-guard refusal are not model failures, so they never switch models.
+    #706: a generate_image that never submitted (quote only, model refusal) is not a failed
+    model run — do not silently switch models and submit again.
     """
+    if "没有提交" in (text or "") or "did not submit" in (text or "").lower():
+        return None
     base = _tool_base(name)
     if base not in _FALLBACK_TOOLS and base != "wait_generation":
         return None
@@ -345,6 +356,121 @@ def model_call_failed(name: str, args: dict, text: str) -> Optional[str]:
         if found:
             return str(found)
     return str((args or {}).get("model") or (args or {}).get("edit_model") or "")
+
+
+_QUOTE_KEYS = ("price", "quote", "quoted", "confirm_usd")
+_REFUSE_RE = re.compile(
+    r"moderation|content policy|content_policy|safety system|refused by the model|model refused|"
+    r"拒绝|审核未通过|敏感内容|违规",
+    re.I,
+)
+_NOT_SUBMIT_RE = re.compile(
+    r"not submitted|did not submit|nothing ran|nothing was submitted|"
+    r"blocked before submitting|没有提交|未提交|没有生成|未发出",
+    re.I,
+)
+_TASK_FAILED_RE = re.compile(r"task failed|任务没能完成|WaveSpeed task", re.I)
+
+
+def _payload_of(text: str) -> Optional[dict]:
+    """JSON object in a tool result, including one wrapped as `[tool error] ...`."""
+    body = text or ""
+    for prefix in ("[tool error] ", "[error] "):
+        if body.startswith(prefix):
+            body = body[len(prefix):]
+            break
+    try:
+        data = json.loads(body)
+    except (ValueError, TypeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _generation_submitted(data: dict) -> bool:
+    if data.get("submitted") is True:
+        return True
+    ids = data.get("ids")
+    if isinstance(ids, list) and any(str(i).strip() for i in ids if i is not None):
+        return True
+    if data.get("id") and not data.get("error") and data.get("submitted") is not False and data.get("started") is not False:
+        status = str(data.get("status") or "")
+        if status not in ("failed", "error", "declined", "cancelled", "quoted"):
+            return True
+    return False
+
+
+def _why_not_submitted(data: Optional[dict], raw: str, lang: str, *, quote: bool, empty: bool) -> str:
+    if empty:
+        return "工具没有返回任何结果" if lang == "zh" else "the tool returned nothing"
+    if quote:
+        return "只返回了报价，没有进入提交" if lang == "zh" else "only a price quote came back; nothing was submitted"
+    bits = []
+    if isinstance(data, dict):
+        for key in ("user_message", "error", "note", "message"):
+            val = data.get(key)
+            if isinstance(val, dict):
+                val = val.get("zh") or val.get("en") or ""
+            if isinstance(val, str) and val.strip():
+                bits.append(val.strip())
+                break
+    text = bits[0] if bits else (raw or "").strip()
+    text = re.sub(r"^\[(?:tool error|error)\]\s*", "", text)
+    text = re.sub(r"^(?:ValueError|TypeError|KeyError):\s*", "", text).strip()
+    if len(text) > 240:
+        text = text[:240] + "…"
+    if text:
+        return text
+    return "没有说明原因" if lang == "zh" else "no reason was given"
+
+
+def explain_unsubmitted(name: str, text: str, lang: str) -> Optional[tuple[str, str]]:
+    """#706: generate_image that did not submit. (agent text, user notice), or None when it did.
+
+    Quote-only, a model/content refusal, an empty result, and an explicit "not submitted" are
+    told to the agent and the user. A user cancel already has its own copy. A WaveSpeed task
+    that failed after submit stays on the #421 path (model fallback may ask).
+    """
+    if _tool_base(name) != "generate_image":
+        return None
+    raw = text or ""
+    if _CANCEL_RE.search(raw):
+        return None
+    data = _payload_of(raw)
+    if isinstance(data, dict) and _generation_submitted(data):
+        return None
+    blob = raw
+    if isinstance(data, dict) and data.get("error"):
+        blob = f"{raw}\n{data.get('error')}"
+    if _TASK_FAILED_RE.search(blob) and not _REFUSE_RE.search(blob):
+        return None
+    quote = isinstance(data, dict) and not data.get("error") and any(k in data for k in _QUOTE_KEYS)
+    refused = _REFUSE_RE.search(blob) is not None
+    explicit = _NOT_SUBMIT_RE.search(raw) is not None or (
+        isinstance(data, dict) and (data.get("submitted") is False or data.get("started") is False))
+    empty = not raw.strip()
+    if not (quote or refused or explicit or empty):
+        return None
+    lk = "zh" if lang == "zh" else "en"
+    why = _why_not_submitted(data, raw, lk, quote=quote, empty=empty)
+    if lk == "zh":
+        agent = ("[tool error] 生成图像没有提交，未扣费。原因：" + why
+                 + "。请把这个原因原文告诉用户，不要用相同参数再次调用 generate_image。")
+        user = f"生成图像没有提交，未扣费。原因：{why}"
+    else:
+        agent = ("[tool error] generate_image did not submit and nothing was charged. Reason: " + why
+                 + ". Tell the user this reason and do not call generate_image again with the same arguments.")
+        user = f"The image was not submitted and nothing was charged. Reason: {why}"
+    return agent, user
+
+
+def identical_stop_detail(name: str, args: dict, lang: str) -> str:
+    """#706: the sentence the user sees when the 4th identical call is blocked. No done-list; stop_text adds it."""
+    label = _step_label(name, args or {}, lang)
+    if lang == "zh":
+        return (f"同一工具「{label}」用相同参数连续超过 3 次，第 4 次已拦截，任务停止，"
+                "未继续执行，也未继续扣费。")
+    return (f"The same tool ({label}) was called with the same arguments more than 3 times in a row. "
+            "The 4th call was blocked and the task stopped; nothing further ran or was charged.")
 
 
 def _remember_generation(gens: dict, name: str, args: dict, text: str) -> None:
@@ -1257,6 +1383,19 @@ class LocalLlmProvider(AgentProvider):
                        "params": {"name": name, "arguments": arguments}},
             timeout=560 if name == "ask_user" else 200,
         )
+        if not isinstance(data, dict):
+            data = {}
+        # #706: a JSON-RPC error (unknown / garbled tool name) used to become an empty tool
+        # result, so the model retried it forever. Surface the message and, for a missing
+        # tool, name the real one.
+        err = data.get("error")
+        if err:
+            message = str(err.get("message") or err) if isinstance(err, dict) else str(err)
+            if "unknown tool" in message.lower():
+                from .run_budget import unknown_tool_message
+                from .guide import CORE_MCP_TOOLS
+                message = unknown_tool_message(name, arguments, known=CORE_MCP_TOOLS)
+            return "[tool error] " + message, []
         result = data.get("result") or {}
         content = result.get("content")
         text = self._extract_text(content)
@@ -1638,10 +1777,20 @@ class LocalLlmProvider(AgentProvider):
                 return await self._confirm_over_quote(turn, handle, lang, n, p, left)
             action, text, price = await agent_loop.paid_gate(run, name, args, ask, call_id=tc_id or "")
             if action != "call":
+                # #706: a skip with no text (quote / refuse that never said why) must not look like success.
+                shown = text or ""
+                notice = ""
+                if not shown.strip():
+                    explained = explain_unsubmitted(name, "", lang)
+                    if explained:
+                        shown, notice = explained
                 await emit(BotEvent(t="tool_use", name=name, input=args, id=tc_id))
-                await emit(BotEvent(t="tool_result", name=name, text=text or "", id=tc_id,
-                                    detail="cancelled" if action == "skip" else ""))
-                return [{"role": "tool", "tool_call_id": tc_id or name, "content": text or ""}]
+                await emit(BotEvent(
+                    t="tool_result", name=name, text=shown, id=tc_id, is_error=bool(notice),
+                    detail="" if notice else ("cancelled" if action == "skip" else "")))
+                if notice:
+                    await emit(BotEvent(t="notify", text=notice))
+                return [{"role": "tool", "tool_call_id": tc_id or name, "content": shown}]
         await emit(BotEvent(t="tool_use", name=name, input=args, id=tc_id))
         tool_failed = False
         images: list[str] = []
@@ -1658,6 +1807,12 @@ class LocalLlmProvider(AgentProvider):
                         session, turn.mcp_endpoint, name, args)
         except _NET_ERRORS as e:
             result_text = f"[error] {type(e).__name__}: {e}"
+            tool_failed = True
+        # #706: quote-only / model refusal / empty generate_image — say why, do not look like a submit.
+        user_notice = ""
+        explained = explain_unsubmitted(name, result_text, lang)
+        if explained:
+            result_text, user_notice = explained
             tool_failed = True
         if skill_key and not tool_failed:
             skill_cache.setdefault(skill_key, result_text)
@@ -1677,6 +1832,8 @@ class LocalLlmProvider(AgentProvider):
             t="tool_result", name=name, text=result_text, id=tc_id,
             is_error=tool_failed or model_failed,
             detail="cancelled" if _CANCEL_RE.search(result_text) else ""))
+        if user_notice:
+            await emit(BotEvent(t="notify", text=user_notice))
         out = [{"role": "tool", "tool_call_id": tc_id or name, "content": result_text}]
         if images:
             out.append({"role": "user", "content": [
@@ -1727,15 +1884,27 @@ class LocalLlmProvider(AgentProvider):
             cached = bool(skill_key) and skill_key in skill_cache
             if cached:
                 loop["cache_hits"] += 1
+            guard = loop.get("identical")
+            if guard is not None and guard.blocks(name, args):
+                # #706: 4th identical call does not run. The stop is stuck:repeat (clear error)
+                # instead of a second set of three after the one-time nudge.
+                _log.warning("[ComfyArt/agent] identical-call guard: %s x%d, blocking", name, guard.run)
+                loop["identical_stop"] = (name, dict(args))
+                tripped = True
+                break
             if loop.get("budget_loop"):
-                pass  # #391: the ProgressTracker owns repeat / stall detection
+                pass  # #391: stall / no-progress still belong to the ProgressTracker
             elif loop["repeat"] >= _REPEAT_STOP or loop["cache_hits"] >= _CACHED_SKILL_STOP:
                 _log.warning("[ComfyArt/local-llm] loop guard: %s repeat=%d cached_skill_reads=%d, stopping",
                              name, loop["repeat"], loop["cache_hits"])
                 tripped = True
                 break
+            reject = ""
+            if not _known_tool(name):
+                from .run_budget import unknown_tool_message
+                reject = "[tool error] " + unknown_tool_message(name, args, known=_KNOWN_TOOLS, lang=lang)
             parsed.append({"name": name, "args": args, "id": tc_id,
-                           "skill_key": skill_key, "cached": cached})
+                           "skill_key": skill_key, "cached": cached, "reject": reject})
 
         from .shot_plan import bind_generate
         run_for_plan = loop.get("run")
@@ -1760,6 +1929,11 @@ class LocalLlmProvider(AgentProvider):
 
         # Checklist (and any other free tool) lands before the confirm card.
         for i, it in enumerate(parsed):
+            if it.get("reject"):
+                chunks[i] = await self._emit_result(
+                    it, it["reject"], emit=emit, done=done, lang=lang, is_error=True)
+                await emit(BotEvent(t="notify", text=it["reject"].removeprefix("[tool error] ").strip()))
+                continue
             if it["name"] not in PAID_TOOLS and it["name"] != QUOTE_TOOL:
                 await run_mcp(i)
 
@@ -1868,6 +2042,15 @@ class LocalLlmProvider(AgentProvider):
             await emit(BotEvent(t="delta", text=text))
             return TurnResult(usage=usage)
         if tripped:
+            run = loop.get("run")
+            spec = loop.get("identical_stop")
+            if run is not None and spec and run.pending_stop is None:
+                from .run_budget import Stop, StopReason
+                run.pending_stop = Stop(
+                    StopReason.STUCK, "repeat", step=run.budget.used.steps,
+                    detail=identical_stop_detail(spec[0], spec[1], lang))
+            if run is not None and run.pending_stop is not None:
+                return TurnResult(usage=usage)  # agent loop finishes stuck:repeat (or an earlier stop)
             return TurnResult(usage=usage, error=_stop_summary(done, lang))
         return None
 
