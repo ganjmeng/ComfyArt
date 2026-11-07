@@ -1,5 +1,4 @@
-"""#673/#735 e2e (mock only, $0): the remaining hidden Phase2 D-group skills appear nowhere on home (featured, chips, + → 技能) or the
-Skills page (every chip). C-group is listed after #735. Set HIDE673_SHOTS=/dir for PNGs."""
+"""#673/#735/#812 e2e (mock only, $0): after #812 hide list is empty; D-group appears on home/Skills. Guard machinery kept. Set HIDE673_SHOTS=/dir for PNGs."""
 from __future__ import annotations
 
 import json
@@ -16,7 +15,7 @@ pw = pytest.importorskip("playwright.async_api")
 ROOT = Path(__file__).resolve().parent.parent
 pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("*")), reason="needs built dist/")
 SHOTS = os.environ.get("HIDE673_SHOTS")
-SEL = ",".join(f'[data-skill="{h}"]' for h in HIDDEN)
+SEL = ",".join(f'[data-skill="{h}"]' for h in HIDDEN) or '[data-skill="__no_hidden__"]'
 
 
 async def _shot(pg, name):
@@ -73,11 +72,9 @@ async def test_composer_slash_picker_hides_deferred(app_url, lang, theme):  # no
         first = await _slash(pg, "")
         assert first == MAIN_ORDER_40[:8], first  # '/' lists listed skills only, main order
         assert "ppt-visual" in await _slash(pg, "ppt")  # #735 C unhidden
-        assert "yingzao" not in await _slash(pg, "ying")
-        assert "yingzao" not in await _slash(pg, "营造")
-        for h in HIDDEN:  # searching a hidden skill by its own name never offers it
-            got = await _slash(pg, names[h].split()[0])
-            assert not set(got) & set(HIDDEN), (h, got)
+        assert "yingzao" in await _slash(pg, "ying")  # #812 D unhidden
+        assert "yingzao" in await _slash(pg, "营造")
+        assert HIDDEN == []
         for sid in ("poster-differentiated-compiler", "brand-identity-director", "product-tvc-advertisement-generator"):  # other skills still found by name
             assert sid in await _slash(pg, names[sid].split()[0]), sid
         await browser.close()

@@ -1,6 +1,5 @@
-"""#673 e2e (mock only, $0): saved work that points at a hidden skill — an old deep link (?skill=yingzao) and the
-regenerate (resend) of an old session — attaches no chip, shows the plain skills.hiddenUnavailable copy in the
-composer, and makes zero network requests (no agent turn, no WaveSpeed/kie submit). The old session still opens.
+"""#673/#812 e2e (mock only, $0): after #812 yingzao is listed again — deep link attaches the chip and does NOT
+show skills.hiddenUnavailable. Hide-guard machinery remains for any future hide-list ids.
 HIDE673_SHOTS=/dir keeps zh-light / en-dark PNGs."""
 from __future__ import annotations
 
@@ -54,34 +53,29 @@ def _posts(reqs):
 
 
 @pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
-async def test_deep_link_to_hidden_skill_shows_copy_no_chip_no_request(app_url, mock_ws, fake_agent, lang, theme):  # noqa: F811
-    reqs: list[tuple[str, str]] = []
+async def test_deep_link_to_yingzao_attaches_after_812_unhide(app_url, mock_ws, fake_agent, lang, theme):  # noqa: F811
     async with pw.async_playwright() as p:
-        browser, pg = await _open(p, app_url + f"?project=p673link{lang}&new=1&skill=yingzao&mode=agent&ask=%E6%97%A7%E9%93%BE%E6%8E%A5", lang, theme)
-        pg.on("request", lambda r: reqs.append((r.method, r.url)))
-        notice = pg.locator(NOTICE)
-        await notice.wait_for(timeout=15000)
-        assert (await notice.inner_text()).strip() == COPY[lang]
-        name = LOC[lang]["skills.yingzao"] if "skills.yingzao" in LOC[lang] else None
-        comp = await pg.locator(".ca-composer").inner_text()
-        assert not name or name not in comp  # no skill chip attached
-        await pg.wait_for_timeout(1500)
-        await _shot(pg, f"hidden-notice-link-{lang}-{theme}")
-        assert not [r for r in reqs if any(k in r[1] for k in PAID)], reqs
-        assert fake_agent.last_turn is None and mock_ws["submits"] == []
+        browser, pg = await _open(p, app_url + f"?project=p673link{lang}&new=1&skill=yingzao&mode=agent", lang, theme)
+        # #812: listed again — no hidden notice; chip may show name
+        assert await pg.locator(NOTICE).count() == 0
+        name = LOC[lang].get("skills.yingzao")
+        if name:
+            assert name in await pg.locator(".ca-composer").inner_text()
+        await _shot(pg, f"yingzao-link-listed-{lang}-{theme}")
         await browser.close()
 
 
 @pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
-async def test_resend_old_session_with_hidden_skill_shows_copy_no_request(app_url, mock_ws, fake_agent, lang, theme):  # noqa: F811
+async def test_resend_listed_yingzao_session_has_no_hidden_notice_812(app_url, mock_ws, fake_agent, lang, theme):  # noqa: F811
+    """#812: yingzao is listed — regenerating an old session must not show hiddenUnavailable."""
     from ComfyArt.api import chat_store
     project = f"p673resend{lang}"
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url + f"?project={project}&new=1", lang, theme)
         chat = await pg.evaluate("""async ([project, provider]) => (await (await fetch('/comfyart/bot/chats', {method: 'POST',
             headers: {'Content-Type': 'application/json'}, body: JSON.stringify({project, provider})})).json()).chat""", [project, fake_agent.id])
-        skill_name = LOC[lang]["skills.pptVisual"]
-        u = chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": "old deck"}, {"type": "skill", "name": skill_name}])
+        skill_name = LOC[lang]["skills.yingzao"]
+        u = chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": "old alley"}, {"type": "skill", "name": skill_name}])
         chat_store.create_message(chat_id=chat["id"], role="assistant", blocks=[{"type": "text", "text": "OLD-REPLY-673"}], parent_id=u["id"])
         await pg.reload()
         await pg.locator(".ca-composer__input").wait_for()
@@ -91,17 +85,11 @@ async def test_resend_old_session_with_hidden_skill_shows_copy_no_request(app_ur
                 await pg.wait_for_timeout(300)
         await pg.get_by_title(LOC[lang]["agentPanel.chatHistory"]).first.click()
         await pg.locator(".ca-history__item").first.click()
-        await pg.get_by_text("OLD-REPLY-673").wait_for(timeout=15000)  # old session still opens
-        reqs: list[tuple[str, str]] = []
-        pg.on("request", lambda r: reqs.append((r.method, r.url)))
+        await pg.get_by_text("OLD-REPLY-673").wait_for(timeout=15000)
         await pg.get_by_text("OLD-REPLY-673").last.hover()
         await pg.get_by_title(LOC[lang]["common.regenerate"]).last.dispatch_event("click")
-        notice = pg.locator(NOTICE)
-        await notice.wait_for(timeout=10000)
-        assert (await notice.inner_text()).strip() == COPY[lang]
-        await pg.wait_for_timeout(1500)
-        assert reqs == [], reqs  # zero network requests: no agent turn, no paid submit
-        assert fake_agent.last_turn is None and mock_ws["submits"] == []
+        await pg.wait_for_timeout(800)
+        assert await pg.locator(NOTICE).count() == 0
         assert await pg.get_by_text("OLD-REPLY-673").count() >= 1
-        await _shot(pg, f"hidden-notice-resend-{lang}-{theme}")
+        await _shot(pg, f"yingzao-resend-listed-{lang}-{theme}")
         await browser.close()

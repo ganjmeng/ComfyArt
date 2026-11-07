@@ -96,7 +96,7 @@ def _featured_from_data():
 
 # Fixed expectation (#689 follow-up): pinned id list so a skill silently dropping out of the
 # feed fails here; _featured_from_data() is only a drift guard against src/skills.ts.
-FEED_EXPECTED = frozenset({  # #735: D-group 4 hidden; C unhidden into feed
+FEED_EXPECTED = frozenset({  # #735/#812: C+D unhidden into feed
     "anim-2d", "banner-design-director", "before-after", "brand-identity-director", "character-sheet-design", "clothing-swap", "commerce-strategist", "creator-identity",
     "flash-cut-video", "interior-architectural-visualization", "lifestyle-scene", "linkedin-banner",
     "logo-abstract", "logo-material-explorer", "marketing-campaign-generator", "meta-ads-creative-director", "mobile-app-visual-design", "motion-poster-generator", "universal-multi-angle-grid",
@@ -113,11 +113,12 @@ FEED_EXPECTED = frozenset({  # #735: D-group 4 hidden; C unhidden into feed
     "live-promo-decor",  # #643 per-slot PR (examples wired => in feed)
     "ai-model",  # #643 per-slot PR (examples wired => in feed)
     "pose-fission",  # #643 per-slot PR (examples wired => in feed)
+    "yingzao", "crt-interface", "crayon-sketch", "fabric-collage",  # #812 D wash
 })
-FEED_MIN = 45  # #735: 49 builtins minus 4 D hidden
+FEED_MIN = 49  # #812: all builtins listed
 
 
-FEATURED_DIRS = ("/580/featured-v1/", "/580/featured-v2/", "/637/wash/", "/636/wash/", "/643/wash/", "/673/wash/")
+FEATURED_DIRS = ("/580/featured-v1/", "/580/featured-v2/", "/637/wash/", "/636/wash/", "/643/wash/", "/673/wash/", "/812/wash/")
 
 
 def _check_tiles(tiles):

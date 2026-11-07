@@ -146,6 +146,7 @@ def test_covers_ten_webps_with_source_manifest():
     # #637 Phase2-S4 B NEW5: remote cover637 wash pins (not local public/skills COVERED)
     phase2_b = ["flash-cut-video", "style-transfer", "person-swap", "commerce-strategist", "lifestyle-scene"]
     phase2_c = ["naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual", "promo-ecommerce"]
+    phase2_d = ["yingzao", "crt-interface", "crayon-sketch", "fabric-collage"]
     for sid, e in _entries().items():
         head = e.split("inputs:", 1)[0]
         if sid == "cover-design-director" or sid in NEW19:
@@ -160,6 +161,8 @@ def test_covers_ten_webps_with_source_manifest():
             assert f"cover: cover637('{sid}')" in head, sid  # #637 soft wash intentional covers
         elif sid in phase2_c:
             assert f"cover: cover673('{sid}')" in head, sid  # #636 C soft wash intentional covers
+        elif sid in phase2_d:
+            assert f"cover: cover812('{sid}')" in head, sid  # #812 D wash pins
         else:
             assert "cover:" not in head, sid
 

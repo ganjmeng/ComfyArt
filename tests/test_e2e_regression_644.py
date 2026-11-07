@@ -39,7 +39,7 @@ DROPPED_13 = [
 ]
 LR4 = ["taobao-product", "before-after", "linkedin-banner", "clothing-swap"]
 COMBOS = [("zh", "light"), ("en", "dark"), ("zh", "dark"), ("en", "light")]
-HIDDEN_SEL = ",".join(f'[data-skill="{h}"]' for h in HIDDEN)
+HIDDEN_SEL = ",".join(f'[data-skill="{h}"]' for h in HIDDEN) or '[data-skill="__no_hidden__"]'
 PAID = ("wavespeed", "kie", "/send", "/generate", "/prompt")  # any non-GET to these = an agent turn or a paid submit
 PNG = bytes.fromhex(  # 2x2 opaque PNG
     "89504e470d0a1a0a0000000d4948445200000002000000020802000000fdd49a73"
