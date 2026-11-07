@@ -9,7 +9,7 @@ import { bakeToImage, createMockup } from './mockup'
 import { api, popAgentCommand, pushAgentCommand } from './comfy'
 import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
-import { capRefs, createGenerator, generate } from './generate'
+import { capRefs, createGenerator, generate, nearestRatio } from './generate'
 import { durationNote, fitDuration, RATIOS, VIDEO_RATIOS, videoResolution } from './genOptions'
 import { tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
@@ -136,13 +136,19 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
   if (wantsRefs && !model.refs && !(model.control && args.refs.every((_: unknown, i: number) => modes[i]))) throw new Error(`${model.label} does not accept refs; use a model with accepts_refs from list_models, give every ref a structure ref_mode, or drop refs`)
   const ratios = video ? VIDEO_RATIOS : RATIOS
   if (args.ratio && !ratios.includes(args.ratio)) throw new Error(`ratio must be one of ${ratios.join(', ')}`)
+  // #707: skill pixels (1584x396 and other non-enum canvases) win over the 1:1 default.
+  const px = (v: unknown) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n > 0 ? n : 0 }
+  const exactW = video ? 0 : px(args.width)
+  const exactH = video ? 0 : px(args.height)
+  const ratioArg = typeof args.ratio === 'string' && ratios.includes(args.ratio) ? args.ratio : ''
+  const imageRatio = ratioArg || (exactW && exactH ? nearestRatio(exactW / exactH, ratios) : '1:1')
   // #128: round the asked seconds up to the model's next allowed duration (capped at its longest) and say so
   const lengths = model.durations?.map(Number)
   const duration = fitDuration(args.duration, lengths)
   const notes = video ? { zh: durationNote(args.duration, duration, lengths, (k, ...a) => tl('zh', k, ...a)), en: durationNote(args.duration, duration, lengths, (k, ...a) => tl('en', k, ...a)) } : null
   const props = video
     ? { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? ratios[0], duration, resolution: videoResolution(args.resolution == null ? '' : String(args.resolution), model.resolutions, model.defaults?.resolution) }
-    : { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? '1:1', count: Math.min(4, Math.max(1, Number(args.count) || 1)) }
+    : { prompt: String(args.prompt), workflow: model.id, ratio: imageRatio, count: Math.min(4, Math.max(1, Number(args.count) || 1)), ...(exactW && exactH ? { resolution: 'custom' as const, cw: exactW, ch: exactH } : {}) }
   const media = video ? [...refUrls(editor, args.reference_images), ...refUrls(editor, args.reference_videos), ...refUrls(editor, args.reference_audios)] : []
   const motion = video && args.motion_video ? refUrls(editor, [args.motion_video])[0] : null
   const speech = video && args.speech_audio ? refUrls(editor, [args.speech_audio])[0] : null
@@ -165,7 +171,12 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     ...(notes?.en ? { durationAsked: Number(args.duration) } : {}),
   }
   const id = createGenerator(editor, video, props, false)
-  editor.updateShape<GeneratorShape>({ id, type: GENERATOR, meta })
+  const exact = !video && exactW && exactH ? { w: exactW, h: exactH } : null
+  editor.updateShape<GeneratorShape>({
+    id, type: GENERATOR,
+    ...(exact ? { props: { w: exact.w, h: exact.h, cw: exact.w, ch: exact.h, resolution: 'custom', ratio: imageRatio } } : {}),
+    meta: exact ? { ...meta, pixelSize: [exact.w, exact.h] } : meta,
+  })
   place(editor, id, args, chat)
   void generate(editor, editor.getShape<GeneratorShape>(id)!, onError)
   const outcome = await awaitSubmit(id)
@@ -175,7 +186,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     throw new Error(err ? agentErrorText(err) : 'generation submit failed')
   }
   if (notes?.en) return { ids: [id], model: model.id, duration, duration_note: notes, note: `call wait_generation with these ids; the video is ${duration}s, not the ${args.duration}s asked: tell the user (duration_note, in their language)` }
-  return { ids: [id], model: model.id, ...(video ? { duration } : {}), note: 'call wait_generation with these ids' }
+  return { ids: [id], model: model.id, ...(video ? { duration } : {}), ...(exact ? { width: exact.w, height: exact.h } : {}), note: 'call wait_generation with these ids' }
 }
 
 async function started(editor: Editor, holder: TLShapeId | undefined) {
