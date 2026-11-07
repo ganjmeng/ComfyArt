@@ -103,12 +103,14 @@ const WASH_MU = '4ef9ce65c6aef5afa6490c3835b80a6f925382c6'
 /** web-product rewash: cover ORIVA/KINLO/AYRA (+hero mp4), 9 examples, featured ORIVA/AUREN/NEXARA/VARDA (review-assets wash-wp, WaveSpeed I2I; kie 402). */
 const WASH_WP = '2438e1d8245b720d560d72a3b659551af0e95db9'
 const WASH_786_R2 = 'f5c9d7770df7a8ef92cd4411371ff5b552b83eee'
+/** #806 — 动态海报 cover + grid hover. Triptych of the washed poster (1324×992). */
+const WASH_806 = 'ff874a61fa77c9f6e25fe0c6a6a4e116d0378d26'
 const COVERS_581: Record<string, readonly [string, string]> = {
   'poster-differentiated-compiler': ['494/covers-v3', COVER_V3], 'rednote-cover-maker': ['494/covers-v3', COVER_V3], 'brand-identity-director': ['786/wash', WASH_786], /* #786 SOLENNE */
   'packaging-design-director': ['494/covers-v3', COVER_V3], 'cover-design-director': ['494/covers-v3', COVER_V3],
   'banner-design-director': ['778/wash', WASH_778], // #778: fintech hero cover (was VENTUR brand board)
   'character-sheet-design': ['788/wash', WASH_788], // #788 SIENNA VALE
-  'product-tvc-advertisement-generator': ['784/wash', WASH_784], /* #784: BR lip-tube wash; featured stays 779 */ 'motion-poster-generator': ['494/covers-v3', COVER_V3], 'interior-architectural-visualization': ['494/covers-v3', COVER_V3],
+  'product-tvc-advertisement-generator': ['784/wash', WASH_784], /* #784: BR lip-tube wash; featured stays 779 */ 'motion-poster-generator': ['806/wash', WASH_806], /* #806: LUMEN DRIFT triptych, same poster as the template wash */ 'interior-architectural-visualization': ['494/covers-v3', COVER_V3],
   'universal-multi-angle-grid': ['494/covers-v4', COVER_V4], 'logo-material-explorer': ['wash-lm', WASH_LM], // VELA
   'meta-ads-creative-director': ['494/covers-v4', COVER_V4], 'mobile-app-visual-design': ['wash-mu', WASH_MU], // SAELIN
   'web-product-visual-design': ['wash-wp', WASH_WP], // ORIVA/KINLO/AYRA
@@ -154,7 +156,9 @@ const feedCovers = (id: string) => { const e = FEED_COVERS[id]; return e ? e[2].
 /** #529 list/detail cover videos (10× short mp4 on review-assets; commit-pinned). */
 const WASH_VIDEO_COMMIT = '1bbb3f208f18b26ef95c8d9f16efeea111c43ac7'
 const video = (id: string) =>
-  `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${WASH_VIDEO_COMMIT}/494/wash/videos/${assetDir(id)}.mp4`
+  id === 'motion-poster-generator'
+    ? pinned('806/wash', WASH_806, 'motion.mp4')
+    : `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${WASH_VIDEO_COMMIT}/494/wash/videos/${assetDir(id)}.mp4`
 /** #575 — media URL is a short cover/example video (mp4/webm/mov). Stills stay images; no fake video badge without data. */
 export function isSkillMediaVideo(src: string | null | undefined): boolean {
   return !!src && /\.(mp4|webm|mov)(\?|#|$)/i.test(src)
@@ -409,10 +413,10 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     inputs: [I('productImage', ['商品图片', 'Product images'], 'image', true), I('productInfo', ['商品资料', 'Product details'], 'text', false, ['补充商品名称、真实卖点和使用场景', 'Product name, real selling points and use cases']), VISUAL] },
   { id: 'motion-poster-generator', name: t('skills.motionPoster'), instructions: 'You are a production motion-poster designer. Deliver one short motion video from a static poster: either a poster-motion clip or a start-to-end frame animation. Keep the subject, on-art text, logos, composition and information hierarchy. Do not reshoot a different ad and do not swap in a new person.\n1) Poster motion: require source_image, the static artwork. Find elements that can move safely and confirm a plan before animating. When motion_brief is filled, follow it exactly; when it is empty, plan the motion automatically with no per-layer setup. Confirm length, ratio and sound, then animate, and finish on a full, legible still frame.\n2) Start and end frames: source_image is the final held frame. When start_frame is provided, use it as the opening frame of the same shot; otherwise design an earlier moment of that shot. Keep subject, viewpoint, style and colors consistent across both frames. Confirm both frames, any adjustments, length, ratio and sound, then generate one continuous move. Do not cut to an unrelated image. End on a full still frame. Text, logos and hierarchy stay put.\n3) Look: apply visual_direction when the user wrote one; otherwise keep the artwork look. Never invent a second brand, a new headline, or a layout change.\n4) Craft: type stays sharp and in quotes; motion must not smear letters, logos or the information hierarchy. The last frame is a complete, readable still.\n5) Refs: pass every provided shape id in refs (ref_modes content) on every generate_image and animate_image call. Describing the artwork in the prompt does not send the image. Never invent motion when source_image is missing.',
     category: 'ads', cover: cover('motion-poster-generator'), quickStartCover: quickStartCover('motion-poster-generator'), featured: feedCovers('motion-poster-generator'), video: video('motion-poster-generator'),
-    /* #806: template videos stay unwired until a same-topic wash (slice 2). Still covers come from wash-748. */
+    /* #806: playable template clips. t1 1112×834 (~4:3), t2 720×1280 (9:16). Stills stay on wash-748. */
     presets: [
-      { ...P('t1', '海报动效', 'Poster Animation', MOTION_POSTER_PROMPT), inputs: MOTION_POSTER_INPUTS },
-      { ...P('t2', '首尾帧动画', 'First-to-Last Frame Animation', MOTION_START_END_PROMPT), inputs: MOTION_START_END_INPUTS },
+      { ...P('t1', '海报动效', 'Poster Animation', MOTION_POSTER_PROMPT, undefined, pinned('569/wash/motion/templates', WASH_569_COMMIT, '01-poster-animation.mp4')), inputs: MOTION_POSTER_INPUTS },
+      { ...P('t2', '首尾帧动画', 'First-to-Last Frame Animation', MOTION_START_END_PROMPT, undefined, pinned('569/wash/motion/templates', WASH_569_COMMIT, '02-first-to-last-frame-animation.mp4')), inputs: MOTION_START_END_INPUTS },
     ],
     inputs: MOTION_POSTER_INPUTS },
   // #593 Phase1-S3 new 6 instructions+presets; #594 wash pins; dual-fit contain; #623 hover video @ 594/wash/videos.
