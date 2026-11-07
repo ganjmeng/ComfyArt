@@ -1,0 +1,31 @@
+{
+  "kind": "pctfix",
+  "started": "2026-11-07T22:51:13+0800",
+  "balance_start": 34.678999,
+  "base": "/workspace/promo01/wash745-gold/out/promo01-washed-gold-2k.webp",
+  "base_url": "https://d2h7xmz5gqybh9.cloudfront.net/media/images/f683c216-c405-4670-b21e-ce55a843dd84.webp",
+  "sot": "黑袋 UP TO 20% OFF + 红袋 人气价→惊爆价",
+  "fixes": [
+    "UP TO 人气% OFF → UP TO 20% OFF",
+    "人气价 → 惊爆价"
+  ],
+  "tid": "fb11c452b02943bead819a586c6da6bb",
+  "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/5cbf7d50-1adf-4ac5-9a8f-5c981f19a4b4.webp",
+  "file": "/workspace/promo01/wash745-gold/out/promo01-washed-gold-2k-pctfix.webp",
+  "balance_end": 34.575499,
+  "spent_approx": 0.1035,
+  "finished": "2026-11-07T22:51:50+0800",
+  "bytes": 2593942,
+  "visual_confirm": {
+    "black_bag": "UP TO 20% OFF",
+    "red_bag": "惊爆价",
+    "price_kept": "¥1899",
+    "confirmed_at": "2026-11-07T22:52:53+0800",
+    "promoted_to": "/workspace/promo01/wash745-gold/out/promo01-washed-gold-2k.webp"
+  },
+  "artifacts": {
+    "pctfix": "/workspace/promo01/wash745-gold/out/promo01-washed-gold-2k-pctfix.webp",
+    "LR_pctfix_D": "/workspace/promo01/wash745-gold/out/LR-pctfix-D.jpg",
+    "LR_gold_vs_washed": "/workspace/promo01/wash745-gold/out/LR-gold-vs-washed.jpg"
+  }
+}

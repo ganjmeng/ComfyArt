@@ -21,3 +21,18 @@
 | [`fix-ledger.json`](fix-ledger.json) | 第一次定点账 |
 | [`enfix-ledger.json`](enfix-ledger.json) | EN-only 账 |
 | [`ocr_spots-gold.json`](ocr_spots-gold.json) | 修补前 OCR 抽点 |
+
+## pctfix (2026-11-07 22:51 Asia/Shanghai) — Related to #745
+
+Targeted single WaveSpeed `openai/gpt-image-2.6-flare/edit` pass (tid `fb11c452b02943bead819a586c6da6bb`):
+
+| Spot | Before (wrong tip) | After |
+|------|--------------------|-------|
+| Black outline bag icon | `UP TO 人气% OFF` (mis-wash) | **`UP TO 20% OFF`** |
+| Red 3D bag label | `人气价` | **`惊爆价`** (owner SoT lock; 人气价 cancelled) |
+| Price on red bag | ¥1899 | ¥1899 (unchanged) |
+
+- Spend ≈ **0.1035** (bal 34.6790 → 34.5755)
+- Tip: `docs/design/673/wash/promo-ecommerce/examples/01-washed-gold-2k.webp`
+- L/R: [`LR-pctfix-D.jpg`](./LR-pctfix-D.jpg) · ledger [`pctfix-ledger.json`](./pctfix-ledger.json)
+- Do NOT full re-wash; design/QA please re-sign this tip.
