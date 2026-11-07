@@ -176,6 +176,43 @@ class TestTurn:
         assert dict(rows)["prompt"]["prompt"] == [{"type": "text", "text": "hi"}]
 
 
+class TestSpawnEnv:
+    async def test_probe_bypasses_the_state_db_guard(self, tmp_path, monkeypatch):
+        """#755/#804: probe env carries the bypass; a bare kit spawn does not."""
+        from ComfyArt.bot import _acp_provider as acp
+
+        seen = {}
+
+        async def fake_run(argv, *, timeout, env=None):
+            seen["env"] = dict(env or {})
+            return 0, b"Hermes 0.22.7\n", b""
+
+        monkeypatch.setattr(acp, "run_command", fake_run)
+        provider = _provider(tmp_path, profile="")
+        monkeypatch.setattr(provider, "_command", lambda: (["/usr/bin/hermes"], ""))
+        status = await provider.probe()
+        assert status.available is True
+        assert seen["env"]["HERMES_STATE_DB_GUARD_BYPASS"] == "1"
+        assert "HERMES_STATE_DB_GUARD_BYPASS" not in acp.base_spawn_env()
+
+    async def test_send_bypasses_the_state_db_guard(self, fake_hermes, tmp_path, monkeypatch):
+        from ComfyArt.bot import _acp_provider as acp
+
+        seen = {}
+        real = acp.AcpTransport
+
+        class Capture(real):
+            def __init__(self, argv, *, cwd, env, on_notification, on_request):
+                seen["env"] = dict(env)
+                super().__init__(argv, cwd=cwd, env=env, on_notification=on_notification, on_request=on_request)
+
+        monkeypatch.setattr(acp, "AcpTransport", Capture)
+        result, _events = await _turn(_provider(tmp_path), TurnRequest(
+            chat_id="c1", user_text="hi", mcp_endpoint=ENDPOINT))
+        assert result.error == ""
+        assert seen["env"]["HERMES_STATE_DB_GUARD_BYPASS"] == "1"
+
+
 class TestRegistration:
     def test_hermes_is_registered_after_builtins(self):
         from ComfyArt.bot import list_providers

@@ -1,3 +1,4 @@
+import contextvars
 import logging
 import random
 import re
@@ -8,9 +9,35 @@ from urllib.parse import urlsplit, urlunsplit
 
 from ._acp import AcpTransport
 from ._acp_provider import SESSION_TIMEOUT_S, AcpLaunch, AcpProvider
-from ._cli_common import base_spawn_env
 from .agent_host import AgentHost
-from .providers import TurnRequest
+from .providers import EmitFn, TurnHandle, TurnRequest, TurnResult
+
+# #755: Hermes 0.22.7 refuses the real profile state.db when it sees pytest. The bypass belongs
+# on Hermes subprocesses only. The kit file stays byte-locked (#754); this wrapper reads a
+# context var that HermesProvider sets around probe/send (#804).
+_HERMES_SPAWN_EXTRA: contextvars.ContextVar[Optional[dict]] = contextvars.ContextVar(
+    "hermes_spawn_extra", default=None)
+
+
+def _install_spawn_env_wrapper() -> None:
+    from . import _acp_provider as acp
+
+    current = acp.base_spawn_env
+    if getattr(current, "_hermes_wrapped", False):
+        return
+
+    def base_spawn_env() -> dict:
+        env = current()
+        extra = _HERMES_SPAWN_EXTRA.get()
+        if extra:
+            env.update(extra)
+        return env
+
+    base_spawn_env._hermes_wrapped = True  # type: ignore[attr-defined]
+    acp.base_spawn_env = base_spawn_env
+
+
+_install_spawn_env_wrapper()
 
 _log = logging.getLogger(__name__)
 
@@ -64,12 +91,23 @@ class HermesProvider(AcpProvider):
         name = self._profile().strip()
         return ["-p", name, *args] if name else list(args)
 
-    def _spawn_env(self) -> dict:
-        # Hermes refuses production state.db when it detects pytest. ComfyArt hosts the
-        # user's real Hermes profile (including Full-App e2e under pytest), so bypass.
-        env = base_spawn_env()
-        env["HERMES_STATE_DB_GUARD_BYPASS"] = "1"
-        return env
+    def _arm_spawn_env(self):
+        # Full-App e2e runs under pytest and still hosts the user's real Hermes profile.
+        return _HERMES_SPAWN_EXTRA.set({"HERMES_STATE_DB_GUARD_BYPASS": "1"})
+
+    async def probe(self):
+        token = self._arm_spawn_env()
+        try:
+            return await super().probe()
+        finally:
+            _HERMES_SPAWN_EXTRA.reset(token)
+
+    async def send(self, turn: TurnRequest, emit: EmitFn, handle: TurnHandle) -> TurnResult:
+        token = self._arm_spawn_env()
+        try:
+            return await super().send(turn, emit, handle)
+        finally:
+            _HERMES_SPAWN_EXTRA.reset(token)
 
     def _command(self) -> tuple[Optional[list[str]], str]:
         name = self._profile().strip()
