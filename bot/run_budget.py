@@ -464,6 +464,37 @@ class StepObservation:
 DEFAULT_PLANNED_IMAGES = 4  # generate_image page clamp (plan_quote.units_of)
 
 
+def _call_args(obs: StepObservation) -> dict:
+    """Decode the JSON arguments stored after the NUL in an observation's call key."""
+    try:
+        value = json.loads(obs.args_key.split("\x00", 1)[1])
+    except (IndexError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _charged_result(obs: StepObservation) -> bool:
+    """Mirror paid_guard.charged: declined, cancelled and failed calls cost nothing."""
+    if obs.failed:
+        return False
+    try:
+        payload = json.loads(obs.result)
+    except (TypeError, ValueError):
+        return True
+    return not (isinstance(payload, dict) and (
+        payload.get("cancelled") or payload.get("error")
+        or payload.get("status") in ("declined", "cancelled", "failed")))
+
+
+def _generate_units(obs: StepObservation) -> int:
+    if obs.tool != "generate_image" or not _charged_result(obs):
+        return 0
+    try:
+        return max(1, int(_call_args(obs).get("count") or 1))
+    except (TypeError, ValueError):
+        return 1
+
+
 @dataclass
 class ProgressTracker:
     stall_steps: int = 4
@@ -484,6 +515,7 @@ class ProgressTracker:
     all_calls_max: int = 300
     paid_calls: int = 0
     planned_images: int = 0
+    plan_items: list[str] = field(default_factory=list)
     total_calls: int = 0
     gen_calls: int = 0
     # #705: wait_generation is outside the 30 cap but each task gets max 10 min OR 120 polls -> stuck:timeout
@@ -554,18 +586,33 @@ class ProgressTracker:
         return sub
 
     def gen_cap(self) -> int:
-        return (self.planned_images or DEFAULT_PLANNED_IMAGES) + 2
+        per_plan = DEFAULT_PLANNED_IMAGES * max(1, len(self.plan_items))
+        planned = max(self.planned_images, per_plan) if self.plan_items else (
+            self.planned_images or DEFAULT_PLANNED_IMAGES)
+        return planned + 2
 
     def over_budget(self, obs: list[StepObservation]) -> bool:
-        """#705: count this step's calls; True once the run exceeds the tool-call or generate_image cap (never reset)."""
+        """#705/#729: stop at the exact call/image cap, never after cap+1.
+
+        A generate_image call blocked before submit costs nothing and must not consume the run's
+        image budget. Each update_plan item owns the same four-image paid-guard quota, so the run
+        image cap expands with the known plan items instead of stopping multi-item work at six.
+        """
         from .guide import PAID_TOOLS
         self.total_calls += len(obs)
         # #705: paid/external calls AND read-only calls (skill reads, views; not wait_generation polls) share the
         # 30 cap, so a read-only loop (stuck:repeat style) cannot run past it either.
         self.paid_calls += sum(1 for o in obs if o.tool in PAID_TOOLS or _capped_readonly(o.tool))
-        self.gen_calls += sum(1 for o in obs if o.tool == "generate_image")
-        return (self.paid_calls > self.tool_calls_max or self.total_calls > self.all_calls_max
-                or self.gen_calls > self.gen_cap())
+        for o in obs:
+            if o.tool != "update_plan" or o.failed:
+                continue
+            for step in _call_args(o).get("steps") or []:
+                text = str((step or {}).get("text") or "") if isinstance(step, dict) else ""
+                if text and text not in self.plan_items:
+                    self.plan_items.append(text)
+        self.gen_calls += sum(_generate_units(o) for o in obs)
+        return (self.paid_calls >= self.tool_calls_max or self.total_calls >= self.all_calls_max
+                or self.gen_calls >= self.gen_cap())
 
     def wait_timeout(self, obs: list[StepObservation], now: Optional[float] = None) -> bool:
         """#705: True once any task polled by wait_generation passes wait_max_s since its first poll or wait_max_polls."""
