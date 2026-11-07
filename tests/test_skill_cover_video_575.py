@@ -5,6 +5,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = (ROOT / "src/skills.ts").read_text()
+# Signed hover clips. Only multi-angle still uses video594 (#623). The other five moved onto wash pins.
+NEW6_VIDEO = {
+    "universal-multi-angle-grid": "video: video594('universal-multi-angle-grid')",
+    "logo-material-explorer": "video: pinned('wash-lm/logo-material', WASH_LM, 'hero.mp4')",  # WASH_LM 58f1e3e9 (#797)
+    "meta-ads-creative-director": "video: video687('meta-ads-creative-director')",  # #687
+    "mobile-app-visual-design": "video: pinned('wash-mu/mobile-ui', WASH_MU, 'hero.mp4')",  # WASH_MU (#792/#793)
+    "web-product-visual-design": "video: pinned('wash-wp/web-product', WASH_WP, 'hero.mp4')",  # WASH_WP 2438e1d8 (#794)
+    "marketing-campaign-generator": "video: video687('marketing-campaign-generator')",  # #687
+}
 EXAMPLES = (ROOT / "src/ui/SkillExamples.tsx").read_text()
 WALL = (ROOT / "src/home/Skills.tsx").read_text()
 HOME = (ROOT / "src/home/Home.tsx").read_text()
@@ -38,15 +47,8 @@ def test_video_helpers_and_pending_scaffold():
     # #687: motion off-topic templates removed → their wash-v1 pin is gone too
     assert "WASH_575_MOTION_VIDEO" not in SKILLS and "575/wash/templates/" not in SKILLS
     assert "TODO(design pin): motion" not in SKILLS
-    for sid in (
-        "universal-multi-angle-grid",
-        "logo-material-explorer",
-        "meta-ads-creative-director",
-        "mobile-app-visual-design",
-        "web-product-visual-design",
-        "marketing-campaign-generator",
-    ):
-        assert f"video: video594('{sid}')" in SKILLS, sid
+    for sid, needle in NEW6_VIDEO.items():
+        assert needle in SKILLS, sid
         assert sid not in block.split("=", 1)[-1].split("as const")[0] or "[]" in block
 
 
@@ -137,12 +139,5 @@ def test_mutation_new6_video_pin_must_stay():
     """Must-red mutation: drop WASH_623 pin / video594 / any new6 video: → red."""
     assert "WASH_623_NEW6_VIDEO" in SKILLS
     assert "d03ea7938877d084c201a94ef51f943dd0e061b9" in SKILLS
-    for sid in (
-        "universal-multi-angle-grid",
-        "logo-material-explorer",
-        "meta-ads-creative-director",
-        "mobile-app-visual-design",
-        "web-product-visual-design",
-        "marketing-campaign-generator",
-    ):
-        assert f"video: video594('{sid}')" in SKILLS, sid
+    for sid, needle in NEW6_VIDEO.items():
+        assert needle in SKILLS, sid

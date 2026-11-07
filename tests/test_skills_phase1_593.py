@@ -25,6 +25,28 @@ NEW_CATEGORY = {
 }
 
 
+_COVER687 = {"meta-ads-creative-director", "marketing-campaign-generator"}
+
+
+def _cover_needle(sid: str) -> str:
+    return "cover: cover687(" if sid in _COVER687 else "cover: cover("
+
+
+def _feat_needle(sid: str) -> str:
+    return "featured: feat687(" if sid in _COVER687 else "featured: feedCovers("
+
+
+def _video_needle(sid: str) -> str:
+    return {
+        "universal-multi-angle-grid": "video: video594('universal-multi-angle-grid')",
+        "logo-material-explorer": "video: pinned('wash-lm/logo-material', WASH_LM, 'hero.mp4')",
+        "meta-ads-creative-director": "video: video687('meta-ads-creative-director')",
+        "mobile-app-visual-design": "video: pinned('wash-mu/mobile-ui', WASH_MU, 'hero.mp4')",
+        "web-product-visual-design": "video: pinned('wash-wp/web-product', WASH_WP, 'hero.mp4')",
+        "marketing-campaign-generator": "video: video687('marketing-campaign-generator')",
+    }[sid]
+
+
 def _entries() -> dict[str, str]:
     a = SKILLS_TS.index("export const BUILTIN_SKILLS")
     block = SKILLS_TS[a:next(i for i in (SKILLS_TS.find("\n])\n", a), SKILLS_TS.find("\n]\n", a)) if i >= 0)]
@@ -39,8 +61,8 @@ def test_new6_production_instructions_and_presets():
         e = entries[sid]
         assert f"category: '{cat}'" in e, sid
         head, _, rest = e.partition("inputs:")
-        assert "cover: cover(" in head and "featured: feedCovers(" in head, sid
-        assert f"video: video594('{sid}')" in head, sid  # #623 hover video wired
+        assert _cover_needle(sid) in head and _feat_needle(sid) in head, sid
+        assert _video_needle(sid) in head, sid  # signed hover clip (video594 only for multi-angle)
         assert "quickStartCoverFit: 'contain'" in head and "examples: ex" not in head, sid  # #751 HOLD: Final examples come from raw + src/data/wash-748.json (1:1, pendingWash), no hand list
         if sid == "universal-multi-angle-grid":
             # #691/#687: reference-card parity → Upload + Additional only, no presets

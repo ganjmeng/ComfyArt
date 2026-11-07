@@ -80,8 +80,16 @@ def test_phase1_media_and_no_demo_placeholder():
     for sid in PHASE1:
         e = entries[sid]
         head = e.split("inputs:", 1)[0]
-        if sid == "cover-design-director":  # #643 (#659) true wash re-pinned cover + featured
-            assert "cover: cover643('cover-design-director')" in head and "featured: feat643('cover-design-director'" in head, sid
+        rewash = {
+            "cover-design-director": ("cover: cover643('cover-design-director')", "featured: feat643('cover-design-director'"),  # #643
+            "rednote-cover-maker": ("cover: cover687('rednote-cover-maker')", "featured: feat687('rednote-cover-maker'"),  # #687
+            "packaging-design-director": ("cover: cover777('packaging-design-director')", "featured: feedCovers('packaging-design-director')"),  # #777
+            "meta-ads-creative-director": ("cover: cover687('meta-ads-creative-director')", "featured: feat687('meta-ads-creative-director'"),  # #687
+            "marketing-campaign-generator": ("cover: cover687('marketing-campaign-generator')", "featured: feat687('marketing-campaign-generator'"),  # #687
+            "interior-architectural-visualization": ("cover: cover687('interior-architectural-visualization')", "featured: feat687('interior-architectural-visualization'"),  # #687
+        }.get(sid)
+        if rewash:
+            assert rewash[0] in head and rewash[1] in head, sid
         else:
             assert "cover: cover(" in head, sid
             assert "featured: feedCovers(" in head, sid

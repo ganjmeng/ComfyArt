@@ -33,6 +33,28 @@ NEW_CATEGORY = {
 }
 
 
+_COVER687 = {"meta-ads-creative-director", "marketing-campaign-generator"}
+
+
+def _cover_needle(sid: str) -> str:
+    return "cover: cover687(" if sid in _COVER687 else "cover: cover("
+
+
+def _feat_needle(sid: str) -> str:
+    return "featured: feat687(" if sid in _COVER687 else "featured: feedCovers("
+
+
+def _video_needle(sid: str) -> str:
+    return {
+        "universal-multi-angle-grid": "video: video594('universal-multi-angle-grid')",
+        "logo-material-explorer": "video: pinned('wash-lm/logo-material', WASH_LM, 'hero.mp4')",  # WASH_LM #797
+        "meta-ads-creative-director": "video: video687('meta-ads-creative-director')",  # #687
+        "mobile-app-visual-design": "video: pinned('wash-mu/mobile-ui', WASH_MU, 'hero.mp4')",  # #792
+        "web-product-visual-design": "video: pinned('wash-wp/web-product', WASH_WP, 'hero.mp4')",  # WASH_WP #794
+        "marketing-campaign-generator": "video: video687('marketing-campaign-generator')",  # #687
+    }[sid]
+
+
 def _entries() -> dict[str, str]:
     a = SKILLS_TS.index("export const BUILTIN_SKILLS")
     block = SKILLS_TS[a:next(i for i in (SKILLS_TS.find("\n])\n", a), SKILLS_TS.find("\n]\n", a)) if i >= 0)]
@@ -55,10 +77,11 @@ def test_new_skills_cut2_skeleton_and_website_categories():
         assert f"category: '{cat}'" in e, sid
         assert "instructions:" in e and "inputs:" in e, sid
         assert "name: t(" in e, sid
-        # #594 wash pins — cover + featured; #623 wired Skill.video hover @ 594/wash
+        # Cover / featured / hover follow the signed wash helper, not a single video594() for every new-6 id.
         head = e.split("inputs:", 1)[0]
-        assert "cover: cover(" in head and "featured: feedCovers(" in head, sid
-        assert f"video: video594('{sid}')" in head, sid
+        assert _cover_needle(sid) in head, sid
+        assert _feat_needle(sid) in head, sid
+        assert _video_needle(sid) in head, sid
         assert "quickStartCoverFit: 'contain'" in head, sid
         assert "examples: ex594(" not in head and "ex594" not in head, sid  # #751 HOLD: Final examples come from raw + src/data/wash-748.json (1:1, pendingWash), no hand list
 

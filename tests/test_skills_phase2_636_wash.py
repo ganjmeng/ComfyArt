@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS_TS = (ROOT / "src/skills.ts").read_text()
 
-WASH_673 = "a4baa17bfb6eb984348a23b439a925f465a0ee53"  # #673 C re-wash replaced the #636 soft wash
+WASH_673 = "15e9bdad271dc2cb0ac1a1c8621927c161ca9299"  # #743 repin (was a4baa17b); same commit as WASH_643
 PHASE2_C = [
     "naive-illustration",
     "logo-abstract",

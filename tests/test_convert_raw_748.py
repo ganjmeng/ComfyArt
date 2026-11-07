@@ -63,7 +63,7 @@ EXAMPLE = {  # sid: (media, n inputs)
     "cover-design-director": ("v", 2), "poster-differentiated-compiler": ("iiiii", 2), "meta-ads-creative-director": ("iiii", 2),
     "marketing-campaign-generator": ("v" + "i" * 7, 2), "banner-design-director": ("v", 2), "logo-material-explorer": ("vii", 2),
     "mobile-app-visual-design": ("i" * 13, 2), "web-product-visual-design": ("i" * 9, 2), "universal-multi-angle-grid": ("i" * 11, 2),
-    "interior-architectural-visualization": ("iiii", 2), "rednote-cover-maker": ("i" * 10, 2),
+    "interior-architectural-visualization": ("ii", 2), "rednote-cover-maker": ("i" * 5, 2),  # skills-748 highlights (#748 hard cut; was iiii / i*10)
 }
 TEMPLATE = {  # sid: ([media depth per template], n inputs per template)
     "character-sheet-design": ([1] * 8, None), "packaging-design-director": ([1, 3, 4, 1, 1], None), "motion-poster-generator": ([1, 1], None),
