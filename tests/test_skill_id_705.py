@@ -78,20 +78,51 @@ def test_tracker_budget_cap_tool_calls_and_generate_image() -> None:
     t = ProgressTracker()
     assert t.gen_cap() == DEFAULT_PLANNED_IMAGES + 2 == 6
     # every step lands a NEW image (so no_progress/same_tool never fire) but never finishes
-    hits = [t.over_budget([StepObservation("generate_image", f"g{i}", json.dumps({"id": f"shape:{i}"}))]) for i in range(1, 8)]
-    assert hits == [False] * 6 + [True]
+    hits = [t.over_budget([StepObservation("generate_image", f"generate_image\x00{json.dumps({'prompt': str(i)})}", json.dumps({"id": f"shape:{i}"}))]) for i in range(1, 8)]
+    assert hits == [False] * 5 + [True, True]
     t = ProgressTracker(planned_images=1)
-    assert [t.over_budget(_obs("generate_image", i)) for i in range(1, 5)] == [False, False, False, True]
+    assert [t.over_budget(_obs("generate_image", i)) for i in range(1, 5)] == [False, False, True, True]
     t = ProgressTracker()  # local tools never hit the paid cap, only the 300 backstop
-    assert not any(t.over_budget(_obs("add_text", i)) for i in range(1, 301))
-    assert t.over_budget(_obs("add_text", 301)) is True
+    assert not any(t.over_budget(_obs("add_text", i)) for i in range(1, 300))
+    assert t.over_budget(_obs("add_text", 300)) is True
     t = ProgressTracker(planned_images=100)  # 30 paid (non-generate_image here) calls max
-    assert [t.over_budget(_obs("edit_image", i)) for i in range(1, 32)] == [False] * 30 + [True]
+    assert [t.over_budget(_obs("edit_image", i)) for i in range(1, 32)] == [False] * 29 + [True, True]
+
+
+def test_generate_cap_follows_plan_items_and_only_counts_charged_images() -> None:
+    steps = [{"text": text, "status": "active" if i == 0 else "pending"}
+             for i, text in enumerate(("hero", "lifestyle", "detail"))]
+    plan = StepObservation("update_plan", "update_plan\x00" + json.dumps({"steps": steps}), '{"ok": true}')
+    t = ProgressTracker()
+    assert t.over_budget([plan]) is False
+    assert t.gen_cap() == 14  # 3 items x 4 images + 2
+
+    blocked = StepObservation(
+        "generate_image",
+        "generate_image\x00" + json.dumps({"prompt": "missing ref"}),
+        "[tool error] blocked before submitting (nothing was charged)",
+        failed=True,
+    )
+    declined = StepObservation(
+        "generate_image",
+        "generate_image\x00" + json.dumps({"prompt": "declined"}),
+        json.dumps({"cancelled": True, "status": "declined"}),
+    )
+    assert t.over_budget([blocked, declined]) is False
+    assert t.gen_calls == 0
+
+    charged = StepObservation(
+        "generate_image",
+        "generate_image\x00" + json.dumps({"prompt": "two", "count": 2}),
+        json.dumps({"ids": ["gen:1", "gen:2"]}),
+    )
+    assert t.over_budget([charged]) is False
+    assert t.gen_calls == 2
 
 
 def test_tracker_readonly_skill_reads_count_toward_30_cap() -> None:
     t = ProgressTracker(planned_images=100)  # #705: a read-only loop cannot bypass the 30 cap
-    assert [t.over_budget(_obs("skill", i)) for i in range(1, 32)] == [False] * 30 + [True]
+    assert [t.over_budget(_obs("skill", i)) for i in range(1, 32)] == [False] * 29 + [True, True]
     t = ProgressTracker()
     assert not any(t.over_budget(_obs("wait_generation", i)) for i in range(1, 60))  # polls are not capped
 

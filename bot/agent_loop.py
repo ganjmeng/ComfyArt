@@ -668,6 +668,8 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         budget = RunBudget(limits, k=k, soft_fraction=policy["soft_fraction"], clock=clock)
         tracker = ProgressTracker(policy["stall_steps"], policy["readonly_max"], policy["tool_fail_max"],
                                   policy["repeat_max"])
+        if goal is not None and goal.kind == "image" and goal.count > 1:
+            tracker.planned_images = goal.count
         tracker.tool_calls_max, tracker.all_calls_max = int(policy["max_tool_calls"]), int(policy["max_all_tool_calls"])  # #705
         run_id = f"run-{uuid.uuid4().hex[:16]}"
         ctx = RunContext(run_id=run_id, store=store, lease_owner=lease_owner, policy=policy, budget=budget,

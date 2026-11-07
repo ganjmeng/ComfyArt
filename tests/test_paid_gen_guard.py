@@ -226,7 +226,6 @@ async def test_decline_on_one_plan_item_does_not_block_another(monkeypatch, subm
     assert not error
 
 
-@pytest.mark.gate_skip(reason="stale on main: per-plan-item cap now yields 7 calls, test expects 9 (paid-gen guard, #717)")
 async def test_each_plan_item_gets_its_own_four(monkeypatch, submits):
     def plan(active):
         return ("update_plan", {"steps": [{"text": t, "status": "active" if t == active else "pending"}
@@ -309,9 +308,13 @@ async def test_generation_without_reference_is_blocked_before_submit(monkeypatch
     assert not error
 
 
-@pytest.mark.gate_skip(reason="stale on main: guard returns no paid calls in this path (paid-gen guard, #717)")
 async def test_blocked_calls_do_not_count_toward_cap(monkeypatch, submits):
-    steps = [_s8_gen(i) for i in range(6)] + [_s8_gen(9, refs=["shape:src"])]
+    # Keep the paid-guard precondition failures isolated from the consecutive tool-error guard:
+    # six blocked ($0) calls followed by one valid call must still submit exactly once.
+    steps = []
+    for i in range(6):
+        steps += [_s8_gen(i), ("wait_generation", {"ids": [f"blocked:{i}"]})]
+    steps.append(_s8_gen(9, refs=["shape:src"]))
     error, *_ = await _local(monkeypatch, steps)
     assert len(_paid(submits)) == 1 and not error
 
