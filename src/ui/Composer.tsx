@@ -121,6 +121,12 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const refs = mergeRefIds(selected.map((s) => s.id), hidden, extra)
     .map((id) => selected.find((s) => s.id === id) ?? editor.getShape(id))
     .filter((s): s is RefShape => !!s && isRefShape(s))
+  // #710: selected reference images use the same image-N chip text as the user bubble.
+  const refChipLabel = (r: RefShape) => {
+    if (refKindOf(r) !== 'image') return truncateLabel(imageName(editor, r))
+    const at = refs.filter((x) => refKindOf(x) === 'image').indexOf(r)
+    return `image-${loose.length + at + 1}`
+  }
   const slash = /^\/(\S*)$/.exec(draft)
   const at = /(?:^|\s)@(\S*)$/.exec(draft)
 
@@ -335,11 +341,12 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
               <button type="button" title={t('common.remove')} onClick={() => docsAtom.set(docs.filter((x) => x.src !== d.src))}>{Icons.close}</button>
             </span>
           ))}
-          {/* #644: composer-only refs (old hidden-skill link) — same capsule look, never a canvas shape */}
+          {/* #644: composer-only refs (old hidden-skill link) — same capsule look, never a canvas shape.
+              #710: image refs read image-1 / image-2 (same chip text as the user bubble). */}
           {loose.map((l, i) => (
             <span key={`loose-${i}`} className="ca-chip ca-chip--capsule" data-testid="composer-capsule" data-loose title={l.name}>
               <span className="ca-chip__thumb"><img src={l.src} alt="" /></span>
-              <span className="ca-chip__name">{truncateLabel(l.name)}</span>
+              <span className="ca-chip__name" data-testid="user-ref-chip">{`image-${i + 1}`}</span>
               <button type="button" title={t('common.remove')} onClick={() => looseRefsAtom.set(loose.filter((_, j) => j !== i))}>{Icons.close}</button>
             </span>
           ))}
@@ -358,7 +365,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
               title={imageName(editor, r)}
             >
               <span className="ca-chip__thumb"><RefThumb editor={editor} s={r} /></span>
-              <span className="ca-chip__name">{truncateLabel(imageName(editor, r))}</span>
+              <span className="ca-chip__name" data-testid={refKindOf(r) === 'image' ? 'user-ref-chip' : undefined}>{refChipLabel(r)}</span>
               <button type="button" title={t('common.remove')} onClick={() => removeRef(r.id)}>{Icons.close}</button>
               {each.on && refs.length > 1 && <EachRole shared={each.isShared(r.id)} onToggle={() => each.toggleShared(r.id)} />}
             </span>

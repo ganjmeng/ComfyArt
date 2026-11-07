@@ -330,6 +330,32 @@ export function RunStop({ b, latest }: { b: BotBlock; latest: boolean }) {
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
+/** #710: a plan card prompt is N shot lines plus 「是否生成这 N 张？」. */
+export function planPromptParts(prompt: string): { lines: string[]; question: string } | null {
+  const parts = (prompt || '').split('\n').map((s) => s.trim()).filter(Boolean)
+  if (parts.length < 2) return null
+  const question = parts[parts.length - 1] ?? ''
+  if (!/^是否生成这\s*\d+\s*张？$/.test(question)) return null
+  return { lines: parts.slice(0, -1), question }
+}
+
+function planAnswerText(b: BotBlock): string {
+  const q = askQuestions(b)[0]
+  const stored = q ? b.answers?.[q.id] : undefined
+  const selected = stored?.selected ?? b.selected ?? []
+  const other = (stored?.other_text ?? b.other_text ?? '').trim()
+  const options = q?.options ?? b.options ?? []
+  if (!selected.length && other) {
+    const letter = LETTERS[options.length] ?? 'C'
+    return `${letter}: ${other}`
+  }
+  if (!selected.length) return t('chatMessage.skipThisQuestion')
+  const i = Math.max(0, options.findIndex((o) => o.id === selected[0]))
+  const letter = LETTERS[i] ?? 'A'
+  const label = options.find((o) => o.id === selected[0])?.label ?? selected[0]
+  return `${letter}: ${label}`
+}
+
 type QState = { selected: string[]; other: string }
 
 function askQuestions(b: BotBlock): AskQuestion[] {
@@ -439,6 +465,17 @@ function QuestionAnswered({ b }: { b: BotBlock }) {
       </div>
     )
   }
+  const plan = planPromptParts(askQuestions(b)[0]?.prompt || b.prompt || '')
+  if (plan) {
+    const text = [...plan.lines, plan.question, planAnswerText(b)].join('\n')
+    return (
+      <div className="ca-chat__user" data-testid="ask-answer-bubble" data-ask={isAskSkipped(b) ? 'skip' : 'answer'}>
+        <div className="ca-chat__bubble ca-chat__bubble--ask ca-chat__bubble--plan">{text}
+          <CopyButton text={text} className="ca-askcopy" testId="ask-answer-copy" icon={Icons.copy} />
+        </div>
+      </div>
+    )
+  }
   if (isAskSkipped(b)) {
     return (
       <div className="ca-chat__user" data-testid="ask-answer-bubble" data-ask="skip">
@@ -501,9 +538,19 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
   // Soft-select on other only when it is the active answer (single: no A–D selected; multi: when filled)
   const otherOn = !!st.other.trim() && (multi || st.selected.length === 0)
 
+  const plan = planPromptParts(q.prompt)
   return (
     <div className="ca-q__block">
-      <div className="ca-q__prompt">{q.prompt}{multi && <span className="ca-q__hint">{t('chatMessage.multipleChoice')}</span>}</div>
+      {plan ? (
+        <>
+          <div className="ca-q__plans" data-testid="question-plan-body">
+            {plan.lines.map((line) => <div key={line} className="ca-q__plan" data-testid="question-plan-line">{line}</div>)}
+          </div>
+          <div className="ca-q__prompt">{plan.question}{multi && <span className="ca-q__hint">{t('chatMessage.multipleChoice')}</span>}</div>
+        </>
+      ) : (
+        <div className="ca-q__prompt">{q.prompt}{multi && <span className="ca-q__hint">{t('chatMessage.multipleChoice')}</span>}</div>
+      )}
       <div className="ca-q__opts">
         {textOnly ? (
           <div className="ca-q__opt" data-text="" data-on={st.other.trim() ? true : undefined}>
@@ -1262,7 +1309,10 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
 export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMessage; onBranch?: () => void }) {
   const text = textOf(m)
   const media = m.blocks.filter((b) => b.type === 'image' || b.type === 'video' || b.type === 'audio')
+  const images = media.filter((b) => b.type === 'image')
+  const restMedia = media.filter((b) => b.type !== 'image')
   const skills = m.blocks.filter((b) => b.type === 'skill')
+  const bubble = skills.length > 0 || images.length > 0
   return (
     <div className="ca-chat__user" data-queued={m.status === 'queued' || undefined}>
       <div className="ca-chat__acts">
@@ -1271,14 +1321,15 @@ export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMes
         <button type="button" className="ca-history__del" title={t('chatMessage.setAsScheduledTask')} onClick={() => schedulesOpenAtom.set({ prompt: text })}>{Icons.bell}</button>
         {onBranch && <button type="button" className="ca-history__del" title={t('chatMessage.forkNewChatFromHere')} onClick={onBranch}>{Icons.merge}</button>}
       </div>
-      {media.length > 0 && <div className="ca-chat__thumbs">{media.map((b) => <Thumb key={b.url} editor={editor} src={b.url!} />)}</div>}
+      {restMedia.length > 0 && <div className="ca-chat__thumbs">{restMedia.map((b) => <Thumb key={b.url} editor={editor} src={b.url!} />)}</div>}
       {m.blocks.filter((b) => b.type === 'kit').map((b) => <span key={b.name} className="ca-chip"><span className="ca-icon">{Icons.assets}</span>{b.name}</span>)}
       {m.blocks.filter((b) => b.type === 'file').map((b) => <a key={b.url} className="ca-chip" href={b.url} target="_blank" rel="noreferrer"><span className="ca-icon">{Icons.page}</span>{b.name}</a>)}
-      {/* #462: the skill chip sits inside the bubble, inline before the text, with the process-line skill icon */}
-      {(text || skills.length > 0) && (
-        <div className={skills.length > 0 ? 'ca-chat__bubble ca-chat__bubble--skill' : 'ca-chat__bubble'} data-testid="user-bubble">
+      {/* #462 skill chip stays; #710 reference images are image-N chips, not a thumbnail wall */}
+      {(text || bubble) && (
+        <div className={bubble ? 'ca-chat__bubble ca-chat__bubble--skill ca-chat__bubble--refs' : 'ca-chat__bubble'} data-testid="user-bubble">
           {skills.map((b) => <SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" />)}
-          {skills.length > 0 ? <span className="ca-chat__text" data-testid="user-bubble-text">{text}</span> : text}
+          {images.map((b, i) => <span key={b.url ?? i} className="ca-chip ca-chip--ref" data-testid="user-ref-chip">{`image-${i + 1}`}</span>)}
+          {bubble ? <span className="ca-chat__text" data-testid="user-bubble-text">{text}</span> : text}
         </div>
       )}
       {m.status === 'queued' && <span className="ca-chat__hint">{t('chatMessage.queuedSendsAfterTheCurrent')}</span>}

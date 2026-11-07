@@ -126,7 +126,7 @@
 .ca-ve__playhead { position: absolute; top: -6px; bottom: -4px; width: 2px; margin-left: -1px; background: #e53935; pointer-events: none; z-index: 3; }
 
 .ca-ask { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 12px; }
-.ca-ask__title { font-weight: 500; }
+.ca-ask__title { font-weight: 500; white-space: pre-line; }
 .ca-ask .ca-panel__foot > button { height: 32px; padding: 0 14px; border-radius: 8px; font: inherit; cursor: pointer; }
 .ca-chat__memo { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ca-muted); }
 .ca-chat__memo .ca-icon { width: 14px; height: 14px; }
@@ -174,7 +174,10 @@
 }
 /* R8: tighter block rhythm */
 .ca-q__block { display: flex; flex-direction: column; gap: 5px; }
-.ca-q__prompt { font-weight: 500; font-size: 13px; line-height: 18px; color: var(--ca-text); }
+.ca-q__prompt { font-weight: 500; font-size: 13px; line-height: 18px; color: var(--ca-text); white-space: pre-line; }
+/* #710: each plan is its own line. pre-line keeps a newline prompt from collapsing into one paragraph. */
+.ca-q__plans { display: flex; flex-direction: column; gap: 8px; white-space: pre-line; }
+.ca-q__plan { white-space: pre-line; font-size: 13px; line-height: 18px; color: var(--ca-text); }
 /* R5 multi hint — （多选） muted, not menu key padding */
 .ca-q__hint { margin-left: 4px; font: 400 12px/18px var(--ca-font); color: var(--ca-muted); font-weight: 400; }
 .ca-q__opts { display: flex; flex-direction: column; gap: var(--ca-opt-gap, 2px); }
