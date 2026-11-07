@@ -60,7 +60,7 @@ def test_builtin_covers(got):
         "banner-design-director": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/79bf01dc6342363348671c368fa1d467706a0e0f/778/wash/banner.webp",
         "character-sheet-design": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1f66faf48e8dbd625b4acf79505adb320586ad14/788/wash/character.webp",
         "product-tvc-advertisement-generator": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/d17ae7c9a27b84ab0f0781bccee100778a9f1e18/784/wash/product.webp",
-        "motion-poster-generator": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v3}/494/covers-v3/motion.webp",
+        "motion-poster-generator": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/ff874a61fa77c9f6e25fe0c6a6a4e116d0378d26/806/wash/motion.webp",  # #806 triptych wash
         "interior-architectural-visualization": "https://raw.githubusercontent.com/ganjmeng/ComfyArt/5c954dbcefb8bd50edef69688b303122debb4ffb/687/wash/interior/cover.webp",
     }
     assert {k: covers[k] for k in washed} == expected
@@ -104,6 +104,7 @@ def test_builtin_videos_unique(got):
     new6 = ("universal-multi-angle-grid", "meta-ads-creative-director", "marketing-campaign-generator")
     for sid in new6:
         assert vids.pop(sid) == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{pin623}/594/wash/videos/{asset_dir(sid)}.mp4"
+    assert vids.pop("motion-poster-generator") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/ff874a61fa77c9f6e25fe0c6a6a4e116d0378d26/806/wash/motion.mp4"  # #806 triptych hover
     pin637 = "2109c085aa74c617cd34517f99626f357062c81c"
     # #637: flash-cut + commerce get single-video example.mp4 as skill.video; other phase2 still null
     for sid in ("flash-cut-video", "commerce-strategist"):
@@ -121,12 +122,12 @@ def test_builtin_videos_unique(got):
     )
     for sid in phase3_null:
         assert vids.pop(sid) is None  # #640 Phase3-S1 empty video until S4
-    assert len(vids) == 10
+    assert len(vids) == 9  # #806 motion hover left the shared 494 clip
     assert vids == {
         k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/{asset_dir(k)}.mp4"
         for k in vids
     }
-    assert len(set(vids.values())) == 10
+    assert len(set(vids.values())) == 9
 
 
 def test_video_field_data_driven(got):
@@ -143,8 +144,11 @@ def test_575_video_contract(got):
     assert got["thumbEx"][0] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/thumbnail.mp4"
     assert got["bannerEx"][0] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e9c0f21959787a9c7401fa95927db3e3e6931bcd/778/wash/banner/examples/01.mp4"  # #778 ex01 fintech wash
     assert len(got["thumbEx"]) == 1 and len(got["bannerEx"]) == 1  # #748 raw highlights: 1 video each (convert)
-    motion_tip = "5a8d22ed88f732d38f8709a2c0740f074a400a89"
-    assert got["motionPresetVideos"] == [None, None]  # #751 HOLD: skill-level video no longer shared onto template cards (each card keeps its OWN cover)  # #748 raw: 2 templates; our wash video is the placeholder (WASH-TODO)
-    # mutation: drop preset.video → null (red if wired URLs vanish)
-    assert not any(got["motionPresetVideos"])  # #751 HOLD: template cards carry no shared video
+    pin569 = "bd043d4cff5019fc4117b5b2f3a33ae437015a28"
+    # #806: each template plays its own clip (poster ~4:3, first-to-last 9:16). Drop either URL → red.
+    assert got["motionPresetVideos"] == [
+        f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{pin569}/569/wash/motion/templates/01-poster-animation.mp4",
+        f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{pin569}/569/wash/motion/templates/02-first-to-last-frame-animation.mp4",
+    ]
+    assert all(u.endswith(".mp4") for u in got["motionPresetVideos"])
     assert got["hoverCalls"] == ["play", "pause"] and got["hoverSeek"] == 0
