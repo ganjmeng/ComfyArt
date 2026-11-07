@@ -1,4 +1,5 @@
 // #155: WaveSpeed failures are shown as readable zh/en messages, never the raw WaveSpeed error text.
+// #721: non-WaveSpeed / unknown raw errors map to wsErr.generic; own validation strings stay via allowlist.
 import { t } from './i18n'
 
 /** #715: text right before the `id` in wsErr.taskRef (zh/en); a code span after one of these renders as .ca-task-id. */
@@ -8,6 +9,30 @@ export const isTaskRefCode = (before: string) => TASK_REF_PREFIXES.some((p) => b
 export const TOP_UP_URL = 'https://wavespeed.ai/top-up'
 const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany', 'noOutput', 'noTaskId', 'unregisteredModel'] as const
 export type WsErrorKind = typeof KINDS[number]
+
+/** #721: our own short validation strings users can act on — keep as-is (explicit allowlist, no blanket pass-through). */
+export const OWN_ERROR_ALLOWLIST = new Set([
+  'mask file not found',
+  'src must be a /api/view URL',
+])
+
+/** Log the raw upstream text for debugging; never show it on the card. */
+export function logRawGenError(raw: unknown) {
+  try {
+    console.warn('[gen] raw error:', raw)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Map a raw / unknown user-facing error string to friendly copy (#721). Allowlisted own strings pass through. */
+export function mapUnknownError(raw: string): string {
+  const msg = raw.trim()
+  if (!msg) return t('wsErr.generic')
+  if (OWN_ERROR_ALLOWLIST.has(msg)) return msg
+  logRawGenError(msg)
+  return t('wsErr.generic')
+}
 
 /** The readable message for a backend error kind, or null when the error is not a tagged WaveSpeed failure. */
 export function wsErrorText(kind: unknown, charged?: unknown, taskId?: unknown): string | null {
@@ -31,8 +56,15 @@ export const fmtUsd = (n: number) => (n > 0 && n < 0.01 ? '< $0.01' : `$${n.toFi
 
 export function wsBodyError(body: any, fallback: string): string {
   const err = body?.error
-  // never stringify an object into "[object Object]": only string text passes through, otherwise the localized fallback
-  return wsErrorText(err?.kind, err?.charged_usd, err?.task_id) ?? (typeof err === 'string' && err.trim() ? err : typeof err?.message === 'string' && err.message.trim() ? err.message : fallback)
+  const tagged = wsErrorText(err?.kind, err?.charged_usd, err?.task_id)
+  if (tagged) return tagged
+  // #721: raw string / err.message → allowlist or wsErr.generic (never dump upstream text / [object Object])
+  const raw = typeof err === 'string' && err.trim() ? err.trim()
+    : typeof err?.message === 'string' && err.message.trim() ? err.message.trim()
+      : null
+  if (raw !== null) return mapUnknownError(raw)
+  // no usable string: keep the caller's already-localized fallback (err.requestFailed / wsErr.failed / …)
+  return fallback
 }
 
 export const RELAY_NOTE = 'user_message is already in the user\'s language; reply with it word for word (keep any link), do not paraphrase or quote a raw error'
