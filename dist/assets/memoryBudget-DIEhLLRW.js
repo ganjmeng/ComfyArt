@@ -1,0 +1,1 @@
+export{l as insertMemoryUpdatedBlock}from"./memoryBudget-DKXBP2OU.js";

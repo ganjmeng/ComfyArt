@@ -70,7 +70,7 @@
   "agentPanel.selectImagesOnTheCanvas": "选中画布上的图片即可作为参考，\"/\" 使用技能，\"@\" 引用参考。",
   "agentPanel.setWavespeedKey": "去设置 Key",
   "agentPanel.startFromSkill": "选择 Skill 开始创作",
-  "agentPanel.stop": "终止",
+  "agentPanel.stop": "停止",
   "agentPanel.taskDetails": "任务详情",
   "agentPanel.uploadReference": "上传本地参考",
   "agentPanel.useBrandKit": "使用品牌套件",

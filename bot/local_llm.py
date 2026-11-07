@@ -1737,8 +1737,16 @@ class LocalLlmProvider(AgentProvider):
             parsed.append({"name": name, "args": args, "id": tc_id,
                            "skill_key": skill_key, "cached": cached})
 
+        from .shot_plan import bind_generate
+        run_for_plan = loop.get("run")
+        for it in parsed:
+            if it["name"] != "generate_image":
+                continue
+            _bound, refuse = bind_generate(run_for_plan, it["args"], consume=False)
+            if refuse:
+                it["refuse"] = refuse
         quote_item = next((it for it in parsed if it["name"] == QUOTE_TOOL), None)
-        paid = [it for it in parsed if it["name"] in PAID_TOOLS]
+        paid = [it for it in parsed if it["name"] in PAID_TOOLS and not it.get("refuse")]
         chunks: list[Optional[list]] = [None] * len(parsed)
 
         ran: list[int] = []
@@ -1824,6 +1832,17 @@ class LocalLlmProvider(AgentProvider):
                 chunks[i] = await self._emit_result(
                     it, _PLAN_REFUSE[lang_key], emit=emit, done=done, lang=lang, is_error=True)
                 continue
+            if it.get("refuse"):
+                chunks[i] = await self._emit_result(
+                    it, it["refuse"], emit=emit, done=done, lang=lang, is_error=True)
+                continue
+            if name == "generate_image":
+                bound, refuse = bind_generate(run_for_plan, it["args"], consume=True)
+                if refuse:
+                    chunks[i] = await self._emit_result(
+                        it, refuse, emit=emit, done=done, lang=lang, is_error=True)
+                    continue
+                it["args"] = bound
             await run_mcp(i)
 
         for ch in chunks:
