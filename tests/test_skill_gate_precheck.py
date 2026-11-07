@@ -138,12 +138,15 @@ def test_gate_skip_marker_registered():
 
 
 def test_every_gate_skip_names_reason_and_issue():
+    """#712: every remaining gate_skip names a reason and an issue.
+
+    #731/#802 cleared the marks on the failures that were fixed, so an empty set is valid.
+    """
     import re
     hits = []
     for p in (ROOT / "tests").glob("test_*.py"):
         for m in re.finditer(r"@pytest\.mark\.gate_skip\((.*?)\)\n", p.read_text()):
             hits.append((p.name, m.group(1)))
-    assert hits, "expected the known main failures to be marked"
     for name, args in hits:
         assert 'reason="' in args and re.search(r"#\d+", args), (name, args)
 
