@@ -26,6 +26,7 @@ from .run_budget import ui_credits
 from .providers import BotEvent, TurnResult
 from .run_budget import (
     BudgetLimits,
+    IdenticalCallGuard,
     ProgressTracker,
     RunBudget,
     RunPolicy,
@@ -389,13 +390,13 @@ _PRIMARY_ACTION = {"error": "retry"}  # #709: stuck primary = 继续生成 (cont
 # the same run from its checkpoint (agent_loop resume: fresh progress window for stuck, +1 budget for budget).
 # #709 UIUX: the card's reason is a plain sentence (never stuck:* / budget:* codes).
 _STUCK_REASON = {
-    "zh": {"no_progress": "连续几步都没有新产出，自动暂停。", "repeat": "同一个操作反复出现，自动暂停。",
+    "zh": {"no_progress": "连续几步都没有新产出，自动暂停。", "repeat": "同一工具用相同参数连续超过 3 次，已立即停下，没有继续执行。",
            "tool_error": "工具连续出错，自动暂停。", "readonly_limit": "连续多步只在查看、没有生成，自动暂停。",
            "same_tool": "连续重复同一步，已停下。", "non_retryable": "工具返回了无法重试的错误，已暂停。",
            "budget": "生成和工具调用次数到了本次上限，自动暂停。",
            "timeout": "等待生成结果超过 {N} 分钟。"},
     "en": {"no_progress": "No new output for several steps, paused automatically.",
-           "repeat": "The same action kept repeating, paused automatically.",
+           "repeat": "The same tool with the same arguments ran more than 3 times in a row, so it stopped immediately.",
            "tool_error": "A tool failed several times in a row, paused automatically.",
            "readonly_limit": "Several steps only looked and made nothing, paused automatically.",
            "same_tool": "Repeated the same step in a row, stopped.",
@@ -597,8 +598,10 @@ def stop_text(stop: Stop, lang: str, done: list[str], hard_cap: int = 0, check: 
         # Same user copy as budget; the cap number is never shown to users.
         text = _with_done(_STOP_TEXT["hard_cap"][lk], done, lang)
     elif stop.reason == StopReason.STUCK:
-        text = _with_done(_STOP_TEXT["stuck"][lk].format(sub=_STALL_LABEL[lk].get(stop.sub, stop.sub),
-                                                           step=stop.step), done, lang)
+        # #706: an identical-call stop carries the tool name in detail; other stuck stops keep the template.
+        head = stop.detail if stop.sub == "repeat" and stop.detail else _STOP_TEXT["stuck"][lk].format(
+            sub=_STALL_LABEL[lk].get(stop.sub, stop.sub), step=stop.step)
+        text = _with_done(head, done, lang)
     elif stop.code in _STOP_TEXT:
         tmpl = _STOP_TEXT[stop.code][lk]
         text = tmpl.format(dim=_DIM[lk].get(stop.dimension, ""), detail=stop.detail)
@@ -777,7 +780,8 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
 
     skill_cache: dict[str, str] = {}
     gens: dict[str, dict] = {}
-    loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens, "budget_loop": True, "run": ctx}
+    loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens, "budget_loop": True, "run": ctx,
+            "identical": IdenticalCallGuard()}
     gate = _PlanGate()
     reason_next = False  # #413: set after a step that wrote memory; consumed by the next request
     try:
