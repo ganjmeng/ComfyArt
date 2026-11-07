@@ -333,7 +333,13 @@ def after_call(chat_id: str, name: str, args: dict, payload: Any,
 
 
 def clip_external_screenshots(chat_id: str, blocks: list[dict]) -> list[dict]:
-    """#238: at most 2 screenshot images returned to an external CLI during one turn."""
+    """#238: at most 2 screenshot images returned to an external CLI during one bot turn.
+
+    #730 no-turn buckets (``__noturn__:``) cap paid submits. They are not a bot turn, so
+    this cap stays off and a direct MCP call still returns every image (#804).
+    """
+    if not chat_id or chat_id.startswith(NOTURN_PREFIX):
+        return blocks
     guard = TURNS.get(chat_id)
     if guard is None or not blocks:
         return blocks

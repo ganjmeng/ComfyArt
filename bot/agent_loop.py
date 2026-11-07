@@ -927,6 +927,13 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             if ctx.tracker.over_budget(obs):  # #705: hard cap, no nudge (e.g. every step a new image, never done)
                 _log.warning("[ComfyArt/agent] run %s over budget: %d calls, %d generate_image (cap %d/%d)", ctx.run_id,
                              ctx.tracker.total_calls, ctx.tracker.gen_calls, ctx.tracker.tool_calls_max, ctx.tracker.gen_cap())
+                # #729 stops the 300-call backstop on the call that reaches it. When that call is also
+                # the #391 step hard cap, keep the continuable hard_cap card instead of stuck:budget (#804).
+                paid_or_image = (ctx.tracker.paid_calls >= ctx.tracker.tool_calls_max
+                                 or ctx.tracker.gen_calls >= ctx.tracker.gen_cap())
+                if not paid_or_image and ctx.budget.used.steps >= ctx.budget.limits.hard_steps:
+                    return await finish(Stop(StopReason.HARD_CAP, step=ctx.budget.used.steps),
+                                        remaining=_remaining_steps(ctx))
                 return await finish(Stop(StopReason.STUCK, "budget", step=ctx.budget.used.steps))
             if ctx.tracker.wait_timeout(obs, now=clock()):  # #705: one generation task waited > 10 min or > 120 polls
                 _log.warning("[ComfyArt/agent] run %s wait_generation timeout: %s", ctx.run_id, ctx.tracker.wait_polls)

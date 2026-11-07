@@ -100,9 +100,6 @@ class AcpProvider(AgentProvider):
             return []
         return [{"type": "http", "name": self._host.name, "url": launch.mcp_url, "headers": []}]
 
-    def _spawn_env(self) -> dict:
-        return base_spawn_env()
-
     def _command(self) -> tuple[Optional[list[str]], str]:
         raise NotImplementedError
 
@@ -128,7 +125,7 @@ class AcpProvider(AgentProvider):
         if argv is not None:
             try:
                 code, out, err = await run_command(self._version_argv(argv), timeout=VERSION_TIMEOUT_S,
-                                                   env=self._spawn_env())
+                                                   env=base_spawn_env())
             except (OSError, asyncio.TimeoutError) as e:
                 status = ProviderStatus(available=False, detail=f"{self.label} --version failed: {e}")
             else:
@@ -208,7 +205,7 @@ class AcpProvider(AgentProvider):
             if method == "session/update":
                 await self._on_update(params.get("update") or {}, emit, names, live[3])
 
-        transport = AcpTransport(launch.argv, cwd=launch.cwd, env=self._spawn_env(),
+        transport = AcpTransport(launch.argv, cwd=launch.cwd, env=base_spawn_env(),
                                  on_notification=on_notification, on_request=self._on_request)
         live[0] = transport
         self._live[handle] = live
