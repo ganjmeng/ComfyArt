@@ -1,0 +1,14 @@
+{
+  "kind": "targeted-fix",
+  "base": "/workspace/promo01/wash745-gold/out/promo01-washed-gold-2k.webp",
+  "tid": "4163be97ac6541e2ad968441fde36382",
+  "url": "https://d2h7xmz5gqybh9.cloudfront.net/output/768e89ed-1ad2-4e79-9383-ab7524637c98.webp",
+  "file": "/workspace/promo01/wash745-gold/out/promo01-washed-gold-2k-fix.webp",
+  "balance_start": 35.403499,
+  "balance_end": 35.299999,
+  "spent_approx": 0.1035,
+  "fixes": [
+    "爆款价→人气价",
+    "EN→WARM CARE/WINTER GLOW/NUVO PICKS/SOFT WARM"
+  ]
+}
