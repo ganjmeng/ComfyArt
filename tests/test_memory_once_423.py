@@ -147,7 +147,7 @@ def test_locales_only_add_memory_retrieved_430():
         "memoryDialog.partTitle.about", "memoryDialog.partTitle.work",
         "memoryDialog.partTitle.taste", "memoryDialog.partTitle.assets",
         "memoryDialog.stepOf", "memoryDialog.freeHint",
-        # #687: motion → Reference Video Remake positioning
+        # #806: motion title/desc (动态海报); desc.motion is the pre-id key if present
         "skills.motionPoster", "skills.desc.motion",
         # #751: Final-16 zh display names (INDEX / product-confirmed)
         "skills.logoMaterialExplorer", "skills.packagingDesign",

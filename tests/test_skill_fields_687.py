@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.lovart_fields_687 import MOTION_FEATURED_REMOVED, OURS_PH, RAW_748, REF12, SPEC
+from tests.lovart_fields_687 import MOTION_DESC, MOTION_FEATURED_806, MOTION_FEATURED_REMOVED, OURS_PH, RAW_748, REF12, SPEC
 
 ROOT = Path(__file__).resolve().parents[1]
 needs_node = pytest.mark.skipif(
@@ -36,11 +36,16 @@ def test_dialog_fields_match_lovart_spec_687(got, sid):
 
 
 @needs_node
-def test_motion_remake_template_and_featured03_removed_687(got):
+def test_motion_poster_templates_and_featured_806(got):
     m = got["motion-poster-generator"]
-    # #748 RAW READY overrides #687's "no motion templates": raw has 2 (海报动效 / 首尾帧动画)
+    # #806: 动态海报 keeps the two raw templates; featured is those stills, not the remake-era 580 drop.
     assert m["presets"] == 2
-    assert not any(MOTION_FEATURED_REMOVED in u for u in m["featured"]) and len(m["featured"]) == 3
+    assert m["presetFields"] == [
+        {"zh": "海报动效", "keys": ["source_image", "motion_brief", "visual_direction"], "required": ["source_image"]},
+        {"zh": "首尾帧动画", "keys": ["source_image", "start_frame", "motion_brief", "visual_direction"], "required": ["source_image"]},
+    ]
+    assert m["featured"] == MOTION_FEATURED_806
+    assert not any(MOTION_FEATURED_REMOVED in u for u in m["featured"])
 
 
 @needs_node
@@ -58,11 +63,16 @@ def test_typo_uploaded_file_are_uploaded_fixed_687():
     for f in (ROOT / "src/locales").glob("*.json"):
         assert "uploaded file" not in json.dumps(json.loads(f.read_text()).get("skills", {}), ensure_ascii=False).lower(), f.name
 
-def test_motion_title_desc_remake_687():
+def test_motion_title_desc_poster_806():
     import json
-    from tests.lovart_fields_687 import MOTION_DESC_EN, MOTION_TITLE
+    from tests.lovart_fields_687 import MOTION_TITLE
+    src = (ROOT / "src/skills.ts").read_text()
+    assert "MOTION_REMAKE_INPUTS_687" not in src and "refVideo" not in src and "remakeBrief" not in src
+    assert "remake" not in src.lower() and "重制" not in src
+    assert "source_image" in src and "start_frame" in src and "motion_brief" in src and "visual_direction" in src
     for lang in ("zh", "en"):
         loc = json.loads((ROOT / f"src/locales/{lang}.json").read_text())
         assert loc["skills.motionPoster"] == MOTION_TITLE[lang], lang
-        assert "lock a still" not in loc["skills.desc.motion-poster-generator"] and "海报" not in loc["skills.desc.motion-poster-generator"]
-    assert json.loads((ROOT / "src/locales/en.json").read_text())["skills.desc.motion-poster-generator"] == MOTION_DESC_EN
+        desc = loc["skills.desc.motion-poster-generator"]
+        assert desc == MOTION_DESC[lang], lang
+        assert "remake" not in desc.lower() and "reference video" not in desc.lower() and "参考视频" not in desc

@@ -26,8 +26,18 @@ CHANGED = list(SPEC)
 OURS_PH = _ours_ph
 REF12 = [k for k, v in _R.items() if v["kind"] == "example" and not v.get("hold")]  # example cards with the shared form
 MOTION_TITLE = {"zh": _R["motion-poster-generator"]["title"]["zh"], "en": _R["motion-poster-generator"]["title"]["en"]}  # #748 raw title 动态海报
-MOTION_DESC_EN = "Adapt a reference video with your content while preserving its shot structure and pacing"
+# #806 — poster copy (docs/design/748/COPY-REWRITE.md). The remake sentence is retired.
+MOTION_DESC = {
+    "zh": "让现有海报动起来，主体、文字和构图保持不变",
+    "en": "Bring an existing poster to life while keeping its subject, text and layout.",
+}
+MOTION_DESC_EN = MOTION_DESC["en"]
+# #806 featured is the two template stills, not the 580 feed (03 was the original-face still).
 MOTION_FEATURED_REMOVED = "580/featured-v1/motion/03.webp"
+MOTION_FEATURED_806 = [
+    "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/motion/templates/01-poster-animation.webp",
+    "https://raw.githubusercontent.com/ganjmeng/ComfyArt/bd043d4cff5019fc4117b5b2f3a33ae437015a28/569/wash/motion/templates/02-first-to-last-frame-animation.webp",
+]
 
 # #687 decision (技术经理): NO old→new key mapping. Old drafts / handoff links using these pre-#687 keys
 # must not throw and must open the dialog with empty fields.
