@@ -6,7 +6,9 @@ SKILLS_TS = (Path(__file__).resolve().parents[1] / "src/skills.ts").read_text(en
 
 
 def _const_ids(name: str) -> list[str]:
-    m = re.search(rf"export const {name} = \[([^\]]+)\] as const", SKILLS_TS, re.S)
+    # `*` so an intentional empty list matches. UNTOUCHED_SKILL_IDS is `[] as const` after #687
+    # (interior rewashed; the export stays).
+    m = re.search(rf"export const {name} = \[([^\]]*)\] as const", SKILLS_TS, re.S)
     assert m, f"{name} literal missing"
     return re.findall(r"'([^']+)'", m.group(1))
 

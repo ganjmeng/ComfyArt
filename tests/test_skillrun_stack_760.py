@@ -81,9 +81,11 @@ def test_wash_raw_not_thumb():
     """media URLs = raw originals with real w/h, not @thumb."""
     assert "02-first-to-last-frame-animation.webp" in WASH
     assert "02-first-to-last-frame-animation@thumb.webp" not in WASH
-    # packaging stack raw
-    assert "packaging__gold.webp" in WASH
+    # packaging stack raw — #777 AURELIA stills (was packaging__gold.webp on 541/wash)
+    assert "777/wash/packaging/examples/02.webp" in WASH
+    assert "packaging__gold.webp" not in WASH
     assert "packaging__gold@thumb.webp" not in WASH
+    assert "777/wash/packaging/examples/02@thumb.webp" not in WASH
 
 
 def test_skills_category_chip_200ms_not_select_pill():
@@ -112,10 +114,10 @@ def test_single_portrait_cover_no_stack():
     assert "0.55335" in CSS and "0.22332" in CSS
     # stack still requires media.length > 1
     assert "t.media.length > 1 && real.length > 0" in RAW
-    # #760 r7: Master wash is single-frame 3:4 (no stacked-sheet bitmap); portrait uses contain
+    # #777: Master still is the AURELIA 01 pin (local packaging/master.webp is no longer referenced)
     skills = (ROOT / "src/skills.ts").read_text()
-    assert "packaging/master.webp" in skills
-    assert (ROOT / "public/skills/packaging/master.webp").is_file()
+    assert "pinned(`777/wash/packaging/examples`, WASH_777, '01.webp')" in skills
+    assert "packaging/master.webp" not in skills
     # portrait single block uses contain (not cover) so 3:4 media is letterboxed-safe
     seg = CSS.split('presetimg[data-orient="portrait"] > img')[1].split("preset-video")[0]
     assert "object-fit: contain" in seg

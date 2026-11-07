@@ -40,10 +40,9 @@ def test_builtin_covers(got):
     """#581 washed covers stay pinned; #594 Phase1 new 6 covers-v4 @ WASH_594."""
     covers = got["builtinCovers"]
     washed = ["poster-differentiated-compiler", "rednote-cover-maker", "brand-identity-director", "packaging-design-director", "banner-design-director", "character-sheet-design", "product-tvc-advertisement-generator", "motion-poster-generator", "interior-architectural-visualization"]
-    assert covers["logo-material-explorer"] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/b72f119af80013b2dc6119e94713b8a2354ac6c4/wash-lm/logo-material.webp"  # VELA rewash
+    assert covers["logo-material-explorer"] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/58f1e3e9ebe225e61363f0e7688149c0c6a49813/wash-lm/logo-material.webp"  # WASH_LM r2 (#797; was b72f119a #790)
     assert covers["mobile-app-visual-design"] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/4ef9ce65c6aef5afa6490c3835b80a6f925382c6/wash-mu/mobile-ui.webp"  # SAELIN rewash
-    assert covers["web-product-visual-design"] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/ca326aede1749ed67952d020e9a28545059e97d0/wash-wp/web-product.webp"  # ORIVA/KINLO/AYRA rewash
-    phase1_new = ["universal-multi-angle-grid", "meta-ads-creative-director", "marketing-campaign-generator"]
+    assert covers["web-product-visual-design"] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/2438e1d8245b720d560d72a3b659551af0e95db9/wash-wp/web-product.webp"  # WASH_WP (#794/#795; was ca326aed)
     v3, pin = "3c9b87e7eae72164efdd1fe30e00f576144475f4", {
         "banner-design-director": ("778/wash", "79bf01dc6342363348671c368fa1d467706a0e0f"),  # #778 fintech cover
         "product-tvc-advertisement-generator": ("784/wash", "d17ae7c9a27b84ab0f0781bccee100778a9f1e18"),  # #784 BR lip-tube wash
@@ -66,10 +65,14 @@ def test_builtin_covers(got):
     assert {k: covers[k] for k in washed} == expected
     # #643 (#659) thumbnail true wash re-pinned cover to WASH_643
     assert covers["cover-design-director"] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/15e9bdad271dc2cb0ac1a1c8621927c161ca9299/643/wash/thumbnail/cover.webp"
-    assert {k: covers[k] for k in phase1_new} == {
-        k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v4}/494/covers-v4/{k}.webp"
-        for k in phase1_new
+    # multi-angle stays covers-v4 @ WASH_594 (folder = assetDir). meta/marketing covers are cover687 (#687).
+    w687 = "5c954dbcefb8bd50edef69688b303122debb4ffb"
+    phase1_new = {
+        "universal-multi-angle-grid": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{v4}/494/covers-v4/multi-angle.webp",
+        "meta-ads-creative-director": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{w687}/687/wash/meta-ads/cover.webp",
+        "marketing-campaign-generator": f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{w687}/687/wash/marketing-campaign/cover.webp",
     }
+    assert {k: covers[k] for k in phase1_new} == phase1_new
 
 
 def test_chips_from_data(got):
@@ -98,13 +101,17 @@ def test_builtin_videos_unique(got):
     assert "custom-workflow" not in vids
     tip = "1bbb3f208f18b26ef95c8d9f16efeea111c43ac7"
     pin623 = "d03ea7938877d084c201a94ef51f943dd0e061b9"
-    assert vids.pop("logo-material-explorer") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/b72f119af80013b2dc6119e94713b8a2354ac6c4/wash-lm/logo-material/hero.mp4"  # VELA hero
+    assert vids.pop("logo-material-explorer") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/58f1e3e9ebe225e61363f0e7688149c0c6a49813/wash-lm/logo-material/hero.mp4"  # WASH_LM hero (#797)
     assert vids.pop("mobile-app-visual-design") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/4ef9ce65c6aef5afa6490c3835b80a6f925382c6/wash-mu/mobile-ui/hero.mp4"  # SAELIN hero
-    assert vids.pop("web-product-visual-design") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/ca326aede1749ed67952d020e9a28545059e97d0/wash-wp/web-product/hero.mp4"  # ORIVA hero
-    new6 = ("universal-multi-angle-grid", "meta-ads-creative-director", "marketing-campaign-generator")
-    for sid in new6:
-        assert vids.pop(sid) == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{pin623}/594/wash/videos/{asset_dir(sid)}.mp4"
+    assert vids.pop("web-product-visual-design") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/2438e1d8245b720d560d72a3b659551af0e95db9/wash-wp/web-product/hero.mp4"  # WASH_WP hero (#794)
+    w687 = "5c954dbcefb8bd50edef69688b303122debb4ffb"
+    assert vids.pop("universal-multi-angle-grid") == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{pin623}/594/wash/videos/{asset_dir('universal-multi-angle-grid')}.mp4"  # video594
+    assert vids.pop("meta-ads-creative-director") == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{w687}/687/wash/meta-ads/cover.mp4"  # video687 (#687; was video594)
+    assert vids.pop("marketing-campaign-generator") == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{w687}/687/wash/marketing-campaign/cover.mp4"  # video687 (#687; was video594)
     assert vids.pop("motion-poster-generator") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/ff874a61fa77c9f6e25fe0c6a6a4e116d0378d26/806/wash/motion.mp4"  # #806 triptych hover
+    assert vids.pop("rednote-cover-maker") == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{w687}/687/wash/social/cover.mp4"  # video687 (#687)
+    assert vids.pop("interior-architectural-visualization") == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{w687}/687/wash/interior/cover.mp4"  # video687 (#687)
+    assert vids.pop("banner-design-director") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/e9c0f21959787a9c7401fa95927db3e3e6931bcd/778/wash/banner/examples/01.mp4"  # #778 hover
     pin637 = "2109c085aa74c617cd34517f99626f357062c81c"
     # #637: flash-cut + commerce get single-video example.mp4 as skill.video; other phase2 still null
     for sid in ("flash-cut-video", "commerce-strategist"):
@@ -122,12 +129,12 @@ def test_builtin_videos_unique(got):
     )
     for sid in phase3_null:
         assert vids.pop(sid) is None  # #640 Phase3-S1 empty video until S4
-    assert len(vids) == 9  # #806 motion hover left the shared 494 clip
+    assert len(vids) == 6  # shared 494 clip; motion #806, banner #778, social/interior #687 left it
     assert vids == {
         k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/{asset_dir(k)}.mp4"
         for k in vids
     }
-    assert len(set(vids.values())) == 9
+    assert len(set(vids.values())) == 6
 
 
 def test_video_field_data_driven(got):

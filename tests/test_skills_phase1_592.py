@@ -78,12 +78,32 @@ def test_upgrade9_keeps_existing_media_pins():
     entries = _entries()
     for sid in UPGRADE:
         e = entries[sid]
-        if sid == "cover-design-director":
-            # #643 true-wash cover/featured/examples + Phase1 video hover + quickStart
-            assert "cover: cover643('cover-design-director')" in e, sid
-            assert "video: video('cover-design-director')" in e, sid
-            assert "feat643('cover-design-director'" in e, sid
-            assert "quickStartCover: quickStartCover('cover-design-director')" in e, sid
+        pins = {
+            "cover-design-director": (
+                "cover: cover643('cover-design-director')",
+                "video: video('cover-design-director')",
+                "feat643('cover-design-director'",
+                "quickStartCover: quickStartCover('cover-design-director')",
+            ),
+            "rednote-cover-maker": (  # #687
+                "cover: cover687('rednote-cover-maker')",
+                "video: video687('rednote-cover-maker')",
+                "feat687('rednote-cover-maker', [1, 2, 3, 4, 5])",
+            ),
+            "packaging-design-director": (  # #777 cover; hover stays video()
+                "cover: cover777('packaging-design-director')",
+                "video: video('packaging-design-director')",
+                "featured: feedCovers('packaging-design-director')",
+            ),
+            "banner-design-director": (  # #778 hover mp4
+                "cover: cover('banner-design-director')",
+                "video: pinned('778/wash/banner/examples', WASH_778_EX01, '01.mp4')",
+                "featured: feedCovers('banner-design-director')",
+            ),
+        }.get(sid)
+        if pins:
+            for needle in pins:
+                assert needle in e, (sid, needle)
         else:
             assert f"cover: cover('{sid}')" in e, sid
             assert f"video: video('{sid}')" in e, sid

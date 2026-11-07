@@ -80,17 +80,24 @@ def test_presets_have_prompts(got):
 
 @needs_node
 def test_builtin_preset_images_unique(got):
-    # #569 template washes stay unique; #594 new-6 have no preset.image — presetImage falls back to covers-v4.
+    # Template stills moved off 541/wash onto signed rewash pins. Motion stays on 569.
     imgs = [u for u in got["builtinPresetImgs"] if u]
-    washed = [u for u in imgs if "569/wash/" in u or "541/wash/" in u]
+    groups = {
+        "788/wash/character/templates/": 8,  # WASH_788 (#788)
+        "784/wash/product/examples/": 7,  # WASH_784 (#784; was 541/wash ×6)
+        "786/wash-r2/brand/": 6,  # WASH_786_R2 f5c9d777 (#786; was 541/wash)
+        "777/wash/packaging/examples/": 5,  # WASH_777 (#777; was 541/wash ×4 + local master.webp)
+        "569/wash/motion/templates/": 2,  # WASH_569_COMMIT bd043d4c
+    }
+    washed = [u for u in imgs if any(k in u for k in groups)]
     covers = [u for u in imgs if "494/covers-v4/" in u]
-    assert len(washed) == 26  # #760 r7: packaging Master moved off 541/wash → local master.webp (was 27)
+    assert len(washed) == 28  # was 26 on 541/wash + 569/wash
     assert all("raw.githubusercontent.com/ganjmeng/ComfyArt/" in u for u in washed)
-    assert sum("788/wash/character/templates/" in u for u in imgs) == 8 and sum("569/wash/motion/templates/" in u for u in washed) == 2  # #751 HOLD: own covers
-    assert sum("541/wash/product/" in u for u in washed) == 6
-    assert sum("541/wash/brand/" in u for u in washed) == 6 and sum("541/wash/packaging/" in u for u in washed) == 4  # #760 r7 Master off 541
-    assert sum("/comfyart/skills/packaging/master.webp" in u for u in imgs) == 1  # #760 r7 Master single 3:4
-    assert len(set(washed)) == 26  # no shared cover fallback across washed presets
+    for needle, n in groups.items():
+        assert sum(needle in u for u in imgs) == n, needle
+    assert not any("541/wash/" in u for u in imgs)
+    assert sum("/comfyart/skills/packaging/master.webp" in u for u in imgs) == 0  # #777 retired the local master bitmap
+    assert len(set(washed)) == 28
     assert covers == []  # #748 Final: the new-6 are example cards now (no presets → no cover fallback)
 
 
@@ -112,9 +119,9 @@ def test_preset_prompt_appended_after_instructions(got):
     assert got["withUnknown"] and got["withNull"]
     assert got["presetDefault"] != got["presetPick"]
     assert got["presetImg"] and got["presetImg"] != "/comfyart/skills/brand/cover.webp"
-    assert "541/wash/brand/brand__handmade.webp" in got["presetImg"]
+    assert "786/wash-r2/brand/brand__handmade.webp" in got["presetImg"]  # WASH_786_R2 (#786; was 541/wash/brand)
     assert len(set(got["brandPresetImgs"])) == 6  # brand six thumbs distinct
-    assert all(u and "541/wash/brand/" in u for u in got["brandPresetImgs"])
+    assert all(u and "786/wash-r2/brand/" in u for u in got["brandPresetImgs"])
 
 
 @needs_node

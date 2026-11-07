@@ -1,6 +1,5 @@
 """#580 cut 2 — source/data contract: three image slots, special cards constant, tabs, tokens."""
 from pathlib import Path
-from tests.skill_ids_748 import asset_dir
 ROOT = Path(__file__).resolve().parents[1]
 HOME = (ROOT / "src/home/Home.tsx").read_text()
 LAYOUT = (ROOT / "src/home/featuredLayout.ts").read_text()
@@ -33,8 +32,19 @@ def test_tokens_and_full_bleed_css():
 def test_featured_v1_and_collages_pinned_590():
     c = "0e92302302de2102ab6f66aa7633a40945a381c7"
     assert f"const FEED_V1 = '{c}'" in SKILLS
-    for sid in ("poster-differentiated-compiler", "rednote-cover-maker", "brand-identity-director", "packaging-design-director", "cover-design-director", "banner-design-director", "character-sheet-design", "product-tvc-advertisement-generator", "interior-architectural-visualization"):
-        assert f"'{sid}': ['580/featured-v1/{asset_dir(sid)}', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']]" in SKILLS
+    feed = {
+        "poster-differentiated-compiler": "['580/featured-v1/poster', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']]",
+        "rednote-cover-maker": "['580/featured-v1/social', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']]",
+        "brand-identity-director": "['786/wash/brand/featured', WASH_786, ['01.webp', '02.webp', '03.webp', '04.webp']]",  # #786
+        "packaging-design-director": "['777/wash/packaging/featured', 'e270088ea1695f5200669649e6e832057e9c8a6a', ['01.webp', '02.webp', '03.webp', '04.webp']]",  # WASH_777 #777
+        "cover-design-director": "['580/featured-v1/thumbnail', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']]",
+        "banner-design-director": "['580/featured-v1/banner', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']]",
+        "character-sheet-design": "['788/wash/character/featured', WASH_788, ['01.webp', '02.webp', '03.webp', '04.webp']]",  # #788
+        "product-tvc-advertisement-generator": "['779/wash/product/featured', WASH_779, ['01.webp', '02.webp', '03.webp', '04.webp']]",  # #779
+        "interior-architectural-visualization": "['580/featured-v1/interior', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']]",
+    }
+    for sid, needle in feed.items():
+        assert f"'{sid}': {needle}" in SKILLS, sid
     # #806: motion featured is the two 动态海报 template stills, not the 580 remake-era feed.
     assert "'motion-poster-generator': ['569/wash/motion/templates', 'bd043d4cff5019fc4117b5b2f3a33ae437015a28', ['01-poster-animation.webp', '02-first-to-last-frame-animation.webp']]" in SKILLS
     assert "inspiration@thumb.webp" in SKILLS and "connector@thumb.webp" in SKILLS

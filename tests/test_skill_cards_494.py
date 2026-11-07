@@ -148,16 +148,18 @@ def test_covers_ten_webps_with_source_manifest():
     phase2_c = ["naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual", "promo-ecommerce"]
     for sid, e in _entries().items():
         head = e.split("inputs:", 1)[0]
-        if sid == "cover-design-director":
-            assert "cover: cover643('cover-design-director')" in head, sid  # #643 true-wash cover
+        if sid == "cover-design-director" or sid in NEW19:
+            assert f"cover: cover643('{sid}')" in head, sid  # #643 true-wash cover
+        elif sid in ("rednote-cover-maker", "meta-ads-creative-director", "marketing-campaign-generator", "interior-architectural-visualization"):
+            assert f"cover: cover687('{sid}')" in head, sid  # #687 cover687 (was cover())
+        elif sid == "packaging-design-director":
+            assert "cover: cover777('packaging-design-director')" in head, sid  # #777 cover777 (was cover())
         elif sid in COVERED or sid in phase1_new:
             assert f"cover: cover('{sid}')" in head, sid  # #581 + #594 covers-v4 pins
         elif sid in phase2_b:
             assert f"cover: cover637('{sid}')" in head, sid  # #637 soft wash intentional covers
         elif sid in phase2_c:
             assert f"cover: cover673('{sid}')" in head, sid  # #636 C soft wash intentional covers
-        elif sid in {"taobao-product", "before-after", "anim-2d", "creator-identity", "product-website", "studio-model", "youtube-channel-banner", "ai-model", "product-to-packaging", "game-art", "portrait-studio", "premium-website", "animated-poster", "pose-fission", "live-promo-decor", "linkedin-banner", "logo-animation", "restaurant-website", "clothing-swap"}:
-            assert f"cover: cover643('{sid}')" in head, sid  # #643 NEW19 true-wash covers
         else:
             assert "cover:" not in head, sid
 

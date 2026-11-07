@@ -73,7 +73,14 @@ def test_wash_map_matches_raw_slots():
     for sid, r in RAW.items():
         if r["kind"] == "example":
             assert len(WASH[sid]) == len(r["highlights"]), sid
-            assert all(u is None for u, h in zip(WASH[sid], r["highlights"]) if h["type"] == "video"), sid
+            for i, (u, h) in enumerate(zip(WASH[sid], r["highlights"])):
+                if h["type"] != "video":
+                    continue
+                if sid == "logo-material-explorer" and i == 0:
+                    # WASH_LM 58f1e3e9 (#797). Slot 0 keeps the signed VELA still; playback is skill.video.
+                    assert u == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/58f1e3e9ebe225e61363f0e7688149c0c6a49813/wash-lm/logo-material/examples/01.webp"
+                else:
+                    assert u is None, (sid, i)
             assert all("lovart" not in (u or "").lower() for u in WASH[sid]), sid
 
 
