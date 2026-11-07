@@ -81,13 +81,16 @@ async def test_skill_dialog_fields_match_lovart_687(app_url, lang, theme):  # no
         await browser.close()
 
 
-async def test_motion_featured_03_removed_687(app_url):  # noqa: F811
+async def test_motion_featured_is_poster_stills_806(app_url):  # noqa: F811
+    from tests.lovart_fields_687 import MOTION_FEATURED_806, MOTION_FEATURED_REMOVED
     async with pw.async_playwright() as p:
         browser, pg = await _page(p, "zh", "light")
         await pg.goto(app_url)
         await pg.get_by_test_id("home-featured-card").first.wait_for()
         html = await pg.content()
-        assert "580/featured-v1/motion/03.webp" not in html
+        assert MOTION_FEATURED_REMOVED not in html
+        for url in MOTION_FEATURED_806:
+            assert url in html, url
         await browser.close()
 
 

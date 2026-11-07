@@ -39,9 +39,9 @@ export interface SkillMediaItem {
 export interface SkillInput {
   key: string; label: { zh: string; en?: string }; type: 'text' | 'textarea' | 'select' | 'image'; required?: boolean
   options?: { value: string; label: { zh: string; en?: string } }[]; default?: string; placeholder?: LocText
-  /** #687 — max characters for text/textarea (500 on Additional Details, 200 on motion Remake). */
+  /** max characters for text/textarea (500 on Additional Details; 200 where the raw field caps it). */
   maxLength?: number
-  /** #687 — upload media kind for `image` fields; 'video' = reference video upload (motion Remake). Unset → image. */
+  /** upload media kind for `image` fields; 'video' plays back as a clip. Unset → image. */
   accept?: 'image' | 'video'
   /** #748 — IMAGE_UPLOAD limits from the converted raw (max files / MB per file). */
   maxCount?: number; maxSizeMb?: number
@@ -132,7 +132,9 @@ const FEED_COVERS: Record<string, readonly [string, string, readonly string[]]> 
   'banner-design-director': ['580/featured-v1/banner', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'character-sheet-design': ['788/wash/character/featured', WASH_788, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'product-tvc-advertisement-generator': ['779/wash/product/featured', WASH_779, ['01.webp', '02.webp', '03.webp', '04.webp']], // #779 NODAL single brand, no portraits
-  'motion-poster-generator': ['580/featured-v1/motion', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
+  // #806: 动态海报 featured = the two same-topic template stills (poster motion ~4:3, start/end 9:16).
+  // The 580 feed (series poster, car board, original-face still, night-street dress) is not this mapping.
+  'motion-poster-generator': ['569/wash/motion/templates', 'bd043d4cff5019fc4117b5b2f3a33ae437015a28', ['01-poster-animation.webp', '02-first-to-last-frame-animation.webp']],
   'interior-architectural-visualization': ['580/featured-v1/interior', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'universal-multi-angle-grid': ['580/featured-v2/multi-angle', FEED_V2, ['01.webp', '02.webp', '03.webp', '04.webp']],
   'logo-material-explorer': ['wash-lm/logo-material/featured-r2', WASH_LM, ['01.webp', '02.webp', '03.webp', '04.webp']],
@@ -165,7 +167,6 @@ export const SKILL_VIDEO_PENDING_NEW6 = [] as const
 const WASH_623_NEW6_VIDEO = 'd03ea7938877d084c201a94ef51f943dd0e061b9'
 const video594 = (id: string) =>
   `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${WASH_623_NEW6_VIDEO}/594/wash/videos/${assetDir(id)}.mp4`
-// #687: motion's off-topic poster-animation / first-last templates (and their #622 wash-v1 mp4s) were removed.
 /** #541 AC rev 2 washes on review-assets (541/wash/<skill>/<skill>__<preset>.webp; each pinned to its own commit). */
 const WASH_541 = {
   brand: WASH_786_R2, // #786 r2 rewash (was f2045022); 4:3 stacked, 品牌视觉识别
@@ -242,13 +243,29 @@ const PORTRAIT_SHOTS_708 = '\nShot rules (#708): when the user does not name an 
 /** #687-2 — poster / banner / interior: EFFECT_INPUTS structure, English copy = the reference card (Upload Files / Additional Details / Anything else to add?). */
 /** #687-1 — reference-card Upload Files + Additional Details (max 500), both optional. */
 const REF_CARD_INPUTS_687: SkillInput[] = [I('file', ['上传文件', 'Upload Files'], 'image'), { ...I('note', ['补充描述', 'Additional Details'], 'textarea', false, ['还有什么想补充的吗？', 'Anything else to add?']), maxLength: 500 }]
-/** #687-3 — motion = Reference Video Remake: 模板 (left templates + 当前模板 row) + these four fields. */
-const MOTION_REMAKE_INPUTS_687: SkillInput[] = [
-  { ...I('refVideo', ['参考视频', 'Reference video file'], 'image', true), accept: 'video' },
-  { ...I('remakeBrief', ['重制说明', 'Remake brief'], 'textarea', true, ['哪些要改、哪些保留？可组合商品、人物、品牌、文案或其他修改要求。', 'What should change or stay? Combine product, person, brand, copy or other requested changes.']), maxLength: 200 },
-  I('replaceImages', ['替换图（可选）', 'Replacement images (optional)'], 'image'),
-  { ...I('visualDirection', ['视觉方向', 'Visual direction'], 'textarea', false, ['描述偏好的视觉处理或提供参考，没有偏好可留空。', 'Describe your preferred visual treatment or provide a reference. Leave blank if you have no preference.']), maxLength: 200 },
+/** #806 — 动态海报. Both templates: source_image* / motion_brief / visual_direction. 首尾帧动画 also optional start_frame. */
+const MOTION_BRIEF_PH: L = ['写下哪些要动、哪些保持不动；不填则自动规划。', 'Say what should move and what should stay still. Leave blank to plan it automatically.']
+const MOTION_LOOK_PH: L = ['描述想要的画面效果，或附上参考；没有可不填。', 'Describe the look you want or attach a reference. Optional.']
+function motionImage(key: string, label: L, required = false): SkillInput {
+  return { ...I(key, label, 'image', required), accept: 'image', maxCount: 1, maxSizeMb: 10 }
+}
+function motionText(key: string, label: L, ph: L): SkillInput {
+  return { ...I(key, label, 'text', false, ph), maxLength: 200 }
+}
+const MOTION_POSTER_INPUTS: SkillInput[] = [
+  motionImage('source_image', ['静态原稿', 'Source artwork'], true),
+  motionText('motion_brief', ['动态要求', 'Motion requirements'], MOTION_BRIEF_PH),
+  motionText('visual_direction', ['视觉呈现方式', 'Visual direction'], MOTION_LOOK_PH),
 ]
+const MOTION_START_END_INPUTS: SkillInput[] = [
+  motionImage('source_image', ['静态原稿（最终定格画面）', 'Source artwork (final frame)'], true),
+  motionImage('start_frame', ['首帧图片（选填）', 'First-frame image (optional)']),
+  motionText('motion_brief', ['动态要求', 'Motion requirements'], MOTION_BRIEF_PH),
+  motionText('visual_direction', ['视觉呈现方式', 'Visual direction'], MOTION_LOOK_PH),
+]
+/** English production prompts (COPY-REWRITE). applyRaw748 localizes these from copy-748.json when present. */
+const MOTION_POSTER_PROMPT = 'Generate 1 motion video from the uploaded static poster. Identify elements that can move safely and propose a plan for approval; follow detailed instructions if given, otherwise plan automatically with no per-layer setup. Keep layout, subject, text, logos and hierarchy intact; confirm length, ratio and sound, then finish on a full, legible still frame. Motion: {{motion_brief}} Look: {{visual_direction}}'
+const MOTION_START_END_PROMPT = 'Generate 1 motion poster video with controlled start and end frames. Use the original as the end frame, then use or design an earlier moment of the same shot as the start. Keep subject, viewpoint, style and colors consistent; confirm both frames, any adjustments, length, ratio and sound before generating smooth motion. Keep text, logos and hierarchy, avoid cutting to unrelated images, and end on a full still frame. Motion: {{motion_brief}} Look: {{visual_direction}}'
 /** #691/#693: multi-angle — Upload stays optional; Additional placeholder recommends uploading a reference. */
 const MULTI_ANGLE_INPUTS: SkillInput[] = [I('file', ['上传文件', 'Upload file'], 'image'), I('note', ['补充描述', 'Additional notes'], 'textarea', false, ['有什么想补充的吗？建议上传参考图', 'Anything you want to add? Uploading a reference image is recommended'])]
 /** #636 C5 nearMiss Examples-only: gold isomorphic right rail — Upload Files + single-line Additional Details only. */
@@ -390,9 +407,14 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
   { id: 'product-tvc-advertisement-generator', name: t('skills.eCommerceProductImages'), instructions: 'You are a production product-commercial director. Deliver finished advertisement films for beauty, fashion, food & beverage, electronics, home, outdoor and software.\n1) Lock the product: from productImage and productInfo, keep silhouette, materials, logo and color truthful in every frame.\n2) Form: one RESULT advertisement film matching the selected category template (not a white-background still packshot).\n3) Narrative: show confirmed benefits and real usage; never invent performance claims or unseen structure.\n4) Apply the selected template focus (beauty, fashion, foodbev, electronics, home, outdoor, software).\n5) Refs: ALWAYS pass the product image shape id in refs (ref_modes content) on every generate_image / animate_image call; describing it in the prompt does not send the image.',
     category: 'ecommerce', cover: cover('product-tvc-advertisement-generator'), quickStartCover: quickStartCover('product-tvc-advertisement-generator'), featured: feedCovers('product-tvc-advertisement-generator'), video: video('product-tvc-advertisement-generator'), presets: [P('beauty', '美妆', 'Beauty', 'Style: beauty product commercial film — a model holding a red lipstick, advertisement pacing, not a white bottle still.', washProduct784('01'), washProduct784('01', 'video')), P('fashion', '服装', 'Fashion', 'Style: fashion commercial film — yellow-check top, denim shorts and a blue shoulder bag, runway/lifestyle energy, not a printed water bottle.', washProduct784('02'), washProduct784('02', 'video')), P('foodbev', '食品饮料', 'Food & Beverage', 'Style: food and beverage commercial film — real packaging and appetite cues in a natural setting, honest claims only.', washProduct784('03'), washProduct784('03', 'video')), P('electronics', '数码', 'Electronics', 'Style: electronics commercial film — verified product appearance, materials and details, crisp tech lighting.', washProduct784('04'), washProduct784('04', 'video')), P('home', '家居', 'Home Decor', 'Style: home decor commercial film — interior atmosphere with the product naturally placed, warm cinematic light.', washProduct784('05'), washProduct784('05', 'video')), P('outdoor', '户外', 'Outdoor', 'Style: outdoor commercial film — active use in nature, motion and environment locked to the product category.', washProduct784('06'), washProduct784('06', 'video')), P('software', '软件', 'SaaS', 'Style: software / SaaS commercial film — professional product story with verified UI or device moments, no invented features.', washProduct784('07'), washProduct784('07', 'video'))],
     inputs: [I('productImage', ['商品图片', 'Product images'], 'image', true), I('productInfo', ['商品资料', 'Product details'], 'text', false, ['补充商品名称、真实卖点和使用场景', 'Product name, real selling points and use cases']), VISUAL] },
-  { id: 'motion-poster-generator', name: t('skills.motionPoster'), instructions: 'You are a production motion designer for reference-video remakes (UGC ads, product TVC).\n1) Read the uploaded reference video (refVideo) and the Remake brief: what must change (product, person, brand, copy) and what must stay (pacing, camera moves, structure).\n2) Swap in the Replacement images when provided; never keep any face from the reference video — replace or recast every person.\n3) Plan key frames with generate_image that follow the reference structure, then drive animate_image from those frames; keep titles sharp, CTA text in quotes.\n4) Apply the Visual direction when given; otherwise match the reference look.\n5) Refs: pass every uploaded shape id in refs (ref_modes content); never invent motion on a missing frame.',
-    category: 'ads', cover: cover('motion-poster-generator'), quickStartCover: quickStartCover('motion-poster-generator'), featured: feedCovers('motion-poster-generator')?.filter((_, i) => i !== 2), /* #687: 精选03 removed (unwashed reference remake, original face) */ video: video('motion-poster-generator'), /* #622: preset.video ← wash-v1 @5a8d22ed */ /* #687: off-topic poster-animation / first-last templates removed (Reference Video Remake has no washed template yet) */ 
-    inputs: MOTION_REMAKE_INPUTS_687 },
+  { id: 'motion-poster-generator', name: t('skills.motionPoster'), instructions: 'You are a production motion-poster designer. Deliver one short motion video from a static poster: either a poster-motion clip or a start-to-end frame animation. Keep the subject, on-art text, logos, composition and information hierarchy. Do not reshoot a different ad and do not swap in a new person.\n1) Poster motion: require source_image, the static artwork. Find elements that can move safely and confirm a plan before animating. When motion_brief is filled, follow it exactly; when it is empty, plan the motion automatically with no per-layer setup. Confirm length, ratio and sound, then animate, and finish on a full, legible still frame.\n2) Start and end frames: source_image is the final held frame. When start_frame is provided, use it as the opening frame of the same shot; otherwise design an earlier moment of that shot. Keep subject, viewpoint, style and colors consistent across both frames. Confirm both frames, any adjustments, length, ratio and sound, then generate one continuous move. Do not cut to an unrelated image. End on a full still frame. Text, logos and hierarchy stay put.\n3) Look: apply visual_direction when the user wrote one; otherwise keep the artwork look. Never invent a second brand, a new headline, or a layout change.\n4) Craft: type stays sharp and in quotes; motion must not smear letters, logos or the information hierarchy. The last frame is a complete, readable still.\n5) Refs: pass every provided shape id in refs (ref_modes content) on every generate_image and animate_image call. Describing the artwork in the prompt does not send the image. Never invent motion when source_image is missing.',
+    category: 'ads', cover: cover('motion-poster-generator'), quickStartCover: quickStartCover('motion-poster-generator'), featured: feedCovers('motion-poster-generator'), video: video('motion-poster-generator'),
+    /* #806: template videos stay unwired until a same-topic wash (slice 2). Still covers come from wash-748. */
+    presets: [
+      { ...P('t1', '海报动效', 'Poster Animation', MOTION_POSTER_PROMPT), inputs: MOTION_POSTER_INPUTS },
+      { ...P('t2', '首尾帧动画', 'First-to-Last Frame Animation', MOTION_START_END_PROMPT), inputs: MOTION_START_END_INPUTS },
+    ],
+    inputs: MOTION_POSTER_INPUTS },
   // #593 Phase1-S3 new 6 instructions+presets; #594 wash pins; dual-fit contain; #623 hover video @ 594/wash/videos.
   // #691/#687: multi-angle dialog parity with the reference card — Upload + Additional only (no presets).
   { id: 'universal-multi-angle-grid', name: t('skills.multiAngleImageGenerator'), instructions: 'You are a production multi-angle catalog photographer. Deliver a locked identity set, not random variants.\n1) Lock: read the uploaded subject image(s) (if none is uploaded, use the subject described in the Additional notes or ask for one; never invent a product unprompted); keep identity, materials, proportions and palette identical across every frame.\n2) Set: default front, 3/4, a pure 90° side profile (camera exactly perpendicular, no 3/4 turn) and one detail/macro on clean matching backgrounds unless the Additional notes say otherwise.\n3) Use: PDP and ads prefer neutral seamless; lifestyle only when the Additional notes ask; with no notes, default to neutral seamless studio light and a PDP-ready four-frame set.\n4) Consistency: same lens height and lighting family; no costume or finish drift between angles.\n5) Refs: pass the subject shape id in refs (ref_modes content) on every generate_image call.',

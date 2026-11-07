@@ -33,8 +33,10 @@ def test_tokens_and_full_bleed_css():
 def test_featured_v1_and_collages_pinned_590():
     c = "0e92302302de2102ab6f66aa7633a40945a381c7"
     assert f"const FEED_V1 = '{c}'" in SKILLS
-    for sid in ("poster-differentiated-compiler", "rednote-cover-maker", "brand-identity-director", "packaging-design-director", "cover-design-director", "banner-design-director", "character-sheet-design", "product-tvc-advertisement-generator", "motion-poster-generator", "interior-architectural-visualization"):
+    for sid in ("poster-differentiated-compiler", "rednote-cover-maker", "brand-identity-director", "packaging-design-director", "cover-design-director", "banner-design-director", "character-sheet-design", "product-tvc-advertisement-generator", "interior-architectural-visualization"):
         assert f"'{sid}': ['580/featured-v1/{asset_dir(sid)}', FEED_V1, ['01.webp', '02.webp', '03.webp', '04.webp']]" in SKILLS
+    # #806: motion featured is the two 动态海报 template stills, not the 580 remake-era feed.
+    assert "'motion-poster-generator': ['569/wash/motion/templates', 'bd043d4cff5019fc4117b5b2f3a33ae437015a28', ['01-poster-animation.webp', '02-first-to-last-frame-animation.webp']]" in SKILLS
     assert "inspiration@thumb.webp" in SKILLS and "connector@thumb.webp" in SKILLS
 
 

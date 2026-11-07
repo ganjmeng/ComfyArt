@@ -10,7 +10,7 @@ SKILLS_TS = (ROOT / "src/skills.ts").read_text()
 
 UPGRADE = ["brand-identity-director", "packaging-design-director", "poster-differentiated-compiler", "product-tvc-advertisement-generator", "character-sheet-design", "rednote-cover-maker", "motion-poster-generator", "banner-design-director", "cover-design-director"]
 EFFECT = {"poster-differentiated-compiler", "banner-design-director", "cover-design-director"}  # #641: thumbnail dialog parity → EFFECT_INPUTS
-TEMPLATE_COUNTS = {"product-tvc-advertisement-generator": 6, "brand-identity-director": 6, "packaging-design-director": 5, "character-sheet-design": 8, "motion-poster-generator": 0}
+TEMPLATE_COUNTS = {"product-tvc-advertisement-generator": 7, "brand-identity-director": 6, "packaging-design-director": 5, "character-sheet-design": 8, "motion-poster-generator": 2}  # product 7 (#784); motion 2 (#806)
 
 
 def _entries() -> dict[str, str]:
@@ -61,10 +61,14 @@ def test_upgrade9_presets_examples_inputs_complete():
             assert len(re.findall(r"Style: |Focus on |Template: ", body)) >= 2, sid
         else:
             n = TEMPLATE_COUNTS[sid]
-            if not n:  # #687: motion off-topic templates removed
+            if not n:
                 assert "presets:" not in e and len(re.findall(r"\bP\('", e)) == 0, sid
                 continue
             assert len(re.findall(r"\bP\('", e)) == n, sid
+            if sid == "motion-poster-generator":  # #806: production prompts, not Style:/Template: stubs
+                assert "MOTION_POSTER_PROMPT" in e and "MOTION_START_END_PROMPT" in e
+                assert "source_image" in e and "start_frame" in e and "motion_brief" in e
+                continue
             # Count only preset prompt prefixes, not instruction prose
             body = e.split("presets:", 1)[1].split("inputs:", 1)[0]
             assert len(re.findall(r"Style: |Focus on |Template: ", body)) == n, sid

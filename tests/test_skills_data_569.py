@@ -35,7 +35,8 @@ CHARACTER_V2 = "https://raw.githubusercontent.com/ganjmeng/ComfyArt/1f66faf48e8d
 MOTION = [("海报动画", "Poster Animation", "01-poster-animation"),
           ("首帧到末帧动画", "First-to-Last Frame Animation", "02-first-to-last-frame-animation")]
 # (zh label, type, required) — 当前模板 is the dialog's own preset row, so each template skill has 3 data inputs.
-# #687: brand / packaging / character → reference-card Upload + Additional; motion → Reference Video Remake
+# #687: brand / packaging / character → reference-card Upload + Additional.
+# #806: motion → 动态海报 (source_image / motion_brief / visual_direction; start_frame on template 2).
 # (locked in tests/test_skill_fields_687.py). product keeps the #569 three fields.
 INPUTS = {"product-tvc-advertisement-generator": [(q["label"]["zh"], q["type"] if q["type"] == "image" else ("textarea" if (q.get("maxLength") or 0) > 200 else "text"), q["required"])
                                                    for q in RAW_748["product-tvc-advertisement-generator"]["templates"][0]["inputs"]]}  # #748 Final raw
