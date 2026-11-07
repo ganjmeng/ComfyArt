@@ -65,6 +65,13 @@ def test_builtin_covers(got):
     assert {k: covers[k] for k in washed} == expected
     # #643 (#659) thumbnail true wash re-pinned cover to WASH_643
     assert covers["cover-design-director"] == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/15e9bdad271dc2cb0ac1a1c8621927c161ca9299/643/wash/thumbnail/cover.webp"
+    # #812 D-group wash covers
+    import re as _re
+    _w812 = _re.search(r"const WASH_812 = '([0-9a-f]{40})'", (ROOT / "src/skills.ts").read_text())
+    assert _w812, "WASH_812 pin missing"
+    w812 = _w812.group(1)
+    for sid in ("yingzao", "crt-interface", "crayon-sketch", "fabric-collage"):
+        assert covers[sid] == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{w812}/812/wash/{sid}/cover.webp", sid
     # multi-angle stays covers-v4 @ WASH_594 (folder = assetDir). meta/marketing covers are cover687 (#687).
     w687 = "5c954dbcefb8bd50edef69688b303122debb4ffb"
     phase1_new = {

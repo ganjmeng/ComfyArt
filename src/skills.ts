@@ -214,6 +214,13 @@ const ex673 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`673/wash/${id}/examples`, WASH_673, `${String(n).padStart(2, '0')}.webp`))
 const feat673 = (id: string, ids: number[]) =>
   ids.map((n) => pinned(`673/wash/${id}/featured`, WASH_673, `${String(n).padStart(2, '0')}.webp`))
+// #812 D-group wash (yingzao / crt-interface / crayon-sketch / fabric-collage); pin → assets tip.
+const WASH_812 = 'b84ab51b402b2e2ef0102c5b97d7bca8f41ea0a1'
+const cover812 = (id: string) => pinned(`812/wash/${id}`, WASH_812, 'cover.webp')
+const ex812 = (id: string, ids: number[]) =>
+  ids.map((n) => pinned(`812/wash/${id}/examples`, WASH_812, `${String(n).padStart(2, '0')}.webp`))
+const feat812 = (id: string, ids: number[]) =>
+  ids.map((n) => pinned(`812/wash/${id}/featured`, WASH_812, `${String(n).padStart(2, '0')}.webp`))
 const wash541 = (commit: string, skillId: string, presetId: string) =>
   `https://raw.githubusercontent.com/ganjmeng/ComfyArt/${commit}/${commit === WASH_786_R2 ? '786/wash-r2' : '541/wash'}/${assetDir(skillId)}/${assetDir(skillId)}__${presetId}.webp`
 const washProduct784 = (n: string, kind: 'image' | 'video' = 'image') =>
@@ -298,27 +305,26 @@ export const PHASE2_NEW_SKILL_IDS = [
 ] as const
 export const PHASE2_NEW_SKILL_ID_SET: ReadonlySet<string> = new Set(PHASE2_NEW_SKILL_IDS)
 
-/** #638 Phase2-S5 Soft mount — PRODUCT-LOCK-PHASE2 Soft order + #735 C-group wash PASS (unhide).
- *  `social` also lives in PHASE1_SKILL_IDS (upgrade, no dup card). Slots: A social upgrade + B NEW5 + C NEW5 washed.
- *  D style4 stays deferred / hidden (Phase4). #490 HOLD. */
+/** #638 Phase2-S5 Soft mount — PRODUCT-LOCK-PHASE2 Soft order + #735 C + #812 D wash PASS (unhide).
+ *  `social` also lives in PHASE1_SKILL_IDS (upgrade, no dup card). Slots: A social upgrade + B NEW5 + C NEW5 + D style4 washed.
+ *  #490 HOLD. */
 export const PHASE2_SKILL_IDS = [
   'flash-cut-video', 'style-transfer', 'person-swap', 'rednote-cover-maker', 'commerce-strategist', 'lifestyle-scene',
   'naive-illustration', 'logo-abstract', 'photo-split-poster', 'ppt-visual', 'promo-ecommerce',
+  'yingzao', 'crt-interface', 'crayon-sketch', 'fabric-collage',
 ] as const
 export const PHASE2_SKILL_ID_SET: ReadonlySet<string> = new Set(PHASE2_SKILL_IDS)
-/** #638/#735 — D style4 only: still data-contract / Phase4; not washed production mount. C moved to PHASE2_SKILL_IDS. */
+/** #638/#735/#812 — deferred empty after D wash+unhide (#812). Keep const for orderBuiltins. */
 export const PHASE2_DEFERRED_SKILL_IDS = [
-  'yingzao', 'crt-interface', 'crayon-sketch', 'fabric-collage',
 ] as const
 export const PHASE2_DEFERRED_SKILL_ID_SET: ReadonlySet<string> = new Set(PHASE2_DEFERRED_SKILL_IDS)
 /** #673 — HIDE LIST (not a delete). Built-in skills listed here are kept in BUILTIN_SKILLS (data, assets, lookup by id
  *  all intact, so saved sessions / cards that reference them still open) but are NOT listed anywhere a user or the agent
  *  picks a skill for new work: home featured waterfall + quick-start + category chips, Skills page, 「+ → 技能」 menu,
  *  composer 「/」 picker, and the agent `skill` tool (list + read).
- *  TO RE-LIST A SKILL: once it is washed in #673 and Angela gives PASS, delete its id from this array. Nothing else to change.
- *  #735 — C-group 5 removed from this list (Skills page visible); D-group 4 stay hidden. */
+ *  TO RE-LIST A SKILL: once it is washed and design/QA PASS, delete its id from this array. Nothing else to change.
+ *  #735 — C-group 5 removed; #812 — D-group 4 removed (washed + pinned). List empty. */
 export const HIDDEN_BUILTIN_SKILL_IDS: readonly string[] = [
-  'yingzao', 'crt-interface', 'crayon-sketch', 'fabric-collage',
 ]
 export const HIDDEN_BUILTIN_SKILL_ID_SET: ReadonlySet<string> = new Set(HIDDEN_BUILTIN_SKILL_IDS)
 /** #673 — true when a skill may be offered for NEW selection. Personal (custom) skills are always listed. */
@@ -338,7 +344,7 @@ export const PHASE3_NEW_SKILL_IDS = [
 ] as const
 export const PHASE3_NEW_SKILL_ID_SET: ReadonlySet<string> = new Set(PHASE3_NEW_SKILL_IDS)
 
-/** Phase1 hot order → Phase2 Soft mount NEW (B+C) → deferred D → untouched / other. */
+/** Phase1 hot order → Phase2 Soft mount NEW (B+C+D) → deferred (empty after #812) → untouched / other. */
 function orderBuiltins(raw: Skill[]): Skill[] {
   const skills = withMeasuredInputs748(raw)
   const phase1Rank = new Map<string, number>(PHASE1_SKILL_IDS.map((id, i) => [id, i]))
@@ -368,7 +374,7 @@ function orderBuiltins(raw: Skill[]): Skill[] {
  *  #634 Phase2-S1 — PRODUCT-LOCK-PHASE2: 14 NEW ids (B .ai5 + C deferred.art5 + D style4).
  *  #635 Phase2-S2 — deepen `social` Fashion UGC production instructions/presets/inputs (keep RedNote; no fashion-ugc id).
  *  #636/#637 Phase2-S3/S4 — B NEW5 production + soft wash; C5 later via #673/#735; D Phase4.
- *  #638 Phase2-S5 — Soft mount A+B via PHASE2_SKILL_IDS + orderBuiltins; #735 mounts C (washed) too; D deferred/hidden; #490 HOLD.
+ *  #638 Phase2-S5 — Soft mount A+B via PHASE2_SKILL_IDS + orderBuiltins; #735 mounts C; #812 mounts D (washed); #490 HOLD.
  *  #642 Phase3-S3 — NEW19 NEARMISS_INPUTS field parity (scaffold); assets empty until #643 wash pins.
  *  Skill Creator Out → #650. `interior` untouched. Gold UX site external — never name it in src.
  */
@@ -513,19 +519,23 @@ export const BUILTIN_SKILLS: Skill[] = orderBuiltins([
     inputs: NEARMISS_INPUTS },
   // D style4 (KEEP for full 15)
   { id: 'yingzao', name: t('skills.yingzao'), instructions: 'Yingzao local editorial poster: real heritage streets / local food travel photos into Chinese display-type edit posters.\n1) Never invent architecture without a photo basis.\n2) Pair the photo with careful Chinese display typography in quotes.\n3) Editorial poster mood; keep place honesty.\n4) Prefer 3:4 or 4:5 social crops.\n5) Refs: pass photo shape ids in refs on every generate_image call.',
-    category: 'social', examples: [], featured: [],
+    category: 'social', cover: cover812('yingzao'),
+    examples: ex812('yingzao', [1, 2]), featured: feat812('yingzao', [1, 2]),
     presets: [P('street', '街巷编辑', 'Street edit', 'Style: local street editorial poster from a real photo, Chinese display type in quotes.'), P('food', '在地食物', 'Local food', 'Style: local food travel editorial poster, honest photo base, display type in quotes.')],
     inputs: [I('placePhoto', ['在地照片', 'Place photo'], 'image', true), I('editNotes', ['编辑说明', 'Edit notes'], 'text', false, ['标题与语气', 'Title and tone']), VISUAL] },
   { id: 'crt-interface', name: t('skills.crtInterface'), instructions: 'CRT retro interface illustration: theme → early CRT computer UI look.\n1) Scanlines, phosphor glow, chunky widgets; multiple colorway presets.\n2) Keep the theme readable inside the faux UI.\n3) Not a flat modern dashboard.\n4) On-screen strings in quotes.\n5) Refs: when refs are uploaded, pass shape ids in refs on every generate_image call.',
-    category: 'social', examples: [], featured: [],
+    category: 'social', cover: cover812('crt-interface'),
+    examples: ex812('crt-interface', [1, 2]), featured: feat812('crt-interface', [1, 2]),
     presets: [P('green', '绿色磷光', 'Green phosphor', 'Style: green phosphor CRT interface illustration of the theme, scanlines, chunky widgets.'), P('amber', '琥珀磷光', 'Amber phosphor', 'Style: amber CRT interface illustration, warm glow, early computer UI chrome.'), P('blue', '冷蓝终端', 'Cold blue terminal', 'Style: cold blue CRT terminal UI illustration, scanlines, readable theme labels in quotes.')],
     inputs: [I('theme', ['主题', 'Theme'], 'text', true, ['界面主题或产品名', 'UI theme or product name']), I('refs', ['参考', 'References'], 'image'), VISUAL] },
   { id: 'crayon-sketch', name: t('skills.crayonSketch'), instructions: 'Rough crayon / oil-pastel sketch: turn a realistic subject into children-book crayon energy.\n1) Distinct from naive giant-object cafe illustration.\n2) Visible crayon strokes, soft wax texture, playful proportion.\n3) Keep subject recognizable.\n4) Minimal text; any words in quotes.\n5) Refs: pass subject shape id in refs on every generate_image call.',
-    category: 'social', examples: [], featured: [],
+    category: 'social', cover: cover812('crayon-sketch'),
+    examples: ex812('crayon-sketch', [1, 2]), featured: feat812('crayon-sketch', [1, 2]),
     presets: [P('wax', '蜡笔涂鸦', 'Crayon doodle', 'Style: rough crayon doodle of the subject, wax texture, playful child-book energy.'), P('pastel', '油画棒', 'Oil pastel', 'Style: oil-pastel sketch of the subject, thick strokes, soft blend, recognizable form.')],
     inputs: [I('subject', ['主体图', 'Subject'], 'image', true), I('notes', ['风格说明', 'Style notes'], 'text', false, ['可留空', 'Optional']), VISUAL] },
   { id: 'fabric-collage', name: t('skills.fabricCollage'), instructions: 'Fabric collage: mix ≥5 textile materials with real stitch and frayed-edge craft.\n1) Not a flat paper collage poster — emphasize cloth, thread and DIY handwork.\n2) Show mixed weaves, knits and trims in one composition.\n3) Keep tactile honesty; soft studio or craft-table light.\n4) Minimal text; words in quotes if any.\n5) Refs: pass refs in refs on every generate_image call.',
-    category: 'social', examples: [], featured: [],
+    category: 'social', cover: cover812('fabric-collage'),
+    examples: ex812('fabric-collage', [1, 2]), featured: feat812('fabric-collage', [1, 2]),
     presets: [P('craft', '手工桌面', 'Craft table', 'Style: fabric collage on a craft table, ≥5 textiles, visible stitches and frayed edges.'), P('wall', '布艺墙饰', 'Textile wall', 'Style: textile wall collage, mixed fabrics, handmade stitch character, tactile depth.')],
     inputs: [I('brief', ['主题说明', 'Theme brief'], 'text', true, ['拼贴主题与材质偏好', 'Collage theme and material prefs']), I('refs', ['参考', 'References'], 'image'), VISUAL] },
   // #640/#642/#643 Phase3 — 19 NEW skills; cover643 pins; NEARMISS_INPUTS (Upload+Additional); examples/featured empty until fuller gold; no competitor copy. Dropped-13 out.
