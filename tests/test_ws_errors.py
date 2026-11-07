@@ -161,3 +161,16 @@ def test_715_task_ref_prefixes_match_locales():
     css = (ROOT / "src/styles/overlays.css").read_text(encoding="utf-8")
     md = [l for l in css.splitlines() if l.startswith(".ca-md code")]
     assert md == [".ca-md code { padding: 1px 4px; border-radius: 4px; background: var(--ca-field); font-size: 12px; }"]  # main's rule, unchanged
+
+
+def test_721_wsbody_raw_maps_to_generic(js):
+    """#721: untagged raw string/message → wsErr.generic; allowlist unchanged; generic is de-vendored."""
+    import re
+    for lang in ("zh", "en"):
+        assert js[lang]["rawString"] == js[lang]["generic"]
+        assert js[lang]["rawMessage"] == js[lang]["generic"]
+        assert js[lang]["mapUnknown"] == js[lang]["generic"]
+        assert js[lang]["mapAllow"] == "mask file not found"
+        assert "Internal Error" not in js[lang]["rawString"]
+        assert not re.search(r"wavespeed|kie|控制台|后台|console|dashboard", js[lang]["generic"], re.I)
+    assert js["allowlist"] == ["mask file not found", "src must be a /api/view URL"]

@@ -4,7 +4,7 @@ import { t } from './i18n'
 import { uiCredits } from './usd'
 import { onComfyEvent } from './ws'
 import { isWsGraph, WS_ID } from './wavespeed'
-import { wsBodyError, wsErrorText } from './wsErrors'
+import { logRawGenError, mapUnknownError, wsBodyError, wsErrorText } from './wsErrors'
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus } from './wavespeedKey'
 
 const POLL_MS = 1500
@@ -143,15 +143,21 @@ export async function loadModelPaths(): Promise<Record<string, string>> {
   return modelPaths
 }
 
-function promptError(body: any, status: number): string {
+export function promptError(body: any, status: number): string {
+  // #721: never dump node_errors / queue raw text onto the card — map to friendly copy; raw goes to the console.
   const lines = Object.entries<any>(body?.node_errors ?? {}).flatMap(([id, ne]) =>
     (ne?.errors ?? []).map((er: any) => `${ne.class_type ?? ''} #${id}: ${er.message}${er.details ? ` — ${er.details}` : ''}`))
-  if (lines.length) return lines.join('\n')
+  if (lines.length) {
+    logRawGenError(lines.join('\n'))
+    return t('wsErr.generic')
+  }
   const top = body?.error
   const readable = wsErrorText(top?.kind, top?.charged_usd, top?.task_id)
   if (readable) return readable
-  if (!top?.message) return `queue failed: ${status}`
-  return top.details ? `${top.message}: ${top.details}` : top.message
+  // validation / queue failure without a tagged kind → wsErr.failed (product #721 row 2)
+  if (top?.message) logRawGenError(top.details ? `${top.message}: ${top.details}` : top.message)
+  else logRawGenError(`queue failed: ${status}`)
+  return t('wsErr.failed')
 }
 
 type WsHook = (inputs: Record<string, unknown>) => Promise<Record<string, unknown>>
@@ -286,7 +292,7 @@ export async function promptHistory(promptId: string): Promise<any> {
 
       : await api(`/history/${promptId}`)
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(wsBodyError(body, `history failed: ${res.status}`))
+  if (!res.ok) throw new Error(wsBodyError(body, t('wsErr.failed')))
   return body[promptId]
 }
 
@@ -297,7 +303,12 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
     if (hist) {
       const messages: [string, any][] = hist.status?.messages ?? []
       const err = messages.find((m) => m[0] === 'execution_error')
-      if (err) throw new Error(wsErrorText(err[1]?.ws_kind, err[1]?.ws_charged, err[1]?.ws_task_id) ?? String(err[1]?.exception_message ?? 'execution failed'))
+      if (err) {
+        const tagged = wsErrorText(err[1]?.ws_kind, err[1]?.ws_charged, err[1]?.ws_task_id)
+        if (tagged) throw new Error(tagged)
+        const raw = String(err[1]?.exception_message ?? 'execution failed')
+        throw new Error(mapUnknownError(raw))
+      }
       const interrupted = messages.find((m) => m[0] === 'execution_interrupted')
       if (interrupted) {
         const charged = interrupted[1]?.ws_charged

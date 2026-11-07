@@ -1,9 +1,12 @@
 // #155: WaveSpeed error kinds -> readable zh/en messages (never the raw WaveSpeed text).
+// #721: non-WaveSpeed / unknown raw → wsErr.generic; allowlist passes through.
 import { setLang } from './i18n_stub'
-import { agentError, agentErrorText, fmtUsd, wsBodyError, wsErrorText } from '../../src/wsErrors'
+import { agentError, agentErrorText, fmtUsd, mapUnknownError, OWN_ERROR_ALLOWLIST, wsBodyError, wsErrorText } from '../../src/wsErrors'
+import { t } from './i18n_stub'
 
 const kinds = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed']
 const raw = { error: { message: 'WaveSpeed request failed (500) Internal Error xyz', kind: 'failed' } }
+const RAW_MULTILINE = 'KSampler #3: Exception — see console at https://wavespeed.ai/dashboard/history\n  at run (backend.py:12)\nInternal Error xyz'
 const out: Record<string, unknown> = {}
 for (const lang of ['zh', 'en'] as const) {
   setLang(lang)
@@ -12,7 +15,13 @@ for (const lang of ['zh', 'en'] as const) {
     raw: wsBodyError(raw, 'x'),
     untagged: wsBodyError({ error: { message: 'mask file not found' } }, 'x'),
     plain: wsBodyError({ error: 'src must be a /api/view URL' }, 'x'),
+    rawString: wsBodyError({ error: RAW_MULTILINE }, 'x'),
+    rawMessage: wsBodyError({ error: { message: RAW_MULTILINE } }, 'x'),
+    generic: t('wsErr.generic'),
+    failed: t('wsErr.failed'),
     unknown: wsErrorText('nope'),
+    mapUnknown: mapUnknownError(RAW_MULTILINE),
+    mapAllow: mapUnknownError('mask file not found'),
     agent: agentError(wsErrorText('insufficientCredit')!),
     agentThrown: agentErrorText(wsErrorText('insufficientCredit')!),
     timeout: wsErrorText('timeout', 0.32),
@@ -31,4 +40,5 @@ for (const lang of ['zh', 'en'] as const) {
   }
 }
 out.fmtUsd = [0.1, 0.14, 1.5, 0.32, 0.004, 0.009, 0, 0.01, 2.005, 12].map(fmtUsd)
+out.allowlist = [...OWN_ERROR_ALLOWLIST].sort()
 console.log(JSON.stringify(out))

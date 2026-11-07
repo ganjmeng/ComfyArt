@@ -6,6 +6,9 @@ import type { Built } from './workflows'
 import { t } from './i18n'
 import { uiCredits } from './usd'
 import { takePendingModel, withModel } from './wavespeed'
+import { mapUnknownError, OWN_ERROR_ALLOWLIST } from './wsErrors'
+import en from './locales/en.json'
+import zh from './locales/zh.json'
 
 export type MediaKind = 'image' | 'video' | 'audio' | 'model'
 
@@ -25,7 +28,24 @@ export interface Job {
 export interface Media { ref: ImageRef; src: string; w: number; h: number; kind: MediaKind }
 export type ErrorSink = (msg: string) => void
 const rawText = (e: unknown) => (e instanceof Error ? e.message : String(e))
+
+/** #721: keys whose locale values are already safe to show on the card (pass through when already mapped). */
+const FRIENDLY_KEY = /^(wsErr|jobs|err|llm|wsKey)\./
+const FRIENDLY_PATTERNS: RegExp[] = (() => {
+  const out: RegExp[] = []
+  for (const loc of [zh as Record<string, string>, en as Record<string, string>]) {
+    for (const [k, v] of Object.entries(loc)) {
+      if (!FRIENDLY_KEY.test(k) || typeof v !== 'string' || !v) continue
+      const esc = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\{\d+\\\}/g, '.*')
+      out.push(new RegExp(`^${esc}$`))
+    }
+  }
+  return out
+})()
+const isFriendlyCopy = (msg: string) => FRIENDLY_PATTERNS.some((re) => re.test(msg))
+
 // WaveSpeed backend errors arrive in English; show them in the UI language.
+// #721: unrecognized / raw dumps → wsErr.generic; own allowlist + already-mapped i18n pass through.
 export function localizeError(msg: string): string {
   if (/\(401\)|rejected the API key/.test(msg)) return t('jobs.wsKeyInvalid')
   if (/Please upload a voice sample first/.test(msg)) return t('jobs.needVoiceSample')
@@ -40,11 +60,19 @@ export function localizeError(msg: string): string {
   if (charged) return t('jobs.wsTimeoutCharged', charged[1])
   const timeout = /WaveSpeed task timed out after (\d+)s/.exec(msg)
   if (timeout) return t('jobs.wsTimeout', timeout[1])
-  const failed = /^WaveSpeed task (?:failed: (.*)|finished without output)$/s.exec(msg)
-  if (failed) return t('jobs.wsFailed', failed[1] ?? t('jobs.noOutput'))
-  return msg
+  // #721: no longer embed the upstream raw text in jobs.wsFailed — fixed wsErr.failed copy
+  if (/^WaveSpeed task (?:failed: .*|finished without output)$/s.test(msg)) return t('wsErr.failed')
+  if (OWN_ERROR_ALLOWLIST.has(msg)) return msg
+  if (isFriendlyCopy(msg)) return msg
+  return mapUnknownError(msg)
 }
-export const errorText = (e: unknown) => localizeError(rawText(e))
+export const errorText = (e: unknown) => {
+  // CostDeclined / NeedKeyError already carry localized copy from their constructors
+  if (e && typeof e === 'object' && 'name' in e && ((e as { name?: string }).name === 'CostDeclined' || (e as { name?: string }).name === 'NeedKeyError')) {
+    return rawText(e)
+  }
+  return localizeError(rawText(e))
+}
 export type Placer = (editor: Editor, holder: TLShape, media: Media[], job: Job, onError: ErrorSink) => Promise<void>
 
 export const GAP = 40

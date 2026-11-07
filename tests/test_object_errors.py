@@ -44,4 +44,6 @@ def test_localized_message(js, lang, site):
     assert js[lang][site]["tagged"] == WS_FAILED[lang]  # tagged WaveSpeed failure -> wsErr copy
     assert js[lang][site]["untagged"] == FALLBACK[site][lang]  # untagged object -> localized fallback
     assert js[lang][site]["nested"] == FALLBACK[site][lang]  # non-string message is not stringified
-    assert js[lang][site]["plain"] == "project not found"  # ComfyArt's own string errors pass through
+    # #721: plain string errors not on the allowlist map to wsErr.generic (no blanket pass-through)
+    GENERIC = {"zh": "这次生成没有完成，请稍后再试。", "en": "This generation didn't finish. Please try again."}
+    assert js[lang][site]["plain"] == GENERIC[lang]
