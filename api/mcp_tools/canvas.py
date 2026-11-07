@@ -56,6 +56,10 @@ def _unregistered_copy() -> str:
 
 
 async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float) -> dict:
+    if action == "generate_image":
+        # #707: a named skill's declared pixels reach the page even if the provider omitted them.
+        from ...bot.skill_output import apply_generate
+        args = apply_generate(args)
     if fallback_for:
         # #236: switch once, to a different model from the #133 table. Never submit the failed model again.
         choice = _fallback_choice(action, args, fallback_for)
@@ -312,13 +316,16 @@ SPECS: dict[str, dict] = {
     "generate_image": _tool(
         "Start generating images on the canvas. Returns ids at once; call wait_generation with them. "
         "prompt: detailed English description (put exact text to render in quotes). ratio like 1:1, "
-        "3:4, 16:9. count 1-4. refs: image shape ids or image URLs the result must follow (subject, "
+        "3:4, 16:9. width and height are pixels when a skill declares an exact canvas "
+        "(linkedin-banner 1584x396, before-after 1024x1280, game-art 1024x1824, pose-fission 1536x2048); "
+        "pass them so the result is not 1024x1024. count 1-4. refs: image shape ids or image URLs the result must follow (subject, "
         "product, style); naming a reference in the prompt does not send it, only refs do. ref_modes: one mode per ref, same order, saying how to use it: content, style, "
         "composition, or a structure guide canny, lineart, depth, normal, pose, mlsd, scribble, softedge, seg, "
         "tile (structure guides also work on models with control instead of refs, e.g. Qwen Image 2512). "
         "base: an image shape id to transform (image-to-image) with base_strength 0-100 (higher changes more). "
         "skill: the id of the skill you are running (e.g. pose-fission); a skill with a registered model runs on it.",
         {"prompt": {"type": "string"}, "model": _MODEL_AUTO, "ratio": {"type": "string"},
+         "width": {"type": "integer"}, "height": {"type": "integer"},
          "count": {"type": "integer"}, "refs": _IDS, "ref_modes": {"type": "array", "items": {"type": "string"}}, "base": {"type": "string"},
          "base_strength": {"type": "integer"}, "skill": {"type": "string"}, **_PLACE},
         ["prompt"], approval="生成图像"),
