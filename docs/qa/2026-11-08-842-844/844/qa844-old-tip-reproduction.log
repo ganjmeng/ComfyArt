@@ -1,0 +1,100 @@
+=== qa844 old-tip reproduction ===
+utc 2026-11-08 13:55:23
+cst 2026-11-08 21:55:23
+tip 4e24170015629d61f92fbdc7889069359d7a7cea
+branch ## HEAD (no branch)
+?? tests/test_qa844_readonly_probe.py
+python 3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]
+pytest 9.2.0
+node v22.23.4
+GATE=1
+PYTHONPATH=/opt/cursor/artifacts/qa844-regression/guard:/tmp/qa844/guard
+WAVESPEED_API_KEY set? no
+KIE_API_KEY set? no
+hash packaged d2ee34ec4299d18a3cf190e29204ea5787f86b355ae8c7db67119c37b5e380d4  /opt/cursor/artifacts/qa844-regression/tests/test_qa844_readonly_probe.py
+hash worktree before d2ee34ec4299d18a3cf190e29204ea5787f86b355ae8c7db67119c37b5e380d4  /tmp/qa844/oldtip/tests/test_qa844_readonly_probe.py
+command: cd /tmp/qa844/oldtip && GATE=1 PYTHONPATH=/opt/cursor/artifacts/qa844-regression/guard:/tmp/qa844/guard /tmp/qa844/venv/bin/python -m pytest --tb=short -ra tests/test_qa844_readonly_probe.py
+=== pytest ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0
+rootdir: /tmp/qa844/oldtip
+configfile: pyproject.toml
+plugins: asyncio-1.4.1.post1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 10 items
+
+tests/test_qa844_readonly_probe.py .FF..FFF.F                            [100%]
+
+=================================== FAILURES ===================================
+_______________ test_probe_classification_gaps_and_path_preview ________________
+tests/test_qa844_readonly_probe.py:160: in test_probe_classification_gaps_and_path_preview
+    assert observed["stylesheet"][0] == "rejected" and observed["stylesheet"][2] is False, observed
+E   AssertionError: {'stylesheet': ('normal', 'normal', True), 'fill_url': ('normal', 'normal', True), 'path_only': ('preview_failed', 'undrawable', True, 'image/png'), 'animate': ('rejected', 'script', True), ...}
+E   assert ('normal' == 'rejected'
+E     
+E     - rejected
+E     + normal)
+________________ test_probe_utf16_doctype_and_invalid_encoding _________________
+tests/test_qa844_readonly_probe.py:181: in test_probe_utf16_doctype_and_invalid_encoding
+    assert verdict.status == "rejected" and verdict.download is None and calls["n"] == 0, (
+E   AssertionError: ('preview_failed', 'malformed', True, 2)
+E   assert ('preview_failed' == 'rejected'
+E     
+E     - rejected
+E     + preview_failed)
+__________________________ test_probe_clock_equality ___________________________
+tests/test_qa844_readonly_probe.py:263: in test_probe_clock_equality
+    assert run([0, 0, 0.25]).status == "normal"
+           ^^^^^^^^^^^^^^^^^
+tests/test_qa844_readonly_probe.py:259: in run
+    return svg_image.admit(_load("normal.svg"), clock=clock)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api/svg_image.py:562: in admit
+    if slow():
+       ^^^^^^
+api/svg_image.py:524: in slow
+    return (clock() - start) > limits.max_seconds
+            ^^^^^^^
+tests/test_qa844_readonly_probe.py:257: in clock
+    return next(seq)
+           ^^^^^^^^^
+E   StopIteration
+_____________________ test_probe_count_and_unknown_format ______________________
+tests/test_qa844_readonly_probe.py:284: in test_probe_count_and_unknown_format
+    assert observed == {
+E   AssertionError: {'count_1_5': None, 'count_true': None, 'count_0': 'svgCount', 'count_2': 'svgCount', ...}
+E   assert {'count_1_5':...vgCount', ...} == {'count_1_5':...vgCount', ...}
+E     
+E     Omitting 3 identical items, use -vv to show
+E     Differing items:
+E     {'old_model': 'openai/gpt-image-2.6-flare/text-to-image'} != {'old_model': 'openai/gpt-image-2.5-flare/text-to-image'}
+E     {'count_true': None} != {'count_true': 'svgCount'}
+E     {'count_1_5': None} != {'count_1_5': 'svgCount'}
+E     {'tiff_error': None} != {'tiff_error': 'svgEdit'}...
+E     
+E     ...Full output truncated, use '-vv' to show
+____________________ test_probe_nonsvg_and_empty_are_saved _____________________
+tests/test_qa844_readonly_probe.py:302: in test_probe_nonsvg_and_empty_are_saved
+    with pytest.raises(WaveSpeedError) as png_err:
+E   Failed: DID NOT RAISE WaveSpeedError
+___________________________ test_probe_quote_fields ____________________________
+tests/test_qa844_readonly_probe.py:373: in test_probe_quote_fields
+    assert "2.5" not in est["svg_note"], est["svg_note"]
+E   AssertionError: 矢量 SVG，用 GPT Image 2.6 文生，一次一张。默认模型仍是 GPT Image 2.5 Flare。价格是同档静图再加 $0.02（沿用既有静图价，不是新核价）。 / Vector SVG from GPT Image 2.6 text-to-image, one image. The default model stays GPT Image 2.5 Flare. Price is the still price plus $0.02 (existing still table, not a new price check).
+E   assert '2.5' not in '矢量 SVG，用 GP...rice check).'
+E     
+E     '2.5' is contained here:
+E       GPT Image 2.5 Flare。价格是同档静图再加 $0.02（沿用既有静图价，不是新核价）。 / Vector SVG from GPT Image 2.6 text-to-image, one image. The default model stays GPT Image 2.5 Flare. Price is the still price plus $0.02 (existing still table, not a new price check).
+E     ?           +++
+=========================== short test summary info ============================
+FAILED tests/test_qa844_readonly_probe.py::test_probe_classification_gaps_and_path_preview
+FAILED tests/test_qa844_readonly_probe.py::test_probe_utf16_doctype_and_invalid_encoding
+FAILED tests/test_qa844_readonly_probe.py::test_probe_clock_equality - StopIt...
+FAILED tests/test_qa844_readonly_probe.py::test_probe_count_and_unknown_format
+FAILED tests/test_qa844_readonly_probe.py::test_probe_nonsvg_and_empty_are_saved
+FAILED tests/test_qa844_readonly_probe.py::test_probe_quote_fields - Assertio...
+========================= 6 failed, 4 passed in 0.27s ==========================
+=== pytest exit 1 ===
+hash worktree after d2ee34ec4299d18a3cf190e29204ea5787f86b355ae8c7db67119c37b5e380d4  /tmp/qa844/oldtip/tests/test_qa844_readonly_probe.py
+hash packaged after d2ee34ec4299d18a3cf190e29204ea5787f86b355ae8c7db67119c37b5e380d4  /opt/cursor/artifacts/qa844-regression/tests/test_qa844_readonly_probe.py
+CMP_AFTER_OK

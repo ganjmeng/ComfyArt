@@ -1,0 +1,6 @@
+{
+  "output_format": "svg",
+  "count": 1.5,
+  "prompt": "logo",
+  "note": "The probe calls block_reason with a Python float 1.5. This JSON holds the same number for replay. The probe does not read this file."
+}
