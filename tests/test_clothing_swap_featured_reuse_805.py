@@ -175,3 +175,16 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert hashlib.sha256((ROOT / "805/reuse/logo-animation/featured.png").read_bytes()).hexdigest() == "23ea2786eae73a9d295f43bbf9edf5b1d46774da4d8e6516d60b916ceda9e2e2"
     assert la[:8] == b"\x89PNG\r\n\x1a\n"
     assert struct.unpack(">II", la[16:24]) == (743, 445)
+    studio = entries["studio-model"]
+    assert "cover: cover643('studio-model')" in studio
+    assert "examples: ex643('studio-model', [1, 2], '9ca3c35db7868e9fe73fb98bf85058c8fa2e048e')" in studio
+    assert "featured: []" in studio
+    assert "video: pinned('805/reuse/studio-model', '44a5caa051ad8c4bd51152afba8ef853e9c77fd8', 'cover.mp4')" in studio
+    sm = subprocess.check_output(["git", "show", "44a5caa051ad8c4bd51152afba8ef853e9c77fd8:805/reuse/studio-model/cover.mp4"], cwd=ROOT)
+    assert hashlib.sha256(sm).hexdigest() == "c2cb08bcef6b6a2eaf361fa228cf641af892cdbe73b8c0070925c7bbccd8749f"
+    assert len(sm) == 333151
+    assert hashlib.sha256((ROOT / "805/reuse/studio-model/cover.mp4").read_bytes()).hexdigest() == hashlib.sha256(sm).hexdigest()
+    ff = (ROOT / "805/reuse/studio-model/firstframe.png").read_bytes()
+    assert hashlib.sha256(ff).hexdigest() == "0c0a2f6017d762f81faaf8768799fe3a5abfe95f76c62940d3b46763be765fa9"
+    assert ff[:8] == b"\x89PNG\r\n\x1a\n"
+    assert struct.unpack(">II", ff[16:24]) == (1054, 1536)

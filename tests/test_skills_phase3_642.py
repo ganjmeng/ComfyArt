@@ -69,7 +69,11 @@ def test_new19_present_production_copy_dialog_inputs():
             assert "cover: pinned('805/reuse/animated-poster', 'a6beae7242511404f6f295265f64d6b7ef00f49b', 'cover.webp')" in head, sid
         else:
             assert f"cover: cover643('{sid}')" in head, sid
-        assert "video:" not in head, sid
+        if sid == "studio-model":
+            # #805: hover mp4 is pinned to the media commit. Cover, examples, and featured stay.
+            assert "video: pinned('805/reuse/studio-model', '44a5caa051ad8c4bd51152afba8ef853e9c77fd8', 'cover.mp4')" in head, sid
+        else:
+            assert "video:" not in head, sid
         reuse_featured = {
             "clothing-swap": "featured: [pinned('643/wash/clothing-swap/examples', WASH_643, '02.webp')]",
             "product-website": "featured: [pinned('643/wash/product-website/examples', WASH_643, '02.webp')]",
