@@ -226,6 +226,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
     { id: 'text', icon: Icons.text, label: t('common.editText'), run: mode$('text') },
     { id: 'angles', icon: Icons.angles, label: t('common.multiAngle'), run: mode$('angles') },
     { id: 'animate', icon: Icons.animate, label: t('common.animateImage'), run: mode$('animate') },
+    { id: 'gif', icon: Icons.image, label: t('imageToolbar.gif'), menu: <GifMenu editor={editor} shape={shape} onDone={() => setMenu(null)} onError={onError} /> },
     { id: 'expand', icon: Icons.expand, label: t('common.expand'), run: mode$('expand') },
     { id: 'inpaint', icon: Icons.lasso, label: t('common.inpaint'), run: mode$('inpaint') },
     { id: 'style', icon: Icons.effects, label: t('common.styleTransfer'), run: mode$('style') },
@@ -324,6 +325,22 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
     </div>
     {panelEl}
     </>
+  )
+}
+
+function GifMenu({ editor, shape, onDone, onError }: { editor: Editor; shape: TLImageShape; onDone: () => void; onError: (msg: string) => void }) {
+  const [prompt, setPrompt] = useState('')
+  const [frames, setFrames] = useState(9)
+  const [ms, setMs] = useState(200)
+  const keys = (e: { stopPropagation: () => void }) => e.stopPropagation()
+  return (
+    <div className="ca-menu" data-testid="gif-menu">
+      <div className="ca-chat__hint">{t('imageToolbar.gifNote')}</div>
+      <textarea className="ca-panel__prompt ca-panel__prompt--boxed" value={prompt} placeholder={t('imageToolbar.gifPrompt')} onChange={(e) => setPrompt(e.target.value)} onKeyDown={keys} />
+      <label className="ca-num"><span>{t('imageToolbar.gifFrames')}</span><input type="number" min={2} max={16} value={frames} onChange={(e) => setFrames(Math.min(16, Math.max(2, Number(e.target.value) || 9)))} onKeyDown={keys} /></label>
+      <label className="ca-num"><span>{t('imageToolbar.gifMs')}</span><input type="number" min={20} max={2000} value={ms} onChange={(e) => setMs(Math.min(2000, Math.max(20, Number(e.target.value) || 200)))} onKeyDown={keys} /></label>
+      <button type="button" className="ca-menu__item" onClick={() => { actions.toGif(editor, shape, prompt, onError, frames, ms); onDone() }}>{t('imageToolbar.gifRun')}</button>
+    </div>
   )
 }
 

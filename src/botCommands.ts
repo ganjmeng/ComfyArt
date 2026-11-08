@@ -11,6 +11,7 @@ import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate, nearestRatio } from './generate'
 import { durationNote, fitDuration, RATIOS, VIDEO_RATIOS, videoResolution } from './genOptions'
+import { clampFrameCount, clampFrameMs, gifModelId } from './gifFile'
 import { tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
 import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom, whenSubmitted } from './jobs'
@@ -155,7 +156,13 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     model = args.model ? models.find((m) => m.id === args.model) ?? (args.auto_model ? models[0] : undefined) : (wantsRefs && models.find((m) => m.refs)) || models[0]
     if (!video && args.size_lock && model) lockId = model.id
   }
-  if (!models.length) throw new Error(`no ${video ? 'video' : 'image'} models loaded yet (WaveSpeed model list unavailable); try again shortly`)
+  const gif = !video && String(args.output_format || '').toLowerCase() === 'gif'
+  if (gif) {
+    // #825: a GIF runs on 2.6 even when Auto's stable default (2.5) is what the page would otherwise use.
+    const id = gifModelId(String(args.model || model?.id || ''))
+    model = models.find((m) => m.id === id) ?? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' }
+  }
+  if (!models.length && !gif) throw new Error(`no ${video ? 'video' : 'image'} models loaded yet (WaveSpeed model list unavailable); try again shortly`)
   if (!model) throw new Error(`unknown model ${JSON.stringify(args.model)}; valid ${video ? 'video' : 'image'} ids: ${models.map((m) => m.id).join(', ')} (default ${models[0].id})`)
   const modes = Array.isArray(args.ref_modes) ? args.ref_modes.map(String) : []
   const allowed = modesFor(model).map((m) => m.id)
@@ -200,6 +207,8 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     ...(!video && args.base ? { base: refUrls(editor, [args.base])[0], strength: Number(args.base_strength) || 60 } : {}),
     ...(video && !mode && args.last_frame ? { lastFrame: refUrls(editor, [args.last_frame])[0] } : {}),
     ...(notes?.en ? { durationAsked: Number(args.duration) } : {}),
+    ...(gif ? { gif: { output_format: 'gif', frame_count: clampFrameCount(args.frame_count), frame_duration_ms: clampFrameMs(args.frame_duration_ms) } } : {}),
+    ...(gif && args.complexity ? { complexity: String(args.complexity) } : {}),
   }
   const id = createGenerator(editor, video, props, false)
   const exact = !video && exactW && exactH ? { w: exactW, h: exactH } : null

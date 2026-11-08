@@ -8,7 +8,8 @@ import { notify } from './notices'
 import { angleParams, annotated, layersGraph, samGraph, type Built, type Crop } from './workflows'
 import { nearestRatio } from './generate'
 import { videoTargetResolution } from './videoGraphs'
-import { VIDEO_RATIOS } from './genOptions'
+import { RATIOS, VIDEO_RATIOS } from './genOptions'
+import { GIF_FLARE, clampFrameCount, clampFrameMs } from './gifFile'
 import { t } from './i18n'
 import type { Edit } from './videoEdit'
 import { timelineGraph } from './videoRender'
@@ -83,6 +84,15 @@ export const editVideo = (e: Editor, s: TLVideoShape, edit: Edit, err: ErrorSink
 
 export const animate = (e: Editor, s: TLImageShape, prompt: string, err: ErrorSink, loop = true) =>
   run(e, s, t('common.animateImage'), err, (src) => cloud(wsBuilt({ feature: 'image_to_video', custom: 'animate', image: src.image, last_image: loop ? src.image : undefined, prompt: prompt || 'Subtle seamless motion. Keep the composition, text and layout unchanged.', duration: 3, ratio: nearestRatio(src.w / src.h, VIDEO_RATIOS) })))
+
+/** #825: still → looping GIF. Edit has no gif, so the still is a reference on text-to-image (2.6-flare), not a video. */
+export const toGif = (e: Editor, s: TLImageShape, prompt: string, err: ErrorSink, frames = 9, ms = 200) =>
+  run(e, s, t('imageToolbar.gif'), err, (src) => cloud(wsBuilt({
+    feature: 'text_to_image', model: GIF_FLARE, image: src.image, images: [src.image],
+    prompt: prompt || 'Turn this still into a short seamless looping animation. Keep the subject, layout and any text.',
+    ratio: nearestRatio(src.w / src.h, RATIOS),
+    params: { output_format: 'gif', frame_count: clampFrameCount(frames), frame_duration_ms: clampFrameMs(ms) },
+  })), { kind: 'image' })
 
 export const upscaleVideo = (e: Editor, s: TLVideoShape, long: number, err: ErrorSink) =>
   run(e, s, t('actions.upscaleVideo'), err, (src) => cloud(wsBuilt({ feature: 'upscale_video', custom: 'videoUpscale', video: src.image, params: { target_resolution: videoTargetResolution(long) } })), { kind: 'video' })
