@@ -51,7 +51,11 @@
         "704-lr/linkedin-banner/fixed-input-v1/RIGHT.png",
         "704-lr/linkedin-banner/fixed-input-v1/design-LR.png"
       ],
-      "reuse": "already-verified RIGHT and design-LR. This checkout had no upload of those files; they are not regenerated and 805/reuse/linkedin-banner/featured.png is not substituted."
+      "sha256": {
+        "704-lr/linkedin-banner/fixed-input-v1/RIGHT.png": "52150b070e4c05cfd6d614fd2ae60793a90c61b30d1c6835ba4adccb42eb0c20",
+        "704-lr/linkedin-banner/fixed-input-v1/design-LR.png": "576ba4292afe42a2575a46ad339032f07f4fc2b470ac094340532af21d873df9"
+      },
+      "reuse": "Verified box upload copied byte-for-byte. Same bytes were not already in the repo. Not regenerated. 805/reuse/linkedin-banner/featured.png is not this tip RIGHT."
     }
   },
   "discarded": [

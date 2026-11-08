@@ -57,8 +57,6 @@ def test_four_skills_map_to_locked_sot_and_voids_stay_discarded():
         assert not (set(spec["tip_right"]) & discarded), skill
         for path in spec["tip_right"]:
             file = ROOT / path
-            if skill == "linkedin-banner":
-                continue
             assert file.is_file(), path
             digest = hashlib.sha256(file.read_bytes()).hexdigest()
             assert spec["sha256"][path] == digest
