@@ -103,6 +103,7 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert "643/wash/animated-poster/featured" not in SKILLS
     poster = entries["animated-poster"]
     assert "examples: ex643('animated-poster', [1, 2], '54cc1199ee8eeaaee36c69d04cdbad21f345c8fd')" in poster
+    assert "quickStartCoverFit: 'contain'" in poster
     m = re.search(r"cover: pinned\('805/reuse/animated-poster', '([0-9a-f]{40})', 'cover.webp'\)", poster)
     assert m, poster[:240]
     cover = subprocess.check_output(["git", "show", f"{m.group(1)}:805/reuse/animated-poster/cover.webp"], cwd=ROOT)
