@@ -76,6 +76,7 @@ def test_new19_present_production_copy_dialog_inputs():
             "premium-website": "featured: [pinned('643/wash/premium-website/examples', '4ccecac30c1cdf3e79826de5614edc5514e150a4', '07.webp')]",
             "restaurant-website": "featured: [pinned('643/wash/restaurant-website/examples', '9ca6d4ee7eb6488bb2c430affa86cfae75613485', '07.webp')]",
             "product-to-packaging": "featured: [pinned('643/wash/product-to-packaging/examples', '6b1cfa37e4eafc72841e70a26909750c2ff44399', '02.webp')]",
+            "live-promo-decor": "featured: [pinned('805/reuse/live-promo-decor', 'e1eb48ba0d2d6511264725c29bd2beebd61816aa', 'featured.webp')]",
         }
         if sid in reuse_featured:
             assert reuse_featured[sid] in e, sid

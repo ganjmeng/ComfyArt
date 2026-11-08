@@ -1,7 +1,7 @@
 """#805 minimal reuse: featured pins of existing washes + animated-poster single cover.
 
 No generation. Historical featured bytes stay at their old commits. The red-woman cover is the
-only new file. live-promo-decor and person HOLDs stay unwired. $0 static.
+The red-woman cover and the recropped live sticker are the only new files. Person HOLDs stay unwired. $0 static.
 """
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ FEATURED = {
     ),
 }
 HELD_EMPTY = (
-    "ai-model", "animated-poster", "live-promo-decor", "linkedin-banner",
+    "ai-model", "animated-poster", "linkedin-banner",
     "creator-identity", "youtube-channel-banner", "portrait-studio", "logo-animation",
 )
 
@@ -99,7 +99,15 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     for sid in HELD_EMPTY:
         assert "featured: []" in entries[sid], sid
         assert "featured: [pinned" not in entries[sid], sid
-    assert "featured: [pinned('643/wash/live-promo-decor" not in SKILLS
+    assert "b51e9793a91e6f2b704677723308597b099e0c516d5d954a0e6b22c19bbf200f" not in SKILLS
+    live = entries["live-promo-decor"]
+    live_pin = re.search(r"featured: \[pinned\('805/reuse/live-promo-decor', '([0-9a-f]{40})', 'featured.webp'\)\]", live)
+    assert live_pin, live[:400]
+    live_blob = subprocess.check_output(["git", "show", f"{live_pin.group(1)}:805/reuse/live-promo-decor/featured.webp"], cwd=ROOT)
+    assert hashlib.sha256(live_blob).hexdigest() == "56c05f4c86bb225c16443d71b0cf25af1dba1247988ddfa9ee61f1333dbb49ef"
+    assert _webp_size(live_blob) == (387, 350)
+    assert "cover: cover643('live-promo-decor')" in live
+    assert "examples: ex643('live-promo-decor', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], '497c6feeb559cc2c053a28fc9b45b3b11b595037')" in live
     assert "643/wash/animated-poster/featured" not in SKILLS
     poster = entries["animated-poster"]
     assert "examples: ex643('animated-poster', [1, 2], '54cc1199ee8eeaaee36c69d04cdbad21f345c8fd')" in poster
