@@ -1,7 +1,4 @@
-"""#805 minimal reuse: featured pins of existing washes + animated-poster single cover.
-
-No generation. Historical featured bytes stay at their old commits. The red-woman cover is the
-The red-woman cover and the recropped live sticker are the only new files. Person HOLDs stay unwired. $0 static.
+"""#805 reuse pins. LinkedIn featured is the reviewed 1904x556 PNG. No generation. $0 static.
 """
 from __future__ import annotations
 
@@ -52,7 +49,7 @@ FEATURED = {
     ),
 }
 HELD_EMPTY = (
-    "ai-model", "animated-poster", "linkedin-banner",
+    "ai-model", "animated-poster",
     "creator-identity", "youtube-channel-banner", "portrait-studio", "logo-animation",
 )
 
@@ -120,3 +117,10 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert hashlib.sha256((ROOT / "805/reuse/animated-poster/cover.webp").read_bytes()).hexdigest() == COVER_SHA
     linkedin = entries["linkedin-banner"]
     assert "width 1584, height 396" in linkedin
+    assert "cover: cover643('linkedin-banner')" in linkedin
+    assert "examples: ex643('linkedin-banner', [1])" in linkedin
+    assert "featured: [pinned('805/reuse/linkedin-banner', 'b6e408ace4835f14282a32d4e19c79e143cb4f53', 'featured.png')]" in linkedin
+    li = subprocess.check_output(["git", "show", "b6e408ace4835f14282a32d4e19c79e143cb4f53:805/reuse/linkedin-banner/featured.png"], cwd=ROOT)
+    assert hashlib.sha256(li).hexdigest() == "ef9d950ebcc542ada4cf2a7bbb7c768a04ab12ebdbb4e23e4c017be4c3015bba"
+    assert li[:8] == b"\x89PNG\r\n\x1a\n"
+    assert struct.unpack(">II", li[16:24]) == (1904, 556)
