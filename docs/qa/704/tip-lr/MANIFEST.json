@@ -1,0 +1,91 @@
+{
+  "issue": [704, 707],
+  "locked": "2026-11-08 Asia/Shanghai",
+  "rule": "Tip RIGHT is only the sot paths below. No provider calls. Void Qwen RIGHT under 704-lr/*/fixed-input-v1/RIGHT.png is discarded for pose-fission, before-after, and game-art.",
+  "skills": {
+    "pose-fission": {
+      "tip_right": [
+        "docs/qa/posepro/pro_01.jpg",
+        "docs/qa/posepro/pro_02.jpg",
+        "docs/qa/posepro/pro_03.jpg",
+        "docs/qa/posepro/pro_04.jpg",
+        "docs/qa/posepro/compare_posepro.jpg",
+        "docs/design/640/78/gold/pose-fission/cover.webp",
+        "643/wash/pose-fission/examples/01.webp",
+        "643/wash/pose-fission/examples/02.webp",
+        "643/wash/pose-fission/examples/03.webp",
+        "643/wash/pose-fission/examples/04.webp"
+      ],
+      "sha256": {
+        "docs/qa/posepro/pro_01.jpg": "b53fa86597dee739712660ca5aa812727e888b5b7b02f542591f235ddee8475e",
+        "docs/qa/posepro/pro_02.jpg": "7b83525f3112689d74b254d8ef440e7c6838f52153aa99af41cf2c7d45a21988",
+        "docs/qa/posepro/pro_03.jpg": "39668d0d04d973aad4063467e3c578147081fd74494338796294a7c5bd2d97fb",
+        "docs/qa/posepro/pro_04.jpg": "70d44acc7984ce7af41203943cbca072db52c30e58365ee8127482e21ce88aee",
+        "docs/qa/posepro/compare_posepro.jpg": "7c98789b5ce1486804dfa169cdf78be3415c0e660c48b4eaa244d84c5b032497",
+        "docs/design/640/78/gold/pose-fission/cover.webp": "b1af2a31f9750eb711ac21ed5a0ae45a38ad853b3dacbab062f93e9cdacef77a",
+        "643/wash/pose-fission/examples/01.webp": "54c186ed66cd4202d9edccad11a479000be4830d68dbdc9d4aab93e7dbf0a5d7",
+        "643/wash/pose-fission/examples/02.webp": "8dcfdfa37346958fd4a67db22ee6e05d3c51919a33c0dfaf33b45f28a6613224",
+        "643/wash/pose-fission/examples/03.webp": "35695c6f1b94dfef43f63ce0bd83c65fbe7ea44c778319c9af8df0815cac3f9e",
+        "643/wash/pose-fission/examples/04.webp": "43f3e15efe2c5fe75b34e703ced8243cd3c5a72672ed36ea2e9b16cda35fe3ad"
+      }
+    },
+    "before-after": {
+      "tip_right": [
+        "docs/design/640/78/gold/before-after/cover.webp"
+      ],
+      "sha256": {
+        "docs/design/640/78/gold/before-after/cover.webp": "df04c9ddbb2c7c2da07b3e28dd5da6ee2ff5268e29ebe8fb5773ed20e961d8f8"
+      }
+    },
+    "game-art": {
+      "tip_right": [
+        "643/wash/game-art/examples/01.webp"
+      ],
+      "sha256": {
+        "643/wash/game-art/examples/01.webp": "05caf4132406b661e583a05b2e00b17fb003f540de74eb9ed8a7210a651f6615"
+      },
+      "note": "奔秋 Go UI example 01. Poster covers are rejected."
+    },
+    "linkedin-banner": {
+      "tip_right": [
+        "704-lr/linkedin-banner/fixed-input-v1/RIGHT.png",
+        "704-lr/linkedin-banner/fixed-input-v1/design-LR.png"
+      ],
+      "reuse": "already-verified RIGHT and design-LR. This checkout had no upload of those files; they are not regenerated and 805/reuse/linkedin-banner/featured.png is not substituted."
+    }
+  },
+  "discarded": [
+    {
+      "path": "704-lr/pose-fission/fixed-input-v1/RIGHT.png",
+      "reason": "void Qwen RIGHT"
+    },
+    {
+      "path": "704-lr/before-after/fixed-input-v1/RIGHT.png",
+      "reason": "void Qwen RIGHT"
+    },
+    {
+      "path": "704-lr/game-art/fixed-input-v1/RIGHT.png",
+      "reason": "void Qwen RIGHT"
+    },
+    {
+      "path": "643/wash/before-after/cover.webp",
+      "sha256": "196264b7c740a49ca57d392f330205ed0d5925125247012dc20b31ed89365bf9",
+      "reason": "drop-text wash RIGHT, not tip RIGHT"
+    },
+    {
+      "path": "docs/design/643/lr/new19/before-after-lr.webp",
+      "sha256": "97b275adc1b2578a8e96e64a6123e54962817db9a76a1ec76873600939abc4be",
+      "reason": "new19 wash-right, not tip RIGHT"
+    },
+    {
+      "path": "docs/design/640/78/gold/game-art/cover.webp",
+      "sha256": "c4f63258f3ea65eb700e2055da9e91e3c8771c6f82761c4c93f21c390d5744c6",
+      "reason": "poster, wrong type, rejected as tip RIGHT"
+    },
+    {
+      "path": "643/wash/game-art/cover.webp",
+      "sha256": "733dc5ffe7356da5b305e72a9a78ce526c2c89155ff688bbfeb101ec9ebc4ef5",
+      "reason": "poster, no usable UI copy, rejected as tip RIGHT"
+    }
+  ]
+}
