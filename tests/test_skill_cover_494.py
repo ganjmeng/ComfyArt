@@ -128,9 +128,11 @@ def test_builtin_videos_unique(got):
               "yingzao", "crt-interface", "crayon-sketch", "fabric-collage")
     for sid in phase2_null:
         assert vids.pop(sid) is None  # C/D + still-only B remain null
+    # #805: studio-model hover is the wash-first-frame remake pinned to its media commit.
+    assert vids.pop("studio-model") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/44a5caa051ad8c4bd51152afba8ef853e9c77fd8/805/reuse/studio-model/cover.mp4"
     phase3_null = (
         "taobao-product", "before-after", "anim-2d", "creator-identity", "product-website",
-        "studio-model", "youtube-channel-banner", "ai-model", "product-to-packaging",
+        "youtube-channel-banner", "ai-model", "product-to-packaging",
         "game-art", "portrait-studio", "premium-website", "animated-poster", "pose-fission",
         "live-promo-decor", "linkedin-banner", "logo-animation", "restaurant-website", "clothing-swap",
     )
