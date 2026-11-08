@@ -53,9 +53,17 @@ _quote_override = None  # tests only: async (model, capability, inputs) -> (pric
 
 
 def reset_runtime() -> None:
-    """Drop in-memory route tickets. Does not touch the saved file or a turn already running."""
+    """Drop in-memory route tickets and idempotency locks. Does not touch saved files."""
     _tickets.clear()
     _replicate_jobs.clear()
+    _runs.clear()
+    _run_locks.clear()
+    _audit.clear()
+
+
+_runs: dict[str, dict] = {}
+_run_locks: dict[str, object] = {}
+_audit: list[dict] = []
 
 
 def _path() -> str:
@@ -82,7 +90,8 @@ def load_doc() -> dict:
     raw = read_json(_path(), {})
     if not isinstance(raw, dict):
         raw = {}
-    return {"image": _section(raw.get("image")), "llm": _section(raw.get("llm"))}
+    tools = raw.get("tools") if isinstance(raw.get("tools"), dict) else {}
+    return {"image": _section(raw.get("image")), "llm": _section(raw.get("llm")), "tools": tools}
 
 
 def _write(doc: dict) -> None:
@@ -271,9 +280,16 @@ def _public_state() -> dict:
                 "capabilities": audit_summary()["capabilities"],
             },
             "note": {
-                "zh": "审计不是路由。未实现的工具保持 WaveSpeed，设置里不能选。",
-                "en": "The audit is not a route. Tools that are not implemented stay on WaveSpeed and cannot be selected.",
+                "zh": "未核实不是不支持。没接通的工具保持原来的 WaveSpeed。",
+                "en": "Unverified is not unsupported. Tools that are not wired stay on WaveSpeed.",
             },
+        },
+        "tools": _tools_view(),
+        "policy": {
+            "fallback_default": False,
+            "max_attempts": "primary once, then one backup",
+            "eligible": ["not_accepted", "auth", "balance", "rate_limit", "unsupported"],
+            "human": ["unknown", "accepted", "safety", "invalid_params", "confirm", "price", "incompatible"],
         },
     }
 
@@ -509,7 +525,7 @@ async def _replicate_execute(decision: dict, inputs: dict) -> str:
         raise WaveSpeedError("Replicate 未配置 REPLICATE_API_TOKEN，未发送请求", 400, kind="provider_unconfigured")
     price, source = await _quote_status(decision, inputs)
     if source != "quote" or not isinstance(price, (int, float)) or isinstance(price, bool):
-        raise WaveSpeedError("价格未知，已停止。不会按静图价确认，也未向供应商发送请求", 400, kind="quote_unknown")
+        raise WaveSpeedError("价格未知，已停止。不会按静图价确认，也未向供应商发送请求", 400, kind="price")
     try:
         body = prediction_body(decision["capability"], inputs)
     except PayloadError as e:
@@ -558,6 +574,8 @@ async def _post_prediction(url: str, body: dict, token: str) -> str:
                     data = {}
     except WaveSpeedError:
         raise
+    except RouteFailure:
+        raise
     except TimeoutError:
         raise
     except Exception as e:
@@ -567,6 +585,340 @@ async def _post_prediction(url: str, body: dict, token: str) -> str:
     if not prediction_id:
         raise WaveSpeedError("Replicate 没有返回任务 id，没有重试", 502, kind="unknown")
     return prediction_id
+
+
+def _tool_record(tool_id: str) -> dict:
+    raw = (load_doc().get("tools") or {}).get(tool_id)
+    if not isinstance(raw, dict):
+        return {"revision": 0, "active": None, "previous": None, "draft": None}
+    active = raw.get("active") if isinstance(raw.get("active"), dict) else None
+    previous = raw.get("previous") if isinstance(raw.get("previous"), dict) else None
+    draft = raw.get("draft") if isinstance(raw.get("draft"), dict) else None
+    try:
+        revision = int(raw.get("revision") or 0)
+    except (TypeError, ValueError):
+        revision = 0
+    return {"revision": revision, "active": active, "previous": previous, "draft": draft}
+
+
+def _tools_view() -> list[dict]:
+    from .tool_routing import TOOLS, public_choices
+    key_ok = _env_configured("REPLICATE_API_TOKEN")
+    rows = []
+    for tool in TOOLS:
+        rec = _tool_record(tool["id"])
+        active = rec["active"]
+        primary = (active or {}).get("primary") or {"provider": "wavespeed", "model": "existing"}
+        replicate = primary.get("provider") == "replicate"
+        rows.append({
+            "id": tool["id"],
+            "group": tool["group"],
+            "label": tool["label"],
+            "blurb": tool["blurb"],
+            "connected": bool(tool["caps"]),
+            "active": active,
+            "draft": rec["draft"],
+            "revision": rec["revision"],
+            "can_restore": rec["previous"] is not None or active is not None,
+            "choices": public_choices(tool),
+            "key_ok": key_ok,
+            "usable": not replicate,
+            "blocked": "quote_unknown" if replicate else "",
+            "effective": {
+                "provider": primary.get("provider") or "wavespeed",
+                "model": primary.get("model") or "existing",
+                "source": "saved" if active else "default",
+                "fallback": bool((active or {}).get("fallback")),
+                "backup": (active or {}).get("backup"),
+            },
+        })
+    return rows
+
+
+def _snapshot(inputs: dict) -> dict:
+    from .tool_routing import capability_for, tool_of
+    tool = tool_of(inputs)
+    rec = _tool_record(tool) if tool else {"revision": 0, "active": None}
+    active = rec.get("active")
+    if not tool or not active:
+        return {"passthrough": True, "tool": tool, "revision": rec.get("revision") or 0}
+    return {
+        "passthrough": False,
+        "tool": tool,
+        "revision": rec["revision"],
+        "primary": active["primary"],
+        "backup": active.get("backup"),
+        "fallback": bool(active.get("fallback")),
+        "capability": capability_for(tool, inputs),
+    }
+
+
+def _note(route: dict, *, fallback: bool, kind: str, task: str | None) -> None:
+    row = {
+        "tool": route.get("tool"),
+        "primary": route.get("primary"),
+        "backup": route.get("backup"),
+        "fallback_used": fallback,
+        "reason": kind,
+        "task_id": task,
+    }
+    _audit.append(row)
+    if len(_audit) > 50:
+        del _audit[:-50]
+    log.info("route tool=%s fallback=%s reason=%s task=%s", row["tool"], fallback, kind, task or "-")
+
+
+async def _quote_endpoint(ep: dict, inputs: dict, cap: str | None):
+    if _quote_override is not None:
+        return await _quote_override(ep.get("model"), cap, inputs)
+    if ep.get("provider") == "wavespeed" and _quote_orig is not None:
+        return await _quote_orig(str(inputs.get("model") or ""), inputs)
+    return None, "unknown"
+
+
+async def _prices_allow(route: dict, inputs: dict, cap: str | None) -> bool:
+    primary_price, primary_src = await _quote_endpoint(route["primary"], inputs, cap)
+    backup_price, backup_src = await _quote_endpoint(route["backup"], inputs, cap)
+    if primary_src != "quote" or backup_src != "quote":
+        return False
+    if isinstance(primary_price, bool) or isinstance(backup_price, bool):
+        return False
+    if not isinstance(primary_price, (int, float)) or not isinstance(backup_price, (int, float)):
+        return False
+    return float(backup_price) <= float(primary_price)
+
+
+async def _call_endpoint(ep: dict, inputs: dict, cap: str | None, orig):
+    from .tool_routing import RouteFailure
+    if ep.get("provider") == "wavespeed":
+        return await orig(inputs)
+    if not cap:
+        raise RouteFailure("unsupported", "这次请求不在该工具已接通的能力里")
+    return await _replicate_execute({
+        "provider": "replicate", "model": ep["model"], "capability": cap, "revision": 0,
+    }, inputs)
+
+
+def _stop(kind: str):
+    from .tool_routing import explain
+    from .wavespeed import WaveSpeedError
+    return WaveSpeedError(explain(kind), 409 if kind == "route_changed" else 400, kind=kind)
+
+
+async def _execute_route(route: dict, inputs: dict, orig):
+    from .tool_routing import BY_ID, ELIGIBLE, backup_ok, classify_failure
+    cap = route.get("capability")
+    try:
+        task = await _call_endpoint(route["primary"], inputs, cap, orig)
+        _note(route, fallback=False, kind="primary", task=str(task))
+        return task
+    except Exception as exc:
+        kind = classify_failure(exc)
+        if kind == "accepted" and getattr(exc, "task_id", None):
+            _note(route, fallback=False, kind=kind, task=exc.task_id)
+            return exc.task_id
+        backup = route.get("backup")
+        if not route.get("fallback") or not backup:
+            _note(route, fallback=False, kind=kind, task=getattr(exc, "task_id", None))
+            raise
+        if kind not in ELIGIBLE:
+            _note(route, fallback=False, kind=kind, task=getattr(exc, "task_id", None))
+            raise _stop(kind) from exc
+        tool = BY_ID[route["tool"]]
+        if not backup_ok(tool, backup["provider"], backup["model"], cap):
+            _note(route, fallback=False, kind="incompatible", task=None)
+            raise _stop("incompatible") from exc
+        if not await _prices_allow(route, inputs, cap):
+            _note(route, fallback=False, kind="price", task=None)
+            raise _stop("price") from exc
+        task = await _call_endpoint(backup, inputs, cap, orig)
+        _note(route, fallback=True, kind=kind, task=str(task))
+        return task
+
+
+async def dispatch_submit(inputs, orig):
+    import asyncio
+    from .tool_routing import logical_key
+    if not isinstance(inputs, dict):
+        return await orig(inputs)
+    decision = _snapshot(inputs)
+    if _route_changed(inputs, decision):
+        raise _stop("route_changed")
+    if decision.get("passthrough"):
+        return await orig(inputs)
+    key = logical_key(inputs, decision)
+    lock = _run_locks.get(key)
+    if lock is None:
+        lock = asyncio.Lock()
+        _run_locks[key] = lock
+    async with lock:
+        remembered = _runs.get(key)
+        if remembered and "task" in remembered:
+            return remembered["task"]
+        if remembered and "error" in remembered:
+            raise remembered["error"]
+        try:
+            task = await _execute_route(decision, inputs, orig)
+        except Exception as exc:
+            _runs[key] = {"error": exc}
+            raise
+        _runs[key] = {"task": task}
+        return task
+
+
+async def dispatch_estimate(inputs, orig):
+    if not isinstance(inputs, dict):
+        return await orig(inputs)
+    decision = _snapshot(inputs)
+    _remember(inputs, decision)
+    if decision.get("passthrough") or decision.get("primary", {}).get("provider") == "wavespeed":
+        return await orig(inputs)
+    body = _estimate_body(decision)
+    body["tool"] = decision.get("tool")
+    body["model"] = decision["primary"]["model"]
+    body["provider"] = "replicate"
+    body["fallback"] = bool(decision.get("fallback"))
+    body["usable"] = False
+    body["blocked"] = "quote_unknown"
+    body["quote_status"] = "unknown"
+    body["confirm"] = False
+    body["price"] = None
+    return body
+
+
+def _write_tool(tool_id: str, rec: dict) -> None:
+    doc = load_doc()
+    doc["tools"][tool_id] = rec
+    _write(doc)
+
+
+@routes.put("/comfyart/provider-admin/tool/{tool_id}")
+async def put_tool(request: web.Request) -> web.Response:
+    from .tool_routing import BY_ID, normalize_route
+    require_admin(request)
+    tool_id = request.match_info["tool_id"]
+    if tool_id not in BY_ID:
+        return error("unknown tool", 404)
+    body = await json_body(request)
+    blocked = _reject_secrets(body)
+    if blocked:
+        return blocked
+    route = normalize_route(tool_id, body)
+    if not route:
+        return web.json_response({"error": "invalid tool route", "issues": ["pick a connected provider and model"]}, status=400)
+    activate = bool(body.get("activate", True))
+    if activate and route["primary"]["provider"] == "replicate" and not _env_configured("REPLICATE_API_TOKEN"):
+        return web.json_response({"error": "needs_key", "saved": False, "activated": False}, status=409)
+    rec = _tool_record(tool_id)
+    if activate:
+        rec["previous"] = rec.get("active")
+        rec["active"] = route
+        rec["draft"] = None
+        rec["revision"] = int(rec.get("revision") or 0) + 1
+    else:
+        rec["draft"] = route
+    _write_tool(tool_id, rec)
+    state = _public_state()
+    state["saved_tool"] = tool_id
+    state["activated"] = activate
+    state["usable"] = route["primary"]["provider"] != "replicate"
+    state["blocked"] = "" if state["usable"] else "quote_unknown"
+    return web.json_response(state)
+
+
+@routes.post("/comfyart/provider-admin/tool/{tool_id}/restore")
+async def restore_tool(request: web.Request) -> web.Response:
+    from .tool_routing import BY_ID
+    require_admin(request)
+    tool_id = request.match_info["tool_id"]
+    if tool_id not in BY_ID:
+        return error("unknown tool", 404)
+    rec = _tool_record(tool_id)
+    current = rec.get("active")
+    rec["active"] = rec.get("previous")
+    rec["previous"] = current
+    rec["draft"] = None
+    rec["revision"] = int(rec.get("revision") or 0) + 1
+    _write_tool(tool_id, rec)
+    state = _public_state()
+    state["restored_tool"] = tool_id
+    return web.json_response(state)
+
+
+@routes.put("/comfyart/provider-admin/tools/batch")
+async def put_tools_batch(request: web.Request) -> web.Response:
+    from .tool_routing import BY_ID, normalize_route
+    require_admin(request)
+    body = await json_body(request)
+    blocked = _reject_secrets(body)
+    if blocked:
+        return blocked
+    ids = body.get("ids") if isinstance(body.get("ids"), list) else []
+    if not ids:
+        return error("choose at least one tool", 400)
+    activate = bool(body.get("activate", True))
+    planned = []
+    skipped = []
+    for tool_id in ids:
+        if tool_id not in BY_ID:
+            skipped.append(tool_id)
+            continue
+        route = normalize_route(str(tool_id), body)
+        if not route:
+            skipped.append(tool_id)
+            continue
+        planned.append((str(tool_id), route))
+    if activate and any(route["primary"]["provider"] == "replicate" for _, route in planned) and not _env_configured("REPLICATE_API_TOKEN"):
+        return web.json_response({"error": "needs_key", "saved": False, "activated": False}, status=409)
+    for tool_id, route in planned:
+        rec = _tool_record(tool_id)
+        if activate:
+            rec["previous"] = rec.get("active")
+            rec["active"] = route
+            rec["draft"] = None
+            rec["revision"] = int(rec.get("revision") or 0) + 1
+        else:
+            rec["draft"] = route
+        _write_tool(tool_id, rec)
+    state = _public_state()
+    state["applied"] = [tool_id for tool_id, _ in planned]
+    state["skipped"] = skipped
+    state["activated"] = activate
+    state["usable"] = not any(route["primary"]["provider"] == "replicate" for _, route in planned)
+    state["blocked"] = "" if state["usable"] else "quote_unknown"
+    return web.json_response(state)
+
+
+@routes.post("/comfyart/provider-admin/llm/check")
+async def check_llm(request: web.Request) -> web.Response:
+    require_admin(request)
+    body = await json_body(request)
+    blocked = _reject_secrets(body)
+    if blocked:
+        return blocked
+    route = llm_route({"provider": body.get("provider"), "model": body.get("model")})
+    current = llm_route()
+    if route is None:
+        return web.json_response({
+            "saved": False, "calls": 0, "would_change_active": False,
+            "ok": body.get("provider") in {None, "", "wavespeed"},
+            "quote": "unknown",
+            "message": "这份草稿不会改变正在用的对话线路，也没有发出请求。",
+        })
+    return web.json_response({
+        "saved": False,
+        "calls": 0,
+        "would_change_active": False,
+        "active_unchanged": current is None or current.get("model") != route["model"],
+        "provider": route["provider"],
+        "model": route["model"],
+        "base_url": route["base_url"],
+        "key_ok": _env_configured(route["secret_env"]),
+        "quote": "unknown",
+        "stream": False,
+        "thinking": "disabled",
+        "message": "只检查草稿。当前对话线路没变，没有付费请求。价格未知。官方模型不是无差异替换。",
+    })
 
 
 def install() -> None:
@@ -581,32 +933,19 @@ def install() -> None:
     _poll_orig = wavespeed.poll
 
     async def submit(inputs):
-        decision = decide_image(inputs if isinstance(inputs, dict) else {})
-        if isinstance(inputs, dict) and _route_changed(inputs, decision):
-            from .wavespeed import WaveSpeedError
-            raise WaveSpeedError("供应商配置在估价之后变了，请重新估价。未发送请求", 409, kind="route_changed")
-        if decision.get("passthrough"):
-            return await _image_orig(inputs)
-        return await _replicate_execute(decision, inputs)
+        return await dispatch_submit(inputs, _image_orig)
 
     async def estimate(inputs):
-        decision = decide_image(inputs if isinstance(inputs, dict) else {})
-        if isinstance(inputs, dict):
-            _remember(inputs, decision)
-        if decision.get("passthrough"):
-            return await _estimate_orig(inputs)
-        if decision.get("unsupported"):
-            from .wavespeed import WaveSpeedError
-            raise WaveSpeedError("这个能力没有已实现的 Replicate 路由", 400, kind="unsupported")
-        return _estimate_body(decision)
+        return await dispatch_estimate(inputs, _estimate_orig)
 
     async def quote(model, inputs):
-        decision = decide_image(inputs if isinstance(inputs, dict) else {})
+        decision = _snapshot(inputs) if isinstance(inputs, dict) else {"passthrough": True}
         if isinstance(inputs, dict):
             _remember(inputs, decision)
-        if decision.get("passthrough"):
+        if decision.get("passthrough") or decision.get("primary", {}).get("provider") != "replicate":
             return await _quote_orig(model, inputs)
-        return None, "unknown"
+        price, source = await _quote_endpoint(decision["primary"], inputs, decision.get("capability"))
+        return price, source
 
     async def poll(task):
         job = _replicate_jobs.get(task)

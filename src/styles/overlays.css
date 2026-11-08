@@ -1147,22 +1147,50 @@
 .ca-memory-onboard__freehint { margin-top: 4px; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
 .ca-memory .ca-rename__body:has(.ca-memory-onboard) { padding-top: 8px; }
 
-.ca-provider { width: min(640px, calc(100vw - 32px)); }
-.ca-provider > .ca-rename__body { gap: 14px; max-height: min(78vh, 860px); }
-.ca-provider__section { display: flex; flex-direction: column; gap: 8px; }
-.ca-provider__section + .ca-provider__section { margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--ca-border); }
-.ca-provider__h { margin: 0; font: 600 15px/22px var(--ca-font); }
-.ca-provider__status { margin: 0; color: var(--ca-text-2); font-size: 12px; line-height: 18px; }
-.ca-provider__cards { display: flex; flex-direction: column; gap: 8px; }
-.ca-provider__card { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 10px 12px; border: 1px solid var(--ca-border); border-radius: 12px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.ca-provider__card[data-on] { border-color: var(--ca-strong); }
-.ca-provider__caps { display: flex; flex-direction: column; gap: 8px; }
-.ca-provider__cap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; }
-.ca-provider__badge[data-ok="0"] { color: var(--ca-error-text); }
-.ca-provider__preview { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--ca-field); white-space: pre-wrap; font: 400 12px/18px var(--ca-font); }
-.ca-provider__banner { padding: 8px 12px; border-radius: 10px; background: var(--ca-field); }
-.ca-provider__diff { margin: 0; padding-left: 18px; color: var(--ca-text-2); font-size: 12px; line-height: 18px; }
-.ca-provider .ca-panel__foot { margin-top: 4px; }
+.ca-prov { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--ca-backdrop); }
+.ca-prov__sheet { width: min(1080px, 100%); height: min(820px, 100%); display: flex; flex-direction: column; border-radius: 20px; background: var(--ca-float); color: var(--ca-text); box-shadow: var(--ca-shadow-float, 0 24px 80px rgba(0,0,0,.28)); overflow: hidden; }
+.ca-prov__head, .ca-prov__foot { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
+.ca-prov__head { justify-content: space-between; }
+.ca-prov__head h2 { margin: 0; font: 600 18px/24px var(--ca-font); }
+.ca-prov__head p, .ca-prov__blurb, .ca-prov__hint { margin: 0; color: var(--ca-text-2); font-size: 13px; line-height: 18px; }
+.ca-prov__segs { display: flex; gap: 6px; padding: 0 20px 12px; }
+.ca-prov__segs button { height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: inherit; cursor: pointer; }
+.ca-prov__segs button[data-on] { background: var(--ca-field); }
+.ca-prov__body { flex: 1; min-height: 0; display: grid; grid-template-columns: 300px 1fr; border-top: 1px solid var(--ca-border); }
+.ca-prov__list, .ca-prov__edit { min-height: 0; overflow: auto; padding: 16px; }
+.ca-prov__list { border-right: 1px solid var(--ca-border); display: flex; flex-direction: column; gap: 10px; }
+.ca-prov__row { display: flex; align-items: center; gap: 8px; }
+.ca-prov__row button { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border: 1px solid transparent; border-radius: 12px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.ca-prov__row[data-on] button { border-color: var(--ca-strong); background: var(--ca-field); }
+.ca-prov__row em { font-style: normal; font-size: 12px; color: var(--ca-text-2); }
+.ca-prov__row em[data-state="blocked"] { color: var(--ca-error-text); }
+.ca-prov__row em[data-state="draft"] { color: var(--ca-text); }
+.ca-prov__edit fieldset { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px; }
+.ca-prov__edit legend { font-size: 13px; color: var(--ca-text-2); }
+.ca-prov button, .ca-prov input, .ca-prov select { font: inherit; }
+.ca-prov__edit h3 { margin: 0; font: 600 20px/26px var(--ca-font); }
+.ca-prov__now { display: flex; justify-content: space-between; gap: 12px; margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--ca-field); }
+.ca-prov__picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.ca-prov__picks button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 160px; padding: 10px 12px; border: 1px solid var(--ca-border); border-radius: 12px; background: transparent; color: inherit; cursor: pointer; }
+.ca-prov__picks button[data-on] { border-color: var(--ca-text); background: var(--ca-field); }
+.ca-prov__picks button:disabled { opacity: .45; cursor: default; }
+.ca-prov__picks small { color: var(--ca-text-2); }
+.ca-prov__switch { display: flex; align-items: center; gap: 8px; }
+.ca-prov__impact, .ca-prov__banner { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--ca-field); }
+.ca-prov__head, .ca-prov__segs, .ca-prov__foot { flex-shrink: 0; }
+.ca-prov__foot { border-top: 1px solid var(--ca-border); display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.ca-prov__bar { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.ca-prov__batch { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ca-prov__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ca-prov__empty { padding: 24px; color: var(--ca-text-2); }
+.ca-prov__llm { padding: 20px 24px; }
+@media (max-width: 800px) {
+  .ca-prov { padding: 0; }
+  .ca-prov__sheet { width: 100%; height: 100%; border-radius: 0; }
+  .ca-prov__body { grid-template-columns: 1fr; }
+  .ca-prov__list { max-height: 42vh; border-right: 0; border-bottom: 1px solid var(--ca-border); }
+}
+
 
 
 /* #463 G4 — Import a Skill drop dialog (folder or ZIP drag & drop). Lucide stroke 2 via .ca-icon. */

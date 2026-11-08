@@ -1,28 +1,25 @@
-/** Admin provider settings. Drafts stay in the page until Save. Secrets are never sent. */
+/** Per-tool provider settings. Drafts stay on the page until Save. Secrets are never sent. */
 
 export interface LangText { zh?: string; en?: string }
-
-export interface ImageModel {
+export interface EndPoint { provider: string; model: string }
+export interface ToolRoute { primary: EndPoint; backup: EndPoint | null; fallback: boolean }
+export interface ToolChoice { provider: string; model: string; label: LangText; enabled: boolean; quote: string; reason: string }
+export interface ToolRow {
   id: string
-  label: string
-  adapter: string
-  capabilities: string[]
-  quote: string
-  docs: string
-  differences: LangText
-}
-
-export interface ImageProviderInfo {
-  id: string
+  group: 'image' | 'video' | 'other' | string
   label: LangText
-  mode: string
-  configured: boolean
-  secret_env: string
-  note: LangText
-  models: ImageModel[]
-  capabilities: Record<string, { supported: boolean; enabled: boolean; formats: string[]; reason: LangText }>
+  blurb: LangText
+  connected: boolean
+  active: ToolRoute | null
+  draft: ToolRoute | null
+  revision: number
+  can_restore: boolean
+  choices: ToolChoice[]
+  key_ok: boolean
+  usable: boolean
+  blocked: string
+  effective: { provider: string; model: string; source: 'saved' | 'default'; fallback: boolean; backup: EndPoint | null }
 }
-
 export interface LlmModel {
   id: string
   label: LangText
@@ -33,7 +30,6 @@ export interface LlmModel {
   note: LangText
   differences: LangText[]
 }
-
 export interface LlmProviderInfo {
   id: string
   label: LangText
@@ -44,51 +40,35 @@ export interface LlmProviderInfo {
   docs: string
   models: LlmModel[]
 }
-
-export interface AuditCapability {
-  capability: string
-  provider: string
-  implemented: boolean
-  quote: string
-  detail: LangText
-}
-
 export interface ProviderAdminState {
   admin: boolean
-  image: {
-    saved: boolean
-    revision: number
-    active: { provider: string; models?: Record<string, string> } | null
-    ignored: boolean
-    can_restore: boolean
-    providers: ImageProviderInfo[]
-  }
+  tools: ToolRow[]
   llm: {
     saved: boolean
     revision: number
     active: { provider: string; model: string } | null
-    ignored: boolean
     can_restore: boolean
     providers: LlmProviderInfo[]
     probe: string
   }
-  audit: {
-    summary: {
-      checked_at: string
-      model_counts: Record<string, number>
-      models_listed: number
-      capabilities: AuditCapability[]
-    }
-    note: LangText
-  }
+  policy: { fallback_default: boolean; max_attempts: string; eligible: string[]; human: string[] }
+  saved_tool?: string
+  activated?: boolean
+  usable?: boolean
+  blocked?: string
+  applied?: string[]
+  skipped?: string[]
+  restored_tool?: string
 }
 
 export class ProviderAdminError extends Error {
   status: number
+  code: string
   issues: string[]
-  constructor(status: number, message: string, issues: string[] = []) {
+  constructor(status: number, message: string, code = '', issues: string[] = []) {
     super(message)
     this.status = status
+    this.code = code
     this.issues = issues
   }
 }
@@ -101,34 +81,31 @@ async function send(path: string, method: string, body?: object): Promise<Provid
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const issues = Array.isArray(data.issues) ? data.issues.map(String) : []
-    throw new ProviderAdminError(res.status, String(data.error || res.statusText), issues)
+    throw new ProviderAdminError(res.status, String(data.error || data.message || res.statusText), String(data.error || ''), Array.isArray(data.issues) ? data.issues.map(String) : [])
   }
   return data as ProviderAdminState
 }
 
 export const loadProviderAdmin = () => send('/comfyart/provider-admin', 'GET')
-
-export const saveImageProvider = (body: object) => send('/comfyart/provider-admin/image', 'PUT', body)
-
-export const restoreImageProvider = () => send('/comfyart/provider-admin/image/restore', 'POST')
-
+export const saveTool = (id: string, body: object) => send(`/comfyart/provider-admin/tool/${id}`, 'PUT', body)
+export const restoreTool = (id: string) => send(`/comfyart/provider-admin/tool/${id}/restore`, 'POST')
+export const saveToolBatch = (body: object) => send('/comfyart/provider-admin/tools/batch', 'PUT', body)
 export const saveLlmProvider = (body: object) => send('/comfyart/provider-admin/llm', 'PUT', body)
-
 export const restoreLlmProvider = () => send('/comfyart/provider-admin/llm/restore', 'POST')
+
+export async function checkLlm(body: object): Promise<{ message: string; calls: number; quote: string; key_ok?: boolean; base_url?: string; model?: string }> {
+  const res = await fetch('/comfyart/provider-admin/llm/check', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new ProviderAdminError(res.status, String(data.error || res.statusText))
+  return data
+}
 
 let open = false
 const listeners = new Set<() => void>()
-
-export function providerAdminOpen() {
-  return open
-}
-
-export function setProviderAdminOpen(next: boolean) {
-  open = next
-  listeners.forEach((fn) => fn())
-}
-
+export function providerAdminOpen() { return open }
+export function setProviderAdminOpen(next: boolean) { open = next; listeners.forEach((fn) => fn()) }
 export function subscribeProviderAdmin(fn: () => void) {
   listeners.add(fn)
   return () => { listeners.delete(fn) }

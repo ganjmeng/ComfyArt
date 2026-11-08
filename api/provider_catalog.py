@@ -271,35 +271,64 @@ def _sighted(model_id: str) -> str:
     return ""
 
 
+# Official pages opened 2026-11-08. A page is not an adapter.
+# connected: schema checked and the product adapter is contract-tested.
+# same_model_pending: same Replicate id, schema read, not wired.
+# alternative_explicit: a different id was seen; never auto-selected.
+# unverified: not located on the pages opened. This is not "unsupported".
+_EXACT = {
+    "openai/gpt-image-2.6-flare/text-to-image": ("connected", "openai/gpt-image-2.6-flare"),
+    "openai/gpt-image-2.6-flare/edit": ("connected", "openai/gpt-image-2.6-flare"),
+    "openai/gpt-image-2.6-sunburst/text-to-image": ("connected", "openai/gpt-image-2.6-sunburst"),
+    "openai/gpt-image-2.6-sunburst/edit": ("connected", "openai/gpt-image-2.6-sunburst"),
+    "openai/gpt-image-2.5-flare/text-to-image": ("same_model_pending", "openai/gpt-image-2.5-flare"),
+    "openai/gpt-image-2.5-flare/edit": ("same_model_pending", "openai/gpt-image-2.5-flare"),
+    "openai/gpt-image-2/text-to-image": ("same_model_pending", "openai/gpt-image-2"),
+    "openai/gpt-image-2/edit": ("same_model_pending", "openai/gpt-image-2"),
+    "google/nano-banana-2/text-to-image": ("alternative_explicit", "google/nano-banana-2"),
+    "google/nano-banana-2/edit": ("alternative_explicit", "google/nano-banana-2"),
+    "google/nano-banana-2.1/text-to-image": ("alternative_explicit", "google/nano-banana-2.1"),
+    "google/nano-banana-2.1/edit": ("alternative_explicit", "google/nano-banana-2.1"),
+    "google/nano-banana-2-lite/text-to-image": ("alternative_explicit", "google/nano-banana-2-lite"),
+    "google/nano-banana-2-lite/edit": ("alternative_explicit", "google/nano-banana-2-lite"),
+    "google/nano-banana-pro/text-to-image": ("alternative_explicit", "google/nano-banana-pro"),
+    "google/nano-banana-pro/edit": ("alternative_explicit", "google/nano-banana-pro"),
+    "bytedance/seedream-v4": ("alternative_explicit", "bytedance/seedream-4"),
+    "bytedance/seedream-v4/edit": ("alternative_explicit", "bytedance/seedream-4"),
+    "bytedance/seedance-2.0/text-to-video": ("alternative_explicit", "bytedance/seedance-2.0"),
+    "bytedance/seedance-2.0/image-to-video": ("alternative_explicit", "bytedance/seedance-2.0"),
+    "google/veo3.1/text-to-video": ("alternative_explicit", "google/veo-3.1"),
+    "google/veo3.1/image-to-video": ("alternative_explicit", "google/veo-3.1"),
+    "google/veo3.1-fast/text-to-video": ("alternative_explicit", "google/veo-3.1-fast"),
+    "google/veo3.1-fast/image-to-video": ("alternative_explicit", "google/veo-3.1-fast"),
+    "black-forest-labs/flux-3/text-to-image": ("alternative_explicit", "black-forest-labs/flux-3-image"),
+    "black-forest-labs/flux-3/image-edit": ("alternative_explicit", "black-forest-labs/flux-3-image"),
+}
+_DETAIL = {
+    "connected": {
+        "zh": "同一个 2.6 模型已接到产品适配器。字段仍和 WaveSpeed 不同，GIF 不能按静图计价。",
+        "en": "The same 2.6 model is wired. Fields still differ from WaveSpeed, and a GIF is not priced as a still.",
+    },
+    "same_model_pending": {
+        "zh": "Replicate 上有同名模型，官方字段已看过，但产品还没接。2.5 / Image 2 的输出格式没有 gif。不会自动换过去。",
+        "en": "The same Replicate model exists and its fields were read, but it is not wired. 2.5 and Image 2 do not list gif. It is not selected automatically.",
+    },
+    "alternative_explicit": {
+        "zh": "官方页是另一个 model id。只能人工点名，不能自动替换，视频也不会改道。",
+        "en": "The official page uses a different model id. It can only be chosen by hand. Nothing is switched automatically, including video.",
+    },
+    "unverified": {
+        "zh": "这次打开的官方页没有定位到这个 id。这是未核实，不是不支持，仍然走现有 WaveSpeed。",
+        "en": "The opened official pages did not locate this id. Unverified is not the same as unsupported. It stays on WaveSpeed.",
+    },
+}
+
+
 def classify_model(feature: str, model_id: str) -> dict:
     """One curated WaveSpeed id. Never calls a provider."""
-    family = _sighted(model_id)
-    gpt26 = "gpt-image-2.6-flare" in model_id or "gpt-image-2.6-sunburst" in model_id
-    replicate_id = ""
-    if "gpt-image-2.6-flare" in model_id:
-        replicate_id = "openai/gpt-image-2.6-flare"
-    elif "gpt-image-2.6-sunburst" in model_id:
-        replicate_id = "openai/gpt-image-2.6-sunburst"
-    enabled = False
-    if gpt26 and feature in ("text_to_image", "image_edit") and replicate_id:
-        verdict = "mapped_with_differences"
-        enabled = True
-        detail = {
-            "zh": "可映射到 Replicate 上的同一个 2.6 模型，但路径、参考图字段、GIF 和尺寸都不同，不能当成同一条请求。",
-            "en": "Maps to the same 2.6 model on Replicate, with different path, reference field, GIF and size. Not fully compatible.",
-        }
-    elif family:
-        verdict = "same_capability_different_model"
-        detail = {
-            "zh": f"Replicate 集合页见过相近名称（{family}），模型 id 和 schema 未逐项核对。不启用。",
-            "en": f"A Replicate collection page shows a related name ({family}). The id and schema were not compared field by field. Not enabled.",
-        }
-    else:
-        verdict = "not_found_in_this_audit"
-        detail = {
-            "zh": "这次核对没有在已打开的 Replicate 官方页上定位到同一个 model id。不启用，仍走 WaveSpeed。",
-            "en": "This audit did not find the same model id on the Replicate pages that were opened. Not enabled; WaveSpeed remains.",
-        }
+    verdict, replicate_id = _EXACT.get(model_id, ("unverified", ""))
+    enabled = verdict == "connected" and feature in ("text_to_image", "image_edit")
+    detail = _DETAIL[verdict]
     return {
         "feature": feature,
         "wavespeed_model": model_id,
@@ -426,9 +455,10 @@ def render_audit_markdown() -> str:
         "## 审计覆盖（不因此启用）",
         "",
         f"精选模型 {summary['models_listed']} 条。",
-        f"同模型可映射（仍有参数差异）{counts.get('mapped_with_differences', 0)}。",
-        f"同能力但不同模型、schema 未逐项核对 {counts.get('same_capability_different_model', 0)}。",
-        f"这次打开的官方页未定位到同一 id {counts.get('not_found_in_this_audit', 0)}。",
+        f"同模型已接通 {counts.get('connected', 0)}。",
+        f"同模型已看过 schema、尚未接入 {counts.get('same_model_pending', 0)}。",
+        f"替代模型，必须人工点名 {counts.get('alternative_explicit', 0)}。",
+        f"未核实（不是不支持）{counts.get('unverified', 0)}。",
         "",
         "Replicate 集合页见过 nano-banana、FLUX.3、Seedream 4.5、Ideogram 4.5、Kling、以及文案中的 Seedance / Veo。",
         "这些 id 与仓库里的 WaveSpeed id 并不相同，没有逐字段对照，设置里不能选。",
