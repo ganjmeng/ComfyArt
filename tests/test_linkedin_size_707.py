@@ -180,7 +180,20 @@ def test_relay_before_after_is_not_redirected(relay):
     out = _run("generate_image", prompt="beauty before after comparison banner", skill="before-after")
     assert SENT
     assert SENT[-1][1].get("model") != QWEN
+    assert SENT[-1][1]["size_lock"] is True
+    assert SENT[-1][1]["width"] == 1024 and SENT[-1][1]["height"] == 1280
     assert out["model_choice"]["model"] != QWEN
+
+
+def test_size_lock_model_submits_without_joining_the_dropdown():
+    with pytest.raises(wavespeed.WaveSpeedError):
+        wavespeed.resolve_model("text_to_image", QWEN)
+    assert wavespeed.resolve_model("text_to_image", QWEN, size_lock=True) == QWEN
+    with pytest.raises(wavespeed.WaveSpeedError):
+        wavespeed.resolve_model("text_to_image", "made/up-model", size_lock=True)
+    cfg = wavespeed.load_config()
+    assert QWEN not in [m["id"] for m in cfg["features"]["text_to_image"]["models"]]
+    assert cfg["features"]["text_to_image"]["default"] == FLARE
 
 
 def _png(w: int, h: int) -> bytes:

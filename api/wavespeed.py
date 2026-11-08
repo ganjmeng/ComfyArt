@@ -529,15 +529,28 @@ def model_details(grouped: dict, model_id: str) -> dict:
     return out
 
 
-def resolve_model(feature: str, model: str | None) -> str:
+def _raw_feature_ids(feature: str) -> set[str]:
+    """Ids in wavespeed_models.json before the Lovart dropdown narrows the list."""
+    with open(CONFIG, encoding="utf-8") as f:
+        raw = json.load(f)
+    models = ((raw.get("features") or {}).get(feature) or {}).get("models") or []
+    return {m["id"] for m in models if isinstance(m, dict) and m.get("id")}
+
+
+def resolve_model(feature: str, model: str | None, *, size_lock: bool = False) -> str:
     config = load_config()
     cfg = config["features"].get(feature)
     if not cfg or feature in config.get("pending_features", []):
         raise WaveSpeedError(f"{feature or 'this tool'} is not available in cloud mode yet", 400)
     if not model:
         return cfg["default"]
-    if model not in [m["id"] for m in cfg["models"]]:
-        valid = ", ".join(m["id"] for m in cfg["models"])
+    ids = [m["id"] for m in cfg["models"]]
+    if model not in ids:
+        # A skill size lock may name a catalog model that is not on the Lovart dropdown.
+        # It stays out of the picker. Any other unknown id is still rejected.
+        if size_lock and model in _raw_feature_ids(feature):
+            return model
+        valid = ", ".join(ids)
         raise WaveSpeedError(f"unknown model {model!r} for {feature}; valid ids: {valid} (default {cfg['default']})", 400)
     return model
 
@@ -1306,7 +1319,7 @@ async def estimate(inputs: dict) -> dict:
         picked = inputs.get("model")
         if feature == "structure_control" and not picked:
             picked = _structure_pick(inputs)
-        model = resolve_model(feature, picked)
+        model = resolve_model(feature, picked, size_lock=bool(inputs.get("size_lock")))
         price, source = await quote(model, inputs)
         tier = tier_label(await priced_inputs(model, inputs))
         if feature == "structure_control" and price is not None:
@@ -1583,7 +1596,7 @@ async def submit(inputs: dict) -> str:
         picked = inputs.get("model")
         if feature == "structure_control" and not picked:
             picked = _structure_pick(inputs)
-        model = resolve_model(feature, picked)
+        model = resolve_model(feature, picked, size_lock=bool(inputs.get("size_lock")))
     _check_limits()
     meta = (await catalog()).get(model)
     if meta and needs_voice_sample(model, feature, _schema(meta), inputs):
