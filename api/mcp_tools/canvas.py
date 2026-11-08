@@ -60,7 +60,8 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         # #707: a named skill's declared pixels reach the page even if the provider omitted them.
         from ...bot.skill_output import apply_generate
         args = apply_generate(args)
-    if fallback_for and action == "generate_image" and args.get("skill") == "linkedin-banner":
+    from ..skill_size import EXACT_SKILLS
+    if fallback_for and action == "generate_image" and args.get("skill") in EXACT_SKILLS:
         # #707: do not retry a banner on a model that would snap 1584×396 to an aspect ratio.
         from ..skill_size import linkedin_fallback_block
         return linkedin_fallback_block(args, fallback_for)
@@ -86,7 +87,7 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             # Auto pick, recording the original value and why on the result (model_choice).
             log.warning("model %r for %s is not registered; falling back to Auto", requested, action)
             args = {k: v for k, v in args.items() if k not in ("model", "auto_model")}
-        if action == "generate_image" and args.get("skill") == "linkedin-banner":
+        if action == "generate_image" and args.get("skill") in EXACT_SKILLS:
             # #707: auto must submit a schema that accepts 1584×396. A named incompatible model stops here.
             from .. import wavespeed
             from ..skill_size import linkedin_decision

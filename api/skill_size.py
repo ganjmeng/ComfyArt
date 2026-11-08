@@ -14,6 +14,8 @@ from __future__ import annotations
 from .wavespeed import _nearest, _resolution, _schema, _size_value
 
 SKILL = "linkedin-banner"
+# Skills whose auto path must submit exact pixels. Others stay on the normal table.
+EXACT_SKILLS = frozenset({SKILL, "before-after"})
 # Used only after accepts_exact_pixels is true and the id is on the curated feature list.
 VERIFIED = {
     "text_to_image": "wavespeed-ai/qwen-image-2.0/text-to-image",
@@ -149,8 +151,9 @@ def linkedin_fallback_block(args: dict, failed: str) -> dict:
 def linkedin_decision(args: dict, catalog: dict, _cfg: dict) -> dict:
     """Auto keeps a schema-exact model. A named incompatible model is refused before submit."""
     wh = pixels_of(args)
+    skill = str(args.get("skill") or SKILL)
     if wh is None:
-        why = "没有提交：linkedin-banner 没有可用的宽高，没有生成。 / Not submitted: linkedin-banner had no pixel size."
+        why = (f"没有提交：{skill} 没有可用的宽高，没有生成。 / Not submitted: {skill} had no pixel size.")
         return {"block": _block("", 0, 0, {}, why=why)}
     w, h = wh
     feature = running_feature(args)
@@ -187,9 +190,9 @@ def linkedin_decision(args: dict, catalog: dict, _cfg: dict) -> dict:
     out["size_lock"] = True
     out["size_candidates"] = [prefer]
     choice = {
-        "model": prefer, "auto": True, "category": "skill_size", "skill": SKILL,
-        "reason": {"zh": f"{SKILL} 需要 {w}×{h}，{prefer} 的 size 字段能按这个宽高提交",
-                   "en": f"{SKILL} needs {w}×{h}, and {prefer} accepts that exact size"},
+        "model": prefer, "auto": True, "category": "skill_size", "skill": skill,
+        "reason": {"zh": f"{skill} 需要 {w}×{h}，{prefer} 的 size 字段能按这个宽高提交",
+                   "en": f"{skill} needs {w}×{h}, and {prefer} accepts that exact size"},
         "requested_size": {"width": w, "height": h},
         "provider_submit": submit,
     }
