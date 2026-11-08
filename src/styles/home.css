@@ -308,6 +308,10 @@ body { background: var(--ca-float); }
   width: 20px; height: 20px; border-radius: 6px; background: var(--ca-float); color: var(--ca-text); opacity: .9; pointer-events: none;
 }
 .ca-featured__badge .ca-icon { width: 14px; height: 14px; }
+/* #832: linkedin featured subtitle sits on the image, so the kind icon leaves the picture
+   and sits at the right of the title row. Other featured cards keep the cover badge. */
+.ca-featured__card[data-skill="linkedin-banner"] .ca-featured__name { align-items: center; gap: 8px; }
+.ca-featured__badge--row { position: static; flex: none; margin-left: auto; }
 .ca-featured__go {
   position: absolute; right: 8px; top: 8px; z-index: 1; padding: 6px 12px; border-radius: 999px;
   background: #fff; color: #111; font: 500 12px/16px var(--ca-font);

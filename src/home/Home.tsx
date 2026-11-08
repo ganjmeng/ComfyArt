@@ -723,10 +723,14 @@ export function Home() {
                   >
                     <span className="ca-featured__cover" style={{ aspectRatio: aspect }}>
                       <img src={image} alt={s.name} loading="lazy" onLoad={(e) => onCaseLoad(id, e.currentTarget)} />
-                      <span className="ca-featured__badge" data-testid="home-featured-kind" aria-hidden><span className="ca-icon">{/\.(mp4|webm|mov)(\?|$)/i.test(image) ? Icons.videoLine : Icons.imageLine}</span></span>
+                      {s.id !== 'linkedin-banner' && <span className="ca-featured__badge" data-testid="home-featured-kind" aria-hidden><span className="ca-icon">{/\.(mp4|webm|mov)(\?|$)/i.test(image) ? Icons.videoLine : Icons.imageLine}</span></span>}
                       <span className="ca-featured__go">{t('skillRun.start')}</span>
                     </span>
-                    <span className="ca-featured__name"><span className="ca-featured__title">{s.name}</span><span className="ca-featured__tag">{t('home.skillCase')}</span></span>
+                    <span className="ca-featured__name">
+                      <span className="ca-featured__title">{s.name}</span>
+                      <span className="ca-featured__tag">{t('home.skillCase')}</span>
+                      {s.id === 'linkedin-banner' && <span className="ca-featured__badge ca-featured__badge--row" data-testid="home-featured-kind" aria-hidden><span className="ca-icon">{/\.(mp4|webm|mov)(\?|$)/i.test(image) ? Icons.videoLine : Icons.imageLine}</span></span>}
+                    </span>
                   </button>
                 ))(item))}
               </div>

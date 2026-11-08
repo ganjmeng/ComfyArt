@@ -127,6 +127,7 @@ def test_new_skills_cut2_skeleton_categories_and_website_chip_sources():
             "restaurant-website": "featured: [pinned('643/wash/restaurant-website/examples', '9ca6d4ee7eb6488bb2c430affa86cfae75613485', '07.webp')]",
             "product-to-packaging": "featured: [pinned('643/wash/product-to-packaging/examples', '6b1cfa37e4eafc72841e70a26909750c2ff44399', '02.webp')]",
             "live-promo-decor": "featured: [pinned('805/reuse/live-promo-decor', 'e1eb48ba0d2d6511264725c29bd2beebd61816aa', 'featured.webp')]",
+            "linkedin-banner": "featured: [pinned('805/reuse/linkedin-banner', 'b6e408ace4835f14282a32d4e19c79e143cb4f53', 'featured.png')]",
         }
         if sid in reuse_featured:
             assert reuse_featured[sid] in e, sid
