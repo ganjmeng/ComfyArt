@@ -109,8 +109,7 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
                                     "reason": {"zh": "自动选择", "en": "Auto picked it"}}),
                       "requested_model": requested, "fallback_reason": _unregistered_reason(requested)}
         if choice and choice.get("category") == "gif":
-            # #825: a GIF never follows refs onto image_edit or a video model. 2.6 is selected even when
-            # the caller named 2.5 or left model empty (Auto / the stable default stays 2.5 for stills).
+            # #825: a GIF never follows refs onto image_edit or a video model. 2.6-flare is the image default.
             args = {k: v for k, v in args.items() if k != "edit_model"}
             args["model"] = choice["model"]
             args["output_format"] = "gif"
@@ -361,10 +360,10 @@ SPECS: dict[str, dict] = {
         "tile (structure guides also work on models with control instead of refs, e.g. Qwen Image 2512). "
         "base: an image shape id to transform (image-to-image) with base_strength 0-100 (higher changes more). "
         "skill: the id of the skill you are running (e.g. pose-fission); a skill with a registered model runs on it. "
-        "GIF / 动图: set output_format to gif (frame_count 2-16, default 9; frame_duration_ms 20-2000, default 200). "
-        "Omit model unless the user named one; a GIF uses GPT Image 2.6 Flare, not the stable 2.5 default. "
-        "A still image is refs or base plus this GIF call: edit cannot emit gif, so the still is a reference for a new "
-        "text-to-image GIF. Do not call generate_video or animate_image for a GIF. complexity is optional "
+        "GIF / 动图: set output_format to gif (frame_count is clamped to 2-16, default 9; frame_duration_ms 20-2000, default 200). "
+        "Omit model unless the user named one; an omitted model and Auto use GPT Image 2.6 Flare, the image default. "
+        "Edit cannot emit gif. The published text-to-image parameters have no reference-image field, so a still's URL is not attached; "
+        "describe that still in the prompt. Do not call generate_video or animate_image for a GIF. complexity is optional "
         "(low, medium, high) and does not change the price; omit it to leave the schema default. Do not set quality "
         "unless the user picked a tier.",
         {"prompt": {"type": "string"}, "model": _MODEL_AUTO, "ratio": {"type": "string"},

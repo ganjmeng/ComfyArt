@@ -810,7 +810,7 @@
   "imageToolbar.gif": "GIF",
   "imageToolbar.gifFrames": "Frames",
   "imageToolbar.gifMs": "Milliseconds per frame",
-  "imageToolbar.gifNote": "This still is a reference for a new GPT Image 2.6 text-to-image GIF. Edit has no gif, and this does not use a video model. Frame count is not billed.",
+  "imageToolbar.gifNote": "Edit has no gif, and this does not use a video model. Text-to-image has no reference-image field, so this picture's URL is not sent; describe it in the prompt. A frame count outside 2–16 is adjusted into that range. Frame count is not billed.",
   "imageToolbar.gifPrompt": "How it should move (empty keeps the subject in a seamless loop)",
   "imageToolbar.gifRun": "Create GIF",
   "imageToolbar.imageTo3d": "Image to 3D",

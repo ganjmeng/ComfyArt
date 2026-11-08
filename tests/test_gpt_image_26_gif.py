@@ -92,7 +92,7 @@ def test_still_to_gif_is_reference_plus_t2i_not_video_or_edit():
     assert "complexity" not in out["params"]
     assert "video" not in out["feature"]
     assert "编辑模型没有 gif" in out["gif_note"]
-    assert "not a video" in out["gif_note"]
+    assert "does not use a video model" in out["gif_note"]
 
 
 def test_edit_gif_is_used_when_the_schema_allows_it():

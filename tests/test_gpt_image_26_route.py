@@ -146,7 +146,7 @@ def test_quote_and_confirm_name_the_same_model_as_submit(local, monkeypatch):
     assert edit["model"] == EDIT
     gif = asyncio.run(wavespeed.estimate({"feature": "image_edit", "image": "https://cdn.test/still.png", "prompt": "做成动图"}))
     assert gif["model"] == T2I and gif["gif_route"] == "reference_t2i"
-    assert "编辑模型没有 gif" in gif["gif_note"] and "not a video" in gif["gif_note"]
+    assert "编辑模型没有 gif" in gif["gif_note"] and "does not use a video model" in gif["gif_note"]
     assert "GIF" in gif["tier"]
     monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0)
     with pytest.raises(wavespeed.WaveSpeedError) as err:
@@ -158,6 +158,78 @@ def test_quote_and_confirm_name_the_same_model_as_submit(local, monkeypatch):
     assert payload["error"]["model"] == T2I
     assert "编辑模型没有 gif" in payload["error"]["gif_note"]
     assert _gen(_Session.posts) == []  # confirm stops before the provider POST
+
+
+# Official request fields, read 2026-11-08 from
+# https://wavespeed.ai/docs/docs-api/openai/openai-gpt-image-2.6-flare-text-to-image
+# plus the two global options that page names. No image, images, or reference field.
+OFFICIAL_T2I_FIELDS = {
+    "prompt", "aspect_ratio", "resolution", "quality", "complexity", "output_format",
+    "frame_count", "frame_duration_ms", "enable_sync_mode", "enable_base64_output",
+}
+
+
+def test_committed_fixture_matches_official_t2i_fields_and_post_drops_still_url(local):
+    props = set(CATALOG[T2I]["api_schema"]["api_schemas"][0]["request_schema"]["properties"])
+    assert props <= OFFICIAL_T2I_FIELDS
+    assert not ({"image", "images", "reference_image", "refs"} & props)
+    still = "https://cdn.test/user-still.png"
+    asyncio.run(wavespeed.submit({
+        "feature": "image_edit", "image": still, "prompt": "把这张做成动图", "output_format": "gif", "frame_count": 99,
+    }))
+    url, body = _gen(_Session.posts)[-1]
+    assert url.endswith("/" + T2I) and "video" not in url
+    blob = json.dumps(body)
+    assert still not in blob
+    assert body["output_format"] == "gif" and body["frame_count"] == 16
+    est = asyncio.run(wavespeed.estimate({
+        "feature": "image_edit", "image": still, "prompt": "把这张做成动图", "output_format": "gif", "frame_count": 99,
+    }))
+    assert est["gif"]["frame_count"] == 16 and "16f" in est["tier"]
+    assert "不会送进请求" in est["gif_note"] and "not sent" in est["gif_note"]
+    assert "不会改走视频" in est["gif_note"] or "does not use a video model" in est["gif_note"]
+
+
+def test_clamped_frame_count_matches_across_quote_confirm_and_post(local, monkeypatch):
+    job = {"feature": "text_to_image", "prompt": "loop", "params": {"output_format": "gif", "frame_count": 99, "frame_duration_ms": 5}}
+    est = asyncio.run(wavespeed.estimate(dict(job)))
+    assert est["gif"]["frame_count"] == 16 and est["gif"]["frame_duration_ms"] == 20
+    assert "16f" in est["tier"] and "20ms" in est["tier"]
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0)
+    with pytest.raises(wavespeed.WaveSpeedError) as err:
+        asyncio.run(wavespeed.submit(dict(job)))
+    assert err.value.status == 409 and "16f" in err.value.tier and "20ms" in err.value.tier
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.5)
+    _Session.posts = []
+    task = asyncio.run(wavespeed.submit(dict(job)))
+    assert task == "local-task"
+    body = _gen(_Session.posts)[-1][1]
+    assert body["frame_count"] == 16 and body["frame_duration_ms"] == 20
+    low = {"feature": "text_to_image", "prompt": "loop", "params": {"output_format": "gif", "frame_count": 1}}
+    assert asyncio.run(wavespeed.submit(low)) == "local-task"
+    assert _gen(_Session.posts)[-1][1]["frame_count"] == 2
+
+
+def test_gif_copy_names_26_as_the_unnamed_model():
+    from ComfyArt.api.mcp_tools import canvas
+    banned = (
+        "默认模型仍是 GPT Image 2.5",
+        "default model stays GPT Image 2.5",
+        "stable 2.5 default",
+        "stable default stays 2.5",
+    )
+    blobs = [
+        gif_image.note_line("text_to_image"),
+        gif_image.note_line("reference_t2i"),
+        canvas.SPECS["generate_image"]["description"],
+    ]
+    for blob in blobs:
+        for bad in banned:
+            assert bad not in blob, bad
+        assert "2.6" in blob
+    desc = canvas.SPECS["generate_image"]["description"]
+    assert "image default" in desc
+    assert "no reference-image field" in desc
 
 
 def test_picked_quality_confirm_tier_matches_payload(local, monkeypatch):

@@ -810,7 +810,7 @@
   "imageToolbar.gif": "GIF",
   "imageToolbar.gifFrames": "帧数",
   "imageToolbar.gifMs": "每帧毫秒",
-  "imageToolbar.gifNote": "这张静图作为参考，用 GPT Image 2.6 文生循环 GIF。编辑模型没有 gif，也不会改走视频。帧数不计费。",
+  "imageToolbar.gifNote": "编辑模型没有 gif，也不会改走视频。文生参数没有参考图字段，这张图的地址不会送进请求；请在提示词里描述画面。帧数超出 2–16 会改成范围内的值。帧数不计费。",
   "imageToolbar.gifPrompt": "描述怎么动（留空则保持主体并做无缝循环）",
   "imageToolbar.gifRun": "生成 GIF",
   "imageToolbar.imageTo3d": "转 3D",

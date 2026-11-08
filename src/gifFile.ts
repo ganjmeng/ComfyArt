@@ -1,4 +1,4 @@
-/** #825: GIF file naming and the 2.6 text-to-image ids. Defaults stay on 2.5; this only names the GIF option. */
+/** #825: GIF file naming. Image Auto/default is 2.6-flare; 2.5 remains a named rollback id. */
 
 export const GIF_FLARE = 'openai/gpt-image-2.6-flare/text-to-image'
 export const GIF_SUNBURST = 'openai/gpt-image-2.6-sunburst/text-to-image'

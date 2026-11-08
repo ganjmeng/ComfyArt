@@ -129,13 +129,16 @@ def note(route: str) -> dict:
             "en": "Edit supports gif, so this looping GIF is an edit. Frame count is not billed; the price matches the still.",
         }
     if route == "reference_t2i":
+        # Official t2i request fields have no image/images/reference parameter
+        # (https://wavespeed.ai/docs/docs-api/openai/openai-gpt-image-2.6-flare-text-to-image, read 2026-11-08).
+        # The still URL is not posted. Do not switch this job to a video model.
         return {
-            "zh": "GIF 只在文生图上可用。编辑模型没有 gif，这张静图作为参考，用 GPT Image 2.6 重新生成循环 GIF，不会改走视频。帧数不计费，价格与同档静图相同。",
-            "en": "GIF is text-to-image only. Edit has no gif, so this still is a reference for a new GPT Image 2.6 GIF, not a video. Frame count is not billed; the price matches the still.",
+            "zh": "GIF 只在文生图上可用。编辑模型没有 gif，不会改走视频。公开文生参数没有参考图字段，这张静图的地址不会送进请求；请在提示词里描述画面。帧数不计费，价格与同档静图相同。未点名模型时用 GPT Image 2.6 Flare。",
+            "en": "GIF is text-to-image only. Edit has no gif, and this does not use a video model. The published text-to-image parameters have no reference-image field, so this still's URL is not sent; describe the picture in the prompt. Frame count is not billed; the price matches the still. An unnamed model uses GPT Image 2.6 Flare.",
         }
     return {
-        "zh": "循环 GIF，用 GPT Image 2.6 文生。帧数不计费，价格与同档静图相同。默认模型仍是 GPT Image 2.5 Flare。",
-        "en": "Looping GIF from GPT Image 2.6 text-to-image. Frame count is not billed; the price matches the still. The default model stays GPT Image 2.5 Flare.",
+        "zh": "循环 GIF，用 GPT Image 2.6 文生。帧数不计费，价格与同档静图相同。未点名模型时文生和编辑用 GPT Image 2.6 Flare。",
+        "en": "Looping GIF from GPT Image 2.6 text-to-image. Frame count is not billed; the price matches the still. An unnamed model uses GPT Image 2.6 Flare for images and edits.",
     }
 
 
@@ -181,6 +184,9 @@ def route_gif(inputs: dict, schemas: dict | None = None) -> dict:
     params.update(spec)
     out["params"] = params
     out["output_format"] = "gif"
+    # Top-level copies stay equal to params so quote/confirm and the POST use one clamped count.
+    out["frame_count"] = spec["frame_count"]
+    out["frame_duration_ms"] = spec["frame_duration_ms"]
     feature = str(out.get("feature") or "text_to_image")
     video = feature in _VIDEO_FEATURES or "video" in feature
     refs = _refs(out)

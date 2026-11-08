@@ -158,7 +158,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
   }
   const gif = !video && String(args.output_format || '').toLowerCase() === 'gif'
   if (gif) {
-    // #825: a GIF runs on 2.6 even when Auto's stable default (2.5) is what the page would otherwise use.
+    // #825: a GIF runs on 2.6-flare, which is also the image default.
     const id = gifModelId(String(args.model || model?.id || ''))
     model = models.find((m) => m.id === id) ?? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' }
   }
