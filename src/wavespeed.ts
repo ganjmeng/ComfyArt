@@ -23,6 +23,8 @@ export interface WsInputs {
   mask?: string
   width?: number
   height?: number
+  /** #707: the downloaded file must match width×height. Not sent to the provider. */
+  size_lock?: boolean
   ratio?: string
   seed?: number
   /** #201: sent only for models whose schema has negative_prompt. */

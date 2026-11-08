@@ -1626,6 +1626,14 @@ async def submit(inputs: dict) -> str:
     gen_ledger.record_submit(task, "wavespeed", model, feature, quoted)
     _jobs[task] = {"model": model, "feature": feature, "started": time.time(), "next_poll": time.time() + POLL_MIN,
                    "inputs": _price_inputs(inputs), "quoted": quoted}
+    if inputs.get("size_lock"):
+        # The provider payload is built from the schema only, so this flag stays on the job.
+        _jobs[task]["size_lock"] = True
+        try:
+            w, h = int(inputs.get("width")), int(inputs.get("height"))
+        except (TypeError, ValueError):
+            w = h = 0
+        _jobs[task]["expect_pixels"] = (w, h) if w > 0 and h > 0 else None
     log.info("WaveSpeed task %s submitted (%s)", task, model)
     await _record_submit_usage(task, model, feature, inputs)  # #498 Usage ledger (submit quote)
     return task
@@ -2152,6 +2160,43 @@ def _backoff(task: str, job: dict, now: float, reason: str) -> dict:
     return _history(task, "processing", [], {})
 
 
+def _ref_bytes(ref: dict) -> bytes:
+    path = os.path.join(os.path.abspath(folder_paths.get_output_directory()), str(ref.get("subfolder") or ""), str(ref.get("filename") or ""))
+    try:
+        return _read(path)
+    except OSError:
+        return b""
+
+
+def _audit_locked_files(job: dict, refs: list) -> dict | None:
+    """After the provider file is on disk, compare its pixels with the locked size.
+
+    None means this job did not lock a size. A mismatch or unreadable file is a
+    failure dict. The file is not resized and the task is not submitted again.
+    """
+    if not job.get("size_lock"):
+        return None
+    from .skill_size import audit_file, size_reject
+
+    expect = job.get("expect_pixels")
+    if not (isinstance(expect, (list, tuple)) and len(expect) == 2 and int(expect[0]) > 0 and int(expect[1]) > 0):
+        return {"match": False, "requested": None, "provider_output": None, "delivered": None, "read_error": True,
+                "error": "没有通过：尺寸已锁定，但没有可核对的宽高。没有拉伸，没有重试，没有换模型。 / Not accepted: size was locked but there was no pixel size to check. It was not stretched, retried, or sent to another model."}
+    requested = (int(expect[0]), int(expect[1]))
+    measured = None
+    for ref in refs:
+        audit = audit_file(_ref_bytes(ref) if isinstance(ref, dict) else b"", requested)
+        if isinstance(ref, dict) and audit.get("provider_output"):
+            ref["metadata"] = {"width": audit["provider_output"]["width"], "height": audit["provider_output"]["height"]}
+        if not audit["match"]:
+            return audit
+        measured = audit
+    if measured is None:
+        return {"match": False, "requested": {"width": requested[0], "height": requested[1]},
+                "provider_output": None, "delivered": None, "read_error": True, "error": size_reject(requested, None)}
+    return measured
+
+
 async def _poll_once(task: str, job: dict, now: float) -> dict:
     async with aiohttp.ClientSession(headers=_headers()) as session:
         async with session.get(f"{_base()}/api/v3/predictions/{task}/result") as res:
@@ -2185,8 +2230,17 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
                                               502, kind="noOutput", charged=cost))
         # CDN URLs expire after 7 days: keep a local copy right away
         refs = [await _download(session, task, i, url) for i, url in enumerate(outputs) if isinstance(url, str)]
+    # #707: a size lock is accepted only when the saved file's pixels match. No stretch, crop, or second submit.
+    audit = _audit_locked_files(job, refs)
+    if audit is not None and not audit.get("match"):
+        return _fail(task, WaveSpeedError(str(audit.get("error") or "没有通过：尺寸核对失败。没有拉伸，没有重试，没有换模型。 / Not accepted: the size check failed. It was not stretched, retried, or sent to another model.")))
     job["done"] = True
     job["result"] = _history(task, "completed", [], {"ws": {"images": refs}})
+    if audit is not None and audit.get("match"):
+        entry = job["result"][f"ws:{task}"]
+        entry["requested_size"] = audit["requested"]
+        entry["provider_output"] = audit["provider_output"]
+        entry["delivered_size"] = audit["delivered"]
     if job.get("model"):
         gen_ledger.mark_succeeded(task, len(refs))
     log.info("WaveSpeed task %s completed (%d output%s)", task, len(refs), "" if len(refs) == 1 else "s")

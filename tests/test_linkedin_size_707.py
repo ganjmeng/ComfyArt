@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import subprocess
 import uuid
 from pathlib import Path
 
@@ -18,7 +19,7 @@ from ComfyArt.api import paid_guard, wavespeed
 from ComfyArt.api.mcp_tools import canvas
 from ComfyArt.api.mcp_tools._context import GUARD_CHAT_ID
 from ComfyArt.api.skill_size import (
-    VERIFIED, accepts_exact_pixels, linkedin_decision, provider_submit, reconcile,
+    VERIFIED, accepts_exact_pixels, audit_file, linkedin_decision, provider_submit, reconcile,
 )
 from ComfyArt.api.wavespeed import _schema
 
@@ -74,6 +75,7 @@ def test_auto_uses_qwen_only_while_its_schema_accepts_exact_size():
     assert "block" not in choice
     assert choice["args"]["model"] == QWEN
     assert choice["args"]["size_lock"] is True
+    assert choice["args"]["size_candidates"] == [QWEN]
     assert "auto_model" not in choice["args"]
     assert choice["choice"]["provider_submit"] == {"size": "1584*396"}
     # Schema no longer accepts exact size: do not keep the id, and do not snap to flare.
@@ -179,6 +181,68 @@ def test_relay_before_after_is_not_redirected(relay):
     assert SENT
     assert SENT[-1][1].get("model") != QWEN
     assert out["model_choice"]["model"] != QWEN
+
+
+def _png(w: int, h: int) -> bytes:
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (w, h), (1, 2, 3)).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def test_audit_file_reads_bytes_then_reconciles():
+    ok = audit_file(_png(1584, 396), (1584, 396))
+    assert ok["match"] is True and ok["error"] is None
+    assert ok["requested"] == ok["provider_output"] == ok["delivered"] == {"width": 1584, "height": 396}
+    bad = audit_file(_png(2048, 682), (1584, 396))
+    assert bad["match"] is False and bad["read_error"] is False
+    assert bad["provider_output"] == {"width": 2048, "height": 682}
+    assert bad["delivered"] == bad["provider_output"]
+    assert "2048×682" in bad["error"] and bad["error"].startswith("没有通过：")
+    dead = audit_file(b"NOTPNG", (1584, 396))
+    assert dead["read_error"] is True and dead["provider_output"] is None and dead["delivered"] is None
+    assert "读不出像素" in dead["error"]
+    # The same three facts stay distinct from a request that merely named the size.
+    assert reconcile((1584, 396), (2048, 682))["match"] is False
+
+
+def test_size_lock_preference_cases():
+    """Not-in-dropdown is allowed. An unchecked model is not forced on. No candidate left means nothing submitted."""
+    proc = subprocess.run(
+        ["node", "--experimental-strip-types", "--disable-warning=ExperimentalWarning",
+         str(ROOT / "tests/js/size_lock_pref_run.ts")],
+        cwd=ROOT, capture_output=True, text=True, check=False,
+    )
+    assert proc.returncode == 0, proc.stderr or proc.stdout
+    got = json.loads(proc.stdout)
+    qwen = QWEN
+    seedream = "bytedance/seedream-v5.0-lite/text-to-image"
+    assert got["absent"] == {"ok": True, "model": qwen, "reason": "not_in_dropdown"}
+    assert got["disabled"] == {"ok": False, "reason": "disabled"}
+    assert got["allDisabled"] == {"ok": False, "reason": "disabled"}
+    assert got["keepsOther"] == {"ok": True, "model": seedream, "reason": "checked"}
+    assert got["keepsOther"]["model"] != qwen
+    assert got["permittedOffDropdown"] == {"ok": True, "model": qwen, "reason": "checked"}
+    assert "没有可用的尺寸兼容模型" in got["refused"] and got["refused"].startswith("没有提交：")
+    assert "默认模型" in got["refused"]
+    assert got["match"] is None
+    assert "2048×682" in got["mismatch"] and "1584×396" in got["mismatch"] and got["mismatchKept"] is True
+    assert "读不出像素" in got["unread"] and got["unreadKept"] is True
+    assert got["placed"] == got["mismatch"]
+    assert got["quiet"] is None
+    bot = (ROOT / "src/botCommands.ts").read_text(encoding="utf-8")
+    gate = bot.split("async function startGenerator", 1)[1].split("const id = createGenerator", 1)[0]
+    assert "pickSizeModel(" in gate and "SIZE_LOCK_REFUSED" in gate
+    assert "const locked: ModelDef | undefined = lockId" not in bot
+    gen = (ROOT / "src/generate.ts").read_text(encoding="utf-8")
+    assert "size_lock: true" in gen
+    poll = (ROOT / "api/wavespeed.py").read_text(encoding="utf-8")
+    body = poll.split("async def _poll_once", 1)[1].split("\nasync def ", 1)[0]
+    assert "_audit_locked_files(job, refs)" in body and "audit_file(" in poll
+    assert "isOwnSizeError(msg)" in (ROOT / "src/wsErrors.ts").read_text(encoding="utf-8")
+    assert "lockedDeliveryError(holder.meta, media)" in (ROOT / "src/jobs.ts").read_text(encoding="utf-8")
+    assert wavespeed.load_config()["features"]["text_to_image"]["default"] == FLARE
 
 
 def test_failed_banner_is_not_retried_on_flare(relay):

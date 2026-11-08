@@ -221,9 +221,10 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     const { controls, prep } = applyRefs(picked, refStrengthsOf(shape), refControlsOf(shape))
     const seed = seedOf(shape) ?? undefined
     const negative_prompt = negativeFor(shape, model)
+    const sizeLock = shape.meta?.sizeLockModel ? { size_lock: true as const } : {}
     if (controls.length && !base) {
       // structure refs (canny/depth/pose/...): a WaveSpeed control model follows their maps, like upstream ControlNet
-      return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })) })
+      return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })), ...sizeLock })
     }
     const prepOf = new Map(picked.map((r, i) => [r.src, prep[i]]))
     const cap = refOverflow(shape) ?? images.length
@@ -233,8 +234,8 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     const askedEdit = featureModelsOf(shape).image_edit
     const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
     return images.length
-      ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...(typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}), seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined })
-      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined, width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent })
+      ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...(typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}), seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock })
+      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined, width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')
