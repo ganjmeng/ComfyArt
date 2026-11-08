@@ -1,5 +1,8 @@
 """#805 reuse pins. LinkedIn featured is the reviewed 1904x556 PNG.
-ai-model featured is the signed v7 402x505 PNG. No generation. $0 static.
+ai-model featured is the signed v7 402x505 PNG.
+portrait-studio featured is the QA PASS free v1 378x459 PNG.
+youtube-channel-banner featured is the QA PASS free v1 1584x396 PNG.
+No generation. $0 static. WaveSpeed unused for these two.
 """
 from __future__ import annotations
 
@@ -51,7 +54,7 @@ FEATURED = {
 }
 HELD_EMPTY = (
     "animated-poster",
-    "creator-identity", "youtube-channel-banner", "portrait-studio", "logo-animation",
+    "creator-identity", "logo-animation",
 )
 
 
@@ -135,3 +138,21 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert aim[:8] == b"\x89PNG\r\n\x1a\n"
     assert struct.unpack(">II", aim[16:24]) == (402, 505)
     assert hashlib.sha256(aim).hexdigest() != "03221e6968c6061799595784d2f0c6c875f7d533a6348cde1a3d99786dc7ce5b"
+    portrait = entries["portrait-studio"]
+    assert "cover: cover643('portrait-studio')" in portrait
+    assert "examples: ex643('portrait-studio', [1, 2, 3, 4, 5, 6], 'd182b5cc030a87cc1911108b735df2cb2c3863fc')" in portrait
+    assert "featured: [pinned('805/reuse/portrait-studio', '9af921cda0daa221b75250e5d4c96e39c261a481', 'featured.png')]" in portrait
+    ps = subprocess.check_output(["git", "show", "9af921cda0daa221b75250e5d4c96e39c261a481:805/reuse/portrait-studio/featured.png"], cwd=ROOT)
+    assert hashlib.sha256(ps).hexdigest() == "e599e39ca2a0d98b114fc21597d75503e1ff0991f48d850f42364759e547c853"
+    assert hashlib.sha256((ROOT / "805/reuse/portrait-studio/featured.png").read_bytes()).hexdigest() == "e599e39ca2a0d98b114fc21597d75503e1ff0991f48d850f42364759e547c853"
+    assert ps[:8] == b"\x89PNG\r\n\x1a\n"
+    assert struct.unpack(">II", ps[16:24]) == (378, 459)
+    youtube = entries["youtube-channel-banner"]
+    assert "cover: cover643('youtube-channel-banner')" in youtube
+    assert "examples: ex643('youtube-channel-banner', [1, 2, 3, 4, 5, 6, 7, 8, 9], '5ff0d28d04a9447c649bd775430e990b2690184e')" in youtube
+    assert "featured: [pinned('805/reuse/youtube-channel-banner', '9af921cda0daa221b75250e5d4c96e39c261a481', 'featured.png')]" in youtube
+    yt = subprocess.check_output(["git", "show", "9af921cda0daa221b75250e5d4c96e39c261a481:805/reuse/youtube-channel-banner/featured.png"], cwd=ROOT)
+    assert hashlib.sha256(yt).hexdigest() == "69caf1f4663d08a95b72a836175515e9f8755780642db86453efb069e63f0ce6"
+    assert hashlib.sha256((ROOT / "805/reuse/youtube-channel-banner/featured.png").read_bytes()).hexdigest() == "69caf1f4663d08a95b72a836175515e9f8755780642db86453efb069e63f0ce6"
+    assert yt[:8] == b"\x89PNG\r\n\x1a\n"
+    assert struct.unpack(">II", yt[16:24]) == (1584, 396)
