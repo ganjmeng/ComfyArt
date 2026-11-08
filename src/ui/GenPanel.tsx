@@ -185,8 +185,13 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
       setSmart(false)
     }
   }
+  const gifBlocked = !!gifSpec(shape.meta) && (refs.length > 0 || !!base)
   const submit = () => {
     if (!ready) return
+    if (gifBlocked) {
+      onError(t('imageToolbar.gifUnsupported'))
+      return
+    }
     generate(editor, shape, onError).catch((e) => onError(errorText(e)))
   }
 
@@ -298,9 +303,9 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
           }
         }}
       />}
-      {(adjusted || overflow != null) && (
-        <div className="ca-gen__notice" role="status" data-testid="gen-notice">
-          {[adjusted && t('genPanel.adjusted'), overflow != null && t('genPanel.refsCapped', overflow)].filter(Boolean).join(' · ')}
+      {(adjusted || overflow != null || gifBlocked) && (
+        <div className="ca-gen__notice" role="status" data-testid={gifBlocked ? 'gif-still-unsupported' : 'gen-notice'}>
+          {[gifBlocked && t('imageToolbar.gifUnsupported'), adjusted && t('genPanel.adjusted'), overflow != null && t('genPanel.refsCapped', overflow)].filter(Boolean).join(' · ')}
         </div>
       )}
       <div className="ca-gen__foot">

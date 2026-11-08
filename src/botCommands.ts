@@ -11,7 +11,7 @@ import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate, nearestRatio } from './generate'
 import { durationNote, fitDuration, RATIOS, VIDEO_RATIOS, videoResolution } from './genOptions'
-import { clampFrameCount, clampFrameMs, gifModelId } from './gifFile'
+import { GIF_STILL_REFUSAL, clampFrameCount, clampFrameMs, gifHasStill, gifModelId } from './gifFile'
 import { tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
 import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom, whenSubmitted } from './jobs'
@@ -157,6 +157,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     if (!video && args.size_lock && model) lockId = model.id
   }
   const gif = !video && String(args.output_format || '').toLowerCase() === 'gif'
+  if (gif && gifHasStill(args)) throw new Error(GIF_STILL_REFUSAL)
   if (gif) {
     // #825: a GIF runs on 2.6-flare, which is also the image default.
     const id = gifModelId(String(args.model || model?.id || ''))

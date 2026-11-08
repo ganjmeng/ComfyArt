@@ -1344,8 +1344,9 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
 
 
 async def route_gif_live(inputs: dict) -> dict:
-    """#825: apply the GIF route using the cached catalog schema. No schema (or no key) keeps the
-    documented P0: edit has no gif, so a still is a reference plus text-to-image."""
+    """#825: pure text GIF uses the catalog schema. A still is refused before catalog, quote, or POST."""
+    if gif_image.requests_gif(inputs) and gif_image.has_still(inputs):
+        raise WaveSpeedError(gif_image.refusal_text(), 400, kind="gifStillUnsupported")
     if inputs.get("custom") or not gif_image.requests_gif(inputs):
         return inputs
     try:

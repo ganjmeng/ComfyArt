@@ -92,7 +92,8 @@ def _tool_features() -> dict:
 def feature_of_step(tool: str, args: dict) -> str:
     """The feature whose price table prices this step. Generators follow the page, not the raw map."""
     if tool == "generate_image" and _gif().requests_gif(args):
-        return "text_to_image"  # #825: GIF is t2i even when a still is attached as a reference
+        _gif().refuse_still_gif(args)  # #825: a still stops the quote; pure text GIF stays text-to-image
+        return "text_to_image"
     if tool == "generate_image" and (args.get("refs") or args.get("base")):
         return "image_edit"
     if tool == "generate_video":
@@ -222,6 +223,7 @@ def normalize_steps(raw: object) -> list[dict]:
                 base["prompt"] = str(step.get("text") or "")
             if not _gif().requests_gif(base):
                 base["output_format"] = "gif"
+            _gif().refuse_still_gif(base)  # before ensure/price: no quote for a still GIF
             args = _gif().ensure_args(base)
             model = _gif().pick_t2i(model)
             args["model"] = model

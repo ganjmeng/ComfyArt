@@ -22,6 +22,22 @@ export function clampFrameMs(value: unknown): number {
 }
 
 /** Sunburst only when the user named that 2.6 family. Anything else, including 2.5 and Auto, uses 2.6-flare. */
+/** Bilingual refusal. Still-to-GIF is not implemented; quoting and generation do not start. */
+export const GIF_STILL_REFUSAL = '静图转 GIF 不支持参考图，估价和生成都不会开始。请去掉参考图、底图或图片列表后再做纯文生 GIF，或在提示词里描述画面。 / Still-to-GIF does not support a reference image, so quoting and generation do not start. Remove the reference, base image, or image list and use a text-only GIF, or describe the picture in the prompt.'
+
+function filled(value: unknown): boolean {
+  if (value == null || value === false) return false
+  if (typeof value === 'string') return value.trim().length > 0
+  if (Array.isArray(value)) return value.some(filled)
+  return true
+}
+
+/** True when a GIF job carries image, images, refs, or base. Empty values do not count. */
+export function gifHasStill(input: { image?: unknown; images?: unknown; refs?: unknown; base?: unknown } | null | undefined): boolean {
+  if (!input) return false
+  return filled(input.image) || filled(input.images) || filled(input.refs) || filled(input.base)
+}
+
 export function gifModelId(id?: string): string {
   return id && id.includes('2.6-sunburst') ? GIF_SUNBURST : GIF_FLARE
 }

@@ -75,37 +75,46 @@ def test_edit_schema_has_no_gif_t2i_schema_has_gif_and_complexity():
     assert gif_image.has_gif(_schema(SUN_26))
 
 
-def test_still_to_gif_is_reference_plus_t2i_not_video_or_edit():
+def test_still_gif_is_refused_for_image_images_refs_and_base():
     schemas = {EDIT_26: _schema(EDIT_26), FLARE_26: _schema(FLARE_26), SUN_26: _schema(SUN_26)}
-    out = gif_image.route_gif({
-        "feature": "image_edit", "model": EDIT_25, "image": "still.png", "prompt": "做成动图",
-        "output_format": "gif", "frame_count": 99, "frame_duration_ms": 1,
+    jobs = [
+        {"feature": "image_edit", "model": EDIT_25, "image": "still.png", "prompt": "做成动图", "output_format": "gif"},
+        {"feature": "text_to_image", "images": ["https://cdn.test/a.png"], "output_format": "gif", "prompt": "loop"},
+        {"feature": "text_to_image", "refs": ["shape:1"], "prompt": "做成动图"},
+        {"feature": "text_to_image", "base": "shape:base", "output_format": "gif", "prompt": "loop"},
+        {"prompt": "gif", "params": {"output_format": "gif", "base": "shape:nested"}},
+    ]
+    for job in jobs:
+        with pytest.raises(gif_image.StillGifUnsupported) as err:
+            gif_image.route_gif(job, schemas)
+        text = str(err.value)
+        assert "不支持" in text and "do not start" in text
+        assert "不会送进请求" not in text
+    pure = gif_image.route_gif({
+        "feature": "text_to_image", "prompt": "做成动图", "frame_count": 99, "frame_duration_ms": 1,
     }, schemas)
-    assert out["feature"] == "text_to_image"
-    assert out["model"] == FLARE_26
-    assert out["gif_route"] == "reference_t2i"
-    assert out["images"] == ["still.png"]
-    assert out["params"]["output_format"] == "gif"
-    assert out["params"]["frame_count"] == 16
-    assert out["params"]["frame_duration_ms"] == 20
-    assert "quality" not in out["params"]
-    assert "complexity" not in out["params"]
-    assert "video" not in out["feature"]
-    assert "编辑模型没有 gif" in out["gif_note"]
-    assert "does not use a video model" in out["gif_note"]
+    assert pure["feature"] == "text_to_image" and pure["model"] == FLARE_26
+    assert pure["gif_route"] == "text_to_image"
+    assert "images" not in pure and "image" not in pure
+    assert pure["params"]["frame_count"] == 16 and pure["params"]["frame_duration_ms"] == 20
+    assert gif_image.still_fields({"base": "", "refs": [], "images": [""], "output_format": "gif"}) == []
 
 
-def test_edit_gif_is_used_when_the_schema_allows_it():
+def test_edit_schema_cannot_authorize_a_still_gif():
     schema = json.loads(json.dumps(_schema(EDIT_26)))
     schema["properties"]["output_format"]["enum"] = ["png", "gif"]
-    out = gif_image.route_gif({"feature": "image_edit", "image": "still.png", "output_format": "gif"}, {EDIT_26: schema})
-    assert out["gif_route"] == "edit" and out["model"] == EDIT_26 and out["feature"] == "image_edit"
+    with pytest.raises(gif_image.StillGifUnsupported):
+        gif_image.route_gif({"feature": "image_edit", "image": "still.png", "output_format": "gif"}, {EDIT_26: schema})
 
 
-def test_video_feature_is_rewritten_off_video_models():
+def test_video_feature_without_a_still_leaves_video_models():
+    with pytest.raises(gif_image.StillGifUnsupported):
+        gif_image.route_gif({
+            "feature": "image_to_video", "model": "kwaivgi/kling-v3.0-std/image-to-video",
+            "prompt": "GIF", "image": "still.png",
+        }, {EDIT_26: _schema(EDIT_26)})
     out = gif_image.route_gif({
-        "feature": "image_to_video", "model": "kwaivgi/kling-v3.0-std/image-to-video",
-        "prompt": "GIF", "image": "still.png",
+        "feature": "image_to_video", "model": "kwaivgi/kling-v3.0-std/image-to-video", "prompt": "GIF",
     }, {EDIT_26: _schema(EDIT_26)})
     assert out["feature"] == "text_to_image"
     assert out["model"] == FLARE_26
@@ -116,10 +125,11 @@ def test_named_sunburst_is_kept_and_25_is_not():
     assert gif_image.pick_t2i(SUN_26) == SUN_26
     assert gif_image.pick_t2i(FLARE_25) == FLARE_26
     assert gif_image.pick_t2i("") == FLARE_26
-    choice = gif_image.choice(SUN_26, has_still=False)
+    choice = gif_image.choice(SUN_26, has_still_image=False)
     assert choice["model"] == SUN_26 and choice["auto"] is False and "edit_model" not in choice
-    switched = gif_image.choice(FLARE_25, has_still=True)
-    assert switched["model"] == FLARE_26 and switched["gif_route"] == "reference_t2i"
+    switched = gif_image.choice(FLARE_25, has_still_image=True)
+    assert switched["blocked"] is True and switched["category"] == "gif_still_unsupported"
+    assert switched["model"] == ""
 
 
 def test_gift_is_not_a_gif_and_frames_default():
@@ -162,12 +172,32 @@ def test_quote_stub_prices_gif_like_a_still_and_names_frames():
     assert wavespeed.output_ext("https://cdn.example/a.png", b"\x89PNG", "image/png") == ".png"
 
 
+def test_generate_image_refuses_still_gif_before_approval_and_submit(monkeypatch):
+    async def boom(*_a, **_k):
+        raise AssertionError("must not ask, quote, or submit")
+
+    monkeypatch.setattr(canvas, "submit_command", boom)
+    monkeypatch.setattr(canvas, "maybe_ask_run_approval", boom)
+    handler = canvas.TOOLS["generate_image"]["handler"]
+    jobs = (
+        {"prompt": "loop", "output_format": "gif", "refs": ["shape:1"]},
+        {"prompt": "loop", "output_format": "gif", "base": "shape:b"},
+        {"prompt": "做成动图", "images": ["https://cdn.test/still.png"]},
+        {"prompt": "gif of a cat", "output_format": "gif", "image": "https://cdn.test/still.png"},
+    )
+    for args in jobs:
+        got = asyncio.run(handler(dict(args)))
+        assert got["kind"] == "gifStillUnsupported"
+        assert got["submitted"] is False and got["generation_succeeded"] is False
+        assert "不支持" in got["user_message"] and "do not start" in got["user_message"]
+
+
 def test_agent_gif_picks_26_and_plain_auto_stays_25():
     gif = canvas._auto_choice("generate_image", {"prompt": "把这张图做成动图", "refs": ["shape:1"]})
-    assert gif["model"] == FLARE_26
-    assert gif["category"] == "gif"
-    assert "edit_model" not in gif
-    assert "video" not in gif["model"]
+    assert gif["blocked"] is True and gif["category"] == "gif_still_unsupported"
+    assert gif["model"] == ""
+    base = canvas._auto_choice("generate_image", {"prompt": "做成动图", "base": "shape:b"})
+    assert base["blocked"] is True
     plain = canvas._auto_choice("generate_image", {"prompt": "a red apple on a table"})
     assert plain["model"] == FLARE_26 and plain["category"] == "default"
     gift = canvas._auto_choice("generate_image", {"prompt": "a gift box poster"})
@@ -176,18 +206,39 @@ def test_agent_gif_picks_26_and_plain_auto_stays_25():
     assert sun["model"] == SUN_26 and sun["auto"] is False
 
 
-def test_plan_quote_keeps_gif_on_t2i_and_shows_frames():
-    assert plan_quote.feature_of_step("generate_image", {"refs": ["a"], "output_format": "gif"}) == "text_to_image"
+def test_plan_quote_refuses_still_gif_before_any_price():
+    with pytest.raises(gif_image.StillGifUnsupported):
+        plan_quote.feature_of_step("generate_image", {"refs": ["a"], "output_format": "gif"})
+    with pytest.raises(gif_image.StillGifUnsupported):
+        plan_quote.feature_of_step("generate_image", {"base": "shape:b", "output_format": "gif"})
     assert plan_quote.feature_of_step("generate_image", {"refs": ["a"], "prompt": "换背景"}) == "image_edit"
-    steps = plan_quote.normalize_steps([{
+    assert plan_quote.feature_of_step("generate_image", {"output_format": "gif", "prompt": "a flag"}) == "text_to_image"
+    with pytest.raises(gif_image.StillGifUnsupported):
+        plan_quote.normalize_steps([{
+            "tool": "generate_image", "text": "做成动图",
+            "arguments": {"prompt": "wave the flag", "refs": ["shape:1"], "frame_count": 3},
+        }])
+    pure = plan_quote.normalize_steps([{
         "tool": "generate_image", "text": "做成动图",
-        "arguments": {"prompt": "wave the flag", "refs": ["shape:1"], "frame_count": 3},
+        "arguments": {"prompt": "wave the flag", "frame_count": 3},
     }])
-    assert steps[0]["model"] == FLARE_26
-    assert steps[0]["arguments"]["output_format"] == "gif"
-    assert steps[0]["arguments"]["frame_count"] == 3
-    assert "quality" not in steps[0]["arguments"]
+    assert pure[0]["model"] == FLARE_26
+    assert pure[0]["arguments"]["output_format"] == "gif"
+    assert pure[0]["arguments"]["frame_count"] == 3
+    assert "quality" not in pure[0]["arguments"]
     assert gif_image.gif_quote_label(3, None).startswith("GIF 3×")
+
+    async def pricer(model, inputs):
+        raise AssertionError(f"price call {model} {inputs}")
+
+    async def models_for(feature):
+        raise AssertionError(f"model list {feature}")
+
+    with pytest.raises(gif_image.StillGifUnsupported):
+        asyncio.run(plan_quote.build_quote([{
+            "tool": "generate_image", "text": "做成动图",
+            "arguments": {"prompt": "wave", "images": ["https://cdn.test/a.png"]},
+        }], "zh", threshold=0, pricer=pricer, models_for=models_for))
 
 
 @pytest.fixture
@@ -223,16 +274,12 @@ def test_estimate_stub_for_gif_uses_published_medium_and_does_not_call_out(monke
 
     monkeypatch.setattr(wavespeed, "_headers", lambda: {})
     monkeypatch.setattr(wavespeed.aiohttp, "ClientSession", _Session)
-    est = asyncio.run(wavespeed.estimate({
-        "feature": "image_edit", "image": "still.png", "prompt": "做成动图",
-        "params": {"output_format": "gif", "frame_count": 12},
-    }))
-    assert est["price"] == 0.05
-    assert est["source"] == "estimate"
-    assert est["gif_route"] == "reference_t2i"
-    assert est["gif"]["priced_as"] == "still"
-    assert est["gif"]["frame_count"] == 12
-    assert "GIF" in est["tier"] and "12f" in est["tier"]
+    with pytest.raises(wavespeed.WaveSpeedError) as refused:
+        asyncio.run(wavespeed.estimate({
+            "feature": "image_edit", "image": "still.png", "prompt": "做成动图",
+            "params": {"output_format": "gif", "frame_count": 12},
+        }))
+    assert refused.value.status == 400 and refused.value.kind == "gifStillUnsupported"
     still = asyncio.run(wavespeed.estimate({"feature": "text_to_image", "model": FLARE_26, "prompt": "a cup"}))
     assert still["price"] == 0.05
     gif_again = asyncio.run(wavespeed.estimate({"feature": "text_to_image", "model": FLARE_26, "prompt": "a cup", "params": {"output_format": "gif", "frame_count": 16}}))
@@ -271,3 +318,5 @@ def test_frontend_gif_file_names_and_clamps(tmp_path):
     assert got["gif"] == {"name": "poster.gif", "mimeType": "image/gif", "isAnimated": True}
     assert got["png"]["mimeType"] == "image/png" and got["png"]["isAnimated"] is False
     assert got["flare"] == FLARE_26
+    assert got["still"] == [True, True, True, True, False, False]
+    assert got["refusal"] is True
