@@ -67,6 +67,8 @@ def test_new19_examples_still_empty_covers_pinned():
             "ai-model": "featured: [pinned('805/reuse/ai-model', '7fbb71bdce30a57f35c367bc949981c00fb2fc10', 'featured.png')]",
             "portrait-studio": "featured: [pinned('805/reuse/portrait-studio', '9af921cda0daa221b75250e5d4c96e39c261a481', 'featured.png')]",
             "youtube-channel-banner": "featured: [pinned('805/reuse/youtube-channel-banner', '9af921cda0daa221b75250e5d4c96e39c261a481', 'featured.png')]",
+            "creator-identity": "featured: [pinned('805/reuse/creator-identity', 'a9865d28d584068861020b7eda74ddd6e4daab75', 'featured.png')]",
+            "logo-animation": "featured: [pinned('805/reuse/logo-animation', 'a9865d28d584068861020b7eda74ddd6e4daab75', 'featured.png')]",
         }
         if sid in reuse_featured:
             assert reuse_featured[sid] in e, sid
