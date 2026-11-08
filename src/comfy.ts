@@ -210,7 +210,10 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
     if (ws.status === 409 && (typeof price === 'number' || wsBody?.error?.unpriced)) {
       // jobs of $0.50 or more need an explicit yes before they are submitted
       // #128: the actual duration when it differs from the one asked
-      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, typeof inputs.duration_note === 'string' ? inputs.duration_note : '', wsBody?.error?.estimate || wsBody?.error?.unpriced ? { tier: typeof wsBody.error.tier === 'string' ? wsBody.error.tier : undefined, unpriced: !!wsBody.error.unpriced } : undefined))) throw new CostDeclined()
+      const gifNote = typeof wsBody?.error?.gif_note === 'string' ? wsBody.error.gif_note : ''
+      const asked = typeof inputs.duration_note === 'string' ? inputs.duration_note : ''
+      const note = [asked, gifNote].filter(Boolean).join('\n')
+      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note, wsBody?.error?.estimate || wsBody?.error?.unpriced ? { tier: typeof wsBody.error.tier === 'string' ? wsBody.error.tier : undefined, unpriced: !!wsBody.error.unpriced } : undefined))) throw new CostDeclined()
       ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
       wsBody = await ws.json().catch(() => null)
     }

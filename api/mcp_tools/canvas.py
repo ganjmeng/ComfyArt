@@ -1,6 +1,7 @@
 import logging
 
 from ..auto_models import UnregisteredModel, choose, load_table, note, registered, skill_pin, tool_feature
+from ..gif_image import choice as gif_choice, ensure_args as ensure_gif_args, requests_gif
 from ..mcp_commands import submit_command
 from ..wavespeed import compact_models, grouped_models, load_config, model_details
 from ._context import BOT_CHAT_ID, PROJECT
@@ -60,6 +61,7 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         # #707: a named skill's declared pixels reach the page even if the provider omitted them.
         from ...bot.skill_output import apply_generate
         args = apply_generate(args)
+        args = ensure_gif_args(args)  # #825: 动图/GIF fills output_format + frame defaults; does not pin quality
     from ..skill_size import EXACT_SKILLS
     if fallback_for and action == "generate_image" and args.get("skill") in EXACT_SKILLS:
         # #707: do not retry a banner on a model that would snap 1584×396 to an aspect ratio.
@@ -106,7 +108,15 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             choice = {**(choice or {"model": "", "auto": True, "category": "auto",
                                     "reason": {"zh": "自动选择", "en": "Auto picked it"}}),
                       "requested_model": requested, "fallback_reason": _unregistered_reason(requested)}
-        if choice and choice["auto"] and choice["category"] != "references" and "model" not in args and choice["model"] != load_config()["features"][tool_feature(action)]["default"]:
+        if choice and choice.get("category") == "gif":
+            # #825: a GIF never follows refs onto image_edit or a video model. 2.6 is selected even when
+            # the caller named 2.5 or left model empty (Auto / the stable default stays 2.5 for stills).
+            args = {k: v for k, v in args.items() if k != "edit_model"}
+            args["model"] = choice["model"]
+            args["output_format"] = "gif"
+            if choice.get("auto"):
+                args["auto_model"] = True
+        elif choice and choice["auto"] and choice["category"] != "references" and "model" not in args and choice["model"] != load_config()["features"][tool_feature(action)]["default"]:
             args = {**args, "model": choice["model"], "auto_model": True} if "edit_model" not in choice else {**args, "edit_model": choice["edit_model"]}
     if choice and choice.get("category") in ("skill", "skill_fallback"):
         args = _pin_args(args, choice)
@@ -282,6 +292,10 @@ def _auto_choice(action: str, args: dict) -> dict | None:
     feature = tool_feature(action)
     if not feature:
         return None
+    if action == "generate_image" and requests_gif(args):
+        # #825: GIF / 动图 is text-to-image on GPT Image 2.6. Checked before refs, which otherwise
+        # become an image_edit (edit has no gif) or could be read as a video.
+        return gif_choice(str(args.get("model") or ""), bool(args.get("refs") or args.get("base")))
     pin = _skill_row(action, args)
     if pin:
         return _skill_choice(args, pin)
@@ -346,11 +360,21 @@ SPECS: dict[str, dict] = {
         "composition, or a structure guide canny, lineart, depth, normal, pose, mlsd, scribble, softedge, seg, "
         "tile (structure guides also work on models with control instead of refs, e.g. Qwen Image 2512). "
         "base: an image shape id to transform (image-to-image) with base_strength 0-100 (higher changes more). "
-        "skill: the id of the skill you are running (e.g. pose-fission); a skill with a registered model runs on it.",
+        "skill: the id of the skill you are running (e.g. pose-fission); a skill with a registered model runs on it. "
+        "GIF / 动图: set output_format to gif (frame_count 2-16, default 9; frame_duration_ms 20-2000, default 200). "
+        "Omit model unless the user named one; a GIF uses GPT Image 2.6 Flare, not the stable 2.5 default. "
+        "A still image is refs or base plus this GIF call: edit cannot emit gif, so the still is a reference for a new "
+        "text-to-image GIF. Do not call generate_video or animate_image for a GIF. complexity is optional "
+        "(low, medium, high) and does not change the price; omit it to leave the schema default. Do not set quality "
+        "unless the user picked a tier.",
         {"prompt": {"type": "string"}, "model": _MODEL_AUTO, "ratio": {"type": "string"},
          "width": {"type": "integer"}, "height": {"type": "integer"},
          "count": {"type": "integer"}, "refs": _IDS, "ref_modes": {"type": "array", "items": {"type": "string"}}, "base": {"type": "string"},
-         "base_strength": {"type": "integer"}, "skill": {"type": "string"}, **_PLACE},
+         "base_strength": {"type": "integer"}, "skill": {"type": "string"},
+         "output_format": {"type": "string", "enum": ["png", "jpeg", "webp", "gif"]},
+         "frame_count": {"type": "integer"}, "frame_duration_ms": {"type": "integer"},
+         "complexity": {"type": "string", "enum": ["low", "medium", "high"]},
+         **_PLACE},
         ["prompt"], approval="生成图像"),
     "generate_video": _tool(
         "Start generating a video. Returns ids at once; call wait_generation with them. first_frame / "

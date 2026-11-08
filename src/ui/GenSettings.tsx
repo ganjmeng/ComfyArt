@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { DURATIONS, QUALITIES, RATIOS, RESOLUTIONS, SHOTS, STYLES, VIDEO_RATIOS, VIDEO_RESOLUTIONS, videoResolution } from '../genOptions'
+import { clampFrameCount, clampFrameMs, type GifSpec } from '../gifFile'
 import { FEATURE_MODELS, IMAGE_FEATURES, type ModelDef, VIDEO_FEATURES } from '../models'
 import type { GeneratorShape } from '../shapes/GeneratorShape'
 import { Chips } from './Chips'
@@ -41,7 +42,7 @@ export function settingsSummary(p: GeneratorShape['props'], video: boolean, caps
 
 type Update = (patch: Partial<GeneratorShape['props']>) => void
 
-export function SettingsPill({ p, video, quality, tiers, caps, update, align, within, side = 'top' }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update; align?: 'start' | 'end'; within?: string; side?: 'top' | 'bottom' }) {
+export function SettingsPill({ p, video, quality, tiers, caps, update, align, within, side = 'top', complexities, complexity, onComplexity, gif, onGif }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update; align?: 'start' | 'end'; within?: string; side?: 'top' | 'bottom'; complexities?: string[]; complexity?: string; onComplexity?: (v: string) => void; gif?: GifSpec | null; onGif?: (next: GifSpec | null) => void }) {
   const [open, setOpen] = useState(false)
   // #159: write the displayed video tier back, so the quote and the submit use what the card shows
   const vres = video ? shownVideoRes(p, caps) : null
@@ -54,7 +55,7 @@ export function SettingsPill({ p, video, quality, tiers, caps, update, align, wi
     <Popover open={open} onOpenChange={setOpen} side={side} align={align} within={within} viewportCap={side === 'bottom'} trigger={({ open: o, toggle }) => (
       <button type="button" className="ca-gen__pill" data-pill="settings" data-open={o || undefined} title={full} onClick={toggle}><span className="ca-icon ca-gen__pillicon">{Icons.adjust}</span><span className="ca-gen__pilltext">{rest ? <>{short}<span className="ca-gen__pillmore">{rest}</span></> : full}</span><span className="ca-gen__chev">{Icons.chevron}</span></button>
     )}>
-      <GenSettings p={p} video={video} quality={quality} tiers={tiers} caps={caps} update={update} />
+      <GenSettings p={p} video={video} quality={quality} tiers={tiers} caps={caps} update={update} complexities={complexities} complexity={complexity} onComplexity={onComplexity} gif={gif} onGif={onGif} />
     </Popover>
   )
 }
@@ -115,7 +116,7 @@ export function ModelPill({ video, model, picks, onPick, onAuto, align = 'end', 
   )
 }
 
-export function GenSettings({ p, video, quality, tiers, caps, update }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update }) {
+export function GenSettings({ p, video, quality, tiers, caps, update, complexities, complexity = '', onComplexity, gif, onGif }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update; complexities?: string[]; complexity?: string; onComplexity?: (v: string) => void; gif?: GifSpec | null; onGif?: (next: GifSpec | null) => void }) {
   // only what the selected model's schema accepts (#95); no enum in the schema means the full list
   const only = <T,>(all: T[], ok?: T[]) => (ok?.length ? all.filter((v) => ok.map(String).includes(String(v))) : all)
   const ratios = only(video ? VIDEO_RATIOS : RATIOS, caps?.ratios)
@@ -177,6 +178,28 @@ export function GenSettings({ p, video, quality, tiers, caps, update }: { p: Gen
             <>
               <div className="ca-gen__label">{t('genPanel.tiers')}</div>
               <Chips value={p.quality} options={tiers.map((q) => [q, q[0].toUpperCase() + q.slice(1)] as [string, string])} onPick={(q) => update({ quality: q })} gen />
+            </>
+          )}
+          {!!complexities?.length && onComplexity && (
+            <>
+              <div className="ca-gen__label">{t('genSettings.complexity')}</div>
+              <Chips value={complexity} options={[['', t('common.default')], ...complexities.map((c) => [c, c[0].toUpperCase() + c.slice(1)] as [string, string])]} onPick={onComplexity} gen />
+              <div className="ca-chat__hint">{t('genSettings.complexityHint')}</div>
+            </>
+          )}
+          {!!caps?.outputFormats?.includes('gif') && onGif && (
+            <>
+              <div className="ca-gen__label">{t('genSettings.format')}</div>
+              <Chips value={gif ? 'gif' : ''} options={[['', t('common.default')], ['gif', 'GIF']] as [string, string][]} onPick={(v) => onGif(v === 'gif' ? { output_format: 'gif', frame_count: gif?.frame_count ?? 9, frame_duration_ms: gif?.frame_duration_ms ?? 200 } : null)} gen />
+              {gif && (
+                <>
+                  <div className="ca-style__row">
+                    <label className="ca-num"><span>{t('imageToolbar.gifFrames')}</span><input type="number" min={2} max={16} value={gif.frame_count} onChange={(e) => onGif({ ...gif, frame_count: clampFrameCount(e.target.value) })} /></label>
+                    <label className="ca-num"><span>{t('imageToolbar.gifMs')}</span><input type="number" min={20} max={2000} value={gif.frame_duration_ms} onChange={(e) => onGif({ ...gif, frame_duration_ms: clampFrameMs(e.target.value) })} /></label>
+                  </div>
+                  <div className="ca-chat__hint">{t('genSettings.gifNote')}</div>
+                </>
+              )}
             </>
           )}
           <div className="ca-gen__label">{t('refModes.style')}</div>

@@ -4,7 +4,7 @@
 export const DEFAULT_PINNED = ['quick', 'chat', 'upscale', 'cutout', 'erase']
 /** Pre-#244 default; users still on this set are migrated to DEFAULT_PINNED. */
 const LEGACY_DEFAULT = ['chat', 'quick', 'inpaint', 'cutout', 'upscale', 'expand']
-export const MENU_MAIN = ['inpaint', 'expand', 'text', 'crop', 'style', 'adjust', 'layers', 'animate', 'angles']
+export const MENU_MAIN = ['inpaint', 'expand', 'text', 'crop', 'style', 'adjust', 'layers', 'animate', 'gif', 'angles']
 export const MENU_GEN = ['regenerate', 'remix', 'copyPrompt', 'export']
 export const MORE_TOOLS = ['effects', 'elements', 'move', 'mockup', 'to3d', 'transform', 'vectorize', 'ocr', 'smudge', 'preview', 'info']
 export const ALL_TOOLS = [...DEFAULT_PINNED, ...MENU_MAIN, ...MENU_GEN, ...MORE_TOOLS]

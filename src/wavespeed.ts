@@ -63,7 +63,7 @@ export interface WsInputs {
   dy?: number
 }
 
-export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null; vendor?: string; recommended?: boolean; qualities?: string[]; aspect_ratios?: string[]; durations?: number[]; duration_range?: DurationRange; resolutions?: string[]; defaults?: Record<string, string | number>; name?: string; blurb?: { zh: string; en: string } }
+export interface CloudModel { id: string; label: string; subtitle?: string; price: number | null; desc: string; local_equivalent?: string | null; default: boolean; inputs?: string[]; max_images?: number | null; vendor?: string; recommended?: boolean; qualities?: string[]; complexities?: string[]; output_formats?: string[]; frame_count?: { min?: number; max?: number; default?: number }; frame_duration_ms?: { min?: number; max?: number; default?: number }; aspect_ratios?: string[]; durations?: number[]; duration_range?: DurationRange; resolutions?: string[]; defaults?: Record<string, string | number>; name?: string; blurb?: { zh: string; en: string } }
 /** #509: a free numeric duration field's range in seconds, from the model's WaveSpeed schema. */
 export interface DurationRange { min: number; max: number; step: number; default?: number }
 export interface CloudFeature { default: string; available: boolean; models: CloudModel[]; picker_order?: string[] }

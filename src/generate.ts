@@ -13,6 +13,7 @@ import { paletteImage, palettePrompt } from './palette'
 import { annotated, randomSeed, type Built } from './workflows'
 import { MAX_VIDEO_REF_KINDS, VIDEO_AREAS, videoSize, type Scene } from './videoGraphs'
 import { durationNote, SHOTS, STYLES, VIDEO_RATIOS, videoResolution } from './genOptions'
+import { gifModelId, gifSpec, type GifSpec } from './gifFile'
 
 export function scenesOf(shape: GeneratorShape): Scene[] {
   return (shape.meta.scenes as Scene[] | undefined) ?? []
@@ -222,6 +223,15 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     const seed = seedOf(shape) ?? undefined
     const negative_prompt = negativeFor(shape, model)
     const sizeLock = shape.meta?.sizeLockModel ? { size_lock: true as const } : {}
+    const gif = gifSpec(shape.meta)
+    if (gif) {
+      // #825: GIF stays on text-to-image (2.6). A still is a reference, not an edit and not a video.
+      return wsBuilt({
+        feature: 'text_to_image', model: gifModelId(model.auto ? undefined : model.id), prompt, width, height,
+        image: images[0], images: images.length ? images : undefined,
+        seed, negative_prompt, params: imageParams(shape, model, gif), ...sizeLock,
+      })
+    }
     if (controls.length && !base) {
       // structure refs (canny/depth/pose/...): a WaveSpeed control model follows their maps, like upstream ControlNet
       return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })), ...sizeLock })
@@ -235,7 +245,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
     return images.length
       ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...(typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}), seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock })
-      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined, width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
+      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: imageParams(shape, model, null), width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')
@@ -270,9 +280,24 @@ function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
   const model = sizeLockModel(shape) ?? modelOf(workflow) ?? agentModels(false)[0]
   if (!model || !(model.cloud || isCloudModel(model.id))) return null
   const [width, height] = pixelSizeOf(shape)
+  const gif = gifSpec(shape.meta)
+  if (gif) {
+    const images = [...(baseOf(shape) ? ['ref'] : []), ...refs.map(() => 'ref')]
+    return { feature: 'text_to_image', model: gifModelId(model.auto ? undefined : model.id), width, height, image: images[0], images: images.length ? images : undefined, params: imageParams(shape, model, gif) }
+  }
   const askedEdit = featureModelsOf(shape).image_edit
   const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
-  return refs.length || baseOf(shape) ? { feature: 'image_edit', model: editModel, width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined }
+  return refs.length || baseOf(shape) ? { feature: 'image_edit', model: editModel, width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: imageParams(shape, model, null) }
+}
+
+function imageParams(shape: GeneratorShape, model: { qualities?: string[]; complexities?: string[] } | null | undefined, gif: GifSpec | null): Record<string, unknown> | undefined {
+  const params: Record<string, unknown> = {}
+  // #189: quality is sent only when the user picked a tier the schema lists. 'standard' (the card default) is not a tier.
+  if (model?.qualities?.includes(shape.props.quality)) params.quality = shape.props.quality
+  const complexity = shape.meta.complexity
+  if (typeof complexity === 'string' && complexity && (model?.complexities?.includes(complexity) || ['low', 'medium', 'high'].includes(complexity))) params.complexity = complexity
+  if (gif) Object.assign(params, gif)
+  return Object.keys(params).length ? params : undefined
 }
 
 export function generate(editor: Editor, shape: GeneratorShape, onError: ErrorSink) {

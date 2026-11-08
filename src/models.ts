@@ -30,6 +30,9 @@ export interface ModelDef {
   price?: number | null
   recommended?: boolean
   qualities?: string[]
+  /** #825: GPT Image complexity (low/medium/high). Not a price pin; omitted unless the user picks one. */
+  complexities?: string[]
+  outputFormats?: string[]
   /** Schema enums and defaults (#95): the settings panel offers only these; switching models keeps what still fits. */
   ratios?: string[]
   durations?: number[]
@@ -100,7 +103,7 @@ async function useCloudImageModels() {
     const seen = new Set<string>()
     return names.flatMap((n) => byPickerOrder(all[n])).filter((m) => !seen.has(m.id) && seen.add(m.id)).map((m) => ({
       // reference-style row (#95 design): display name + one-line description; the raw id only in the tooltip
-      id: m.id, label: m.name || m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, ratios: m.aspect_ratios, durations: m.durations, resolutions: m.resolutions, maxImages: m.max_images, defaults: m.defaults, inputs: m.inputs, desc: m.blurb?.[lang] ?? '', about: m.desc || undefined, files: [], cloud: true, lora: null,
+      id: m.id, label: m.name || m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, complexities: m.complexities, outputFormats: m.output_formats, ratios: m.aspect_ratios, durations: m.durations, resolutions: m.resolutions, maxImages: m.max_images, defaults: m.defaults, inputs: m.inputs, desc: m.blurb?.[lang] ?? '', about: m.desc || undefined, files: [], cloud: true, lora: null,
       // control: structure refs run on WaveSpeed control models (#80), so the ControlNet knobs show like upstream
       ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }),
     }))

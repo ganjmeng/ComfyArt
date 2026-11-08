@@ -1,6 +1,7 @@
 import { AssetRecordType, atom, createShapeId, isShapeId, type Editor, type TLParentId, type JsonValue, type TLAssetId, type TLImageAsset, type TLShape, type TLShapeId, type TLVideoAsset } from 'tldraw'
 
 import { cancelPrompt, CostDeclined, NeedKeyError, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
+import { placedFile } from './gifFile'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Built } from './workflows'
 import { t } from './i18n'
@@ -158,11 +159,12 @@ export async function toMedia(ref: ImageRef, kind: MediaKind): Promise<Media> {
 
 export function placeMedia(editor: Editor, m: Media, name: string, x: number, y: number, w: number, parentId?: TLShape['parentId']): TLShapeId {
   const assetId = AssetRecordType.createId()
+  const file = placedFile(m.ref.filename, name, m.kind === 'video')
   editor.createAssets([{
     id: assetId,
     typeName: 'asset',
     type: m.kind,
-    props: { name, src: m.src, w: m.w, h: m.h, mimeType: m.kind === 'video' ? 'video/mp4' : m.ref.filename.endsWith('.svg') ? 'image/svg+xml' : m.ref.filename.endsWith('.webp') ? 'image/webp' : 'image/png', isAnimated: m.kind === 'video' || m.ref.filename.endsWith('.webp') },
+    props: { name: file.name, src: m.src, w: m.w, h: m.h, mimeType: file.mimeType, isAnimated: file.isAnimated },
     meta: {},
   } as any])
   const id = createShapeId()
