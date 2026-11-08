@@ -1,4 +1,5 @@
-"""#805 reuse pins. LinkedIn featured is the reviewed 1904x556 PNG. No generation. $0 static.
+"""#805 reuse pins. LinkedIn featured is the reviewed 1904x556 PNG.
+ai-model featured is the signed v7 402x505 PNG. No generation. $0 static.
 """
 from __future__ import annotations
 
@@ -49,7 +50,7 @@ FEATURED = {
     ),
 }
 HELD_EMPTY = (
-    "ai-model", "animated-poster",
+    "animated-poster",
     "creator-identity", "youtube-channel-banner", "portrait-studio", "logo-animation",
 )
 
@@ -124,3 +125,13 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert hashlib.sha256(li).hexdigest() == "ef9d950ebcc542ada4cf2a7bbb7c768a04ab12ebdbb4e23e4c017be4c3015bba"
     assert li[:8] == b"\x89PNG\r\n\x1a\n"
     assert struct.unpack(">II", li[16:24]) == (1904, 556)
+    ai = entries["ai-model"]
+    assert "cover: cover643('ai-model')" in ai
+    assert "examples: ex643('ai-model', [1, 2, 3, 4, 5, 6], '604e9be57c96010fc6183f89d02c971f612d10e7')" in ai
+    assert "featured: [pinned('805/reuse/ai-model', '7fbb71bdce30a57f35c367bc949981c00fb2fc10', 'featured.png')]" in ai
+    aim = subprocess.check_output(["git", "show", "7fbb71bdce30a57f35c367bc949981c00fb2fc10:805/reuse/ai-model/featured.png"], cwd=ROOT)
+    assert hashlib.sha256(aim).hexdigest() == "b82e07a40cdbb26eb139a2d0deadb62dbbc4fc84e6e21ee3c564e94c6c5b1e12"
+    assert hashlib.sha256((ROOT / "805/reuse/ai-model/featured.png").read_bytes()).hexdigest() == "b82e07a40cdbb26eb139a2d0deadb62dbbc4fc84e6e21ee3c564e94c6c5b1e12"
+    assert aim[:8] == b"\x89PNG\r\n\x1a\n"
+    assert struct.unpack(">II", aim[16:24]) == (402, 505)
+    assert hashlib.sha256(aim).hexdigest() != "03221e6968c6061799595784d2f0c6c875f7d533a6348cde1a3d99786dc7ce5b"
