@@ -21,6 +21,12 @@ DROPPED_MUST_ABSENT = [
     "anime-official-site", "cinematic-snapshot", "zhixian-poster", "cartoon-ip-extend",
     "culture-creative", "new-chinese-mobile", "portfolio-site",
 ]
+# #805 eight-slot hover. studio-model stays on its own media pin (#839).
+HOVER_805 = "b2ec2a5c7aeb294257087216057de4bb4105d944"
+HOVER_805_SLOTS = {
+    "before-after", "taobao-product", "creator-identity", "youtube-channel-banner",
+    "live-promo-decor", "linkedin-banner", "logo-animation", "restaurant-website",
+}
 
 
 def _entries() -> dict[str, str]:
@@ -72,6 +78,8 @@ def test_new19_present_production_copy_dialog_inputs():
         if sid == "studio-model":
             # #805: hover mp4 is pinned to the media commit. Cover, examples, and featured stay.
             assert "video: pinned('805/reuse/studio-model', '44a5caa051ad8c4bd51152afba8ef853e9c77fd8', 'cover.mp4')" in head, sid
+        elif sid in HOVER_805_SLOTS:
+            assert f"video: pinned('805/reuse/{sid}', '{HOVER_805}', 'cover.mp4')" in head, sid
         else:
             assert "video:" not in head, sid
         reuse_featured = {
