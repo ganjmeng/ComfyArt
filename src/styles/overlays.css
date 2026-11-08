@@ -1147,6 +1147,24 @@
 .ca-memory-onboard__freehint { margin-top: 4px; color: var(--ca-muted); font: 400 13px/20px var(--ca-font); }
 .ca-memory .ca-rename__body:has(.ca-memory-onboard) { padding-top: 8px; }
 
+.ca-provider { width: min(640px, calc(100vw - 32px)); }
+.ca-provider > .ca-rename__body { gap: 14px; max-height: min(78vh, 860px); }
+.ca-provider__section { display: flex; flex-direction: column; gap: 8px; }
+.ca-provider__section + .ca-provider__section { margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--ca-border); }
+.ca-provider__h { margin: 0; font: 600 15px/22px var(--ca-font); }
+.ca-provider__status { margin: 0; color: var(--ca-text-2); font-size: 12px; line-height: 18px; }
+.ca-provider__cards { display: flex; flex-direction: column; gap: 8px; }
+.ca-provider__card { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 10px 12px; border: 1px solid var(--ca-border); border-radius: 12px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.ca-provider__card[data-on] { border-color: var(--ca-strong); }
+.ca-provider__caps { display: flex; flex-direction: column; gap: 8px; }
+.ca-provider__cap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; }
+.ca-provider__badge[data-ok="0"] { color: var(--ca-error-text); }
+.ca-provider__preview { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--ca-field); white-space: pre-wrap; font: 400 12px/18px var(--ca-font); }
+.ca-provider__banner { padding: 8px 12px; border-radius: 10px; background: var(--ca-field); }
+.ca-provider__diff { margin: 0; padding-left: 18px; color: var(--ca-text-2); font-size: 12px; line-height: 18px; }
+.ca-provider .ca-panel__foot { margin-top: 4px; }
+
+
 /* #463 G4 — Import a Skill drop dialog (folder or ZIP drag & drop). Lucide stroke 2 via .ca-icon. */
 .ca-skimport { width: 520px; }
 .ca-skimport__drop {
