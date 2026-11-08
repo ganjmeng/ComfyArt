@@ -15,7 +15,7 @@ from .wavespeed import _nearest, _resolution, _schema, _size_value
 
 SKILL = "linkedin-banner"
 # Skills whose auto path must submit exact pixels. Others stay on the normal table.
-EXACT_SKILLS = frozenset({SKILL, "before-after"})
+EXACT_SKILLS = frozenset({SKILL, "before-after", "pose-fission", "game-art"})
 # Used only after accepts_exact_pixels is true and the id is on the curated feature list.
 VERIFIED = {
     "text_to_image": "wavespeed-ai/qwen-image-2.0/text-to-image",
