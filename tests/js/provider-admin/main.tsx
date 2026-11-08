@@ -50,7 +50,7 @@ function row(id: string, group: string, label: string, blurb: string) {
     active: rec.active, draft: rec.draft, revision: rec.revision,
     can_restore: rec.previous != null || rec.active != null,
     choices: choices(id), key_ok: location.hash !== '#nokey', usable: !replicate,
-    blocked: replicate ? 'quote_unknown' : '',
+    blocked: replicate ? 'needs_user_confirm' : '',
     effective: { provider: primary.provider, model: primary.model, source: rec.active ? 'saved' : 'default', fallback: !!rec.active?.fallback, backup: rec.active?.backup || null },
   }
 }
@@ -102,7 +102,7 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       saved[id] = { revision: (saved[id]?.revision || 0) + 1, previous: saved[id]?.active || null, draft: null, active: { primary: body.primary, backup: null, fallback: false } }
       applied.push(id)
     }
-    return json({ ...state(), applied, skipped, activated: true, usable: false, blocked: 'quote_unknown' })
+    return json({ ...state(), applied, skipped, activated: true, usable: false, blocked: 'needs_user_confirm' })
   }
   if (tool && method === 'PUT') {
     if (location.hash === '#nokey' && body.activate !== false && body.primary?.provider === 'replicate') {
@@ -113,7 +113,7 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     if (body.activate === false) rec.draft = route
     else { rec.previous = rec.active; rec.active = route; rec.revision += 1 }
     saved[tool] = rec
-    return json({ ...state(), saved_tool: tool, activated: body.activate !== false, usable: body.primary?.provider !== 'replicate', blocked: body.primary?.provider === 'replicate' ? 'quote_unknown' : '' })
+    return json({ ...state(), saved_tool: tool, activated: body.activate !== false, usable: body.primary?.provider !== 'replicate', blocked: body.primary?.provider === 'replicate' ? 'needs_user_confirm' : '' })
   }
   return json(state())
 }

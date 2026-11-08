@@ -142,7 +142,7 @@ export function ProviderAdmin() {
     setBusy(true); setError(''); setNotice('')
     saveTool(current.id, { ...draft, activate }).then((next) => {
       absorb(next)
-      const blocked = next.blocked === 'quote_unknown' || (next.usable === false && draft.primary.provider === 'replicate')
+      const blocked = next.blocked === 'needs_user_confirm' || next.blocked === 'quote_unknown' || (next.usable === false && draft.primary.provider === 'replicate')
       setNotice(activate
         ? (blocked ? '' : tx('已启用。新的这个工具会走刚保存的线路。', 'Enabled. New runs of this tool use the saved route.'))
         : tx('草稿已记住，正在用的线路没有改。', 'Draft kept. The live route did not change.'))
@@ -226,7 +226,7 @@ export function ProviderAdmin() {
                   <span>{tx('主线路明确没受理时，自动试一次备选', 'If the primary clearly never created a task, try the backup once')}</span>
                 </label>
                 {dirty && <p className="ca-prov__impact" data-testid="provider-impact">{impact(current, draft)}</p>}
-                {current.blocked === 'quote_unknown' && current.effective.source === 'saved' && <p className="ca-prov__banner" role="status" data-testid="provider-blocked">{tx('这条已保存，但价格未知，所以新任务会停住，不会扣费。保存成功不等于已经能用。', 'This is saved, but the price is unknown, so a new job stops and is not charged. Saved does not mean usable.')}</p>}
+                {(current.blocked === 'needs_user_confirm' || current.blocked === 'quote_unknown') && current.effective.source === 'saved' && <p className="ca-prov__banner" role="status" data-testid="provider-blocked">{tx('已保存。Replicate 按质量和输入计费，官方没有给出硬上限，这里不编造价格。下次生成会先问使用的人；不同意就不会发送。管理员保存不等于别人同意付费。', 'Saved. Replicate bills by quality and inputs, and the official page gives no hard cap, so no price is invented here. The next run asks the person generating; declining sends nothing. An admin save is not someone else agreeing to pay.')}</p>}
                 {!current.key_ok && draft.primary.provider === 'replicate' && <p className="ca-prov__banner" data-testid="provider-nokey">{tx('还没有 Replicate 密钥。可以先留草稿，不能启用。', 'No Replicate key yet. You can keep a draft, but you cannot turn it on.')}</p>}
                 {notice && <p className="ca-prov__banner" role="status" data-testid="provider-saved">{notice}</p>}
                 {error && <p className="ca-prov__banner" role="alert" data-testid="provider-error">{error}</p>}
@@ -265,7 +265,7 @@ export function ProviderAdmin() {
                     saveToolBatch({ ids: checked, primary: { provider: 'replicate', model: batchModel }, backup: null, fallback: false, activate: true }).then((next) => {
                       absorb(next)
                       setChecked([])
-                      setNotice(next.usable ? tx('所选工具已启用。', 'Selected tools are on.') : tx(`已保存 ${next.applied?.length || checked.length} 个。价格未知，这些新任务会停住，不会扣费。没选中的工具没变。`, `Saved ${next.applied?.length || 0}. Price unknown, so those new jobs stop and are not charged. Unselected tools are unchanged.`))
+                      setNotice(next.usable ? tx('所选工具已启用。', 'Selected tools are on.') : tx(`已保存 ${next.applied?.length || checked.length} 个。费用没有硬上限，使用的人确认后才会发送。没选中的工具没变。`, `Saved ${next.applied?.length || 0}. There is no hard cap, so a run waits for the person using it. Unselected tools are unchanged.`))
                     }).catch((e: unknown) => setError(failText(e))).finally(() => setBusy(false))
                   }}>{tx('保存所选', 'Save selected')}</button>
                 </div>
@@ -286,6 +286,7 @@ export function ProviderAdmin() {
 function Status({ tool, dirty }: { tool: ToolRow; dirty: boolean }) {
   if (dirty) return <span className="ca-prov__chip" data-state="draft">{tx('未保存', 'Unsaved')}</span>
   if (tool.effective.source === 'default') return <span className="ca-prov__chip">{tx('默认', 'Default')}</span>
+  if (tool.blocked === 'needs_user_confirm' || tool.blocked === 'quote_unknown') return <span className="ca-prov__chip" data-state="draft">{tx('待确认', 'Needs confirm')}</span>
   if (tool.blocked) return <span className="ca-prov__chip" data-state="blocked">{tx('不能生成', 'Blocked')}</span>
   return <span className="ca-prov__chip" data-state="live">{tool.effective.provider === 'replicate' ? 'Replicate' : 'WaveSpeed'}</span>
 }
@@ -318,7 +319,7 @@ function impact(tool: ToolRow, draft: ToolRoute) {
   if (!same(now.primary, draft.primary)) bits.push(tx(`主线路改为 ${providerName(draft.primary.provider)}。`, `Primary becomes ${providerName(draft.primary.provider)}.`))
   if (!same(now.backup, draft.backup)) bits.push(draft.backup ? tx('备选已设置。', 'A backup is set.') : tx('去掉备选。', 'Backup removed.'))
   if (now.fallback !== draft.fallback) bits.push(draft.fallback ? tx('兜底会打开。', 'Fallback will turn on.') : tx('兜底会关掉。', 'Fallback will turn off.'))
-  if (draft.primary.provider === 'replicate') bits.push(tx('价格未知，启用后新任务会停住。', 'Price unknown. After turning it on, a new job stops.'))
+  if (draft.primary.provider === 'replicate') bits.push(tx('费用未知。使用的人确认后才会发送。', 'Cost unknown. Nothing is sent until the person using it confirms.'))
   return bits.join(' ')
 }
 

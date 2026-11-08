@@ -171,9 +171,23 @@ async def test_unknown_price_and_incompatible_backup_do_not_switch(monkeypatch):
     import ComfyArt.api.wavespeed as wavespeed
     from ComfyArt.api.wavespeed import WaveSpeedError
     posts = await _arm(monkeypatch, lambda: RouteFailure("not_accepted", "no task"), lambda model: (None, "unknown"))
+    job = {"tool": "edit_image", "feature": "image_edit", "prompt": "e", "image": "https://cdn.example/a.png"}
     with pytest.raises(WaveSpeedError) as caught:
-        await wavespeed.submit({"tool": "edit_image", "feature": "image_edit", "prompt": "e", "image": "https://cdn.example/a.png"})
-    assert caught.value.kind == "price" and posts == []
+        await wavespeed.submit(job)
+    assert caught.value.status == 409 and caught.value.unpriced and caught.value.kind == "confirm" and posts == []
+    provider_admin._runs.clear()
+    with pytest.raises(WaveSpeedError) as caught:
+        await wavespeed.submit({**job, "confirmed": True})
+    assert len(posts) == 1 and caught.value.kind == "price"
+    posts.clear()
+    provider_admin._runs.clear()
+    provider_admin._confirm_offers.clear()
+    with pytest.raises(WaveSpeedError) as caught:
+        await wavespeed.submit({**job, "prompt": "e-bypass", "confirmed": True})
+    assert posts == [] and caught.value.unpriced
+    estimate = await provider_admin.dispatch_estimate(job, lambda inputs: {"price": 9, "source": "quote"})
+    assert estimate["price"] is None and estimate["source"] == "unpriced" and estimate["confirm"] is True
+    assert "0.030405" not in json.dumps(estimate)
 
     provider_admin._runs.clear()
     provider_admin._write_tool("to_gif", {
@@ -259,7 +273,7 @@ async def test_batch_skips_unconnected_tools(client, monkeypatch):
     })
     body = await res.json()
     assert res.status == 200 and body["applied"] == ["edit_image"] and "generate_video" in body["skipped"]
-    assert body["usable"] is False and body["blocked"] == "quote_unknown"
+    assert body["usable"] is False and body["blocked"] == "needs_user_confirm"
     video = next(row for row in body["tools"] if row["id"] == "generate_video")
     edit = next(row for row in body["tools"] if row["id"] == "edit_image")
     assert video["effective"]["source"] == "default"

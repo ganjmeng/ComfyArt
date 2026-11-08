@@ -150,9 +150,9 @@ def main() -> None:
         log.add(
             "主备共存",
             "改图选 Replicate Flare、备选 WaveSpeed、打开兜底并保存。生成图片不改。",
-            "改图生效为 Replicate，生成图片仍是默认。价格未知会拦住新任务。",
-            f"页面「{live}」；拦截「{blocked[:42]}」；影响「{impact[:42]}」；接口改图={edit['effective']['provider']} 生成图片={gen['effective']['source']}。",
-            coexist and "价格未知" in blocked and "没受理时会试备选" in live,
+            "改图生效为 Replicate，生成图片仍是默认。费用未知时要使用的人确认，管理员保存不等于同意付费。",
+            f"页面「{live}」；拦截「{blocked[:48]}」；影响「{impact[:42]}」；接口改图={edit['effective']['provider']} 生成图片={gen['effective']['source']}。",
+            coexist and "不编造价格" in blocked and "管理员保存不等于" in blocked and "没受理时会试备选" in live,
             shot(page, "walk-coexist"),
         )
 

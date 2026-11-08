@@ -59,11 +59,14 @@ def reset_runtime() -> None:
     _runs.clear()
     _run_locks.clear()
     _audit.clear()
+    _confirm_offers.clear()
 
 
 _runs: dict[str, dict] = {}
 _run_locks: dict[str, object] = {}
 _audit: list[dict] = []
+_confirm_offers: dict[str, float] = {}
+CONFIRM_TTL = 600
 
 
 def _path() -> str:
@@ -506,15 +509,41 @@ def _estimate_body(decision: dict) -> dict:
     return {
         "price": None,
         "currency": "USD",
-        "source": "none",
+        "source": "unpriced",
         "confirm_usd": confirm_usd(),
-        "confirm": False,
+        "confirm": True,
         "quote_status": "unknown",
         "provider": decision.get("provider"),
         "model": decision.get("model"),
         "capability": decision.get("capability"),
-        "blocked": True,
+        "blocked": "needs_user_confirm",
+        "billing": "token_no_cap",
     }
+
+
+def _confirm_key(decision: dict, inputs: dict) -> str:
+    """Bind a yes to this provider, model, and the parameters that change the bill."""
+    params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+    payload = {
+        "provider": decision.get("provider"),
+        "model": decision.get("model"),
+        "capability": decision.get("capability"),
+        "revision": decision.get("revision"),
+        "prompt": str(inputs.get("prompt") or ""),
+        "fmt": str(params.get("output_format") or inputs.get("output_format") or ""),
+        "quality": str(params.get("quality") or inputs.get("quality") or ""),
+        "frames": params.get("frame_count", inputs.get("frame_count")),
+        "frame_ms": params.get("frame_duration_ms", inputs.get("frame_duration_ms")),
+        "images": [str(v) for v in (inputs.get("images") or [])] if isinstance(inputs.get("images"), list) else [],
+        "image": str(inputs.get("image") or ""),
+        "w": inputs.get("width"),
+        "h": inputs.get("height"),
+    }
+    return json.dumps(payload, sort_keys=True, default=str)
+
+
+def _known_quote(price, source: str) -> bool:
+    return source == "quote" and isinstance(price, (int, float)) and not isinstance(price, bool)
 
 
 async def _replicate_execute(decision: dict, inputs: dict) -> str:
@@ -524,8 +553,21 @@ async def _replicate_execute(decision: dict, inputs: dict) -> str:
     if not _env_configured("REPLICATE_API_TOKEN"):
         raise WaveSpeedError("Replicate 未配置 REPLICATE_API_TOKEN，未发送请求", 400, kind="provider_unconfigured")
     price, source = await _quote_status(decision, inputs)
-    if source != "quote" or not isinstance(price, (int, float)) or isinstance(price, bool):
-        raise WaveSpeedError("价格未知，已停止。不会按静图价确认，也未向供应商发送请求", 400, kind="price")
+    if not _known_quote(price, source):
+        key = _confirm_key(decision, inputs)
+        offered = _confirm_offers.get(key)
+        fresh = offered is not None and time.time() - offered < CONFIRM_TTL
+        if not inputs.get("confirmed") or not fresh:
+            _confirm_offers[key] = time.time()
+            params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+            quality = str(params.get("quality") or inputs.get("quality") or "auto")
+            fmt = str(params.get("output_format") or inputs.get("output_format") or "image")
+            raise WaveSpeedError(
+                "Replicate 没有公布这次请求的硬上限。费用随质量、帧数和输入图变化，这里不编造价格。使用的人确认后才会发送。",
+                409, unpriced=True, kind="confirm", tier=f"{decision.get('model')} · {fmt} · {quality}",
+            )
+        _confirm_offers.pop(key, None)
+        price = None
     try:
         body = prediction_body(decision["capability"], inputs)
     except PayloadError as e:
@@ -543,7 +585,10 @@ async def _replicate_execute(decision: dict, inputs: dict) -> str:
     except WaveSpeedError:
         raise
     from . import gen_ledger
-    gen_ledger.record_submit(prediction_id, "replicate", decision["model"], decision["capability"], float(price))
+    gen_ledger.record_submit(
+        prediction_id, "replicate", decision["model"], decision["capability"],
+        float(price) if _known_quote(price, source) else None,
+    )
     _replicate_jobs[prediction_id] = {
         "provider": "replicate", "model": decision["model"], "capability": decision["capability"],
         "revision": decision["revision"], "started": time.time(),
@@ -623,7 +668,7 @@ def _tools_view() -> list[dict]:
             "choices": public_choices(tool),
             "key_ok": key_ok,
             "usable": not replicate,
-            "blocked": "quote_unknown" if replicate else "",
+            "blocked": "needs_user_confirm" if replicate else "",
             "effective": {
                 "provider": primary.get("provider") or "wavespeed",
                 "model": primary.get("model") or "existing",
@@ -718,6 +763,9 @@ async def _execute_route(route: dict, inputs: dict, orig):
         return task
     except Exception as exc:
         kind = classify_failure(exc)
+        if kind == "confirm":
+            _note(route, fallback=False, kind=kind, task=None)
+            raise
         if kind == "accepted" and getattr(exc, "task_id", None):
             _note(route, fallback=False, kind=kind, task=exc.task_id)
             return exc.task_id
@@ -764,6 +812,8 @@ async def dispatch_submit(inputs, orig):
         try:
             task = await _execute_route(decision, inputs, orig)
         except Exception as exc:
+            if getattr(exc, "unpriced", False) or getattr(exc, "kind", "") == "confirm":
+                raise
             _runs[key] = {"error": exc}
             raise
         _runs[key] = {"task": task}
@@ -783,10 +833,11 @@ async def dispatch_estimate(inputs, orig):
     body["provider"] = "replicate"
     body["fallback"] = bool(decision.get("fallback"))
     body["usable"] = False
-    body["blocked"] = "quote_unknown"
+    body["blocked"] = "needs_user_confirm"
     body["quote_status"] = "unknown"
-    body["confirm"] = False
+    body["confirm"] = True
     body["price"] = None
+    body["billing"] = "token_no_cap"
     return body
 
 
@@ -826,7 +877,7 @@ async def put_tool(request: web.Request) -> web.Response:
     state["saved_tool"] = tool_id
     state["activated"] = activate
     state["usable"] = route["primary"]["provider"] != "replicate"
-    state["blocked"] = "" if state["usable"] else "quote_unknown"
+    state["blocked"] = "" if state["usable"] else "needs_user_confirm"
     return web.json_response(state)
 
 
@@ -889,7 +940,7 @@ async def put_tools_batch(request: web.Request) -> web.Response:
     state["skipped"] = skipped
     state["activated"] = activate
     state["usable"] = not any(route["primary"]["provider"] == "replicate" for _, route in planned)
-    state["blocked"] = "" if state["usable"] else "quote_unknown"
+    state["blocked"] = "" if state["usable"] else "needs_user_confirm"
     return web.json_response(state)
 
 
