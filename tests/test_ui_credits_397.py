@@ -107,8 +107,8 @@ def test_migrate_confirm_prefs_helper_cases():
 
 def test_cloud_confirm_locales_use_credits_not_dollars():
     for key in (
-        "jobs.confirmCost", "jobs.confirmEstimate", "jobs.confirmEstimateTier",
-        "jobs.confirmSegLeft", "jobs.confirmSegMax", "wsKey.confirmUsd",
+        "jobs.confirmCost", "jobs.confirmCostGif", "jobs.confirmEstimate", "jobs.confirmEstimateTier",
+        "jobs.confirmEstimateGif", "jobs.confirmUnpricedGif", "jobs.confirmSegLeft", "jobs.confirmSegMax", "wsKey.confirmUsd",
     ):
         assert "$" not in ZH[key], (key, ZH[key])
         assert "$" not in EN[key], (key, EN[key])
@@ -118,7 +118,7 @@ def test_cloud_confirm_locales_use_credits_not_dollars():
 
 def test_ask_cost_uses_ui_credits():
     comfy = (ROOT / "src/comfy.ts").read_text()
-    ask = comfy[comfy.index("export function askCost"):comfy.index("export async function queuePrompt")]
+    ask = (ROOT / "src/confirmText.ts").read_text()
     assert "uiCredits(price ?? 0)" in ask
     assert "usd(price" not in ask
     # mutation: dialog amount must come from uiCredits, not usd()

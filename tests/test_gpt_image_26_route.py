@@ -193,6 +193,45 @@ def test_still_gif_makes_zero_price_and_generation_posts(local):
         assert _Session.posts == []
 
 
+def test_confirm_fields_carry_effective_frames_from_the_request_local_mock(local, monkeypatch):
+    """The 0.05 figure is this file's local stand-in, not a live WaveSpeed price API response."""
+    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0)
+    high = {"feature": "text_to_image", "prompt": "loop", "params": {"output_format": "gif", "frame_count": 99, "frame_duration_ms": 5}}
+    with pytest.raises(wavespeed.WaveSpeedError) as err:
+        asyncio.run(wavespeed.submit(dict(high)))
+    payload = json.loads(wavespeed._respond_error(err.value).body)["error"]
+    assert payload["confirm_usd"] == 0.05
+    assert payload.get("estimate") is not True
+    assert payload["gif"] == {
+        "frame_count": 16, "frame_duration_ms": 20,
+        "asked_frame_count": 99, "asked_frame_duration_ms": 5,
+    }
+    assert _gen(_Session.posts) == []
+    assert _price(_Session.posts), "the local stand-in recorded the quote"
+    _Session.posts = []
+    low = {"feature": "text_to_image", "prompt": "loop", "params": {"output_format": "gif", "frame_count": 1}}
+    with pytest.raises(wavespeed.WaveSpeedError) as low_err:
+        asyncio.run(wavespeed.submit(dict(low)))
+    low_gif = json.loads(wavespeed._respond_error(low_err.value).body)["error"]["gif"]
+    assert low_gif["frame_count"] == 2 and low_gif["frame_duration_ms"] == 200
+    assert low_gif["asked_frame_count"] == 1
+    assert "asked_frame_duration_ms" not in low_gif
+    assert _gen(_Session.posts) == []
+
+    async def unpriced(model, inputs):
+        return None, "unpriced"
+
+    monkeypatch.setattr(wavespeed, "quote", unpriced)
+    _Session.posts = []
+    with pytest.raises(wavespeed.WaveSpeedError) as none:
+        asyncio.run(wavespeed.submit(dict(high)))
+    body = json.loads(wavespeed._respond_error(none.value).body)["error"]
+    assert body["unpriced"] is True and body["confirm_usd"] is None
+    assert body["gif"]["frame_count"] == 16 and body["gif"]["asked_frame_count"] == 99
+    assert body["gif"]["frame_duration_ms"] == 20
+    assert _Session.posts == []
+
+
 def test_clamped_frame_count_matches_across_quote_confirm_and_post(local, monkeypatch):
     job = {"feature": "text_to_image", "prompt": "loop", "params": {"output_format": "gif", "frame_count": 99, "frame_duration_ms": 5}}
     est = asyncio.run(wavespeed.estimate(dict(job)))

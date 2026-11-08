@@ -1,7 +1,7 @@
 import { confirmAtom } from './ui/Confirm'
 import { readLocal } from './localPrefs'
+import { confirmDesc, type ConfirmDetail, type ConfirmGif } from './confirmText'
 import { t } from './i18n'
-import { uiCredits } from './usd'
 import { onComfyEvent } from './ws'
 import { isWsGraph, WS_ID } from './wavespeed'
 import { logRawGenError, mapUnknownError, wsBodyError, wsErrorText } from './wsErrors'
@@ -177,17 +177,13 @@ export function popAgentCommand() { agentDepth = Math.max(0, agentDepth - 1) }
 /** True only while an agent command is on the stack and the plan was confirmed. */
 export function planBypassNow() { return planConfirmed && agentDepth > 0 }
 
+export type { ConfirmDetail, ConfirmGif }
+
 /** Second confirmation for costly cloud jobs, in the app's own Confirm dialog. */
-export function askCost(price: number | null, segSplits?: number, segCapped?: boolean, note = '', estimate?: { tier?: string; unpriced?: boolean }): Promise<boolean> {
+export function askCost(price: number | null, segSplits?: number, segCapped?: boolean, note = '', estimate?: ConfirmDetail): Promise<boolean> {
   // #138: seg maps quote an upper bound before anything is recognised (nothing is charged before this dialog);
   // on a retry only the classes still missing a mask are quoted
-  const p = String(uiCredits(price ?? 0))  // #397: credits only in the confirm dialog (never dollars)
-  // #159: the price API failed, so this is the catalog estimate for the tier that will be submitted, and it says so
-  // #159: no price for the submitted tier: no amount at all, only the tier it will be charged at
-  const cost = estimate?.unpriced || price == null ? t('jobs.confirmUnpriced', estimate?.tier || t('jobs.thisTier'))
-    : estimate && typeof segSplits !== 'number' ? (estimate.tier ? t('jobs.confirmEstimateTier', p, estimate.tier) : t('jobs.confirmEstimate', p))
-    : typeof segSplits !== 'number' ? t('jobs.confirmCost', p)
-    : segCapped ? t('jobs.confirmSegMax', p, segSplits) : t('jobs.confirmSegLeft', p, segSplits)
+  const cost = confirmDesc(price, segSplits, segCapped, estimate)
   return new Promise((resolve) => confirmAtom.set({
     title: t('jobs.confirmTitle'), ...(note ? { note } : {}), desc: cost, ok: t('jobs.confirmOk'),
     run: () => resolve(true), cancel: () => resolve(false),
@@ -214,7 +210,16 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
       const routed = typeof wsBody?.error?.model === 'string' ? wsBody.error.model : ''
       const asked = typeof inputs.duration_note === 'string' ? inputs.duration_note : ''
       const note = [routed, asked, gifNote].filter(Boolean).join('\n')
-      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note, wsBody?.error?.estimate || wsBody?.error?.unpriced ? { tier: typeof wsBody.error.tier === 'string' ? wsBody.error.tier : undefined, unpriced: !!wsBody.error.unpriced } : undefined))) throw new CostDeclined()
+      const rawGif = wsBody?.error?.gif
+      const gif = rawGif && typeof rawGif.frame_count === 'number' && typeof rawGif.frame_duration_ms === 'number' ? rawGif as ConfirmGif : undefined
+      const detail: ConfirmDetail = {
+        tier: typeof wsBody.error.tier === 'string' ? wsBody.error.tier : undefined,
+        unpriced: !!wsBody.error.unpriced,
+        estimate: !!wsBody.error.estimate,
+        live: typeof price === 'number' && !wsBody.error.unpriced && !wsBody.error.estimate,
+        ...(gif ? { gif } : {}),
+      }
+      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note, detail.unpriced || detail.estimate || detail.live || gif ? detail : undefined))) throw new CostDeclined()
       ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
       wsBody = await ws.json().catch(() => null)
     }

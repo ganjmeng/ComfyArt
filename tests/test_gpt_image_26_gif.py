@@ -302,6 +302,25 @@ def test_list_models_exposes_26_complexity_without_changing_default(catalog):
     assert FLARE_26 in ids and SUN_26 in ids and FLARE_25 in ids
 
 
+def test_visible_confirm_text_uses_request_frames_local_mock(tmp_path):
+    """Sentence test only. 0.05 is a local stand-in inside confirm_desc.ts, not a live price API."""
+    root = Path(__file__).resolve().parents[1]
+    rolldown = root / "node_modules" / ".bin" / "rolldown"
+    if not rolldown.exists() or not shutil.which("node"):
+        pytest.skip("needs node + npm install")
+    out = tmp_path / "confirm.mjs"
+    subprocess.run([str(rolldown), "-c", "tests/js/rolldown.config.mjs"], cwd=root, check=True,
+                   capture_output=True, env={**os.environ, "OUT": str(out), "ENTRY": "confirm_desc.ts"})
+    got = json.loads(subprocess.run(["node", str(out)], check=True, capture_output=True, text=True).stdout)
+    assert got["mockPrice"] is True and got["credits"] == 5
+    assert got["live99"] == "这次云端生成约需 5 积分，GIF 16 帧（已从 99 帧调整），每帧 20 毫秒（已从 5 毫秒调整），确定继续吗？"
+    assert got["live1"] == "这次云端生成约需 5 积分，GIF 2 帧（已从 1 帧调整），每帧 200 毫秒，确定继续吗？"
+    assert "毫秒调整" not in got["live1"]
+    assert got["unpriced"] == "暂时查不到准确价格。GIF 16 帧（已从 99 帧调整），每帧 20 毫秒（已从 5 毫秒调整）。继续会按这个档位实际扣费，确定继续吗？"
+    assert "积分" not in got["unpriced"]
+    assert got["estimate"] == "估算价：GIF 16 帧（已从 99 帧调整），每帧 20 毫秒，约 5 积分（暂时查不到实时价格，以实际扣费为准），确定继续吗？"
+
+
 def test_frontend_gif_file_names_and_clamps(tmp_path):
     root = Path(__file__).resolve().parents[1]
     rolldown = root / "node_modules" / ".bin" / "rolldown"

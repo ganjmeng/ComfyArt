@@ -49,6 +49,15 @@ _GIF_RE = re.compile(r"(?<![A-Za-z])gifs?(?![A-Za-z])", re.I)
 _VIDEO_FEATURES = {"text_to_video", "image_to_video", "reference_to_video", "motion_control", "lip_sync", "animate_image"}
 
 
+def asked_int(value) -> int | None:
+    """A whole number the caller actually sent. Missing or non-integers are not an original value."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        if isinstance(value, str) and value.strip().lstrip("-").isdigit():
+            return int(value.strip())
+        return None
+    return value
+
+
 def clamp_int(value, bounds: tuple[int, int, int]) -> int:
     lo, hi, default = bounds
     try:
@@ -253,13 +262,21 @@ def route_gif(inputs: dict, schemas: dict | None = None) -> dict:
         raise StillGifUnsupported(refusal_text())
     out = dict(inputs)
     params = dict(out.get("params") or {}) if isinstance(out.get("params"), dict) else {}
-    spec = gif_params(params.get("frame_count", out.get("frame_count")), params.get("frame_duration_ms", out.get("frame_duration_ms")))
+    raw_count = params.get("frame_count", out.get("frame_count"))
+    raw_ms = params.get("frame_duration_ms", out.get("frame_duration_ms"))
+    spec = gif_params(raw_count, raw_ms)
     params.update(spec)
     out["params"] = params
     out["output_format"] = "gif"
     # Top-level copies stay equal to params so quote/confirm and the POST use one clamped count.
     out["frame_count"] = spec["frame_count"]
     out["frame_duration_ms"] = spec["frame_duration_ms"]
+    asked_count = asked_int(raw_count)
+    asked_ms = asked_int(raw_ms)
+    if asked_count is not None and asked_count != spec["frame_count"]:
+        out["gif_asked_frame_count"] = asked_count
+    if asked_ms is not None and asked_ms != spec["frame_duration_ms"]:
+        out["gif_asked_frame_duration_ms"] = asked_ms
     feature = str(out.get("feature") or "text_to_image")
     video = feature in _VIDEO_FEATURES or "video" in feature
     out["feature"] = "text_to_image"
