@@ -2,7 +2,9 @@
 ai-model featured is the signed v7 402x505 PNG.
 portrait-studio featured is the QA PASS free v1 378x459 PNG.
 youtube-channel-banner featured is the QA PASS free v1 1584x396 PNG.
-No generation. $0 static. WaveSpeed unused for these two.
+creator-identity featured is the owner/product/QA PASS v4 782x432 PNG (MAE≈36 vs REFERENCE).
+logo-animation featured is the owner/product/QA PASS v4r 743x445 PNG (MAE≈33 vs REFERENCE).
+No generation. $0 static. WaveSpeed unused. Cover and examples stay.
 """
 from __future__ import annotations
 
@@ -54,7 +56,6 @@ FEATURED = {
 }
 HELD_EMPTY = (
     "animated-poster",
-    "creator-identity", "logo-animation",
 )
 
 
@@ -156,3 +157,21 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert hashlib.sha256((ROOT / "805/reuse/youtube-channel-banner/featured.png").read_bytes()).hexdigest() == "69caf1f4663d08a95b72a836175515e9f8755780642db86453efb069e63f0ce6"
     assert yt[:8] == b"\x89PNG\r\n\x1a\n"
     assert struct.unpack(">II", yt[16:24]) == (1584, 396)
+    creator = entries["creator-identity"]
+    assert "cover: cover643('creator-identity')" in creator
+    assert "examples: ex643('creator-identity', [1], '3e2df6b2192a6600f3b32d394f8fd5ab820ca98b')" in creator
+    assert "featured: [pinned('805/reuse/creator-identity', 'a9865d28d584068861020b7eda74ddd6e4daab75', 'featured.png')]" in creator
+    ci = subprocess.check_output(["git", "show", "a9865d28d584068861020b7eda74ddd6e4daab75:805/reuse/creator-identity/featured.png"], cwd=ROOT)
+    assert hashlib.sha256(ci).hexdigest() == "4928eeb817d369aca3ee1576e7112199e3b9f8a70875cf6ea00c5f24af4bb1e1"
+    assert hashlib.sha256((ROOT / "805/reuse/creator-identity/featured.png").read_bytes()).hexdigest() == "4928eeb817d369aca3ee1576e7112199e3b9f8a70875cf6ea00c5f24af4bb1e1"
+    assert ci[:8] == b"\x89PNG\r\n\x1a\n"
+    assert struct.unpack(">II", ci[16:24]) == (782, 432)
+    logo = entries["logo-animation"]
+    assert "cover: cover643('logo-animation')" in logo
+    assert "examples: ex643('logo-animation', [1, 2, 3, 4], '12d051fe4c9ce81405b4dd4e81094e21501ae9c4')" in logo
+    assert "featured: [pinned('805/reuse/logo-animation', 'a9865d28d584068861020b7eda74ddd6e4daab75', 'featured.png')]" in logo
+    la = subprocess.check_output(["git", "show", "a9865d28d584068861020b7eda74ddd6e4daab75:805/reuse/logo-animation/featured.png"], cwd=ROOT)
+    assert hashlib.sha256(la).hexdigest() == "23ea2786eae73a9d295f43bbf9edf5b1d46774da4d8e6516d60b916ceda9e2e2"
+    assert hashlib.sha256((ROOT / "805/reuse/logo-animation/featured.png").read_bytes()).hexdigest() == "23ea2786eae73a9d295f43bbf9edf5b1d46774da4d8e6516d60b916ceda9e2e2"
+    assert la[:8] == b"\x89PNG\r\n\x1a\n"
+    assert struct.unpack(">II", la[16:24]) == (743, 445)
