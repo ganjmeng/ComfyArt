@@ -8,7 +8,7 @@ export const TASK_REF_PREFIXES = ['任务编号：', 'Task ID: ']
 export const isTaskRefCode = (before: string) => TASK_REF_PREFIXES.some((p) => before.endsWith(p))
 
 export const TOP_UP_URL = 'https://wavespeed.ai/top-up'
-const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany', 'noOutput', 'noTaskId', 'unregisteredModel'] as const
+const KINDS = ['insufficientCredit', 'moderation', 'rateLimit', 'invalidKey', 'network', 'failed', 'timeout', 'loraUrl', 'loraUnsupported', 'loraTooMany', 'noOutput', 'noTaskId', 'unregisteredModel', 'svgRejected', 'svgEdit', 'svgCount'] as const
 export type WsErrorKind = typeof KINDS[number]
 
 /** #721: our own short validation strings users can act on — keep as-is (explicit allowlist, no blanket pass-through). */

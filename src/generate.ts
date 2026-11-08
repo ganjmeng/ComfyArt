@@ -14,6 +14,7 @@ import { annotated, randomSeed, type Built } from './workflows'
 import { MAX_VIDEO_REF_KINDS, VIDEO_AREAS, videoSize, type Scene } from './videoGraphs'
 import { durationNote, SHOTS, STYLES, VIDEO_RATIOS, videoResolution } from './genOptions'
 import { gifModelId, gifSpec, type GifSpec } from './gifFile'
+import { svgModelId, svgSpec, type SvgSpec } from './svgFile'
 
 export function scenesOf(shape: GeneratorShape): Scene[] {
   return (shape.meta.scenes as Scene[] | undefined) ?? []
@@ -224,6 +225,15 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     const negative_prompt = negativeFor(shape, model)
     const sizeLock = shape.meta?.sizeLockModel ? { size_lock: true as const } : {}
     const gif = gifSpec(shape.meta)
+    const svg = svgSpec(shape.meta)
+    if (svg) {
+      // #826: SVG stays on 2.6 text-to-image, n=1. References and edit are refused.
+      if (images.length || shape.props.count !== 1) throw new Error(images.length ? t('wsErr.svgEdit') : t('wsErr.svgCount'))
+      return wsBuilt({
+        feature: 'text_to_image', model: svgModelId(model.auto ? undefined : model.id), prompt, width, height,
+        seed, negative_prompt, params: imageParams(shape, model, null, svg), ...sizeLock,
+      })
+    }
     if (gif) {
       // #825: GIF stays on text-to-image (2.6). A still is a reference, not an edit and not a video.
       return wsBuilt({
@@ -245,7 +255,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
     return images.length
       ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...(typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}), seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock })
-      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: imageParams(shape, model, null), width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
+      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: imageParams(shape, model, null, svgSpec(shape.meta)), width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')
@@ -281,6 +291,11 @@ function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
   if (!model || !(model.cloud || isCloudModel(model.id))) return null
   const [width, height] = pixelSizeOf(shape)
   const gif = gifSpec(shape.meta)
+  const svg = svgSpec(shape.meta)
+  if (svg) {
+    if (refs.length || baseOf(shape) || shape.props.count !== 1) return null
+    return { feature: 'text_to_image', model: svgModelId(model.auto ? undefined : model.id), width, height, params: imageParams(shape, model, null, svg) }
+  }
   if (gif) {
     const images = [...(baseOf(shape) ? ['ref'] : []), ...refs.map(() => 'ref')]
     return { feature: 'text_to_image', model: gifModelId(model.auto ? undefined : model.id), width, height, image: images[0], images: images.length ? images : undefined, params: imageParams(shape, model, gif) }
@@ -290,13 +305,14 @@ function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
   return refs.length || baseOf(shape) ? { feature: 'image_edit', model: editModel, width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: imageParams(shape, model, null) }
 }
 
-function imageParams(shape: GeneratorShape, model: { qualities?: string[]; complexities?: string[] } | null | undefined, gif: GifSpec | null): Record<string, unknown> | undefined {
+function imageParams(shape: GeneratorShape, model: { qualities?: string[]; complexities?: string[] } | null | undefined, gif: GifSpec | null, svg: SvgSpec | null = null): Record<string, unknown> | undefined {
   const params: Record<string, unknown> = {}
   // #189: quality is sent only when the user picked a tier the schema lists. 'standard' (the card default) is not a tier.
   if (model?.qualities?.includes(shape.props.quality)) params.quality = shape.props.quality
   const complexity = shape.meta.complexity
   if (typeof complexity === 'string' && complexity && (model?.complexities?.includes(complexity) || ['low', 'medium', 'high'].includes(complexity))) params.complexity = complexity
   if (gif) Object.assign(params, gif)
+  if (svg) params.output_format = 'svg'
   return Object.keys(params).length ? params : undefined
 }
 

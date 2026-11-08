@@ -2,6 +2,7 @@ import logging
 
 from ..auto_models import UnregisteredModel, choose, load_table, note, registered, skill_pin, tool_feature
 from ..gif_image import choice as gif_choice, ensure_args as ensure_gif_args, requests_gif
+from ..svg_image import block_reason as svg_block, choice as svg_choice, ensure_args as ensure_svg_args, requests_svg
 from ..mcp_commands import submit_command
 from ..wavespeed import compact_models, grouped_models, load_config, model_details
 from ._context import BOT_CHAT_ID, PROJECT
@@ -61,7 +62,10 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         # #707: a named skill's declared pixels reach the page even if the provider omitted them.
         from ...bot.skill_output import apply_generate
         args = apply_generate(args)
-        args = ensure_gif_args(args)  # #825: 动图/GIF fills output_format + frame defaults; does not pin quality
+        if requests_svg(args) and not svg_block(args):
+            args = ensure_svg_args(args)  # #826: svg + n=1. Does not pin quality. Edit / n≠1 stay blocked.
+        else:
+            args = ensure_gif_args(args)  # #825: 动图/GIF fills output_format + frame defaults; does not pin quality
     from ..skill_size import EXACT_SKILLS
     if fallback_for and action == "generate_image" and args.get("skill") in EXACT_SKILLS:
         # #707: do not retry a banner on a model that would snap 1584×396 to an aspect ratio.
@@ -108,7 +112,20 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             choice = {**(choice or {"model": "", "auto": True, "category": "auto",
                                     "reason": {"zh": "自动选择", "en": "Auto picked it"}}),
                       "requested_model": requested, "fallback_reason": _unregistered_reason(requested)}
-        if choice and choice.get("category") == "gif":
+        if choice and choice.get("category") == "svg_rejected":
+            err = choice["svg_error"]
+            return {"status": "failed", "generation_succeeded": False, "error": err["message"], "kind": err["kind"],
+                    "user_message": err["message"]}
+        if choice and choice.get("category") == "svg":
+            # #826: SVG is 2.6 text-to-image, n=1. The stable default stays 2.5 for stills.
+            args = {k: v for k, v in args.items() if k != "edit_model"}
+            args["model"] = choice["model"]
+            args["output_format"] = "svg"
+            args["count"] = 1
+            args["n"] = 1
+            if choice.get("auto"):
+                args["auto_model"] = True
+        elif choice and choice.get("category") == "gif":
             # #825: a GIF never follows refs onto image_edit or a video model. 2.6 is selected even when
             # the caller named 2.5 or left model empty (Auto / the stable default stays 2.5 for stills).
             args = {k: v for k, v in args.items() if k != "edit_model"}
@@ -296,6 +313,13 @@ def _auto_choice(action: str, args: dict) -> dict | None:
         # #825: GIF / 动图 is text-to-image on GPT Image 2.6. Checked before refs, which otherwise
         # become an image_edit (edit has no gif) or could be read as a video.
         return gif_choice(str(args.get("model") or ""), bool(args.get("refs") or args.get("base")))
+    if action == "generate_image" and requests_svg(args):
+        # #826: SVG is 2.6 text-to-image, n=1. Edit and references are refused. Checked before the
+        # reference branch, which would otherwise select an edit model.
+        blocked = svg_block(args)
+        if blocked:
+            return {"model": "", "auto": True, "category": "svg_rejected", "svg_error": blocked, "reason": blocked["reason"]}
+        return svg_choice(str(args.get("model") or ""))
     pin = _skill_row(action, args)
     if pin:
         return _skill_choice(args, pin)
@@ -364,14 +388,17 @@ SPECS: dict[str, dict] = {
         "GIF / 动图: set output_format to gif (frame_count 2-16, default 9; frame_duration_ms 20-2000, default 200). "
         "Omit model unless the user named one; a GIF uses GPT Image 2.6 Flare, not the stable 2.5 default. "
         "A still image is refs or base plus this GIF call: edit cannot emit gif, so the still is a reference for a new "
-        "text-to-image GIF. Do not call generate_video or animate_image for a GIF. complexity is optional "
+        "text-to-image GIF. Do not call generate_video or animate_image for a GIF. "
+        "SVG / 矢量 / 可编辑路径: set output_format to svg and count to 1. SVG is GPT Image 2.6 text-to-image only. "
+        "Do not pass refs, base, or an edit model, and do not use edit_image to make an SVG. "
+        "complexity is optional "
         "(low, medium, high) and does not change the price; omit it to leave the schema default. Do not set quality "
         "unless the user picked a tier.",
         {"prompt": {"type": "string"}, "model": _MODEL_AUTO, "ratio": {"type": "string"},
          "width": {"type": "integer"}, "height": {"type": "integer"},
          "count": {"type": "integer"}, "refs": _IDS, "ref_modes": {"type": "array", "items": {"type": "string"}}, "base": {"type": "string"},
          "base_strength": {"type": "integer"}, "skill": {"type": "string"},
-         "output_format": {"type": "string", "enum": ["png", "jpeg", "webp", "gif"]},
+         "output_format": {"type": "string", "enum": ["png", "jpeg", "webp", "gif", "svg"]},
          "frame_count": {"type": "integer"}, "frame_duration_ms": {"type": "integer"},
          "complexity": {"type": "string", "enum": ["low", "medium", "high"]},
          **_PLACE},

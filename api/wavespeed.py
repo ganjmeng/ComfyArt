@@ -26,7 +26,7 @@ import aiohttp
 import folder_paths
 from aiohttp import web
 
-from . import gen_ledger, gif_image, refprep
+from . import gen_ledger, gif_image, refprep, svg_image
 from ._common import app_path, error, json_body, routes
 
 log = logging.getLogger("comfyart.wavespeed")
@@ -1048,13 +1048,31 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
     if loras := lora_payload(props, inputs):
         payload["loras"] = loras  # #202
     gif = gif_image.requests_gif(inputs) or str(payload.get("output_format") or "").lower() == "gif"
-    if inputs.get("png") and not gif and "png" in (props.get("output_format", {}).get("enum") or []):
+    if inputs.get("png") and not gif and not svg_image.requests_svg(inputs) and "png" in (props.get("output_format", {}).get("enum") or []):
         payload["output_format"] = "png"
     _finalize_gif(props, payload)
+    _finalize_svg(props, payload, inputs)
     missing = [k for k in schema.get("required") or [] if k not in payload]
     if missing:
         raise WaveSpeedError(f"this model needs {', '.join(missing)}", 400)
     return payload
+
+
+def _finalize_svg(props: dict, payload: dict, inputs: dict) -> None:
+    """#826: SVG is text-to-image on a schema that lists svg. Edit schemas raise. Quality is not pinned here."""
+    if not svg_image.requests_svg(inputs) and str(payload.get("output_format") or "").lower() != "svg":
+        return
+    blocked = svg_image.block_reason(inputs if svg_image.requests_svg(inputs) else {**inputs, "output_format": "svg"})
+    if blocked:
+        raise WaveSpeedError(blocked["message"], 400, kind=blocked["kind"])
+    enum = (props.get("output_format") or {}).get("enum") or []
+    if enum and not svg_image.has_svg({"properties": props}):
+        raise WaveSpeedError(svg_image.USER["edit"]["zh"] + " / " + svg_image.USER["edit"]["en"], 400, kind="svgEdit")
+    payload["output_format"] = "svg"
+    payload.pop("frame_count", None)
+    payload.pop("frame_duration_ms", None)
+    if "num_images" in props:
+        payload["num_images"] = 1
 
 
 def _finalize_gif(props: dict, payload: dict) -> None:
@@ -1235,7 +1253,11 @@ def tier_label(priced: dict) -> str:
     parts = [str(priced["resolution"])] if priced.get("resolution") else []
     if priced.get("duration"):
         parts.append(f"{priced['duration']}s")
-    if str(priced.get("output_format") or "").lower() == "gif":
+    fmt = str(priced.get("output_format") or "").lower()
+    if fmt == "svg":
+        parts.append("SVG")
+        parts.append("n=1")
+    elif fmt == "gif":
         parts.append("GIF")
         if priced.get("frame_count") not in (None, ""):
             parts.append(f"{priced['frame_count']}f")
@@ -1306,6 +1328,14 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     submitted tier is the schema's default tier (the tier base_price is for), labelled 「估算价」/'Estimated'; otherwise
     (None, 'unpriced'): no amount is shown and the job always asks before it is submitted."""
     priced = await priced_inputs(model, inputs)
+    if svg_image.requests_svg(inputs) or str(priced.get("output_format") or "").lower() == "svg":
+        # Local still cell + $0.02. Do not call the price API and do not submit.
+        quality = str(priced.get("quality") or "medium")
+        resolution = str(priced.get("resolution") or "1k")
+        stub = svg_image.local_usd(model, quality, resolution)
+        if stub is None:
+            return None, "unpriced"
+        return float(stub), "estimate"
     # #825: frame_count / frame_duration_ms are quoted on the confirm line but not sent to the price API.
     body = {"model_id": model, "inputs": gif_image.billable(priced)}
     ck = json.dumps(body, sort_keys=True)
@@ -1379,6 +1409,12 @@ async def estimate(inputs: dict) -> dict:
         if inputs.get("feature") == "mockup_surface":
             return {"price": None, "currency": "USD", "source": "none", "confirm_usd": confirm_usd(), "confirm": confirm_usd() == 0}
         inputs = await route_gif_live(inputs)
+        routed = svg_image.route(inputs)
+        if isinstance(routed, dict) and routed.get("svg_error"):
+            err = routed["svg_error"]
+            return {"price": None, "currency": "USD", "source": "rejected", "confirm_usd": confirm_usd(),
+                    "confirm": False, "error": err["message"], "kind": err["kind"]}
+        inputs = routed
         feature = feature_of(str(inputs.get("feature") or ""))
         picked = inputs.get("model")
         if feature == "structure_control" and not picked:
@@ -1401,6 +1437,19 @@ async def estimate(inputs: dict) -> dict:
         out["gif_note"] = inputs.get("gif_note") or ""
         out["gif"] = {"output_format": "gif", "frame_count": params.get("frame_count"),
                       "frame_duration_ms": params.get("frame_duration_ms"), "priced_as": "still"}
+    if inputs.get("svg_route"):
+        params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+        priced = await priced_inputs(model, inputs)
+        out["svg_route"] = inputs["svg_route"]
+        out["svg_note"] = inputs.get("svg_note") or ""
+        out["tier"] = tier_label({**priced, "output_format": "svg"})
+        out["svg"] = {
+            "output_format": "svg", "n": 1, "model": model, "feature": "text_to_image",
+            "addon_usd": svg_image.SVG_ADDON_USD, "priced_as": "still_plus_0.02",
+            "quality": str(priced.get("quality") or "medium"),
+            "resolution": str(priced.get("resolution") or "1k"),
+            "quality_sent": params.get("quality") not in (None, ""),
+        }
     return out
 
 
@@ -1660,6 +1709,11 @@ async def submit(inputs: dict) -> str:
     if inputs.get("feature") == "mockup_surface":
         return await _submit_surface(inputs)
     inputs = await route_gif_live(dict(inputs))
+    routed = svg_image.route(inputs)
+    if isinstance(routed, dict) and routed.get("svg_error"):
+        err = routed["svg_error"]
+        raise WaveSpeedError(err["message"], 400, kind=err["kind"])
+    inputs = routed
     feature = feature_of(str(inputs.get("feature") or ""))
     if inputs.get("custom"):
         model = custom_model(inputs.get("model"), await catalog())
@@ -1711,6 +1765,8 @@ async def submit(inputs: dict) -> str:
     gen_ledger.record_submit(task, "wavespeed", model, feature, quoted)
     _jobs[task] = {"model": model, "feature": feature, "started": time.time(), "next_poll": time.time() + POLL_MIN,
                    "inputs": _price_inputs(inputs), "quoted": quoted}
+    if svg_image.requests_svg(inputs):
+        _jobs[task]["svg"] = True
     if inputs.get("size_lock"):
         # The provider payload is built from the schema only, so this flag stays on the job.
         _jobs[task]["size_lock"] = True
@@ -2143,7 +2199,10 @@ def _ext(url: str, default: str) -> str:
 
 
 def output_ext(url: str, data: bytes = b"", content_type: str = "") -> str:
-    """#825: a GIF body is saved as .gif even when the CDN url has no extension."""
+    """#825: a GIF body is saved as .gif even when the CDN url has no extension.
+    #826: SVG bytes are named .svg. Admission still decides whether they may be stored."""
+    if svg_image.looks_like_svg(data, content_type, url):
+        return ".svg"
     if data.startswith((b"GIF87a", b"GIF89a")) or "image/gif" in (content_type or "").lower():
         return ".gif"
     return _ext(url, ".png")
@@ -2158,6 +2217,20 @@ async def _download(session: aiohttp.ClientSession, task: str, index: int, url: 
             raise WaveSpeedError(f"downloading WaveSpeed output failed ({res.status})")
         data = await res.read()
         ctype = res.headers.get("Content-Type", "")
+    svg_job = bool((_jobs.get(task) or {}).get("svg"))
+    if svg_job or svg_image.looks_like_svg(data, ctype, url):
+        verdict = svg_image.admit(data)
+        if verdict.status == "rejected" or verdict.download is None or verdict.preview_png is None:
+            raise WaveSpeedError(verdict.message, 400, kind=verdict.kind or "svgRejected")
+        filename = f"ws_{task[:12]}_{index}.svg"
+        path = os.path.join(root, SUBFOLDER, filename)
+        preview = f"ws_{task[:12]}_{index}.preview.png"
+        if not os.path.isfile(path):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            _write(path, verdict.download)
+            _write(os.path.join(root, SUBFOLDER, preview), verdict.preview_png)
+        return {"filename": filename, "subfolder": SUBFOLDER, "type": "output",
+                "svg_preview": preview, "svg_state": verdict.status, "svg_message": verdict.message}
     filename = f"ws_{task[:12]}_{index}{output_ext(url, data, ctype)}"
     path = os.path.join(root, SUBFOLDER, filename)
     if not os.path.isfile(path):
