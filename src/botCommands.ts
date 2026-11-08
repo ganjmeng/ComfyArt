@@ -136,13 +136,16 @@ function sizeLockCandidates(args: Args): string[] {
 async function startGenerator(editor: Editor, video: boolean, args: Args, onError: ErrorSink, chat: string) {
   const models = agentModels(video)
   const wantsRefs = !video && Array.isArray(args.refs) && args.refs.length > 0
-  // #707: not being on the Lovart dropdown is not a disable. Auto off is. A size lock
-  // uses the first compatible id the user still allows, and does not build a model
-  // they turned off. The feature default is not a substitute.
+  // #707: a size lock always audits the file. An id that is not on the Lovart dropdown
+  // goes through the preference gate and is not replaced by the feature default.
+  // A dropdown model keeps the normal preference fallback, then the file is still audited.
+  const listed = IMAGE_MODELS.map((m) => m.id)
+  const candidates = !video && args.size_lock ? sizeLockCandidates(args) : []
+  const offDropdown = candidates.some((id) => !listed.includes(id))
   let lockId = ''
   let model: ModelDef | undefined
-  if (!video && args.size_lock) {
-    const gate = pickSizeModel(sizeLockCandidates(args), modelPrefsAtom.get(), IMAGE_MODELS.map((m) => m.id))
+  if (offDropdown) {
+    const gate = pickSizeModel(candidates, modelPrefsAtom.get(), listed)
     if (!gate.ok) throw new Error(SIZE_LOCK_REFUSED)
     lockId = gate.model
     const known = models.find((m) => m.id === lockId)
@@ -150,6 +153,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
   } else {
     // #133: an Auto pick the user disabled in model prefs falls back to the default (result.model says which ran)
     model = args.model ? models.find((m) => m.id === args.model) ?? (args.auto_model ? models[0] : undefined) : (wantsRefs && models.find((m) => m.refs)) || models[0]
+    if (!video && args.size_lock && model) lockId = model.id
   }
   if (!models.length) throw new Error(`no ${video ? 'video' : 'image'} models loaded yet (WaveSpeed model list unavailable); try again shortly`)
   if (!model) throw new Error(`unknown model ${JSON.stringify(args.model)}; valid ${video ? 'video' : 'image'} ids: ${models.map((m) => m.id).join(', ')} (default ${models[0].id})`)
@@ -352,6 +356,26 @@ const HANDLERS: Record<string, Handler> = {
 export function registerCommandBus(editor: Editor, project: string, isStale: () => boolean, onError: ErrorSink) {
   const announce = () => api('/comfyart/mcp_page', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: CLIENT_ID, project }) }).catch((e) => onError(errorText(e)))
   void announce()
+  // Same generate_image handler the agent command bus calls. Tests use it to drive auto args
+  // through startGenerator; it is not a second model picker.
+  try {
+    if (globalThis.localStorage?.getItem('comfyart.e2e') === '1') {
+      const hook = globalThis as { __comfyartE2E?: unknown }
+      hook.__comfyartE2E = {
+        listed: () => IMAGE_MODELS.map((m) => m.id),
+        setPrefs: (prefs: { auto: boolean; enabled: string[] }) => modelPrefsAtom.set(prefs),
+        command: async (action: string, args: Args) => {
+          const handler = HANDLERS[action]
+          if (!handler) return { ok: false, error: `unknown command ${action}` }
+          try {
+            return { ok: true, result: await handler(editor, args ?? {}, onError, '') }
+          } catch (e) {
+            return { ok: false, error: errorText(e) }
+          }
+        },
+      }
+    }
+  } catch { /* storage unavailable */ }
   const stops = [
     onReconnect(() => void announce()),
     onComfyEvent('comfyart-mcp-command', (msg: { id: string; action: string; project: string; chat?: string; args: Args }) => {

@@ -26,7 +26,10 @@ export function pickSizeModel(candidates: readonly string[], prefs: SizePrefs, l
 
 export function isOwnSizeError(msg: string): boolean {
   const text = msg.trim()
+  // Completion mismatches and the pre-submit size-lock refusal must stay readable.
+  // The command bus maps unknown errors to generic copy; these prefixes are ours.
   return text.startsWith('没有通过：') || text.startsWith('Not accepted:')
+    || text.startsWith('没有提交：') || text.startsWith('Not submitted:')
 }
 
 /** Delivery gate. Null means the file pixels match the lock and may be placed.

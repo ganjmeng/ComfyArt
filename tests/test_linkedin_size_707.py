@@ -180,7 +180,20 @@ def test_relay_before_after_is_not_redirected(relay):
     out = _run("generate_image", prompt="beauty before after comparison banner", skill="before-after")
     assert SENT
     assert SENT[-1][1].get("model") != QWEN
+    assert SENT[-1][1]["size_lock"] is True
+    assert SENT[-1][1]["width"] == 1024 and SENT[-1][1]["height"] == 1280
     assert out["model_choice"]["model"] != QWEN
+
+
+def test_size_lock_model_submits_without_joining_the_dropdown():
+    with pytest.raises(wavespeed.WaveSpeedError):
+        wavespeed.resolve_model("text_to_image", QWEN)
+    assert wavespeed.resolve_model("text_to_image", QWEN, size_lock=True) == QWEN
+    with pytest.raises(wavespeed.WaveSpeedError):
+        wavespeed.resolve_model("text_to_image", "made/up-model", size_lock=True)
+    cfg = wavespeed.load_config()
+    assert QWEN not in [m["id"] for m in cfg["features"]["text_to_image"]["models"]]
+    assert cfg["features"]["text_to_image"]["default"] == FLARE
 
 
 def _png(w: int, h: int) -> bytes:
@@ -225,6 +238,7 @@ def test_size_lock_preference_cases():
     assert got["keepsOther"]["model"] != qwen
     assert got["permittedOffDropdown"] == {"ok": True, "model": qwen, "reason": "checked"}
     assert "没有可用的尺寸兼容模型" in got["refused"] and got["refused"].startswith("没有提交：")
+    assert got["refusedKept"] is True
     assert "默认模型" in got["refused"]
     assert got["match"] is None
     assert "2048×682" in got["mismatch"] and "1584×396" in got["mismatch"] and got["mismatchKept"] is True

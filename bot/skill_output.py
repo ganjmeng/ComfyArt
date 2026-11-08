@@ -71,6 +71,8 @@ def apply_generate(args: dict | None, current_skill: str = "") -> dict:
         args["ratio"] = row["ratio"]
     else:
         args.pop("ratio", None)
+    # The page audits the downloaded file against these pixels. This does not change the model.
+    args["size_lock"] = True
     return args
 
 

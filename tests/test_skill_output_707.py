@@ -55,14 +55,18 @@ def test_apply_fills_from_display_name_and_leaves_other_skills():
     assert custom == {"skill": "poster", "prompt": "x", "ratio": "1:1"}
     ba = apply_generate({"prompt": "x"}, "前后对比视觉")
     assert ba["skill"] == "before-after" and (ba["width"], ba["height"], ba["ratio"], ba["count"]) == (1024, 1280, "4:5", 1)
+    assert ba["size_lock"] is True
     game = apply_generate({"prompt": "key art", "skill": "game-art", "ratio": "1:1", "width": 1024, "height": 1024, "count": 3})
     assert (game["width"], game["height"], game["ratio"], game["count"]) == (1024, 1824, "9:16", 1)
+    assert game["size_lock"] is True
     pose = apply_generate({"prompt": "turn"}, "电商同场景角色姿势裂变")
     assert pose["skill"] == "pose-fission" and (pose["width"], pose["height"], pose["ratio"], pose["count"]) == (1536, 2048, "3:4", 1)
+    assert pose["size_lock"] is True
     banner = apply_generate({"prompt": "banner", "ratio": "16:9", "width": 1820, "height": 1024}, "LinkedIn Banner")
     assert banner["skill"] == "linkedin-banner"
     assert (banner["width"], banner["height"], banner["count"]) == (1584, 396, 1)
     assert "ratio" not in banner
+    assert banner["size_lock"] is True
 
 
 def test_single_image_skip_does_not_touch_pose_or_the_first_generate():
