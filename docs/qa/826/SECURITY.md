@@ -1,5 +1,7 @@
 # #826 SVG 安全阈值
 
+这份记录是本地策略和测试，不是供应商出图，也不是部署实证。三态产品组件截图（LOCAL FIXTURE / mock）在 `docs/qa/826/FIXTURE-UI.md`，生成实现是 `f36fa178ae8cc48ee2cbd867ac66629ef7191296`。`40b44600` 里「path 不能预览、畸形文件仍可下载」的说法已经过时，不要沿用到当前头。
+
 生产入口是 `isolated_admit`：子进程里跑 `admit`。子进程设置 `RLIMIT_AS` 768MiB、`RLIMIT_CPU` 3 秒、`RLIMIT_FSIZE` 2MiB，并 `alarm(3)`。SVG 工作本身仍用 0.25 秒逻辑时钟。alarm 比 0.25 秒宽，是因为解释器启动不计入那 0.25 秒；逻辑时钟仍然包住解析和绘制。
 
 只接受 UTF-8。带 NUL、UTF-16/32 BOM，或声明了别的 encoding，直接拒绝，不把原始字节当 ASCII 去搜标记。
