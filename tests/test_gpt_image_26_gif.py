@@ -1,7 +1,6 @@
-"""#825 phase 1: 2.6 is a picker option and GIF is text-to-image. Auto/default stay on 2.5-flare.
+"""#825: 2.6-flare is the Auto/default. 2.5 stays selectable. GIF stays text-to-image.
 
 No WaveSpeed submit and no price-API spend. The 2.6 fee is the published table stub.
-Default flip to 2.6-flare is a follow-up after product+QA+Tech PASS.
 """
 import asyncio
 import json
@@ -32,12 +31,16 @@ def _schema(mid):
     return _CATALOG_DATA[mid]["api_schema"]["api_schemas"][0]["request_schema"]
 
 
-def test_auto_default_stays_on_25_flare():
+def test_auto_default_is_26_flare_and_25_still_resolves():
     cur = _curated()
-    assert cur["text_to_image"]["default"] == FLARE_25
-    assert cur["image_edit"]["default"] == EDIT_25
-    assert wavespeed.resolve_model("text_to_image", None) == FLARE_25
-    assert wavespeed.resolve_model("image_edit", None) == EDIT_25
+    assert cur["text_to_image"]["default"] == FLARE_26
+    assert cur["image_edit"]["default"] == EDIT_26
+    assert wavespeed.resolve_model("text_to_image", None) == FLARE_26
+    assert wavespeed.resolve_model("text_to_image", "auto") == FLARE_26
+    assert wavespeed.resolve_model("image_edit", None) == EDIT_26
+    assert wavespeed.resolve_model("image_edit", "auto") == EDIT_26
+    assert wavespeed.resolve_model("text_to_image", FLARE_25) == FLARE_25
+    assert wavespeed.resolve_model("image_edit", EDIT_25) == EDIT_25
     assert "quality" not in wavespeed.model_defaults(FLARE_25)
     assert "quality" not in wavespeed.model_defaults(FLARE_26)
     assert "quality" not in wavespeed.model_defaults(EDIT_26)
@@ -166,9 +169,9 @@ def test_agent_gif_picks_26_and_plain_auto_stays_25():
     assert "edit_model" not in gif
     assert "video" not in gif["model"]
     plain = canvas._auto_choice("generate_image", {"prompt": "a red apple on a table"})
-    assert plain["model"] == FLARE_25
+    assert plain["model"] == FLARE_26 and plain["category"] == "default"
     gift = canvas._auto_choice("generate_image", {"prompt": "a gift box poster"})
-    assert gift["model"] == FLARE_25
+    assert gift["model"] == FLARE_26 and gift["category"] != "gif"
     sun = canvas._auto_choice("generate_image", {"prompt": "loop", "output_format": "gif", "model": SUN_26})
     assert sun["model"] == SUN_26 and sun["auto"] is False
 
@@ -247,7 +250,7 @@ def test_list_models_exposes_26_complexity_without_changing_default(catalog):
     assert model["complexities"] == ["low", "medium", "high"]
     assert "gif" in model["output_formats"]
     assert model["frame_count"]["default"] == 9
-    assert grouped["text_to_image"]["default"] == FLARE_25
+    assert grouped["text_to_image"]["default"] == FLARE_26
     ids = [m["id"] for m in grouped["text_to_image"]["models"]]
     assert FLARE_26 in ids and SUN_26 in ids and FLARE_25 in ids
 

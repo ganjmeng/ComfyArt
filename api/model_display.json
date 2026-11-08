@@ -34,8 +34,8 @@
   [
    "gpt-image-2.6-flare",
    "GPT Image 2.6 Flare",
-   "新选项；文生可出循环 GIF，默认仍是 2.5",
-   "New option; text-to-image can emit a looping GIF. 2.5 stays the default"
+   "默认文生图和编辑；文生可出循环 GIF。2.5 仍可手动选回",
+   "Default for images and edits; text-to-image can emit a looping GIF. 2.5 stays selectable"
   ],
   [
    "gpt-image-2.5-sunburst",

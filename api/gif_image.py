@@ -1,7 +1,6 @@
-"""#825 phase 1: GPT Image 2.6 is a selectable option. Auto / the feature default stay on 2.5-flare.
+"""#825: GPT Image 2.6-flare is the Auto / feature default for text-to-image and image edit.
 
-The owner end-state is that 2.6-flare becomes the default after product+QA+Tech PASS.
-That flip is a follow-up, not this module.
+An explicit 2.5-flare id still routes to 2.5. This module does not pin quality.
 
 GIF is text-to-image only (WaveSpeed docs, 2026-11-08): edit output_format is png/jpeg/webp.
 A still image therefore becomes a reference plus a new text-to-image GIF. Frame count is not billed;
