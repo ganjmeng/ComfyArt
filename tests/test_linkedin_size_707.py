@@ -1,0 +1,189 @@
+"""#707 size compatibility: requested pixels, the payload the adapter would submit,
+and the pixels a provider file would deliver are three different facts.
+
+The catalog fixture supplies schemas. No WaveSpeed HTTP and no new image file.
+A 1584×396 provider file in one test is an explicit mock standing in for the
+already-authorized Qwen check; this file does not re-run that check.
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import uuid
+from pathlib import Path
+
+import pytest
+
+from ComfyArt.api import paid_guard, wavespeed
+from ComfyArt.api.mcp_tools import canvas
+from ComfyArt.api.mcp_tools._context import GUARD_CHAT_ID
+from ComfyArt.api.skill_size import (
+    VERIFIED, accepts_exact_pixels, linkedin_decision, provider_submit, reconcile,
+)
+from ComfyArt.api.wavespeed import _schema
+
+ROOT = Path(__file__).resolve().parents[1]
+FIXTURE = json.loads((ROOT / "tests/fixtures/wavespeed_catalog_subset.json").read_text(encoding="utf-8"))
+FLARE = "openai/gpt-image-2.5-flare/text-to-image"
+QWEN = VERIFIED["text_to_image"]
+QWEN_EDIT = VERIFIED["image_edit"]
+SENT: list[tuple[str, dict]] = []
+
+
+def _flare():
+    return _schema(FIXTURE[FLARE])
+
+
+def _qwen():
+    return _schema(FIXTURE[QWEN])
+
+
+def test_flare_snaps_and_qwen_schema_submits_exact_size():
+    flare = provider_submit(_flare(), 1584, 396)
+    assert flare.get("aspect_ratio") == "3:1"
+    assert flare.get("resolution") == "2k"
+    assert "size" not in flare
+    assert accepts_exact_pixels(_flare(), 1584, 396) is False
+    # A prompt that merely mentions 1584x396 does not make this payload exact.
+    assert "1584*396" not in json.dumps(flare)
+    qwen = provider_submit(_qwen(), 1584, 396)
+    assert qwen == {"size": "1584*396"}
+    assert accepts_exact_pixels(_qwen(), 1584, 396) is True
+    broken = {"properties": {"prompt": {}}}
+    assert accepts_exact_pixels(broken, 1584, 396) is False
+
+
+def test_delivery_follows_provider_pixels_not_the_request():
+    # Mock file sizes only. Nothing here opens an image or calls a provider.
+    same = reconcile((1584, 396), (1584, 396))
+    assert same["requested"] == {"width": 1584, "height": 396}
+    assert same["provider_output"] == same["delivered"] == {"width": 1584, "height": 396}
+    assert same["match"] is True
+    snapped = reconcile((1584, 396), (2048, 682))
+    assert snapped["requested"]["width"] == 1584
+    assert snapped["delivered"] == {"width": 2048, "height": 682}
+    assert snapped["match"] is False
+    assert reconcile((1584, 396), None)["delivered"] is None
+
+
+def test_auto_uses_qwen_only_while_its_schema_accepts_exact_size():
+    cfg = wavespeed.load_config()
+    choice = linkedin_decision(
+        {"prompt": "LinkedIn banner with the words Data", "skill": "linkedin-banner", "width": 1584, "height": 396},
+        FIXTURE, cfg)
+    assert "block" not in choice
+    assert choice["args"]["model"] == QWEN
+    assert choice["args"]["size_lock"] is True
+    assert "auto_model" not in choice["args"]
+    assert choice["choice"]["provider_submit"] == {"size": "1584*396"}
+    # Schema no longer accepts exact size: do not keep the id, and do not snap to flare.
+    bare = json.loads(json.dumps(FIXTURE))
+    bare[QWEN]["api_schema"]["api_schemas"][0]["request_schema"]["properties"].pop("size")
+    refused = linkedin_decision(
+        {"prompt": "banner", "skill": "linkedin-banner", "width": 1584, "height": 396}, bare, cfg)
+    assert refused["block"]["submitted"] is False
+    assert refused["block"]["model"] == ""
+    assert QWEN not in refused["block"]["note"]
+    assert "1584" in refused["block"]["note"]
+
+
+def test_named_flare_is_refused_before_submit():
+    cfg = wavespeed.load_config()
+    got = linkedin_decision(
+        {"prompt": "banner 1584x396", "skill": "linkedin-banner", "model": FLARE, "width": 1584, "height": 396},
+        FIXTURE, cfg)
+    block = got["block"]
+    assert block["submitted"] is False and block["status"] == "failed"
+    assert block["model"] == FLARE
+    assert block["requested_size"] == {"width": 1584, "height": 396}
+    assert block["provider_submit"]["aspect_ratio"] == "3:1"
+    assert block["provider_output"] is None and block["delivered_size"] is None
+    assert "没有提交" in block["note"] and "没有换模型" in block["note"]
+    assert "1584*396" not in json.dumps(block["provider_submit"])
+
+
+def test_other_skills_and_plain_banner_keep_the_table():
+    plain = canvas._auto_choice("generate_image", {"prompt": "LinkedIn banner for a data engineer"})
+    assert plain["model"] == FLARE
+    poster = canvas._auto_choice("generate_image", {"prompt": "Movie poster with the headline SUMMER"})
+    assert poster["model"] == FLARE
+    cfg = wavespeed.load_config()
+    assert cfg["features"]["text_to_image"]["default"] == FLARE
+    # Qwen 2.0 stays off the Lovart dropdown. The skill path uses it only when the schema accepts the size.
+    assert QWEN not in cfg["features"]["text_to_image"]["recommended"]
+    assert QWEN not in [m["id"] for m in cfg["features"]["text_to_image"]["models"]]
+
+
+@pytest.fixture
+def relay(monkeypatch):
+    SENT.clear()
+
+    async def submit(action, args, project, timeout, chat=""):
+        SENT.append((action, dict(args)))
+        return {"ids": ["shape:g1"], "model": args.get("model") or args.get("edit_model")}
+
+    async def catalog(refresh=False):
+        return FIXTURE
+
+    async def no_approval(label):
+        return None
+
+    monkeypatch.setattr(canvas, "submit_command", submit)
+    monkeypatch.setattr(canvas, "maybe_ask_run_approval", no_approval)
+    monkeypatch.setattr(wavespeed, "catalog", catalog)
+
+
+def _run(tool, **args):
+    chat = paid_guard.noturn_key(f"size-{uuid.uuid4().hex}")
+    token = GUARD_CHAT_ID.set(chat)
+    try:
+        return asyncio.run(canvas.TOOLS[tool]["handler"](args))
+    finally:
+        GUARD_CHAT_ID.reset(token)
+        paid_guard.TURNS.pop(chat, None)
+
+
+def test_relay_auto_submits_qwen_and_does_not_claim_a_file(relay):
+    out = _run("generate_image", prompt="Professional LinkedIn banner, headline in quotes", skill="linkedin-banner")
+    assert SENT and SENT[0][0] == "generate_image"
+    sent = SENT[0][1]
+    assert sent["model"] == QWEN
+    assert sent["width"] == 1584 and sent["height"] == 396 and sent["size_lock"] is True
+    assert sent.get("model") != FLARE
+    assert out["provider_submit"] == {"size": "1584*396"}
+    assert out["requested_size"] == {"width": 1584, "height": 396}
+    assert out["provider_output"] is None and out["delivered_size"] is None
+    assert out["model_choice"]["model"] == QWEN
+    assert "1584" in out["model_choice"]["note"]
+
+
+def test_relay_named_flare_does_not_submit(relay):
+    out = _run("generate_image", prompt="banner", skill="linkedin-banner", model=FLARE, width=1820, height=1024)
+    assert SENT == []
+    assert out["submitted"] is False
+    assert out["requested_size"] == {"width": 1584, "height": 396}  # skill size replaces the invented 1820×1024
+    assert out["provider_submit"]["aspect_ratio"] == "3:1"
+    assert out["provider_output"] is None
+
+
+def test_relay_refs_use_the_edit_schema_not_flare(relay):
+    out = _run("generate_image", prompt="banner", skill="linkedin-banner", refs=["shape:face"])
+    assert SENT[0][1]["edit_model"] == QWEN_EDIT
+    assert SENT[0][1].get("model") != FLARE
+    assert out["provider_submit"] == {"size": "1584*396"}
+    assert accepts_exact_pixels(_schema(FIXTURE[QWEN_EDIT]), 1584, 396)
+
+
+def test_relay_before_after_is_not_redirected(relay):
+    out = _run("generate_image", prompt="beauty before after comparison banner", skill="before-after")
+    assert SENT
+    assert SENT[-1][1].get("model") != QWEN
+    assert out["model_choice"]["model"] != QWEN
+
+
+def test_failed_banner_is_not_retried_on_flare(relay):
+    out = _run("generate_image", prompt="banner", skill="linkedin-banner", fallback_for=QWEN)
+    assert SENT == []
+    assert out["submitted"] is False
+    assert FLARE not in out["note"]
+    assert "没有提交" in out["note"]
