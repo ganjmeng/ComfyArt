@@ -1,23 +1,32 @@
 # #826 SVG 安全阈值
 
-实现在 `api/svg_image.py`。生产调用 `admit(data)`，不传入自定义 limits。
+生产入口是 `isolated_admit`：子进程里跑 `admit`。子进程设置 `RLIMIT_AS` 768MiB、`RLIMIT_CPU` 3 秒、`RLIMIT_FSIZE` 2MiB，并 `alarm(3)`。SVG 工作本身仍用 0.25 秒逻辑时钟。alarm 比 0.25 秒宽，是因为解释器启动不计入那 0.25 秒；逻辑时钟仍然包住解析和绘制。
+
+只接受 UTF-8。带 NUL、UTF-16/32 BOM，或声明了别的 encoding，直接拒绝，不把原始字节当 ASCII 去搜标记。
 
 | 阈值 | 值 | 超过以后 |
 | --- | --- | --- |
-| 文件大小 | 512 KiB (`MAX_BYTES`) | 拒绝，不解析，不下载 |
-| 边长 | 1024 (`MAX_EDGE`) | 拒绝，不分配位图 |
-| 像素面积 | 1024×1024 (`MAX_PIXELS`) | 拒绝，不分配位图 |
-| 元素个数 | 2000 (`MAX_ELEMENTS`) | 拒绝 |
-| 时长 | 0.25 秒 (`MAX_SECONDS`) | 拒绝，不提供下载 |
+| 文件大小 | 512 KiB | 拒绝，不解析，不下载 |
+| 边长 | 1024 | 拒绝，不分配位图 |
+| 像素面积 | 1024×1024 | 拒绝，不分配位图 |
+| 元素个数 | 2000 | 拒绝 |
+| SVG 工作时长 | 0.25 秒 | 拒绝，不提供下载 |
+| 子进程地址空间 | 768 MiB | 子进程被杀掉，父进程拒绝下载 |
+| 子进程 CPU / alarm | 3 秒 | 同上，作启动之外的硬停 |
 
-隔离方式（不是「没有弹窗」）：
+准入：
 
-- 脚本：拒绝 `script`、`foreignObject`、`on*`、`javascript:`。模块里没有 `eval` / `exec`。
-- 外网：模块不引用 socket、urllib、HTTP 客户端。`http(s):`、`//`、`data:` 在遍历属性时拒绝。
-- 本地文件：拒绝 `file:`、绝对路径和相对文件引用。`ElementTree` 没有自定义 opener。
-- 实体：原始字节里出现 `DOCTYPE` / `ENTITY` / `CDATA` 时，在 `ElementTree.fromstring` 之前拒绝。
-- 预览：只画 rect / circle / ellipse / polygon，输出 PNG。失败回退是 PNG，不是 SVG URL。
-- 危险文件：`download is None`，缩略图 404，下载路由不返回原文。
-- 已确认安全但画不出的文件：`preview_failed`，保留原始字节，提示「预览失败，原 SVG 仍可下载。」
+- 空文件、非 SVG、不合法 XML：拒绝，不下载。
+- DOCTYPE / ENTITY / CDATA、xml-stylesheet 和其他处理指令、`@import`、非 `url(#id)` 的 CSS `url()`：拒绝，不下载。
+- 脚本、事件、`javascript:`、`file:`、外链：拒绝，不下载。
+- 只有完整通过上述校验、但本地画不出像素（例如只有 text）才 `preview_failed` 并保留原文件下载。
+- 预览是本地 PNG，包含 path。不把 SVG 交给浏览器，也不向外网取资源。
 
-SVG 任务显式使用 GPT Image 2.6 文生图，不修改全局默认模型。报价是既有静图价 + $0.02。medium 1k 为 0.05 + 0.02 = 0.07，不是新的供应商核价。本卡没有调用 WaveSpeed，也没有付费冒烟。
+生产渲染只在两类隔离都成功之后才调用 `admit`：
+
+- 网络：`unshare(CLONE_NEWUSER|CLONE_NEWNET)`，然后向 `192.0.2.1:9` 和 `127.0.0.1:9` 连接，结果必须是网络不可达。单独的 `unshare(CLONE_NEWNET)` 在这里会 EPERM；那不是降级继续渲染的理由。rlimit 也不是断网。
+- 文件：库导入之后、解析之前设置 `PR_SET_NO_NEW_PRIVS` 和没有允许规则的 Landlock。`open("/etc/passwd")` 必须失败。
+
+任一检查失败时子进程不导入绘制模块、不解析、不画，父进程丢掉任何预览字节。本文件不把某一台机器的 EPERM 写成通过条件。
+
+SVG 任务显式使用 GPT Image 2.6 文生图，不修改全局默认。`count` 必须是精确整数 1，浮点不会被截成 1。报价是既有静图价 + $0.02。medium 1k 为 0.05 + 0.02 = 0.07，不是新的供应商核价。本卡没有调用供应商，也没有付费冒烟。

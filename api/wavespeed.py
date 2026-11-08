@@ -2219,7 +2219,7 @@ async def _download(session: aiohttp.ClientSession, task: str, index: int, url: 
         ctype = res.headers.get("Content-Type", "")
     svg_job = bool((_jobs.get(task) or {}).get("svg"))
     if svg_job or svg_image.looks_like_svg(data, ctype, url):
-        verdict = svg_image.admit(data)
+        verdict = svg_image.isolated_admit(data)
         if verdict.status == "rejected" or verdict.download is None or verdict.preview_png is None:
             raise WaveSpeedError(verdict.message, 400, kind=verdict.kind or "svgRejected")
         filename = f"ws_{task[:12]}_{index}.svg"

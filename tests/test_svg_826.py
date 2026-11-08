@@ -60,8 +60,16 @@ def test_limits_are_the_production_caps():
     for banned in ("eval(", "exec(", "import socket", "import urllib", "subprocess", "urlopen"):
         assert banned not in src
     download = (ROOT / "api" / "wavespeed.py").read_text(encoding="utf-8")
-    assert "svg_image.admit(data)" in download
+    assert "svg_image.isolated_admit(data)" in download
     assert "admit(data, limits" not in download
+    raster = (ROOT / "api" / "svg_raster.py").read_text(encoding="utf-8")
+    worker = (ROOT / "api" / "svg_worker.py").read_text(encoding="utf-8")
+    for banned in ("eval(", "exec(", "import socket", "import urllib", "urlopen"):
+        assert banned not in raster
+    for banned in ("eval(", "exec(", "import urllib", "urlopen"):
+        assert banned not in worker
+    assert "import socket" in worker  # probe only; a successful connect aborts before render
+    assert "setrlimit" in worker and "RLIMIT_AS" in worker and "alarm(" in worker
 
 
 def test_normal_preview_is_opaque_png_and_keeps_svg():
@@ -84,16 +92,118 @@ def test_transparent_preview_keeps_clear_corners_and_svg():
 
 
 def test_safe_undrawable_preview_failure_still_downloads():
-    """Independent from the rejection tests: a safe file that cannot be drawn stays downloadable."""
-    for name, reason in (("text_only.svg", "undrawable"), ("truncated.svg", "malformed")):
-        raw = _load(name)
+    """A well-formed safe file that draws no pixels keeps the original download."""
+    raw = _load("text_only.svg")
+    verdict = svg_image.admit(raw)
+    assert verdict.status == "preview_failed" and verdict.reason == "undrawable"
+    assert verdict.download == raw and verdict.kind == ""
+    assert "预览失败" in verdict.message_zh and "downloaded" in verdict.message_en
+    im = _png(verdict)
+    assert im.getpixel((0, 0))[:3] == (0, 0, 0)
+    assert im.getpixel((16, 16))[:3] == (128, 128, 128)
+
+
+def test_path_preview_is_an_identifiable_png():
+    raw = _load("path.svg")
+    verdict = svg_image.admit(raw)
+    assert verdict.status == "transparent" and verdict.download == raw
+    im = _png(verdict)
+    assert im.getpixel((16, 16))[:3] == (0, 170, 0)
+    assert im.getpixel((0, 0))[3] == 0
+    assert b"<path" not in verdict.preview_png
+
+
+def test_invalid_and_non_svg_bytes_are_not_downloadable():
+    empty = svg_image.admit(b"")
+    png = svg_image.admit(b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
+    broken = svg_image.admit(_load("truncated.svg"))
+    html = svg_image.admit(b"<html><body>no</body></html>")
+    for verdict, reason in ((empty, "empty"), (png, "unsupported_encoding"), (broken, "malformed"), (html, "not_svg")):
+        assert verdict.status == "rejected" and verdict.reason == reason
+        assert verdict.download is None and verdict.preview_png is None
+
+
+def test_stylesheet_and_css_external_are_rejected():
+    sheet = b'''<?xml version="1.0"?>
+<?xml-stylesheet type="text/css" href="https://evil.example/a.css"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" fill="#ff0000"/></svg>'''
+    css = b'<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><style>@import "https://evil.example/a.css";</style><rect width="32" height="32" fill="#ff0000"/></svg>'
+    for raw, reason in ((sheet, "stylesheet"), (css, "stylesheet")):
         verdict = svg_image.admit(raw)
-        assert (name, verdict.status, verdict.reason) == (name, "preview_failed", reason)
-        assert verdict.download == raw and verdict.kind == ""
-        assert "预览失败" in verdict.message_zh and "downloaded" in verdict.message_en
-        im = _png(verdict)
-        assert im.getpixel((0, 0))[:3] == (0, 0, 0)
-        assert im.getpixel((16, 16))[:3] == (128, 128, 128)
+        assert verdict.status == "rejected" and verdict.reason == reason and verdict.download is None
+
+
+def test_utf16_doctype_is_rejected_not_downloaded():
+    raw = '<!DOCTYPE svg [<!ENTITY x "aaaa">]><svg xmlns="http://www.w3.org/2000/svg"></svg>'.encode("utf-16")
+    verdict = svg_image.admit(raw)
+    assert verdict.status == "rejected" and verdict.reason == "unsupported_encoding"
+    assert verdict.download is None and verdict.preview_png is None
+
+
+def test_count_must_be_exact_integer_one():
+    refused = svg_image.route({"output_format": "svg", "count": 1.5, "prompt": "logo"})
+    assert refused["svg_error"]["kind"] == "svgCount" and refused["count"] == 1.5
+    assert svg_image.ensure_args({"output_format": "svg", "count": 1.5, "prompt": "logo"})["count"] == 1.5
+    for bad in (1.0, True, "1.5", "1.0", "01"):
+        assert svg_image.block_reason({"output_format": "svg", "prompt": "logo", "count": bad})["kind"] == "svgCount"
+    assert svg_image.block_reason({"output_format": "svg", "prompt": "logo", "count": 1}) is None
+    assert svg_image.block_reason({"output_format": "svg", "prompt": "logo", "n": "1"}) is None
+    kept = svg_image.ensure_args({"output_format": "svg", "prompt": "logo", "count": 1})
+    assert kept["count"] == 1 and kept["n"] == 1
+
+
+def _configured_default(feature: str) -> str:
+    curated = json.loads((ROOT / "api" / "curated_models.json").read_text(encoding="utf-8"))["features"]
+    return curated[feature]["default"]
+
+
+def test_svg_does_not_replace_the_configured_default():
+    """The global default is whatever curated_models says. SVG must not rewrite it, and must still select 2.6."""
+    before_t2i = _configured_default("text_to_image")
+    before_edit = _configured_default("image_edit")
+    assert wavespeed.resolve_model("text_to_image", None) == before_t2i
+    assert wavespeed.resolve_model("image_edit", None) == before_edit
+    routed = svg_image.route({"prompt": "矢量标志"})
+    assert routed["model"] == FLARE_26 and routed["feature"] == "text_to_image"
+    choice = svg_image.choice(None)
+    assert choice["model"] == FLARE_26 and choice["category"] == "svg"
+    plain = canvas._auto_choice("generate_image", {"prompt": "a red apple on a table"})
+    assert plain["model"] == before_t2i
+    assert wavespeed.resolve_model("text_to_image", None) == before_t2i
+    assert wavespeed.resolve_model("image_edit", None) == before_edit
+    assert _configured_default("text_to_image") == before_t2i
+    assert _configured_default("image_edit") == before_edit
+    assert "quality" not in wavespeed.model_defaults(before_t2i)
+    assert "quality" not in wavespeed.model_defaults(FLARE_26)
+
+
+def test_isolation_failure_does_not_parse_or_render():
+    from ComfyArt.api import svg_worker
+    def refuse():
+        return {"ok": False, "network_isolated": False, "filesystem_isolated": False, "network_probe": "unavailable"}
+    def explode(_data, _iso):
+        raise AssertionError("render ran")
+    out = svg_worker.run(_load("path.svg"), establish_network=refuse, render=explode)
+    assert out["rendered"] is False and out["preview"] is None and out["download"] is None
+    assert out["reason"] == "isolation_unavailable"
+
+
+def test_isolated_path_preview_requires_real_net_and_file_sandbox():
+    """A reachable network or a readable /etc/passwd is not a pass. rlimit alone is not either."""
+    from ComfyArt.api import svg_raster
+    verdict = svg_raster.isolated_admit(_load("path.svg"))
+    assert verdict.runtime.get("rendered") is True
+    assert verdict.runtime.get("network_isolated") is True
+    assert verdict.runtime.get("filesystem_isolated") is True
+    assert verdict.runtime.get("network_probe") in {"ENETUNREACH", "ENETDOWN", "EHOSTUNREACH"}
+    assert verdict.runtime.get("filesystem_probe") in {"EACCES", "EPERM"}
+    assert verdict.runtime.get("rlimit_is_network_isolation") is False
+    assert verdict.status == "transparent" and verdict.download == _load("path.svg")
+    im = _png(verdict)
+    assert im.getpixel((16, 16))[:3] == (0, 170, 0)
+    blocked = svg_raster.isolated_admit(_load("script.svg"))
+    assert blocked.status == "rejected" and blocked.reason == "script" and blocked.download is None
+    assert blocked.runtime.get("network_isolated") is True and blocked.runtime.get("filesystem_isolated") is True
 
 
 @pytest.mark.parametrize("name,reason", [
@@ -179,14 +289,6 @@ def test_external_svg_does_not_open_a_socket(monkeypatch):
     monkeypatch.setattr(socket, "create_connection", boom)
     verdict = svg_image.admit(_load("external.svg"))
     assert verdict.reason == "external" and verdict.download is None
-
-
-def test_default_model_stays_25_flare():
-    curated = json.loads((ROOT / "api" / "curated_models.json").read_text(encoding="utf-8"))["features"]
-    assert curated["text_to_image"]["default"] == FLARE_25
-    assert wavespeed.resolve_model("text_to_image", None) == FLARE_25
-    assert "quality" not in wavespeed.model_defaults(FLARE_25)
-    assert "quality" not in wavespeed.model_defaults(FLARE_26)
 
 
 def test_svg_copy_names_26_and_does_not_claim_a_site_default():
@@ -306,12 +408,12 @@ def test_submit_refuses_edit_svg_before_any_session(monkeypatch):
     assert caught.value.kind == "svgEdit"
 
 
-def test_agent_svg_picks_26_and_plain_auto_stays_25():
+def test_agent_svg_picks_26_and_plain_auto_keeps_configured_default():
     svg = canvas._auto_choice("generate_image", {"prompt": "画一个 SVG 矢量标志"})
     assert svg["model"] == FLARE_26 and svg["category"] == "svg" and svg["n"] == 1
     assert "edit_model" not in svg
     plain = canvas._auto_choice("generate_image", {"prompt": "a red apple on a table"})
-    assert plain["model"] == FLARE_25
+    assert plain["model"] == _configured_default("text_to_image")
     blocked = canvas._auto_choice("generate_image", {"prompt": "svg", "refs": ["shape:1"], "output_format": "svg"})
     assert blocked["category"] == "svg_rejected" and blocked["svg_error"]["kind"] == "svgEdit"
     enum = canvas.SPECS["generate_image"]["inputSchema"]["properties"]["output_format"]["enum"]

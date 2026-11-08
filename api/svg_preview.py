@@ -6,7 +6,7 @@ import os
 from aiohttp import web
 
 from ._common import routes, view_path
-from .svg_image import admit, read_limited
+from .svg_image import isolated_admit, read_limited
 
 _HEADERS = {
     "X-Content-Type-Options": "nosniff",
@@ -23,7 +23,7 @@ async def svg_download(request: web.Request) -> web.StreamResponse:
         data = read_limited(path)
     except (OSError, ValueError):
         raise web.HTTPNotFound()
-    verdict = admit(data)
+    verdict = isolated_admit(data)
     if verdict.status == "rejected" or verdict.download is None:
         # The body is the readable refusal, never the SVG bytes.
         raise web.HTTPNotFound(text=verdict.message, content_type="text/plain")
