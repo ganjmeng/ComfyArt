@@ -4,6 +4,8 @@
 
 四张板都是 **PENDING / HOLD**。缺的是当前 tip 运行时证据。这不是功能 FAIL。没有证据不等于功能失败。
 
+QA：历史来源与标注在 `10f740f9` 为 PASS。当前链路仍是 HOLD。
+
 板上固定句：`HISTORICAL REFERENCE ONLY / NOT CURRENT CHAIN OUTPUT; current runtime commit and same-input proof NOT VERIFIED`
 
 文件落地 commit 不是运行时 commit。下面凡写 unknown 或 missing，都是仓库记录里没有，不补写。
@@ -73,8 +75,8 @@
 | 字段 | 结果 |
 |---|---|
 | 输入/参考身份 | 没有单独的已核验输入文件。`design-LR.png` 目视内嵌字：左 `LEFT | Lovart Spec Reference`，右 `RIGHT | explicit Qwen candidate for preprocessing`。两张不同的图在一个文件里。同输入未核验。 |
-| 请求 | 缺失。旁边没有 prompt 记录。NOTES 只说按已验收原字节拷入，不重新生成。 |
-| 运行时 commit | 缺失。落地 commit `3dc069605e3f533bf2254c1ab98ab259083b996e`（2026-11-08 +0800，#704 SoT 锁定）不是生成运行时 commit。 |
+| 请求 | 历史请求未附在本 PR 仓库。不是笼统的「请求不存在」。QA 报告本地有历史 `request.json`、`manifest.json`、submission/poll 记录，task `567b91c978c8468cbcad615403d14171`，一次提交，没有图像参考参数。这是 QA 报告的本地历史证据，本 PR 没有独立查看这些文件。它们不是当前 auto/UI 链路、step/time 或运行时 commit 的证明。当前运行时请求仍然缺失。 |
+| 运行时 commit | 当前运行时 commit 仍然缺失。落地 commit `3dc069605e3f533bf2254c1ab98ab259083b996e`（2026-11-08 +0800，#704 SoT 锁定）不是生成运行时 commit。 |
 | 图像尺寸 | `RIGHT.png` 1584×396，与文档目标像素一致（文件头已核验）。`design-LR.png` 3200×450，不等于 1584×396。都按原比例显示，没有把 design-LR 拉成 1584×396。 |
 | 当前 UI canvas | 缺失 |
 | step ≤ 10 | 缺失 |
@@ -84,7 +86,7 @@
 | 板上声明 | 两张图都盖了 `explicit candidate image only, auto/UI chain unverified`。像素一致不是当前链路证明。 |
 | 未用 | `805/reuse/linkedin-banner/featured.png`。三张作废 Qwen RIGHT（pose-fission、before-after、game-art）未用，工作区里也没有这些文件。 |
 
-旧 RIGHT 是一张 1584×396。当前 UI 画布、≤10 步、≤3 分钟 done 都没有。
+旧 RIGHT 是一张 1584×396。历史请求未附在本 PR 仓库。当前运行时请求、运行时 commit、UI 画布、≤10 步、≤3 分钟 done 仍然缺失。QA 报告的本地历史记录不是当前链路证明。
 
 ## 板文件
 
@@ -95,4 +97,4 @@
 | `before-after.png` | `a0320e4972ce0b53a950772e0a6601033261366524138dd53410e1ed75f25694` |
 | `pose-fission.png` | `16fdc23a77b729701260cfafa7c34519bcace1faf99a97b9f6479f9583a84019` |
 | `game-art.png` | `0461ea6f9513241fb49c6fb60a40d1e7988023f0bd9c71b540b5cba41afa0d8a` |
-| `linkedin-banner.png` | `26887c9bb0fb0cabd1979e141402605d8ae77697f23d19563275c216610d8ba5` |
+| `linkedin-banner.png` | `17e18b7f5ea3324722e44c9aa81048a30a0722b4e411bc1241aa55e8fd5a4998` |
