@@ -128,8 +128,9 @@ def test_builtin_videos_unique(got):
               "yingzao", "crt-interface", "crayon-sketch", "fabric-collage")
     for sid in phase2_null:
         assert vids.pop(sid) is None  # C/D + still-only B remain null
-    # #805: studio-model hover is the wash-first-frame remake pinned to its media commit.
+    # #805: studio-model + animated-poster hovers are wash-first-frame remakes pinned to their media commits.
     assert vids.pop("studio-model") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/44a5caa051ad8c4bd51152afba8ef853e9c77fd8/805/reuse/studio-model/cover.mp4"
+    assert vids.pop("animated-poster") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/359b05ded3e5649acb69cf8aab33b13db454546b/805/reuse/animated-poster/cover.mp4"
     hover805 = "b2ec2a5c7aeb294257087216057de4bb4105d944"
     hover_slots = (
         "before-after", "taobao-product", "creator-identity", "youtube-channel-banner",
@@ -139,11 +140,11 @@ def test_builtin_videos_unique(got):
         assert vids.pop(sid) == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{hover805}/805/reuse/{sid}/cover.mp4"  # #805 hover
     phase3_null = (
         "anim-2d", "product-website", "ai-model", "product-to-packaging",
-        "game-art", "portrait-studio", "premium-website", "animated-poster", "pose-fission",
+        "game-art", "portrait-studio", "premium-website", "pose-fission",
         "clothing-swap",
     )
     for sid in phase3_null:
-        assert vids.pop(sid) is None  # animated-poster stays off this pin
+        assert vids.pop(sid) is None
     assert len(vids) == 6  # shared 494 clip; motion #806, banner #778, social/interior #687 left it
     assert vids == {
         k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/{asset_dir(k)}.mp4"
