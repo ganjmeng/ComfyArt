@@ -238,6 +238,7 @@ def test_size_lock_preference_cases():
     assert got["keepsOther"]["model"] != qwen
     assert got["permittedOffDropdown"] == {"ok": True, "model": qwen, "reason": "checked"}
     assert "没有可用的尺寸兼容模型" in got["refused"] and got["refused"].startswith("没有提交：")
+    assert got["refusedKept"] is True
     assert "默认模型" in got["refused"]
     assert got["match"] is None
     assert "2048×682" in got["mismatch"] and "1584×396" in got["mismatch"] and got["mismatchKept"] is True

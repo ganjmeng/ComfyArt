@@ -22,6 +22,6 @@ const out = {
   mismatch, unread, match, placed, quiet,
   mismatchKept: !!mismatch && isOwnSizeError(mismatch),
   unreadKept: !!unread && isOwnSizeError(unread),
-  refusedIsNotAccepted: !isOwnSizeError(SIZE_LOCK_REFUSED) && SIZE_LOCK_REFUSED.startsWith('没有提交：'),
+  refusedKept: isOwnSizeError(SIZE_LOCK_REFUSED),
 }
 console.log(JSON.stringify(out))

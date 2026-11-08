@@ -356,6 +356,26 @@ const HANDLERS: Record<string, Handler> = {
 export function registerCommandBus(editor: Editor, project: string, isStale: () => boolean, onError: ErrorSink) {
   const announce = () => api('/comfyart/mcp_page', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: CLIENT_ID, project }) }).catch((e) => onError(errorText(e)))
   void announce()
+  // Same generate_image handler the agent command bus calls. Tests use it to drive auto args
+  // through startGenerator; it is not a second model picker.
+  try {
+    if (globalThis.localStorage?.getItem('comfyart.e2e') === '1') {
+      const hook = globalThis as { __comfyartE2E?: unknown }
+      hook.__comfyartE2E = {
+        listed: () => IMAGE_MODELS.map((m) => m.id),
+        setPrefs: (prefs: { auto: boolean; enabled: string[] }) => modelPrefsAtom.set(prefs),
+        command: async (action: string, args: Args) => {
+          const handler = HANDLERS[action]
+          if (!handler) return { ok: false, error: `unknown command ${action}` }
+          try {
+            return { ok: true, result: await handler(editor, args ?? {}, onError, '') }
+          } catch (e) {
+            return { ok: false, error: errorText(e) }
+          }
+        },
+      }
+    }
+  } catch { /* storage unavailable */ }
   const stops = [
     onReconnect(() => void announce()),
     onComfyEvent('comfyart-mcp-command', (msg: { id: string; action: string; project: string; chat?: string; args: Args }) => {

@@ -22,6 +22,7 @@ from aiohttp.test_utils import TestServer
 from PIL import Image, ImageDraw
 
 from ComfyArt.api import wavespeed
+from ComfyArt.api.skill_size import linkedin_decision
 from test_wavespeed import MODELS
 
 pw = pytest.importorskip("playwright.async_api")
@@ -146,6 +147,76 @@ async def _until(fn, timeout=25.0):
             return
         await asyncio.sleep(0.1)
     raise AssertionError("timed out")
+
+
+def _auto_banner_args() -> dict:
+    """The args the linkedin auto path sends to the page. Not a hand-built card."""
+    decision = linkedin_decision(
+        {"prompt": "local auto banner", "skill": "linkedin-banner", "width": 1584, "height": 396},
+        FIXTURE, wavespeed.load_config())
+    assert "block" not in decision
+    args = decision["args"]
+    assert args["model"] == QWEN and args["size_lock"] is True
+    assert args["size_candidates"] == [QWEN]
+    assert "openai/gpt-image-2.5-flare/text-to-image" not in args["size_candidates"]
+    return args
+
+
+async def _boot(page, app_url: str):
+    await page.add_init_script("localStorage.setItem('comfyart.lang','zh'); localStorage.setItem('comfyart.e2e','1')")
+    await page.goto(app_url)
+    await page.wait_for_timeout(1500)
+    await page.mouse.click(28, 83)
+    await page.locator(".tl-canvas").wait_for()
+    await page.wait_for_timeout(800)
+    if await page.locator(".ca-modal").count():
+        await page.locator(".ca-modal button").nth(-2).click()
+    await page.wait_for_function("() => window.__comfyartE2E && window.__comfyartE2E.listed().includes('openai/gpt-image-2.5-flare/text-to-image')")
+
+
+async def test_auto_entry_respects_disabled_qwen_and_does_not_call_upstream(app_url, mock_ws):
+    """Agent generate_image args go through the real command handler, not a pre-filled card."""
+    args = _auto_banner_args()
+    async with pw.async_playwright() as p:
+        try:
+            browser = await p.chromium.launch()
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
+        page = await browser.new_page(viewport={"width": 1280, "height": 800}, locale="zh-CN")
+        await _boot(page, app_url)
+        listed = await page.evaluate("() => window.__comfyartE2E.listed()")
+        assert QWEN not in listed
+        assert "openai/gpt-image-2.5-flare/text-to-image" in listed
+
+        async def command(payload):
+            return await page.evaluate(
+                """async (args) => window.__comfyartE2E.command('generate_image', args)""",
+                payload,
+            )
+
+        await page.evaluate("(enabled) => window.__comfyartE2E.setPrefs({ auto: false, enabled })", listed)
+        disabled = await command(args)
+        assert disabled["ok"] is False
+        assert "没有可用的尺寸兼容模型" in disabled["error"]
+        assert "没有提交" in disabled["error"]
+        assert "这次生成没有完成" not in disabled["error"]
+        assert mock_ws["submits"] == []
+
+        none = await command({**args, "model": QWEN, "size_candidates": [QWEN, "wavespeed-ai/qwen-image-2.0/edit"]})
+        assert none["ok"] is False
+        assert "没有可用的尺寸兼容模型" in none["error"]
+        assert mock_ws["submits"] == []
+
+        await page.evaluate("() => window.__comfyartE2E.setPrefs({ auto: true, enabled: [] })")
+        allowed = await command(args)
+        assert mock_ws["submits"], allowed
+        model, payload = mock_ws["submits"][-1]
+        assert model == QWEN
+        assert payload.get("size") == "1584*396"
+        assert "size_lock" not in payload
+        assert all(m != "openai/gpt-image-2.5-flare/text-to-image" for m, _ in mock_ws["submits"])
+        assert len(mock_ws["submits"]) == 1
+        await browser.close()
 
 
 async def test_skill_cards_place_matching_fixture_and_refuse_a_different_one(app_url, mock_ws):
