@@ -1,6 +1,7 @@
 // #155: WaveSpeed failures are shown as readable zh/en messages, never the raw WaveSpeed error text.
 // #721: non-WaveSpeed / unknown raw errors map to wsErr.generic; own validation strings stay via allowlist.
 import { t } from './i18n'
+import { isOwnSizeError } from './sizeLockPref'
 
 /** #715: text right before the `id` in wsErr.taskRef (zh/en); a code span after one of these renders as .ca-task-id. */
 export const TASK_REF_PREFIXES = ['任务编号：', 'Task ID: ']
@@ -29,7 +30,7 @@ export function logRawGenError(raw: unknown) {
 export function mapUnknownError(raw: string): string {
   const msg = raw.trim()
   if (!msg) return t('wsErr.generic')
-  if (OWN_ERROR_ALLOWLIST.has(msg)) return msg
+  if (OWN_ERROR_ALLOWLIST.has(msg) || isOwnSizeError(msg)) return msg
   logRawGenError(msg)
   return t('wsErr.generic')
 }

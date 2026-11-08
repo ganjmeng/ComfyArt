@@ -6,6 +6,7 @@ import type { Built } from './workflows'
 import { t } from './i18n'
 import { uiCredits } from './usd'
 import { takePendingModel, withModel } from './wavespeed'
+import { lockedDeliveryError } from './sizeLockPref'
 import { mapUnknownError, OWN_ERROR_ALLOWLIST } from './wsErrors'
 import en from './locales/en.json'
 import zh from './locales/zh.json'
@@ -267,6 +268,9 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
     const media = await Promise.all(refs.map((r) => toMedia(r, refKind(viewUrl(r)) === 'video' ? 'video' : job.kind)))
     const holder = editor.getShape(holderId)
     if (!holder) return
+    // #707: a size-locked job is not placed when the decoded file is not the locked pixels.
+    const refused = lockedDeliveryError(holder.meta, media)
+    if (refused) throw new Error(refused)
     await (placers[job.placer ?? ''] ?? defaultPlacer)(editor, holder, media, job, onError)
     report(holderId, { srcs: media.map((m) => m.src) })
   } catch (e) {

@@ -51,6 +51,12 @@ export function targetSize({ ratio, resolution, workflow, cw, ch }: GeneratorSha
 }
 
 /** #707: a skill canvas (1584×396 and other exact pixels) is not snapped to a multiple of 16. */
+/** #707: a skill size lock names a catalog model that is not on the Lovart dropdown. */
+function sizeLockModel(shape: { meta?: { sizeLockModel?: unknown } }): ModelDef | undefined {
+  const id = typeof shape.meta?.sizeLockModel === 'string' ? shape.meta.sizeLockModel : ''
+  return id ? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' } : undefined
+}
+
 export function pixelSizeOf(shape: { props: GeneratorShape['props']; meta?: { pixelSize?: unknown } }): [number, number] {
   const raw = shape.meta?.pixelSize
   if (Array.isArray(raw) && raw.length >= 2) {
@@ -156,7 +162,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   const { ratio, workflow, duration, transparent, style } = shape.props
   const suffix = (isVideo(workflow) ? SHOTS : STYLES).find(([k]) => k === style)?.[2]
   const refs = refsOf(shape)
-  const model = isVideo(workflow) ? null : modelOf(workflow) ?? agentModels(false)[0]
+  const model = isVideo(workflow) ? null : sizeLockModel(shape) ?? modelOf(workflow) ?? agentModels(false)[0]
   const colors = isVideo(workflow) ? [] : colorsOf(shape)
   const picked = model ? usableRefs(model, refs, refModesOf(shape)).slice(0, refLimit(model)) : []
   const palette = colors.length && model?.refs && model.id !== CUSTOM_GENERATE && picked.length < refLimit(model)
@@ -209,24 +215,27 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
       seed: seedOf(shape) ?? undefined, png: transparent,
     })
   }
-  if (model && isCloudModel(model.id)) {
+  if (model && (model.cloud || isCloudModel(model.id))) {
     const base = baseOf(shape)
     const images = [...(base ? [base.src] : []), ...refs].map(annotated)
     const { controls, prep } = applyRefs(picked, refStrengthsOf(shape), refControlsOf(shape))
     const seed = seedOf(shape) ?? undefined
     const negative_prompt = negativeFor(shape, model)
+    const sizeLock = shape.meta?.sizeLockModel ? { size_lock: true as const } : {}
     if (controls.length && !base) {
       // structure refs (canny/depth/pose/...): a WaveSpeed control model follows their maps, like upstream ControlNet
-      return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })) })
+      return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })), ...sizeLock })
     }
     const prepOf = new Map(picked.map((r, i) => [r.src, prep[i]]))
     const cap = refOverflow(shape) ?? images.length
     const refPrep = [...(base ? [null] : []), ...refs.map((r) => prepOf.get(r) ?? null)].slice(0, cap)
     images.splice(cap)
     // reference images go to the image-edit feature; its default model is used unless the agent picked one
+    const askedEdit = featureModelsOf(shape).image_edit
+    const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
     return images.length
-      ? wsBuilt({ feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), prompt, images, width, height, ...(typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}), seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined })
-      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined, width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent })
+      ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...(typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}), seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock })
+      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined, width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')
@@ -258,10 +267,12 @@ function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
     if (refs.length || lastFrameOf(shape)) return { ...base, feature: 'image_to_video', model: modelIn('image_to_video', featureModelsOf(shape).image_to_video ?? workflow) }
     return { ...base, feature: 'text_to_video', model: modelIn('text_to_video', workflow) }
   }
-  const model = modelOf(workflow) ?? agentModels(false)[0]
-  if (!model || !isCloudModel(model.id)) return null
+  const model = sizeLockModel(shape) ?? modelOf(workflow) ?? agentModels(false)[0]
+  if (!model || !(model.cloud || isCloudModel(model.id))) return null
   const [width, height] = pixelSizeOf(shape)
-  return refs.length || baseOf(shape) ? { feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined }
+  const askedEdit = featureModelsOf(shape).image_edit
+  const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
+  return refs.length || baseOf(shape) ? { feature: 'image_edit', model: editModel, width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined }
 }
 
 export function generate(editor: Editor, shape: GeneratorShape, onError: ErrorSink) {

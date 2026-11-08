@@ -14,7 +14,8 @@ import { durationNote, fitDuration, RATIOS, VIDEO_RATIOS, videoResolution } from
 import { tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
 import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom, whenSubmitted } from './jobs'
-import { agentModels } from './models'
+import { agentModels, IMAGE_MODELS, modelPrefsAtom, type ModelDef } from './models'
+import { pickSizeModel, SIZE_LOCK_REFUSED } from './sizeLockPref'
 import { modesFor } from './refModes'
 import { AUDIO } from './shapes/EmbedShapes'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
@@ -122,11 +123,34 @@ function editOf(editor: Editor, args: Args): Edit {
   return { clips, transitions, subtitles, music }
 }
 
+function sizeLockCandidates(args: Args): string[] {
+  const raw = [...(Array.isArray(args.size_candidates) ? args.size_candidates : []), args.edit_model, args.model]
+  const ids: string[] = []
+  for (const item of raw) {
+    const id = String(item ?? '').trim()
+    if (id && !ids.includes(id)) ids.push(id)
+  }
+  return ids
+}
+
 async function startGenerator(editor: Editor, video: boolean, args: Args, onError: ErrorSink, chat: string) {
   const models = agentModels(video)
   const wantsRefs = !video && Array.isArray(args.refs) && args.refs.length > 0
-  // #133: an Auto pick the user disabled in model prefs falls back to the default (result.model says which ran)
-  const model = args.model ? models.find((m) => m.id === args.model) ?? (args.auto_model ? models[0] : undefined) : (wantsRefs && models.find((m) => m.refs)) || models[0]
+  // #707: not being on the Lovart dropdown is not a disable. Auto off is. A size lock
+  // uses the first compatible id the user still allows, and does not build a model
+  // they turned off. The feature default is not a substitute.
+  let lockId = ''
+  let model: ModelDef | undefined
+  if (!video && args.size_lock) {
+    const gate = pickSizeModel(sizeLockCandidates(args), modelPrefsAtom.get(), IMAGE_MODELS.map((m) => m.id))
+    if (!gate.ok) throw new Error(SIZE_LOCK_REFUSED)
+    lockId = gate.model
+    const known = models.find((m) => m.id === lockId)
+    model = known ?? { id: lockId, label: lockId, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' }
+  } else {
+    // #133: an Auto pick the user disabled in model prefs falls back to the default (result.model says which ran)
+    model = args.model ? models.find((m) => m.id === args.model) ?? (args.auto_model ? models[0] : undefined) : (wantsRefs && models.find((m) => m.refs)) || models[0]
+  }
   if (!models.length) throw new Error(`no ${video ? 'video' : 'image'} models loaded yet (WaveSpeed model list unavailable); try again shortly`)
   if (!model) throw new Error(`unknown model ${JSON.stringify(args.model)}; valid ${video ? 'video' : 'image'} ids: ${models.map((m) => m.id).join(', ')} (default ${models[0].id})`)
   const modes = Array.isArray(args.ref_modes) ? args.ref_modes.map(String) : []
@@ -164,6 +188,9 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     ...(!video && modes.length ? { refModes: Object.fromEntries(refs.flatMap((src, i) => (modes[i] ? [[src, modes[i]]] : []))) } : {}),
     // #133 Auto: 2+ refs run on the multi-reference edit model the backend picked (edit_model)
     ...(!video && typeof args.edit_model === 'string' ? { featureModels: { image_edit: args.edit_model } } : {}),
+    // A size lock that skipped a disabled candidate must edit with the model that is still allowed.
+    ...(lockId && (wantsRefs || args.base) ? { featureModels: { image_edit: lockId } } : {}),
+    ...(lockId ? { sizeLockModel: lockId } : {}),
     // #708: a skill-pinned edit model's tier (e.g. pose-fission → nano-banana-pro/edit at 2k)
     ...(!video && typeof args.edit_resolution === 'string' ? { editResolution: args.edit_resolution } : {}),
     ...(!video && args.base ? { base: refUrls(editor, [args.base])[0], strength: Number(args.base_strength) || 60 } : {}),

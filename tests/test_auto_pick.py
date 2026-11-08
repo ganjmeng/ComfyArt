@@ -147,8 +147,11 @@ def test_page_runs_the_auto_edit_pick():
     bot = (root / "botCommands.ts").read_text()
     gen = (root / "generate.ts").read_text()
     assert "featureModels: { image_edit: args.edit_model }" in bot
-    assert "feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), prompt" in gen
-    assert "feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), width" in gen
+    # modelIn still resolves a listed edit model; a size-locked id that is not on the dropdown is passed through.
+    assert "modelIn('image_edit', askedEdit)" in gen
+    assert "feature: 'image_edit', model: editModel, prompt" in gen
+    assert "feature: 'image_edit', model: editModel, width" in gen
+    assert "askedEdit === model.id ? askedEdit : undefined" in gen
 
 
 def test_table_models_are_in_catalog():

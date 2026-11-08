@@ -60,6 +60,10 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         # #707: a named skill's declared pixels reach the page even if the provider omitted them.
         from ...bot.skill_output import apply_generate
         args = apply_generate(args)
+    if fallback_for and action == "generate_image" and args.get("skill") == "linkedin-banner":
+        # #707: do not retry a banner on a model that would snap 1584×396 to an aspect ratio.
+        from ..skill_size import linkedin_fallback_block
+        return linkedin_fallback_block(args, fallback_for)
     if fallback_for:
         # #236: switch once, to a different model from the #133 table. Never submit the failed model again.
         choice = _fallback_choice(action, args, fallback_for)
@@ -82,7 +86,19 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             # Auto pick, recording the original value and why on the result (model_choice).
             log.warning("model %r for %s is not registered; falling back to Auto", requested, action)
             args = {k: v for k, v in args.items() if k not in ("model", "auto_model")}
-        choice = _auto_choice(action, args)
+        if action == "generate_image" and args.get("skill") == "linkedin-banner":
+            # #707: auto must submit a schema that accepts 1584×396. A named incompatible model stops here.
+            from .. import wavespeed
+            from ..skill_size import linkedin_decision
+            decision = linkedin_decision(args, await wavespeed.catalog(), load_config())
+            if decision.get("block"):
+                return decision["block"]
+            args = decision["args"]
+            choice = decision["choice"]
+            if requested:
+                choice = {**choice, "requested_model": requested, "fallback_reason": _unregistered_reason(requested)}
+        else:
+            choice = _auto_choice(action, args)
         if choice and choice.get("category") == "skill_unregistered":
             return _unregistered_block(choice)
         if requested:
@@ -97,7 +113,7 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
     result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
     if choice and isinstance(result, dict) and not result.get("cancelled"):
         ran = result.get("model")
-        if choice["auto"] and "edit_model" not in choice and choice["category"] != "references" and ran and ran != choice["model"]:
+        if choice["auto"] and choice.get("category") != "skill_size" and "edit_model" not in choice and choice["category"] != "references" and ran and ran != choice["model"]:
             log.warning("auto model %s is disabled on the page; %s ran instead", choice["model"], ran)
             if choice.get("category") == "fallback":
                 asked, failed = choice["model"], choice.get("fallback") or choice["model"]
@@ -109,6 +125,12 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
                           "reason": {"zh": f"{choice['reason']['zh']}，但 {choice['model']} 已在模型设置里关闭，改用默认模型",
                                      "en": f"{choice['reason']['en']}, but {choice['model']} is turned off in model settings, so the default model was used"}}
         result["model_choice"] = {**choice, "note": note(choice) if choice.get("model") else choice["fallback_reason"]["en"]}
+        if choice.get("provider_submit"):
+            result["requested_size"] = choice.get("requested_size")
+            result["provider_submit"] = choice["provider_submit"]
+            # File pixels are not known until the provider returns an image. Not measured here.
+            result["provider_output"] = None
+            result["delivered_size"] = None
         if choice.get("requested_model"):
             result["requested_model"] = choice["requested_model"]
             result["model_fallback_reason"] = choice["fallback_reason"]
