@@ -72,7 +72,7 @@ TITLE_KEY = {
     "clothing-swap": "skills.clothingSwap",
 }
 WEBSITE_NEW = ["product-website", "premium-website", "restaurant-website"]
-# #805 eight-slot hover. studio-model stays on its own media pin (#839).
+# #805 eight-slot hover. studio-model and animated-poster stay on their own media pins.
 HOVER_805 = "b2ec2a5c7aeb294257087216057de4bb4105d944"
 HOVER_805_SLOTS = {
     "before-after", "taobao-product", "creator-identity", "youtube-channel-banner",
@@ -128,6 +128,8 @@ def test_new_skills_cut2_skeleton_categories_and_website_chip_sources():
         if sid == "studio-model":
             # #805: hover mp4 is pinned to the media commit. Cover, examples, and featured stay.
             assert "video: pinned('805/reuse/studio-model', '44a5caa051ad8c4bd51152afba8ef853e9c77fd8', 'cover.mp4')" in head, sid
+        elif sid == "animated-poster":
+            assert "video: pinned('805/reuse/animated-poster', '359b05ded3e5649acb69cf8aab33b13db454546b', 'cover.mp4')" in head, sid
         elif sid in HOVER_805_SLOTS:
             assert f"video: pinned('805/reuse/{sid}', '{HOVER_805}', 'cover.mp4')" in head, sid
         else:
