@@ -65,9 +65,22 @@ def test_new19_present_production_copy_dialog_inputs():
         if f"examples: ex643('{sid}'" in e:
             BATCH1_EX = BATCH1_EX | {sid}
         head = e.split("inputs:", 1)[0]
-        assert f"cover: cover643('{sid}')" in head, sid
+        if sid == "animated-poster":
+            assert "cover: pinned('805/reuse/animated-poster', 'a6beae7242511404f6f295265f64d6b7ef00f49b', 'cover.webp')" in head, sid
+        else:
+            assert f"cover: cover643('{sid}')" in head, sid
         assert "video:" not in head, sid
-        assert "featured: []" in e, sid
+        reuse_featured = {
+            "clothing-swap": "featured: [pinned('643/wash/clothing-swap/examples', WASH_643, '02.webp')]",
+            "product-website": "featured: [pinned('643/wash/product-website/examples', WASH_643, '02.webp')]",
+            "premium-website": "featured: [pinned('643/wash/premium-website/examples', '4ccecac30c1cdf3e79826de5614edc5514e150a4', '07.webp')]",
+            "restaurant-website": "featured: [pinned('643/wash/restaurant-website/examples', '9ca6d4ee7eb6488bb2c430affa86cfae75613485', '07.webp')]",
+            "product-to-packaging": "featured: [pinned('643/wash/product-to-packaging/examples', '6b1cfa37e4eafc72841e70a26909750c2ff44399', '02.webp')]",
+        }
+        if sid in reuse_featured:
+            assert reuse_featured[sid] in e, sid
+        else:
+            assert "featured: []" in e, sid
         if sid in BATCH1_EX:
             assert f"examples: ex643('{sid}'" in e, sid
             assert "examples: []" not in e, sid
