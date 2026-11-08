@@ -176,13 +176,30 @@ def test_relay_refs_use_the_edit_schema_not_flare(relay):
     assert accepts_exact_pixels(_schema(FIXTURE[QWEN_EDIT]), 1584, 396)
 
 
-def test_relay_before_after_is_not_redirected(relay):
+@pytest.mark.parametrize("skill,w,h", [
+    ("pose-fission", 1536, 2048),
+    ("game-art", 1024, 1824),
+])
+def test_relay_pose_and_game_use_exact_size_not_flare(relay, skill, w, h):
+    out = _run("generate_image", prompt="skill canvas", skill=skill)
+    sent = SENT[-1][1]
+    assert sent["model"] == QWEN and sent.get("model") != FLARE
+    assert sent["size_lock"] is True and sent["size_candidates"] == [QWEN]
+    assert sent["width"] == w and sent["height"] == h
+    assert out["model_choice"]["model"] == QWEN
+    assert out["provider_submit"] == {"size": f"{w}*{h}"}
+
+
+def test_relay_before_after_uses_exact_size_not_flare(relay):
     out = _run("generate_image", prompt="beauty before after comparison banner", skill="before-after")
     assert SENT
-    assert SENT[-1][1].get("model") != QWEN
-    assert SENT[-1][1]["size_lock"] is True
-    assert SENT[-1][1]["width"] == 1024 and SENT[-1][1]["height"] == 1280
-    assert out["model_choice"]["model"] != QWEN
+    sent = SENT[-1][1]
+    assert sent["model"] == QWEN and sent.get("model") != FLARE
+    assert sent["size_lock"] is True and sent["size_candidates"] == [QWEN]
+    assert sent["width"] == 1024 and sent["height"] == 1280
+    assert out["model_choice"]["model"] == QWEN
+    assert out["model_choice"]["category"] == "skill_size"
+    assert out["provider_submit"] == {"size": "1024*1280"}
 
 
 def test_size_lock_model_submits_without_joining_the_dropdown():
