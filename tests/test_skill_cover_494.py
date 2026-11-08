@@ -130,14 +130,20 @@ def test_builtin_videos_unique(got):
         assert vids.pop(sid) is None  # C/D + still-only B remain null
     # #805: studio-model hover is the wash-first-frame remake pinned to its media commit.
     assert vids.pop("studio-model") == "https://raw.githubusercontent.com/ganjmeng/ComfyArt/44a5caa051ad8c4bd51152afba8ef853e9c77fd8/805/reuse/studio-model/cover.mp4"
+    hover805 = "b2ec2a5c7aeb294257087216057de4bb4105d944"
+    hover_slots = (
+        "before-after", "taobao-product", "creator-identity", "youtube-channel-banner",
+        "live-promo-decor", "linkedin-banner", "logo-animation", "restaurant-website",
+    )
+    for sid in hover_slots:
+        assert vids.pop(sid) == f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{hover805}/805/reuse/{sid}/cover.mp4"  # #805 hover
     phase3_null = (
-        "taobao-product", "before-after", "anim-2d", "creator-identity", "product-website",
-        "youtube-channel-banner", "ai-model", "product-to-packaging",
+        "anim-2d", "product-website", "ai-model", "product-to-packaging",
         "game-art", "portrait-studio", "premium-website", "animated-poster", "pose-fission",
-        "live-promo-decor", "linkedin-banner", "logo-animation", "restaurant-website", "clothing-swap",
+        "clothing-swap",
     )
     for sid in phase3_null:
-        assert vids.pop(sid) is None  # #640 Phase3-S1 empty video until S4
+        assert vids.pop(sid) is None  # animated-poster stays off this pin
     assert len(vids) == 6  # shared 494 clip; motion #806, banner #778, social/interior #687 left it
     assert vids == {
         k: f"https://raw.githubusercontent.com/ganjmeng/ComfyArt/{tip}/494/wash/videos/{asset_dir(k)}.mp4"
