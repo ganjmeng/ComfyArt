@@ -33,6 +33,12 @@ const GROUPS = [
   ['llm', '语言模型', 'Language'],
 ] as const
 
+function failText(e: unknown) {
+  if (e instanceof ProviderAdminError && e.code === 'needs_key') return tx('还没有 Replicate 密钥，不能启用。正在用的线路没变。', 'No Replicate key, so this cannot be turned on. The live route is unchanged.')
+  if (e instanceof ProviderAdminError) return e.message
+  return tx('没有保存成功。请检查网络后再试。', 'Could not save. Check the connection and try again.')
+}
+
 function blank(): ToolRoute {
   return { primary: { provider: 'wavespeed', model: 'existing' }, backup: null, fallback: false }
 }
@@ -96,6 +102,18 @@ export function ProviderAdmin() {
     return state.tools.filter((tool) => routeKey(drafts[tool.id] || blank()) !== routeKey(tool.active || blank())).map((tool) => tool.id)
   }, [state, drafts])
 
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      if (dirtyIds.length) setLeave(true)
+      else setProviderAdminOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, dirtyIds])
+
   if (!open) return null
   const tools = state?.tools || []
   const shown = tools.filter((tool) => {
@@ -129,8 +147,7 @@ export function ProviderAdmin() {
         ? (blocked ? '' : tx('已启用。新的这个工具会走刚保存的线路。', 'Enabled. New runs of this tool use the saved route.'))
         : tx('草稿已记住，正在用的线路没有改。', 'Draft kept. The live route did not change.'))
     }).catch((e: unknown) => {
-      if (e instanceof ProviderAdminError && e.code === 'needs_key') setError(tx('还没有 Replicate 密钥，不能启用。正在用的线路没变。', 'No Replicate key, so this cannot be turned on. The live route is unchanged.'))
-      else setError(e instanceof Error ? e.message : String(e))
+      setError(failText(e))
     }).finally(() => setBusy(false))
   }
 
@@ -143,7 +160,6 @@ export function ProviderAdmin() {
         aria-labelledby="provider-title"
         data-testid="provider-admin"
         onKeyDown={(e) => {
-          if (e.key === 'Escape') { e.preventDefault(); close() }
           if (e.key === 'ArrowDown') { e.preventDefault(); move(1) }
           if (e.key === 'ArrowUp') { e.preventDefault(); move(-1) }
         }}
@@ -153,7 +169,7 @@ export function ProviderAdmin() {
             <h2 id="provider-title">{tx('供应商', 'Providers')}</h2>
             <p>{tx('每个工具各自一条线路。没改过的工具继续用现在的默认。', 'Each tool has its own route. Untouched tools keep today’s default.')}</p>
           </div>
-          <button type="button" className="ca-panel__icon" aria-label={tx('关闭', 'Close')} onClick={close}>×</button>
+          <button type="button" className="ca-prov__x" aria-label={tx('关闭', 'Close')} onClick={close}>×</button>
         </header>
         {!forbidden && (
           <div className="ca-prov__segs" role="tablist">
@@ -167,14 +183,14 @@ export function ProviderAdmin() {
         {!loading && !forbidden && state && group !== 'llm' && (
           <div className="ca-prov__body">
             <aside className="ca-prov__list">
-              <input className="ca-panel__input" data-testid="provider-search" placeholder={tx('搜索工具', 'Search tools')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={tx('搜索工具', 'Search tools')} />
-              <div role="listbox" aria-label={tx('工具', 'Tools')} data-testid="provider-tools">
+              <input className="ca-prov__search" data-testid="provider-search" placeholder={tx('搜索工具', 'Search tools')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={tx('搜索工具', 'Search tools')} />
+              <div className="ca-prov__tools" role="listbox" aria-label={tx('工具', 'Tools')} data-testid="provider-tools">
                 {shown.length === 0 && <p className="ca-prov__empty" data-testid="provider-empty">{tx('没有找到这个工具。', 'No tool matches.')}</p>}
                 {shown.map((tool) => (
                   <div key={tool.id} className="ca-prov__row" data-on={tool.id === current?.id || undefined}>
-                    {tool.connected && (
-                      <input type="checkbox" aria-label={lt(tool.label)} checked={checked.includes(tool.id)} onChange={(e) => setChecked(e.target.checked ? [...checked, tool.id] : checked.filter((id) => id !== tool.id))} />
-                    )}
+                    {tool.connected ? (
+                      <button type="button" className="ca-prov__tick" role="checkbox" aria-checked={checked.includes(tool.id)} aria-label={lt(tool.label)} data-testid={`provider-check-${tool.id}`} data-on={checked.includes(tool.id) || undefined} onClick={() => setChecked(checked.includes(tool.id) ? checked.filter((id) => id !== tool.id) : [...checked, tool.id])} />
+                    ) : <span className="ca-prov__tick ca-prov__tick--space" />}
                     <button type="button" role="option" aria-selected={tool.id === current?.id} data-testid={`provider-tool-${tool.id}`} onClick={() => setPicked(tool.id)}>
                       <strong>{lt(tool.label)}</strong>
                       <Status tool={tool} dirty={dirtyIds.includes(tool.id)} />
@@ -191,33 +207,32 @@ export function ProviderAdmin() {
                   {tx('现在生效', 'Live now')}
                   <b>{liveText(current)}</b>
                 </p>
-                {!current.connected && <p className="ca-prov__banner" data-testid="provider-unverified">{tx('这条还不能改到 Replicate。未核实不是不支持，它会继续走原来的 WaveSpeed。', 'This cannot move to Replicate yet. Unverified does not mean unsupported. It stays on WaveSpeed.')}</p>}
-                <fieldset disabled={!current.connected}>
-                  <legend>{tx('主线路', 'Primary')}</legend>
+                {!current.connected && <p className="ca-prov__quiet" data-testid="provider-unverified">{tx('这条先继续用 WaveSpeed。Replicate 还没接通，不是不能用。', 'This stays on WaveSpeed. Replicate is not wired yet, which is not the same as unusable.')}</p>}
+                <div className="ca-prov__block">
+                  <h4>{tx('主线路', 'Primary')}</h4>
                   <ChoiceList value={draft.primary} choices={current.choices} testId="provider-primary" onChange={(primary) => setDrafts({ ...drafts, [current.id]: { ...draft, primary } })} />
-                </fieldset>
-                <fieldset disabled={!current.connected}>
-                  <legend>{tx('备选', 'Backup')}</legend>
+                </div>
+                <div className="ca-prov__block">
+                  <h4>{tx('备选', 'Backup')}</h4>
                   <ChoiceList
                     value={draft.backup || { provider: '', model: '' }}
-                    choices={[{ provider: '', model: '', label: { zh: '不设备选', en: 'No backup' }, enabled: true, quote: '', reason: '' }, ...current.choices.filter((choice) => choice.enabled && !(choice.provider === draft.primary.provider && choice.model === draft.primary.model))]}
+                    choices={[{ provider: '', model: '', label: { zh: '不设备选', en: 'No backup' }, enabled: current.connected, quote: '', reason: current.connected ? '' : tx('还没有可接通的备选', 'No wired backup yet') }, ...current.choices.filter((choice) => !(choice.provider === draft.primary.provider && choice.model === draft.primary.model)).map((choice) => choice.backup === false ? { ...choice, enabled: false, reason: choice.backup_reason || choice.reason } : choice)]}
                     testId="provider-backup"
                     onChange={(backup) => setDrafts({ ...drafts, [current.id]: { ...draft, backup: backup.provider ? backup : null, fallback: backup.provider ? draft.fallback : false } })}
                   />
-                </fieldset>
+                </div>
                 <label className="ca-prov__switch">
                   <button type="button" className="ca-switch" role="switch" aria-checked={draft.fallback} data-on={draft.fallback || undefined} data-testid="provider-fallback" disabled={!draft.backup} onClick={() => setDrafts({ ...drafts, [current.id]: { ...draft, fallback: !draft.fallback } })}><span /></button>
-                  {tx('主线路明确没受理时，自动试一次备选', 'If the primary clearly never created a task, try the backup once')}
+                  <span>{tx('主线路明确没受理时，自动试一次备选', 'If the primary clearly never created a task, try the backup once')}</span>
                 </label>
-                {draft.fallback && <p className="ca-prov__hint">{tx('超时、已经有任务号、内容没通过、价格对不上，都不会自动换。每次最多主一次、备一次。', 'Timeouts, an existing task id, a safety block, or a price that does not match will not switch. At most one primary try and one backup try.')}</p>}
                 {dirty && <p className="ca-prov__impact" data-testid="provider-impact">{impact(current, draft)}</p>}
                 {current.blocked === 'quote_unknown' && current.effective.source === 'saved' && <p className="ca-prov__banner" role="status" data-testid="provider-blocked">{tx('这条已保存，但价格未知，所以新任务会停住，不会扣费。保存成功不等于已经能用。', 'This is saved, but the price is unknown, so a new job stops and is not charged. Saved does not mean usable.')}</p>}
                 {!current.key_ok && draft.primary.provider === 'replicate' && <p className="ca-prov__banner" data-testid="provider-nokey">{tx('还没有 Replicate 密钥。可以先留草稿，不能启用。', 'No Replicate key yet. You can keep a draft, but you cannot turn it on.')}</p>}
                 {notice && <p className="ca-prov__banner" role="status" data-testid="provider-saved">{notice}</p>}
                 {error && <p className="ca-prov__banner" role="alert" data-testid="provider-error">{error}</p>}
-                <details data-testid="provider-details" onToggle={(e) => setDetails((e.target as HTMLDetailsElement).open)}>
-                  <summary>{tx('规则和字段', 'Rules and fields')}</summary>
-                  {details && <p>{tx('已接通的只有 GPT Image 2.6 Flare / Sunburst。参考图字段是 input_images。GIF 不按静图计价。视频和其他工具保持原路。', 'Only GPT Image 2.6 Flare and Sunburst are wired. References use input_images. A GIF is not priced as a still. Video and other tools stay put.')}</p>}
+                <details className="ca-prov__more" data-testid="provider-details" onToggle={(e) => setDetails((e.target as HTMLDetailsElement).open)}>
+                  <summary>{tx('什么时候会换、什么时候不会', 'When it switches, and when it does not')}</summary>
+                  {details && <p>{tx('超时、已有任务号、内容没通过、价格对不上，都不会自动换。每次最多主一次、备一次。已接通的是 GPT Image 2.6。视频和其他工具保持原路。', 'Timeouts, an existing task id, a safety block, or a mismatched price will not switch. At most one primary try and one backup. Only GPT Image 2.6 is wired. Video and other tools stay put.')}</p>}
                 </details>
               </section>
             )}
@@ -230,8 +245,8 @@ export function ProviderAdmin() {
           {leave ? (
             <>
               <span>{tx(`还有 ${dirtyIds.length} 个工具没保存。`, `${dirtyIds.length} tools are not saved.`)}</span>
-              <button type="button" className="ca-panel__secondary" onClick={() => setLeave(false)}>{tx('继续编辑', 'Keep editing')}</button>
-              <button type="button" className="ca-panel__primary" data-testid="provider-discard" onClick={() => { setLeave(false); setProviderAdminOpen(false) }}>{tx('放弃并关闭', 'Discard and close')}</button>
+              <button type="button" className="ca-prov__btn" onClick={() => setLeave(false)}>{tx('继续编辑', 'Keep editing')}</button>
+              <button type="button" className="ca-prov__btn ca-prov__btn--primary" data-testid="provider-discard" onClick={() => { setLeave(false); setProviderAdminOpen(false) }}>{tx('放弃并关闭', 'Discard and close')}</button>
             </>
           ) : group === 'llm' ? (
             <span className="ca-prov__hint">{tx('语言模型和图像工具分开保存。', 'The language model is saved apart from the image tools.')}</span>
@@ -240,25 +255,25 @@ export function ProviderAdmin() {
               {checked.length > 0 && (
                 <div className="ca-prov__batch" data-testid="provider-batch">
                   <span data-testid="provider-batch-count">{tx(`已选 ${checked.length} 个可切换工具`, `${checked.length} switchable tools selected`)}</span>
-                  <select aria-label={tx('批量主线路', 'Batch primary')} value={batchModel} onChange={(e) => setBatchModel(e.target.value)}>
-                    <option value="openai/gpt-image-2.6-flare">Replicate · Flare</option>
-                    <option value="openai/gpt-image-2.6-sunburst">Replicate · Sunburst</option>
-                  </select>
+                  <span className="ca-prov__batchpicks" role="group" aria-label={tx('批量主线路', 'Batch primary')}>
+                    <button type="button" data-on={batchModel.endsWith('flare') || undefined} onClick={() => setBatchModel('openai/gpt-image-2.6-flare')}>Flare</button>
+                    <button type="button" data-on={batchModel.endsWith('sunburst') || undefined} onClick={() => setBatchModel('openai/gpt-image-2.6-sunburst')}>Sunburst</button>
+                  </span>
                   <span className="ca-prov__hint">{tx('只改这些工具的主线路，不碰没选中的，也不改它们的备选。', 'Only these tools’ primary route changes. Unselected tools and backups stay.')}</span>
-                  <button type="button" className="ca-panel__secondary" data-testid="provider-batch-apply" disabled={busy} onClick={() => {
+                  <button type="button" className="ca-prov__btn" data-testid="provider-batch-apply" disabled={busy} onClick={() => {
                     setBusy(true); setError('')
                     saveToolBatch({ ids: checked, primary: { provider: 'replicate', model: batchModel }, backup: null, fallback: false, activate: true }).then((next) => {
                       absorb(next)
                       setChecked([])
                       setNotice(next.usable ? tx('所选工具已启用。', 'Selected tools are on.') : tx(`已保存 ${next.applied?.length || checked.length} 个。价格未知，这些新任务会停住，不会扣费。没选中的工具没变。`, `Saved ${next.applied?.length || 0}. Price unknown, so those new jobs stop and are not charged. Unselected tools are unchanged.`))
-                    }).catch((e: unknown) => setError(e instanceof ProviderAdminError && e.code === 'needs_key' ? tx('没有密钥，一个都没启用。', 'No key, so none were turned on.') : String(e))).finally(() => setBusy(false))
+                    }).catch((e: unknown) => setError(failText(e))).finally(() => setBusy(false))
                   }}>{tx('保存所选', 'Save selected')}</button>
                 </div>
               )}
               <div className="ca-prov__bar">
-              <button type="button" className="ca-panel__secondary" data-testid="provider-restore" disabled={!current?.can_restore || busy} onClick={() => current && restoreTool(current.id).then((next) => { absorb(next); setNotice(tx('已回到这个工具的上一份。别的工具没动。', 'Restored this tool’s previous setup. Other tools are untouched.')) }).catch((e: unknown) => setError(String(e)))}>{tx('恢复这个工具', 'Restore this tool')}</button>
-              <button type="button" className="ca-panel__secondary" disabled={!dirty || busy} data-testid="provider-draft" onClick={() => saveOne(false)}>{tx('只留草稿', 'Keep draft')}</button>
-              <button type="button" className="ca-panel__primary" data-testid="provider-save" disabled={!dirty || busy || (draft.primary.provider === 'replicate' && !current?.key_ok)} onClick={() => saveOne(true)}>{busy ? tx('正在保存', 'Saving') : tx('保存并启用', 'Save and turn on')}</button>
+              <button type="button" className="ca-prov__btn" data-testid="provider-restore" disabled={!current?.can_restore || busy} onClick={() => current && restoreTool(current.id).then((next) => { absorb(next); setNotice(tx('已回到这个工具的上一份。别的工具没动。', 'Restored this tool’s previous setup. Other tools are untouched.')) }).catch((e: unknown) => setError(failText(e)))}>{tx('恢复这个工具', 'Restore this tool')}</button>
+              <button type="button" className="ca-prov__btn" disabled={!dirty || busy} data-testid="provider-draft" onClick={() => saveOne(false)}>{tx('只留草稿', 'Keep draft')}</button>
+              <button type="button" className="ca-prov__btn ca-prov__btn--primary" data-testid="provider-save" disabled={!dirty || busy || (draft.primary.provider === 'replicate' && !current?.key_ok)} onClick={() => saveOne(true)}>{busy ? tx('正在保存', 'Saving') : tx('保存并启用', 'Save and turn on')}</button>
               </div>
             </>
           )}
@@ -269,18 +284,25 @@ export function ProviderAdmin() {
 }
 
 function Status({ tool, dirty }: { tool: ToolRow; dirty: boolean }) {
-  if (dirty) return <em data-state="draft">{tx('未保存', 'Unsaved')}</em>
-  if (tool.effective.source === 'default') return <em data-state="default">{tx('默认 WaveSpeed', 'Default WaveSpeed')}</em>
-  if (tool.blocked) return <em data-state="blocked">{tx('已保存 · 不能生成', 'Saved · blocked')}</em>
-  const backup = tool.effective.fallback ? tx(' · 可兜底', ' · backup on') : ''
-  return <em data-state="live">{tool.effective.provider}{backup}</em>
+  if (dirty) return <span className="ca-prov__chip" data-state="draft">{tx('未保存', 'Unsaved')}</span>
+  if (tool.effective.source === 'default') return <span className="ca-prov__chip">{tx('默认', 'Default')}</span>
+  if (tool.blocked) return <span className="ca-prov__chip" data-state="blocked">{tx('不能生成', 'Blocked')}</span>
+  return <span className="ca-prov__chip" data-state="live">{tool.effective.provider === 'replicate' ? 'Replicate' : 'WaveSpeed'}</span>
+}
+
+function providerName(provider: string) {
+  if (provider === 'replicate') return 'Replicate'
+  if (provider === 'wavespeed') return 'WaveSpeed'
+  return provider
 }
 
 function liveText(tool: ToolRow) {
   if (tool.effective.source === 'default') return tx('WaveSpeed，系统默认', 'WaveSpeed, the system default')
-  const name = tool.effective.provider === 'replicate' ? 'Replicate' : 'WaveSpeed'
-  const backup = tool.effective.backup ? tx('，备选已开', ', backup on') : ''
-  return `${name} · ${shortModel(tool.effective.model)}${backup}`
+  const name = providerName(tool.effective.provider)
+  const extra = tool.effective.backup
+    ? (tool.effective.fallback ? tx('，没受理时会试备选', ', backup will be tried') : tx('，备选已设但不会自动换', ', backup is set and stays manual'))
+    : ''
+  return `${name} · ${shortModel(tool.effective.model)}${extra}`
 }
 
 function shortModel(model: string) {
@@ -293,7 +315,7 @@ function shortModel(model: string) {
 function impact(tool: ToolRow, draft: ToolRoute) {
   const now = tool.active || blank()
   const bits = [tx('保存后只影响这个工具的新任务。', 'After saving, only new runs of this tool change.')]
-  if (!same(now.primary, draft.primary)) bits.push(tx(`主线路改为 ${draft.primary.provider}。`, `Primary becomes ${draft.primary.provider}.`))
+  if (!same(now.primary, draft.primary)) bits.push(tx(`主线路改为 ${providerName(draft.primary.provider)}。`, `Primary becomes ${providerName(draft.primary.provider)}.`))
   if (!same(now.backup, draft.backup)) bits.push(draft.backup ? tx('备选已设置。', 'A backup is set.') : tx('去掉备选。', 'Backup removed.'))
   if (now.fallback !== draft.fallback) bits.push(draft.fallback ? tx('兜底会打开。', 'Fallback will turn on.') : tx('兜底会关掉。', 'Fallback will turn off.'))
   if (draft.primary.provider === 'replicate') bits.push(tx('价格未知，启用后新任务会停住。', 'Price unknown. After turning it on, a new job stops.'))
@@ -306,10 +328,11 @@ function ChoiceList({ value, choices, onChange, testId }: { value: EndPoint; cho
       {choices.map((choice) => {
         const on = choice.provider === value.provider && choice.model === value.model
         return (
-          <button key={`${choice.provider}:${choice.model}`} type="button" disabled={!choice.enabled} data-on={on || undefined} title={choice.reason || undefined} onClick={() => onChange({ provider: choice.provider, model: choice.model })}>
+          <button key={`${choice.provider}:${choice.model}`} type="button" disabled={!choice.enabled} data-on={on || undefined} onClick={() => onChange({ provider: choice.provider, model: choice.model })}>
+            <i />
             <span>{lt(choice.label)}</span>
-            {choice.quote === 'unknown' && <small>{tx('价格未知', 'Price unknown')}</small>}
-            {!choice.enabled && <small>{choice.reason}</small>}
+            {choice.quote === 'unknown' && choice.enabled && <small>{tx('价格未知', 'Price unknown')}</small>}
+            {!choice.enabled && choice.reason && <small>{choice.reason}</small>}
           </button>
         )
       })}
@@ -352,13 +375,13 @@ function LlmPane({ state, providerId, modelId, note, onProvider, onModel, onNote
       {dirty && <p className="ca-prov__impact">{tx('还没保存。检查和保存都不会改正在进行的对话。', 'Not saved. Checking or saving does not change a chat already running.')}</p>}
       {note && <p className="ca-prov__banner" role="status" data-testid="provider-llm-check-result">{note}</p>}
       <div className="ca-prov__actions">
-        <button type="button" className="ca-panel__secondary" data-testid="provider-llm-check" onClick={() => {
+        <button type="button" className="ca-prov__btn" data-testid="provider-llm-check" onClick={() => {
           checkLlm({ provider: providerId, model: modelId }).then((result) => onNote(result.message || tx('未调用。', 'No call.'))).catch((e: unknown) => onNote(String(e)))
         }}>{tx('检查草稿', 'Check draft')}</button>
-        <button type="button" className="ca-panel__primary" data-testid="provider-llm-save" disabled={!dirty || (providerId === 'deepseek' && !info?.configured)} onClick={() => {
+        <button type="button" className="ca-prov__btn ca-prov__btn--primary" data-testid="provider-llm-save" disabled={!dirty || (providerId === 'deepseek' && !info?.configured)} title={!info?.configured && providerId === 'deepseek' ? tx('还没有官方密钥，不能启用', 'No official key, so this cannot be turned on') : undefined} onClick={() => {
           saveLlmProvider({ provider: providerId, model: modelId }).then((next) => { onState(next); onNote(tx('语言模型已保存。图像工具没变。', 'Language model saved. Image tools are unchanged.')) }).catch((e: unknown) => onNote(String(e)))
         }}>{tx('保存语言模型', 'Save language model')}</button>
-        <button type="button" className="ca-panel__secondary" disabled={!state.llm.can_restore} onClick={() => restoreLlmProvider().then((next) => { onState(next); onNote(tx('语言模型已恢复。', 'Language model restored.')) })}>{tx('恢复', 'Restore')}</button>
+        <button type="button" className="ca-prov__btn" disabled={!state.llm.can_restore} onClick={() => restoreLlmProvider().then((next) => { onState(next); onNote(tx('语言模型已恢复。', 'Language model restored.')) })}>{tx('恢复', 'Restore')}</button>
       </div>
     </section>
   )

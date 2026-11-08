@@ -3,7 +3,7 @@
 export interface LangText { zh?: string; en?: string }
 export interface EndPoint { provider: string; model: string }
 export interface ToolRoute { primary: EndPoint; backup: EndPoint | null; fallback: boolean }
-export interface ToolChoice { provider: string; model: string; label: LangText; enabled: boolean; quote: string; reason: string }
+export interface ToolChoice { provider: string; model: string; label: LangText; enabled: boolean; quote: string; reason: string; backup?: boolean; backup_reason?: string }
 export interface ToolRow {
   id: string
   group: 'image' | 'video' | 'other' | string

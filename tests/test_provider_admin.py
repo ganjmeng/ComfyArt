@@ -264,3 +264,27 @@ async def test_batch_skips_unconnected_tools(client, monkeypatch):
     edit = next(row for row in body["tools"] if row["id"] == "edit_image")
     assert video["effective"]["source"] == "default"
     assert edit["effective"]["provider"] == "replicate" and edit["usable"] is False
+
+
+async def test_svg_stays_on_the_original_route_and_gif_backup_is_rejected(client, monkeypatch):
+    monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
+    saved = await client.put("/comfyart/provider-admin/tool/generate_image", json={
+        "primary": {"provider": "replicate", "model": FLARE}, "backup": None, "fallback": False, "activate": True,
+    })
+    assert saved.status == 200
+    seen = []
+
+    async def original(inputs):
+        seen.append("svg")
+        return "orig"
+
+    assert await provider_admin.dispatch_submit(
+        {"feature": "text_to_image", "prompt": "mark", "params": {"output_format": "svg"}}, original,
+    ) == "orig"
+    assert seen == ["svg"]
+    rejected = await client.put("/comfyart/provider-admin/tool/to_gif", json={
+        "primary": {"provider": "replicate", "model": FLARE},
+        "backup": {"provider": "wavespeed", "model": "existing"},
+        "fallback": True,
+    })
+    assert rejected.status == 400

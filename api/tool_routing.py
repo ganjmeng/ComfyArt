@@ -238,6 +238,8 @@ def normalize_route(tool_id: str, body: dict) -> dict | None:
     backup = endpoint(body.get("backup")) if body.get("backup") else None
     if backup and (backup == primary or not choice_enabled(tool, backup["provider"], backup["model"])[0]):
         return None
+    if backup and backup["provider"] == "wavespeed" and not tool["wavespeed_backup"]:
+        return None
     return {"primary": primary, "backup": backup, "fallback": bool(body.get("fallback")) and backup is not None}
 
 
@@ -246,6 +248,8 @@ def public_choices(tool: dict) -> list[dict]:
         "provider": "wavespeed", "model": "existing",
         "label": {"zh": "WaveSpeed · 现有模型", "en": "WaveSpeed · current model"},
         "enabled": True, "quote": "provider", "reason": "",
+        "backup": bool(tool["wavespeed_backup"]),
+        "backup_reason": "" if tool["wavespeed_backup"] else "这个工具的结果 WaveSpeed 接不住，不能当备选",
     }]
     for model in CONNECTED:
         ok, reason = choice_enabled(tool, "replicate", model)
@@ -254,6 +258,7 @@ def public_choices(tool: dict) -> list[dict]:
             "provider": "replicate", "model": model,
             "label": {"zh": f"Replicate · {label}", "en": f"Replicate · {label}"},
             "enabled": ok, "quote": "unknown", "reason": reason,
+            "backup": ok, "backup_reason": reason,
         })
     if not tool["caps"]:
         rows.append({
@@ -261,6 +266,8 @@ def public_choices(tool: dict) -> list[dict]:
             "label": {"zh": "Replicate · 未核实", "en": "Replicate · unverified"},
             "enabled": False, "quote": "unknown",
             "reason": "还没在官方 schema 上接通。未核实不是不支持，也不会自动换。",
+            "backup": False,
+            "backup_reason": "还没接通，不能当备选",
         })
     return rows
 

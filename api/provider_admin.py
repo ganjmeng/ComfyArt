@@ -637,7 +637,11 @@ def _tools_view() -> list[dict]:
 
 def _snapshot(inputs: dict) -> dict:
     from .tool_routing import capability_for, tool_of
+    params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+    fmt = str(params.get("output_format") or inputs.get("output_format") or "").lower()
     tool = tool_of(inputs)
+    if fmt == "svg":
+        return {"passthrough": True, "tool": tool, "revision": 0}
     rec = _tool_record(tool) if tool else {"revision": 0, "active": None}
     active = rec.get("active")
     if not tool or not active:

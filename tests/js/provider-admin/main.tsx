@@ -1,8 +1,8 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { initLocale } from '../../../src/i18n'
-import { setProviderAdminOpen } from '../../../src/providerAdmin'
+import { providerAdminOpen, setProviderAdminOpen, subscribeProviderAdmin } from '../../../src/providerAdmin'
 import { ProviderAdmin } from '../../../src/ui/ProviderAdmin'
 import '../../../src/styles/base.css'
 import '../../../src/styles/canvas.css'
@@ -71,6 +71,9 @@ function state() {
 }
 
 const realFetch = window.fetch.bind(window)
+const mock = new URLSearchParams(location.search).has('mock')
+if (mock) {
+document.getElementById('mock-banner')!.textContent = 'Mock 预览 · 未调用真实供应商 · 费用未知 · 无密钥'
 window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = String(input)
   if (!url.includes('/comfyart/provider-admin')) return realFetch(input, init)
@@ -114,6 +117,9 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   }
   return json(state())
 }
+} else {
+  document.getElementById('mock-banner')!.textContent = '本地设置接口 · 临时目录 · 不调用生成供应商'
+}
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
@@ -122,5 +128,22 @@ function json(data: unknown, status = 200) {
 localStorage.setItem('comfyart.lang', 'zh')
 document.documentElement.dataset.theme = 'dark'
 await initLocale()
-setProviderAdminOpen(true)
-createRoot(document.getElementById('root')!).render(<StrictMode><ProviderAdmin /></StrictMode>)
+
+function Gate() {
+  const [open, setOpen] = useState(providerAdminOpen())
+  useEffect(() => subscribeProviderAdmin(() => setOpen(providerAdminOpen())), [])
+  return (
+    <>
+      {!open && (
+      <main className="ca-prov-gate">
+        <h1>设置</h1>
+        <p>从设置进入供应商。这一页只连本地设置接口。</p>
+        <button type="button" data-testid="settings-providers" onClick={() => setProviderAdminOpen(true)}>供应商</button>
+      </main>
+      )}
+      <ProviderAdmin />
+    </>
+  )
+}
+
+createRoot(document.getElementById('root')!).render(<StrictMode><Gate /></StrictMode>)
