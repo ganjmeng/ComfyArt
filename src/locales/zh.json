@@ -702,7 +702,7 @@
   "genSettings.count": "数量",
   "genSettings.format": "格式",
   "genSettings.gifNote": "GIF 由 GPT Image 2.6 文生。帧数不计费，价格与同档静图相同。编辑模型不能出 GIF。",
-  "genSettings.svgNote": "SVG 由 GPT Image 2.6 文生，一次一张。价格是同档静图再加 $0.02。不能从编辑或参考图生成。",
+  "genSettings.svgNote": "SVG 显式使用 GPT Image 2.6 文生，一次一张，不改全局默认。价格是同档静图再加 $0.02。不能从编辑或参考图生成。",
   "genSettings.svgTransparent": "背景是透明的。下载仍是原来的 SVG。",
   "genSettings.imageSettings": "图像设置",
   "genSettings.quality": "质量",

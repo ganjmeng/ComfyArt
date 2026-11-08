@@ -117,7 +117,7 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             return {"status": "failed", "generation_succeeded": False, "error": err["message"], "kind": err["kind"],
                     "user_message": err["message"]}
         if choice and choice.get("category") == "svg":
-            # #826: SVG is 2.6 text-to-image, n=1. The stable default stays 2.5 for stills.
+            # #826: SVG explicitly uses 2.6 text-to-image, n=1. It does not change the global default.
             args = {k: v for k, v in args.items() if k != "edit_model"}
             args["model"] = choice["model"]
             args["output_format"] = "svg"
@@ -389,7 +389,7 @@ SPECS: dict[str, dict] = {
         "Omit model unless the user named one; a GIF uses GPT Image 2.6 Flare, not the stable 2.5 default. "
         "A still image is refs or base plus this GIF call: edit cannot emit gif, so the still is a reference for a new "
         "text-to-image GIF. Do not call generate_video or animate_image for a GIF. "
-        "SVG / 矢量 / 可编辑路径: set output_format to svg and count to 1. SVG is GPT Image 2.6 text-to-image only. "
+        "SVG / 矢量 / 可编辑路径: set output_format to svg and count to 1. SVG explicitly uses GPT Image 2.6 text-to-image and does not change the global default. "
         "Do not pass refs, base, or an edit model, and do not use edit_image to make an SVG. "
         "complexity is optional "
         "(low, medium, high) and does not change the price; omit it to leave the schema default. Do not set quality "

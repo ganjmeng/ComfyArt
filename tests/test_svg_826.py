@@ -189,6 +189,28 @@ def test_default_model_stays_25_flare():
     assert "quality" not in wavespeed.model_defaults(FLARE_26)
 
 
+def test_svg_copy_names_26_and_does_not_claim_a_site_default():
+    """User-facing SVG text must not pin the site default to 2.5 or say it is already 2.6."""
+    zh = json.loads((ROOT / "src" / "locales" / "zh.json").read_text(encoding="utf-8"))["genSettings.svgNote"]
+    en = json.loads((ROOT / "src" / "locales" / "en.json").read_text(encoding="utf-8"))["genSettings.svgNote"]
+    guide = (ROOT / "bot" / "guide.py").read_text(encoding="utf-8")
+    svg_guide = guide.split("SVG / 矢量", 1)[1].split("- Copy ids", 1)[0]
+    tool = canvas.SPECS["generate_image"]["description"]
+    svg_tool = tool.split("SVG / 矢量", 1)[1].split("Do not pass refs", 1)[0]
+    for text in (svg_image.NOTE["zh"], svg_image.NOTE["en"], zh, en, svg_guide, svg_tool,
+                 (ROOT / "docs" / "qa" / "826" / "SECURITY.md").read_text(encoding="utf-8")):
+        assert "2.5" not in text
+        assert "默认模型仍是" not in text
+        assert "default model stays" not in text.lower()
+        assert "stable image default" not in text.lower()
+        assert "线上默认" not in text
+    assert "2.6" in svg_image.NOTE["zh"] and "不改全局默认" in svg_image.NOTE["zh"]
+    assert "explicitly uses GPT Image 2.6" in svg_image.NOTE["en"]
+    assert "does not change the global default" in svg_image.NOTE["en"]
+    assert "does not change the global default" in svg_guide
+    assert "does not change the global default" in svg_tool
+
+
 def test_route_is_26_t2i_n1_and_does_not_pin_quality():
     out = svg_image.route({"prompt": "一个可编辑路径的矢量标志", "model": FLARE_25})
     assert out["feature"] == "text_to_image" and out["model"] == FLARE_26

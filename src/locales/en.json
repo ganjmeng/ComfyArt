@@ -702,7 +702,7 @@
   "genSettings.count": "Count",
   "genSettings.format": "Format",
   "genSettings.gifNote": "GIF is text-to-image on GPT Image 2.6. Frame count is not billed; the price matches the still. Edit cannot emit a GIF.",
-  "genSettings.svgNote": "SVG is text-to-image on GPT Image 2.6, one image. Price is the still price plus $0.02. Edit and reference images are not supported.",
+  "genSettings.svgNote": "SVG explicitly uses GPT Image 2.6 text-to-image, one image, and does not change the global default. Price is the still price plus $0.02. Edit and reference images are not supported.",
   "genSettings.svgTransparent": "The background is transparent. The download is still the original SVG.",
   "genSettings.imageSettings": "Image Settings",
   "genSettings.quality": "Quality",

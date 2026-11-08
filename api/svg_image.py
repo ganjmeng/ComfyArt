@@ -82,8 +82,8 @@ USER = {
     },
 }
 NOTE = {
-    "zh": "矢量 SVG，用 GPT Image 2.6 文生，一次一张。默认模型仍是 GPT Image 2.5 Flare。价格是同档静图再加 $0.02（沿用既有静图价，不是新核价）。",
-    "en": "Vector SVG from GPT Image 2.6 text-to-image, one image. The default model stays GPT Image 2.5 Flare. Price is the still price plus $0.02 (existing still table, not a new price check).",
+    "zh": "矢量 SVG，显式使用 GPT Image 2.6 文生，一次一张。不改全局默认模型。价格是同档静图再加 $0.02（沿用既有静图价，不是新核价）。",
+    "en": "Vector SVG explicitly uses GPT Image 2.6 text-to-image, one image. This does not change the global default model. Price is the still price plus $0.02 (existing still table, not a new price check).",
 }
 
 
@@ -188,7 +188,7 @@ def block_reason(inputs: dict) -> dict | None:
 
 
 def pick_t2i(model: str | None) -> str:
-    """2.6-sunburst text-to-image only when that family was named. Never an edit id. Never 2.5."""
+    """2.6-sunburst text-to-image only when that family was named. Otherwise 2.6-flare text-to-image. Never an edit id."""
     m = str(model or "")
     if "2.6-sunburst" in m and not m.endswith("/edit"):
         return SUNBURST

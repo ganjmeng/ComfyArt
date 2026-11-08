@@ -103,7 +103,7 @@ AGENT_GUIDE = (
     "Omit model unless the user named one; SVG uses "
     "openai/gpt-image-2.6-flare/text-to-image (or "
     "openai/gpt-image-2.6-sunburst/text-to-image when they asked for Sunburst). "
-    "The stable image default stays openai/gpt-image-2.5-flare/text-to-image. "
+    "SVG explicitly uses that 2.6 text-to-image model and does not change the global default. "
     "SVG is text-to-image only: do not pass refs or base, do not call edit_image, and do not ask for more than one. "
     "Do not set quality unless the user picked a tier.\n"
     "- Copy ids exactly as tools return them. Never say something was "
