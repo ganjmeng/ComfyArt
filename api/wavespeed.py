@@ -26,7 +26,7 @@ import aiohttp
 import folder_paths
 from aiohttp import web
 
-from . import gen_ledger, gif_image, refprep
+from . import gen_ledger, gif_image, refprep, svg_image
 from ._common import app_path, error, json_body, routes
 
 log = logging.getLogger("comfyart.wavespeed")
@@ -81,13 +81,15 @@ def apply_catalog_price_fixes(models: dict) -> dict:
 
 
 class WaveSpeedError(Exception):
-    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False, charged: float | None = None, gif_note: str = ""):
+    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False, charged: float | None = None, gif_note: str = "", model: str = "", gif: dict | None = None):
         super().__init__(message)
         self.charged = charged  # #174: kind 'timeout' — the quoted price that may have been charged (None: unknown)
         self.unpriced = unpriced  # #159: no price for the submitted tier; the dialog shows no amount
         self.estimate = estimate  # #159: the price API failed; the dialog says 「估算价」/'Estimated'
         self.tier = tier  # #159: the tier that will be submitted, e.g. '480p · 5s'
         self.gif_note = gif_note  # #825: bilingual still→GIF / frame note for the confirm dialog
+        self.gif = gif  # effective frame_count / frame_duration_ms already on this request, plus an asked value only when one was sent
+        self.model = model  # #825: the id that will be submitted, so confirm matches the route
         self.status = status
         # #155: what the UI shows instead of the raw WaveSpeed text (insufficientCredit, moderation, rateLimit, invalidKey, failed)
         self.kind = kind
@@ -556,7 +558,7 @@ def resolve_model(feature: str, model: str | None, *, size_lock: bool = False) -
     cfg = config["features"].get(feature)
     if not cfg or feature in config.get("pending_features", []):
         raise WaveSpeedError(f"{feature or 'this tool'} is not available in cloud mode yet", 400)
-    if not model:
+    if not model or model in ("auto", "auto:video"):
         return cfg["default"]
     ids = [m["id"] for m in cfg["models"]]
     if model not in ids:
@@ -1048,13 +1050,31 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
     if loras := lora_payload(props, inputs):
         payload["loras"] = loras  # #202
     gif = gif_image.requests_gif(inputs) or str(payload.get("output_format") or "").lower() == "gif"
-    if inputs.get("png") and not gif and "png" in (props.get("output_format", {}).get("enum") or []):
+    if inputs.get("png") and not gif and not svg_image.requests_svg(inputs) and "png" in (props.get("output_format", {}).get("enum") or []):
         payload["output_format"] = "png"
     _finalize_gif(props, payload)
+    _finalize_svg(props, payload, inputs)
     missing = [k for k in schema.get("required") or [] if k not in payload]
     if missing:
         raise WaveSpeedError(f"this model needs {', '.join(missing)}", 400)
     return payload
+
+
+def _finalize_svg(props: dict, payload: dict, inputs: dict) -> None:
+    """#826: SVG is text-to-image on a schema that lists svg. Edit schemas raise. Quality is not pinned here."""
+    if not svg_image.requests_svg(inputs) and str(payload.get("output_format") or "").lower() != "svg":
+        return
+    blocked = svg_image.block_reason(inputs if svg_image.requests_svg(inputs) else {**inputs, "output_format": "svg"})
+    if blocked:
+        raise WaveSpeedError(blocked["message"], 400, kind=blocked["kind"])
+    enum = (props.get("output_format") or {}).get("enum") or []
+    if enum and not svg_image.has_svg({"properties": props}):
+        raise WaveSpeedError(svg_image.USER["edit"]["zh"] + " / " + svg_image.USER["edit"]["en"], 400, kind="svgEdit")
+    payload["output_format"] = "svg"
+    payload.pop("frame_count", None)
+    payload.pop("frame_duration_ms", None)
+    if "num_images" in props:
+        payload["num_images"] = 1
 
 
 def _finalize_gif(props: dict, payload: dict) -> None:
@@ -1230,12 +1250,34 @@ def _is_default_tier(props: dict, priced: dict) -> bool:
     return True
 
 
+def _gif_confirm(inputs: dict) -> dict | None:
+    """Frame count and duration already written onto this request. Not a second clamp."""
+    if not inputs.get("gif_route"):
+        return None
+    params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+    count, ms = params.get("frame_count"), params.get("frame_duration_ms")
+    if not isinstance(count, int) or isinstance(count, bool) or not isinstance(ms, int) or isinstance(ms, bool):
+        return None
+    out = {"frame_count": count, "frame_duration_ms": ms}
+    asked = inputs.get("gif_asked_frame_count")
+    asked_ms = inputs.get("gif_asked_frame_duration_ms")
+    if isinstance(asked, int) and not isinstance(asked, bool):
+        out["asked_frame_count"] = asked
+    if isinstance(asked_ms, int) and not isinstance(asked_ms, bool):
+        out["asked_frame_duration_ms"] = asked_ms
+    return out
+
+
 def tier_label(priced: dict) -> str:
     """Short tier for the confirm dialog, e.g. '480p · 5s' or '1k · GIF · 9f · 200ms'."""
     parts = [str(priced["resolution"])] if priced.get("resolution") else []
     if priced.get("duration"):
         parts.append(f"{priced['duration']}s")
-    if str(priced.get("output_format") or "").lower() == "gif":
+    fmt = str(priced.get("output_format") or "").lower()
+    if fmt == "svg":
+        parts.append("SVG")
+        parts.append("n=1")
+    elif fmt == "gif":
         parts.append("GIF")
         if priced.get("frame_count") not in (None, ""):
             parts.append(f"{priced['frame_count']}f")
@@ -1306,6 +1348,14 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     submitted tier is the schema's default tier (the tier base_price is for), labelled 「估算价」/'Estimated'; otherwise
     (None, 'unpriced'): no amount is shown and the job always asks before it is submitted."""
     priced = await priced_inputs(model, inputs)
+    if svg_image.requests_svg(inputs) or str(priced.get("output_format") or "").lower() == "svg":
+        # Local still cell + $0.02. Do not call the price API and do not submit.
+        quality = str(priced.get("quality") or "medium")
+        resolution = str(priced.get("resolution") or "1k")
+        stub = svg_image.local_usd(model, quality, resolution)
+        if stub is None:
+            return None, "unpriced"
+        return float(stub), "estimate"
     # #825: frame_count / frame_duration_ms are quoted on the confirm line but not sent to the price API.
     body = {"model_id": model, "inputs": gif_image.billable(priced)}
     ck = json.dumps(body, sort_keys=True)
@@ -1343,8 +1393,9 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
 
 
 async def route_gif_live(inputs: dict) -> dict:
-    """#825: apply the GIF route using the cached catalog schema. No schema (or no key) keeps the
-    documented P0: edit has no gif, so a still is a reference plus text-to-image."""
+    """#825: pure text GIF uses the catalog schema. A still is refused before catalog, quote, or POST."""
+    if gif_image.requests_gif(inputs) and gif_image.has_still(inputs):
+        raise WaveSpeedError(gif_image.refusal_text(), 400, kind="gifStillUnsupported")
     if inputs.get("custom") or not gif_image.requests_gif(inputs):
         return inputs
     try:
@@ -1379,6 +1430,12 @@ async def estimate(inputs: dict) -> dict:
         if inputs.get("feature") == "mockup_surface":
             return {"price": None, "currency": "USD", "source": "none", "confirm_usd": confirm_usd(), "confirm": confirm_usd() == 0}
         inputs = await route_gif_live(inputs)
+        routed = svg_image.route(inputs)
+        if isinstance(routed, dict) and routed.get("svg_error"):
+            err = routed["svg_error"]
+            return {"price": None, "currency": "USD", "source": "rejected", "confirm_usd": confirm_usd(),
+                    "confirm": False, "error": err["message"], "kind": err["kind"]}
+        inputs = routed
         feature = feature_of(str(inputs.get("feature") or ""))
         picked = inputs.get("model")
         if feature == "structure_control" and not picked:
@@ -1391,6 +1448,8 @@ async def estimate(inputs: dict) -> dict:
             price = None if extra is None else round(float(price) + extra, 6)
     out = {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
            "confirm": needs_confirm(price) if price is not None else (source == "unpriced" or confirm_usd() == 0)}
+    if not isinstance(inputs.get("scenes"), list):
+        out["model"] = model  # #825: quote names the same id submit will POST
     if not isinstance(inputs.get("scenes"), list) and tier:
         out["tier"] = tier
     if not isinstance(inputs.get("scenes"), list) and feature == "transcribe" and duration_estimated(model, inputs):
@@ -1401,6 +1460,19 @@ async def estimate(inputs: dict) -> dict:
         out["gif_note"] = inputs.get("gif_note") or ""
         out["gif"] = {"output_format": "gif", "frame_count": params.get("frame_count"),
                       "frame_duration_ms": params.get("frame_duration_ms"), "priced_as": "still"}
+    if inputs.get("svg_route"):
+        params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+        priced = await priced_inputs(model, inputs)
+        out["svg_route"] = inputs["svg_route"]
+        out["svg_note"] = inputs.get("svg_note") or ""
+        out["tier"] = tier_label({**priced, "output_format": "svg"})
+        out["svg"] = {
+            "output_format": "svg", "n": 1, "model": model, "feature": "text_to_image",
+            "addon_usd": svg_image.SVG_ADDON_USD, "priced_as": "still_plus_0.02",
+            "quality": str(priced.get("quality") or "medium"),
+            "resolution": str(priced.get("resolution") or "1k"),
+            "quality_sent": params.get("quality") not in (None, ""),
+        }
     return out
 
 
@@ -1660,6 +1732,11 @@ async def submit(inputs: dict) -> str:
     if inputs.get("feature") == "mockup_surface":
         return await _submit_surface(inputs)
     inputs = await route_gif_live(dict(inputs))
+    routed = svg_image.route(inputs)
+    if isinstance(routed, dict) and routed.get("svg_error"):
+        err = routed["svg_error"]
+        raise WaveSpeedError(err["message"], 400, kind=err["kind"])
+    inputs = routed
     feature = feature_of(str(inputs.get("feature") or ""))
     if inputs.get("custom"):
         model = custom_model(inputs.get("model"), await catalog())
@@ -1683,14 +1760,15 @@ async def submit(inputs: dict) -> str:
             extra = await _steps_price(inputs)
             price = None if extra is None else round(float(price) + extra, 6)
         gif_note = inputs.get("gif_note") if isinstance(inputs.get("gif_note"), str) else ""
+        gif_body = _gif_confirm(inputs)
         if price is not None and needs_confirm(price):
             # expensive job: the page asks and resubmits with confirmed=true; #159 an estimate is labelled as one
             raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped,
-                                 estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note)
+                                 estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body)
         if source == "unpriced":
             # #159: no price for the submitted tier: never guess one, always ask (no amount, the tier is named)
             raise WaveSpeedError(f"{model}: no price for this tier; confirm to continue", 409, unpriced=True,
-                                 tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note)
+                                 tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body)
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())
@@ -1711,6 +1789,8 @@ async def submit(inputs: dict) -> str:
     gen_ledger.record_submit(task, "wavespeed", model, feature, quoted)
     _jobs[task] = {"model": model, "feature": feature, "started": time.time(), "next_poll": time.time() + POLL_MIN,
                    "inputs": _price_inputs(inputs), "quoted": quoted}
+    if svg_image.requests_svg(inputs):
+        _jobs[task]["svg"] = True
     if inputs.get("size_lock"):
         # The provider payload is built from the schema only, so this flag stays on the job.
         _jobs[task]["size_lock"] = True
@@ -2143,7 +2223,10 @@ def _ext(url: str, default: str) -> str:
 
 
 def output_ext(url: str, data: bytes = b"", content_type: str = "") -> str:
-    """#825: a GIF body is saved as .gif even when the CDN url has no extension."""
+    """#825: a GIF body is saved as .gif even when the CDN url has no extension.
+    #826: SVG bytes are named .svg. Admission still decides whether they may be stored."""
+    if svg_image.looks_like_svg(data, content_type, url):
+        return ".svg"
     if data.startswith((b"GIF87a", b"GIF89a")) or "image/gif" in (content_type or "").lower():
         return ".gif"
     return _ext(url, ".png")
@@ -2158,6 +2241,20 @@ async def _download(session: aiohttp.ClientSession, task: str, index: int, url: 
             raise WaveSpeedError(f"downloading WaveSpeed output failed ({res.status})")
         data = await res.read()
         ctype = res.headers.get("Content-Type", "")
+    svg_job = bool((_jobs.get(task) or {}).get("svg"))
+    if svg_job or svg_image.looks_like_svg(data, ctype, url):
+        verdict = svg_image.isolated_admit(data)
+        if verdict.status == "rejected" or verdict.download is None or verdict.preview_png is None:
+            raise WaveSpeedError(verdict.message, 400, kind=verdict.kind or "svgRejected")
+        filename = f"ws_{task[:12]}_{index}.svg"
+        path = os.path.join(root, SUBFOLDER, filename)
+        preview = f"ws_{task[:12]}_{index}.preview.png"
+        if not os.path.isfile(path):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            _write(path, verdict.download)
+            _write(os.path.join(root, SUBFOLDER, preview), verdict.preview_png)
+        return {"filename": filename, "subfolder": SUBFOLDER, "type": "output",
+                "svg_preview": preview, "svg_state": verdict.status, "svg_message": verdict.message}
     filename = f"ws_{task[:12]}_{index}{output_ext(url, data, ctype)}"
     path = os.path.join(root, SUBFOLDER, filename)
     if not os.path.isfile(path):
@@ -2488,6 +2585,10 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
             body["tier"] = e.tier
         if e.gif_note:
             body["gif_note"] = e.gif_note
+        if e.model:
+            body["model"] = e.model
+        if e.gif:
+            body["gif"] = e.gif
     elif e.unpriced:
         body["confirm_usd"] = None
         body["unpriced"] = True
@@ -2495,6 +2596,13 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
             body["tier"] = e.tier
         if e.gif_note:
             body["gif_note"] = e.gif_note
+        if e.model:
+            body["model"] = e.model
+        if e.gif:
+            body["gif"] = e.gif
+    issued = getattr(e, "confirm_token", None)
+    if isinstance(issued, str) and issued:
+        body["confirm_token"] = issued
     return web.json_response({"error": body}, status=e.status)
 
 
@@ -2534,12 +2642,17 @@ async def wavespeed_run(request: web.Request) -> web.Response:
     inputs = (await json_body(request)).get("inputs")
     if not isinstance(inputs, dict):
         return error("inputs must be an object", 400)
+    from ._common import request_user
+    from .provider_admin import bind_confirm_user, reset_confirm_user
+    user_token = bind_confirm_user(request_user(request))
     try:
         task = await submit(inputs)
     except WaveSpeedError as e:
         return _respond_error(e)
     except aiohttp.ClientError as e:
         return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}", kind="network"))
+    finally:
+        reset_confirm_user(user_token)
     return web.json_response({"prompt_id": f"ws:{task}"})
 
 

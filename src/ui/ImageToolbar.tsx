@@ -176,6 +176,11 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   const asset = shape.props.assetId ? editor.getAsset(shape.props.assetId) : null
   if (asset?.type !== 'image' || !asset.props.src) return null
   const { src, name, w: iw, h: ih } = asset.props
+  const svgDownload = typeof asset.meta?.svgDownload === 'string' ? asset.meta.svgDownload : ''
+  const svgName = typeof asset.meta?.svgName === 'string' ? asset.meta.svgName : name
+  const saveSrc = svgDownload || src
+  const saveName = svgDownload ? svgName : name
+  const svgState = typeof asset.meta?.svgState === 'string' ? asset.meta.svgState : ''
 
   const host = editor.getContainer().getBoundingClientRect()
   const left = Math.min(Math.max((rect.l + rect.r) / 2 - width / 2, EDGE), host.width - width - EDGE)
@@ -279,7 +284,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
       <div ref={bar} className="ca-bar ca-toolbar ca-toolbar--image ca-toolbar--swap" data-tool={swapTool.id} style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
         <span className="ca-toolbar__name">{swapTool.label}</span>
         <TransformMenu editor={editor} shape={shape} bar />
-        <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
+        <Btn icon={Icons.download} hint={svgState === 'preview_failed' ? t('wsErr.svgPreviewFailed') : t('common.download')} onClick={() => download(saveSrc, saveName)} />
       </div>
     )
   }
@@ -320,7 +325,9 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
         )}
       </Popover>
       <div className="ca-bar__sep" />{/* #283 version A (supersedes #244): upstream 5231d59 grouping, tools | download */}
-      <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
+      {svgState === 'preview_failed' && <span className="ca-chat__hint">{String(asset.meta?.svgMessage || t('wsErr.svgPreviewFailed'))}</span>}
+      {svgState === 'transparent' && <span className="ca-chat__hint">{t('genSettings.svgTransparent')}</span>}
+      <Btn icon={Icons.download} hint={svgState === 'preview_failed' ? t('wsErr.svgPreviewFailed') : t('common.download')} onClick={() => download(saveSrc, saveName)} />
       {customize && createPortal(<CustomizeDialog tools={tools} onClose={() => setCustomize(false)} />, document.body)}
     </div>
     {panelEl}

@@ -1,6 +1,6 @@
-"""#134: image default is gpt-image-2.5 flare via the single 'default' field in api/curated_models.json;
-Auto resolves to it and the picker order does not move. #189: no GPT Image request pins a quality tier; quality is
-left out so WaveSpeed runs its schema default (medium), and the confirm price is quoted for that same tier. Mock only: no WaveSpeed calls."""
+"""#825 phase 2: image Auto/default is gpt-image-2.6 flare via the single 'default' field.
+An explicit 2.5-flare id still resolves. Picker order does not move. #189: no GPT Image request pins a quality
+tier; quality is left out so WaveSpeed runs its schema default (medium). Mock only: no WaveSpeed calls."""
 import asyncio
 import json
 
@@ -8,14 +8,19 @@ import pytest
 
 from ComfyArt.api import wavespeed
 
-T2I = "openai/gpt-image-2.5-flare/text-to-image"
-EDIT = "openai/gpt-image-2.5-flare/edit"
+T2I = "openai/gpt-image-2.6-flare/text-to-image"
+EDIT = "openai/gpt-image-2.6-flare/edit"
+T2I_25 = "openai/gpt-image-2.5-flare/text-to-image"
+EDIT_25 = "openai/gpt-image-2.5-flare/edit"
 SCHEMA = {"properties": {"prompt": {}, "quality": {"enum": ["low", "medium", "high", "xhigh", "max"]}}}
 
 
 def test_auto_resolves_to_flare():
     assert wavespeed.resolve_model("text_to_image", None) == T2I
     assert wavespeed.resolve_model("image_edit", None) == EDIT
+    assert wavespeed.resolve_model("text_to_image", "") == T2I
+    assert wavespeed.resolve_model("text_to_image", T2I_25) == T2I_25
+    assert wavespeed.resolve_model("image_edit", EDIT_25) == EDIT_25
     assert wavespeed.resolve_model("text_to_image", "openai/gpt-image-2/text-to-image") == "openai/gpt-image-2/text-to-image"
 
 
@@ -29,7 +34,8 @@ def test_single_default_field_and_order_unchanged():
     assert wavespeed.picker_order("text_to_image", models)[0] == "openai/gpt-image-2/text-to-image"
 
 
-GPT_IMAGE = [T2I, EDIT, "openai/gpt-image-2.5-sunburst/text-to-image", "openai/gpt-image-2.5-sunburst/edit",
+GPT_IMAGE = [T2I, EDIT, T2I_25, EDIT_25, "openai/gpt-image-2.6-sunburst/text-to-image", "openai/gpt-image-2.6-sunburst/edit",
+             "openai/gpt-image-2.5-sunburst/text-to-image", "openai/gpt-image-2.5-sunburst/edit",
              "openai/gpt-image-2/text-to-image", "openai/gpt-image-2/edit"]
 MEDIUM_1K = 0.039  # product table: sunburst/flare edit, medium, 1k
 
@@ -52,10 +58,10 @@ def test_payload_omits_quality_unless_user_picks(model):
     assert p["quality"] == "max"  # an explicit user pick still goes through unchanged
 
 
-@pytest.mark.parametrize("inputs,tier", [({"feature": "text_to_image"}, None),
-                                         ({"feature": "image_edit"}, None),
-                                         ({"feature": "text_to_image", "model": T2I, "params": {"quality": "high"}}, "high")])
-def test_confirm_price_is_for_chosen_tier(monkeypatch, inputs, tier):
+@pytest.mark.parametrize("inputs,tier,expect", [({"feature": "text_to_image"}, None, T2I),
+                                               ({"feature": "image_edit"}, None, EDIT),
+                                               ({"feature": "text_to_image", "model": T2I_25, "params": {"quality": "high"}}, "high", T2I_25)])
+def test_confirm_price_is_for_chosen_tier(monkeypatch, inputs, tier, expect):
     seen = []
     prices = {"low": 0.024, "medium": 0.06, "high": 0.18}
 
@@ -66,4 +72,4 @@ def test_confirm_price_is_for_chosen_tier(monkeypatch, inputs, tier):
     monkeypatch.setattr(wavespeed, "quote", fake_quote)
     est = asyncio.run(wavespeed.estimate(inputs))
     assert seen[0][1] == tier and est["price"] == prices[tier or "medium"]
-    assert seen[0][0] in (T2I, EDIT)
+    assert seen[0][0] == expect

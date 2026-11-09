@@ -24,7 +24,8 @@ def test_usd_format(tmp_path):
 def test_confirm_uses_ui_credits_not_dollars():
     """#397: cloud confirm dialog shows credits; GenPanel estimate next to Send stays USD (#192) for now."""
     comfy = (ROOT / "src/comfy.ts").read_text()
-    ask = comfy[comfy.index("export function askCost"):comfy.index("export async function queuePrompt")]
+    ask = (ROOT / "src/confirmText.ts").read_text()
     assert "uiCredits(price ?? 0)" in ask and "usd(price" not in ask
+    assert "confirmDesc(" in comfy[comfy.index("export function askCost"):comfy.index("export async function queuePrompt")]
     gen = (ROOT / "src/ui/GenPanel.tsx").read_text()
     assert "≈$${usd(estimate)}" in gen and "estimate.toFixed(2)" not in gen

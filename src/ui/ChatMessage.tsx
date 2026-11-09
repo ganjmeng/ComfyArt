@@ -1,11 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
-import { answerAsk, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
+import { answerAsk, quoteAnswer, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
 import { setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
 import { errorText } from '../jobs'
-import { confirmAtom } from './Confirm'
+import { ChatInlineConfirm } from './ChatInlineConfirm'
 import OVER_QUOTE from '../../bot/over_quote.json'
 import { schedulesOpenAtom } from '../schedules'
 import { Icons } from './icons'
@@ -737,34 +737,33 @@ export function OverQuote({ b }: { b: BotBlock }) {
   const copy = OVER_QUOTE.copy[lang === 'zh' ? 'zh' : 'en']
   const credits = (b as BotBlock & { credits?: number }).credits
   const body = credits != null ? copy.body.replace('{credits}', String(credits)) : (b.prompt ?? '')
-  useEffect(() => {
-    if (!pending || !askId) return
-    let live = true
-    const answer = (id: string) => void answerAsk(askId, [id], '').catch((e) => { if (live) setError(errorText(e)) })
-    confirmAtom.set({
-      title: t('jobs.confirmTitle'),
-      desc: body,
-      ok: copy.confirm,
-      cancelLabel: copy.decline,
-      // #393: no ✕, the backdrop does nothing; Esc = 先到这里 (cancel → decline)
-      closable: false,
-      backdropClose: false,
-      className: 'ca-overquote',
-      run: () => { if (live) answer(OVER_QUOTE.confirm) },
-      cancel: () => { if (live) answer(OVER_QUOTE.decline) },
-    })
-    return () => {
-      live = false
-      const cur = confirmAtom.get()
-      if (cur && cur.desc === body) confirmAtom.set(null)
-    }
-  }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
+  if (pending && askId) {
+    const answer = quoteAnswer(askId)
+    return (
+      <>
+        <ChatInlineConfirm
+          title={t('jobs.confirmTitle')}
+          desc={body}
+          okLabel={t('jobs.confirmOk')}
+          cancelLabel={copy.decline}
+          testId="chat-inline-overquote"
+          onConfirm={async () => {
+            await answer([OVER_QUOTE.confirm])
+          }}
+          onCancel={() => {
+            void answer([OVER_QUOTE.decline]).catch((e) => setError(errorText(e)))
+          }}
+        />
+        {error ? <div className="ca-chat__hint">{error}</div> : null}
+      </>
+    )
+  }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const ok = b.status === 'answered' && (b.selected ?? []).includes(OVER_QUOTE.confirm)
   return (
     <div className="ca-chat__memo" data-kind={OVER_QUOTE.kind}>
       <span className="ca-icon">{ok ? Icons.check : Icons.close}</span>
-      {body} → {ok ? copy.confirm : b.status === 'expired' ? t('chatMessage.timedOut') : copy.decline}
+      {body} → {ok ? t('jobs.confirmOk') : b.status === 'expired' ? t('chatMessage.timedOut') : copy.decline}
     </div>
   )
 }
@@ -774,46 +773,43 @@ function PlanQuote({ b }: { b: BotBlock }) {
   const [error, setError] = useState('')
   const askId = b.ask_id
   const pending = b.status === 'pending'
-  const startLabel = (b.options ?? []).find((o) => o.id === 'start')?.label ?? ''
-  useEffect(() => {
-    if (!pending || !askId) return
-    let live = true
-    const open = () => confirmAtom.set({
-      title: t('jobs.confirmTitle'),
-      desc: b.prompt ?? '',
-      ok: startLabel,
-      lines: b.lines ?? [],
-      totalLabel: b.total_label,
-      total: b.total,
-      run: () => {
-        if (!live) return
-        setAgentPlanConfirmed(true)
-        void answerAsk(askId, ['start'], '').catch((e) => {
-          if (!live) return
-          setAgentPlanConfirmed(false)
-          setError(errorText(e))
-          open()
-        })
-      },
-      cancel: () => {
-        if (!live) return
-        setAgentPlanConfirmed(false)
-        void answerAsk(askId, ['cancel'], '').catch((e) => { if (live) setError(errorText(e)) })
-      },
-    })
-    open()
-    return () => {
-      live = false
-      const cur = confirmAtom.get()
-      if (cur && cur.desc === (b.prompt ?? '')) confirmAtom.set(null)
-    }
-  }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
+  if (pending && askId) {
+    const answer = quoteAnswer(askId)
+    return (
+      <>
+        <ChatInlineConfirm
+          title={t('jobs.confirmTitle')}
+          desc={b.prompt ?? ''}
+          okLabel={t('jobs.confirmOk')}
+          lines={b.lines ?? []}
+          totalLabel={b.total_label}
+          total={b.total}
+          testId="chat-inline-planquote"
+          onConfirm={async () => {
+            setAgentPlanConfirmed(true)
+            try {
+              await answer(['start'])
+            } catch (e) {
+              setAgentPlanConfirmed(false)
+              setError(errorText(e))
+              throw e
+            }
+          }}
+          onCancel={() => {
+            setAgentPlanConfirmed(false)
+            void answer(['cancel']).catch((e) => setError(errorText(e)))
+          }}
+        />
+        {error ? <div className="ca-chat__hint">{error}</div> : null}
+      </>
+    )
+  }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const started = b.status === 'answered' && (b.selected ?? []).includes('start')
   return (
     <div className="ca-chat__memo">
       <span className="ca-icon">{started ? Icons.check : Icons.close}</span>
-      {b.prompt} → {started ? startLabel : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
+      {b.prompt} → {started ? t('jobs.confirmOk') : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
     </div>
   )
 }

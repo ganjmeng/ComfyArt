@@ -15,6 +15,7 @@ import { Icons } from './icons'
 import { Popover } from './Popover'
 import { shortcutsAtom } from './Shortcuts'
 import { keySettingsOpenAtom, keyStatusAtom, WAVESPEED_HISTORY_URL } from '../wavespeedKey'
+import { setProviderAdminOpen } from '../providerAdmin'
 import { usageOpenAtom } from './UsageDialog'
 
 /** #35: the docs site (Mintlify, URL in docsConfig.ts); English at the root, Chinese under /zh. */
@@ -139,6 +140,9 @@ export function SettingsMenu({ editor, trigger }: { editor?: Editor; trigger: (p
         <div className="ca-menu__sep" />
         <button type="button" className="ca-menu__item" data-testid="settings-ws-key" onClick={() => { setOpen(false); keySettingsOpenAtom.set(true) }}>
           <span className="ca-icon">{Icons.settings}</span><span className="ca-menu__grow">{t('wsKey.menu')}</span>
+        </button>
+        <button type="button" className="ca-menu__item" data-testid="settings-providers" onClick={() => { setOpen(false); setProviderAdminOpen(true) }}>
+          <span className="ca-icon">{Icons.settings}</span><span className="ca-menu__grow">{lang === 'zh' ? '供应商' : 'Providers'}</span>
         </button>
         <button type="button" className="ca-menu__item" data-testid="settings-unload" onClick={() => { setOpen(false); void unloadModels().then((r) => { done(t('settings.unloadModelsDone', r.models, r.prices), !!editor); void loadCloudModels() }, (e) => reportError(errorText(e))) }}>
           <span className="ca-icon">{Icons.erase}</span><span className="ca-menu__grow">{t('settings.unloadModels')}</span>

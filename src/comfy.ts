@@ -1,10 +1,11 @@
+import { canSubmitPricedConfirmation } from './ui/confirmationSubmission'
 import { confirmAtom } from './ui/Confirm'
 import { readLocal } from './localPrefs'
+import { confirmDesc, type ConfirmDetail, type ConfirmGif } from './confirmText'
 import { t } from './i18n'
-import { uiCredits } from './usd'
 import { onComfyEvent } from './ws'
 import { isWsGraph, WS_ID } from './wavespeed'
-import { logRawGenError, mapUnknownError, wsBodyError, wsErrorText } from './wsErrors'
+import { logRawGenError, mapUnknownError, wsErrorText } from './wsErrors'
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus } from './wavespeedKey'
 
 const POLL_MS = 1500
@@ -25,9 +26,17 @@ export class NeedKeyError extends Error {
   }
 }
 
+/** History/query could not confirm a terminal result — keep pending, do not treat as lost/restart. */
+export class UncertainResultError extends Error {
+  constructor(message = t('jobs.resultPendingHint')) {
+    super(message)
+    this.name = 'UncertainResultError'
+  }
+}
+
 export type PromptGraph = Record<string, { class_type: string; inputs: Record<string, unknown>; _meta?: { title?: string } }>
 
-export interface ImageRef { filename: string; subfolder: string; type: string; metadata?: { width?: number; height?: number } }
+export interface ImageRef { filename: string; subfolder: string; type: string; metadata?: { width?: number; height?: number }; svg_preview?: string; svg_state?: string; svg_message?: string }
 
 function comfyUser(): string | null {
   return readLocal('Comfy.userId')
@@ -177,20 +186,22 @@ export function popAgentCommand() { agentDepth = Math.max(0, agentDepth - 1) }
 /** True only while an agent command is on the stack and the plan was confirmed. */
 export function planBypassNow() { return planConfirmed && agentDepth > 0 }
 
+export type { ConfirmDetail, ConfirmGif }
+
 /** Second confirmation for costly cloud jobs, in the app's own Confirm dialog. */
-export function askCost(price: number | null, segSplits?: number, segCapped?: boolean, note = '', estimate?: { tier?: string; unpriced?: boolean }): Promise<boolean> {
+export function askCost(price: number | null, segSplits?: number, segCapped?: boolean, note = '', estimate?: ConfirmDetail, submit?: () => Promise<void>): Promise<boolean> {
   // #138: seg maps quote an upper bound before anything is recognised (nothing is charged before this dialog);
   // on a retry only the classes still missing a mask are quoted
-  const p = String(uiCredits(price ?? 0))  // #397: credits only in the confirm dialog (never dollars)
-  // #159: the price API failed, so this is the catalog estimate for the tier that will be submitted, and it says so
-  // #159: no price for the submitted tier: no amount at all, only the tier it will be charged at
-  const cost = estimate?.unpriced || price == null ? t('jobs.confirmUnpriced', estimate?.tier || t('jobs.thisTier'))
-    : estimate && typeof segSplits !== 'number' ? (estimate.tier ? t('jobs.confirmEstimateTier', p, estimate.tier) : t('jobs.confirmEstimate', p))
-    : typeof segSplits !== 'number' ? t('jobs.confirmCost', p)
-    : segCapped ? t('jobs.confirmSegMax', p, segSplits) : t('jobs.confirmSegLeft', p, segSplits)
-  return new Promise((resolve) => confirmAtom.set({
+  const cost = confirmDesc(price, segSplits, segCapped, estimate)
+  return new Promise((resolve, reject) => confirmAtom.set({
     title: t('jobs.confirmTitle'), ...(note ? { note } : {}), desc: cost, ok: t('jobs.confirmOk'),
     run: () => resolve(true), cancel: () => resolve(false),
+    ...(submit ? {
+      submit,
+      // No real paid confirmation when the price cannot be bounded.
+      okDisabled: !canSubmitPricedConfirmation(price, !!estimate?.unpriced),
+      submissionFailed: () => reject(new Error(t('jobs.submissionUncertain'))),
+    } : {}),
   }))
 }
 
@@ -207,17 +218,37 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
     let ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
     let wsBody = await ws.json().catch(() => null)
     const price = wsBody?.error?.confirm_usd
+    const confirmToken = typeof wsBody?.error?.confirm_token === 'string' ? wsBody.error.confirm_token : ''
     if (ws.status === 409 && (typeof price === 'number' || wsBody?.error?.unpriced)) {
       // jobs of $0.50 or more need an explicit yes before they are submitted
       // #128: the actual duration when it differs from the one asked
       const gifNote = typeof wsBody?.error?.gif_note === 'string' ? wsBody.error.gif_note : ''
+      const routed = typeof wsBody?.error?.model === 'string' ? wsBody.error.model : ''
       const asked = typeof inputs.duration_note === 'string' ? inputs.duration_note : ''
-      const note = [asked, gifNote].filter(Boolean).join('\n')
-      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note, wsBody?.error?.estimate || wsBody?.error?.unpriced ? { tier: typeof wsBody.error.tier === 'string' ? wsBody.error.tier : undefined, unpriced: !!wsBody.error.unpriced } : undefined))) throw new CostDeclined()
-      ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
-      wsBody = await ws.json().catch(() => null)
+      const note = [routed, asked, gifNote].filter(Boolean).join('\n')
+      const rawGif = wsBody?.error?.gif
+      const gif = rawGif && typeof rawGif.frame_count === 'number' && typeof rawGif.frame_duration_ms === 'number' ? rawGif as ConfirmGif : undefined
+      const detail: ConfirmDetail = {
+        tier: typeof wsBody.error.tier === 'string' ? wsBody.error.tier : undefined,
+        unpriced: !!wsBody.error.unpriced,
+        openEnded: confirmToken.length > 0,
+        estimate: !!wsBody.error.estimate,
+        live: typeof price === 'number' && !wsBody.error.unpriced && !wsBody.error.estimate,
+        ...(gif ? { gif } : {}),
+      }
+      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note,
+        detail.openEnded || detail.unpriced || detail.estimate || detail.live || gif ? detail : undefined,
+        async () => {
+          const next = { ...inputs, confirmed: true, ...(confirmToken ? { confirm_token: confirmToken } : {}) }
+          ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: next }) })
+          wsBody = await ws.json().catch(() => null)
+          // Without a task id, do not claim the submission failed or permit a second request.
+          if (!ws.ok || typeof wsBody?.prompt_id !== 'string' || !wsBody.prompt_id) throw new Error(t('jobs.submissionUncertain'))
+        },
+      ))) throw new CostDeclined()
     }
     if (!ws.ok) throw new Error(promptError(wsBody, ws.status))
+    if (typeof wsBody?.prompt_id !== 'string' || !wsBody.prompt_id) throw new UncertainResultError(t('jobs.resultPendingHint'))
     return String(wsBody.prompt_id)
   }
   // Only WaveSpeed graphs can run; tools not yet ported fail clearly.
@@ -295,14 +326,29 @@ export async function promptHistory(promptId: string): Promise<any> {
 
       : await api(`/history/${promptId}`)
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(wsBodyError(body, t('wsErr.failed')))
+  // R05/R10: HTTP failure stays 「结果待确认」, never hard-fail / server-restart copy.
+  if (!res.ok) throw new UncertainResultError(t('jobs.resultPendingHint'))
   return body[promptId]
 }
 
-async function waitForOutput<T>(promptId: string, node: string, pick: (out: Record<string, any>) => T | null): Promise<T> {
+export type JobPollStatus = 'querying' | 'running'
+
+async function waitForOutput<T>(
+  promptId: string,
+  node: string,
+  pick: (out: Record<string, any>) => T | null,
+  onStatus?: (status: JobPollStatus) => void,
+): Promise<T> {
   let misses = 0
+  onStatus?.('querying')
   for (;;) {
-    const hist = await promptHistory(promptId)
+    let hist: any
+    try {
+      hist = await promptHistory(promptId)
+    } catch (e) {
+      if (e instanceof UncertainResultError) throw e
+      throw new UncertainResultError(t('jobs.resultPendingHint'))
+    }
     if (hist) {
       const messages: [string, any][] = hist.status?.messages ?? []
       const err = messages.find((m) => m[0] === 'execution_error')
@@ -326,20 +372,27 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
         return value
       }
       if (hist.status?.completed || hist.status?.status_str === 'error') throw new Error(t('jobs.noOutput'))
+      // Authority says the task still exists without terminal output yet.
+      onStatus?.('running')
     } else if (promptId.startsWith(WS_ID) || await inQueue(promptId)) {
       misses = 0
+      onStatus?.('running')
     } else if (++misses >= 2) {
-      throw new Error(t('jobs.lost'))
+      throw new UncertainResultError(t('jobs.resultPendingHint'))
     }
     await nap(promptId)
   }
 }
 
-export function waitForImages(promptId: string, node: string): Promise<ImageRef[]> {
+export function waitForImages(
+  promptId: string,
+  node: string,
+  onStatus?: (status: JobPollStatus) => void,
+): Promise<ImageRef[]> {
   return waitForOutput(promptId, node, (out) => {
     const items = [...(out.images ?? []), ...(out.videos ?? []), ...(out.gifs ?? []), ...(out.audio ?? []), ...(out['3d'] ?? [])]
     return items.length ? items as ImageRef[] : null
-  })
+  }, onStatus)
 }
 
 export function waitForText(promptId: string, node: string): Promise<string> {

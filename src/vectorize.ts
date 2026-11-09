@@ -3,6 +3,7 @@ import type { Editor, TLImageShape } from 'tldraw'
 
 import { loadImage } from './adjust'
 import { uploadImage, viewUrl } from './comfy'
+import { rasterLoadSrc, RASTER_FAIL_PNG } from './svgFile'
 import { GAP, placeMedia } from './jobs'
 import { t } from './i18n'
 
@@ -14,16 +15,18 @@ const OPTIONS = { numberofcolors: 16, ltres: 1, qtres: 1, pathomit: 8, colorquan
 
 export function svgRaster(src: string, w: number, h: number, scale: number): Promise<string> {
   const px = Math.min(RASTER_MAX, RASTER_STEP * 2 ** Math.max(0, Math.ceil(Math.log2(Math.max(w, h) * scale / RASTER_STEP))))
-  const key = `${src}|${px}`
+  const target = rasterLoadSrc(src)
+  const key = `${target}|${px}`
   if (!rasters.has(key)) {
-    rasters.set(key, loadImage(src).then((img) => {
+    // #826: load the server PNG (or another non-SVG source). Failure is a PNG, never the SVG URL.
+    rasters.set(key, loadImage(target).then((img) => {
       const k = px / Math.max(w, h)
       const c = document.createElement('canvas')
       c.width = Math.round(w * k)
       c.height = Math.round(h * k)
       c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height)
-      return new Promise<string>((resolve) => c.toBlob((b) => resolve(b ? URL.createObjectURL(b) : src), 'image/png'))
-    }).catch(() => src))
+      return new Promise<string>((resolve) => c.toBlob((b) => resolve(b ? URL.createObjectURL(b) : RASTER_FAIL_PNG), 'image/png'))
+    }).catch(() => RASTER_FAIL_PNG))
   }
   return rasters.get(key)!
 }

@@ -4,7 +4,10 @@ from aiohttp import web
 from server import PromptServer
 
 from . import api
+from .api.provider_admin import install as install_provider_admin
 from .nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+
+install_provider_admin()
 
 ROOT = Path(__file__).parent
 DIST = ROOT / "dist"

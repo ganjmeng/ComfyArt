@@ -1,6 +1,7 @@
 import { atom, react } from 'tldraw'
 
 import { api, setAgentPlanConfirmed } from './comfy'
+import { createQuoteAnswer } from './ui/quoteAnswer'
 import { resultsAtom } from './jobs'
 import { notify } from './notices'
 import { onComfyEvent, onReconnect } from './ws'
@@ -329,6 +330,11 @@ export async function stopTurn() {
 /** #391: resume a paused run from its server-side checkpoint (409 when another Continue won). */
 export async function continueRun(runId: string, lang: string) {
   await json(`/comfyart/bot/runs/${runId}/continue`, send({ lang }))
+}
+
+/** Capture before opening a quote: switching chats must not redirect an approval. */
+export function quoteAnswer(askId: string) {
+  return createQuoteAnswer(currentChat()?.id ?? null, askId, (path, body) => json(path, send(body)))
 }
 
 export async function answerAsk(askId: string, selected: string[], other: string, answers?: AskAnswers) {
