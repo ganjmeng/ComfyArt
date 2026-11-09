@@ -197,6 +197,8 @@ export function placeMedia(editor: Editor, m: Media, name: string, x: number, y:
 
 export interface GenInfo {
   tool: string
+  /** #825: Auto · model pill payload (survives refresh on the result shape). */
+  modelChoice?: import('./autoPill').ModelChoice
   prompt?: string
   ratio?: string
   resolution?: string
@@ -218,10 +220,12 @@ function infoOf(holder: TLShape, job: Job): GenInfo {
   if (!prompt) return { tool: job.name }
   const refs = holder.meta.refs as string[] | undefined
   const inputs = Object.fromEntries(GEN_INPUTS.filter((k) => holder.meta[k] != null).map((k) => [k, holder.meta[k]!]))
+  const modelChoice = holder.meta.modelChoice as import('./autoPill').ModelChoice | undefined
   return {
     tool: t('common.generate'), prompt, ratio: p.ratio, resolution: p.resolution, duration: p.duration, workflow: p.workflow,
     ...(typeof job.extra?.seed === 'number' ? { seed: job.extra.seed } : {}),
     ...(refs?.length ? { refs } : {}),
+    ...(modelChoice ? { modelChoice } : {}),
     settings: { count: p.count, quality: p.quality, style: p.style, transparent: p.transparent, cw: p.cw, ch: p.ch },
     inputs,
   }

@@ -517,6 +517,7 @@
   color: var(--ca-muted);
 }
 .ca-process__steps {
+  overflow: visible;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -573,10 +574,26 @@
   height: var(--ca-process-ico);
   display: flex;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
   font: 500 13px/1 var(--ca-font);
   color: var(--ca-muted);
   white-space: nowrap;
+  gap: 0;
 }
+/* #825: natural width at normal cards; ellipsis only when the grid column is actually narrow */
+.ca-process__labeltext {
+  flex: 0 1 auto;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
 .ca-process__label--active {
   background: linear-gradient(
     100deg,
@@ -1042,6 +1059,8 @@
 .ca-process__row[data-kind="thought"] .ca-process__label { font-weight: 400; color: var(--ca-text-think); } /* #765 Thought row 13/400 */
 /* #421: failed generation row — same red as tool-step errors */
 .ca-process__row[data-error] .ca-process__label { color: #dc2626; }
+/* #825 Design: Auto · model label stays muted gray — failure is the 生成失败 reply only */
+.ca-process__row[data-error] .ca-process__label[data-testid="auto-model-label"] { color: var(--ca-muted); }
 
 /* #442 v6 (designer): 24px flex rows, gap 6, column gap 8 → icon-to-icon 32; card is a sibling at the icon x */
 .ca-process { --ca-process-row-gap: 8px; --ca-process-gutter: 6px; --ca-process-card-ink: #000; }

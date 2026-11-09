@@ -322,6 +322,8 @@
   "chatMessage.designValidated": "Design validated",
   "chatMessage.editAgain": "Edit again",
   "chatMessage.failed": "Failed",
+  "chatMessage.autoPickedPrefix": "Auto-picked: ",
+  "chatMessage.skillPinnedModel": "{0} skill pinned model",
   "chatMessage.forkNewChatFromHere": "Fork new chat from here",
   "chatMessage.generating": "Generating…",
   "chatMessage.generatingImages": "Generating images…",

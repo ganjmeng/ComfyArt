@@ -12,3 +12,4 @@ wavespeed.env
 wavespeed_key.json
 .gate_owned
 tmp-712-shots/
+tmp/

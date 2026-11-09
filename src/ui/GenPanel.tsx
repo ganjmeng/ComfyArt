@@ -72,9 +72,16 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
     if (!estKey) return
     let live = true
     // debounced; the backend caches each WaveSpeed quote for 5 minutes
-    const timer = setTimeout(() => { estimateCost(JSON.parse(estKey)).then((e) => { if (live) { setEstDetail(e); setEstimate(e?.price ?? null); setEstimated(e?.source === 'estimate'); setUnpriced(e?.source === 'unpriced') } }).catch(() => {}) }, 300)
+    const timer = setTimeout(() => { estimateCost(JSON.parse(estKey)).then((e) => {
+      if (!live) return
+      setEstDetail(e); setEstimate(e?.price ?? null); setEstimated(e?.source === 'estimate'); setUnpriced(e?.source === 'unpriced')
+      // #825: same model_choice estimate quotes → confirm → card
+      if (e?.model_choice && shape) {
+        editor.updateShape<GeneratorShape>({ id: shape.id, type: shape.type, meta: { ...editor.getShape(shape.id)?.meta, modelChoice: e.model_choice } as GeneratorShape['meta'] })
+      }
+    }).catch(() => {}) }, 300)
     return () => { live = false; clearTimeout(timer) }
-  }, [estKey])
+  }, [estKey, editor, shape?.id])
   if (!shape || !rect || running || canvasPick) return null
   const p = shape.props
   const update = (patch: Partial<GeneratorShape['props']>) => {

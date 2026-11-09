@@ -322,6 +322,8 @@
   "chatMessage.designValidated": "设计已校验",
   "chatMessage.editAgain": "重新编辑",
   "chatMessage.failed": "失败",
+  "chatMessage.autoPickedPrefix": "自动选择：",
+  "chatMessage.skillPinnedModel": "{0} 技能固定模型",
   "chatMessage.forkNewChatFromHere": "从这里分叉新对话",
   "chatMessage.generating": "生成中…",
   "chatMessage.generatingImages": "正在生成图片…",

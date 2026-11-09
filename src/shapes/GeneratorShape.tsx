@@ -15,7 +15,9 @@ import {
 import { isVideo } from '../models'
 import { errorText, resultsAtom, stopJob } from '../jobs'
 import { Icons } from '../ui/icons'
-import { t } from '../i18n'
+import { lang, t } from '../i18n'
+import { autoPillLabel, autoPillTooltip, type ModelChoice } from '../autoPill'
+import { Tip } from '../ui/Tip'
 
 export const GENERATOR = 'generator'
 /** #287: shared with the home composer, which has no editor to ask for defaults. */
@@ -132,10 +134,15 @@ function GeneratorCard({ shape }: { shape: GeneratorShape }) {
   const querying = job?.phase === 'querying' && !pending
   const error = (!job || pending) ? undefined : result?.error
   const pendingCopy = pending ? (result?.error || `${t('jobs.resultPendingShort')}\n${t('jobs.resultPendingHint')}`) : undefined
-  const pill = querying ? t('jobs.queryingStatus')
+  const statusPill = querying ? t('jobs.queryingStatus')
     : pending ? t('jobs.resultPendingShort')
     : job ? t('taskDetails.generating')
     : null
+  // #825: Lovart-style gray icon+text row (not a colored capsule). Auto · name; manual = name only.
+  const choice = (shape.meta.modelChoice as ModelChoice | undefined)
+    || (job ? { auto: true } as ModelChoice : null)
+  const modelLabel = autoPillLabel(choice)
+  const modelTitle = autoPillTooltip(choice, lang)
   return (
     <HTMLContainer
       className={job || pending ? 'ca-gen-card ca-gen-frame' : 'ca-gen-card'}
@@ -161,7 +168,20 @@ function GeneratorCard({ shape }: { shape: GeneratorShape }) {
           })}
         >{Icons.stop}</button>
       )}
-      {pill && <div className="ca-gen-frame__pill" role="status" aria-live="polite">{pill}</div>}
+      {modelLabel && (modelTitle ? (
+        <Tip label={modelTitle} wide>
+          <div className="ca-gen-frame__model" data-testid="auto-model-label" role="status" aria-label={modelTitle}>
+            <span className="ca-icon">{isVideo(shape.props.workflow) ? Icons.videoLine : Icons.sparkleImage}</span>
+            <span className="ca-gen-frame__modeltext">{modelLabel}</span>
+          </div>
+        </Tip>
+      ) : (
+        <div className="ca-gen-frame__model" data-testid="auto-model-label" role="status">
+          <span className="ca-icon">{isVideo(shape.props.workflow) ? Icons.videoLine : Icons.sparkleImage}</span>
+          <span className="ca-gen-frame__modeltext">{modelLabel}</span>
+        </div>
+      ))}
+      {statusPill && <div className="ca-gen-frame__pill" role="status" aria-live="polite">{statusPill}</div>}
     </HTMLContainer>
   )
 }

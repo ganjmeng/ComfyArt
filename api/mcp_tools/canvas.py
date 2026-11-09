@@ -1,6 +1,6 @@
 import logging
 
-from ..auto_models import UnregisteredModel, choose, load_table, named_or_none, note, registered, skill_pin, tool_feature
+from ..auto_models import UnregisteredModel, choose, load_table, named_or_none, note, registered, skill_pin, skill_pin_reason, tool_feature
 from ..gif_image import choice as gif_choice, ensure_args as ensure_gif_args, requests_gif, still_block
 from ..svg_image import block_reason as svg_block, choice as svg_choice, ensure_args as ensure_svg_args, requests_svg
 from ..mcp_commands import submit_command
@@ -151,6 +151,9 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
     if choice and choice.get("category") in ("skill", "skill_fallback"):
         args = _pin_args(args, choice)
     args.pop("skill", None)
+    # #825: page stashes model_choice on the gen card / GenInfo (Auto · name + hover reason).
+    if choice and isinstance(choice, dict):
+        args = {**args, "model_choice": {**choice, "note": note(choice) if choice.get("model") else (choice.get("fallback_reason") or {}).get("en", "")}}
     result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
     if choice and isinstance(result, dict) and not result.get("cancelled"):
         ran = result.get("model")
@@ -261,7 +264,7 @@ def _skill_choice(args: dict, pin: dict) -> dict:
         return {"model": pin["model"], "auto": True, "category": "skill_unregistered", "skill": skill,
                 "reason": {"zh": f"{skill} 固定的模型 {pin['model']} 不在模型列表里", "en": f"{pin['model']} pinned by {skill} is not in the model catalog"}}
     return {"model": pin["model"], "auto": True, "category": "skill", "skill": skill, "edit_model": pin["model"],
-            "resolution": pin.get("resolution"), "ratio": pin.get("ratio"), "reason": {"zh": pin["zh"], "en": pin["en"]}}
+            "resolution": pin.get("resolution"), "ratio": pin.get("ratio"), "reason": skill_pin_reason(skill)}
 
 
 def _skill_fallback(args: dict, pin: dict, failed: str) -> dict | None:
@@ -274,10 +277,10 @@ def _skill_fallback(args: dict, pin: dict, failed: str) -> dict | None:
         log.error("skill %s fallback %s is not in the catalog; not submitting", skill, fb)
         return None
     log.warning("skill %s: %s failed; falling back to %s", skill, failed, fb)
+    # #825: same skill-pin wording as a successful pin; pill_tooltip adds 「 · 首选…改用…」
     return {"model": fb, "auto": True, "category": "skill_fallback", "skill": skill, "fallback": failed, "edit_model": fb,
             "resolution": pin.get("resolution"), "ratio": pin.get("ratio"),
-            "reason": {"zh": f"{failed} 调用失败，按 {skill} 的登记改用备用模型 {fb}",
-                       "en": f"{failed} failed, so {skill}'s registered fallback {fb} was used"}}
+            "reason": skill_pin_reason(skill)}
 
 
 def _pin_args(args: dict, choice: dict) -> dict:

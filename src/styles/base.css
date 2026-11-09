@@ -227,6 +227,30 @@ body { font-family: var(--ca-font); color: var(--ca-text); }
   box-shadow: 0 2px 8px rgba(0,0,0,.16); pointer-events: none; white-space: nowrap;
 }
 :root[data-theme="dark"] .ca-tip { box-shadow: 0 0 0 .5px rgba(255,255,255,.14), 0 2px 8px rgba(0,0,0,.16); }
+/* #825: routing-reason tip — same chip colors, wraps one sentence, never truncates inside */
+.ca-tip--wide {
+  height: auto;
+  min-height: 26px;
+  max-width: 240px;
+  padding: 6px 10px;
+  white-space: normal;
+  line-height: 1.35;
+  font: 400 12px/1.35 var(--ca-font);
+  text-align: left;
+  align-items: flex-start;
+  overflow: visible;
+}
+/* flex child must shrink so max-width on the chip actually wraps the sentence */
+.ca-tip--wide .ca-tip__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+}
+.ca-tip[data-below] { /* flip: tip sits below the anchor (transform overridden inline) */ }
 .ca-tip__name { flex: none; }
 .ca-tip__key {
   display: inline-flex; align-items: center; height: 18px; padding: 0 6px;
@@ -248,5 +272,6 @@ body { font-family: var(--ca-font); color: var(--ca-text); }
 .ca-label__icon { display: flex; width: 14px; height: 14px; margin-right: 4px; flex: none; }
 .ca-label__icon svg { width: 100%; height: 100%; }
 .ca-label__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ca-label__model { margin-left: 8px; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--ca-muted); font-weight: 500; }
 .ca-label__size { margin-left: auto; padding-left: 8px; flex: none; }
 

@@ -19,6 +19,8 @@ import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
 import { attachSkill, loadSkills, skillCreatorAtom } from '../skills'
 import { openSkillEditor } from './SkillsDialog'
+import { Tip } from './Tip'
+import { autoPillLabel, autoPillTooltip, inputIsAuto, modelChoiceOfResult } from '../autoPill'
 
 const GEN_TOOLS = new Set(['generate_image', 'generate_video', 'edit_image', 'animate_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers', 'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer', 'extend_video', 'upscale_video', 'remove_video_background', 'generate_music', 'generate_sound_effect', 'text_to_speech', 'image_to_3d', 'edit_elements', 'create_mockup', 'create_slides'])
 
@@ -848,6 +850,8 @@ type ProcessStep = {
   kind: ProcessKind
   label: string
   live: boolean
+  /** #825: Auto routing reason on hover; manual picks leave this unset (no reason UI). */
+  title?: string
   /** #421: generation (or linked wait) failed — row reads as failed, not done. */
   error?: boolean
   /** #437: the search source's real favicon, shown before the page count. */
@@ -915,12 +919,24 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
                   <span className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline">{thoughtCollapsedTip(s.text ?? '')}</span>
                 </span>
               ) : (
-                <span className={shine ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>
-                  {s.favicon && <Favicon src={s.favicon} />}
-                  {s.label}
-                  {isMemory && <span className="ca-process__memchev ca-icon" data-testid="memory-updated-chev">{Icons.memoryChev}</span>}
-                  {isRefAnalysis && <span className="ca-process__memchev ca-icon" data-testid="ref-analysis-chev">{Icons.memoryChev}</span>}
-                </span>
+                (() => {
+                  const labelEl = (
+                    <span
+                      className={shine ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}
+                      data-testid={(s.kind === 'image' || s.kind === 'video') ? 'auto-model-label' : undefined}
+                      aria-label={s.title || undefined}
+                    >
+                      {s.favicon && <Favicon src={s.favicon} />}
+                      <span className="ca-process__labeltext">{s.label}</span>
+                      {isMemory && <span className="ca-process__memchev ca-icon" data-testid="memory-updated-chev">{Icons.memoryChev}</span>}
+                      {isRefAnalysis && <span className="ca-process__memchev ca-icon" data-testid="ref-analysis-chev">{Icons.memoryChev}</span>}
+                    </span>
+                  )
+                  // #825: Auto reason via existing <Tip> only — never native title (double tips)
+                  return s.title
+                    ? <Tip label={s.title} wide>{labelEl}</Tip>
+                    : labelEl
+                })()
               )}
             </>
           )
@@ -1201,7 +1217,31 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
         }
         if (kindResolved === 'skill_created') { const c = skillCreatedOf(b, result); if (c) created.push(c) }
         const pages = kindResolved === 'search_pages' ? searchResultCount(b, result) : undefined
-        const model = (kindResolved === 'image' || kindResolved === 'video') ? processModelName(b.input) : undefined
+        // #825: prefer model_choice from the tool result (table Auto + reason); fall back to input model id.
+        let model: string | undefined
+        let modelTitle: string | undefined
+        if (kindResolved === 'image' || kindResolved === 'video') {
+          // Prefer model_choice on the tool result. Live Auto (no result yet) → just "Auto".
+          // Legacy done cards without model_choice / model → leave model unset (tool fallback label; never empty Auto).
+          const fromResult = modelChoiceOfResult(result?.text)
+          const named = processModelName(b.input)
+          const autoIn = inputIsAuto(b.input as Record<string, unknown> | undefined)
+          let choice = fromResult
+          if (!choice && stepLiveProbe && autoIn) choice = { auto: true as const, ...(named ? { model: named } : {}) }
+          if (!choice && named) {
+            choice = autoIn
+              ? { auto: true as const, model: named }
+              : { auto: false as const, model: named, reason: { zh: '你指定了这个模型', en: 'you named this model' } }
+          }
+          if (choice) {
+            const labelChoice = stepLiveProbe && choice.auto && !choice.model ? { auto: true as const } : choice
+            // Done Auto without a concrete model id → do not paint a lone "Auto" (legacy).
+            if (!(choice.auto && !choice.model && !stepLiveProbe)) {
+              model = autoPillLabel(labelChoice) ?? undefined
+              modelTitle = autoPillTooltip(choice, lang) ?? undefined
+            }
+          }
+        }
         const aspectRatio = (kindResolved === 'image' || kindResolved === 'video') ? processAspectRatio(b.input) : undefined
         // #430: updating an existing entry shows 记忆已读取 (not clickable) right before 记忆已更新 ›
         if (b.type === 'memory_updated' && memBlocks.some((x) => (x.updated_ids ?? []).length > 0)) {
@@ -1231,17 +1271,23 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
           // #393 nit: a declined / refused paid step never reads as done
           // #421: failed generation reads as failed, not the success/model-name row
           // #420/#421: failed/cancelled tool_use on the rail reads 「工具名 · 失败/Failed」 (incl. canvas tools)
-          label: b.type === 'tool_use' && (genCancelled || genFailed)
+          // #825: failed/cancelled image|video keep the Auto · model label when we have one;
+          // only fall back to 「工具名 · 失败」 when there is no model label (legacy / plain tools).
+          label: (b.type === 'tool_use' && (genCancelled || genFailed)
             && (kindResolved === 'image' || kindResolved === 'video' || kindResolved === 'tool')
+            && !model)
             ? `${toolLabel(b.name)} · ${t(genCancelled ? 'chatMessage.cancelled' : 'chatMessage.failed')}`
             : processLabel(kindResolved, stepLive, {
-              fallback: b.type === 'tool_use' ? toolLabel(b.name) : b.label,
+              fallback: b.type === 'tool_use' && (genCancelled || genFailed)
+                ? `${toolLabel(b.name)} · ${t(genCancelled ? 'chatMessage.cancelled' : 'chatMessage.failed')}`
+                : (b.type === 'tool_use' ? toolLabel(b.name) : b.label),
               model,
               pages,
             }),
           live: stepLive,
           error: genFailed || undefined,
           text: b.type === 'thinking' ? b.text : undefined,
+          title: modelTitle,
           aspectRatio,
           memoryIds: b.type === 'memory_updated' ? memIdsAll : undefined,
           memoryTexts: b.type === 'memory_updated' ? memTextsAll : undefined,

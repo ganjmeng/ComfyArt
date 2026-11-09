@@ -53,6 +53,36 @@ def skill_pin(skill: str | None) -> dict | None:
     return dict(row) if isinstance(row, dict) else None
 
 
+def skill_pin_reason(skill: str) -> dict[str, str]:
+    """#825 tip category for a skill pin. Mirrors chatMessage.skillPinnedModel (zh/en)."""
+    s = str(skill)
+    return {"zh": f"{s} 技能固定模型", "en": f"{s} skill pinned model"}
+
+
+def skill_fallback_choice(skill: str) -> dict:
+    """#825: model_choice when a skill's pinned model failed and its registered fallback ran.
+
+    ``model`` is the table fallback (what ran); ``fallback`` is the pinned primary (what failed).
+    Reason is the same skill-pin wording as a successful pin — pill_tooltip adds 「 · 首选…」.
+    """
+    pin = skill_pin(skill)
+    if not pin or not pin.get("model") or not pin.get("fallback"):
+        raise ValueError(f"skill {skill!r} has no registered model/fallback in auto_models.json")
+    fb = pin["fallback"]
+    primary = pin["model"]
+    return {
+        "model": fb,
+        "auto": True,
+        "category": "skill_fallback",
+        "skill": str(skill),
+        "fallback": primary,
+        "edit_model": fb,
+        "resolution": pin.get("resolution"),
+        "ratio": pin.get("ratio"),
+        "reason": skill_pin_reason(skill),
+    }
+
+
 def tool_feature(tool: str) -> str | None:
     return next((f for f, spec in load_table().items() if spec["tool"] == tool or tool in (spec.get("masked") or {}).get("tools", [])), None)
 
@@ -165,3 +195,114 @@ def note(choice: dict) -> str:
     if choice.get("plain"):
         return f"用了 {m}，{r['zh']}。/ Used {m}, {r['en']}."
     return f"用了 {m}，因为{r['zh']}。/ Used {m} because {r['en']}."
+
+
+# Short labels for the generation-card Auto pill (#825). Prefer catalog label when the UI has it;
+# these fallbacks keep tooltips readable without loading the WaveSpeed catalog.
+_SHORT = {
+    "openai/gpt-image-2.6-sunburst/text-to-image": "GPT Image 2.6 Sunburst",
+    "openai/gpt-image-2.6-sunburst/edit": "GPT Image 2.6 Sunburst",
+    "openai/gpt-image-2.6-flare/text-to-image": "GPT Image 2.6 Flare",
+    "openai/gpt-image-2.6-flare/edit": "GPT Image 2.6 Flare",
+    "openai/gpt-image-2.5-sunburst/edit": "GPT Image 2.5 Sunburst",
+    "openai/gpt-image-2.5-flare/text-to-image": "GPT Image 2.5 Flare",
+    "openai/gpt-image-2.5-flare/edit": "GPT Image 2.5 Flare",
+    "google/nano-banana-2.1/text-to-image": "Nano Banana 2.1",
+    "google/nano-banana-2.1/edit": "Nano Banana 2.1",
+    "google/nano-banana-pro/edit": "Nano Banana Pro",
+    "bytedance/seedream-v5.0-pro": "Seedream 5.0 Pro",
+    "bytedance/seedream-v5.0-pro/edit": "Seedream 5.0 Pro",
+    "recraft-ai/recraft-v3": "Recraft V3",
+}
+
+
+_ACRONYMS = frozenset({"gpt", "ai", "ui", "io", "api", "cpu", "gpu", "vae"})
+
+
+def _humanize_id_segment(seg: str) -> str:
+    """Hyphen/underscore → spaces; capitalize words but keep known acronyms (GPT not Gpt)."""
+    words = seg.replace("-", " ").replace("_", " ").split()
+    out: list[str] = []
+    for w in words:
+        low = w.lower()
+        if low in _ACRONYMS:
+            out.append(low.upper())
+        elif w:
+            out.append(w[0].upper() + w[1:])
+        else:
+            out.append(w)
+    return " ".join(out)
+
+
+def short_name(model: str | None) -> str:
+    """Human short name for a WaveSpeed model id (pill text)."""
+    if not model:
+        return ""
+    if model in _SHORT:
+        return _SHORT[model]
+    # owner/name[/variant] → slug segment, humanized without mangling GPT→Gpt
+    parts = [p for p in str(model).split("/") if p]
+    if len(parts) >= 2:
+        return _humanize_id_segment(parts[-2])
+    return str(model)
+
+
+def reason_text(choice: dict, lang: str = "zh") -> str:
+    """Locale string from the routing table reason (no separate frontend copy)."""
+    r = choice.get("reason") or {}
+    if not isinstance(r, dict):
+        return str(r or "")
+    key = "en" if str(lang).lower().startswith("en") else "zh"
+    return str(r.get(key) or r.get("zh") or r.get("en") or "")
+
+
+def pill_label(choice: dict, *, catalog_label: str | None = None) -> str | None:
+    """Visible pill text. Auto → 'Auto · <name>'; manual → model name only; None when no model yet.
+
+    Before the actual model is known, callers should pass choice={'auto': True} with no model → 'Auto'.
+    Legacy cards with neither model nor auto → None (render nothing).
+    """
+    if not isinstance(choice, dict):
+        return None
+    model = choice.get("model")
+    auto = bool(choice.get("auto"))
+    name = (catalog_label or "").strip() or short_name(model)
+    if auto and not model:
+        return "Auto"
+    if not model and not auto:
+        return None
+    if auto:
+        # fallback used: still Auto prefix; tooltip explains 首选 X 失败
+        return f"Auto · {name}" if name else "Auto"
+    return name or None
+
+
+# Mirrors src/locales chatMessage.autoPickedPrefix (i18n owns the string; keep in sync).
+_AUTO_PICKED_PREFIX = {"zh": "自动选择：", "en": "Auto-picked: "}
+
+
+def pill_tooltip(choice: dict, lang: str = "zh") -> str | None:
+    """Hover/tap reason. Manual picks: None (UI shows no reason popup).
+
+    Auto (table): i18n prefix + table category.
+    Skill pin / skill fallback: NO auto-picked prefix — skill wording only.
+    Fallback (any): ``{category} · 首选 X 失败，改用 Y`` (preferred = choice['fallback']).
+    """
+    if not isinstance(choice, dict) or not choice.get("auto"):
+        return None
+    en = str(lang).lower().startswith("en")
+    key = "en" if en else "zh"
+    skillish = bool(choice.get("skill")) or choice.get("category") in ("skill", "skill_fallback")
+    prefix = "" if skillish else _AUTO_PICKED_PREFIX[key]
+    category = reason_text(choice, key)
+    failed = choice.get("fallback")
+    model = choice.get("model")
+    if failed and model:
+        if en:
+            body = f"{category} · Preferred {short_name(failed)} failed, used {short_name(model)}"
+        else:
+            body = f"{category} · 首选 {short_name(failed)} 失败，改用 {short_name(model)}"
+        return f"{prefix}{body}".strip()
+    if not category:
+        return None
+    return f"{prefix}{category}"
