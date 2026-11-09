@@ -125,37 +125,60 @@ def test_both_fail_never_retries_sunburst(catalog):
 
 
 @pytest.mark.asyncio
-async def test_soft_timeout_still_running_keeps_polling_no_second_submit(ws, monkeypatch):
+async def test_timeout_cap_running_fails_logs_id_no_flare(ws, monkeypatch, caplog):
+    from ComfyArt.bot.local_llm import model_call_failed
     ws["status"] = "processing"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": POSTER, "confirmed": True})
+    started = wavespeed._jobs[task]["started"]
+    monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 1.0)
+    monkeypatch.setattr(wavespeed.time, "time", lambda: started + 2)
+    with caplog.at_level("WARNING"):
+        hist = await wavespeed.poll(task)
+    entry = hist[f"ws:{task}"]
+    assert entry["status"]["completed"]
+    assert entry["generation_succeeded"] is False
+    info = entry["status"]["messages"][0][1]
+    assert info["ws_kind"] == "timeout" and info["ws_task_id"] == task
+    assert info["fallback_blocked"] is True
+    assert task in caplog.text and "no Flare" in caplog.text
+    # Tool-result shaped payload carrying the poll failure info
+    tool = {"status": "error", "error": {"kind": "timeout", "fallback_blocked": True, "task_id": task},
+            "model": SUN_T2I}
+    assert model_call_failed("generate_image", {"prompt": POSTER}, json.dumps(tool)) is None
+    assert model_call_failed("generate_image", {"prompt": POSTER}, json.dumps(hist)) is None
     assert len(ws["submits"]) == 1
-    monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
-    await wavespeed.poll(task)
+    assert wavespeed._jobs[task]["started"] == started
+    assert await wavespeed.poll(task) == hist
     assert len(ws["submits"]) == 1
-    job = wavespeed._jobs[task]
-    assert job.get("soft_timeout_checked") or int(job.get("soft_timeout_extends") or 0) >= 1
-    assert not job.get("done")
 
 
 @pytest.mark.asyncio
-async def test_soft_timeout_later_success_no_flare_submit(ws, monkeypatch):
+async def test_before_cap_running_keeps_original(ws, monkeypatch):
     ws["status"] = "processing"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": POSTER, "confirmed": True})
-    monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
-    await wavespeed.poll(task)
+    started = wavespeed._jobs[task]["started"]
+    monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 100)
+    monkeypatch.setattr(wavespeed.time, "time", lambda: started + 10)
+    hist = await wavespeed.poll(task)
+    assert not hist[f"ws:{task}"]["status"]["completed"]
     assert len(ws["submits"]) == 1
-    # Original later completes — still only one submit
+    assert wavespeed._jobs[task]["started"] == started
+
+
+@pytest.mark.asyncio
+async def test_timeout_cap_status_completed_uses_original_no_flare(ws, monkeypatch):
+    """At JOB_TIMEOUT a final free status GET that finds completed uses the original image; no Flare."""
     ws["status"] = "completed"
-    ws["outputs"] = ["https://cdn.example/out.png"]
-    wavespeed._jobs[task]["started"] = 0
-    wavespeed._jobs[task]["soft_timeout_checked"] = False
-    wavespeed._jobs[task].pop("result", None)
-    # May fail download in mock; critical invariant is submit count
-    try:
-        await wavespeed.poll(task)
-    except Exception:
-        pass
+    task = await wavespeed.submit({"feature": "text_to_image", "prompt": POSTER, "confirmed": True})
+    started = wavespeed._jobs[task]["started"]
+    monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 1.0)
+    monkeypatch.setattr(wavespeed.time, "time", lambda: started + 2)
+    hist = await wavespeed.poll(task)
+    entry = hist[f"ws:{task}"]
+    assert entry["generation_succeeded"] is True
+    assert entry.get("model_choice") is None or entry.get("model_choice", {}).get("fallback") is None
     assert len(ws["submits"]) == 1
+    assert wavespeed._jobs[task].get("fallback_blocked") is not True
 
 
 @pytest.mark.asyncio

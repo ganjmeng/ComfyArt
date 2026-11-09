@@ -2318,6 +2318,8 @@ def _fail(task: str, message: "str | WaveSpeedError") -> dict:
         if message.kind in ("timeout", "noOutput"):
             info["ws_task_id"] = task  # #712: the UI shows the task id for feedback / refunds
     job = _jobs.get(task)
+    if job and job.get("fallback_blocked"):
+        info["fallback_blocked"] = True
     if job and job.get("model"):
         charged = message.charged if isinstance(message, WaveSpeedError) else None
         gen_ledger.record_failure(task, "wavespeed", job["model"], str(message), kind=info.get("ws_kind") or "failed",
@@ -2327,22 +2329,6 @@ def _fail(task: str, message: "str | WaveSpeedError") -> dict:
         job["result"] = _history(task, "failed", [["execution_error", info]], {})
         return job["result"]
     return _history(task, "failed", [["execution_error", info]], {})
-
-
-def _job_runtime_fallback_eligible(job: dict) -> bool:
-    """#872: soft-timeout keep-alive only when this Auto row registered a runtime Flare fallback."""
-    mc = job.get("model_choice") if isinstance(job.get("model_choice"), dict) else None
-    if not mc or not mc.get("auto"):
-        return False
-    feature = job.get("feature") or ""
-    if not feature:
-        return False
-    try:
-        from .auto_models import registered_runtime_fallback
-        ids = {m["id"] for m in load_config()["features"].get(feature, {}).get("models", [])}
-        return bool(registered_runtime_fallback(feature, mc, ids))
-    except Exception:
-        return False
 
 
 async def poll(task: str) -> dict:
@@ -2365,52 +2351,20 @@ async def poll(task: str) -> dict:
         return await _poll_wrapped(task, job)
     now = time.time()
     if now - job["started"] > JOB_TIMEOUT:
-        soft = _job_runtime_fallback_eligible(job)
-        if soft and job.get("model") and not job.get("soft_timeout_checked"):
-            # #872: status-check first. Still running → keep polling same id (never Flare yet).
-            job["soft_timeout_checked"] = True
-            try:
-                got = await _poll_once(task, job, now)
-                if job.get("result"):
-                    log.info("#872: WaveSpeed task %s settled after soft timeout via status check", task)
-                    return got
-                job["started"] = now
-                job["soft_timeout_extends"] = int(job.get("soft_timeout_extends") or 0) + 1
-                log.info(
-                    "#872: task %s still running after soft timeout (extend #%s); keep polling original, no fallback",
-                    task, job["soft_timeout_extends"],
-                )
-                return _history(task, "processing", [], {})
-            except (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError, OSError, _Transient) as e:
-                log.warning("#872: soft-timeout status check for %s failed (%s)", task, type(e).__name__)
-        elif soft and job.get("model") and job.get("soft_timeout_checked") and not job.get("recovery_tried"):
+        # JOB_TIMEOUT is the total lifetime, not a renewable polling window.
+        if job.get("model") and not job.get("recovery_tried"):
             job["recovery_tried"] = True
             try:
                 got = await _poll_once(task, job, now)
                 if job.get("result"):
-                    log.info("#712/#872: WaveSpeed task %s recovered after soft-timeout window", task)
-                    return got
-                if int(job.get("soft_timeout_extends") or 0) < 3:
-                    job["started"] = now
-                    job["soft_timeout_checked"] = False
-                    job["recovery_tried"] = False
-                    job["soft_timeout_extends"] = int(job.get("soft_timeout_extends") or 0) + 1
-                    log.info("#872: task %s still running; extend again (#%s), no Flare", task, job["soft_timeout_extends"])
-                    return _history(task, "processing", [], {})
-            except (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError, OSError, _Transient) as e:
-                log.warning("#712/#872: recovery poll for %s failed (%s)", task, type(e).__name__)
-        elif (not soft) and job.get("model") and not job.get("recovery_tried"):
-            # #712: non-#872 jobs — one last free status GET, then timeout (unchanged)
-            job["recovery_tried"] = True
-            try:
-                got = await _poll_once(task, job, now)
-                if job.get("result"):
-                    log.info("#712: WaveSpeed task %s recovered after the poll timeout via its saved id", task)
                     return got
             except (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError, OSError, _Transient) as e:
-                log.warning("#712: recovery poll for %s failed (%s)", task, type(e).__name__)
+                log.warning("#872: final status check for prediction %s failed (%s)", task, type(e).__name__)
         if job.get("result"):
             return job["result"]
+        # Running or unknown at the cap: never submit another potentially billed job.
+        job["fallback_blocked"] = True
+        log.warning("#872: prediction %s reached JOB_TIMEOUT=%ss while unresolved; no Flare; reconcile this id", task, JOB_TIMEOUT)
         if job.get("model"):
             return _fail(task, await _timeout_error(task))
         return _fail(task, WaveSpeedError(f"WaveSpeed task timed out after {int(JOB_TIMEOUT)}s", 504, kind="timeout"))

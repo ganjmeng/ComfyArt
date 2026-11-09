@@ -341,6 +341,31 @@ def _result_error_kind(text: str) -> Optional[str]:
     return None
 
 
+
+def _fallback_blocked_payload(text: str) -> bool:
+    """True when the tool result says the primary was left unresolved at JOB_TIMEOUT."""
+    if re.search(r'"fallback_blocked"\s*:\s*true', text or "", re.I):
+        return True
+    data = _payload_of(text) or _json_obj(text)
+    if not isinstance(data, dict):
+        return False
+    if data.get("fallback_blocked") is True:
+        return True
+    err = data.get("error")
+    if isinstance(err, dict) and err.get("fallback_blocked") is True:
+        return True
+    # history-style execution_error from poll/_fail
+    for key, entry in list(data.items()):
+        if not (isinstance(key, str) and key.startswith("ws:") and isinstance(entry, dict)):
+            continue
+        status = entry.get("status") if isinstance(entry.get("status"), dict) else {}
+        for msg in status.get("messages") or []:
+            if isinstance(msg, (list, tuple)) and len(msg) > 1 and isinstance(msg[1], dict):
+                if msg[1].get("fallback_blocked") is True:
+                    return True
+    return False
+
+
 def model_call_failed(name: str, args: dict, text: str) -> Optional[str]:
     """The model id that failed, '' when the payload omits it, or None when this is not a model failure.
 
@@ -349,6 +374,8 @@ def model_call_failed(name: str, args: dict, text: str) -> Optional[str]:
     #706: a generate_image that never submitted (quote only, model refusal) is not a failed
     model run — do not silently switch models and submit again.
     """
+    if _fallback_blocked_payload(text or ""):
+        return None  # #872: total JOB_TIMEOUT cap, original still unresolved — no Flare
     if "没有提交" in (text or "") or "did not submit" in (text or "").lower():
         return None
     base = _tool_base(name)
