@@ -86,6 +86,10 @@ def main():
             elif case == "failed":
                 assert "Auto ·" in label.inner_text()
                 assert page.locator("#gen .ca-process__row[data-error]").count() >= 1
+            elif case == "fallback":
+                assert label.inner_text().strip() == "Auto · Nano Banana 2.1", label.inner_text()
+            elif case == "skill":
+                assert label.inner_text().strip() == "Auto · Nano Banana Pro", label.inner_text()
             elif case == "ellipsis":
                 assert label.count() == 1
                 overflow = page.evaluate(
@@ -124,8 +128,14 @@ def main():
                     assert geom["sw"] <= geom["cw"] + 1, f"{name}: tip truncates horizontally {geom}"
                     assert geom["text"].strip(), f"{name}: empty tip"
                     if case == "fallback":
-                        assert "自动选择：" in geom["text"] and "首选" in geom["text"] and "改用" in geom["text"], geom["text"]
-                        assert " · " in geom["text"] and not geom["text"].rstrip().endswith("Logo"), geom["text"]
+                        # Skill-pin fallback: no 自动选择：; tip =「pose-fission 技能固定模型 · 首选 …」
+                        assert geom["text"].startswith("pose-fission 技能固定模型"), geom["text"]
+                        assert "首选" in geom["text"] and "改用" in geom["text"], geom["text"]
+                        assert "自动选择：" not in geom["text"], geom["text"]
+                        assert "Nano Banana Pro" in geom["text"] and "Nano Banana 2.1" in geom["text"], geom["text"]
+                    if case == "skill":
+                        assert geom["text"] == "pose-fission 技能固定模型", geom["text"]
+                        assert "自动选择：" not in geom["text"], geom["text"]
                     if case == "flip":
                         assert "自动选择：" in geom["text"] or "Auto-picked:" in geom["text"], geom["text"]
                         assert "flips below" not in geom["text"], geom["text"]

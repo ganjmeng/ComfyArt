@@ -53,21 +53,62 @@ def test_auto_before_model_known_shows_just_auto():
     assert auto_models.pill_label({}) is None  # legacy: no empty pill
 
 
-def test_fallback_tooltip_mentions_preferred_failed():
+def test_skill_pin_tooltip_has_no_auto_prefix():
     choice = {
-        "model": "openai/gpt-image-2.6-flare/text-to-image",
+        "model": "google/nano-banana-pro/edit",
         "auto": True,
-        "fallback": "openai/gpt-image-2.6-sunburst/text-to-image",
-        "reason": {"zh": "图标/Logo", "en": "icon / logo"},
+        "category": "skill",
+        "skill": "pose-fission",
+        "reason": auto_models.skill_pin_reason("pose-fission"),
     }
+    assert auto_models.pill_label(choice) == "Auto · Nano Banana Pro"
+    assert auto_models.pill_tooltip(choice, "zh") == "pose-fission 技能固定模型"
+    assert auto_models.pill_tooltip(choice, "en") == "pose-fission skill pinned model"
+    assert not auto_models.pill_tooltip(choice, "zh").startswith("自动选择")
+
+
+def test_pose_fission_fallback_matches_table_and_tip():
+    """09 fixture / real route: preferred in tip is the table's pinned model (no hardcoding)."""
+    pin = auto_models.skill_pin("pose-fission")
+    assert pin and pin.get("fallback"), "pose-fission must list a fallback in auto_models.json"
+    choice = auto_models.skill_fallback_choice("pose-fission")
+    # Used model is the registered fallback; failed (首选) is the pin primary
+    assert choice["model"] == pin["fallback"]
+    assert choice["fallback"] == pin["model"]
+    assert choice["category"] == "skill_fallback"
+    assert choice["reason"] == auto_models.skill_pin_reason("pose-fission")
+    # 首选 model in tip text must be whatever the table configures as primary
+    preferred_short = auto_models.short_name(pin["model"])
+    used_short = auto_models.short_name(pin["fallback"])
     tip = auto_models.pill_tooltip(choice, "zh")
-    assert tip == (
-        "自动选择：图标/Logo · 首选 GPT Image 2.6 Sunburst 失败，改用 GPT Image 2.6 Flare"
-    )
+    assert tip == f"pose-fission 技能固定模型 · 首选 {preferred_short} 失败，改用 {used_short}"
+    assert preferred_short in tip and f"首选 {preferred_short}" in tip
+    assert not tip.startswith("自动选择")
+    assert auto_models.pill_label(choice) == f"Auto · {used_short}"
     tip_en = auto_models.pill_tooltip(choice, "en")
     assert tip_en == (
-        "Auto-picked: icon / logo · Preferred GPT Image 2.6 Sunburst failed, used GPT Image 2.6 Flare"
+        f"pose-fission skill pinned model · Preferred {preferred_short} failed, used {used_short}"
     )
+
+
+def test_fallback_fixture_pair_is_registered_in_table():
+    """pill825 fallback case must use a real skills.*.fallback pair from auto_models.json."""
+    table = json.loads((ROOT / "api/auto_models.json").read_text(encoding="utf-8"))
+    main = (ROOT / "tests/js/pill825/main.tsx").read_text()
+    # Fixture imports the table and uses posePin.model / posePin.fallback
+    assert "auto_models.json" in main and "pose-fission" in main
+    pin = table["skills"]["pose-fission"]
+    assert pin["fallback"] == "google/nano-banana-2.1/edit"
+    assert pin["model"] == "google/nano-banana-pro/edit"
+    # Any skills row that lists fallback: model/fallback must match that row
+    for name, row in table["skills"].items():
+        if name.startswith("_") or not isinstance(row, dict):
+            continue
+        if not row.get("fallback"):
+            continue
+        choice = auto_models.skill_fallback_choice(name)
+        assert choice["fallback"] == row["model"]
+        assert choice["model"] == row["fallback"]
 
 
 def test_short_name_preserves_gpt_casing():
@@ -98,6 +139,8 @@ def test_frontend_auto_pill_mirrors_backend():
     assert "chatMessage.autoPickedPrefix" in (ROOT / "src/locales/zh.json").read_text()
     assert "自动选择：" in (ROOT / "src/locales/zh.json").read_text()
     assert "Auto-picked: " in (ROOT / "src/locales/en.json").read_text()
+    assert "chatMessage.skillPinnedModel" in (ROOT / "src/locales/zh.json").read_text()
+    assert "{0} 技能固定模型" in (ROOT / "src/locales/zh.json").read_text()
     assert "data-testid=\"auto-model-label\"" in chat or "auto-model-label" in chat
     gen = (ROOT / "src/shapes/GeneratorShape.tsx").read_text()
     assert "ca-gen-frame__model" in gen and "autoPillLabel" in gen

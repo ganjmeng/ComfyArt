@@ -53,6 +53,36 @@ def skill_pin(skill: str | None) -> dict | None:
     return dict(row) if isinstance(row, dict) else None
 
 
+def skill_pin_reason(skill: str) -> dict[str, str]:
+    """#825 tip category for a skill pin. Mirrors chatMessage.skillPinnedModel (zh/en)."""
+    s = str(skill)
+    return {"zh": f"{s} 技能固定模型", "en": f"{s} skill pinned model"}
+
+
+def skill_fallback_choice(skill: str) -> dict:
+    """#825: model_choice when a skill's pinned model failed and its registered fallback ran.
+
+    ``model`` is the table fallback (what ran); ``fallback`` is the pinned primary (what failed).
+    Reason is the same skill-pin wording as a successful pin — pill_tooltip adds 「 · 首选…」.
+    """
+    pin = skill_pin(skill)
+    if not pin or not pin.get("model") or not pin.get("fallback"):
+        raise ValueError(f"skill {skill!r} has no registered model/fallback in auto_models.json")
+    fb = pin["fallback"]
+    primary = pin["model"]
+    return {
+        "model": fb,
+        "auto": True,
+        "category": "skill_fallback",
+        "skill": str(skill),
+        "fallback": primary,
+        "edit_model": fb,
+        "resolution": pin.get("resolution"),
+        "ratio": pin.get("ratio"),
+        "reason": skill_pin_reason(skill),
+    }
+
+
 def tool_feature(tool: str) -> str | None:
     return next((f for f, spec in load_table().items() if spec["tool"] == tool or tool in (spec.get("masked") or {}).get("tools", [])), None)
 
@@ -254,14 +284,16 @@ _AUTO_PICKED_PREFIX = {"zh": "自动选择：", "en": "Auto-picked: "}
 def pill_tooltip(choice: dict, lang: str = "zh") -> str | None:
     """Hover/tap reason. Manual picks: None (UI shows no reason popup).
 
-    Auto: i18n prefix + table category. Fallback:
-    ``{prefix}{category} · 首选 X 失败，改用 Y`` / ``{prefix}{category} · Preferred X failed, used Y``.
+    Auto (table): i18n prefix + table category.
+    Skill pin / skill fallback: NO auto-picked prefix — skill wording only.
+    Fallback (any): ``{category} · 首选 X 失败，改用 Y`` (preferred = choice['fallback']).
     """
     if not isinstance(choice, dict) or not choice.get("auto"):
         return None
     en = str(lang).lower().startswith("en")
     key = "en" if en else "zh"
-    prefix = _AUTO_PICKED_PREFIX[key]
+    skillish = bool(choice.get("skill")) or choice.get("category") in ("skill", "skill_fallback")
+    prefix = "" if skillish else _AUTO_PICKED_PREFIX[key]
     category = reason_text(choice, key)
     failed = choice.get("fallback")
     model = choice.get("model")

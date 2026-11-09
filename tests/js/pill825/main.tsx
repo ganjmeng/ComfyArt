@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { AssistantBlocks } from '../../../src/ui/ChatMessage'
 import { TOOL_LABELS } from '../../../src/bot'
 import { setLang, t } from '../i18n_stub'
+import { skillPinReason } from '../../../src/autoPill'
+import autoTable from '../../../api/auto_models.json'
 
 const q = new URLSearchParams(location.search)
 const lang = q.get('lang') === 'en' ? 'en' : 'zh'
@@ -18,8 +20,15 @@ const res = (id: string, name: string, text: string, status = 'success') => (
 
 const sunburst = 'openai/gpt-image-2.6-sunburst/text-to-image'
 const flare = 'openai/gpt-image-2.6-flare/text-to-image'
-const banana = 'google/nano-banana-pro/edit'
 const longId = 'openai/gpt-image-2.6-sunburst-with-an-extremely-long-marketing-name-that-must-ellipsis/text-to-image'
+
+/** Real pose-fission pin from api/auto_models.json — not invented fixture pairs. */
+const posePin = (autoTable as { skills: Record<string, { model: string; fallback: string }> }).skills['pose-fission']
+if (!posePin?.model || !posePin?.fallback) throw new Error('pose-fission missing from auto_models.json')
+const poseSkill = 'pose-fission'
+const posePrimary = posePin.model       // what failed / pinned primary
+const poseFallback = posePin.fallback   // what ran after fallback
+const poseReason = skillPinReason(poseSkill)
 
 function choice(partial: Record<string, unknown>) {
   return JSON.stringify({ ids: ['shape:g1'], model_choice: partial, note: 'wait_generation' })
@@ -82,15 +91,17 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
     },
   },
   fallback: {
+    // Real table pair: pose-fission primary failed → registered fallback ran (mirrors skill_fallback_choice)
     thumbs: true,
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
-        { type: 'thinking', text: 'pick' },
-        use('g1', 'mcp__comfyart__generate_image', { prompt: 'logo' }),
+        { type: 'thinking', text: 'pose' },
+        use('g1', 'mcp__comfyart__generate_image', { prompt: 'pose', skill: poseSkill, auto_model: true }),
         res('g1', 'mcp__comfyart__generate_image', choice({
-          model: flare, auto: true, category: 'logo',
-          fallback: sunburst,
-          reason: { zh: '图标/Logo', en: 'icon / logo' },
+          model: poseFallback, auto: true, category: 'skill_fallback', skill: poseSkill,
+          fallback: posePrimary,
+          edit_model: poseFallback,
+          reason: poseReason,
         })),
         { type: 'text', text: 'ok' },
       ],
@@ -101,10 +112,11 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
         { type: 'thinking', text: 'pose' },
-        use('g1', 'mcp__comfyart__generate_image', { prompt: 'pose', skill: 'pose-fission', auto_model: true }),
+        use('g1', 'mcp__comfyart__generate_image', { prompt: 'pose', skill: poseSkill, auto_model: true }),
         res('g1', 'mcp__comfyart__generate_image', choice({
-          model: banana, auto: true, category: 'skill',
-          reason: { zh: 'pose-fission 技能固定模型', en: 'pose-fission skill pinned model' },
+          model: posePrimary, auto: true, category: 'skill', skill: poseSkill,
+          edit_model: posePrimary,
+          reason: poseReason,
         })),
         { type: 'text', text: 'ok' },
       ],

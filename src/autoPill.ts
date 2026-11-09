@@ -5,6 +5,7 @@ export type ModelChoice = {
   model?: string
   auto?: boolean
   category?: string
+  skill?: string
   reason?: { zh?: string; en?: string } | string
   fallback?: string
   note?: string
@@ -63,6 +64,18 @@ function tipLang(lang: string): Lang {
   return lang.toLowerCase().startsWith('en') ? 'en' : 'zh'
 }
 
+function isSkillChoice(choice: ModelChoice): boolean {
+  return !!choice.skill || choice.category === 'skill' || choice.category === 'skill_fallback'
+}
+
+/** Mirrors api/auto_models.skill_pin_reason / chatMessage.skillPinnedModel. */
+export function skillPinReason(skill: string): { zh: string; en: string } {
+  return {
+    zh: tl('zh', 'chatMessage.skillPinnedModel', skill),
+    en: tl('en', 'chatMessage.skillPinnedModel', skill),
+  }
+}
+
 /** Visible label. Auto → 'Auto · <name>'; manual → name only; Auto with no model yet → 'Auto'; legacy empty → null. */
 export function autoPillLabel(choice: ModelChoice | null | undefined, catalogLabel?: string | null): string | null {
   if (!choice || typeof choice !== 'object') return null
@@ -75,16 +88,15 @@ export function autoPillLabel(choice: ModelChoice | null | undefined, catalogLab
   return name || null
 }
 
-/** Hover/tap reason. Manual: null (no reason UI). Auto: i18n prefix + table category; fallback note when set. */
+/** Hover/tap reason. Manual: null. Table Auto: i18n prefix + category. Skill pin: no prefix. */
 export function autoPillTooltip(choice: ModelChoice | null | undefined, lang: string): string | null {
   if (!choice || !choice.auto) return null
   const L = tipLang(lang)
-  const prefix = tl(L, 'chatMessage.autoPickedPrefix')
+  const prefix = isSkillChoice(choice) ? '' : tl(L, 'chatMessage.autoPickedPrefix')
   const category = reasonText(choice, L)
   const failed = choice.fallback
   const model = choice.model
   if (failed && model) {
-    // Design: `{prefix}{category} · 首选 X 失败，改用 Y` (category first; no trailing period+category)
     const body = L === 'en'
       ? `${category} · Preferred ${shortModelName(failed)} failed, used ${shortModelName(model)}`
       : `${category} · 首选 ${shortModelName(failed)} 失败，改用 ${shortModelName(model)}`
