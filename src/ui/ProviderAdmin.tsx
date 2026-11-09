@@ -44,7 +44,7 @@ function blank(): ToolRoute {
   return { primary: { provider: 'wavespeed', model: 'existing' }, backup: null, fallback: false }
 }
 
-/** Draft radios follow Live/effective. gif_default only steers Still→GIF (to_gif), never generate_image stills. */
+/** Unedited radios follow Live/effective (via liveBaseline). gif_default only steers Still→GIF (to_gif), never generate_image stills. Local drafts map holds only in-session edits. */
 function draftRoute(tool: ToolRow): ToolRoute {
   const route = tool.active || tool.draft
   if (route) return { primary: route.primary, backup: route.backup || null, fallback: !!route.fallback }
@@ -101,11 +101,14 @@ export function ProviderAdmin() {
     setError('')
     setNotice('')
     setLeave(false)
+    // Fresh open: drop in-memory edits so Primary always re-seeds from Live/draftRoute.
+    setDrafts({})
+    setChecked([])
     loadProviderAdmin().then((next) => {
       setState(next)
       const first = next.tools[0]?.id || 'generate_image'
       setPicked(first)
-      setDrafts(Object.fromEntries(next.tools.map((tool) => [tool.id, draftRoute(tool)])))
+      // Do not pre-seed drafts: unread tools read through draftRoute(current) → Live/effective.
       const llm = next.llm.active
       setLlmProvider(llm?.provider || 'deepseek')
       setLlmModel(llm?.model || 'deepseek-flash')
@@ -117,11 +120,12 @@ export function ProviderAdmin() {
 
   const absorb = (next: ProviderAdminState) => {
     setState(next)
-    setDrafts(Object.fromEntries(next.tools.map((tool) => [tool.id, draftRoute(tool)])))
+    // After save/restore, drop local edits so radios follow the new Live baseline.
+    setDrafts({})
   }
   const dirtyIds = useMemo(() => {
     if (!state) return []
-    return state.tools.filter((tool) => routeKey(drafts[tool.id] || draftRoute(tool)) !== routeKey(liveBaseline(tool))).map((tool) => tool.id)
+    return state.tools.filter((tool) => drafts[tool.id] != null && routeKey(drafts[tool.id]) !== routeKey(liveBaseline(tool))).map((tool) => tool.id)
   }, [state, drafts])
 
   useEffect(() => {
@@ -145,7 +149,7 @@ export function ProviderAdmin() {
     return true
   })
   const current = tools.find((tool) => tool.id === picked) || shown[0]
-  const draft = current ? drafts[current.id] || blank() : blank()
+  const draft = current ? (drafts[current.id] ?? draftRoute(current)) : blank()
   const dirty = current ? dirtyIds.includes(current.id) : false
 
   const close = () => {
@@ -351,11 +355,11 @@ function impact(tool: ToolRow, draft: ToolRoute) {
 
 function ChoiceList({ value, choices, onChange, testId }: { value: EndPoint; choices: ToolChoice[]; onChange: (value: EndPoint) => void; testId: string }) {
   return (
-    <div className="ca-prov__picks" data-testid={testId}>
+    <div className="ca-prov__picks" data-testid={testId} data-selected-provider={value.provider || ''} data-selected-model={value.model || ''}>
       {choices.map((choice) => {
         const on = choice.provider === value.provider && choice.model === value.model
         return (
-          <button key={`${choice.provider}:${choice.model}`} type="button" disabled={!choice.enabled} data-on={on || undefined} onClick={() => onChange({ provider: choice.provider, model: choice.model })}>
+          <button key={`${choice.provider}:${choice.model}`} type="button" disabled={!choice.enabled} data-on={on || undefined} data-testid={on ? `${testId}-selected` : undefined} onClick={() => onChange({ provider: choice.provider, model: choice.model })}>
             <i />
             <span>{lt(choice.label)}</span>
             {choice.quote === 'unknown' && choice.enabled && <small>{tx('价格未知', 'Price unknown')}</small>}
