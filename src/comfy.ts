@@ -1,3 +1,4 @@
+import { canSubmitPricedConfirmation } from './ui/confirmationSubmission'
 import { confirmAtom } from './ui/Confirm'
 import { readLocal } from './localPrefs'
 import { confirmDesc, type ConfirmDetail, type ConfirmGif } from './confirmText'
@@ -180,13 +181,19 @@ export function planBypassNow() { return planConfirmed && agentDepth > 0 }
 export type { ConfirmDetail, ConfirmGif }
 
 /** Second confirmation for costly cloud jobs, in the app's own Confirm dialog. */
-export function askCost(price: number | null, segSplits?: number, segCapped?: boolean, note = '', estimate?: ConfirmDetail): Promise<boolean> {
+export function askCost(price: number | null, segSplits?: number, segCapped?: boolean, note = '', estimate?: ConfirmDetail, submit?: () => Promise<void>): Promise<boolean> {
   // #138: seg maps quote an upper bound before anything is recognised (nothing is charged before this dialog);
   // on a retry only the classes still missing a mask are quoted
   const cost = confirmDesc(price, segSplits, segCapped, estimate)
-  return new Promise((resolve) => confirmAtom.set({
+  return new Promise((resolve, reject) => confirmAtom.set({
     title: t('jobs.confirmTitle'), ...(note ? { note } : {}), desc: cost, ok: t('jobs.confirmOk'),
     run: () => resolve(true), cancel: () => resolve(false),
+    ...(submit ? {
+      submit,
+      // No real paid confirmation when the price cannot be bounded.
+      okDisabled: !canSubmitPricedConfirmation(price, !!estimate?.unpriced),
+      submissionFailed: () => reject(new Error(t('jobs.submissionUncertain'))),
+    } : {}),
   }))
 }
 
@@ -221,10 +228,16 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
         live: typeof price === 'number' && !wsBody.error.unpriced && !wsBody.error.estimate,
         ...(gif ? { gif } : {}),
       }
-      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note, detail.openEnded || detail.unpriced || detail.estimate || detail.live || gif ? detail : undefined))) throw new CostDeclined()
-      const next = { ...inputs, confirmed: true, ...(confirmToken ? { confirm_token: confirmToken } : {}) }
-      ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: next }) })
-      wsBody = await ws.json().catch(() => null)
+      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note,
+        detail.openEnded || detail.unpriced || detail.estimate || detail.live || gif ? detail : undefined,
+        async () => {
+          const next = { ...inputs, confirmed: true, ...(confirmToken ? { confirm_token: confirmToken } : {}) }
+          ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: next }) })
+          wsBody = await ws.json().catch(() => null)
+          // Without a task id, do not claim the submission failed or permit a second request.
+          if (!ws.ok || typeof wsBody?.prompt_id !== 'string' || !wsBody.prompt_id) throw new Error(t('jobs.submissionUncertain'))
+        },
+      ))) throw new CostDeclined()
     }
     if (!ws.ok) throw new Error(promptError(wsBody, ws.status))
     return String(wsBody.prompt_id)

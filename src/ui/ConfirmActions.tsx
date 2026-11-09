@@ -8,6 +8,8 @@ export function ConfirmActions({
   okLabel,
   danger = false,
   okDisabled = false,
+  cancelDisabled = false,
+  loading = false,
   okIcon,
   onCancel,
   onOk,
@@ -18,6 +20,8 @@ export function ConfirmActions({
   okLabel: string
   danger?: boolean
   okDisabled?: boolean
+  cancelDisabled?: boolean
+  loading?: boolean
   okIcon?: ReactNode
   onCancel: () => void
   onOk: () => void
@@ -28,8 +32,8 @@ export function ConfirmActions({
   useEffect(() => { cancelRef.current?.focus() }, [])
   return (
     <div className="ca-panel__foot ca-confirm-actions" role="group">
-      <Button ref={cancelRef} variant="secondary" data-testid={cancelTestId} onClick={onCancel}>{cancelLabel}</Button>
-      <Button variant={danger ? 'danger' : 'primary'} icon={okIcon} disabled={okDisabled} data-testid={okTestId} onClick={onOk}>{okLabel}</Button>
+      <Button ref={cancelRef} variant="secondary" disabled={cancelDisabled} data-testid={cancelTestId} onClick={onCancel}>{cancelLabel}</Button>
+      <Button variant={danger ? 'danger' : 'primary'} icon={okIcon} loading={loading} disabled={okDisabled} data-testid={okTestId} onClick={onOk}>{okLabel}</Button>
     </div>
   )
 }

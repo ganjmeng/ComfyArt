@@ -25,10 +25,11 @@ if (force) document.documentElement.dataset.force = force
 const gif = { frame_count: 16, frame_duration_ms: 20, asked_frame_count: 99, asked_frame_duration_ms: 5 }
 const scene = q.get('scene') || 'cost'
 const selftest = q.get('selftest') || ''
-const counts = { runs: 0, cancels: 0 }
+const counts = { runs: 0, cancels: 0, submits: 0 }
 
 function publish(extra: Record<string, string> = {}) {
   const root = document.documentElement
+  root.dataset.submits = String(counts.submits)
   root.dataset.runs = String(counts.runs)
   root.dataset.cancels = String(counts.cancels)
   for (const [key, value] of Object.entries(extra)) root.dataset[key] = value
@@ -41,6 +42,18 @@ function costAsk(danger = false) {
     desc: danger ? t('arti.memory.deleteDesc', 'mock memory text') : confirmDesc(0.05, undefined, false, { live: true, gif }),
     ok: danger ? t('common.delete') : t('jobs.confirmOk'),
     danger,
+    ...(['submit', 'submit-reject', 'submit-unpriced'].includes(scene) ? {
+      okDisabled: scene === 'submit-unpriced',
+      submit: async () => {
+        counts.submits += 1; publish()
+        const delay = Math.min(60000, Math.max(0, Number(q.get('submit-delay') || '1000') || 0))
+        await new Promise<void>((resolve, reject) => setTimeout(() => {
+          if (scene === 'submit-reject') reject(new Error('MOCK response lost'))
+          else resolve()
+        }, delay))
+      },
+      submissionFailed: () => publish({ submission: 'uncertain' }),
+    } : {}),
     run: () => { counts.runs += 1; publish() },
     cancel: () => { counts.cancels += 1; publish() },
   })
@@ -112,7 +125,7 @@ async function boot() {
   }
   if (label) label.textContent = scene === 'danger'
     ? 'LOCAL FIXTURE · product Confirm · danger · mock memory text'
-    : 'LOCAL FIXTURE · mock price 0.05 · not a live price API'
+    : 'LOCAL FIXTURE · mock price 0.05 · async scenes are local timers only · no network submission'
   costAsk(scene === 'danger')
   root.render(<>
     <Confirm />

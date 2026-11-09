@@ -1830,5 +1830,7 @@
   "botSettings.hermesSshHost": "Hermes SSH 主机",
   "botSettings.hermesSshHostHint": "主机别名或 user@host（密钥登录）；留空 = 使用本机 Hermes",
   "botSettings.hermesProfile": "Hermes 配置档",
-  "botSettings.hermesProfileHint": "给 {brand} 专用的配置档（hermes -p <名字>），见 Agent 文档。留空 = Hermes 默认配置档"
+  "botSettings.hermesProfileHint": "给 {brand} 专用的配置档（hermes -p <名字>），见 Agent 文档。留空 = Hermes 默认配置档",
+  "jobs.submittingConfirm": "正在提交，请勿重复操作。",
+  "jobs.submissionUncertain": "结果待确认。关闭不代表取消任务或未扣费，请先核对任务记录，不要重复提交。"
 }

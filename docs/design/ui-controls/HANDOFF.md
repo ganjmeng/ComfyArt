@@ -68,3 +68,18 @@
 - Applied the designer's static review correction: shared Button/IconButton minimum height 36px and border radius 8px, including the footer override. Width and other padding rules unchanged.
 - Static CSS assertions and TypeScript checks passed locally; actual rendered dimensions, long labels, touch usage and visual comparison remain pending.
 - This does not fix paid-submit lifecycle. Current generic Confirm closes before callback; changing it globally would affect delete/restore confirmations. The paid request caller and response lifetime must be handled separately.
+
+## Paid cost-confirm lifecycle continuation (local, no supplier calls)
+
+Implemented only for the direct-generation cost-confirm request in `queuePrompt`:
+
+- The confirmed POST runs while the dialog stays open. A single-shot controller prevents repeat requests and disables Cancel / OK / Escape / backdrop closing while awaiting a response. Generic delete/restore confirmations retain their old synchronous behavior.
+- After 30 seconds, the UI says the result is unconfirmed, allows closing (not cancelling), and keeps the outstanding request and in-memory submission status. No timer abort or automatic retry. A late acknowledgement still resolves the originating job and cannot close a newer dialog.
+- A rejected/lost response or missing prompt id stays unconfirmed and disables the primary action. An unpriced, missing, invalid or negative price cannot enable this real paid-confirm submission.
+- The status map is in memory, not a durable reconciliation system. Agent plan/over-quote confirmations, reload recovery, provider-side idempotency and budget-cap enforcement are NOT completed by this patch. No real submission is authorized by these tests.
+
+Evidence: `node --experimental-strip-types --test tests/test_confirmation_submission.mjs` passes 8 checks (controller behavior plus static wiring/policy checks); `node tests/test_confirm_narrow_contract.cjs`, `tsc --noEmit`, and `git diff --check` pass. These are not browser interaction or independent QA results.
+
+Mock-only browser fixture scenes prepared, NOT executed: `scene=submit`, `scene=submit-reject`, `scene=submit-unpriced`; `submit-delay=35000` lets QA observe timeout then late acknowledgement. These use local timers, never provider requests.
+
+Existing services on 8188 (#848) and 5210 (old #850) have not been moved to this head and cannot attest to this patch. Browser rendering, focus, Escape/backdrop behavior, visual comparison and independent acceptance remain pending.
