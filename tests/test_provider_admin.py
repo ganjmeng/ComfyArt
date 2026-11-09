@@ -146,6 +146,39 @@ def test_replicate_payload_keeps_references_and_has_no_price():
         replicate_image.build_input("reference_gif", {"prompt": "animate"})
 
 
+def test_replicate_gif_aspect_never_sends_pixel_wxh():
+    """Product UI E006: width/height 1024 became aspect_ratio 1024x1024; success used no WxH."""
+    from_pixels = replicate_image.build_input(
+        "text_to_gif",
+        {"prompt": "orange ball", "width": 1024, "height": 1024, "quality": "low",
+         "params": {"frame_count": 2, "frame_duration_ms": 200, "output_format": "gif"}},
+    )
+    assert from_pixels["aspect_ratio"] == "1:1"
+    assert "x" not in from_pixels["aspect_ratio"]
+    assert from_pixels["output_format"] == "gif" and from_pixels["frame_count"] == 2
+
+    from_named_pixels = replicate_image.build_input(
+        "text_to_gif",
+        {"prompt": "orange ball", "aspect_ratio": "1024x1024", "quality": "low",
+         "params": {"frame_count": 2, "frame_duration_ms": 200}},
+    )
+    assert from_named_pixels["aspect_ratio"] == "1:1"
+
+    named = replicate_image.build_input(
+        "text_to_gif",
+        {"prompt": "orange ball", "ratio": "16:9", "params": {"frame_count": 2, "frame_duration_ms": 200}},
+    )
+    assert named["aspect_ratio"] == "16:9"
+
+    bare = replicate_image.build_input(
+        "text_to_gif",
+        {"prompt": "orange ball", "params": {"frame_count": 2, "frame_duration_ms": 200, "complexity": "low", "quality": "low"},
+         "complexity": "low", "quality": "low", "number_of_images": 1},
+    )
+    assert "aspect_ratio" not in bare
+    assert bare.get("complexity") == "low" and bare.get("quality") == "low" and bare.get("number_of_images") == 1
+
+
 async def _arm(monkeypatch, primary, quotes):
     posts = []
 

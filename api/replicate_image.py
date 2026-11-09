@@ -95,16 +95,44 @@ def _local_path(value: str) -> str:
     return path if path and os.path.isfile(path) else ""
 
 
+def _nearest_aspect(ratio: float) -> str:
+    """Map a width/height ratio onto the Replicate aspect_ratio enum (never WxH pixels)."""
+    best = "1:1"
+    best_d = float("inf")
+    for item in ASPECTS:
+        if ":" not in item:
+            continue
+        left, _, right = item.partition(":")
+        try:
+            value = float(left) / float(right)
+        except ValueError:
+            continue
+        distance = abs(value - ratio)
+        if distance < best_d:
+            best_d, best = distance, item
+    return best
+
+
 def _aspect(inputs: dict) -> str:
+    """Only emit values Replicate accepts (ASPECTS). Pixel sizes like 1024x1024 caused E006."""
     named = str(inputs.get("aspect_ratio") or inputs.get("ratio") or "").strip()
     if named in ASPECTS:
         return named
+    # UI sometimes puts canvas pixels into aspect_ratio / ratio ("1024x1024").
+    if "x" in named.lower() and ":" not in named:
+        try:
+            left, _, right = named.lower().partition("x")
+            width, height = int(left), int(right)
+            if width > 0 and height > 0:
+                return _nearest_aspect(width / height)
+        except ValueError:
+            pass
     try:
         width, height = int(inputs.get("width")), int(inputs.get("height"))
     except (TypeError, ValueError):
         return ""
     if width > 0 and height > 0:
-        return f"{width}x{height}"
+        return _nearest_aspect(width / height)
     return ""
 
 
