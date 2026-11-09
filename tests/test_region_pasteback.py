@@ -1,4 +1,4 @@
-"""#45: masked/region edits only send the selection crop (default gpt-image-2.5-sunburst/edit) and paste the
+"""#45: masked/region edits only send the selection crop (default gpt-image-2.6-sunburst/edit) and paste the
 result back through the mask; move object = cloud erase on a crop + local composite (no edit model).
 Mocks only (local aiohttp WaveSpeed stand-in + catalog fixture): no network, no charge."""
 from __future__ import annotations
@@ -18,7 +18,7 @@ from ComfyArt.api import auto_models, wavespeed
 from test_wavespeed import MODELS, uncurated, ws  # noqa: F401  (fixtures)
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "wavespeed_catalog_subset.json").read_text())
-SUNBURST = "openai/gpt-image-2.5-sunburst/edit"
+SUNBURST = "openai/gpt-image-2.6-sunburst/edit"
 FLARE = "openai/gpt-image-2.5-flare/edit"
 DEFAULT_EDIT = "openai/gpt-image-2.6-flare/edit"
 ERASER = "wavespeed-ai/image-eraser"

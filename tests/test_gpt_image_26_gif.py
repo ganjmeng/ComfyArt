@@ -201,7 +201,7 @@ def test_agent_gif_picks_26_and_plain_auto_stays_25():
     plain = canvas._auto_choice("generate_image", {"prompt": "a red apple on a table"})
     assert plain["model"] == FLARE_26 and plain["category"] == "default"
     gift = canvas._auto_choice("generate_image", {"prompt": "a gift box poster"})
-    assert gift["model"] == FLARE_26 and gift["category"] != "gif"
+    assert gift["model"] == SUN_26 and gift["category"] == "poster_text"  # #825 poster/text -> 2.6 sunburst
     sun = canvas._auto_choice("generate_image", {"prompt": "loop", "output_format": "gif", "model": SUN_26})
     assert sun["model"] == SUN_26 and sun["auto"] is False
 

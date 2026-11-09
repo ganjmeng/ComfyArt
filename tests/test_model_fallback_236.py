@@ -26,7 +26,8 @@ FLARE_EDIT = "openai/gpt-image-2.6-flare/edit"
 SEEDREAM = "bytedance/seedream-v5.0-pro"
 SEEDREAM_EDIT = "bytedance/seedream-v5.0-pro/edit"
 NANO = "google/nano-banana-2.1/edit"
-SUNBURST = "openai/gpt-image-2.5-sunburst/edit"
+SUNBURST = "openai/gpt-image-2.6-sunburst/edit"
+SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
 MJ = "midjourney/text-to-image"
 RECRAFT = "recraft-ai/recraft-v3"
 PORTRAIT = "Photorealistic portrait of an old fisherman"
@@ -48,6 +49,7 @@ def test_reply_contract_still_names_the_model():
 
 @pytest.mark.parametrize("action,args,failed,model,edit", [
     ("generate_image", {"prompt": PORTRAIT}, SEEDREAM, FLARE, False),
+    ("generate_image", {"prompt": 'Movie poster with the headline "SUMMER"'}, SUNBURST_T2I, FLARE, False),
     ("generate_image", {"prompt": "Minimal logo for a tea brand"}, RECRAFT, FLARE, False),
     ("generate_image", {"prompt": ANIME, "model": "alibaba/qwen-image-3.0/text-to-image"},
      "alibaba/qwen-image-3.0/text-to-image", MJ, False),
@@ -74,7 +76,6 @@ def test_fallback_follows_the_133_table(action, args, failed, model, edit):
 
 @pytest.mark.parametrize("action,args,failed", [
     ("generate_image", {"prompt": "a cup of coffee on a table"}, FLARE),
-    ("generate_image", {"prompt": 'Movie poster with the headline "SUMMER"'}, FLARE),
     ("generate_image", {"prompt": "make it blue", "refs": ["shape:r"]}, FLARE_EDIT),
     ("generate_video", {"prompt": "a cat walking"}, "bytedance/seedance-2.0/text-to-video"),
 ])

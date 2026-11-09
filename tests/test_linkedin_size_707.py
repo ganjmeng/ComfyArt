@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = json.loads((ROOT / "tests/fixtures/wavespeed_catalog_subset.json").read_text(encoding="utf-8"))
 FLARE = "openai/gpt-image-2.5-flare/text-to-image"
 DEFAULT_T2I = "openai/gpt-image-2.6-flare/text-to-image"
+SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
 QWEN = VERIFIED["text_to_image"]
 QWEN_EDIT = VERIFIED["image_edit"]
 SENT: list[tuple[str, dict]] = []
@@ -106,10 +107,11 @@ def test_named_flare_is_refused_before_submit():
 
 
 def test_other_skills_and_plain_banner_keep_the_table():
+    # #825: banner/poster keywords hit poster_text -> 2.6 sunburst; feature default stays flare
     plain = canvas._auto_choice("generate_image", {"prompt": "LinkedIn banner for a data engineer"})
-    assert plain["model"] == DEFAULT_T2I
+    assert plain["model"] == SUNBURST_T2I and plain["category"] == "poster_text"
     poster = canvas._auto_choice("generate_image", {"prompt": "Movie poster with the headline SUMMER"})
-    assert poster["model"] == DEFAULT_T2I
+    assert poster["model"] == SUNBURST_T2I and poster["category"] == "poster_text"
     cfg = wavespeed.load_config()
     assert cfg["features"]["text_to_image"]["default"] == DEFAULT_T2I
     # Qwen 2.0 stays off the Lovart dropdown. The skill path uses it only when the schema accepts the size.

@@ -51,7 +51,7 @@ def test_same_prompt_many_turns_same_model():
 
 
 @pytest.mark.parametrize("prompt,model", [
-    ("Movie poster with the headline \"SUMMER\"", "openai/gpt-image-2.6-flare/text-to-image"),
+    ("Movie poster with the headline \"SUMMER\"", "openai/gpt-image-2.6-sunburst/text-to-image"),
     ("Photorealistic portrait of an old fisherman", "bytedance/seedream-v5.0-pro"),
     ("Anime girl under cherry blossoms", "midjourney/text-to-image"),
     ("一张写实人像", "bytedance/seedream-v5.0-pro"),
@@ -204,3 +204,63 @@ def test_runs_do_not_share_the_noturn_cap():
     """#731 isolation regression: 6 direct handler runs (each its own turn) are never refused by a shared cap."""
     picks = [run("generate_image", prompt="the same prompt")["model_choice"]["model"] for _ in range(6)]
     assert picks == [default("text_to_image")] * 6
+
+
+# --- #825: poster/text + masked -> 2.6 sunburst; explicit auto does not bypass the table ---
+SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
+SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
+FLARE_T2I = "openai/gpt-image-2.6-flare/text-to-image"
+FLARE_EDIT = "openai/gpt-image-2.6-flare/edit"
+POSTER = 'Movie poster with the headline "SUMMER"'
+
+
+def test_825_poster_uses_sunburst_with_poster_reason():
+    choice = run("generate_image", prompt=POSTER)["model_choice"]
+    assert choice["model"] == SUNBURST_T2I and choice["auto"] and choice["category"] == "poster_text"
+    assert "海报" in choice["reason"]["zh"] or "poster" in choice["reason"]["en"].lower()
+    assert "poster" in choice["note"].lower() or "海报" in choice["note"]
+
+
+def test_825_masked_edit_uses_sunburst_edit():
+    cfg = canvas.load_config()
+    choice = auto_models.choose("image_edit", "redo the sky", None, cfg, masked=True)
+    assert choice["model"] == SUNBURST_EDIT and choice["auto"] and choice["category"] == "masked"
+    row = auto_models.load_table()["image_edit"]["masked"]
+    assert row["model"] == SUNBURST_EDIT
+
+
+@pytest.mark.parametrize("named", [None, "", "auto", "Auto", " AUTO ", "auto:video", "Auto:Video"])
+def test_825_unmatched_explicit_auto_consults_table_default(named):
+    cfg = canvas.load_config()
+    choice = auto_models.choose("text_to_image", "a cup of coffee on a table", named, cfg)
+    assert choice["category"] == "default" and choice["auto"] is True and choice["model"] == FLARE_T2I
+    # through the tool path too (None omitted; empty / auto passed through)
+    kwargs = {"prompt": "a cup of coffee on a table"}
+    if named is not None:
+        kwargs["model"] = named
+    out = run("generate_image", **kwargs)["model_choice"]
+    assert out["category"] == "default" and out["auto"] is True and out["model"] == FLARE_T2I
+
+
+def test_825_auto_token_with_logo_prompt_hits_recraft():
+    cfg = canvas.load_config()
+    for token in ("auto", "Auto", "auto:video"):
+        choice = auto_models.choose("text_to_image", "Minimal logo for a tea brand", token, cfg)
+        assert choice["model"] == "recraft-ai/recraft-v3" and choice["category"] == "logo" and choice["auto"]
+    out = run("generate_image", prompt="Minimal logo for a tea brand", model="auto")["model_choice"]
+    assert out["model"] == "recraft-ai/recraft-v3" and out["category"] == "logo" and out["auto"]
+
+
+def test_825_user_named_still_wins():
+    choice = run("generate_image", prompt=POSTER, model="alibaba/qwen-image-3.0/text-to-image")["model_choice"]
+    assert choice["model"] == "alibaba/qwen-image-3.0/text-to-image" and choice["auto"] is False and choice["category"] == "user"
+
+
+def test_825_unmatched_edit_stays_on_image_edit_default():
+    choice = run("edit_image", id="shape:a", prompt="change the sign text")["model_choice"]
+    assert choice["model"] == FLARE_EDIT == default("image_edit")
+    assert choice["auto"]
+    # explicit auto on edit also consults the table (default), not category user
+    cfg = canvas.load_config()
+    c2 = auto_models.choose("image_edit", "change the sign text", "auto", cfg)
+    assert c2["category"] == "default" and c2["model"] == FLARE_EDIT and c2["auto"]

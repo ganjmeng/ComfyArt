@@ -1,0 +1,56 @@
+{
+  "event": "b_pasteback_end",
+  "balance_end": 31.120199,
+  "spent": 0.0975,
+  "crop_sha256": "645c5be50f8bc1f7c112e0e5cd2af4f29a066b6bc8e46ce2cccd3c0783e71e1b",
+  "results": [
+    {
+      "id": "B1p",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "085e7871c6994c0aac384c1749d7dbdb",
+      "cost": 0.039,
+      "latency_s": 25.298,
+      "balance_before": 31.217699,
+      "balance_after": 31.178699,
+      "model": "openai/gpt-image-2.5-sunburst/edit"
+    },
+    {
+      "id": "B2p",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "5a5ca49dac5b4cb7922931d7e864ed77",
+      "cost": 0.0585,
+      "latency_s": 30.642,
+      "balance_before": 31.178699,
+      "balance_after": 31.120199,
+      "model": "openai/gpt-image-2.6-sunburst/edit"
+    }
+  ],
+  "acceptance": {
+    "B1p": {
+      "max_abs_diff_outside": 0,
+      "n_diff_pixels_outside": 0,
+      "outside_ok": true,
+      "inside_near_black_frac": 0.0,
+      "inside_mean_rgb": [
+        244.3,
+        172.6,
+        139.6
+      ],
+      "black_band": false
+    },
+    "B2p": {
+      "max_abs_diff_outside": 0,
+      "n_diff_pixels_outside": 0,
+      "outside_ok": true,
+      "inside_near_black_frac": 0.0,
+      "inside_mean_rgb": [
+        233.4,
+        175.2,
+        167.8
+      ],
+      "black_band": false
+    }
+  }
+}

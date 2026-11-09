@@ -173,7 +173,7 @@ export function inpaint(e: Editor, shape: TLImageShape, mask: HTMLCanvasElement,
 }
 
 /** #45 like the original touchGraph: only the crop goes to the edit model (masked edits default to
- * gpt-image-2.5-sunburst/edit, backend), its result is pasted back with the mask, so pixels outside stay as they were. */
+ * gpt-image-2.6-sunburst/edit, backend), its result is pasted back with the mask, so pixels outside stay as they were. */
 export function regionGraph(image: string, crop: Crop, mask: string, prompt: string): Built {
   return wsBuilt({ feature: 'image_edit', custom: 'inpaint', image, mask, paste: crop, prompt: `${prompt}. ${keep}` })
 }

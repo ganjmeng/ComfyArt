@@ -1,6 +1,6 @@
 import logging
 
-from ..auto_models import UnregisteredModel, choose, load_table, note, registered, skill_pin, tool_feature
+from ..auto_models import UnregisteredModel, choose, load_table, named_or_none, note, registered, skill_pin, tool_feature
 from ..gif_image import choice as gif_choice, ensure_args as ensure_gif_args, requests_gif, still_block
 from ..svg_image import block_reason as svg_block, choice as svg_choice, ensure_args as ensure_svg_args, requests_svg
 from ..mcp_commands import submit_command
@@ -244,7 +244,7 @@ def _same_model_block(model: str) -> dict:
 def _skill_row(action: str, args: dict) -> dict | None:
     """#708: the skill's pinned row when this call runs on that row's feature and names no model."""
     pin = skill_pin(args.get("skill"))
-    if not pin or args.get("model") or _running_feature(action, args) != pin.get("feature"):
+    if not pin or named_or_none(args.get("model")) or _running_feature(action, args) != pin.get("feature"):
         return None
     return pin
 
@@ -306,7 +306,7 @@ def registered_ids(action: str) -> set[str]:
 
 def unregistered_model(action: str, args: dict) -> str:
     """#734: the agent-passed model when the catalog does not register it for this tool, else ''."""
-    model = str(args.get("model") or "")
+    model = named_or_none(args.get("model")) or ""
     if not model or not tool_feature(action):
         return ""
     return "" if model in registered_ids(action) else model
@@ -318,21 +318,23 @@ def _unregistered_reason(model: str) -> dict:
 
 
 def _auto_choice(action: str, args: dict) -> dict | None:
-    """#133: which model runs and why (user-named wins, else the Auto table). #708: a skill pin wins over Auto."""
+    """#133: which model runs and why (user-named wins, else the Auto table). #708: a skill pin wins over Auto.
+    #825: front-end Auto tokens ``auto`` / ``auto:video`` are unnamed (consult the table), not category user."""
     feature = tool_feature(action)
     if not feature:
         return None
+    named = named_or_none(args.get("model"))
     if action == "generate_image" and requests_gif(args):
         # #825: GIF / 动图 is text-to-image on GPT Image 2.6. Checked before refs, which otherwise
         # become an image_edit (edit has no gif) or could be read as a video.
-        return gif_choice(str(args.get("model") or ""), bool(args.get("refs") or args.get("base")))
+        return gif_choice(named or "", bool(args.get("refs") or args.get("base")))
     if action == "generate_image" and requests_svg(args):
         # #826: SVG is 2.6 text-to-image, n=1. Edit and references are refused. Checked before the
         # reference branch, which would otherwise select an edit model.
         blocked = svg_block(args)
         if blocked:
             return {"model": "", "auto": True, "category": "svg_rejected", "svg_error": blocked, "reason": blocked["reason"]}
-        return svg_choice(str(args.get("model") or ""))
+        return svg_choice(named or "")
     pin = _skill_row(action, args)
     if pin:
         return _skill_choice(args, pin)
@@ -341,22 +343,22 @@ def _auto_choice(action: str, args: dict) -> dict | None:
         # refs/base run on image_edit (src/generate.ts). Auto (#133 ruling): 2+ refs -> the multi-reference row,
         # else the edit default. A user-named (text-to-image) model keeps the page's edit default as before.
         refs = len(args.get("refs") or [])
-        if not args.get("model") and refs >= 2:
+        if not named and refs >= 2:
             multi = load_table()["image_edit"]["multi_reference"]
             ids = {m["id"] for m in cfg["features"]["image_edit"]["models"]}
             model, failed = registered(multi, ids, "image_edit/multi_reference")  # #712: no silent fallback
             out = {"model": model, "auto": True, "category": "multi_reference", "edit_model": model,
                    "reason": {"zh": multi["zh"].format(n=refs), "en": multi["en"].format(n=refs)}}
             return {**out, "fallback": failed} if failed else out
-        if args.get("model"):
-            reason = {"zh": f"你指定了 {args['model']}，但带参考图时走图片编辑，用的是它的默认模型",
-                      "en": f"you named {args['model']}, but references run on image editing, which uses its default model"}
+        if named:
+            reason = {"zh": f"你指定了 {named}，但带参考图时走图片编辑，用的是它的默认模型",
+                      "en": f"you named {named}, but references run on image editing, which uses its default model"}
         else:
             reason = {"zh": "只有 1 张参考图（或底图），用图片编辑的默认模型就够了",
                       "en": "there is one reference (or base) image, which the image-edit default model handles"}
-        return {"model": cfg["features"]["image_edit"]["default"], "auto": not args.get("model"), "category": "references", "reason": reason}
+        return {"model": cfg["features"]["image_edit"]["default"], "auto": not named, "category": "references", "reason": reason}
     masked = action in (load_table()[feature].get("masked") or {}).get("tools", [])
-    return choose(feature, str(args.get("prompt") or ""), str(args.get("model") or "") or None, cfg, masked=masked)
+    return choose(feature, str(args.get("prompt") or ""), named, cfg, masked=masked)
 
 
 def _tool(description: str, properties: dict, required: list[str] = (), **relay) -> dict:
