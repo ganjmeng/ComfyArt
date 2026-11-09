@@ -2,7 +2,8 @@
 
 Covers failed (job stub + error), recovering/null-job (job cleared + error), and
 size-lock refused. Mock WaveSpeed only, $0. Asserts: no <img> with empty/missing
-src inside .ca-gen-card, and no img alt contains the model short name.
+src inside .ca-gen-card; no img alt contains the model short name; in-frame Auto
+label does not intersect the error banner or placeholder (out of flow / absent).
 """
 from __future__ import annotations
 
@@ -52,11 +53,20 @@ async def _open_gen(page, app_url):
     )
 
 
+def _overlap(a, b):
+    return not (a["x2"] <= b["x1"] or b["x2"] <= a["x1"] or a["y2"] <= b["y1"] or b["y2"] <= a["y1"])
+
+
 async def _assert_no_output_img_leak(page, label: str):
     info = await page.evaluate(
         """(frag) => {
           const card = document.querySelector('.ca-gen-card')
           if (!card) return { err: 'no-card' }
+          const rect = (el) => {
+            if (!el) return null
+            const r = el.getBoundingClientRect()
+            return { x1: r.left, y1: r.top, x2: r.right, y2: r.bottom, w: r.width, h: r.height }
+          }
           const imgs = [...card.querySelectorAll('img')]
           const empty = imgs.filter((i) => {
             const s = i.getAttribute('src')
@@ -67,11 +77,18 @@ async def _assert_no_output_img_leak(page, label: str):
             return a.includes(frag) || /Auto\\s*·/.test(a)
           }).map((i) => ({ alt: i.getAttribute('alt'), src: i.getAttribute('src') }))
           const model = card.querySelector('[data-testid=auto-model-label]')
+          const errEl = card.querySelector('.ca-gen-card__error')
+          const icon = card.querySelector('.ca-gen-card__icon')
           const modelPos = model ? getComputedStyle(model).position : null
+          const modelDisplay = model ? getComputedStyle(model).display : null
           return {
-            imgCount: imgs.length, empty, named, modelPos,
-            hasError: !!card.querySelector('.ca-gen-card__error'),
+            imgCount: imgs.length, empty, named, modelPos, modelDisplay,
+            hasError: !!errEl,
             modelText: model ? (model.textContent || '').trim() : null,
+            modelRect: rect(model),
+            errorRect: rect(errEl),
+            iconRect: rect(icon),
+            pending: card.getAttribute('data-pending'),
           }
         }""",
         MODEL_FRAG,
@@ -79,9 +96,16 @@ async def _assert_no_output_img_leak(page, label: str):
     assert info.get("err") is None, (label, info)
     assert info["empty"] == [], (label, info)
     assert info["named"] == [], (label, info)
-    # after #870 CSS fix the Auto row stays absolute (not in-flow "alt" next to the icon)
-    if info.get("modelText"):
+    assert info["hasError"], (label, info)
+    # #870: settled no-output → no in-frame Auto row (SelectionLabel keeps it in the header)
+    assert info["modelText"] is None and info["modelRect"] is None, (label, info)
+    # if a future change reintroduces the node, it must stay out of flow and not intersect
+    if info.get("modelRect"):
         assert info["modelPos"] == "absolute", (label, info)
+        if info.get("errorRect"):
+            assert not _overlap(info["modelRect"], info["errorRect"]), (label, info)
+        if info.get("iconRect") and info["iconRect"]["w"] > 0:
+            assert not _overlap(info["modelRect"], info["iconRect"]), (label, info)
 
 
 @pytest.mark.asyncio
@@ -138,6 +162,5 @@ async def test_no_output_states_have_no_broken_img_or_model_alt(app_url, mock_ws
             }"""
         )
         await page.wait_for_timeout(200)
-        # with job running, icon may hide; error must still not introduce a broken img
         await _assert_no_output_img_leak(page, "failed")
         await browser.close()

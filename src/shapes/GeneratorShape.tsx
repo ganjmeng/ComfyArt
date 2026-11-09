@@ -140,10 +140,12 @@ function GeneratorCard({ shape }: { shape: GeneratorShape }) {
     : job ? t('taskDetails.generating')
     : null
   // #825: Lovart-style gray icon+text row (not a colored capsule). Auto · name; manual = name only.
+  // #870: in-frame row only while pending (matches #871 CSS gate). Settled no-output cards
+  // would overlap the error banner; SelectionLabel already shows Auto · <model> in the header.
   const choice = (shape.meta.modelChoice as ModelChoice | undefined)
     || (job ? { auto: true } as ModelChoice : null)
-  const modelLabel = autoPillLabel(choice)
-  const modelTitle = autoPillTooltip(choice, lang)
+  const modelLabel = pending ? autoPillLabel(choice) : null
+  const modelTitle = pending ? autoPillTooltip(choice, lang) : undefined
   return (
     <HTMLContainer
       className={job || pending ? 'ca-gen-card ca-gen-frame' : 'ca-gen-card'}
