@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
-import { answerAsk, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
+import { answerAsk, quoteAnswer, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
 import { setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
 import { errorText } from '../jobs'
@@ -740,8 +740,8 @@ export function OverQuote({ b }: { b: BotBlock }) {
   useEffect(() => {
     if (!pending || !askId) return
     let live = true
-    const answer = (id: string) => void answerAsk(askId, [id], '').catch((e) => { if (live) setError(errorText(e)) })
-    confirmAtom.set({
+    const answer = quoteAnswer(askId)
+    const ask = {
       title: t('jobs.confirmTitle'),
       desc: body,
       ok: copy.confirm,
@@ -750,13 +750,18 @@ export function OverQuote({ b }: { b: BotBlock }) {
       closable: false,
       backdropClose: false,
       className: 'ca-overquote',
-      run: () => { if (live) answer(OVER_QUOTE.confirm) },
-      cancel: () => { if (live) answer(OVER_QUOTE.decline) },
-    })
+      run: () => {},
+      submit: async () => {
+        if (!live) throw new Error(t('jobs.submissionUncertain'))
+        await answer([OVER_QUOTE.confirm])
+      },
+      submissionFailed: () => { if (live) setError(t('jobs.submissionUncertain')) },
+      cancel: () => { if (live) void answer([OVER_QUOTE.decline]).catch((e) => { if (live) setError(errorText(e)) }) },
+    }
+    confirmAtom.set(ask)
     return () => {
       live = false
-      const cur = confirmAtom.get()
-      if (cur && cur.desc === body) confirmAtom.set(null)
+      if (confirmAtom.get() === ask) confirmAtom.set(null)
     }
   }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
@@ -778,34 +783,35 @@ function PlanQuote({ b }: { b: BotBlock }) {
   useEffect(() => {
     if (!pending || !askId) return
     let live = true
-    const open = () => confirmAtom.set({
+    const answer = quoteAnswer(askId)
+    const ask = {
       title: t('jobs.confirmTitle'),
       desc: b.prompt ?? '',
       ok: startLabel,
       lines: b.lines ?? [],
       totalLabel: b.total_label,
       total: b.total,
-      run: () => {
-        if (!live) return
+      run: () => {},
+      submit: async () => {
+        if (!live) throw new Error(t('jobs.submissionUncertain'))
         setAgentPlanConfirmed(true)
-        void answerAsk(askId, ['start'], '').catch((e) => {
-          if (!live) return
-          setAgentPlanConfirmed(false)
-          setError(errorText(e))
-          open()
-        })
+        await answer(['start'])
+      },
+      submissionFailed: () => {
+        if (!live) return
+        setAgentPlanConfirmed(false)
+        setError(t('jobs.submissionUncertain'))
       },
       cancel: () => {
         if (!live) return
         setAgentPlanConfirmed(false)
-        void answerAsk(askId, ['cancel'], '').catch((e) => { if (live) setError(errorText(e)) })
+        void answer(['cancel']).catch((e) => { if (live) setError(errorText(e)) })
       },
-    })
-    open()
+    }
+    confirmAtom.set(ask)
     return () => {
       live = false
-      const cur = confirmAtom.get()
-      if (cur && cur.desc === (b.prompt ?? '')) confirmAtom.set(null)
+      if (confirmAtom.get() === ask) confirmAtom.set(null)
     }
   }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null

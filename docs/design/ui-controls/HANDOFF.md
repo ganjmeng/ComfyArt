@@ -83,3 +83,10 @@ Evidence: `node --experimental-strip-types --test tests/test_confirmation_submis
 Mock-only browser fixture scenes prepared, NOT executed: `scene=submit`, `scene=submit-reject`, `scene=submit-unpriced`; `submit-delay=35000` lets QA observe timeout then late acknowledgement. These use local timers, never provider requests.
 
 Existing services on 8188 (#848) and 5210 (old #850) have not been moved to this head and cannot attest to this patch. Browser rendering, focus, Escape/backdrop behavior, visual comparison and independent acceptance remain pending.
+
+### Agent quote submission follow-up (2026-11-09)
+
+- PlanQuote and OverQuote now opt into the shared single-shot asynchronous Confirm lifecycle: submitting locks close/repeat; timeout or lost acknowledgement becomes uncertain, not automatic retry. PlanQuote no longer reopens a fresh approval on failure.
+- Capture originating chat/ask before opening; require the existing API's `{ ok: true }` acknowledgement. A missing conversation or malformed acknowledgement is not success. Cleanup uses ask identity, not shared description text.
+- No-network checks: `node --experimental-strip-types --test tests/test_confirmation_submission.mjs tests/test_quote_answer.mjs` (14 checks, including static wiring), narrow/button static contracts, `tsc --noEmit`, `git diff --check`. These are not browser tests.
+- Scope excludes reload/remount reconciliation, server idempotency, numerical quote/budget enforcement and supplier execution. Existing host is not automatically updated by this source commit.
