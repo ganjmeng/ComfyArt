@@ -26,6 +26,7 @@ from ComfyArt.api.wavespeed import _schema
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = json.loads((ROOT / "tests/fixtures/wavespeed_catalog_subset.json").read_text(encoding="utf-8"))
 FLARE = "openai/gpt-image-2.5-flare/text-to-image"
+DEFAULT_T2I = "openai/gpt-image-2.6-flare/text-to-image"
 QWEN = VERIFIED["text_to_image"]
 QWEN_EDIT = VERIFIED["image_edit"]
 SENT: list[tuple[str, dict]] = []
@@ -106,11 +107,11 @@ def test_named_flare_is_refused_before_submit():
 
 def test_other_skills_and_plain_banner_keep_the_table():
     plain = canvas._auto_choice("generate_image", {"prompt": "LinkedIn banner for a data engineer"})
-    assert plain["model"] == FLARE
+    assert plain["model"] == DEFAULT_T2I
     poster = canvas._auto_choice("generate_image", {"prompt": "Movie poster with the headline SUMMER"})
-    assert poster["model"] == FLARE
+    assert poster["model"] == DEFAULT_T2I
     cfg = wavespeed.load_config()
-    assert cfg["features"]["text_to_image"]["default"] == FLARE
+    assert cfg["features"]["text_to_image"]["default"] == DEFAULT_T2I
     # Qwen 2.0 stays off the Lovart dropdown. The skill path uses it only when the schema accepts the size.
     assert QWEN not in cfg["features"]["text_to_image"]["recommended"]
     assert QWEN not in [m["id"] for m in cfg["features"]["text_to_image"]["models"]]
@@ -210,7 +211,7 @@ def test_size_lock_model_submits_without_joining_the_dropdown():
         wavespeed.resolve_model("text_to_image", "made/up-model", size_lock=True)
     cfg = wavespeed.load_config()
     assert QWEN not in [m["id"] for m in cfg["features"]["text_to_image"]["models"]]
-    assert cfg["features"]["text_to_image"]["default"] == FLARE
+    assert cfg["features"]["text_to_image"]["default"] == DEFAULT_T2I
 
 
 def _png(w: int, h: int) -> bytes:
@@ -273,7 +274,7 @@ def test_size_lock_preference_cases():
     assert "_audit_locked_files(job, refs)" in body and "audit_file(" in poll
     assert "isOwnSizeError(msg)" in (ROOT / "src/wsErrors.ts").read_text(encoding="utf-8")
     assert "lockedDeliveryError(holder.meta, media)" in (ROOT / "src/jobs.ts").read_text(encoding="utf-8")
-    assert wavespeed.load_config()["features"]["text_to_image"]["default"] == FLARE
+    assert wavespeed.load_config()["features"]["text_to_image"]["default"] == DEFAULT_T2I
 
 
 def test_failed_banner_is_not_retried_on_flare(relay):

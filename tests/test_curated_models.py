@@ -76,7 +76,8 @@ def test_every_original_feature_keeps_a_model_and_valid_default():
 
 def test_product_defaults():
     cfg = wavespeed.load_config()["features"]
-    assert cfg["text_to_image"]["default"] == "openai/gpt-image-2.5-flare/text-to-image"
+    assert cfg["text_to_image"]["default"] == "openai/gpt-image-2.6-flare/text-to-image"
+    assert cfg["image_edit"]["default"] == "openai/gpt-image-2.6-flare/edit"
     assert cfg["text_to_video"]["default"] == "bytedance/seedance-2.0/text-to-video"
     assert cfg["image_to_3d"]["default"] == "tripo3d/h3.1/image-to-3d"
 

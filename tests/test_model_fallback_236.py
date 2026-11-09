@@ -21,8 +21,8 @@ from ComfyArt.bot.local_llm import (
 )
 from ComfyArt.bot.providers import BotEvent, TurnHandle, TurnRequest
 
-FLARE = "openai/gpt-image-2.5-flare/text-to-image"
-FLARE_EDIT = "openai/gpt-image-2.5-flare/edit"
+FLARE = "openai/gpt-image-2.6-flare/text-to-image"
+FLARE_EDIT = "openai/gpt-image-2.6-flare/edit"
 SEEDREAM = "bytedance/seedream-v5.0-pro"
 SEEDREAM_EDIT = "bytedance/seedream-v5.0-pro/edit"
 NANO = "google/nano-banana-2.1/edit"
@@ -296,6 +296,12 @@ async def test_two_refs_fall_back_to_the_edit_default(monkeypatch):
 
     monkeypatch.setattr(canvas, "submit_command", submit)
     monkeypatch.setattr(canvas, "maybe_ask_run_approval", no_approval)
+    async def priced(self, feature):
+        # No live catalog in this test: a priced table keeps the quote under the confirm line
+        # so the fallback itself can run. The edit default is the phase-2 2.6-flare id.
+        return [(NANO, 0.02), (FLARE_EDIT, 0.05)]
+
+    monkeypatch.setattr(LocalLlmProvider, "_models_for", priced)
     await _turn(monkeypatch, [("generate_image", {"prompt": "the mug", "refs": ["shape:a", "shape:b"]})],
                 user_text="用这两张图")
     edits = [a.get("edit_model") for a in sent]

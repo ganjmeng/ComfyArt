@@ -81,13 +81,15 @@ def apply_catalog_price_fixes(models: dict) -> dict:
 
 
 class WaveSpeedError(Exception):
-    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False, charged: float | None = None, gif_note: str = ""):
+    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False, charged: float | None = None, gif_note: str = "", model: str = "", gif: dict | None = None):
         super().__init__(message)
         self.charged = charged  # #174: kind 'timeout' — the quoted price that may have been charged (None: unknown)
         self.unpriced = unpriced  # #159: no price for the submitted tier; the dialog shows no amount
         self.estimate = estimate  # #159: the price API failed; the dialog says 「估算价」/'Estimated'
         self.tier = tier  # #159: the tier that will be submitted, e.g. '480p · 5s'
         self.gif_note = gif_note  # #825: bilingual still→GIF / frame note for the confirm dialog
+        self.gif = gif  # effective frame_count / frame_duration_ms already on this request, plus an asked value only when one was sent
+        self.model = model  # #825: the id that will be submitted, so confirm matches the route
         self.status = status
         # #155: what the UI shows instead of the raw WaveSpeed text (insufficientCredit, moderation, rateLimit, invalidKey, failed)
         self.kind = kind
@@ -556,7 +558,7 @@ def resolve_model(feature: str, model: str | None, *, size_lock: bool = False) -
     cfg = config["features"].get(feature)
     if not cfg or feature in config.get("pending_features", []):
         raise WaveSpeedError(f"{feature or 'this tool'} is not available in cloud mode yet", 400)
-    if not model:
+    if not model or model in ("auto", "auto:video"):
         return cfg["default"]
     ids = [m["id"] for m in cfg["models"]]
     if model not in ids:
@@ -1248,6 +1250,24 @@ def _is_default_tier(props: dict, priced: dict) -> bool:
     return True
 
 
+def _gif_confirm(inputs: dict) -> dict | None:
+    """Frame count and duration already written onto this request. Not a second clamp."""
+    if not inputs.get("gif_route"):
+        return None
+    params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+    count, ms = params.get("frame_count"), params.get("frame_duration_ms")
+    if not isinstance(count, int) or isinstance(count, bool) or not isinstance(ms, int) or isinstance(ms, bool):
+        return None
+    out = {"frame_count": count, "frame_duration_ms": ms}
+    asked = inputs.get("gif_asked_frame_count")
+    asked_ms = inputs.get("gif_asked_frame_duration_ms")
+    if isinstance(asked, int) and not isinstance(asked, bool):
+        out["asked_frame_count"] = asked
+    if isinstance(asked_ms, int) and not isinstance(asked_ms, bool):
+        out["asked_frame_duration_ms"] = asked_ms
+    return out
+
+
 def tier_label(priced: dict) -> str:
     """Short tier for the confirm dialog, e.g. '480p · 5s' or '1k · GIF · 9f · 200ms'."""
     parts = [str(priced["resolution"])] if priced.get("resolution") else []
@@ -1373,8 +1393,9 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
 
 
 async def route_gif_live(inputs: dict) -> dict:
-    """#825: apply the GIF route using the cached catalog schema. No schema (or no key) keeps the
-    documented P0: edit has no gif, so a still is a reference plus text-to-image."""
+    """#825: pure text GIF uses the catalog schema. A still is refused before catalog, quote, or POST."""
+    if gif_image.requests_gif(inputs) and gif_image.has_still(inputs):
+        raise WaveSpeedError(gif_image.refusal_text(), 400, kind="gifStillUnsupported")
     if inputs.get("custom") or not gif_image.requests_gif(inputs):
         return inputs
     try:
@@ -1427,6 +1448,8 @@ async def estimate(inputs: dict) -> dict:
             price = None if extra is None else round(float(price) + extra, 6)
     out = {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
            "confirm": needs_confirm(price) if price is not None else (source == "unpriced" or confirm_usd() == 0)}
+    if not isinstance(inputs.get("scenes"), list):
+        out["model"] = model  # #825: quote names the same id submit will POST
     if not isinstance(inputs.get("scenes"), list) and tier:
         out["tier"] = tier
     if not isinstance(inputs.get("scenes"), list) and feature == "transcribe" and duration_estimated(model, inputs):
@@ -1737,14 +1760,15 @@ async def submit(inputs: dict) -> str:
             extra = await _steps_price(inputs)
             price = None if extra is None else round(float(price) + extra, 6)
         gif_note = inputs.get("gif_note") if isinstance(inputs.get("gif_note"), str) else ""
+        gif_body = _gif_confirm(inputs)
         if price is not None and needs_confirm(price):
             # expensive job: the page asks and resubmits with confirmed=true; #159 an estimate is labelled as one
             raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped,
-                                 estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note)
+                                 estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body)
         if source == "unpriced":
             # #159: no price for the submitted tier: never guess one, always ask (no amount, the tier is named)
             raise WaveSpeedError(f"{model}: no price for this tier; confirm to continue", 409, unpriced=True,
-                                 tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note)
+                                 tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body)
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())
@@ -2561,6 +2585,10 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
             body["tier"] = e.tier
         if e.gif_note:
             body["gif_note"] = e.gif_note
+        if e.model:
+            body["model"] = e.model
+        if e.gif:
+            body["gif"] = e.gif
     elif e.unpriced:
         body["confirm_usd"] = None
         body["unpriced"] = True
@@ -2568,6 +2596,10 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
             body["tier"] = e.tier
         if e.gif_note:
             body["gif_note"] = e.gif_note
+        if e.model:
+            body["model"] = e.model
+        if e.gif:
+            body["gif"] = e.gif
     return web.json_response({"error": body}, status=e.status)
 
 

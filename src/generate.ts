@@ -13,7 +13,7 @@ import { paletteImage, palettePrompt } from './palette'
 import { annotated, randomSeed, type Built } from './workflows'
 import { MAX_VIDEO_REF_KINDS, VIDEO_AREAS, videoSize, type Scene } from './videoGraphs'
 import { durationNote, SHOTS, STYLES, VIDEO_RATIOS, videoResolution } from './genOptions'
-import { gifModelId, gifSpec, type GifSpec } from './gifFile'
+import { GIF_STILL_REFUSAL, gifHasStill, gifModelId, gifSpec, type GifSpec } from './gifFile'
 import { svgModelId, svgSpec, type SvgSpec } from './svgFile'
 
 export function scenesOf(shape: GeneratorShape): Scene[] {
@@ -235,10 +235,9 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
       })
     }
     if (gif) {
-      // #825: GIF stays on text-to-image (2.6). A still is a reference, not an edit and not a video.
+      if (gifHasStill({ image: images[0], images, base: base?.src, refs })) throw new Error(GIF_STILL_REFUSAL)
       return wsBuilt({
         feature: 'text_to_image', model: gifModelId(model.auto ? undefined : model.id), prompt, width, height,
-        image: images[0], images: images.length ? images : undefined,
         seed, negative_prompt, params: imageParams(shape, model, gif), ...sizeLock,
       })
     }
@@ -297,8 +296,9 @@ function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
     return { feature: 'text_to_image', model: svgModelId(model.auto ? undefined : model.id), width, height, params: imageParams(shape, model, null, svg) }
   }
   if (gif) {
-    const images = [...(baseOf(shape) ? ['ref'] : []), ...refs.map(() => 'ref')]
-    return { feature: 'text_to_image', model: gifModelId(model.auto ? undefined : model.id), width, height, image: images[0], images: images.length ? images : undefined, params: imageParams(shape, model, gif) }
+    const base = baseOf(shape)
+    if (gifHasStill({ base: base?.src, refs })) return null
+    return { feature: 'text_to_image', model: gifModelId(model.auto ? undefined : model.id), width, height, params: imageParams(shape, model, gif) }
   }
   const askedEdit = featureModelsOf(shape).image_edit
   const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)

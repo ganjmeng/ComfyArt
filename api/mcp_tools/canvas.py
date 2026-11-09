@@ -1,7 +1,7 @@
 import logging
 
 from ..auto_models import UnregisteredModel, choose, load_table, note, registered, skill_pin, tool_feature
-from ..gif_image import choice as gif_choice, ensure_args as ensure_gif_args, requests_gif
+from ..gif_image import choice as gif_choice, ensure_args as ensure_gif_args, requests_gif, still_block
 from ..svg_image import block_reason as svg_block, choice as svg_choice, ensure_args as ensure_svg_args, requests_svg
 from ..mcp_commands import submit_command
 from ..wavespeed import compact_models, grouped_models, load_config, model_details
@@ -33,6 +33,11 @@ def _schema(properties: dict, required: list[str] = ()) -> dict:
 def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
     async def handler(args: dict) -> dict:
         args = dict(args)
+        if action == "generate_image":
+            # #825: still→GIF is refused before approval, quote, confirm, and submit.
+            blocked_gif = still_block(ensure_gif_args(dict(args)))
+            if blocked_gif is not None:
+                return blocked_gif
         fallback_for = str(args.pop("fallback_for", "") or "")
         if approval:
             label = str(args.get("prompt") or args.get("to") or "")[:80]
@@ -64,8 +69,10 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         args = apply_generate(args)
         if requests_svg(args) and not svg_block(args):
             args = ensure_svg_args(args)  # #826: svg + n=1. Does not pin quality. Edit / n≠1 stay blocked.
-        else:
-            args = ensure_gif_args(args)  # #825: 动图/GIF fills output_format + frame defaults; does not pin quality
+        args = ensure_gif_args(args)  # #825: 动图/GIF fills output_format + frame defaults; does not pin quality
+        blocked_gif = still_block(args)
+        if blocked_gif is not None:
+            return blocked_gif
     from ..skill_size import EXACT_SKILLS
     if fallback_for and action == "generate_image" and args.get("skill") in EXACT_SKILLS:
         # #707: do not retry a banner on a model that would snap 1584×396 to an aspect ratio.
@@ -116,6 +123,13 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             err = choice["svg_error"]
             return {"status": "failed", "generation_succeeded": False, "error": err["message"], "kind": err["kind"],
                     "user_message": err["message"]}
+        if choice and choice.get("blocked"):
+            return still_block(args) or {
+                "status": "failed", "generation_succeeded": False, "submitted": False,
+                "error": choice["reason"]["zh"] + " / " + choice["reason"]["en"],
+                "kind": "gifStillUnsupported",
+                "user_message": choice["reason"]["zh"] + " / " + choice["reason"]["en"],
+            }
         if choice and choice.get("category") == "svg":
             # #826: SVG explicitly uses 2.6 text-to-image, n=1. It does not change the global default.
             args = {k: v for k, v in args.items() if k != "edit_model"}
@@ -126,8 +140,7 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             if choice.get("auto"):
                 args["auto_model"] = True
         elif choice and choice.get("category") == "gif":
-            # #825: a GIF never follows refs onto image_edit or a video model. 2.6 is selected even when
-            # the caller named 2.5 or left model empty (Auto / the stable default stays 2.5 for stills).
+            # #825: a pure text GIF stays on 2.6 text-to-image. A still never reaches this branch.
             args = {k: v for k, v in args.items() if k != "edit_model"}
             args["model"] = choice["model"]
             args["output_format"] = "gif"
@@ -385,10 +398,11 @@ SPECS: dict[str, dict] = {
         "tile (structure guides also work on models with control instead of refs, e.g. Qwen Image 2512). "
         "base: an image shape id to transform (image-to-image) with base_strength 0-100 (higher changes more). "
         "skill: the id of the skill you are running (e.g. pose-fission); a skill with a registered model runs on it. "
-        "GIF / 动图: set output_format to gif (frame_count 2-16, default 9; frame_duration_ms 20-2000, default 200). "
-        "Omit model unless the user named one; a GIF uses GPT Image 2.6 Flare, not the stable 2.5 default. "
-        "A still image is refs or base plus this GIF call: edit cannot emit gif, so the still is a reference for a new "
-        "text-to-image GIF. Do not call generate_video or animate_image for a GIF. "
+        "GIF / 动图: set output_format to gif (frame_count is clamped to 2-16, default 9; frame_duration_ms 20-2000, default 200). "
+        "Omit model unless the user named one; an omitted model and Auto use GPT Image 2.6 Flare, the image default. "
+        "A GIF with refs, base, image, or images is refused before any quote or generation: still-to-GIF is not supported. "
+        "Do not attach those fields and do not call generate_video or animate_image for a GIF. Use a text-only prompt, "
+        "or describe the picture in the prompt. "
         "SVG / 矢量 / 可编辑路径: set output_format to svg and count to 1. SVG explicitly uses GPT Image 2.6 text-to-image and does not change the global default. "
         "Do not pass refs, base, or an edit model, and do not use edit_image to make an SVG. "
         "complexity is optional "

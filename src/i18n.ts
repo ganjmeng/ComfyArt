@@ -28,6 +28,11 @@ export async function initLocale() {
   document.title = BRAND.pageTitle
 }
 
+export function previewLang(next: Lang) {
+  lang = next
+  if (typeof document !== 'undefined') document.documentElement.lang = next === 'zh' ? 'zh-CN' : 'en'
+}
+
 export function setLang(next: Lang) {
   writeLocal(KEY, next)
   location.reload()

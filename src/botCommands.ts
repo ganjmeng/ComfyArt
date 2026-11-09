@@ -11,7 +11,7 @@ import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate, nearestRatio } from './generate'
 import { durationNote, fitDuration, RATIOS, VIDEO_RATIOS, videoResolution } from './genOptions'
-import { clampFrameCount, clampFrameMs, gifModelId } from './gifFile'
+import { GIF_STILL_REFUSAL, clampFrameCount, clampFrameMs, gifHasStill, gifModelId } from './gifFile'
 import { svgModelId } from './svgFile'
 import { t, tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
@@ -165,8 +165,9 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     const id = svgModelId(String(args.model || model?.id || ''))
     model = models.find((m) => m.id === id) ?? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' }
   }
+  if (gif && gifHasStill(args)) throw new Error(GIF_STILL_REFUSAL)
   if (gif) {
-    // #825: a GIF runs on 2.6 even when Auto's stable default (2.5) is what the page would otherwise use.
+    // #825: a GIF runs on 2.6-flare, which is also the image default.
     const id = gifModelId(String(args.model || model?.id || ''))
     model = models.find((m) => m.id === id) ?? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' }
   }

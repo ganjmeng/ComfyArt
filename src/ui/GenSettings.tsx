@@ -117,6 +117,24 @@ export function ModelPill({ video, model, picks, onPick, onAuto, align = 'end', 
   )
 }
 
+function GifFrames({ gif, onGif }: { gif: GifSpec; onGif: (next: GifSpec | null) => void }) {
+  const frames = clampFrameCount(gif.frame_count)
+  const ms = clampFrameMs(gif.frame_duration_ms)
+  useEffect(() => {
+    if (gif.frame_count === frames && gif.frame_duration_ms === ms) return
+    onGif({ ...gif, frame_count: frames, frame_duration_ms: ms })
+  }, [gif, frames, ms, onGif])
+  return (
+    <>
+      <div className="ca-style__row">
+        <label className="ca-num"><span>{t('imageToolbar.gifFrames')}</span><input type="number" min={2} max={16} value={frames} onChange={(e) => onGif({ ...gif, frame_count: clampFrameCount(e.target.value) })} /></label>
+        <label className="ca-num"><span>{t('imageToolbar.gifMs')}</span><input type="number" min={20} max={2000} value={ms} onChange={(e) => onGif({ ...gif, frame_duration_ms: clampFrameMs(e.target.value) })} /></label>
+      </div>
+      <div className="ca-chat__hint">{t('genSettings.gifNote')}</div>
+    </>
+  )
+}
+
 export function GenSettings({ p, video, quality, tiers, caps, update, complexities, complexity = '', onComplexity, gif, onGif, svg, onSvg }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update; complexities?: string[]; complexity?: string; onComplexity?: (v: string) => void; gif?: GifSpec | null; onGif?: (next: GifSpec | null) => void; svg?: SvgSpec | null; onSvg?: (next: SvgSpec | null) => void }) {
   // only what the selected model's schema accepts (#95); no enum in the schema means the full list
   const only = <T,>(all: T[], ok?: T[]) => (ok?.length ? all.filter((v) => ok.map(String).includes(String(v))) : all)
@@ -196,15 +214,7 @@ export function GenSettings({ p, video, quality, tiers, caps, update, complexiti
                 else if (v === 'svg') { onGif?.(null); onSvg?.({ output_format: 'svg', n: 1 }); update({ count: 1 }) }
                 else { onGif?.(null); onSvg?.(null) }
               }} gen />
-              {gif && (
-                <>
-                  <div className="ca-style__row">
-                    <label className="ca-num"><span>{t('imageToolbar.gifFrames')}</span><input type="number" min={2} max={16} value={gif.frame_count} onChange={(e) => onGif?.({ ...gif, frame_count: clampFrameCount(e.target.value) })} /></label>
-                    <label className="ca-num"><span>{t('imageToolbar.gifMs')}</span><input type="number" min={20} max={2000} value={gif.frame_duration_ms} onChange={(e) => onGif?.({ ...gif, frame_duration_ms: clampFrameMs(e.target.value) })} /></label>
-                  </div>
-                  <div className="ca-chat__hint">{t('genSettings.gifNote')}</div>
-                </>
-              )}
+              {gif && onGif && <GifFrames gif={gif} onGif={onGif} />}
               {svg && <div className="ca-chat__hint">{t('genSettings.svgNote')}</div>}
             </>
           )}
