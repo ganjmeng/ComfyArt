@@ -1,5 +1,5 @@
 {
- "_comment": "#133 product table v1, widened for #237 accuracy. Categories are first-match: logo, poster/text, anime/illustration, photoreal portrait/product/e-commerce, then character/product consistency, else the feature default. English keywords are whole words; Chinese keywords are substrings. A keyword preceded by a negation (no / don't / 不要 / 没有) does not count. exclude blanks a phrase before matching (portrait orientation, job title, context menu). also is a list of groups that all have to hit, so bare 'photorealistic' or '写实' is not enough for a landscape. 2+ reference images are not a category here: api/mcp_tools/canvas.py sends them to image_edit multi_reference (google/nano-banana-2.1/edit, #153) because refs run on the edit path. A model missing from the catalog is an error (#712); only a model listed in the row's explicit \"fallback\" (string or list) stands in, logged.",
+ "_comment": "#133 product table v1, widened for #237 accuracy. Categories are first-match: logo, poster/text, anime/illustration, photoreal portrait/product/e-commerce, then character/product consistency, else the feature default. English keywords are whole words; Chinese keywords are substrings. A keyword preceded by a negation (no / don't / 不要 / 没有) does not count. exclude blanks a phrase before matching (portrait orientation, job title, context menu). also is a list of groups that all have to hit, so bare 'photorealistic' or '写实' is not enough for a landscape. 2+ reference images are not a category here: api/mcp_tools/canvas.py sends them to image_edit multi_reference (google/nano-banana-2.1/edit, #153) because refs run on the edit path. A model missing from the catalog is an error (#712); only a model listed in the row's explicit \"fallback\" (string or list) stands in, logged. #872: poster_text and image_edit.masked register runtime fallback to matching 2.6 Flare (error/timeout after status check); tip is the short pill category.",
  "skills": {
   "_comment": "#708/#712: per-skill model pins. Registered explicitly: the skill's model runs at its resolution; fallback runs only after the primary call fails (logged). A pinned model missing from the catalog is an error, never a silent switch to the feature default.",
   "pose-fission": {
@@ -79,7 +79,12 @@
       "menu bar",
       "title bar",
       "window title"
-     ]
+     ],
+     "fallback": "openai/gpt-image-2.6-flare/text-to-image",
+     "tip": {
+      "zh": "海报/带字",
+      "en": "poster / text"
+     }
     },
     {
      "id": "anime_art",
@@ -237,7 +242,12 @@
      "edit_region"
     ],
     "zh": "这是带选区或涂抹蒙版的局部编辑（#45），只改选区，用精度更高的模型",
-    "en": "this is an edit with a selection or brushed mask (#45), which only changes the selection and uses the more precise model"
+    "en": "this is an edit with a selection or brushed mask (#45), which only changes the selection and uses the more precise model",
+    "fallback": "openai/gpt-image-2.6-flare/edit",
+    "tip": {
+     "zh": "选区编辑",
+     "en": "selection edit"
+    }
    },
    "default": {
     "zh": "这是通用图片编辑的默认模型",

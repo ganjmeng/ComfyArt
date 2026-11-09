@@ -1,6 +1,6 @@
 import logging
 
-from ..auto_models import UnregisteredModel, choose, load_table, named_or_none, note, registered, skill_pin, skill_pin_reason, tool_feature
+from ..auto_models import UnregisteredModel, choose, load_table, named_or_none, note, registered, skill_pin, skill_pin_reason, table_runtime_fallback_choice, tool_feature
 from ..gif_image import choice as gif_choice, ensure_args as ensure_gif_args, requests_gif, still_block
 from ..svg_image import block_reason as svg_block, choice as svg_choice, ensure_args as ensure_svg_args, requests_svg
 from ..mcp_commands import submit_command
@@ -218,6 +218,20 @@ def _fallback_choice(action: str, args: dict, failed: str) -> dict | None:
     cfg = load_config()["features"][feature]
     ids = {m["id"] for m in cfg["models"]}
     default = cfg["default"]
+    # #872: if the registered Flare fallback itself failed, do not bounce back to Sunburst
+    from ..auto_models import registered_runtime_fallback
+    registered_fb = registered_runtime_fallback(feature, primary, ids)
+    if registered_fb and failed == registered_fb:
+        log.warning("#872: registered fallback %s also failed; not retrying primary %s", failed, primary.get("model"))
+        return None
+    # #872: prefer the row's registered runtime fallback (Sunburst → Flare) — same shape as skill_fallback
+    row_fb = table_runtime_fallback_choice(feature, primary, failed, ids)
+    if row_fb:
+        if action == "generate_image" and (clean.get("refs") or clean.get("base")):
+            row_fb = {**row_fb, "edit_model": row_fb["model"]}
+        if feature == "image_edit" or primary.get("category") == "masked":
+            row_fb = {**row_fb, "edit_model": row_fb["model"]}
+        return row_fb
     table_model = primary["model"]
     if table_model in ids and table_model != failed:
         target = table_model

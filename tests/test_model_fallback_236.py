@@ -58,9 +58,7 @@ def test_reply_contract_still_names_the_model():
     ("edit_image", {"id": "shape:a", "prompt": "new background, keep the same person"}, FLARE_EDIT, NANO, False),
     ("edit_image", {"id": "shape:a", "prompt": "retouch the skin"}, SEEDREAM_EDIT, FLARE_EDIT, False),
     ("edit_region", {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8},
-     SUNBURST, FLARE_EDIT, False),
-    ("edit_region", {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8},
-     FLARE_EDIT, SUNBURST, False),
+     SUNBURST, FLARE_EDIT, True),  # #872 masked row fallback sets edit_model
     ("generate_image", {"prompt": "two refs", "refs": ["shape:a", "shape:b"]}, NANO, FLARE_EDIT, True),
 ])
 def test_fallback_follows_the_133_table(action, args, failed, model, edit):
@@ -81,6 +79,16 @@ def test_fallback_follows_the_133_table(action, args, failed, model, edit):
 ])
 def test_no_fallback_when_it_would_repeat_the_same_model(action, args, failed):
     assert canvas._fallback_choice(action, args, failed) is None
+
+
+def test_masked_flare_failure_does_not_retry_sunburst():
+    """#872: when the registered Flare edit fallback fails, do not bounce back to Sunburst."""
+    choice = canvas._fallback_choice(
+        "edit_region",
+        {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8},
+        FLARE_EDIT,
+    )
+    assert choice is None
 
 
 def test_decline_and_guard_are_not_model_failures():
