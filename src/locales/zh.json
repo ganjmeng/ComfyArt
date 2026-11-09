@@ -1835,5 +1835,20 @@
   "botSettings.hermesProfile": "Hermes 配置档",
   "botSettings.hermesProfileHint": "给 {brand} 专用的配置档（hermes -p <名字>），见 Agent 文档。留空 = Hermes 默认配置档",
   "jobs.submittingConfirm": "正在提交，请勿重复操作。",
-  "jobs.submissionUncertain": "结果待确认。关闭不代表取消任务或未扣费，请先核对任务记录，不要重复提交。"
+  "jobs.submissionUncertain": "结果待确认。关闭不代表取消任务或未扣费，请先核对任务记录，不要重复提交。",
+  "provider.defaultReplicate": "默认 · Replicate",
+  "provider.defaultWavespeed": "默认 · WaveSpeed",
+  "provider.nowActive": "现在生效",
+  "provider.flareDefault": "GPT Image 2.6 · Flare",
+  "provider.routePending": "主线路将改为 {next}（当前 {prev}）。确认后保存。",
+  "provider.confirmRoute": "确认更改",
+  "provider.gifAltWavespeedBlocked": "静图转动图不可用 WaveSpeed 作备选",
+  "provider.keyMissingDraft": "未配置 {key}：可编辑草稿，不能激活",
+  "provider.saveFailed": "保存失败，已保留未提交更改",
+  "provider.batchSelectedOnly": "仅更改已选工具",
+  "gen.outputGif": "动图 GIF",
+  "gen.outputSvg": "矢量 SVG",
+  "gen.frameCount": "帧数",
+  "gen.frameDuration": "帧时长（毫秒）",
+  "gen.svgPreviewHint": "画布为预览图；下载为原 SVG 文件"
 }

@@ -57,6 +57,8 @@ async def test_to_gif_primary_bans_wavespeed(client, monkeypatch):
     assert row["gif_default"]["provider"] == "replicate"
     ws = next(c for c in row["choices"] if c["provider"] == "wavespeed")
     assert ws["enabled"] is False
+    assert ws["backup"] is False
+    assert "WaveSpeed" in ws["backup_reason"] or "备选" in ws["backup_reason"]
     flare = next(c for c in row["choices"] if c["model"] == FLARE)
     assert flare["enabled"] is True
     bad = await client.put("/comfyart/provider-admin/tool/to_gif", json={

@@ -49,6 +49,16 @@ export function t(key: string, ...args: (string | number)[]): string {
   return fill(text, args)
 }
 
+/** Named placeholders from design copy tables ({next}, {prev}, {key}, …). */
+export function tn(key: string, vars: Record<string, string | number> = {}): string {
+  let text = MESSAGES[lang][key] ?? MESSAGES.en[key] ?? key
+  text = text.replace(/\{brand\}/g, BRAND.name)
+  for (const [name, value] of Object.entries(vars)) {
+    text = text.replaceAll(`{${name}}`, String(value))
+  }
+  return text
+}
+
 /** t() in a fixed language (#128: tool results carry both zh and en for the agent's reply). */
 export function tl(to: Lang, key: string, ...args: (string | number)[]): string {
   const text = MESSAGES[to][key] ?? MESSAGES.en[key] ?? key

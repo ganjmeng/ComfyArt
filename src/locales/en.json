@@ -1835,5 +1835,20 @@
   "botSettings.hermesProfile": "Hermes profile",
   "botSettings.hermesProfileHint": "Profile made for {brand} (hermes -p <name>), see the Agent guide. Empty = Hermes default profile",
   "jobs.submittingConfirm": "Submitting. Please do not submit again.",
-  "jobs.submissionUncertain": "Submission result unconfirmed. Closing does not cancel the task or mean no charge. Check task records before submitting again."
+  "jobs.submissionUncertain": "Submission result unconfirmed. Closing does not cancel the task or mean no charge. Check task records before submitting again.",
+  "provider.defaultReplicate": "Default · Replicate",
+  "provider.defaultWavespeed": "Default · WaveSpeed",
+  "provider.nowActive": "Active now",
+  "provider.flareDefault": "GPT Image 2.6 · Flare",
+  "provider.routePending": "Primary route will switch to {next} (now {prev}). Confirm to save.",
+  "provider.confirmRoute": "Confirm change",
+  "provider.gifAltWavespeedBlocked": "WaveSpeed can’t be an alternate for still→GIF",
+  "provider.keyMissingDraft": "{key} missing: draft editable, can’t activate",
+  "provider.saveFailed": "Save failed; unsaved changes kept",
+  "provider.batchSelectedOnly": "Only selected tools",
+  "gen.outputGif": "GIF",
+  "gen.outputSvg": "SVG",
+  "gen.frameCount": "Frames",
+  "gen.frameDuration": "Frame duration (ms)",
+  "gen.svgPreviewHint": "Canvas shows a preview; download is the original SVG"
 }
