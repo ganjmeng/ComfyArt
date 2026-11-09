@@ -186,16 +186,34 @@ _SHORT = {
 }
 
 
+_ACRONYMS = frozenset({"gpt", "ai", "ui", "io", "api", "cpu", "gpu", "vae"})
+
+
+def _humanize_id_segment(seg: str) -> str:
+    """Hyphen/underscore → spaces; capitalize words but keep known acronyms (GPT not Gpt)."""
+    words = seg.replace("-", " ").replace("_", " ").split()
+    out: list[str] = []
+    for w in words:
+        low = w.lower()
+        if low in _ACRONYMS:
+            out.append(low.upper())
+        elif w:
+            out.append(w[0].upper() + w[1:])
+        else:
+            out.append(w)
+    return " ".join(out)
+
+
 def short_name(model: str | None) -> str:
     """Human short name for a WaveSpeed model id (pill text)."""
     if not model:
         return ""
     if model in _SHORT:
         return _SHORT[model]
-    # owner/name[/variant] → last two path parts, title-cased lightly
+    # owner/name[/variant] → slug segment, humanized without mangling GPT→Gpt
     parts = [p for p in str(model).split("/") if p]
     if len(parts) >= 2:
-        return parts[-2].replace("-", " ").replace("_", " ").title()
+        return _humanize_id_segment(parts[-2])
     return str(model)
 
 
@@ -229,15 +247,30 @@ def pill_label(choice: dict, *, catalog_label: str | None = None) -> str | None:
     return name or None
 
 
+# Mirrors src/locales chatMessage.autoPickedPrefix (i18n owns the string; keep in sync).
+_AUTO_PICKED_PREFIX = {"zh": "自动选择：", "en": "Auto-picked: "}
+
+
 def pill_tooltip(choice: dict, lang: str = "zh") -> str | None:
-    """Hover/tap reason. Manual picks: None (UI shows no reason popup). Auto: table reason; fallback note when set."""
+    """Hover/tap reason. Manual picks: None (UI shows no reason popup).
+
+    Auto: i18n prefix + table category. Fallback:
+    ``{prefix}{category} · 首选 X 失败，改用 Y`` / ``{prefix}{category} · Preferred X failed, used Y``.
+    """
     if not isinstance(choice, dict) or not choice.get("auto"):
         return None
+    en = str(lang).lower().startswith("en")
+    key = "en" if en else "zh"
+    prefix = _AUTO_PICKED_PREFIX[key]
+    category = reason_text(choice, key)
     failed = choice.get("fallback")
     model = choice.get("model")
     if failed and model:
-        if str(lang).lower().startswith("en"):
-            return f"Preferred {short_name(failed)} failed; used {short_name(model)} instead. {reason_text(choice, 'en')}".strip()
-        return f"首选 {short_name(failed)} 失败，改用 {short_name(model)}。{reason_text(choice, 'zh')}".strip()
-    text = reason_text(choice, lang)
-    return text or None
+        if en:
+            body = f"{category} · Preferred {short_name(failed)} failed, used {short_name(model)}"
+        else:
+            body = f"{category} · 首选 {short_name(failed)} 失败，改用 {short_name(model)}"
+        return f"{prefix}{body}".strip()
+    if not category:
+        return None
+    return f"{prefix}{category}"

@@ -1,4 +1,5 @@
 /** #825: generation-card / process-rail Auto · model label (mirrors api/auto_models.pill_*). */
+import { tl, type Lang } from './i18n'
 
 export type ModelChoice = {
   model?: string
@@ -25,12 +26,28 @@ const SHORT: Record<string, string> = {
   'recraft-ai/recraft-v3': 'Recraft V3',
 }
 
+const ACRONYMS = new Set(['gpt', 'ai', 'ui', 'io', 'api', 'cpu', 'gpu', 'vae'])
+
+/** Hyphen/underscore → spaces; capitalize words but keep GPT (not Gpt). */
+function humanizeIdSegment(seg: string): string {
+  return seg
+    .replace(/[-_]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => {
+      const low = w.toLowerCase()
+      if (ACRONYMS.has(low)) return low.toUpperCase()
+      return w.charAt(0).toUpperCase() + w.slice(1)
+    })
+    .join(' ')
+}
+
 export function shortModelName(model?: string | null, catalogLabel?: string | null): string {
   if (catalogLabel?.trim()) return catalogLabel.trim()
   if (!model) return ''
   if (SHORT[model]) return SHORT[model]
   const parts = String(model).split('/').filter(Boolean)
-  if (parts.length >= 2) return parts[parts.length - 2]!.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  if (parts.length >= 2) return humanizeIdSegment(parts[parts.length - 2]!)
   return String(model)
 }
 
@@ -40,6 +57,10 @@ function reasonText(choice: ModelChoice, lang: string): string {
   if (typeof r === 'string') return r
   const key = lang.toLowerCase().startsWith('en') ? 'en' : 'zh'
   return String(r[key as 'zh' | 'en'] || r.zh || r.en || '')
+}
+
+function tipLang(lang: string): Lang {
+  return lang.toLowerCase().startsWith('en') ? 'en' : 'zh'
 }
 
 /** Visible label. Auto → 'Auto · <name>'; manual → name only; Auto with no model yet → 'Auto'; legacy empty → null. */
@@ -54,18 +75,23 @@ export function autoPillLabel(choice: ModelChoice | null | undefined, catalogLab
   return name || null
 }
 
-/** Hover/tap reason. Manual: null (no reason UI). Auto: table reason; fallback note when set. */
+/** Hover/tap reason. Manual: null (no reason UI). Auto: i18n prefix + table category; fallback note when set. */
 export function autoPillTooltip(choice: ModelChoice | null | undefined, lang: string): string | null {
   if (!choice || !choice.auto) return null
+  const L = tipLang(lang)
+  const prefix = tl(L, 'chatMessage.autoPickedPrefix')
+  const category = reasonText(choice, L)
   const failed = choice.fallback
   const model = choice.model
   if (failed && model) {
-    if (lang.toLowerCase().startsWith('en')) {
-      return `Preferred ${shortModelName(failed)} failed; used ${shortModelName(model)} instead. ${reasonText(choice, 'en')}`.trim()
-    }
-    return `首选 ${shortModelName(failed)} 失败，改用 ${shortModelName(model)}。${reasonText(choice, 'zh')}`.trim()
+    // Design: `{prefix}{category} · 首选 X 失败，改用 Y` (category first; no trailing period+category)
+    const body = L === 'en'
+      ? `${category} · Preferred ${shortModelName(failed)} failed, used ${shortModelName(model)}`
+      : `${category} · 首选 ${shortModelName(failed)} 失败，改用 ${shortModelName(model)}`
+    return `${prefix}${body}`.trim()
   }
-  return reasonText(choice, lang) || null
+  if (!category) return null
+  return `${prefix}${category}`
 }
 
 /** Parse model_choice from a tool_result JSON text (MCP payload). */

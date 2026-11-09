@@ -92,6 +92,8 @@ def main():
                     """() => { const e = document.querySelector('#gen [data-testid=auto-model-label] .ca-process__labeltext');
                       return !!(e && e.scrollWidth > e.clientWidth + 1) }""")
                 assert overflow, "narrow card must ellipsis"
+                label_text = label.inner_text()
+                assert "GPT" in label_text and "Gpt" not in label_text, label_text
             elif case != "legacy":
                 assert label.count() >= 1, f"{name}: missing label"
                 # Normal width: full short name visible (no mid-word Su…)
@@ -122,9 +124,11 @@ def main():
                     assert geom["sw"] <= geom["cw"] + 1, f"{name}: tip truncates horizontally {geom}"
                     assert geom["text"].strip(), f"{name}: empty tip"
                     if case == "fallback":
-                        assert "首选" in geom["text"] and "改用" in geom["text"], geom["text"]
+                        assert "自动选择：" in geom["text"] and "首选" in geom["text"] and "改用" in geom["text"], geom["text"]
+                        assert " · " in geom["text"] and not geom["text"].rstrip().endswith("Logo"), geom["text"]
                     if case == "flip":
-                        assert "flips below" in geom["text"] or "海报" in geom["text"], geom["text"]
+                        assert "自动选择：" in geom["text"] or "Auto-picked:" in geom["text"], geom["text"]
+                        assert "flips below" not in geom["text"], geom["text"]
                     if case == "flip":
                         assert tip.get_attribute("data-below") == "true", "top-edge must flip below"
                     # Tip must not cover reply text (above-label tip is fine)

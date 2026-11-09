@@ -159,7 +159,7 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
         use('g1', 'mcp__comfyart__generate_image', { prompt: '海报大字' }),
         res('g1', 'mcp__comfyart__generate_image', choice({
           model: sunburst, auto: true, category: 'poster_text',
-          reason: { zh: '海报/带字 — tip flips below when the top edge has no room', en: 'poster / text — tip flips below when the top edge has no room' },
+          reason: { zh: '海报/带字', en: 'poster / text' },
         })),
       ],
     },
