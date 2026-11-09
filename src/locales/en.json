@@ -870,6 +870,7 @@
   "jobs.confirmSegMax": "Up to {0} credits (recognition plus up to {1} segmentation calls). Continue?",
   "jobs.confirmTitle": "Confirm cost",
   "jobs.confirmUnpriced": "Couldn't get the exact price; continuing will be charged at the actual rate for {0}. Continue?",
+  "jobs.confirmOpen": "This request has no hard price cap. Confirming agrees to the actual usage charge, not a ceiling. Nothing is sent if you decline.",
   "jobs.costDeclined": "Cancelled this generation; nothing was charged",
   "jobs.interrupted": "Generation was cancelled",
   "jobs.stop": "Stop generating",

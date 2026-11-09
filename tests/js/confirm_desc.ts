@@ -27,4 +27,6 @@ console.log(JSON.stringify({
   live1,
   unpriced,
   estimate,
+  openGif: confirmDesc(null, undefined, false, { openEnded: true, unpriced: true, gif: { frame_count: 16, frame_duration_ms: 20 } }, "zh"),
+  openEn: confirmDesc(null, undefined, false, { openEnded: true }, "en"),
 }))

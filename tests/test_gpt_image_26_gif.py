@@ -283,7 +283,9 @@ def test_estimate_stub_for_gif_uses_published_medium_and_does_not_call_out(monke
     still = asyncio.run(wavespeed.estimate({"feature": "text_to_image", "model": FLARE_26, "prompt": "a cup"}))
     assert still["price"] == 0.05
     gif_again = asyncio.run(wavespeed.estimate({"feature": "text_to_image", "model": FLARE_26, "prompt": "a cup", "params": {"output_format": "gif", "frame_count": 16}}))
-    assert gif_again["price"] == still["price"]
+    # The unsaved GIF route is now Replicate; never borrow the WaveSpeed table price.
+    assert gif_again["price"] is None and gif_again["source"] == "unpriced"
+    assert gif_again["confirm"] is True
 
 
 def test_list_models_exposes_26_complexity_without_changing_default(catalog):
@@ -318,6 +320,10 @@ def test_visible_confirm_text_uses_request_frames_local_mock(tmp_path):
     assert "毫秒调整" not in got["live1"]
     assert got["unpriced"] == "暂时查不到准确价格。GIF 16 帧（已从 99 帧调整），每帧 20 毫秒（已从 5 毫秒调整）。继续会按这个档位实际扣费，确定继续吗？"
     assert "积分" not in got["unpriced"]
+    assert "没有可核对的封顶价" in got["openGif"]
+    assert "GIF 16 帧" in got["openGif"] and "每帧 20 毫秒" in got["openGif"]
+    assert "积分" not in got["openGif"]
+    assert "no hard price cap" in got["openEn"]
     assert got["estimate"] == "估算价：GIF 16 帧（已从 99 帧调整），每帧 20 毫秒，约 5 积分（暂时查不到实时价格，以实际扣费为准），确定继续吗？"
 
 
