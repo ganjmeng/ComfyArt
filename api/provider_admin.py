@@ -53,20 +53,32 @@ _quote_override = None  # tests only: async (model, capability, inputs) -> (pric
 
 
 def reset_runtime() -> None:
-    """Drop in-memory route tickets and idempotency locks. Does not touch saved files."""
+    """Drop in-memory route tickets and idempotency locks. Does not touch saved provider config."""
     _tickets.clear()
     _replicate_jobs.clear()
     _runs.clear()
     _run_locks.clear()
     _audit.clear()
-    _confirm_offers.clear()
+    try:
+        os.remove(_confirm_path())
+    except OSError:
+        pass
 
 
 _runs: dict[str, dict] = {}
 _run_locks: dict[str, object] = {}
 _audit: list[dict] = []
-_confirm_offers: dict[str, float] = {}
+_confirm_user: contextvars.ContextVar[str] = contextvars.ContextVar("comfyart_confirm_user", default="")
 CONFIRM_TTL = 600
+CONFIRM_FILE = "confirm_tokens.json"
+
+
+def bind_confirm_user(user: str):
+    return _confirm_user.set(user or "")
+
+
+def reset_confirm_user(token) -> None:
+    _confirm_user.reset(token)
 
 
 def _path() -> str:
@@ -521,25 +533,122 @@ def _estimate_body(decision: dict) -> dict:
     }
 
 
-def _confirm_key(decision: dict, inputs: dict) -> str:
-    """Bind a yes to this provider, model, and the parameters that change the bill."""
+def _confirm_path() -> str:
+    return app_path(CONFIRM_FILE)
+
+
+def _billable_digest(decision: dict, inputs: dict) -> str:
+    """Hash every input that can change a Replicate bill. The token is not this hash."""
+    import hashlib
     params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+
+    def pick(key: str):
+        return params.get(key, inputs.get(key))
+
+    images = []
+    for key in ("image", "base", "mask"):
+        if inputs.get(key):
+            images.append(str(inputs.get(key)))
+    for key in ("images", "refs"):
+        values = inputs.get(key)
+        if isinstance(values, list):
+            images.extend(str(v) for v in values if v)
     payload = {
+        "user": _confirm_user.get() or "",
+        "tool": decision.get("tool"),
         "provider": decision.get("provider"),
         "model": decision.get("model"),
-        "capability": decision.get("capability"),
         "revision": decision.get("revision"),
+        "capability": decision.get("capability"),
         "prompt": str(inputs.get("prompt") or ""),
-        "fmt": str(params.get("output_format") or inputs.get("output_format") or ""),
-        "quality": str(params.get("quality") or inputs.get("quality") or ""),
-        "frames": params.get("frame_count", inputs.get("frame_count")),
-        "frame_ms": params.get("frame_duration_ms", inputs.get("frame_duration_ms")),
-        "images": [str(v) for v in (inputs.get("images") or [])] if isinstance(inputs.get("images"), list) else [],
-        "image": str(inputs.get("image") or ""),
+        "fmt": str(pick("output_format") or ""),
+        "quality": str(pick("quality") or ""),
+        "complexity": str(pick("complexity") or ""),
+        "frames": pick("frame_count"),
+        "frame_ms": pick("frame_duration_ms"),
+        "count": pick("number_of_images") if pick("number_of_images") is not None else pick("count"),
+        "aspect": str(pick("aspect_ratio") or pick("ratio") or ""),
+        "background": str(pick("background") or ""),
+        "moderation": str(pick("moderation") or ""),
         "w": inputs.get("width"),
         "h": inputs.get("height"),
+        "images": images,
     }
-    return json.dumps(payload, sort_keys=True, default=str)
+    raw = json.dumps(payload, sort_keys=True, default=str).encode()
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _mutate_tokens(change):
+    import fcntl
+    path = _confirm_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    os.chmod(path, 0o600)
+    with os.fdopen(fd, "r+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            handle.seek(0)
+            raw = handle.read()
+            data = json.loads(raw) if raw.strip() else {}
+            if not isinstance(data, dict):
+                data = {}
+            result = change(data)
+            handle.seek(0)
+            handle.truncate()
+            json.dump(data, handle)
+            handle.flush()
+            os.fsync(handle.fileno())
+            return result
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _issue_confirm(decision: dict, inputs: dict) -> str:
+    import secrets
+    token = secrets.token_urlsafe(32)
+    digest = _billable_digest(decision, inputs)
+
+    def add(data: dict):
+        now = time.time()
+        for key, row in list(data.items()):
+            if not isinstance(row, dict) or row.get("used") or float(row.get("exp") or 0) <= now:
+                data.pop(key, None)
+        data[token] = {
+            "user": _confirm_user.get() or "",
+            "tool": decision.get("tool"),
+            "provider": decision.get("provider"),
+            "model": decision.get("model"),
+            "revision": decision.get("revision"),
+            "digest": digest,
+            "exp": now + CONFIRM_TTL,
+            "used": False,
+        }
+        return token
+
+    return _mutate_tokens(add)
+
+
+def _take_confirm(token: str, decision: dict, inputs: dict) -> bool:
+    """Mark one matching token used. A second caller, even in another process, gets False."""
+    digest = _billable_digest(decision, inputs)
+    user = _confirm_user.get() or ""
+
+    def take(data: dict):
+        row = data.get(token)
+        if not isinstance(row, dict) or row.get("used"):
+            return False
+        if float(row.get("exp") or 0) <= time.time():
+            return False
+        if row.get("user") != user or row.get("digest") != digest:
+            return False
+        if row.get("tool") != decision.get("tool") or row.get("provider") != decision.get("provider"):
+            return False
+        if row.get("model") != decision.get("model") or row.get("revision") != decision.get("revision"):
+            return False
+        row["used"] = True
+        return True
+
+    return bool(token) and _mutate_tokens(take)
 
 
 def _known_quote(price, source: str) -> bool:
@@ -554,19 +663,15 @@ async def _replicate_execute(decision: dict, inputs: dict) -> str:
         raise WaveSpeedError("Replicate 未配置 REPLICATE_API_TOKEN，未发送请求", 400, kind="provider_unconfigured")
     price, source = await _quote_status(decision, inputs)
     if not _known_quote(price, source):
-        key = _confirm_key(decision, inputs)
-        offered = _confirm_offers.get(key)
-        fresh = offered is not None and time.time() - offered < CONFIRM_TTL
-        if not inputs.get("confirmed") or not fresh:
-            _confirm_offers[key] = time.time()
-            params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
-            quality = str(params.get("quality") or inputs.get("quality") or "auto")
-            fmt = str(params.get("output_format") or inputs.get("output_format") or "image")
-            raise WaveSpeedError(
-                "Replicate 没有公布这次请求的硬上限。费用随质量、帧数和输入图变化，这里不编造价格。使用的人确认后才会发送。",
-                409, unpriced=True, kind="confirm", tier=f"{decision.get('model')} · {fmt} · {quality}",
+        presented = str(inputs.get("confirm_token") or "")
+        if not _take_confirm(presented, decision, inputs):
+            issued = _issue_confirm(decision, inputs)
+            err = WaveSpeedError(
+                "这次没有可核对的封顶价。确认只表示同意按实际用量计费，不确认就不会发送。",
+                409, unpriced=True, kind="confirm",
             )
-        _confirm_offers.pop(key, None)
+            err.confirm_token = issued
+            raise err
         price = None
     try:
         body = prediction_body(decision["capability"], inputs)
@@ -600,6 +705,8 @@ async def _replicate_execute(decision: dict, inputs: dict) -> str:
 async def _post_prediction(url: str, body: dict, token: str) -> str:
     import aiohttp
     from .wavespeed import WaveSpeedError
+    if os.environ.get("COMFYART_REPLICATE_DRY_RUN") == "1":
+        return "dry-run-no-network"
     timeout = aiohttp.ClientTimeout(total=60)
     try:
         async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -737,14 +844,15 @@ async def _prices_allow(route: dict, inputs: dict, cap: str | None) -> bool:
     return float(backup_price) <= float(primary_price)
 
 
-async def _call_endpoint(ep: dict, inputs: dict, cap: str | None, orig):
+async def _call_endpoint(ep: dict, inputs: dict, cap: str | None, orig, route: dict):
     from .tool_routing import RouteFailure
     if ep.get("provider") == "wavespeed":
         return await orig(inputs)
     if not cap:
         raise RouteFailure("unsupported", "这次请求不在该工具已接通的能力里")
     return await _replicate_execute({
-        "provider": "replicate", "model": ep["model"], "capability": cap, "revision": 0,
+        "provider": "replicate", "model": ep["model"], "capability": cap,
+        "revision": route.get("revision"), "tool": route.get("tool"),
     }, inputs)
 
 
@@ -758,7 +866,7 @@ async def _execute_route(route: dict, inputs: dict, orig):
     from .tool_routing import BY_ID, ELIGIBLE, backup_ok, classify_failure
     cap = route.get("capability")
     try:
-        task = await _call_endpoint(route["primary"], inputs, cap, orig)
+        task = await _call_endpoint(route["primary"], inputs, cap, orig, route)
         _note(route, fallback=False, kind="primary", task=str(task))
         return task
     except Exception as exc:
@@ -783,7 +891,7 @@ async def _execute_route(route: dict, inputs: dict, orig):
         if not await _prices_allow(route, inputs, cap):
             _note(route, fallback=False, kind="price", task=None)
             raise _stop("price") from exc
-        task = await _call_endpoint(backup, inputs, cap, orig)
+        task = await _call_endpoint(backup, inputs, cap, orig, route)
         _note(route, fallback=True, kind=kind, task=str(task))
         return task
 
@@ -973,6 +1081,39 @@ async def check_llm(request: web.Request) -> web.Response:
         "stream": False,
         "thinking": "disabled",
         "message": "只检查草稿。当前对话线路没变，没有付费请求。价格未知。官方模型不是无差异替换。",
+    })
+
+
+@routes.post("/comfyart/provider-admin/llm/rehearse")
+async def rehearse_llm(request: web.Request) -> web.Response:
+    """One local tool round-trip. It does not open a socket or save the active route."""
+    require_admin(request)
+    body = await json_body(request)
+    blocked = _reject_secrets(body)
+    if blocked:
+        return blocked
+    before = llm_route()
+    route = llm_route({"provider": body.get("provider"), "model": body.get("model")}) or {
+        "provider": "wavespeed", "model": "existing", "request_model": "deepseek/deepseek-v4.1-flash-1017",
+    }
+    assistant = {
+        "role": "assistant", "content": None,
+        "tool_calls": [{"id": "call_local", "type": "function", "function": {"name": "lookup", "arguments": "{\"q\":\"x\"}"}}],
+    }
+    follow = {"role": "tool", "tool_call_id": "call_local", "content": "{\"ok\":true}"}
+    return web.json_response({
+        "saved": False,
+        "calls": 0,
+        "network": False,
+        "connected": False,
+        "kind": "rehearsal",
+        "active_unchanged": llm_route() == before,
+        "thinking": "disabled",
+        "stream": False,
+        "provider": route.get("provider"),
+        "model": route.get("model"),
+        "round": [{"role": "user", "content": "本地替身"}, assistant, follow],
+        "message": "这是本地模拟的一次工具往返，没有联网，也没有改正在用的线路。不能当成连通或付费测试。思考被关掉，因为现有代理不会把 reasoning_content 传回去。",
     })
 
 

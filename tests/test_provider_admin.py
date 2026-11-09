@@ -174,17 +174,23 @@ async def test_unknown_price_and_incompatible_backup_do_not_switch(monkeypatch):
     job = {"tool": "edit_image", "feature": "image_edit", "prompt": "e", "image": "https://cdn.example/a.png"}
     with pytest.raises(WaveSpeedError) as caught:
         await wavespeed.submit(job)
-    assert caught.value.status == 409 and caught.value.unpriced and caught.value.kind == "confirm" and posts == []
+    token = caught.value.confirm_token
+    assert caught.value.status == 409 and caught.value.unpriced and token and posts == []
     provider_admin._runs.clear()
     with pytest.raises(WaveSpeedError) as caught:
-        await wavespeed.submit({**job, "confirmed": True})
+        await wavespeed.submit({**job, "confirmed": True, "confirm_token": token})
     assert len(posts) == 1 and caught.value.kind == "price"
     posts.clear()
     provider_admin._runs.clear()
-    provider_admin._confirm_offers.clear()
+    with pytest.raises(WaveSpeedError) as caught:
+        await wavespeed.submit({**job, "confirm_token": token})
+    assert posts == [] and caught.value.unpriced
     with pytest.raises(WaveSpeedError) as caught:
         await wavespeed.submit({**job, "prompt": "e-bypass", "confirmed": True})
-    assert posts == [] and caught.value.unpriced
+    assert posts == [] and caught.value.confirm_token
+    with pytest.raises(WaveSpeedError) as caught:
+        await wavespeed.submit({**job, "prompt": "e-bypass", "confirmed": True})
+    assert posts == []
     estimate = await provider_admin.dispatch_estimate(job, lambda inputs: {"price": 9, "source": "quote"})
     assert estimate["price"] is None and estimate["source"] == "unpriced" and estimate["confirm"] is True
     assert "0.030405" not in json.dumps(estimate)
@@ -302,3 +308,85 @@ async def test_svg_stays_on_the_original_route_and_gif_backup_is_rejected(client
         "fallback": True,
     })
     assert rejected.status == 400
+
+
+async def test_confirm_token_is_bound_single_use_and_durable(client, monkeypatch):
+    import os
+    import threading
+    import ComfyArt.api.wavespeed as wavespeed
+    from ComfyArt.api.wavespeed import WaveSpeedError
+    posts = []
+
+    async def post(url, body, token):
+        posts.append(url)
+        return "pred_once"
+
+    monkeypatch.setattr(provider_admin, "_post_prediction", post)
+    monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
+    saved = await client.put("/comfyart/provider-admin/tool/edit_image", json=_route())
+    assert saved.status == 200
+    saved_body = await saved.json()
+    revision = next(row["revision"] for row in saved_body["tools"] if row["id"] == "edit_image")
+    job = {"tool": "edit_image", "feature": "image_edit", "prompt": "bound", "image": "https://cdn.example/a.png", "params": {"quality": "low"}}
+    first = await client.post("/comfyart/wavespeed/run", json={"inputs": job})
+    body = await first.json()
+    token = body["error"]["confirm_token"]
+    assert first.status == 409 and body["error"]["unpriced"] is True and "封顶价" in body["error"]["message"] and posts == []
+    assert "0.03" not in json.dumps(body)
+    mode = os.stat(provider_admin._confirm_path()).st_mode & 0o777
+    assert mode == 0o600
+
+    other = await client.post("/comfyart/wavespeed/run", json={"inputs": {**job, "confirm_token": token}}, headers={"comfy-user": "alice"})
+    assert other.status == 409 and posts == []
+    changed = await client.post("/comfyart/wavespeed/run", json={"inputs": {**job, "confirm_token": token, "params": {"quality": "max"}}})
+    assert changed.status == 409 and posts == []
+    provider_admin._write_tool("edit_image", {
+        "revision": revision + 5,
+        "active": {"primary": {"provider": "replicate", "model": FLARE}, "backup": None, "fallback": False},
+        "previous": None,
+    })
+    stale = await client.post("/comfyart/wavespeed/run", json={"inputs": {**job, "confirm_token": token}})
+    assert stale.status == 409 and posts == []
+    provider_admin._write_tool("edit_image", {
+        "revision": revision,
+        "active": {"primary": {"provider": "replicate", "model": FLARE}, "backup": None, "fallback": False},
+        "previous": None,
+    })
+    ok = await client.post("/comfyart/wavespeed/run", json={"inputs": {**job, "confirm_token": token}})
+    assert ok.status == 200 and len(posts) == 1
+    provider_admin._runs.clear()
+    replay = await client.post("/comfyart/wavespeed/run", json={"inputs": {**job, "confirm_token": token}})
+    assert replay.status == 409 and len(posts) == 1
+
+    fresh = await client.post("/comfyart/wavespeed/run", json={"inputs": {**job, "prompt": "race"}})
+    race = (await fresh.json())["error"]["confirm_token"]
+    decision = {"tool": "edit_image", "provider": "replicate", "model": FLARE, "revision": revision, "capability": "image_edit"}
+    wins = []
+
+    def claim():
+        provider_admin.bind_confirm_user("default")
+        wins.append(provider_admin._take_confirm(race, decision, {**job, "prompt": "race"}))
+
+    threads = [threading.Thread(target=claim) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert wins.count(True) == 1
+
+    monkeypatch.setattr(provider_admin, "CONFIRM_TTL", -1)
+    expired = await client.post("/comfyart/wavespeed/run", json={"inputs": {**job, "prompt": "old"}})
+    expired_token = (await expired.json())["error"]["confirm_token"]
+    again = await client.post("/comfyart/wavespeed/run", json={"inputs": {**job, "prompt": "old", "confirm_token": expired_token}})
+    assert again.status == 409
+
+
+async def test_llm_rehearsal_does_not_call_or_save(client, monkeypatch):
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    before = provider_admin.active_llm()
+    res = await client.post("/comfyart/provider-admin/llm/rehearse", json={"provider": "deepseek", "model": "deepseek-flash"})
+    body = await res.json()
+    assert res.status == 200 and body["calls"] == 0 and body["network"] is False and body["connected"] is False
+    assert body["kind"] == "rehearsal" and "没有联网" in body["message"]
+    assert body["thinking"] == "disabled" and body["round"][1]["tool_calls"][0]["id"] == "call_local"
+    assert provider_admin.active_llm() == before

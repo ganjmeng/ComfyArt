@@ -102,6 +102,15 @@ export async function checkLlm(body: object): Promise<{ message: string; calls: 
   return data
 }
 
+export async function rehearseLlm(body: object): Promise<{ message: string; calls: number; network: boolean; connected: boolean; kind: string }> {
+  const res = await fetch('/comfyart/provider-admin/llm/rehearse', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new ProviderAdminError(res.status, String(data.error || res.statusText))
+  return data
+}
+
 let open = false
 const listeners = new Set<() => void>()
 export function providerAdminOpen() { return open }

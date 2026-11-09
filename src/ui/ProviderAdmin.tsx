@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { lang } from '../i18n'
 import {
   checkLlm,
+  rehearseLlm,
   loadProviderAdmin,
   ProviderAdminError,
   providerAdminOpen,
@@ -379,6 +380,9 @@ function LlmPane({ state, providerId, modelId, note, onProvider, onModel, onNote
         <button type="button" className="ca-prov__btn" data-testid="provider-llm-check" onClick={() => {
           checkLlm({ provider: providerId, model: modelId }).then((result) => onNote(result.message || tx('未调用。', 'No call.'))).catch((e: unknown) => onNote(String(e)))
         }}>{tx('检查草稿', 'Check draft')}</button>
+        <button type="button" className="ca-prov__btn" data-testid="provider-llm-rehearse" onClick={() => {
+          rehearseLlm({ provider: providerId, model: modelId }).then((result) => onNote(result.message || tx('未调用。', 'No call.'))).catch((e: unknown) => onNote(String(e)))
+        }}>{tx('模拟工具往返', 'Rehearse a tool round')}</button>
         <button type="button" className="ca-prov__btn ca-prov__btn--primary" data-testid="provider-llm-save" disabled={!dirty || (providerId === 'deepseek' && !info?.configured)} title={!info?.configured && providerId === 'deepseek' ? tx('还没有官方密钥，不能启用', 'No official key, so this cannot be turned on') : undefined} onClick={() => {
           saveLlmProvider({ provider: providerId, model: modelId }).then((next) => { onState(next); onNote(tx('语言模型已保存。图像工具没变。', 'Language model saved. Image tools are unchanged.')) }).catch((e: unknown) => onNote(String(e)))
         }}>{tx('保存语言模型', 'Save language model')}</button>
