@@ -54,3 +54,11 @@
 ## 后续若继续
 
 先看确认框和记忆选择器。SVG 与设置页仍分开。共享样式只在 `.ca-btn` / `.ca-confirm`，避免改到 #844 正在动的 `ImageToolbar.tsx`。
+
+## 2026-11-09 local continuation: narrow viewport contract
+
+- Based on #850 `0484720396fdecbe1028733c5a4cc35d1e5aa822`; not an integration of #845 or #848.
+- Applies the group design decision only below a 380px viewport: 360px viewport produces a border-box card width of 328px, 16px outer margins, 24px horizontal inner padding; actual borders reduce usable content width. Fact rows stack vertically with automatic height and wrapping.
+- Related checks: `node tests/test_confirm_narrow_contract.cjs` (static CSS contract), `tsc --noEmit`, `git diff --check`. All passed locally. No browser measurement, interaction or visual PASS is claimed.
+- Separate worktree `/workspace/comfyart-confirm-narrow-20261109`; the QA worktree and running port 5210 remain unchanged at the original #850 SHA. Dependencies are shared through an ignored node_modules symlink.
+- Pending: browser measurements at 360/379/380/390px, actual page comparison, submitting/timeout behavior, unknown-cost protection and independent QA. No billing, routing, download or supplier changes in this patch.
