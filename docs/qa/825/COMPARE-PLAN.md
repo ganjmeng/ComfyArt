@@ -1,6 +1,6 @@
 # #825 paid comparison plan (draft only — not run)
 
-**Status:** pending approval. Do **not** run until prompts are posted on [#825](https://github.com/ganjmeng/ComfyArt/issues/825) and spend is approved.  
+**Status:** **RAN** 2026-11-10 Asia/Shanghai. See `SPEND.md`, `OCR-A-REPORT.md`, `lr/` collages, `out/`. Total actual spend **$0.5493** (cap $0.65).  
 **Cap:** **$0.65** total · **10** images.  
 **Quality:** WaveSpeed schema default (**medium**), not pinned (#189).  
 **Prices:** cited from repo sources below (not hand-waved estimates). Real charge = balance delta; abort if cumulative would exceed **$0.65**.
