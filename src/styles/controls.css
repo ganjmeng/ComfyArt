@@ -27,7 +27,7 @@
 .ca-btn__label { min-width: 0; }
 
 .ca-btn.ca-panel__secondary {
-  border: 1px solid var(--ca-text-2);
+  border: 1px solid var(--ca-border);
   background: var(--ca-float);
   color: var(--ca-text);
 }
@@ -53,7 +53,7 @@
 
 .ca-btn:focus { outline: none; }
 .ca-btn:focus-visible {
-  outline: 2px solid var(--ca-strong);
+  outline: 1px solid var(--ca-text-2);
   outline-offset: 2px;
 }
 .ca-btn:is(.ca-panel__primary, .ca-panel__secondary):disabled,
@@ -82,7 +82,15 @@
   .ca-btn__spin { animation: none; border-right-color: currentColor; opacity: .7; }
 }
 
-.ca-confirm-actions { flex-wrap: wrap; align-items: center; }
+/* Own the footer layout: Confirm is also rendered without canvas.css. */
+.ca-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
 .ca-modal__card.ca-confirm {
   border: var(--ca-border-w) solid var(--ca-border);
 }
@@ -111,11 +119,4 @@
     gap: 4px;
   }
   .ca-confirm .ca-keys__row > span { overflow-wrap: anywhere; }
-}
-
-/* Headless captures set data-force so the same rules as :hover / :focus-visible can be photographed. */
-html[data-force="hover"] .ca-confirm .ca-btn.ca-panel__primary:not(.ca-panel__danger):not(:disabled) { opacity: .92; }
-html[data-force="focus"] .ca-confirm .ca-btn.ca-panel__primary {
-  outline: 2px solid var(--ca-strong);
-  outline-offset: 2px;
 }

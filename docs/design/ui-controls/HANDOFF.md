@@ -90,3 +90,10 @@ Existing services on 8188 (#848) and 5210 (old #850) have not been moved to this
 - Capture originating chat/ask before opening; require the existing API's `{ ok: true }` acknowledgement. A missing conversation or malformed acknowledgement is not success. Cleanup uses ask identity, not shared description text.
 - No-network checks: `node --experimental-strip-types --test tests/test_confirmation_submission.mjs tests/test_quote_answer.mjs` (14 checks, including static wiring), narrow/button static contracts, `tsc --noEmit`, `git diff --check`. These are not browser tests.
 - Scope excludes reload/remount reconciliation, server idempotency, numerical quote/budget enforcement and supplier execution. Existing host is not automatically updated by this source commit.
+
+### Confirmation visual feedback follow-up (2026-11-09)
+
+- User reported missing button spacing and harsh highlighting. Independent Confirm rendering omitted `canvas.css`; footer flex/gap/right-alignment previously lived only there. `controls.css` now owns footer layout (8px gap, right alignment, wrap), so it does not rely on the canvas page.
+- Secondary border uses the subtle existing border token; keyboard focus keeps one 1px neutral visible outline. Removed production `data-force` selectors that gave the primary a fake extra focus ring in captures. The existing Lovart reference at `docs/design/381/78/lovart/memory-delete-confirm-dialog-light.png` is reference only, not proof of exact visual parity.
+- Added three static visual contracts; existing 14 no-network submission/quote checks, narrow/button static checks and TypeScript checks remain separate from browser evidence.
+- `OUT_DIR=/absolute/dir BEFORE_CSS=/absolute/before.css node tests/js/buildConfirmVisualPreview.mjs` builds actual Confirm into offline before/after HTML. It uses mock copy/quote and optional mock submission promises; it is a component preview, not a full product screenshot or provider test. Browser screenshot evidence is reported separately when captured.

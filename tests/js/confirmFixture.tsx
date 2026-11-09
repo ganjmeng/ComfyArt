@@ -17,8 +17,6 @@ const q = new URLSearchParams(location.search)
 const lang = q.get('lang') === 'en' ? 'en' : 'zh'
 previewLang(lang)
 if (q.get('theme') === 'dark') document.documentElement.dataset.theme = 'dark'
-const force = q.get('force')
-if (force) document.documentElement.dataset.force = force
 
 // Same sentence askCost puts in the product Confirm dialog.
 // 0.05 is a local stand-in for confirm_usd, not a live WaveSpeed price response.
