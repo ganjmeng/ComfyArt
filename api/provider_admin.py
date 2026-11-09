@@ -1033,6 +1033,35 @@ async def dispatch_submit(inputs, orig):
         return task
 
 
+def _auto_still_generate(inputs: dict, decision: dict) -> bool:
+    """Empty Auto still generate_image (not GIF). Explicit model picks stay untouched."""
+    from .gif_image import requests_gif
+    from .tool_routing import tool_of
+    tool = decision.get("tool") or tool_of(inputs)
+    if tool != "generate_image":
+        return False
+    if requests_gif(inputs):
+        return False
+    picked = str(inputs.get("model") or "").strip().lower()
+    return picked in ("", "auto", "auto:video")
+
+
+def _still_auto_effective_tip(inputs: dict, decision: dict) -> dict | None:
+    """Product: empty Auto still tip = generate_image.effective; never gif_default / catalog flare."""
+    if not _auto_still_generate(inputs, decision):
+        return None
+    row = next((t for t in _tools_view() if t["id"] == "generate_image"), None)
+    if not row:
+        return None
+    eff = row["effective"]
+    return {
+        "provider": eff["provider"],
+        "model": eff["model"],
+        "effective": True,
+        "effective_source": eff.get("source") or "",
+    }
+
+
 async def dispatch_estimate(inputs, orig):
     if not isinstance(inputs, dict):
         return await orig(inputs)
@@ -1040,7 +1069,11 @@ async def dispatch_estimate(inputs, orig):
     decision = _snapshot(inputs)
     _remember(inputs, decision)
     if decision.get("passthrough") or decision.get("primary", {}).get("provider") == "wavespeed":
-        return await orig(inputs)
+        body = await orig(inputs)
+        tip = _still_auto_effective_tip(inputs, decision)
+        if tip and isinstance(body, dict):
+            body = {**body, **tip}
+        return body
     prepared = _prepare_gif_inputs(inputs) if decision.get("capability") in {"text_to_gif", "reference_gif"} else inputs
     body = _estimate_body(decision)
     body["tool"] = decision.get("tool")

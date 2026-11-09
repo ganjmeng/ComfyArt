@@ -328,7 +328,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
             update({ workflow: id, ...patch })
           }} />
         {unpriced && estimate == null && <span className="ca-gen__est" data-testid="ws-estimate" title={t('wsKey.unpriced')}>{t('wsKey.unpricedTag')}</span>}
-        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={[estDetail?.model, estimated ? t('wsKey.estimated', `$${estimate}`) : t('wsKey.estimate', `$${estimate}`), estDetail?.tier].filter(Boolean).join(' · ')}>{`${estimated ? `${t('wsKey.estimatedTag')} ` : ''}≈$${usd(estimate)}${estDetail?.tier ? ` · ${estDetail.tier}` : ''}`}</span>}
+        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={[estDetail?.provider && estDetail?.model ? `${estDetail.provider}/${estDetail.model}` : estDetail?.model, estimated ? t('wsKey.estimated', `$${estimate}`) : t('wsKey.estimate', `$${estimate}`), estDetail?.tier].filter(Boolean).join(' · ')}>{`${estimated ? `${t('wsKey.estimatedTag')} ` : ''}≈$${usd(estimate)}${estDetail?.tier ? ` · ${estDetail.tier}` : ''}`}</span>}
         <button type="button" className="ca-gen__send" disabled={!ready || noCredit} title={noCredit ? t('wsKey.needCredit') : estimate != null ? `${t('common.generate')} · ${t('wsKey.estimate', `$${estimate}`)}` : t('common.generate')} onClick={submit}>
           <span className="ca-icon">{Icons.send}</span>
         </button>
