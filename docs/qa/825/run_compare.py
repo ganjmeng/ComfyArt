@@ -11,6 +11,17 @@ from pathlib import Path
 
 import requests
 from PIL import Image
+import math
+
+def nearest_aspect(w: int, h: int, options=None) -> str:
+    """Mirror api/wavespeed.py _nearest (~L762)."""
+    options = options or ["1:1","1:2","2:1","1:3","3:1","2:3","3:2","3:4","4:3","4:5","5:4","9:16","16:9","9:21","21:9"]
+    aspect = w / h
+    def ratio(s: str) -> float:
+        a, b = s.split(":")
+        return float(a) / float(b)
+    return min(options, key=lambda o: abs(math.log(ratio(o) / aspect)))
+
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "out"

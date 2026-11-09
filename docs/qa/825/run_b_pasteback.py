@@ -18,6 +18,17 @@ BASE_IMG = ROOT / "inputs" / "base-window-sky.png"
 MASK_IMG = ROOT / "inputs" / "mask-sky-top.png"
 TOUCH_PAD, TOUCH_MIN = 0.25, 384
 
+def nearest_aspect(w: int, h: int, options=None) -> str:
+    """Mirror api/wavespeed.py _nearest (~L762) from crop width/height."""
+    import math
+    options = options or ["1:1","1:2","2:1","1:3","3:1","2:3","3:2","3:4","4:3","4:5","5:4","9:16","16:9","9:21","21:9"]
+    aspect = w / h
+    def ratio(s: str) -> float:
+        a, b = s.split(":")
+        return float(a) / float(b)
+    return min(options, key=lambda o: abs(math.log(ratio(o) / aspect)))
+
+
 def env_key():
     k = os.environ.get("WAVESPEED_API_KEY")
     if not k:
@@ -147,7 +158,7 @@ def one(job_id, model, prep, attempt, spent):
         "prompt": PROMPT,
         "images": [upload(prep["crop_path"])],
         "resolution": "1k",
-        "aspect_ratio": "3:4",
+        "aspect_ratio": nearest_aspect(prep["box"]["w"], prep["box"]["h"]),
         "output_format": "png",
         # NO mask_image — production region path
     }
@@ -160,7 +171,7 @@ def one(job_id, model, prep, attempt, spent):
         "prediction_id": rid, "balance_before": b0, "http_status": r.status_code,
         "crop_sha256": prep["crop_hash"], "crop_box": prep["box"],
         "payload_keys": sorted(payload.keys()), "has_mask_image": "mask_image" in payload,
-        "resolution": "1k", "aspect_ratio": "3:4", "prompt": PROMPT,
+        "resolution": "1k", "aspect_ratio": nearest_aspect(prep["box"]["w"], prep["box"]["h"]), "prompt": PROMPT,
         "error": None if rid else body,
     }
     append(submit_rec)

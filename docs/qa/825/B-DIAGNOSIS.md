@@ -52,3 +52,11 @@ Production region / brush inpaint (`src/actions.ts` `editRegion` / `regionGraph`
 | Pasteback | none | none | local `paste_result` |
 
 For this base, production crop would be `{x:0,y:0,w:768,h:632}` around sky `{0,0,768,421}`.
+
+## Known deviations (B pasteback rerun — Design PASS, no re-run)
+
+1. **Hard-coded `aspect_ratio=3:4`** on a **768×632** crop. Production `build_payload` (`api/wavespeed.py` ~L1010–1012) would set `aspect_ratio` via `_nearest` from crop `width/height` → **`5:4`** for 768/632≈1.215. Provider returned **880×1184** (3:4-ish); pasteback bicubic-scaled that into the 768×632 box, so the sky was mildly **squashed**. Fair 2.5 vs 2.6 comparison (identical inputs/params); **gradient sky hides** the squash. Scripts now use `nearest_aspect(crop_w, crop_h)` (mirror of `_nearest`); **do not re-run** for this docs fix.
+
+2. **Test mask one extra row:** sky α=0 included **row 420**, which is wall color on the base (wall starts at y=420). Correct seam is rows **0..419**. Mask asset regenerated to end at 419 (file-only; no API). Prior pasteback still Design PASS — 1px sky line only.
+
+3. **Synthetic flat/gradient base:** B proves pasteback placement, clean seam, and that 2.6 color is more natural on this fixture. It does **not** prove which model is better on complex real-photo scenes; feathered real-photo seam → later real-device/E2E acceptance (技术经理).
