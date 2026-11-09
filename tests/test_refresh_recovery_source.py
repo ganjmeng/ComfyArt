@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COMFY = (ROOT / "src/comfy.ts").read_text(encoding="utf-8")
 JOBS = (ROOT / "src/jobs.ts").read_text(encoding="utf-8")
 GEN = (ROOT / "src/shapes/GeneratorShape.tsx").read_text(encoding="utf-8")
+CSS = (ROOT / "src/styles/canvas.css").read_text(encoding="utf-8")
 ZH = (ROOT / "src/locales/zh.json").read_text(encoding="utf-8")
 EN = (ROOT / "src/locales/en.json").read_text(encoding="utf-8")
 
@@ -46,3 +47,25 @@ def test_generator_shows_querying_and_pending_status_not_error_red():
     # pending copy uses status role, not the error alert class for pending
     assert 'role="status"' in GEN
     assert "jobs.resultPendingShort" in GEN
+
+def test_r15_running_error_stays_above_stop():
+    """R15: in-flight long error must not sit under the centered stop button."""
+    assert ".ca-gen-card[data-running] .ca-gen-card__error" in CSS
+    block = CSS.split(".ca-gen-card[data-running] .ca-gen-card__error", 1)[1].split("}", 1)[0]
+    assert "max-height: calc(50% - 36px)" in block
+    assert "overflow-y: auto" in block
+    assert "overflow-wrap: anywhere" in CSS
+    # stop stays centered; no retry control on the card
+    assert "left: 50%" in CSS.split(".ca-gen-card__stop", 1)[1].split("}", 1)[0]
+    assert "retry" not in GEN.lower()
+
+
+def test_r16_stop_focus_visible_neutral_ring():
+    """R16: stop keyboard focus uses restrained 1px neutral ring (ca-btn token)."""
+    assert ".ca-gen-card__stop:focus-visible" in CSS
+    fv = CSS.split(".ca-gen-card__stop:focus-visible", 1)[1].split("}", 1)[0]
+    assert "outline: 1px solid var(--ca-text-2)" in fv
+    assert "outline-offset: 2px" in fv
+    # known soft: pending card still has no collapse control (R07); do not invent one here
+    assert "ca-gen-card__collapse" not in GEN
+
