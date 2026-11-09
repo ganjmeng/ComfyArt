@@ -1,9 +1,8 @@
-"""#870: when a gen card has no output, the DOM must not paint a broken <img>.
+"""#870: Auto · model is header-only; gen-card frame never paints .ca-gen-frame__model.
 
-Covers failed (job stub + error), recovering/null-job (job cleared + error), and
-size-lock refused. Mock WaveSpeed only, $0. Asserts: no <img> with empty/missing
-src inside .ca-gen-card; no img alt contains the model short name; in-frame Auto
-label does not intersect the error banner or placeholder (out of flow / absent).
+Across data-running, data-pending, and failed/refused: (1) no in-frame model row,
+(2) SelectionLabel header contains Auto · <model>, (3) with no output, no <img>
+with empty/missing src. Mock WaveSpeed, $0.
 """
 from __future__ import annotations
 
@@ -19,10 +18,11 @@ ROOT = __import__("pathlib").Path(__file__).resolve().parent.parent
 pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("index.html")), reason="needs built dist/")
 
 W, H, WRONG = 1024, 1280, (2048, 682)
-MODEL_FRAG = "Qwen"  # short_name fragment from Auto · Qwen Image 2.0
+FLARE = "openai/gpt-image-2.6-flare/text-to-image"  # #871 09b poster_fb model
 
 
-async def _open_gen(page, app_url):
+async def _open_gen(page, app_url, prompt="870-label", model=None):
+    model = model or QWEN
     await page.add_init_script(
         "localStorage.setItem('comfyart.lang','zh'); localStorage.setItem('comfyart.e2e','1')"
     )
@@ -37,130 +37,135 @@ async def _open_gen(page, app_url):
     await page.get_by_role("button", name="图像生成").first.click()
     await page.locator(".ca-gen__prompt").wait_for()
     await page.evaluate(
-        """([w, h, model]) => {
+        """([w, h, model, prompt]) => {
           const ed = window.__caEditor
           const id = ed.getSelectedShapeIds()[0]
           const shape = ed.getShape(id)
           ed.updateShape({
             id, type: 'generator',
-            props: { ...shape.props, prompt: 'no-output-img', resolution: 'custom', ratio: '4:5', cw: w, ch: h, w, h },
+            props: { ...shape.props, prompt, resolution: 'custom', ratio: '4:5', cw: w, ch: h, w, h },
             meta: { ...shape.meta, pixelSize: [w, h], sizeLockModel: model, quiet: false,
               modelChoice: { auto: true, model, category: 'poster_text',
                 reason: { zh: '自动选择：海报/带字', en: 'Auto-picked: poster/text' } } },
           })
+          ed.select(id)
         }""",
-        [W, H, QWEN],
+        [W, H, model, prompt],
     )
 
 
-def _overlap(a, b):
-    return not (a["x2"] <= b["x1"] or b["x2"] <= a["x1"] or a["y2"] <= b["y1"] or b["y2"] <= a["y1"])
-
-
-async def _assert_no_output_img_leak(page, label: str):
+async def _assert_header_only(page, label: str, *, expect_error: bool):
     info = await page.evaluate(
-        """(frag) => {
+        """() => {
           const card = document.querySelector('.ca-gen-card')
+          const header = document.querySelector('.ca-label')
           if (!card) return { err: 'no-card' }
-          const rect = (el) => {
-            if (!el) return null
-            const r = el.getBoundingClientRect()
-            return { x1: r.left, y1: r.top, x2: r.right, y2: r.bottom, w: r.width, h: r.height }
-          }
-          const imgs = [...card.querySelectorAll('img')]
-          const empty = imgs.filter((i) => {
-            const s = i.getAttribute('src')
-            return s == null || !String(s).trim()
-          }).map((i) => i.outerHTML.slice(0, 160))
-          const named = imgs.filter((i) => {
-            const a = i.getAttribute('alt') || ''
-            return a.includes(frag) || /Auto\\s*·/.test(a)
-          }).map((i) => ({ alt: i.getAttribute('alt'), src: i.getAttribute('src') }))
-          const model = card.querySelector('[data-testid=auto-model-label]')
-          const errEl = card.querySelector('.ca-gen-card__error')
-          const icon = card.querySelector('.ca-gen-card__icon')
-          const modelPos = model ? getComputedStyle(model).position : null
-          const modelDisplay = model ? getComputedStyle(model).display : null
+          const imgs = [...card.querySelectorAll('img')].map((i) => ({
+            src: i.getAttribute('src'), alt: i.getAttribute('alt'),
+          }))
           return {
-            imgCount: imgs.length, empty, named, modelPos, modelDisplay,
-            hasError: !!errEl,
-            modelText: model ? (model.textContent || '').trim() : null,
-            modelRect: rect(model),
-            errorRect: rect(errEl),
-            iconRect: rect(icon),
+            inFrameModel: !!card.querySelector('.ca-gen-frame__model'),
+            inFrameTestId: !!card.querySelector('[data-testid=auto-model-label]'),
+            headerText: header ? header.innerText : null,
+            headerModel: header ? !!header.querySelector('[data-testid=auto-model-label], .ca-label__model') : false,
+            hasError: !!card.querySelector('.ca-gen-card__error'),
+            emptyImgs: imgs.filter((i) => i.src == null || !String(i.src).trim()),
+            running: card.getAttribute('data-running'),
             pending: card.getAttribute('data-pending'),
           }
-        }""",
-        MODEL_FRAG,
+        }"""
     )
     assert info.get("err") is None, (label, info)
-    assert info["empty"] == [], (label, info)
-    assert info["named"] == [], (label, info)
-    assert info["hasError"], (label, info)
-    # #870: settled no-output → no in-frame Auto row (SelectionLabel keeps it in the header)
-    assert info["modelText"] is None and info["modelRect"] is None, (label, info)
-    # if a future change reintroduces the node, it must stay out of flow and not intersect
-    if info.get("modelRect"):
-        assert info["modelPos"] == "absolute", (label, info)
-        if info.get("errorRect"):
-            assert not _overlap(info["modelRect"], info["errorRect"]), (label, info)
-        if info.get("iconRect") and info["iconRect"]["w"] > 0:
-            assert not _overlap(info["modelRect"], info["iconRect"]), (label, info)
+    assert info["inFrameModel"] is False and info["inFrameTestId"] is False, (label, info)
+    assert info["headerText"] and "Auto ·" in info["headerText"], (label, info)
+    assert info["headerModel"] is True, (label, info)
+    if expect_error:
+        assert info["hasError"] is True, (label, info)
+        assert info["emptyImgs"] == [], (label, info)
+    return info
 
 
 @pytest.mark.asyncio
-async def test_no_output_states_have_no_broken_img_or_model_alt(app_url, mock_ws):  # noqa: F811
+async def test_header_only_auto_label_running_pending_and_no_output(app_url, mock_ws):  # noqa: F811
     mock_ws["png"] = _png(*WRONG, (20, 20, 20), "wrong")
     async with pw.async_playwright() as p:
         browser = await p.chromium.launch()
         page = await browser.new_page(viewport={"width": 1440, "height": 900})
-        await _open_gen(page, app_url)
+        await _open_gen(page, app_url, prompt="870 header-only", model=QWEN)
 
-        # --- refused (real size-lock path → job null + error) ---
-        before = len(mock_ws["submits"])
-        await page.locator(".ca-gen__send").click()
-        for _ in range(300):
-            if len(mock_ws["submits"]) > before and await page.locator(".ca-gen-card__error").count():
-                break
-            await asyncio.sleep(0.1)
-        assert await page.locator(".ca-gen-card__error").count() >= 1
-        text = await page.locator(".ca-gen-card__error").inner_text()
-        assert "没有通过" in text
-        await _assert_no_output_img_leak(page, "refused")
+        # --- data-running ---
+        await page.evaluate(
+            """() => {
+              const ed = window.__caEditor
+              const id = [...ed.getCurrentPageShapes()].find((s) => s.type === 'generator').id
+              const shape = ed.getShape(id)
+              ed.updateShape({ id, type: 'generator', meta: { ...shape.meta, job: { id: 'run', phase: 'running' } } })
+              ed.select(id)
+              const atom = window.__caResultsAtom
+              if (atom) atom.update((r) => { const n = { ...r }; delete n[id]; return n })
+            }"""
+        )
+        await page.wait_for_timeout(200)
+        await page.locator(".ca-label").wait_for()
+        run = await _assert_header_only(page, "running", expect_error=False)
+        assert run["running"] == "true", run
 
-        # --- recovering / null-job (explicit clear; size-lock already cleared job) ---
+        # --- data-pending ---
+        await page.evaluate(
+            """() => {
+              const ed = window.__caEditor
+              const id = [...ed.getCurrentPageShapes()].find((s) => s.type === 'generator').id
+              const shape = ed.getShape(id)
+              ed.updateShape({ id, type: 'generator', meta: { ...shape.meta, job: { id: 'pend', uncertain: true } } })
+              ed.select(id)
+              const atom = window.__caResultsAtom
+              if (atom) atom.update((r) => ({ ...r, [id]: { srcs: [], pending: true } }))
+            }"""
+        )
+        await page.wait_for_timeout(200)
+        pend = await _assert_header_only(page, "pending", expect_error=False)
+        assert pend["pending"] == "true", pend
+
+        # --- refused (size-lock → null-job + error) ---
         await page.evaluate(
             """() => {
               const ed = window.__caEditor
               const id = [...ed.getCurrentPageShapes()].find((s) => s.type === 'generator').id
               const shape = ed.getShape(id)
               ed.updateShape({ id, type: 'generator', meta: { ...shape.meta, job: null } })
-              const atom = window.__caResultsAtom
-              if (atom) {
-                const cur = atom.get()[id] || { srcs: [] }
-                atom.update((r) => ({ ...r, [id]: { ...cur, srcs: [], error: cur.error || 'recovering probe' } }))
-              }
+            }"""
+        )
+        before = len(mock_ws["submits"])
+        await page.locator(".ca-gen__send").click()
+        for _ in range(300):
+            if len(mock_ws["submits"]) > before and await page.locator(".ca-gen-card__error").count():
+                break
+            await asyncio.sleep(0.1)
+        await page.evaluate(
+            """() => {
+              const ed = window.__caEditor
+              const id = [...ed.getCurrentPageShapes()].find((s) => s.type === 'generator').id
+              ed.select(id)
             }"""
         )
         await page.wait_for_timeout(200)
-        await _assert_no_output_img_leak(page, "recovering-null-job")
+        await page.locator(".ca-label").wait_for()
+        refused = await _assert_header_only(page, "refused", expect_error=True)
+        assert "没有通过" in await page.locator(".ca-gen-card__error").inner_text()
+        assert not refused["running"] and not refused["pending"], refused
 
-        # --- failed (job stub re-attached + error, still no output) ---
+        # --- failed (job stub + error, still no in-frame model) ---
         await page.evaluate(
             """() => {
               const ed = window.__caEditor
               const id = [...ed.getCurrentPageShapes()].find((s) => s.type === 'generator').id
               const shape = ed.getShape(id)
-              ed.updateShape({
-                id, type: 'generator',
-                meta: { ...shape.meta, job: { id: 'fail-probe', phase: 'running' } },
-              })
+              ed.updateShape({ id, type: 'generator', meta: { ...shape.meta, job: { id: 'fail', phase: 'running' } } })
+              ed.select(id)
               const atom = window.__caResultsAtom
-              if (atom) {
-                atom.update((r) => ({ ...r, [id]: { srcs: [], error: '生成失败 / Generation failed' } }))
-              }
+              if (atom) atom.update((r) => ({ ...r, [id]: { srcs: [], error: '生成失败 / Generation failed' } }))
             }"""
         )
         await page.wait_for_timeout(200)
-        await _assert_no_output_img_leak(page, "failed")
+        await _assert_header_only(page, "failed", expect_error=True)
         await browser.close()
