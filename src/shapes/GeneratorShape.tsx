@@ -17,6 +17,7 @@ import { errorText, resultsAtom, stopJob } from '../jobs'
 import { Icons } from '../ui/icons'
 import { lang, t } from '../i18n'
 import { autoPillLabel, autoPillTooltip, type ModelChoice } from '../autoPill'
+import { Tip } from '../ui/Tip'
 
 export const GENERATOR = 'generator'
 /** #287: shared with the home composer, which has no editor to ask for defaults. */
@@ -167,12 +168,19 @@ function GeneratorCard({ shape }: { shape: GeneratorShape }) {
           })}
         >{Icons.stop}</button>
       )}
-      {modelLabel && (
-        <div className="ca-gen-frame__model" data-testid="auto-model-label" title={modelTitle ?? undefined} role="status">
+      {modelLabel && (modelTitle ? (
+        <Tip label={modelTitle} wide>
+          <div className="ca-gen-frame__model" data-testid="auto-model-label" role="status" aria-label={modelTitle}>
+            <span className="ca-icon">{isVideo(shape.props.workflow) ? Icons.videoLine : Icons.sparkleImage}</span>
+            <span className="ca-gen-frame__modeltext">{modelLabel}</span>
+          </div>
+        </Tip>
+      ) : (
+        <div className="ca-gen-frame__model" data-testid="auto-model-label" role="status">
           <span className="ca-icon">{isVideo(shape.props.workflow) ? Icons.videoLine : Icons.sparkleImage}</span>
           <span className="ca-gen-frame__modeltext">{modelLabel}</span>
         </div>
-      )}
+      ))}
       {statusPill && <div className="ca-gen-frame__pill" role="status" aria-live="polite">{statusPill}</div>}
     </HTMLContainer>
   )

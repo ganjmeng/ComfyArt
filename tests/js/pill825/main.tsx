@@ -25,9 +25,13 @@ function choice(partial: Record<string, unknown>) {
   return JSON.stringify({ ids: ['shape:g1'], model_choice: partial, note: 'wait_generation' })
 }
 
-const cases: Record<string, { width?: number; msg: any; live?: boolean }> = {
-  // Done Auto with table reason (zh/en tip from reason)
+/** 1×1 peach PNG as a mock product thumb under the model row (Lovart layout). */
+const MOCK_THUMB =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAYAAABV7bNHAAAAhUlEQVR4nO3BMQEAAADCoPVP7WsIoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIC3AReUAAE9sWYyAAAAAElFTkSuQmCC'
+
+const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?: boolean; padTop?: number }> = {
   auto: {
+    thumbs: true,
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
         { type: 'thinking', text: 'pick' },
@@ -40,7 +44,6 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean }> = {
       ],
     },
   },
-  // Live generating — just Auto
   generating: {
     live: true,
     msg: {
@@ -50,8 +53,8 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean }> = {
       ],
     },
   },
-  // Manual pick — name only, no title/tooltip
   manual: {
+    thumbs: true,
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
         { type: 'thinking', text: 'pick' },
@@ -64,8 +67,8 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean }> = {
       ],
     },
   },
-  // Failed but keep Auto · label
   failed: {
+    thumbs: true,
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
         { type: 'thinking', text: 'pick' },
@@ -78,8 +81,8 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean }> = {
       ],
     },
   },
-  // Fallback tooltip
   fallback: {
+    thumbs: true,
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
         { type: 'thinking', text: 'pick' },
@@ -93,8 +96,8 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean }> = {
       ],
     },
   },
-  // Skill-pinned pose-fission → Nano Banana Pro with Auto prefix
   skill: {
+    thumbs: true,
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
         { type: 'thinking', text: 'pose' },
@@ -107,8 +110,8 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean }> = {
       ],
     },
   },
-  // Legacy: no model fields → no empty label
   legacy: {
+    thumbs: true,
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
         { type: 'thinking', text: 'old' },
@@ -118,9 +121,9 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean }> = {
       ],
     },
   },
-  // Narrow width + long name → ellipsis
   ellipsis: {
     width: 220,
+    thumbs: true,
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
         { type: 'thinking', text: 'long' },
@@ -133,8 +136,8 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean }> = {
       ],
     },
   },
-  // Remount / “refresh” — same blocks again (label survives)
   refresh: {
+    thumbs: true,
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
         { type: 'thinking', text: 'pick' },
@@ -147,19 +150,51 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean }> = {
       ],
     },
   },
+  // Tip at top edge → auto-flip below the label (no reply line so tip has room)
+  flip: {
+    thumbs: true,
+    padTop: 0,
+    msg: {
+      id: 'a', role: 'assistant', status: 'done', blocks: [
+        use('g1', 'mcp__comfyart__generate_image', { prompt: '海报大字' }),
+        res('g1', 'mcp__comfyart__generate_image', choice({
+          model: sunburst, auto: true, category: 'poster_text',
+          reason: { zh: '海报/带字 — tip flips below when the top edge has no room', en: 'poster / text — tip flips below when the top edge has no room' },
+        })),
+      ],
+    },
+  },
 }
 
 const cfg = cases[caseId] || cases.auto
 const width = cfg.width ?? 392
 
 createRoot(document.getElementById('root')!).render(
-  <div className="ca-root" style={{ width, padding: 16, paddingBottom: 80, background: 'var(--ca-bg)', minHeight: 280, overflow: 'visible' }} data-case={caseId}>
-    <div style={{ font: '11px/14px system-ui', opacity: 0.5, marginBottom: 8 }}>
-      {caseId} · {lang} · {q.get('theme') || 'light'}
-    </div>
+  <div
+    className="ca-root"
+    style={{
+      width,
+      padding: cfg.padTop === 0 ? '4px 16px 80px' : '16px 16px 80px',
+      background: 'var(--ca-float)',
+      minHeight: 320,
+      overflow: 'visible',
+    }}
+    data-case={caseId}
+  >
+    {cfg.padTop !== 0 && (
+      <div style={{ font: '11px/14px system-ui', opacity: 0.5, marginBottom: 8 }}>
+        {caseId} · {lang} · {q.get('theme') || 'light'}
+      </div>
+    )}
     <div className="ca-chat">
       <div className="ca-chat__bot" id="gen">
         <AssistantBlocks editor={null as any} m={cfg.msg} />
+        {cfg.thumbs && (
+          <div className="ca-chat__thumbs" data-testid="mock-thumbs" style={{ marginTop: 8, marginLeft: 28, display: 'flex', gap: 8 }}>
+            <img className="ca-chat__thumb" src={MOCK_THUMB} alt="" width={72} height={72} style={{ borderRadius: 8, objectFit: 'cover', background: '#fecaca' }} />
+            <img className="ca-chat__thumb" src={MOCK_THUMB} alt="" width={72} height={72} style={{ borderRadius: 8, objectFit: 'cover', background: '#bbf7d0', filter: 'hue-rotate(90deg)' }} />
+          </div>
+        )}
       </div>
     </div>
   </div>,

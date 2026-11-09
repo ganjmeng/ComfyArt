@@ -41,7 +41,7 @@ export function SelectionLabel() {
     <div className="ca-label" style={{ left: rect.l, top: rect.t - 22, width: rect.r - rect.l }}>
       <span className="ca-label__icon">{info.video ? Icons.video : Icons.image}</span>
       <span className="ca-label__name">{info.name}</span>
-      {info.model && <span className="ca-label__model" data-testid="auto-model-label" title={info.modelTitle}>{info.model}</span>}
+      {info.model && <span className="ca-label__model" data-testid="auto-model-label" aria-label={info.modelTitle || undefined}>{info.model}</span>}
       <span className="ca-label__size">{info.size}</span>
     </div>
   )

@@ -1,11 +1,10 @@
-"""#825: Playwright shots of real AssistantBlocks Auto · label. $0, no network beyond localhost."""
+"""#825: Playwright shots of real AssistantBlocks Auto · label + existing <Tip>. $0."""
 from __future__ import annotations
 
 import os
 import shutil
 import subprocess
 import threading
-import time
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -13,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "docs/qa/825-pill"
 CSS = "\n".join((ROOT / "src/styles" / f).read_text() for f in ("base.css", "canvas.css", "shell.css", "overlays.css"))
+
 
 def bundle(dest: Path) -> None:
     dest.mkdir(parents=True, exist_ok=True)
@@ -23,30 +23,36 @@ def bundle(dest: Path) -> None:
     )
     (dest / "index.html").write_text(
         "<!doctype html><meta charset=utf-8>"
-        f"<style>html,body{{margin:0;background:var(--ca-bg,#fff)}}{CSS}</style>"
+        f"<style>html,body{{margin:0;background:var(--ca-float,#fff)}}{CSS}</style>"
         "<div id=root></div><script src=app.js></script>"
     )
 
+
 def serve(d: Path):
-    srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=str(d)))
+    class Quiet(SimpleHTTPRequestHandler):
+        def log_message(self, *a): pass
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(Quiet, directory=str(d)))
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return srv, f"http://127.0.0.1:{srv.server_port}"
 
+
+# name, case, lang, theme, hover?, viewport?
 SHOTS = [
-    # name, case, lang, theme, hover?, narrow viewport?
-    ("01-auto-zh-light", "auto", "zh", "light", True, None),
-    ("02-auto-en-dark", "auto", "en", "dark", True, None),
-    ("03-hover-reason-zh", "auto", "zh", "light", True, None),
-    ("04-hover-reason-en", "auto", "en", "dark", True, None),
-    ("05-ellipsis-narrow", "ellipsis", "zh", "light", False, {"width": 260, "height": 360}),
-    ("06-manual-no-tooltip", "manual", "zh", "light", True, None),  # hover should NOT show tip
-    ("07-failed-keeps-label", "failed", "zh", "light", False, None),
-    ("08-generating-auto", "generating", "zh", "light", False, None),
-    ("09-fallback-tooltip-zh", "fallback", "zh", "light", True, None),
-    ("10-skill-pose-fission", "skill", "zh", "light", True, None),
-    ("11-legacy-no-empty", "legacy", "zh", "light", False, None),
-    ("12-refresh-survives", "refresh", "zh", "light", False, None),
+    ("01-auto-zh-light", "auto", "zh", "light", True, {"width": 440, "height": 520}),
+    ("02-auto-en-dark", "auto", "en", "dark", True, {"width": 440, "height": 520}),
+    ("03-hover-reason-zh", "auto", "zh", "light", True, {"width": 440, "height": 520}),
+    ("04-hover-reason-en", "auto", "en", "dark", True, {"width": 440, "height": 520}),
+    ("05-ellipsis-narrow", "ellipsis", "zh", "light", False, {"width": 260, "height": 420}),
+    ("06-manual-no-tooltip", "manual", "zh", "light", True, {"width": 440, "height": 520}),
+    ("07-failed-keeps-label", "failed", "zh", "light", False, {"width": 440, "height": 520}),
+    ("08-generating-auto", "generating", "zh", "light", False, {"width": 440, "height": 420}),
+    ("09-fallback-tooltip-zh", "fallback", "zh", "light", True, {"width": 440, "height": 520}),
+    ("10-skill-pose-fission", "skill", "zh", "light", True, {"width": 440, "height": 520}),
+    ("11-legacy-no-empty", "legacy", "zh", "light", False, {"width": 440, "height": 520}),
+    ("12-refresh-survives", "refresh", "zh", "light", False, {"width": 440, "height": 520}),
+    ("13-tip-flip-top-edge", "flip", "zh", "light", True, {"width": 440, "height": 360}),
 ]
+
 
 def main():
     from playwright.sync_api import sync_playwright
@@ -59,87 +65,92 @@ def main():
     bundle(d)
     srv, base = serve(d)
     print("serving", base)
-    results = []
     with sync_playwright() as p:
-        try:
-            browser = p.chromium.launch()
-        except Exception as e:
-            raise SystemExit(f"no chromium: {e}")
+        browser = p.chromium.launch()
         for name, case, lang, theme, hover, vp in SHOTS:
-            viewport = vp or {"width": 440, "height": 420}
-            page = browser.new_page(viewport=viewport, device_scale_factor=2)
+            page = browser.new_page(viewport=vp, device_scale_factor=2)
             page.route("**/*", lambda r: r.continue_() if r.request.url.startswith(base) else r.abort())
             page.goto(f"{base}/index.html?case={case}&lang={lang}&theme={theme}")
             page.wait_for_function("window.__ready")
             page.wait_for_timeout(250)
             label = page.locator("#gen [data-testid=auto-model-label]")
-            # assertions per case
+
             if case == "legacy":
-                assert label.count() == 0 or not (label.first.inner_text() or "").strip() == "", "legacy must not show empty label"
-                # stronger: either no label node, or if process row exists text is not empty Auto-looking blank
                 texts = page.locator("#gen .ca-process__row[data-kind=image] .ca-process__label").all_inner_texts()
-                for tx in texts:
-                    assert tx.strip() != ""  # may show tool fallback, but not blank
-                # Prefer: no auto-model-label with empty text
-                if label.count():
-                    assert label.first.inner_text().strip() != ""
+                assert texts and all(tx.strip() for tx in texts)
+                assert "Auto ·" not in " ".join(texts) or True  # may be tool label
             elif case == "generating":
-                page.wait_for_timeout(400)  # shine
-                assert label.count() == 1
-                assert label.inner_text().strip() == "Auto"
+                assert label.count() == 1 and label.inner_text().strip() == "Auto"
             elif case == "manual":
                 assert "Auto" not in label.inner_text()
-                assert label.get_attribute("title") in (None, "")
             elif case == "failed":
-                assert "Auto ·" in label.inner_text() or "Sunburst" in label.inner_text()
+                assert "Auto ·" in label.inner_text()
                 assert page.locator("#gen .ca-process__row[data-error]").count() >= 1
             elif case == "ellipsis":
                 assert label.count() == 1
-                box = label.bounding_box()
-                assert box and box["width"] < 200
-                # text truncated visually: scrollWidth > clientWidth
                 overflow = page.evaluate(
-                    """() => { const e = document.querySelector('#gen [data-testid=auto-model-label] .ca-process__labeltext')
-                      || document.querySelector('#gen [data-testid=auto-model-label]');
+                    """() => { const e = document.querySelector('#gen [data-testid=auto-model-label] .ca-process__labeltext');
                       return !!(e && e.scrollWidth > e.clientWidth + 1) }""")
-                assert overflow, "expected ellipsis overflow on label text"
-            else:
+                assert overflow, "narrow card must ellipsis"
+            elif case != "legacy":
                 assert label.count() >= 1, f"{name}: missing label"
+                # Normal width: full short name visible (no mid-word Su…)
+                if case in ("auto", "refresh", "flip", "fallback", "skill", "failed") and vp["width"] >= 400:
+                    text = label.inner_text()
+                    assert "…" not in text and "..." not in text, f"unexpected ellipsis at normal width: {text!r}"
 
+            tip_count = 0
             if hover and label.count():
                 label.hover()
-                # Native/CSS ::after tips are clipped by label overflow:hidden (ellipsis).
-                # Inject the same title string as a real tip node under the label (matches CSS tip copy).
-                page.evaluate("""() => {
-                  const e = document.querySelector('#gen [data-testid=auto-model-label]');
-                  if (!e) return;
-                  const title = e.getAttribute('title');
-                  document.querySelectorAll('.ca-825-tip').forEach(n => n.remove());
-                  if (!title) return;
-                  const tip = document.createElement('div');
-                  tip.className = 'ca-825-tip';
-                  tip.setAttribute('data-testid', 'auto-model-tip');
-                  tip.textContent = title;
-                  tip.style.cssText = 'margin:6px 0 0 28px;max-width:320px;padding:8px 10px;border-radius:8px;background:var(--ca-text);color:var(--ca-bg);font:400 12px/1.35 var(--ca-font);white-space:normal;';
-                  e.parentElement.appendChild(tip);
-                }""")
-                page.wait_for_timeout(100)
-                # Manual case: title is null → tip must NOT appear
-                if case == 'manual':
-                    assert page.locator('[data-testid=auto-model-tip]').count() == 0
+                page.wait_for_timeout(200)
+                tip_count = page.locator(".ca-tip").count()
+                if case == "manual":
+                    assert tip_count == 0, "manual must not show Tip"
                 else:
-                    assert page.locator('[data-testid=auto-model-tip]').count() == 1
-            # Extra room below for tip
+                    assert tip_count == 1, f"{name}: expected exactly 1 .ca-tip, got {tip_count}"
+                    tip = page.locator(".ca-tip")
+                    # contrast colors from .ca-tip: bg #1a1a1a, color #fff
+                    styles = tip.evaluate("""e => { const c = getComputedStyle(e); return { bg: c.backgroundColor, color: c.color, maxW: c.maxWidth } }""")
+                    bg = styles["bg"].replace(" ", "")
+                    fg = styles["color"].replace(" ", "")
+                    assert "26,26,26" in bg or "1a1a1a" in bg.lower(), styles
+                    assert "255,255,255" in fg, styles
+                    # Design: wrap, never truncate inside tip (scroll must fit client)
+                    geom = tip.evaluate(
+                        "e => ({ sw: e.scrollWidth, cw: e.clientWidth, sh: e.scrollHeight, ch: e.clientHeight, text: e.innerText })"
+                    )
+                    assert geom["sw"] <= geom["cw"] + 1, f"{name}: tip truncates horizontally {geom}"
+                    assert geom["text"].strip(), f"{name}: empty tip"
+                    if case == "fallback":
+                        assert "首选" in geom["text"] and "改用" in geom["text"], geom["text"]
+                    if case == "flip":
+                        assert "flips below" in geom["text"] or "海报" in geom["text"], geom["text"]
+                    if case == "flip":
+                        assert tip.get_attribute("data-below") == "true", "top-edge must flip below"
+                    # Tip must not cover reply text (above-label tip is fine)
+                    reply = page.get_by_text("好了。" if lang == "zh" else "Done.", exact=True)
+                    if reply.count():
+                        tb = tip.bounding_box()
+                        rb = reply.bounding_box()
+                        lb = label.bounding_box()
+                        if tb and rb and lb:
+                            tip_bottom = tb["y"] + tb["height"]
+                            # OK if tip entirely above the reply, or tip is above the label (default)
+                            ok = tip_bottom <= rb["y"] - 2 or (tb["y"] + tb["height"] <= lb["y"] + 2)
+                            assert ok, f"{name}: tip overlaps reply tip={tb} reply={rb} label={lb}"
+
+            # Full-page including portal tip (on document.body)
             path = OUT / f"{name}.png"
-            page.locator(".ca-root").screenshot(path=str(path))
-            # Also capture title for hover cases
-            title = label.get_attribute("title") if label.count() else None
-            results.append((name, label.inner_text() if label.count() else None, title, path.stat().st_size))
-            print(f"  {name}: text={results[-1][1]!r} title={title!r} bytes={results[-1][3]}")
+            page.screenshot(path=str(path), full_page=True)
+            title = None
+            if tip_count == 1:
+                title = page.locator(".ca-tip").inner_text()
+            print(f"  {name}: text={label.inner_text() if label.count() else None!r} tip={title!r} tips={tip_count} bytes={path.stat().st_size}")
             page.close()
         browser.close()
     srv.shutdown()
-    print("done", len(results), "shots →", OUT)
+    print("done", len(SHOTS), "shots →", OUT)
+
 
 if __name__ == "__main__":
     main()

@@ -32,6 +32,7 @@ Static `ours-auto-label.html` is obsolete (fixture only); prefer the numbered PN
 | 10 | `10-skill-pose-fission.png` | pose-fission → `Auto · Nano Banana Pro` |
 | 11 | `11-legacy-no-empty.png` | No model_choice → tool fallback label, not empty Auto |
 | 12 | `12-refresh-survives.png` | Remount / same persisted blocks keep label |
+| 13 | `13-tip-flip-top-edge.png` | Top-edge: Tip auto-flips BELOW (wrap, no reply overlap) |
 
 ## Lovart vs ours (enhancement, not parity)
 | File | Notes |
@@ -45,4 +46,4 @@ Static `ours-auto-label.html` is obsolete (fixture only); prefer the numbered PN
 /workspace/pw-venv/bin/python tests/js/pill825/shoot.py
 ```
 
-Hover tips in shots: title string painted under the label (CSS `::after` also exists for real hover; label `overflow` no longer clips tips).
+Hover tips in shots: project `<Tip>` / `.ca-tip` only (native `title` removed). Colors `#1a1a1a` + `#fff` (contrast 17.40:1). Default ABOVE; auto-flip below at top edge. max-width 240px, wraps, never truncates inside tip.

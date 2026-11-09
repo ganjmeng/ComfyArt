@@ -19,6 +19,7 @@ import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
 import { attachSkill, loadSkills, skillCreatorAtom } from '../skills'
 import { openSkillEditor } from './SkillsDialog'
+import { Tip } from './Tip'
 import { autoPillLabel, autoPillTooltip, inputIsAuto, modelChoiceOfResult } from '../autoPill'
 
 const GEN_TOOLS = new Set(['generate_image', 'generate_video', 'edit_image', 'animate_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers', 'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer', 'extend_video', 'upscale_video', 'remove_video_background', 'generate_music', 'generate_sound_effect', 'text_to_speech', 'image_to_3d', 'edit_elements', 'create_mockup', 'create_slides'])
@@ -914,16 +915,28 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
               {/* #413: a live thought on the rail shows its latest line inline, like the lone Thought tip */}
               {s.live && s.kind === 'thought' && !open && thoughtCollapsedTip(s.text ?? '') ? (
                 <span className="ca-process__inline">
-                  <span className="ca-process__label ca-process__label--active" title={s.title} data-testid={s.title ? "auto-model-label" : undefined}>{s.label}</span>
+                  <span className="ca-process__label ca-process__label--active">{s.label}</span>
                   <span className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline">{thoughtCollapsedTip(s.text ?? '')}</span>
                 </span>
               ) : (
-                <span className={shine ? 'ca-process__label ca-process__label--active' : 'ca-process__label'} title={s.title} data-testid={(s.kind === 'image' || s.kind === 'video') ? 'auto-model-label' : undefined}>
-                  {s.favicon && <Favicon src={s.favicon} />}
-                  <span className="ca-process__labeltext">{s.label}</span>
-                  {isMemory && <span className="ca-process__memchev ca-icon" data-testid="memory-updated-chev">{Icons.memoryChev}</span>}
-                  {isRefAnalysis && <span className="ca-process__memchev ca-icon" data-testid="ref-analysis-chev">{Icons.memoryChev}</span>}
-                </span>
+                (() => {
+                  const labelEl = (
+                    <span
+                      className={shine ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}
+                      data-testid={(s.kind === 'image' || s.kind === 'video') ? 'auto-model-label' : undefined}
+                      aria-label={s.title || undefined}
+                    >
+                      {s.favicon && <Favicon src={s.favicon} />}
+                      <span className="ca-process__labeltext">{s.label}</span>
+                      {isMemory && <span className="ca-process__memchev ca-icon" data-testid="memory-updated-chev">{Icons.memoryChev}</span>}
+                      {isRefAnalysis && <span className="ca-process__memchev ca-icon" data-testid="ref-analysis-chev">{Icons.memoryChev}</span>}
+                    </span>
+                  )
+                  // #825: Auto reason via existing <Tip> only — never native title (double tips)
+                  return s.title
+                    ? <Tip label={s.title} wide>{labelEl}</Tip>
+                    : labelEl
+                })()
               )}
             </>
           )
