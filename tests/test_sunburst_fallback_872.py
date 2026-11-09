@@ -55,7 +55,7 @@ def test_poster_choose_tip_and_runtime_fallback(catalog):
 
 
 def test_canvas_fallback_choice_uses_row_fallback(catalog):
-    choice = canvas._fallback_choice("generate_image", {"prompt": POSTER}, SUN_T2I)
+    choice = canvas._fallback_choice("generate_image", {"prompt": POSTER, "auto_model": True}, SUN_T2I)
     assert choice["model"] == FLARE_T2I and choice["fallback"] == SUN_T2I
     assert choice["category"] == "poster_text"
     poster = next(c for c in auto_models.load_table()["text_to_image"]["categories"] if c["id"] == "poster_text")
@@ -65,7 +65,7 @@ def test_canvas_fallback_choice_uses_row_fallback(catalog):
 def test_masked_fallback_choice_uses_flare_edit(catalog):
     choice = canvas._fallback_choice(
         "edit_region",
-        {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8},
+        {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8, "auto_model": True},
         SUN_EDIT,
     )
     assert choice["model"] == FLARE_EDIT and choice["fallback"] == SUN_EDIT
@@ -120,7 +120,7 @@ def test_both_fail_never_retries_sunburst(catalog):
     fb = auto_models.table_runtime_fallback_choice("text_to_image", primary, SUN_T2I, ids)
     assert fb["model"] == FLARE_T2I
     assert auto_models.table_runtime_fallback_choice("text_to_image", fb, FLARE_T2I, ids) is None
-    choice = canvas._fallback_choice("generate_image", {"prompt": POSTER}, FLARE_T2I)
+    choice = canvas._fallback_choice("generate_image", {"prompt": POSTER, "auto_model": True}, FLARE_T2I)
     assert choice is None  # registered fallback failed → stop
 
 
@@ -130,6 +130,7 @@ async def test_timeout_cap_running_fails_logs_id_no_flare(ws, monkeypatch, caplo
     ws["status"] = "processing"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": POSTER, "confirmed": True})
     started = wavespeed._jobs[task]["started"]
+    monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 1.0)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 1.0)
     monkeypatch.setattr(wavespeed.time, "time", lambda: started + 2)
     with caplog.at_level("WARNING"):
@@ -140,7 +141,7 @@ async def test_timeout_cap_running_fails_logs_id_no_flare(ws, monkeypatch, caplo
     info = entry["status"]["messages"][0][1]
     assert info["ws_kind"] == "timeout" and info["ws_task_id"] == task
     assert info["fallback_blocked"] is True
-    assert task in caplog.text and "no Flare" in caplog.text
+    assert task in caplog.text and "no Flare" in caplog.text and "timeout=" in caplog.text
     # Tool-result shaped payload carrying the poll failure info
     tool = {"status": "error", "error": {"kind": "timeout", "fallback_blocked": True, "task_id": task},
             "model": SUN_T2I}
@@ -157,6 +158,7 @@ async def test_before_cap_running_keeps_original(ws, monkeypatch):
     ws["status"] = "processing"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": POSTER, "confirmed": True})
     started = wavespeed._jobs[task]["started"]
+    monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 100)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 100)
     monkeypatch.setattr(wavespeed.time, "time", lambda: started + 10)
     hist = await wavespeed.poll(task)
@@ -171,6 +173,7 @@ async def test_timeout_cap_status_completed_uses_original_no_flare(ws, monkeypat
     ws["status"] = "completed"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": POSTER, "confirmed": True})
     started = wavespeed._jobs[task]["started"]
+    monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 1.0)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 1.0)
     monkeypatch.setattr(wavespeed.time, "time", lambda: started + 2)
     hist = await wavespeed.poll(task)
@@ -189,3 +192,27 @@ async def test_failed_prediction_no_extra_submit(ws, monkeypatch):
     hist = await wavespeed.poll(task)
     assert hist[f"ws:{task}"]["status"]["completed"] is True
     assert len(ws["submits"]) == 1
+
+
+def test_image_vs_video_job_timeout_constants():
+    """#873: image jobs 10 min; video/other keep 30 min (split from the old shared 30 min)."""
+    assert wavespeed.IMAGE_JOB_TIMEOUT == 10 * 60
+    assert wavespeed.JOB_TIMEOUT == 30 * 60
+    assert wavespeed._job_timeout_for({"feature": "text_to_image"}) == wavespeed.IMAGE_JOB_TIMEOUT
+    assert wavespeed._job_timeout_for({"feature": "image_edit"}) == wavespeed.IMAGE_JOB_TIMEOUT
+    assert wavespeed._job_timeout_for({"feature": "text_to_video"}) == wavespeed.JOB_TIMEOUT
+    assert wavespeed._job_timeout_for({"feature": "image_to_video"}) == wavespeed.JOB_TIMEOUT
+    assert wavespeed._job_timeout_for({"feature": "music"}) == wavespeed.JOB_TIMEOUT
+
+
+def test_manual_sunburst_never_triggers_872_auto_fallback(catalog):
+    """Manually picked Sunburst must not take the #873 tip-row Flare path (no auto_model)."""
+    choice = canvas._fallback_choice(
+        "generate_image", {"prompt": POSTER, "model": SUN_T2I}, SUN_T2I)
+    assert choice is not None  # #236 may still offer the feature default after confirm
+    assert choice["category"] == "fallback"  # not poster_text / tip-row
+    assert choice["model"] == FLARE_T2I and choice["fallback"] == SUN_T2I
+    assert "首选" not in (choice.get("reason") or {}).get("zh", "")
+    tip = auto_models.pill_tooltip(choice, "zh")
+    # #873 auto tip shape is category · 首选 …; #236 fallback tip must not claim auto-picked poster row
+    assert "海报/带字 · 首选" not in tip

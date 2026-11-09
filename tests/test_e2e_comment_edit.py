@@ -344,7 +344,8 @@ async def test_comment_edit_failure_and_timeout_are_reported(page, mock_ws, monk
     pg = page
     mock_ws["status"] = "failed" if mode == "failed" else "processing"
     if mode == "timeout":
-        monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 2.0)
+        monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 2.0)
+    monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 2.0)
     panel = await _point_comment(pg, mock_ws, "把背景变成夜晚")
     await panel.get_by_role("button", name=ZH["common.generate"]).click()
     await _until(lambda: _async(len(_edits(mock_ws)) == 1))

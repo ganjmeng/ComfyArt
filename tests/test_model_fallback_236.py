@@ -57,8 +57,9 @@ def test_reply_contract_still_names_the_model():
     ("edit_image", {"id": "shape:a", "prompt": "new background, keep the same person"}, NANO, FLARE_EDIT, False),
     ("edit_image", {"id": "shape:a", "prompt": "new background, keep the same person"}, FLARE_EDIT, NANO, False),
     ("edit_image", {"id": "shape:a", "prompt": "retouch the skin"}, SEEDREAM_EDIT, FLARE_EDIT, False),
-    ("edit_region", {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8},
-     SUNBURST, FLARE_EDIT, True),  # #872 masked row fallback sets edit_model
+    ("edit_region", {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8,
+      "auto_model": True},
+     SUNBURST, FLARE_EDIT, True),  # #872/#873 Auto masked row fallback sets edit_model
     ("generate_image", {"prompt": "two refs", "refs": ["shape:a", "shape:b"]}, NANO, FLARE_EDIT, True),
 ])
 def test_fallback_follows_the_133_table(action, args, failed, model, edit):
@@ -369,3 +370,30 @@ async def test_handler_submit_uses_fallback_and_names_it(page):
     assert note.startswith(f"用了 {FLARE}，因为") and f"Used {FLARE} because" in note and SEEDREAM in note
     assert "费用规则" in _cost_block_note(SEEDREAM, FLARE, "zh")
     assert "cost rules" in _cost_block_note(SEEDREAM, FLARE, "en")
+
+
+@pytest.mark.asyncio
+async def test_236_confirm_before_fallback_never_silent(monkeypatch, page):
+    """#236/#873: manually picked models always ask before switching; never silently change models."""
+    # agree=False → confirm asked, but no second submit
+    _result, events, _seen, asked = await _turn(
+        monkeypatch,
+        [("generate_image", {"prompt": 'Movie poster with the headline "SUMMER"', "model": SUNBURST_T2I})],
+        user_text="画海报",
+        agree=False,
+    )
+    assert asked and asked[0][0] == SUNBURST_T2I
+    assert [a.get("model") for a in _gens(page)] == [SUNBURST_T2I]  # no silent switch
+    deltas = " ".join(e.text for e in events if e.t == "delta")
+    assert _no_switch_note(SUNBURST_T2I, FLARE, "zh") in deltas
+
+    page.clear()
+    _result2, _ev2, _seen2, asked2 = await _turn(
+        monkeypatch,
+        [("generate_image", {"prompt": 'Movie poster with the headline "SUMMER"', "model": SUNBURST_T2I})],
+        user_text="画海报",
+        agree=True,
+    )
+    assert asked2 and asked2[0][0] == SUNBURST_T2I and asked2[0][1] == FLARE
+    models = [a.get("model") for a in _gens(page)]
+    assert models == [SUNBURST_T2I, FLARE]  # switch only after explicit yes

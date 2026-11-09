@@ -47,6 +47,7 @@ async def test_no_task_id_is_failed_with_cost(ws):  # noqa: F811
 
 async def test_poll_timeout_recovered_with_saved_id(ws, monkeypatch):  # noqa: F811
     task = await wavespeed.submit(dict(BODY))  # mock finishes at once
+    monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 0.0)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
     hist = await wavespeed.poll(task)
     assert hist[f"ws:{task}"]["generation_succeeded"] is True

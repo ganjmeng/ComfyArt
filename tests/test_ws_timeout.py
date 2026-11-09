@@ -16,6 +16,7 @@ async def test_local_timeout_has_kind_and_amount(ws, monkeypatch):  # noqa: F811
     ws["status"] = "processing"
     ws["prices"]["wavespeed-ai/minimax-h3/text-to-video"] = 0.32
     task = await wavespeed.submit({"feature": "text_to_video", "model": "wavespeed-ai/minimax-h3/text-to-video", "prompt": "x", "duration": 5})
+    monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 0.0)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
     info = _info(await wavespeed.poll(task), task)
     assert "timed out" in info["exception_message"]
@@ -35,6 +36,7 @@ async def test_timeout_without_price_has_no_amount(ws, monkeypatch):  # noqa: F8
     ws["status"] = "processing"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x", "confirmed": True})
     wavespeed._jobs[task].pop("model", None)  # nothing to quote
+    monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 0.0)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
     info = _info(await wavespeed.poll(task), task)
     assert info["ws_kind"] == "timeout" and "ws_charged" not in info

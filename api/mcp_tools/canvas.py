@@ -224,8 +224,8 @@ def _fallback_choice(action: str, args: dict, failed: str) -> dict | None:
     if registered_fb and failed == registered_fb:
         log.warning("#872: registered fallback %s also failed; not retrying primary %s", failed, primary.get("model"))
         return None
-    # #872: prefer the row's registered runtime fallback (Sunburst → Flare) — same shape as skill_fallback
-    row_fb = table_runtime_fallback_choice(feature, primary, failed, ids)
+    # #872/#873: runtime table fallback (Sunburst → Flare) only for Auto rows, never manual picks (#236 confirm path).
+    row_fb = table_runtime_fallback_choice(feature, primary, failed, ids) if args.get("auto_model") else None
     if row_fb:
         if action == "generate_image" and (clean.get("refs") or clean.get("base")):
             row_fb = {**row_fb, "edit_model": row_fb["model"]}
