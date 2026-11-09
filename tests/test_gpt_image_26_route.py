@@ -121,22 +121,43 @@ def test_explicit_quality_is_sent_and_unset_is_not(local):
     assert "quality" not in _gen(_Session.posts)[-1][1]
 
 
-def test_gif_stays_26_t2i_and_still_reference_is_not_a_video(local):
-    asyncio.run(wavespeed.submit({"feature": "text_to_image", "prompt": "做成动图"}))
-    url, body = _gen(_Session.posts)[-1]
-    assert url.endswith("/" + T2I)
+def test_gif_stays_26_t2i_and_still_reference_is_not_a_video(local, monkeypatch):
+    """Default GIF is Replicate 2.6: unpriced confirm first, then dry-run POST with frames."""
+    from ComfyArt.api import provider_admin
+    posts = []
+
+    async def post(url, body, token):
+        posts.append((url, body))
+        return "dry-run-no-network"
+
+    monkeypatch.setenv("REPLICATE_API_TOKEN", "r8_test_not_a_real_token")
+    monkeypatch.setenv("COMFYART_REPLICATE_DRY_RUN", "1")
+    monkeypatch.setattr(provider_admin, "_post_prediction", post)
+    with pytest.raises(wavespeed.WaveSpeedError) as caught:
+        asyncio.run(wavespeed.submit({"feature": "text_to_image", "prompt": "做成动图"}))
+    assert caught.value.status == 409 and caught.value.unpriced and caught.value.confirm_token
+    assert caught.value.gif and caught.value.gif["frame_count"] == 9
+    assert _Session.posts == [] and posts == []
+    task = asyncio.run(wavespeed.submit({
+        "feature": "text_to_image", "prompt": "做成动图", "confirm_token": caught.value.confirm_token,
+    }))
+    assert task == "dry-run-no-network"
+    assert len(posts) == 1
+    url, body = posts[0]
+    assert url.endswith("/openai/gpt-image-2.6-flare/predictions")
     assert "video" not in url and "/edit" not in url
-    assert body["output_format"] == "gif" and body["frame_count"] == 9 and body["frame_duration_ms"] == 200
-    assert "quality" not in body
-    assert "frame_count" not in _price(_Session.posts)[-1][1]["inputs"]
+    inp = body["input"]
+    assert inp["output_format"] == "gif" and inp["frame_count"] == 9 and inp["frame_duration_ms"] == 200
+    assert "quality" not in inp
     _Session.posts = []
+    posts.clear()
     with pytest.raises(wavespeed.WaveSpeedError) as err:
         asyncio.run(wavespeed.submit({
             "feature": "image_edit", "model": EDIT_25, "image": "https://cdn.test/still.png",
             "prompt": "把这张做成动图", "output_format": "gif",
         }))
     assert err.value.status == 400 and err.value.kind == "gifStillUnsupported"
-    assert _Session.posts == []
+    assert _Session.posts == [] and posts == []
 
 
 def test_quote_and_confirm_name_the_same_model_as_submit(local, monkeypatch):
@@ -194,62 +215,73 @@ def test_still_gif_makes_zero_price_and_generation_posts(local):
 
 
 def test_confirm_fields_carry_effective_frames_from_the_request_local_mock(local, monkeypatch):
-    """The 0.05 figure is this file's local stand-in, not a live WaveSpeed price API response."""
-    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0)
+    """Default Replicate GIF confirm is unpriced and still carries clamped frames. No WaveSpeed quote."""
+    monkeypatch.setenv("REPLICATE_API_TOKEN", "r8_test_not_a_real_token")
     high = {"feature": "text_to_image", "prompt": "loop", "params": {"output_format": "gif", "frame_count": 99, "frame_duration_ms": 5}}
     with pytest.raises(wavespeed.WaveSpeedError) as err:
         asyncio.run(wavespeed.submit(dict(high)))
     payload = json.loads(wavespeed._respond_error(err.value).body)["error"]
-    assert payload["confirm_usd"] == 0.05
+    assert payload["unpriced"] is True and payload["confirm_usd"] is None
+    assert payload.get("confirm_token")
     assert payload.get("estimate") is not True
     assert payload["gif"] == {
         "frame_count": 16, "frame_duration_ms": 20,
         "asked_frame_count": 99, "asked_frame_duration_ms": 5,
     }
+    assert "16f" in (payload.get("tier") or "") and "20ms" in (payload.get("tier") or "")
     assert _gen(_Session.posts) == []
-    assert _price(_Session.posts), "the local stand-in recorded the quote"
+    assert _price(_Session.posts) == []
     _Session.posts = []
     low = {"feature": "text_to_image", "prompt": "loop", "params": {"output_format": "gif", "frame_count": 1}}
     with pytest.raises(wavespeed.WaveSpeedError) as low_err:
         asyncio.run(wavespeed.submit(dict(low)))
-    low_gif = json.loads(wavespeed._respond_error(low_err.value).body)["error"]["gif"]
+    low_body = json.loads(wavespeed._respond_error(low_err.value).body)["error"]
+    low_gif = low_body["gif"]
     assert low_gif["frame_count"] == 2 and low_gif["frame_duration_ms"] == 200
     assert low_gif["asked_frame_count"] == 1
     assert "asked_frame_duration_ms" not in low_gif
+    assert low_body["unpriced"] is True and low_body.get("confirm_token")
     assert _gen(_Session.posts) == []
-
-    async def unpriced(model, inputs):
-        return None, "unpriced"
-
-    monkeypatch.setattr(wavespeed, "quote", unpriced)
-    _Session.posts = []
-    with pytest.raises(wavespeed.WaveSpeedError) as none:
-        asyncio.run(wavespeed.submit(dict(high)))
-    body = json.loads(wavespeed._respond_error(none.value).body)["error"]
-    assert body["unpriced"] is True and body["confirm_usd"] is None
-    assert body["gif"]["frame_count"] == 16 and body["gif"]["asked_frame_count"] == 99
-    assert body["gif"]["frame_duration_ms"] == 20
     assert _Session.posts == []
 
 
 def test_clamped_frame_count_matches_across_quote_confirm_and_post(local, monkeypatch):
+    """Replicate default: estimate and 409 confirm share clamped frames; confirm_token unlocks dry-run POST."""
+    from ComfyArt.api import provider_admin
+    posts = []
+
+    async def post(url, body, token):
+        posts.append((url, body))
+        return "dry-run-no-network"
+
+    monkeypatch.setenv("REPLICATE_API_TOKEN", "r8_test_not_a_real_token")
+    monkeypatch.setenv("COMFYART_REPLICATE_DRY_RUN", "1")
+    monkeypatch.setattr(provider_admin, "_post_prediction", post)
     job = {"feature": "text_to_image", "prompt": "loop", "params": {"output_format": "gif", "frame_count": 99, "frame_duration_ms": 5}}
     est = asyncio.run(wavespeed.estimate(dict(job)))
+    assert est["provider"] == "replicate" and est["price"] is None
     assert est["gif"]["frame_count"] == 16 and est["gif"]["frame_duration_ms"] == 20
     assert "16f" in est["tier"] and "20ms" in est["tier"]
-    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0)
     with pytest.raises(wavespeed.WaveSpeedError) as err:
         asyncio.run(wavespeed.submit(dict(job)))
-    assert err.value.status == 409 and "16f" in err.value.tier and "20ms" in err.value.tier
-    monkeypatch.setattr(wavespeed, "confirm_usd", lambda: 0.5)
+    assert err.value.status == 409 and err.value.unpriced and err.value.confirm_token
+    assert "16f" in err.value.tier and "20ms" in err.value.tier
+    assert err.value.gif["frame_count"] == 16 and err.value.gif["asked_frame_count"] == 99
     _Session.posts = []
-    task = asyncio.run(wavespeed.submit(dict(job)))
-    assert task == "local-task"
-    body = _gen(_Session.posts)[-1][1]
+    posts.clear()
+    task = asyncio.run(wavespeed.submit({**job, "confirm_token": err.value.confirm_token}))
+    assert task == "dry-run-no-network"
+    assert _Session.posts == []
+    assert len(posts) == 1
+    body = posts[0][1]["input"]
     assert body["frame_count"] == 16 and body["frame_duration_ms"] == 20
-    low = {"feature": "text_to_image", "prompt": "loop", "params": {"output_format": "gif", "frame_count": 1}}
-    assert asyncio.run(wavespeed.submit(low)) == "local-task"
-    assert _gen(_Session.posts)[-1][1]["frame_count"] == 2
+    provider_admin._runs.clear()
+    low = {"feature": "text_to_image", "prompt": "loop-low", "params": {"output_format": "gif", "frame_count": 1}}
+    with pytest.raises(wavespeed.WaveSpeedError) as low_err:
+        asyncio.run(wavespeed.submit(dict(low)))
+    posts.clear()
+    assert asyncio.run(wavespeed.submit({**low, "confirm_token": low_err.value.confirm_token})) == "dry-run-no-network"
+    assert posts[-1][1]["input"]["frame_count"] == 2
 
 
 def test_gif_copy_names_26_as_the_unnamed_model():

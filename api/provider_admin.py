@@ -663,12 +663,55 @@ def _known_quote(price, source: str) -> bool:
     return source == "quote" and isinstance(price, (int, float)) and not isinstance(price, bool)
 
 
-async def _replicate_execute(decision: dict, inputs: dict) -> str:
+def _reject_still_gif(inputs: dict) -> None:
+    """Still + GIF is refused on every provider path before quote or POST."""
+    from . import gif_image
     from .wavespeed import WaveSpeedError
+    if isinstance(inputs, dict) and gif_image.requests_gif(inputs) and gif_image.has_still(inputs):
+        raise WaveSpeedError(gif_image.refusal_text(), 400, kind="gifStillUnsupported")
+
+
+def _prepare_gif_inputs(inputs: dict) -> dict:
+    """Clamp GIF frames onto the request the confirm and Replicate POST will share."""
+    from . import gif_image
+    if not isinstance(inputs, dict) or not gif_image.requests_gif(inputs):
+        return inputs
+    return gif_image.route_gif(dict(inputs))
+
+
+def _gif_tier_label(inputs: dict) -> str:
+    params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+    count = params.get("frame_count", inputs.get("frame_count"))
+    ms = params.get("frame_duration_ms", inputs.get("frame_duration_ms"))
+    parts = ["GIF"]
+    if count not in (None, ""):
+        parts.append(f"{count}f")
+    if ms not in (None, ""):
+        parts.append(f"{ms}ms")
+    return " · ".join(parts)
+
+
+def _estimate_gif_body(inputs: dict) -> dict | None:
+    if not inputs.get("gif_route"):
+        return None
+    params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+    return {
+        "output_format": "gif",
+        "frame_count": params.get("frame_count"),
+        "frame_duration_ms": params.get("frame_duration_ms"),
+        "priced_as": "still",
+    }
+
+
+async def _replicate_execute(decision: dict, inputs: dict) -> str:
+    from .wavespeed import WaveSpeedError, _gif_confirm
     if decision.get("unsupported"):
         raise WaveSpeedError("这个能力没有已实现的 Replicate 路由，未发送请求", 400, kind="unsupported")
     if not _env_configured("REPLICATE_API_TOKEN"):
         raise WaveSpeedError("Replicate 未配置 REPLICATE_API_TOKEN，未发送请求", 400, kind="provider_unconfigured")
+    _reject_still_gif(inputs)
+    if decision.get("capability") in {"text_to_gif", "reference_gif"}:
+        inputs = _prepare_gif_inputs(inputs)
     price, source = await _quote_status(decision, inputs)
     if not _known_quote(price, source):
         presented = str(inputs.get("confirm_token") or "")
@@ -677,6 +720,10 @@ async def _replicate_execute(decision: dict, inputs: dict) -> str:
             err = WaveSpeedError(
                 "这次没有可核对的封顶价。确认只表示同意按实际用量计费，不确认就不会发送。",
                 409, unpriced=True, kind="confirm",
+                tier=_gif_tier_label(inputs) if inputs.get("gif_route") else "",
+                model=str(decision.get("model") or ""),
+                gif=_gif_confirm(inputs),
+                gif_note=str(inputs.get("gif_note") or ""),
             )
             err.confirm_token = issued
             raise err
@@ -821,11 +868,13 @@ def _gif_replicate_model(inputs: dict) -> str:
 
 
 def _default_gif_route(tool: str | None, inputs: dict, revision: int) -> dict | None:
+    """Pure text GIF defaults to Replicate 2.6. Still+GIF is refused, never reference_gif."""
     from .tool_routing import capability_for
     if tool not in {"to_gif", "generate_image"}:
         return None
     cap = capability_for(tool, inputs)
-    if cap not in {"text_to_gif", "reference_gif"}:
+    # Still+GIF is refused before quote/POST; default never opens reference_gif.
+    if cap != "text_to_gif":
         return None
     return {
         "passthrough": False,
@@ -956,6 +1005,7 @@ async def dispatch_submit(inputs, orig):
     from .tool_routing import logical_key
     if not isinstance(inputs, dict):
         return await orig(inputs)
+    _reject_still_gif(inputs)
     decision = _snapshot(inputs)
     if _route_changed(inputs, decision):
         raise _stop("route_changed")
@@ -986,10 +1036,12 @@ async def dispatch_submit(inputs, orig):
 async def dispatch_estimate(inputs, orig):
     if not isinstance(inputs, dict):
         return await orig(inputs)
+    _reject_still_gif(inputs)
     decision = _snapshot(inputs)
     _remember(inputs, decision)
     if decision.get("passthrough") or decision.get("primary", {}).get("provider") == "wavespeed":
         return await orig(inputs)
+    prepared = _prepare_gif_inputs(inputs) if decision.get("capability") in {"text_to_gif", "reference_gif"} else inputs
     body = _estimate_body(decision)
     body["tool"] = decision.get("tool")
     body["model"] = decision["primary"]["model"]
@@ -1001,6 +1053,12 @@ async def dispatch_estimate(inputs, orig):
     body["confirm"] = True
     body["price"] = None
     body["billing"] = "token_no_cap"
+    gif = _estimate_gif_body(prepared)
+    if gif:
+        body["gif"] = gif
+        body["gif_route"] = prepared.get("gif_route")
+        body["gif_note"] = prepared.get("gif_note") or ""
+        body["tier"] = _gif_tier_label(prepared)
     return body
 
 
