@@ -26,8 +26,8 @@ from __future__ import annotations
 from ComfyArt.api import auto_models
 from ComfyArt.api.mcp_tools import canvas
 
-FLARE_T2I = "openai/gpt-image-2.5-flare/text-to-image"
-FLARE_EDIT = "openai/gpt-image-2.5-flare/edit"
+FLARE_T2I = "openai/gpt-image-2.6-flare/text-to-image"
+FLARE_EDIT = "openai/gpt-image-2.6-flare/edit"
 SEEDREAM = "bytedance/seedream-v5.0-pro"
 SEEDREAM_EDIT = "bytedance/seedream-v5.0-pro/edit"
 NANO_T2I = "google/nano-banana-2.1/text-to-image"

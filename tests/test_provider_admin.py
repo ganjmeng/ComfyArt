@@ -212,9 +212,10 @@ async def test_unknown_price_and_incompatible_backup_do_not_switch(monkeypatch):
 
     monkeypatch.setattr(provider_admin, "_post_prediction", post)
     monkeypatch.setattr(provider_admin, "_quote_override", priced)
+    # Product rule: still+GIF never reaches a provider POST, so WaveSpeed cannot be a backup for it.
     with pytest.raises(WaveSpeedError) as caught:
         await wavespeed.submit({"tool": "to_gif", "feature": "text_to_image", "prompt": "loop", "image": "https://cdn.example/a.png", "params": {"output_format": "gif"}})
-    assert caught.value.kind == "incompatible" and len(seen) == 1
+    assert caught.value.kind == "gifStillUnsupported" and len(seen) == 0
 
 
 async def test_concurrent_submit_is_idempotent(monkeypatch):
@@ -438,8 +439,12 @@ async def test_gif_defaults_to_replicate_26_and_llm_defaults_official(monkeypatc
         "active": {"primary": {"provider": "wavespeed", "model": "existing"}, "backup": None, "fallback": False},
         "previous": None,
     })
-    ref = {"tool": "to_gif", "feature": "text_to_image", "prompt": "keep", "image": "https://cdn.example/a.png", "params": {"output_format": "gif"}}
+    # Explicit WaveSpeed to_gif: pure text GIF passes through. Still+GIF is refused before provider.
+    ref = {"tool": "to_gif", "feature": "text_to_image", "prompt": "keep", "params": {"output_format": "gif"}}
     assert await provider_admin.dispatch_submit(ref, orig) == "wave"
+    with pytest.raises(WaveSpeedError) as still:
+        await provider_admin.dispatch_submit({**ref, "image": "https://cdn.example/a.png"}, orig)
+    assert still.value.kind == "gifStillUnsupported"
     route = provider_admin.llm_route()
     assert route["model"] == "deepseek-flash" and route["base_url"] == "https://api.deepseek.com"
     monkeypatch.delenv("DEEPSEEK_API_KEY")

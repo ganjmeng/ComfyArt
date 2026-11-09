@@ -62,6 +62,6 @@ def test_dropdown_follows_backend_picker_order_and_shows_display_name(result):
 
 def test_frontend_reads_backend_default_without_reordering(result):
     # #134: the default comes from the backend's single 'default' value; the dropdown keeps its order
-    assert result["defaultT2i"] == "openai/gpt-image-2.5-flare/text-to-image"
-    assert result["agentFirst"] == "openai/gpt-image-2.5-flare/text-to-image"
+    assert result["defaultT2i"] == "openai/gpt-image-2.6-flare/text-to-image"
+    assert result["agentFirst"] == "openai/gpt-image-2.6-flare/text-to-image"
     assert result["tabs"]["text_to_image"][0] == "openai/gpt-image-2/text-to-image"

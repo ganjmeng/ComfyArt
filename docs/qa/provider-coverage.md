@@ -226,4 +226,3 @@ Replicate 集合页见过 nano-banana、FLUX.3、Seedream 4.5、Ideogram 4.5、K
 现有链路不使用 SSE 流式。工具调用形状按官方非思考文档对齐，本环境未做付费实测。
 价格未知。不保存不改变活动配置。无密钥则新任务失败，不回退 WaveSpeed。
 不能据此认为任意 OpenAI 兼容模型都可以换上。
-

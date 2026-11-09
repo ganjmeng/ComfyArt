@@ -185,8 +185,13 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
       setSmart(false)
     }
   }
+  const gifBlocked = !!gifSpec(shape.meta) && (refs.length > 0 || !!base)
   const submit = () => {
     if (!ready) return
+    if (gifBlocked) {
+      onError(t('imageToolbar.gifUnsupported'))
+      return
+    }
     generate(editor, shape, onError).catch((e) => onError(errorText(e)))
   }
 
@@ -298,9 +303,9 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
           }
         }}
       />}
-      {(adjusted || overflow != null) && (
-        <div className="ca-gen__notice" role="status" data-testid="gen-notice">
-          {[adjusted && t('genPanel.adjusted'), overflow != null && t('genPanel.refsCapped', overflow)].filter(Boolean).join(' · ')}
+      {(adjusted || overflow != null || gifBlocked) && (
+        <div className="ca-gen__notice" role="status" data-testid={gifBlocked ? 'gif-still-unsupported' : 'gen-notice'}>
+          {[gifBlocked && t('imageToolbar.gifUnsupported'), adjusted && t('genPanel.adjusted'), overflow != null && t('genPanel.refsCapped', overflow)].filter(Boolean).join(' · ')}
         </div>
       )}
       <div className="ca-gen__foot">
@@ -322,7 +327,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
             update({ workflow: id, ...patch })
           }} />
         {unpriced && estimate == null && <span className="ca-gen__est" data-testid="ws-estimate" title={t('wsKey.unpriced')}>{t('wsKey.unpricedTag')}</span>}
-        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={[estimated ? t('wsKey.estimated', `$${estimate}`) : t('wsKey.estimate', `$${estimate}`), estDetail?.tier].filter(Boolean).join(' · ')}>{`${estimated ? `${t('wsKey.estimatedTag')} ` : ''}≈$${usd(estimate)}${estDetail?.tier ? ` · ${estDetail.tier}` : ''}`}</span>}
+        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={[estDetail?.model, estimated ? t('wsKey.estimated', `$${estimate}`) : t('wsKey.estimate', `$${estimate}`), estDetail?.tier].filter(Boolean).join(' · ')}>{`${estimated ? `${t('wsKey.estimatedTag')} ` : ''}≈$${usd(estimate)}${estDetail?.tier ? ` · ${estDetail.tier}` : ''}`}</span>}
         <button type="button" className="ca-gen__send" disabled={!ready || noCredit} title={noCredit ? t('wsKey.needCredit') : estimate != null ? `${t('common.generate')} · ${t('wsKey.estimate', `$${estimate}`)}` : t('common.generate')} onClick={submit}>
           <span className="ca-icon">{Icons.send}</span>
         </button>

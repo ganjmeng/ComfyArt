@@ -46,12 +46,12 @@ def default(feature):
 
 def test_same_prompt_many_turns_same_model():
     picks = {run("generate_image", prompt="a cup of coffee on a table")["model_choice"]["model"] for _ in range(5)}
-    assert picks == {default("text_to_image")} == {"openai/gpt-image-2.5-flare/text-to-image"}
+    assert picks == {default("text_to_image")} == {"openai/gpt-image-2.6-flare/text-to-image"}
     assert all("model" not in a for _, a in SENT)  # default path unchanged: page resolves Auto
 
 
 @pytest.mark.parametrize("prompt,model", [
-    ("Movie poster with the headline \"SUMMER\"", "openai/gpt-image-2.5-flare/text-to-image"),
+    ("Movie poster with the headline \"SUMMER\"", "openai/gpt-image-2.6-flare/text-to-image"),
     ("Photorealistic portrait of an old fisherman", "bytedance/seedream-v5.0-pro"),
     ("Anime girl under cherry blossoms", "midjourney/text-to-image"),
     ("一张写实人像", "bytedance/seedream-v5.0-pro"),

@@ -45,7 +45,7 @@
     },
     {
      "id": "poster_text",
-     "model": "openai/gpt-image-2.5-flare/text-to-image",
+     "model": "openai/gpt-image-2.6-flare/text-to-image",
      "zh": "这是海报 / 信息图 / 带文字的任务",
      "en": "this is a poster, infographic or text-heavy task",
      "keywords": [

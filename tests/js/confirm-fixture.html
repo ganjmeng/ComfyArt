@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LOCAL FIXTURE confirm</title>
+  </head>
+  <body>
+    <script>document.documentElement.dataset.boot = 'html'; window.addEventListener('error', (e) => { document.documentElement.dataset.err = String(e.message || e.error || 'error').slice(0, 240) })</script>
+    <p data-testid="fixture-label">LOCAL FIXTURE · mock price 0.05 · not a live price API</p>
+    <div id="root"></div>
+    <script type="module" src="./confirmFixture.tsx"></script>
+  </body>
+</html>
