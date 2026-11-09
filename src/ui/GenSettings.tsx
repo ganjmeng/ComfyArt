@@ -127,8 +127,8 @@ function GifFrames({ gif, onGif }: { gif: GifSpec; onGif: (next: GifSpec | null)
   return (
     <>
       <div className="ca-style__row">
-        <label className="ca-num"><span>{t('imageToolbar.gifFrames')}</span><input type="number" min={2} max={16} value={frames} onChange={(e) => onGif({ ...gif, frame_count: clampFrameCount(e.target.value) })} /></label>
-        <label className="ca-num"><span>{t('imageToolbar.gifMs')}</span><input type="number" min={20} max={2000} value={ms} onChange={(e) => onGif({ ...gif, frame_duration_ms: clampFrameMs(e.target.value) })} /></label>
+        <label className="ca-num"><span>{t('gen.frameCount')}</span><input type="number" min={2} max={16} value={frames} onChange={(e) => onGif({ ...gif, frame_count: clampFrameCount(e.target.value) })} /></label>
+        <label className="ca-num"><span>{t('gen.frameDuration')}</span><input type="number" min={20} max={2000} value={ms} onChange={(e) => onGif({ ...gif, frame_duration_ms: clampFrameMs(e.target.value) })} /></label>
       </div>
       <div className="ca-chat__hint">{t('genSettings.gifNote')}</div>
     </>
@@ -209,13 +209,18 @@ export function GenSettings({ p, video, quality, tiers, caps, update, complexiti
           {(!!caps?.outputFormats?.includes('gif') || !!caps?.outputFormats?.includes('svg')) && (onGif || onSvg) && (
             <>
               <div className="ca-gen__label">{t('genSettings.format')}</div>
-              <Chips value={gif ? 'gif' : svg ? 'svg' : ''} options={[['', t('common.default')], ...(caps?.outputFormats?.includes('gif') ? [['gif', 'GIF'] as [string, string]] : []), ...(caps?.outputFormats?.includes('svg') ? [['svg', 'SVG'] as [string, string]] : [])]} onPick={(v) => {
+              <Chips value={gif ? 'gif' : svg ? 'svg' : ''} options={[['', t('common.default')], ...(caps?.outputFormats?.includes('gif') ? [['gif', t('gen.outputGif')] as [string, string]] : []), ...(caps?.outputFormats?.includes('svg') ? [['svg', t('gen.outputSvg')] as [string, string]] : [])]} onPick={(v) => {
                 if (v === 'gif') { onSvg?.(null); onGif?.({ output_format: 'gif', frame_count: gif?.frame_count ?? 9, frame_duration_ms: gif?.frame_duration_ms ?? 200 }) }
                 else if (v === 'svg') { onGif?.(null); onSvg?.({ output_format: 'svg', n: 1 }); update({ count: 1 }) }
                 else { onGif?.(null); onSvg?.(null) }
               }} gen />
               {gif && onGif && <GifFrames gif={gif} onGif={onGif} />}
-              {svg && <div className="ca-chat__hint">{t('genSettings.svgNote')}</div>}
+              {svg && (
+                <>
+                  <div className="ca-chat__hint" data-testid="gen-svg-preview-hint">{t('gen.svgPreviewHint')}</div>
+                  <div className="ca-chat__hint">{t('genSettings.svgNote')}</div>
+                </>
+              )}
             </>
           )}
           <div className="ca-gen__label">{t('refModes.style')}</div>

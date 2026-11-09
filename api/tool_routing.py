@@ -254,7 +254,10 @@ def public_choices(tool: dict) -> list[dict]:
         "enabled": not ban_ws, "quote": "provider",
         "reason": "静图转动图主线路禁止 WaveSpeed，请用 Replicate" if ban_ws else "",
         "backup": bool(tool["wavespeed_backup"]),
-        "backup_reason": "" if tool["wavespeed_backup"] else "这个工具的结果 WaveSpeed 接不住，不能当备选",
+        "backup_reason": (
+            "静图转动图不可用 WaveSpeed 作备选" if ban_ws
+            else ("" if tool["wavespeed_backup"] else "这个工具的结果 WaveSpeed 接不住，不能当备选")
+        ),
     }]
     for model in CONNECTED:
         ok, reason = choice_enabled(tool, "replicate", model)

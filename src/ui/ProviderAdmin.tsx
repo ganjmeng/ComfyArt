@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { lang } from '../i18n'
+import { lang, t, tn } from '../i18n'
 import {
   checkLlm,
   rehearseLlm,
@@ -35,9 +35,9 @@ const GROUPS = [
 ] as const
 
 function failText(e: unknown) {
-  if (e instanceof ProviderAdminError && e.code === 'needs_key') return tx('还没有 Replicate 密钥，不能启用。正在用的线路没变。', 'No Replicate key, so this cannot be turned on. The live route is unchanged.')
+  if (e instanceof ProviderAdminError && e.code === 'needs_key') return tn('provider.keyMissingDraft', { key: 'REPLICATE_API_TOKEN' })
   if (e instanceof ProviderAdminError) return e.message
-  return tx('没有保存成功。请检查网络后再试。', 'Could not save. Check the connection and try again.')
+  return t('provider.saveFailed')
 }
 
 function blank(): ToolRoute {
@@ -230,21 +230,32 @@ export function ProviderAdmin() {
                 <h3>{lt(current.label)}</h3>
                 <p className="ca-prov__blurb">{lt(current.blurb)}</p>
                 <p className="ca-prov__now" data-testid="provider-effective">
-                  {tx('现在生效', 'Live now')}
+                  {t('provider.nowActive')}
                   <b>{liveText(current)}</b>
                 </p>
                 {!current.connected && <p className="ca-prov__quiet" data-testid="provider-unverified">{tx('这条先继续用 WaveSpeed。Replicate 还没接通，不是不能用。', 'This stays on WaveSpeed. Replicate is not wired yet, which is not the same as unusable.')}</p>}
-                {current.gif_default && current.effective.provider !== 'replicate' && <p className="ca-prov__quiet" data-testid="provider-gif-default">{tx('文生 GIF 和参考图 GIF 默认走 Replicate，型号与这次请求里的 GPT Image 2.6 相同；没点名就是 Flare。静图不改。没有密钥不会改回 WaveSpeed。', 'Text GIFs and reference GIFs default to Replicate, using the same GPT Image 2.6 named in the request, or Flare when none is named. Stills stay. A missing key does not fall back to WaveSpeed.')}</p>}
-                {current.blocked === 'needs_key' && <p className="ca-prov__banner" data-testid="provider-nokey">{tx('还没有 Replicate 密钥。这条默认不能用，也不会改回 WaveSpeed。', 'No Replicate key. This default cannot run, and it does not fall back to WaveSpeed.')}</p>}
+                {current.gif_default && current.effective.provider !== 'replicate' && <p className="ca-prov__quiet" data-testid="provider-gif-default">{tx('文生 GIF 和参考图 GIF 默认走 Replicate，型号与这次请求里的 GPT Image 2.6 相同；没点名就是 Flare。静图不改。没有密钥不会改回 WaveSpeed。', 'Text GIFs and reference GIFs default to Replicate, using the same GPT Image 2.6 named in the request, or Flare when none is named. Stills stay. A missing key does not fall back to WaveSpeed.')} <span data-testid="provider-flare-default">{t('provider.flareDefault')}</span></p>}
+                {current.id === 'to_gif' && current.effective.source === 'default' && <p className="ca-prov__quiet" data-testid="provider-to-gif-default-model">{t('provider.flareDefault')}</p>}
+                {current.blocked === 'needs_key' && <p className="ca-prov__banner" data-testid="provider-nokey">{tn('provider.keyMissingDraft', { key: 'REPLICATE_API_TOKEN' })}</p>}
                 <div className="ca-prov__block">
                   <h4>{tx('主线路', 'Primary')}</h4>
-                  <ChoiceList value={draft.primary} choices={current.choices} testId="provider-primary" onChange={(primary) => setDrafts({ ...drafts, [current.id]: { ...draft, primary } })} />
+                  <ChoiceList value={draft.primary} choices={current.choices} toolId={current.id} role="primary" testId="provider-primary" onChange={(primary) => setDrafts({ ...drafts, [current.id]: { ...draft, primary } })} />
                 </div>
                 <div className="ca-prov__block">
                   <h4>{tx('备选', 'Backup')}</h4>
                   <ChoiceList
                     value={draft.backup || { provider: '', model: '' }}
-                    choices={[{ provider: '', model: '', label: { zh: '不设备选', en: 'No backup' }, enabled: current.connected, quote: '', reason: current.connected ? '' : tx('还没有可接通的备选', 'No wired backup yet') }, ...current.choices.filter((choice) => !(choice.provider === draft.primary.provider && choice.model === draft.primary.model)).map((choice) => choice.backup === false ? { ...choice, enabled: false, reason: choice.backup_reason || choice.reason } : choice)]}
+                    choices={[{ provider: '', model: '', label: { zh: '不设备选', en: 'No backup' }, enabled: current.connected, quote: '', reason: current.connected ? '' : tx('还没有可接通的备选', 'No wired backup yet') }, ...current.choices.filter((choice) => !(choice.provider === draft.primary.provider && choice.model === draft.primary.model)).map((choice) => {
+                      if (choice.backup === false) {
+                        const reason = current.id === 'to_gif' && choice.provider === 'wavespeed'
+                          ? t('provider.gifAltWavespeedBlocked')
+                          : (choice.backup_reason || choice.reason)
+                        return { ...choice, enabled: false, reason }
+                      }
+                      return choice
+                    })]}
+                    toolId={current.id}
+                    role="backup"
                     testId="provider-backup"
                     onChange={(backup) => setDrafts({ ...drafts, [current.id]: { ...draft, backup: backup.provider ? backup : null, fallback: backup.provider ? draft.fallback : false } })}
                   />
@@ -254,8 +265,23 @@ export function ProviderAdmin() {
                   <span>{tx('主线路明确没受理时，自动试一次备选', 'If the primary clearly never created a task, try the backup once')}</span>
                 </label>
                 {dirty && <p className="ca-prov__impact" data-testid="provider-impact">{impact(current, draft)}</p>}
+                {dirty && !same(liveBaseline(current).primary, draft.primary) && (
+                  <div className="ca-prov__pending" role="status" data-testid="provider-route-pending">
+                    <p>{tn('provider.routePending', { next: providerName(draft.primary.provider), prev: providerName(liveBaseline(current).primary.provider) })}</p>
+                    <div className="ca-prov__pending-actions">
+                      <button type="button" className="ca-prov__btn" data-testid="provider-route-cancel" disabled={busy} onClick={() => {
+                        const next = { ...drafts }
+                        delete next[current.id]
+                        setDrafts(next)
+                        setError('')
+                        setNotice('')
+                      }}>{t('common.cancel')}</button>
+                      <button type="button" className="ca-prov__btn ca-prov__btn--primary" data-testid="provider-route-confirm" disabled={busy || (draft.primary.provider === 'replicate' && !current.key_ok)} onClick={() => saveOne(true)}>{t('provider.confirmRoute')}</button>
+                    </div>
+                  </div>
+                )}
                 {(current.blocked === 'needs_user_confirm' || current.blocked === 'quote_unknown') && current.effective.source === 'saved' && <p className="ca-prov__banner" role="status" data-testid="provider-blocked">{tx('已保存。Replicate 按质量和输入计费，官方没有给出硬上限，这里不编造价格。下次生成会先问使用的人；不同意就不会发送。管理员保存不等于别人同意付费。', 'Saved. Replicate bills by quality and inputs, and the official page gives no hard cap, so no price is invented here. The next run asks the person generating; declining sends nothing. An admin save is not someone else agreeing to pay.')}</p>}
-                {!current.key_ok && current.blocked !== 'needs_key' && draft.primary.provider === 'replicate' && <p className="ca-prov__banner" data-testid="provider-nokey">{tx('还没有 Replicate 密钥。可以先留草稿，不能启用。', 'No Replicate key yet. You can keep a draft, but you cannot turn it on.')}</p>}
+                {!current.key_ok && current.blocked !== 'needs_key' && draft.primary.provider === 'replicate' && <p className="ca-prov__banner" data-testid="provider-nokey">{tn('provider.keyMissingDraft', { key: 'REPLICATE_API_TOKEN' })}</p>}
                 {notice && <p className="ca-prov__banner" role="status" data-testid="provider-saved">{notice}</p>}
                 {error && <p className="ca-prov__banner" role="alert" data-testid="provider-error">{error}</p>}
                 <details className="ca-prov__more" data-testid="provider-details" onToggle={(e) => setDetails((e.target as HTMLDetailsElement).open)}>
@@ -287,7 +313,7 @@ export function ProviderAdmin() {
                     <button type="button" data-on={batchModel.endsWith('flare') || undefined} onClick={() => setBatchModel('openai/gpt-image-2.6-flare')}>Flare</button>
                     <button type="button" data-on={batchModel.endsWith('sunburst') || undefined} onClick={() => setBatchModel('openai/gpt-image-2.6-sunburst')}>Sunburst</button>
                   </span>
-                  <span className="ca-prov__hint">{tx('只改这些工具的主线路，不碰没选中的，也不改它们的备选。', 'Only these tools’ primary route changes. Unselected tools and backups stay.')}</span>
+                  <span className="ca-prov__hint" data-testid="provider-batch-selected-only">{t('provider.batchSelectedOnly')}</span>
                   <button type="button" className="ca-prov__btn" data-testid="provider-batch-apply" disabled={busy} onClick={() => {
                     setBusy(true); setError('')
                     saveToolBatch({ ids: checked, primary: { provider: 'replicate', model: batchModel }, backup: null, fallback: false, activate: true }).then((next) => {
@@ -314,7 +340,10 @@ export function ProviderAdmin() {
 function Status({ tool, dirty }: { tool: ToolRow; dirty: boolean }) {
   if (dirty) return <span className="ca-prov__chip" data-state="draft">{tx('未保存', 'Unsaved')}</span>
   if (tool.blocked === 'needs_key') return <span className="ca-prov__chip" data-state="blocked">{tx('缺密钥', 'No key')}</span>
-  if (tool.effective.source === 'default') return <span className="ca-prov__chip">{tx('默认', 'Default')}</span>
+  if (tool.effective.source === 'default') {
+    const label = tool.effective.provider === 'replicate' ? t('provider.defaultReplicate') : t('provider.defaultWavespeed')
+    return <span className="ca-prov__chip" data-testid="provider-default-chip">{label}</span>
+  }
   if (tool.blocked === 'needs_user_confirm' || tool.blocked === 'quote_unknown') return <span className="ca-prov__chip" data-state="draft">{tx('待确认', 'Needs confirm')}</span>
   if (tool.blocked) return <span className="ca-prov__chip" data-state="blocked">{tx('不能生成', 'Blocked')}</span>
   return <span className="ca-prov__chip" data-state="live">{tool.effective.provider === 'replicate' ? 'Replicate' : 'WaveSpeed'}</span>
@@ -353,17 +382,19 @@ function impact(tool: ToolRow, draft: ToolRoute) {
   return bits.join(' ')
 }
 
-function ChoiceList({ value, choices, onChange, testId }: { value: EndPoint; choices: ToolChoice[]; onChange: (value: EndPoint) => void; testId: string }) {
+function ChoiceList({ value, choices, onChange, testId, toolId, role }: { value: EndPoint; choices: ToolChoice[]; onChange: (value: EndPoint) => void; testId: string; toolId?: string; role?: 'primary' | 'backup' }) {
   return (
     <div className="ca-prov__picks" data-testid={testId} data-selected-provider={value.provider || ''} data-selected-model={value.model || ''}>
       {choices.map((choice) => {
         const on = choice.provider === value.provider && choice.model === value.model
+        const blockedAlt = toolId === 'to_gif' && choice.provider === 'wavespeed' && role === 'backup'
+        const reason = blockedAlt ? t('provider.gifAltWavespeedBlocked') : choice.reason
         return (
-          <button key={`${choice.provider}:${choice.model}`} type="button" disabled={!choice.enabled} data-on={on || undefined} data-testid={on ? `${testId}-selected` : undefined} onClick={() => onChange({ provider: choice.provider, model: choice.model })}>
+          <button key={`${choice.provider}:${choice.model}`} type="button" disabled={!choice.enabled} data-on={on || undefined} data-testid={on ? `${testId}-selected` : (!choice.enabled && choice.provider === 'wavespeed' ? `${testId}-wavespeed-blocked` : undefined)} onClick={() => onChange({ provider: choice.provider, model: choice.model })}>
             <i />
             <span>{lt(choice.label)}</span>
             {choice.quote === 'unknown' && choice.enabled && <small>{tx('价格未知', 'Price unknown')}</small>}
-            {!choice.enabled && choice.reason && <small>{choice.reason}</small>}
+            {!choice.enabled && reason && <small data-testid={blockedAlt || (toolId === 'to_gif' && choice.provider === 'wavespeed') ? 'provider-gif-alt-blocked' : undefined}>{reason}</small>}
           </button>
         )
       })}
@@ -387,8 +418,8 @@ function LlmPane({ state, providerId, modelId, note, onProvider, onModel, onNote
   return (
     <section className="ca-prov__edit ca-prov__llm" data-testid="provider-llm">
       <h3>{tx('语言模型', 'Language model')}</h3>
-      <p className="ca-prov__now" data-testid="provider-llm-status">{tx('现在生效', 'Live now')} <b>{state.llm.effective ? `DeepSeek · ${state.llm.effective.model}` : (state.llm.active ? `${state.llm.active.provider} · ${state.llm.active.model}` : tx('WaveSpeed · 现有配置', 'WaveSpeed · current setup'))}</b></p>
-      {providerId === 'deepseek' && info && !info.configured && <p className="ca-prov__banner" data-testid="provider-llm-nokey">{tx('还没有官方 DeepSeek 密钥。新对话不能发送，也不会改回 WaveSpeed。', 'No official DeepSeek key. New chats are not sent, and they do not fall back to WaveSpeed.')}</p>}
+      <p className="ca-prov__now" data-testid="provider-llm-status">{t('provider.nowActive')} <b>{state.llm.effective ? `DeepSeek · ${state.llm.effective.model}` : (state.llm.active ? `${state.llm.active.provider} · ${state.llm.active.model}` : tx('WaveSpeed · 现有配置', 'WaveSpeed · current setup'))}</b></p>
+      {providerId === 'deepseek' && info && !info.configured && <p className="ca-prov__banner" data-testid="provider-llm-nokey">{tn('provider.keyMissingDraft', { key: 'DEEPSEEK_API_KEY' })}</p>}
       <div className="ca-prov__picks" data-testid="provider-llm-providers">
         {state.llm.providers.map((provider) => (
           <button key={provider.id} type="button" data-on={provider.id === providerId || undefined} data-testid={`provider-llm-${provider.id}`} onClick={() => { onProvider(provider.id); onModel(provider.models[0]?.id || 'existing'); onNote('') }}>
