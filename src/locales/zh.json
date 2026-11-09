@@ -872,6 +872,7 @@
   "jobs.confirmSegMax": "最多 {0} 积分（识别加最多 {1} 次分割），确定继续吗？",
   "jobs.confirmTitle": "确认费用",
   "jobs.confirmUnpriced": "暂时查不到准确价格，继续会按 {0} 实际扣费，确定继续吗？",
+  "jobs.confirmOpen": "这次没有可核对的封顶价。确认只表示同意按实际用量计费，不确认就不会发送。",
   "jobs.costDeclined": "已取消该生成，未扣费",
   "jobs.interrupted": "生成已取消",
   "jobs.stop": "停止生成",

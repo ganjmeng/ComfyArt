@@ -2600,6 +2600,9 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
             body["model"] = e.model
         if e.gif:
             body["gif"] = e.gif
+    issued = getattr(e, "confirm_token", None)
+    if isinstance(issued, str) and issued:
+        body["confirm_token"] = issued
     return web.json_response({"error": body}, status=e.status)
 
 
@@ -2639,12 +2642,17 @@ async def wavespeed_run(request: web.Request) -> web.Response:
     inputs = (await json_body(request)).get("inputs")
     if not isinstance(inputs, dict):
         return error("inputs must be an object", 400)
+    from ._common import request_user
+    from .provider_admin import bind_confirm_user, reset_confirm_user
+    user_token = bind_confirm_user(request_user(request))
     try:
         task = await submit(inputs)
     except WaveSpeedError as e:
         return _respond_error(e)
     except aiohttp.ClientError as e:
         return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}", kind="network"))
+    finally:
+        reset_confirm_user(user_token)
     return web.json_response({"prompt_id": f"ws:{task}"})
 
 

@@ -65,6 +65,11 @@ def _allowed_tools(comfy_mcp_argv: list[str]) -> list[str]:
 
 
 def provider_model(provider_id: str) -> str:
+    if provider_id == "local-llm":
+        from .provider_admin import llm_model_override
+        override = llm_model_override()
+        if override:
+            return override
     key = f"bot-model-{provider_id}"
     return str(get_setting(key) or "").strip() if key in SETTINGS_SPEC else ""
 

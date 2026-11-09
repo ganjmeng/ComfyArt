@@ -7,7 +7,7 @@ export interface ConfirmGif {
   asked_frame_count?: number
   asked_frame_duration_ms?: number
 }
-export interface ConfirmDetail { tier?: string; unpriced?: boolean; estimate?: boolean; live?: boolean; gif?: ConfirmGif }
+export interface ConfirmDetail { openEnded?: boolean; tier?: string; unpriced?: boolean; estimate?: boolean; live?: boolean; gif?: ConfirmGif }
 
 function gifClause(gif: ConfirmGif, to?: Lang): string {
   const tr = (key: string, ...args: (string | number)[]) => (to ? tl(to, key, ...args) : t(key, ...args))
@@ -21,6 +21,7 @@ export function confirmDesc(price: number | null, segSplits?: number, segCapped?
   const tr = (key: string, ...args: (string | number)[]) => (to ? tl(to, key, ...args) : t(key, ...args))
   const p = String(uiCredits(price ?? 0))  // #397: credits only in the confirm dialog (never dollars)
   const clause = detail?.gif && typeof detail.gif.frame_count === 'number' && typeof detail.gif.frame_duration_ms === 'number' ? gifClause(detail.gif, to) : ''
+  if (detail?.openEnded) return clause ? `${tr('jobs.confirmOpen')} GIF ${clause}` : tr('jobs.confirmOpen')
   if (detail?.unpriced || price == null) return clause ? tr('jobs.confirmUnpricedGif', clause) : tr('jobs.confirmUnpriced', detail?.tier || tr('jobs.thisTier'))
   if (detail?.estimate && typeof segSplits !== 'number') return clause ? tr('jobs.confirmEstimateGif', p, clause) : (detail.tier ? tr('jobs.confirmEstimateTier', p, detail.tier) : tr('jobs.confirmEstimate', p))
   if (typeof segSplits !== 'number') return clause ? tr('jobs.confirmCostGif', p, clause) : tr('jobs.confirmCost', p)

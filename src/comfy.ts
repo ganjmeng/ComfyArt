@@ -203,6 +203,7 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
     let ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs }) })
     let wsBody = await ws.json().catch(() => null)
     const price = wsBody?.error?.confirm_usd
+    const confirmToken = typeof wsBody?.error?.confirm_token === 'string' ? wsBody.error.confirm_token : ''
     if (ws.status === 409 && (typeof price === 'number' || wsBody?.error?.unpriced)) {
       // jobs of $0.50 or more need an explicit yes before they are submitted
       // #128: the actual duration when it differs from the one asked
@@ -215,12 +216,14 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
       const detail: ConfirmDetail = {
         tier: typeof wsBody.error.tier === 'string' ? wsBody.error.tier : undefined,
         unpriced: !!wsBody.error.unpriced,
+        openEnded: confirmToken.length > 0,
         estimate: !!wsBody.error.estimate,
         live: typeof price === 'number' && !wsBody.error.unpriced && !wsBody.error.estimate,
         ...(gif ? { gif } : {}),
       }
-      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note, detail.unpriced || detail.estimate || detail.live || gif ? detail : undefined))) throw new CostDeclined()
-      ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: { ...inputs, confirmed: true } }) })
+      if (!(await askCost(price, wsBody?.error?.seg_splits, wsBody?.error?.seg_capped, note, detail.openEnded || detail.unpriced || detail.estimate || detail.live || gif ? detail : undefined))) throw new CostDeclined()
+      const next = { ...inputs, confirmed: true, ...(confirmToken ? { confirm_token: confirmToken } : {}) }
+      ws = await api('/comfyart/wavespeed/run', { ...init, body: JSON.stringify({ inputs: next }) })
       wsBody = await ws.json().catch(() => null)
     }
     if (!ws.ok) throw new Error(promptError(wsBody, ws.status))

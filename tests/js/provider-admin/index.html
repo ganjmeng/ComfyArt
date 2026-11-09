@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>供应商设置预览</title>
+    <style>
+      .ca-prov-gate { min-height: 100vh; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 72px 32px; color: var(--ca-text); }
+      .ca-prov-gate h1 { margin: 0; font: 560 28px/34px var(--ca-font); }
+      .ca-prov-gate p { margin: 0; color: var(--ca-muted); }
+      .ca-prov-gate button { height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--ca-btn-primary-bg); color: var(--ca-btn-primary-fg); cursor: pointer; }
+      #mock-banner { position: fixed; top: 8px; left: 8px; z-index: 3000; max-width: calc(100% - 16px); padding: 6px 10px; border-radius: 8px; background: #111; color: #fff; font: 12px/18px sans-serif; }
+      @media (max-width: 800px) {
+        #mock-banner { top: 0; left: 0; right: 0; max-width: none; border-radius: 0; text-align: center; }
+        .ca-prov { padding: 32px 0 0 !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="mock-banner">本地设置接口 · 临时目录 · 不调用生成供应商</div>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>
