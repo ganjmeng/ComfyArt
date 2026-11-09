@@ -78,3 +78,7 @@
 - #707 <https://github.com/ganjmeng/ComfyArt/issues/707>
 - #825 <https://github.com/ganjmeng/ComfyArt/issues/825>
 - #826 <https://github.com/ganjmeng/ComfyArt/issues/826>
+
+## #848
+
+集成候选复验在 [848-eca055b5/REPORT.md](848-eca055b5/REPORT.md)。head `eca055b522d2f10ca2b3993f9af1f75f338ff8bc`，包含 #842 `69223e84763a9e02d24e87281da3e005d50a0842` 与 #844 `b00d0b3a38932456f0f43f05ec3262f895117be6`。截图和日志在同目录，不覆盖此前 844/842 原材料。

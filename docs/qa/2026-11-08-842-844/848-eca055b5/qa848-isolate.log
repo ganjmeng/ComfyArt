@@ -1,0 +1,11 @@
+HEAVY_BYTES 71300
+BEFORE unshare_eperm []
+PID 5798
+{"name": "unshare_eperm", "pid": 5798, "rc": 0, "sig": null, "outer_kill": false, "seconds": 0.035, "stdout": 520, "rendered": false, "reason": "isolation_unavailable", "download": false, "preview": false, "net": "EPERM", "fs": null, "imports": 0, "left": [], "err_tail": "troy encodings.utf_8\n# destroy _codecs\n# destroy _warnings\n# destroy math\n# destroy _bisect\n# destroy _random\n# destroy builtins\n# destroy _operator\n# destroy _sha2\n# destroy itertools\n# destroy _abc\n# destroy posix\n# clear sys.audit hooks\n"}
+BEFORE landlock_eperm []
+PID 5800
+{"name": "landlock_eperm", "pid": 5800, "rc": 0, "sig": null, "outer_kill": false, "seconds": 0.086, "stdout": 554, "rendered": false, "reason": "isolation_unavailable", "download": false, "preview": false, "net": "ENETUNREACH", "fs": "EPERM", "imports": 5, "left": [], "err_tail": "y _bisect\n# destroy functools\n# destroy time\n# destroy _random\n# destroy re\n# destroy _sha2\n# destroy _sre\n# destroy _thread\n# destroy _operator\n# destroy itertools\n# destroy _functools\n# destroy posix\n# destroy _io\n# clear sys.audit hooks\n"}
+BEFORE draw_load_heavy_path []
+PID 5803
+{"name": "draw_load_heavy_path", "pid": 5803, "rc": 0, "sig": null, "outer_kill": false, "seconds": 0.098, "stdout": 95980, "rendered": true, "reason": "normal", "download": true, "preview": true, "net": "ENETUNREACH", "fs": "EACCES", "imports": 0, "left": [], "err_tail": ""}
+FINAL []
