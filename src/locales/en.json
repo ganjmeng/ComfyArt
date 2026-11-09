@@ -1830,5 +1830,7 @@
   "botSettings.hermesSshHost": "Hermes SSH host",
   "botSettings.hermesSshHostHint": "Host alias or user@host (key login); empty = use local Hermes",
   "botSettings.hermesProfile": "Hermes profile",
-  "botSettings.hermesProfileHint": "Profile made for {brand} (hermes -p <name>), see the Agent guide. Empty = Hermes default profile"
+  "botSettings.hermesProfileHint": "Profile made for {brand} (hermes -p <name>), see the Agent guide. Empty = Hermes default profile",
+  "jobs.submittingConfirm": "Submitting. Please do not submit again.",
+  "jobs.submissionUncertain": "Submission result unconfirmed. Closing does not cancel the task or mean no charge. Check task records before submitting again."
 }
