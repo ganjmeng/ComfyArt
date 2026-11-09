@@ -1,0 +1,45 @@
+{
+  "mode": "dry-run",
+  "model": "openai/gpt-image-2.6-flare/edit",
+  "prompt": "Change only the selected can to a matte sage-green aluminum finish; keep shape, logo layout, and background unchanged.",
+  "base": "docs/qa/873-flare-trial/base.png",
+  "mask": "docs/qa/873-flare-trial/mask.png",
+  "base_size": [
+    1536,
+    857
+  ],
+  "mask_region": {
+    "x": 107,
+    "y": 402,
+    "w": 127,
+    "h": 397
+  },
+  "crop_box": {
+    "x": 0,
+    "y": 265,
+    "w": 384,
+    "h": 592
+  },
+  "crop_sha256": "2aee7a9bc71dbade88d57c315346e5d3cb2d4ea23c988a0c481621481aaceea5",
+  "aspect_ratio": "2:3",
+  "resolution": "1k",
+  "num_images": 1,
+  "cap_usd": 0.1,
+  "min_balance_usd": 20.0,
+  "estimated_cost_usd": 0.065,
+  "estimated_cost_source": "tests/fixtures/wavespeed_catalog_subset.json base_price",
+  "payload_shape": {
+    "prompt": "Change only the selected can to a matte sage-green aluminum finish; keep shape, logo layout, and background unchanged.",
+    "images": [
+      "<uploaded crop only — production pasteback, NO mask_image>"
+    ],
+    "resolution": "1k",
+    "aspect_ratio": "2:3",
+    "output_format": "png"
+  },
+  "notes": [
+    "Mirrors api/wavespeed.py region_inputs/_submit_paste: crop submitted, mask used only locally for pasteback.",
+    "Live mode: one submit, stop after one failure, no retries.",
+    "$0.1 spend cap; abort if WaveSpeed balance < $20."
+  ]
+}
