@@ -1,6 +1,6 @@
 # Group B corrected rerun plan (await 技术经理 GO) — #825
 
-**Status:** **DO NOT RUN** until 技术经理 approves. Cap **$0.12**. No other paid work concurrent.
+**Status:** **RAN** 2026-11-10 Asia/Shanghai after 技术经理 GO. Actual spend **$0.0975** / $0.12. See `B-pasteback-summary.json`, collage `lr/B-pasteback-orig-2.5-2.6.webp`, edge `lr/B-pasteback-edge-200pct.webp`.
 
 ## Goal
 Apples-to-apples Flare-path fairness: **both** B1 (2.5 Sunburst edit) and B2 (2.6 Sunburst edit) through the **real production masked-edit path** (region pasteback). 2.5 input must match production exactly (crop only; no `mask_image`).

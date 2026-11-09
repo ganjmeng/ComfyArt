@@ -19,3 +19,19 @@
 | D3 | `openai/gpt-image-2.6-sunburst/text-to-image` | `32b2046864a44e1188302ba42506c6b1` | 31.262699 | 31.217699 | **$0.0450** | 30.936 |
 
 **Sum of per-call costs:** $0.5493
+
+
+---
+
+# B pasteback rerun (production path) — 2026-11-10 Asia/Shanghai
+
+- Cap **$0.12**; actual **$0.0975**
+- Balance end: **$31.120199** (start of rerun was 31.217699)
+- Same crop sha256: `645c5be50f8bc1f7c112e0e5cd2af4f29a066b6bc8e46ce2cccd3c0783e71e1b` · box `{"x":0,"y":0,"w":768,"h":632}`
+- Both calls: `resolution=1k`, `aspect_ratio=3:4`, same prompt, **no mask_image**; only model differed
+- Acceptance: outside mask **pixel-identical** (Δmax=0, n_diff=0); **no black band**
+
+| # | Model | Prediction id | Bal in | Bal out | Cost | Latency s |
+|---|-------|---------------|--------|---------|------|-----------|
+| B1p | `openai/gpt-image-2.5-sunburst/edit` | `085e7871c6994c0aac384c1749d7dbdb` | 31.217699 | 31.178699 | **$0.0390** | 25.298 |
+| B2p | `openai/gpt-image-2.6-sunburst/edit` | `5a5ca49dac5b4cb7922931d7e864ed77` | 31.178699 | 31.120199 | **$0.0585** | 30.642 |
