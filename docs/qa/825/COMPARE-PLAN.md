@@ -113,8 +113,7 @@ No reference image. First collage panel = **prompt text card** (not a generation
 **Prompt (exact):**
 
 ```
-商业棚拍半身像，亚洲女性，自然皮肤纹理和毛孔，柔和侧光，35mm 摄影质感，非网红脸。
-Commercial studio half-body portrait of an East Asian woman, natural skin texture and pores, soft side light, 35mm photography look, non-influencer face, no logo, no watermark.
+Photoreal portrait of an attractive young East Asian woman, beauty-campaign grade, natural makeup, real skin texture with fine pores, soft daylight, 35mm photography look, 非网红脸, no logo, no watermark.
 ```
 
 **Collage order:** **prompt card | banana | Seedream | Sunburst** (text | D1 | D2 | D3). Label each generation: model · prompt summary · 1K · cost.
