@@ -1,0 +1,210 @@
+tip /tmp/qa844/tip40b
+kernel 6.12.113+
+harness_pid 4559
+strace absent
+
+==== unshare_seccomp_eperm ====
+{
+  "argv": [
+    "/tmp/qa844/venv/bin/python",
+    "-v",
+    "/tmp/qa844/tip40b/api/svg_worker.py"
+  ],
+  "pid": 4565,
+  "returncode": 0,
+  "signal": null,
+  "signal_name": null,
+  "timed_out_outer": false,
+  "stdout_len": 520,
+  "json": {
+    "status": "rejected",
+    "reason": "isolation_unavailable",
+    "kind": "svgRejected",
+    "message_zh": "渲染隔离没有建立，已拒绝，不会解析或提供下载。",
+    "message_en": "Render isolation was not established. The file was rejected and was not parsed or offered for download.",
+    "download": null,
+    "preview": null,
+    "rendered": false,
+    "applied": {
+      "ok": false,
+      "network_isolated": false,
+      "network_probe": "EPERM",
+      "filesystem_isolated": false
+    }
+  },
+  "download_present": false,
+  "preview_present": false,
+  "rendered": false,
+  "reason": "isolation_unavailable",
+  "network_probe": "EPERM",
+  "filesystem_probe": null,
+  "import_lines": [],
+  "stderr_tail": "ng\n# destroy contextlib\n# destroy time\n# destroy fcntl\n# destroy _posixsubprocess\n# destroy selectors\n# destroy warnings\n# destroy io\n# destroy shutil\n# destroy errno\n# destroy weakref\n# destroy _collections_abc\n# destroy _collections\n# destroy collections.abc\n# destroy _thread\n# destroy stat\n# destroy posixpath\n# destroy re\n# destroy functools\n# destroy _functools\n# destroy re._parser\n# destroy _sre\n# destroy select\n# destroy _weakref\n# clear sys.meta_path\n# clear sys.modules\n# destroy _frozen_importlib\n# destroy codecs\n# destroy encodings.aliases\n# destroy encodings.utf_8\n# destroy _codecs\n# destroy _warnings\n# destroy math\n# destroy _bisect\n# destroy _random\n# destroy builtins\n# destroy _operator\n# destroy _sha2\n# destroy itertools\n# destroy _abc\n# destroy posix\n# clear sys.audit hooks\n",
+  "before": [
+    "before pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py "
+  ],
+  "started": [
+    "started pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py ",
+    "started pid=4565 ppid=4559 state=R cmd=/tmp/qa844/venv/bin/python -v /tmp/qa844/tip40b/api/svg_worker.py "
+  ],
+  "after": [
+    "after pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py "
+  ],
+  "worker_after": []
+}
+
+==== landlock_seccomp_eperm ====
+{
+  "argv": [
+    "/tmp/qa844/venv/bin/python",
+    "-v",
+    "/tmp/qa844/tip40b/api/svg_worker.py"
+  ],
+  "pid": 4567,
+  "returncode": 0,
+  "signal": null,
+  "signal_name": null,
+  "timed_out_outer": false,
+  "stdout_len": 554,
+  "json": {
+    "status": "rejected",
+    "reason": "isolation_unavailable",
+    "kind": "svgRejected",
+    "message_zh": "渲染隔离没有建立，已拒绝，不会解析或提供下载。",
+    "message_en": "Render isolation was not established. The file was rejected and was not parsed or offered for download.",
+    "download": null,
+    "preview": null,
+    "rendered": false,
+    "applied": {
+      "ok": false,
+      "network_isolated": true,
+      "network_probe": "ENETUNREACH",
+      "filesystem_isolated": false,
+      "filesystem_probe": "EPERM"
+    }
+  },
+  "download_present": false,
+  "preview_present": false,
+  "rendered": false,
+  "reason": "isolation_unavailable",
+  "network_probe": "ENETUNREACH",
+  "filesystem_probe": "EPERM",
+  "import_lines": [
+    "# /tmp/qa844/tip40b/api/__pycache__/svg_raster.cpython-312.pyc matches /tmp/qa844/tip40b/api/svg_raster.py",
+    "# code object from '/tmp/qa844/tip40b/api/__pycache__/svg_raster.cpython-312.pyc'",
+    "# /tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/__init__.cpython-312.pyc matches /tmp/qa844/venv/lib/python3.12/site-packages/PIL/__init__.py",
+    "# code object from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/__init__.cpython-312.pyc'",
+    "# /tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/_version.cpython-312.pyc matches /tmp/qa844/venv/lib/python3.12/site-packages/PIL/_version.py",
+    "# code object from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/_version.cpython-312.pyc'",
+    "import 'PIL._version' # <_frozen_importlib_external.SourceFileLoader object at 0x7f4605829700>",
+    "import 'PIL' # <_frozen_importlib_external.SourceFileLoader object at 0x7f46058297f0>",
+    "# /tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/Image.cpython-312.pyc matches /tmp/qa844/venv/lib/python3.12/site-packages/PIL/Image.py",
+    "# code object from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/Image.cpython-312.pyc'",
+    "# /tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/ExifTags.cpython-312.pyc matches /tmp/qa844/venv/lib/python3.12/site-packages/PIL/ExifTags.py",
+    "# code object from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/ExifTags.cpython-312.pyc'",
+    "import 'PIL.ExifTags' # <_frozen_importlib_external.SourceFileLoader object at 0x7f4605876ea0>",
+    "# /tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/ImageMode.cpython-312.pyc matches /tmp/qa844/venv/lib/python3.12/site-packages/PIL/ImageMode.py",
+    "# code object from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/ImageMode.cpython-312.pyc'",
+    "import 'PIL.ImageMode' # <_frozen_importlib_external.SourceFileLoader object at 0x7f4605ab6c90>",
+    "# /tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/TiffTags.cpython-312.pyc matches /tmp/qa844/venv/lib/python3.12/site-packages/PIL/TiffTags.py",
+    "# code object from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/TiffTags.cpython-312.pyc'",
+    "import 'PIL.TiffTags' # <_frozen_importlib_external.SourceFileLoader object at 0x7f46056c2d20>",
+    "# /tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/_binary.cpython-312.pyc matches /tmp/qa844/venv/lib/python3.12/site-packages/PIL/_binary.py",
+    "# code object from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/_binary.cpython-312.pyc'",
+    "import 'PIL._binary' # <_frozen_importlib_external.SourceFileLoader object at 0x7f46056c1f10>",
+    "# /tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/_deprecate.cpython-312.pyc matches /tmp/qa844/venv/lib/python3.12/site-packages/PIL/_deprecate.py",
+    "# code object from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/_deprecate.cpython-312.pyc'",
+    "import 'PIL._deprecate' # <_frozen_importlib_external.SourceFileLoader object at 0x7f46056c17f0>",
+    "# /tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/_util.cpython-312.pyc matches /tmp/qa844/venv/lib/python3.12/site-packages/PIL/_util.py",
+    "# code object from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/__pycache__/_util.cpython-312.pyc'",
+    "import 'PIL._util' # <_frozen_importlib_external.SourceFileLoader object at 0x7f46056c1520>",
+    "# extension module 'PIL._imaging' loaded from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/_imaging.cpython-312-x86_64-linux-gnu.so'",
+    "# extension module 'PIL._imaging' executed from '/tmp/qa844/venv/lib/python3.12/site-packages/PIL/_imaging.cpython-312-x86_64-linux-gnu.so'"
+  ],
+  "stderr_tail": "y PIL.ImagePalette\n# destroy PIL.ImageSequence\n# destroy PIL.ImageFile\n# destroy zlib\n# destroy numbers\n# destroy operator\n# destroy datetime\n# destroy locale\n# destroy warnings\n# destroy io\n# destroy mmap\n# destroy PIL.Image\n# destroy PIL.ImageColor\n# destroy PIL.ImageFont\n# destroy PIL.ImageText\n# destroy PIL._imaging\n# destroy struct\n# destroy binascii\n# clear sys.meta_path\n# clear sys.modules\n# destroy _frozen_importlib\n# destroy codecs\n# destroy encodings.aliases\n# destroy encodings.utf_8\n# destroy _codecs\n# destroy _warnings\n# destroy math\n# destroy _bisect\n# destroy functools\n# destroy time\n# destroy _random\n# destroy re\n# destroy _sha2\n# destroy _sre\n# destroy _thread\n# destroy _operator\n# destroy itertools\n# destroy _functools\n# destroy posix\n# destroy _io\n# clear sys.audit hooks\n",
+  "before": [
+    "before pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py "
+  ],
+  "started": [
+    "started pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py ",
+    "started pid=4567 ppid=4559 state=R cmd=/tmp/qa844/venv/bin/python -v /tmp/qa844/tip40b/api/svg_worker.py "
+  ],
+  "after": [
+    "after pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py "
+  ],
+  "worker_after": []
+}
+
+==== product_alarm_no_stdin ====
+{
+  "argv": [
+    "/tmp/qa844/venv/bin/python",
+    "-v",
+    "/tmp/qa844/tip40b/api/svg_worker.py"
+  ],
+  "pid": 4570,
+  "returncode": -14,
+  "signal": 14,
+  "signal_name": "SIGALRM",
+  "timed_out_outer": false,
+  "stdout_len": 0,
+  "json": null,
+  "download_present": false,
+  "preview_present": false,
+  "rendered": null,
+  "reason": null,
+  "network_probe": null,
+  "filesystem_probe": null,
+  "import_lines": [],
+  "stderr_tail": "yc'\nimport 'urllib' # <_frozen_importlib_external.SourceFileLoader object at 0x7f5521d74bc0>\n# /usr/lib/python3.12/urllib/__pycache__/parse.cpython-312.pyc matches /usr/lib/python3.12/urllib/parse.py\n# code object from '/usr/lib/python3.12/urllib/__pycache__/parse.cpython-312.pyc'\n# /usr/lib/python3.12/__pycache__/ipaddress.cpython-312.pyc matches /usr/lib/python3.12/ipaddress.py\n# code object from '/usr/lib/python3.12/__pycache__/ipaddress.cpython-312.pyc'\nimport 'ipaddress' # <_frozen_importlib_external.SourceFileLoader object at 0x7f5521d772c0>\nimport 'urllib.parse' # <_frozen_importlib_external.SourceFileLoader object at 0x7f5521d74cb0>\nimport 'ntpath' # <class '_frozen_importlib.FrozenImporter'>\nimport 'pathlib' # <_frozen_importlib_external.SourceFileLoader object at 0x7f5521d10da0>\n",
+  "before": [
+    "before pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py "
+  ],
+  "started": [
+    "started pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py ",
+    "started pid=4570 ppid=4559 state=R cmd=/tmp/qa844/venv/bin/python -v /tmp/qa844/tip40b/api/svg_worker.py "
+  ],
+  "after": [
+    "after pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py "
+  ],
+  "worker_after": []
+}
+
+==== harness_as_32mib ====
+{
+  "argv": [
+    "prlimit",
+    "--as=33554432",
+    "/tmp/qa844/venv/bin/python",
+    "/tmp/qa844/tip40b/api/svg_worker.py"
+  ],
+  "pid": 4573,
+  "returncode": 1,
+  "signal": null,
+  "signal_name": null,
+  "timed_out_outer": false,
+  "stdout_len": 0,
+  "json": null,
+  "download_present": false,
+  "preview_present": false,
+  "rendered": null,
+  "reason": null,
+  "network_probe": null,
+  "filesystem_probe": null,
+  "import_lines": [],
+  "stderr_tail": "Traceback (most recent call last):\n  File \"/tmp/qa844/tip40b/api/svg_worker.py\", line 185, in <module>\n    main()\n  File \"/tmp/qa844/tip40b/api/svg_worker.py\", line 179, in main\n    _limits()\n  File \"/tmp/qa844/tip40b/api/svg_worker.py\", line 34, in _limits\n    resource.setrlimit(resource.RLIMIT_AS, (AS, AS))\nValueError: not allowed to raise maximum limit\n",
+  "before": [
+    "before pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py "
+  ],
+  "started": [
+    "started pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py ",
+    "started pid=4573 ppid=4559 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/tip40b/api/svg_worker.py "
+  ],
+  "after": [
+    "after pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py "
+  ],
+  "worker_after": []
+}
+
+==== final snapshot ====
+final pid=4559 ppid=4555 state=R cmd=/tmp/qa844/venv/bin/python /tmp/qa844/kernel_fail_harness.py 

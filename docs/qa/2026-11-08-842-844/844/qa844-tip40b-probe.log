@@ -1,0 +1,68 @@
+=== original probe on 40b446002da7fec41ecc992fa8af4cad1995470c ===
+UTC 2026-11-08 14:39:21
+CST 2026-11-08 22:39:21
+40b446002da7fec41ecc992fa8af4cad1995470c
+python 
+pytest 9.2.0
+GATE=1
+PYTHONPATH=/opt/cursor/artifacts/qa844-regression/guard:/opt/cursor/artifacts/qa844-regression/guard:/tmp/qa844/guard
+hash before d2ee34ec4299d18a3cf190e29204ea5787f86b355ae8c7db67119c37b5e380d4  tests/test_qa844_readonly_probe.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0
+rootdir: /tmp/qa844/tip40b
+configfile: pyproject.toml
+plugins: asyncio-1.4.1.post1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 10 items
+
+tests/test_qa844_readonly_probe.py FF..FFF.FF                            [100%]
+
+=================================== FAILURES ===================================
+E   assert 1 == (1 + 1)
+/tmp/qa844/tip40b/tests/test_qa844_readonly_probe.py:110: assert 1 == (1 + 1)
+E   AssertionError: {'stylesheet': ('rejected', 'stylesheet', False), 'fill_url': ('rejected', 'external', False), 'path_only': ('transparent', 'transparent', True, 'image/png'), 'animate': ('rejected', 'script', True), ...}
+    assert 'transparent' == 'normal'
+      
+      - normal
+      + transparent
+/tmp/qa844/tip40b/tests/test_qa844_readonly_probe.py:162: AssertionError: {'stylesheet': ('rejected', 'stylesheet', False), 'fill_url': ('rejected', 'external', False), 'path_only': ('transparent', 'transparent', True, 'image/png'), 'animate': ('rejected', 'script', True), ...}
+E   AssertionError: assert ('malformed' == 'malformed'
+      
+        malformed and None == b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+     +  where None = <ComfyArt.api.svg_raster.Verdict object at 0x7f2d74b6d820>.download
+     +    where <ComfyArt.api.svg_raster.Verdict object at 0x7f2d74b6d820> = <function admit at 0x7f2d79a947c0>(b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+     +      where <function admit at 0x7f2d79a947c0> = svg_image.admit
+/tmp/qa844/tip40b/tests/test_qa844_readonly_probe.py:235: AssertionError: assert ('malformed' == 'malformed'
+E   StopIteration
+/tmp/qa844/tip40b/tests/test_qa844_readonly_probe.py:257: StopIteration
+E   AssertionError: {'count_1_5': 'svgCount', 'count_true': 'svgCount', 'count_0': 'svgCount', 'count_2': 'svgCount', ...}
+    assert {'count_1_5':...vgCount', ...} == {'count_1_5':...vgCount', ...}
+      
+      Omitting 5 identical items, use -vv to show
+      Differing items:
+      {'tiff_error': None} != {'tiff_error': 'svgEdit'}
+      {'tiff_model': 'openai/gpt-image-2.5-flare/text-to-image'} != {'tiff_model': None}
+      {'old_model': 'openai/gpt-image-2.6-flare/text-to-image'} != {'old_model': 'openai/gpt-image-2.5-flare/text-to-image'}
+      {'old_error': None} != {'old_error': 'svgEdit'}
+      Use -v to get more diff
+/tmp/qa844/tip40b/tests/test_qa844_readonly_probe.py:284: AssertionError: {'count_1_5': 'svgCount', 'count_true': 'svgCount', 'count_0': 'svgCount', 'count_2': 'svgCount', ...}
+E   AssertionError: assert 404 == 200
+     +  where 404 = <ClientResponse(http://127.0.0.1:36683/comfyart/svg_download?url=/api/view?filename%3Dtext.svg%26type%3Doutput) [404 N...set=utf-8', 'Content-Length': '312', 'Date': 'Sun, 08 Nov 2026 14:39:24 GMT', 'Server': 'Python/3.12 aiohttp/3.14.5')>\n.status
+/tmp/qa844/tip40b/tests/test_qa844_readonly_probe.py:333: AssertionError: assert 404 == 200
+E   AssertionError: assert None == 'openai/gpt-image-2.6-flare/text-to-image'
+     +  where None = <built-in method get of dict object at 0x7f2d6ae050c0>('model')
+     +    where <built-in method get of dict object at 0x7f2d6ae050c0> = {'price': 0.07, 'currency': 'USD', 'source': 'estimate', 'confirm_usd': 0.5, ...}.get
+/tmp/qa844/tip40b/tests/test_qa844_readonly_probe.py:374: AssertionError: assert None == 'openai/gpt-image-2.6-flare/text-to-image'
+=========================== short test summary info ============================
+FAILED tests/test_qa844_readonly_probe.py::test_probe_io_counters_on_safe_and_dangerous
+FAILED tests/test_qa844_readonly_probe.py::test_probe_classification_gaps_and_path_preview
+FAILED tests/test_qa844_readonly_probe.py::test_probe_boundaries_equal_and_over
+FAILED tests/test_qa844_readonly_probe.py::test_probe_clock_equality - StopIt...
+FAILED tests/test_qa844_readonly_probe.py::test_probe_count_and_unknown_format
+FAILED tests/test_qa844_readonly_probe.py::test_probe_download_headers_and_hash
+FAILED tests/test_qa844_readonly_probe.py::test_probe_quote_fields - Assertio...
+========================= 7 failed, 3 passed in 0.89s ==========================
+EXIT:1
+hash after d2ee34ec4299d18a3cf190e29204ea5787f86b355ae8c7db67119c37b5e380d4  tests/test_qa844_readonly_probe.py
+d2ee34ec4299d18a3cf190e29204ea5787f86b355ae8c7db67119c37b5e380d4  /opt/cursor/artifacts/qa844-regression/tests/test_qa844_readonly_probe.py
+CMP_OK

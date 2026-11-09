@@ -1,0 +1,37 @@
+FF..FFF...                                                               [100%]
+=================================== FAILURES ===================================
+E   assert 1 == (1 + 1)
+/tmp/qa848/tests/test_qa844_readonly_probe.py:110: assert 1 == (1 + 1)
+E   AssertionError: {'stylesheet': ('rejected', 'stylesheet', False), 'fill_url': ('rejected', 'external', False), 'path_only': ('transparent', 'transparent', True, 'image/png'), 'animate': ('rejected', 'script', True), ...}
+    assert 'transparent' == 'normal'
+      
+      - normal
+      + transparent
+/tmp/qa848/tests/test_qa844_readonly_probe.py:162: AssertionError: {'stylesheet': ('rejected', 'stylesheet', False), 'fill_url': ('rejected', 'external', False), 'path_only': ('transparent', 'transparent', True, 'image/png'), 'animate': ('rejected', 'script', True), ...}
+E   AssertionError: assert ('malformed' == 'malformed'
+      
+        malformed and None == b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+     +  where None = <ComfyArt.api.svg_raster.Verdict object at 0x7f61696b47a0>.download
+     +    where <ComfyArt.api.svg_raster.Verdict object at 0x7f61696b47a0> = <function admit at 0x7f6176f2f1a0>(b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+     +      where <function admit at 0x7f6176f2f1a0> = svg_image.admit
+/tmp/qa848/tests/test_qa844_readonly_probe.py:235: AssertionError: assert ('malformed' == 'malformed'
+E   StopIteration
+/tmp/qa848/tests/test_qa844_readonly_probe.py:257: StopIteration
+E   AssertionError: {'count_1_5': 'svgCount', 'count_true': 'svgCount', 'count_0': 'svgCount', 'count_2': 'svgCount', ...}
+    assert {'count_1_5':...vgCount', ...} == {'count_1_5':...vgCount', ...}
+      
+      Omitting 5 identical items, use -vv to show
+      Differing items:
+      {'tiff_error': None} != {'tiff_error': 'svgEdit'}
+      {'old_error': None} != {'old_error': 'svgEdit'}
+      {'tiff_model': 'openai/gpt-image-2.5-flare/text-to-image'} != {'tiff_model': None}
+      {'old_model': 'openai/gpt-image-2.6-flare/text-to-image'} != {'old_model': 'openai/gpt-image-2.5-flare/text-to-image'}
+      Use -v to get more diff
+/tmp/qa848/tests/test_qa844_readonly_probe.py:284: AssertionError: {'count_1_5': 'svgCount', 'count_true': 'svgCount', 'count_0': 'svgCount', 'count_2': 'svgCount', ...}
+=========================== short test summary info ============================
+FAILED tests/test_qa844_readonly_probe.py::test_probe_io_counters_on_safe_and_dangerous
+FAILED tests/test_qa844_readonly_probe.py::test_probe_classification_gaps_and_path_preview
+FAILED tests/test_qa844_readonly_probe.py::test_probe_boundaries_equal_and_over
+FAILED tests/test_qa844_readonly_probe.py::test_probe_clock_equality - StopIt...
+FAILED tests/test_qa844_readonly_probe.py::test_probe_count_and_unknown_format
+5 failed, 5 passed in 4.52s
