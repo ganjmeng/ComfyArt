@@ -26,3 +26,10 @@ def test_live_baseline_gif_default_only_for_to_gif():
 def test_draft_route_delegates_to_live_baseline():
     body = _fn("draftRoute")
     assert "liveBaseline(tool)" in body
+
+
+def test_unedited_primary_reads_draft_route_not_blank():
+    """Opening Providers must not fall back to blank() WaveSpeed for Still→GIF, nor keep stale edits."""
+    assert "drafts[current.id] ?? draftRoute(current)" in SRC or 'drafts[current.id] ?? draftRoute(current)' in SRC
+    assert "drafts[current.id] || blank()" not in SRC
+    assert "setDrafts({})" in SRC
