@@ -1,11 +1,12 @@
-"""#825 phase 1: GPT Image 2.6 is a selectable option. Auto / the feature default stay on 2.5-flare.
+"""#825: GPT Image 2.6-flare is the Auto / feature default for text-to-image and image edit.
 
-The owner end-state is that 2.6-flare becomes the default after product+QA+Tech PASS.
-That flip is a follow-up, not this module.
+An explicit 2.5-flare id still routes to 2.5. This module does not pin quality.
 
-GIF is text-to-image only (WaveSpeed docs, 2026-11-08): edit output_format is png/jpeg/webp.
-A still image therefore becomes a reference plus a new text-to-image GIF. Frame count is not billed;
-a GIF costs the same as a still of that quality and resolution. No live WaveSpeed submit in this module.
+A pure text-to-image GIF stays on 2.6 text-to-image. A GIF that also carries a still
+(image, images, refs, or base) is refused before any quote or provider POST.
+That refusal is not a still-to-GIF implementation: the published text-to-image schema
+has no reference field (docs read 2026-11-08). Frame count is not billed.
+No live WaveSpeed submit in this module.
 """
 from __future__ import annotations
 
@@ -46,6 +47,15 @@ UNBILLED = ("frame_count", "frame_duration_ms")
 
 _GIF_RE = re.compile(r"(?<![A-Za-z])gifs?(?![A-Za-z])", re.I)
 _VIDEO_FEATURES = {"text_to_video", "image_to_video", "reference_to_video", "motion_control", "lip_sync", "animate_image"}
+
+
+def asked_int(value) -> int | None:
+    """A whole number the caller actually sent. Missing or non-integers are not an original value."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        if isinstance(value, str) and value.strip().lstrip("-").isdigit():
+            return int(value.strip())
+        return None
+    return value
 
 
 def clamp_int(value, bounds: tuple[int, int, int]) -> int:
@@ -89,6 +99,79 @@ def requests_gif(inputs: dict) -> bool:
     return prompt_wants_gif(str(inputs.get("prompt") or ""))
 
 
+class StillGifUnsupported(Exception):
+    """GIF plus a still. Raised before any price call or generation POST.
+
+    This is a refusal. It does not implement still-to-GIF.
+    """
+
+
+# Readable in both languages. Quoting and generation do not start.
+REFUSAL_ZH = "静图转 GIF 不支持参考图，估价和生成都不会开始。请去掉参考图、底图或图片列表后再做纯文生 GIF，或在提示词里描述画面。"
+REFUSAL_EN = "Still-to-GIF does not support a reference image, so quoting and generation do not start. Remove the reference, base image, or image list and use a text-only GIF, or describe the picture in the prompt."
+
+# Tech named base in addition to refs and images. Scalars and lists are both stills.
+_STILL_SCALARS = ("image", "base", "reference_image", "last_image", "markup_image", "mask_image")
+_STILL_LISTS = ("images", "refs", "reference_images")
+
+
+def refusal_text() -> str:
+    return f"{REFUSAL_ZH} / {REFUSAL_EN}"
+
+
+def _filled(value) -> bool:
+    if value is None or value is False:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, (list, tuple, set)):
+        return any(_filled(item) for item in value)
+    if isinstance(value, dict):
+        return any(_filled(item) for item in value.values())
+    return bool(value)
+
+
+def still_fields(inputs: dict) -> list[str]:
+    """Names of attached stills: image, images, refs, base, and the same keys under params."""
+    if not isinstance(inputs, dict):
+        return []
+    bags = [inputs]
+    params = inputs.get("params")
+    if isinstance(params, dict):
+        bags.append(params)
+    found: list[str] = []
+    for bag in bags:
+        for key in (*_STILL_SCALARS, *_STILL_LISTS):
+            if key in bag and _filled(bag.get(key)) and key not in found:
+                found.append(key)
+    return found
+
+
+def has_still(inputs: dict) -> bool:
+    return bool(still_fields(inputs))
+
+
+def refuse_still_gif(inputs: dict) -> None:
+    """Stop a GIF that carries a still. Pure text-to-image GIF is left alone."""
+    if isinstance(inputs, dict) and requests_gif(inputs) and has_still(inputs):
+        raise StillGifUnsupported(refusal_text())
+
+
+def still_block(inputs: dict) -> dict | None:
+    """Agent-facing refusal. None when the call may continue. No quote and no submit."""
+    if not isinstance(inputs, dict) or not requests_gif(inputs) or not has_still(inputs):
+        return None
+    text = refusal_text()
+    return {
+        "status": "failed",
+        "generation_succeeded": False,
+        "submitted": False,
+        "error": text,
+        "kind": "gifStillUnsupported",
+        "user_message": text,
+    }
+
+
 def ensure_args(args: dict) -> dict:
     """Fill GIF defaults on a generate_image call. Does not set quality or complexity."""
     if not isinstance(args, dict) or not requests_gif(args):
@@ -130,13 +213,12 @@ def note(route: str) -> dict:
             "en": "Edit supports gif, so this looping GIF is an edit. Frame count is not billed; the price matches the still.",
         }
     if route == "reference_t2i":
-        return {
-            "zh": "GIF 只在文生图上可用。编辑模型没有 gif，这张静图作为参考，用 GPT Image 2.6 重新生成循环 GIF，不会改走视频。帧数不计费，价格与同档静图相同。",
-            "en": "GIF is text-to-image only. Edit has no gif, so this still is a reference for a new GPT Image 2.6 GIF, not a video. Frame count is not billed; the price matches the still.",
-        }
+        # Kept only so an old caller cannot describe a drop-and-continue path.
+        # route_gif raises StillGifUnsupported instead of posting a text-only GIF.
+        return {"zh": REFUSAL_ZH, "en": REFUSAL_EN}
     return {
-        "zh": "循环 GIF，用 GPT Image 2.6 文生。帧数不计费，价格与同档静图相同。默认模型仍是 GPT Image 2.5 Flare。",
-        "en": "Looping GIF from GPT Image 2.6 text-to-image. Frame count is not billed; the price matches the still. The default model stays GPT Image 2.5 Flare.",
+        "zh": "循环 GIF，用 GPT Image 2.6 文生。帧数不计费，价格与同档静图相同。未点名模型时文生和编辑用 GPT Image 2.6 Flare。",
+        "en": "Looping GIF from GPT Image 2.6 text-to-image. Frame count is not billed; the price matches the still. An unnamed model uses GPT Image 2.6 Flare for images and edits.",
     }
 
 
@@ -145,11 +227,19 @@ def note_line(route: str) -> str:
     return f"{pair['zh']} / {pair['en']}"
 
 
-def choice(model: str, has_still: bool) -> dict:
-    """Agent Auto row for a GIF. Does not return an edit_model or a video model."""
+def choice(model: str, has_still_image: bool) -> dict:
+    """Agent Auto row for a GIF. A still is a refusal, not a text-to-image rewrite."""
+    if has_still_image:
+        return {
+            "model": "",
+            "auto": True,
+            "category": "gif_still_unsupported",
+            "blocked": True,
+            "reason": {"zh": REFUSAL_ZH, "en": REFUSAL_EN},
+        }
     picked = pick_t2i(model)
     named = bool(model) and model == picked
-    route = "reference_t2i" if has_still else "text_to_image"
+    route = "text_to_image"
     reason = note(route)
     if model and model != picked:
         reason = {
@@ -159,55 +249,39 @@ def choice(model: str, has_still: bool) -> dict:
     return {"model": picked, "auto": not named, "category": "gif", "reason": reason, "gif_route": route}
 
 
-def _refs(inputs: dict) -> list:
-    refs = []
-    for value in [inputs.get("image"), inputs.get("base"), *(inputs.get("images") if isinstance(inputs.get("images"), list) else [])]:
-        if value and value not in refs:
-            refs.append(value)
-    return refs
-
-
 def route_gif(inputs: dict, schemas: dict | None = None) -> dict:
-    """Rewrite a GIF job onto a model that can emit gif. Never leaves it on a video feature.
+    """Rewrite a pure text GIF onto 2.6 text-to-image. Never leaves it on a video feature.
 
-    schemas: model id -> request schema (with a properties map). Missing schema means
-    edit cannot emit gif (the checked docs), so a still uses reference + text-to-image.
+    A still (image, images, refs, or base) raises StillGifUnsupported before any rewrite.
+    schemas is unused for that refusal: edit-with-gif is not a still-to-GIF path.
     """
     if not requests_gif(inputs):
         return inputs
-    schemas = schemas or {}
+    refuse_still_gif(inputs)
+    if schemas is not None and not isinstance(schemas, dict):
+        raise StillGifUnsupported(refusal_text())
     out = dict(inputs)
     params = dict(out.get("params") or {}) if isinstance(out.get("params"), dict) else {}
-    spec = gif_params(params.get("frame_count", out.get("frame_count")), params.get("frame_duration_ms", out.get("frame_duration_ms")))
+    raw_count = params.get("frame_count", out.get("frame_count"))
+    raw_ms = params.get("frame_duration_ms", out.get("frame_duration_ms"))
+    spec = gif_params(raw_count, raw_ms)
     params.update(spec)
     out["params"] = params
     out["output_format"] = "gif"
+    # Top-level copies stay equal to params so quote/confirm and the POST use one clamped count.
+    out["frame_count"] = spec["frame_count"]
+    out["frame_duration_ms"] = spec["frame_duration_ms"]
+    asked_count = asked_int(raw_count)
+    asked_ms = asked_int(raw_ms)
+    if asked_count is not None and asked_count != spec["frame_count"]:
+        out["gif_asked_frame_count"] = asked_count
+    if asked_ms is not None and asked_ms != spec["frame_duration_ms"]:
+        out["gif_asked_frame_duration_ms"] = asked_ms
     feature = str(out.get("feature") or "text_to_image")
     video = feature in _VIDEO_FEATURES or "video" in feature
-    refs = _refs(out)
-    edit_model = None
-    if refs and not video:
-        named = str(out.get("model") or "")
-        candidates = []
-        if named.endswith("/edit"):
-            candidates.append(named)
-        candidates.extend([FLARE_EDIT, SUNBURST_EDIT])
-        for cand in candidates:
-            if has_gif(schemas.get(cand)):
-                edit_model = cand
-                break
-    if edit_model:
-        out["feature"] = "image_edit"
-        out["model"] = edit_model
-        out["gif_route"] = "edit"
-    else:
-        out["feature"] = "text_to_image"
-        out["model"] = pick_t2i(None if video else out.get("model"))
-        if refs:
-            out["images"] = refs
-            out["gif_route"] = "reference_t2i"
-        else:
-            out["gif_route"] = "text_to_image"
+    out["feature"] = "text_to_image"
+    out["model"] = pick_t2i(None if video else out.get("model"))
+    out["gif_route"] = "text_to_image"
     out["gif_note"] = note_line(out["gif_route"])
     return out
 

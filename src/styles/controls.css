@@ -1,0 +1,122 @@
+/* Shared buttons. Uses existing color, border, and type tokens.
+   Scoped to .ca-btn so older panel buttons keep their current metrics. */
+
+.ca-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font: 500 14px/20px var(--ca-font);
+  cursor: pointer;
+}
+.ca-panel__foot > .ca-btn {
+  height: auto;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+.ca-btn .ca-icon,
+.ca-btn__icon { width: 16px; height: 16px; flex: none; }
+.ca-btn__label { min-width: 0; }
+
+.ca-btn.ca-panel__secondary {
+  border: 1px solid var(--ca-border);
+  background: var(--ca-float);
+  color: var(--ca-text);
+}
+.ca-btn.ca-panel__secondary:hover:not(:disabled) { background: var(--ca-hover); }
+.ca-btn.ca-panel__primary:not(.ca-panel__danger) {
+  border: 1px solid transparent;
+  background: var(--ca-strong);
+  color: var(--ca-float);
+}
+.ca-btn.ca-panel__primary:not(.ca-panel__danger):hover:not(:disabled) { opacity: .92; }
+.ca-btn.ca-panel__primary.ca-panel__danger {
+  border: 1px solid transparent;
+  background: var(--ca-error-text);
+  color: #fff;
+}
+:root[data-theme="dark"] .ca-btn.ca-panel__primary.ca-panel__danger {
+  background: var(--ca-error-bg);
+  color: var(--ca-error-text);
+}
+.ca-btn.ca-panel__primary.ca-panel__danger:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 999px rgba(255,255,255,.08);
+}
+
+.ca-btn:focus { outline: none; }
+.ca-btn:focus-visible {
+  outline: 1px solid var(--ca-text-2);
+  outline-offset: 2px;
+}
+.ca-btn:is(.ca-panel__primary, .ca-panel__secondary):disabled,
+.ca-btn:is(.ca-panel__primary, .ca-panel__secondary)[data-loading] {
+  background: var(--ca-field);
+  color: var(--ca-muted);
+  border-color: transparent;
+  box-shadow: none;
+  opacity: 1;
+  cursor: default;
+}
+.ca-btn[data-loading] { cursor: progress; }
+
+.ca-btn__spin {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ca-btn-spin .7s linear infinite;
+}
+@keyframes ca-btn-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ca-btn__spin { animation: none; border-right-color: currentColor; opacity: .7; }
+}
+
+/* Own the footer layout: Confirm is also rendered without canvas.css. */
+.ca-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+.ca-modal__card.ca-confirm {
+  border: var(--ca-border-w) solid var(--ca-border);
+}
+.ca-confirm__note,
+.ca-confirm__desc { margin: 0; }
+.ca-confirm__note { color: var(--ca-text-2); font-size: 13px; line-height: 20px; }
+.ca-confirm__desc { color: var(--ca-text); line-height: 22px; }
+
+@media (max-width: 420px) {
+  .ca-confirm .ca-confirm-actions > .ca-btn { flex: 1 1 120px; }
+}
+
+/* Nov 9 design decision: viewport (not container) below 380px.
+   Border-box keeps a 360px viewport at 328px outer card width. */
+@media (width < 380px) {
+  .ca-modal__card.ca-confirm {
+    box-sizing: border-box;
+    width: calc(100vw - 32px);
+  }
+  .ca-confirm > .ca-side__head { padding-left: 24px; padding-right: 24px; }
+  .ca-confirm > .ca-rename__body { padding-left: 24px; padding-right: 24px; }
+  .ca-confirm .ca-keys__row {
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
+    gap: 4px;
+  }
+  .ca-confirm .ca-keys__row > span { overflow-wrap: anywhere; }
+}

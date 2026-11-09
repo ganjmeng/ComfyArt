@@ -48,7 +48,7 @@ export async function deleteKey(): Promise<void> {
 }
 
 /** #159: source 'estimate' = the price API failed and `price` is the catalog estimate for `tier` (shown as 「估算价」/'Estimated'). */
-export interface Estimate { price: number | null; confirm_usd: number; confirm: boolean; source?: 'quote' | 'estimate' | 'unpriced' | 'none'; tier?: string; duration_estimated?: boolean }
+export interface Estimate { price: number | null; confirm_usd: number; confirm: boolean; source?: 'quote' | 'estimate' | 'unpriced' | 'none'; tier?: string; duration_estimated?: boolean; model?: string; provider?: string; effective?: boolean; effective_model?: string; gif_note?: string }
 
 /** Estimated cost of a cloud job (backend caches WaveSpeed's /model/price quote for 5 minutes). */
 export async function estimateCost(inputs: Record<string, unknown>): Promise<Estimate | null> {

@@ -28,6 +28,11 @@ export async function initLocale() {
   document.title = BRAND.pageTitle
 }
 
+export function previewLang(next: Lang) {
+  lang = next
+  if (typeof document !== 'undefined') document.documentElement.lang = next === 'zh' ? 'zh-CN' : 'en'
+}
+
 export function setLang(next: Lang) {
   writeLocal(KEY, next)
   location.reload()
@@ -42,6 +47,16 @@ function fill(text: string, args: (string | number)[]): string {
 export function t(key: string, ...args: (string | number)[]): string {
   const text = MESSAGES[lang][key] ?? MESSAGES.en[key] ?? key
   return fill(text, args)
+}
+
+/** Named placeholders from design copy tables ({next}, {prev}, {key}, …). */
+export function tn(key: string, vars: Record<string, string | number> = {}): string {
+  let text = MESSAGES[lang][key] ?? MESSAGES.en[key] ?? key
+  text = text.replace(/\{brand\}/g, BRAND.name)
+  for (const [name, value] of Object.entries(vars)) {
+    text = text.replaceAll(`{${name}}`, String(value))
+  }
+  return text
 }
 
 /** t() in a fixed language (#128: tool results carry both zh and en for the agent's reply). */

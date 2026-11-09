@@ -231,7 +231,7 @@ async def test_color_modes_preprocess_refs_for_edit(ws, monkeypatch):
     await wavespeed.submit({"feature": "image_edit", "prompt": "p", "images": [a, b], "prep": [None, "recolor"]})
     model, payload = ws["submits"][0]
     # #105/#134: no pick -> the curated default ("default" field), never the last item in the list.
-    assert default == "openai/gpt-image-2.5-flare/edit"
+    assert default == "openai/gpt-image-2.6-flare/edit"
     assert model == default and ws["uploads"] == 2 and len(payload["images"]) == 2
 
 

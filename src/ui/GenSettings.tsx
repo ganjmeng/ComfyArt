@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { DURATIONS, QUALITIES, RATIOS, RESOLUTIONS, SHOTS, STYLES, VIDEO_RATIOS, VIDEO_RESOLUTIONS, videoResolution } from '../genOptions'
 import { clampFrameCount, clampFrameMs, type GifSpec } from '../gifFile'
+import type { SvgSpec } from '../svgFile'
 import { FEATURE_MODELS, IMAGE_FEATURES, type ModelDef, VIDEO_FEATURES } from '../models'
 import type { GeneratorShape } from '../shapes/GeneratorShape'
 import { Chips } from './Chips'
@@ -42,7 +43,7 @@ export function settingsSummary(p: GeneratorShape['props'], video: boolean, caps
 
 type Update = (patch: Partial<GeneratorShape['props']>) => void
 
-export function SettingsPill({ p, video, quality, tiers, caps, update, align, within, side = 'top', complexities, complexity, onComplexity, gif, onGif }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update; align?: 'start' | 'end'; within?: string; side?: 'top' | 'bottom'; complexities?: string[]; complexity?: string; onComplexity?: (v: string) => void; gif?: GifSpec | null; onGif?: (next: GifSpec | null) => void }) {
+export function SettingsPill({ p, video, quality, tiers, caps, update, align, within, side = 'top', complexities, complexity, onComplexity, gif, onGif, svg, onSvg }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update; align?: 'start' | 'end'; within?: string; side?: 'top' | 'bottom'; complexities?: string[]; complexity?: string; onComplexity?: (v: string) => void; gif?: GifSpec | null; onGif?: (next: GifSpec | null) => void; svg?: SvgSpec | null; onSvg?: (next: SvgSpec | null) => void }) {
   const [open, setOpen] = useState(false)
   // #159: write the displayed video tier back, so the quote and the submit use what the card shows
   const vres = video ? shownVideoRes(p, caps) : null
@@ -55,7 +56,7 @@ export function SettingsPill({ p, video, quality, tiers, caps, update, align, wi
     <Popover open={open} onOpenChange={setOpen} side={side} align={align} within={within} viewportCap={side === 'bottom'} trigger={({ open: o, toggle }) => (
       <button type="button" className="ca-gen__pill" data-pill="settings" data-open={o || undefined} title={full} onClick={toggle}><span className="ca-icon ca-gen__pillicon">{Icons.adjust}</span><span className="ca-gen__pilltext">{rest ? <>{short}<span className="ca-gen__pillmore">{rest}</span></> : full}</span><span className="ca-gen__chev">{Icons.chevron}</span></button>
     )}>
-      <GenSettings p={p} video={video} quality={quality} tiers={tiers} caps={caps} update={update} complexities={complexities} complexity={complexity} onComplexity={onComplexity} gif={gif} onGif={onGif} />
+      <GenSettings p={p} video={video} quality={quality} tiers={tiers} caps={caps} update={update} complexities={complexities} complexity={complexity} onComplexity={onComplexity} gif={gif} onGif={onGif} svg={svg} onSvg={onSvg} />
     </Popover>
   )
 }
@@ -116,7 +117,25 @@ export function ModelPill({ video, model, picks, onPick, onAuto, align = 'end', 
   )
 }
 
-export function GenSettings({ p, video, quality, tiers, caps, update, complexities, complexity = '', onComplexity, gif, onGif }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update; complexities?: string[]; complexity?: string; onComplexity?: (v: string) => void; gif?: GifSpec | null; onGif?: (next: GifSpec | null) => void }) {
+function GifFrames({ gif, onGif }: { gif: GifSpec; onGif: (next: GifSpec | null) => void }) {
+  const frames = clampFrameCount(gif.frame_count)
+  const ms = clampFrameMs(gif.frame_duration_ms)
+  useEffect(() => {
+    if (gif.frame_count === frames && gif.frame_duration_ms === ms) return
+    onGif({ ...gif, frame_count: frames, frame_duration_ms: ms })
+  }, [gif, frames, ms, onGif])
+  return (
+    <>
+      <div className="ca-style__row">
+        <label className="ca-num"><span>{t('gen.frameCount')}</span><input type="number" min={2} max={16} value={frames} onChange={(e) => onGif({ ...gif, frame_count: clampFrameCount(e.target.value) })} /></label>
+        <label className="ca-num"><span>{t('gen.frameDuration')}</span><input type="number" min={20} max={2000} value={ms} onChange={(e) => onGif({ ...gif, frame_duration_ms: clampFrameMs(e.target.value) })} /></label>
+      </div>
+      <div className="ca-chat__hint">{t('genSettings.gifNote')}</div>
+    </>
+  )
+}
+
+export function GenSettings({ p, video, quality, tiers, caps, update, complexities, complexity = '', onComplexity, gif, onGif, svg, onSvg }: { p: GeneratorShape['props']; video: boolean; quality: boolean; tiers?: string[]; caps?: ModelDef; update: Update; complexities?: string[]; complexity?: string; onComplexity?: (v: string) => void; gif?: GifSpec | null; onGif?: (next: GifSpec | null) => void; svg?: SvgSpec | null; onSvg?: (next: SvgSpec | null) => void }) {
   // only what the selected model's schema accepts (#95); no enum in the schema means the full list
   const only = <T,>(all: T[], ok?: T[]) => (ok?.length ? all.filter((v) => ok.map(String).includes(String(v))) : all)
   const ratios = only(video ? VIDEO_RATIOS : RATIOS, caps?.ratios)
@@ -159,7 +178,7 @@ export function GenSettings({ p, video, quality, tiers, caps, update, complexiti
       <div className="ca-gen__label">{video ? t('common.duration') : t('genSettings.count')}</div>
       {video
         ? <Chips value={p.duration} options={(durations.length ? durations : DURATIONS).map((d) => [d, `${d}s`] as [number, string])} onPick={(d) => update({ duration: d })} gen />
-        : <Chips value={p.count} options={COUNTS.map((n) => [n, String(n)] as [number, string])} onPick={(n) => update({ count: n })} gen />}
+        : <Chips value={svg ? 1 : p.count} options={(svg ? [1] : COUNTS).map((n) => [n, String(n)] as [number, string])} onPick={(n) => update({ count: svg ? 1 : n })} gen />}
       {video && (
         <>
           <div className="ca-gen__label">{t('genSettings.cameraMotion')}</div>
@@ -187,17 +206,19 @@ export function GenSettings({ p, video, quality, tiers, caps, update, complexiti
               <div className="ca-chat__hint">{t('genSettings.complexityHint')}</div>
             </>
           )}
-          {!!caps?.outputFormats?.includes('gif') && onGif && (
+          {(!!caps?.outputFormats?.includes('gif') || !!caps?.outputFormats?.includes('svg')) && (onGif || onSvg) && (
             <>
               <div className="ca-gen__label">{t('genSettings.format')}</div>
-              <Chips value={gif ? 'gif' : ''} options={[['', t('common.default')], ['gif', 'GIF']] as [string, string][]} onPick={(v) => onGif(v === 'gif' ? { output_format: 'gif', frame_count: gif?.frame_count ?? 9, frame_duration_ms: gif?.frame_duration_ms ?? 200 } : null)} gen />
-              {gif && (
+              <Chips value={gif ? 'gif' : svg ? 'svg' : ''} options={[['', t('common.default')], ...(caps?.outputFormats?.includes('gif') ? [['gif', t('gen.outputGif')] as [string, string]] : []), ...(caps?.outputFormats?.includes('svg') ? [['svg', t('gen.outputSvg')] as [string, string]] : [])]} onPick={(v) => {
+                if (v === 'gif') { onSvg?.(null); onGif?.({ output_format: 'gif', frame_count: gif?.frame_count ?? 9, frame_duration_ms: gif?.frame_duration_ms ?? 200 }) }
+                else if (v === 'svg') { onGif?.(null); onSvg?.({ output_format: 'svg', n: 1 }); update({ count: 1 }) }
+                else { onGif?.(null); onSvg?.(null) }
+              }} gen />
+              {gif && onGif && <GifFrames gif={gif} onGif={onGif} />}
+              {svg && (
                 <>
-                  <div className="ca-style__row">
-                    <label className="ca-num"><span>{t('imageToolbar.gifFrames')}</span><input type="number" min={2} max={16} value={gif.frame_count} onChange={(e) => onGif({ ...gif, frame_count: clampFrameCount(e.target.value) })} /></label>
-                    <label className="ca-num"><span>{t('imageToolbar.gifMs')}</span><input type="number" min={20} max={2000} value={gif.frame_duration_ms} onChange={(e) => onGif({ ...gif, frame_duration_ms: clampFrameMs(e.target.value) })} /></label>
-                  </div>
-                  <div className="ca-chat__hint">{t('genSettings.gifNote')}</div>
+                  <div className="ca-chat__hint" data-testid="gen-svg-preview-hint">{t('gen.svgPreviewHint')}</div>
+                  <div className="ca-chat__hint">{t('genSettings.svgNote')}</div>
                 </>
               )}
             </>
