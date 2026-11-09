@@ -100,6 +100,8 @@ Keep the same person and face identity from the reference. Turn her to a 3/4 pro
 
 **Collage order:** **reference | banana | Seedream | Sunburst** (C-ref | C1 | C2 | C3). Label each: model · prompt summary · 1K · cost.
 
+**Size note (ran):** ref `portrait-studio/01.webp` is **1152×1536**. Script requested `resolution=1k` + `aspect_ratio=3:4` (tier, not ref pixels). Raw outs: C1 **896×1200**, C2 **886×1182**, C3 **880×1184** — expected provider 1k≈~880–900 × ~1180–1200, not a model defect.
+
 ## Group D — Person t2i (3) @ **1K** — evidence only
 
 No reference image. First collage panel = **prompt text card** (not a generation).
