@@ -26,6 +26,8 @@ export interface Job {
   stopping?: boolean
   /** Quoted USD stashed by stopJob for the 「已停止」 fee line. */
   stoppedCharged?: number
+  /** Refresh recovery: querying while authority is unknown; running once the task is confirmed live. */
+  phase?: 'querying' | 'running'
 }
 
 export interface Media { ref: ImageRef; src: string; w: number; h: number; kind: MediaKind }
@@ -83,6 +85,16 @@ const active = new Set<string>()
 const settled = new Set<string>()
 /** Reject waiters when the user stops a job that WaveSpeed cannot truly cancel mid-flight. */
 const dropped = new Map<string, (err: Error) => void>()
+/** R09: once a job reaches a terminal outcome, ignore late poll responses. */
+const terminals = new Map<string, { kind: 'ok' | 'error'; seq: number }>()
+let responseSeq = 0
+/** Ordered log of refresh/query outcomes for late-response audits (R09). */
+export const jobResponseLog: { jobId: string; kind: string; seq: number; at: number }[] = []
+function logJobResponse(jobId: string, kind: string) {
+  const seq = ++responseSeq
+  jobResponseLog.push({ jobId, kind, seq, at: Date.now() })
+  return seq
+}
 const placers: Record<string, Placer> = {}
 
 export interface JobResult { srcs: string[]; error?: string }
@@ -267,14 +279,29 @@ async function keepPartial(editor: Editor, holder: TLShape, job: Job): Promise<n
   return media.length
 }
 
+function markJobPhase(editor: Editor, holderId: TLShapeId, phase: 'querying' | 'running') {
+  const holder = editor.getShape(holderId)
+  const cur = holder ? jobOf(holder) : null
+  if (!holder || !cur || cur.phase === phase) return
+  editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: { ...cur, phase } as any } })
+}
+
 async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: ErrorSink) {
   if (active.has(job.id)) return
   active.add(job.id)
   try {
     const refs = await Promise.race([
-      waitForImages(job.id, job.node),
+      waitForImages(job.id, job.node, (status) => markJobPhase(editor, holderId, status)),
       new Promise<never>((_, reject) => dropped.set(job.id, reject)),
     ])
+    const seq = logJobResponse(job.id, 'ok')
+    // R09: never let a late success/error overwrite an earlier terminal outcome.
+    const prior = terminals.get(job.id)
+    if (prior) {
+      logJobResponse(job.id, `ignore-ok-after-${prior.kind}`)
+      return
+    }
+    terminals.set(job.id, { kind: 'ok', seq })
     settled.add(job.id)
     const media = await Promise.all(refs.map((r) => toMedia(r, refKind(viewUrl(r)) === 'video' ? 'video' : job.kind)))
     const holder = editor.getShape(holderId)
@@ -285,6 +312,18 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
     await (placers[job.placer ?? ''] ?? defaultPlacer)(editor, holder, media, job, onError)
     report(holderId, { srcs: media.map((m) => m.src) })
   } catch (e) {
+    const seq = logJobResponse(job.id, 'error')
+    const prior = terminals.get(job.id)
+    if (prior?.kind === 'ok') {
+      // Late error/running response after success: keep the terminal success.
+      logJobResponse(job.id, 'ignore-error-after-ok')
+      return
+    }
+    if (prior?.kind === 'error') {
+      logJobResponse(job.id, 'ignore-duplicate-error')
+      return
+    }
+    terminals.set(job.id, { kind: 'error', seq })
     const holder = editor.getShape(holderId)
     const live = holder ? jobOf(holder) : null
     const stopped = !!(live?.stopping || job.stopping)
@@ -420,7 +459,11 @@ export function spawnHolder(editor: Editor, beside: TLShape, size?: [number, num
 export function resumeJobs(editor: Editor, onError: ErrorSink) {
   for (const shape of editor.store.query.records('shape').get()) {
     const job = jobOf(shape)
-    if (job) void finish(editor, shape.id, job, onError)
+    if (!job) continue
+    // R02: show querying copy on the original card until authority answers.
+    const phased: Job = { ...job, phase: job.phase ?? 'querying' }
+    editor.updateShape({ id: shape.id, type: shape.type, meta: { ...shape.meta, job: phased as any } })
+    void finish(editor, shape.id, phased, onError)
   }
   return editor.sideEffects.registerAfterDeleteHandler('shape', (shape) => {
     const job = jobOf(shape)

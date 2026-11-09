@@ -321,8 +321,16 @@ export async function promptHistory(promptId: string): Promise<any> {
   return body[promptId]
 }
 
-async function waitForOutput<T>(promptId: string, node: string, pick: (out: Record<string, any>) => T | null): Promise<T> {
+export type JobPollStatus = 'querying' | 'running'
+
+async function waitForOutput<T>(
+  promptId: string,
+  node: string,
+  pick: (out: Record<string, any>) => T | null,
+  onStatus?: (status: JobPollStatus) => void,
+): Promise<T> {
   let misses = 0
+  onStatus?.('querying')
   for (;;) {
     const hist = await promptHistory(promptId)
     if (hist) {
@@ -348,8 +356,11 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
         return value
       }
       if (hist.status?.completed || hist.status?.status_str === 'error') throw new Error(t('jobs.noOutput'))
+      // Authority says the task still exists without terminal output yet.
+      onStatus?.('running')
     } else if (promptId.startsWith(WS_ID) || await inQueue(promptId)) {
       misses = 0
+      onStatus?.('running')
     } else if (++misses >= 2) {
       throw new Error(t('jobs.lost'))
     }
@@ -357,11 +368,15 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
   }
 }
 
-export function waitForImages(promptId: string, node: string): Promise<ImageRef[]> {
+export function waitForImages(
+  promptId: string,
+  node: string,
+  onStatus?: (status: JobPollStatus) => void,
+): Promise<ImageRef[]> {
   return waitForOutput(promptId, node, (out) => {
     const items = [...(out.images ?? []), ...(out.videos ?? []), ...(out.gifs ?? []), ...(out.audio ?? []), ...(out['3d'] ?? [])]
     return items.length ? items as ImageRef[] : null
-  })
+  }, onStatus)
 }
 
 export function waitForText(promptId: string, node: string): Promise<string> {

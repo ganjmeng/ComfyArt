@@ -126,12 +126,14 @@ export class GeneratorShapeUtil extends BaseBoxShapeUtil<GeneratorShape> {
 
 function GeneratorCard({ shape }: { shape: GeneratorShape }) {
   const editor = useEditor()
-  const job = shape.meta.job as { id: string; stopping?: boolean } | undefined
+  const job = shape.meta.job as { id: string; stopping?: boolean; phase?: 'querying' | 'running' } | undefined
+  const querying = job?.phase === 'querying'
   const error = useValue('generator error', () => (job ? undefined : resultsAtom.get()[shape.id]?.error), [job?.id, shape.id])
   return (
     <HTMLContainer
       className={job ? 'ca-gen-card ca-gen-frame' : 'ca-gen-card'}
       data-running={job ? true : undefined}
+      data-querying={querying ? true : undefined}
       style={{ width: '100%', height: '100%' }}
     >
       <span className="ca-gen-card__icon">{isVideo(shape.props.workflow) ? Icons.video : Icons.image}</span>
@@ -150,7 +152,10 @@ function GeneratorCard({ shape }: { shape: GeneratorShape }) {
           })}
         >{Icons.stop}</button>
       )}
-      {job && <div className="ca-gen-frame__pill">{t('taskDetails.generating')}</div>}
+      {job && querying && (
+        <div className="ca-gen-frame__pill" role="status" aria-live="polite">{t('jobs.queryingStatus')}</div>
+      )}
+      {job && !querying && <div className="ca-gen-frame__pill">{t('taskDetails.generating')}</div>}
     </HTMLContainer>
   )
 }
