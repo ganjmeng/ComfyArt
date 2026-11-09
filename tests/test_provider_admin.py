@@ -84,13 +84,21 @@ async def test_generate_image_keeps_gif_default_but_effective_is_wavespeed(clien
     assert to_gif["gif_default"]["provider"] == "replicate"
 
 async def test_missing_key_does_not_activate(client, monkeypatch):
+    """Gap 4: no-key draft editable; activate blocked with needs_key."""
     monkeypatch.delenv("REPLICATE_API_TOKEN", raising=False)
     res = await client.put("/comfyart/provider-admin/tool/edit_image", json=_route())
-    assert res.status == 409 and (await res.json())["activated"] is False
+    body = await res.json()
+    assert res.status == 409 and body["activated"] is False and body["error"] == "needs_key" and body.get("saved") is False
     assert provider_admin._tool_record("edit_image")["active"] is None
+    assert provider_admin._tool_record("edit_image").get("draft") in (None, {})
     draft = await client.put("/comfyart/provider-admin/tool/edit_image", json=_route(activate=False))
-    assert draft.status == 200 and (await draft.json())["activated"] is False
-    assert provider_admin._tool_record("edit_image")["active"] is None
+    draft_body = await draft.json()
+    assert draft.status == 200 and draft_body["activated"] is False
+    rec = provider_admin._tool_record("edit_image")
+    assert rec["active"] is None
+    assert rec["draft"] is not None
+    assert rec["draft"]["primary"]["provider"] == "replicate"
+    assert rec["draft"]["primary"]["model"] == FLARE
 
 
 async def test_tool_coexistence_and_restore(monkeypatch):
@@ -321,6 +329,81 @@ async def test_batch_skips_unconnected_tools(client, monkeypatch):
     edit = next(row for row in body["tools"] if row["id"] == "edit_image")
     assert video["effective"]["source"] == "default"
     assert edit["effective"]["provider"] == "replicate" and edit["usable"] is False
+
+
+async def test_batch_only_mutates_selected_tools(client, monkeypatch):
+    """Gap 4: PUT /tools/batch only changes checked ids; unselected stay put."""
+    monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
+    # Seed two connected tools differently.
+    seed_edit = await client.put("/comfyart/provider-admin/tool/edit_image", json=_route(SUNBURST))
+    assert seed_edit.status == 200
+    seed_gen = await client.put("/comfyart/provider-admin/tool/generate_image", json=_route(FLARE))
+    assert seed_gen.status == 200
+    before_edit = provider_admin._tool_record("edit_image")
+    before_gen = provider_admin._tool_record("generate_image")
+    assert before_edit["active"]["primary"]["model"] == SUNBURST
+    assert before_gen["active"]["primary"]["model"] == FLARE
+    # Batch only generate_image → Sunburst; edit_image must remain untouched.
+    res = await client.put("/comfyart/provider-admin/tools/batch", json={
+        "ids": ["generate_image"],
+        "primary": {"provider": "replicate", "model": SUNBURST},
+        "backup": None,
+        "fallback": False,
+        "activate": True,
+    })
+    body = await res.json()
+    assert res.status == 200 and body["applied"] == ["generate_image"]
+    assert "edit_image" not in body["applied"]
+    after_edit = provider_admin._tool_record("edit_image")
+    after_gen = provider_admin._tool_record("generate_image")
+    assert after_edit["active"] == before_edit["active"]
+    assert after_edit["revision"] == before_edit["revision"]
+    assert after_gen["active"]["primary"]["model"] == SUNBURST
+    assert after_gen["revision"] == before_gen["revision"] + 1
+    edit_row = next(row for row in body["tools"] if row["id"] == "edit_image")
+    gen_row = next(row for row in body["tools"] if row["id"] == "generate_image")
+    assert edit_row["effective"]["model"] == SUNBURST
+    assert gen_row["effective"]["model"] == SUNBURST
+
+
+async def test_batch_missing_key_blocks_activate_allows_draft(client, monkeypatch):
+    """Gap 4: batch activate without REPLICATE key → needs_key; draft-only writes selected."""
+    monkeypatch.delenv("REPLICATE_API_TOKEN", raising=False)
+    provider_admin._write_tool("edit_image", {"revision": 0, "active": None, "previous": None, "draft": None})
+    provider_admin._write_tool("generate_image", {"revision": 0, "active": None, "previous": None, "draft": None})
+    blocked = await client.put("/comfyart/provider-admin/tools/batch", json={
+        "ids": ["edit_image", "generate_image"],
+        "primary": {"provider": "replicate", "model": FLARE},
+        "backup": None,
+        "fallback": False,
+        "activate": True,
+    })
+    blocked_body = await blocked.json()
+    assert blocked.status == 409 and blocked_body["error"] == "needs_key" and blocked_body.get("saved") is False
+    assert provider_admin._tool_record("edit_image")["active"] is None
+    assert provider_admin._tool_record("generate_image")["active"] is None
+    drafted = await client.put("/comfyart/provider-admin/tools/batch", json={
+        "ids": ["edit_image"],
+        "primary": {"provider": "replicate", "model": FLARE},
+        "backup": None,
+        "fallback": False,
+        "activate": False,
+    })
+    drafted_body = await drafted.json()
+    assert drafted.status == 200 and drafted_body["activated"] is False and drafted_body["applied"] == ["edit_image"]
+    assert provider_admin._tool_record("edit_image")["draft"]["primary"]["model"] == FLARE
+    assert provider_admin._tool_record("generate_image")["draft"] is None
+    assert provider_admin._tool_record("edit_image")["active"] is None
+
+
+async def test_llm_missing_key_cannot_activate(client, monkeypatch):
+    """Gap 4: DeepSeek without DEEPSEEK_API_KEY cannot activate/save."""
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    before = provider_admin.active_llm()
+    res = await client.put("/comfyart/provider-admin/llm", json={"provider": "deepseek", "model": "deepseek-flash"})
+    body = await res.json()
+    assert res.status == 409 and body["error"] == "needs_key" and body.get("saved") is False
+    assert provider_admin.active_llm() == before
 
 
 async def test_svg_stays_on_the_original_route_and_gif_backup_is_rejected(client, monkeypatch):

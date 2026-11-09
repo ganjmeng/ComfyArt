@@ -416,7 +416,12 @@ async def put_llm_provider(request: web.Request) -> web.Response:
     issues = _issues_llm(body)
     if issues:
         return web.json_response({"error": "invalid llm provider", "issues": issues}, status=400)
-    active = {"provider": str(body["provider"]), "model": str(body["model"])}
+    provider = str(body["provider"])
+    model = str(body["model"])
+    # Gap 4: no-key draft — DeepSeek may be edited in UI, but activate/save requires DEEPSEEK_API_KEY.
+    if provider == "deepseek" and not _env_configured("DEEPSEEK_API_KEY"):
+        return web.json_response({"error": "needs_key", "saved": False, "activated": False}, status=409)
+    active = {"provider": provider, "model": model}
     state = _save_section("llm", active)
     log.info("llm provider saved provider=%s model=%s revision=%s", active["provider"], active["model"], state["llm"]["revision"])
     return web.json_response(state)

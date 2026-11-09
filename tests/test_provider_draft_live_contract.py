@@ -33,3 +33,18 @@ def test_unedited_primary_reads_draft_route_not_blank():
     assert "drafts[current.id] ?? draftRoute(current)" in SRC or 'drafts[current.id] ?? draftRoute(current)' in SRC
     assert "drafts[current.id] || blank()" not in SRC
     assert "setDrafts({})" in SRC
+
+
+def test_gap4_save_error_does_not_call_absorb():
+    """On save failure, in-session drafts stay: catch only setError(failText), absorb stays in then()."""
+    # saveOne: then → absorb; catch → setError(failText) without absorb.
+    assert "function failText" in SRC or "failText(e" in SRC
+    idx_save = SRC.find("const saveOne")
+    assert idx_save > 0
+    chunk = SRC[idx_save:idx_save + 900]
+    assert "absorb(next)" in chunk
+    assert "setError(failText(e))" in chunk
+    # catch block must not call absorb
+    catch = chunk[chunk.find(".catch"):chunk.find(".finally")]
+    assert "absorb" not in catch
+
