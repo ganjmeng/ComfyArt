@@ -1,0 +1,32 @@
+QA unpaid UI shots — http://127.0.0.1:8192/comfyart/
+Expected tip: main 7369e04
+Hard-refresh: Ctrl+Shift+R done
+Constraints: no Save providers; no Generate/Submit/继续生成; no API keys — observed
+
+1) Settings → Providers
+   PASS — opened Providers dialog (Settings → Providers)
+
+2) Tool generate_image (Generate image)
+   Live/effective: WaveSpeed, the system default
+     → PASS (shows WaveSpeed)
+   Primary draft radio: Replicate · Flare selected (data-on / radio filled); WaveSpeed · current model NOT selected
+     → FAIL (expected Primary = WaveSpeed, not Replicate·Flare)
+   Screenshots:
+     - genimg-primary-live-wavespeed.png (full Providers panel)
+     - genimg-primary-closeup.png (Primary picks closeup)
+
+3) Tool to_gif / Still to GIF
+   Live/effective: Replicate · Flare, the system default
+     → PASS
+   Primary draft: Replicate · Flare selected
+     → PASS
+   WaveSpeed primary: disabled with tip「静图转动图主线路禁止 WaveSpeed，请用 Replicate」
+     → PASS
+   Screenshot:
+     - stillgif-primary-flare.png
+
+4) Tip / version
+   Tip/hash 7369e04: NOT shown in UI (Providers, Settings menu, page title, or visible chrome)
+     → NOTE — none visible; task assumed tip main 7369e04
+
+Overall: FAIL (generate_image Primary draft is Replicate·Flare, expected WaveSpeed)
