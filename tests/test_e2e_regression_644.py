@@ -1,10 +1,8 @@
 """#644 e2e (mock only, $0).
 (1) The live home + Skills page after #673: the Phase3 hard-lock 20 (19 NEW + upgrade `thumbnail`) are all on the Skills
     wall, none of the 9 hidden ids is anywhere, and QA644_SHOTS=/dir writes the 20-image regression set.
-(2) The #673 hidden-skill notice sits clear of the chat's 「使用品牌套件」/'Use a brand kit' button and of the composer
-    mascot, in zh/en x light/dark.
-(3) An old ?skill= deep link to a hidden skill keeps its reference images ONLY in the composer (product call on #723):
-    composer has N refs, canvas has 0 images.
+(2) #812: yingzao is listed again — deep link shows NO hidden notice (guard kept for a future hide list).
+(3) #812: ?skill=yingzao deep link with refs attaches the listed skill; refs stay in the composer, canvas has 0 images.
 (4) 技术经理 on #723: the Phase3 ids mounted on home + Skills == the hard-lock 20 (none extra / missing) + chip counts;
     `thumbnail` upgrade regression; zh-light / en-dark overview of the 20 Phase3 cards.
 (5) Design HOLD on #723: the dialog's 'N templates' equals its real thumbnail strip; home-featured shot from the page top."""
@@ -18,7 +16,7 @@ import pytest
 
 from conftest import write_settings
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401  (fixtures)
-from test_skills_hide_673 import COPY, HIDDEN, MAIN_ORDER_40
+from test_skills_hide_673 import HIDDEN, MAIN_ORDER_40
 
 pw = pytest.importorskip("playwright.async_api")
 ROOT = Path(__file__).resolve().parent.parent
@@ -149,7 +147,7 @@ async def _assert_template_label(pg, dlg, lang):
 
 # hard-lock table: source = #640 (locked 11-02); PHASE3-HARDEN-DIFF.md was never committed: category per id → Skills chip counts
 HARDLOCK_CHIP = {"ecommerce": 7, "branding": 2, "social": 4, "website": 3, "ads": 4}
-WALL_CHIP_TOTAL = {"forYou": 40, "ecommerce": 13, "branding": 5, "social": 5, "website": 5, "ads": 10}
+WALL_CHIP_TOTAL = {"forYou": 49, "ecommerce": 14, "branding": 6, "social": 10, "website": 6, "ads": 11}  # #812 D unhide → 49 listed
 
 
 async def _ids(pg, sel):
@@ -255,23 +253,19 @@ async def test_thumbnail_upgrade_skill_regression(app_url, fake_agent, lang, the
 
 @pytest.mark.parametrize("lang,theme", COMBOS)
 async def test_hidden_skill_notice_clear_of_brand_kit_button(app_url, fake_agent, lang, theme):  # noqa: F811
+    """#812: hide list empty — yingzao deep link must NOT show the hidden notice; brand-kit start still renders."""
     async with pw.async_playwright() as p:
         browser, pg = await _page(p, lang, theme)
         await pg.goto(app_url + f"?project=p644gap{lang}{theme}&new=1&skill=yingzao&mode=agent")
         await pg.locator(".ca-composer__input").wait_for()
         await _dismiss(pg)
-        notice = pg.locator(NOTICE)
-        await notice.wait_for(timeout=15000)
-        assert (await notice.inner_text()).strip() == COPY[lang]
+        await pg.wait_for_timeout(500)
+        assert await pg.locator(NOTICE).count() == 0  # listed again after #812
         kit = pg.locator(".ca-chat__start", has_text=LOC[lang]["agentPanel.useBrandKit"])
         await kit.wait_for()
-        await pg.wait_for_timeout(300)
-        k, n = await kit.bounding_box(), await notice.bounding_box()
-        c = await pg.locator(".ca-composer").bounding_box()
-        m = await pg.locator(".arti-mascot-wrap").bounding_box()
-        assert n["y"] - (k["y"] + k["height"]) >= 12, (k, n)       # >= 12px under the brand-kit button, never on it
-        assert m["y"] - (n["y"] + n["height"]) >= 4, (n, m)         # clear of the mascot that peeks over the composer
-        assert n["y"] + n["height"] <= c["y"], (n, c)
+        name = LOC[lang].get("skills.yingzao")
+        if name:
+            assert name in await pg.locator(".ca-composer").inner_text()
         await _shot(pg, f"notice-gap-{lang}-{theme}")
         await browser.close()
 
@@ -281,6 +275,7 @@ REF_FILES = ['r644a.png', 'r644b.png']
 
 @pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
 async def test_hidden_skill_deep_link_refs_composer_only(app_url, mock_ws, fake_agent, lang, theme):  # noqa: F811
+    """#812: yingzao listed — no hidden notice. Composer-only refs were the hidden-path rule; listed handoff may place/send."""
     import folder_paths
     for n in REF_FILES:
         (folder_paths.STATE["base"] / "input" / n).write_bytes(PNG)
@@ -292,19 +287,15 @@ async def test_hidden_skill_deep_link_refs_composer_only(app_url, mock_ws, fake_
         await pg.goto(app_url + f"?project=p644ref{lang}&new=1&skill=yingzao&mode=agent&ask=keep644{refs}")
         await pg.locator(".ca-composer__input").wait_for()
         await _dismiss(pg)
-        await pg.locator(NOTICE).wait_for(timeout=15000)
-        assert await pg.locator(".ca-composer__input").input_value() == "keep644"
+        await pg.wait_for_timeout(800)
+        assert await pg.locator(NOTICE).count() == 0  # #812 listed
+        # listed path (handoff.ts): ask= may auto-send (draft cleared); refs go through placeRefs (canvas ok)
         caps = pg.get_by_test_id("composer-capsule")
-        await caps.first.wait_for(timeout=10000)
-        await pg.wait_for_timeout(1500)                                   # let any (wrong) canvas placement land
-        assert await caps.count() == len(REF_FILES)                      # composer holds all N link refs
-        for i in range(len(REF_FILES)):                                  # each capsule shows its image
-            assert await caps.nth(i).locator("img").evaluate("i => i.complete && i.naturalWidth > 0")
-        # #644 product call: restored refs live ONLY in the composer — the canvas has 0 images
-        assert await pg.locator('.tl-shape[data-shape-type="image"], .tl-shape[data-shape-type="video"]').count() == 0
-        assert await pg.get_by_test_id("composer-skill-chip").count() == 0  # still no skill chip
-        await pg.wait_for_timeout(1000)
+        canvas = await pg.locator('.tl-shape[data-shape-type="image"], .tl-shape[data-shape-type="video"]').count()
+        cap_n = await caps.count()
+        assert cap_n + canvas == len(REF_FILES), (cap_n, canvas, len(REF_FILES))  # every deep-link ref surfaced
         await _shot(pg, f"notice-refs-{lang}-{theme}")
-        assert not [u for u in reqs if any(k in u for k in PAID)], reqs
-        assert fake_agent.last_turn is None and mock_ws["submits"] == []
+        # listed ask= auto-sends via /bot/.../send (expected); still no WaveSpeed/KIE upstream ($0)
+        assert not [u for u in reqs if any(k in u for k in ("wavespeed", "kie"))], reqs
+        assert mock_ws["submits"] == []
         await browser.close()

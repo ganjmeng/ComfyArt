@@ -6,3 +6,4 @@ group A end=44.209849 total=0.0756 (cap 0.08)
 group B start=44.209849
 taobao-product id=f91c28d393de4f008ad5c041b83241c0 before=44.209849 after=44.172049 cost=0.0378 ok (attempt 1/3)
 group B end=44.172049 total=0.0378 (cap 0.30)
+# correction 2026-11-10 (#870): p4 attempt2 id=6795c6c7621145e8b08e976bf59f8661 (created 2026-11-04T15:41:24.848Z UTC / 23:41:24 Asia/Shanghai) balance 43.635906→43.560306 delta=0.0756 vs list 0.0378. Extra 0.0378 = concurrent id=8388963703d54ceda9e10a3b058982ce model=google/nano-banana-2.1/edit created 2026-11-04T15:41:31.844Z (≈7s later, inference 25479ms). Task match: lr736 promo tag a in docs/design/673/next/lr736/spend-log.jsonl ("lost (run interrupted before logging)", after=43.560306, t≈23:41 Asia/Shanghai). Source: WaveSpeed POST /api/v3/predictions filters created_after=2026-11-04T15:30:00Z created_before=2026-11-04T15:50:00Z + GET /api/v3/predictions/{id}/result; local spend-log.jsonl + next673/calls.jsonl.

@@ -142,10 +142,12 @@ def test_frontend_auto_pill_mirrors_backend():
     assert "chatMessage.skillPinnedModel" in (ROOT / "src/locales/zh.json").read_text()
     assert "{0} 技能固定模型" in (ROOT / "src/locales/zh.json").read_text()
     assert "data-testid=\"auto-model-label\"" in chat or "auto-model-label" in chat
+    # #870 design: in-frame gen-card Auto row removed; SelectionLabel + process rail keep auto-model-label
     gen = (ROOT / "src/shapes/GeneratorShape.tsx").read_text()
-    assert "ca-gen-frame__model" in gen and "autoPillLabel" in gen
-    # Not a colored capsule for the model row
-    assert "ca-gen-frame__model" in (ROOT / "src/styles/canvas.css").read_text()
+    assert "ca-gen-frame__model" not in gen and "autoPillLabel" not in gen
+    assert "ca-gen-frame__model" not in (ROOT / "src/styles/canvas.css").read_text()
+    sel = (ROOT / "src/ui/SelectionLabel.tsx").read_text()
+    assert "autoPillLabel" in sel and "ca-label__model" in sel and "auto-model-label" in sel
 
 
 def test_resolve_model_choice_auto_and_manual(catalog):

@@ -57,8 +57,31 @@ async function main() {
   }
   guard.requests = requests
   globalThis.fetch = realFetch
+  // #870: hide list empty after #812 — temporarily put one builtin on the Set so the
+  // banner + attach-refusal path stays covered ($0). Mutate the runtime Set only; array stays [].
+  const hideSet = S.HIDDEN_BUILTIN_SKILL_ID_SET as Set<string>
+  const probeId = 'yingzao'
+  hideSet.add(probeId)
+  const sim: Record<string, unknown> = {}
+  try {
+    for (const lg of ['zh', 'en'] as const) {
+      setLang(lg)
+      const skill = all.find((x) => x.id === probeId)!
+      S.skillNoticeAtom.set(null); S.skillAtom.set(null)
+      const attached = S.attachSkill(skill)
+      sim[lg] = {
+        attached,
+        chip: S.skillAtom.get()?.id ?? null,
+        notice: S.skillNoticeAtom.get(),
+        blocked: S.blockHiddenSkill(skill),
+        noticeCopy: S.hiddenSkillNotice(skill),
+      }
+    }
+  } finally {
+    hideSet.delete(probeId)
+  }
   setLang('zh')
-  console.log(JSON.stringify({ guard,
+  console.log(JSON.stringify({ guard, simulatedHidden: sim,
     hidden: S.HIDDEN_BUILTIN_SKILL_IDS, builtinAll: S.BUILTIN_SKILLS.map((s) => s.id), listed: listed.map((s) => s.id),
     chips, byChip, featured, agentList, hiddenReads, resolved, listedReadId: (listedRead as any).id, unknown,
   }))
