@@ -74,9 +74,11 @@ test('phase subscription can be removed without affecting an outstanding request
   assert.equal(observed, 1)
   assert.equal(h.counts().succeeded, 1)
 })
-test('unpriced, missing, nonfinite or negative quotes cannot enable real paid submit', () => {
-  for (const price of [null, NaN, Infinity, -Infinity, -1]) assert.equal(canSubmitPricedConfirmation(price), false)
-  assert.equal(canSubmitPricedConfirmation(0.05, true), false)
+test('open-ended/null may continue; nonfinite or negative cannot', () => {
+  assert.equal(canSubmitPricedConfirmation(null), true)
+  assert.equal(canSubmitPricedConfirmation(null, true), true)
+  assert.equal(canSubmitPricedConfirmation(0.05, true), true)
+  for (const price of [NaN, Infinity, -Infinity, -1]) assert.equal(canSubmitPricedConfirmation(price), false)
   assert.equal(canSubmitPricedConfirmation(0.05), true)
   assert.equal(canSubmitPricedConfirmation(0), true)
 })
