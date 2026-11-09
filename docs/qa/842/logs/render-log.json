@@ -1,0 +1,44 @@
+[
+  {
+    "scene": "zh-adjusted",
+    "ok": true,
+    "bytes": 71603,
+    "errors": [],
+    "text": "openai/gpt-image-2.6-flare/text-to-image\n这次云端生成约需 7 积分，GIF 16 帧（已从 99 帧调整），每帧 20 毫秒（已从 5 毫秒调整），确定继续吗？\n取消继续生成"
+  },
+  {
+    "scene": "en-adjusted",
+    "ok": true,
+    "bytes": 68107,
+    "errors": [],
+    "text": "openai/gpt-image-2.6-flare/text-to-image\nThis cloud job costs about 7 credits, GIF 16 frames (adjusted from 99), 20 ms per frame (adjusted from 5). Continue?\nCancelGenerate"
+  },
+  {
+    "scene": "zh-edge",
+    "ok": true,
+    "bytes": 64452,
+    "errors": [],
+    "text": "openai/gpt-image-2.6-flare/text-to-image\n这次云端生成约需 7 积分，GIF 9 帧，每帧 200 毫秒，确定继续吗？\n取消继续生成"
+  },
+  {
+    "scene": "zh-low",
+    "ok": true,
+    "bytes": 67592,
+    "errors": [],
+    "text": "openai/gpt-image-2.6-flare/text-to-image\n这次云端生成约需 7 积分，GIF 2 帧（已从 1 帧调整），每帧 200 毫秒，确定继续吗？\n取消继续生成"
+  },
+  {
+    "scene": "zh-estimate",
+    "ok": true,
+    "bytes": 78340,
+    "errors": [],
+    "text": "openai/gpt-image-2.6-flare/text-to-image\n估算价：GIF 16 帧（已从 99 帧调整），每帧 20 毫秒（已从 5 毫秒调整），约 7 积分（暂时查不到实时价格，以实际扣费为准），确定继续吗？\n取消继续生成"
+  },
+  {
+    "scene": "zh-unpriced",
+    "ok": true,
+    "bytes": 78207,
+    "errors": [],
+    "text": "openai/gpt-image-2.6-flare/text-to-image\n暂时查不到准确价格。GIF 16 帧（已从 99 帧调整），每帧 20 毫秒（已从 5 毫秒调整）。继续会按这个档位实际扣费，确定继续吗？\n取消继续生成"
+  }
+]
