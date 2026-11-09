@@ -390,3 +390,61 @@ async def test_llm_rehearsal_does_not_call_or_save(client, monkeypatch):
     assert body["kind"] == "rehearsal" and "没有联网" in body["message"]
     assert body["thinking"] == "disabled" and body["round"][1]["tool_calls"][0]["id"] == "call_local"
     assert provider_admin.active_llm() == before
+
+
+async def test_gif_defaults_to_replicate_26_and_llm_defaults_official(monkeypatch):
+    from ComfyArt.api.wavespeed import WaveSpeedError
+    from ComfyArt.bot.providers import TurnRequest, get_provider
+    posts = []
+
+    async def post(url, body, token):
+        posts.append(url)
+        return "pred_gif"
+
+    async def orig(inputs):
+        return "wave"
+
+    monkeypatch.setattr(provider_admin, "_post_prediction", post)
+    monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test-not-a-real-deepseek-key")
+    assert await provider_admin.dispatch_submit({"feature": "text_to_image", "prompt": "still"}, orig) == "wave"
+    assert await provider_admin.dispatch_submit({"feature": "text_to_video", "prompt": "clip"}, orig) == "wave"
+    gif = {"feature": "text_to_image", "prompt": "loop", "params": {"output_format": "gif"}}
+    with pytest.raises(WaveSpeedError) as caught:
+        await provider_admin.dispatch_submit(gif, orig)
+    assert caught.value.unpriced and caught.value.confirm_token and posts == []
+    assert await provider_admin.dispatch_submit({**gif, "confirm_token": caught.value.confirm_token}, orig) == "pred_gif"
+    assert posts == ["https://api.replicate.com/v1/models/openai/gpt-image-2.6-flare/predictions"]
+    again = await provider_admin.dispatch_submit({**gif, "confirm_token": "spent"}, orig)
+    assert again == "pred_gif" and len(posts) == 1
+    sun = {"feature": "text_to_image", "prompt": "sun", "model": "openai/gpt-image-2.6-sunburst/text-to-image", "params": {"output_format": "gif"}}
+    with pytest.raises(WaveSpeedError) as caught:
+        await provider_admin.dispatch_submit(sun, orig)
+    posts.clear()
+    assert await provider_admin.dispatch_submit({**sun, "confirm_token": caught.value.confirm_token}, orig) == "pred_gif"
+    assert posts == ["https://api.replicate.com/v1/models/openai/gpt-image-2.6-sunburst/predictions"]
+    monkeypatch.delenv("REPLICATE_API_TOKEN")
+
+    async def wave(inputs):
+        posts.append("wave")
+        return "wave"
+
+    with pytest.raises(WaveSpeedError) as caught:
+        await provider_admin.dispatch_submit({"feature": "text_to_image", "prompt": "nokey", "params": {"output_format": "gif"}}, wave)
+    assert caught.value.kind == "provider_unconfigured" and "wave" not in posts
+    monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
+    provider_admin._write_tool("to_gif", {
+        "revision": 3,
+        "active": {"primary": {"provider": "wavespeed", "model": "existing"}, "backup": None, "fallback": False},
+        "previous": None,
+    })
+    ref = {"tool": "to_gif", "feature": "text_to_image", "prompt": "keep", "image": "https://cdn.example/a.png", "params": {"output_format": "gif"}}
+    assert await provider_admin.dispatch_submit(ref, orig) == "wave"
+    route = provider_admin.llm_route()
+    assert route["model"] == "deepseek-flash" and route["base_url"] == "https://api.deepseek.com"
+    monkeypatch.delenv("DEEPSEEK_API_KEY")
+    missed = await get_provider("local-llm").send(TurnRequest(chat_id="c", user_text="hi"), None, None)
+    assert "DEEPSEEK_API_KEY" in missed.error and "未发送" in missed.error
+    provider_admin._save_section("llm", {"provider": "wavespeed", "model": "existing"})
+    assert provider_admin.llm_route() is None
+    assert provider_admin.active_llm()["provider"] == "wavespeed"

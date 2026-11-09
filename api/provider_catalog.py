@@ -483,7 +483,7 @@ def render_audit_markdown() -> str:
         "",
         "## LLM",
         "",
-        "生产默认仍是 WaveSpeed `https://llm.wavespeed.ai/v1` 上的 `deepseek/deepseek-v4.1-flash-1017`。",
+        "没有管理员覆盖时，语言模型默认是官方 `https://api.deepseek.com` 的 `deepseek-flash`。显式保存 WaveSpeed 才继续用 `deepseek/deepseek-v4.1-flash-1017`。",
         "官方可选项是 `https://api.deepseek.com` 的 `deepseek-flash`（文档：现由 DeepSeek-V4.1-Flash-1017 提供）和 `deepseek-v4-pro`。",
         "调用名不同。官方省略 thinking 时默认开启思考；思考模式下工具调用必须回传 reasoning_content，否则 400。",
         "现有 Agent 不回传 reasoning_content，因此官方路由会显式关闭思考。deepseek-flash 非思考温度固定 1.0。",

@@ -83,8 +83,8 @@ export function ProviderAdmin() {
       setPicked(first)
       setDrafts(Object.fromEntries(next.tools.map((tool) => [tool.id, tool.active ? { ...tool.active, backup: tool.active.backup || null } : blank()])))
       const llm = next.llm.active
-      setLlmProvider(llm?.provider || 'wavespeed')
-      setLlmModel(llm?.model || 'existing')
+      setLlmProvider(llm?.provider || 'deepseek')
+      setLlmModel(llm?.model || 'deepseek-flash')
     }).catch((e: unknown) => {
       if (e instanceof ProviderAdminError && e.status === 403) setForbidden(true)
       else setError(e instanceof Error ? e.message : String(e))
@@ -209,6 +209,8 @@ export function ProviderAdmin() {
                   <b>{liveText(current)}</b>
                 </p>
                 {!current.connected && <p className="ca-prov__quiet" data-testid="provider-unverified">{tx('这条先继续用 WaveSpeed。Replicate 还没接通，不是不能用。', 'This stays on WaveSpeed. Replicate is not wired yet, which is not the same as unusable.')}</p>}
+                {current.gif_default && current.effective.provider !== 'replicate' && <p className="ca-prov__quiet" data-testid="provider-gif-default">{tx('文生 GIF 和参考图 GIF 默认走 Replicate，型号与这次请求里的 GPT Image 2.6 相同；没点名就是 Flare。静图不改。没有密钥不会改回 WaveSpeed。', 'Text GIFs and reference GIFs default to Replicate, using the same GPT Image 2.6 named in the request, or Flare when none is named. Stills stay. A missing key does not fall back to WaveSpeed.')}</p>}
+                {current.blocked === 'needs_key' && <p className="ca-prov__banner" data-testid="provider-nokey">{tx('还没有 Replicate 密钥。这条默认不能用，也不会改回 WaveSpeed。', 'No Replicate key. This default cannot run, and it does not fall back to WaveSpeed.')}</p>}
                 <div className="ca-prov__block">
                   <h4>{tx('主线路', 'Primary')}</h4>
                   <ChoiceList value={draft.primary} choices={current.choices} testId="provider-primary" onChange={(primary) => setDrafts({ ...drafts, [current.id]: { ...draft, primary } })} />
@@ -228,7 +230,7 @@ export function ProviderAdmin() {
                 </label>
                 {dirty && <p className="ca-prov__impact" data-testid="provider-impact">{impact(current, draft)}</p>}
                 {(current.blocked === 'needs_user_confirm' || current.blocked === 'quote_unknown') && current.effective.source === 'saved' && <p className="ca-prov__banner" role="status" data-testid="provider-blocked">{tx('已保存。Replicate 按质量和输入计费，官方没有给出硬上限，这里不编造价格。下次生成会先问使用的人；不同意就不会发送。管理员保存不等于别人同意付费。', 'Saved. Replicate bills by quality and inputs, and the official page gives no hard cap, so no price is invented here. The next run asks the person generating; declining sends nothing. An admin save is not someone else agreeing to pay.')}</p>}
-                {!current.key_ok && draft.primary.provider === 'replicate' && <p className="ca-prov__banner" data-testid="provider-nokey">{tx('还没有 Replicate 密钥。可以先留草稿，不能启用。', 'No Replicate key yet. You can keep a draft, but you cannot turn it on.')}</p>}
+                {!current.key_ok && current.blocked !== 'needs_key' && draft.primary.provider === 'replicate' && <p className="ca-prov__banner" data-testid="provider-nokey">{tx('还没有 Replicate 密钥。可以先留草稿，不能启用。', 'No Replicate key yet. You can keep a draft, but you cannot turn it on.')}</p>}
                 {notice && <p className="ca-prov__banner" role="status" data-testid="provider-saved">{notice}</p>}
                 {error && <p className="ca-prov__banner" role="alert" data-testid="provider-error">{error}</p>}
                 <details className="ca-prov__more" data-testid="provider-details" onToggle={(e) => setDetails((e.target as HTMLDetailsElement).open)}>
@@ -286,6 +288,7 @@ export function ProviderAdmin() {
 
 function Status({ tool, dirty }: { tool: ToolRow; dirty: boolean }) {
   if (dirty) return <span className="ca-prov__chip" data-state="draft">{tx('未保存', 'Unsaved')}</span>
+  if (tool.blocked === 'needs_key') return <span className="ca-prov__chip" data-state="blocked">{tx('缺密钥', 'No key')}</span>
   if (tool.effective.source === 'default') return <span className="ca-prov__chip">{tx('默认', 'Default')}</span>
   if (tool.blocked === 'needs_user_confirm' || tool.blocked === 'quote_unknown') return <span className="ca-prov__chip" data-state="draft">{tx('待确认', 'Needs confirm')}</span>
   if (tool.blocked) return <span className="ca-prov__chip" data-state="blocked">{tx('不能生成', 'Blocked')}</span>
@@ -299,6 +302,7 @@ function providerName(provider: string) {
 }
 
 function liveText(tool: ToolRow) {
+  if (tool.effective.source === 'default' && tool.effective.provider === 'replicate') return `${shortModel(tool.effective.model) === 'Flare' ? 'Replicate · Flare' : 'Replicate · ' + shortModel(tool.effective.model)}${tx('，系统默认', ', the system default')}`
   if (tool.effective.source === 'default') return tx('WaveSpeed，系统默认', 'WaveSpeed, the system default')
   const name = providerName(tool.effective.provider)
   const extra = tool.effective.backup
@@ -354,11 +358,12 @@ function LlmPane({ state, providerId, modelId, note, onProvider, onModel, onNote
 }) {
   const info = state.llm.providers.find((item) => item.id === providerId)
   const model = info?.models.find((item) => item.id === modelId)
-  const dirty = providerId !== (state.llm.active?.provider || 'wavespeed') || modelId !== (state.llm.active?.model || 'existing')
+  const dirty = providerId !== (state.llm.active?.provider || 'deepseek') || modelId !== (state.llm.active?.model || 'deepseek-flash')
   return (
     <section className="ca-prov__edit ca-prov__llm" data-testid="provider-llm">
       <h3>{tx('语言模型', 'Language model')}</h3>
-      <p className="ca-prov__now" data-testid="provider-llm-status">{tx('现在生效', 'Live now')} <b>{state.llm.active ? `${state.llm.active.provider} · ${state.llm.active.model}` : tx('WaveSpeed · deepseek/deepseek-v4.1-flash-1017', 'WaveSpeed · deepseek/deepseek-v4.1-flash-1017')}</b></p>
+      <p className="ca-prov__now" data-testid="provider-llm-status">{tx('现在生效', 'Live now')} <b>{state.llm.effective ? `DeepSeek · ${state.llm.effective.model}` : (state.llm.active ? `${state.llm.active.provider} · ${state.llm.active.model}` : tx('WaveSpeed · 现有配置', 'WaveSpeed · current setup'))}</b></p>
+      {providerId === 'deepseek' && info && !info.configured && <p className="ca-prov__banner" data-testid="provider-llm-nokey">{tx('还没有官方 DeepSeek 密钥。新对话不能发送，也不会改回 WaveSpeed。', 'No official DeepSeek key. New chats are not sent, and they do not fall back to WaveSpeed.')}</p>}
       <div className="ca-prov__picks" data-testid="provider-llm-providers">
         {state.llm.providers.map((provider) => (
           <button key={provider.id} type="button" data-on={provider.id === providerId || undefined} data-testid={`provider-llm-${provider.id}`} onClick={() => { onProvider(provider.id); onModel(provider.models[0]?.id || 'existing'); onNote('') }}>

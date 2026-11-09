@@ -216,18 +216,25 @@ def image_revision() -> int:
 
 def llm_model_override() -> str | None:
     """Model id for a new turn. None keeps the existing settings model."""
-    active = active_llm()
-    if not active or active.get("model") == "existing" or active.get("provider") == "wavespeed":
+    route = llm_route()
+    if not route:
         return None
-    model = llm_model(active["provider"], active["model"])
-    if not model or model.get("passthrough"):
-        return None
-    return str(model.get("request_model") or "") or None
+    return str(route.get("model") or "") or None
+
+
+def _llm_choice(active: dict | None) -> dict | None:
+    """No saved section means the official DeepSeek default. An explicit WaveSpeed save stays put."""
+    if active is None:
+        return {"provider": "deepseek", "model": "deepseek-flash"}
+    return active
 
 
 def llm_route(active: dict | None = None) -> dict | None:
-    """Resolved official route, or None when the existing LLM path must be left alone."""
-    active = active_llm() if active is None else _valid_llm(active)
+    """Resolved official route, or None when an explicit WaveSpeed save must be left alone."""
+    if active is None:
+        active = _llm_choice(active_llm())
+    else:
+        active = _valid_llm(active)
     if not active or active.get("provider") == "wavespeed":
         return None
     provider = llm_provider(active["provider"])
@@ -279,9 +286,10 @@ def _public_state() -> dict:
             "providers": public_image_providers(image_on),
         },
         "llm": {
-            "saved": llm_active is not None and not (llm_active.get("provider") == "wavespeed" and llm_active.get("model") == "existing" and doc["llm"]["revision"] == 0),
+            "saved": llm_active is not None,
             "revision": doc["llm"]["revision"],
             "active": llm_active,
+            "effective": llm_route(),
             "ignored": doc["llm"]["active"] is not None and llm_active is None,
             "can_restore": doc["llm"]["previous"] is not None or (llm_active is not None and doc["llm"]["revision"] > 0),
             "providers": public_llm_providers(llm_on),
@@ -760,8 +768,23 @@ def _tools_view() -> list[dict]:
     for tool in TOOLS:
         rec = _tool_record(tool["id"])
         active = rec["active"]
-        primary = (active or {}).get("primary") or {"provider": "wavespeed", "model": "existing"}
+        gif_tool = tool["id"] == "to_gif"
+        if active:
+            primary = active.get("primary") or {"provider": "wavespeed", "model": "existing"}
+            source = "saved"
+        elif gif_tool:
+            primary = {"provider": "replicate", "model": "openai/gpt-image-2.6-flare"}
+            source = "default"
+        else:
+            primary = {"provider": "wavespeed", "model": "existing"}
+            source = "default"
         replicate = primary.get("provider") == "replicate"
+        if replicate and not key_ok:
+            blocked = "needs_key"
+        elif replicate:
+            blocked = "needs_user_confirm"
+        else:
+            blocked = ""
         rows.append({
             "id": tool["id"],
             "group": tool["group"],
@@ -775,16 +798,45 @@ def _tools_view() -> list[dict]:
             "choices": public_choices(tool),
             "key_ok": key_ok,
             "usable": not replicate,
-            "blocked": "needs_user_confirm" if replicate else "",
+            "blocked": blocked,
+            "gif_default": {"provider": "replicate", "model": "openai/gpt-image-2.6-flare"} if tool["id"] in {"to_gif", "generate_image"} and not active else None,
             "effective": {
                 "provider": primary.get("provider") or "wavespeed",
                 "model": primary.get("model") or "existing",
-                "source": "saved" if active else "default",
+                "source": source,
                 "fallback": bool((active or {}).get("fallback")),
                 "backup": (active or {}).get("backup"),
             },
         })
     return rows
+
+
+def _gif_replicate_model(inputs: dict) -> str:
+    """Same 2.6 family the GIF path already picks. Unnamed stays flare. Never 2.5."""
+    from .gif_image import pick_t2i
+    picked = pick_t2i(str(inputs.get("model") or ""))
+    if "sunburst" in picked:
+        return "openai/gpt-image-2.6-sunburst"
+    return "openai/gpt-image-2.6-flare"
+
+
+def _default_gif_route(tool: str | None, inputs: dict, revision: int) -> dict | None:
+    from .tool_routing import capability_for
+    if tool not in {"to_gif", "generate_image"}:
+        return None
+    cap = capability_for(tool, inputs)
+    if cap not in {"text_to_gif", "reference_gif"}:
+        return None
+    return {
+        "passthrough": False,
+        "tool": tool,
+        "revision": revision,
+        "primary": {"provider": "replicate", "model": _gif_replicate_model(inputs)},
+        "backup": None,
+        "fallback": False,
+        "capability": cap,
+        "source": "default",
+    }
 
 
 def _snapshot(inputs: dict) -> dict:
@@ -797,6 +849,9 @@ def _snapshot(inputs: dict) -> dict:
     rec = _tool_record(tool) if tool else {"revision": 0, "active": None}
     active = rec.get("active")
     if not tool or not active:
+        gif = _default_gif_route(tool, inputs, int(rec.get("revision") or 0))
+        if gif:
+            return gif
         return {"passthrough": True, "tool": tool, "revision": rec.get("revision") or 0}
     return {
         "passthrough": False,

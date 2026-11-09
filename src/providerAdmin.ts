@@ -18,6 +18,7 @@ export interface ToolRow {
   key_ok: boolean
   usable: boolean
   blocked: string
+  gif_default?: { provider: string; model: string } | null
   effective: { provider: string; model: string; source: 'saved' | 'default'; fallback: boolean; backup: EndPoint | null }
 }
 export interface LlmModel {
@@ -47,6 +48,7 @@ export interface ProviderAdminState {
     saved: boolean
     revision: number
     active: { provider: string; model: string } | null
+    effective?: { provider: string; model: string; base_url?: string } | null
     can_restore: boolean
     providers: LlmProviderInfo[]
     probe: string
