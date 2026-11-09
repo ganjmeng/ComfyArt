@@ -19,6 +19,7 @@ import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
 import { attachSkill, loadSkills, skillCreatorAtom } from '../skills'
 import { openSkillEditor } from './SkillsDialog'
+import { autoPillLabel, autoPillTooltip, inputIsAuto, modelChoiceOfResult } from '../autoPill'
 
 const GEN_TOOLS = new Set(['generate_image', 'generate_video', 'edit_image', 'animate_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers', 'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer', 'extend_video', 'upscale_video', 'remove_video_background', 'generate_music', 'generate_sound_effect', 'text_to_speech', 'image_to_3d', 'edit_elements', 'create_mockup', 'create_slides'])
 
@@ -919,7 +920,7 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
               ) : (
                 <span className={shine ? 'ca-process__label ca-process__label--active' : 'ca-process__label'} title={s.title} data-testid={(s.kind === 'image' || s.kind === 'video') ? 'auto-model-label' : undefined}>
                   {s.favicon && <Favicon src={s.favicon} />}
-                  {s.label}
+                  <span className="ca-process__labeltext">{s.label}</span>
                   {isMemory && <span className="ca-process__memchev ca-icon" data-testid="memory-updated-chev">{Icons.memoryChev}</span>}
                   {isRefAnalysis && <span className="ca-process__memchev ca-icon" data-testid="ref-analysis-chev">{Icons.memoryChev}</span>}
                 </span>
@@ -1207,20 +1208,25 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
         let model: string | undefined
         let modelTitle: string | undefined
         if (kindResolved === 'image' || kindResolved === 'video') {
-          const choice = modelChoiceOfResult(result?.text) || (
-            inputIsAuto(b.input as Record<string, unknown> | undefined)
-              ? { auto: true as const, model: processModelName(b.input) }
-              : processModelName(b.input)
-                ? { auto: false as const, model: processModelName(b.input)!, reason: { zh: '你指定了这个模型', en: 'you named this model' } }
-                : null
-          )
+          // Prefer model_choice on the tool result. Live Auto (no result yet) → just "Auto".
+          // Legacy done cards without model_choice / model → leave model unset (tool fallback label; never empty Auto).
+          const fromResult = modelChoiceOfResult(result?.text)
+          const named = processModelName(b.input)
+          const autoIn = inputIsAuto(b.input as Record<string, unknown> | undefined)
+          let choice = fromResult
+          if (!choice && stepLiveProbe && autoIn) choice = { auto: true as const, ...(named ? { model: named } : {}) }
+          if (!choice && named) {
+            choice = autoIn
+              ? { auto: true as const, model: named }
+              : { auto: false as const, model: named, reason: { zh: '你指定了这个模型', en: 'you named this model' } }
+          }
           if (choice) {
-            // Live Auto before the concrete model is known → just "Auto" (never flash a default id).
-            const labelChoice = stepLiveProbe && choice.auto && !choice.model
-              ? { auto: true as const }
-              : choice
-            model = autoPillLabel(labelChoice) ?? undefined
-            modelTitle = autoPillTooltip(choice, lang) ?? undefined
+            const labelChoice = stepLiveProbe && choice.auto && !choice.model ? { auto: true as const } : choice
+            // Done Auto without a concrete model id → do not paint a lone "Auto" (legacy).
+            if (!(choice.auto && !choice.model && !stepLiveProbe)) {
+              model = autoPillLabel(labelChoice) ?? undefined
+              modelTitle = autoPillTooltip(choice, lang) ?? undefined
+            }
           }
         }
         const aspectRatio = (kindResolved === 'image' || kindResolved === 'video') ? processAspectRatio(b.input) : undefined
@@ -1252,11 +1258,16 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
           // #393 nit: a declined / refused paid step never reads as done
           // #421: failed generation reads as failed, not the success/model-name row
           // #420/#421: failed/cancelled tool_use on the rail reads 「工具名 · 失败/Failed」 (incl. canvas tools)
-          label: b.type === 'tool_use' && (genCancelled || genFailed)
+          // #825: failed/cancelled image|video keep the Auto · model label when we have one;
+          // only fall back to 「工具名 · 失败」 when there is no model label (legacy / plain tools).
+          label: (b.type === 'tool_use' && (genCancelled || genFailed)
             && (kindResolved === 'image' || kindResolved === 'video' || kindResolved === 'tool')
+            && !model)
             ? `${toolLabel(b.name)} · ${t(genCancelled ? 'chatMessage.cancelled' : 'chatMessage.failed')}`
             : processLabel(kindResolved, stepLive, {
-              fallback: b.type === 'tool_use' ? toolLabel(b.name) : b.label,
+              fallback: b.type === 'tool_use' && (genCancelled || genFailed)
+                ? `${toolLabel(b.name)} · ${t(genCancelled ? 'chatMessage.cancelled' : 'chatMessage.failed')}`
+                : (b.type === 'tool_use' ? toolLabel(b.name) : b.label),
               model,
               pages,
             }),

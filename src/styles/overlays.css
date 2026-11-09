@@ -517,6 +517,7 @@
   color: var(--ca-muted);
 }
 .ca-process__steps {
+  overflow: visible;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -573,10 +574,46 @@
   height: var(--ca-process-ico);
   display: flex;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
   font: 500 13px/1 var(--ca-font);
   color: var(--ca-muted);
   white-space: nowrap;
+  gap: 0;
 }
+.ca-process__labeltext {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* #825: hover reason tip (table zh/en); manual picks omit title so nothing shows */
+.ca-process__label[title]:not([title=""]):hover::after,
+.ca-process__label[title]:not([title=""]).is-tip-open::after,
+.ca-process__label[data-tip]:hover::after,
+.ca-process__label[data-tip].is-tip-open::after {
+  content: attr(title);
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  max-width: min(320px, 70vw);
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--ca-text);
+  color: var(--ca-bg);
+  font: 400 12px/1.35 var(--ca-font);
+  white-space: normal;
+  pointer-events: none;
+  box-shadow: 0 4px 16px color-mix(in srgb, #000 20%, transparent);
+}
+.ca-process__label[title]:not([title=""]),
+.ca-process__label[data-tip] { position: relative; }
+
 .ca-process__label--active {
   background: linear-gradient(
     100deg,
