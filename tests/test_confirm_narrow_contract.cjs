@@ -23,3 +23,13 @@ assert.equal(facts['flex-direction'], 'column')
 assert.equal(facts.height, 'auto')
 assert.equal(declarations('.ca-confirm .ca-keys__row > span')['overflow-wrap'], 'anywhere')
 console.log('PASS: narrow CSS contract (breakpoint, outer sizing, padding, facts, wrapping); browser not tested')
+
+// Shared buttons and the footer override must both retain the approved metrics.
+for (const selector of ['.ca-btn', '.ca-panel__foot > .ca-btn']) {
+  const rule = css.nodes.find(n => n.type === 'rule' && n.selector === selector)
+  assert.ok(rule, selector)
+  const values = Object.fromEntries(rule.nodes.filter(n => n.type === 'decl').map(n => [n.prop, n.value]))
+  assert.equal(values['min-height'], '36px')
+  assert.equal(values['border-radius'], '8px')
+}
+console.log('PASS: static shared button metrics (36px minimum height, 8px radius); browser not tested')

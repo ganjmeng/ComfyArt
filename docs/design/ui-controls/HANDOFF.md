@@ -62,3 +62,9 @@
 - Related checks: `node tests/test_confirm_narrow_contract.cjs` (static CSS contract), `tsc --noEmit`, `git diff --check`. All passed locally. No browser measurement, interaction or visual PASS is claimed.
 - Separate worktree `/workspace/comfyart-confirm-narrow-20261109`; the QA worktree and running port 5210 remain unchanged at the original #850 SHA. Dependencies are shared through an ignored node_modules symlink.
 - Pending: browser measurements at 360/379/380/390px, actual page comparison, submitting/timeout behavior, unknown-cost protection and independent QA. No billing, routing, download or supplier changes in this patch.
+
+### Shared button metrics follow-up
+
+- Applied the designer's static review correction: shared Button/IconButton minimum height 36px and border radius 8px, including the footer override. Width and other padding rules unchanged.
+- Static CSS assertions and TypeScript checks passed locally; actual rendered dimensions, long labels, touch usage and visual comparison remain pending.
+- This does not fix paid-submit lifecycle. Current generic Confirm closes before callback; changing it globally would affect delete/restore confirmations. The paid request caller and response lifetime must be handled separately.
