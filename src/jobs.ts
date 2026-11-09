@@ -1,6 +1,6 @@
 import { AssetRecordType, atom, createShapeId, isShapeId, type Editor, type TLParentId, type JsonValue, type TLAssetId, type TLImageAsset, type TLShape, type TLShapeId, type TLVideoAsset } from 'tldraw'
 
-import { cancelPrompt, CostDeclined, NeedKeyError, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
+import { cancelPrompt, CostDeclined, NeedKeyError, UncertainResultError, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
 import { placedFile } from './gifFile'
 import { svgAsset } from './svgFile'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
@@ -28,6 +28,8 @@ export interface Job {
   stoppedCharged?: number
   /** Refresh recovery: querying while authority is unknown; running once the task is confirmed live. */
   phase?: 'querying' | 'running'
+  /** Result could not be confirmed — keep card, no retry, no fail-red. */
+  uncertain?: boolean
 }
 
 export interface Media { ref: ImageRef; src: string; w: number; h: number; kind: MediaKind }
@@ -72,8 +74,8 @@ export function localizeError(msg: string): string {
   return mapUnknownError(msg)
 }
 export const errorText = (e: unknown) => {
-  // CostDeclined / NeedKeyError already carry localized copy from their constructors
-  if (e && typeof e === 'object' && 'name' in e && ((e as { name?: string }).name === 'CostDeclined' || (e as { name?: string }).name === 'NeedKeyError')) {
+  // CostDeclined / NeedKeyError / UncertainResultError already carry localized copy
+  if (e && typeof e === 'object' && 'name' in e && ((e as { name?: string }).name === 'CostDeclined' || (e as { name?: string }).name === 'NeedKeyError' || (e as { name?: string }).name === 'UncertainResultError')) {
     return rawText(e)
   }
   return localizeError(rawText(e))
@@ -97,7 +99,7 @@ function logJobResponse(jobId: string, kind: string) {
 }
 const placers: Record<string, Placer> = {}
 
-export interface JobResult { srcs: string[]; error?: string }
+export interface JobResult { srcs: string[]; error?: string; pending?: boolean }
 export const resultsAtom = atom<Record<string, JobResult>>('job results', {})
 // #282/#408: e2e tip shoots set the card banner without a live waiter
 if (typeof window !== 'undefined') (window as unknown as { __caResultsAtom?: typeof resultsAtom }).__caResultsAtom = resultsAtom
@@ -287,6 +289,7 @@ function markJobPhase(editor: Editor, holderId: TLShapeId, phase: 'querying' | '
 }
 
 async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: ErrorSink) {
+  if (!job.id) return
   if (active.has(job.id)) return
   active.add(job.id)
   try {
@@ -323,10 +326,29 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
       logJobResponse(job.id, 'ignore-duplicate-error')
       return
     }
-    terminals.set(job.id, { kind: 'error', seq })
     const holder = editor.getShape(holderId)
     const live = holder ? jobOf(holder) : null
     const stopped = !!(live?.stopping || job.stopping)
+    const uncertain = e instanceof UncertainResultError || (e as { name?: string })?.name === 'UncertainResultError'
+    if (uncertain && !stopped) {
+      // R05/R10: keep pending — do not mark hard terminal fail / fail-red toast.
+      logJobResponse(job.id, 'uncertain')
+      if (holder) {
+        const cur = jobOf(holder) ?? job
+        editor.updateShape({
+          id: holderId,
+          type: holder.type,
+          meta: { ...holder.meta, job: { ...cur, phase: undefined, uncertain: true, stopping: false } as any },
+        })
+      }
+      report(holderId, {
+        srcs: [],
+        error: `${t('jobs.resultPendingShort')}\n${t('jobs.resultPendingHint')}`,
+        pending: true,
+      })
+      return
+    }
+    terminals.set(job.id, { kind: 'error', seq })
     const kept = holder ? await keepPartial(editor, holder, job).catch(() => 0) : 0
     // User stop: prefer fee line from cancel (stoppedCharged / reject message); else 「已停止」.
     let msg: string
@@ -419,6 +441,7 @@ export async function startJob(
     await finish(editor, holderId, job, onError)
   } catch (e) {
     const soft = e instanceof CostDeclined || e instanceof NeedKeyError
+    const uncertain = e instanceof UncertainResultError || (e as { name?: string })?.name === 'UncertainResultError'
     settleSubmitGate(holderId, e instanceof CostDeclined ? 'declined' : soft ? 'error' : 'error')
     const holder = editor.getShape(holderId)
     if (soft) {
@@ -426,6 +449,27 @@ export async function startJob(
       if (holder?.meta.temp || holder?.meta.quiet) editor.deleteShape(holderId)
       else if (holder) editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: null } })
       report(holderId, { srcs: [], error: errorText(e) })
+      return
+    }
+    if (uncertain) {
+      // R06: lost receipt — keep pending record, never forge an id or re-ask cost.
+      if (holder) {
+        const pendingJob: Job = {
+          id: '',
+          node: '',
+          name: opts.name,
+          kind: opts.kind ?? 'image',
+          ...(opts.placer ? { placer: opts.placer } : {}),
+          ...(opts.extra ? { extra: opts.extra } : {}),
+          uncertain: true,
+        }
+        editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: pendingJob as any, quiet: false } })
+      }
+      report(holderId, {
+        srcs: [],
+        error: `${t('jobs.resultPendingShort')}\n${t('jobs.resultPendingHint')}`,
+        pending: true,
+      })
       return
     }
     if (holder?.meta.temp) editor.deleteShape(holderId)
@@ -460,8 +504,10 @@ export function resumeJobs(editor: Editor, onError: ErrorSink) {
   for (const shape of editor.store.query.records('shape').get()) {
     const job = jobOf(shape)
     if (!job) continue
+    // R06: no task id — keep pending; never invent an id or re-submit.
+    if (!job.id) continue
     // R02: show querying copy on the original card until authority answers.
-    const phased: Job = { ...job, phase: job.phase ?? 'querying' }
+    const phased: Job = { ...job, phase: job.phase ?? 'querying', uncertain: false }
     editor.updateShape({ id: shape.id, type: shape.type, meta: { ...shape.meta, job: phased as any } })
     void finish(editor, shape.id, phased, onError)
   }
