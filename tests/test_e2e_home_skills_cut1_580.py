@@ -2,6 +2,7 @@
 gap 16, no horizontal scroll; Skill 案例 masonry 3 columns ≈299 wide, gap 16, no repeated skill. Mock only, $0."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -118,7 +119,8 @@ FEED_EXPECTED = frozenset({  # #735/#812: C+D unhidden into feed
 FEED_MIN = 49  # #812: all builtins listed
 
 
-FEATURED_DIRS = ("/580/featured-v1/", "/580/featured-v2/", "/637/wash/", "/636/wash/", "/643/wash/", "/673/wash/", "/812/wash/")
+# #870: featured tiles pin review-assets under wash/featured/embed/reuse trees (SHA dirs drift; match by kind).
+FEATURED_IMG_OK = re.compile(r"/(?:\d{3,}(?:/wash(?:-r\d+)?(?:/|$)|/featured|/embed|/reuse)|wash-[a-z]+/|580/featured-v[12]/)")
 
 
 def _check_tiles(tiles):
@@ -127,8 +129,8 @@ def _check_tiles(tiles):
     assert set(skills) == FEED_EXPECTED, sorted(set(skills) ^ FEED_EXPECTED)
     assert len(set(skills)) == len(FEED_EXPECTED) == FEED_MIN
     assert _featured_from_data() == FEED_EXPECTED, "skills.ts feed drifted: update FEED_EXPECTED deliberately"
-    # #588/#594 featured-v1/v2; later phases pin their own wash dirs (#637 B5, #636 C5, #643 thumbnail)
-    assert all(any(d in t["img"] for d in FEATURED_DIRS) for t in tiles), [t["img"] for t in tiles]
+    # #588/#594 featured-v1/v2; later phases pin wash/featured trees (#637/#643/#779/#788/#812/…)
+    assert all(FEATURED_IMG_OK.search(t["img"]) for t in tiles), [t["img"] for t in tiles]
     assert all(a != b for a, b in zip(skills, skills[1:])), skills  # data order: no adjacent duplicates
     assert len({t["img"] for t in tiles}) == len(tiles)
     assert len(tiles) > len(PHASE1_FEATURED)  # second round follows

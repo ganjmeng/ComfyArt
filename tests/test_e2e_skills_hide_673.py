@@ -72,8 +72,9 @@ async def test_composer_slash_picker_hides_deferred(app_url, lang, theme):  # no
         first = await _slash(pg, "")
         assert first == MAIN_ORDER_40[:8], first  # '/' lists listed skills only, main order
         assert "ppt-visual" in await _slash(pg, "ppt")  # #735 C unhidden
-        assert "yingzao" in await _slash(pg, "ying")  # #812 D unhidden
-        assert "yingzao" in await _slash(pg, "营造")
+        # slash filters s.name only (Composer.tsx) — use a token that exists in the active locale
+        q = "营造" if lang == "zh" else "ying"
+        assert "yingzao" in await _slash(pg, q), (lang, q)  # #812 D unhidden
         assert HIDDEN == []
         for sid in ("poster-differentiated-compiler", "brand-identity-director", "product-tvc-advertisement-generator"):  # other skills still found by name
             assert sid in await _slash(pg, names[sid].split()[0]), sid

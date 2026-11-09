@@ -17,7 +17,7 @@ BOX = "el => { const r = el.getBoundingClientRect(); return [Math.round(r.width)
 
 
 async def _modal(pg, skill):
-    await pg.set_viewport_size({"width": 1440, "height": 960})
+    await pg.set_viewport_size({"width": 1280, "height": 960})  # #760/@1280 → width 1112; height needs vh≥884 for 820
     await pg.locator(f'[data-skill="{skill}"] .ca-swall__cover').click()
     dlg = pg.get_by_test_id("skill-run-dialog")
     await dlg.wait_for()
@@ -57,7 +57,7 @@ async def test_zoom_select_and_gating(app_url):  # noqa: F811
         await _modal(pg, "product-tvc-advertisement-generator")
         assert await pg.locator(".ca-skillrun__tile").count() == 7  # tiles follow presets[] (#748 raw: 7)
         ids = await pg.get_by_test_id("skill-run-preset").evaluate_all("bs => bs.map(b => b.dataset.preset)")
-        assert ids == ["white", "lifestyle", "detail", "electronics", "food", "beauty", "t7"]  # #748: 7th raw template
+        assert ids == ["beauty", "fashion", "foodbev", "electronics", "home", "outdoor", "software"]  # #784 product TVC categories
         assert await pg.get_by_test_id("skill-run-meta").inner_text() == "7 个模板"
         tile = pg.locator(".ca-skillrun__tile").nth(1)
         await tile.hover()

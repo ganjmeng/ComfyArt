@@ -132,7 +132,8 @@ function GeneratorCard({ shape }: { shape: GeneratorShape }) {
   const result = useValue('generator result', () => resultsAtom.get()[shape.id], [shape.id])
   const pending = !!(job?.uncertain || result?.pending)
   const querying = job?.phase === 'querying' && !pending
-  const error = (!job || pending) ? undefined : result?.error
+  // #870: show delivery/size-lock errors after job clears; only pending hides this slot (pendingCopy).
+  const error = pending ? undefined : result?.error
   const pendingCopy = pending ? (result?.error || `${t('jobs.resultPendingShort')}\n${t('jobs.resultPendingHint')}`) : undefined
   const statusPill = querying ? t('jobs.queryingStatus')
     : pending ? t('jobs.resultPendingShort')
