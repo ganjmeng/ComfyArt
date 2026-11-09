@@ -43,7 +43,19 @@ CURATED = os.path.join(os.path.dirname(__file__), "curated_models.json")
 CATALOG_TTL = 24 * 3600
 POLL_MIN = 2.0
 POLL_MAX_BACKOFF = 15.0
+# #873: image jobs cap at 10 min total; video/audio/3d keep the longer window.
+IMAGE_JOB_TIMEOUT = float(os.environ.get("WAVESPEED_IMAGE_JOB_TIMEOUT") or 10 * 60)
 JOB_TIMEOUT = float(os.environ.get("WAVESPEED_JOB_TIMEOUT") or 30 * 60)
+
+
+def _job_timeout_for(job: dict) -> float:
+    """Wall-clock cap for one WaveSpeed prediction (from submit / resume)."""
+    feature = str(job.get("feature") or "")
+    if feature and feature_kind(feature) in ("image", "image_tools"):
+        return IMAGE_JOB_TIMEOUT
+    return JOB_TIMEOUT
+
+
 ANNOTATED = re.compile(r"^(.+) \[(input|output|temp)\]$")
 SUBFOLDER = "wavespeed"
 
@@ -221,6 +233,11 @@ def error_kind(status: int | None, code=None, msg: str = "") -> str:
         return "rateLimit"
     if status == 401:
         return "invalidKey"
+    # #872: model offline / unavailable — eligible for registered Flare fallback
+    if "offline" in low or "model is unavailable" in low or "model unavailable" in low:
+        return "modelOffline"
+    if status is not None and status >= 500:
+        return "failed"  # server 5xx → fallback-eligible
     return "failed"
 
 
@@ -2313,6 +2330,8 @@ def _fail(task: str, message: "str | WaveSpeedError") -> dict:
         if message.kind in ("timeout", "noOutput"):
             info["ws_task_id"] = task  # #712: the UI shows the task id for feedback / refunds
     job = _jobs.get(task)
+    if job and job.get("fallback_blocked"):
+        info["fallback_blocked"] = True
     if job and job.get("model"):
         charged = message.charged if isinstance(message, WaveSpeedError) else None
         gen_ledger.record_failure(task, "wavespeed", job["model"], str(message), kind=info.get("ws_kind") or "failed",
@@ -2343,22 +2362,28 @@ async def poll(task: str) -> dict:
     if job.get("paste") or job.get("move"):
         return await _poll_wrapped(task, job)
     now = time.time()
-    if now - job["started"] > JOB_TIMEOUT:
+    limit = _job_timeout_for(job)
+    if now - job["started"] > limit:
+        # Total lifetime for this prediction (image = IMAGE_JOB_TIMEOUT, else JOB_TIMEOUT).
         if job.get("model") and not job.get("recovery_tried"):
-            # #712: one last poll with the saved request id before calling it failed (the result GET is free)
             job["recovery_tried"] = True
             try:
                 got = await _poll_once(task, job, now)
                 if job.get("result"):
-                    log.info("#712: WaveSpeed task %s recovered after the poll timeout via its saved id", task)
                     return got
             except (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError, OSError, _Transient) as e:
-                log.warning("#712: recovery poll for %s failed (%s)", task, type(e).__name__)
+                log.warning("#873: final status check for prediction %s failed (%s)", task, type(e).__name__)
         if job.get("result"):
             return job["result"]
+        # Still running / unresolved at the cap: fail with NO Flare; log id for reconciliation.
+        job["fallback_blocked"] = True
+        log.warning(
+            "#873: prediction %s reached timeout=%ss (feature=%s) while unresolved; no Flare; reconcile this id",
+            task, int(limit), job.get("feature") or "",
+        )
         if job.get("model"):
             return _fail(task, await _timeout_error(task))
-        return _fail(task, WaveSpeedError(f"WaveSpeed task timed out after {int(JOB_TIMEOUT)}s", 504, kind="timeout"))
+        return _fail(task, WaveSpeedError(f"WaveSpeed task timed out after {int(limit)}s", 504, kind="timeout"))
     if now < job["next_poll"]:
         return _history(task, "processing", [], {})
     job["next_poll"] = now + POLL_MIN

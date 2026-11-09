@@ -90,6 +90,22 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
       ],
     },
   },
+  // #872: poster_text Sunburst → Flare runtime fallback (table tip + models)
+  poster_fb: {
+    thumbs: true,
+    msg: {
+      id: 'a', role: 'assistant', status: 'done', blocks: [
+        { type: 'thinking', text: 'pick' },
+        use('g1', 'mcp__comfyart__generate_image', { prompt: '海报大字' }),
+        res('g1', 'mcp__comfyart__generate_image', choice({
+          model: flare, auto: true, category: 'poster_text',
+          fallback: sunburst,
+          reason: { zh: '海报/带字', en: 'poster / text' },
+        })),
+        { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
+      ],
+    },
+  },
   fallback: {
     // Real table pair: pose-fission primary failed → registered fallback ran (mirrors skill_fallback_choice)
     thumbs: true,

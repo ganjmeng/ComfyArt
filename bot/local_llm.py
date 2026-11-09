@@ -321,6 +321,51 @@ def _payload_failed(data: dict) -> bool:
     return bool(data.get("model") or data.get("model_choice") or _MODEL_FAIL_RE.search(blob))
 
 
+def _result_error_kind(text: str) -> Optional[str]:
+    """#872: WaveSpeed/UI error kind from a tool result payload, if present."""
+    data = _payload_of(text or "") or _json_obj(text or "")
+    if not isinstance(data, dict):
+        return None
+    err = data.get("error")
+    if isinstance(err, dict) and err.get("kind"):
+        return str(err.get("kind"))
+    if data.get("ws_kind"):
+        return str(data.get("ws_kind"))
+    # history-style execution_error
+    status = data.get("status") if isinstance(data.get("status"), dict) else {}
+    msgs = status.get("messages") if isinstance(status, dict) else None
+    if isinstance(msgs, list) and msgs and isinstance(msgs[0], (list, tuple)) and len(msgs[0]) > 1:
+        info = msgs[0][1]
+        if isinstance(info, dict) and info.get("ws_kind"):
+            return str(info.get("ws_kind"))
+    return None
+
+
+
+def _fallback_blocked_payload(text: str) -> bool:
+    """True when the tool result says the primary was left unresolved at JOB_TIMEOUT."""
+    if re.search(r'"fallback_blocked"\s*:\s*true', text or "", re.I):
+        return True
+    data = _payload_of(text) or _json_obj(text)
+    if not isinstance(data, dict):
+        return False
+    if data.get("fallback_blocked") is True:
+        return True
+    err = data.get("error")
+    if isinstance(err, dict) and err.get("fallback_blocked") is True:
+        return True
+    # history-style execution_error from poll/_fail
+    for key, entry in list(data.items()):
+        if not (isinstance(key, str) and key.startswith("ws:") and isinstance(entry, dict)):
+            continue
+        status = entry.get("status") if isinstance(entry.get("status"), dict) else {}
+        for msg in status.get("messages") or []:
+            if isinstance(msg, (list, tuple)) and len(msg) > 1 and isinstance(msg[1], dict):
+                if msg[1].get("fallback_blocked") is True:
+                    return True
+    return False
+
+
 def model_call_failed(name: str, args: dict, text: str) -> Optional[str]:
     """The model id that failed, '' when the payload omits it, or None when this is not a model failure.
 
@@ -329,6 +374,8 @@ def model_call_failed(name: str, args: dict, text: str) -> Optional[str]:
     #706: a generate_image that never submitted (quote only, model refusal) is not a failed
     model run — do not silently switch models and submit again.
     """
+    if _fallback_blocked_payload(text or ""):
+        return None  # #872: total JOB_TIMEOUT cap, original still unresolved — no Flare
     if "没有提交" in (text or "") or "did not submit" in (text or "").lower():
         return None
     base = _tool_base(name)
@@ -2147,6 +2194,13 @@ class LocalLlmProvider(AgentProvider):
         _remember_generation(gens, name, args, result_text)
         signal = model_call_failed(name, args, result_text)
         if signal is None:
+            return
+        # #872: only 5xx / timeout / model-offline may Flare; balance, moderation, bad params do not
+        from ..api.auto_models import fallback_kind_eligible
+        kind = _result_error_kind(result_text)
+        if kind is not None and not fallback_kind_eligible(kind):
+            _log.warning(
+                "[ComfyArt/local-llm] #872: kind %s is not fallback-eligible; not switching models", kind)
             return
         base = _tool_base(name)
         if base == "wait_generation":

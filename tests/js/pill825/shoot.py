@@ -47,6 +47,7 @@ SHOTS = [
     ("07-failed-keeps-label", "failed", "zh", "light", False, {"width": 440, "height": 520}),
     ("08-generating-auto", "generating", "zh", "light", False, {"width": 440, "height": 420}),
     ("09-fallback-tooltip-zh", "fallback", "zh", "light", True, {"width": 440, "height": 520}),
+    ("09b-poster-sunburst-fallback", "poster_fb", "zh", "light", True, {"width": 440, "height": 520}),
     ("10-skill-pose-fission", "skill", "zh", "light", True, {"width": 440, "height": 520}),
     ("11-legacy-no-empty", "legacy", "zh", "light", False, {"width": 440, "height": 520}),
     ("12-refresh-survives", "refresh", "zh", "light", False, {"width": 440, "height": 520}),
@@ -86,6 +87,8 @@ def main():
             elif case == "failed":
                 assert "Auto ·" in label.inner_text()
                 assert page.locator("#gen .ca-process__row[data-error]").count() >= 1
+            elif case == "poster_fb":
+                assert label.inner_text().strip() == "Auto · GPT Image 2.6 Flare", label.inner_text()
             elif case == "fallback":
                 assert label.inner_text().strip() == "Auto · Nano Banana 2.1", label.inner_text()
             elif case == "skill":
@@ -101,7 +104,7 @@ def main():
             elif case != "legacy":
                 assert label.count() >= 1, f"{name}: missing label"
                 # Normal width: full short name visible (no mid-word Su…)
-                if case in ("auto", "refresh", "flip", "fallback", "skill", "failed") and vp["width"] >= 400:
+                if case in ("auto", "refresh", "flip", "fallback", "poster_fb", "skill", "failed") and vp["width"] >= 400:
                     text = label.inner_text()
                     assert "…" not in text and "..." not in text, f"unexpected ellipsis at normal width: {text!r}"
 
@@ -127,6 +130,10 @@ def main():
                     )
                     assert geom["sw"] <= geom["cw"] + 1, f"{name}: tip truncates horizontally {geom}"
                     assert geom["text"].strip(), f"{name}: empty tip"
+                    if case == "poster_fb":
+                        assert geom["text"].startswith("自动选择：海报/带字"), geom["text"]
+                        assert "首选" in geom["text"] and "GPT Image 2.6 Sunburst" in geom["text"]
+                        assert "GPT Image 2.6 Flare" in geom["text"], geom["text"]
                     if case == "fallback":
                         # Skill-pin fallback: no 自动选择：; tip =「pose-fission 技能固定模型 · 首选 …」
                         assert geom["text"].startswith("pose-fission 技能固定模型"), geom["text"]
