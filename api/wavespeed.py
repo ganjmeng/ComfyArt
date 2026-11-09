@@ -591,7 +591,7 @@ def resolve_model_choice(feature: str, inputs: dict) -> tuple[str, dict | None]:
     named = named_or_none(picked if isinstance(picked, str) else None)
     masked = bool(inputs.get("mask") or inputs.get("mask_image") or inputs.get("region"))
     prompt = str(inputs.get("prompt") or "")
-    choice = choose(feature, prompt, named or picked, load_config(), masked=masked)
+    choice = choose(feature, prompt, named, load_config(), masked=masked)
     # resolve_model validates / applies size_lock; prefer choice model id
     model = resolve_model(feature, choice.get("model"), size_lock=bool(inputs.get("size_lock")))
     if model != choice.get("model"):
