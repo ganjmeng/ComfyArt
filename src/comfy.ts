@@ -25,6 +25,14 @@ export class NeedKeyError extends Error {
   }
 }
 
+/** History/query could not confirm a terminal result — keep pending, do not treat as lost/restart. */
+export class UncertainResultError extends Error {
+  constructor(message = t('jobs.resultPendingHint')) {
+    super(message)
+    this.name = 'UncertainResultError'
+  }
+}
+
 export type PromptGraph = Record<string, { class_type: string; inputs: Record<string, unknown>; _meta?: { title?: string } }>
 
 export interface ImageRef { filename: string; subfolder: string; type: string; metadata?: { width?: number; height?: number }; svg_preview?: string; svg_state?: string; svg_message?: string }
@@ -227,6 +235,7 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
       wsBody = await ws.json().catch(() => null)
     }
     if (!ws.ok) throw new Error(promptError(wsBody, ws.status))
+    if (typeof wsBody?.prompt_id !== 'string' || !wsBody.prompt_id) throw new UncertainResultError(t('jobs.resultPendingHint'))
     return String(wsBody.prompt_id)
   }
   // Only WaveSpeed graphs can run; tools not yet ported fail clearly.
@@ -304,14 +313,22 @@ export async function promptHistory(promptId: string): Promise<any> {
 
       : await api(`/history/${promptId}`)
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(wsBodyError(body, t('wsErr.failed')))
+  // Refresh recovery: HTTP failure keeps 「结果待确认」, never paint as hard fail / server restart.
+  if (!res.ok) throw new UncertainResultError(t('jobs.resultPendingHint'))
   return body[promptId]
 }
 
 async function waitForOutput<T>(promptId: string, node: string, pick: (out: Record<string, any>) => T | null): Promise<T> {
   let misses = 0
   for (;;) {
-    const hist = await promptHistory(promptId)
+    let hist: any
+    try {
+      hist = await promptHistory(promptId)
+    } catch (e) {
+      if (e instanceof UncertainResultError) throw e
+      // Network / parse failures while querying: stay pending, do not invent lost/restart.
+      throw new UncertainResultError(t('jobs.resultPendingHint'))
+    }
     if (hist) {
       const messages: [string, any][] = hist.status?.messages ?? []
       const err = messages.find((m) => m[0] === 'execution_error')
@@ -338,7 +355,7 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
     } else if (promptId.startsWith(WS_ID) || await inQueue(promptId)) {
       misses = 0
     } else if (++misses >= 2) {
-      throw new Error(t('jobs.lost'))
+      throw new UncertainResultError(t('jobs.resultPendingHint'))
     }
     await nap(promptId)
   }

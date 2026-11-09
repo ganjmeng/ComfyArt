@@ -1,6 +1,6 @@
 import { AssetRecordType, atom, createShapeId, isShapeId, type Editor, type TLParentId, type JsonValue, type TLAssetId, type TLImageAsset, type TLShape, type TLShapeId, type TLVideoAsset } from 'tldraw'
 
-import { cancelPrompt, CostDeclined, NeedKeyError, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
+import { cancelPrompt, CostDeclined, NeedKeyError, UncertainResultError, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
 import { placedFile } from './gifFile'
 import { svgAsset } from './svgFile'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
@@ -26,6 +26,10 @@ export interface Job {
   stopping?: boolean
   /** Quoted USD stashed by stopJob for the 「已停止」 fee line. */
   stoppedCharged?: number
+  /** Resume path: querying history after reload. */
+  querying?: boolean
+  /** Result could not be confirmed — keep card, no retry, no fail-red. */
+  uncertain?: boolean
 }
 
 export interface Media { ref: ImageRef; src: string; w: number; h: number; kind: MediaKind }
@@ -70,8 +74,8 @@ export function localizeError(msg: string): string {
   return mapUnknownError(msg)
 }
 export const errorText = (e: unknown) => {
-  // CostDeclined / NeedKeyError already carry localized copy from their constructors
-  if (e && typeof e === 'object' && 'name' in e && ((e as { name?: string }).name === 'CostDeclined' || (e as { name?: string }).name === 'NeedKeyError')) {
+  // CostDeclined / NeedKeyError / UncertainResultError already carry localized copy from their constructors
+  if (e && typeof e === 'object' && 'name' in e && ((e as { name?: string }).name === 'CostDeclined' || (e as { name?: string }).name === 'NeedKeyError' || (e as { name?: string }).name === 'UncertainResultError')) {
     return rawText(e)
   }
   return localizeError(rawText(e))
@@ -81,11 +85,20 @@ export type Placer = (editor: Editor, holder: TLShape, media: Media[], job: Job,
 export const GAP = 40
 const active = new Set<string>()
 const settled = new Set<string>()
+/** Job ids that already reached an authoritative terminal success/failure (R09: ignore late queries). */
+const reachedTerminal = new Set<string>()
+const resumeLog: string[] = []
+function logResume(event: string, jobId: string) {
+  const line = `${Date.now()} ${event} ${jobId}`
+  resumeLog.push(line)
+  if (resumeLog.length > 40) resumeLog.shift()
+  if (typeof console !== 'undefined' && console.info) console.info('[resume]', event, jobId)
+}
 /** Reject waiters when the user stops a job that WaveSpeed cannot truly cancel mid-flight. */
 const dropped = new Map<string, (err: Error) => void>()
 const placers: Record<string, Placer> = {}
 
-export interface JobResult { srcs: string[]; error?: string }
+export interface JobResult { srcs: string[]; error?: string; pending?: boolean }
 export const resultsAtom = atom<Record<string, JobResult>>('job results', {})
 // #282/#408: e2e tip shoots set the card banner without a live waiter
 if (typeof window !== 'undefined') (window as unknown as { __caResultsAtom?: typeof resultsAtom }).__caResultsAtom = resultsAtom
@@ -267,15 +280,37 @@ async function keepPartial(editor: Editor, holder: TLShape, job: Job): Promise<n
   return media.length
 }
 
-async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: ErrorSink) {
-  if (active.has(job.id)) return
-  active.add(job.id)
+async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: ErrorSink, opts?: { resume?: boolean }) {
+  const trackId = job.id || `pending:${holderId}`
+  if (job.uncertain && !job.id) return
+  if (active.has(trackId)) return
+  if (reachedTerminal.has(trackId)) {
+    logResume('skip-already-terminal', trackId)
+    return
+  }
+  active.add(trackId)
+  const markJob = (patch: Partial<Job>) => {
+    const h = editor.getShape(holderId)
+    if (!h) return
+    const cur = jobOf(h) ?? job
+    editor.updateShape({ id: holderId, type: h.type, meta: { ...h.meta, job: { ...cur, ...patch } as any } })
+  }
+  if (opts?.resume) markJob({ querying: true, uncertain: false })
   try {
+    if (!job.id) {
+      throw new UncertainResultError(t('jobs.resultPendingHint'))
+    }
     const refs = await Promise.race([
       waitForImages(job.id, job.node),
       new Promise<never>((_, reject) => dropped.set(job.id, reject)),
     ])
+    if (reachedTerminal.has(trackId)) {
+      logResume('ignore-late-success', trackId)
+      return
+    }
+    reachedTerminal.add(trackId)
     settled.add(job.id)
+    logResume('terminal-ok', trackId)
     const media = await Promise.all(refs.map((r) => toMedia(r, refKind(viewUrl(r)) === 'video' ? 'video' : job.kind)))
     const holder = editor.getShape(holderId)
     if (!holder) return
@@ -288,6 +323,22 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
     const holder = editor.getShape(holderId)
     const live = holder ? jobOf(holder) : null
     const stopped = !!(live?.stopping || job.stopping)
+    const uncertain = e instanceof UncertainResultError || (e as { name?: string })?.name === 'UncertainResultError'
+    if (!stopped && reachedTerminal.has(trackId)) {
+      logResume('ignore-late-error', trackId)
+      return
+    }
+    if (uncertain && !stopped) {
+      logResume('uncertain', trackId)
+      const pending = `${t('jobs.resultPendingShort')}\n${t('jobs.resultPendingHint')}`
+      if (holder) {
+        markJob({ querying: false, uncertain: true, stopping: false })
+      }
+      // Soft status only — no fail-red toast / no retry affordance.
+      report(holderId, { srcs: [], error: pending, pending: true })
+      return
+    }
+    if (!stopped) reachedTerminal.add(trackId)
     const kept = holder ? await keepPartial(editor, holder, job).catch(() => 0) : 0
     // User stop: prefer fee line from cancel (stoppedCharged / reject message); else 「已停止」.
     let msg: string
@@ -316,9 +367,11 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
     // User-initiated stop: card banner is enough; no stacked toast.
     if (holder && !stopped) onError(msg)
   } finally {
-    active.delete(job.id)
-    settled.delete(job.id)
-    dropped.delete(job.id)
+    active.delete(trackId)
+    if (job.id) {
+      settled.delete(job.id)
+      dropped.delete(job.id)
+    }
   }
 }
 
@@ -380,6 +433,7 @@ export async function startJob(
     await finish(editor, holderId, job, onError)
   } catch (e) {
     const soft = e instanceof CostDeclined || e instanceof NeedKeyError
+    const uncertain = e instanceof UncertainResultError || (e as { name?: string })?.name === 'UncertainResultError'
     settleSubmitGate(holderId, e instanceof CostDeclined ? 'declined' : soft ? 'error' : 'error')
     const holder = editor.getShape(holderId)
     if (soft) {
@@ -387,6 +441,24 @@ export async function startJob(
       if (holder?.meta.temp || holder?.meta.quiet) editor.deleteShape(holderId)
       else if (holder) editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: null } })
       report(holderId, { srcs: [], error: errorText(e) })
+      return
+    }
+    if (uncertain) {
+      // R06: receipt lost / unconfirmed — keep a pending record, never forge an id or re-ask cost.
+      if (holder) {
+        const pendingJob: Job = {
+          id: '',
+          node: '',
+          name: opts.name,
+          kind: opts.kind ?? 'image',
+          ...(opts.placer ? { placer: opts.placer } : {}),
+          ...(opts.extra ? { extra: opts.extra } : {}),
+          uncertain: true,
+        }
+        editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: pendingJob as any, quiet: false } })
+      }
+      const pending = `${t('jobs.resultPendingShort')}\n${t('jobs.resultPendingHint')}`
+      report(holderId, { srcs: [], error: pending, pending: true })
       return
     }
     if (holder?.meta.temp) editor.deleteShape(holderId)
@@ -420,10 +492,14 @@ export function spawnHolder(editor: Editor, beside: TLShape, size?: [number, num
 export function resumeJobs(editor: Editor, onError: ErrorSink) {
   for (const shape of editor.store.query.records('shape').get()) {
     const job = jobOf(shape)
-    if (job) void finish(editor, shape.id, job, onError)
+    if (!job) continue
+    // R06: no task id — keep pending card; never invent an id or re-submit.
+    if (!job.id) continue
+    // R14: uncertain with a real id may re-query for an authoritative terminal state.
+    void finish(editor, shape.id, job, onError, { resume: true })
   }
   return editor.sideEffects.registerAfterDeleteHandler('shape', (shape) => {
     const job = jobOf(shape)
-    if (job && active.has(job.id) && !settled.has(job.id)) cancelPrompt(job.id).catch((e) => onError(errorText(e)))
+    if (job?.id && active.has(job.id) && !settled.has(job.id)) cancelPrompt(job.id).catch((e) => onError(errorText(e)))
   })
 }
