@@ -1,7 +1,8 @@
 source=643/wash/product-to-packaging/examples/01.webp
 source_note=real studio product photo (KOIRA packaging), no people
 size=1536x857
-mask_box_xyxy=(105, 400, 235, 800)
-mask_wh=130x400
+mask_box_xyxy=(88, 485, 248, 818)
+mask_wh=160x333
+nudge=None
 feather=GaussianBlur(radius=5) rounded-rect
-prompt=Change only the selected can to a matte sage-green aluminum finish; keep shape, logo layout, and background unchanged.
+prompt=Change only the selected can to a matte sage-green aluminum finish; keep shape, logo layout, and background unchanged; keep the KOIRA wordmark, "AMBER ROAST OOLONG" text, sun and koi line art, silver rim, highlights and floor shadow unchanged.

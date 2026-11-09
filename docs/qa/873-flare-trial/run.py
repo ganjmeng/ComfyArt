@@ -38,7 +38,8 @@ MODEL = "openai/gpt-image-2.6-flare/edit"
 RESOLUTION = "1k"
 PROMPT = (
     "Change only the selected can to a matte sage-green aluminum finish; "
-    "keep shape, logo layout, and background unchanged."
+    "keep shape, logo layout, and background unchanged; keep the KOIRA wordmark, "
+    '"AMBER ROAST OOLONG" text, sun and koi line art, silver rim, highlights and floor shadow unchanged.'
 )
 BASE_IMG = ROOT / "base.png"
 MASK_IMG = ROOT / "mask.png"

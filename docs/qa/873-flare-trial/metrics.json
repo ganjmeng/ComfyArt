@@ -1,0 +1,49 @@
+{
+  "prediction_from_calls": null,
+  "diff_outside_mask_lt_0.5": {
+    "max_abs": 38,
+    "n_diff": 5101,
+    "n_px": 1263806,
+    "mean_abs_where_diff": 0.005231288135468049
+  },
+  "diff_outside_feather_edit_eq_0": {
+    "max_abs": 0,
+    "n_diff": 0,
+    "n_px": 1251144,
+    "mean_abs_where_diff": 0.0
+  },
+  "diff_feather_band": {
+    "max_abs": 242,
+    "n_diff": 16597,
+    "n_px": 24164,
+    "mean_abs_where_diff": 10.390608618882084
+  },
+  "diff_inside": {
+    "max_abs": 251,
+    "n_diff": 52540,
+    "n_px": 52546,
+    "mean_abs_where_diff": 49.95744680851064
+  },
+  "seam": {
+    "seam_jump_mean": 9.35,
+    "luma_3px_inside": 219.2,
+    "luma_3px_outside": 223.6,
+    "luma_delta_in_out": -4.4,
+    "n_border_px": 986
+  },
+  "paths": {
+    "result": "docs/qa/873-flare-trial/result.png",
+    "lr": "docs/qa/873-flare-trial/lr/LR-base-vs-result.png",
+    "crop_a_sides": "docs/qa/873-flare-trial/lr/crop200-a-can-sides.png",
+    "crop_b_bottom": "docs/qa/873-flare-trial/lr/crop200-b-can-bottom.png",
+    "crop_c_bg": "docs/qa/873-flare-trial/lr/crop200-c-bg-outside.png"
+  },
+  "live": {
+    "prediction_id": "6ac1b24c9bb04b728f30985ace4bad5a",
+    "ok": true,
+    "balance_before": 31.120199,
+    "balance_after": 31.061699,
+    "cost": 0.0585,
+    "status": "completed"
+  }
+}
