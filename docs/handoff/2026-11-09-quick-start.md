@@ -95,9 +95,9 @@
 - 2026-11-09 08:07，用户要求 Lovart 风格可复用组件，并指出按钮太简陋。
 - 范围：先做确认弹窗、按钮、生成卡片/工具条、SVG 预览下载错误态。统一字体、间距、圆角、层级，以及 hover / focus / loading / disabled / error。优先复用已有组件。
 - 约束：不照搬品牌；不改路由、计费、安全和下载逻辑。
-- 设计首版目标：**08:30 北京时间**，只交付首版视觉对照/规范，不是全部功能完成，也不是承诺已通过。
-- 组件工程首版交验目标：**09:00 北京时间**。这是交验目标，不是承诺已通过。
-- 截至团队报告中的 08:21：尚无可交验的 Lovart 版。#848 不是 Lovart 新版。新会话先看现有进度。
+- 设计首版目标：**08:30 北京时间**。设计工作流已 finished，云端 PR：<https://github.com/ganjmeng/ComfyArt/pull/849>。最新 SHA 与验收未核。
+- 组件工程首版交验目标：**09:00 北京时间**。工程工作流已 finished，云端 PR：<https://github.com/ganjmeng/ComfyArt/pull/850>。最新 SHA 与验收未核。
+- 两份都已有云端 PR。不要写成没有提交。#848 不是 Lovart 新版。
 - 已有工程工作流：<https://cursor.com/agents/bc-7d87ed9e-6e60-53a0-93f3-848ddd9a862c>
 - 已有设计工作流：<https://cursor.com/agents/bc-0b32ce40-9b33-564d-a357-0cb3c8e316c8>
 - 设计追溯：<https://github.com/ganjmeng/ComfyArt/pull/842#issuecomment-6729072118> ，<https://github.com/ganjmeng/ComfyArt/pull/844#issuecomment-6729013403>
@@ -169,7 +169,7 @@
 - 真实绘制的 CPU、内存、输出超限，以及目标部署。
 - 静图转 GIF 的产品成功链路和实价。WaveSpeed 编辑 GIF 那次独立失败仍是 11 月 8 日 22:33 的 HTTP 400，无任务 ID、无产物、未重试。费用 UNKNOWN。Replicate 直连已有 GIF 产物，不要写成从未成功。
 - 四技能 #707/#704 的当前真实出图链路。
-- Lovart 风格可复用组件。设计首版目标 08:30 北京时间，组件工程首版交验目标 09:00 北京时间。两者都是目标时刻，不是已通过。08:21 团队报告称当时没有可交验版本。
+- Lovart 风格可复用组件的验收。设计已 finished，PR <https://github.com/ganjmeng/ComfyArt/pull/849>；工程已 finished，PR <https://github.com/ganjmeng/ComfyArt/pull/850>。最新 SHA 与验收未核。不要写成没有提交。
 
 明确守住的行为：
 
@@ -192,7 +192,7 @@
 
 - #848 限定范围 QA 已完成，不要重开复验。整卡剩余项：真实绘制 CPU/内存/输出超限、目标部署、静图转 GIF 产品成功链路、实价。报告：<https://github.com/ganjmeng/ComfyArt/blob/532a1aa2cb7bd3829946bd19f6a1c5f0bbc179d7/docs/qa/2026-11-08-842-844/848-eca055b5/REPORT.md>
 - #845 未合并、未上线，完整产品点击验收未完成。不授权新增付费。
-- 设计首版按 08:30 北京时间记录；组件工程首版交验目标 09:00 北京时间。先核已有工作流，不把目标时刻写成已通过。范围仍是确认弹窗、按钮、生成卡片/工具条、SVG 预览下载错误态。
+- 设计 PR <https://github.com/ganjmeng/ComfyArt/pull/849>、工程 PR <https://github.com/ganjmeng/ComfyArt/pull/850> 已在云端。先读这两份最新 head。最新 SHA 与验收未核，不要重开，不要写成没有提交。
 - 静图转 GIF 的产品内成功链路仍待完成。在新的明确授权出现之前，不做付费重试，不换供应商。
 - 四技能真实链路保持 HOLD，直到有当前链路证据。#843 不能充当该证据。
 - 代码和文档按小批次提交并推送。每批给出 PR 或文件链接、完整 SHA、测试状态。秘密不入库；日志和文档里的密钥打码。
@@ -201,7 +201,7 @@
 
 - 整卡 HOLD：真实绘制 CPU/内存/输出超限、目标部署、静图转 GIF 产品成功链路、实价。
 - GIF：WaveSpeed 11 月 8 日 22:33 编辑请求仍是 HTTP 400。费用 UNKNOWN。$2 预算余额未知。Replicate 直连已有产物，产品内链路未通过。OpenAI 文档路径和 fal.ai 备选都还不是已选定、已实测的实现。Lovart 是否必须经过视频，尚未核实。
-- 视觉改版：08:21 无可交验版本。设计首版 08:30、工程交验 09:00 都不是已通过。#848 不是 Lovart 新版。
+- 视觉改版：设计 #849、工程 #850 已有云端 PR，工作流均已 finished。最新 SHA 与验收未核。#848 不是 Lovart 新版。
 
 ### 下一步
 
@@ -226,7 +226,7 @@
 并行推进已有工作，不要重开、不要重烧，也不要重开 #848 限定范围 QA：
 - 集成整卡剩余项：https://github.com/ganjmeng/ComfyArt/pull/848 与工程工作流 https://cursor.com/agents/bc-7d87ed9e-6e60-53a0-93f3-848ddd9a862c 。下载须保留原 SVG 字节，棋盘不写入原件。静图转 GIF 的产品成功链路仍保留。
 - 默认路由：https://github.com/ganjmeng/ComfyArt/pull/845 。未授权则不合并、不上线、不新增付费。
-- 视觉：设计工作流 https://cursor.com/agents/bc-0b32ce40-9b33-564d-a357-0cb3c8e316c8 。设计追溯 https://github.com/ganjmeng/ComfyArt/pull/842#issuecomment-6729072118 和 https://github.com/ganjmeng/ComfyArt/pull/844#issuecomment-6729013403 。先做确认弹窗、按钮、生成卡片/工具条、SVG 预览下载错误态；统一字体、间距、圆角、层级和 hover/focus/loading/disabled/error；优先复用已有组件。不照搬 Lovart 品牌。不改路由、计费、安全和下载逻辑。设计首版 08:30 北京时间、组件工程首版交验目标 09:00 北京时间，分别记录，都不是承诺已通过。08:21 尚无可交验版本。#848 不是 Lovart 新版。先核进度再动手。
+- 视觉：设计已 finished，PR https://github.com/ganjmeng/ComfyArt/pull/849 ，工作流 https://cursor.com/agents/bc-0b32ce40-9b33-564d-a357-0cb3c8e316c8 。工程已 finished，PR https://github.com/ganjmeng/ComfyArt/pull/850 ，工作流 https://cursor.com/agents/bc-7d87ed9e-6e60-53a0-93f3-848ddd9a862c 。两份都已有云端 PR，不要写成没有提交。最新 SHA 与验收未核，先读最新 head，不要重开。设计追溯 https://github.com/ganjmeng/ComfyArt/pull/842#issuecomment-6729072118 和 https://github.com/ganjmeng/ComfyArt/pull/844#issuecomment-6729013403 。不照搬 Lovart 品牌。不改路由、计费、安全和下载逻辑。#848 不是 Lovart 新版。
 
 不要重做已收口的 #805 hover，以及已合入的 #839、#840、#841。不要改其他现有分支的历史。
 
