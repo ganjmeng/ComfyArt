@@ -58,7 +58,9 @@ async def test_to_gif_primary_bans_wavespeed(client, monkeypatch):
     ws = next(c for c in row["choices"] if c["provider"] == "wavespeed")
     assert ws["enabled"] is False
     assert ws["backup"] is False
-    assert "WaveSpeed" in ws["backup_reason"] or "备选" in ws["backup_reason"]
+    # Design copy (provider.gifAltWavespeedBlocked zh); loose "WaveSpeed"|"备选" let old wording pass.
+    locked = "静图转动图不可用 WaveSpeed 作备选"
+    assert locked in ws["backup_reason"], ws["backup_reason"]
     flare = next(c for c in row["choices"] if c["model"] == FLARE)
     assert flare["enabled"] is True
     bad = await client.put("/comfyart/provider-admin/tool/to_gif", json={
