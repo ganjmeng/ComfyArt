@@ -66,6 +66,19 @@ async def test_to_gif_primary_bans_wavespeed(client, monkeypatch):
     assert provider_admin._tool_record("to_gif")["active"] is None
 
 
+
+async def test_generate_image_keeps_gif_default_but_effective_is_wavespeed(client, monkeypatch):
+    """UI must follow effective (WaveSpeed) for generate_image Primary; gif_default is GIF-path hint only."""
+    monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
+    body = await (await client.get("/comfyart/provider-admin")).json()
+    row = next(t for t in body["tools"] if t["id"] == "generate_image")
+    assert row["active"] is None
+    assert row["effective"]["provider"] == "wavespeed"
+    assert row["gif_default"]["provider"] == "replicate"
+    to_gif = next(t for t in body["tools"] if t["id"] == "to_gif")
+    assert to_gif["effective"]["provider"] == "replicate"
+    assert to_gif["gif_default"]["provider"] == "replicate"
+
 async def test_missing_key_does_not_activate(client, monkeypatch):
     monkeypatch.delenv("REPLICATE_API_TOKEN", raising=False)
     res = await client.put("/comfyart/provider-admin/tool/edit_image", json=_route())
