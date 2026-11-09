@@ -5,7 +5,7 @@ import { confirmDesc, type ConfirmDetail, type ConfirmGif } from './confirmText'
 import { t } from './i18n'
 import { onComfyEvent } from './ws'
 import { isWsGraph, WS_ID } from './wavespeed'
-import { logRawGenError, mapUnknownError, wsBodyError, wsErrorText } from './wsErrors'
+import { logRawGenError, mapUnknownError, wsErrorText } from './wsErrors'
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus } from './wavespeedKey'
 
 const POLL_MS = 1500
@@ -23,6 +23,14 @@ export class NeedKeyError extends Error {
   constructor(message = t('wsKey.needKey')) {
     super(message)
     this.name = 'NeedKeyError'
+  }
+}
+
+/** History/query could not confirm a terminal result — keep pending, do not treat as lost/restart. */
+export class UncertainResultError extends Error {
+  constructor(message = t('jobs.resultPendingHint')) {
+    super(message)
+    this.name = 'UncertainResultError'
   }
 }
 
@@ -240,6 +248,7 @@ export async function queuePrompt(prompt: PromptGraph, _runOn = defaultTarget(),
       ))) throw new CostDeclined()
     }
     if (!ws.ok) throw new Error(promptError(wsBody, ws.status))
+    if (typeof wsBody?.prompt_id !== 'string' || !wsBody.prompt_id) throw new UncertainResultError(t('jobs.resultPendingHint'))
     return String(wsBody.prompt_id)
   }
   // Only WaveSpeed graphs can run; tools not yet ported fail clearly.
@@ -317,14 +326,29 @@ export async function promptHistory(promptId: string): Promise<any> {
 
       : await api(`/history/${promptId}`)
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(wsBodyError(body, t('wsErr.failed')))
+  // R05/R10: HTTP failure stays 「结果待确认」, never hard-fail / server-restart copy.
+  if (!res.ok) throw new UncertainResultError(t('jobs.resultPendingHint'))
   return body[promptId]
 }
 
-async function waitForOutput<T>(promptId: string, node: string, pick: (out: Record<string, any>) => T | null): Promise<T> {
+export type JobPollStatus = 'querying' | 'running'
+
+async function waitForOutput<T>(
+  promptId: string,
+  node: string,
+  pick: (out: Record<string, any>) => T | null,
+  onStatus?: (status: JobPollStatus) => void,
+): Promise<T> {
   let misses = 0
+  onStatus?.('querying')
   for (;;) {
-    const hist = await promptHistory(promptId)
+    let hist: any
+    try {
+      hist = await promptHistory(promptId)
+    } catch (e) {
+      if (e instanceof UncertainResultError) throw e
+      throw new UncertainResultError(t('jobs.resultPendingHint'))
+    }
     if (hist) {
       const messages: [string, any][] = hist.status?.messages ?? []
       const err = messages.find((m) => m[0] === 'execution_error')
@@ -348,20 +372,27 @@ async function waitForOutput<T>(promptId: string, node: string, pick: (out: Reco
         return value
       }
       if (hist.status?.completed || hist.status?.status_str === 'error') throw new Error(t('jobs.noOutput'))
+      // Authority says the task still exists without terminal output yet.
+      onStatus?.('running')
     } else if (promptId.startsWith(WS_ID) || await inQueue(promptId)) {
       misses = 0
+      onStatus?.('running')
     } else if (++misses >= 2) {
-      throw new Error(t('jobs.lost'))
+      throw new UncertainResultError(t('jobs.resultPendingHint'))
     }
     await nap(promptId)
   }
 }
 
-export function waitForImages(promptId: string, node: string): Promise<ImageRef[]> {
+export function waitForImages(
+  promptId: string,
+  node: string,
+  onStatus?: (status: JobPollStatus) => void,
+): Promise<ImageRef[]> {
   return waitForOutput(promptId, node, (out) => {
     const items = [...(out.images ?? []), ...(out.videos ?? []), ...(out.gifs ?? []), ...(out.audio ?? []), ...(out['3d'] ?? [])]
     return items.length ? items as ImageRef[] : null
-  })
+  }, onStatus)
 }
 
 export function waitForText(promptId: string, node: string): Promise<string> {
