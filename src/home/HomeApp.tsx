@@ -24,6 +24,7 @@ import { BrandMark } from '../ui/BrandMark'
 import { Icons } from '../ui/icons'
 import { isEnter } from '../ui/keys'
 import { KeySettings } from '../ui/KeySettings'
+import { ProviderAdmin } from '../ui/ProviderAdmin'
 import { Popover } from '../ui/Popover'
 import { SettingsMenu } from '../ui/SettingsMenu'
 import { UsageDialog } from '../ui/UsageDialog'
@@ -270,6 +271,7 @@ export function HomeApp({ view }: { view: View }) {
       <MemoryDialog onError={(msg) => showMemoryToast(msg)} />
       <SkillsDialog home onError={(msg) => showMemoryToast(msg, 'error')} />
       <KeySettings />
+      <ProviderAdmin />
       <UsageDialog />
     </div>
   )

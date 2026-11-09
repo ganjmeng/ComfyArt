@@ -132,7 +132,10 @@ def fresh_user_dir(tmp_path):
     SENT.clear()
     from server import PromptServer
     PromptServer.instance.sockets.clear()
+    from ComfyArt.api.provider_admin import reset_runtime
+    reset_runtime()
     yield tmp_path
+    reset_runtime()
 
 
 def write_settings(**values) -> None:
