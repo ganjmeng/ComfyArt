@@ -161,6 +161,17 @@ def test_agent_read_of_hidden_skill_by_id_is_not_an_error_733(lang) -> None:
     assert report()["guard"][lang].get("readErr") is None
 
 
+@needs_node
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_simulated_hidden_skill_attach_shows_notice_870(lang) -> None:
+    """#870: hide list empty after #812 — harness temporarily adds yingzao to the Set so
+    attachSkill / blockHiddenSkill / notice copy stay covered ($0). Not a product hide."""
+    g = report()["simulatedHidden"][lang]
+    assert g["attached"] is False and g["chip"] is None
+    assert g["blocked"] is True
+    assert g["notice"] == COPY[lang] and g["noticeCopy"] == COPY[lang]
+
+
 SRC = ROOT / "src"
 
 

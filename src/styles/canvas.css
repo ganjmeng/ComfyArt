@@ -44,7 +44,9 @@
 /* #715 design: task-id line on its own line; the id never breaks mid-string, ellipsis if wider than the card (full id in title) */
 .ca-gen-card__error { white-space: pre-line; }
 .ca-gen-card__status { position: absolute; left: 8px; right: 8px; top: 8px; padding: 6px 12px; border-radius: 8px; background: var(--ca-field); color: var(--ca-text); font-size: 13px; overflow-wrap: anywhere; white-space: pre-line; }
-.ca-gen-card[data-pending] /* #825: Lovart-style model row (gray text + icon), not a colored capsule */
+/* #825/#870: Lovart-style model row (gray text + icon), not a colored capsule.
+   Absolute on every no-output card — never gate on [data-pending] (that made failed/refused
+   cards park Auto · name in-flow next to the placeholder, looking like a broken <img> alt). */
 .ca-gen-frame__model {
   position: absolute;
   left: 10px;

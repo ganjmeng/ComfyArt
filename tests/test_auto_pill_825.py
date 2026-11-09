@@ -144,8 +144,14 @@ def test_frontend_auto_pill_mirrors_backend():
     assert "data-testid=\"auto-model-label\"" in chat or "auto-model-label" in chat
     gen = (ROOT / "src/shapes/GeneratorShape.tsx").read_text()
     assert "ca-gen-frame__model" in gen and "autoPillLabel" in gen
-    # Not a colored capsule for the model row
-    assert "ca-gen-frame__model" in (ROOT / "src/styles/canvas.css").read_text()
+    # Not a colored capsule for the model row; absolute on every card (not gated on [data-pending] — #870)
+    css = (ROOT / "src/styles/canvas.css").read_text()
+    assert "ca-gen-frame__model" in css
+    block = css.split(".ca-gen-frame__model {", 1)[1].split("}", 1)[0]
+    assert "position: absolute" in block
+    # selector must not be a descendant of [data-pending] (that leaked Auto · name as in-flow "alt")
+    before = css.split(".ca-gen-frame__model {", 1)[0].rstrip()
+    assert not before.endswith("[data-pending]") and ".ca-gen-card[data-pending]" not in before[-80:]
 
 
 def test_resolve_model_choice_auto_and_manual(catalog):

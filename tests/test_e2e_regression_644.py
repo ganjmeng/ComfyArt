@@ -293,7 +293,7 @@ async def test_hidden_skill_deep_link_refs_composer_only(app_url, mock_ws, fake_
         caps = pg.get_by_test_id("composer-capsule")
         canvas = await pg.locator('.tl-shape[data-shape-type="image"], .tl-shape[data-shape-type="video"]').count()
         cap_n = await caps.count()
-        assert cap_n + canvas >= 1, (cap_n, canvas)  # refs surfaced somewhere
+        assert cap_n + canvas == len(REF_FILES), (cap_n, canvas, len(REF_FILES))  # every deep-link ref surfaced
         await _shot(pg, f"notice-refs-{lang}-{theme}")
         # listed ask= auto-sends via /bot/.../send (expected); still no WaveSpeed/KIE upstream ($0)
         assert not [u for u in reqs if any(k in u for k in ("wavespeed", "kie"))], reqs
