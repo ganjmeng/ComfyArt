@@ -485,3 +485,30 @@ async def test_gif_defaults_to_replicate_26_and_llm_defaults_official(monkeypatc
     provider_admin._save_section("llm", {"provider": "wavespeed", "model": "existing"})
     assert provider_admin.llm_route() is None
     assert provider_admin.active_llm()["provider"] == "wavespeed"
+
+
+# --- Source contract: ProviderAdmin draft/live (mutation must fail if gif_default unscoped) ---
+import re as _re
+from pathlib import Path as _Path
+
+_PROVIDER_ADMIN_SRC = (_Path(__file__).resolve().parents[1] / "src/ui/ProviderAdmin.tsx").read_text(encoding="utf-8")
+
+
+def _provider_admin_fn(name: str) -> str:
+    m = _re.search(rf"function {name}\(tool: ToolRow\): ToolRoute \{{(.*?)\n\}}", _PROVIDER_ADMIN_SRC, _re.S)
+    assert m, f"missing {name}"
+    return m.group(1)
+
+
+def test_live_baseline_gif_default_only_for_to_gif():
+    body = _provider_admin_fn("liveBaseline")
+    assert "gif_default" in body
+    assert "tool.id === 'to_gif'" in body or 'tool.id === "to_gif"' in body
+    # Bare `if (tool.gif_default)` (no to_gif on the same statement) is the mutation QA used.
+    assert _re.search(r"if\s*\(\s*tool\.gif_default\s*\)", body) is None
+    assert _re.search(r"tool\.id\s*===\s*['\"]to_gif['\"]\s*&&\s*tool\.gif_default", body)
+
+
+def test_draft_route_delegates_to_live_baseline():
+    body = _provider_admin_fn("draftRoute")
+    assert "liveBaseline(tool)" in body
