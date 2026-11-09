@@ -32,13 +32,23 @@
 - `PYTHONPATH=/agent/repos python3 -m pytest -q tests/test_svg_826.py tests/test_gpt_image_26_route.py tests/test_gpt_image_26_gif.py tests/test_flare_default.py tests/test_curated_models.py tests/test_plan_quote_235.py`：284 passed。
 - `PYTHONPATH=/agent/repos python3 -m pytest -q tests/test_svg826_canvas_tip.py`：1 passed。三张图由这次重跑生成。
 
-下面三张图是 **LOCAL FIXTURE / mock**。页顶棕条写着不是供应商结果。它们是真实 Tldraw、`ImageToolbar`、生成卡片，像素来自本地 `admit()`。这不是部署实证，也不是供应商出图。
+下面三张图是后来的设计复验重跑，不是上面那次合并测试的旧图，也不是 #844 签字头 `b00d0b3a38932456f0f43f05ec3262f895117be6`。它们仍是 **LOCAL FIXTURE / mock**：真实 Tldraw、`ComfyImageShapeUtil`、`ImageToolbar`、生成卡片，像素来自本地 `admit()`。不是供应商出图，也不是部署实证。
 
 | 图 | 状态 |
 | --- | --- |
-| `01-path-preview.png` | 正常 path，可辨 PNG，可下载 |
-| `02-preview-failed-download.png` | 安全但画不出（纯 text），可下载 |
-| `03-rejected-no-download.png` | 脚本拒绝，无下载 |
+| `01-path-preview.png` | 透明 path 铺在棋盘上，棋盘只在显示层。下载文件名 `path.svg`，字节和 SHA-256 与已准入原件一致 |
+| `02-preview-failed-download.png` | 画布居中失败图标和「预览失败，原 SVG 仍可下载。」没有灰底黑块。下载是 `text_only.svg` 原件 |
+| `03-rejected-no-download.png` | 脚本拒绝，没有下载，也没有失败占位图 |
+
+## 设计复验（#844 评论，追加在本候选上）
+
+评论指出两处：失败画布是灰底加左上黑块；透明预览看不出透明。修复在本分支追加，输入祖先仍是 `69223e84763a9e02d24e87281da3e005d50a0842` 和 `b00d0b3a38932456f0f43f05ec3262f895117be6`。
+
+- 失败占位由 `ComfyImageShapeUtil` 绘制，不再把带黑块的预览 PNG 画上画布。存档用的失败 PNG 改为全透明，没有不透明像素。
+- 棋盘是 `.ca-svg-checker` 的 CSS。预览 PNG 四角仍是透明，SVG 下载字节不含棋盘。
+- 安全拒绝仍无下载，也不会出现失败占位。
+
+这次在修复后的树上重跑：`npx tsc --noEmit` 退出码 0；`tests/test_svg_826.py`、`tests/test_gpt_image_26_route.py`、`tests/test_gpt_image_26_gif.py`、`tests/test_flare_default.py`、`tests/test_curated_models.py`、`tests/test_plan_quote_235.py` 共 285 passed；`tests/test_svg826_canvas_tip.py` 1 passed。#842 上单独的 67 passed 只对应 `69223e84`，不代替这次集成重验。
 
 ## 这次没有做
 

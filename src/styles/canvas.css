@@ -6,6 +6,37 @@
   color: var(--ca-empty-icon);
   pointer-events: all;
 }
+/* #826: checker is a display layer under a transparent PNG. It is not part of the SVG download. */
+.ca-svg-checker {
+  position: relative;
+  overflow: hidden;
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #c8c8c8 25%, transparent 25%),
+    linear-gradient(-45deg, #c8c8c8 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #c8c8c8 75%),
+    linear-gradient(-45deg, transparent 75%, #c8c8c8 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+.ca-svg-fail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f4f5;
+  color: #3f3f46;
+}
+.ca-svg-fail__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 78%;
+  text-align: center;
+}
+.ca-svg-fail__icon { width: 36px; height: 36px; }
+.ca-svg-fail__text { font: 500 13px/18px var(--ca-font, sans-serif); }
 .ca-gen-card__icon { display: flex; width: 22%; max-width: 96px; aspect-ratio: 1; }
 .ca-gen-card { position: relative; }
 .ca-gen-card__error a { color: inherit; text-decoration: underline; pointer-events: all; cursor: pointer; }

@@ -562,10 +562,13 @@ def _png(im) -> bytes:
 
 
 def _failure_png() -> bytes:
-    from PIL import Image, ImageDraw
-    im = Image.new("RGBA", (32, 32), (128, 128, 128, 255))
-    ImageDraw.Draw(im).rectangle([0, 0, 3, 3], fill=(0, 0, 0, 255))
-    return _png(im)
+    """A PNG record with no opaque pixels. The canvas draws its own placeholder.
+
+    This bitmap is not a picture of the file. A gray field or a black block here
+    would look like a finished image, so every pixel stays transparent.
+    """
+    from PIL import Image
+    return _png(Image.new("RGBA", (8, 8), (0, 0, 0, 0)))
 
 
 def _pixels(im) -> str:

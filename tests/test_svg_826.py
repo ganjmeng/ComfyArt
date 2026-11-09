@@ -4,6 +4,7 @@ Mock and local raster only. No WaveSpeed submit, no price-API call, no paid smok
 Medium 1k at $0.07 is the existing still cell $0.05 plus $0.02, not a new price check.
 """
 import asyncio
+import hashlib
 import io
 import json
 import os
@@ -99,8 +100,21 @@ def test_safe_undrawable_preview_failure_still_downloads():
     assert verdict.download == raw and verdict.kind == ""
     assert "预览失败" in verdict.message_zh and "downloaded" in verdict.message_en
     im = _png(verdict)
-    assert im.getpixel((0, 0))[:3] == (0, 0, 0)
-    assert im.getpixel((16, 16))[:3] == (128, 128, 128)
+    assert im.size == (8, 8)
+    assert all(im.getpixel((x, y))[3] == 0 for x in range(im.size[0]) for y in range(im.size[1]))
+
+
+def test_admitted_download_hash_matches_the_original_svg():
+    """The checkerboard is not part of the file. A rejected file has no download."""
+    for name in ("path.svg", "transparent.svg", "text_only.svg"):
+        raw = _load(name)
+        verdict = svg_image.admit(raw)
+        assert verdict.download is not None
+        assert verdict.download == raw
+        assert hashlib.sha256(verdict.download).hexdigest() == hashlib.sha256(raw).hexdigest()
+        assert b"checker" not in verdict.download and b"<script" not in verdict.download
+    refused = svg_image.admit(_load("script.svg"))
+    assert refused.download is None and refused.preview_png is None
 
 
 def test_path_preview_is_an_identifiable_png():

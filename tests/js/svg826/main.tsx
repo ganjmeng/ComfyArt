@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { AssetRecordType, Tldraw, createShapeId, type Editor, type TLComponents } from 'tldraw'
 import { ImageToolbar } from '../../../src/ui/ImageToolbar'
 import { GENERATOR, GENERATOR_DEFAULTS, GeneratorShapeUtil } from '../../../src/shapes/GeneratorShape'
+import { ComfyImageShapeUtil } from '../../../src/shapes/SvgImageShape'
 import { resultsAtom } from '../../../src/jobs'
 import 'tldraw/tldraw.css'
 import '../../../src/styles/base.css'
@@ -23,6 +24,8 @@ const components: TLComponents = {
 
 function place(editor: Editor) {
   const file = new URL(state === 'failed' ? 'fail.png' : 'path.png', location.href).href
+  const original = new URL(state === 'failed' ? 'text_only.svg' : 'path.svg', location.href).href
+  const originalName = state === 'failed' ? 'text_only.svg' : 'path.svg'
   if (state === 'rejected') {
     const id = createShapeId()
     editor.createShape({
@@ -52,8 +55,8 @@ function place(editor: Editor) {
     meta: {
       localFixture: true,
       inlineSvg: false,
-      svgDownload: 'logo.svg',
-      svgName: 'logo.svg',
+      svgDownload: original,
+      svgName: originalName,
       svgState: failed ? 'preview_failed' : 'transparent',
       svgMessage: t('wsErr.svgPreviewFailed'),
     },
@@ -79,7 +82,7 @@ export async function mount() {
   frame.className = 'ca-fixture-frame'
   root.append(frame)
   createRoot(frame).render(
-    <Tldraw shapeUtils={[GeneratorShapeUtil]} components={components} onMount={place}>
+    <Tldraw shapeUtils={[ComfyImageShapeUtil, GeneratorShapeUtil]} components={components} onMount={place}>
       <ImageToolbar onError={() => {}} />
     </Tldraw>,
   )

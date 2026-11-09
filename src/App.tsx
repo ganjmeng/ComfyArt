@@ -28,6 +28,7 @@ import { VectorShapeUtil, VectorTool } from './shapes/VectorShape'
 import { ArtboardShapeUtil } from './shapes/ArtboardShape'
 import { GeneratorShapeUtil } from './shapes/GeneratorShape'
 import { MockupShapeUtil } from './shapes/MockupShape'
+import { ComfyImageShapeUtil } from './shapes/SvgImageShape'
 import { HoverVideoShapeUtil } from './shapes/VideoShape'
 import { AdjustPanel } from './ui/AdjustPanel'
 import { AgentPanel, chatViewAtom, type ChatView } from './ui/AgentPanel'
@@ -96,7 +97,7 @@ import { uuid } from './id'
 const CHANNEL = 'comfyart-projects'
 const TAB = uuid()
 const assetUrls = getAssetUrlsByImport()
-const shapeUtils = [ArtboardShapeUtil, GeneratorShapeUtil, CommentShapeUtil, DoodleShapeUtil, TextShapeUtil, VectorShapeUtil, LottieShapeUtil, ModelShapeUtil, HtmlShapeUtil, AudioShapeUtil, MockupShapeUtil, GenBlockShapeUtil, QrShapeUtil, HoverVideoShapeUtil]
+const shapeUtils = [ComfyImageShapeUtil, ArtboardShapeUtil, GeneratorShapeUtil, CommentShapeUtil, DoodleShapeUtil, TextShapeUtil, VectorShapeUtil, LottieShapeUtil, ModelShapeUtil, HtmlShapeUtil, AudioShapeUtil, MockupShapeUtil, GenBlockShapeUtil, QrShapeUtil, HoverVideoShapeUtil]
 const tools = [CommentTool, DoodleTool, TextTool, VectorTool, PenTool]
 const getShapeVisibility = (shape: TLShape) => (shape.meta.hidden ? 'hidden' as const : 'inherit' as const)
 
