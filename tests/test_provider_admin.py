@@ -47,6 +47,25 @@ async def test_tools_default_and_admin_gate(client, monkeypatch):
     assert body["policy"]["fallback_default"] is False
 
 
+async def test_to_gif_primary_bans_wavespeed(client, monkeypatch):
+    """Still→GIF live default is Replicate·Flare; WaveSpeed cannot be the primary pick."""
+    monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
+    body = await (await client.get("/comfyart/provider-admin")).json()
+    row = next(t for t in body["tools"] if t["id"] == "to_gif")
+    assert row["effective"]["provider"] == "replicate"
+    assert row["effective"]["model"] == FLARE
+    assert row["gif_default"]["provider"] == "replicate"
+    ws = next(c for c in row["choices"] if c["provider"] == "wavespeed")
+    assert ws["enabled"] is False
+    flare = next(c for c in row["choices"] if c["model"] == FLARE)
+    assert flare["enabled"] is True
+    bad = await client.put("/comfyart/provider-admin/tool/to_gif", json={
+        "primary": {"provider": "wavespeed", "model": "existing"}, "backup": None, "fallback": False, "activate": True,
+    })
+    assert bad.status in {400, 409, 422}
+    assert provider_admin._tool_record("to_gif")["active"] is None
+
+
 async def test_missing_key_does_not_activate(client, monkeypatch):
     monkeypatch.delenv("REPLICATE_API_TOKEN", raising=False)
     res = await client.put("/comfyart/provider-admin/tool/edit_image", json=_route())
