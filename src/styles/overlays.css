@@ -126,6 +126,24 @@
 .ca-ve__playhead { position: absolute; top: -6px; bottom: -4px; width: 2px; margin-left: -1px; background: #e53935; pointer-events: none; z-index: 3; }
 
 .ca-ask { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: var(--ca-border-w) solid var(--ca-border); border-radius: 12px; }
+
+/* Agent fee confirm inside chat (PlanQuote / OverQuote). No modal/scrim — see design 2026-11-09-chat-inline-confirm. */
+.ca-chat-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: var(--ca-border-w) solid var(--ca-border);
+  border-radius: 12px;
+  background: var(--ca-float);
+  box-sizing: border-box;
+  width: 100%;
+}
+.ca-chat-confirm__title { font-weight: 600; font-size: 14px; line-height: 20px; color: var(--ca-strong); }
+.ca-chat-confirm__desc { margin: 0; color: var(--ca-text); font: 400 13px/20px var(--ca-font); white-space: pre-line; }
+.ca-chat-confirm__status { margin: 0; color: var(--ca-muted); font: 400 12px/18px var(--ca-font); }
+.ca-chat-confirm__actions { gap: 8px; }
+.ca-chat-confirm .ca-panel__foot > button { height: 32px; padding: 0 14px; border-radius: 8px; font: inherit; cursor: pointer; }
 .ca-ask__title { font-weight: 500; white-space: pre-line; }
 .ca-ask .ca-panel__foot > button { height: 32px; padding: 0 14px; border-radius: 8px; font: inherit; cursor: pointer; }
 .ca-chat__memo { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ca-muted); }

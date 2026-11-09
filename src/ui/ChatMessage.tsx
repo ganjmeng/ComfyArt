@@ -5,7 +5,7 @@ import { answerAsk, quoteAnswer, continueRun, outputsOf, toolLabel, toolName, ty
 import { setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
 import { errorText } from '../jobs'
-import { confirmAtom } from './Confirm'
+import { ChatInlineConfirm } from './ChatInlineConfirm'
 import OVER_QUOTE from '../../bot/over_quote.json'
 import { schedulesOpenAtom } from '../schedules'
 import { Icons } from './icons'
@@ -737,33 +737,27 @@ export function OverQuote({ b }: { b: BotBlock }) {
   const copy = OVER_QUOTE.copy[lang === 'zh' ? 'zh' : 'en']
   const credits = (b as BotBlock & { credits?: number }).credits
   const body = credits != null ? copy.body.replace('{credits}', String(credits)) : (b.prompt ?? '')
-  useEffect(() => {
-    if (!pending || !askId) return
-    let live = true
+  if (pending && askId) {
     const answer = quoteAnswer(askId)
-    const ask = {
-      title: t('jobs.confirmTitle'),
-      desc: body,
-      ok: copy.confirm,
-      cancelLabel: copy.decline,
-      // #393: no ✕, the backdrop does nothing; Esc = 先到这里 (cancel → decline)
-      closable: false,
-      backdropClose: false,
-      className: 'ca-overquote',
-      run: () => {},
-      submit: async () => {
-        if (!live) throw new Error(t('jobs.submissionUncertain'))
-        await answer([OVER_QUOTE.confirm])
-      },
-      submissionFailed: () => { if (live) setError(t('jobs.submissionUncertain')) },
-      cancel: () => { if (live) void answer([OVER_QUOTE.decline]).catch((e) => { if (live) setError(errorText(e)) }) },
-    }
-    confirmAtom.set(ask)
-    return () => {
-      live = false
-      if (confirmAtom.get() === ask) confirmAtom.set(null)
-    }
-  }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
+    return (
+      <>
+        <ChatInlineConfirm
+          title={t('jobs.confirmTitle')}
+          desc={body}
+          okLabel={copy.confirm}
+          cancelLabel={copy.decline}
+          testId="chat-inline-overquote"
+          onConfirm={async () => {
+            await answer([OVER_QUOTE.confirm])
+          }}
+          onCancel={() => {
+            void answer([OVER_QUOTE.decline]).catch((e) => setError(errorText(e)))
+          }}
+        />
+        {error ? <div className="ca-chat__hint">{error}</div> : null}
+      </>
+    )
+  }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const ok = b.status === 'answered' && (b.selected ?? []).includes(OVER_QUOTE.confirm)
   return (
@@ -780,40 +774,37 @@ function PlanQuote({ b }: { b: BotBlock }) {
   const askId = b.ask_id
   const pending = b.status === 'pending'
   const startLabel = (b.options ?? []).find((o) => o.id === 'start')?.label ?? ''
-  useEffect(() => {
-    if (!pending || !askId) return
-    let live = true
+  if (pending && askId) {
     const answer = quoteAnswer(askId)
-    const ask = {
-      title: t('jobs.confirmTitle'),
-      desc: b.prompt ?? '',
-      ok: startLabel,
-      lines: b.lines ?? [],
-      totalLabel: b.total_label,
-      total: b.total,
-      run: () => {},
-      submit: async () => {
-        if (!live) throw new Error(t('jobs.submissionUncertain'))
-        setAgentPlanConfirmed(true)
-        await answer(['start'])
-      },
-      submissionFailed: () => {
-        if (!live) return
-        setAgentPlanConfirmed(false)
-        setError(t('jobs.submissionUncertain'))
-      },
-      cancel: () => {
-        if (!live) return
-        setAgentPlanConfirmed(false)
-        void answer(['cancel']).catch((e) => { if (live) setError(errorText(e)) })
-      },
-    }
-    confirmAtom.set(ask)
-    return () => {
-      live = false
-      if (confirmAtom.get() === ask) confirmAtom.set(null)
-    }
-  }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
+    return (
+      <>
+        <ChatInlineConfirm
+          title={t('jobs.confirmTitle')}
+          desc={b.prompt ?? ''}
+          okLabel={startLabel || t('jobs.confirmOk')}
+          lines={b.lines ?? []}
+          totalLabel={b.total_label}
+          total={b.total}
+          testId="chat-inline-planquote"
+          onConfirm={async () => {
+            setAgentPlanConfirmed(true)
+            try {
+              await answer(['start'])
+            } catch (e) {
+              setAgentPlanConfirmed(false)
+              setError(errorText(e))
+              throw e
+            }
+          }}
+          onCancel={() => {
+            setAgentPlanConfirmed(false)
+            void answer(['cancel']).catch((e) => setError(errorText(e)))
+          }}
+        />
+        {error ? <div className="ca-chat__hint">{error}</div> : null}
+      </>
+    )
+  }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const started = b.status === 'answered' && (b.selected ?? []).includes('start')
   return (
