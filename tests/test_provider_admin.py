@@ -393,6 +393,27 @@ async def test_llm_rehearsal_does_not_call_or_save(client, monkeypatch):
     assert provider_admin.active_llm() == before
 
 
+
+async def test_to_gif_primary_rejects_wavespeed_and_choices_disable(client, monkeypatch):
+    """Still→GIF: WaveSpeed cannot be primary; choices mark it disabled; Live stays Replicate."""
+    monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
+    state = await client.get("/comfyart/provider-admin")
+    assert state.status == 200
+    body = await state.json()
+    gif = next(row for row in body["tools"] if row["id"] == "to_gif")
+    assert gif["effective"]["provider"] == "replicate"
+    assert gif["effective"]["model"] == FLARE
+    ws = next(c for c in gif["choices"] if c["provider"] == "wavespeed")
+    assert ws["enabled"] is False
+    rejected = await client.put("/comfyart/provider-admin/tool/to_gif", json={
+        "primary": {"provider": "wavespeed", "model": "existing"},
+        "backup": None,
+        "fallback": False,
+        "activate": True,
+    })
+    assert rejected.status == 400
+
+
 async def test_gif_defaults_to_replicate_26_and_llm_defaults_official(monkeypatch):
     from ComfyArt.api.wavespeed import WaveSpeedError
     from ComfyArt.bot.providers import TurnRequest, get_provider

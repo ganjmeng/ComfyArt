@@ -44,6 +44,21 @@ function blank(): ToolRoute {
   return { primary: { provider: 'wavespeed', model: 'existing' }, backup: null, fallback: false }
 }
 
+/** Still→GIF system default matches Live (Replicate·Flare); never seed WaveSpeed. */
+function defaultDraft(tool: ToolRow): ToolRoute {
+  if (tool.id === 'to_gif') {
+    const g = tool.gif_default || { provider: 'replicate', model: 'openai/gpt-image-2.6-flare' }
+    return { primary: { provider: g.provider, model: g.model }, backup: null, fallback: false }
+  }
+  return blank()
+}
+
+function draftFromTool(tool: ToolRow): ToolRoute {
+  if (tool.active) return { ...tool.active, backup: tool.active.backup || null }
+  if (tool.draft) return { primary: tool.draft.primary, backup: tool.draft.backup || null, fallback: !!tool.draft.fallback }
+  return defaultDraft(tool)
+}
+
 function useOpen() {
   const [value, setValue] = useState(providerAdminOpen())
   useEffect(() => subscribeProviderAdmin(() => setValue(providerAdminOpen())), [])
@@ -81,7 +96,7 @@ export function ProviderAdmin() {
       setState(next)
       const first = next.tools[0]?.id || 'generate_image'
       setPicked(first)
-      setDrafts(Object.fromEntries(next.tools.map((tool) => [tool.id, tool.active ? { ...tool.active, backup: tool.active.backup || null } : blank()])))
+      setDrafts(Object.fromEntries(next.tools.map((tool) => [tool.id, draftFromTool(tool)])))
       const llm = next.llm.active
       setLlmProvider(llm?.provider || 'deepseek')
       setLlmModel(llm?.model || 'deepseek-flash')
@@ -93,14 +108,11 @@ export function ProviderAdmin() {
 
   const absorb = (next: ProviderAdminState) => {
     setState(next)
-    setDrafts(Object.fromEntries(next.tools.map((tool) => {
-      const route = tool.active || tool.draft
-      return [tool.id, route ? { primary: route.primary, backup: route.backup || null, fallback: route.fallback } : blank()]
-    })))
+    setDrafts(Object.fromEntries(next.tools.map((tool) => [tool.id, draftFromTool(tool)])))
   }
   const dirtyIds = useMemo(() => {
     if (!state) return []
-    return state.tools.filter((tool) => routeKey(drafts[tool.id] || blank()) !== routeKey(tool.active || blank())).map((tool) => tool.id)
+    return state.tools.filter((tool) => routeKey(drafts[tool.id] || defaultDraft(tool)) !== routeKey(tool.active || defaultDraft(tool))).map((tool) => tool.id)
   }, [state, drafts])
 
   useEffect(() => {
@@ -124,7 +136,7 @@ export function ProviderAdmin() {
     return true
   })
   const current = tools.find((tool) => tool.id === picked) || shown[0]
-  const draft = current ? drafts[current.id] || blank() : blank()
+  const draft = current ? drafts[current.id] || defaultDraft(current) : blank()
   const dirty = current ? dirtyIds.includes(current.id) : false
 
   const close = () => {
@@ -319,7 +331,7 @@ function shortModel(model: string) {
 }
 
 function impact(tool: ToolRow, draft: ToolRoute) {
-  const now = tool.active || blank()
+  const now = tool.active || defaultDraft(tool)
   const bits = [tx('保存后只影响这个工具的新任务。', 'After saving, only new runs of this tool change.')]
   if (!same(now.primary, draft.primary)) bits.push(tx(`主线路改为 ${providerName(draft.primary.provider)}。`, `Primary becomes ${providerName(draft.primary.provider)}.`))
   if (!same(now.backup, draft.backup)) bits.push(draft.backup ? tx('备选已设置。', 'A backup is set.') : tx('去掉备选。', 'Backup removed.'))

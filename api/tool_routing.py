@@ -190,6 +190,8 @@ def connected(model_id: str) -> bool:
 
 def choice_enabled(tool: dict, provider: str, model: str) -> tuple[bool, str]:
     if provider == "wavespeed" and model == "existing":
+        if tool.get("id") == "to_gif":
+            return False, "静图转动图主线路不可用 WaveSpeed，须跟 Live（Replicate · Flare）"
         return True, ""
     if provider != "replicate" or model not in CONNECTED:
         return False, "未核实或尚未接入，不能选"
@@ -244,10 +246,14 @@ def normalize_route(tool_id: str, body: dict) -> dict | None:
 
 
 def public_choices(tool: dict) -> list[dict]:
+    # Still→GIF: primary cannot be WaveSpeed — Live default is Replicate·Flare.
+    ws_ok = tool["id"] != "to_gif"
     rows = [{
         "provider": "wavespeed", "model": "existing",
         "label": {"zh": "WaveSpeed · 现有模型", "en": "WaveSpeed · current model"},
-        "enabled": True, "quote": "provider", "reason": "",
+        "enabled": ws_ok,
+        "quote": "provider",
+        "reason": "" if ws_ok else "静图转动图主线路不可用 WaveSpeed，须跟 Live（Replicate · Flare）",
         "backup": bool(tool["wavespeed_backup"]),
         "backup_reason": "" if tool["wavespeed_backup"] else "这个工具的结果 WaveSpeed 接不住，不能当备选",
     }]
