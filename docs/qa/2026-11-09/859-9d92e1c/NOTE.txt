@@ -1,0 +1,1 @@
+8192@9d92e1c hard-refresh first-screen: Providers Live=WaveSpeed OK; estimate model id still gpt-image-2.6-flare → unpaid visual not PASS for Primary=Live.
