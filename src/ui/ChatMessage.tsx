@@ -744,7 +744,7 @@ export function OverQuote({ b }: { b: BotBlock }) {
         <ChatInlineConfirm
           title={t('jobs.confirmTitle')}
           desc={body}
-          okLabel={copy.confirm}
+          okLabel={t('jobs.confirmOk')}
           cancelLabel={copy.decline}
           testId="chat-inline-overquote"
           onConfirm={async () => {
@@ -763,7 +763,7 @@ export function OverQuote({ b }: { b: BotBlock }) {
   return (
     <div className="ca-chat__memo" data-kind={OVER_QUOTE.kind}>
       <span className="ca-icon">{ok ? Icons.check : Icons.close}</span>
-      {body} → {ok ? copy.confirm : b.status === 'expired' ? t('chatMessage.timedOut') : copy.decline}
+      {body} → {ok ? t('jobs.confirmOk') : b.status === 'expired' ? t('chatMessage.timedOut') : copy.decline}
     </div>
   )
 }
@@ -773,7 +773,6 @@ function PlanQuote({ b }: { b: BotBlock }) {
   const [error, setError] = useState('')
   const askId = b.ask_id
   const pending = b.status === 'pending'
-  const startLabel = (b.options ?? []).find((o) => o.id === 'start')?.label ?? ''
   if (pending && askId) {
     const answer = quoteAnswer(askId)
     return (
@@ -781,7 +780,7 @@ function PlanQuote({ b }: { b: BotBlock }) {
         <ChatInlineConfirm
           title={t('jobs.confirmTitle')}
           desc={b.prompt ?? ''}
-          okLabel={startLabel || t('jobs.confirmOk')}
+          okLabel={t('jobs.confirmOk')}
           lines={b.lines ?? []}
           totalLabel={b.total_label}
           total={b.total}
@@ -810,7 +809,7 @@ function PlanQuote({ b }: { b: BotBlock }) {
   return (
     <div className="ca-chat__memo">
       <span className="ca-icon">{started ? Icons.check : Icons.close}</span>
-      {b.prompt} → {started ? startLabel : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
+      {b.prompt} → {started ? t('jobs.confirmOk') : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
     </div>
   )
 }
