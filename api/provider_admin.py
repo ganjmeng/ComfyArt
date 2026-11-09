@@ -1047,18 +1047,25 @@ def _auto_still_generate(inputs: dict, decision: dict) -> bool:
 
 
 def _still_auto_effective_tip(inputs: dict, decision: dict) -> dict | None:
-    """Product: empty Auto still tip = generate_image.effective; never gif_default / catalog flare."""
+    """Product: empty Auto still tip shows WaveSpeed/effective provider; never gif_default / Replicate.
+
+    Keep estimate ``model`` aligned with submit (WaveSpeed catalog id may be flare). Only stamp
+    ``provider`` (+ effective metadata); do not rewrite ``model`` to Live ``existing``.
+    """
     if not _auto_still_generate(inputs, decision):
         return None
     row = next((t for t in _tools_view() if t["id"] == "generate_image"), None)
     if not row:
         return None
     eff = row["effective"]
+    # Replicate Live Primary is handled by the non-wavespeed estimate branch.
+    if (eff.get("provider") or "") == "replicate":
+        return None
     return {
-        "provider": eff["provider"],
-        "model": eff["model"],
+        "provider": eff["provider"] or "wavespeed",
         "effective": True,
         "effective_source": eff.get("source") or "",
+        "effective_model": eff.get("model") or "existing",
     }
 
 

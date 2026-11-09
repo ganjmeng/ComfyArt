@@ -515,23 +515,23 @@ def test_draft_route_delegates_to_live_baseline():
 
 
 async def test_auto_still_estimate_tip_follows_generate_image_effective(monkeypatch):
-    """Empty Auto still tip = generate_image.effective (WaveSpeed/existing), never catalog flare / gif_default."""
+    """Empty Auto still tip stamps WaveSpeed provider; keeps submit-aligned model (flare id OK)."""
     monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
     provider_admin._write_tool("generate_image", {"revision": 0, "active": None, "previous": None, "draft": None})
 
     async def orig(inputs):
-        # Mimic wavespeed.estimate resolving Auto → curated flare (the bug tip).
+        # Mimic wavespeed.estimate resolving Auto → curated flare (submit path).
         return {"price": 0.045, "currency": "USD", "source": "estimate", "model": FLARE, "tier": "1k"}
 
     job = {"tool": "generate_image", "feature": "text_to_image", "prompt": "a cat"}
     body = await provider_admin.dispatch_estimate(job, orig)
     assert body["provider"] == "wavespeed"
-    assert body["model"] == "existing"
+    assert body["model"] == FLARE  # must stay quote/submit model — never rewrite to Live existing
     assert body["effective"] is True
-    assert "flare" not in str(body["model"]).lower()
-    assert body["price"] == 0.045  # price path still quotes via WaveSpeed estimate
+    assert body["effective_model"] == "existing"
+    assert body["price"] == 0.045
 
-    # Explicit model pick keeps tip on that model.
+    # Explicit model pick: no effective overlay.
     body2 = await provider_admin.dispatch_estimate({**job, "model": FLARE}, orig)
     assert body2["model"] == FLARE
     assert body2.get("effective") is not True
