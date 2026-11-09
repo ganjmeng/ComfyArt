@@ -1,5 +1,34 @@
 /** Per-tool provider settings. Drafts stay on the page until Save. Secrets are never sent. */
 
+import { readLocal, writeLocal } from './localPrefs'
+
+/** Safe save-fail fixture for design/QA shots (gap 4). Opt-in only.
+ *  URL `?providerSaveFail=1` or localStorage `comfyart.provider.saveFailMock` = "1".
+ *  Forces saveTool / saveToolBatch to reject WITHOUT calling the network — prefs stay untouched.
+ *  Plain Error (not ProviderAdminError) → ProviderAdmin failText uses provider.saveFailed. */
+const SAVE_FAIL_MOCK_KEY = 'comfyart.provider.saveFailMock'
+
+export function providerSaveFailFixture(): boolean {
+  try {
+    const q = new URL(location.href).searchParams.get('providerSaveFail')
+    if (q === '1' || q === 'true') return true
+  } catch { /* SSR / non-browser */ }
+  return readLocal(SAVE_FAIL_MOCK_KEY) === '1'
+}
+
+export function setProviderSaveFailFixture(on: boolean) {
+  if (!on) {
+    try { localStorage.removeItem(SAVE_FAIL_MOCK_KEY) } catch { /* */ }
+    return
+  }
+  writeLocal(SAVE_FAIL_MOCK_KEY, '1')
+}
+
+function rejectSaveFixture(): Promise<never> {
+  return Promise.reject(new Error('provider-save-fail-fixture'))
+}
+
+
 export interface LangText { zh?: string; en?: string }
 export interface EndPoint { provider: string; model: string }
 export interface ToolRoute { primary: EndPoint; backup: EndPoint | null; fallback: boolean }
@@ -89,9 +118,13 @@ async function send(path: string, method: string, body?: object): Promise<Provid
 }
 
 export const loadProviderAdmin = () => send('/comfyart/provider-admin', 'GET')
-export const saveTool = (id: string, body: object) => send(`/comfyart/provider-admin/tool/${id}`, 'PUT', body)
+export const saveTool = (id: string, body: object) => (
+  providerSaveFailFixture() ? rejectSaveFixture() : send(`/comfyart/provider-admin/tool/${id}`, 'PUT', body)
+)
 export const restoreTool = (id: string) => send(`/comfyart/provider-admin/tool/${id}/restore`, 'POST')
-export const saveToolBatch = (body: object) => send('/comfyart/provider-admin/tools/batch', 'PUT', body)
+export const saveToolBatch = (body: object) => (
+  providerSaveFailFixture() ? rejectSaveFixture() : send('/comfyart/provider-admin/tools/batch', 'PUT', body)
+)
 export const saveLlmProvider = (body: object) => send('/comfyart/provider-admin/llm', 'PUT', body)
 export const restoreLlmProvider = () => send('/comfyart/provider-admin/llm/restore', 'POST')
 
