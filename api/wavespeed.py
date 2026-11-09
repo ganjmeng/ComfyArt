@@ -81,7 +81,7 @@ def apply_catalog_price_fixes(models: dict) -> dict:
 
 
 class WaveSpeedError(Exception):
-    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False, charged: float | None = None, gif_note: str = "", model: str = "", gif: dict | None = None):
+    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False, charged: float | None = None, gif_note: str = "", model: str = "", gif: dict | None = None, model_choice: dict | None = None):
         super().__init__(message)
         self.charged = charged  # #174: kind 'timeout' — the quoted price that may have been charged (None: unknown)
         self.unpriced = unpriced  # #159: no price for the submitted tier; the dialog shows no amount
@@ -90,6 +90,7 @@ class WaveSpeedError(Exception):
         self.gif_note = gif_note  # #825: bilingual still→GIF / frame note for the confirm dialog
         self.gif = gif  # effective frame_count / frame_duration_ms already on this request, plus an asked value only when one was sent
         self.model = model  # #825: the id that will be submitted, so confirm matches the route
+        self.model_choice = model_choice  # #825: Auto · reason payload for the gen card
         self.status = status
         # #155: what the UI shows instead of the raw WaveSpeed text (insufficientCredit, moderation, rateLimit, invalidKey, failed)
         self.kind = kind
@@ -570,6 +571,33 @@ def resolve_model(feature: str, model: str | None, *, size_lock: bool = False) -
         raise WaveSpeedError(f"unknown model {model!r} for {feature}; valid ids: {valid} (default {cfg['default']})", 400)
     return model
 
+
+
+def resolve_model_choice(feature: str, inputs: dict) -> tuple[str, dict | None]:
+    """#825: Auto / omitted model → table choose(); named model → user choice with backend reason.
+    Returns (model_id, model_choice_dict_or_None). structure_control / custom keep prior resolve_model path.
+    """
+    from .auto_models import choose, named_or_none, note
+    picked = inputs.get("model")
+    if feature == "structure_control" and not picked:
+        picked = _structure_pick(inputs)
+        model = resolve_model(feature, picked, size_lock=bool(inputs.get("size_lock")))
+        return model, None
+    # Features without an auto_models table row fall back to resolve_model only.
+    from .auto_models import load_table
+    if feature not in load_table():
+        model = resolve_model(feature, picked, size_lock=bool(inputs.get("size_lock")))
+        return model, None
+    named = named_or_none(picked if isinstance(picked, str) else None)
+    masked = bool(inputs.get("mask") or inputs.get("mask_image") or inputs.get("region"))
+    prompt = str(inputs.get("prompt") or "")
+    choice = choose(feature, prompt, named or picked, load_config(), masked=masked)
+    # resolve_model validates / applies size_lock; prefer choice model id
+    model = resolve_model(feature, choice.get("model"), size_lock=bool(inputs.get("size_lock")))
+    if model != choice.get("model"):
+        choice = {**choice, "model": model}
+    choice = {**choice, "note": note(choice)}
+    return model, choice
 
 # custom_workflow (cloud): a feature can run any WaveSpeed model; "fields" maps ComfyArt's values
 # (the upstream @markers) onto that model's request fields.
@@ -1407,6 +1435,7 @@ async def route_gif_live(inputs: dict) -> dict:
 
 async def estimate(inputs: dict) -> dict:
     """Estimated total for a job; a storyboard is priced as the sum of its scenes."""
+    model_choice = None
     if isinstance(inputs.get("scenes"), list):
         scenes = [sc for sc in inputs["scenes"] if isinstance(sc, dict)]
         base = {k: v for k, v in inputs.items() if k != "scenes"}
@@ -1437,10 +1466,7 @@ async def estimate(inputs: dict) -> dict:
                     "confirm": False, "error": err["message"], "kind": err["kind"]}
         inputs = routed
         feature = feature_of(str(inputs.get("feature") or ""))
-        picked = inputs.get("model")
-        if feature == "structure_control" and not picked:
-            picked = _structure_pick(inputs)
-        model = resolve_model(feature, picked, size_lock=bool(inputs.get("size_lock")))
+        model, model_choice = resolve_model_choice(feature, inputs)
         price, source = await quote(model, inputs)
         tier = tier_label(await priced_inputs(model, inputs))
         if feature == "structure_control" and price is not None:
@@ -1450,6 +1476,8 @@ async def estimate(inputs: dict) -> dict:
            "confirm": needs_confirm(price) if price is not None else (source == "unpriced" or confirm_usd() == 0)}
     if not isinstance(inputs.get("scenes"), list):
         out["model"] = model  # #825: quote names the same id submit will POST
+        if model_choice:
+            out["model_choice"] = model_choice
     if not isinstance(inputs.get("scenes"), list) and tier:
         out["tier"] = tier
     if not isinstance(inputs.get("scenes"), list) and feature == "transcribe" and duration_estimated(model, inputs):
@@ -1740,11 +1768,9 @@ async def submit(inputs: dict) -> str:
     feature = feature_of(str(inputs.get("feature") or ""))
     if inputs.get("custom"):
         model = custom_model(inputs.get("model"), await catalog())
+        model_choice = None
     else:
-        picked = inputs.get("model")
-        if feature == "structure_control" and not picked:
-            picked = _structure_pick(inputs)
-        model = resolve_model(feature, picked, size_lock=bool(inputs.get("size_lock")))
+        model, model_choice = resolve_model_choice(feature, inputs)
     _check_limits()
     meta = (await catalog()).get(model)
     if meta and needs_voice_sample(model, feature, _schema(meta), inputs):
@@ -1764,11 +1790,11 @@ async def submit(inputs: dict) -> str:
         if price is not None and needs_confirm(price):
             # expensive job: the page asks and resubmits with confirmed=true; #159 an estimate is labelled as one
             raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped,
-                                 estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body)
+                                 estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
         if source == "unpriced":
             # #159: no price for the submitted tier: never guess one, always ask (no amount, the tier is named)
             raise WaveSpeedError(f"{model}: no price for this tier; confirm to continue", 409, unpriced=True,
-                                 tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body)
+                                 tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())
@@ -1789,6 +1815,8 @@ async def submit(inputs: dict) -> str:
     gen_ledger.record_submit(task, "wavespeed", model, feature, quoted)
     _jobs[task] = {"model": model, "feature": feature, "started": time.time(), "next_poll": time.time() + POLL_MIN,
                    "inputs": _price_inputs(inputs), "quoted": quoted}
+    if model_choice:
+        _jobs[task]["model_choice"] = model_choice
     if svg_image.requests_svg(inputs):
         _jobs[task]["svg"] = True
     if inputs.get("size_lock"):
@@ -2268,6 +2296,11 @@ def _history(task: str, status: str, messages: list, outputs: dict) -> dict:
     entry = {"status": {"completed": done, "status_str": "error" if status == "failed" else status, "messages": messages}, "outputs": outputs}
     if done:
         entry["generation_succeeded"] = status == "completed"  # #712
+    job = _jobs.get(task) or {}
+    if job.get("model_choice"):
+        entry["model_choice"] = job["model_choice"]  # #825: pill survives poll/refresh
+    if job.get("model") and "model" not in entry:
+        entry["model"] = job["model"]
     return {f"ws:{task}": entry}
 
 
@@ -2589,6 +2622,8 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
             body["model"] = e.model
         if e.gif:
             body["gif"] = e.gif
+        if getattr(e, "model_choice", None):
+            body["model_choice"] = e.model_choice
     elif e.unpriced:
         body["confirm_usd"] = None
         body["unpriced"] = True
@@ -2598,6 +2633,8 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
             body["gif_note"] = e.gif_note
         if e.model:
             body["model"] = e.model
+        if getattr(e, "model_choice", None):
+            body["model_choice"] = e.model_choice
         if e.gif:
             body["gif"] = e.gif
     issued = getattr(e, "confirm_token", None)

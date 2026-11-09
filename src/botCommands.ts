@@ -219,6 +219,8 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     ...(gif ? { gif: { output_format: 'gif', frame_count: clampFrameCount(args.frame_count), frame_duration_ms: clampFrameMs(args.frame_duration_ms) } } : {}),
     ...(svg ? { svg: { output_format: 'svg' as const, n: 1 as const } } : {}),
     ...(gif && args.complexity ? { complexity: String(args.complexity) } : {}),
+    // #825: Auto · short name + hover reason (from canvas choose / user pick)
+    ...(args.model_choice && typeof args.model_choice === 'object' ? { modelChoice: args.model_choice } : args.auto_model ? { modelChoice: { model: model.id, auto: true, reason: { zh: '自动选择', en: 'Auto picked it' } } } : model ? { modelChoice: { model: model.id, auto: false, reason: { zh: '你指定了这个模型', en: 'you named this model' } } } : {}),
   }
   const id = createGenerator(editor, video, props, false)
   const exact = !video && exactW && exactH ? { w: exactW, h: exactH } : null

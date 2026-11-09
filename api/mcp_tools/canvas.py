@@ -151,6 +151,9 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
     if choice and choice.get("category") in ("skill", "skill_fallback"):
         args = _pin_args(args, choice)
     args.pop("skill", None)
+    # #825: page stashes model_choice on the gen card / GenInfo (Auto · name + hover reason).
+    if choice and isinstance(choice, dict):
+        args = {**args, "model_choice": {**choice, "note": note(choice) if choice.get("model") else (choice.get("fallback_reason") or {}).get("en", "")}}
     result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
     if choice and isinstance(result, dict) and not result.get("cancelled"):
         ran = result.get("model")

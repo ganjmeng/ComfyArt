@@ -848,6 +848,8 @@ type ProcessStep = {
   kind: ProcessKind
   label: string
   live: boolean
+  /** #825: Auto routing reason on hover; manual picks leave this unset (no reason UI). */
+  title?: string
   /** #421: generation (or linked wait) failed — row reads as failed, not done. */
   error?: boolean
   /** #437: the search source's real favicon, shown before the page count. */
@@ -911,11 +913,11 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
               {/* #413: a live thought on the rail shows its latest line inline, like the lone Thought tip */}
               {s.live && s.kind === 'thought' && !open && thoughtCollapsedTip(s.text ?? '') ? (
                 <span className="ca-process__inline">
-                  <span className="ca-process__label ca-process__label--active">{s.label}</span>
+                  <span className="ca-process__label ca-process__label--active" title={s.title} data-testid={s.title ? "auto-model-label" : undefined}>{s.label}</span>
                   <span className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline">{thoughtCollapsedTip(s.text ?? '')}</span>
                 </span>
               ) : (
-                <span className={shine ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>
+                <span className={shine ? 'ca-process__label ca-process__label--active' : 'ca-process__label'} title={s.title} data-testid={(s.kind === 'image' || s.kind === 'video') ? 'auto-model-label' : undefined}>
                   {s.favicon && <Favicon src={s.favicon} />}
                   {s.label}
                   {isMemory && <span className="ca-process__memchev ca-icon" data-testid="memory-updated-chev">{Icons.memoryChev}</span>}
@@ -1201,7 +1203,26 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
         }
         if (kindResolved === 'skill_created') { const c = skillCreatedOf(b, result); if (c) created.push(c) }
         const pages = kindResolved === 'search_pages' ? searchResultCount(b, result) : undefined
-        const model = (kindResolved === 'image' || kindResolved === 'video') ? processModelName(b.input) : undefined
+        // #825: prefer model_choice from the tool result (table Auto + reason); fall back to input model id.
+        let model: string | undefined
+        let modelTitle: string | undefined
+        if (kindResolved === 'image' || kindResolved === 'video') {
+          const choice = modelChoiceOfResult(result?.text) || (
+            inputIsAuto(b.input as Record<string, unknown> | undefined)
+              ? { auto: true as const, model: processModelName(b.input) }
+              : processModelName(b.input)
+                ? { auto: false as const, model: processModelName(b.input)!, reason: { zh: '你指定了这个模型', en: 'you named this model' } }
+                : null
+          )
+          if (choice) {
+            // Live Auto before the concrete model is known → just "Auto" (never flash a default id).
+            const labelChoice = stepLiveProbe && choice.auto && !choice.model
+              ? { auto: true as const }
+              : choice
+            model = autoPillLabel(labelChoice) ?? undefined
+            modelTitle = autoPillTooltip(choice, lang) ?? undefined
+          }
+        }
         const aspectRatio = (kindResolved === 'image' || kindResolved === 'video') ? processAspectRatio(b.input) : undefined
         // #430: updating an existing entry shows 记忆已读取 (not clickable) right before 记忆已更新 ›
         if (b.type === 'memory_updated' && memBlocks.some((x) => (x.updated_ids ?? []).length > 0)) {
@@ -1242,6 +1263,7 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
           live: stepLive,
           error: genFailed || undefined,
           text: b.type === 'thinking' ? b.text : undefined,
+          title: modelTitle,
           aspectRatio,
           memoryIds: b.type === 'memory_updated' ? memIdsAll : undefined,
           memoryTexts: b.type === 'memory_updated' ? memTextsAll : undefined,

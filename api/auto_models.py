@@ -165,3 +165,79 @@ def note(choice: dict) -> str:
     if choice.get("plain"):
         return f"用了 {m}，{r['zh']}。/ Used {m}, {r['en']}."
     return f"用了 {m}，因为{r['zh']}。/ Used {m} because {r['en']}."
+
+
+# Short labels for the generation-card Auto pill (#825). Prefer catalog label when the UI has it;
+# these fallbacks keep tooltips readable without loading the WaveSpeed catalog.
+_SHORT = {
+    "openai/gpt-image-2.6-sunburst/text-to-image": "GPT Image 2.6 Sunburst",
+    "openai/gpt-image-2.6-sunburst/edit": "GPT Image 2.6 Sunburst",
+    "openai/gpt-image-2.6-flare/text-to-image": "GPT Image 2.6 Flare",
+    "openai/gpt-image-2.6-flare/edit": "GPT Image 2.6 Flare",
+    "openai/gpt-image-2.5-sunburst/edit": "GPT Image 2.5 Sunburst",
+    "openai/gpt-image-2.5-flare/text-to-image": "GPT Image 2.5 Flare",
+    "openai/gpt-image-2.5-flare/edit": "GPT Image 2.5 Flare",
+    "google/nano-banana-2.1/text-to-image": "Nano Banana 2.1",
+    "google/nano-banana-2.1/edit": "Nano Banana 2.1",
+    "google/nano-banana-pro/edit": "Nano Banana Pro",
+    "bytedance/seedream-v5.0-pro": "Seedream 5.0 Pro",
+    "bytedance/seedream-v5.0-pro/edit": "Seedream 5.0 Pro",
+    "recraft-ai/recraft-v3": "Recraft V3",
+}
+
+
+def short_name(model: str | None) -> str:
+    """Human short name for a WaveSpeed model id (pill text)."""
+    if not model:
+        return ""
+    if model in _SHORT:
+        return _SHORT[model]
+    # owner/name[/variant] → last two path parts, title-cased lightly
+    parts = [p for p in str(model).split("/") if p]
+    if len(parts) >= 2:
+        return parts[-2].replace("-", " ").replace("_", " ").title()
+    return str(model)
+
+
+def reason_text(choice: dict, lang: str = "zh") -> str:
+    """Locale string from the routing table reason (no separate frontend copy)."""
+    r = choice.get("reason") or {}
+    if not isinstance(r, dict):
+        return str(r or "")
+    key = "en" if str(lang).lower().startswith("en") else "zh"
+    return str(r.get(key) or r.get("zh") or r.get("en") or "")
+
+
+def pill_label(choice: dict, *, catalog_label: str | None = None) -> str | None:
+    """Visible pill text. Auto → 'Auto · <name>'; manual → model name only; None when no model yet.
+
+    Before the actual model is known, callers should pass choice={'auto': True} with no model → 'Auto'.
+    Legacy cards with neither model nor auto → None (render nothing).
+    """
+    if not isinstance(choice, dict):
+        return None
+    model = choice.get("model")
+    auto = bool(choice.get("auto"))
+    name = (catalog_label or "").strip() or short_name(model)
+    if auto and not model:
+        return "Auto"
+    if not model and not auto:
+        return None
+    if auto:
+        # fallback used: still Auto prefix; tooltip explains 首选 X 失败
+        return f"Auto · {name}" if name else "Auto"
+    return name or None
+
+
+def pill_tooltip(choice: dict, lang: str = "zh") -> str | None:
+    """Hover/tap reason. Manual picks: None (UI shows no reason popup). Auto: table reason; fallback note when set."""
+    if not isinstance(choice, dict) or not choice.get("auto"):
+        return None
+    failed = choice.get("fallback")
+    model = choice.get("model")
+    if failed and model:
+        if str(lang).lower().startswith("en"):
+            return f"Preferred {short_name(failed)} failed; used {short_name(model)} instead. {reason_text(choice, 'en')}".strip()
+        return f"首选 {short_name(failed)} 失败，改用 {short_name(model)}。{reason_text(choice, 'zh')}".strip()
+    text = reason_text(choice, lang)
+    return text or None
