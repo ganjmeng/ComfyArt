@@ -1,5 +1,4 @@
-"""#673 e2e (mock only, $0): the 9 hidden Phase2 skills appear nowhere on home (featured, chips, + → 技能) or the
-Skills page (every chip). Set HIDE673_SHOTS=/dir for zh-light / en-dark PNGs."""
+"""#673/#735/#812 e2e (mock only, $0): after #812 hide list is empty; D-group appears on home/Skills. Guard machinery kept. Set HIDE673_SHOTS=/dir for PNGs."""
 from __future__ import annotations
 
 import json
@@ -10,13 +9,13 @@ from pathlib import Path
 import pytest
 
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401
-from test_skills_hide_673 import HIDDEN, MAIN_ORDER_40
+from test_skills_hide_673 import HIDDEN, MAIN_ORDER_45 as MAIN_ORDER_40
 
 pw = pytest.importorskip("playwright.async_api")
 ROOT = Path(__file__).resolve().parent.parent
 pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("*")), reason="needs built dist/")
 SHOTS = os.environ.get("HIDE673_SHOTS")
-SEL = ",".join(f'[data-skill="{h}"]' for h in HIDDEN)
+SEL = ",".join(f'[data-skill="{h}"]' for h in HIDDEN) or '[data-skill="__no_hidden__"]'
 
 
 async def _shot(pg, name):
@@ -44,7 +43,9 @@ def _skill_names(lang):
     """id -> display name in `lang` (skills.ts name: t('key') + src/locales)."""
     loc = json.loads((ROOT / f"src/locales/{lang}.json").read_text())
     src = (ROOT / "src/skills.ts").read_text()
-    return {m[0]: loc[m[1]] for m in re.findall(r"\{ id: '([a-z0-9-]+)', name: t\('([\w.]+)'\)", src)}
+    from tests.skill_ids_748 import TITLE  # #748 Final 16 display names come from raw titles
+    names = {m[0]: loc[m[1]] for m in re.findall(r"\{ id: '([a-z0-9-]+)', name: t\('([\w.]+)'\)", src)}
+    return {**names, **{k: v[lang] for k, v in TITLE.items() if k in names}}
 
 
 async def _slash(pg, q):
@@ -70,12 +71,11 @@ async def test_composer_slash_picker_hides_deferred(app_url, lang, theme):  # no
                 await pg.wait_for_timeout(300)
         first = await _slash(pg, "")
         assert first == MAIN_ORDER_40[:8], first  # '/' lists listed skills only, main order
-        assert "ppt-visual" not in await _slash(pg, "ppt")
-        assert "ppt-visual" not in await _slash(pg, "PPT")
-        for h in HIDDEN:  # searching a hidden skill by its own name never offers it
-            got = await _slash(pg, names[h].split()[0])
-            assert not set(got) & set(HIDDEN), (h, got)
-        for sid in ("poster", "brand", "product"):  # other skills still found by name
+        assert "ppt-visual" in await _slash(pg, "ppt")  # #735 C unhidden
+        assert "yingzao" in await _slash(pg, "ying")  # #812 D unhidden
+        assert "yingzao" in await _slash(pg, "营造")
+        assert HIDDEN == []
+        for sid in ("poster-differentiated-compiler", "brand-identity-director", "product-tvc-advertisement-generator"):  # other skills still found by name
             assert sid in await _slash(pg, names[sid].split()[0]), sid
         await browser.close()
 

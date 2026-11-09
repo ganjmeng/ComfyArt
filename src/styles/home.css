@@ -308,6 +308,10 @@ body { background: var(--ca-float); }
   width: 20px; height: 20px; border-radius: 6px; background: var(--ca-float); color: var(--ca-text); opacity: .9; pointer-events: none;
 }
 .ca-featured__badge .ca-icon { width: 14px; height: 14px; }
+/* #832: linkedin featured subtitle sits on the image, so the kind icon leaves the picture
+   and sits at the right of the title row. Other featured cards keep the cover badge. */
+.ca-featured__card[data-skill="linkedin-banner"] .ca-featured__name { align-items: center; gap: 8px; }
+.ca-featured__badge--row { position: static; flex: none; margin-left: auto; }
 .ca-featured__go {
   position: absolute; right: 8px; top: 8px; z-index: 1; padding: 6px 12px; border-radius: 999px;
   background: #fff; color: #111; font: 500 12px/16px var(--ca-font);
@@ -748,6 +752,8 @@ body { background: var(--ca-float); }
   height: var(--ca-chip-h); padding: var(--ca-chip-py) var(--ca-chip-px); box-sizing: border-box; border: var(--ca-chip-border);
   border-radius: var(--ca-chip-radius); background: var(--ca-chip-bg); color: var(--ca-chip-fg);
   font: var(--ca-chip-font); cursor: pointer;
+  /* #760 — Skills category chips (For you / E-commerce / …): ~200ms; NOT the card 「选择」 pill (100ms). */
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
 }
 .ca-skills__chip:hover { background: var(--ca-chip-hover-bg); }
 .ca-skills__chip[data-on] { background: var(--ca-chip-on-bg); color: var(--ca-chip-on-fg); border-color: var(--ca-chip-on-border); }
@@ -772,7 +778,7 @@ body { background: var(--ca-float); }
   border-radius: 12px; overflow: hidden; background: var(--ca-hover);
 }
 /* #641 thumbnail shelf card: YouTube 16:9 cover. Other skills keep 231/173. */
-.ca-swall__card[data-skill="thumbnail"] .ca-swall__cover { aspect-ratio: 16 / 9; }
+.ca-swall__card[data-skill="cover-design-director"] .ca-swall__cover { aspect-ratio: 16 / 9; }
 .ca-swall__cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 300ms ease; }
 /* #594/#602 — dual media-fit on Skills wall: contain + light-gray plate for Phase1 new6 boards */
 .ca-swall__cover[data-fit="contain"] { background: var(--ca-field); }
@@ -866,13 +872,15 @@ body { background: var(--ca-float); }
 
 /* #494-2 — skill's own dialog: left templates (2-col) + right 「开始制作」 panel. */
 .ca-skillrun {
-  /* #541 design spec: 1112×820, left 752 + right 360 */
+  /* #760 product: @1280 → 1112×820 / cards 344×288 (well 344×258);
+   *               @1920 → 1200×820 / cards 388×321. Right pane locked 360;
+   * width scales with viewport between 1112 and 1200 (not a flat min(1200) cap). */
   position: relative; border-radius: 16px;
-  width: min(1112px, calc(100vw - 32px));
+  width: min(1200px, calc(100vw - 32px), max(1112px, calc(1112px + (100vw - 1280px) * 88 / 640)));
   height: min(820px, calc(100vh - 64px));
   max-height: min(820px, calc(100vh - 64px));
   display: flex; flex-direction: row; padding: 0; overflow: hidden;
-  animation: ca-skillrun-in 250ms cubic-bezier(.2, 0, 0, 1) both;
+  animation: ca-skillrun-in 200ms cubic-bezier(.2, 0, 0, 1) both;
   transform-origin: center center;
 }
 @keyframes ca-skillrun-in {
@@ -880,7 +888,7 @@ body { background: var(--ca-float); }
   to { opacity: 1; transform: scale(1); }
 }
 .ca-modal[data-testid="skill-run-modal"] {
-  animation: ca-skillrun-backdrop-in 250ms cubic-bezier(.2, 0, 0, 1) both;
+  animation: ca-skillrun-backdrop-in 200ms cubic-bezier(.2, 0, 0, 1) both;
 }
 @keyframes ca-skillrun-backdrop-in {
   from { opacity: 0; }
@@ -990,7 +998,6 @@ body { background: var(--ca-float); }
   position: relative; aspect-ratio: 160 / 120; border-radius: 12px; overflow: hidden;
   background: var(--ca-skillrun-tile); display: grid; place-items: center;
   box-shadow: inset 0 0 0 var(--ca-border-w) transparent;
-  /* selected ring / ✓ are instantaneous — no transition */
   transition: none;
 }
 /* #576 selected ring wraps the image only; title sits outside below (flex gap 8). Overlay so the image can't paint over it. */
@@ -1001,10 +1008,29 @@ body { background: var(--ca-float); }
 .ca-skillrun__preset[data-on] .ca-skillrun__presetimg::after {
   box-shadow: inset 0 0 0 1px var(--ca-text);
 }
-.ca-skillrun__presetimg img, .ca-skillrun__presetimg video { width: 100%; height: 100%; object-fit: contain; }
+/* #760 — contain ONLY (never cover); letterbox on --ca-skillrun-tile (#f4f4f4). Portrait fills height (~145×258 @1280). */
+.ca-skillrun__presetimg > img, .ca-skillrun__presetimg > video {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  max-width: 100%; max-height: 100%; width: auto; height: auto;
+  object-fit: contain; object-position: center;
+}
+/* #760 r7 — single portrait cover (Master Packaging 270×360 → 181.5×242 centered; NO stack, NO under-layers).
+ * Exact 3:4 media → contain == cover inside the portrait frame; contain keeps letterbox if ratio drifts. */
+.ca-skillrun__presetimg[data-orient="portrait"] > img,
+.ca-skillrun__presetimg[data-orient="portrait"] > video {
+  left: calc(var(--ca-skillrun-stack-inset, 8px) + (100% - 2 * var(--ca-skillrun-stack-inset, 8px)) * 0.22332);
+  top: var(--ca-skillrun-stack-inset, 8px);
+  transform: none;
+  width: calc((100% - 2 * var(--ca-skillrun-stack-inset, 8px)) * 0.55335);
+  height: calc(100% - 2 * var(--ca-skillrun-stack-inset, 8px));
+  max-width: none; max-height: none;
+  object-fit: contain; object-position: center;
+}
 /* #622 — preset.video muted hover/focus overlay (still underneath; no-video path unchanged). */
 .ca-skillrun__preset-video {
-  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block;
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  max-width: 100%; max-height: 100%; width: auto; height: auto;
+  object-fit: contain; object-position: center; display: block;
   opacity: 0; pointer-events: none; z-index: 0;
   transition: opacity 150ms ease;
 }
@@ -1250,3 +1276,107 @@ body { background: var(--ca-float); }
   padding-right: 32px;
 }
 .ca-skillrun__presetselect::-ms-expand { display: none; }
+
+/* #748 — SkillRunDialog static polish per design measure 2026-11-05 (packaging + motion first).
+ * Timings: design measure on #751 comment 6646945899. */
+.ca-skillrun {
+  --ca-skillrun-select-dur: 0ms;                /* design #751 c6646945899: stroke / ✓ / 当前模板 instant snap */
+  --ca-skillrun-select-ease: linear;
+  --ca-skillrun-hover-dur: 100ms;               /* design: 「选择」 capsule fade */
+  --ca-skillrun-hover-ease: ease-out;
+  --ca-skillrun-stack-dur: 400ms;               /* design: stack expand / collapse */
+  --ca-skillrun-stack-ease: cubic-bezier(.25, .1, .25, 1);
+  --ca-skillrun-ring: #1a1a1a;
+}
+.ca-skillrun__presetimg, .ca-skillrun__presetimg::after { border-radius: 8px; }
+.ca-skillrun__presetimg::after { transition: box-shadow var(--ca-skillrun-select-dur) var(--ca-skillrun-select-ease); }
+.ca-skillrun__preset[data-on] .ca-skillrun__presetimg::after { box-shadow: inset 0 0 0 1.5px var(--ca-skillrun-ring); }
+.ca-skillrun__check { background: var(--ca-skillrun-ring); color: #fff; }
+:root[data-theme="dark"] .ca-skillrun { --ca-skillrun-ring: var(--ca-text); }
+.ca-skillrun__presetname { transition: color var(--ca-skillrun-select-dur) var(--ca-skillrun-select-ease); }
+.ca-skillrun__zoom, .ca-skillrun__pick {
+  transition: opacity var(--ca-skillrun-hover-dur) var(--ca-skillrun-hover-ease), transform var(--ca-skillrun-hover-dur) var(--ca-skillrun-hover-ease);
+}
+/* #760 — generic SkillRun stack (all skills). % of 8px-inset (328×242 @1280).
+ * Rest: ALL media[] in DOM; indices ≥3 opacity:0 (max 3 visible). Aspect-aware:
+ *   landscape → 100%×76.03% + translateY(15.75%) scale(.757178) (~78% AABB);
+ *   portrait  → 55.335%×100% (181.5×242) left 22.332% + scale(.8057).
+ * Focus: hover/focus-visible ONLY (no [data-on] sticky). 2–3 = one-row; ≥4 = 2×2 (161×118 gap 6, 4th opacity 0).
+ * Cover img: contain letterbox only — never cover. */
+.ca-skillrun { --ca-skillrun-stack-inset: 8px; --ca-skillrun-stack-cell: 32.11%; --ca-skillrun-stack-pitch: 33.94%; }
+.ca-skillrun__preset:has(.ca-skillrun__stack) .ca-skillrun__presetimg > img { opacity: 0; }
+.ca-skillrun__stack { position: absolute; inset: var(--ca-skillrun-stack-inset); z-index: 1; pointer-events: none; }
+.ca-skillrun__stack > *,
+.ca-skillrun__presetimg .ca-skillrun__stack > * {
+  position: absolute; left: 0; top: 0; width: 100%; height: 76.03%;
+  object-fit: contain; object-position: center; border-radius: 6px; background: var(--ca-skillrun-tile);
+  z-index: calc(3 - var(--i));
+  transform-origin: center center;
+  transform: translateY(15.75%) scale(.757178) rotate(var(--r, 0deg));
+  transition: left var(--ca-skillrun-stack-dur) var(--ca-skillrun-stack-ease),
+              top var(--ca-skillrun-stack-dur) var(--ca-skillrun-stack-ease),
+              width var(--ca-skillrun-stack-dur) var(--ca-skillrun-stack-ease),
+              height var(--ca-skillrun-stack-dur) var(--ca-skillrun-stack-ease),
+              transform var(--ca-skillrun-stack-dur) var(--ca-skillrun-stack-ease),
+              opacity var(--ca-skillrun-stack-dur) var(--ca-skillrun-stack-ease);
+}
+.ca-skillrun__stack[data-orient="portrait"] > *,
+.ca-skillrun__presetimg .ca-skillrun__stack[data-orient="portrait"] > * {
+  /* Multi-SKU static: layers 181.5×242 (height贴满 inset), translateX 73.25 (=left 22.332%), scale .8057.
+   * object-fit:cover fills the portrait frame (landscape wash would letterbox with contain). */
+  width: 55.335%; height: 100%; left: 22.332%; top: 0;
+  object-fit: cover; object-position: center;
+  transform: scale(.8057) rotate(var(--r, 0deg));
+}
+.ca-skillrun__stack > *:nth-child(1) { --r: 5deg; }
+.ca-skillrun__stack > *:nth-child(2) { --r: -5deg; }
+.ca-skillrun__stack > *:nth-child(3) { --r: 10deg; }
+.ca-skillrun__stack > *:nth-child(n+4) { opacity: 0; }
+/* focus 2–3: one row */
+.ca-skillrun__preset:hover .ca-skillrun__stack[data-n="2"] > *,
+.ca-skillrun__preset:focus-visible .ca-skillrun__stack[data-n="2"] > *,
+.ca-skillrun__preset:hover .ca-skillrun__stack[data-n="3"] > *,
+.ca-skillrun__preset:focus-visible .ca-skillrun__stack[data-n="3"] > *,
+.ca-skillrun__preset:hover .ca-skillrun__presetimg .ca-skillrun__stack[data-n="2"] > *,
+.ca-skillrun__preset:focus-visible .ca-skillrun__presetimg .ca-skillrun__stack[data-n="2"] > *,
+.ca-skillrun__preset:hover .ca-skillrun__presetimg .ca-skillrun__stack[data-n="3"] > *,
+.ca-skillrun__preset:focus-visible .ca-skillrun__presetimg .ca-skillrun__stack[data-n="3"] > * {
+  width: var(--ca-skillrun-stack-cell); height: 100%; left: calc(var(--i) * var(--ca-skillrun-stack-pitch)); top: 0;
+  object-fit: contain; transform: none;
+}
+/* focus ≥4: 2×2 cells 161×118 gap 6; 4th stays opacity 0 */
+.ca-skillrun__preset:hover .ca-skillrun__stack[data-n="4"] > *,
+.ca-skillrun__preset:focus-visible .ca-skillrun__stack[data-n="4"] > *,
+.ca-skillrun__preset:hover .ca-skillrun__presetimg .ca-skillrun__stack[data-n="4"] > *,
+.ca-skillrun__preset:focus-visible .ca-skillrun__presetimg .ca-skillrun__stack[data-n="4"] > * {
+  width: 49.085%; height: 48.76%; object-fit: contain; transform: none;
+}
+.ca-skillrun__preset:hover .ca-skillrun__stack[data-n="4"] > *:nth-child(1),
+.ca-skillrun__preset:focus-visible .ca-skillrun__stack[data-n="4"] > *:nth-child(1) { left: 0; top: 0; }
+.ca-skillrun__preset:hover .ca-skillrun__stack[data-n="4"] > *:nth-child(2),
+.ca-skillrun__preset:focus-visible .ca-skillrun__stack[data-n="4"] > *:nth-child(2) { left: 50.915%; top: 0; }
+.ca-skillrun__preset:hover .ca-skillrun__stack[data-n="4"] > *:nth-child(3),
+.ca-skillrun__preset:focus-visible .ca-skillrun__stack[data-n="4"] > *:nth-child(3) { left: 0; top: 51.24%; }
+.ca-skillrun__preset:hover .ca-skillrun__stack[data-n="4"] > *:nth-child(4),
+.ca-skillrun__preset:focus-visible .ca-skillrun__stack[data-n="4"] > *:nth-child(4) { left: 50.915%; top: 51.24%; opacity: 0; }
+/* 「选择」 capsule ≈52×22 white top-right; expand icon ≈14×15 top-left; selected: 1px rgb(120,120,120) + dark ✓ replaces capsule */
+.ca-skillrun__pick { min-width: 52px; height: 22px; padding: 0 10px; box-sizing: border-box; border-radius: 11px; background: #fff; color: #1a1a1a; top: 8px; right: 8px; display: inline-flex; align-items: center; justify-content: center; }
+.ca-skillrun__preset[data-on] .ca-skillrun__pick { opacity: 0 !important; }
+.ca-skillrun__zoom { top: 8px; left: 8px; }
+.ca-skillrun__zoom .ca-icon, .ca-skillrun__zoom svg { width: 14px; height: 15px; }
+.ca-skillrun__preset[data-on] .ca-skillrun__presetimg::after { box-shadow: inset 0 0 0 1px var(--ca-skillrun-selected-stroke); }
+.ca-skillrun { --ca-skillrun-selected-stroke: rgb(120 120 120); }
+/* #748 dark selected: ✓ glyph must contrast its light badge; stroke reads on dark tiles */
+:root[data-theme="dark"] .ca-skillrun__check { background: #fff; color: #111; opacity: 1 !important; box-shadow: 0 0 0 1px rgb(0 0 0 / .45), 0 1px 3px rgb(0 0 0 / .5); }
+:root[data-theme="dark"] .ca-skillrun__check .ca-icon svg { stroke-width: 3; }
+:root[data-theme="dark"] .ca-skillrun__preset[data-on] .ca-skillrun__presetimg::after { box-shadow: inset 0 0 0 1.5px var(--ca-text); }
+/* right panel: label→control 8, field gap 24; text 36h grey; Start disabled light grey until required filled */
+.ca-skillrun__body > .ca-skillform { gap: 24px; }
+.ca-skillrun .ca-skillform .ca-skillrun__field > .ca-panel__input { background: var(--ca-field); border: 0; }
+.ca-skillrun__current .ca-skillrun__currentrow { background: var(--ca-float, #fff); box-shadow: inset 0 0 0 1px var(--ca-border); }
+.ca-skillrun__go[aria-disabled="true"] { background: var(--ca-hover, #ececec); color: var(--ca-muted, #a3a3a3); cursor: not-allowed; }
+/* #751 pendingWash: unwashed slot = the empty-state grey plate + image icon (same tokens as .ca-mem-empty__badge). */
+.ca-skillrun__pending { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: var(--ca-hover); color: var(--ca-muted); border-radius: inherit; }
+.ca-skillrun__pending .ca-icon { width: 20px; height: 20px; opacity: .8; }
+.ca-skillrun__pending[data-stage] { min-height: 240px; border-radius: 12px; }
+.ca-skillrun__pending[data-stage] .ca-icon { width: 32px; height: 32px; }

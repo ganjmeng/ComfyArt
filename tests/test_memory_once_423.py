@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.skill_ids_748 import FINAL_IDS, asset_dir
 from ComfyArt.api.bot_turns import _TurnState, _apply_event, memory_updated_block
 from ComfyArt.bot.providers import BotEvent, TurnHandle
 
@@ -146,6 +147,10 @@ def test_locales_only_add_memory_retrieved_430():
         "memoryDialog.partTitle.about", "memoryDialog.partTitle.work",
         "memoryDialog.partTitle.taste", "memoryDialog.partTitle.assets",
         "memoryDialog.stepOf", "memoryDialog.freeHint",
+        # #806: motion title/desc (动态海报); desc.motion is the pre-id key if present
+        "skills.motionPoster", "skills.desc.motion",
+        # #751: Final-16 zh display names (INDEX / product-confirmed)
+        "skills.logoMaterialExplorer", "skills.packagingDesign",
         # #570: to3d / upscale tool panel copy
         "toolPanel.reset", "toolPanel.useNow", "toolPanel.model", "toolPanel.mode", "toolPanel.faithful", "toolPanel.enhance", "toolPanel.resolution",
         # #423: 「已保存 N 条」 under the memory row
@@ -165,6 +170,9 @@ def test_locales_only_add_memory_retrieved_430():
         "customWorkflows.action.extend", "customWorkflows.action.videoUpscale",
         "customWorkflows.action.videoCutout", "customWorkflows.action.model3d",
         "customWorkflows.group.model", "customWorkflows.model3dGone", "customWorkflows.needsVideo",
+        # #763: composer placeholder aligned to the original ("@" for context, "/" for skills)
+        "composer.describeYourDesignNeedsFor", "chatMessage.other", "chatMessage.skipThisQuestion",
+        "composer.atSearchPlaceholder", "composer.atGroupModel",
         # #542: Skill Creator landing heading (not memory copy)
         "agentPanel.creatorStartTitle",
         # #539 PR-B: Assets page empty state + embedded detail upload copy (not memory copy)
@@ -179,6 +187,8 @@ def test_locales_only_add_memory_retrieved_430():
         # #712: billed-with-no-image failure copy (not memory copy)
         "wsErr.noOutput", "wsErr.noOutputNoAmount", "wsErr.noTaskId", "wsErr.noTaskIdNoAmount", "wsErr.unregisteredModel",
         "wsErr.timeout", "wsErr.timeoutNoAmount", "wsErr.taskRef",  # #712: 后台 -> 控制台, {0} carries the $
+        # #825/#871: auto-pick pill reason prefix and skill-pin reason (not memory copy)
+        "chatMessage.autoPickedPrefix", "chatMessage.skillPinnedModel",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)
@@ -195,6 +205,12 @@ def test_locales_only_add_memory_retrieved_430():
         for d in (cur, base):  # #463 skill import copy is its own namespace, not memory copy
             for k in [k for k in d if k.startswith("skillsImport.")]:
                 d.pop(k)
+            # #751 Final-16 hard cut: only Final skillKeys (+ their old assetDir aliases) leave the cat/desc check
+            final_slugs = set(FINAL_IDS) | {asset_dir(sid) for sid in FINAL_IDS}
+            for k in [k for k in d if k.startswith(("skills.cat.", "skills.desc."))]:
+                slug = k.split(".", 2)[-1]
+                if slug in final_slugs:
+                    d.pop(k)
         assert cur == base
     zh, en = json.loads(_src("src/locales/zh.json")), json.loads(_src("src/locales/en.json"))
     assert zh["chatMessage.memoryUpdated"] == "记忆已更新" and en["chatMessage.memoryUpdated"] == "Memory updated"

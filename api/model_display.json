@@ -26,6 +26,18 @@
    "Reliable all-rounder, good with multiple references"
   ],
   [
+   "gpt-image-2.6-sunburst",
+   "GPT Image 2.6 Sunburst",
+   "2.6 精度档，可选；文生可出循环 GIF",
+   "Optional 2.6 precision tier; text-to-image can emit a looping GIF"
+  ],
+  [
+   "gpt-image-2.6-flare",
+   "GPT Image 2.6 Flare",
+   "文生图和编辑当前走这一档；文生可出循环 GIF。2.5 仍可手动选回",
+   "Images and edits currently use this tier; text-to-image can emit a looping GIF. 2.5 stays selectable"
+  ],
+  [
    "gpt-image-2.5-sunburst",
    "GPT Image 2.5 Sunburst",
    "偏重精度，五档质量可选",
@@ -369,6 +381,8 @@
    "Nano Banana 2",
    "Nano Banana 2 Lite",
    "GPT Image 2",
+   "GPT Image 2.6 Flare",
+   "GPT Image 2.6 Sunburst",
    "GPT Image 2.5 Sunburst",
    "GPT Image 2.5 Flare",
    "GPT Image 1.5",

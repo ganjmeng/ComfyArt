@@ -79,12 +79,12 @@ async def test_same_tool_guard_stops_varied_generate_without_progress(monkeypatc
 
 
 async def test_budget_cap_every_step_new_image_never_finishes(monkeypatch, store):  # noqa: F811
-    """#705 tech lead: each step produces a new image (real progress) but the model never finishes ->
-    stopped at planned(4, default)+2 generate_image calls with stuck:budget. Alternating tools dodge same_tool."""
+    """A runaway LinkedIn run still stops on the budget. #707 submits only the first image."""
     def script(m, n):
         return calls(("generate_image", {"prompt": f"v{n}"})) if n % 2 == 0 else calls(("get_canvas", {"n": n}))
     r = Rig(monkeypatch, script, store=store, mcp=_mcp)
     res, _ = await r.send(compose_provider_text("Banner", skill_name=SKILL))
     s = stop_of(res)
     assert (s["reason"], s["sub"]) == ("stuck", "budget"), s
-    assert len([c for c in r.mcp if c[0] == "generate_image"]) == 7  # 7th call trips the cap of 6
+    # #707: a single-image skill submits once. Later generate_image calls are not sent.
+    assert len([c for c in r.mcp if c[0] == "generate_image"]) == 1

@@ -8,6 +8,7 @@ from PIL import Image, ImageOps
 
 from ._common import app_path, routes, view_path
 from .bot_media import VIDEO_EXT, video_frames
+from .svg_image import isolated_admit, read_limited
 
 SIZES = (256, 512, 1024)
 SKIP_FACTOR = 1.25
@@ -53,4 +54,15 @@ async def thumb(request: web.Request) -> web.StreamResponse:
     headers = {"Cache-Control": "no-cache"}
     if path.endswith(".webp"):
         headers["Content-Type"] = "image/webp"
+    elif path.lower().endswith(".svg"):
+        # #826: never serve the SVG document as an image. Raster PNG, or 404 when the file is rejected.
+        verdict = isolated_admit(read_limited(path))
+        if verdict.status == "rejected" or not verdict.preview_png:
+            raise web.HTTPNotFound(text=verdict.message, content_type="text/plain")
+        return web.Response(body=verdict.preview_png, headers={
+            **headers,
+            "Content-Type": "image/png",
+            "Content-Security-Policy": "sandbox; default-src 'none'",
+            "X-Content-Type-Options": "nosniff",
+        })
     return web.FileResponse(path, headers=headers)

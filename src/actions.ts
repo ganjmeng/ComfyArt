@@ -9,6 +9,7 @@ import { angleParams, annotated, layersGraph, samGraph, type Built, type Crop } 
 import { nearestRatio } from './generate'
 import { videoTargetResolution } from './videoGraphs'
 import { VIDEO_RATIOS } from './genOptions'
+import { GIF_STILL_REFUSAL } from './gifFile'
 import { t } from './i18n'
 import type { Edit } from './videoEdit'
 import { timelineGraph } from './videoRender'
@@ -83,6 +84,12 @@ export const editVideo = (e: Editor, s: TLVideoShape, edit: Edit, err: ErrorSink
 
 export const animate = (e: Editor, s: TLImageShape, prompt: string, err: ErrorSink, loop = true) =>
   run(e, s, t('common.animateImage'), err, (src) => cloud(wsBuilt({ feature: 'image_to_video', custom: 'animate', image: src.image, last_image: loop ? src.image : undefined, prompt: prompt || 'Subtle seamless motion. Keep the composition, text and layout unchanged.', duration: 3, ratio: nearestRatio(src.w / src.h, VIDEO_RATIOS) })))
+
+/** #825: the toolbar still is a reference. Still-to-GIF is refused before estimate, confirm, and submit. */
+export const toGif = (e: Editor, s: TLImageShape, prompt: string, err: ErrorSink, frames = 9, ms = 200) => {
+  void e; void s; void prompt; void frames; void ms
+  err(GIF_STILL_REFUSAL)
+}
 
 export const upscaleVideo = (e: Editor, s: TLVideoShape, long: number, err: ErrorSink) =>
   run(e, s, t('actions.upscaleVideo'), err, (src) => cloud(wsBuilt({ feature: 'upscale_video', custom: 'videoUpscale', video: src.image, params: { target_resolution: videoTargetResolution(long) } })), { kind: 'video' })
@@ -166,7 +173,7 @@ export function inpaint(e: Editor, shape: TLImageShape, mask: HTMLCanvasElement,
 }
 
 /** #45 like the original touchGraph: only the crop goes to the edit model (masked edits default to
- * gpt-image-2.5-sunburst/edit, backend), its result is pasted back with the mask, so pixels outside stay as they were. */
+ * gpt-image-2.6-sunburst/edit, backend), its result is pasted back with the mask, so pixels outside stay as they were. */
 export function regionGraph(image: string, crop: Crop, mask: string, prompt: string): Built {
   return wsBuilt({ feature: 'image_edit', custom: 'inpaint', image, mask, paste: crop, prompt: `${prompt}. ${keep}` })
 }

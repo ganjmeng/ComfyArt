@@ -6,6 +6,8 @@ import { lang, t } from '../i18n'
 import { correct, forget, memoryChoiceAtom, memoryToastAtom, showMemoryToast } from '../memory'
 
 export { showMemoryToast } from '../memory'
+import { ConfirmActions } from './ConfirmActions'
+import { firstGate } from './firstAction'
 import { Icons } from './icons'
 import { Modal } from './Modal'
 
@@ -34,20 +36,32 @@ export function MemoryChooser() {
   }
   const more = !!bar?.more
   useEffect(measure, [choice])
+  const gate = useRef(firstGate())
+  const seen = useRef(choice)
+  if (seen.current !== choice) {
+    seen.current = choice
+    gate.current = firstGate()
+  }
   if (!choice) return null
   const close = () => { memoryChoiceAtom.set(null); setPicked(null) }
-  const run = async () => {
+  const once = (fn: () => void) => { if (gate.current()) fn() }
+  const run = () => {
     if (!picked) return
-    close()
-    try {
-      if (choice.action === 'forget') { if ((await forget([{ id: picked }], choice.source)).changed.length) showMemoryToast(t('arti.memory.deletedToast')) }
-      else await correct([{ id: picked, old: '', new: choice.next ?? '' }], choice.source)
-    } catch { /* the store already showed 保存失败，请重试 */ }
+    once(() => {
+      const id = picked
+      close()
+      void (async () => {
+        try {
+          if (choice.action === 'forget') { if ((await forget([{ id }], choice.source)).changed.length) showMemoryToast(t('arti.memory.deletedToast')) }
+          else await correct([{ id, old: '', new: choice.next ?? '' }], choice.source)
+        } catch { /* the store already showed 保存失败，请重试 */ }
+      })()
+    })
   }
   const danger = choice.action === 'forget'
   const rows = [...choice.candidates].sort((a, b) => (validTime(b.time) ? b.time : -Infinity) - (validTime(a.time) ? a.time : -Infinity) || 0)  // newest first, untimed last
   return createPortal(
-    <Modal title={t(danger ? 'memory.choose.titleForget' : 'memory.choose.title', rows.length)} className="ca-rename ca-confirm" closable={false} onClose={close}>
+    <Modal dialog title={t(danger ? 'memory.choose.titleForget' : 'memory.choose.title', rows.length)} className="ca-rename ca-confirm" closable={false} onClose={() => once(close)}>
       <div className="ca-rename__body" data-testid="memory-chooser">
         <div className="ca-mem-choose__scroll" data-more={more || undefined} data-testid="memory-chooser-scroll">
         <div className="ca-mem-choose__list" role="radiogroup" ref={listRef} onScroll={measure} data-testid="memory-chooser-list">
@@ -61,12 +75,17 @@ export function MemoryChooser() {
         </div>
         {bar ? <div className="ca-mem-choose__bar" aria-hidden data-testid="memory-chooser-bar"><i style={{ top: `${bar.top}%`, height: `${bar.size}%` }} /></div> : null}
         </div>
-        <div className="ca-panel__foot">
-          <button type="button" className="ca-panel__secondary" data-testid="memory-chooser-cancel" onClick={close}>{t('common.cancel')}</button>
-          <button type="button" data-testid="memory-chooser-ok" disabled={!picked} className={danger ? 'ca-panel__primary ca-panel__danger' : 'ca-panel__primary'} onClick={() => void run()}>
-            {t(danger ? 'common.delete' : 'memory.choose.correct')}
-          </button>
-        </div>
+        <ConfirmActions
+          cancelLabel={t('common.cancel')}
+          okLabel={t(danger ? 'common.delete' : 'memory.choose.correct')}
+          danger={danger}
+          okDisabled={!picked}
+          okIcon={danger ? Icons.trash : undefined}
+          onCancel={() => once(close)}
+          onOk={run}
+          cancelTestId="memory-chooser-cancel"
+          okTestId="memory-chooser-ok"
+        />
       </div>
     </Modal>,
     document.body,

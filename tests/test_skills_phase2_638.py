@@ -1,4 +1,4 @@
-"""#638 Phase2-S5 Soft mount: home + Skills hang Phase2 A+B (Soft order); C/D deferred; #490 HOLD.
+"""#638/#735/#812 Phase2 Soft mount: home + Skills hang Phase2 A+B+C+D (Soft order); deferred empty; #490 HOLD.
 $0 static reads; no network."""
 from __future__ import annotations
 
@@ -12,24 +12,28 @@ SKILLS_PAGE = (ROOT / "src/home/Skills.tsx").read_text()
 DIALOG = (ROOT / "src/ui/SkillRunDialog.tsx").read_text()
 
 PHASE1 = [
-    "product", "multi-angle", "brand", "character", "logo-material", "packaging",
-    "motion", "meta-ads", "poster", "thumbnail", "mobile-ui", "social",
-    "marketing-campaign", "web-product", "banner",
+    "product-tvc-advertisement-generator", "universal-multi-angle-grid", "brand-identity-director", "character-sheet-design", "logo-material-explorer", "packaging-design-director",
+    "motion-poster-generator", "meta-ads-creative-director", "poster-differentiated-compiler", "cover-design-director", "mobile-app-visual-design", "rednote-cover-maker",
+    "marketing-campaign-generator", "web-product-visual-design", "banner-design-director",
 ]
-# Soft order slots 1–6 (PRODUCT-LOCK-PHASE2): A social + B NEW5
+# Soft order: A social + B NEW5 + #735 C NEW5 (washed)
 PHASE2_MOUNT = [
-    "flash-cut-video", "style-transfer", "person-swap", "social",
+    "flash-cut-video", "style-transfer", "person-swap", "rednote-cover-maker",
     "commerce-strategist", "lifestyle-scene",
+    "naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual", "promo-ecommerce",
+    "yingzao", "crt-interface", "crayon-sketch", "fabric-collage",
 ]
+PHASE2_D = ["yingzao", "crt-interface", "crayon-sketch", "fabric-collage"]
 PHASE2_B = [
     "flash-cut-video", "style-transfer", "person-swap",
     "commerce-strategist", "lifestyle-scene",
 ]
-PHASE2_DEFERRED_C = [
+PHASE2_C = [
     "naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual", "promo-ecommerce",
 ]
+PHASE2_DEFERRED_C = PHASE2_C  # historical name; C is mounted after #735
 PHASE2_DEFERRED_D = ["yingzao", "crt-interface", "crayon-sketch", "fabric-collage"]
-UNTOUCHED = ["interior"]  # custom-workflow removed (no Lovart card)
+UNTOUCHED = ["interior-architectural-visualization"]  # custom-workflow removed (no Lovart card)
 
 
 def _entries() -> dict[str, str]:
@@ -40,20 +44,20 @@ def _entries() -> dict[str, str]:
 
 
 def _const_ids(name: str) -> list[str]:
-    m = re.search(rf"export const {name} = \[([^\]]+)\] as const", SKILLS_TS, re.S)
+    m = re.search(rf"export const {name} = \[([^\]]*)\] as const", SKILLS_TS, re.S)
     assert m, f"{name} literal missing"
     return re.findall(r"'([^']+)'", m.group(1))
 
 
 def test_phase2_soft_mount_constants():
     assert _const_ids("PHASE2_SKILL_IDS") == PHASE2_MOUNT
-    assert len(PHASE2_MOUNT) == 6 and len(set(PHASE2_MOUNT)) == 6
-    assert "social" in PHASE2_MOUNT and "fashion-ugc" not in PHASE2_MOUNT
+    assert len(PHASE2_MOUNT) == 15 and len(set(PHASE2_MOUNT)) == 15
+    assert "rednote-cover-maker" in PHASE2_MOUNT and "fashion-ugc" not in PHASE2_MOUNT
     deferred = _const_ids("PHASE2_DEFERRED_SKILL_IDS")
-    assert deferred == PHASE2_DEFERRED_C + PHASE2_DEFERRED_D
-    # C/D must not be in Soft mount list
-    assert not (set(PHASE2_DEFERRED_C + PHASE2_DEFERRED_D) & set(PHASE2_MOUNT) - {"social"})
-    assert "ppt-visual" not in PHASE2_MOUNT  # C HOLD
+    assert deferred == []  # #812: D mounted
+    assert set(PHASE2_D) <= set(PHASE2_MOUNT)
+    assert set(PHASE2_C) <= set(PHASE2_MOUNT)
+    assert "ppt-visual" in PHASE2_MOUNT and "yingzao" in PHASE2_MOUNT
     assert "#638" in SKILLS_TS and "PRODUCT-LOCK-PHASE2" in SKILLS_TS
     assert "#490" in SKILLS_TS and "HOLD" in SKILLS_TS
 
@@ -66,17 +70,17 @@ def test_order_builtins_phase1_then_phase2_b_then_deferred():
     # Source presence
     assert set(PHASE1) <= set(ids)
     assert set(PHASE2_B) <= set(ids)
-    assert set(PHASE2_DEFERRED_C + PHASE2_DEFERRED_D) <= set(ids)
+    assert set(PHASE2_C + PHASE2_D) <= set(ids)
     assert all(u in ids for u in UNTOUCHED)
     assert len(ids) == 49  # #640 Phase3-S1
     # Runtime order is orderBuiltins output — assert the exported const lists encode Soft order
     assert _const_ids("PHASE1_SKILL_IDS") == PHASE1
     assert _const_ids("PHASE2_SKILL_IDS") == PHASE2_MOUNT
     # No duplicate mount of social as a second id
-    assert ids.count("social") == 1
+    assert ids.count("rednote-cover-maker") == 1
 
 
-def test_b_washed_mounted_deferred_still_empty_assets():
+def test_b_washed_mounted_and_d_washed_pinned():
     entries = _entries()
     for sid in PHASE2_B:
         e = entries[sid]
@@ -85,15 +89,14 @@ def test_b_washed_mounted_deferred_still_empty_assets():
         assert "featured: feat637(" in e or "featured:" in head, sid
         assert "demo" not in e.lower() and "placeholder.webp" not in e, sid
         assert "lovart" not in e.lower(), sid
-    for sid in PHASE2_DEFERRED_C:  # #636 C5 soft wash landed: cover636 + ex636 + feat636
+    for sid in PHASE2_C:  # #636/#673 C5 wash; #735 mounted
         head = entries[sid].split("inputs:", 1)[0]
-        assert f"cover: cover636('{sid}')" in head and f"examples: ex636('{sid}'" in head and f"featured: feat636('{sid}'" in head, sid
+        assert f"cover: cover673('{sid}')" in head and f"examples: ex673('{sid}'" in head and f"featured: feat673('{sid}'" in head, sid
         assert "cover637" not in head, sid
-    for sid in PHASE2_DEFERRED_D:
-        e = entries[sid]
-        head = e.split("inputs:", 1)[0]
-        assert "examples: []" in e and "featured: []" in e, sid
-        assert "cover637" not in head, sid
+    for sid in PHASE2_D:  # #812 D wash pinned
+        head = entries[sid].split("inputs:", 1)[0]
+        assert f"cover: cover812('{sid}')" in head and f"examples: ex812('{sid}'" in head and f"featured: feat812('{sid}'" in head, sid
+        assert "examples: []" not in head and "featured: []" not in head, sid
 
 
 def test_home_skills_same_source_and_chips():
@@ -104,16 +107,16 @@ def test_home_skills_same_source_and_chips():
     assert "HOME_SKILL_ROW" in HOME
     # website chip source: Phase1 website skills (ppt-visual C HOLD — may stay out of mount)
     entries = _entries()
-    assert "category: 'website'" in entries["mobile-ui"]
-    assert "category: 'website'" in entries["web-product"]
-    assert "category: 'website'" in entries["ppt-visual"]  # data present but deferred
+    assert "category: 'website'" in entries["mobile-app-visual-design"]
+    assert "category: 'website'" in entries["web-product-visual-design"]
+    assert "category: 'website'" in entries["ppt-visual"]  # #735 mounted (website chip)
     assert "'website'" in SKILLS_TS
 
 
 def test_dialog_agent_handoff_and_social_fashion_ugc_regression():
     assert "mode: 'agent'" in SKILLS_TS
     assert "skillRunParams" in DIALOG
-    social = _entries()["social"]
+    social = _entries()["rednote-cover-maker"]
     presets = re.findall(r"\bP\('([^']+)'", social)
     assert "ugc-feed" in presets and "ugc-story" in presets
     assert "Fashion UGC" in social or "fashion UGC" in social.lower()

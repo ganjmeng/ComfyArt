@@ -21,12 +21,13 @@ from ComfyArt.bot.local_llm import (
 )
 from ComfyArt.bot.providers import BotEvent, TurnHandle, TurnRequest
 
-FLARE = "openai/gpt-image-2.5-flare/text-to-image"
-FLARE_EDIT = "openai/gpt-image-2.5-flare/edit"
+FLARE = "openai/gpt-image-2.6-flare/text-to-image"
+FLARE_EDIT = "openai/gpt-image-2.6-flare/edit"
 SEEDREAM = "bytedance/seedream-v5.0-pro"
 SEEDREAM_EDIT = "bytedance/seedream-v5.0-pro/edit"
 NANO = "google/nano-banana-2.1/edit"
-SUNBURST = "openai/gpt-image-2.5-sunburst/edit"
+SUNBURST = "openai/gpt-image-2.6-sunburst/edit"
+SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
 MJ = "midjourney/text-to-image"
 RECRAFT = "recraft-ai/recraft-v3"
 PORTRAIT = "Photorealistic portrait of an old fisherman"
@@ -48,6 +49,7 @@ def test_reply_contract_still_names_the_model():
 
 @pytest.mark.parametrize("action,args,failed,model,edit", [
     ("generate_image", {"prompt": PORTRAIT}, SEEDREAM, FLARE, False),
+    ("generate_image", {"prompt": 'Movie poster with the headline "SUMMER"'}, SUNBURST_T2I, FLARE, False),
     ("generate_image", {"prompt": "Minimal logo for a tea brand"}, RECRAFT, FLARE, False),
     ("generate_image", {"prompt": ANIME, "model": "alibaba/qwen-image-3.0/text-to-image"},
      "alibaba/qwen-image-3.0/text-to-image", MJ, False),
@@ -55,10 +57,9 @@ def test_reply_contract_still_names_the_model():
     ("edit_image", {"id": "shape:a", "prompt": "new background, keep the same person"}, NANO, FLARE_EDIT, False),
     ("edit_image", {"id": "shape:a", "prompt": "new background, keep the same person"}, FLARE_EDIT, NANO, False),
     ("edit_image", {"id": "shape:a", "prompt": "retouch the skin"}, SEEDREAM_EDIT, FLARE_EDIT, False),
-    ("edit_region", {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8},
-     SUNBURST, FLARE_EDIT, False),
-    ("edit_region", {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8},
-     FLARE_EDIT, SUNBURST, False),
+    ("edit_region", {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8,
+      "auto_model": True},
+     SUNBURST, FLARE_EDIT, True),  # #872/#873 Auto masked row fallback sets edit_model
     ("generate_image", {"prompt": "two refs", "refs": ["shape:a", "shape:b"]}, NANO, FLARE_EDIT, True),
 ])
 def test_fallback_follows_the_133_table(action, args, failed, model, edit):
@@ -74,12 +75,21 @@ def test_fallback_follows_the_133_table(action, args, failed, model, edit):
 
 @pytest.mark.parametrize("action,args,failed", [
     ("generate_image", {"prompt": "a cup of coffee on a table"}, FLARE),
-    ("generate_image", {"prompt": 'Movie poster with the headline "SUMMER"'}, FLARE),
     ("generate_image", {"prompt": "make it blue", "refs": ["shape:r"]}, FLARE_EDIT),
     ("generate_video", {"prompt": "a cat walking"}, "bytedance/seedance-2.0/text-to-video"),
 ])
 def test_no_fallback_when_it_would_repeat_the_same_model(action, args, failed):
     assert canvas._fallback_choice(action, args, failed) is None
+
+
+def test_masked_flare_failure_does_not_retry_sunburst():
+    """#872: when the registered Flare edit fallback fails, do not bounce back to Sunburst."""
+    choice = canvas._fallback_choice(
+        "edit_region",
+        {"id": "shape:a", "prompt": "redo the sky", "x": 0, "y": 0, "width": 8, "height": 8},
+        FLARE_EDIT,
+    )
+    assert choice is None
 
 
 def test_decline_and_guard_are_not_model_failures():
@@ -100,7 +110,7 @@ def test_fallback_allowed_follows_the_cap_and_a_decline():
     paid_guard.after_call("c", "generate_image", {"prompt": "p"}, {"ids": ["g"]}, True)
     assert not paid_guard.fallback_allowed("c", "generate_image", {"prompt": "p"})
     paid_guard.TURNS.clear()
-    paid_guard.begin_turn("c", text="poster", provider_text="poster", lang="en")
+    paid_guard.begin_turn("c", text="poster-differentiated-compiler", provider_text="poster-differentiated-compiler", lang="en")
     paid_guard.after_call("c", "generate_image", {}, {"cancelled": True, "status": "declined"}, True)
     assert not paid_guard.fallback_allowed("c", "generate_image", {"prompt": "p"})
     assert paid_guard.fallback_allowed("no-such-turn", "generate_image", {"prompt": "p"})
@@ -165,6 +175,11 @@ async def _turn(monkeypatch, steps, *, user_text="画一张写实人像", lang="
 
     monkeypatch.setattr(provider, "_request_json", fake_request)
     monkeypatch.setattr(provider, "_mcp_call_tool", fake_call)
+
+    async def free_price(model, inputs):  # #732: pricing now fails closed, so stub it (no WaveSpeed key here)
+        return 0.0
+
+    monkeypatch.setattr(provider, "_price_one", free_price)
     monkeypatch.setattr(LocalLlmProvider, "_confirm_fallback", confirm)
     events: list[BotEvent] = []
 
@@ -291,6 +306,12 @@ async def test_two_refs_fall_back_to_the_edit_default(monkeypatch):
 
     monkeypatch.setattr(canvas, "submit_command", submit)
     monkeypatch.setattr(canvas, "maybe_ask_run_approval", no_approval)
+    async def priced(self, feature):
+        # No live catalog in this test: a priced table keeps the quote under the confirm line
+        # so the fallback itself can run. The edit default is the phase-2 2.6-flare id.
+        return [(NANO, 0.02), (FLARE_EDIT, 0.05)]
+
+    monkeypatch.setattr(LocalLlmProvider, "_models_for", priced)
     await _turn(monkeypatch, [("generate_image", {"prompt": "the mug", "refs": ["shape:a", "shape:b"]})],
                 user_text="用这两张图")
     edits = [a.get("edit_model") for a in sent]
@@ -349,3 +370,30 @@ async def test_handler_submit_uses_fallback_and_names_it(page):
     assert note.startswith(f"用了 {FLARE}，因为") and f"Used {FLARE} because" in note and SEEDREAM in note
     assert "费用规则" in _cost_block_note(SEEDREAM, FLARE, "zh")
     assert "cost rules" in _cost_block_note(SEEDREAM, FLARE, "en")
+
+
+@pytest.mark.asyncio
+async def test_236_confirm_before_fallback_never_silent(monkeypatch, page):
+    """#236/#873: manually picked models always ask before switching; never silently change models."""
+    # agree=False → confirm asked, but no second submit
+    _result, events, _seen, asked = await _turn(
+        monkeypatch,
+        [("generate_image", {"prompt": 'Movie poster with the headline "SUMMER"', "model": SUNBURST_T2I})],
+        user_text="画海报",
+        agree=False,
+    )
+    assert asked and asked[0][0] == SUNBURST_T2I
+    assert [a.get("model") for a in _gens(page)] == [SUNBURST_T2I]  # no silent switch
+    deltas = " ".join(e.text for e in events if e.t == "delta")
+    assert _no_switch_note(SUNBURST_T2I, FLARE, "zh") in deltas
+
+    page.clear()
+    _result2, _ev2, _seen2, asked2 = await _turn(
+        monkeypatch,
+        [("generate_image", {"prompt": 'Movie poster with the headline "SUMMER"', "model": SUNBURST_T2I})],
+        user_text="画海报",
+        agree=True,
+    )
+    assert asked2 and asked2[0][0] == SUNBURST_T2I and asked2[0][1] == FLARE
+    models = [a.get("model") for a in _gens(page)]
+    assert models == [SUNBURST_T2I, FLARE]  # switch only after explicit yes

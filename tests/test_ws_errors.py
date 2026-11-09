@@ -111,10 +111,11 @@ def test_712_unregistered_and_task_id_copy(js):
     assert js["zh"]["noTaskId"] == "没有拿到任务编号，无法取回结果，可能已扣费约 $0.10。已记为失败。"
 
 
-# #712 PM: no vendor name in user-facing wsErr copy. These keys predate #712, still name the vendor and are left
-# unchanged on purpose (reported in PR #715, out of scope); every other wsErr.* key must not.
-PRE_712_VENDOR_KEYS = {"wsErr.failed", "wsErr.insufficientCredit", "wsErr.invalidKey", "wsErr.moderation", "wsErr.network",
-                       "wsErr.rateLimit"}
+# #712 PM: no vendor name in user-facing wsErr copy. #715 left the pre-existing keys naming the vendor and reported
+# them; #719 removed the vendor from 5 of them. The only remaining exception is wsErr.invalidKey: the settings page asks
+# the user for a WaveSpeed key, so naming which key to fix is functional (not marketing) copy.
+PRE_719_VENDOR_KEYS = {"wsErr.invalidKey"}
+DE_VENDORED_719 = ("wsErr.failed", "wsErr.insufficientCredit", "wsErr.moderation", "wsErr.network", "wsErr.rateLimit")
 
 
 def test_712_no_vendor_or_console_in_wserr_copy():
@@ -122,10 +123,22 @@ def test_712_no_vendor_or_console_in_wserr_copy():
     for lang in ("zh", "en"):
         loc = json.loads((ROOT / f"src/locales/{lang}.json").read_text(encoding="utf-8"))
         hits = {k for k, v in loc.items() if k.startswith("wsErr.") and re.search(r"wavespeed|kie", v, re.I)}
-        assert hits == PRE_712_VENDOR_KEYS, (lang, sorted(hits ^ PRE_712_VENDOR_KEYS))
+        assert hits == PRE_719_VENDOR_KEYS, (lang, sorted(hits ^ PRE_719_VENDOR_KEYS))
         # no pointer to a vendor console / back office, nor to a generation history UI that doesn't exist yet (#715 option a)
         bad = [k for k, v in loc.items() if k.startswith("wsErr.") and re.search(r"控制台|后台|console|dashboard|生成记录|历史记录|generation history", v, re.I)]
         assert not bad, (lang, bad)
+
+
+def test_719_de_vendored_keys_are_clean_and_whitelist_is_explicit():
+    """#719: the 5 old keys no longer name the vendor/console; invalidKey is the explicit, documented whitelist."""
+    import re
+    for lang in ("zh", "en"):
+        loc = json.loads((ROOT / f"src/locales/{lang}.json").read_text(encoding="utf-8"))
+        for k in DE_VENDORED_719:
+            assert k in loc, (lang, k)
+            assert not re.search(r"wavespeed|kie|控制台|后台|console|dashboard", loc[k], re.I), (lang, k, loc[k])
+        assert re.search(r"WaveSpeed", loc["wsErr.invalidKey"]), lang  # functional: names the key to check in Settings
+        assert set(DE_VENDORED_719).isdisjoint(PRE_719_VENDOR_KEYS)
 
 
 def test_712_task_id_shown_when_obtained(js):
@@ -148,3 +161,16 @@ def test_715_task_ref_prefixes_match_locales():
     css = (ROOT / "src/styles/overlays.css").read_text(encoding="utf-8")
     md = [l for l in css.splitlines() if l.startswith(".ca-md code")]
     assert md == [".ca-md code { padding: 1px 4px; border-radius: 4px; background: var(--ca-field); font-size: 12px; }"]  # main's rule, unchanged
+
+
+def test_721_wsbody_raw_maps_to_generic(js):
+    """#721: untagged raw string/message → wsErr.generic; allowlist unchanged; generic is de-vendored."""
+    import re
+    for lang in ("zh", "en"):
+        assert js[lang]["rawString"] == js[lang]["generic"]
+        assert js[lang]["rawMessage"] == js[lang]["generic"]
+        assert js[lang]["mapUnknown"] == js[lang]["generic"]
+        assert js[lang]["mapAllow"] == "mask file not found"
+        assert "Internal Error" not in js[lang]["rawString"]
+        assert not re.search(r"wavespeed|kie|控制台|后台|console|dashboard", js[lang]["generic"], re.I)
+    assert js["allowlist"] == ["mask file not found", "src must be a /api/view URL"]

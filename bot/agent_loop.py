@@ -26,6 +26,7 @@ from .run_budget import ui_credits
 from .providers import BotEvent, TurnResult
 from .run_budget import (
     BudgetLimits,
+    IdenticalCallGuard,
     ProgressTracker,
     RunBudget,
     RunPolicy,
@@ -168,6 +169,10 @@ class RunContext:
     confirmer: Any = None
     current_skill: str = ""                         # #705: skill the run was started from (auto-fills empty reads)
     skill_autofills: int = 0
+    plan_gate_active: bool = False                  # #710: multi-shot plan card is open or confirmed
+    shot_confirmed: bool = False
+    shots: list = field(default_factory=list)
+    shot_cursor: int = 0
 
     # -- persistence -------------------------------------------------------------
     def state(self, messages: Optional[list] = None) -> dict:
@@ -385,13 +390,13 @@ _PRIMARY_ACTION = {"error": "retry"}  # #709: stuck primary = 继续生成 (cont
 # the same run from its checkpoint (agent_loop resume: fresh progress window for stuck, +1 budget for budget).
 # #709 UIUX: the card's reason is a plain sentence (never stuck:* / budget:* codes).
 _STUCK_REASON = {
-    "zh": {"no_progress": "连续几步都没有新产出，自动暂停。", "repeat": "同一个操作反复出现，自动暂停。",
+    "zh": {"no_progress": "连续几步都没有新产出，自动暂停。", "repeat": "同一工具用相同参数连续超过 3 次，已立即停下，没有继续执行。",
            "tool_error": "工具连续出错，自动暂停。", "readonly_limit": "连续多步只在查看、没有生成，自动暂停。",
            "same_tool": "连续重复同一步，已停下。", "non_retryable": "工具返回了无法重试的错误，已暂停。",
            "budget": "生成和工具调用次数到了本次上限，自动暂停。",
            "timeout": "等待生成结果超过 {N} 分钟。"},
     "en": {"no_progress": "No new output for several steps, paused automatically.",
-           "repeat": "The same action kept repeating, paused automatically.",
+           "repeat": "The same tool with the same arguments ran more than 3 times in a row, so it stopped immediately.",
            "tool_error": "A tool failed several times in a row, paused automatically.",
            "readonly_limit": "Several steps only looked and made nothing, paused automatically.",
            "same_tool": "Repeated the same step in a row, stopped.",
@@ -593,8 +598,10 @@ def stop_text(stop: Stop, lang: str, done: list[str], hard_cap: int = 0, check: 
         # Same user copy as budget; the cap number is never shown to users.
         text = _with_done(_STOP_TEXT["hard_cap"][lk], done, lang)
     elif stop.reason == StopReason.STUCK:
-        text = _with_done(_STOP_TEXT["stuck"][lk].format(sub=_STALL_LABEL[lk].get(stop.sub, stop.sub),
-                                                           step=stop.step), done, lang)
+        # #706: an identical-call stop carries the tool name in detail; other stuck stops keep the template.
+        head = stop.detail if stop.sub == "repeat" and stop.detail else _STOP_TEXT["stuck"][lk].format(
+            sub=_STALL_LABEL[lk].get(stop.sub, stop.sub), step=stop.step)
+        text = _with_done(head, done, lang)
     elif stop.code in _STOP_TEXT:
         tmpl = _STOP_TEXT[stop.code][lk]
         text = tmpl.format(dim=_DIM[lk].get(stop.dimension, ""), detail=stop.detail)
@@ -668,6 +675,8 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
         budget = RunBudget(limits, k=k, soft_fraction=policy["soft_fraction"], clock=clock)
         tracker = ProgressTracker(policy["stall_steps"], policy["readonly_max"], policy["tool_fail_max"],
                                   policy["repeat_max"])
+        if goal is not None and goal.kind == "image" and goal.count > 1:
+            tracker.planned_images = goal.count
         tracker.tool_calls_max, tracker.all_calls_max = int(policy["max_tool_calls"]), int(policy["max_all_tool_calls"])  # #705
         run_id = f"run-{uuid.uuid4().hex[:16]}"
         ctx = RunContext(run_id=run_id, store=store, lease_owner=lease_owner, policy=policy, budget=budget,
@@ -771,10 +780,16 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
 
     skill_cache: dict[str, str] = {}
     gens: dict[str, dict] = {}
-    loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens, "budget_loop": True, "run": ctx}
+    loop = {"repeat": 0, "last_key": "", "cache_hits": 0, "gens": gens, "budget_loop": True, "run": ctx,
+            "identical": IdenticalCallGuard()}
     gate = _PlanGate()
     reason_next = False  # #413: set after a step that wrote memory; consumed by the next request
     try:
+        if resumed is None:
+            from .shot_plan import run_plan_card
+            plan_stop = await run_plan_card(ctx, turn, handle, messages)
+            if plan_stop == "stopped" or handle.stop_requested:
+                return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
         while True:
             if handle.stop_requested:
                 return await finish(Stop(StopReason.USER_STOP, step=ctx.budget.used.steps))
@@ -925,6 +940,13 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             if ctx.tracker.over_budget(obs):  # #705: hard cap, no nudge (e.g. every step a new image, never done)
                 _log.warning("[ComfyArt/agent] run %s over budget: %d calls, %d generate_image (cap %d/%d)", ctx.run_id,
                              ctx.tracker.total_calls, ctx.tracker.gen_calls, ctx.tracker.tool_calls_max, ctx.tracker.gen_cap())
+                # #729 stops the 300-call backstop on the call that reaches it. When that call is also
+                # the #391 step hard cap, keep the continuable hard_cap card instead of stuck:budget (#804).
+                paid_or_image = (ctx.tracker.paid_calls >= ctx.tracker.tool_calls_max
+                                 or ctx.tracker.gen_calls >= ctx.tracker.gen_cap())
+                if not paid_or_image and ctx.budget.used.steps >= ctx.budget.limits.hard_steps:
+                    return await finish(Stop(StopReason.HARD_CAP, step=ctx.budget.used.steps),
+                                        remaining=_remaining_steps(ctx))
                 return await finish(Stop(StopReason.STUCK, "budget", step=ctx.budget.used.steps))
             if ctx.tracker.wait_timeout(obs, now=clock()):  # #705: one generation task waited > 10 min or > 120 polls
                 _log.warning("[ComfyArt/agent] run %s wait_generation timeout: %s", ctx.run_id, ctx.tracker.wait_polls)
@@ -961,6 +983,12 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
 # ---------------------------------------------------------------------------
 
 
+_PRICE_ERROR_NOTE = {
+    "zh": "[non-retryable] 价格检查失败（{err}），本次付费调用未发出，未扣费。",
+    "en": "[non-retryable] The price check failed ({err}); this paid call was not sent and nothing was charged.",
+}
+
+
 def paid_key(ctx: RunContext, name: str, args: dict, call_id: str = "") -> str:
     """Per-call idempotency id: the step plus the model's tool_call id. Two calls with identical
     params are two calls (4 images = 4 calls); only the SAME call replayed after a checkpoint is
@@ -989,8 +1017,11 @@ async def paid_gate(ctx: RunContext, name: str, args: dict, emit_confirm,
         try:
             p = await ctx.pricer(name, args)
             price = float(p) if p is not None else 0.0
-        except Exception:
+        except Exception as e:
+            # #732: fail CLOSED. A pricing error (e.g. the old ModuleNotFoundError in bot/local_llm.py) used to
+            # fall through with price 0.0, so the budget check passed and the paid call went out unpriced.
             _log.exception("[ComfyArt/agent] pricing %s failed", name)
+            return "skip", _PRICE_ERROR_NOTE[lk].format(err=type(e).__name__), 0.0
     if not ctx.budget.can_afford(price):
         if confirm_policy(ctx.mode, "paid_confirm") == "skip":
             ctx.pending_stop = Stop(StopReason.BUDGET, "unattended_skipped", dimension="credits",

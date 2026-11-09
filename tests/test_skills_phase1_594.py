@@ -10,8 +10,30 @@ SKILLS_TS = (ROOT / "src/skills.ts").read_text()
 SKILLS = (ROOT / "src/home/Skills.tsx").read_text()
 CSS = (ROOT / "src/styles/home.css").read_text()
 
-PHASE1_NEW = ["multi-angle", "logo-material", "meta-ads", "mobile-ui", "web-product", "marketing-campaign"]
+PHASE1_NEW = ["universal-multi-angle-grid", "logo-material-explorer", "meta-ads-creative-director", "mobile-app-visual-design", "web-product-visual-design", "marketing-campaign-generator"]
 WASH_594 = "cc76d743d416c3d9a9a6852d811a7a80caf40319"
+
+
+_COVER687 = {"meta-ads-creative-director", "marketing-campaign-generator"}
+
+
+def _cover_exact(sid: str) -> str:
+    return f"cover: cover687('{sid}')" if sid in _COVER687 else f"cover: cover('{sid}')"
+
+
+def _feat_needle(sid: str) -> str:
+    return "featured: feat687(" if sid in _COVER687 else "featured: feedCovers("
+
+
+def _video_needle(sid: str) -> str:
+    return {
+        "universal-multi-angle-grid": "video: video594('universal-multi-angle-grid')",
+        "logo-material-explorer": "video: pinned('wash-lm/logo-material', WASH_LM, 'hero.mp4')",
+        "meta-ads-creative-director": "video: video687('meta-ads-creative-director')",
+        "mobile-app-visual-design": "video: pinned('wash-mu/mobile-ui', WASH_MU, 'hero.mp4')",
+        "web-product-visual-design": "video: pinned('wash-wp/web-product', WASH_WP, 'hero.mp4')",
+        "marketing-campaign-generator": "video: video687('marketing-campaign-generator')",
+    }[sid]
 
 
 def _entries() -> dict[str, str]:
@@ -24,18 +46,18 @@ def _entries() -> dict[str, str]:
 def test_wash_594_pin_and_paths():
     assert f"const WASH_594 = '{WASH_594}'" in SKILLS_TS
     assert "494/covers-v4" in SKILLS_TS and "580/featured-v2" in SKILLS_TS
-    assert "594/wash/" in SKILLS_TS and "ex594" in SKILLS_TS
+    assert "594/wash/" in SKILLS_TS and "ex594(" not in SKILLS_TS  # #751 HOLD: Final examples = raw + wash-748.json (1:1, pendingWash)
     assert "WASH_623_NEW6_VIDEO" in SKILLS_TS
     assert "d03ea7938877d084c201a94ef51f943dd0e061b9" in SKILLS_TS
     assert "video594" in SKILLS_TS and "594/wash/videos/" in SKILLS_TS
     for sid in PHASE1_NEW:
         e = _entries()[sid]
         head = e.split("inputs:", 1)[0]
-        assert f"cover: cover('{sid}')" in head
-        assert f"featured: feedCovers('{sid}')" in head
-        assert f"examples: ex594('{sid}', [1, 2, 3, 4])" in head
+        assert _cover_exact(sid) in head
+        assert _feat_needle(sid) in head
+        assert "examples: ex" not in head  # #751 HOLD: Final examples = raw + wash-748.json (1:1, pendingWash)
         assert "quickStartCoverFit: 'contain'" in head
-        assert f"video: video594('{sid}')" in head  # #623
+        assert _video_needle(sid) in head
         assert "lovart" not in head.lower()
 
 

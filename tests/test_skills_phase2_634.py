@@ -16,7 +16,7 @@ PHASE2_NEW = [
     "naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual", "promo-ecommerce",
     "yingzao", "crt-interface", "crayon-sketch", "fabric-collage",
 ]
-UNTOUCHED = ["interior"]  # custom-workflow removed (no Lovart card)
+UNTOUCHED = ["interior-architectural-visualization"]  # custom-workflow removed (no Lovart card)
 NEW_CATEGORY = {
     "flash-cut-video": "ads",
     "style-transfer": "branding",
@@ -61,7 +61,7 @@ def _entries() -> dict[str, str]:
 def test_phase2_ids_present_social_kept_untouched_and_no_skill_creator():
     ids = list(_entries())
     assert set(PHASE2_NEW) <= set(ids)
-    assert "social" in ids
+    assert "rednote-cover-maker" in ids
     assert all(u in ids for u in UNTOUCHED)
     assert len(ids) == 49  # #640 Phase3-S1: 31 prior + 19 NEW
     assert "skill-creator" not in ids and "fashion-ugc" not in ids
@@ -90,10 +90,13 @@ def test_new_skills_cut2_skeleton_categories():
             assert "cover: cover637(" in head, sid
             assert "examples: []" not in e and "featured: []" not in e, sid
         elif sid in ("naive-illustration", "logo-abstract", "photo-split-poster", "ppt-visual", "promo-ecommerce"):
-            # #636 group C5: deferred (not an accepted soft wash) — ships interim cover636/ex636 pins, Examples-only nearMiss
-            assert f"cover: cover636('{sid}')" in head and f"examples: ex636('{sid}'" in head, sid
+            # #636/#673/#735 C wash pins
+            assert f"cover: cover673('{sid}')" in head and f"examples: ex673('{sid}'" in head, sid
+        elif sid in ("yingzao", "crt-interface", "crayon-sketch", "fabric-collage"):
+            # #812 D wash pins
+            assert f"cover: cover812('{sid}')" in head and f"examples: ex812('{sid}'" in head, sid
+            assert "examples: []" not in e and "featured: []" not in e, sid
         else:
-            # D still deferred
             assert "examples: []" in e and "featured: []" in e, sid
             assert "cover:" not in head and "video:" not in head, sid
 

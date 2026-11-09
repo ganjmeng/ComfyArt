@@ -9,12 +9,15 @@ import { bakeToImage, createMockup } from './mockup'
 import { api, popAgentCommand, pushAgentCommand } from './comfy'
 import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
-import { capRefs, createGenerator, generate } from './generate'
+import { capRefs, createGenerator, generate, nearestRatio } from './generate'
 import { durationNote, fitDuration, RATIOS, VIDEO_RATIOS, videoResolution } from './genOptions'
-import { tl } from './i18n'
+import { GIF_STILL_REFUSAL, clampFrameCount, clampFrameMs, gifHasStill, gifModelId } from './gifFile'
+import { svgModelId } from './svgFile'
+import { t, tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
 import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom, whenSubmitted } from './jobs'
-import { agentModels } from './models'
+import { agentModels, IMAGE_MODELS, modelPrefsAtom, type ModelDef } from './models'
+import { pickSizeModel, SIZE_LOCK_REFUSED } from './sizeLockPref'
 import { modesFor } from './refModes'
 import { AUDIO } from './shapes/EmbedShapes'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
@@ -122,12 +125,53 @@ function editOf(editor: Editor, args: Args): Edit {
   return { clips, transitions, subtitles, music }
 }
 
+function sizeLockCandidates(args: Args): string[] {
+  const raw = [...(Array.isArray(args.size_candidates) ? args.size_candidates : []), args.edit_model, args.model]
+  const ids: string[] = []
+  for (const item of raw) {
+    const id = String(item ?? '').trim()
+    if (id && !ids.includes(id)) ids.push(id)
+  }
+  return ids
+}
+
 async function startGenerator(editor: Editor, video: boolean, args: Args, onError: ErrorSink, chat: string) {
   const models = agentModels(video)
   const wantsRefs = !video && Array.isArray(args.refs) && args.refs.length > 0
-  // #133: an Auto pick the user disabled in model prefs falls back to the default (result.model says which ran)
-  const model = args.model ? models.find((m) => m.id === args.model) ?? (args.auto_model ? models[0] : undefined) : (wantsRefs && models.find((m) => m.refs)) || models[0]
-  if (!models.length) throw new Error(`no ${video ? 'video' : 'image'} models loaded yet (WaveSpeed model list unavailable); try again shortly`)
+  // #707: a size lock always audits the file. An id that is not on the Lovart dropdown
+  // goes through the preference gate and is not replaced by the feature default.
+  // A dropdown model keeps the normal preference fallback, then the file is still audited.
+  const listed = IMAGE_MODELS.map((m) => m.id)
+  const candidates = !video && args.size_lock ? sizeLockCandidates(args) : []
+  const offDropdown = candidates.some((id) => !listed.includes(id))
+  let lockId = ''
+  let model: ModelDef | undefined
+  if (offDropdown) {
+    const gate = pickSizeModel(candidates, modelPrefsAtom.get(), listed)
+    if (!gate.ok) throw new Error(SIZE_LOCK_REFUSED)
+    lockId = gate.model
+    const known = models.find((m) => m.id === lockId)
+    model = known ?? { id: lockId, label: lockId, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' }
+  } else {
+    // #133: an Auto pick the user disabled in model prefs falls back to the default (result.model says which ran)
+    model = args.model ? models.find((m) => m.id === args.model) ?? (args.auto_model ? models[0] : undefined) : (wantsRefs && models.find((m) => m.refs)) || models[0]
+    if (!video && args.size_lock && model) lockId = model.id
+  }
+  const gif = !video && String(args.output_format || '').toLowerCase() === 'gif'
+  const svg = !video && !gif && String(args.output_format || '').toLowerCase() === 'svg'
+  if (svg) {
+    if (wantsRefs || args.base) throw new Error(t('wsErr.svgEdit'))
+    if (Number(args.count || 1) !== 1) throw new Error(t('wsErr.svgCount'))
+    const id = svgModelId(String(args.model || model?.id || ''))
+    model = models.find((m) => m.id === id) ?? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' }
+  }
+  if (gif && gifHasStill(args)) throw new Error(GIF_STILL_REFUSAL)
+  if (gif) {
+    // #825: a GIF runs on 2.6-flare, which is also the image default.
+    const id = gifModelId(String(args.model || model?.id || ''))
+    model = models.find((m) => m.id === id) ?? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' }
+  }
+  if (!models.length && !gif && !svg) throw new Error(`no ${video ? 'video' : 'image'} models loaded yet (WaveSpeed model list unavailable); try again shortly`)
   if (!model) throw new Error(`unknown model ${JSON.stringify(args.model)}; valid ${video ? 'video' : 'image'} ids: ${models.map((m) => m.id).join(', ')} (default ${models[0].id})`)
   const modes = Array.isArray(args.ref_modes) ? args.ref_modes.map(String) : []
   const allowed = modesFor(model).map((m) => m.id)
@@ -136,13 +180,19 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
   if (wantsRefs && !model.refs && !(model.control && args.refs.every((_: unknown, i: number) => modes[i]))) throw new Error(`${model.label} does not accept refs; use a model with accepts_refs from list_models, give every ref a structure ref_mode, or drop refs`)
   const ratios = video ? VIDEO_RATIOS : RATIOS
   if (args.ratio && !ratios.includes(args.ratio)) throw new Error(`ratio must be one of ${ratios.join(', ')}`)
+  // #707: skill pixels (1584x396 and other non-enum canvases) win over the 1:1 default.
+  const px = (v: unknown) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n > 0 ? n : 0 }
+  const exactW = video ? 0 : px(args.width)
+  const exactH = video ? 0 : px(args.height)
+  const ratioArg = typeof args.ratio === 'string' && ratios.includes(args.ratio) ? args.ratio : ''
+  const imageRatio = ratioArg || (exactW && exactH ? nearestRatio(exactW / exactH, ratios) : '1:1')
   // #128: round the asked seconds up to the model's next allowed duration (capped at its longest) and say so
   const lengths = model.durations?.map(Number)
   const duration = fitDuration(args.duration, lengths)
   const notes = video ? { zh: durationNote(args.duration, duration, lengths, (k, ...a) => tl('zh', k, ...a)), en: durationNote(args.duration, duration, lengths, (k, ...a) => tl('en', k, ...a)) } : null
   const props = video
     ? { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? ratios[0], duration, resolution: videoResolution(args.resolution == null ? '' : String(args.resolution), model.resolutions, model.defaults?.resolution) }
-    : { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? '1:1', count: Math.min(4, Math.max(1, Number(args.count) || 1)) }
+    : { prompt: String(args.prompt), workflow: model.id, ratio: imageRatio, count: svg ? 1 : Math.min(4, Math.max(1, Number(args.count) || 1)), ...(exactW && exactH ? { resolution: 'custom' as const, cw: exactW, ch: exactH } : {}) }
   const media = video ? [...refUrls(editor, args.reference_images), ...refUrls(editor, args.reference_videos), ...refUrls(editor, args.reference_audios)] : []
   const motion = video && args.motion_video ? refUrls(editor, [args.motion_video])[0] : null
   const speech = video && args.speech_audio ? refUrls(editor, [args.speech_audio])[0] : null
@@ -158,12 +208,27 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     ...(!video && modes.length ? { refModes: Object.fromEntries(refs.flatMap((src, i) => (modes[i] ? [[src, modes[i]]] : []))) } : {}),
     // #133 Auto: 2+ refs run on the multi-reference edit model the backend picked (edit_model)
     ...(!video && typeof args.edit_model === 'string' ? { featureModels: { image_edit: args.edit_model } } : {}),
+    // A size lock that skipped a disabled candidate must edit with the model that is still allowed.
+    ...(lockId && (wantsRefs || args.base) ? { featureModels: { image_edit: lockId } } : {}),
+    ...(lockId ? { sizeLockModel: lockId } : {}),
+    // #708: a skill-pinned edit model's tier (e.g. pose-fission → nano-banana-pro/edit at 2k)
+    ...(!video && typeof args.edit_resolution === 'string' ? { editResolution: args.edit_resolution } : {}),
     ...(!video && args.base ? { base: refUrls(editor, [args.base])[0], strength: Number(args.base_strength) || 60 } : {}),
     ...(video && !mode && args.last_frame ? { lastFrame: refUrls(editor, [args.last_frame])[0] } : {}),
     ...(notes?.en ? { durationAsked: Number(args.duration) } : {}),
+    ...(gif ? { gif: { output_format: 'gif', frame_count: clampFrameCount(args.frame_count), frame_duration_ms: clampFrameMs(args.frame_duration_ms) } } : {}),
+    ...(svg ? { svg: { output_format: 'svg' as const, n: 1 as const } } : {}),
+    ...(gif && args.complexity ? { complexity: String(args.complexity) } : {}),
+    // #825: Auto · short name + hover reason (from canvas choose / user pick)
+    ...(args.model_choice && typeof args.model_choice === 'object' ? { modelChoice: args.model_choice } : args.auto_model ? { modelChoice: { model: model.id, auto: true, reason: { zh: '自动选择', en: 'Auto picked it' } } } : model ? { modelChoice: { model: model.id, auto: false, reason: { zh: '你指定了这个模型', en: 'you named this model' } } } : {}),
   }
   const id = createGenerator(editor, video, props, false)
-  editor.updateShape<GeneratorShape>({ id, type: GENERATOR, meta })
+  const exact = !video && exactW && exactH ? { w: exactW, h: exactH } : null
+  editor.updateShape<GeneratorShape>({
+    id, type: GENERATOR,
+    ...(exact ? { props: { w: exact.w, h: exact.h, cw: exact.w, ch: exact.h, resolution: 'custom', ratio: imageRatio } } : {}),
+    meta: exact ? { ...meta, pixelSize: [exact.w, exact.h] } : meta,
+  })
   place(editor, id, args, chat)
   void generate(editor, editor.getShape<GeneratorShape>(id)!, onError)
   const outcome = await awaitSubmit(id)
@@ -173,7 +238,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     throw new Error(err ? agentErrorText(err) : 'generation submit failed')
   }
   if (notes?.en) return { ids: [id], model: model.id, duration, duration_note: notes, note: `call wait_generation with these ids; the video is ${duration}s, not the ${args.duration}s asked: tell the user (duration_note, in their language)` }
-  return { ids: [id], model: model.id, ...(video ? { duration } : {}), note: 'call wait_generation with these ids' }
+  return { ids: [id], model: model.id, ...(video ? { duration } : {}), ...(exact ? { width: exact.w, height: exact.h } : {}), note: 'call wait_generation with these ids' }
 }
 
 async function started(editor: Editor, holder: TLShapeId | undefined) {
@@ -312,6 +377,26 @@ const HANDLERS: Record<string, Handler> = {
 export function registerCommandBus(editor: Editor, project: string, isStale: () => boolean, onError: ErrorSink) {
   const announce = () => api('/comfyart/mcp_page', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: CLIENT_ID, project }) }).catch((e) => onError(errorText(e)))
   void announce()
+  // Same generate_image handler the agent command bus calls. Tests use it to drive auto args
+  // through startGenerator; it is not a second model picker.
+  try {
+    if (globalThis.localStorage?.getItem('comfyart.e2e') === '1') {
+      const hook = globalThis as { __comfyartE2E?: unknown }
+      hook.__comfyartE2E = {
+        listed: () => IMAGE_MODELS.map((m) => m.id),
+        setPrefs: (prefs: { auto: boolean; enabled: string[] }) => modelPrefsAtom.set(prefs),
+        command: async (action: string, args: Args) => {
+          const handler = HANDLERS[action]
+          if (!handler) return { ok: false, error: `unknown command ${action}` }
+          try {
+            return { ok: true, result: await handler(editor, args ?? {}, onError, '') }
+          } catch (e) {
+            return { ok: false, error: errorText(e) }
+          }
+        },
+      }
+    }
+  } catch { /* storage unavailable */ }
   const stops = [
     onReconnect(() => void announce()),
     onComfyEvent('comfyart-mcp-command', (msg: { id: string; action: string; project: string; chat?: string; args: Args }) => {

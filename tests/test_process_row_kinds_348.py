@@ -2,6 +2,7 @@
 from __future__ import annotations
 import pytest
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,25 +32,15 @@ def test_process_kind_union_includes_must() -> None:
         assert f"'{k}'" in CHAT
 
 
-@pytest.mark.gate_skip(reason="stale on main: process icons moved to Lucide components (#348, #608)")
 def test_process_icons_lucide_new() -> None:
-    assert "fileSearch:" in ICONS
-    assert "squareCode:" in ICONS
-    assert "fileCode:" in ICONS
-    assert "filePenLine:" in ICONS
-    assert "listChecks:" in ICONS
-    assert "sparkles:" in ICONS
-    assert "Icons.fileSearch" in CHAT
-    assert "Icons.squareCode" in CHAT
-    assert "Icons.fileCode" in CHAT
-    assert "Icons.filePenLine" in CHAT
-    assert "Icons.listChecks" in CHAT
-    assert "Icons.sparkles" in CHAT
-    # FileSearch has magnifier circle (Lucide)
-    fs = ICONS.split("fileSearch:")[1].split(",\n")[0]
-    assert "circle" in fs.lower() or "r=" in fs
-    sq = ICONS.split("squareCode:")[1].split(",\n")[0]
-    assert "rect" in sq.lower() or 'rx="2"' in sq
+    # #731: after the Lucide swap the rows map to L(<LucideName>, <stroke>) helpers, so the old greps for inline
+    # <Svg> shapes (circle/rect/r=) no longer apply; assert the Lucide mapping instead.
+    want = {"fileSearch": "FileSearch", "squareCode": "SquareCode", "fileCode": "FileCode",
+            "filePenLine": "FilePenLine", "listChecks": "ListChecks", "sparkles": "Sparkles"}
+    for key, lucide in want.items():
+        assert re.search(rf"\b{key}:\s*L\({lucide}\b", ICONS), key
+    for key in want:
+        assert f"Icons.{key}" in CHAT, key
 
 
 def test_skill_file_read_mapping() -> None:

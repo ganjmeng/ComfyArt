@@ -10,7 +10,7 @@ from server import PromptServer
 from ..bot import BotEvent, TurnHandle, TurnRequest, get_provider
 from ..bot.local_llm import turn_result_from_blocks
 from ..bot._cli_common import resolve_comfy_mcp_argv
-from ..bot.guide import COMFY_MCP_ALLOWED_TOOLS
+from ..bot.agent_host import COMFY_MCP_ALLOWED_TOOLS
 from . import bot_asks, chat_store, paid_guard
 from .settings import SETTINGS_SPEC, get_setting
 
@@ -65,6 +65,11 @@ def _allowed_tools(comfy_mcp_argv: list[str]) -> list[str]:
 
 
 def provider_model(provider_id: str) -> str:
+    if provider_id == "local-llm":
+        from .provider_admin import llm_model_override
+        override = llm_model_override()
+        if override:
+            return override
     key = f"bot-model-{provider_id}"
     return str(get_setting(key) or "").strip() if key in SETTINGS_SPEC else ""
 

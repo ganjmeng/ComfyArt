@@ -103,9 +103,9 @@ def _assert_production(sid: str, cat: str, preset_min: int, required: list[str],
     assert f"category: '{cat}'" in e, sid
     # #636 C soft wash: cover + examples/featured filled (hardMax layouts)
     head = e.split("inputs:", 1)[0]
-    assert "cover: cover636(" in head, sid
+    assert "cover: cover673(" in head, sid
     assert "examples: []" not in e and "featured: []" not in e, sid
-    assert "feat636(" in e or "ex636(" in e, sid
+    assert "feat673(" in e or "ex673(" in e, sid
     assert "video:" not in head, sid  # C stills only
     instr = _instructions(e)
     assert r"\n1)" in instr and r"\n5)" in instr, sid
@@ -187,7 +187,7 @@ def test_c5_lock_specific_guards():
     e = _entries()
     naive = _instructions(e["naive-illustration"]).lower()
     assert "giant" in naive and ("tiny" in naive or "mini" in naive)
-    assert "social" in naive or "cover" in naive  # mutual exclusion
+    assert "rednote-cover-maker" in naive or "cover" in naive  # mutual exclusion
     logo = _instructions(e["logo-abstract"]).lower()
     assert "geometric" in logo and ("mark" in logo or "single" in logo)
     assert "material" in logo or "vi" in logo  # distinct from logo-material / brand VI
@@ -217,7 +217,7 @@ def test_b5_locales_and_website_chip_untouched():
         assert ZH[f"skills.cat.{sid}"] and EN[f"skills.cat.{sid}"]
     assert "category: 'website'" in SKILLS_TS
     assert "id: 'ppt-visual'" in SKILLS_TS
-    assert "id: 'mobile-ui'" in SKILLS_TS and "id: 'web-product'" in SKILLS_TS
+    assert "id: 'mobile-app-visual-design'" in SKILLS_TS and "id: 'web-product-visual-design'" in SKILLS_TS
 
 
 def test_c5_locales():

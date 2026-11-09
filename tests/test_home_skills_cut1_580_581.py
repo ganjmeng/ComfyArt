@@ -113,6 +113,19 @@ def test_featured_card_icon_tag_hover() -> None:
     assert "skillRun.start" in block and "onClick={() => trySkill(s, p?.id ?? null)}" in block
 
 
+def test_linkedin_featured_badge_leaves_the_picture() -> None:
+    # #832: only linkedin moves the kind icon into the title row. Other cards keep the cover badge.
+    block = HOME.split('data-testid="home-featured-card"', 1)[1].split("</button>", 1)[0]
+    cover, name = block.split('className="ca-featured__name"', 1)
+    assert "s.id !== 'linkedin-banner'" in cover and "ca-featured__badge" in cover
+    assert "s.id === 'linkedin-banner'" in name and "ca-featured__badge--row" in name
+    assert "ca-featured__title" in name and "text-overflow: ellipsis" in CSS
+    rule = CSS.split('.ca-featured__card[data-skill="linkedin-banner"] .ca-featured__name', 1)[1].split("}", 1)[0]
+    assert "align-items: center" in rule and "gap: 8px" in rule
+    row = CSS.split(".ca-featured__badge--row", 1)[1].split("}", 1)[0]
+    assert "position: static" in row and "margin-left: auto" in row and "flex: none" in row
+
+
 def test_row_cover_ratio_4x3() -> None:
     assert "--ca-skillrow-cover-ratio: 4 / 3" in _rule(".ca-skillgrid")
 

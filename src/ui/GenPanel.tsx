@@ -22,7 +22,9 @@ import { Popover } from './Popover'
 import { useElementSize, useSelectedGenerator, useSelectionRect } from './selection'
 import { t } from '../i18n'
 import { isEnter } from './keys'
-import { estimateCost, keyStatusAtom, outOfCredit } from '../wavespeedKey'
+import { estimateCost, keyStatusAtom, outOfCredit, type Estimate } from '../wavespeedKey'
+import { gifSpec } from '../gifFile'
+import { svgSpec } from '../svgFile'
 
 const GAP = 12
 const EDGE = 8
@@ -63,15 +65,23 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
   }, [editor, shape?.id])
   const [estimate, setEstimate] = useState<number | null>(null)
   const [estimated, setEstimated] = useState(false)
+  const [estDetail, setEstDetail] = useState<Estimate | null>(null)
   const [unpriced, setUnpriced] = useState(false)  // #159: no price for this tier: no $ number at all
   useEffect(() => {
-    setEstimate(null); setUnpriced(false)
+    setEstimate(null); setUnpriced(false); setEstDetail(null)
     if (!estKey) return
     let live = true
     // debounced; the backend caches each WaveSpeed quote for 5 minutes
-    const timer = setTimeout(() => { estimateCost(JSON.parse(estKey)).then((e) => { if (live) { setEstimate(e?.price ?? null); setEstimated(e?.source === 'estimate'); setUnpriced(e?.source === 'unpriced') } }).catch(() => {}) }, 300)
+    const timer = setTimeout(() => { estimateCost(JSON.parse(estKey)).then((e) => {
+      if (!live) return
+      setEstDetail(e); setEstimate(e?.price ?? null); setEstimated(e?.source === 'estimate'); setUnpriced(e?.source === 'unpriced')
+      // #825: same model_choice estimate quotes → confirm → card
+      if (e?.model_choice && shape) {
+        editor.updateShape<GeneratorShape>({ id: shape.id, type: shape.type, meta: { ...editor.getShape(shape.id)?.meta, modelChoice: e.model_choice } as GeneratorShape['meta'] })
+      }
+    }).catch(() => {}) }, 300)
     return () => { live = false; clearTimeout(timer) }
-  }, [estKey])
+  }, [estKey, editor, shape?.id])
   if (!shape || !rect || running || canvasPick) return null
   const p = shape.props
   const update = (patch: Partial<GeneratorShape['props']>) => {
@@ -183,8 +193,13 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
       setSmart(false)
     }
   }
+  const gifBlocked = !!gifSpec(shape.meta) && (refs.length > 0 || !!base)
   const submit = () => {
     if (!ready) return
+    if (gifBlocked) {
+      onError(t('imageToolbar.gifUnsupported'))
+      return
+    }
     generate(editor, shape, onError).catch((e) => onError(errorText(e)))
   }
 
@@ -296,13 +311,13 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
           }
         }}
       />}
-      {(adjusted || overflow != null) && (
-        <div className="ca-gen__notice" role="status" data-testid="gen-notice">
-          {[adjusted && t('genPanel.adjusted'), overflow != null && t('genPanel.refsCapped', overflow)].filter(Boolean).join(' · ')}
+      {(adjusted || overflow != null || gifBlocked) && (
+        <div className="ca-gen__notice" role="status" data-testid={gifBlocked ? 'gif-still-unsupported' : 'gen-notice'}>
+          {[gifBlocked && t('imageToolbar.gifUnsupported'), adjusted && t('genPanel.adjusted'), overflow != null && t('genPanel.refsCapped', overflow)].filter(Boolean).join(' · ')}
         </div>
       )}
       <div className="ca-gen__foot">
-        <SettingsPill p={p} video={video} quality={!!model.steps} tiers={model.qualities} caps={model} update={update} />
+        <SettingsPill p={p} video={video} quality={!!model.steps} tiers={model.qualities} caps={model} update={update} complexities={model.complexities} complexity={typeof shape.meta.complexity === 'string' ? shape.meta.complexity : ''} onComplexity={(c) => setMeta({ complexity: c || null })} gif={gifSpec(shape.meta)} onGif={(g) => setMeta({ gif: g, ...(g ? { svg: null } : {}) })} svg={svgSpec(shape.meta)} onSvg={(s) => { setMeta({ svg: s, ...(s ? { gif: null } : {}) }); if (s) update({ count: 1 }) }} />
         <AdvancedPill shape={shape} model={model} setMeta={setMeta} />
         <div className="ca-gen__spacer" />
         <ModelPill video={video} model={model} picks={featureModelsOf(shape)}
@@ -320,7 +335,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
             update({ workflow: id, ...patch })
           }} />
         {unpriced && estimate == null && <span className="ca-gen__est" data-testid="ws-estimate" title={t('wsKey.unpriced')}>{t('wsKey.unpricedTag')}</span>}
-        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={estimated ? t('wsKey.estimated', `$${estimate}`) : t('wsKey.estimate', `$${estimate}`)}>{`${estimated ? `${t('wsKey.estimatedTag')} ` : ''}≈$${usd(estimate)}`}</span>}
+        {estimate != null && <span className="ca-gen__est" data-testid="ws-estimate" title={[estDetail?.provider && estDetail?.model ? `${estDetail.provider}/${estDetail.model}` : estDetail?.model, estimated ? t('wsKey.estimated', `$${estimate}`) : t('wsKey.estimate', `$${estimate}`), estDetail?.tier].filter(Boolean).join(' · ')}>{`${estimated ? `${t('wsKey.estimatedTag')} ` : ''}≈$${usd(estimate)}${estDetail?.tier ? ` · ${estDetail.tier}` : ''}`}</span>}
         <button type="button" className="ca-gen__send" disabled={!ready || noCredit} title={noCredit ? t('wsKey.needCredit') : estimate != null ? `${t('common.generate')} · ${t('wsKey.estimate', `$${estimate}`)}` : t('common.generate')} onClick={submit}>
           <span className="ca-icon">{Icons.send}</span>
         </button>

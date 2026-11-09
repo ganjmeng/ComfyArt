@@ -453,6 +453,90 @@ def _h(*parts: str) -> str:
     return hashlib.sha256("\x1f".join(parts).encode()).hexdigest()[:16]
 
 
+# #706: polling the same job is not a dead loop. Every other tool is.
+_LOOP_POLL_TOOLS = frozenset({"wait_generation"})
+_SKILL_ACTIONS = frozenset({"read", "list", "save", "file", "read_file", "file_read"})
+
+
+def call_identity(tool: str, args: object) -> str:
+    """Stable key for one tool call. Key order does not matter; wait polls are excluded by the guard."""
+    base = re.sub(r"^mcp__\w+__", "", tool or "")
+    payload = args if isinstance(args, dict) else {}
+    return base + "\x00" + json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
+
+
+@dataclass
+class IdenticalCallGuard:
+    """#706: the 4th consecutive call with the same tool and the same arguments must not run.
+
+    Three identical calls are allowed. The next one (the 4th) is the stop. A different call, or a
+    wait_generation poll, breaks the streak. The counter is not reset by the one-time "try another
+    approach" nudge — that nudge is what used to let the same call run a second set of three (×6).
+    """
+
+    max_same: int = 3
+    last: str = ""
+    run: int = 0
+
+    def blocks(self, tool: str, args: object) -> bool:
+        base = re.sub(r"^mcp__\w+__", "", tool or "")
+        if base in _LOOP_POLL_TOOLS:
+            self.run = 0
+            self.last = ""
+            return False
+        key = call_identity(tool, args)
+        self.run = self.run + 1 if key == self.last else 1
+        self.last = key
+        return self.run > self.max_same
+
+
+def suggest_tool_name(name: str, args: object = None, known: Optional[Iterable[str]] = None) -> str:
+    """Best real tool for a garbled or missing name. Skill reads (action=read/list + a name) hint `skill`."""
+    import difflib
+
+    payload = args if isinstance(args, dict) else {}
+    known_list = [str(k) for k in (known or ()) if k]
+    known_set = set(known_list)
+    base = re.sub(r"^mcp__\w+__", "", str(name or "")).strip()
+    if base in known_set:
+        return base
+    action = str(payload.get("action") or "").lower()
+    if action in _SKILL_ACTIONS and (not known_set or "skill" in known_set):
+        return "skill"
+    leaf = base.split(".")[-1].replace("-", "_")
+    for candidate in (leaf, base):
+        if not candidate or not known_list:
+            continue
+        match = difflib.get_close_matches(candidate, known_list, n=1, cutoff=0.6)
+        if match:
+            return match[0]
+    return ""
+
+
+def unknown_tool_message(name: str, args: object = None, *, known: Optional[Iterable[str]] = None,
+                         lang: str = "zh") -> str:
+    """#706: a garbled or missing tool name. Readable, and it names the tool to call instead."""
+    suggestion = suggest_tool_name(name, args, known)
+    shown = ", ".join(list(known or ())[:8])
+    if lang == "zh":
+        if suggestion == "skill":
+            hint = "读取技能请调用 `skill`，action 用 `read`，name 或 id 填技能名。"
+        elif suggestion:
+            hint = f"请改用 `{suggestion}`。"
+        else:
+            hint = "请从可用工具里选一个正确的名字。"
+        tail = f"可用工具包括：{shown}。" if shown else ""
+        return f"没有名为 `{name}` 的工具，这次调用没有执行。{hint}{tail}"
+    if suggestion == "skill":
+        hint = "To read a skill, call `skill` with action `read` and the skill name or id."
+    elif suggestion:
+        hint = f"Call `{suggestion}` instead."
+    else:
+        hint = "Pick one of the real tool names."
+    tail = f" Tools include: {shown}." if shown else ""
+    return f"There is no tool named `{name}`; this call did not run. {hint}{tail}"
+
+
 @dataclass
 class StepObservation:
     tool: str
@@ -462,6 +546,37 @@ class StepObservation:
 
 
 DEFAULT_PLANNED_IMAGES = 4  # generate_image page clamp (plan_quote.units_of)
+
+
+def _call_args(obs: StepObservation) -> dict:
+    """Decode the JSON arguments stored after the NUL in an observation's call key."""
+    try:
+        value = json.loads(obs.args_key.split("\x00", 1)[1])
+    except (IndexError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _charged_result(obs: StepObservation) -> bool:
+    """Mirror paid_guard.charged: declined, cancelled and failed calls cost nothing."""
+    if obs.failed:
+        return False
+    try:
+        payload = json.loads(obs.result)
+    except (TypeError, ValueError):
+        return True
+    return not (isinstance(payload, dict) and (
+        payload.get("cancelled") or payload.get("error")
+        or payload.get("status") in ("declined", "cancelled", "failed")))
+
+
+def _generate_units(obs: StepObservation) -> int:
+    if obs.tool != "generate_image" or not _charged_result(obs):
+        return 0
+    try:
+        return max(1, int(_call_args(obs).get("count") or 1))
+    except (TypeError, ValueError):
+        return 1
 
 
 @dataclass
@@ -484,6 +599,7 @@ class ProgressTracker:
     all_calls_max: int = 300
     paid_calls: int = 0
     planned_images: int = 0
+    plan_items: list[str] = field(default_factory=list)
     total_calls: int = 0
     gen_calls: int = 0
     # #705: wait_generation is outside the 30 cap but each task gets max 10 min OR 120 polls -> stuck:timeout
@@ -554,18 +670,33 @@ class ProgressTracker:
         return sub
 
     def gen_cap(self) -> int:
-        return (self.planned_images or DEFAULT_PLANNED_IMAGES) + 2
+        per_plan = DEFAULT_PLANNED_IMAGES * max(1, len(self.plan_items))
+        planned = max(self.planned_images, per_plan) if self.plan_items else (
+            self.planned_images or DEFAULT_PLANNED_IMAGES)
+        return planned + 2
 
     def over_budget(self, obs: list[StepObservation]) -> bool:
-        """#705: count this step's calls; True once the run exceeds the tool-call or generate_image cap (never reset)."""
+        """#705/#729: stop at the exact call/image cap, never after cap+1.
+
+        A generate_image call blocked before submit costs nothing and must not consume the run's
+        image budget. Each update_plan item owns the same four-image paid-guard quota, so the run
+        image cap expands with the known plan items instead of stopping multi-item work at six.
+        """
         from .guide import PAID_TOOLS
         self.total_calls += len(obs)
         # #705: paid/external calls AND read-only calls (skill reads, views; not wait_generation polls) share the
         # 30 cap, so a read-only loop (stuck:repeat style) cannot run past it either.
         self.paid_calls += sum(1 for o in obs if o.tool in PAID_TOOLS or _capped_readonly(o.tool))
-        self.gen_calls += sum(1 for o in obs if o.tool == "generate_image")
-        return (self.paid_calls > self.tool_calls_max or self.total_calls > self.all_calls_max
-                or self.gen_calls > self.gen_cap())
+        for o in obs:
+            if o.tool != "update_plan" or o.failed:
+                continue
+            for step in _call_args(o).get("steps") or []:
+                text = str((step or {}).get("text") or "") if isinstance(step, dict) else ""
+                if text and text not in self.plan_items:
+                    self.plan_items.append(text)
+        self.gen_calls += sum(_generate_units(o) for o in obs)
+        return (self.paid_calls >= self.tool_calls_max or self.total_calls >= self.all_calls_max
+                or self.gen_calls >= self.gen_cap())
 
     def wait_timeout(self, obs: list[StepObservation], now: Optional[float] = None) -> bool:
         """#705: True once any task polled by wait_generation passes wait_max_s since its first poll or wait_max_polls."""

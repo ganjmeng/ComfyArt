@@ -68,10 +68,16 @@ def test_buttons_stacked_172x38_not_stretched() -> None:
 
 
 def test_input_card_720_docked_bottom_and_lovart_placeholder() -> None:
-    assert ".ca-agent[data-max] .ca-composer { width: min(720px, calc(100% - 24px));" in SHELL
+    # #763: the 720px cap is one rule shared by the chat column, the composer, and the question dock.
+    width = re.search(
+        r"\.ca-agent\[data-max\] \.ca-chat, \.ca-agent\[data-max\] \.ca-composer, "
+        r"\.ca-agent\[data-max\] \.ca-chat__dock \{([^}]*)\}",
+        SHELL)
+    assert width and "width: min(720px, calc(100% - 24px));" in width.group(1)
     assert ".ca-agent[data-max] .ca-composer { margin-bottom: 8px; }" in SHELL
-    # #650: creator landing input is empty per gold; normal composer keeps the hint
-    assert "placeholder={skillCreator.on ? '' : t('composer.describeYourDesignNeedsFor')}" in COMPOSER
+    # #650: creator landing input is empty. #763: while the @ menu is open the placeholder is the search hint.
+    assert ("placeholder={skillCreator.on ? '' : atOpen ? t('composer.atSearchPlaceholder') : "
+            "t('composer.describeYourDesignNeedsFor')}") in COMPOSER
     assert ZH["composer.describeYourDesignNeedsFor"] == '请描述你的设计需求，"/"使用技能，"@"引用参考'
 
 

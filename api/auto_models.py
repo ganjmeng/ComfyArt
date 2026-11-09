@@ -15,6 +15,23 @@ from pathlib import Path
 log = logging.getLogger("comfyart")
 TABLE = Path(__file__).with_name("auto_models.json")
 
+AUTO_TOKENS = frozenset({"auto", "auto:video"})
+
+
+def named_or_none(model: str | None) -> str | None:
+    """Return a real user-named model id, or None when omitted / explicit Auto (#825).
+
+    Front-end Auto tokens ``auto`` and ``auto:video`` (any case, trimmed) must not win as
+    category ``user`` and skip the task table.
+    """
+    if model is None:
+        return None
+    s = str(model).strip()
+    if not s or s.lower() in AUTO_TOKENS:
+        return None
+    return s
+
+
 # Filler between a negation and the keyword: "no headline", "don't add a title", "不要太小的文字".
 _NEG_EN = re.compile(r"(?:\bno|without|never|not|don'?t|do not)\b(?:\s+\w+){0,4}\s*$")
 # 无 / 别 are single characters and also start unrelated words (无限), so they only count
@@ -25,6 +42,45 @@ _NEG_ZH = re.compile(r"(?:(?:不要|没有|别加|不加|勿)(?:[\u4e00-\u9fff]{
 def load_table() -> dict:
     with open(TABLE, encoding="utf-8") as f:
         return json.load(f)["features"]
+
+
+def skill_pin(skill: str | None) -> dict | None:
+    """#708: a skill's explicitly registered model row (model, resolution, ratio, fallback), or None."""
+    if not skill:
+        return None
+    with open(TABLE, encoding="utf-8") as f:
+        row = (json.load(f).get("skills") or {}).get(str(skill))
+    return dict(row) if isinstance(row, dict) else None
+
+
+def skill_pin_reason(skill: str) -> dict[str, str]:
+    """#825 tip category for a skill pin. Mirrors chatMessage.skillPinnedModel (zh/en)."""
+    s = str(skill)
+    return {"zh": f"{s} 技能固定模型", "en": f"{s} skill pinned model"}
+
+
+def skill_fallback_choice(skill: str) -> dict:
+    """#825: model_choice when a skill's pinned model failed and its registered fallback ran.
+
+    ``model`` is the table fallback (what ran); ``fallback`` is the pinned primary (what failed).
+    Reason is the same skill-pin wording as a successful pin — pill_tooltip adds 「 · 首选…」.
+    """
+    pin = skill_pin(skill)
+    if not pin or not pin.get("model") or not pin.get("fallback"):
+        raise ValueError(f"skill {skill!r} has no registered model/fallback in auto_models.json")
+    fb = pin["fallback"]
+    primary = pin["model"]
+    return {
+        "model": fb,
+        "auto": True,
+        "category": "skill_fallback",
+        "skill": str(skill),
+        "fallback": primary,
+        "edit_model": fb,
+        "resolution": pin.get("resolution"),
+        "ratio": pin.get("ratio"),
+        "reason": skill_pin_reason(skill),
+    }
 
 
 def tool_feature(tool: str) -> str | None:
@@ -104,10 +160,110 @@ def registered(row: dict, ids: set, where: str) -> tuple[str, str | None]:
                             f"registered fallback in auto_models.json; register it or add a \"fallback\" entry")
 
 
+
+def _tip_reason(row: dict) -> dict[str, str]:
+    """Short pill category (tip) when the row defines one; else the long zh/en agent copy."""
+    tip = row.get("tip") if isinstance(row.get("tip"), dict) else None
+    if tip and (tip.get("zh") or tip.get("en")):
+        return {"zh": str(tip.get("zh") or tip.get("en") or ""), "en": str(tip.get("en") or tip.get("zh") or "")}
+    return {"zh": str(row.get("zh") or ""), "en": str(row.get("en") or "")}
+
+
+def runtime_fallback_of(choice: dict | None) -> str | None:
+    """#872: registered runtime fallback id for this Auto choice's table row, or None."""
+    if not isinstance(choice, dict) or not choice.get("auto"):
+        return None
+    feature = None
+    # Infer feature from category / model path is fragile — caller passes row via table_row_fallback
+    return None
+
+
+def table_row_for_choice(feature: str, choice: dict) -> dict | None:
+    """The auto_models.json row that produced this choice (category or masked), or None."""
+    if not isinstance(choice, dict):
+        return None
+    spec = load_table().get(feature) or {}
+    cat_id = choice.get("category")
+    if cat_id == "masked":
+        row = spec.get("masked")
+        return dict(row) if isinstance(row, dict) else None
+    for c in spec.get("categories") or []:
+        if c.get("id") == cat_id:
+            return dict(c)
+    return None
+
+
+def registered_runtime_fallback(feature: str, choice: dict, ids: set) -> str | None:
+    """#872: explicit row ``fallback`` when the primary is in the catalog (runtime error path)."""
+    row = table_row_for_choice(feature, choice)
+    if not row:
+        return None
+    fb = row.get("fallback")
+    if not fb:
+        return None
+    alts = [fb] if isinstance(fb, str) else list(fb)
+    primary = choice.get("model") or row.get("model")
+    for alt in alts:
+        if alt and alt in ids and alt != primary:
+            return alt
+    return None
+
+
+# Kinds that may switch to the row's registered Flare fallback (#872 tester).
+FALLBACK_ELIGIBLE_KINDS = frozenset({"timeout", "failed", "modelOffline", "network"})
+# Client / account / policy errors: surface as-is, never Flare.
+FALLBACK_BLOCKED_KINDS = frozenset({
+    "insufficientCredit", "moderation", "invalidKey", "rateLimit",
+    "loraUnsupported", "loraUrl", "loraTooMany", "svgEdit", "svgRejected",
+    "gifStillUnsupported", "unregisteredModel", "confirm",
+})
+
+
+def fallback_kind_eligible(kind: str | None, status: int | None = None) -> bool:
+    """True when a primary failure may retry once on the row's registered fallback."""
+    if kind in FALLBACK_BLOCKED_KINDS:
+        return False
+    # Bad-param / client 4xx (except kinds already listed) never Flare
+    if status is not None and 400 <= int(status) < 500:
+        return False
+    if kind in FALLBACK_ELIGIBLE_KINDS:
+        return True
+    if status is not None and int(status) >= 500:
+        return True
+    if kind == "failed" or kind is None:
+        return True
+    return False
+
+
+def table_runtime_fallback_choice(feature: str, primary: dict, failed: str, ids: set) -> dict | None:
+    """#872: like skill_fallback_choice — preferred failed, registered fallback runs; reason keeps tip for pill."""
+    if not primary or failed != primary.get("model"):
+        return None
+    fb = registered_runtime_fallback(feature, primary, ids)
+    if not fb or fb == failed:
+        return None
+    row = table_row_for_choice(feature, primary) or {}
+    log.warning("#872: auto row %s: %s failed; falling back to registered %s",
+                primary.get("category"), failed, fb)
+    out = {
+        "model": fb,
+        "auto": True,
+        "category": primary.get("category"),
+        "fallback": failed,
+        "reason": _tip_reason(row) if row.get("tip") or row.get("zh") else dict(primary.get("reason") or {}),
+    }
+    if primary.get("category") == "masked" or "edit" in str(fb):
+        # edit path callers may set edit_model
+        pass
+    return out
+
+
 def choose(feature: str, prompt: str, named: str | None, catalog: dict, masked: bool = False) -> dict:
     """catalog: load_config() result. Returns {model, auto, category, reason: {zh, en}}.
-    masked (#45): the edit has a selection or brushed mask -> the table's 'masked' row (user-named still wins)."""
+    masked (#45): the edit has a selection or brushed mask -> the table's 'masked' row (user-named still wins).
+    #825: ``auto`` / ``auto:video`` are not user picks — they consult the table like an omitted model."""
     cfg = catalog["features"][feature]
+    named = named_or_none(named)
     if named:
         return {"model": named, "auto": False, "category": "user",
                 "reason": {"zh": "你指定了这个模型", "en": "you named this model"}}
@@ -116,7 +272,7 @@ def choose(feature: str, prompt: str, named: str | None, catalog: dict, masked: 
     ids = {m["id"] for m in cfg["models"]}
     if row:
         model, failed = registered(row, ids, f"{feature}/masked")
-        out = {"model": model, "auto": True, "category": "masked", "reason": {"zh": row["zh"], "en": row["en"]}}
+        out = {"model": model, "auto": True, "category": "masked", "reason": _tip_reason(row)}
         return {**out, "fallback": failed} if failed else out
     text = _norm(prompt or "")
     cat = next((c for c in spec["categories"] if _matches(c, text)), None)
@@ -127,13 +283,130 @@ def choose(feature: str, prompt: str, named: str | None, catalog: dict, masked: 
                 "reason": {"zh": f"{cat['zh']}，{failed} 未登记，按登记的备选改用 {model}",
                            "en": f"{cat['en']}; {failed} is not registered, so its registered fallback {model} was used"}}
     if cat:
-        return {"model": cat["model"], "auto": True, "category": cat["id"], "reason": {"zh": cat["zh"], "en": cat["en"]}}
+        return {"model": cat["model"], "auto": True, "category": cat["id"], "reason": _tip_reason(cat)}
     return {"model": cfg["default"], "auto": True, "category": "default", "reason": dict(spec["default"]), "plain": True}
 
 
 def note(choice: dict) -> str:
     """One line the agent repeats in its reply: 用了 X，因为 Y / used X because Y."""
     m, r = choice["model"], choice["reason"]
+    failed = choice.get("fallback")
+    # #872 tip-style rows (poster_text / masked / skill_fallback): name both models.
+    # #236 category "fallback" already embeds the failure in reason — keep the old sentence.
+    if failed and choice.get("auto") and choice.get("category") not in (None, "fallback", "default", "user"):
+        return (f"用了 {m}，因为首选 {failed} 失败改用；{r['zh']}。"
+                f"/ Used {m} because preferred {failed} failed so the registered fallback ran; {r['en']}.")
     if choice.get("plain"):
         return f"用了 {m}，{r['zh']}。/ Used {m}, {r['en']}."
     return f"用了 {m}，因为{r['zh']}。/ Used {m} because {r['en']}."
+
+
+# Short labels for the generation-card Auto pill (#825). Prefer catalog label when the UI has it;
+# these fallbacks keep tooltips readable without loading the WaveSpeed catalog.
+_SHORT = {
+    "openai/gpt-image-2.6-sunburst/text-to-image": "GPT Image 2.6 Sunburst",
+    "openai/gpt-image-2.6-sunburst/edit": "GPT Image 2.6 Sunburst",
+    "openai/gpt-image-2.6-flare/text-to-image": "GPT Image 2.6 Flare",
+    "openai/gpt-image-2.6-flare/edit": "GPT Image 2.6 Flare",
+    "openai/gpt-image-2.5-sunburst/edit": "GPT Image 2.5 Sunburst",
+    "openai/gpt-image-2.5-flare/text-to-image": "GPT Image 2.5 Flare",
+    "openai/gpt-image-2.5-flare/edit": "GPT Image 2.5 Flare",
+    "google/nano-banana-2.1/text-to-image": "Nano Banana 2.1",
+    "google/nano-banana-2.1/edit": "Nano Banana 2.1",
+    "google/nano-banana-pro/edit": "Nano Banana Pro",
+    "bytedance/seedream-v5.0-pro": "Seedream 5.0 Pro",
+    "bytedance/seedream-v5.0-pro/edit": "Seedream 5.0 Pro",
+    "recraft-ai/recraft-v3": "Recraft V3",
+}
+
+
+_ACRONYMS = frozenset({"gpt", "ai", "ui", "io", "api", "cpu", "gpu", "vae"})
+
+
+def _humanize_id_segment(seg: str) -> str:
+    """Hyphen/underscore → spaces; capitalize words but keep known acronyms (GPT not Gpt)."""
+    words = seg.replace("-", " ").replace("_", " ").split()
+    out: list[str] = []
+    for w in words:
+        low = w.lower()
+        if low in _ACRONYMS:
+            out.append(low.upper())
+        elif w:
+            out.append(w[0].upper() + w[1:])
+        else:
+            out.append(w)
+    return " ".join(out)
+
+
+def short_name(model: str | None) -> str:
+    """Human short name for a WaveSpeed model id (pill text)."""
+    if not model:
+        return ""
+    if model in _SHORT:
+        return _SHORT[model]
+    # owner/name[/variant] → slug segment, humanized without mangling GPT→Gpt
+    parts = [p for p in str(model).split("/") if p]
+    if len(parts) >= 2:
+        return _humanize_id_segment(parts[-2])
+    return str(model)
+
+
+def reason_text(choice: dict, lang: str = "zh") -> str:
+    """Locale string from the routing table reason (no separate frontend copy)."""
+    r = choice.get("reason") or {}
+    if not isinstance(r, dict):
+        return str(r or "")
+    key = "en" if str(lang).lower().startswith("en") else "zh"
+    return str(r.get(key) or r.get("zh") or r.get("en") or "")
+
+
+def pill_label(choice: dict, *, catalog_label: str | None = None) -> str | None:
+    """Visible pill text. Auto → 'Auto · <name>'; manual → model name only; None when no model yet.
+
+    Before the actual model is known, callers should pass choice={'auto': True} with no model → 'Auto'.
+    Legacy cards with neither model nor auto → None (render nothing).
+    """
+    if not isinstance(choice, dict):
+        return None
+    model = choice.get("model")
+    auto = bool(choice.get("auto"))
+    name = (catalog_label or "").strip() or short_name(model)
+    if auto and not model:
+        return "Auto"
+    if not model and not auto:
+        return None
+    if auto:
+        # fallback used: still Auto prefix; tooltip explains 首选 X 失败
+        return f"Auto · {name}" if name else "Auto"
+    return name or None
+
+
+# Mirrors src/locales chatMessage.autoPickedPrefix (i18n owns the string; keep in sync).
+_AUTO_PICKED_PREFIX = {"zh": "自动选择：", "en": "Auto-picked: "}
+
+
+def pill_tooltip(choice: dict, lang: str = "zh") -> str | None:
+    """Hover/tap reason. Manual picks: None (UI shows no reason popup).
+
+    Auto (table): i18n prefix + table category.
+    Skill pin / skill fallback: NO auto-picked prefix — skill wording only.
+    Fallback (any): ``{category} · 首选 X 失败，改用 Y`` (preferred = choice['fallback']).
+    """
+    if not isinstance(choice, dict) or not choice.get("auto"):
+        return None
+    en = str(lang).lower().startswith("en")
+    key = "en" if en else "zh"
+    skillish = bool(choice.get("skill")) or choice.get("category") in ("skill", "skill_fallback")
+    prefix = "" if skillish else _AUTO_PICKED_PREFIX[key]
+    category = reason_text(choice, key)
+    failed = choice.get("fallback")
+    model = choice.get("model")
+    if failed and model:
+        if en:
+            body = f"{category} · Preferred {short_name(failed)} failed, used {short_name(model)}"
+        else:
+            body = f"{category} · 首选 {short_name(failed)} 失败，改用 {short_name(model)}"
+        return f"{prefix}{body}".strip()
+    if not category:
+        return None
+    return f"{prefix}{category}"

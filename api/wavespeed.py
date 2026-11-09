@@ -26,7 +26,7 @@ import aiohttp
 import folder_paths
 from aiohttp import web
 
-from . import gen_ledger, refprep
+from . import gen_ledger, gif_image, refprep, svg_image
 from ._common import app_path, error, json_body, routes
 
 log = logging.getLogger("comfyart.wavespeed")
@@ -43,7 +43,19 @@ CURATED = os.path.join(os.path.dirname(__file__), "curated_models.json")
 CATALOG_TTL = 24 * 3600
 POLL_MIN = 2.0
 POLL_MAX_BACKOFF = 15.0
+# #873: image jobs cap at 10 min total; video/audio/3d keep the longer window.
+IMAGE_JOB_TIMEOUT = float(os.environ.get("WAVESPEED_IMAGE_JOB_TIMEOUT") or 10 * 60)
 JOB_TIMEOUT = float(os.environ.get("WAVESPEED_JOB_TIMEOUT") or 30 * 60)
+
+
+def _job_timeout_for(job: dict) -> float:
+    """Wall-clock cap for one WaveSpeed prediction (from submit / resume)."""
+    feature = str(job.get("feature") or "")
+    if feature and feature_kind(feature) in ("image", "image_tools"):
+        return IMAGE_JOB_TIMEOUT
+    return JOB_TIMEOUT
+
+
 ANNOTATED = re.compile(r"^(.+) \[(input|output|temp)\]$")
 SUBFOLDER = "wavespeed"
 
@@ -81,12 +93,16 @@ def apply_catalog_price_fixes(models: dict) -> dict:
 
 
 class WaveSpeedError(Exception):
-    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False, charged: float | None = None):
+    def __init__(self, message: str, status: int = 502, confirm: float | None = None, seg_splits: int | None = None, seg_capped: bool = False, estimate: bool = False, tier: str = "", kind: str | None = None, unpriced: bool = False, charged: float | None = None, gif_note: str = "", model: str = "", gif: dict | None = None, model_choice: dict | None = None):
         super().__init__(message)
         self.charged = charged  # #174: kind 'timeout' — the quoted price that may have been charged (None: unknown)
         self.unpriced = unpriced  # #159: no price for the submitted tier; the dialog shows no amount
         self.estimate = estimate  # #159: the price API failed; the dialog says 「估算价」/'Estimated'
         self.tier = tier  # #159: the tier that will be submitted, e.g. '480p · 5s'
+        self.gif_note = gif_note  # #825: bilingual still→GIF / frame note for the confirm dialog
+        self.gif = gif  # effective frame_count / frame_duration_ms already on this request, plus an asked value only when one was sent
+        self.model = model  # #825: the id that will be submitted, so confirm matches the route
+        self.model_choice = model_choice  # #825: Auto · reason payload for the gen card
         self.status = status
         # #155: what the UI shows instead of the raw WaveSpeed text (insufficientCredit, moderation, rateLimit, invalidKey, failed)
         self.kind = kind
@@ -217,6 +233,11 @@ def error_kind(status: int | None, code=None, msg: str = "") -> str:
         return "rateLimit"
     if status == 401:
         return "invalidKey"
+    # #872: model offline / unavailable — eligible for registered Flare fallback
+    if "offline" in low or "model is unavailable" in low or "model unavailable" in low:
+        return "modelOffline"
+    if status is not None and status >= 500:
+        return "failed"  # server 5xx → fallback-eligible
     return "failed"
 
 
@@ -291,13 +312,23 @@ def _caps(schema: dict) -> dict:
             out[k + "s"] = props[k]["enum"]
     if props.get("quality", {}).get("enum"):
         out["qualities"] = props["quality"]["enum"]
+    if props.get("complexity", {}).get("enum"):
+        out["complexities"] = props["complexity"]["enum"]  # #825: low/medium/high, not a price pin
+    if props.get("output_format", {}).get("enum"):
+        out["output_formats"] = props["output_format"]["enum"]
+    for key in ("frame_count", "frame_duration_ms"):
+        spec = props.get(key) or {}
+        rng = {dst: int(spec[src]) for src, dst in (("minimum", "min"), ("maximum", "max"), ("default", "default"))
+               if isinstance(spec.get(src), (int, float)) and not isinstance(spec.get(src), bool)}
+        if rng:
+            out[key] = rng
     if "images" in props:
         out["max_images"] = props["images"].get("maxItems")
     if "loras" in props:
         out["max_loras"] = (props["loras"] or {}).get("maxItems")  # #202
     if (rng := duration_range(props)):
         out["duration_range"] = rng
-    defaults = {k: props[k]["default"] for k in ("aspect_ratio", "resolution", "duration", "quality") if "default" in (props.get(k) or {})}
+    defaults = {k: props[k]["default"] for k in ("aspect_ratio", "resolution", "duration", "quality", "complexity", "output_format") if "default" in (props.get(k) or {})}
     if defaults:
         out["defaults"] = defaults
     return out
@@ -526,21 +557,64 @@ def model_details(grouped: dict, model_id: str) -> dict:
         out["duration_range"] = m["duration_range"]  # #509: generate_music clamps duration into it
     if m.get("qualities"):
         out["tiers"] = m["qualities"]
+    for k in ("complexities", "output_formats", "frame_count", "frame_duration_ms"):
+        if m.get(k):
+            out[k] = m[k]
     return out
 
 
-def resolve_model(feature: str, model: str | None) -> str:
+def _raw_feature_ids(feature: str) -> set[str]:
+    """Ids in wavespeed_models.json before the Lovart dropdown narrows the list."""
+    with open(CONFIG, encoding="utf-8") as f:
+        raw = json.load(f)
+    models = ((raw.get("features") or {}).get(feature) or {}).get("models") or []
+    return {m["id"] for m in models if isinstance(m, dict) and m.get("id")}
+
+
+def resolve_model(feature: str, model: str | None, *, size_lock: bool = False) -> str:
     config = load_config()
     cfg = config["features"].get(feature)
     if not cfg or feature in config.get("pending_features", []):
         raise WaveSpeedError(f"{feature or 'this tool'} is not available in cloud mode yet", 400)
-    if not model:
+    if not model or model in ("auto", "auto:video"):
         return cfg["default"]
-    if model not in [m["id"] for m in cfg["models"]]:
-        valid = ", ".join(m["id"] for m in cfg["models"])
+    ids = [m["id"] for m in cfg["models"]]
+    if model not in ids:
+        # A skill size lock may name a catalog model that is not on the Lovart dropdown.
+        # It stays out of the picker. Any other unknown id is still rejected.
+        if size_lock and model in _raw_feature_ids(feature):
+            return model
+        valid = ", ".join(ids)
         raise WaveSpeedError(f"unknown model {model!r} for {feature}; valid ids: {valid} (default {cfg['default']})", 400)
     return model
 
+
+
+def resolve_model_choice(feature: str, inputs: dict) -> tuple[str, dict | None]:
+    """#825: Auto / omitted model → table choose(); named model → user choice with backend reason.
+    Returns (model_id, model_choice_dict_or_None). structure_control / custom keep prior resolve_model path.
+    """
+    from .auto_models import choose, named_or_none, note
+    picked = inputs.get("model")
+    if feature == "structure_control" and not picked:
+        picked = _structure_pick(inputs)
+        model = resolve_model(feature, picked, size_lock=bool(inputs.get("size_lock")))
+        return model, None
+    # Features without an auto_models table row fall back to resolve_model only.
+    from .auto_models import load_table
+    if feature not in load_table():
+        model = resolve_model(feature, picked, size_lock=bool(inputs.get("size_lock")))
+        return model, None
+    named = named_or_none(picked if isinstance(picked, str) else None)
+    masked = bool(inputs.get("mask") or inputs.get("mask_image") or inputs.get("region"))
+    prompt = str(inputs.get("prompt") or "")
+    choice = choose(feature, prompt, named, load_config(), masked=masked)
+    # resolve_model validates / applies size_lock; prefer choice model id
+    model = resolve_model(feature, choice.get("model"), size_lock=bool(inputs.get("size_lock")))
+    if model != choice.get("model"):
+        choice = {**choice, "model": model}
+    choice = {**choice, "note": note(choice)}
+    return model, choice
 
 # custom_workflow (cloud): a feature can run any WaveSpeed model; "fields" maps ComfyArt's values
 # (the upstream @markers) onto that model's request fields.
@@ -982,7 +1056,9 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
             payload["aspect_ratio"] = _nearest(props["aspect_ratio"]["enum"], w / h)
         if props.get("resolution", {}).get("enum"):
             payload["resolution"] = _resolution(props["resolution"]["enum"], max(int(w), int(h)))
-    elif inputs.get("ratio") and props.get("aspect_ratio", {}).get("enum"):
+    if inputs.get("resolution") and str(inputs["resolution"]) in (props.get("resolution", {}).get("enum") or []):
+        payload["resolution"] = str(inputs["resolution"])  # #708: an explicit tier (skill pin) wins over the size guess
+    if not (w and h) and inputs.get("ratio") and props.get("aspect_ratio", {}).get("enum"):
         a, b = str(inputs["ratio"]).split(":")
         payload["aspect_ratio"] = _nearest(props["aspect_ratio"]["enum"], float(a) / float(b))
     await _media_fields(session, props, inputs, payload)
@@ -1018,12 +1094,54 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
         payload["negative_prompt"] = negative  # #201: only models whose schema takes it
     if loras := lora_payload(props, inputs):
         payload["loras"] = loras  # #202
-    if inputs.get("png") and "png" in (props.get("output_format", {}).get("enum") or []):
+    gif = gif_image.requests_gif(inputs) or str(payload.get("output_format") or "").lower() == "gif"
+    if inputs.get("png") and not gif and not svg_image.requests_svg(inputs) and "png" in (props.get("output_format", {}).get("enum") or []):
         payload["output_format"] = "png"
+    _finalize_gif(props, payload)
+    _finalize_svg(props, payload, inputs)
     missing = [k for k in schema.get("required") or [] if k not in payload]
     if missing:
         raise WaveSpeedError(f"this model needs {', '.join(missing)}", 400)
     return payload
+
+
+def _finalize_svg(props: dict, payload: dict, inputs: dict) -> None:
+    """#826: SVG is text-to-image on a schema that lists svg. Edit schemas raise. Quality is not pinned here."""
+    if not svg_image.requests_svg(inputs) and str(payload.get("output_format") or "").lower() != "svg":
+        return
+    blocked = svg_image.block_reason(inputs if svg_image.requests_svg(inputs) else {**inputs, "output_format": "svg"})
+    if blocked:
+        raise WaveSpeedError(blocked["message"], 400, kind=blocked["kind"])
+    enum = (props.get("output_format") or {}).get("enum") or []
+    if enum and not svg_image.has_svg({"properties": props}):
+        raise WaveSpeedError(svg_image.USER["edit"]["zh"] + " / " + svg_image.USER["edit"]["en"], 400, kind="svgEdit")
+    payload["output_format"] = "svg"
+    payload.pop("frame_count", None)
+    payload.pop("frame_duration_ms", None)
+    if "num_images" in props:
+        payload["num_images"] = 1
+
+
+def _finalize_gif(props: dict, payload: dict) -> None:
+    """#825: send gif frames only when the schema accepts them, clamped to the documented range.
+    A format the schema does not list is dropped (2.5 has no gif). Quality and complexity stay as the caller set them."""
+    fmt = payload.get("output_format")
+    enum = (props.get("output_format") or {}).get("enum") or []
+    if fmt and enum and fmt not in enum:
+        payload.pop("output_format", None)
+        fmt = None
+    if str(fmt or "").lower() != "gif":
+        payload.pop("frame_count", None)
+        payload.pop("frame_duration_ms", None)
+        return
+    if "frame_count" in props:
+        payload["frame_count"] = gif_image.clamp_int(payload.get("frame_count"), gif_image.FRAME_COUNT)
+    else:
+        payload.pop("frame_count", None)
+    if "frame_duration_ms" in props:
+        payload["frame_duration_ms"] = gif_image.clamp_int(payload.get("frame_duration_ms"), gif_image.FRAME_MS)
+    else:
+        payload.pop("frame_duration_ms", None)
 
 
 _submits: list[float] = []
@@ -1053,7 +1171,7 @@ PREFS_FILE = "wavespeed_prefs.json"
 QUOTE_TTL = 300.0
 _quotes: dict[str, tuple[float, float]] = {}
 # scalar fields that change a model's price; media and prompts never do
-_PRICE_FIELDS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "num_images", "quality", "thinking")
+_PRICE_FIELDS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "num_images", "quality", "thinking", "output_format", "frame_count", "frame_duration_ms")
 
 
 # #397: confirm line is stored as integer UI credits (1 credit = $0.01). Legacy confirm_usd
@@ -1078,7 +1196,7 @@ def valid_confirm_credits(v) -> bool:
 
 def migrate_confirm_prefs(data: dict) -> tuple[int, bool]:
     """Return (credits, dirty). dirty=True when a legacy confirm_usd value must be rewritten."""
-    from ComfyArt.bot.run_budget import ui_credits
+    from ..bot.run_budget import ui_credits
     if not isinstance(data, dict):
         return DEFAULT_CONFIRM_CREDITS, False
     if "confirm_credits" in data and valid_confirm_credits(data["confirm_credits"]):
@@ -1177,11 +1295,39 @@ def _is_default_tier(props: dict, priced: dict) -> bool:
     return True
 
 
+def _gif_confirm(inputs: dict) -> dict | None:
+    """Frame count and duration already written onto this request. Not a second clamp."""
+    if not inputs.get("gif_route"):
+        return None
+    params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+    count, ms = params.get("frame_count"), params.get("frame_duration_ms")
+    if not isinstance(count, int) or isinstance(count, bool) or not isinstance(ms, int) or isinstance(ms, bool):
+        return None
+    out = {"frame_count": count, "frame_duration_ms": ms}
+    asked = inputs.get("gif_asked_frame_count")
+    asked_ms = inputs.get("gif_asked_frame_duration_ms")
+    if isinstance(asked, int) and not isinstance(asked, bool):
+        out["asked_frame_count"] = asked
+    if isinstance(asked_ms, int) and not isinstance(asked_ms, bool):
+        out["asked_frame_duration_ms"] = asked_ms
+    return out
+
+
 def tier_label(priced: dict) -> str:
-    """Short tier for the confirm dialog, e.g. '480p · 5s'."""
+    """Short tier for the confirm dialog, e.g. '480p · 5s' or '1k · GIF · 9f · 200ms'."""
     parts = [str(priced["resolution"])] if priced.get("resolution") else []
     if priced.get("duration"):
         parts.append(f"{priced['duration']}s")
+    fmt = str(priced.get("output_format") or "").lower()
+    if fmt == "svg":
+        parts.append("SVG")
+        parts.append("n=1")
+    elif fmt == "gif":
+        parts.append("GIF")
+        if priced.get("frame_count") not in (None, ""):
+            parts.append(f"{priced['frame_count']}f")
+        if priced.get("frame_duration_ms") not in (None, ""):
+            parts.append(f"{priced['frame_duration_ms']}ms")
     return " · ".join(parts)
 
 
@@ -1247,7 +1393,16 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     submitted tier is the schema's default tier (the tier base_price is for), labelled 「估算价」/'Estimated'; otherwise
     (None, 'unpriced'): no amount is shown and the job always asks before it is submitted."""
     priced = await priced_inputs(model, inputs)
-    body = {"model_id": model, "inputs": priced}
+    if svg_image.requests_svg(inputs) or str(priced.get("output_format") or "").lower() == "svg":
+        # Local still cell + $0.02. Do not call the price API and do not submit.
+        quality = str(priced.get("quality") or "medium")
+        resolution = str(priced.get("resolution") or "1k")
+        stub = svg_image.local_usd(model, quality, resolution)
+        if stub is None:
+            return None, "unpriced"
+        return float(stub), "estimate"
+    # #825: frame_count / frame_duration_ms are quoted on the confirm line but not sent to the price API.
+    body = {"model_id": model, "inputs": gif_image.billable(priced)}
     ck = json.dumps(body, sort_keys=True)
     hit = _quotes.get(ck)
     if hit and time.time() - hit[1] < QUOTE_TTL:
@@ -1264,6 +1419,12 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
             return float(price), "quote"
     except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
         pass
+    if model in gif_image.GIF_T2I:
+        # Published 2.6 table when the price API is down. GIF uses the still cell; frames are not a multiplier.
+        # Unset quality/resolution are the schema defaults (medium / 1k), which #189 also leaves unpinned.
+        stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"))
+        if stub is not None:
+            return float(stub), "estimate"
     meta = (await catalog()).get(model) or {}
     base = base_price_of(model, meta)
     if model in DURATION_BILLED and isinstance(base, (int, float)) and not isinstance(base, bool) and priced.get("duration"):
@@ -1276,8 +1437,22 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
     return None, "unpriced"
 
 
+async def route_gif_live(inputs: dict) -> dict:
+    """#825: pure text GIF uses the catalog schema. A still is refused before catalog, quote, or POST."""
+    if gif_image.requests_gif(inputs) and gif_image.has_still(inputs):
+        raise WaveSpeedError(gif_image.refusal_text(), 400, kind="gifStillUnsupported")
+    if inputs.get("custom") or not gif_image.requests_gif(inputs):
+        return inputs
+    try:
+        cat = await catalog()
+    except (WaveSpeedError, aiohttp.ClientError, asyncio.TimeoutError, AttributeError):
+        cat = {}
+    return gif_image.route_gif(inputs, {mid: _schema(m) for mid, m in (cat or {}).items()})
+
+
 async def estimate(inputs: dict) -> dict:
     """Estimated total for a job; a storyboard is priced as the sum of its scenes."""
+    model_choice = None
     if isinstance(inputs.get("scenes"), list):
         scenes = [sc for sc in inputs["scenes"] if isinstance(sc, dict)]
         base = {k: v for k, v in inputs.items() if k != "scenes"}
@@ -1300,11 +1475,15 @@ async def estimate(inputs: dict) -> dict:
             inputs = region_inputs(inputs, (await clipped_paste(inputs))[1])
         if inputs.get("feature") == "mockup_surface":
             return {"price": None, "currency": "USD", "source": "none", "confirm_usd": confirm_usd(), "confirm": confirm_usd() == 0}
+        inputs = await route_gif_live(inputs)
+        routed = svg_image.route(inputs)
+        if isinstance(routed, dict) and routed.get("svg_error"):
+            err = routed["svg_error"]
+            return {"price": None, "currency": "USD", "source": "rejected", "confirm_usd": confirm_usd(),
+                    "confirm": False, "error": err["message"], "kind": err["kind"]}
+        inputs = routed
         feature = feature_of(str(inputs.get("feature") or ""))
-        picked = inputs.get("model")
-        if feature == "structure_control" and not picked:
-            picked = _structure_pick(inputs)
-        model = resolve_model(feature, picked)
+        model, model_choice = resolve_model_choice(feature, inputs)
         price, source = await quote(model, inputs)
         tier = tier_label(await priced_inputs(model, inputs))
         if feature == "structure_control" and price is not None:
@@ -1312,10 +1491,33 @@ async def estimate(inputs: dict) -> dict:
             price = None if extra is None else round(float(price) + extra, 6)
     out = {"price": price, "currency": "USD", "source": source, "confirm_usd": confirm_usd(),
            "confirm": needs_confirm(price) if price is not None else (source == "unpriced" or confirm_usd() == 0)}
+    if not isinstance(inputs.get("scenes"), list):
+        out["model"] = model  # #825: quote names the same id submit will POST
+        if model_choice:
+            out["model_choice"] = model_choice
     if not isinstance(inputs.get("scenes"), list) and tier:
         out["tier"] = tier
     if not isinstance(inputs.get("scenes"), list) and feature == "transcribe" and duration_estimated(model, inputs):
         out["duration_estimated"] = True  # #185: 「读不到音频时长，按 60 秒估算」
+    if inputs.get("gif_route"):
+        params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+        out["gif_route"] = inputs["gif_route"]
+        out["gif_note"] = inputs.get("gif_note") or ""
+        out["gif"] = {"output_format": "gif", "frame_count": params.get("frame_count"),
+                      "frame_duration_ms": params.get("frame_duration_ms"), "priced_as": "still"}
+    if inputs.get("svg_route"):
+        params = inputs.get("params") if isinstance(inputs.get("params"), dict) else {}
+        priced = await priced_inputs(model, inputs)
+        out["svg_route"] = inputs["svg_route"]
+        out["svg_note"] = inputs.get("svg_note") or ""
+        out["tier"] = tier_label({**priced, "output_format": "svg"})
+        out["svg"] = {
+            "output_format": "svg", "n": 1, "model": model, "feature": "text_to_image",
+            "addon_usd": svg_image.SVG_ADDON_USD, "priced_as": "still_plus_0.02",
+            "quality": str(priced.get("quality") or "medium"),
+            "resolution": str(priced.get("resolution") or "1k"),
+            "quality_sent": params.get("quality") not in (None, ""),
+        }
     return out
 
 
@@ -1574,14 +1776,18 @@ async def submit(inputs: dict) -> str:
         return await _submit_scenes(inputs)
     if inputs.get("feature") == "mockup_surface":
         return await _submit_surface(inputs)
+    inputs = await route_gif_live(dict(inputs))
+    routed = svg_image.route(inputs)
+    if isinstance(routed, dict) and routed.get("svg_error"):
+        err = routed["svg_error"]
+        raise WaveSpeedError(err["message"], 400, kind=err["kind"])
+    inputs = routed
     feature = feature_of(str(inputs.get("feature") or ""))
     if inputs.get("custom"):
         model = custom_model(inputs.get("model"), await catalog())
+        model_choice = None
     else:
-        picked = inputs.get("model")
-        if feature == "structure_control" and not picked:
-            picked = _structure_pick(inputs)
-        model = resolve_model(feature, picked)
+        model, model_choice = resolve_model_choice(feature, inputs)
     _check_limits()
     meta = (await catalog()).get(model)
     if meta and needs_voice_sample(model, feature, _schema(meta), inputs):
@@ -1596,14 +1802,16 @@ async def submit(inputs: dict) -> str:
         if feature == "structure_control" and price is not None:
             extra = await _steps_price(inputs)
             price = None if extra is None else round(float(price) + extra, 6)
+        gif_note = inputs.get("gif_note") if isinstance(inputs.get("gif_note"), str) else ""
+        gif_body = _gif_confirm(inputs)
         if price is not None and needs_confirm(price):
             # expensive job: the page asks and resubmits with confirmed=true; #159 an estimate is labelled as one
             raise WaveSpeedError(f"{model} costs about ${price} per run; confirm to continue", 409, confirm=float(price), seg_splits=splits, seg_capped=capped,
-                                 estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)))
+                                 estimate=source == "estimate", tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
         if source == "unpriced":
             # #159: no price for the submitted tier: never guess one, always ask (no amount, the tier is named)
             raise WaveSpeedError(f"{model}: no price for this tier; confirm to continue", 409, unpriced=True,
-                                 tier=tier_label(await priced_inputs(model, inputs)))
+                                 tier=tier_label(await priced_inputs(model, inputs)), gif_note=gif_note, model=model, gif=gif_body, model_choice=model_choice)
     async with aiohttp.ClientSession(headers=_headers()) as session:
         payload = await build_payload(session, _schema(meta), await _prepare(session, model, inputs), model)
         _submits.append(time.time())
@@ -1624,6 +1832,18 @@ async def submit(inputs: dict) -> str:
     gen_ledger.record_submit(task, "wavespeed", model, feature, quoted)
     _jobs[task] = {"model": model, "feature": feature, "started": time.time(), "next_poll": time.time() + POLL_MIN,
                    "inputs": _price_inputs(inputs), "quoted": quoted}
+    if model_choice:
+        _jobs[task]["model_choice"] = model_choice
+    if svg_image.requests_svg(inputs):
+        _jobs[task]["svg"] = True
+    if inputs.get("size_lock"):
+        # The provider payload is built from the schema only, so this flag stays on the job.
+        _jobs[task]["size_lock"] = True
+        try:
+            w, h = int(inputs.get("width")), int(inputs.get("height"))
+        except (TypeError, ValueError):
+            w = h = 0
+        _jobs[task]["expect_pixels"] = (w, h) if w > 0 and h > 0 else None
     log.info("WaveSpeed task %s submitted (%s)", task, model)
     await _record_submit_usage(task, model, feature, inputs)  # #498 Usage ledger (submit quote)
     return task
@@ -2047,18 +2267,43 @@ def _ext(url: str, default: str) -> str:
     return ext if 1 < len(ext) <= 5 else default
 
 
+def output_ext(url: str, data: bytes = b"", content_type: str = "") -> str:
+    """#825: a GIF body is saved as .gif even when the CDN url has no extension.
+    #826: SVG bytes are named .svg. Admission still decides whether they may be stored."""
+    if svg_image.looks_like_svg(data, content_type, url):
+        return ".svg"
+    if data.startswith((b"GIF87a", b"GIF89a")) or "image/gif" in (content_type or "").lower():
+        return ".gif"
+    return _ext(url, ".png")
+
+
 async def _download(session: aiohttp.ClientSession, task: str, index: int, url: str) -> dict:
     root = os.path.abspath(folder_paths.get_output_directory())
-    filename = f"ws_{task[:12]}_{index}{_ext(url, '.png')}"
+    async with session.get(url) as res:
+        if res.status >= 500 or res.status == 429:
+            raise _Transient(f"download HTTP {res.status}")
+        if res.status >= 400:
+            raise WaveSpeedError(f"downloading WaveSpeed output failed ({res.status})")
+        data = await res.read()
+        ctype = res.headers.get("Content-Type", "")
+    svg_job = bool((_jobs.get(task) or {}).get("svg"))
+    if svg_job or svg_image.looks_like_svg(data, ctype, url):
+        verdict = svg_image.isolated_admit(data)
+        if verdict.status == "rejected" or verdict.download is None or verdict.preview_png is None:
+            raise WaveSpeedError(verdict.message, 400, kind=verdict.kind or "svgRejected")
+        filename = f"ws_{task[:12]}_{index}.svg"
+        path = os.path.join(root, SUBFOLDER, filename)
+        preview = f"ws_{task[:12]}_{index}.preview.png"
+        if not os.path.isfile(path):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            _write(path, verdict.download)
+            _write(os.path.join(root, SUBFOLDER, preview), verdict.preview_png)
+        return {"filename": filename, "subfolder": SUBFOLDER, "type": "output",
+                "svg_preview": preview, "svg_state": verdict.status, "svg_message": verdict.message}
+    filename = f"ws_{task[:12]}_{index}{output_ext(url, data, ctype)}"
     path = os.path.join(root, SUBFOLDER, filename)
     if not os.path.isfile(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        async with session.get(url) as res:
-            if res.status >= 500 or res.status == 429:
-                raise _Transient(f"download HTTP {res.status}")
-            if res.status >= 400:
-                raise WaveSpeedError(f"downloading WaveSpeed output failed ({res.status})")
-            data = await res.read()
         _write(path, data)
     return {"filename": filename, "subfolder": SUBFOLDER, "type": "output"}
 
@@ -2068,6 +2313,11 @@ def _history(task: str, status: str, messages: list, outputs: dict) -> dict:
     entry = {"status": {"completed": done, "status_str": "error" if status == "failed" else status, "messages": messages}, "outputs": outputs}
     if done:
         entry["generation_succeeded"] = status == "completed"  # #712
+    job = _jobs.get(task) or {}
+    if job.get("model_choice"):
+        entry["model_choice"] = job["model_choice"]  # #825: pill survives poll/refresh
+    if job.get("model") and "model" not in entry:
+        entry["model"] = job["model"]
     return {f"ws:{task}": entry}
 
 
@@ -2080,6 +2330,8 @@ def _fail(task: str, message: "str | WaveSpeedError") -> dict:
         if message.kind in ("timeout", "noOutput"):
             info["ws_task_id"] = task  # #712: the UI shows the task id for feedback / refunds
     job = _jobs.get(task)
+    if job and job.get("fallback_blocked"):
+        info["fallback_blocked"] = True
     if job and job.get("model"):
         charged = message.charged if isinstance(message, WaveSpeedError) else None
         gen_ledger.record_failure(task, "wavespeed", job["model"], str(message), kind=info.get("ws_kind") or "failed",
@@ -2110,22 +2362,28 @@ async def poll(task: str) -> dict:
     if job.get("paste") or job.get("move"):
         return await _poll_wrapped(task, job)
     now = time.time()
-    if now - job["started"] > JOB_TIMEOUT:
+    limit = _job_timeout_for(job)
+    if now - job["started"] > limit:
+        # Total lifetime for this prediction (image = IMAGE_JOB_TIMEOUT, else JOB_TIMEOUT).
         if job.get("model") and not job.get("recovery_tried"):
-            # #712: one last poll with the saved request id before calling it failed (the result GET is free)
             job["recovery_tried"] = True
             try:
                 got = await _poll_once(task, job, now)
                 if job.get("result"):
-                    log.info("#712: WaveSpeed task %s recovered after the poll timeout via its saved id", task)
                     return got
             except (TimeoutError, asyncio.TimeoutError, aiohttp.ClientError, OSError, _Transient) as e:
-                log.warning("#712: recovery poll for %s failed (%s)", task, type(e).__name__)
+                log.warning("#873: final status check for prediction %s failed (%s)", task, type(e).__name__)
         if job.get("result"):
             return job["result"]
+        # Still running / unresolved at the cap: fail with NO Flare; log id for reconciliation.
+        job["fallback_blocked"] = True
+        log.warning(
+            "#873: prediction %s reached timeout=%ss (feature=%s) while unresolved; no Flare; reconcile this id",
+            task, int(limit), job.get("feature") or "",
+        )
         if job.get("model"):
             return _fail(task, await _timeout_error(task))
-        return _fail(task, WaveSpeedError(f"WaveSpeed task timed out after {int(JOB_TIMEOUT)}s", 504, kind="timeout"))
+        return _fail(task, WaveSpeedError(f"WaveSpeed task timed out after {int(limit)}s", 504, kind="timeout"))
     if now < job["next_poll"]:
         return _history(task, "processing", [], {})
     job["next_poll"] = now + POLL_MIN
@@ -2148,6 +2406,43 @@ def _backoff(task: str, job: dict, now: float, reason: str) -> dict:
     job["next_poll"] = now + min(max(POLL_MIN, 0.01) * 2 ** n, POLL_MAX_BACKOFF)
     log.warning("WaveSpeed poll for %s hit a transient error (%s), retry #%d", task, reason, n + 1)
     return _history(task, "processing", [], {})
+
+
+def _ref_bytes(ref: dict) -> bytes:
+    path = os.path.join(os.path.abspath(folder_paths.get_output_directory()), str(ref.get("subfolder") or ""), str(ref.get("filename") or ""))
+    try:
+        return _read(path)
+    except OSError:
+        return b""
+
+
+def _audit_locked_files(job: dict, refs: list) -> dict | None:
+    """After the provider file is on disk, compare its pixels with the locked size.
+
+    None means this job did not lock a size. A mismatch or unreadable file is a
+    failure dict. The file is not resized and the task is not submitted again.
+    """
+    if not job.get("size_lock"):
+        return None
+    from .skill_size import audit_file, size_reject
+
+    expect = job.get("expect_pixels")
+    if not (isinstance(expect, (list, tuple)) and len(expect) == 2 and int(expect[0]) > 0 and int(expect[1]) > 0):
+        return {"match": False, "requested": None, "provider_output": None, "delivered": None, "read_error": True,
+                "error": "没有通过：尺寸已锁定，但没有可核对的宽高。没有拉伸，没有重试，没有换模型。 / Not accepted: size was locked but there was no pixel size to check. It was not stretched, retried, or sent to another model."}
+    requested = (int(expect[0]), int(expect[1]))
+    measured = None
+    for ref in refs:
+        audit = audit_file(_ref_bytes(ref) if isinstance(ref, dict) else b"", requested)
+        if isinstance(ref, dict) and audit.get("provider_output"):
+            ref["metadata"] = {"width": audit["provider_output"]["width"], "height": audit["provider_output"]["height"]}
+        if not audit["match"]:
+            return audit
+        measured = audit
+    if measured is None:
+        return {"match": False, "requested": {"width": requested[0], "height": requested[1]},
+                "provider_output": None, "delivered": None, "read_error": True, "error": size_reject(requested, None)}
+    return measured
 
 
 async def _poll_once(task: str, job: dict, now: float) -> dict:
@@ -2183,8 +2478,17 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
                                               502, kind="noOutput", charged=cost))
         # CDN URLs expire after 7 days: keep a local copy right away
         refs = [await _download(session, task, i, url) for i, url in enumerate(outputs) if isinstance(url, str)]
+    # #707: a size lock is accepted only when the saved file's pixels match. No stretch, crop, or second submit.
+    audit = _audit_locked_files(job, refs)
+    if audit is not None and not audit.get("match"):
+        return _fail(task, WaveSpeedError(str(audit.get("error") or "没有通过：尺寸核对失败。没有拉伸，没有重试，没有换模型。 / Not accepted: the size check failed. It was not stretched, retried, or sent to another model.")))
     job["done"] = True
     job["result"] = _history(task, "completed", [], {"ws": {"images": refs}})
+    if audit is not None and audit.get("match"):
+        entry = job["result"][f"ws:{task}"]
+        entry["requested_size"] = audit["requested"]
+        entry["provider_output"] = audit["provider_output"]
+        entry["delivered_size"] = audit["delivered"]
     if job.get("model"):
         gen_ledger.mark_succeeded(task, len(refs))
     log.info("WaveSpeed task %s completed (%d output%s)", task, len(refs), "" if len(refs) == 1 else "s")
@@ -2337,11 +2641,30 @@ def _respond_error(e: WaveSpeedError) -> web.Response:
             body["estimate"] = True
         if e.tier:
             body["tier"] = e.tier
+        if e.gif_note:
+            body["gif_note"] = e.gif_note
+        if e.model:
+            body["model"] = e.model
+        if e.gif:
+            body["gif"] = e.gif
+        if getattr(e, "model_choice", None):
+            body["model_choice"] = e.model_choice
     elif e.unpriced:
         body["confirm_usd"] = None
         body["unpriced"] = True
         if e.tier:
             body["tier"] = e.tier
+        if e.gif_note:
+            body["gif_note"] = e.gif_note
+        if e.model:
+            body["model"] = e.model
+        if getattr(e, "model_choice", None):
+            body["model_choice"] = e.model_choice
+        if e.gif:
+            body["gif"] = e.gif
+    issued = getattr(e, "confirm_token", None)
+    if isinstance(issued, str) and issued:
+        body["confirm_token"] = issued
     return web.json_response({"error": body}, status=e.status)
 
 
@@ -2381,12 +2704,17 @@ async def wavespeed_run(request: web.Request) -> web.Response:
     inputs = (await json_body(request)).get("inputs")
     if not isinstance(inputs, dict):
         return error("inputs must be an object", 400)
+    from ._common import request_user
+    from .provider_admin import bind_confirm_user, reset_confirm_user
+    user_token = bind_confirm_user(request_user(request))
     try:
         task = await submit(inputs)
     except WaveSpeedError as e:
         return _respond_error(e)
     except aiohttp.ClientError as e:
         return _respond_error(WaveSpeedError(f"could not reach WaveSpeed: {e}", kind="network"))
+    finally:
+        reset_confirm_user(user_token)
     return web.json_response({"prompt_id": f"ws:{task}"})
 
 
@@ -2436,7 +2764,7 @@ async def wavespeed_confirm_put(request: web.Request) -> web.Response:
         v = body.get("confirm_usd")
         if not valid_confirm_usd(v):
             return error("confirm_usd must be a number from 0 to 1000 (0 = always confirm)", 400)
-        from ComfyArt.bot.run_budget import ui_credits
+        from ..bot.run_budget import ui_credits
         credits = ui_credits(float(v))
     else:
         return error(

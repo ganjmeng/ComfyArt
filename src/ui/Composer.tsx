@@ -1,13 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useValue, type Editor, type TLShapeId } from 'tldraw'
 
-import { agentModeAtom, DOC_ACCEPT, docsAtom, draftAtom, eachLine, eachRuns, extraRefsAtom, generateDirect, isRefShape, kitsAtom, refKindOf, sendToAgent, srcOf, uploadRefs, type RefShape } from '../agent'
+import { agentModeAtom, DOC_ACCEPT, docsAtom, draftAtom, eachLine, eachRuns, extraRefsAtom, looseRefsAtom, generateDirect, isRefShape, kitsAtom, refKindOf, sendToAgent, srcOf, uploadRefs, type RefShape } from '../agent'
 
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, refreshKeyStatus } from '../wavespeedKey'
 import { EachButton, EachRole, useEach } from './EachToggle'
 import { RefFrameButton } from './RefFrameButton'
 import { listAssets, placeAsset, type AssetItem } from '../assets'
-import { botEnabledAtom, loadProviders, loadSettings, messagesAtom, providerLabel, providersStateAtom } from '../bot'
+import { imageUrl } from '../comfy'
+import { botEnabledAtom, loadProviders, loadSettings, messagesAtom, providerLabel, providersStateAtom, stopTurn } from '../bot'
 import { errorText } from '../jobs'
 import { KIND_LABELS, libraryAtom } from '../library'
 import type { AudioShape } from '../shapes/EmbedShapes'
@@ -29,6 +30,7 @@ import { t } from '../i18n'
 import { mergeRefIds, removeRefId } from '../refDedupe'
 import { uuid } from '../id'
 import { isEnter } from './keys'
+import { IMAGE_MODELS } from '../models'
 
 const REVIEW_PROMPT = t('composer.canvasReviewUseGetCanvas')
 const SKILL_PROMPT = t('composer.turnTheApproachCompletedIn')
@@ -36,7 +38,9 @@ const SKILL_PROMPT = t('composer.turnTheApproachCompletedIn')
 export const FILE_ACCEPT = `image/*,video/*,audio/*,${DOC_ACCEPT}`
 
 /** #362: @ menu shows ≤N rows per group before … More (reference density). */
-const AT_GROUP_LIMIT = 5
+const AT_GROUP_LIMIT = 3
+/** #763: @ Model group shows the first tiers, then More expands in place. */
+const AT_MODEL_LIMIT = 3
 /** #362 SHOULD: collapse individual capsules when selection exceeds this. */
 const CAPSULE_SUMMARY_AT = 10
 
@@ -56,7 +60,7 @@ function truncateLabel(name: string, max = 8) {
 function RefThumb({ editor, s }: { editor: Editor; s: RefShape }) {
   const kind = refKindOf(s)
   if (kind === 'audio') return <span className="ca-icon">{Icons.music}</span>
-  return kind === 'video' ? <video src={srcOf(editor, s) ?? ''} muted preload="metadata" /> : <img src={srcOf(editor, s) ?? ''} alt="" />
+  return kind === 'video' ? <video src={srcOf(editor, s) ?? ''} muted preload="metadata" /> : <img src={imageUrl(srcOf(editor, s) ?? '')} alt="" />
 }
 
 /** #250: how far the composer bar has to fold so +, voice and send stay inside it.
@@ -93,6 +97,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const skillNotice = useValue(skillNoticeAtom)  // #673
   const skillCreator = useValue(skillCreatorAtom)
   const extra = useValue(extraRefsAtom)
+  const loose = useValue(looseRefsAtom)  // #644: composer-only refs, no canvas shape
   const kits = useValue(kitsAtom)
   const library = useValue(libraryAtom)
   const docs = useValue(docsAtom)
@@ -101,6 +106,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const [menu, setMenu] = useState<'plus' | 'skills' | 'assets' | 'mode' | 'create' | null>(null)
   const [skills, setSkills] = useState<Skill[]>([])
   const [atAssets, setAtAssets] = useState<AssetItem[]>([])
+  const [atAllModels, setAtAllModels] = useState(false)
   const file = useRef<HTMLInputElement>(null)
   const [hidden, setHidden] = useState<TLShapeId[]>([])
   const [drop, setDrop] = useState(false)
@@ -115,6 +121,12 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const refs = mergeRefIds(selected.map((s) => s.id), hidden, extra)
     .map((id) => selected.find((s) => s.id === id) ?? editor.getShape(id))
     .filter((s): s is RefShape => !!s && isRefShape(s))
+  // #710: selected reference images use the same image-N chip text as the user bubble.
+  const refChipLabel = (r: RefShape) => {
+    if (refKindOf(r) !== 'image') return truncateLabel(imageName(editor, r))
+    const at = refs.filter((x) => refKindOf(x) === 'image').indexOf(r)
+    return `image-${loose.length + at + 1}`
+  }
   const slash = /^\/(\S*)$/.exec(draft)
   const at = /(?:^|\s)@(\S*)$/.exec(draft)
 
@@ -124,7 +136,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
 
   // #362: load 素材 for @ menu (no model group). Fail soft → empty 素材 group.
   useEffect(() => {
-    if (!at) { setAtAssets([]); return }
+    if (!at) { setAtAssets([]); setAtAllModels(false); return }
     let alive = true
     void listAssets('input,output', at[1] || '')
       .then((page) => { if (alive) setAtAssets(page.items) })
@@ -150,10 +162,10 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const fail = (e: unknown) => onError(errorText(e))
   const upload = (files: FileList | null) => uploadRefs(editor, Array.from(files ?? [])).catch(fail)
   const imageFiles = (list: DataTransfer) => Array.from(list.files)
-  const { showSend, setVoice } = useSlot(content || refs.length > 0, composing)
+  const { showSend, setVoice } = useSlot(content || refs.length > 0 || loose.length > 0, composing)
   const send = () => {
     const text = draft.trim()
-    if ((!text && !refs.length) || agentOff || agentLoading) return  // #268: an image with no text counts as content
+    if ((!text && !refs.length && !loose.length) || agentOff || agentLoading) return  // #268: an image with no text counts as content
     // #294: after a failed Agent-list load, every agent-mode send re-loads the list once first.
     // Still failing → toast the real error and keep the draft; succeeded → send as normal.
     if (mode === 'agent' && providersStateAtom.get().state === 'error') {
@@ -172,12 +184,14 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       const keptSkill = skill
       const keptKits = kits
       const keptDocs = docs
+      const keptLoose = loose
       const creating = skillCreatorAtom.get().on
       // #491 A3: the user's words go in the bubble; the creator instruction rides in the hidden context
       const creatorContext = creating && text ? t('composer.skillCreatorPrefill', text) : ''
       const creatorChip = creating ? t(skillCreatorAtom.get().chip ?? 'composer.skillCreator') : ''
       draftAtom.set('')
       extraRefsAtom.set([])
+      looseRefsAtom.set([])
       kitsAtom.set([])
       if (creating) skillCreatorAtom.set({ on: false })
       if (mode === 'agent') {
@@ -187,11 +201,12 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       const targets = keptRefs.length > 1 ? each.targets(keptRefs) : []
       each.reset()
       try {
-        if (mode === 'agent') await sendToAgent(editor, text, keptRefs, creating ? null : keptSkill, keptKits, keptDocs, [targets.length ? eachLine(keptRefs, targets) : '', creatorContext].filter(Boolean).join('\n'), creatorChip ? { chip: creatorChip } : undefined)
-        else await generateDirect(editor, text, eachRuns(keptRefs, targets, () => text), mode === 'video', onError)
+        if (mode === 'agent') await sendToAgent(editor, text, keptRefs, creating ? null : keptSkill, keptKits, keptDocs, [targets.length ? eachLine(keptRefs, targets) : '', creatorContext].filter(Boolean).join('\n'), { ...(creatorChip ? { chip: creatorChip } : undefined), loose: keptLoose })
+        else await generateDirect(editor, text, eachRuns(keptRefs, targets, () => text).map((run) => ({ ...run, loose: keptLoose.map((l) => l.src) })), mode === 'video', onError)
       } catch (e) {
         // restore composer content if the send never reached the chat / job
         draftAtom.set(text || draftAtom.get())
+        if (keptLoose.length) looseRefsAtom.set(keptLoose)
         fail(e)
       }
     }
@@ -199,15 +214,17 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   }
 
   const filtered = slash ? skills.filter((s) => s.name.toLowerCase().includes(slash[1].toLowerCase())) : skills  // #673: '/ppt' finds PPT
-  // #362 @ menu: exactly 参考 → 本项目 → 素材. NO model group (voids old Assets/Model fake-align).
+  // #763 @ menu: Assets (参考 kits + this project + 素材) → Model (image model tiers).
   const atQ = (at?.[1] ?? '').toLowerCase()
   const atRefs = at ? library.filter((k) => k.name.toLowerCase().includes(atQ) && !kits.some((x) => x.id === k.id)) : []
   const atProject = at ? images.filter((s) => imageName(editor, s).toLowerCase().includes(atQ)) : []
   const atMats = at ? atAssets.filter((a) => a.name.toLowerCase().includes(atQ)) : []
+  const atModels = at ? IMAGE_MODELS.filter((m) => m.label.toLowerCase().includes(atQ)) : []
   const atOpen = !!at
   const clearAt = () => draftAtom.set(draft.slice(0, at!.index) + (at!.index ? ' ' : ''))
   const clearAllCapsules = () => {
     extraRefsAtom.set([])
+    looseRefsAtom.set([])
     setHidden(selected.map((s) => s.id))
   }
   const modeInfo = modeOf(mode)
@@ -217,6 +234,14 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   const typing = content
 
   return (
+    <>
+    {/* #644: the #673 notice sits in normal flow ABOVE the composer (clear of the mascot peek), so it never overlaps the chat's start buttons */}
+    {skillNotice && (
+        <div className="ca-chat__hint ca-composer__notice" role="status" data-testid="skill-hidden-notice">
+          <span className="ca-menu__grow">{skillNotice}</span>
+          <button type="button" className="ca-history__del" title={t('common.close')} data-testid="skill-hidden-notice-close" onClick={() => skillNoticeAtom.set(null)}>{Icons.close}</button>
+        </div>
+      )}
     <div
       className="ca-composer"
       data-drop={drop || undefined}
@@ -226,12 +251,6 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
     >
       {/* #371 P1-mascot: left-top peek; idle static frame 0; --play/--typing animate */}
       <ArtiMascot busy={busy} typing={typing} />
-      {skillNotice && (
-        <div className="ca-chat__hint ca-composer__notice" role="status" data-testid="skill-hidden-notice">
-          <span className="ca-menu__grow">{skillNotice}</span>
-          <button type="button" className="ca-history__del" title={t('common.close')} data-testid="skill-hidden-notice-close" onClick={() => skillNoticeAtom.set(null)}>{Icons.close}</button>
-        </div>
-      )}
       {(slash && filtered.length > 0) && (
         <div className="ca-menu ca-composer__suggest" data-testid="slash-menu">
           {filtered.slice(0, 8).map((s) => (
@@ -241,70 +260,68 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           ))}
         </div>
       )}
-      {/* #362: @ popup — groups 参考 → 本项目 → 素材 only; never a model group */}
+      {/* #362: @ capsule menu; #763: @ popup — Assets (project refs + 素材) → Model (model tiers); each group ends with More */}
       {atOpen && (
         <div className="ca-menu ca-composer__suggest ca-at-menu" data-testid="at-menu" data-at-capsule="362">
-          <div className="ca-at-menu__filter" data-testid="at-menu-filter">
-            {atQ ? `@${at![1]}` : t('composer.atFilterPlaceholder')}
-          </div>
-          <div className="ca-at-menu__group" data-at-group="reference">
-            <div className="ca-at-menu__title">{t('composer.atGroupReference')}</div>
-            {atRefs.slice(0, AT_GROUP_LIMIT).map((k) => (
-              <button key={k.id} type="button" className="ca-menu__item ca-at-menu__row" onClick={() => { kitsAtom.set([...kits, k]); clearAt() }}>
-                {k.images[0]
-                  ? <img className="ca-at-menu__thumb" src={k.images[0]} alt="" />
-                  : <span className="ca-at-menu__thumb ca-at-menu__thumb--empty"><span className="ca-icon">{Icons.assets}</span></span>}
-                <span className="ca-menu__grow">{k.name}</span>
-              </button>
-            ))}
-            {atRefs.length > AT_GROUP_LIMIT && (
-              <button type="button" className="ca-menu__item ca-at-menu__more" onClick={() => setMenu('assets')}>
-                <span className="ca-at-menu__more-mark">…</span><span className="ca-menu__grow">{t('composer.atMore')}</span>
-              </button>
-            )}
-          </div>
-          <div className="ca-at-menu__group" data-at-group="project">
-            <div className="ca-at-menu__title">{t('composer.atGroupProject')}</div>
-            {atProject.slice(0, AT_GROUP_LIMIT).map((s) => (
-              <button key={s.id} type="button" className="ca-menu__item ca-at-menu__row" onClick={() => { addRef(s.id); clearAt() }}>
-                <span className="ca-at-menu__thumb">
-                  {s.type === 'image' || s.type === 'video'
-                    ? (s.type === 'video'
-                      ? <><video src={srcOf(editor, s) ?? ''} muted preload="metadata" /><span className="ca-at-menu__play">{Icons.play}</span></>
-                      : <img src={srcOf(editor, s) ?? ''} alt="" />)
-                    : <span className="ca-icon">{Icons.music}</span>}
-                </span>
-                <span className="ca-menu__grow">{imageName(editor, s)}</span>
-              </button>
-            ))}
-            {atProject.length > AT_GROUP_LIMIT && (
-              <div className="ca-menu__item ca-at-menu__more"><span className="ca-at-menu__more-mark">…</span><span className="ca-menu__grow">{t('composer.atMore')}</span></div>
-            )}
-          </div>
           <div className="ca-at-menu__group" data-at-group="assets">
             <div className="ca-at-menu__title">{t('composer.atGroupAssets')}</div>
-            {atMats.slice(0, AT_GROUP_LIMIT).map((a) => (
-              <button key={a.id} type="button" className="ca-menu__item ca-at-menu__row" onClick={() => {
-                clearAt()
-                void placeAsset(editor, a).then((id) => id && addRef(id)).catch(fail)
-              }}>
-                <span className="ca-at-menu__thumb">
-                  {a.kind === 'video'
-                    ? <><img src={a.src} alt="" /><span className="ca-at-menu__play">{Icons.play}</span></>
-                    : <img src={a.src} alt="" />}
-                </span>
-                <span className="ca-menu__grow">{a.name || t('common.image')}</span>
+            {[
+              ...atRefs.map((k) => (
+                <button key={`k-${k.id}`} type="button" className="ca-menu__item ca-at-menu__row" onClick={() => { kitsAtom.set([...kits, k]); clearAt() }}>
+                  {k.images?.[0]
+                    ? <img className="ca-at-menu__thumb" src={k.images[0]} alt="" />
+                    : <span className="ca-at-menu__thumb ca-at-menu__thumb--empty"><span className="ca-icon">{Icons.assets}</span></span>}
+                  <span className="ca-menu__grow">{k.name}</span>
+                </button>
+              )),
+              ...atProject.map((s) => (
+                <button key={`s-${s.id}`} type="button" className="ca-menu__item ca-at-menu__row" onClick={() => { addRef(s.id); clearAt() }}>
+                  <span className="ca-at-menu__thumb">
+                    {refKindOf(s) === 'audio'
+                      ? <span className="ca-icon">{Icons.music}</span>
+                      : refKindOf(s) === 'video'
+                        ? <><video src={srcOf(editor, s) ?? ''} muted preload="metadata" /><span className="ca-at-menu__play">{Icons.play}</span></>
+                        : <img src={imageUrl(srcOf(editor, s) ?? '')} alt="" />}
+                  </span>
+                  <span className="ca-menu__grow">{imageName(editor, s)}</span>
+                </button>
+              )),
+              ...atMats.map((a) => (
+                <button key={`a-${a.id}`} type="button" className="ca-menu__item ca-at-menu__row" onClick={() => {
+                  clearAt()
+                  void placeAsset(editor, a).then((id) => id && addRef(id)).catch(fail)
+                }}>
+                  <span className="ca-at-menu__thumb">
+                    {a.kind === 'video'
+                      ? <><img src={a.src} alt="" /><span className="ca-at-menu__play">{Icons.play}</span></>
+                      : <img src={imageUrl(a.src)} alt="" />}
+                  </span>
+                  <span className="ca-menu__grow">{a.name || t('common.image')}</span>
+                </button>
+              )),
+            ].slice(0, AT_GROUP_LIMIT)}
+            <button type="button" className="ca-menu__item ca-at-menu__more" onClick={() => setMenu('assets')}>
+              <span className="ca-at-menu__more-mark">…</span><span className="ca-menu__grow">{t('composer.atMore')}</span>
+            </button>
+          </div>
+          <div className="ca-at-menu__sep" />
+          <div className="ca-at-menu__group" data-at-group="model">
+            <div className="ca-at-menu__title">{t('composer.atGroupModel')}</div>
+            {atModels.slice(0, atAllModels ? undefined : AT_MODEL_LIMIT).map((m) => (
+              <button key={m.id} type="button" className="ca-menu__item ca-at-menu__row" title={m.desc} onClick={() => draftAtom.set(`${draft.slice(0, at!.index)}${at!.index ? ' ' : ''}@${m.label} `)}>
+                <span className="ca-at-menu__thumb ca-at-menu__thumb--icon"><span className="ca-icon">{Icons.sparkles}</span></span>
+                <span className="ca-menu__grow">{m.label}</span>
               </button>
             ))}
-            {atMats.length > AT_GROUP_LIMIT && (
-              <button type="button" className="ca-menu__item ca-at-menu__more" onClick={() => setMenu('assets')}>
+            {!atAllModels && atModels.length > AT_MODEL_LIMIT && (
+              <button type="button" className="ca-menu__item ca-at-menu__more" onClick={() => setAtAllModels(true)}>
                 <span className="ca-at-menu__more-mark">…</span><span className="ca-menu__grow">{t('composer.atMore')}</span>
               </button>
             )}
           </div>
         </div>
       )}
-      {(refs.length > 0 || skill || skillCreator.on || kits.length > 0 || (mode === 'agent' && docs.length > 0)) && (
+      {(refs.length > 0 || loose.length > 0 || skill || skillCreator.on || kits.length > 0 || (mode === 'agent' && docs.length > 0)) && (
         <div className="ca-composer__chips">
           {kits.map((k) => (
             <span key={k.id} className="ca-chip">
@@ -324,6 +341,15 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
               <button type="button" title={t('common.remove')} onClick={() => docsAtom.set(docs.filter((x) => x.src !== d.src))}>{Icons.close}</button>
             </span>
           ))}
+          {/* #644: composer-only refs (old hidden-skill link) — same capsule look, never a canvas shape.
+              #710: image refs read image-1 / image-2 (same chip text as the user bubble). */}
+          {loose.map((l, i) => (
+            <span key={`loose-${i}`} className="ca-chip ca-chip--capsule" data-testid="composer-capsule" data-loose title={l.name}>
+              <span className="ca-chip__thumb"><img src={l.src} alt="" /></span>
+              <span className="ca-chip__name" data-testid="user-ref-chip">{`image-${i + 1}`}</span>
+              <button type="button" title={t('common.remove')} onClick={() => looseRefsAtom.set(loose.filter((_, j) => j !== i))}>{Icons.close}</button>
+            </span>
+          ))}
           {/* #362: canvas multi-select → composer capsules (thumb + truncated label); removable; no auto-send */}
           {refs.length > CAPSULE_SUMMARY_AT ? (
             <span className="ca-chip ca-chip--capsule ca-chip--summary" data-testid="capsule-summary" title={t('composer.selectedCount', refs.length)}>
@@ -339,17 +365,22 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
               title={imageName(editor, r)}
             >
               <span className="ca-chip__thumb"><RefThumb editor={editor} s={r} /></span>
-              <span className="ca-chip__name">{truncateLabel(imageName(editor, r))}</span>
+              <span className="ca-chip__name" data-testid={refKindOf(r) === 'image' ? 'user-ref-chip' : undefined}>{refChipLabel(r)}</span>
               <button type="button" title={t('common.remove')} onClick={() => removeRef(r.id)}>{Icons.close}</button>
               {each.on && refs.length > 1 && <EachRole shared={each.isShared(r.id)} onToggle={() => each.toggleShared(r.id)} />}
             </span>
           ))}
         </div>
       )}
+      {/* #763: while typing `@`, the search hint trails the typed text (same font box as the textarea) */}
+      <div className="ca-composer__field">
+      {atOpen && !at![1] && (
+        <div className="ca-composer__ghost" aria-hidden="true" data-testid="at-search-hint"><span className="ca-composer__ghost-typed">{draft}</span>{t('composer.atSearchPlaceholder')}</div>
+      )}
       <textarea
         className="ca-composer__input"
         value={draft}
-        placeholder={skillCreator.on ? '' : t('composer.describeYourDesignNeedsFor')} /* #650: gold creator input is empty */
+        placeholder={skillCreator.on ? '' : atOpen ? t('composer.atSearchPlaceholder') : t('composer.describeYourDesignNeedsFor')} /* #650: gold creator input is empty */
         onChange={(e) => draftAtom.set(e.target.value)}
         onCompositionStart={() => setComposing(true)}
         onCompositionEnd={() => setComposing(false)}
@@ -369,6 +400,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           }
         }}
       />
+      </div>
       <div ref={foot.ref} className="ca-composer__foot" data-fit={foot.fit || undefined}>
         <input ref={file} type="file" accept={FILE_ACCEPT} multiple hidden onChange={(e) => { void upload(e.target.files); e.target.value = '' }} />
         <Popover
@@ -479,8 +511,10 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
         {mode === 'agent' && <ModelPrefs onError={onError} />}
         <ComposerSlot showSend={showSend} setVoice={setVoice} canSend={(content || refs.length > 0) && !agentOff && !agentLoading} onSend={send}
           title={agentLoading ? t('bot.agentListLoading') : busy && mode === 'agent' ? t('composer.sendQueuedAfterTheCurrent') : t('composer.send')} onError={onError}
+          onStop={busy ? () => void stopTurn().catch((e) => onError(errorText(e))) : undefined}
           onText={(t) => draftAtom.set(`${draftAtom.get()}${draftAtom.get() ? ' ' : ''}${t}`)} />
       </div>
     </div>
+    </>
   )
 }

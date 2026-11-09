@@ -12,7 +12,7 @@ pw = pytest.importorskip("playwright.async_api")
 ROOT = Path(__file__).resolve().parent.parent
 pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("*")), reason="needs built dist/")
 
-HOT_QUICK = ["product", "multi-angle", "brand", "character", "logo-material", "packaging"]
+HOT_QUICK = ["product-tvc-advertisement-generator", "universal-multi-angle-grid", "brand-identity-director", "character-sheet-design", "logo-material-explorer", "packaging-design-director"]
 PHASE2_B = [
     "flash-cut-video", "style-transfer", "person-swap",
     "commerce-strategist", "lifestyle-scene",
@@ -44,7 +44,7 @@ async def test_home_quickstart_phase1_and_website_chip(app_url):  # noqa: F811
         assert await pg.get_by_test_id("home-chip-website").count() == 1
         await pg.get_by_test_id("home-chip-website").click()
         shown = await pg.get_by_test_id("home-skill-card").evaluate_all("els => els.map(e => e.dataset.skill)")
-        assert "mobile-ui" in shown and "web-product" in shown
+        assert "mobile-app-visual-design" in shown and "web-product-visual-design" in shown
         # Soft mount does not require ppt-visual in the quick-start row
         await browser.close()
 
@@ -56,15 +56,16 @@ async def test_skills_explore_phase2_b_after_phase1(app_url):  # noqa: F811
         await pg.get_by_test_id("skills-wall-card").first.wait_for()
         ids = await pg.get_by_test_id("skills-wall-card").evaluate_all("els => els.map(e => e.dataset.skill)")
         # Phase1 product first; B NEW5 appear after Phase1 block; social once
-        assert ids[0] == "product"
-        assert ids.count("social") == 1
+        assert ids[0] == "product-tvc-advertisement-generator"
+        assert ids.count("rednote-cover-maker") == 1
         for sid in PHASE2_B:
             assert sid in ids, sid
         # Soft order among B: flash-cut → style-transfer → person-swap → commerce → lifestyle
         bpos = [ids.index(s) for s in PHASE2_B]
         assert bpos == sorted(bpos)
-        # #673: deferred ids hidden from the wall
-        assert "naive-illustration" not in ids and "ppt-visual" not in ids
+        # #735/#812: C+D unhidden on the wall
+        assert "naive-illustration" in ids and "ppt-visual" in ids
+        assert "yingzao" in ids and "fabric-collage" in ids
         # website chip on Explore
         assert await pg.get_by_test_id("skills-chip-website").count() == 1
         await browser.close()
@@ -86,9 +87,9 @@ async def test_commerce_strategist_dialog_to_agent_and_social_ugc(app_url):  # n
         assert "mode=agent" in pg.url
         # Back home → social Fashion UGC presets regression
         await pg.goto(app_url + "?view=skills")
-        await pg.locator('[data-testid="skills-wall-card"][data-skill="social"]').click()
+        await pg.locator('[data-testid="skills-wall-card"][data-skill="rednote-cover-maker"]').click()
         await dlg.wait_for()
-        assert await dlg.get_attribute("data-skill") == "social"
+        assert await dlg.get_attribute("data-skill") == "rednote-cover-maker"
         # #636 product lock: Examples-only (presets lack media) → no 「当前模板」 select
         assert await pg.get_by_test_id("skill-run-preset-select").count() == 0
         assert await pg.get_by_test_id("skill-run-current").count() == 0

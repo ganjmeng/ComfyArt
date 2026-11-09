@@ -1,4 +1,4 @@
-"""#45: masked/region edits only send the selection crop (default gpt-image-2.5-sunburst/edit) and paste the
+"""#45: masked/region edits only send the selection crop (default gpt-image-2.6-sunburst/edit) and paste the
 result back through the mask; move object = cloud erase on a crop + local composite (no edit model).
 Mocks only (local aiohttp WaveSpeed stand-in + catalog fixture): no network, no charge."""
 from __future__ import annotations
@@ -18,8 +18,9 @@ from ComfyArt.api import auto_models, wavespeed
 from test_wavespeed import MODELS, uncurated, ws  # noqa: F401  (fixtures)
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "wavespeed_catalog_subset.json").read_text())
-SUNBURST = "openai/gpt-image-2.5-sunburst/edit"
+SUNBURST = "openai/gpt-image-2.6-sunburst/edit"
 FLARE = "openai/gpt-image-2.5-flare/edit"
+DEFAULT_EDIT = "openai/gpt-image-2.6-flare/edit"
 ERASER = "wavespeed-ai/image-eraser"
 REAL_CURATED = wavespeed.load_curated
 
@@ -27,7 +28,7 @@ REAL_CURATED = wavespeed.load_curated
 @pytest.fixture
 def curated(monkeypatch, ws):
     monkeypatch.setattr(wavespeed, "load_curated", REAL_CURATED)
-    extra = [FIXTURE[m] for m in (SUNBURST, FLARE, ERASER)]
+    extra = [FIXTURE[m] for m in (SUNBURST, FLARE, DEFAULT_EDIT, ERASER)]
     monkeypatch.setattr("test_wavespeed.MODELS", [m for m in MODELS if m["model_id"] != ERASER] + extra)
     wavespeed._catalog.update({"at": 0.0, "models": {}})
     return ws
@@ -105,8 +106,8 @@ async def test_user_model_wins_and_mask_free_edit_keeps_flare(curated):
             "paste": {"x": 0, "y": 0, "w": 64, "h": 64}, "prompt": "x"}
     await wavespeed.submit({**base, "model": FLARE})
     await wavespeed.submit({"feature": "image_edit", "images": ["https://example.com/a.png"], "prompt": "x"})
-    assert [m for m, _ in curated["submits"]] == [FLARE, FLARE]
-    assert wavespeed.load_config()["features"]["image_edit"]["default"] == FLARE  # global default unchanged
+    assert [m for m, _ in curated["submits"]] == [FLARE, DEFAULT_EDIT]
+    assert wavespeed.load_config()["features"]["image_edit"]["default"] == DEFAULT_EDIT
 
 
 async def test_move_object_erases_a_crop_and_composites_locally(curated, monkeypatch):

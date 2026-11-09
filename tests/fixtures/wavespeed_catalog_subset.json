@@ -7015,5 +7015,335 @@
 "description": "Z-Image-Turbo is a 6 billion parameter text-to-image model that generates photorealistic images in sub-second time. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
 "model_id": "wavespeed-ai/z-image/turbo",
 "name": "wavespeed-ai/z-image/turbo"
+},
+"openai/gpt-image-2.6-flare/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+],
+"default": "1:1"
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+],
+"default": "1k"
+},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high",
+"xhigh",
+"max"
+],
+"default": "medium"
+},
+"complexity": {
+"enum": [
+"low",
+"medium",
+"high"
+],
+"default": "high"
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"prompt": {},
+"images": {
+"maxItems": 16
+},
+"mask_image": {},
+"markup_image": {},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+],
+"default": "png"
+}
+}
+}
+}
+]
+},
+"base_price": 0.065,
+"description": "GPT Image 2.6 Flare Edit. output_format is png, jpeg or webp (no gif). complexity does not change the price.",
+"model_id": "openai/gpt-image-2.6-flare/edit",
+"name": "openai/gpt-image-2.6-flare/edit"
+},
+"openai/gpt-image-2.6-flare/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+],
+"default": "1:1"
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+],
+"default": "1k"
+},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high",
+"xhigh",
+"max"
+],
+"default": "medium"
+},
+"complexity": {
+"enum": [
+"low",
+"medium",
+"high"
+],
+"default": "high"
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"prompt": {},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp",
+"gif",
+"svg"
+],
+"default": "png"
+},
+"frame_count": {
+"type": "integer",
+"minimum": 2,
+"maximum": 16,
+"default": 9
+},
+"frame_duration_ms": {
+"type": "integer",
+"minimum": 20,
+"maximum": 2000,
+"default": 200
+}
+}
+}
+}
+]
+},
+"base_price": 0.05,
+"description": "GPT Image 2.6 Flare text-to-image. GIF costs the same as a still; frame_count is not billed. Medium 1k is $0.05.",
+"model_id": "openai/gpt-image-2.6-flare/text-to-image",
+"name": "openai/gpt-image-2.6-flare/text-to-image"
+},
+"openai/gpt-image-2.6-sunburst/edit": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+],
+"default": "1:1"
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+],
+"default": "1k"
+},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high",
+"xhigh",
+"max"
+],
+"default": "medium"
+},
+"complexity": {
+"enum": [
+"low",
+"medium",
+"high"
+],
+"default": "high"
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"prompt": {},
+"images": {
+"maxItems": 16
+},
+"mask_image": {},
+"markup_image": {},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp"
+],
+"default": "png"
+}
+}
+}
+}
+]
+},
+"base_price": 0.065,
+"description": "GPT Image 2.6 Sunburst Edit. output_format is png, jpeg or webp (no gif).",
+"model_id": "openai/gpt-image-2.6-sunburst/edit",
+"name": "openai/gpt-image-2.6-sunburst/edit"
+},
+"openai/gpt-image-2.6-sunburst/text-to-image": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+],
+"default": "1:1"
+},
+"resolution": {
+"enum": [
+"1k",
+"2k",
+"4k"
+],
+"default": "1k"
+},
+"quality": {
+"enum": [
+"low",
+"medium",
+"high",
+"xhigh",
+"max"
+],
+"default": "medium"
+},
+"complexity": {
+"enum": [
+"low",
+"medium",
+"high"
+],
+"default": "high"
+},
+"enable_base64_output": {},
+"enable_sync_mode": {},
+"prompt": {},
+"output_format": {
+"enum": [
+"png",
+"jpeg",
+"webp",
+"gif",
+"svg"
+],
+"default": "png"
+},
+"frame_count": {
+"type": "integer",
+"minimum": 2,
+"maximum": 16,
+"default": 9
+},
+"frame_duration_ms": {
+"type": "integer",
+"minimum": 20,
+"maximum": 2000,
+"default": 200
+}
+}
+}
+}
+]
+},
+"base_price": 0.05,
+"description": "GPT Image 2.6 Sunburst text-to-image. GIF costs the same as a still; frame_count is not billed. Medium 1k is $0.05.",
+"model_id": "openai/gpt-image-2.6-sunburst/text-to-image",
+"name": "openai/gpt-image-2.6-sunburst/text-to-image"
 }
 }

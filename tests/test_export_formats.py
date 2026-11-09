@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import re
+import shutil
 import subprocess
 import zipfile
 from pathlib import Path
@@ -30,10 +32,16 @@ def exported(tmp_path_factory):
         Image.new("RGB", (w, h), c).save(fix / f"{w}x{h}.png")
         Image.new("RGB", (w, h), c).save(fix / f"{w}x{h}.jpg", quality=90)
     bundle = base / "run.mjs"
+    # Offline PATH, but keep `node` resolvable. rolldown's shebang is `#!/usr/bin/env node`, and
+    # node_ready() is true when node lives outside /usr/bin (nvm, exec-daemon) (#804).
+    node = shutil.which("node")
+    path = "/usr/bin:/bin:/usr/local/bin"
+    if node:
+        path = str(Path(node).resolve().parent) + os.pathsep + path
     subprocess.run([str(ROOT / "node_modules/.bin/rolldown"), "-c", "tests/js/export/rolldown.config.mjs"], cwd=ROOT,
-                   check=True, capture_output=True, env={"PATH": "/usr/bin:/bin:/usr/local/bin", "OUT": str(bundle)})
+                   check=True, capture_output=True, env={"PATH": path, "OUT": str(bundle)})
     proc = subprocess.run(["node", str(bundle)], cwd=out, check=True, capture_output=True, text=True,
-                          env={"PATH": "/usr/bin:/bin:/usr/local/bin", "OUT_DIR": str(out), "FIXTURES": str(fix),
+                          env={"PATH": path, "OUT_DIR": str(out), "FIXTURES": str(fix),
                                "NODE_PATH": str(ROOT / "node_modules")})
     return json.loads(proc.stdout.strip().splitlines()[-1]), out
 

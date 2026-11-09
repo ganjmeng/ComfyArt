@@ -1,11 +1,13 @@
 """#133: Auto picks a model by task type from api/auto_models.json (product table v1); user-named wins;
 the tool result says which model and why (zh + en). All mocked: no page, no WaveSpeed call."""
 import asyncio
+import uuid
 
 import pytest
 
-from ComfyArt.api import auto_models
+from ComfyArt.api import auto_models, paid_guard
 from ComfyArt.api.mcp_tools import canvas
+from ComfyArt.api.mcp_tools._context import GUARD_CHAT_ID
 
 SENT = []
 
@@ -25,7 +27,17 @@ def mocked(monkeypatch):
 
 
 def run(tool, **args):
-    return asyncio.run(canvas.TOOLS[tool]["handler"](args))
+    """#731: #730 wraps direct handler() calls in the paid guard. With no agent turn every call shares the
+    process-wide ``__noturn__:anonymous`` turn, so its 4-image cap leaked across tests (and across the 5
+    runs of test_same_prompt_many_turns_same_model). Each run gets its own throwaway noturn chat = its own
+    turn; the production per-turn cap is untouched (see tests/test_mcp_paid_guard_730.py)."""
+    chat = paid_guard.noturn_key(f"auto-pick-{uuid.uuid4().hex}")
+    token = GUARD_CHAT_ID.set(chat)
+    try:
+        return asyncio.run(canvas.TOOLS[tool]["handler"](args))
+    finally:
+        GUARD_CHAT_ID.reset(token)
+        paid_guard.TURNS.pop(chat, None)
 
 
 def default(feature):
@@ -34,12 +46,12 @@ def default(feature):
 
 def test_same_prompt_many_turns_same_model():
     picks = {run("generate_image", prompt="a cup of coffee on a table")["model_choice"]["model"] for _ in range(5)}
-    assert picks == {default("text_to_image")} == {"openai/gpt-image-2.5-flare/text-to-image"}
+    assert picks == {default("text_to_image")} == {"openai/gpt-image-2.6-flare/text-to-image"}
     assert all("model" not in a for _, a in SENT)  # default path unchanged: page resolves Auto
 
 
 @pytest.mark.parametrize("prompt,model", [
-    ("Movie poster with the headline \"SUMMER\"", "openai/gpt-image-2.5-flare/text-to-image"),
+    ("Movie poster with the headline \"SUMMER\"", "openai/gpt-image-2.6-sunburst/text-to-image"),
     ("Photorealistic portrait of an old fisherman", "bytedance/seedream-v5.0-pro"),
     ("Anime girl under cherry blossoms", "midjourney/text-to-image"),
     ("一张写实人像", "bytedance/seedream-v5.0-pro"),
@@ -96,7 +108,7 @@ def test_choose_raises_directly():
 def test_edit_table_and_one_ref():
     assert run("edit_image", id="shape:a", prompt="change the sign text")["model_choice"]["model"] == default("image_edit")
     assert run("edit_image", id="shape:a", prompt="new background, keep the same person")["model_choice"]["model"] == "google/nano-banana-2.1/edit"
-    choice = run("generate_image", prompt="poster", refs=["shape:r"])["model_choice"]
+    choice = run("generate_image", prompt="poster-differentiated-compiler", refs=["shape:r"])["model_choice"]
     assert choice["model"] == default("image_edit") and choice["category"] == "references"
     assert "model" not in SENT[-1][1] and "edit_model" not in SENT[-1][1]
 
@@ -135,8 +147,11 @@ def test_page_runs_the_auto_edit_pick():
     bot = (root / "botCommands.ts").read_text()
     gen = (root / "generate.ts").read_text()
     assert "featureModels: { image_edit: args.edit_model }" in bot
-    assert "feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), prompt" in gen
-    assert "feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), width" in gen
+    # modelIn still resolves a listed edit model; a size-locked id that is not on the dropdown is passed through.
+    assert "modelIn('image_edit', askedEdit)" in gen
+    assert "feature: 'image_edit', model: editModel, prompt" in gen
+    assert "feature: 'image_edit', model: editModel, width" in gen
+    assert "askedEdit === model.id ? askedEdit : undefined" in gen
 
 
 def test_table_models_are_in_catalog():
@@ -183,3 +198,69 @@ def test_default_reason_wording():
 def test_named_model_with_refs_says_why():
     note = run("generate_image", prompt="p", refs=["shape:a", "shape:b"], model="openai/gpt-image-2/text-to-image")["model_choice"]["note"]
     assert "你指定了 openai/gpt-image-2/text-to-image" in note and "you named openai/gpt-image-2/text-to-image" in note
+
+
+def test_runs_do_not_share_the_noturn_cap():
+    """#731 isolation regression: 6 direct handler runs (each its own turn) are never refused by a shared cap."""
+    picks = [run("generate_image", prompt="the same prompt")["model_choice"]["model"] for _ in range(6)]
+    assert picks == [default("text_to_image")] * 6
+
+
+# --- #825: poster/text + masked -> 2.6 sunburst; explicit auto does not bypass the table ---
+SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
+SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
+FLARE_T2I = "openai/gpt-image-2.6-flare/text-to-image"
+FLARE_EDIT = "openai/gpt-image-2.6-flare/edit"
+POSTER = 'Movie poster with the headline "SUMMER"'
+
+
+def test_825_poster_uses_sunburst_with_poster_reason():
+    choice = run("generate_image", prompt=POSTER)["model_choice"]
+    assert choice["model"] == SUNBURST_T2I and choice["auto"] and choice["category"] == "poster_text"
+    assert "海报" in choice["reason"]["zh"] or "poster" in choice["reason"]["en"].lower()
+    assert "poster" in choice["note"].lower() or "海报" in choice["note"]
+
+
+def test_825_masked_edit_uses_sunburst_edit():
+    cfg = canvas.load_config()
+    choice = auto_models.choose("image_edit", "redo the sky", None, cfg, masked=True)
+    assert choice["model"] == SUNBURST_EDIT and choice["auto"] and choice["category"] == "masked"
+    row = auto_models.load_table()["image_edit"]["masked"]
+    assert row["model"] == SUNBURST_EDIT
+
+
+@pytest.mark.parametrize("named", [None, "", "auto", "Auto", " AUTO ", "auto:video", "Auto:Video"])
+def test_825_unmatched_explicit_auto_consults_table_default(named):
+    cfg = canvas.load_config()
+    choice = auto_models.choose("text_to_image", "a cup of coffee on a table", named, cfg)
+    assert choice["category"] == "default" and choice["auto"] is True and choice["model"] == FLARE_T2I
+    # through the tool path too (None omitted; empty / auto passed through)
+    kwargs = {"prompt": "a cup of coffee on a table"}
+    if named is not None:
+        kwargs["model"] = named
+    out = run("generate_image", **kwargs)["model_choice"]
+    assert out["category"] == "default" and out["auto"] is True and out["model"] == FLARE_T2I
+
+
+def test_825_auto_token_with_logo_prompt_hits_recraft():
+    cfg = canvas.load_config()
+    for token in ("auto", "Auto", "auto:video"):
+        choice = auto_models.choose("text_to_image", "Minimal logo for a tea brand", token, cfg)
+        assert choice["model"] == "recraft-ai/recraft-v3" and choice["category"] == "logo" and choice["auto"]
+    out = run("generate_image", prompt="Minimal logo for a tea brand", model="auto")["model_choice"]
+    assert out["model"] == "recraft-ai/recraft-v3" and out["category"] == "logo" and out["auto"]
+
+
+def test_825_user_named_still_wins():
+    choice = run("generate_image", prompt=POSTER, model="alibaba/qwen-image-3.0/text-to-image")["model_choice"]
+    assert choice["model"] == "alibaba/qwen-image-3.0/text-to-image" and choice["auto"] is False and choice["category"] == "user"
+
+
+def test_825_unmatched_edit_stays_on_image_edit_default():
+    choice = run("edit_image", id="shape:a", prompt="change the sign text")["model_choice"]
+    assert choice["model"] == FLARE_EDIT == default("image_edit")
+    assert choice["auto"]
+    # explicit auto on edit also consults the table (default), not category user
+    cfg = canvas.load_config()
+    c2 = auto_models.choose("image_edit", "change the sign text", "auto", cfg)
+    assert c2["category"] == "default" and c2["model"] == FLARE_EDIT and c2["auto"]

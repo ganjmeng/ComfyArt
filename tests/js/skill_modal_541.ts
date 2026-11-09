@@ -5,7 +5,7 @@
 })()
 
 // #541 harness: Lovart meta line is real data only (template count from presets[]; no usage counter).
-import { BUILTIN_SKILLS, isSkillMediaVideo, presetImage, skillMeta } from '../../src/skills'
+import { BUILTIN_SKILLS, isSkillMediaVideo, presetImage, skillMeta, skillThumbCount } from '../../src/skills'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { SkillExamples } from '../../src/ui/SkillExamples'
@@ -15,15 +15,16 @@ const old = { id: 'old-skill', name: 'Old', instructions: 'Old rules.', custom: 
 console.log(JSON.stringify({
   meta: Object.fromEntries(BUILTIN_SKILLS.map((s) => [s.id, skillMeta(s)])),
   presets: Object.fromEntries(BUILTIN_SKILLS.map((s) => [s.id, s.presets?.length ?? 0])),
+  thumbs: Object.fromEntries(BUILTIN_SKILLS.map((s) => [s.id, skillThumbCount(s)])),
   old: skillMeta(old),
-  imgs: { product: img('product'), brand: img('brand'), packaging: img('packaging') },
+  imgs: { 'product-tvc-advertisement-generator': img('product-tvc-advertisement-generator'), 'brand-identity-director': img('brand-identity-director'), 'packaging-design-director': img('packaging-design-director') },
   exUrls: Object.fromEntries(BUILTIN_SKILLS.filter((s) => s.examples?.length).map((s) => [s.id, s.examples])),
   examples: Object.fromEntries(BUILTIN_SKILLS.map((s) => [s.id, s.examples?.length ?? 0])),
   exMock: renderToStaticMarkup(createElement(SkillExamples, { examples: mock })),
   exOne: renderToStaticMarkup(createElement(SkillExamples, { examples: [mock[0]] })),
   exNone: [renderToStaticMarkup(createElement(SkillExamples, {})), renderToStaticMarkup(createElement(SkillExamples, { examples: [] }))],
-  productIds: BUILTIN_SKILLS.find((s) => s.id === 'product')!.presets!.map((p) => p.id),
-  productNew: BUILTIN_SKILLS.find((s) => s.id === 'product')!.presets!.slice(3).map((p) => presetImage(BUILTIN_SKILLS.find((s) => s.id === 'product')!, p)),
+  productIds: BUILTIN_SKILLS.find((s) => s.id === 'product-tvc-advertisement-generator')!.presets!.map((p) => p.id),
+  productNew: BUILTIN_SKILLS.find((s) => s.id === 'product-tvc-advertisement-generator')!.presets!.slice(3).map((p) => presetImage(BUILTIN_SKILLS.find((s) => s.id === 'product-tvc-advertisement-generator')!, p)),
   exVideoMock: renderToStaticMarkup(createElement(SkillExamples, { examples: ['https://x.test/clip.mp4', 'https://x.test/e2.webp'] })),
   isVideoMp4: isSkillMediaVideo('https://x.test/clip.mp4'),
   isVideoWebp: isSkillMediaVideo('https://x.test/e2.webp'),

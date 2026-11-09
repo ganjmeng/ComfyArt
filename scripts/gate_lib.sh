@@ -49,3 +49,32 @@ gate_collect_err_tail() {
   tail -20 "$1" | grep -vE '^[0-9]+(/[0-9]+)? tests? (collected|selected)'
   return 0
 }
+
+# --- #724: node-unit tests (tests/js/*.ts run through rolldown + node) ---
+# Same readiness condition as tests/conftest.py node_ready(): a `node` binary and node_modules/.bin/rolldown.
+# Without both, the frontend unit tests skip silently, so the gate must never count that run as green.
+gate_node_ready() {
+  local wt=${1:?usage: gate_node_ready <worktree>}
+  command -v node >/dev/null 2>&1 || {
+    gate_die "node-unit: node not found in PATH; install Node so the frontend unit tests can run"; return 1; }
+  [ -x "$wt/node_modules/.bin/rolldown" ] || {
+    gate_die "node-unit: $wt/node_modules/.bin/rolldown missing; run npm ci so the frontend unit tests can run"; return 1; }
+  return 0
+}
+
+# True when the report written by tests/conftest.py says its node_ready() was true.
+gate_node_unit_ready() {
+  local json=${1:-}
+  [ -n "$json" ] && [ -f "$json" ] || return 1
+  grep -q '"ready"[[:space:]]*:[[:space:]]*true' "$json"
+}
+
+# Total written by tests/conftest.py (pytest_collection_finish) when GATE_NODE_UNIT_JSON is set.
+# Prints the number; returns 1 with no output when the report is missing/unreadable.
+gate_node_unit_total() {
+  local json=${1:-} total
+  [ -n "$json" ] && [ -f "$json" ] || return 1
+  total=$(sed -n 's/.*"total"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$json" | head -1)
+  [ -n "$total" ] || return 1
+  printf '%s' "$total"
+}

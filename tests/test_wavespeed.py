@@ -146,7 +146,8 @@ async def ws(monkeypatch, fresh_user_dir):
         return web.json_response({"code": 200, "data": {"download_url": f"https://cdn.test/up{state['uploads']}.png"}})
 
     async def cdn(request):
-        return web.Response(body=b"PNGDATA")
+        body = state.get("cdn", b"PNGDATA")
+        return web.Response(body=body if isinstance(body, bytes) else b"PNGDATA")
 
     app.router.add_get("/api/v3/models", models)
     app.router.add_post("/api/v3/media/upload/binary", upload)
@@ -164,6 +165,75 @@ async def ws(monkeypatch, fresh_user_dir):
     wavespeed._submits.clear()
     yield state
     await server.close()
+
+
+def _png(w: int, h: int) -> bytes:
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (w, h), (12, 34, 56)).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+async def _locked_banner(ws, body: bytes, **extra):
+    ws["cdn"] = body
+    task = await wavespeed.submit({
+        "feature": "text_to_image", "model": T2I, "prompt": "linkedin banner",
+        "width": 1584, "height": 396, "size_lock": True, **extra,
+    })
+    model, payload = ws["submits"][0]
+    assert model == T2I
+    assert payload.get("size") == "1584*396"
+    assert "size_lock" not in payload
+    hist = await wavespeed.poll(task)
+    return task, hist[f"ws:{task}"]
+
+
+async def test_size_lock_poll_accepts_the_downloaded_file(ws):
+    """Production poll reads the saved file. A matching PNG is not treated as success just because the request said 1584×396."""
+    from PIL import Image
+    import folder_paths
+    body = _png(1584, 396)
+    task, out = await _locked_banner(ws, body)
+    assert out["status"]["status_str"] == "completed"
+    assert out["generation_succeeded"] is True
+    assert out["requested_size"] == {"width": 1584, "height": 396}
+    assert out["provider_output"] == {"width": 1584, "height": 396}
+    assert out["delivered_size"] == out["provider_output"]
+    ref = out["outputs"]["ws"]["images"][0]
+    saved = wavespeed._read(os.path.join(folder_paths.get_output_directory(), ref["subfolder"], ref["filename"]))
+    assert saved == body
+    with Image.open(io.BytesIO(saved)) as img:
+        assert img.size == (1584, 396)
+    assert ref["metadata"] == {"width": 1584, "height": 396}
+    submits = len(ws["submits"])
+    await wavespeed.poll(task)
+    assert len(ws["submits"]) == submits
+
+
+async def test_size_lock_poll_rejects_a_different_file(ws):
+    task, out = await _locked_banner(ws, _png(2048, 682))
+    assert out["generation_succeeded"] is False
+    assert out["status"]["status_str"] == "error"
+    assert out["outputs"] == {}
+    msg = out["status"]["messages"][0][1]["exception_message"]
+    assert msg.startswith("没有通过：")
+    assert "2048×682" in msg and "1584×396" in msg
+    assert "没有拉伸" in msg and "没有换模型" in msg
+    assert "ws_kind" not in out["status"]["messages"][0][1]
+    submits = len(ws["submits"])
+    again = await wavespeed.poll(task)
+    assert len(ws["submits"]) == submits == 1
+    assert again[f"ws:{task}"]["generation_succeeded"] is False
+
+
+async def test_size_lock_poll_rejects_unreadable_bytes(ws):
+    _task, out = await _locked_banner(ws, b"NOTPNG")
+    assert out["generation_succeeded"] is False
+    assert out["outputs"] == {}
+    msg = out["status"]["messages"][0][1]["exception_message"]
+    assert "读不出像素" in msg and "1584×396" in msg
+    assert msg.startswith("没有通过：")
+    assert len(ws["submits"]) == 1
 
 
 async def test_text_to_image_submit_poll_download(ws):
@@ -230,6 +300,7 @@ async def test_timeout(ws, monkeypatch):
     ws["status"] = "processing"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
     assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["completed"] is False
+    monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 0.0)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
     msgs = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"]
     assert "timed out" in msgs[0][1]["exception_message"]
@@ -797,6 +868,7 @@ async def test_transient_errors_still_hit_job_timeout(ws, monkeypatch):
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
     ws["result_status"] = 502
     assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["status_str"] == "processing"
+    monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 0.0)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
     msgs = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"]
     assert "timed out" in msgs[0][1]["exception_message"]
@@ -1052,7 +1124,7 @@ async def test_170_image_task_failed_is_readable(ws):
     hist = (await wavespeed.poll(task))[f"ws:{task}"]
     info = hist["status"]["messages"][0][1]
     assert hist["status"]["completed"] is True and hist["status"]["status_str"] == "error"
-    assert info["ws_kind"] == "failed" and _shown("failed")[0] == "WaveSpeed 没能完成这次任务，请检查输入后再试。"
+    assert info["ws_kind"] == "failed" and _shown("failed")[0] == "任务没能完成，请检查输入后再试。"  # #719: no vendor name
     assert (await wavespeed.poll(task)) == {f"ws:{task}": hist} and len(ws["submits"]) == 1  # cached, not resubmitted
 
 
@@ -1092,6 +1164,7 @@ async def test_170_3d_submit_server_error_is_readable(ws):
 async def test_170_task_timeout_has_readable_kind(ws, monkeypatch):
     ws["status"] = "processing"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
+    monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 0.0)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
     info = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"][0][1]
     assert "timed out" in info["exception_message"]

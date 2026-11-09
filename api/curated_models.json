@@ -1,7 +1,7 @@
 {
-  "_comment": "Product-curated models per feature (ganjmeng/ComfyArt#95 comment 6355206069, final list from Lovart in-app capture). Single source of truth for the model picker (GET /comfyart/wavespeed/models) and the agent's list_models: api/wavespeed.py load_config() narrows each listed feature in wavespeed_models.json to exactly these ids, in this order (the picker keeps this order: first id first, then Lovart order). 'default' (#134) is the feature default / Auto target when set, else the first id. 'default_params' (#134, optional): request fields the feature default gets when the job leaves them unset. #189: GPT Image models get none, so quality is never sent and WaveSpeed runs (and prices) its schema default (medium). Switching the default is a one-line edit of 'default'. Features not listed here keep their wavespeed_models.json models. 'needs' lists request fields every model of that feature must accept (checked by tests against the catalog fixture and by scripts/check_curated_models.py against the live catalog). 'more' (#95 full Lovart list): every other Lovart in-app model that exists on WaveSpeed, in Lovart dropdown order; usable everywhere, shown after the recommended 'models' in the picker, and in list_models only with all=true.",
+  "_comment": "#825 phase 2: Auto and the feature default for text_to_image and image_edit are openai/gpt-image-2.6-flare. 2.5-flare stays in the list so an explicit pick still routes there. Product-curated models per feature (ganjmeng/ComfyArt#95 comment 6355206069, final list from Lovart in-app capture). Single source of truth for the model picker (GET /comfyart/wavespeed/models) and the agent's list_models: api/wavespeed.py load_config() narrows each listed feature in wavespeed_models.json to exactly these ids, in this order (the picker keeps this order: first id first, then Lovart order). 'default' (#134) is the feature default / Auto target when set, else the first id. 'default_params' (#134, optional): request fields the feature default gets when the job leaves them unset. #189: GPT Image models get none, so quality is never sent and WaveSpeed runs (and prices) its schema default (medium). Switching the default is a one-line edit of 'default'. Features not listed here keep their wavespeed_models.json models. 'needs' lists request fields every model of that feature must accept (checked by tests against the catalog fixture and by scripts/check_curated_models.py against the live catalog). 'more' (#95 full Lovart list): every other Lovart in-app model that exists on WaveSpeed, in Lovart dropdown order; usable everywhere, shown after the recommended 'models' in the picker, and in list_models only with all=true.",
   "features": {
-    "text_to_image": {"needs": ["prompt"], "default": "openai/gpt-image-2.5-flare/text-to-image", "models": [
+    "text_to_image": {"needs": ["prompt"], "default": "openai/gpt-image-2.6-flare/text-to-image", "models": [
       "openai/gpt-image-2/text-to-image",
       "google/nano-banana-2.1/text-to-image",
       "bytedance/seedream-v5.0-pro",
@@ -26,8 +26,10 @@
       "pruna-ai/p-image/ideogram",
       "recraft-ai/recraft-v3",
       "wavespeed-ai/flux-dev-lora",
-      "wavespeed-ai/qwen-image/text-to-image-lora"]},
-    "image_edit": {"needs": ["prompt"], "default": "openai/gpt-image-2.5-flare/edit", "models": [
+      "wavespeed-ai/qwen-image/text-to-image-lora",
+      "openai/gpt-image-2.6-flare/text-to-image",
+      "openai/gpt-image-2.6-sunburst/text-to-image"]},
+    "image_edit": {"needs": ["prompt"], "default": "openai/gpt-image-2.6-flare/edit", "models": [
       "openai/gpt-image-2/edit",
       "google/nano-banana-2.1/edit",
       "bytedance/seedream-v5.0-pro/edit",
@@ -47,7 +49,9 @@
       "wavespeed-ai/flux-2-max/edit",
       "alibaba/qwen-image-3.0-pro/edit",
       "ideogram-ai/ideogram-v4.5/edit",
-      "wavespeed-ai/qwen-image/edit-lora"]},
+      "wavespeed-ai/qwen-image/edit-lora",
+      "openai/gpt-image-2.6-flare/edit",
+      "openai/gpt-image-2.6-sunburst/edit"]},
     "text_to_video": {"needs": ["prompt"], "models": [
       "bytedance/seedance-2.0/text-to-video",
       "kwaivgi/kling-v3.0-std/text-to-video",

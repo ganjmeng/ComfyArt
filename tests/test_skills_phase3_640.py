@@ -18,7 +18,7 @@ PHASE3_NEW = [
     "live-promo-decor", "linkedin-banner", "logo-animation", "restaurant-website", "clothing-swap",
 ]
 DROPPED_13 = [
-    "app-listing-kit", "ip-logo", "magazine-postcard", "poster", "talking-collage", "brand",
+    "app-listing-kit", "ip-logo", "magazine-postcard", "poster-differentiated-compiler", "talking-collage", "brand-identity-director",
     "anime-official-site", "cinematic-snapshot", "zhixian-poster", "cartoon-ip-extend",
     "culture-creative", "new-chinese-mobile", "portfolio-site",
 ]
@@ -28,7 +28,7 @@ DROPPED_MUST_ABSENT = [
     "anime-official-site", "cinematic-snapshot", "zhixian-poster", "cartoon-ip-extend",
     "culture-creative", "new-chinese-mobile", "portfolio-site",
 ]
-UNTOUCHED = ["interior"]  # custom-workflow removed (no Lovart card)
+UNTOUCHED = ["interior-architectural-visualization"]  # custom-workflow removed (no Lovart card)
 NEW_CATEGORY = {
     "taobao-product": "ecommerce",
     "before-after": "ads",
@@ -72,6 +72,12 @@ TITLE_KEY = {
     "clothing-swap": "skills.clothingSwap",
 }
 WEBSITE_NEW = ["product-website", "premium-website", "restaurant-website"]
+# #805 eight-slot hover. studio-model and animated-poster stay on their own media pins.
+HOVER_805 = "b2ec2a5c7aeb294257087216057de4bb4105d944"
+HOVER_805_SLOTS = {
+    "before-after", "taobao-product", "creator-identity", "youtube-channel-banner",
+    "live-promo-decor", "linkedin-banner", "logo-animation", "restaurant-website",
+}
 
 
 def _entries() -> dict[str, str]:
@@ -84,7 +90,7 @@ def _entries() -> dict[str, str]:
 def test_phase3_ids_match_hard_lock_thumbnail_kept_untouched_no_dropped_no_skill_creator():
     ids = list(_entries())
     assert set(PHASE3_NEW) <= set(ids)
-    assert "thumbnail" in ids
+    assert "cover-design-director" in ids
     assert all(u in ids for u in UNTOUCHED)
     assert len(ids) == 49  # 31 prior + 19 NEW
     assert "PHASE3_NEW_SKILL_IDS" in SKILLS_TS
@@ -94,7 +100,7 @@ def test_phase3_ids_match_hard_lock_thumbnail_kept_untouched_no_dropped_no_skill
         assert d not in ids, d
     # Dropped Phase3 board ids must not appear as Phase3 NEW constants
     for d in DROPPED_13:
-        if d in ("poster", "brand"):
+        if d in ("poster-differentiated-compiler", "brand-identity-director"):
             continue  # Phase1 keep
         assert f"'{d}'" not in SKILLS_TS.split("PHASE3_NEW_SKILL_IDS", 1)[1].split("] as const", 1)[0]
 
@@ -114,9 +120,38 @@ def test_new_skills_cut2_skeleton_categories_and_website_chip_sources():
         if f"examples: ex643('{sid}'" in e:
             BATCH1_EX = BATCH1_EX | {sid}
         head = e.split("inputs:", 1)[0]
-        assert f"cover: cover643('{sid}')" in head, sid  # #643 NEW19 cover pins
-        assert "video:" not in head, sid
-        assert "featured: []" in e, sid
+        if sid == "animated-poster":
+            # #805: owner single cover, not the triptych. featured stays empty.
+            assert "cover: pinned('805/reuse/animated-poster', 'a6beae7242511404f6f295265f64d6b7ef00f49b', 'cover.webp')" in head, sid
+        else:
+            assert f"cover: cover643('{sid}')" in head, sid  # #643 NEW19 cover pins
+        if sid == "studio-model":
+            # #805: hover mp4 is pinned to the media commit. Cover, examples, and featured stay.
+            assert "video: pinned('805/reuse/studio-model', '44a5caa051ad8c4bd51152afba8ef853e9c77fd8', 'cover.mp4')" in head, sid
+        elif sid == "animated-poster":
+            assert "video: pinned('805/reuse/animated-poster', '359b05ded3e5649acb69cf8aab33b13db454546b', 'cover.mp4')" in head, sid
+        elif sid in HOVER_805_SLOTS:
+            assert f"video: pinned('805/reuse/{sid}', '{HOVER_805}', 'cover.mp4')" in head, sid
+        else:
+            assert "video:" not in head, sid
+        reuse_featured = {
+            "clothing-swap": "featured: [pinned('643/wash/clothing-swap/examples', WASH_643, '02.webp')]",
+            "product-website": "featured: [pinned('643/wash/product-website/examples', WASH_643, '02.webp')]",
+            "premium-website": "featured: [pinned('643/wash/premium-website/examples', '4ccecac30c1cdf3e79826de5614edc5514e150a4', '07.webp')]",
+            "restaurant-website": "featured: [pinned('643/wash/restaurant-website/examples', '9ca6d4ee7eb6488bb2c430affa86cfae75613485', '07.webp')]",
+            "product-to-packaging": "featured: [pinned('643/wash/product-to-packaging/examples', '6b1cfa37e4eafc72841e70a26909750c2ff44399', '02.webp')]",
+            "live-promo-decor": "featured: [pinned('805/reuse/live-promo-decor', 'e1eb48ba0d2d6511264725c29bd2beebd61816aa', 'featured.webp')]",
+            "linkedin-banner": "featured: [pinned('805/reuse/linkedin-banner', 'b6e408ace4835f14282a32d4e19c79e143cb4f53', 'featured.png')]",
+            "ai-model": "featured: [pinned('805/reuse/ai-model', '7fbb71bdce30a57f35c367bc949981c00fb2fc10', 'featured.png')]",
+            "portrait-studio": "featured: [pinned('805/reuse/portrait-studio', '9af921cda0daa221b75250e5d4c96e39c261a481', 'featured.png')]",
+            "youtube-channel-banner": "featured: [pinned('805/reuse/youtube-channel-banner', '9af921cda0daa221b75250e5d4c96e39c261a481', 'featured.png')]",
+            "creator-identity": "featured: [pinned('805/reuse/creator-identity', 'a9865d28d584068861020b7eda74ddd6e4daab75', 'featured.png')]",
+            "logo-animation": "featured: [pinned('805/reuse/logo-animation', 'a9865d28d584068861020b7eda74ddd6e4daab75', 'featured.png')]",
+        }
+        if sid in reuse_featured:
+            assert reuse_featured[sid] in e, sid
+        else:
+            assert "featured: []" in e, sid
         if sid in BATCH1_EX:
             assert f"examples: ex643('{sid}'" in e, sid
             assert "examples: []" not in e, sid
@@ -126,8 +161,8 @@ def test_new_skills_cut2_skeleton_categories_and_website_chip_sources():
     for sid in WEBSITE_NEW:
         assert "category: 'website'" in entries[sid]
     # upgrade thumbnail still social + present
-    assert "category: 'social'" in entries["thumbnail"]
-    assert ("#640 Phase3-S1 upgrade slot" in SKILLS_TS) or ("#641 Phase3-S2" in SKILLS_TS and "thumbnail" in SKILLS_TS)
+    assert "category: 'social'" in entries["cover-design-director"]
+    assert ("#640 Phase3-S1 upgrade slot" in SKILLS_TS) or ("#641 Phase3-S2" in SKILLS_TS and "cover-design-director" in SKILLS_TS)
 
 
 def test_locale_titles_descriptions_categories_for_new_ids():

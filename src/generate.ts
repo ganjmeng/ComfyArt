@@ -13,6 +13,8 @@ import { paletteImage, palettePrompt } from './palette'
 import { annotated, randomSeed, type Built } from './workflows'
 import { MAX_VIDEO_REF_KINDS, VIDEO_AREAS, videoSize, type Scene } from './videoGraphs'
 import { durationNote, SHOTS, STYLES, VIDEO_RATIOS, videoResolution } from './genOptions'
+import { GIF_STILL_REFUSAL, gifHasStill, gifModelId, gifSpec, type GifSpec } from './gifFile'
+import { svgModelId, svgSpec, type SvgSpec } from './svgFile'
 
 export function scenesOf(shape: GeneratorShape): Scene[] {
   return (shape.meta.scenes as Scene[] | undefined) ?? []
@@ -48,6 +50,23 @@ export function targetSize({ ratio, resolution, workflow, cw, ch }: GeneratorSha
   if (resolution === 'custom') return [snap16(cw), snap16(ch)]
   const short = SHORT_SIDE[resolution] ?? 1024
   return r >= 1 ? [snap16(short * r), short] : [short, snap16(short / r)]
+}
+
+/** #707: a skill canvas (1584×396 and other exact pixels) is not snapped to a multiple of 16. */
+/** #707: a skill size lock names a catalog model that is not on the Lovart dropdown. */
+function sizeLockModel(shape: { meta?: { sizeLockModel?: unknown } }): ModelDef | undefined {
+  const id = typeof shape.meta?.sizeLockModel === 'string' ? shape.meta.sizeLockModel : ''
+  return id ? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' } : undefined
+}
+
+export function pixelSizeOf(shape: { props: GeneratorShape['props']; meta?: { pixelSize?: unknown } }): [number, number] {
+  const raw = shape.meta?.pixelSize
+  if (Array.isArray(raw) && raw.length >= 2) {
+    const w = Math.round(Number(raw[0]))
+    const h = Math.round(Number(raw[1]))
+    if (w > 0 && h > 0) return [w, h]
+  }
+  return targetSize(shape.props)
 }
 
 /** #159: a video card never carries the image default '1K': the model's default/first tier (480p when unknown). */
@@ -145,7 +164,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   const { ratio, workflow, duration, transparent, style } = shape.props
   const suffix = (isVideo(workflow) ? SHOTS : STYLES).find(([k]) => k === style)?.[2]
   const refs = refsOf(shape)
-  const model = isVideo(workflow) ? null : modelOf(workflow) ?? agentModels(false)[0]
+  const model = isVideo(workflow) ? null : sizeLockModel(shape) ?? modelOf(workflow) ?? agentModels(false)[0]
   const colors = isVideo(workflow) ? [] : colorsOf(shape)
   const picked = model ? usableRefs(model, refs, refModesOf(shape)).slice(0, refLimit(model)) : []
   const palette = colors.length && model?.refs && model.id !== CUSTOM_GENERATE && picked.length < refLimit(model)
@@ -186,7 +205,7 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     return wsBuilt({ ...base, feature: 'text_to_video', custom: 'video', model: modelIn('text_to_video', workflow) })
   }
   if (isVideo(workflow)) throw new Error(t('jobs.notInCloud'))
-  const [width, height] = targetSize(shape.props)
+  const [width, height] = pixelSizeOf(shape)
   if (model?.id === CUSTOM_GENERATE) {
     // custom text-to-image: @image/@image2 get the first two refs; @base/@strength get the base image
     const start = baseOf(shape)
@@ -198,24 +217,44 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
       seed: seedOf(shape) ?? undefined, png: transparent,
     })
   }
-  if (model && isCloudModel(model.id)) {
+  if (model && (model.cloud || isCloudModel(model.id))) {
     const base = baseOf(shape)
     const images = [...(base ? [base.src] : []), ...refs].map(annotated)
     const { controls, prep } = applyRefs(picked, refStrengthsOf(shape), refControlsOf(shape))
     const seed = seedOf(shape) ?? undefined
     const negative_prompt = negativeFor(shape, model)
+    const sizeLock = shape.meta?.sizeLockModel ? { size_lock: true as const } : {}
+    const gif = gifSpec(shape.meta)
+    const svg = svgSpec(shape.meta)
+    if (svg) {
+      // #826: SVG stays on 2.6 text-to-image, n=1. References and edit are refused.
+      if (images.length || shape.props.count !== 1) throw new Error(images.length ? t('wsErr.svgEdit') : t('wsErr.svgCount'))
+      return wsBuilt({
+        feature: 'text_to_image', model: svgModelId(model.auto ? undefined : model.id), prompt, width, height,
+        seed, negative_prompt, params: imageParams(shape, model, null, svg), ...sizeLock,
+      })
+    }
+    if (gif) {
+      if (gifHasStill({ image: images[0], images, base: base?.src, refs })) throw new Error(GIF_STILL_REFUSAL)
+      return wsBuilt({
+        feature: 'text_to_image', model: gifModelId(model.auto ? undefined : model.id), prompt, width, height,
+        seed, negative_prompt, params: imageParams(shape, model, gif), ...sizeLock,
+      })
+    }
     if (controls.length && !base) {
       // structure refs (canny/depth/pose/...): a WaveSpeed control model follows their maps, like upstream ControlNet
-      return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })) })
+      return wsBuilt({ feature: 'structure_control', prompt, width, height, seed, png: transparent, controls: controls.map(({ src, ...knobs }) => ({ ...knobs, image: annotated(src) })), ...sizeLock })
     }
     const prepOf = new Map(picked.map((r, i) => [r.src, prep[i]]))
     const cap = refOverflow(shape) ?? images.length
     const refPrep = [...(base ? [null] : []), ...refs.map((r) => prepOf.get(r) ?? null)].slice(0, cap)
     images.splice(cap)
     // reference images go to the image-edit feature; its default model is used unless the agent picked one
+    const askedEdit = featureModelsOf(shape).image_edit
+    const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
     return images.length
-      ? wsBuilt({ feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), prompt, images, width, height, seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined })
-      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined, width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent })
+      ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...(typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}), seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock })
+      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: imageParams(shape, model, null, svgSpec(shape.meta)), width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')
@@ -247,10 +286,34 @@ function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
     if (refs.length || lastFrameOf(shape)) return { ...base, feature: 'image_to_video', model: modelIn('image_to_video', featureModelsOf(shape).image_to_video ?? workflow) }
     return { ...base, feature: 'text_to_video', model: modelIn('text_to_video', workflow) }
   }
-  const model = modelOf(workflow) ?? agentModels(false)[0]
-  if (!model || !isCloudModel(model.id)) return null
-  const [width, height] = targetSize(shape.props)
-  return refs.length || baseOf(shape) ? { feature: 'image_edit', model: modelIn('image_edit', featureModelsOf(shape).image_edit), width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: model.qualities?.includes(shape.props.quality) ? { quality: shape.props.quality } : undefined }
+  const model = sizeLockModel(shape) ?? modelOf(workflow) ?? agentModels(false)[0]
+  if (!model || !(model.cloud || isCloudModel(model.id))) return null
+  const [width, height] = pixelSizeOf(shape)
+  const gif = gifSpec(shape.meta)
+  const svg = svgSpec(shape.meta)
+  if (svg) {
+    if (refs.length || baseOf(shape) || shape.props.count !== 1) return null
+    return { feature: 'text_to_image', model: svgModelId(model.auto ? undefined : model.id), width, height, params: imageParams(shape, model, null, svg) }
+  }
+  if (gif) {
+    const base = baseOf(shape)
+    if (gifHasStill({ base: base?.src, refs })) return null
+    return { feature: 'text_to_image', model: gifModelId(model.auto ? undefined : model.id), width, height, params: imageParams(shape, model, gif) }
+  }
+  const askedEdit = featureModelsOf(shape).image_edit
+  const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
+  return refs.length || baseOf(shape) ? { feature: 'image_edit', model: editModel, width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: imageParams(shape, model, null) }
+}
+
+function imageParams(shape: GeneratorShape, model: { qualities?: string[]; complexities?: string[] } | null | undefined, gif: GifSpec | null, svg: SvgSpec | null = null): Record<string, unknown> | undefined {
+  const params: Record<string, unknown> = {}
+  // #189: quality is sent only when the user picked a tier the schema lists. 'standard' (the card default) is not a tier.
+  if (model?.qualities?.includes(shape.props.quality)) params.quality = shape.props.quality
+  const complexity = shape.meta.complexity
+  if (typeof complexity === 'string' && complexity && (model?.complexities?.includes(complexity) || ['low', 'medium', 'high'].includes(complexity))) params.complexity = complexity
+  if (gif) Object.assign(params, gif)
+  if (svg) params.output_format = 'svg'
+  return Object.keys(params).length ? params : undefined
 }
 
 export function generate(editor: Editor, shape: GeneratorShape, onError: ErrorSink) {

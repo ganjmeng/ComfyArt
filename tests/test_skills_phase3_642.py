@@ -21,6 +21,12 @@ DROPPED_MUST_ABSENT = [
     "anime-official-site", "cinematic-snapshot", "zhixian-poster", "cartoon-ip-extend",
     "culture-creative", "new-chinese-mobile", "portfolio-site",
 ]
+# #805 eight-slot hover. studio-model and animated-poster stay on their own media pins.
+HOVER_805 = "b2ec2a5c7aeb294257087216057de4bb4105d944"
+HOVER_805_SLOTS = {
+    "before-after", "taobao-product", "creator-identity", "youtube-channel-banner",
+    "live-promo-decor", "linkedin-banner", "logo-animation", "restaurant-website",
+}
 
 
 def _entries() -> dict[str, str]:
@@ -57,7 +63,8 @@ def test_new19_present_production_copy_dialog_inputs():
         assert "presetChips" not in e, sid
         assert "presets:" in e, sid
         assert len(re.findall(r"\bP\('", e)) >= 2, sid
-        # #643 cover pins; batch1 examples wired, featured stays empty; no video
+        # #643 cover pins; batch1 examples wired, featured stays empty.
+        # #805 hover: eight-slot pin, plus studio-model and animated-poster on their own commits.
         BATCH1_EX = {
             "taobao-product", "before-after", "product-website", "linkedin-banner", "clothing-swap",
         }
@@ -65,9 +72,37 @@ def test_new19_present_production_copy_dialog_inputs():
         if f"examples: ex643('{sid}'" in e:
             BATCH1_EX = BATCH1_EX | {sid}
         head = e.split("inputs:", 1)[0]
-        assert f"cover: cover643('{sid}')" in head, sid
-        assert "video:" not in head, sid
-        assert "featured: []" in e, sid
+        if sid == "animated-poster":
+            assert "cover: pinned('805/reuse/animated-poster', 'a6beae7242511404f6f295265f64d6b7ef00f49b', 'cover.webp')" in head, sid
+        else:
+            assert f"cover: cover643('{sid}')" in head, sid
+        if sid == "studio-model":
+            # #805: hover mp4 is pinned to the media commit. Cover, examples, and featured stay.
+            assert "video: pinned('805/reuse/studio-model', '44a5caa051ad8c4bd51152afba8ef853e9c77fd8', 'cover.mp4')" in head, sid
+        elif sid == "animated-poster":
+            assert "video: pinned('805/reuse/animated-poster', '359b05ded3e5649acb69cf8aab33b13db454546b', 'cover.mp4')" in head, sid
+        elif sid in HOVER_805_SLOTS:
+            assert f"video: pinned('805/reuse/{sid}', '{HOVER_805}', 'cover.mp4')" in head, sid
+        else:
+            assert "video:" not in head, sid
+        reuse_featured = {
+            "clothing-swap": "featured: [pinned('643/wash/clothing-swap/examples', WASH_643, '02.webp')]",
+            "product-website": "featured: [pinned('643/wash/product-website/examples', WASH_643, '02.webp')]",
+            "premium-website": "featured: [pinned('643/wash/premium-website/examples', '4ccecac30c1cdf3e79826de5614edc5514e150a4', '07.webp')]",
+            "restaurant-website": "featured: [pinned('643/wash/restaurant-website/examples', '9ca6d4ee7eb6488bb2c430affa86cfae75613485', '07.webp')]",
+            "product-to-packaging": "featured: [pinned('643/wash/product-to-packaging/examples', '6b1cfa37e4eafc72841e70a26909750c2ff44399', '02.webp')]",
+            "live-promo-decor": "featured: [pinned('805/reuse/live-promo-decor', 'e1eb48ba0d2d6511264725c29bd2beebd61816aa', 'featured.webp')]",
+            "linkedin-banner": "featured: [pinned('805/reuse/linkedin-banner', 'b6e408ace4835f14282a32d4e19c79e143cb4f53', 'featured.png')]",
+            "ai-model": "featured: [pinned('805/reuse/ai-model', '7fbb71bdce30a57f35c367bc949981c00fb2fc10', 'featured.png')]",
+            "portrait-studio": "featured: [pinned('805/reuse/portrait-studio', '9af921cda0daa221b75250e5d4c96e39c261a481', 'featured.png')]",
+            "youtube-channel-banner": "featured: [pinned('805/reuse/youtube-channel-banner', '9af921cda0daa221b75250e5d4c96e39c261a481', 'featured.png')]",
+            "creator-identity": "featured: [pinned('805/reuse/creator-identity', 'a9865d28d584068861020b7eda74ddd6e4daab75', 'featured.png')]",
+            "logo-animation": "featured: [pinned('805/reuse/logo-animation', 'a9865d28d584068861020b7eda74ddd6e4daab75', 'featured.png')]",
+        }
+        if sid in reuse_featured:
+            assert reuse_featured[sid] in e, sid
+        else:
+            assert "featured: []" in e, sid
         if sid in BATCH1_EX:
             assert f"examples: ex643('{sid}'" in e, sid
             assert "examples: []" not in e, sid

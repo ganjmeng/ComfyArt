@@ -1,6 +1,8 @@
 import logging
 
-from ..auto_models import UnregisteredModel, choose, load_table, note, registered, tool_feature
+from ..auto_models import UnregisteredModel, choose, load_table, named_or_none, note, registered, skill_pin, skill_pin_reason, table_runtime_fallback_choice, tool_feature
+from ..gif_image import choice as gif_choice, ensure_args as ensure_gif_args, requests_gif, still_block
+from ..svg_image import block_reason as svg_block, choice as svg_choice, ensure_args as ensure_svg_args, requests_svg
 from ..mcp_commands import submit_command
 from ..wavespeed import compact_models, grouped_models, load_config, model_details
 from ._context import BOT_CHAT_ID, PROJECT
@@ -31,6 +33,11 @@ def _schema(properties: dict, required: list[str] = ()) -> dict:
 def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
     async def handler(args: dict) -> dict:
         args = dict(args)
+        if action == "generate_image":
+            # #825: still→GIF is refused before approval, quote, confirm, and submit.
+            blocked_gif = still_block(ensure_gif_args(dict(args)))
+            if blocked_gif is not None:
+                return blocked_gif
         fallback_for = str(args.pop("fallback_for", "") or "")
         if approval:
             label = str(args.get("prompt") or args.get("to") or "")[:80]
@@ -56,6 +63,21 @@ def _unregistered_copy() -> str:
 
 
 async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float) -> dict:
+    if action == "generate_image":
+        # #707: a named skill's declared pixels reach the page even if the provider omitted them.
+        from ...bot.skill_output import apply_generate
+        args = apply_generate(args)
+        if requests_svg(args) and not svg_block(args):
+            args = ensure_svg_args(args)  # #826: svg + n=1. Does not pin quality. Edit / n≠1 stay blocked.
+        args = ensure_gif_args(args)  # #825: 动图/GIF fills output_format + frame defaults; does not pin quality
+        blocked_gif = still_block(args)
+        if blocked_gif is not None:
+            return blocked_gif
+    from ..skill_size import EXACT_SKILLS
+    if fallback_for and action == "generate_image" and args.get("skill") in EXACT_SKILLS:
+        # #707: do not retry a banner on a model that would snap 1584×396 to an aspect ratio.
+        from ..skill_size import linkedin_fallback_block
+        return linkedin_fallback_block(args, fallback_for)
     if fallback_for:
         # #236: switch once, to a different model from the #133 table. Never submit the failed model again.
         choice = _fallback_choice(action, args, fallback_for)
@@ -72,13 +94,70 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         if (args.get("edit_model") or args.get("model")) == fallback_for:
             return _same_model_block(fallback_for)
     else:
-        choice = _auto_choice(action, args)
-        if choice and choice["auto"] and choice["category"] != "references" and "model" not in args and choice["model"] != load_config()["features"][tool_feature(action)]["default"]:
+        requested = unregistered_model(action, args)
+        if requested:
+            # #734: a model id the catalog does not register never errors out or asks the user: drop it and let
+            # Auto pick, recording the original value and why on the result (model_choice).
+            log.warning("model %r for %s is not registered; falling back to Auto", requested, action)
+            args = {k: v for k, v in args.items() if k not in ("model", "auto_model")}
+        if action == "generate_image" and args.get("skill") in EXACT_SKILLS:
+            # #707: auto must submit a schema that accepts 1584×396. A named incompatible model stops here.
+            from .. import wavespeed
+            from ..skill_size import linkedin_decision
+            decision = linkedin_decision(args, await wavespeed.catalog(), load_config())
+            if decision.get("block"):
+                return decision["block"]
+            args = decision["args"]
+            choice = decision["choice"]
+            if requested:
+                choice = {**choice, "requested_model": requested, "fallback_reason": _unregistered_reason(requested)}
+        else:
+            choice = _auto_choice(action, args)
+        if choice and choice.get("category") == "skill_unregistered":
+            return _unregistered_block(choice)
+        if requested:
+            choice = {**(choice or {"model": "", "auto": True, "category": "auto",
+                                    "reason": {"zh": "自动选择", "en": "Auto picked it"}}),
+                      "requested_model": requested, "fallback_reason": _unregistered_reason(requested)}
+        if choice and choice.get("category") == "svg_rejected":
+            err = choice["svg_error"]
+            return {"status": "failed", "generation_succeeded": False, "error": err["message"], "kind": err["kind"],
+                    "user_message": err["message"]}
+        if choice and choice.get("blocked"):
+            return still_block(args) or {
+                "status": "failed", "generation_succeeded": False, "submitted": False,
+                "error": choice["reason"]["zh"] + " / " + choice["reason"]["en"],
+                "kind": "gifStillUnsupported",
+                "user_message": choice["reason"]["zh"] + " / " + choice["reason"]["en"],
+            }
+        if choice and choice.get("category") == "svg":
+            # #826: SVG explicitly uses 2.6 text-to-image, n=1. It does not change the global default.
+            args = {k: v for k, v in args.items() if k != "edit_model"}
+            args["model"] = choice["model"]
+            args["output_format"] = "svg"
+            args["count"] = 1
+            args["n"] = 1
+            if choice.get("auto"):
+                args["auto_model"] = True
+        elif choice and choice.get("category") == "gif":
+            # #825: a pure text GIF stays on 2.6 text-to-image. A still never reaches this branch.
+            args = {k: v for k, v in args.items() if k != "edit_model"}
+            args["model"] = choice["model"]
+            args["output_format"] = "gif"
+            if choice.get("auto"):
+                args["auto_model"] = True
+        elif choice and choice["auto"] and choice["category"] != "references" and "model" not in args and choice["model"] != load_config()["features"][tool_feature(action)]["default"]:
             args = {**args, "model": choice["model"], "auto_model": True} if "edit_model" not in choice else {**args, "edit_model": choice["edit_model"]}
+    if choice and choice.get("category") in ("skill", "skill_fallback"):
+        args = _pin_args(args, choice)
+    args.pop("skill", None)
+    # #825: page stashes model_choice on the gen card / GenInfo (Auto · name + hover reason).
+    if choice and isinstance(choice, dict):
+        args = {**args, "model_choice": {**choice, "note": note(choice) if choice.get("model") else (choice.get("fallback_reason") or {}).get("en", "")}}
     result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
     if choice and isinstance(result, dict) and not result.get("cancelled"):
         ran = result.get("model")
-        if choice["auto"] and "edit_model" not in choice and choice["category"] != "references" and ran and ran != choice["model"]:
+        if choice["auto"] and choice.get("category") != "skill_size" and "edit_model" not in choice and choice["category"] != "references" and ran and ran != choice["model"]:
             log.warning("auto model %s is disabled on the page; %s ran instead", choice["model"], ran)
             if choice.get("category") == "fallback":
                 asked, failed = choice["model"], choice.get("fallback") or choice["model"]
@@ -89,7 +168,16 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
                 choice = {**choice, "model": ran, "fallback": choice["model"],
                           "reason": {"zh": f"{choice['reason']['zh']}，但 {choice['model']} 已在模型设置里关闭，改用默认模型",
                                      "en": f"{choice['reason']['en']}, but {choice['model']} is turned off in model settings, so the default model was used"}}
-        result["model_choice"] = {**choice, "note": note(choice)}
+        result["model_choice"] = {**choice, "note": note(choice) if choice.get("model") else choice["fallback_reason"]["en"]}
+        if choice.get("provider_submit"):
+            result["requested_size"] = choice.get("requested_size")
+            result["provider_submit"] = choice["provider_submit"]
+            # File pixels are not known until the provider returns an image. Not measured here.
+            result["provider_output"] = None
+            result["delivered_size"] = None
+        if choice.get("requested_model"):
+            result["requested_model"] = choice["requested_model"]
+            result["model_fallback_reason"] = choice["fallback_reason"]
     image = result.pop("png", None)
     if image:
         result["_images"] = [{"data": image, "mime": "image/png"}]
@@ -121,12 +209,29 @@ def _fallback_choice(action: str, args: dict, failed: str) -> dict | None:
     if not feature or not failed:
         return None
     clean = {k: v for k, v in args.items() if k not in ("model", "edit_model", "auto_model", "fallback_for")}
+    pin = _skill_row(action, clean)
+    if pin:
+        return _skill_fallback(clean, pin, failed)
     primary = _auto_choice(action, clean)
     if not primary:
         return None
     cfg = load_config()["features"][feature]
     ids = {m["id"] for m in cfg["models"]}
     default = cfg["default"]
+    # #872: if the registered Flare fallback itself failed, do not bounce back to Sunburst
+    from ..auto_models import registered_runtime_fallback
+    registered_fb = registered_runtime_fallback(feature, primary, ids)
+    if registered_fb and failed == registered_fb:
+        log.warning("#872: registered fallback %s also failed; not retrying primary %s", failed, primary.get("model"))
+        return None
+    # #872/#873: runtime table fallback (Sunburst → Flare) only for Auto rows, never manual picks (#236 confirm path).
+    row_fb = table_runtime_fallback_choice(feature, primary, failed, ids) if args.get("auto_model") else None
+    if row_fb:
+        if action == "generate_image" and (clean.get("refs") or clean.get("base")):
+            row_fb = {**row_fb, "edit_model": row_fb["model"]}
+        if feature == "image_edit" or primary.get("category") == "masked":
+            row_fb = {**row_fb, "edit_model": row_fb["model"]}
+        return row_fb
     table_model = primary["model"]
     if table_model in ids and table_model != failed:
         target = table_model
@@ -152,32 +257,125 @@ def _same_model_block(model: str) -> dict:
             "note": f"没有用 {model} 再次提交。/ Did not submit {model} again."}
 
 
+
+def _skill_row(action: str, args: dict) -> dict | None:
+    """#708: the skill's pinned row when this call runs on that row's feature and names no model."""
+    pin = skill_pin(args.get("skill"))
+    if not pin or named_or_none(args.get("model")) or _running_feature(action, args) != pin.get("feature"):
+        return None
+    return pin
+
+
+def _edit_ids() -> set:
+    return {m["id"] for m in load_config()["features"]["image_edit"]["models"]}
+
+
+def _skill_choice(args: dict, pin: dict) -> dict:
+    skill = str(args.get("skill"))
+    if pin["model"] not in _edit_ids():
+        # #712: never a silent switch to the feature default
+        log.error("skill %s pins %s, which is not in the catalog; not submitting", skill, pin["model"])
+        return {"model": pin["model"], "auto": True, "category": "skill_unregistered", "skill": skill,
+                "reason": {"zh": f"{skill} 固定的模型 {pin['model']} 不在模型列表里", "en": f"{pin['model']} pinned by {skill} is not in the model catalog"}}
+    return {"model": pin["model"], "auto": True, "category": "skill", "skill": skill, "edit_model": pin["model"],
+            "resolution": pin.get("resolution"), "ratio": pin.get("ratio"), "reason": skill_pin_reason(skill)}
+
+
+def _skill_fallback(args: dict, pin: dict, failed: str) -> dict | None:
+    """#708: the pinned fallback runs only after the pinned model failed; anything else is not switched."""
+    skill = str(args.get("skill"))
+    fb = pin.get("fallback")
+    if failed != pin["model"] or not fb or fb == failed:
+        return None
+    if fb not in _edit_ids():
+        log.error("skill %s fallback %s is not in the catalog; not submitting", skill, fb)
+        return None
+    log.warning("skill %s: %s failed; falling back to %s", skill, failed, fb)
+    # #825: same skill-pin wording as a successful pin; pill_tooltip adds 「 · 首选…改用…」
+    return {"model": fb, "auto": True, "category": "skill_fallback", "skill": skill, "fallback": failed, "edit_model": fb,
+            "resolution": pin.get("resolution"), "ratio": pin.get("ratio"),
+            "reason": skill_pin_reason(skill)}
+
+
+def _pin_args(args: dict, choice: dict) -> dict:
+    args = {k: v for k, v in args.items() if k not in ("model", "auto_model")}
+    args["edit_model"] = choice["edit_model"]
+    if choice.get("resolution"):
+        args["edit_resolution"] = choice["resolution"]
+    if choice.get("ratio") and not args.get("ratio"):
+        args["ratio"] = choice["ratio"]
+    return args
+
+
+def _unregistered_block(choice: dict) -> dict:
+    return {"status": "failed", "model": choice["model"], "error": choice["reason"]["en"],
+            "note": f"没有提交：{choice['reason']['zh']}。/ Not submitted: {choice['reason']['en']}."}
+
+
+def registered_ids(action: str) -> set[str]:
+    """#734: model ids the catalog registers for this tool's feature (empty when the tool has no model feature)."""
+    feature = tool_feature(action)
+    if not feature:
+        return set()
+    feats = load_config()["features"]
+    return {m["id"] for m in (feats.get(feature) or {}).get("models") or []}
+
+
+def unregistered_model(action: str, args: dict) -> str:
+    """#734: the agent-passed model when the catalog does not register it for this tool, else ''."""
+    model = named_or_none(args.get("model")) or ""
+    if not model or not tool_feature(action):
+        return ""
+    return "" if model in registered_ids(action) else model
+
+
+def _unregistered_reason(model: str) -> dict:
+    return {"zh": f"{model} 不是已注册的模型，已改用自动选择",
+            "en": f"{model} is not a registered model, so Auto picked the model instead"}
+
+
 def _auto_choice(action: str, args: dict) -> dict | None:
-    """#133: which model runs and why (user-named wins, else the Auto table)."""
+    """#133: which model runs and why (user-named wins, else the Auto table). #708: a skill pin wins over Auto.
+    #825: front-end Auto tokens ``auto`` / ``auto:video`` are unnamed (consult the table), not category user."""
     feature = tool_feature(action)
     if not feature:
         return None
+    named = named_or_none(args.get("model"))
+    if action == "generate_image" and requests_gif(args):
+        # #825: GIF / 动图 is text-to-image on GPT Image 2.6. Checked before refs, which otherwise
+        # become an image_edit (edit has no gif) or could be read as a video.
+        return gif_choice(named or "", bool(args.get("refs") or args.get("base")))
+    if action == "generate_image" and requests_svg(args):
+        # #826: SVG is 2.6 text-to-image, n=1. Edit and references are refused. Checked before the
+        # reference branch, which would otherwise select an edit model.
+        blocked = svg_block(args)
+        if blocked:
+            return {"model": "", "auto": True, "category": "svg_rejected", "svg_error": blocked, "reason": blocked["reason"]}
+        return svg_choice(named or "")
+    pin = _skill_row(action, args)
+    if pin:
+        return _skill_choice(args, pin)
     cfg = load_config()
     if action == "generate_image" and (args.get("refs") or args.get("base")):
         # refs/base run on image_edit (src/generate.ts). Auto (#133 ruling): 2+ refs -> the multi-reference row,
         # else the edit default. A user-named (text-to-image) model keeps the page's edit default as before.
         refs = len(args.get("refs") or [])
-        if not args.get("model") and refs >= 2:
+        if not named and refs >= 2:
             multi = load_table()["image_edit"]["multi_reference"]
             ids = {m["id"] for m in cfg["features"]["image_edit"]["models"]}
             model, failed = registered(multi, ids, "image_edit/multi_reference")  # #712: no silent fallback
             out = {"model": model, "auto": True, "category": "multi_reference", "edit_model": model,
                    "reason": {"zh": multi["zh"].format(n=refs), "en": multi["en"].format(n=refs)}}
             return {**out, "fallback": failed} if failed else out
-        if args.get("model"):
-            reason = {"zh": f"你指定了 {args['model']}，但带参考图时走图片编辑，用的是它的默认模型",
-                      "en": f"you named {args['model']}, but references run on image editing, which uses its default model"}
+        if named:
+            reason = {"zh": f"你指定了 {named}，但带参考图时走图片编辑，用的是它的默认模型",
+                      "en": f"you named {named}, but references run on image editing, which uses its default model"}
         else:
             reason = {"zh": "只有 1 张参考图（或底图），用图片编辑的默认模型就够了",
                       "en": "there is one reference (or base) image, which the image-edit default model handles"}
-        return {"model": cfg["features"]["image_edit"]["default"], "auto": not args.get("model"), "category": "references", "reason": reason}
+        return {"model": cfg["features"]["image_edit"]["default"], "auto": not named, "category": "references", "reason": reason}
     masked = action in (load_table()[feature].get("masked") or {}).get("tools", [])
-    return choose(feature, str(args.get("prompt") or ""), str(args.get("model") or "") or None, cfg, masked=masked)
+    return choose(feature, str(args.get("prompt") or ""), named, cfg, masked=masked)
 
 
 def _tool(description: str, properties: dict, required: list[str] = (), **relay) -> dict:
@@ -211,14 +409,32 @@ SPECS: dict[str, dict] = {
     "generate_image": _tool(
         "Start generating images on the canvas. Returns ids at once; call wait_generation with them. "
         "prompt: detailed English description (put exact text to render in quotes). ratio like 1:1, "
-        "3:4, 16:9. count 1-4. refs: image shape ids or image URLs the result must follow (subject, "
+        "3:4, 16:9. width and height are pixels when a skill declares an exact canvas "
+        "(linkedin-banner 1584x396, before-after 1024x1280, game-art 1024x1824, pose-fission 1536x2048); "
+        "pass them so the result is not 1024x1024. count 1-4. refs: image shape ids or image URLs the result must follow (subject, "
         "product, style); naming a reference in the prompt does not send it, only refs do. ref_modes: one mode per ref, same order, saying how to use it: content, style, "
         "composition, or a structure guide canny, lineart, depth, normal, pose, mlsd, scribble, softedge, seg, "
         "tile (structure guides also work on models with control instead of refs, e.g. Qwen Image 2512). "
-        "base: an image shape id to transform (image-to-image) with base_strength 0-100 (higher changes more).",
+        "base: an image shape id to transform (image-to-image) with base_strength 0-100 (higher changes more). "
+        "skill: the id of the skill you are running (e.g. pose-fission); a skill with a registered model runs on it. "
+        "GIF / 动图: set output_format to gif (frame_count is clamped to 2-16, default 9; frame_duration_ms 20-2000, default 200). "
+        "Omit model unless the user named one; an omitted model and Auto use GPT Image 2.6 Flare, the image default. "
+        "A GIF with refs, base, image, or images is refused before any quote or generation: still-to-GIF is not supported. "
+        "Do not attach those fields and do not call generate_video or animate_image for a GIF. Use a text-only prompt, "
+        "or describe the picture in the prompt. "
+        "SVG / 矢量 / 可编辑路径: set output_format to svg and count to 1. SVG explicitly uses GPT Image 2.6 text-to-image and does not change the global default. "
+        "Do not pass refs, base, or an edit model, and do not use edit_image to make an SVG. "
+        "complexity is optional "
+        "(low, medium, high) and does not change the price; omit it to leave the schema default. Do not set quality "
+        "unless the user picked a tier.",
         {"prompt": {"type": "string"}, "model": _MODEL_AUTO, "ratio": {"type": "string"},
+         "width": {"type": "integer"}, "height": {"type": "integer"},
          "count": {"type": "integer"}, "refs": _IDS, "ref_modes": {"type": "array", "items": {"type": "string"}}, "base": {"type": "string"},
-         "base_strength": {"type": "integer"}, **_PLACE},
+         "base_strength": {"type": "integer"}, "skill": {"type": "string"},
+         "output_format": {"type": "string", "enum": ["png", "jpeg", "webp", "gif", "svg"]},
+         "frame_count": {"type": "integer"}, "frame_duration_ms": {"type": "integer"},
+         "complexity": {"type": "string", "enum": ["low", "medium", "high"]},
+         **_PLACE},
         ["prompt"], approval="生成图像"),
     "generate_video": _tool(
         "Start generating a video. Returns ids at once; call wait_generation with them. first_frame / "

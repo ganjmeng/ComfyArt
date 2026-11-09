@@ -65,10 +65,15 @@ def test_scoped_icons_use_lucide_helpers() -> None:
         assert re.search(pat, ICONS), f"{key} should map to L({lucide})"
 
 
-@pytest.mark.gate_skip(reason="stale on main: sidebar no longer imports Icons.exit after the Lucide swap (#608)")
 def test_sidebar_consumers_still_use_icons_api() -> None:
+    # #731: 'exit' left the HomeApp rail after the Lucide swap — the WaveSpeed task-history entry now lives in
+    # ProjectHeader's menu, and the settings menu uses the same glyph. Assert those consumers instead.
     for key in SIDEBAR_MAP:
+        if key == "exit":
+            continue
         assert f"Icons.{key}" in HOME_APP, key
+    for consumer in ("src/ui/ProjectHeader.tsx", "src/ui/SettingsMenu.tsx"):
+        assert "Icons.exit" in (ROOT / consumer).read_text(), consumer
 
 
 def test_dock_and_canvas_tools_consumers() -> None:

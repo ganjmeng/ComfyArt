@@ -13,6 +13,17 @@ from typing import Awaitable, Callable, Optional
 
 from .guide import PAID_TOOLS
 
+
+def _gif():
+    # Lazy: importing api at module load cycles through bot (api/__init__ -> bot -> plan_quote).
+    from ..api import gif_image
+    return gif_image
+
+
+def _svg():
+    from ..api import svg_image
+    return svg_image
+
 Pricer = Callable[[str, dict], Awaitable[Optional[float]]]
 ModelsFor = Callable[[str], Awaitable[list[tuple[str, Optional[float]]]]]
 
@@ -37,7 +48,7 @@ _PROMPT_ONE = {
     "zh": "这次生成预计约 {total} 积分，达到了你设置的 {threshold} 积分确认线。确定开始吗？",
     "en": "This generation will cost about {total} credits, at or above your {threshold} credits confirm limit. Start?",
 }
-_PRICE_KEYS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "quality")
+_PRICE_KEYS = ("duration", "resolution", "aspect_ratio", "ratio", "size", "quality", "output_format", "frame_count", "frame_duration_ms")
 _DROP_ARG = ("fallback", "fallback_model", "model")
 _GENERIC = {"text-to-image", "image-to-image", "edit", "image-edit", "text-to-video", "image-to-video"}
 _VIDEO_REF_KEYS = ("first_frame", "reference_images", "reference_videos", "motion_video", "speech_audio")
@@ -85,6 +96,11 @@ def _tool_features() -> dict:
 
 def feature_of_step(tool: str, args: dict) -> str:
     """The feature whose price table prices this step. Generators follow the page, not the raw map."""
+    if tool == "generate_image" and _gif().requests_gif(args):
+        _gif().refuse_still_gif(args)  # #825: a still stops the quote; pure text GIF stays text-to-image
+        return "text_to_image"
+    if tool == "generate_image" and _svg().requests_svg(args):
+        return "text_to_image"  # #826: SVG is t2i. Edit is refused before this is priced.
     if tool == "generate_image" and (args.get("refs") or args.get("base")):
         return "image_edit"
     if tool == "generate_video":
@@ -98,6 +114,8 @@ def units_of(tool: str, args: dict) -> int:
     """generate_image count is N runs (the page clamps it to 1..4). Everything else is one run."""
     if tool != "generate_image":
         return 1
+    if _svg().requests_svg(args):
+        return 1  # #826: one SVG. A count other than 1 is refused, not billed as a batch.
     try:
         n = int(args.get("count") or 1)
     except (TypeError, ValueError):
@@ -132,7 +150,7 @@ def model_label(model_id: str) -> str:
     if not model_id:
         return ""
     try:
-        from ComfyArt.api.wavespeed import display_of, short_label
+        from ..api.wavespeed import display_of, short_label
         shown = display_of(model_id)
         if shown and shown.get("name"):
             return str(shown["name"])
@@ -207,6 +225,34 @@ def normalize_steps(raw: object) -> list[dict]:
         args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
         args = {k: v for k, v in args.items() if k not in ("fallback", "fallback_model")}
         model = str(step.get("model") or args.get("model") or "")
+        blob = f"{args.get('prompt') or ''} {step.get('text') or ''}"
+        merged = {**args, "prompt": blob}
+        if tool == "generate_image" and _svg().requests_svg(merged):
+            blocked = _svg().block_reason(merged)
+            if blocked:
+                out.append({
+                    "text": str(step.get("text") or "").strip(),
+                    "tool": tool,
+                    "model": "",
+                    "arguments": args,
+                    "svg_blocked": blocked,
+                })
+                continue
+            if not merged.get("prompt"):
+                merged["prompt"] = str(step.get("text") or "")
+            args = _svg().ensure_args(merged)
+            model = _svg().pick_t2i(model)
+            args["model"] = model
+        elif tool == "generate_image" and _gif().requests_gif({**args, "prompt": blob}):
+            base = dict(args)
+            if not base.get("prompt"):
+                base["prompt"] = str(step.get("text") or "")
+            if not _gif().requests_gif(base):
+                base["output_format"] = "gif"
+            _gif().refuse_still_gif(base)  # before ensure/price: no quote for a still GIF
+            args = _gif().ensure_args(base)
+            model = _gif().pick_t2i(model)
+            args["model"] = model
         out.append({
             "text": str(step.get("text") or "").strip(),
             "tool": tool,
@@ -266,11 +312,21 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
         return None
     lines: list[Line] = []
     for step in prepared:
+        if step.get("svg_blocked"):
+            lines.append(Line(
+                text=step["svg_blocked"]["message"], price=ABOUT[lang], amount=0.0, approx=True,
+                unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"]),
+            ))
+            continue
         amount, approx, show = await _price_step(step, pricer, models_for)
         unpriced = amount is None
         name = step["text"] or step["tool"]
         label = model_label(show) if show else AUTO_LABEL[lang]
         text = f"{name} · {label}" if label else name
+        if step["tool"] == "generate_image" and _gif().requests_gif(step["arguments"]):
+            text = f"{text} · {_gif().gif_quote_label(step['arguments'].get('frame_count'), step['arguments'].get('frame_duration_ms'))}"
+        if step["tool"] == "generate_image" and _svg().requests_svg(step["arguments"]):
+            text = f"{text} · SVG · n=1"
         if unpriced:
             price = ABOUT[lang]
             amount_n = 0.0

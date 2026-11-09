@@ -16,8 +16,11 @@ def test_enclosed_font_face_and_asset_437():
     assert 'font: 400 13px/1.6 "CA Enclosed", var(--ca-font)' in CSS
 
 
-@pytest.mark.gate_skip(reason="needs fontTools, which the gate venv does not install (#437)")
 def test_enclosed_woff2_covers_2460_2473_437():
+    # #437/#731: the bundled WOFF2 is Brotli-compressed. fonttools[woff]/brotli are test-only deps
+    # (requirements-test.txt); skip with a clear reason when they are not installed.
+    pytest.importorskip("fontTools", reason="fonttools[woff] missing: pip install -r requirements-test.txt")
+    pytest.importorskip("brotli", reason="brotli missing: pip install -r requirements-test.txt")
     from fontTools.ttLib import TTFont
     cmap = TTFont(str(FONT)).getBestCmap()
     missing = [hex(cp) for cp in range(0x2460, 0x2474) if cp not in cmap]

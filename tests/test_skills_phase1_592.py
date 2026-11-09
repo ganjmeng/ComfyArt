@@ -8,9 +8,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS_TS = (ROOT / "src/skills.ts").read_text()
 
-UPGRADE = ["brand", "packaging", "poster", "product", "character", "social", "motion", "banner", "thumbnail"]
-EFFECT = {"poster", "banner", "thumbnail"}  # #641: thumbnail dialog parity → EFFECT_INPUTS
-TEMPLATE_COUNTS = {"product": 6, "brand": 6, "packaging": 5, "character": 8, "motion": 2}
+UPGRADE = ["brand-identity-director", "packaging-design-director", "poster-differentiated-compiler", "product-tvc-advertisement-generator", "character-sheet-design", "rednote-cover-maker", "motion-poster-generator", "banner-design-director", "cover-design-director"]
+EFFECT = {"poster-differentiated-compiler", "banner-design-director", "cover-design-director"}  # #641: thumbnail dialog parity → EFFECT_INPUTS
+TEMPLATE_COUNTS = {"product-tvc-advertisement-generator": 7, "brand-identity-director": 6, "packaging-design-director": 5, "character-sheet-design": 8, "motion-poster-generator": 2}  # product 7 (#784); motion 2 (#806)
 
 
 def _entries() -> dict[str, str]:
@@ -43,25 +43,32 @@ def test_upgrade9_presets_examples_inputs_complete():
         e = entries[sid]
         assert "inputs:" in e, sid
         if sid in EFFECT:
-            assert "inputs: EFFECT_INPUTS" in e, sid
+            assert ("inputs: REF_CARD_INPUTS_687 }" if sid in ("poster-differentiated-compiler", "banner-design-director", "interior-architectural-visualization") else "inputs: EFFECT_INPUTS }") in e, sid  # #687
             assert len(re.findall(r"\bP\('", e)) == 0, sid
-            if sid == "thumbnail":
+            if sid == "cover-design-director":
                 assert "titleCopy" not in e, sid
-                assert "cover: cover643('thumbnail')" in e and "ex643(" in e and "feat643('thumbnail'" in e, sid
-                assert "video: video('thumbnail')" in e, sid
-                assert ("examples: [video(" in e and "ex643(" in e), sid
+                assert "cover: cover643('cover-design-director')" in e and "ex643(" not in e and "feat643('cover-design-director'" in e, sid
+                assert "video: video('cover-design-director')" in e, sid
+                assert "examples: [video(" not in e, sid  # #751 HOLD: Final examples = raw + wash-748.json (1:1, pendingWash)
             else:
-                assert ("examples: ex541(" in e) or ("examples: [video(" in e and "ex541(" in e), sid  # #575 video lead ok
-        elif sid == "social":
+                assert "ex541(" not in e and "examples: [video(" not in e, sid  # #751 HOLD: Final examples = raw + wash-748.json (1:1, pendingWash)
+        elif sid == "rednote-cover-maker":
             # #635 Phase2-S2: Fashion UGC presets coexist with RedNote examples; custom inputs
-            assert "examples: ex541(" in e, sid
+            assert "ex541(" not in e, sid  # #751 HOLD: Final examples = raw + wash-748.json (1:1, pendingWash)
             assert "inputs: EFFECT_INPUTS" not in e, sid
             assert len(re.findall(r"\bP\('", e)) >= 2, sid
             body = e.split("presets:", 1)[1].split("inputs:", 1)[0]
             assert len(re.findall(r"Style: |Focus on |Template: ", body)) >= 2, sid
         else:
             n = TEMPLATE_COUNTS[sid]
+            if not n:
+                assert "presets:" not in e and len(re.findall(r"\bP\('", e)) == 0, sid
+                continue
             assert len(re.findall(r"\bP\('", e)) == n, sid
+            if sid == "motion-poster-generator":  # #806: production prompts, not Style:/Template: stubs
+                assert "MOTION_POSTER_PROMPT" in e and "MOTION_START_END_PROMPT" in e
+                assert "source_image" in e and "start_frame" in e and "motion_brief" in e
+                continue
             # Count only preset prompt prefixes, not instruction prose
             body = e.split("presets:", 1)[1].split("inputs:", 1)[0]
             assert len(re.findall(r"Style: |Focus on |Template: ", body)) == n, sid
@@ -71,12 +78,32 @@ def test_upgrade9_keeps_existing_media_pins():
     entries = _entries()
     for sid in UPGRADE:
         e = entries[sid]
-        if sid == "thumbnail":
-            # #643 true-wash cover/featured/examples + Phase1 video hover + quickStart
-            assert "cover: cover643('thumbnail')" in e, sid
-            assert "video: video('thumbnail')" in e, sid
-            assert "feat643('thumbnail'" in e, sid
-            assert "quickStartCover: quickStartCover('thumbnail')" in e, sid
+        pins = {
+            "cover-design-director": (
+                "cover: cover643('cover-design-director')",
+                "video: video('cover-design-director')",
+                "feat643('cover-design-director'",
+                "quickStartCover: quickStartCover('cover-design-director')",
+            ),
+            "rednote-cover-maker": (  # #687
+                "cover: cover687('rednote-cover-maker')",
+                "video: video687('rednote-cover-maker')",
+                "feat687('rednote-cover-maker', [1, 2, 3, 4, 5])",
+            ),
+            "packaging-design-director": (  # #777 cover; hover stays video()
+                "cover: cover777('packaging-design-director')",
+                "video: video('packaging-design-director')",
+                "featured: feedCovers('packaging-design-director')",
+            ),
+            "banner-design-director": (  # #778 hover mp4
+                "cover: cover('banner-design-director')",
+                "video: pinned('778/wash/banner/examples', WASH_778_EX01, '01.mp4')",
+                "featured: feedCovers('banner-design-director')",
+            ),
+        }.get(sid)
+        if pins:
+            for needle in pins:
+                assert needle in e, (sid, needle)
         else:
             assert f"cover: cover('{sid}')" in e, sid
             assert f"video: video('{sid}')" in e, sid

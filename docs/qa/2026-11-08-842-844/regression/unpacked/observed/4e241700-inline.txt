@@ -1,0 +1,19 @@
+tip: 4e24170015629d61f92fbdc7889069359d7a7cea
+Same QA session, after the pytest probe. GATE=1. No vendor session.
+Inline script, not part of test_qa844_readonly_probe.py.
+
+BAD preview_failed malformed True
+UTF16 preview_failed malformed True doctype_ascii False
+PNG_SAVE ws_task-png2_0.svg preview_failed True
+  body equals the PNG bytes
+  preview file starts with PNG magic
+EMPTY_SAVE ws_task-empty2_0.svg preview_failed
+  body length 0
+EST_KEYS ['confirm', 'confirm_usd', 'currency', 'price', 'source', 'svg', 'svg_note', 'svg_route', 'tier']
+TOP_MODEL None
+CONFIRM False 0.07 estimate
+SVG model openai/gpt-image-2.6-flare/text-to-image n 1 output_format svg quality medium resolution 1k quality_sent False priced_as still_plus_0.02
+TIER 1k · SVG · n=1
+
+UTF-16 input was the same string as fixtures/utf16-doctype.bin, encoded with Python utf-16.
+Its raw bytes do not contain the ASCII sequence <!doctype.

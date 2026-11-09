@@ -1,11 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
-import { answerAsk, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
+import { answerAsk, quoteAnswer, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
 import { setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
 import { errorText } from '../jobs'
-import { confirmAtom } from './Confirm'
+import { ChatInlineConfirm } from './ChatInlineConfirm'
 import OVER_QUOTE from '../../bot/over_quote.json'
 import { schedulesOpenAtom } from '../schedules'
 import { Icons } from './icons'
@@ -19,6 +19,8 @@ import { stepState } from './stepState'
 import { readLocal, writeLocal } from '../localPrefs'
 import { attachSkill, loadSkills, skillCreatorAtom } from '../skills'
 import { openSkillEditor } from './SkillsDialog'
+import { Tip } from './Tip'
+import { autoPillLabel, autoPillTooltip, inputIsAuto, modelChoiceOfResult } from '../autoPill'
 
 const GEN_TOOLS = new Set(['generate_image', 'generate_video', 'edit_image', 'animate_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers', 'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer', 'extend_video', 'upscale_video', 'remove_video_background', 'generate_music', 'generate_sound_effect', 'text_to_speech', 'image_to_3d', 'edit_elements', 'create_mockup', 'create_slides'])
 
@@ -330,6 +332,32 @@ export function RunStop({ b, latest }: { b: BotBlock; latest: boolean }) {
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
+/** #710: a plan card prompt is N shot lines plus 「是否生成这 N 张？」. */
+export function planPromptParts(prompt: string): { lines: string[]; question: string } | null {
+  const parts = (prompt || '').split('\n').map((s) => s.trim()).filter(Boolean)
+  if (parts.length < 2) return null
+  const question = parts[parts.length - 1] ?? ''
+  if (!/^是否生成这\s*\d+\s*张？$/.test(question)) return null
+  return { lines: parts.slice(0, -1), question }
+}
+
+function planAnswerText(b: BotBlock): string {
+  const q = askQuestions(b)[0]
+  const stored = q ? b.answers?.[q.id] : undefined
+  const selected = stored?.selected ?? b.selected ?? []
+  const other = (stored?.other_text ?? b.other_text ?? '').trim()
+  const options = q?.options ?? b.options ?? []
+  if (!selected.length && other) {
+    const letter = LETTERS[options.length] ?? 'C'
+    return `${letter}: ${other}`
+  }
+  if (!selected.length) return t('chatMessage.skipThisQuestion')
+  const i = Math.max(0, options.findIndex((o) => o.id === selected[0]))
+  const letter = LETTERS[i] ?? 'A'
+  const label = options.find((o) => o.id === selected[0])?.label ?? selected[0]
+  return `${letter}: ${label}`
+}
+
 type QState = { selected: string[]; other: string }
 
 function askQuestions(b: BotBlock): AskQuestion[] {
@@ -406,7 +434,7 @@ function toAnswers(questions: AskQuestion[], states: Record<string, QState>): As
   return answers
 }
 
-/** Historical chip asks (no kind) keep the memo path; new question cards use the grey Q/A bubble. */
+/** Historical chip asks (no kind) keep the memo path. */
 function AskMemo({ b }: { b: BotBlock }) {
   const labels = askAnswerLabels(b)
   return (
@@ -417,6 +445,19 @@ function AskMemo({ b }: { b: BotBlock }) {
   )
 }
 
+/** #766: empty selection + no other text = Skip (right user bubble with skip copy only). */
+function isAskSkipped(b: BotBlock): boolean {
+  const questions = askQuestions(b)
+  if (b.answers) {
+    return questions.every((q) => {
+      const a = b.answers![q.id]
+      return !a || (!(a.selected?.length) && !(a.other_text?.trim()))
+    })
+  }
+  return !(b.selected?.length) && !(b.other_text?.trim())
+}
+
+/** #766: answered ask → right user bubble (same shell as the prompt); never the old left grey 问/答 bar. */
 function QuestionAnswered({ b }: { b: BotBlock }) {
   if (b.status !== 'answered') {
     return (
@@ -426,28 +467,44 @@ function QuestionAnswered({ b }: { b: BotBlock }) {
       </div>
     )
   }
-  const questions = askQuestions(b)
-  if (questions.length > 1 || (b.answers && Object.keys(b.answers).length > 1)) {
+  const plan = planPromptParts(askQuestions(b)[0]?.prompt || b.prompt || '')
+  if (plan) {
+    const text = [...plan.lines, plan.question, planAnswerText(b)].join('\n')
     return (
-      <div className="ca-qmemo">
-        {questions.map((q) => {
-          const a = b.answers?.[q.id]
-          const answer = a ? (qAnswerLabels(q, a.selected ?? [], a.other_text) || t('chatMessage.skipped')) : (askAnswerLabels(b) || t('chatMessage.skipped'))
-          return (
-            <div key={q.id} className="ca-qmemo__block">
-              <div className="ca-qmemo__row"><span className="ca-qmemo__k">{t('chatMessage.qaAsk')}</span><span className="ca-qmemo__v">{q.prompt}</span></div>
-              <div className="ca-qmemo__row"><span className="ca-qmemo__k">{t('chatMessage.qaAnswer')}</span><span className="ca-qmemo__v">{answer}</span></div>
-            </div>
-          )
-        })}
+      <div className="ca-chat__user" data-testid="ask-answer-bubble" data-ask={isAskSkipped(b) ? 'skip' : 'answer'}>
+        <div className="ca-chat__bubble ca-chat__bubble--ask ca-chat__bubble--plan">{text}
+          <CopyButton text={text} className="ca-askcopy" testId="ask-answer-copy" icon={Icons.copy} />
+        </div>
       </div>
     )
   }
-  const answer = askAnswerLabels(b) || t('chatMessage.skipped')
+  if (isAskSkipped(b)) {
+    return (
+      <div className="ca-chat__user" data-testid="ask-answer-bubble" data-ask="skip">
+        <div className="ca-chat__bubble ca-chat__bubble--ask">{t('chatMessage.skipThisQuestion')}</div>
+      </div>
+    )
+  }
+  const questions = askQuestions(b)
+  const lines: string[] = []
+  const multi = questions.length > 1 || !!(b.answers && Object.keys(b.answers).length > 1)
+  if (multi) {
+    for (const q of questions) {
+      const a = b.answers?.[q.id]
+      const answer = a ? qAnswerLabels(q, a.selected ?? [], a.other_text) : askAnswerLabels(b)
+      if (!answer) continue
+      lines.push(`${t('chatMessage.qaAsk')}: ${q.prompt}`)
+      lines.push(`${t('chatMessage.qaAnswer')}: ${answer}`)
+    }
+  } else {
+    const prompt = questions[0]?.prompt || b.prompt || ''
+    const answer = askAnswerLabels(b)
+    lines.push(`${t('chatMessage.qaAsk')}: ${prompt}`)
+    lines.push(`${t('chatMessage.qaAnswer')}: ${answer}`)
+  }
   return (
-    <div className="ca-qmemo">
-      <div className="ca-qmemo__row"><span className="ca-qmemo__k">{t('chatMessage.qaAsk')}</span><span className="ca-qmemo__v">{b.prompt}</span></div>
-      <div className="ca-qmemo__row"><span className="ca-qmemo__k">{t('chatMessage.qaAnswer')}</span><span className="ca-qmemo__v">{answer}</span></div>
+    <div className="ca-chat__user" data-testid="ask-answer-bubble" data-ask="answer">
+      <div className="ca-chat__bubble ca-chat__bubble--ask">{lines.join('\n')}</div>
     </div>
   )
 }
@@ -457,6 +514,7 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
   const multi = (q.max_selections ?? 1) > 1
   const allowOther = !!q.allow_other
   const textOnly = !options.length && allowOther
+  // #763: D is always the inline `Other (type your answer)...` row on choice cards
   const recommended = new Set([...(q.defaults ?? []), ...options.filter((o) => o.recommended).map((o) => o.id)])
   const otherLetter = LETTERS[options.length] ?? 'A'
 
@@ -482,9 +540,19 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
   // Soft-select on other only when it is the active answer (single: no A–D selected; multi: when filled)
   const otherOn = !!st.other.trim() && (multi || st.selected.length === 0)
 
+  const plan = planPromptParts(q.prompt)
   return (
     <div className="ca-q__block">
-      <div className="ca-q__prompt">{q.prompt}{multi && <span className="ca-q__hint">{t('chatMessage.multipleChoice')}</span>}</div>
+      {plan ? (
+        <>
+          <div className="ca-q__plans" data-testid="question-plan-body">
+            {plan.lines.map((line) => <div key={line} className="ca-q__plan" data-testid="question-plan-line">{line}</div>)}
+          </div>
+          <div className="ca-q__prompt">{plan.question}{multi && <span className="ca-q__hint">{t('chatMessage.multipleChoice')}</span>}</div>
+        </>
+      ) : (
+        <div className="ca-q__prompt">{q.prompt}{multi && <span className="ca-q__hint">{t('chatMessage.multipleChoice')}</span>}</div>
+      )}
       <div className="ca-q__opts">
         {textOnly ? (
           <div className="ca-q__opt" data-text="" data-on={st.other.trim() ? true : undefined}>
@@ -507,14 +575,15 @@ function QuestionBlock({ q, st, onChange }: { q: AskQuestion; st: QState; onChan
                 {recommended.has(o.id) && <span className="ca-q__rec">{t('chatMessage.recommended')}</span>}
               </button>
             ))}
-            {allowOther && (
-              <div className="ca-q__opt" data-other="" data-text="" data-on={otherOn || undefined}>
+            {(
+              <div className="ca-q__opt" data-other="" data-text="" data-on={otherOn || undefined} data-off={!allowOther || undefined}>
                 <span className="ca-q__letter">{otherLetter}</span>
                 <input
                   type="text"
                   className="ca-q__input"
                   value={st.other}
                   placeholder={q.placeholder || t('chatMessage.other')}
+                  disabled={!allowOther}
                   onChange={(e) => onOther(e.target.value)}
                   onFocus={stealOther}
                   onKeyDown={(e) => e.stopPropagation()}
@@ -624,6 +693,33 @@ function Ask({ b }: { b: BotBlock }) {
   )
 }
 
+/** #763/#769: quiet empty 输出中… / Outputting… chrome (rail row, bordered status, footer) when:
+ * - a question is open, or just ended and reply text has not started yet (#763), or
+ * - the turn is already done, or
+ * - after an ask the reply text is present and no non-ask tool is still pending (#769 wait / completed reply).
+ * Do not quiet a plain generating turn with no ask (keeps Outputting… while streaming). */
+export function askQuiet(m: BotMessage) {
+  let at = -1
+  m.blocks.forEach((b, i) => { if (b.type === 'ask') at = i })
+  if (at < 0) return m.status !== 'streaming'
+  const after = m.blocks.slice(at + 1)
+  const replied = after.some((b) => b.type === 'text' && (b.text ?? '').trim() !== '')
+  if (!replied) return true
+  if (m.status !== 'streaming') return true
+  // Reply text is already on screen — stay quiet unless a real tool is still running.
+  return !after.some((b) => {
+    if (b.type !== 'tool_use') return false
+    if (toolName(b.name) === 'ask_user') return false
+    if (!b.id) return !after.some((x) => x.type === 'tool_result')
+    return !m.blocks.some((x) => x.type === 'tool_result' && x.id === b.id)
+  })
+}
+
+/** #763: a pending question card docks directly above the composer (not inline in the timeline). */
+export function isDockedQuestion(b: BotBlock) {
+  return b.type === 'ask' && b.status === 'pending' && b.kind !== 'plan_quote' && b.kind !== 'run_approval' && b.kind !== OVER_QUOTE.kind
+}
+
 export function renderAsk(b: BotBlock, key: string | number) {
   if (b.kind === 'plan_quote') return <PlanQuote key={key} b={b} />
   if (b.kind === 'run_approval') return <Ask key={key} b={b} />
@@ -643,34 +739,33 @@ export function OverQuote({ b }: { b: BotBlock }) {
   const copy = OVER_QUOTE.copy[lang === 'zh' ? 'zh' : 'en']
   const credits = (b as BotBlock & { credits?: number }).credits
   const body = credits != null ? copy.body.replace('{credits}', String(credits)) : (b.prompt ?? '')
-  useEffect(() => {
-    if (!pending || !askId) return
-    let live = true
-    const answer = (id: string) => void answerAsk(askId, [id], '').catch((e) => { if (live) setError(errorText(e)) })
-    confirmAtom.set({
-      title: t('jobs.confirmTitle'),
-      desc: body,
-      ok: copy.confirm,
-      cancelLabel: copy.decline,
-      // #393: no ✕, the backdrop does nothing; Esc = 先到这里 (cancel → decline)
-      closable: false,
-      backdropClose: false,
-      className: 'ca-overquote',
-      run: () => { if (live) answer(OVER_QUOTE.confirm) },
-      cancel: () => { if (live) answer(OVER_QUOTE.decline) },
-    })
-    return () => {
-      live = false
-      const cur = confirmAtom.get()
-      if (cur && cur.desc === body) confirmAtom.set(null)
-    }
-  }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
+  if (pending && askId) {
+    const answer = quoteAnswer(askId)
+    return (
+      <>
+        <ChatInlineConfirm
+          title={t('jobs.confirmTitle')}
+          desc={body}
+          okLabel={t('jobs.confirmOk')}
+          cancelLabel={copy.decline}
+          testId="chat-inline-overquote"
+          onConfirm={async () => {
+            await answer([OVER_QUOTE.confirm])
+          }}
+          onCancel={() => {
+            void answer([OVER_QUOTE.decline]).catch((e) => setError(errorText(e)))
+          }}
+        />
+        {error ? <div className="ca-chat__hint">{error}</div> : null}
+      </>
+    )
+  }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const ok = b.status === 'answered' && (b.selected ?? []).includes(OVER_QUOTE.confirm)
   return (
     <div className="ca-chat__memo" data-kind={OVER_QUOTE.kind}>
       <span className="ca-icon">{ok ? Icons.check : Icons.close}</span>
-      {body} → {ok ? copy.confirm : b.status === 'expired' ? t('chatMessage.timedOut') : copy.decline}
+      {body} → {ok ? t('jobs.confirmOk') : b.status === 'expired' ? t('chatMessage.timedOut') : copy.decline}
     </div>
   )
 }
@@ -680,46 +775,43 @@ function PlanQuote({ b }: { b: BotBlock }) {
   const [error, setError] = useState('')
   const askId = b.ask_id
   const pending = b.status === 'pending'
-  const startLabel = (b.options ?? []).find((o) => o.id === 'start')?.label ?? ''
-  useEffect(() => {
-    if (!pending || !askId) return
-    let live = true
-    const open = () => confirmAtom.set({
-      title: t('jobs.confirmTitle'),
-      desc: b.prompt ?? '',
-      ok: startLabel,
-      lines: b.lines ?? [],
-      totalLabel: b.total_label,
-      total: b.total,
-      run: () => {
-        if (!live) return
-        setAgentPlanConfirmed(true)
-        void answerAsk(askId, ['start'], '').catch((e) => {
-          if (!live) return
-          setAgentPlanConfirmed(false)
-          setError(errorText(e))
-          open()
-        })
-      },
-      cancel: () => {
-        if (!live) return
-        setAgentPlanConfirmed(false)
-        void answerAsk(askId, ['cancel'], '').catch((e) => { if (live) setError(errorText(e)) })
-      },
-    })
-    open()
-    return () => {
-      live = false
-      const cur = confirmAtom.get()
-      if (cur && cur.desc === (b.prompt ?? '')) confirmAtom.set(null)
-    }
-  }, [pending, askId]) // eslint-disable-line react-hooks/exhaustive-deps -- reopen only when this ask starts or resolves
+  if (pending && askId) {
+    const answer = quoteAnswer(askId)
+    return (
+      <>
+        <ChatInlineConfirm
+          title={t('jobs.confirmTitle')}
+          desc={b.prompt ?? ''}
+          okLabel={t('jobs.confirmOk')}
+          lines={b.lines ?? []}
+          totalLabel={b.total_label}
+          total={b.total}
+          testId="chat-inline-planquote"
+          onConfirm={async () => {
+            setAgentPlanConfirmed(true)
+            try {
+              await answer(['start'])
+            } catch (e) {
+              setAgentPlanConfirmed(false)
+              setError(errorText(e))
+              throw e
+            }
+          }}
+          onCancel={() => {
+            setAgentPlanConfirmed(false)
+            void answer(['cancel']).catch((e) => setError(errorText(e)))
+          }}
+        />
+        {error ? <div className="ca-chat__hint">{error}</div> : null}
+      </>
+    )
+  }
   if (pending) return error ? <div className="ca-chat__hint">{error}</div> : null
   const started = b.status === 'answered' && (b.selected ?? []).includes('start')
   return (
     <div className="ca-chat__memo">
       <span className="ca-icon">{started ? Icons.check : Icons.close}</span>
-      {b.prompt} → {started ? startLabel : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
+      {b.prompt} → {started ? t('jobs.confirmOk') : b.status === 'expired' ? t('chatMessage.timedOut') : t('chatMessage.canceled')}
     </div>
   )
 }
@@ -758,6 +850,8 @@ type ProcessStep = {
   kind: ProcessKind
   label: string
   live: boolean
+  /** #825: Auto routing reason on hover; manual picks leave this unset (no reason UI). */
+  title?: string
   /** #421: generation (or linked wait) failed — row reads as failed, not done. */
   error?: boolean
   /** #437: the search source's real favicon, shown before the page count. */
@@ -819,18 +913,30 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
                 <span className="ca-icon">{PROCESS_ICONS[s.kind]}</span>
               </span>
               {/* #413: a live thought on the rail shows its latest line inline, like the lone Thought tip */}
-              {s.live && s.kind === 'thought' && !open && s.text?.trim() ? (
+              {s.live && s.kind === 'thought' && !open && thoughtCollapsedTip(s.text ?? '') ? (
                 <span className="ca-process__inline">
                   <span className="ca-process__label ca-process__label--active">{s.label}</span>
-                  <span className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline">{s.text.trim().split('\n').at(-1)}</span>
+                  <span className="ca-chat__arg ca-process__arg" data-testid="live-thought-inline">{thoughtCollapsedTip(s.text ?? '')}</span>
                 </span>
               ) : (
-                <span className={shine ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}>
-                  {s.favicon && <Favicon src={s.favicon} />}
-                  {s.label}
-                  {isMemory && <span className="ca-process__memchev ca-icon" data-testid="memory-updated-chev">{Icons.memoryChev}</span>}
-                  {isRefAnalysis && <span className="ca-process__memchev ca-icon" data-testid="ref-analysis-chev">{Icons.memoryChev}</span>}
-                </span>
+                (() => {
+                  const labelEl = (
+                    <span
+                      className={shine ? 'ca-process__label ca-process__label--active' : 'ca-process__label'}
+                      data-testid={(s.kind === 'image' || s.kind === 'video') ? 'auto-model-label' : undefined}
+                      aria-label={s.title || undefined}
+                    >
+                      {s.favicon && <Favicon src={s.favicon} />}
+                      <span className="ca-process__labeltext">{s.label}</span>
+                      {isMemory && <span className="ca-process__memchev ca-icon" data-testid="memory-updated-chev">{Icons.memoryChev}</span>}
+                      {isRefAnalysis && <span className="ca-process__memchev ca-icon" data-testid="ref-analysis-chev">{Icons.memoryChev}</span>}
+                    </span>
+                  )
+                  // #825: Auto reason via existing <Tip> only — never native title (double tips)
+                  return s.title
+                    ? <Tip label={s.title} wide>{labelEl}</Tip>
+                    : labelEl
+                })()
               )}
             </>
           )
@@ -898,14 +1004,27 @@ function ProcessTimeline({ steps: rawSteps }: { steps: ProcessStep[] }) {
   )
 }
 
+
+/** #766: collapsed Thought preview is 正文 — must not show ask_user.
+ * Pick the last line that does not mention the tool (case-insensitive).
+ * Expanded thinking body keeps the raw text (tool names OK there). */
+export function thoughtCollapsedTip(text: string): string {
+  const lines = text.trim().split('\n').map((l) => l.trim()).filter(Boolean)
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (!/ask_user/i.test(lines[i]!)) return lines[i]!
+  }
+  return ''
+}
+
 function Thought({ text, live }: { text: string; live: boolean }) {
   const [open, setOpen] = useState(false)
+  const tip = thoughtCollapsedTip(text)
   return (
     <div className="ca-chat__tool ca-chat__thought" data-live={live || undefined} data-open={open || undefined}>
       <button type="button" className="ca-chat__step" onClick={() => setOpen(!open)}>
         <span className="ca-chat__thinkicon"><span className="ca-icon">{Icons.think}</span></span>
         <span className="ca-chat__thinklabel">{live ? liveThoughtLabel() : t('chatMessage.thought')}</span>
-        {!open && <span className="ca-chat__arg">{text.trim().split('\n').at(-1)}</span>}
+        {!open && tip ? <span className="ca-chat__arg">{tip}</span> : null}
         <span className="ca-chat__chev ca-icon">{Icons.chevron}</span>
       </button>
       {open && <div className="ca-chat__io ca-chat__thoughttext">{text.trim()}</div>}
@@ -987,12 +1106,13 @@ function DoneFeedback({ messageId }: { messageId: string }) {
   )
 }
 
-export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }) {
+export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: BotMessage; dockAsks?: boolean }) {
   const results = new Map(m.blocks.filter((b) => b.type === 'tool_result' && b.id).map((b) => [b.id, b]))
   const resultOf = (b: BotBlock, i: number) => (b.id ? results.get(b.id) : m.blocks[i + 1]?.type === 'tool_result' ? m.blocks[i + 1] : undefined)
   const isPlan = (b: BotBlock) => b.type === 'tool_use' && toolName(b.name) === 'update_plan'
   const plan = m.blocks.filter(isPlan).at(-1)
   const done = m.status !== 'streaming'
+  const quiet = askQuiet(m) // #763: no 输出中… shell while a question is open / just answered or skipped
   const outputs = done ? outputsOf(m.blocks.filter((b) => b.type !== 'task')) : []
   const items: ReactNode[] = []
   let run: Pair[] = []
@@ -1037,6 +1157,8 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     // #627: thinking after an image/video gen row → ref_analysis (参考素材分析结束), not a second 思考完成
   let sawMediaGen = false
   m.blocks.forEach((b, i) => {
+    // #763: ask_user never paints its own 向你提问 timeline row (the docked card is the status)
+    if ((b.type === 'tool_use' || b.type === 'tool_result') && toolName(b.name) === 'ask_user') return
     if (hideMemCall(b)) {
       // #437: memory write in flight → 记忆更新中 (no ›); becomes 记忆已更新 › when memory_updated lands
       if (
@@ -1095,7 +1217,31 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
         }
         if (kindResolved === 'skill_created') { const c = skillCreatedOf(b, result); if (c) created.push(c) }
         const pages = kindResolved === 'search_pages' ? searchResultCount(b, result) : undefined
-        const model = (kindResolved === 'image' || kindResolved === 'video') ? processModelName(b.input) : undefined
+        // #825: prefer model_choice from the tool result (table Auto + reason); fall back to input model id.
+        let model: string | undefined
+        let modelTitle: string | undefined
+        if (kindResolved === 'image' || kindResolved === 'video') {
+          // Prefer model_choice on the tool result. Live Auto (no result yet) → just "Auto".
+          // Legacy done cards without model_choice / model → leave model unset (tool fallback label; never empty Auto).
+          const fromResult = modelChoiceOfResult(result?.text)
+          const named = processModelName(b.input)
+          const autoIn = inputIsAuto(b.input as Record<string, unknown> | undefined)
+          let choice = fromResult
+          if (!choice && stepLiveProbe && autoIn) choice = { auto: true as const, ...(named ? { model: named } : {}) }
+          if (!choice && named) {
+            choice = autoIn
+              ? { auto: true as const, model: named }
+              : { auto: false as const, model: named, reason: { zh: '你指定了这个模型', en: 'you named this model' } }
+          }
+          if (choice) {
+            const labelChoice = stepLiveProbe && choice.auto && !choice.model ? { auto: true as const } : choice
+            // Done Auto without a concrete model id → do not paint a lone "Auto" (legacy).
+            if (!(choice.auto && !choice.model && !stepLiveProbe)) {
+              model = autoPillLabel(labelChoice) ?? undefined
+              modelTitle = autoPillTooltip(choice, lang) ?? undefined
+            }
+          }
+        }
         const aspectRatio = (kindResolved === 'image' || kindResolved === 'video') ? processAspectRatio(b.input) : undefined
         // #430: updating an existing entry shows 记忆已读取 (not clickable) right before 记忆已更新 ›
         if (b.type === 'memory_updated' && memBlocks.some((x) => (x.updated_ids ?? []).length > 0)) {
@@ -1125,17 +1271,23 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
           // #393 nit: a declined / refused paid step never reads as done
           // #421: failed generation reads as failed, not the success/model-name row
           // #420/#421: failed/cancelled tool_use on the rail reads 「工具名 · 失败/Failed」 (incl. canvas tools)
-          label: b.type === 'tool_use' && (genCancelled || genFailed)
+          // #825: failed/cancelled image|video keep the Auto · model label when we have one;
+          // only fall back to 「工具名 · 失败」 when there is no model label (legacy / plain tools).
+          label: (b.type === 'tool_use' && (genCancelled || genFailed)
             && (kindResolved === 'image' || kindResolved === 'video' || kindResolved === 'tool')
+            && !model)
             ? `${toolLabel(b.name)} · ${t(genCancelled ? 'chatMessage.cancelled' : 'chatMessage.failed')}`
             : processLabel(kindResolved, stepLive, {
-              fallback: b.type === 'tool_use' ? toolLabel(b.name) : b.label,
+              fallback: b.type === 'tool_use' && (genCancelled || genFailed)
+                ? `${toolLabel(b.name)} · ${t(genCancelled ? 'chatMessage.cancelled' : 'chatMessage.failed')}`
+                : (b.type === 'tool_use' ? toolLabel(b.name) : b.label),
               model,
               pages,
             }),
           live: stepLive,
           error: genFailed || undefined,
           text: b.type === 'thinking' ? b.text : undefined,
+          title: modelTitle,
           aspectRatio,
           memoryIds: b.type === 'memory_updated' ? memIdsAll : undefined,
           memoryTexts: b.type === 'memory_updated' ? memTextsAll : undefined,
@@ -1151,7 +1303,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     }
     if (b.type !== 'tool_result') {
       // #348: streaming wait / emitting reply → Outputting… on the rail (Brain)
-      if (!done && proc.length && !proc.some((s) => s.live) && (b.type === 'text' || b.type === 'notice' || b.type === 'ask' || b.type === 'task')) {
+      if (!done && !quiet && proc.length && !proc.some((s) => s.live) && (b.type === 'text' || b.type === 'notice' || b.type === 'task')) {
         proc.push({
           key: `out${i}`,
           kind: 'outputting',
@@ -1166,7 +1318,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
       if (b.type === 'text') items.push(<Markdown key={i} text={b.text ?? ''} />)
       if (b.type === 'tool_use') items.push(<Step key={i} editor={editor} use={b} result={resultOf(b, i)} />)
       if (b.type === 'retry') items.push(<Retry key={i} b={b} live={!done && !m.blocks.slice(i + 1).some((x) => x.type === 'retry')} />)
-      if (b.type === 'ask') items.push(renderAsk(b, b.ask_id ?? i))
+      if (b.type === 'ask' && !(dockAsks && isDockedQuestion(b))) items.push(renderAsk(b, b.ask_id ?? i))
       if (b.type === 'task') items.push(<Task key={i} editor={editor} b={b} />)
       if (b.type === 'run_stop') {
         // #492: skip reason=done in AssistantBlocks render (reloaded old chats included). latest-card scan unchanged.
@@ -1178,7 +1330,7 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
     }
   })
   // Streaming with process rail but no live row yet → Outputting… wait state
-  if (!done && proc.length && !proc.some((s) => s.live)) {
+  if (!done && !quiet && proc.length && !proc.some((s) => s.live)) {
     proc.push({
       key: 'out-end',
       kind: 'outputting',
@@ -1199,7 +1351,10 @@ export function AssistantBlocks({ editor, m }: { editor: Editor; m: BotMessage }
 export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMessage; onBranch?: () => void }) {
   const text = textOf(m)
   const media = m.blocks.filter((b) => b.type === 'image' || b.type === 'video' || b.type === 'audio')
+  const images = media.filter((b) => b.type === 'image')
+  const restMedia = media.filter((b) => b.type !== 'image')
   const skills = m.blocks.filter((b) => b.type === 'skill')
+  const bubble = skills.length > 0 || images.length > 0
   return (
     <div className="ca-chat__user" data-queued={m.status === 'queued' || undefined}>
       <div className="ca-chat__acts">
@@ -1208,14 +1363,15 @@ export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMes
         <button type="button" className="ca-history__del" title={t('chatMessage.setAsScheduledTask')} onClick={() => schedulesOpenAtom.set({ prompt: text })}>{Icons.bell}</button>
         {onBranch && <button type="button" className="ca-history__del" title={t('chatMessage.forkNewChatFromHere')} onClick={onBranch}>{Icons.merge}</button>}
       </div>
-      {media.length > 0 && <div className="ca-chat__thumbs">{media.map((b) => <Thumb key={b.url} editor={editor} src={b.url!} />)}</div>}
+      {restMedia.length > 0 && <div className="ca-chat__thumbs">{restMedia.map((b) => <Thumb key={b.url} editor={editor} src={b.url!} />)}</div>}
       {m.blocks.filter((b) => b.type === 'kit').map((b) => <span key={b.name} className="ca-chip"><span className="ca-icon">{Icons.assets}</span>{b.name}</span>)}
       {m.blocks.filter((b) => b.type === 'file').map((b) => <a key={b.url} className="ca-chip" href={b.url} target="_blank" rel="noreferrer"><span className="ca-icon">{Icons.page}</span>{b.name}</a>)}
-      {/* #462: the skill chip sits inside the bubble, inline before the text, with the process-line skill icon */}
-      {(text || skills.length > 0) && (
-        <div className={skills.length > 0 ? 'ca-chat__bubble ca-chat__bubble--skill' : 'ca-chat__bubble'} data-testid="user-bubble">
+      {/* #462 skill chip stays; #710 reference images are image-N chips, not a thumbnail wall */}
+      {(text || bubble) && (
+        <div className={bubble ? 'ca-chat__bubble ca-chat__bubble--skill ca-chat__bubble--refs' : 'ca-chat__bubble'} data-testid="user-bubble">
           {skills.map((b) => <SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" />)}
-          {skills.length > 0 ? <span className="ca-chat__text" data-testid="user-bubble-text">{text}</span> : text}
+          {images.map((b, i) => <span key={b.url ?? i} className="ca-chip ca-chip--ref" data-testid="user-ref-chip">{`image-${i + 1}`}</span>)}
+          {bubble ? <span className="ca-chat__text" data-testid="user-bubble-text">{text}</span> : text}
         </div>
       )}
       {m.status === 'queued' && <span className="ca-chat__hint">{t('chatMessage.queuedSendsAfterTheCurrent')}</span>}

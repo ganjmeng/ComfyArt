@@ -1,0 +1,51 @@
+tip: 4e24170015629d61f92fbdc7889069359d7a7cea
+command: GATE=1 PYTHONPATH=/tmp/qa844/guard python -m pytest -q --tb=short tests/test_qa844_readonly_probe.py
+result: 4 passed, 6 failed in 0.27s
+skipped: 0
+
+.FF..FFF.F
+
+FAILED test_probe_classification_gaps_and_path_preview
+AssertionError: {'stylesheet': ('normal', 'normal', True), 'fill_url': ('normal', 'normal', True), 'path_only': ('preview_failed', 'undrawable', True, 'image/png'), 'animate': ('rejected', 'script', True), ...}
+assert ('normal' == 'rejected')
+animate and data_image assertions had already passed. stylesheet assertion failed first, so fill_url and path_only were not separately asserted, but their observed values are in the message above.
+
+FAILED test_probe_utf16_doctype_and_invalid_encoding
+AssertionError: ('preview_failed', 'malformed', True, 2)
+status preview_failed, download present, fromstring call count 2.
+
+FAILED test_probe_clock_equality
+StopIteration in clock() at api/svg_image.py slow() after draw.
+Failing line: assert run([0, 0, 0.25]).status == "normal"
+The two earlier assertions in the same test had passed:
+run([0, 0, 0, 0.25]).status == "normal"
+run([0, 0, 0, 0.25 + 1e-9]).reason == "too_slow"
+The third call supplies only three samples. admit() reads clock four times. This StopIteration is the probe, not the product.
+
+FAILED test_probe_count_and_unknown_format
+observed differences on tip:
+count_1_5: None
+count_true: None
+tiff_error: None
+tiff_model: openai/gpt-image-2.5-flare/text-to-image
+old_model: openai/gpt-image-2.6-flare/text-to-image
+Identical items omitted by pytest included count_0, count_2, and count_str_1_5 as svgCount.
+old_error was not svgEdit.
+
+FAILED test_probe_nonsvg_and_empty_are_saved
+Failed: DID NOT RAISE WaveSpeedError
+The PNG body was stored. The empty-body assertion in the same test did not run.
+
+FAILED test_probe_quote_fields
+AssertionError: svg_note contains 2.5
+Prior asserts in that test passed: price 0.07, source estimate, confirm False, svg.model 2.6, n 1, output_format svg, tier contains SVG and n=1, plan step model 2.6 and count 1.
+The following assert, est.get("model") == FLARE_26, did not run.
+
+PASSED
+test_probe_io_counters_on_safe_and_dangerous
+test_probe_xxe_utf8_rejected_before_parser
+test_probe_boundaries_equal_and_over
+test_probe_download_headers_and_hash
+
+Follow-up on the same tip, still not a vendor call:
+xml-stylesheet and fill-url(https) during admit: socket_delta 0, open_delta 0, status normal, https://evil.example present in download bytes.

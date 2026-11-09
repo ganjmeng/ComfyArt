@@ -176,6 +176,11 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
   const asset = shape.props.assetId ? editor.getAsset(shape.props.assetId) : null
   if (asset?.type !== 'image' || !asset.props.src) return null
   const { src, name, w: iw, h: ih } = asset.props
+  const svgDownload = typeof asset.meta?.svgDownload === 'string' ? asset.meta.svgDownload : ''
+  const svgName = typeof asset.meta?.svgName === 'string' ? asset.meta.svgName : name
+  const saveSrc = svgDownload || src
+  const saveName = svgDownload ? svgName : name
+  const svgState = typeof asset.meta?.svgState === 'string' ? asset.meta.svgState : ''
 
   const host = editor.getContainer().getBoundingClientRect()
   const left = Math.min(Math.max((rect.l + rect.r) / 2 - width / 2, EDGE), host.width - width - EDGE)
@@ -226,6 +231,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
     { id: 'text', icon: Icons.text, label: t('common.editText'), run: mode$('text') },
     { id: 'angles', icon: Icons.angles, label: t('common.multiAngle'), run: mode$('angles') },
     { id: 'animate', icon: Icons.animate, label: t('common.animateImage'), run: mode$('animate') },
+    { id: 'gif', icon: Icons.image, label: t('imageToolbar.gif'), menu: <GifMenu editor={editor} shape={shape} onDone={() => setMenu(null)} onError={onError} /> },
     { id: 'expand', icon: Icons.expand, label: t('common.expand'), run: mode$('expand') },
     { id: 'inpaint', icon: Icons.lasso, label: t('common.inpaint'), run: mode$('inpaint') },
     { id: 'style', icon: Icons.effects, label: t('common.styleTransfer'), run: mode$('style') },
@@ -278,7 +284,7 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
       <div ref={bar} className="ca-bar ca-toolbar ca-toolbar--image ca-toolbar--swap" data-tool={swapTool.id} style={{ left, top }} onPointerDown={(e) => e.stopPropagation()}>
         <span className="ca-toolbar__name">{swapTool.label}</span>
         <TransformMenu editor={editor} shape={shape} bar />
-        <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
+        <Btn icon={Icons.download} hint={svgState === 'preview_failed' ? t('wsErr.svgPreviewFailed') : t('common.download')} onClick={() => download(saveSrc, saveName)} />
       </div>
     )
   }
@@ -319,11 +325,29 @@ export function ImageToolbar({ onError }: { onError: (msg: string) => void }) {
         )}
       </Popover>
       <div className="ca-bar__sep" />{/* #283 version A (supersedes #244): upstream 5231d59 grouping, tools | download */}
-      <Btn icon={Icons.download} hint={t('common.download')} onClick={() => download(src, name)} />
+      {svgState === 'preview_failed' && <span className="ca-chat__hint">{String(asset.meta?.svgMessage || t('wsErr.svgPreviewFailed'))}</span>}
+      {svgState === 'transparent' && <span className="ca-chat__hint">{t('genSettings.svgTransparent')}</span>}
+      <Btn icon={Icons.download} hint={svgState === 'preview_failed' ? t('wsErr.svgPreviewFailed') : t('common.download')} onClick={() => download(saveSrc, saveName)} />
       {customize && createPortal(<CustomizeDialog tools={tools} onClose={() => setCustomize(false)} />, document.body)}
     </div>
     {panelEl}
     </>
+  )
+}
+
+function GifMenu({ editor, shape, onDone, onError }: { editor: Editor; shape: TLImageShape; onDone: () => void; onError: (msg: string) => void }) {
+  const [prompt, setPrompt] = useState('')
+  const [frames, setFrames] = useState(9)
+  const [ms, setMs] = useState(200)
+  const keys = (e: { stopPropagation: () => void }) => e.stopPropagation()
+  return (
+    <div className="ca-menu" data-testid="gif-menu">
+      <div className="ca-chat__hint">{t('imageToolbar.gifNote')}</div>
+      <textarea className="ca-panel__prompt ca-panel__prompt--boxed" value={prompt} placeholder={t('imageToolbar.gifPrompt')} onChange={(e) => setPrompt(e.target.value)} onKeyDown={keys} />
+      <label className="ca-num"><span>{t('imageToolbar.gifFrames')}</span><input type="number" min={2} max={16} value={frames} onChange={(e) => setFrames(Math.min(16, Math.max(2, Number(e.target.value) || 9)))} onKeyDown={keys} /></label>
+      <label className="ca-num"><span>{t('imageToolbar.gifMs')}</span><input type="number" min={20} max={2000} value={ms} onChange={(e) => setMs(Math.min(2000, Math.max(20, Number(e.target.value) || 200)))} onKeyDown={keys} /></label>
+      <button type="button" className="ca-menu__item" onClick={() => { actions.toGif(editor, shape, prompt, onError, frames, ms); onDone() }}>{t('imageToolbar.gifRun')}</button>
+    </div>
   )
 }
 

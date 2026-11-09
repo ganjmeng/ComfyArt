@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from test_e2e_comment_edit import app_url, mock_ws  # noqa: F401  (fixtures)
+from test_skills_hide_673 import MAIN_ORDER_45  # #742 C-group release → 45
 BRAND_NAME = re.search(r"name: '([^']+)'", (Path(__file__).resolve().parents[1] / "src/brand.ts").read_text()).group(1)
 
 pw = pytest.importorskip("playwright.async_api")
@@ -64,7 +65,7 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
     async with pw.async_playwright() as p:
         browser, pg = await _open(p, app_url, lang, theme)
         cards = pg.get_by_test_id("skills-wall-card")
-        assert await cards.count() == 40  # #673 hides 9 deferred; #591 + #634 + #640 Phase3-S1
+        assert await cards.count() == len(MAIN_ORDER_45)  # #742 C-group +5; #673 hides deferred; #591 + #634 + #640 Phase3-S1
         await pg.locator('[data-skill="style-transfer"]').scroll_into_view_if_needed()  # custom-workflow card removed (no Lovart card)
         await _shot(pg, f"list-{lang}-{theme}")
         chips = await pg.get_by_test_id("skills-chips").locator("button").all_inner_texts()
@@ -72,7 +73,7 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
         assert chips == (zh_chips if lang == "zh" else en_chips)
         assert await pg.get_by_test_id("skills-chip-website").count() == 1  # #591 mobile-ui/web-product
         await pg.get_by_test_id("skills-chip-ecommerce").click()
-        assert sorted(await cards.evaluate_all("cs => cs.map(c => c.dataset.skill)")) == ["ai-model", "clothing-swap", "commerce-strategist", "lifestyle-scene", "live-promo-decor", "multi-angle", "packaging", "person-swap", "pose-fission", "product", "product-to-packaging", "studio-model", "taobao-product"]  # #634 + #640 Phase3 ecommerce builtins
+        assert sorted(await cards.evaluate_all("cs => cs.map(c => c.dataset.skill)")) == sorted(["ai-model", "clothing-swap", "commerce-strategist", "lifestyle-scene", "live-promo-decor", "universal-multi-angle-grid", "packaging-design-director", "person-swap", "pose-fission", "product-tvc-advertisement-generator", "product-to-packaging", "promo-ecommerce", "studio-model", "taobao-product"])  # #634 + #640 Phase3 ecommerce builtins
         await _shot(pg, f"chip-ecommerce-{lang}-{theme}")
         await pg.get_by_test_id("skills-chip-forYou").click()
         assert await pg.locator('[data-skill="custom-workflow"]').count() == 0  # removed: no Lovart card
@@ -81,7 +82,7 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
         assert "637/wash/style-transfer/cover.webp" in (await cw.get_by_test_id("skills-card-cover").get_attribute("src") or "")
         # #494/#529 — kind badge on every Explore card (bottom-left). Built-ins with `video` → data-kind=video;
         # style-transfer (no video) stays image. Never invent a video badge without data.
-        assert await cards.locator(".ca-swall__cover [data-testid=skills-card-kind]").count() == 40  # #673
+        assert await cards.locator(".ca-swall__cover [data-testid=skills-card-kind]").count() == len(MAIN_ORDER_45)  # #673/#742
         box, badge = await cw.locator(".ca-swall__cover").bounding_box(), await cw.get_by_test_id("skills-card-kind").bounding_box()
         assert badge["x"] - box["x"] < 16 and (box["y"] + box["height"]) - (badge["y"] + badge["height"]) < 16
         assert await cw.get_by_test_id("skills-card-kind").get_attribute("data-kind") == "image"
@@ -90,7 +91,7 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
             "c => { const e = document.createElement('span'); e.className = 'ca-swall__placeholder'; c.append(e);"
             " const p = document.createElement('i'); p.style.color = 'var(--ca-text-2)'; e.parentNode.append(p);"
             " const ok = getComputedStyle(e).color === getComputedStyle(p).color; p.remove(); e.remove(); return ok }")
-        poster = pg.locator('[data-skill="poster"]')
+        poster = pg.locator('[data-skill="poster-differentiated-compiler"]')
         src = await poster.get_by_test_id("skills-card-cover").get_attribute("src")
         assert "494/covers-v3/poster.webp" in (src or "")
         assert await pg.evaluate("s => fetch(s).then(r => r.status)", src) == 200
@@ -109,9 +110,9 @@ async def test_cards_chips_bookmark(app_url, lang, theme):  # noqa: F811
         before = pg.url
         await poster.get_by_test_id("skills-card-bookmark").click()
         assert pg.url == before  # bookmark only toggles favourite
-        assert "poster" in await pg.evaluate("localStorage.getItem('comfyart.skillFavourites')")
+        assert "poster-differentiated-compiler" in await pg.evaluate("localStorage.getItem('comfyart.skillFavourites')")
         await pg.get_by_test_id("skills-tab-favourites").click()
-        assert await cards.evaluate_all("cs => cs.map(c => c.dataset.skill)") == ["poster"]
+        assert await cards.evaluate_all("cs => cs.map(c => c.dataset.skill)") == ["poster-differentiated-compiler"]
         await browser.close()
 
 

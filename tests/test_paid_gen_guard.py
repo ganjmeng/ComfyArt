@@ -21,7 +21,7 @@ from ComfyArt.bot.guide import PAID_TOOLS
 from ComfyArt.bot.local_llm import LocalLlmProvider
 from ComfyArt.bot.providers import TurnHandle, TurnRequest
 
-S8_TEXT = compose_provider_text("用这张产品图做电商图（图片 id: shape:src）", skill_name="product")
+S8_TEXT = compose_provider_text("用这张产品图做电商图（图片 id: shape:src）", skill_name="product-tvc-advertisement-generator")
 ZH_STOP = "已生成 4 张仍未完成，已停止，未继续扣费，请告诉我怎么调整"
 EN_STOP = ("Generated 4 images and still not done, so I stopped; no further "
            "charges. Tell me how to adjust.")
@@ -49,7 +49,8 @@ def submits(monkeypatch):
             return {"ok": True}
         return handler
     for name in ("generate_image", "generate_video", "edit_image", "update_plan", "wait_generation"):
-        monkeypatch.setitem(mcp.TOOLS, name, {**mcp.TOOLS[name], "handler": fake(name)})
+        monkeypatch.setitem(mcp.TOOLS, name, {**mcp.TOOLS[name], "handler": fake(name), "_paid_guarded": False})
+    mcp._install_paid_handler_guards()
     log.decline = decline
     yield log
     paid_guard.TURNS.clear()
@@ -117,7 +118,7 @@ def _paid(log):
 # ---- rule 1: at most 4 paid generations per plan item (or exactly N) -----------------------------
 
 async def test_s8_replay_local_llm_fifth_paid_submit_is_zero(monkeypatch, submits):
-    steps = [("skill", {"action": "read", "name": "product"})]
+    steps = [("skill", {"action": "read", "name": "product-tvc-advertisement-generator"})]
     for i in range(25):  # S8 asked for 25 generations
         steps += [_s8_gen(i, refs=["shape:src"]), ("wait_generation", {"ids": [f"gen:{i}"]})]
     error, events, llm = await _local(monkeypatch, steps)
@@ -162,7 +163,7 @@ async def test_s8_replay_claude_code_fifth_paid_submit_is_zero(bot_client, submi
     monkeypatch.setattr(PromptServer.instance, "port", bot_client.server.port, raising=False)
     chat = chat_store.create_chat(user="default", project="p", provider="claude-code")
     resp = await bot_client.post(f"/comfyart/bot/chats/{chat['id']}/send",
-                                 json={"text": "用这张产品图做电商图（图片 id: shape:src）", "skill": "product", "lang": lang})
+                                 json={"text": "用这张产品图做电商图（图片 id: shape:src）", "skill": "product-tvc-advertisement-generator", "lang": lang})
     assert resp.status == 200, await resp.text()
     data = await wait_bot_done(bot_client, chat["id"], timeout=20)
     assert len(_paid(submits)) == 4  # 5th (and every later) submit: 0
@@ -225,7 +226,6 @@ async def test_decline_on_one_plan_item_does_not_block_another(monkeypatch, subm
     assert not error
 
 
-@pytest.mark.gate_skip(reason="stale on main: per-plan-item cap now yields 7 calls, test expects 9 (paid-gen guard, #717)")
 async def test_each_plan_item_gets_its_own_four(monkeypatch, submits):
     def plan(active):
         return ("update_plan", {"steps": [{"text": t, "status": "active" if t == active else "pending"}
@@ -246,17 +246,21 @@ async def test_declined_runs_do_not_count(monkeypatch, submits):
     submits.decline["n"] = 1
     steps = [plan("a"), ("generate_image", {"prompt": "declined"}),
              plan("b"), *[("generate_image", {"prompt": f"b{i}"}) for i in range(4)]]
-    error, *_ = await _local(monkeypatch, steps, user_text="poster")
+    error, *_ = await _local(monkeypatch, steps, user_text="poster-differentiated-compiler")
     assert len(_paid(submits)) == 4 and not error
     assert all(s[1]["prompt"].startswith("b") for s in _paid(submits))
 
 
 async def test_no_guard_outside_a_bot_turn(submits):
-    # plain MCP clients (no bot chat) are not turn-scoped
+    # #730: plain MCP clients (no bot chat) share a no-turn bucket with the same default cap
+    paid_guard.TURNS.clear()
+    outs = []
     for i in range(6):
-        out = await mcp._tools_call({"name": "generate_image", "arguments": {"prompt": str(i)}})
-        assert not out["isError"]
-    assert len(_paid(submits)) == 6
+        outs.append(await mcp._tools_call({"name": "generate_image", "arguments": {"prompt": str(i)}}))
+    assert len(_paid(submits)) == 4
+    assert all(not o["isError"] for o in outs[:4])
+    assert outs[4]["isError"] and outs[4]["content"][0]["text"].startswith(
+        "Generated 4 images and still not done")
 
 
 def test_charged_reads_cancel_and_errors():
@@ -304,15 +308,19 @@ async def test_generation_without_reference_is_blocked_before_submit(monkeypatch
     assert not error
 
 
-@pytest.mark.gate_skip(reason="stale on main: guard returns no paid calls in this path (paid-gen guard, #717)")
 async def test_blocked_calls_do_not_count_toward_cap(monkeypatch, submits):
-    steps = [_s8_gen(i) for i in range(6)] + [_s8_gen(9, refs=["shape:src"])]
+    # Keep the paid-guard precondition failures isolated from the consecutive tool-error guard:
+    # six blocked ($0) calls followed by one valid call must still submit exactly once.
+    steps = []
+    for i in range(6):
+        steps += [_s8_gen(i), ("wait_generation", {"ids": [f"blocked:{i}"]})]
+    steps.append(_s8_gen(9, refs=["shape:src"]))
     error, *_ = await _local(monkeypatch, steps)
     assert len(_paid(submits)) == 1 and not error
 
 
 async def test_base_or_attached_image_line_counts_as_reference(monkeypatch, submits):
-    text = compose_provider_text("做电商主图", skill_name="product", lines=[
+    text = compose_provider_text("做电商主图", skill_name="product-tvc-advertisement-generator", lines=[
         "[Attached image 1: shape id shape:abc — /view?x. Use the shape id with edit tools or as a generation ref.]"])
     assert paid_guard.product_refs(text) == ["shape:abc"]
     steps = [("generate_image", {"prompt": "p", "base": "shape:abc"}),
@@ -335,7 +343,7 @@ async def test_edit_tools_are_not_ref_blocked(monkeypatch, submits):
 
 def test_product_skill_tells_the_agent_to_pass_refs():
     src = (Path(__file__).resolve().parent.parent / "src" / "skills.ts").read_text()
-    line = next(l for l in src.splitlines() if "id: 'product'" in l)
+    line = next(l for l in src.splitlines() if "id: 'product-tvc-advertisement-generator'" in l)
     assert "refs" in line and "does not send the image" in line
     assert "only refs do" in canvas.TOOLS["generate_image"]["description"]
 

@@ -1,0 +1,31 @@
+supp_pid 4224
+POLICY empty rejected empty dl False png False
+POLICY png rejected unsupported_encoding dl False png False
+POLICY malformed rejected malformed dl False png False
+POLICY utf16 rejected unsupported_encoding dl False png False
+POLICY css_url rejected external dl False png False
+POLICY pi rejected stylesheet dl False png False
+POLICY script rejected script dl False png False
+POLICY text preview_failed undrawable dl True png True
+POLICY path transparent transparent dl True png True
+POLICY normal normal normal dl True png True
+PATH_INPROC transparent (32, 32) center (0, 170, 0, 255) corner (0, 0, 0, 0)
+COUNT 1 None
+COUNT 1.5 svgCount
+COUNT 1.0 svgCount
+COUNT True svgCount
+COUNT 0 svgCount
+COUNT 2 svgCount
+COUNT '1' None
+COUNT '1.5' svgCount
+ISOLATED path ('transparent', 'transparent', True, True, {'mode': 'subprocess', 'rendered': True, 'network_isolated': True, 'filesystem_isolated': True, 'network_probe': 'ENETUNREACH', 'filesystem_probe': 'EACCES', 'rlimit_as': 805306368, 'rlimit_cpu': 3, 'rlimit_fsize': 2097152, 'alarm_seconds': 3, 'rlimit_is_network_isolation': False})
+ISOLATED script ('rejected', 'script', False, False, {'mode': 'subprocess', 'rendered': True, 'network_isolated': True, 'filesystem_isolated': True, 'network_probe': 'ENETUNREACH', 'filesystem_probe': 'EACCES', 'rlimit_as': 805306368, 'rlimit_cpu': 3, 'rlimit_fsize': 2097152, 'alarm_seconds': 3, 'rlimit_is_network_isolation': False})
+ISOLATED empty ('rejected', 'empty', False, False, {'mode': 'subprocess', 'rendered': True, 'network_isolated': True, 'filesystem_isolated': True, 'network_probe': 'ENETUNREACH', 'filesystem_probe': 'EACCES', 'rlimit_as': 805306368, 'rlimit_cpu': 3, 'rlimit_fsize': 2097152, 'alarm_seconds': 3, 'rlimit_is_network_isolation': False})
+ISOLATED text ('preview_failed', 'undrawable', True, True, {'mode': 'subprocess', 'rendered': True, 'network_isolated': True, 'filesystem_isolated': True, 'network_probe': 'ENETUNREACH', 'filesystem_probe': 'EACCES', 'rlimit_as': 805306368, 'rlimit_cpu': 3, 'rlimit_fsize': 2097152, 'alarm_seconds': 3, 'rlimit_is_network_isolation': False})
+ISOLATED normal ('normal', 'normal', True, True, {'mode': 'subprocess', 'rendered': True, 'network_isolated': True, 'filesystem_isolated': True, 'network_probe': 'ENETUNREACH', 'filesystem_probe': 'EACCES', 'rlimit_as': 805306368, 'rlimit_cpu': 3, 'rlimit_fsize': 2097152, 'alarm_seconds': 3, 'rlimit_is_network_isolation': False})
+ISOLATED pi ('rejected', 'stylesheet', False, False, {'mode': 'subprocess', 'rendered': True, 'network_isolated': True, 'filesystem_isolated': True, 'network_probe': 'ENETUNREACH', 'filesystem_probe': 'EACCES', 'rlimit_as': 805306368, 'rlimit_cpu': 3, 'rlimit_fsize': 2097152, 'alarm_seconds': 3, 'rlimit_is_network_isolation': False})
+ISOLATED css_url ('rejected', 'external', False, False, {'mode': 'subprocess', 'rendered': True, 'network_isolated': True, 'filesystem_isolated': True, 'network_probe': 'ENETUNREACH', 'filesystem_probe': 'EACCES', 'rlimit_as': 805306368, 'rlimit_cpu': 3, 'rlimit_fsize': 2097152, 'alarm_seconds': 3, 'rlimit_is_network_isolation': False})
+ISOLATED utf16 ('rejected', 'unsupported_encoding', False, False, {'mode': 'subprocess', 'rendered': True, 'network_isolated': True, 'filesystem_isolated': True, 'network_probe': 'ENETUNREACH', 'filesystem_probe': 'EACCES', 'rlimit_as': 805306368, 'rlimit_cpu': 3, 'rlimit_fsize': 2097152, 'alarm_seconds': 3, 'rlimit_is_network_isolation': False})
+ISOLATED png ('rejected', 'unsupported_encoding', False, False, {'mode': 'subprocess', 'rendered': True, 'network_isolated': True, 'filesystem_isolated': True, 'network_probe': 'ENETUNREACH', 'filesystem_probe': 'EACCES', 'rlimit_as': 805306368, 'rlimit_cpu': 3, 'rlimit_fsize': 2097152, 'alarm_seconds': 3, 'rlimit_is_network_isolation': False})
+ISOLATED malformed ('rejected', 'malformed', False, False, {'mode': 'subprocess', 'rendered': True, 'network_isolated': True, 'filesystem_isolated': True, 'network_probe': 'ENETUNREACH', 'filesystem_probe': 'EACCES', 'rlimit_as': 805306368, 'rlimit_cpu': 3, 'rlimit_fsize': 2097152, 'alarm_seconds': 3, 'rlimit_is_network_isolation': False})
+CANARY_FILE False

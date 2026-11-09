@@ -1,11 +1,17 @@
 import { AssetRecordType, atom, createShapeId, isShapeId, type Editor, type TLParentId, type JsonValue, type TLAssetId, type TLImageAsset, type TLShape, type TLShapeId, type TLVideoAsset } from 'tldraw'
 
-import { cancelPrompt, CostDeclined, NeedKeyError, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
+import { cancelPrompt, CostDeclined, NeedKeyError, UncertainResultError, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
+import { placedFile } from './gifFile'
+import { svgAsset } from './svgFile'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Built } from './workflows'
 import { t } from './i18n'
 import { uiCredits } from './usd'
 import { takePendingModel, withModel } from './wavespeed'
+import { lockedDeliveryError } from './sizeLockPref'
+import { mapUnknownError, OWN_ERROR_ALLOWLIST } from './wsErrors'
+import en from './locales/en.json'
+import zh from './locales/zh.json'
 
 export type MediaKind = 'image' | 'video' | 'audio' | 'model'
 
@@ -20,12 +26,33 @@ export interface Job {
   stopping?: boolean
   /** Quoted USD stashed by stopJob for the 「已停止」 fee line. */
   stoppedCharged?: number
+  /** Refresh recovery: querying while authority is unknown; running once the task is confirmed live. */
+  phase?: 'querying' | 'running'
+  /** Result could not be confirmed — keep card, no retry, no fail-red. */
+  uncertain?: boolean
 }
 
 export interface Media { ref: ImageRef; src: string; w: number; h: number; kind: MediaKind }
 export type ErrorSink = (msg: string) => void
 const rawText = (e: unknown) => (e instanceof Error ? e.message : String(e))
+
+/** #721: keys whose locale values are already safe to show on the card (pass through when already mapped). */
+const FRIENDLY_KEY = /^(wsErr|jobs|err|llm|wsKey)\./
+const FRIENDLY_PATTERNS: RegExp[] = (() => {
+  const out: RegExp[] = []
+  for (const loc of [zh as Record<string, string>, en as Record<string, string>]) {
+    for (const [k, v] of Object.entries(loc)) {
+      if (!FRIENDLY_KEY.test(k) || typeof v !== 'string' || !v) continue
+      const esc = v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\{\d+\\\}/g, '.*')
+      out.push(new RegExp(`^${esc}$`))
+    }
+  }
+  return out
+})()
+const isFriendlyCopy = (msg: string) => FRIENDLY_PATTERNS.some((re) => re.test(msg))
+
 // WaveSpeed backend errors arrive in English; show them in the UI language.
+// #721: unrecognized / raw dumps → wsErr.generic; own allowlist + already-mapped i18n pass through.
 export function localizeError(msg: string): string {
   if (/\(401\)|rejected the API key/.test(msg)) return t('jobs.wsKeyInvalid')
   if (/Please upload a voice sample first/.test(msg)) return t('jobs.needVoiceSample')
@@ -40,11 +67,19 @@ export function localizeError(msg: string): string {
   if (charged) return t('jobs.wsTimeoutCharged', charged[1])
   const timeout = /WaveSpeed task timed out after (\d+)s/.exec(msg)
   if (timeout) return t('jobs.wsTimeout', timeout[1])
-  const failed = /^WaveSpeed task (?:failed: (.*)|finished without output)$/s.exec(msg)
-  if (failed) return t('jobs.wsFailed', failed[1] ?? t('jobs.noOutput'))
-  return msg
+  // #721: no longer embed the upstream raw text in jobs.wsFailed — fixed wsErr.failed copy
+  if (/^WaveSpeed task (?:failed: .*|finished without output)$/s.test(msg)) return t('wsErr.failed')
+  if (OWN_ERROR_ALLOWLIST.has(msg)) return msg
+  if (isFriendlyCopy(msg)) return msg
+  return mapUnknownError(msg)
 }
-export const errorText = (e: unknown) => localizeError(rawText(e))
+export const errorText = (e: unknown) => {
+  // CostDeclined / NeedKeyError / UncertainResultError already carry localized copy
+  if (e && typeof e === 'object' && 'name' in e && ((e as { name?: string }).name === 'CostDeclined' || (e as { name?: string }).name === 'NeedKeyError' || (e as { name?: string }).name === 'UncertainResultError')) {
+    return rawText(e)
+  }
+  return localizeError(rawText(e))
+}
 export type Placer = (editor: Editor, holder: TLShape, media: Media[], job: Job, onError: ErrorSink) => Promise<void>
 
 export const GAP = 40
@@ -52,9 +87,19 @@ const active = new Set<string>()
 const settled = new Set<string>()
 /** Reject waiters when the user stops a job that WaveSpeed cannot truly cancel mid-flight. */
 const dropped = new Map<string, (err: Error) => void>()
+/** R09: once a job reaches a terminal outcome, ignore late poll responses. */
+const terminals = new Map<string, { kind: 'ok' | 'error'; seq: number }>()
+let responseSeq = 0
+/** Ordered log of refresh/query outcomes for late-response audits (R09). */
+export const jobResponseLog: { jobId: string; kind: string; seq: number; at: number }[] = []
+function logJobResponse(jobId: string, kind: string) {
+  const seq = ++responseSeq
+  jobResponseLog.push({ jobId, kind, seq, at: Date.now() })
+  return seq
+}
 const placers: Record<string, Placer> = {}
 
-export interface JobResult { srcs: string[]; error?: string }
+export interface JobResult { srcs: string[]; error?: string; pending?: boolean }
 export const resultsAtom = atom<Record<string, JobResult>>('job results', {})
 // #282/#408: e2e tip shoots set the card banner without a live waiter
 if (typeof window !== 'undefined') (window as unknown as { __caResultsAtom?: typeof resultsAtom }).__caResultsAtom = resultsAtom
@@ -118,8 +163,9 @@ export function jobOf(shape: TLShape): Job | null {
 }
 
 export async function toMedia(ref: ImageRef, kind: MediaKind): Promise<Media> {
-  const src = viewUrl(ref)
-  if (kind === 'image' && refKind(src) === 'video') kind = 'video' // cloud animations are MP4, not animated WebP
+  const svg = svgAsset(ref)
+  const src = svg ? svg.displaySrc : viewUrl(ref)
+  if (kind === 'image' && !svg && refKind(viewUrl(ref)) === 'video') kind = 'video' // cloud animations are MP4, not animated WebP
   if (kind === 'audio' || kind === 'model') return { ref, src, w: 0, h: 0, kind }
   const { w, h } = ref.metadata?.width && ref.metadata?.height && kind === 'image'
     ? { w: ref.metadata.width, h: ref.metadata.height }
@@ -129,12 +175,20 @@ export async function toMedia(ref: ImageRef, kind: MediaKind): Promise<Media> {
 
 export function placeMedia(editor: Editor, m: Media, name: string, x: number, y: number, w: number, parentId?: TLShape['parentId']): TLShapeId {
   const assetId = AssetRecordType.createId()
+  const file = placedFile(m.ref.filename, name, m.kind === 'video')
+  const svg = svgAsset(m.ref)
   editor.createAssets([{
     id: assetId,
     typeName: 'asset',
     type: m.kind,
-    props: { name, src: m.src, w: m.w, h: m.h, mimeType: m.kind === 'video' ? 'video/mp4' : m.ref.filename.endsWith('.svg') ? 'image/svg+xml' : m.ref.filename.endsWith('.webp') ? 'image/webp' : 'image/png', isAnimated: m.kind === 'video' || m.ref.filename.endsWith('.webp') },
-    meta: {},
+    props: {
+      name: svg ? svg.downloadName : file.name,
+      src: m.src,
+      w: m.w, h: m.h,
+      mimeType: svg ? 'image/png' : file.mimeType,
+      isAnimated: svg ? false : file.isAnimated,
+    },
+    meta: svg ? { svgDownload: svg.downloadUrl, svgName: svg.downloadName, svgState: svg.state, svgMessage: svg.message, inlineSvg: false } : {},
   } as any])
   const id = createShapeId()
   editor.createShape({ id, type: m.kind, x, y, ...(parentId ? { parentId } : {}), props: { assetId, w, h: w * m.h / m.w } } as any)
@@ -143,6 +197,8 @@ export function placeMedia(editor: Editor, m: Media, name: string, x: number, y:
 
 export interface GenInfo {
   tool: string
+  /** #825: Auto · model pill payload (survives refresh on the result shape). */
+  modelChoice?: import('./autoPill').ModelChoice
   prompt?: string
   ratio?: string
   resolution?: string
@@ -164,10 +220,12 @@ function infoOf(holder: TLShape, job: Job): GenInfo {
   if (!prompt) return { tool: job.name }
   const refs = holder.meta.refs as string[] | undefined
   const inputs = Object.fromEntries(GEN_INPUTS.filter((k) => holder.meta[k] != null).map((k) => [k, holder.meta[k]!]))
+  const modelChoice = holder.meta.modelChoice as import('./autoPill').ModelChoice | undefined
   return {
     tool: t('common.generate'), prompt, ratio: p.ratio, resolution: p.resolution, duration: p.duration, workflow: p.workflow,
     ...(typeof job.extra?.seed === 'number' ? { seed: job.extra.seed } : {}),
     ...(refs?.length ? { refs } : {}),
+    ...(modelChoice ? { modelChoice } : {}),
     settings: { count: p.count, quality: p.quality, style: p.style, transparent: p.transparent, cw: p.cw, ch: p.ch },
     inputs,
   }
@@ -227,24 +285,74 @@ async function keepPartial(editor: Editor, holder: TLShape, job: Job): Promise<n
   return media.length
 }
 
+function markJobPhase(editor: Editor, holderId: TLShapeId, phase: 'querying' | 'running') {
+  const holder = editor.getShape(holderId)
+  const cur = holder ? jobOf(holder) : null
+  if (!holder || !cur || cur.phase === phase) return
+  editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: { ...cur, phase } as any } })
+}
+
 async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: ErrorSink) {
+  if (!job.id) return
   if (active.has(job.id)) return
   active.add(job.id)
   try {
     const refs = await Promise.race([
-      waitForImages(job.id, job.node),
+      waitForImages(job.id, job.node, (status) => markJobPhase(editor, holderId, status)),
       new Promise<never>((_, reject) => dropped.set(job.id, reject)),
     ])
+    const seq = logJobResponse(job.id, 'ok')
+    // R09: never let a late success/error overwrite an earlier terminal outcome.
+    const prior = terminals.get(job.id)
+    if (prior) {
+      logJobResponse(job.id, `ignore-ok-after-${prior.kind}`)
+      return
+    }
+    terminals.set(job.id, { kind: 'ok', seq })
     settled.add(job.id)
     const media = await Promise.all(refs.map((r) => toMedia(r, refKind(viewUrl(r)) === 'video' ? 'video' : job.kind)))
     const holder = editor.getShape(holderId)
     if (!holder) return
+    // #707: a size-locked job is not placed when the decoded file is not the locked pixels.
+    const refused = lockedDeliveryError(holder.meta, media)
+    if (refused) throw new Error(refused)
     await (placers[job.placer ?? ''] ?? defaultPlacer)(editor, holder, media, job, onError)
     report(holderId, { srcs: media.map((m) => m.src) })
   } catch (e) {
+    const seq = logJobResponse(job.id, 'error')
+    const prior = terminals.get(job.id)
+    if (prior?.kind === 'ok') {
+      // Late error/running response after success: keep the terminal success.
+      logJobResponse(job.id, 'ignore-error-after-ok')
+      return
+    }
+    if (prior?.kind === 'error') {
+      logJobResponse(job.id, 'ignore-duplicate-error')
+      return
+    }
     const holder = editor.getShape(holderId)
     const live = holder ? jobOf(holder) : null
     const stopped = !!(live?.stopping || job.stopping)
+    const uncertain = e instanceof UncertainResultError || (e as { name?: string })?.name === 'UncertainResultError'
+    if (uncertain && !stopped) {
+      // R05/R10: keep pending — do not mark hard terminal fail / fail-red toast.
+      logJobResponse(job.id, 'uncertain')
+      if (holder) {
+        const cur = jobOf(holder) ?? job
+        editor.updateShape({
+          id: holderId,
+          type: holder.type,
+          meta: { ...holder.meta, job: { ...cur, phase: undefined, uncertain: true, stopping: false } as any },
+        })
+      }
+      report(holderId, {
+        srcs: [],
+        error: `${t('jobs.resultPendingShort')}\n${t('jobs.resultPendingHint')}`,
+        pending: true,
+      })
+      return
+    }
+    terminals.set(job.id, { kind: 'error', seq })
     const kept = holder ? await keepPartial(editor, holder, job).catch(() => 0) : 0
     // User stop: prefer fee line from cancel (stoppedCharged / reject message); else 「已停止」.
     let msg: string
@@ -337,6 +445,7 @@ export async function startJob(
     await finish(editor, holderId, job, onError)
   } catch (e) {
     const soft = e instanceof CostDeclined || e instanceof NeedKeyError
+    const uncertain = e instanceof UncertainResultError || (e as { name?: string })?.name === 'UncertainResultError'
     settleSubmitGate(holderId, e instanceof CostDeclined ? 'declined' : soft ? 'error' : 'error')
     const holder = editor.getShape(holderId)
     if (soft) {
@@ -344,6 +453,27 @@ export async function startJob(
       if (holder?.meta.temp || holder?.meta.quiet) editor.deleteShape(holderId)
       else if (holder) editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: null } })
       report(holderId, { srcs: [], error: errorText(e) })
+      return
+    }
+    if (uncertain) {
+      // R06: lost receipt — keep pending record, never forge an id or re-ask cost.
+      if (holder) {
+        const pendingJob: Job = {
+          id: '',
+          node: '',
+          name: opts.name,
+          kind: opts.kind ?? 'image',
+          ...(opts.placer ? { placer: opts.placer } : {}),
+          ...(opts.extra ? { extra: opts.extra } : {}),
+          uncertain: true,
+        }
+        editor.updateShape({ id: holderId, type: holder.type, meta: { ...holder.meta, job: pendingJob as any, quiet: false } })
+      }
+      report(holderId, {
+        srcs: [],
+        error: `${t('jobs.resultPendingShort')}\n${t('jobs.resultPendingHint')}`,
+        pending: true,
+      })
       return
     }
     if (holder?.meta.temp) editor.deleteShape(holderId)
@@ -377,7 +507,13 @@ export function spawnHolder(editor: Editor, beside: TLShape, size?: [number, num
 export function resumeJobs(editor: Editor, onError: ErrorSink) {
   for (const shape of editor.store.query.records('shape').get()) {
     const job = jobOf(shape)
-    if (job) void finish(editor, shape.id, job, onError)
+    if (!job) continue
+    // R06: no task id — keep pending; never invent an id or re-submit.
+    if (!job.id) continue
+    // R02: show querying copy on the original card until authority answers.
+    const phased: Job = { ...job, phase: job.phase ?? 'querying', uncertain: false }
+    editor.updateShape({ id: shape.id, type: shape.type, meta: { ...shape.meta, job: phased as any } })
+    void finish(editor, shape.id, phased, onError)
   }
   return editor.sideEffects.registerAfterDeleteHandler('shape', (shape) => {
     const job = jobOf(shape)

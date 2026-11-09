@@ -1,0 +1,119 @@
+{
+  "event": "run_end",
+  "balance_start": 31.766999,
+  "balance_end": 31.217699,
+  "spent_from_balance": 0.5493,
+  "spent_sum_deltas": 0.5493,
+  "results": [
+    {
+      "id": "A1",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "2cf3bb30caca4166a59334c63816bdbc",
+      "cost": 0.09,
+      "latency_s": 36.376,
+      "balance_before": 31.766999,
+      "balance_after": 31.676999,
+      "out": "/workspace/wt825/docs/qa/825/out/A1.png"
+    },
+    {
+      "id": "A2",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "1fe4bd2b3b1e49d3a00f97624de6bfb6",
+      "cost": 0.09,
+      "latency_s": 59.572,
+      "balance_before": 31.676999,
+      "balance_after": 31.586999,
+      "out": "/workspace/wt825/docs/qa/825/out/A2.png"
+    },
+    {
+      "id": "B1",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "c1417807dcc04c37b326287c0f859d83",
+      "cost": 0.039,
+      "latency_s": 25.028,
+      "balance_before": 31.586999,
+      "balance_after": 31.547999,
+      "out": "/workspace/wt825/docs/qa/825/out/B1.png"
+    },
+    {
+      "id": "B2",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "625389052fad43ceacebf0fb48ce56ee",
+      "cost": 0.072,
+      "latency_s": 30.995,
+      "balance_before": 31.547999,
+      "balance_after": 31.475999,
+      "out": "/workspace/wt825/docs/qa/825/out/B2.png"
+    },
+    {
+      "id": "C1",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "8b08f315c02541dbb31897384a4834b1",
+      "cost": 0.0378,
+      "latency_s": 47.869,
+      "balance_before": 31.475999,
+      "balance_after": 31.438199,
+      "out": "/workspace/wt825/docs/qa/825/out/C1.png"
+    },
+    {
+      "id": "C2",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "366abb9bae9c450cb5514a90299d619c",
+      "cost": 0.0405,
+      "latency_s": 30.702,
+      "balance_before": 31.438199,
+      "balance_after": 31.397699,
+      "out": "/workspace/wt825/docs/qa/825/out/C2.png"
+    },
+    {
+      "id": "C3",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "f8c12db6c4cd4f5ea1aa8c868377be53",
+      "cost": 0.0585,
+      "latency_s": 48.111,
+      "balance_before": 31.397699,
+      "balance_after": 31.339199,
+      "out": "/workspace/wt825/docs/qa/825/out/C3.png"
+    },
+    {
+      "id": "D1",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "d69a210b926b4e039c0bb4d697da8512",
+      "cost": 0.036,
+      "latency_s": 35.829,
+      "balance_before": 31.339199,
+      "balance_after": 31.303199,
+      "out": "/workspace/wt825/docs/qa/825/out/D1.png"
+    },
+    {
+      "id": "D2",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "ade77dc5fffb465183bc30dd71c94720",
+      "cost": 0.0405,
+      "latency_s": 36.287,
+      "balance_before": 31.303199,
+      "balance_after": 31.262699,
+      "out": "/workspace/wt825/docs/qa/825/out/D2.png"
+    },
+    {
+      "id": "D3",
+      "attempt": 1,
+      "ok": true,
+      "prediction_id": "32b2046864a44e1188302ba42506c6b1",
+      "cost": 0.045,
+      "latency_s": 30.936,
+      "balance_before": 31.262699,
+      "balance_after": 31.217699,
+      "out": "/workspace/wt825/docs/qa/825/out/D3.png"
+    }
+  ]
+}
