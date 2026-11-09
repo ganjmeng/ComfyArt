@@ -47,7 +47,12 @@ export class ConfirmationSubmission {
   }
 }
 
-/** Only use for a real paid submit, never to turn an unknown quote into zero. */
+/**
+ * Gate for the paid Confirm Continue button.
+ * Open-ended / unknown quotes (null or unpriced) may Continue after explicit confirm (G02/F01);
+ * never treat unknown as $0. Negative and non-finite prices stay blocked.
+ */
 export function canSubmitPricedConfirmation(price: number | null, unpriced = false) {
-  return !unpriced && price != null && Number.isFinite(price) && price >= 0
+  if (unpriced || price == null) return true
+  return Number.isFinite(price) && price >= 0
 }
