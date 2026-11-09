@@ -4,7 +4,7 @@ import { confirmDesc, type ConfirmDetail, type ConfirmGif } from './confirmText'
 import { t } from './i18n'
 import { onComfyEvent } from './ws'
 import { isWsGraph, WS_ID } from './wavespeed'
-import { logRawGenError, mapUnknownError, wsBodyError, wsErrorText } from './wsErrors'
+import { logRawGenError, mapUnknownError, wsErrorText } from './wsErrors'
 import { keyMissing, keySettingsOpenAtom, keyStatusAtom, outOfCredit, refreshKeyStatus } from './wavespeedKey'
 
 const POLL_MS = 1500
