@@ -314,7 +314,7 @@ export function ProviderAdmin() {
                     <button type="button" data-on={batchModel.endsWith('sunburst') || undefined} onClick={() => setBatchModel('openai/gpt-image-2.6-sunburst')}>Sunburst</button>
                   </span>
                   <span className="ca-prov__hint" data-testid="provider-batch-selected-only">{t('provider.batchSelectedOnly')}</span>
-                  <button type="button" className="ca-prov__btn" data-testid="provider-batch-apply" disabled={busy} onClick={() => {
+                  <button type="button" className="ca-prov__btn" data-testid="provider-batch-apply" disabled={busy || !tools.some((t) => t.key_ok)} title={!tools.some((t) => t.key_ok) ? tn('provider.keyMissingDraft', { key: 'REPLICATE_API_TOKEN' }) : undefined} onClick={() => {
                     setBusy(true); setError('')
                     saveToolBatch({ ids: checked, primary: { provider: 'replicate', model: batchModel }, backup: null, fallback: false, activate: true }).then((next) => {
                       absorb(next)

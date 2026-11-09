@@ -69,3 +69,32 @@ def test_gen_settings_svg_independent_of_gif_frames():
     # Format picker clears the other format when switching.
     assert "onSvg?.(null); onGif?.(" in GEN or "onSvg?.(null)" in GEN
     assert "onGif?.(null); onSvg?.(" in GEN or "onGif?.(null)" in GEN
+
+
+def test_gap4_nokey_savefail_batch_wiring():
+    """Gap 4 UI: keyMissingDraft / saveFailed / batchSelectedOnly + drafts kept on error."""
+    assert "provider.keyMissingDraft" in PROV
+    assert "provider.saveFailed" in PROV
+    assert "provider.batchSelectedOnly" in PROV
+    assert "provider-batch-selected-only" in PROV
+    assert "provider-nokey" in PROV
+    assert "provider-llm-nokey" in PROV
+    assert "failText" in PROV
+    # needs_key maps to keyMissingDraft; other failures map to saveFailed.
+    assert "e.code === 'needs_key'" in PROV or 'e.code === "needs_key"' in PROV
+    assert "tn('provider.keyMissingDraft'" in PROV or 'tn("provider.keyMissingDraft"' in PROV
+    assert "t('provider.saveFailed')" in PROV or 't("provider.saveFailed")' in PROV
+    # Save / batch error path must not clear in-session drafts (absorb only on success).
+    assert "setError(failText(e))" in PROV
+    assert "absorb(next)" in PROV
+    # Batch apply disabled without replicate key (cannot activate).
+    assert "provider-batch-apply" in PROV
+    assert "tools.some((t) => t.key_ok)" in PROV or "tools.some((t)=>t.key_ok)" in PROV
+    # LLM save disabled without DeepSeek key.
+    assert "provider-llm-save" in PROV
+    assert "providerId === 'deepseek' && !info?.configured" in PROV or 'providerId === "deepseek" && !info?.configured' in PROV
+    # Copy meaning: zh saveFailed keeps unsaved changes.
+    assert "已保留未提交更改" in ZH["provider.saveFailed"] or "未提交" in ZH["provider.saveFailed"]
+    assert "不能激活" in ZH["provider.keyMissingDraft"] or "不可激活" in ZH["provider.keyMissingDraft"]
+    assert "已选" in ZH["provider.batchSelectedOnly"] or "所选" in ZH["provider.batchSelectedOnly"]
+
