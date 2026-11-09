@@ -44,22 +44,25 @@ function blank(): ToolRoute {
   return { primary: { provider: 'wavespeed', model: 'existing' }, backup: null, fallback: false }
 }
 
-/** Draft radios follow Live: Still→GIF defaults to Replicate·Flare, never WaveSpeed. */
+/** Draft radios follow Live/effective. gif_default only steers Still→GIF (to_gif), never generate_image stills. */
 function draftRoute(tool: ToolRow): ToolRoute {
   const route = tool.active || tool.draft
   if (route) return { primary: route.primary, backup: route.backup || null, fallback: !!route.fallback }
-  if (tool.gif_default) return { primary: { provider: tool.gif_default.provider, model: tool.gif_default.model }, backup: null, fallback: false }
-  if (tool.effective?.provider === 'replicate') {
-    return { primary: { provider: tool.effective.provider, model: tool.effective.model }, backup: null, fallback: false }
-  }
-  return blank()
+  return liveBaseline(tool)
 }
 
 function liveBaseline(tool: ToolRow): ToolRoute {
   if (tool.active) return { primary: tool.active.primary, backup: tool.active.backup || null, fallback: !!tool.active.fallback }
-  if (tool.gif_default) return { primary: { provider: tool.gif_default.provider, model: tool.gif_default.model }, backup: null, fallback: false }
-  if (tool.effective?.provider === 'replicate') {
-    return { primary: { provider: tool.effective.provider, model: tool.effective.model }, backup: null, fallback: false }
+  // Still→GIF Live defaults to Replicate·Flare via gif_default.
+  if (tool.id === 'to_gif' && tool.gif_default) {
+    return { primary: { provider: tool.gif_default.provider, model: tool.gif_default.model }, backup: null, fallback: false }
+  }
+  if (tool.effective?.provider) {
+    return {
+      primary: { provider: tool.effective.provider, model: tool.effective.model },
+      backup: tool.effective.backup || null,
+      fallback: !!tool.effective.fallback,
+    }
   }
   return blank()
 }
