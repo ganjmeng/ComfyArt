@@ -8,6 +8,7 @@ fonttools[woff]>=4.40
 # requirements (av>=17.0.0, Pillow, SQLAlchemy>=2.0.0, aiohttp>=3.11.8). CI installs this file
 # so collection uses the real modules. Do not stub them to make the job green.
 av>=17.0.0
+numpy>=1.25.0
 Pillow
 SQLAlchemy>=2.0.0
 aiohttp>=3.11.8
