@@ -1304,7 +1304,19 @@ def install() -> None:
     async def poll(task):
         job = _replicate_jobs.get(task)
         if not job:
-            return await _poll_orig(task)
+            from . import gen_ledger
+            saved = gen_ledger.run(task) or {}
+            if saved.get("provider") == "replicate":
+                # Resume a paid Replicate id after restart; never resubmit.
+                job = _replicate_jobs[task] = {
+                    "provider": "replicate",
+                    "model": saved.get("model"),
+                    "capability": saved.get("feature") or "",
+                    "started": float(saved.get("submitted_at") or time.time()),
+                }
+                log.info("#712: resuming Replicate task %s from the saved request id", task)
+            else:
+                return await _poll_orig(task)
         return await _poll_replicate(task, job)
 
     wavespeed.submit = submit
@@ -1360,31 +1372,79 @@ def install() -> None:
     install.done = True
 
 
-async def _fetch_prediction(task: str, token: str) -> str:
+def _replicate_output_urls(output) -> list[str]:
+    """Keep supplier delivery URLs from a succeeded Replicate prediction."""
+    if isinstance(output, str) and output.startswith(("http://", "https://")):
+        return [output]
+    if isinstance(output, list):
+        urls: list[str] = []
+        for item in output:
+            urls.extend(_replicate_output_urls(item))
+        return urls
+    if isinstance(output, dict):
+        urls = []
+        for value in output.values():
+            urls.extend(_replicate_output_urls(value))
+        return urls
+    return []
+
+
+async def _fetch_prediction(task: str, token: str) -> dict:
+    """GET an existing prediction. Returns the JSON body; never creates a new one."""
     import aiohttp
     url = f"https://api.replicate.com/v1/predictions/{task}"
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
         async with session.get(url, headers={"Authorization": f"Bearer {token}"}) as res:
             data = await res.json(content_type=None)
-            return str((data or {}).get("status") or "")
+            return data if isinstance(data, dict) else {}
 
 
 async def _poll_replicate(task: str, job: dict) -> dict:
-    """One status read for a prediction already created. Never submits again."""
-    from .wavespeed import WaveSpeedError, _history
+    """One status read for a prediction already created. Never submits again.
+
+    On success, download supplier output URLs into the app output folder and
+    refill history ``outputs`` (empty completed was the GIF acceptance defect).
+    """
+    import aiohttp
+    from .wavespeed import WaveSpeedError, _download, _history
+    if job.get("result"):
+        return job["result"]
     token = os.environ.get("REPLICATE_API_TOKEN", "").strip()
     if not token:
         return _history(task, "failed", [["execution_error", {"exception_message": "Replicate token missing; not resubmitted"}]], {})
     try:
-        status = await _fetch_prediction(task, token)
+        data = await _fetch_prediction(task, token)
     except (TimeoutError, OSError) as e:
         log.warning("replicate poll %s %s; not resubmitted", task, type(e).__name__)
         raise WaveSpeedError("Replicate 查询超时或失败，状态未知，没有重新提交", 504, kind="unknown") from e
     except Exception as e:
         log.warning("replicate poll %s %s; not resubmitted", task, type(e).__name__)
         raise WaveSpeedError("Replicate 查询超时或失败，状态未知，没有重新提交", 504, kind="unknown") from e
+    status = str((data or {}).get("status") or "")
     if status == "succeeded":
-        return _history(task, "completed", [], {})
+        urls = _replicate_output_urls((data or {}).get("output"))
+        if not urls:
+            result = _history(
+                task,
+                "failed",
+                [["execution_error", {
+                    "exception_message": "Replicate task finished without output; not resubmitted",
+                    "ws_kind": "noOutput",
+                }]],
+                {},
+            )
+            job["done"] = True
+            job["result"] = result
+            return result
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as session:
+            refs = [await _download(session, task, i, url) for i, url in enumerate(urls)]
+        result = _history(task, "completed", [], {"ws": {"images": refs}})
+        job["done"] = True
+        job["result"] = result
+        from . import gen_ledger
+        gen_ledger.mark_succeeded(task, len(refs))
+        log.info("replicate task %s completed (%d output%s)", task, len(refs), "" if len(refs) == 1 else "s")
+        return result
     if status in {"failed", "canceled"}:
         return _history(task, "failed", [["execution_error", {"exception_message": "Replicate task failed; not resubmitted"}]], {})
     return _history(task, "processing", [], {})

@@ -649,3 +649,66 @@ async def test_auto_still_estimate_tip_follows_saved_replicate_live(monkeypatch)
     )
     assert body["provider"] == "replicate"
     assert body["model"] == FLARE
+
+
+def test_replicate_output_urls_keeps_http_strings():
+    assert provider_admin._replicate_output_urls("https://cdn.example/a.gif") == ["https://cdn.example/a.gif"]
+    assert provider_admin._replicate_output_urls(["https://cdn.example/a.gif", "skip", {"u": "https://cdn.example/b.gif"}]) == [
+        "https://cdn.example/a.gif",
+        "https://cdn.example/b.gif",
+    ]
+    assert provider_admin._replicate_output_urls(None) == []
+
+
+async def test_poll_replicate_refills_outputs_on_succeeded(monkeypatch, tmp_path):
+    """Succeeded Replicate predictions must download and refill history outputs (not completed+{})."""
+    monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
+    provider_admin._replicate_jobs.clear()
+    task = "8cvacsy13nrmr0d1qzq8npqnh4"
+    job = {"provider": "replicate", "model": FLARE, "capability": "text_to_gif", "started": 0.0}
+    provider_admin._replicate_jobs[task] = job
+
+    async def fetch(task_id, token):
+        assert task_id == task and token == TOKEN
+        return {"status": "succeeded", "output": "https://cdn.example/out.gif"}
+
+    async def download(session, task_id, index, url):
+        assert url.endswith("out.gif")
+        return {"filename": f"ws_{task_id[:12]}_{index}.gif", "subfolder": "wavespeed", "type": "output"}
+
+    monkeypatch.setattr(provider_admin, "_fetch_prediction", fetch)
+    monkeypatch.setattr("ComfyArt.api.wavespeed._download", download)
+    marked = []
+
+    def mark(task_id, count):
+        marked.append((task_id, count))
+
+    monkeypatch.setattr("ComfyArt.api.gen_ledger.mark_succeeded", mark)
+    body = await provider_admin._poll_replicate(task, job)
+    entry = body[f"ws:{task}"]
+    assert entry["status"]["completed"] is True
+    assert entry["generation_succeeded"] is True
+    assert entry["outputs"]["ws"]["images"][0]["filename"].endswith(".gif")
+    assert marked == [(task, 1)]
+    # Cached: second poll must not refetch.
+    async def boom(*a, **k):
+        raise AssertionError("must use cached result")
+    monkeypatch.setattr(provider_admin, "_fetch_prediction", boom)
+    assert await provider_admin._poll_replicate(task, job) == body
+
+
+async def test_poll_replicate_succeeded_without_output_is_failure(monkeypatch):
+    monkeypatch.setenv("REPLICATE_API_TOKEN", TOKEN)
+    task = "empty-output-task"
+    job = {"provider": "replicate", "model": FLARE, "capability": "text_to_gif", "started": 0.0}
+
+    async def fetch(task_id, token):
+        return {"status": "succeeded", "output": None}
+
+    monkeypatch.setattr(provider_admin, "_fetch_prediction", fetch)
+    body = await provider_admin._poll_replicate(task, job)
+    entry = body[f"ws:{task}"]
+    assert entry["status"]["completed"] is True
+    assert entry["generation_succeeded"] is False
+    assert entry["outputs"] == {}
+    assert entry["status"]["messages"][0][1]["ws_kind"] == "noOutput"
