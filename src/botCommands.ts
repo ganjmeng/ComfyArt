@@ -12,7 +12,8 @@ import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate, nearestRatio } from './generate'
 import { durationNote, fitDuration, RATIOS, VIDEO_RATIOS, videoResolution } from './genOptions'
 import { GIF_STILL_REFUSAL, clampFrameCount, clampFrameMs, gifHasStill, gifModelId } from './gifFile'
-import { tl } from './i18n'
+import { svgModelId } from './svgFile'
+import { t, tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
 import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom, whenSubmitted } from './jobs'
 import { agentModels, IMAGE_MODELS, modelPrefsAtom, type ModelDef } from './models'
@@ -157,13 +158,20 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     if (!video && args.size_lock && model) lockId = model.id
   }
   const gif = !video && String(args.output_format || '').toLowerCase() === 'gif'
+  const svg = !video && !gif && String(args.output_format || '').toLowerCase() === 'svg'
+  if (svg) {
+    if (wantsRefs || args.base) throw new Error(t('wsErr.svgEdit'))
+    if (Number(args.count || 1) !== 1) throw new Error(t('wsErr.svgCount'))
+    const id = svgModelId(String(args.model || model?.id || ''))
+    model = models.find((m) => m.id === id) ?? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' }
+  }
   if (gif && gifHasStill(args)) throw new Error(GIF_STILL_REFUSAL)
   if (gif) {
     // #825: a GIF runs on 2.6-flare, which is also the image default.
     const id = gifModelId(String(args.model || model?.id || ''))
     model = models.find((m) => m.id === id) ?? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' }
   }
-  if (!models.length && !gif) throw new Error(`no ${video ? 'video' : 'image'} models loaded yet (WaveSpeed model list unavailable); try again shortly`)
+  if (!models.length && !gif && !svg) throw new Error(`no ${video ? 'video' : 'image'} models loaded yet (WaveSpeed model list unavailable); try again shortly`)
   if (!model) throw new Error(`unknown model ${JSON.stringify(args.model)}; valid ${video ? 'video' : 'image'} ids: ${models.map((m) => m.id).join(', ')} (default ${models[0].id})`)
   const modes = Array.isArray(args.ref_modes) ? args.ref_modes.map(String) : []
   const allowed = modesFor(model).map((m) => m.id)
@@ -184,7 +192,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
   const notes = video ? { zh: durationNote(args.duration, duration, lengths, (k, ...a) => tl('zh', k, ...a)), en: durationNote(args.duration, duration, lengths, (k, ...a) => tl('en', k, ...a)) } : null
   const props = video
     ? { prompt: String(args.prompt), workflow: model.id, ratio: args.ratio ?? ratios[0], duration, resolution: videoResolution(args.resolution == null ? '' : String(args.resolution), model.resolutions, model.defaults?.resolution) }
-    : { prompt: String(args.prompt), workflow: model.id, ratio: imageRatio, count: Math.min(4, Math.max(1, Number(args.count) || 1)), ...(exactW && exactH ? { resolution: 'custom' as const, cw: exactW, ch: exactH } : {}) }
+    : { prompt: String(args.prompt), workflow: model.id, ratio: imageRatio, count: svg ? 1 : Math.min(4, Math.max(1, Number(args.count) || 1)), ...(exactW && exactH ? { resolution: 'custom' as const, cw: exactW, ch: exactH } : {}) }
   const media = video ? [...refUrls(editor, args.reference_images), ...refUrls(editor, args.reference_videos), ...refUrls(editor, args.reference_audios)] : []
   const motion = video && args.motion_video ? refUrls(editor, [args.motion_video])[0] : null
   const speech = video && args.speech_audio ? refUrls(editor, [args.speech_audio])[0] : null
@@ -209,6 +217,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     ...(video && !mode && args.last_frame ? { lastFrame: refUrls(editor, [args.last_frame])[0] } : {}),
     ...(notes?.en ? { durationAsked: Number(args.duration) } : {}),
     ...(gif ? { gif: { output_format: 'gif', frame_count: clampFrameCount(args.frame_count), frame_duration_ms: clampFrameMs(args.frame_duration_ms) } } : {}),
+    ...(svg ? { svg: { output_format: 'svg' as const, n: 1 as const } } : {}),
     ...(gif && args.complexity ? { complexity: String(args.complexity) } : {}),
   }
   const id = createGenerator(editor, video, props, false)

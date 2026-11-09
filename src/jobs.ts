@@ -2,6 +2,7 @@ import { AssetRecordType, atom, createShapeId, isShapeId, type Editor, type TLPa
 
 import { cancelPrompt, CostDeclined, NeedKeyError, mediaMeta, planBypassNow, promptHistory, queuePrompt, refKind, viewUrl, waitForImages, type ImageRef } from './comfy'
 import { placedFile } from './gifFile'
+import { svgAsset } from './svgFile'
 import { GENERATOR, type GeneratorShape } from './shapes/GeneratorShape'
 import type { Built } from './workflows'
 import { t } from './i18n'
@@ -148,8 +149,9 @@ export function jobOf(shape: TLShape): Job | null {
 }
 
 export async function toMedia(ref: ImageRef, kind: MediaKind): Promise<Media> {
-  const src = viewUrl(ref)
-  if (kind === 'image' && refKind(src) === 'video') kind = 'video' // cloud animations are MP4, not animated WebP
+  const svg = svgAsset(ref)
+  const src = svg ? svg.displaySrc : viewUrl(ref)
+  if (kind === 'image' && !svg && refKind(viewUrl(ref)) === 'video') kind = 'video' // cloud animations are MP4, not animated WebP
   if (kind === 'audio' || kind === 'model') return { ref, src, w: 0, h: 0, kind }
   const { w, h } = ref.metadata?.width && ref.metadata?.height && kind === 'image'
     ? { w: ref.metadata.width, h: ref.metadata.height }
@@ -160,12 +162,19 @@ export async function toMedia(ref: ImageRef, kind: MediaKind): Promise<Media> {
 export function placeMedia(editor: Editor, m: Media, name: string, x: number, y: number, w: number, parentId?: TLShape['parentId']): TLShapeId {
   const assetId = AssetRecordType.createId()
   const file = placedFile(m.ref.filename, name, m.kind === 'video')
+  const svg = svgAsset(m.ref)
   editor.createAssets([{
     id: assetId,
     typeName: 'asset',
     type: m.kind,
-    props: { name: file.name, src: m.src, w: m.w, h: m.h, mimeType: file.mimeType, isAnimated: file.isAnimated },
-    meta: {},
+    props: {
+      name: svg ? svg.downloadName : file.name,
+      src: m.src,
+      w: m.w, h: m.h,
+      mimeType: svg ? 'image/png' : file.mimeType,
+      isAnimated: svg ? false : file.isAnimated,
+    },
+    meta: svg ? { svgDownload: svg.downloadUrl, svgName: svg.downloadName, svgState: svg.state, svgMessage: svg.message, inlineSvg: false } : {},
   } as any])
   const id = createShapeId()
   editor.createShape({ id, type: m.kind, x, y, ...(parentId ? { parentId } : {}), props: { assetId, w, h: w * m.h / m.w } } as any)

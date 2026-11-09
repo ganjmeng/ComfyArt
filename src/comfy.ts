@@ -27,7 +27,7 @@ export class NeedKeyError extends Error {
 
 export type PromptGraph = Record<string, { class_type: string; inputs: Record<string, unknown>; _meta?: { title?: string } }>
 
-export interface ImageRef { filename: string; subfolder: string; type: string; metadata?: { width?: number; height?: number } }
+export interface ImageRef { filename: string; subfolder: string; type: string; metadata?: { width?: number; height?: number }; svg_preview?: string; svg_state?: string; svg_message?: string }
 
 function comfyUser(): string | null {
   return readLocal('Comfy.userId')

@@ -24,6 +24,7 @@ import { t } from '../i18n'
 import { isEnter } from './keys'
 import { estimateCost, keyStatusAtom, outOfCredit, type Estimate } from '../wavespeedKey'
 import { gifSpec } from '../gifFile'
+import { svgSpec } from '../svgFile'
 
 const GAP = 12
 const EDGE = 8
@@ -309,7 +310,7 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
         </div>
       )}
       <div className="ca-gen__foot">
-        <SettingsPill p={p} video={video} quality={!!model.steps} tiers={model.qualities} caps={model} update={update} complexities={model.complexities} complexity={typeof shape.meta.complexity === 'string' ? shape.meta.complexity : ''} onComplexity={(c) => setMeta({ complexity: c || null })} gif={gifSpec(shape.meta)} onGif={(g) => setMeta({ gif: g })} />
+        <SettingsPill p={p} video={video} quality={!!model.steps} tiers={model.qualities} caps={model} update={update} complexities={model.complexities} complexity={typeof shape.meta.complexity === 'string' ? shape.meta.complexity : ''} onComplexity={(c) => setMeta({ complexity: c || null })} gif={gifSpec(shape.meta)} onGif={(g) => setMeta({ gif: g, ...(g ? { svg: null } : {}) })} svg={svgSpec(shape.meta)} onSvg={(s) => { setMeta({ svg: s, ...(s ? { gif: null } : {}) }); if (s) update({ count: 1 }) }} />
         <AdvancedPill shape={shape} model={model} setMeta={setMeta} />
         <div className="ca-gen__spacer" />
         <ModelPill video={video} model={model} picks={featureModelsOf(shape)}
