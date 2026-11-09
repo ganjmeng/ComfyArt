@@ -15,6 +15,23 @@ from pathlib import Path
 log = logging.getLogger("comfyart")
 TABLE = Path(__file__).with_name("auto_models.json")
 
+AUTO_TOKENS = frozenset({"auto", "auto:video"})
+
+
+def named_or_none(model: str | None) -> str | None:
+    """Return a real user-named model id, or None when omitted / explicit Auto (#825).
+
+    Front-end Auto tokens ``auto`` and ``auto:video`` (any case, trimmed) must not win as
+    category ``user`` and skip the task table.
+    """
+    if model is None:
+        return None
+    s = str(model).strip()
+    if not s or s.lower() in AUTO_TOKENS:
+        return None
+    return s
+
+
 # Filler between a negation and the keyword: "no headline", "don't add a title", "不要太小的文字".
 _NEG_EN = re.compile(r"(?:\bno|without|never|not|don'?t|do not)\b(?:\s+\w+){0,4}\s*$")
 # 无 / 别 are single characters and also start unrelated words (无限), so they only count
@@ -115,8 +132,10 @@ def registered(row: dict, ids: set, where: str) -> tuple[str, str | None]:
 
 def choose(feature: str, prompt: str, named: str | None, catalog: dict, masked: bool = False) -> dict:
     """catalog: load_config() result. Returns {model, auto, category, reason: {zh, en}}.
-    masked (#45): the edit has a selection or brushed mask -> the table's 'masked' row (user-named still wins)."""
+    masked (#45): the edit has a selection or brushed mask -> the table's 'masked' row (user-named still wins).
+    #825: ``auto`` / ``auto:video`` are not user picks — they consult the table like an omitted model."""
     cfg = catalog["features"][feature]
+    named = named_or_none(named)
     if named:
         return {"model": named, "auto": False, "category": "user",
                 "reason": {"zh": "你指定了这个模型", "en": "you named this model"}}
