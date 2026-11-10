@@ -227,7 +227,22 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
       ],
     },
   },
-  // #825 keep_product Auto edit card (same hover wording, Banana 2.1).
+  // #825 keep_generic Auto edit card (Banana 2.1, short tip 保持原图一致).
+  keepgeneric: {
+    thumbs: true,
+    msg: {
+      id: 'a', role: 'assistant', status: 'done', blocks: [
+        { type: 'thinking', text: 'pick' },
+        use('g1', 'mcp__comfyart__edit_image', { prompt: '保持一致，只换背景' }),
+        res('g1', 'mcp__comfyart__edit_image', choice({
+          model: bananaEdit, auto: true, category: 'keep_generic',
+          reason: { zh: '保持原图一致', en: 'keep the original consistent' },
+        })),
+        { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
+      ],
+    },
+  },
+  // #825 keep_product Auto edit card (Banana 2.1, short tip 保留商品不变).
   keepproduct: {
     thumbs: true,
     msg: {

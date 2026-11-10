@@ -40,7 +40,7 @@ NAMED = "alibaba/qwen-image-3.0/text-to-image"
 TABLE_ROWS = (
     "t2i_general", "t2i_poster", "t2i_person", "t2i_photoreal", "t2i_consistency",
     "t2i_multi_ref", "t2i_one_ref", "t2i_anime", "t2i_logo",
-    "edit_general", "edit_identity", "edit_product", "edit_retouch", "edit_person", "user_named",
+    "edit_general", "edit_identity", "edit_product", "edit_generic", "edit_retouch", "edit_person", "user_named",
 )
 
 
@@ -169,11 +169,17 @@ CASES = [
     case("en", "edit_identity", "edit_image", "keep her face, new hairstyle", SEEDREAM_EDIT, "keep_identity"),
     case("zh", "edit_identity", "edit_image", "换背景，保持同一个人", SEEDREAM_EDIT, "keep_identity"),
     case("zh", "edit_identity", "edit_image", "只换背景，人脸不要动", SEEDREAM_EDIT, "keep_identity"),
+    case("zh", "edit_identity", "edit_image", "保持一致，人脸不要动", SEEDREAM_EDIT, "keep_identity"),
     case("zh", "edit_identity", "edit_image", "衣服改成红色，五官不变", SEEDREAM_EDIT, "keep_identity"),
     case("zh", "edit_product", "edit_image", "保留产品外观，只改背景颜色", NANO_EDIT, "keep_product"),
     case("zh", "edit_identity", "edit_image", "人物不要变，把季节换成冬天", SEEDREAM_EDIT, "keep_identity"),
     case("zh", "edit_product", "edit_image", "保留产品，只换背景", NANO_EDIT, "keep_product"),
     case("zh", "edit_identity", "edit_image", "保留同一个人，换衣服", SEEDREAM_EDIT, "keep_identity"),
+    case("en", "edit_identity", "edit_image", "keep the same face", SEEDREAM_EDIT, "keep_identity"),
+    case("en", "edit_generic", "edit_image", "keep the same bottle, change the background", NANO_EDIT, "keep_generic"),
+    case("zh", "edit_generic", "edit_image", "保持一致", NANO_EDIT, "keep_generic"),
+    case("zh", "edit_generic", "edit_image", "保持原样，把香水瓶放到海边", NANO_EDIT, "keep_generic"),
+    case("zh", "edit_generic", "edit_image", "背景改成海边，其他保持不变", NANO_EDIT, "keep_generic"),
 
     # --- photoreal photo retouch → seedream edit ---
     case("en", "edit_retouch", "edit_image", "retouch the portrait, natural skin", SEEDREAM_EDIT, "photo_retouch"),

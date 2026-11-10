@@ -1,5 +1,5 @@
 """$0 mocked L/R of the keep-face Auto edit card header, plus hover shots for
-keep_identity (person) and keep_product. No network, no paid calls.
+keep_identity, keep_product, and keep_generic. No network, no paid calls.
 """
 from __future__ import annotations
 
@@ -115,6 +115,11 @@ def main() -> None:
             "Auto · Nano Banana 2.1", hover=True, vp=HOVER_VP,
             expected_tip="自动选择：保留商品不变",
         )
+        generic = _shot(
+            browser, base, "04-hover-keep-generic", "keepgeneric",
+            "Auto · Nano Banana 2.1", hover=True, vp=HOVER_VP,
+            expected_tip="自动选择：保持原图一致",
+        )
         browser.close()
     srv.shutdown()
     _lr(
@@ -124,6 +129,7 @@ def main() -> None:
     )
     print("hover identity", ident)
     print("hover product", product)
+    print("hover generic", generic)
     print("done")
 
 

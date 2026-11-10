@@ -1,5 +1,5 @@
 {
- "_comment": "#133 product table v1, widened for #237 accuracy. Categories are first-match: logo, poster/text, anime/illustration, realistic person, photoreal product/e-commerce, then character/product consistency, else the feature default. English keywords are whole words; Chinese keywords are substrings. A keyword preceded by a negation (no / don't / 不要 / 没有) does not count. exclude blanks a phrase before matching (portrait orientation, job title, context menu). also is a list of groups that all have to hit, so bare 'photorealistic' or '写实' is not enough for a landscape. 2+ reference images are not a category here: api/mcp_tools/canvas.py sends them to image_edit multi_reference (google/nano-banana-2.1/edit, #153) because refs run on the edit path. A model missing from the catalog is an error (#712); only a model listed in the row's explicit \"fallback\" (string or list) stands in, logged. #872: image_edit.masked registers runtime fallback to matching 2.6 Flare (error/timeout after status check); poster_text has no registered fallback (a failure goes through the #236 ask-to-switch path); tip is the short pill category. #825: image_edit.keep_identity (person/face keep phrases) uses Seedream 5.0 Pro edit; keep_product (product / background-only phrases) stays on Banana 2.1. Short tips: 保留同一人物 / keep the same person, and 保留商品不变 / keep the product unchanged. Both are first-match with keep_identity first, so a prompt that has both person and product words routes to Seedream.",
+ "_comment": "#133 product table v1, widened for #237 accuracy. Categories are first-match: logo, poster/text, anime/illustration, realistic person, photoreal product/e-commerce, then character/product consistency, else the feature default. English keywords are whole words; Chinese keywords are substrings. A keyword preceded by a negation (no / don't / 不要 / 没有) does not count. exclude blanks a phrase before matching (portrait orientation, job title, context menu). also is a list of groups that all have to hit, so bare 'photorealistic' or '写实' is not enough for a landscape. 2+ reference images are not a category here: api/mcp_tools/canvas.py sends them to image_edit multi_reference (google/nano-banana-2.1/edit, #153) because refs run on the edit path. A model missing from the catalog is an error (#712); only a model listed in the row's explicit \"fallback\" (string or list) stands in, logged. #872: image_edit.masked registers runtime fallback to matching 2.6 Flare (error/timeout after status check); poster_text has no registered fallback (a failure goes through the #236 ask-to-switch path); tip is the short pill category. #825: image_edit.keep_identity (person/face keep phrases) uses Seedream 5.0 Pro edit; keep_product (product / background-only phrases) stays on Banana 2.1. Short tips: 保留同一人物 / keep the same person, 保留商品不变 / keep the product unchanged, and 保持原图一致 / keep the original consistent. First-match order is keep_identity, keep_product, keep_generic, so person/face phrases win, then product phrases, then generic keep phrases (keep the same / 保持一致 / 保持原样 / 保持原貌 / 保持不变) which stay on Banana 2.1.",
  "skills": {
   "_comment": "#708/#712: per-skill model pins. Registered explicitly: the skill's model runs at its resolution; fallback runs only after the primary call fails (logged). A pinned model missing from the catalog is an error, never a silent switch to the feature default.",
   "pose-fission": {
@@ -279,7 +279,8 @@
       "en": "keep the same person"
      },
      "keywords": [
-      "keep the same",
+      "keep the same face",
+      "keep the same person",
       "keep the face",
       "keep the person",
       "keep her face",
@@ -298,10 +299,6 @@
       "保持人物",
       "保持脸",
       "保持五官",
-      "保持一致",
-      "保持原样",
-      "保持原貌",
-      "保持不变",
       "同一个人",
       "人物不变",
       "人物不要变",
@@ -333,6 +330,23 @@
       "保留产品",
       "只换背景",
       "只改背景"
+     ]
+    },
+    {
+     "id": "keep_generic",
+     "model": "google/nano-banana-2.1/edit",
+     "zh": "这是要保持原图一致的局部修改",
+     "en": "this is a local edit that must keep the original consistent",
+     "tip": {
+      "zh": "保持原图一致",
+      "en": "keep the original consistent"
+     },
+     "keywords": [
+      "keep the same",
+      "保持一致",
+      "保持原样",
+      "保持原貌",
+      "保持不变"
      ]
     },
     {
