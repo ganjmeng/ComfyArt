@@ -11,7 +11,7 @@ No WaveSpeed call lives here.
 """
 from __future__ import annotations
 
-from .wavespeed import _nearest, _resolution, _schema, _size_value
+from .wavespeed import _nearest, _resolution, _schema, _size_value, submits_size_field
 
 SKILL = "linkedin-banner"
 # Skills whose auto path must submit exact pixels. Others stay on the normal table.
@@ -39,11 +39,11 @@ def pixels_of(args: dict) -> tuple[int, int] | None:
     return w, h
 
 
-def provider_submit(schema: dict, w: int, h: int) -> dict:
+def provider_submit(schema: dict, w: int, h: int, model: str = "") -> dict:
     """The size fields build_payload would send. No HTTP."""
     props = (schema or {}).get("properties") or {}
     out: dict = {}
-    if "size" in props and not (props.get("size") or {}).get("x-hidden"):
+    if "size" in props and submits_size_field(props.get("size") or {}, model):
         out["size"] = _size_value(props["size"], int(w), int(h))
     enum = (props.get("aspect_ratio") or {}).get("enum")
     if enum:
@@ -54,9 +54,9 @@ def provider_submit(schema: dict, w: int, h: int) -> dict:
     return out
 
 
-def accepts_exact_pixels(schema: dict, w: int, h: int) -> bool:
+def accepts_exact_pixels(schema: dict, w: int, h: int, model: str = "") -> bool:
     """True only when the submit is the exact ``W*H`` string and no snapped ratio."""
-    sent = provider_submit(schema, w, h)
+    sent = provider_submit(schema, w, h, model)
     return sent.get("size") == f"{int(w)}*{int(h)}" and "aspect_ratio" not in sent
 
 
@@ -160,8 +160,8 @@ def linkedin_decision(args: dict, catalog: dict, _cfg: dict) -> dict:
     named = str(args.get("model") or "")
     if named:
         schema = _schema((catalog or {}).get(named))
-        submit = provider_submit(schema, w, h) if schema else {}
-        if not accepts_exact_pixels(schema, w, h):
+        submit = provider_submit(schema, w, h, named) if schema else {}
+        if not accepts_exact_pixels(schema, w, h, named):
             detail = _snap_sentence(submit)
             why = (f"没有提交：{named} 不能输出 {w}×{h}。{detail}没有换模型，也没有拉伸。"
                    f" / Not submitted: {named} cannot output {w}×{h}. No model was substituted and the image was not stretched.")
@@ -180,12 +180,12 @@ def linkedin_decision(args: dict, catalog: dict, _cfg: dict) -> dict:
     # submit the exact size string. _cfg is the curated config, unused on purpose:
     # membership there is the picker, not proof of a pixel size. The page still
     # drops the id when the user has turned that model off.
-    if not accepts_exact_pixels(schema, w, h):
+    if not accepts_exact_pixels(schema, w, h, prefer):
         why = (f"没有提交：模型列表里没有能按 {w}×{h} 提交 size 的{('图片编辑' if feature == 'image_edit' else '文生图')}模型。"
                f"没有改用只会改比例的模型。 / Not submitted: no listed model can submit size {w}*{h}. "
                "A ratio-only model was not substituted.")
         return {"block": _block("", w, h, {}, why=why)}
-    submit = provider_submit(schema, w, h)
+    submit = provider_submit(schema, w, h, prefer)
     out = {k: v for k, v in args.items() if k not in ("model", "auto_model", "edit_model")}
     out["size_lock"] = True
     out["size_candidates"] = [prefer]
