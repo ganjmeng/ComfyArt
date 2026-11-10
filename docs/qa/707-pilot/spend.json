@@ -1,9 +1,12 @@
 {
-  "balance_before": 30.765899,
-  "balance_after": 30.666899,
-  "spend_delta": 0.099,
-  "spend_sum_costs": 0.099,
-  "results": [
+  "pilot_start_balance": 30.765899,
+  "after_linkedin_stop": 30.666899,
+  "pose_segment_before": 30.666899,
+  "balance_after": 30.414899,
+  "spend_delta_full": 0.351,
+  "spend_pose_segment": 0.252,
+  "spend_sum_costs": 0.351,
+  "results_first_segment": [
     {
       "event": "done",
       "id": "before-after",
@@ -79,5 +82,66 @@
       "size": null
     }
   ],
-  "ts": "2026-11-10 22:38:07 +0800 (Asia/Shanghai)"
+  "results_pose": [
+    {
+      "event": "done",
+      "id": "pose-fission-profile",
+      "model": "google/nano-banana-pro/edit",
+      "prediction_id": "c4903a74e972468b949b759aad45a910",
+      "attempt": 1,
+      "balance_before": 30.666899,
+      "balance_after": 30.540899,
+      "cost": 0.126,
+      "ok": true,
+      "status": "completed",
+      "size": [
+        1792,
+        2400
+      ],
+      "out": {
+        "png": "docs/qa/707-pilot/pose-fission-profile.png",
+        "webp": "docs/qa/707-pilot/pose-fission-profile.webp",
+        "size": [
+          1792,
+          2400
+        ]
+      },
+      "lr": "docs/qa/707-pilot/pose-fission-profile-lr.png",
+      "error": null,
+      "latency_s": 68.213,
+      "quoted_list": 0.14,
+      "quoted_discounted": 0.126
+    },
+    {
+      "event": "done",
+      "id": "pose-fission-lookback",
+      "model": "google/nano-banana-pro/edit",
+      "prediction_id": "125aa37871f644218c44439c0167c878",
+      "attempt": 1,
+      "balance_before": 30.540899,
+      "balance_after": 30.414899,
+      "cost": 0.126,
+      "ok": true,
+      "status": "completed",
+      "size": [
+        1792,
+        2400
+      ],
+      "out": {
+        "png": "docs/qa/707-pilot/pose-fission-lookback.png",
+        "webp": "docs/qa/707-pilot/pose-fission-lookback.webp",
+        "size": [
+          1792,
+          2400
+        ]
+      },
+      "lr": "docs/qa/707-pilot/pose-fission-lookback-lr.png",
+      "error": null,
+      "latency_s": 62.824,
+      "quoted_list": 0.14,
+      "quoted_discounted": 0.126
+    }
+  ],
+  "ts_first": "2026-11-10 22:38:07 +0800 (Asia/Shanghai)",
+  "ts_pose": "2026-11-10 22:44:41 +0800 (Asia/Shanghai)"
 }
