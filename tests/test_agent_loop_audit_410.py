@@ -201,6 +201,38 @@ def test_harness_user_skill_chip_shrinks_first_text_one_line(browser, bundle, la
     assert para["inBubble"] and para["textLines"] >= 2 and para["chipW"] >= para["chipMin"] - 0.5, para
 
 
+def test_harness_user_skill_with_refs_uses_wrap_modifier_and_caps_chip(browser, bundle):
+    """A bubble with reference images keeps the #710 wrap modifier; the skill chip is at most 160px."""
+    from urllib.parse import quote
+    name = "早安咖啡店海报生成器·门店社媒竖版暖色调超长名称版本二"
+    page = browser.new_page(viewport={"width": 420, "height": 720}, device_scale_factor=2)
+    page.route("**/*", lambda r: r.continue_() if r.request.url.startswith(bundle) else r.abort())
+    page.goto(
+        f"{bundle}/index.html?lang=zh&theme=light&scene=user-skill"
+        f"&name={quote(name)}&images=2&text={quote('同参考图街景')}"
+    )
+    page.wait_for_function("window.__ready")
+    page.wait_for_timeout(200)
+    m = page.evaluate("""() => {
+      const bub = document.querySelector('[data-testid=user-bubble]')
+      const chip = bub.querySelector('[data-testid=user-skill-chip]')
+      const refs = [...bub.querySelectorAll('[data-testid=user-ref-chip]')]
+      const cs = getComputedStyle(bub)
+      return {
+        cls: bub.className,
+        flexWrap: cs.flexWrap,
+        chipW: chip.getBoundingClientRect().width,
+        refLabels: refs.map((el) => el.textContent),
+      }
+    }""")
+    page.close()
+    assert "ca-chat__bubble--refs" in m["cls"].split(), m
+    assert "ca-chat__bubble--skill" in m["cls"].split(), m
+    assert m["flexWrap"] == "wrap", m
+    assert m["refLabels"] == ["image-1", "image-2"], m
+    assert m["chipW"] <= 160, m
+
+
 def test_harness_renders_memory_done(browser, bundle):
     page = _open(browser, bundle, "memory-done", "zh", "light")
     assert page.locator("[data-testid=memory-updated-row]").count() >= 1
