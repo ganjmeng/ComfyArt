@@ -33,6 +33,8 @@ export interface BotBlock {
   url?: string
   shape?: string
   level?: string
+  /** #877: "use_official_llm" shows 切回官方默认 on a custom-endpoint failure notice */
+  action?: string
   ask_id?: string
   prompt?: string
   options?: AskOption[]
@@ -148,6 +150,8 @@ export const toolLabel = (name?: string) => TOOL_LABELS[toolName(name)] ?? toolN
 export const providersAtom = atom<ProviderInfo[]>('bot providers', [])
 export const botEnabledAtom = atom<boolean | null>('bot enabled', null)
 export const settingsAtom = atom<BotSettings>('bot settings', {})
+export type LlmSource = 'admin' | 'settings' | 'default'
+export const llmSourceAtom = atom<{ source: LlmSource; host: string }>('bot llm source', { source: 'default', host: '' })
 export const chatsAtom = atom<BotChat[]>('bot chats', [])
 export const chatIdAtom = atom<string | null>('bot chat id', null)
 export const messagesAtom = atom<BotMessage[]>('bot messages', [])
@@ -170,9 +174,9 @@ const send = (body: unknown, method = 'POST'): RequestInit => ({ method, headers
 export async function loadProviders(opts?: { refresh?: boolean }) {
   // #247: 「重新检测」passes refresh so the server drops the 60s probe cache
   const q = opts?.refresh ? '?refresh=1' : ''
-  let status: { enabled: boolean; user: string; providers: ProviderInfo[] }
+  let status: { enabled: boolean; user: string; providers: ProviderInfo[]; llm?: { source: LlmSource; host: string } }
   try {
-    status = await json<{ enabled: boolean; user: string; providers: ProviderInfo[] }>(`/comfyart/bot/status${q}`)
+    status = await json<{ enabled: boolean; user: string; providers: ProviderInfo[]; llm?: { source: LlmSource; host: string } }>(`/comfyart/bot/status${q}`)
   } catch (e) {
     // #294: keep an already-loaded list on a failed re-check; only the first load reports the error to send
     if (providersStateAtom.get().state !== 'ready') providersStateAtom.set({ state: 'error', error: e instanceof Error ? e.message : String(e) })
@@ -183,6 +187,7 @@ export async function loadProviders(opts?: { refresh?: boolean }) {
   botEnabledAtom.set(status.enabled)
   // #661: same class of crash as chats — AgentPanel providers.find on undefined
   providersAtom.set(status.providers ?? [])
+  llmSourceAtom.set({ source: status.llm?.source ?? 'default', host: status.llm?.host ?? '' })
 }
 
 function applySettings(settings: BotSettings) {
@@ -202,6 +207,12 @@ export type LocalLlmTestCode = 'ok' | 'no_url' | 'unreachable' | 'auth_failed' |
 export type LocalLlmTestResult = { ok: boolean; code: LocalLlmTestCode; model?: string; status?: number; models?: string[]; detail?: string }
 export async function testLocalLlm(draft: { url?: string; key?: string; model?: string }) {
   return json<LocalLlmTestResult>('/comfyart/bot/local-llm/test', send(draft))
+}
+
+/** #877: write URL/model back to defaults and clear the custom key. Does not touch the admin section. */
+export async function useOfficialLlmDefault() {
+  applySettings(await json<BotSettings>('/comfyart/bot/local-llm/use-official-default', send({})))
+  await refreshBot()
 }
 
 

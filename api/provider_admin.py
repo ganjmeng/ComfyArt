@@ -15,6 +15,7 @@ Do not put tokens in settings.json, this file, logs, or screenshots.
 from __future__ import annotations
 
 import contextvars
+from urllib.parse import urlparse
 import json
 import logging
 import os
@@ -214,6 +215,101 @@ def image_revision() -> int:
     return int(load_doc()["image"]["revision"])
 
 
+OFFICIAL_NO_KEY_ERROR = (
+    "DeepSeek 官方未配置 DEEPSEEK_API_KEY，未发送请求 / "
+    "Official DeepSeek has no DEEPSEEK_API_KEY, so nothing was sent."
+)
+
+# #877: one plain-language reason after the shared failure head.
+_SETTINGS_FAIL = {
+    "zh": {
+        "head": "你设置的模型服务连接失败",
+        "host": "主机连不上",
+        "auth": "鉴权失败",
+        "timeout": "超时",
+    },
+    "en": {
+        "head": "The model service you set could not be connected",
+        "host": "host unreachable",
+        "auth": "authentication failed",
+        "timeout": "timed out",
+    },
+}
+
+
+def _norm_setting(value) -> str:
+    return str(value or "").strip().rstrip("/")
+
+
+def settings_llm_is_custom() -> bool:
+    """True when the saved URL or model differs from SETTINGS_SPEC (not merely because the key exists)."""
+    from .settings import SETTINGS_SPEC, get_setting
+    url = _norm_setting(get_setting("bot-local-llm-url"))
+    model = _norm_setting(get_setting("bot-model-local-llm"))
+    def_url = _norm_setting(SETTINGS_SPEC["bot-local-llm-url"])
+    def_model = _norm_setting(SETTINGS_SPEC["bot-model-local-llm"])
+    return url != def_url or model != def_model
+
+
+def llm_settings_host() -> str:
+    from .settings import get_setting
+    return (urlparse(str(get_setting("bot-local-llm-url") or "").strip()).hostname or "")
+
+
+def llm_source() -> str:
+    """How the built-in agent picks an LLM: admin section, then custom settings, else official default."""
+    if active_llm() is not None:
+        return "admin"
+    if settings_llm_is_custom():
+        return "settings"
+    return "default"
+
+
+def restore_official_llm_settings() -> dict:
+    """Write URL/model back to SETTINGS_SPEC defaults and clear the custom key. Does not touch the admin section."""
+    from .settings import SETTINGS_SPEC, all_settings, _file, _masked
+    current = all_settings()
+    current["bot-local-llm-url"] = SETTINGS_SPEC["bot-local-llm-url"]
+    current["bot-model-local-llm"] = SETTINGS_SPEC["bot-model-local-llm"]
+    current["bot-local-llm-key"] = ""
+    write_json(_file(), current, mode=0o600)
+    return _masked(current)
+
+
+def _settings_fail_reason(error: str) -> str | None:
+    """Map a settings-source connection failure to host / auth / timeout. None if it is some other error."""
+    text = (error or "").lower()
+    if not text:
+        return None
+    if any(k in text for k in ("timeout", "timed out", "超时")):
+        return "timeout"
+    if any(k in text for k in ("401", "403", "unauthorized", "forbidden", "invalid api", "authentication", "鉴权")):
+        return "auth"
+    if any(k in text for k in (
+        "http ", "cannot connect", "connecterror", "clientconnector", "connection refused",
+        "name or service not known", "nodename nor servname", "network is unreachable",
+        "unreachable", "5xx", "429", "ssl", "connection reset", "主机连不上",
+        "server disconnected", "clienterror", "网络中断", "network dropped", "network error",
+    )):
+        return "host"
+    return None
+
+
+def settings_llm_fail_copy(error: str, lang: str = "") -> str | None:
+    """#877: never silently switch; return the failure copy + one reason, or None if this is not a connect fail."""
+    reason = _settings_fail_reason(error)
+    if not reason:
+        return None
+    zh, en = _SETTINGS_FAIL["zh"], _SETTINGS_FAIL["en"]
+    zh_line = f"{zh['head']}：{zh[reason]}"
+    en_line = f"{en['head']}: {en[reason]}"
+    if lang == "zh":
+        return zh_line
+    if lang == "en":
+        return en_line
+    return f"{zh_line} / {en_line}"
+
+
 def llm_model_override() -> str | None:
     """Model id for a new turn. None keeps the existing settings model."""
     route = llm_route()
@@ -223,14 +319,16 @@ def llm_model_override() -> str | None:
 
 
 def _llm_choice(active: dict | None) -> dict | None:
-    """No saved section means the official DeepSeek default. An explicit WaveSpeed save stays put."""
-    if active is None:
-        return {"provider": "deepseek", "model": "deepseek-flash"}
-    return active
+    """Admin section first; else custom settings (leave URL/model alone); else official DeepSeek."""
+    if active is not None:
+        return active
+    if llm_source() == "settings":
+        return None
+    return {"provider": "deepseek", "model": "deepseek-flash"}
 
 
 def llm_route(active: dict | None = None) -> dict | None:
-    """Resolved official route, or None when an explicit WaveSpeed save must be left alone."""
+    """Resolved official route, or None when settings/WaveSpeed must be left alone."""
     if active is None:
         active = _llm_choice(active_llm())
     else:
@@ -290,6 +388,7 @@ def _public_state() -> dict:
             "revision": doc["llm"]["revision"],
             "active": llm_active,
             "effective": llm_route(),
+            "source": llm_source(),
             "ignored": doc["llm"]["active"] is not None and llm_active is None,
             "can_restore": doc["llm"]["previous"] is not None or (llm_active is not None and doc["llm"]["revision"] > 0),
             "providers": public_llm_providers(llm_on),
@@ -1333,13 +1432,29 @@ def install() -> None:
             body = adapt_llm_body(json_body, url)
             return await _llm_http(session, method, url, headers=headers, json_body=body, timeout=timeout)
 
+        from ..bot.providers import ProviderStatus
+        from dataclasses import replace
+
+        _llm_orig_probe = provider.probe
+
+        async def probe():
+            route = llm_route()
+            if route is not None and not _env_configured(route["secret_env"]):
+                return ProviderStatus(available=False, detail=OFFICIAL_NO_KEY_ERROR)
+            return await _llm_orig_probe()
+
         async def send(turn, emit, handle):
+            source = llm_source()
             route = llm_route()
             if route is None:
-                return await _llm_orig_send(turn, emit, handle)
+                result = await _llm_orig_send(turn, emit, handle)
+                if source == "settings" and result and result.error:
+                    copy = settings_llm_fail_copy(result.error, getattr(turn, "lang", "") or "")
+                    if copy:
+                        return replace(result, error=copy, action="use_official_llm")
+                return result
             if not _env_configured(route["secret_env"]):
-                return TurnResult(error="DeepSeek 官方未配置 DEEPSEEK_API_KEY，未发送请求 / Official DeepSeek has no DEEPSEEK_API_KEY, so nothing was sent.")
-            from dataclasses import replace
+                return TurnResult(error=OFFICIAL_NO_KEY_ERROR)
             locked_turn = replace(turn, model=route["model"])
             token = _llm_lock.set(route)
             try:
@@ -1369,6 +1484,7 @@ def install() -> None:
         provider._api_headers = _api_headers
         provider._request_json = _request_json
         provider.send = send
+        provider.probe = probe
     install.done = True
 
 

@@ -11,11 +11,18 @@ from .settings import bot_disabled, bot_enabled, get_setting, mcp_enabled
 EXTERNAL_NEEDS_MCP = "external agents need MCP: turn on MCP in Agent settings"
 
 
+def _llm_status() -> dict:
+    from .provider_admin import llm_settings_host, llm_source
+    source = llm_source()
+    return {"source": source, "host": llm_settings_host() if source == "settings" else ""}
+
+
 @routes.get("/comfyart/bot/status")
 async def bot_status(request: web.Request) -> web.Response:
     user = request_user(request)
     if not bot_enabled():
         return web.json_response({"enabled": False, "user": user, "providers": []})
+    llm = _llm_status()
     refresh = request.rel_url.query.get("refresh") == "1"
     out = []
     for provider in list_providers():
@@ -42,7 +49,7 @@ async def bot_status(request: web.Request) -> web.Response:
         if options:
             entry["model_options"] = options
         out.append(entry)
-    return web.json_response({"enabled": True, "user": user, "providers": out})
+    return web.json_response({"enabled": True, "user": user, "providers": out, "llm": llm})
 
 
 def _owned_chat(request: web.Request) -> dict:
@@ -376,6 +383,12 @@ async def bot_test_local_llm(request: web.Request) -> web.Response:
     result = await test_local_llm(base_url=url, api_key=key, model=model)
     return web.json_response(result)
 
+
+@routes.post("/comfyart/bot/local-llm/use-official-default")
+async def bot_use_official_llm_default(_request: web.Request) -> web.Response:
+    """#877: write settings URL/model back to defaults and clear the custom key. Does not touch admin."""
+    from .provider_admin import restore_official_llm_settings
+    return web.json_response(restore_official_llm_settings())
 
 
 def reap_stale_messages() -> None:

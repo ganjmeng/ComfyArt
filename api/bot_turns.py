@@ -391,8 +391,11 @@ async def _run_turn(chat: dict, text: str, state: _TurnState, *,
         if self_check_info.get("self_check") == "fail" and error:
             error = _sc.scrub_done_claims(error)
     if error:
-        state.blocks.append({"type": "notice", "level": "error", "text": error,
-                             **({"self_check": self_check_info} if self_check_info.get("self_check") == "fail" else {})})
+        notice = {"type": "notice", "level": "error", "text": error,
+                  **({"self_check": self_check_info} if self_check_info.get("self_check") == "fail" else {})}
+        if result and getattr(result, "action", ""):
+            notice["action"] = result.action
+        state.blocks.append(notice)
     elif status == "done":
         notice = unverified_write_notice(state.blocks)
         if notice:

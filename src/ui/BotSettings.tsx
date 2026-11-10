@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useValue } from 'tldraw'
 
-import { BUILTIN_AGENT, botEnabledAtom, providerLabel, providersAtom, refreshBot, saveSettings, settingsAtom, testLocalLlm, type BotSettings as Settings, type LocalLlmTestCode, type ProviderInfo } from '../bot'
+import { BUILTIN_AGENT, botEnabledAtom, llmSourceAtom, providerLabel, providersAtom, refreshBot, saveSettings, settingsAtom, testLocalLlm, useOfficialLlmDefault, type BotSettings as Settings, type LocalLlmTestCode, type ProviderInfo } from '../bot'
 import { errorText } from '../jobs'
 import { agentSetupFocusAtom, botSettingsOpenAtom } from './AgentPicker'
 import { docsUrl } from './SettingsMenu'
@@ -47,9 +47,11 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
   const settings = useValue(settingsAtom)
   const providers = useValue(providersAtom)
   const enabled = useValue(botEnabledAtom)
+  const llmSource = useValue(llmSourceAtom)
   const [draft, setDraft] = useState<Settings>({})
   const [testing, setTesting] = useState(false)
   const [testState, setTestState] = useState<{ ok: boolean; text: string } | null>(null)
+  const [switching, setSwitching] = useState(false)
   // #345: Advanced (comfy-mcp) starts collapsed
   const [advancedOpen, setAdvancedOpen] = useState(false)
   // #219: a stored custom key belongs to its host; a new host clears it (the backend enforces the same rule)
@@ -82,7 +84,8 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
       model: String(draft[MODEL_KEY] ?? ''),
     }).then((r) => {
       const code = (r.code in TEST_MSG ? r.code : 'unreachable') as LocalLlmTestCode
-      setTestState({ ok: !!r.ok, text: TEST_MSG[code](r.model) })
+      const reason = ({ unreachable: t('botSettings.customLlmFailHost'), auth_failed: t('botSettings.customLlmFailAuth'), timeout: t('botSettings.customLlmFailTimeout') } as Partial<Record<LocalLlmTestCode, string>>)[code]
+      setTestState({ ok: !!r.ok, text: !r.ok && reason ? `${t('botSettings.customLlmFailed')}：${reason}` : TEST_MSG[code](r.model) })
     }).catch(() => {
       setTestState({ ok: false, text: t('botSettings.testFailed') })
     }).finally(() => setTesting(false))
@@ -98,6 +101,11 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
         <section className="ca-botsettings__section" data-testid="botsettings-builtin">
           <div className="ca-botsettings__sectiontitle">{t('botSettings.builtinAgent')}</div>
           <div className="ca-chat__hint">{t('botSettings.builtinAgentHint')}</div>
+          <div className="ca-botsettings__llmsource" data-testid="llm-source">
+            {llmSource.source === 'settings'
+              ? t('botSettings.llmSourceCustom', llmSource.host || hostOf(settings[URL_KEY]))
+              : t('botSettings.llmSourceOfficial')}
+          </div>
           {llmFields.map(([key, label, hint, type]) => (
             <label key={key} className="ca-rename__field">
               <span>{label}</span>
@@ -114,6 +122,21 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
               <span className="ca-botsettings__testmsg" data-ok={testState.ok || undefined} data-err={!testState.ok || undefined} role="status">
                 {testState.text}
               </span>
+            )}
+            {(llmSource.source === 'settings' || (testState && !testState.ok)) && (
+              <button
+                type="button"
+                className="ca-panel__secondary"
+                data-testid="use-official-llm"
+                disabled={switching}
+                onClick={() => {
+                  if (switching) return
+                  setSwitching(true)
+                  void useOfficialLlmDefault().then(() => setTestState(null)).catch((e) => onError(errorText(e))).finally(() => setSwitching(false))
+                }}
+              >
+                {t('botSettings.useOfficialDefault')}
+              </button>
             )}
           </div>
         </section>

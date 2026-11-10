@@ -66,6 +66,7 @@ async def test_status_lists_builtin_first_even_with_claude_and_codex_detected(bo
 async def test_no_wavespeed_key_gives_a_clear_status_not_a_401(no_env_keys, monkeypatch):
     monkeypatch.setattr(wavespeed, "key_source", lambda: ("", "none"))
     monkeypatch.setattr(settings, "read_json", lambda *_a, **_k: {})
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     called = []
 
     async def boom(self):
@@ -73,9 +74,10 @@ async def test_no_wavespeed_key_gives_a_clear_status_not_a_401(no_env_keys, monk
         raise AssertionError("must not hit the endpoint without a key")
     monkeypatch.setattr(LocalLlmProvider, "probe", boom)
     st = await get_provider("local-llm").probe()
-    assert not st.available and st.detail == api_providers.NO_KEY_DETAIL and not called
+    from ComfyArt.api.provider_admin import OFFICIAL_NO_KEY_ERROR
+    assert not st.available and st.detail == OFFICIAL_NO_KEY_ERROR and not called
     res = await get_provider("local-llm").send(None, None, None)
-    assert "WaveSpeed Key" in res.error and "401" not in res.error
+    assert "Official DeepSeek" in res.error and "未配置" in res.error and "401" not in res.error
 
 
 def test_custom_url_key_used_and_wavespeed_key_never_sent_there(no_env_keys, monkeypatch):
