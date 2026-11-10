@@ -22,8 +22,6 @@ pw = pytest.importorskip("playwright.async_api")
 
 FLARE = "openai/gpt-image-2.5-flare/text-to-image"
 CASES = (
-    ("pose-fission", 1536, 2048, (36, 96, 168),
-     "Same person and scene, one new camera angle. One 3:4 still."),
     ("game-art", 1024, 1824, (32, 128, 72),
      "One portrait mobile game UI screen, title bar, list, button, bottom nav. Not key art."),
 )
@@ -41,7 +39,7 @@ def _commands():
     return [d for event, d in SENT if event == "comfyart-mcp-command"]
 
 
-@pytest.mark.parametrize("skill,w,h,rgb,prompt", CASES, ids=["pose-fission", "game-art"])
+@pytest.mark.parametrize("skill,w,h,rgb,prompt", CASES, ids=["game-art"])
 async def test_exact_skill_auto_entry_respects_prefs(app_url, mock_ws, monkeypatch, skill, w, h, rgb, prompt):  # noqa: F811
     import aiohttp
     from ComfyArt.api import mcp_commands
@@ -143,4 +141,65 @@ async def test_exact_skill_auto_entry_respects_prefs(app_url, mock_ws, monkeypat
             }"""
         )
         assert natural == [w, h], (skill, natural)
+        await browser.close()
+
+async def test_e2e_skill_pose_fission_without_refs_refuses_before_submit(app_url, mock_ws, monkeypatch):  # noqa: F811
+    """pose-fission Auto with no base/refs must not submit and must ask for a person photo."""
+    import aiohttp
+    from ComfyArt.api import mcp_commands
+    from server import PromptServer
+
+    mcp_commands._pages.clear()
+    write_settings(**{"enable-mcp": True})
+    sockets: list = []
+    original = PromptServer.instance.send_sync
+
+    def forward(event, data, sid=None):
+        original(event, data, sid)
+        raw = json.dumps({"type": event, "data": data})
+        for ws in list(sockets):
+            ws.send(raw)
+
+    monkeypatch.setattr(PromptServer.instance, "send_sync", forward)
+
+    async with pw.async_playwright() as p:
+        try:
+            browser = await p.chromium.launch()
+        except Exception as e:
+            pytest.skip(f"chromium not available: {e}")
+        ctx = await browser.new_context(viewport={"width": 1440, "height": 900}, locale="zh-CN")
+        await ctx.route_web_socket(re.compile(r"/ws(\?|$)"), lambda ws: sockets.append(ws))
+        page = await ctx.new_page()
+        await page.add_init_script("localStorage.setItem('comfyart.lang','zh'); localStorage.setItem('comfyart.e2e','1')")
+        await page.goto(app_url)
+        await page.wait_for_timeout(1200)
+        await page.mouse.click(28, 83)
+        await page.locator(".tl-canvas").wait_for()
+        await page.wait_for_timeout(600)
+        if await page.locator(".ca-modal").count():
+            await page.locator(".ca-modal button").nth(-2).click()
+        for _ in range(50):
+            if sockets:
+                break
+            await asyncio.sleep(0.1)
+        assert sockets, "page websocket was not connected"
+        pages = dict(mcp_commands._pages)
+        assert pages, "the canvas did not register a project"
+        for client in pages:
+            PromptServer.instance.sockets[client] = object()
+        project = next(iter(pages.values()))
+        origin = app_url.split("/comfyart/")[0]
+        async with aiohttp.ClientSession() as http:
+            res = await http.post(
+                f"{origin}/comfyart/mcp?project={project}",
+                json={"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                      "params": {"name": "generate_image",
+                                 "arguments": {"prompt": "Same person and scene, one new camera angle.",
+                                               "skill": "pose-fission"}}},
+                timeout=aiohttp.ClientTimeout(total=30),
+            )
+            body = await res.json()
+        text = body["result"]["content"][0]["text"]
+        assert "请上传一张人物照片" in text, text
+        assert mock_ws["submits"] == []
         await browser.close()

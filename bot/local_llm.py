@@ -2221,7 +2221,7 @@ class LocalLlmProvider(AgentProvider):
         if not failed:
             from ..api.mcp_tools.canvas import _auto_choice
             picked = _auto_choice(tool, call_args)
-            failed = str(picked["model"]) if picked else ""
+            failed = str((picked or {}).get("model") or "")
         if not failed or not tool:
             return
         from ..api.mcp_tools.canvas import _fallback_choice
