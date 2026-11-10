@@ -1,0 +1,21 @@
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": "e948f3f5a5914594b9f7588105497b19",
+    "model": "wavespeed-ai/krea-v2/turbo",
+    "outputs": [
+      "https://d2h7xmz5gqybh9.cloudfront.net/output/928ad4c1-10dc-4247-a776-6814e8634be4-u2_6a189c29-c238-4c55-8e27-5181e77300f1.jpeg"
+    ],
+    "urls": {
+      "get": "https://api.wavespeed.ai/api/v3/predictions/e948f3f5a5914594b9f7588105497b19/result"
+    },
+    "status": "completed",
+    "created_at": "2026-11-10T11:29:06.055170687Z",
+    "code": 0,
+    "error": "",
+    "timings": {
+      "inference": 6633
+    }
+  }
+}

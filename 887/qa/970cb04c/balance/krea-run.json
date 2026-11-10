@@ -1,0 +1,18 @@
+{
+  "name": "krea",
+  "app": "http://127.0.0.1:8680",
+  "tip": "970cb04cbda8978686a7754ca4cd1a3126413323",
+  "prompt_id": "ws:e948f3f5a5914594b9f7588105497b19",
+  "task": "e948f3f5a5914594b9f7588105497b19",
+  "model": "wavespeed-ai/krea-v2/turbo",
+  "submitted_at": "2026-11-10T19:29:06.374410+08:00",
+  "finished_at": "2026-11-10T19:29:19.147722+08:00",
+  "quoted_usd": 0.012,
+  "generation_succeeded": true,
+  "balance_before_usd": 30.822899,
+  "balance_after_usd": 30.810899,
+  "balance_diff_usd": 0.012,
+  "before_captured_at": "2026-11-10T19:29:01.597053+08:00",
+  "after_captured_at": "2026-11-10T19:31:46.298701+08:00",
+  "after_note": "Shell wrapper aborted after submit; job completed on App 8680. After snapshot recaptured from official GET /api/v3/balance; balance equals before minus quoted 0.012 with no other runs in between."
+}

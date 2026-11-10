@@ -1,0 +1,32 @@
+{
+  "ws:e948f3f5a5914594b9f7588105497b19": {
+    "status": {
+      "completed": true,
+      "status_str": "completed",
+      "messages": []
+    },
+    "outputs": {
+      "ws": {
+        "images": [
+          {
+            "filename": "ws_e948f3f5a591_0.jpeg",
+            "subfolder": "wavespeed",
+            "type": "output"
+          }
+        ]
+      }
+    },
+    "generation_succeeded": true,
+    "model_choice": {
+      "model": "wavespeed-ai/krea-v2/turbo",
+      "auto": false,
+      "category": "user",
+      "reason": {
+        "zh": "你指定了这个模型",
+        "en": "you named this model"
+      },
+      "note": "用了 wavespeed-ai/krea-v2/turbo，因为你指定了这个模型。/ Used wavespeed-ai/krea-v2/turbo because you named this model."
+    },
+    "model": "wavespeed-ai/krea-v2/turbo"
+  }
+}

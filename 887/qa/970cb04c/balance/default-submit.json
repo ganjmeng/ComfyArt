@@ -1,0 +1,12 @@
+{
+  "prompt_id": "ws:922cdbfc46074d79929448172ea236db",
+  "task": "922cdbfc46074d79929448172ea236db",
+  "submitted_at": "2026-11-10T19:32:01.684044+08:00",
+  "inputs": {
+    "feature": "text_to_image",
+    "model": "openai/gpt-image-2.6-flare/text-to-image",
+    "prompt": "A simple blue teacup on a wooden table, soft daylight",
+    "width": 1024,
+    "height": 1024
+  }
+}

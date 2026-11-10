@@ -1,0 +1,40 @@
+{
+  "tip": "970cb04cbda8978686a7754ca4cd1a3126413323",
+  "app": "http://127.0.0.1:8680",
+  "account_last4": "EOjU",
+  "source": "official GET https://api.wavespeed.ai/api/v3/balance (same env key as App)",
+  "note": "Equivalent new paid App-API runs on tip 970cb04c. Original jobs 36df2f7d98ae4f7193e8e79e8c774abd / 31e7ed529854492883bdb9878487ee7b only had quoted_usd, no balance snapshots.",
+  "original_jobs": {
+    "krea": "36df2f7d98ae4f7193e8e79e8c774abd",
+    "default": "31e7ed529854492883bdb9878487ee7b"
+  },
+  "finished_at": "2026-11-10T19:36:35.171557+08:00",
+  "runs": [
+    {
+      "name": "krea",
+      "prompt_id": "ws:e948f3f5a5914594b9f7588105497b19",
+      "task": "e948f3f5a5914594b9f7588105497b19",
+      "model": "wavespeed-ai/krea-v2/turbo",
+      "quoted_usd": 0.012,
+      "generation_succeeded": true,
+      "submitted_at": "2026-11-10T19:29:06.374410+08:00",
+      "finished_at": "2026-11-10T19:29:19.147722+08:00",
+      "balance_before_usd": 30.822899,
+      "balance_after_usd": 30.810899,
+      "balance_diff_usd": 0.012
+    },
+    {
+      "name": "default",
+      "prompt_id": "ws:922cdbfc46074d79929448172ea236db",
+      "task": "922cdbfc46074d79929448172ea236db",
+      "model": "openai/gpt-image-2.6-flare/text-to-image",
+      "quoted_usd": 0.045,
+      "generation_succeeded": true,
+      "submitted_at": "2026-11-10T19:32:01.679460+08:00",
+      "finished_at": "2026-11-10T19:32:30.957023+08:00",
+      "balance_before_usd": 30.810899,
+      "balance_after_usd": 30.765899,
+      "balance_diff_usd": 0.045
+    }
+  ]
+}

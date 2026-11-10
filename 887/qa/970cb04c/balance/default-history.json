@@ -1,0 +1,32 @@
+{
+  "ws:922cdbfc46074d79929448172ea236db": {
+    "status": {
+      "completed": true,
+      "status_str": "completed",
+      "messages": []
+    },
+    "outputs": {
+      "ws": {
+        "images": [
+          {
+            "filename": "ws_922cdbfc4607_0.png",
+            "subfolder": "wavespeed",
+            "type": "output"
+          }
+        ]
+      }
+    },
+    "generation_succeeded": true,
+    "model_choice": {
+      "model": "openai/gpt-image-2.6-flare/text-to-image",
+      "auto": false,
+      "category": "user",
+      "reason": {
+        "zh": "你指定了这个模型",
+        "en": "you named this model"
+      },
+      "note": "用了 openai/gpt-image-2.6-flare/text-to-image，因为你指定了这个模型。/ Used openai/gpt-image-2.6-flare/text-to-image because you named this model."
+    },
+    "model": "openai/gpt-image-2.6-flare/text-to-image"
+  }
+}
