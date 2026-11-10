@@ -232,11 +232,14 @@ const scenes: Record<string, Msg> = {
 }
 
 // #462: user turns with a skill chip inside the bubble (?scene=user-skill&name=…&text=…)
+// #710: ?images=N adds image-N reference chips so the --refs wrap modifier can be locked in tests
+const imageCount = Math.max(0, parseInt(q.get('images') || '0', 10) || 0)
 const userScenes: Record<string, Msg> = {
   'user-skill': {
     id: 'us', role: 'user', status: 'done',
     blocks: [
       { type: 'skill', name: q.get('name') || '早安咖啡店海报生成器' },
+      ...Array.from({ length: imageCount }, (_, i) => ({ type: 'image', url: `blob:ref-${i}` })),
       { type: 'text', text: q.get('text') || (q.get('lang') === 'en' ? 'I want to edit this Skill' : '我想修改这个 Skill') },
     ],
   },
