@@ -85,7 +85,7 @@ def test_templates_lock_layout_and_pixels():
     ba, pose, game, banner = (_instr(s) for s in ("before-after", "pose-fission", "game-art", "linkedin-banner"))
     assert "ONE comparison card" in ba and "1024" in ba and "1280" in ba and "4:5" in ba
     assert "separate portraits" in ba and "list_models" in ba
-    assert "1536" in pose and "2048" in pose and "3:4" in pose and "different angle" in pose
+    assert "1536" in pose and "2048" in pose and "3:4" in pose and "different pose and angle" in pose
     assert "white backdrop" in pose and "one generate_image call per plan line" in pose
     assert "title bar" in game and "bottom navigation" in game and "1024" in game and "1824" in game
     assert "not key art" in game.lower() or "not key art" in game
@@ -169,3 +169,32 @@ async def test_linkedin_skips_list_models_expand_and_a_second_generate(monkeypat
     texts = [e.text for e in events if e.t == "tool_result"]
     assert any("list_models" in t for t in texts)
     assert any("1 次" in t for t in texts)
+
+
+def test_before_after_template_has_no_default_side_profile():
+    ba = _instr("before-after")
+    assert "Do not default to a 45° or 90° side profile" in ba
+    assert "mostly frontal or near-frontal" in ba
+    assert "Default to a 45° or 90° side profile" not in ba
+
+
+def test_pose_fission_template_changes_only_pose_and_angle():
+    pose = _instr("pose-fission")
+    assert "change only pose and angle" in pose
+    assert "change ONLY camera angle and framing" not in pose
+    assert "camera angle and framing" not in pose
+    assert "shot size" not in pose.lower()
+
+
+def test_game_art_template_requires_bottom_nav_only_on_home_and_list_pages():
+    game = _instr("game-art")
+    assert "bottom navigation is required on home and list pages" in game
+    assert "may omit the bottom nav" in game
+
+
+def test_linkedin_banner_template_keeps_avatar_safe_area_empty():
+    banner = _instr("linkedin-banner")
+    assert "leave the avatar safe area EMPTY" in banner
+    assert "no face" in banner
+    # Personal preset also keeps the safe area empty.
+    assert "avatar safe area empty (no face drawn there)" in SKILLS
