@@ -15,7 +15,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from cases import CASES, IMG, Case  # noqa: E402
 from harness import CJK, LLM_KEY, ROOT, WS_KEY, FakePage, MockLLM, MockWS, NetGuard, curated_ids  # noqa: E402
-from conftest import wait_bot_done, write_settings  # noqa: E402
+from conftest import wait_bot_done, write_admin_llm_passthrough, write_settings  # noqa: E402
 
 RESULTS: dict[str, dict] = {}
 LANGS = ("zh", "en")
@@ -59,6 +59,8 @@ async def _run(case: Case, lang: str, monkeypatch, caplog, capfd) -> dict:
         llm_url = base + "/mockllm/v1"
     write_settings(**{"enable-bot": True, "bot-local-llm-url": llm_url, "bot-model-local-llm": "mock-agent-model",
                       **case.settings})
+    # Official DeepSeek is the no-section default (90073499). Pin WaveSpeed/existing so the mock URL wins.
+    write_admin_llm_passthrough()
     page = FakePage(ws_url=base + "/mockws", decline=case.decline, shapes=[*map(_copy, case.shapes_initial)],
                     selection=list(case.selection), brand_kit=case.brand_kit)
     monkeypatch.setattr(canvas, "submit_command", page)

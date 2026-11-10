@@ -145,6 +145,16 @@ def write_settings(**values) -> None:
     settings.write_json(settings.app_path("settings.json"), current)
 
 
+def write_admin_llm_passthrough() -> None:
+    """Save an explicit WaveSpeed/existing admin LLM section so tests use the settings URL (localhost mock).
+
+    Commit 90073499 made a missing admin section default to official DeepSeek. Product routing is
+    unchanged (#877); tests that talk to a mock must write this themselves (#870 B1).
+    """
+    from ComfyArt.api.provider_admin import _save_section
+    _save_section("llm", {"provider": "wavespeed", "model": "existing"})
+
+
 class FakeProvider(AgentProvider):
     id = "fake-test"
     label = "Fake"
@@ -283,7 +293,7 @@ def pytest_collection_finish(session):
 
 
 # --- #712 no-spend: under scripts/gate.sh (GATE=1) paid keys are unset and outbound network is blocked ---
-GATE_PAID_KEYS = ("WAVESPEED_API_KEY", "KIE_API_KEY")
+GATE_PAID_KEYS = ("WAVESPEED_API_KEY", "KIE_API_KEY", "DEEPSEEK_API_KEY")
 _LOCAL = ("127.0.0.1", "::1", "localhost", "0.0.0.0")
 
 
@@ -321,6 +331,68 @@ def _gate_guard() -> None:
         return real_gai(host, *a, **kw)
 
     socket.getaddrinfo = getaddrinfo
+
+    # #870 B1: block every real upstream at the HTTP clients the code actually uses, not only
+    # local-llm._request_json. Localhost (e2e / TestServer / mocks) stays open.
+    import urllib.request
+    from urllib.parse import urlparse
+
+    def _gate_check_url(url) -> None:
+        raw = url.full_url if hasattr(url, "full_url") else url
+        host = urlparse(str(raw or "")).hostname
+        if host in _LOCAL or not host:
+            return
+        raise GateNetworkBlocked(
+            f"GATE=1: test called real upstream {host} ({raw}); "
+            "use a localhost mock, not WaveSpeed / Replicate / kie / DeepSeek (#870 B1 / #712)"
+        )
+
+    _url_open = urllib.request.OpenerDirector.open
+
+    def _gate_url_open(self, fullurl, *args, **kwargs):
+        _gate_check_url(fullurl)
+        return _url_open(self, fullurl, *args, **kwargs)
+
+    urllib.request.OpenerDirector.open = _gate_url_open
+
+    import aiohttp
+    _aio_request = aiohttp.ClientSession._request
+
+    async def _gate_aio_request(self, method, str_or_url, **kwargs):
+        _gate_check_url(str_or_url)
+        return await _aio_request(self, method, str_or_url, **kwargs)
+
+    aiohttp.ClientSession._request = _gate_aio_request
+
+    try:
+        import requests
+        _req = requests.sessions.Session.request
+
+        def _gate_requests(self, method, url, *args, **kwargs):
+            _gate_check_url(url)
+            return _req(self, method, url, *args, **kwargs)
+
+        requests.sessions.Session.request = _gate_requests
+    except ImportError:
+        pass
+
+    try:
+        import httpx
+        _httpx = httpx.Client.request
+        _httpx_async = httpx.AsyncClient.request
+
+        def _gate_httpx(self, method, url, *args, **kwargs):
+            _gate_check_url(url)
+            return _httpx(self, method, url, *args, **kwargs)
+
+        async def _gate_httpx_async(self, method, url, *args, **kwargs):
+            _gate_check_url(url)
+            return await _httpx_async(self, method, url, *args, **kwargs)
+
+        httpx.Client.request = _gate_httpx
+        httpx.AsyncClient.request = _gate_httpx_async
+    except ImportError:
+        pass
 
 
 if os.environ.get("GATE") == "1":

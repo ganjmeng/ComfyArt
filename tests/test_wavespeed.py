@@ -721,8 +721,10 @@ async def test_llm_complete_uses_openai_compatible_endpoint(bot_client, monkeypa
     server = TestServer(app)
     await server.start_server()
     try:
+        from conftest import write_admin_llm_passthrough
         write_settings(**{"enable-mcp": True, "enable-bot": True, "bot-local-llm-url": str(server.make_url("/v1")),
                           "bot-model-local-llm": ""})  # #120: no saved model -> first model the endpoint lists
+        write_admin_llm_passthrough()  # no-section default is official DeepSeek (90073499); keep the mock model
         monkeypatch.setenv("COMFYART_LOCAL_LLM_API_KEY", "llm-test")
         res = await bot_client.post("/comfyart/llm/complete", json={"text": "hi", "system": "be brief", "images": []})
         assert res.status == 200, await res.text()

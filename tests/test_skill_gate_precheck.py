@@ -178,6 +178,60 @@ def test_gate_guard_blocks_outbound_allows_localhost():
     assert out.stdout.split() == ["BLOCKED", "DNSBLOCKED", "LOCAL"], out.stderr[-800:]
 
 
+# Real kie.ai host as used by scripts/kie_wash_phase3.py (API_BASE).
+GATE_UPSTREAM_HOSTS = ("api.wavespeed.ai", "api.replicate.com", "api.kie.ai", "api.deepseek.com")
+
+
+def test_gate_http_blocks_all_real_upstreams_allows_localhost():
+    """#870 B1: urllib + aiohttp requests to real upstreams raise GateNetworkBlocked; localhost stays open."""
+    hosts = ",".join(GATE_UPSTREAM_HOSTS)
+    code = (
+        "import os, sys, asyncio, urllib.request, socket, aiohttp\n"
+        "os.environ['GATE']='1'\n"
+        "sys.path.insert(0, 'tests'); import conftest\n"
+        "from conftest import GateNetworkBlocked\n"
+        f"hosts = '{hosts}'.split(',')\n"
+        "for host in hosts:\n"
+        "    url = f'https://{host}/'\n"
+        "    try:\n"
+        "        urllib.request.urlopen(url, timeout=2)\n"
+        "        print(f'URLLIB_OPEN:{host}')\n"
+        "    except GateNetworkBlocked:\n"
+        "        print(f'URLLIB_BLOCKED:{host}')\n"
+        "    except Exception as e:\n"
+        "        print(f'URLLIB_OTHER:{host}:{type(e).__name__}')\n"
+        "async def aio():\n"
+        "    out = []\n"
+        "    async with aiohttp.ClientSession() as s:\n"
+        "        for host in hosts:\n"
+        "            try:\n"
+        "                await s.get(f'https://{host}/', timeout=aiohttp.ClientTimeout(total=2))\n"
+        "                out.append(f'AIO_OPEN:{host}')\n"
+        "            except GateNetworkBlocked:\n"
+        "                out.append(f'AIO_BLOCKED:{host}')\n"
+        "            except Exception as e:\n"
+        "                out.append(f'AIO_OTHER:{host}:{type(e).__name__}')\n"
+        "    return out\n"
+        "print(' '.join(asyncio.run(aio())))\n"
+        "srv=socket.socket(); srv.bind(('127.0.0.1',0)); srv.listen(1); port=srv.getsockname()[1]\n"
+        "try:\n"
+        "    urllib.request.urlopen(f'http://127.0.0.1:{port}/', timeout=0.3)\n"
+        "except GateNetworkBlocked:\n"
+        "    print('LOCAL_BLOCKED')\n"
+        "except Exception:\n"
+        "    print('LOCAL_OK')\n"
+        "else:\n"
+        "    print('LOCAL_OK')\n"
+        "srv.close()\n"
+    )
+    out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, timeout=60)
+    tokens = out.stdout.split()
+    expected = [f"URLLIB_BLOCKED:{h}" for h in GATE_UPSTREAM_HOSTS]
+    expected += [f"AIO_BLOCKED:{h}" for h in GATE_UPSTREAM_HOSTS]
+    expected += ["LOCAL_OK"]
+    assert tokens == expected, (tokens, out.stderr[-800:])
+
+
 # --- #724: node-unit tests are counted, and a missing node/node_modules is never a pass ---
 def _free_port() -> int:
     s = socket.socket(); s.bind(("127.0.0.1", 0)); port = s.getsockname()[1]; s.close()
