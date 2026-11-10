@@ -93,7 +93,7 @@ def run_hint(name: object) -> str:
         )
     return (
         f"Output lock: each generate_image uses skill={sid!r}, {size}, count=1, and a different prompt "
-        "(angle and framing). Do not repeat the same arguments. Do not use 1024x1024."
+        "(pose and angle only, not camera or shot size). Do not repeat the same arguments. Do not use 1024x1024."
     )
 
 
