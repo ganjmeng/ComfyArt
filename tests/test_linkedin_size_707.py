@@ -30,6 +30,25 @@ DEFAULT_T2I = "openai/gpt-image-2.6-flare/text-to-image"
 QWEN = VERIFIED["text_to_image"]
 QWEN_EDIT = VERIFIED["image_edit"]
 SENT: list[tuple[str, dict]] = []
+# Recorded from a read-only GET of the live WaveSpeed catalog. Unit tests never
+# fetch that endpoint; re-check with scripts/check_wavespeed_fixture.py (not CI).
+# /edit size is x-hidden; /text-to-image size is visible and has a default.
+LIVE_QWEN20_SIZE = {
+    QWEN_EDIT: {
+        "description": "Image dimensions in width*height format (e.g., 1024*1024, 1280*720)",
+        "maximum": 4096,
+        "minimum": 256,
+        "type": "string",
+        "x-hidden": True,
+    },
+    QWEN: {
+        "default": "1024*1024",
+        "description": "Image dimensions in width*height format (e.g., 1024*1024, 1280*720)",
+        "maximum": 4096,
+        "minimum": 256,
+        "type": "string",
+    },
+}
 
 
 def _flare():
@@ -175,7 +194,101 @@ def test_relay_refs_use_the_edit_schema_not_flare(relay):
     assert SENT[0][1]["edit_model"] == QWEN_EDIT
     assert SENT[0][1].get("model") != FLARE
     assert out["provider_submit"] == {"size": "1584*396"}
-    assert accepts_exact_pixels(_schema(FIXTURE[QWEN_EDIT]), 1584, 396)
+    assert accepts_exact_pixels(_schema(FIXTURE[QWEN_EDIT]), 1584, 396, QWEN_EDIT)
+
+
+def test_fixture_qwen20_size_keeps_live_x_hidden():
+    """Fail if the catalog fixture regresses to a bare `size: {}` (tests would pass for the wrong reason).
+
+    Does not call WaveSpeed. `wavespeed-ai/qwen-image-2.0/edit` size must stay x-hidden, matching live.
+    """
+    assert set(LIVE_QWEN20_SIZE) == set(wavespeed.HIDDEN_SIZE_ALLOWLIST) == {QWEN_EDIT, QWEN}
+    for mid, expected in LIVE_QWEN20_SIZE.items():
+        got = _schema(FIXTURE[mid])["properties"]["size"]
+        assert got == expected, f"{mid} fixture size drifted from the recorded live shape"
+    assert _schema(FIXTURE[QWEN_EDIT])["properties"]["size"].get("x-hidden") is True
+
+
+def test_hidden_size_allowlist_only_covers_qwen_image_20():
+    """Live catalog marks qwen-image-2.0/edit size as x-hidden. Only the two allowlisted ids may submit it."""
+    hidden = {"properties": {"size": {
+        "type": "string", "minimum": 256, "maximum": 4096, "x-hidden": True,
+        "description": "Image dimensions in width*height format (e.g., 1024*1024, 1280*720)",
+    }}}
+    other = "bytedance/seedream-v5.0-pro/edit"
+    assert wavespeed.HIDDEN_SIZE_ALLOWLIST == frozenset({QWEN_EDIT, QWEN})
+    assert provider_submit(hidden, 1584, 396) == {}
+    assert accepts_exact_pixels(hidden, 1584, 396) is False
+    assert provider_submit(hidden, 1584, 396, other) == {}
+    assert accepts_exact_pixels(hidden, 1584, 396, other) is False
+    assert provider_submit(hidden, 1584, 396, QWEN_EDIT) == {"size": "1584*396"}
+    assert accepts_exact_pixels(hidden, 1584, 396, QWEN_EDIT) is True
+    assert provider_submit(hidden, 1024, 1280, QWEN) == {"size": "1024*1280"}
+    assert accepts_exact_pixels(hidden, 1024, 1824, QWEN) is True
+    # Visible size still submits without being on the allowlist.
+    visible = {"properties": {"size": {"type": "string", "minimum": 256, "maximum": 4096}}}
+    assert provider_submit(visible, 1584, 396, other) == {"size": "1584*396"}
+
+
+@pytest.mark.parametrize("skill,w,h", [
+    ("linkedin-banner", 1584, 396),
+    ("before-after", 1024, 1280),
+    ("game-art", 1024, 1824),
+])
+def test_relay_exact_skills_with_refs_submit_qwen_edit_size(relay, skill, w, h):
+    """#828 exact-size skills with a reference image go through generate_image and submit W*H on the edit model."""
+    out = _run("generate_image", prompt="skill canvas with a reference", skill=skill, refs=["shape:face"])
+    assert SENT and SENT[-1][0] == "generate_image"
+    sent = SENT[-1][1]
+    assert sent["edit_model"] == QWEN_EDIT
+    assert sent.get("model") != FLARE
+    assert sent["size_lock"] is True and sent["size_candidates"] == [QWEN_EDIT]
+    assert sent["width"] == w and sent["height"] == h
+    assert out["provider_submit"] == {"size": f"{w}*{h}"}
+    assert out["model_choice"]["model"] == QWEN_EDIT
+
+
+def test_relay_non_allowlisted_hidden_size_is_blocked(relay, monkeypatch):
+    # FLARE is registered for generate_image (text_to_image dropdown). An /edit id
+    # is treated as unregistered and Auto would send Qwen instead of blocking.
+    # Keep only an x-hidden size field so the refusal is the allowlist, not a snapped ratio.
+    mid = FLARE
+    catalog = json.loads(json.dumps(FIXTURE))
+    catalog[mid]["api_schema"]["api_schemas"][0]["request_schema"]["properties"] = {
+        "prompt": {},
+        "size": {"type": "string", "minimum": 256, "maximum": 4096, "x-hidden": True},
+    }
+
+    async def catalog_fn(refresh=False):
+        return catalog
+
+    monkeypatch.setattr(wavespeed, "catalog", catalog_fn)
+    out = _run("generate_image", prompt="banner", skill="linkedin-banner", model=mid, refs=["shape:face"])
+    assert SENT == []
+    assert out["submitted"] is False
+    assert out["model"] == mid
+    assert "size" not in (out.get("provider_submit") or {})
+    assert "没有提交" in (out.get("note") or out.get("error") or "")
+
+
+def test_build_payload_sends_allowlisted_hidden_size_only():
+    hidden_size = {"type": "string", "minimum": 256, "maximum": 4096, "x-hidden": True}
+    schema = {"properties": {
+        "prompt": {"type": "string"},
+        "size": hidden_size,
+        "foo": {"type": "string", "x-hidden": True},
+    }}
+    inputs = {"prompt": "banner", "width": 1584, "height": 396}
+    allowed = asyncio.run(wavespeed.build_payload(None, schema, inputs, QWEN_EDIT))
+    assert allowed["size"] == "1584*396"
+    assert allowed["prompt"] == "banner"
+    assert "foo" not in allowed  # allowlist is only for size, not every hidden field
+    blocked = asyncio.run(wavespeed.build_payload(None, schema, inputs, "bytedance/seedream-v5.0-pro/edit"))
+    assert "size" not in blocked
+    assert "foo" not in blocked
+    # text-to-image is also allowlisted if its size is later marked hidden
+    t2i = asyncio.run(wavespeed.build_payload(None, schema, {"prompt": "x", "width": 1024, "height": 1824}, QWEN))
+    assert t2i["size"] == "1024*1824"
 
 
 @pytest.mark.parametrize("skill,w,h", [

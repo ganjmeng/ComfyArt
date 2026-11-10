@@ -6488,7 +6488,13 @@
 },
 "prompt": {},
 "seed": {},
-"size": {}
+"size": {
+"description": "Image dimensions in width*height format (e.g., 1024*1024, 1280*720)",
+"maximum": 4096,
+"minimum": 256,
+"type": "string",
+"x-hidden": true
+}
 }
 }
 }
@@ -6507,7 +6513,13 @@
 "properties": {
 "prompt": {},
 "seed": {},
-"size": {}
+"size": {
+"default": "1024*1024",
+"description": "Image dimensions in width*height format (e.g., 1024*1024, 1280*720)",
+"maximum": 4096,
+"minimum": 256,
+"type": "string"
+}
 }
 }
 }

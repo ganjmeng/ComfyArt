@@ -948,6 +948,26 @@ def _av_fields(props: dict, required: set, inputs: dict, payload: dict) -> None:
         payload["language"] = "auto" if "auto" in lang else lang[0]
 
 
+# Live WaveSpeed marks `size` x-hidden on some edit models, including
+# wavespeed-ai/qwen-image-2.0/edit. build_payload used to skip that hidden
+# size field, so #828 exact-size skills refused to submit when a reference
+# image was attached. Only these two ids may send the hidden `size` field;
+# every other hidden field on every model is still dropped.
+HIDDEN_SIZE_ALLOWLIST = frozenset({
+    "wavespeed-ai/qwen-image-2.0/edit",
+    "wavespeed-ai/qwen-image-2.0/text-to-image",
+})
+
+
+def submits_size_field(spec: dict | None, model: str = "") -> bool:
+    """True when build_payload / provider_submit should include schema `size`."""
+    if not isinstance(spec, dict):
+        return False
+    if spec.get("x-hidden") and str(model) not in HIDDEN_SIZE_ALLOWLIST:
+        return False
+    return True
+
+
 def _size_value(spec: dict, w: int, h: int) -> str:
     """size as the schema wants it: free W*H, or the closest enum entry (ratios like 16:9 or sizes like 1024*1536)."""
     enum = [str(v) for v in spec.get("enum") or []]
@@ -1050,7 +1070,7 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
         payload["mask_image"] = await _upload(session, path, mask_to_white(_read(path)), f"mask-{uuid.uuid4().hex[:8]}.png")
     w, h = inputs.get("width"), inputs.get("height")
     if w and h:
-        if "size" in props and not props["size"].get("x-hidden"):
+        if "size" in props and submits_size_field(props.get("size"), model):
             payload["size"] = _size_value(props["size"], int(w), int(h))
         if props.get("aspect_ratio", {}).get("enum"):
             payload["aspect_ratio"] = _nearest(props["aspect_ratio"]["enum"], w / h)
