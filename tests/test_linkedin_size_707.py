@@ -249,13 +249,15 @@ def test_relay_exact_skills_with_refs_submit_qwen_edit_size(relay, skill, w, h):
 
 
 def test_relay_non_allowlisted_hidden_size_is_blocked(relay, monkeypatch):
-    # A registered curated edit model, not on the allowlist. A made-up id would be
-    # dropped as unregistered and Auto would send Qwen instead of blocking.
-    mid = "bytedance/seedream-v5.0-lite/edit"
+    # FLARE is registered for generate_image (text_to_image dropdown). An /edit id
+    # is treated as unregistered and Auto would send Qwen instead of blocking.
+    # Keep only an x-hidden size field so the refusal is the allowlist, not a snapped ratio.
+    mid = FLARE
     catalog = json.loads(json.dumps(FIXTURE))
-    props = catalog[mid]["api_schema"]["api_schemas"][0]["request_schema"]["properties"]
-    props["size"] = {"type": "string", "minimum": 256, "maximum": 4096, "x-hidden": True}
-    props.pop("aspect_ratio", None)
+    catalog[mid]["api_schema"]["api_schemas"][0]["request_schema"]["properties"] = {
+        "prompt": {},
+        "size": {"type": "string", "minimum": 256, "maximum": 4096, "x-hidden": True},
+    }
 
     async def catalog_fn(refresh=False):
         return catalog
