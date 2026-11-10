@@ -12,6 +12,19 @@ Approved scope: 5 predictions from the #889 / #707 plan. Unpinned skills were ru
 - Total spend (full-pilot balance delta): **$0.351000**
 - pose-fission segment: $30.666899 → $30.414899 = **$0.252000**
 - Floor stayed above $20. Total is under the ~$0.455 quote and the $3 cap.
+- **Product-path LinkedIn attempt (2026-11-10 22:59–23:00 Asia/Shanghai, tip `7c38f0e3e5dc5d9ee2f9b00bf75d417a1de7e388`):** balance stayed **$30.414899**. Cost **$0.000**. Nothing was submitted.
+
+## Product-path LinkedIn run (stopped before submit)
+
+Tech approved one linkedin-banner image through the real product path (`api/mcp_tools/canvas.py` `generate_image` → `apply_generate` → `linkedin_decision`), with no model named in the script, same gold ref as the earlier pilot (`docs/design/640/78/gold/linkedin-banner/cover.webp`). Expected route: `wavespeed-ai/qwen-image-2.0/edit` at `size=1584*396`, about $0.03, inside the approved 5 images and the $3 cap.
+
+The live WaveSpeed catalog was used (not the test fixture). `linkedin_decision` **blocked before any predict POST**. The handler error was: no listed image-edit model can submit size `1584*396`; a ratio-only model was not substituted. Balance before and after: **$30.414899**. No prediction id. No output file.
+
+Cause: live `wavespeed-ai/qwen-image-2.0/edit` still has a `size` string field (`width*height`, min 256, max 4096), but that field is marked **`x-hidden: true`**. `provider_submit` and `build_payload` skip x-hidden fields, so `accepts_exact_pixels` is false and the Auto path refuses. The same model's text-to-image id, `wavespeed-ai/qwen-image-2.0/text-to-image`, has a visible `size` field and would submit `1584*396`; it was not used, because a reference image was supplied and the product path is `image_edit`. The `/model/price` endpoint does quote `wavespeed-ai/qwen-image-2.0/edit` at `size=1584*396` for $0.03, but the product path never reached submit, and this run did not bypass that gate.
+
+The unit tests and the earlier $0 dry-run still pass because `tests/fixtures/wavespeed_catalog_subset.json` has `size: {}` on the edit model with no `x-hidden`. That fixture does not match the live catalog.
+
+This is not a pin change and not a model substitution. The Flare 4:1 failures from the first segment are unchanged.
 
 Live discounted quotes going in: `bytedance/seedream-v5.0-pro/edit` $0.0405 + `openai/gpt-image-2.6-flare/edit` $0.045 ×2 + `google/nano-banana-pro/edit` $0.126 ×2 = **$0.3825** (list $0.425). `openai/gpt-image-2.6-flare/edit` on game-art actually debited $0.0585; the linkedin-banner attempts were $0.
 
@@ -20,12 +33,13 @@ Live discounted quotes going in: `bytedance/seedream-v5.0-pro/edit` $0.0405 + `o
 | before-after | `bytedance/seedream-v5.0-pro/edit` | 1k · 4:5 | 915×1144 | `bfb3daf0f5b148f4bc11db076e00f767` | $0.045 / $0.0405 | **$0.0405** | completed, attempt 1 |
 | game-art | `openai/gpt-image-2.6-flare/edit` | 1k · 9:16 | 768×1360 | `16f615d83d814b3cb0da8936dc154a44` | $0.050 / $0.045 | **$0.0585** | completed, attempt 1 |
 | linkedin-banner | `openai/gpt-image-2.6-flare/edit` | 1k · 4:1 (1584:396 family) | — | — | $0.050 / $0.045 | **$0.000** | submit failed twice (HTTP 400); not rerun |
+| linkedin-banner (product path) | expected `wavespeed-ai/qwen-image-2.0/edit` | exact `1584*396` | — | — | $0.030 / $0.030 | **$0.000** | blocked before submit: live edit `size` is `x-hidden` |
 | pose-fission 侧脸 | `google/nano-banana-pro/edit` | 2k · 3:4 | 1792×2400 | `c4903a74e972468b949b759aad45a910` | $0.140 / $0.126 | **$0.126** | completed, attempt 1 |
 | pose-fission 回头 | `google/nano-banana-pro/edit` | 2k · 3:4 | 1792×2400 | `125aa37871f644218c44439c0167c878` | $0.140 / $0.126 | **$0.126** | completed, attempt 1 |
 
-**Sum of per-call costs:** $0.3510 (matches the full-pilot balance delta).
+**Sum of per-call costs:** $0.3510 (matches the full-pilot balance delta). The product-path LinkedIn attempt added $0.
 
-## LinkedIn stop (unchanged; not rerun)
+## LinkedIn Flare stop (first segment, unchanged)
 
 The generate API rejected `aspect_ratio=4:1` on `openai/gpt-image-2.6-flare/edit` (HTTP 400): the field must be one of `1:1`, `1:2`, `2:1`, `1:3`, `3:1`, `2:3`, `3:2`, `3:4`, and others in the schema — **no 4:1**. Closest enum value is `3:1`. The free `/model/price` endpoint had accepted `4:1` and quoted $0.045, but the predict endpoint did not. Both attempts were the same 4:1 request from the (then) plan table; neither was charged. The pilot script had hand-picked `openai/gpt-image-2.6-flare/edit`; it did not go through the product Auto path in `api/skill_size.py` (#828), which for linkedin-banner submits `wavespeed-ai/qwen-image-2.0/edit` or `wavespeed-ai/qwen-image-2.0/text-to-image` at native `1584*396`. LinkedIn was not retried here. pose-fission was later resumed under a separate tech-lead decision, still inside the original 5-image / $3 approval.
 

@@ -143,5 +143,29 @@
     }
   ],
   "ts_first": "2026-11-10 22:38:07 +0800 (Asia/Shanghai)",
-  "ts_pose": "2026-11-10 22:44:41 +0800 (Asia/Shanghai)"
+  "ts_pose": "2026-11-10 22:44:41 +0800 (Asia/Shanghai)",
+  "linkedin_product_path": {
+    "event": "blocked_before_submit",
+    "path": "api/mcp_tools/canvas.py generate_image / apply_generate / linkedin_decision, live WaveSpeed catalog, no model named in the call",
+    "skill": "linkedin-banner",
+    "refs": "docs/design/640/78/gold/linkedin-banner/cover.webp",
+    "expected_model": "wavespeed-ai/qwen-image-2.0/edit",
+    "expected_size": "1584*396",
+    "submitted": false,
+    "prediction_id": null,
+    "cost": 0.0,
+    "balance_before": 30.414899,
+    "balance_after": 30.414899,
+    "spend_pilot_total_unchanged": 0.351,
+    "handler_error": "Not submitted: no listed model can submit size 1584*396. A ratio-only model was not substituted.",
+    "live_qwen_edit_size": {
+      "type": "string",
+      "minimum": 256,
+      "maximum": 4096,
+      "x-hidden": true
+    },
+    "accepts_exact_pixels": false,
+    "provider_submit": {},
+    "ts": "2026-11-10 23:00:59 +0800 (Asia/Shanghai)"
+  }
 }
