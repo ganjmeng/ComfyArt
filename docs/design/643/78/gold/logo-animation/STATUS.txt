@@ -1,0 +1,25 @@
+id: logo-animation
+lovart_name: LOGO animation video
+requested_name: Logo Animation Video
+lovart_url: https://www.lovart.ai/skills
+how_opened: Explore search "Logo Animation Video" → card title "LOGO animation video" (奇点广告研究所). Same English name, capitalization differs on the card. Not "Animate Your Logo, Mascot or Illustration" or "Creator Channel Growth Kit". URL stayed /skills.
+captured:
+- dialog-examples.png — SkillRunDialog; Examples label visible, example 01 playing (warp-speed frame) and 4 logo thumbs.
+- video/ex-01.mp4 … ex-04.mp4 — original mp4 sources from the dialog <video> for buttons 01–04.
+- examples/ex-01-poster.jpg … ex-04-poster.jpg — player poster attribute of each example (oss snapshot t=0, h_1040) of those same mp4s. Not the Explore card cover.
+example_urls:
+- https://a.lovart.ai/asset/skill-plaza/19/19196547a58315ac8fcdd2dd505c8fee66b59fb631187f68edf2511906230948.mp4
+- https://a.lovart.ai/asset/skill-plaza/45/45e50d90bbb76ebe4e78da4b04410b7ff04fdb493ee492fade1cfe97fbf1d500.mp4
+- https://a.lovart.ai/asset/skill-plaza/70/701d941281616ffe05e6356a78dfd6b6fef1dad552cb2c27389a88464257a2f4.mp4
+- https://a.lovart.ai/asset/skill-plaza/0c/0c53a479af9481e45ecd783127b49e9c28f415a652384836594f2d7f4b5581f3.mp4
+featured: none distinct from Examples.
+video: yes. All four examples are mp4 (~8.06s each). No separate still-image examples.
+missing: none.
+note: The Explore card cover is a different mp4 (skill-plaza/99/99ad9f2e…, "CREATE LOGO ANIMATION VIDEO") and was not saved.
+
+video_files_verified:
+- ex-01.mp4 5.8MB duration 8.06s
+- ex-02.mp4 4.5MB duration 8.06s
+- ex-03.mp4 3.8MB duration 8.06s
+- ex-04.mp4 5.0MB duration 8.06s
+All four are valid isom mp4. Posters are distinct t=0 JPEGs (1848×1040).

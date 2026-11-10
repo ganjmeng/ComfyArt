@@ -1,0 +1,59 @@
+{
+ "_comment": "#643 batch2 STRONG rewash pass 2 (remaining half-screen-soft stills).",
+ "assets": [
+  {
+   "skill_id": "ai-model",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "docs/design/643/78/gold/ai-model/examples/ex-01.png",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered studio head-and-shoulders portrait of a young woman with dark brown hair in a soft updo with face-framing tendrils, mauve square-neck top, soft even light on plain off-white backdrop. Same reusable AI-model identity headshot use-slot — DIFFERENT face from reference (new identity), stay beauty/model portrait. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): render a CLEARLY DIFFERENT woman (different face shape, eyes, nose, lips, skin tone shade), restyle the hair in a visibly different way while keeping the same general hair length family, change top/garment color to a contrasting hue, change backdrop to a distinctly different solid studio color (e.g. warm sand, sage, dusty blue), switch to slight 3/4 head turn and side key light with visible shadow. Still a single centered studio head-and-shoulders model portrait.",
+   "aspect_ratio": "3:4",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "ai-model",
+   "slot": "examples",
+   "index": 6,
+   "source_path": "docs/design/643/78/gold/ai-model/examples/ex-06.png",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a studio close-up of a young East-Asian woman with short black shag/wolf cut with electric-blue underlayers, freckles, high-collar gray/black athletic zip jacket, plain white backdrop. Same AI-model identity portrait use-slot — DIFFERENT face; keep distinctive short blue-tipped hair category. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): render a CLEARLY DIFFERENT woman (different face shape, eyes, nose, lips, skin tone shade), restyle the hair in a visibly different way while keeping the same general hair length family, change top/garment color to a contrasting hue, change backdrop to a distinctly different solid studio color (e.g. warm sand, sage, dusty blue), switch to slight 3/4 head turn and side key light with visible shadow. Still a single centered studio head-and-shoulders model portrait.",
+   "aspect_ratio": "3:4",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "premium-website",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "docs/design/643/78/gold/premium-website/examples/ex-01.webp",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide premium bakery website hero mockup: cream page, dark top ticker, serif logo + nav + red Order CTA, large serif headline with italic accent word, mustard circular hero graphic with artisan sourdough photo tile + hand-shaped badge, bottom product ticker. Generic bakery name only. Same premium brand-site art-direction use-slot — stay bakery website, not SaaS UI kit. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): re-shoot the bakery/food scene with a different arrangement, a different camera angle (e.g. top-down or low 3/4), a different dominant background color (e.g. deep teal, terracotta, or cream instead of the reference color), different lighting mood and different props. Keep the same artisanal bakery product category and premium website hero/section image use-slot.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "premium-website",
+   "slot": "examples",
+   "index": 6,
+   "source_path": "docs/design/643/78/gold/premium-website/examples/ex-06.webp",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a tall berry-topped layer cake + tall slice on matching red plates against solid red backdrop with hard side light; cherries in foreground. Same premium bakery celebration-cake photography use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): re-shoot the bakery/food scene with a different arrangement, a different camera angle (e.g. top-down or low 3/4), a different dominant background color (e.g. deep teal, terracotta, or cream instead of the reference color), different lighting mood and different props. Keep the same artisanal bakery product category and premium website hero/section image use-slot.",
+   "aspect_ratio": "4:3",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "logo-animation",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "docs/design/643/78/gold/logo-animation/examples/ex-01-poster.jpg",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered logo lockup on white: circular teal-to-navy brush ring with play-triangle + line-eye mark, dark-blue Chinese wordmark beneath. Generic institute mark only. Same logo-animation still/poster use-slot — stay logo mark, do not invent a website or person. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): redesign the emblem with a visibly different mark geometry and a different dominant color palette, set it on a tinted colored background instead of plain white, change typeface weight/style of the wordmark. Keep the same logo lockup layout family and text content so it is still the same logo-animation still use-slot.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "logo-animation",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "docs/design/643/78/gold/logo-animation/examples/ex-03-poster.jpg",
+   "prompt": "Recreate this image as original artwork with NEW pixels so a half-screen glance proves it is not a soft copy. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered logo lockup on white: seven red vertical bars forming a stylized heritage icon above black English CHINESE INTANGIBLE CULTURAL HERITAGE + Chinese calligraphy wordmark. Same logo-animation still/poster use-slot. STRONG DELTA REQUIRED (previous attempt was a near-copy and was rejected): redesign the emblem with a visibly different mark geometry and a different dominant color palette, set it on a tinted colored background instead of plain white, change typeface weight/style of the wordmark. Keep the same logo lockup layout family and text content so it is still the same logo-animation still use-slot.",
+   "aspect_ratio": "16:9",
+   "resolution": "2K"
+  }
+ ]
+}

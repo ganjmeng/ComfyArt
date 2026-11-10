@@ -1,0 +1,16 @@
+id: anim-2d
+lovart_name: 2D Animation Converter
+lovart_url: https://www.lovart.ai/skills
+how_opened: Explore search "2D Animation Converter" → exact card (abhijeet). URL stayed /skills.
+captured:
+- dialog-examples.png — SkillRunDialog on example 03 (flat cel portrait) with 3 thumbs visible.
+- examples/ex-02.webp, ex-03.webp — original stills (examples 02 and 03).
+- examples/ex-01-poster.jpg — t=0 poster of example 01.
+- video/ex-01.mp4 — example 01, 8.7MB mp4.
+example_urls:
+- https://a.lovart.ai/artifacts/agent/bARb17DEq4JZkfIo.mp4
+- https://a.lovart.ai/artifacts/user/AsGzqeNIWg6PPVdd.webp
+- https://a.lovart.ai/artifacts/user/5bXRdL6BZE2N2MV6.webp
+featured: none distinct from Examples.
+video: yes, example 01 only. Examples 02 and 03 are stills.
+missing: none.

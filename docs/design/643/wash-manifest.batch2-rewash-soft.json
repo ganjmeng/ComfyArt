@@ -1,0 +1,104 @@
+{
+  "_comment": "#643 batch2 SOFT rewash \u2014 stronger half-screen \u0394, still identity-lock (no topic/kitchen drift). Softest 11 from first pass.",
+  "assets": [
+    {
+      "skill_id": "anim-2d",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "docs/design/643/78/gold/anim-2d/examples/ex-01-poster.jpg",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a vertical cel-shaded 2D animation still of a South-Asian spiritual speaker seated cross-legged with mic stand, mustard kurta + red dhoti + patterned yellow stole + deity pendant, orange horizontal tilak with red bindi, colorful stage backdrop. Same 2D-animation converter use-slot \u2014 stay on illustrated spiritual speaker, never photo-real or unrelated topics. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "9:16",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "anim-2d",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "docs/design/643/78/gold/anim-2d/examples/ex-03.webp",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a vertical cel-shaded 2D portrait of a long-haired South-Asian spiritual speaker in yellow patterned kurta with pink floral shawl, bead malas + deity pendant + gold amulet, blue/black mic in foreground, soft vertical color-block backdrop. Same 2D-animation converter use-slot. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "9:16",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 5,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-05.webp",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with a soft peach lifestyle banner: smiling East-Asian woman (hair bun, peach cardigan) on the left, rounded peach title + life/travel tagline, leaf shadows. Same YouTube lifestyle channel-art use-slot. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 6,
+      "source_path": "docs/design/643/78/gold/youtube-channel-banner/examples/ex-06.webp",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a YouTube desktop channel mockup with a navy travel banner: map/compass motifs + bold title + travel tagline on left/center; young man with backpack against sunlit mountains on the right. Same YouTube travel channel-art use-slot. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "docs/design/643/78/gold/ai-model/examples/ex-01.png",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered studio head-and-shoulders portrait of a young woman with dark brown hair in a soft updo with face-framing tendrils, mauve square-neck top, soft even light on plain off-white backdrop. Same reusable AI-model identity headshot use-slot \u2014 DIFFERENT face from reference (new identity), stay beauty/model portrait. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "3:4",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 1,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-01.webp",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a wide premium bakery website hero mockup: cream page, dark top ticker, serif logo + nav + red Order CTA, large serif headline with italic accent word, mustard circular hero graphic with artisan sourdough photo tile + hand-shaped badge, bottom product ticker. Generic bakery name only. Same premium brand-site art-direction use-slot \u2014 stay bakery website, not SaaS UI kit. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 3,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-03.webp",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a square commercial food shot: artisan scored sourdough boule floating on saturated yellow with grain/flour burst and soft ground shadow. Same premium bakery product-hero use-slot. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "1:1",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-04.webp",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a warm pastry still life: stacked croissants + pains au chocolat with torn honeycomb crumb, small bowl of raspberry jam, burgundy napkin, cream negative space on the left. Same premium bakery product photography use-slot. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 6,
+      "source_path": "docs/design/643/78/gold/premium-website/examples/ex-06.webp",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a tall berry-topped layer cake + tall slice on matching red plates against solid red backdrop with hard side light; cherries in foreground. Same premium bakery celebration-cake photography use-slot. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "4:3",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "logo-animation",
+      "slot": "examples",
+      "index": 2,
+      "source_path": "docs/design/643/78/gold/logo-animation/examples/ex-02-poster.jpg",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a horizontal logo lockup on white: rainbow translucent circle of interlocking human figures on the left, black English stacked title WORLD / INTANGIBLE CULTURAL HERITAGE / EXPO + Chinese wordmark on the right, thin vertical divider. Same logo-animation still/poster use-slot. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    },
+    {
+      "skill_id": "logo-animation",
+      "slot": "examples",
+      "index": 4,
+      "source_path": "docs/design/643/78/gold/logo-animation/examples/ex-04-poster.jpg",
+      "prompt": "TRUE WASH \u2014 half-screen must instantly prove this is NOT the reference. FORBIDDEN soft remix / near-copy pixels. Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, and use-slot as the reference \u2014 do NOT change topic. No brand marks, watermarks, competitor logos, or recognizable celebrity likeness. Keep a centered circular brand mark on white: lime-green disc with yellow cow + blue horse cartoon characters integrated with bold yellow bubble lettering, footer Chinese \u725b\u9a6c\u751f\u6d3b | N&M CULTURAL CREATIVITY. Same logo-animation still/poster use-slot \u2014 stay cartoon logo mark. REQUIRED: change lighting direction, secondary props placement, color temperature, and fine textures enough that a half-screen glance proves new pixels \u2014 without changing subject category, composition family, or use-slot.",
+      "aspect_ratio": "16:9",
+      "resolution": "2K"
+    }
+  ]
+}

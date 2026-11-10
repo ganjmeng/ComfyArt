@@ -1,0 +1,275 @@
+{
+ "_comment": "#643 batch3 (ex-HOLD slots) true-wash; gold downscaled locally, never committed.",
+ "assets": [
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-01.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-02.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-03.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-04.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 5,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-05.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 6,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-06.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 7,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-07.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 8,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-08.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 9,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-09.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 10,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-10.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 11,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-11.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "live-promo-decor",
+   "slot": "examples",
+   "index": 12,
+   "source_path": "/workspace/gold-new/live-promo-decor/ex-12.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a Chinese e-commerce livestream promo decoration design (live-room backgrounds, price-tag stickers, corner badges, product/host promo panels) with the same panel layout and Chinese promo-copy hierarchy. STRONG DELTA: change dominant color palette to a clearly different scheme, redraw all decorative shapes/ribbons/badges, use a different host/model and different product styling, new invented brand names and different price numerals.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "/workspace/gold-new/pose-fission/ex-01.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep an e-commerce same-scene multi-pose fashion shot: same model wardrobe category (tailored blazer + skirt), same street scene type, same framing family. STRONG DELTA: a clearly different model (different face, hair), different blazer color, different time of day/lighting and colour grade, different street details, different pose.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "/workspace/gold-new/pose-fission/ex-02.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep an e-commerce same-scene multi-pose fashion shot: same model wardrobe category (tailored blazer + skirt), same street scene type, same framing family. STRONG DELTA: a clearly different model (different face, hair), different blazer color, different time of day/lighting and colour grade, different street details, different pose.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "/workspace/gold-new/pose-fission/ex-03.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep an e-commerce same-scene multi-pose fashion shot: same model wardrobe category (tailored blazer + skirt), same street scene type, same framing family. STRONG DELTA: a clearly different model (different face, hair), different blazer color, different time of day/lighting and colour grade, different street details, different pose.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "pose-fission",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "/workspace/gold-new/pose-fission/ex-04.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep an e-commerce same-scene multi-pose fashion shot: same model wardrobe category (tailored blazer + skirt), same street scene type, same framing family. STRONG DELTA: a clearly different model (different face, hair), different blazer color, different time of day/lighting and colour grade, different street details, different pose.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "portrait-studio",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "/workspace/gold-new/portrait-studio/ex-01.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a professional fashion/portrait studio photo of a single person in the same framing and pose family and same wardrobe category. STRONG DELTA: a clearly different person (different face, hairstyle and hair color), different garment colors, a distinctly different backdrop color and lighting setup; any headline text replaced by new generic copy in the same position.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "portrait-studio",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "/workspace/gold-new/portrait-studio/ex-02.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a professional fashion/portrait studio photo of a single person in the same framing and pose family and same wardrobe category. STRONG DELTA: a clearly different person (different face, hairstyle and hair color), different garment colors, a distinctly different backdrop color and lighting setup; any headline text replaced by new generic copy in the same position.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "portrait-studio",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "/workspace/gold-new/portrait-studio/ex-03.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a professional fashion/portrait studio photo of a single person in the same framing and pose family and same wardrobe category. STRONG DELTA: a clearly different person (different face, hairstyle and hair color), different garment colors, a distinctly different backdrop color and lighting setup; any headline text replaced by new generic copy in the same position.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "portrait-studio",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "/workspace/gold-new/portrait-studio/ex-04.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a professional fashion/portrait studio photo of a single person in the same framing and pose family and same wardrobe category. STRONG DELTA: a clearly different person (different face, hairstyle and hair color), different garment colors, a distinctly different backdrop color and lighting setup; any headline text replaced by new generic copy in the same position.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "portrait-studio",
+   "slot": "examples",
+   "index": 5,
+   "source_path": "/workspace/gold-new/portrait-studio/ex-05.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a professional fashion/portrait studio photo of a single person in the same framing and pose family and same wardrobe category. STRONG DELTA: a clearly different person (different face, hairstyle and hair color), different garment colors, a distinctly different backdrop color and lighting setup; any headline text replaced by new generic copy in the same position.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "portrait-studio",
+   "slot": "examples",
+   "index": 6,
+   "source_path": "/workspace/gold-new/portrait-studio/ex-06.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a professional fashion/portrait studio photo of a single person in the same framing and pose family and same wardrobe category. STRONG DELTA: a clearly different person (different face, hairstyle and hair color), different garment colors, a distinctly different backdrop color and lighting setup; any headline text replaced by new generic copy in the same position.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "/workspace/gold-new/restaurant-website/ex-01.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 2,
+   "source_path": "/workspace/gold-new/restaurant-website/ex-02.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 3,
+   "source_path": "/workspace/gold-new/restaurant-website/ex-03.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 4,
+   "source_path": "/workspace/gold-new/restaurant-website/ex-04.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 5,
+   "source_path": "/workspace/gold-new/restaurant-website/ex-05.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 6,
+   "source_path": "/workspace/gold-new/restaurant-website/ex-06.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "restaurant-website",
+   "slot": "examples",
+   "index": 7,
+   "source_path": "/workspace/gold-new/restaurant-website/ex-07.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a dark fine-dining restaurant website section screenshot (same section type, same layout, nav bar, headings and buttons positions). STRONG DELTA: invent a different restaurant name, change accent color from gold to a clearly different accent, new photography (different dishes/chefs/interior), different typeface style; keep it a restaurant website.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  },
+  {
+   "skill_id": "animated-poster",
+   "slot": "examples",
+   "index": 1,
+   "source_path": "/workspace/gold-new/animated-poster/ex-02-frame.jpg",
+   "prompt": "TRUE WASH — half-screen glance must instantly prove this is NOT the reference (previous soft remixes were rejected). Recreate as ORIGINAL artwork with NEW pixels. IDENTITY-LOCK: keep the same subject category, composition family, layout and use-slot as the reference — do NOT change topic. No brand marks, watermarks, competitor logos or recognizable celebrity likeness; replace any brand names with generic invented ones. Keep a vertical cinematic motion-poster key frame: single dramatic portrait of a person against dark space-like background with bold title text at bottom. STRONG DELTA: clearly different person, different color grade (e.g. warm amber or crimson instead of blue), different background elements, new invented title text in the same position.",
+   "aspect_ratio": "auto",
+   "resolution": "2K"
+  }
+ ]
+}

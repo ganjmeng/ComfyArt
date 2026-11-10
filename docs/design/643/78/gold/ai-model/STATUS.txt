@@ -1,0 +1,18 @@
+id: ai-model
+lovart_name: AI Model Customization Generator
+requested_name: AI Model Custom Generator
+lovart_url: https://www.lovart.ai/skills
+how_opened: Exact search "AI Model Custom Generator" and "AI Model Custom" returned no skills. Search "AI Model" opened "AI Model Customization Generator" (古猫). That is the only close title; captured it and labeled the mismatch. URL stayed /skills.
+captured:
+- dialog-examples.png — SkillRunDialog on example 01 (head-and-shoulders portrait) with 6 thumbs visible.
+- examples/ex-01.png, ex-02.png, ex-03.webp, ex-04.png, ex-05.png, ex-06.png — originals with the UI resize query stripped.
+example_urls:
+- https://a.lovart.ai/artifacts/agent/Ka54mHHg75Dqx6Z2.png
+- https://a.lovart.ai/artifacts/agent/bTs3moJ06U3Aojer.png
+- https://a.lovart.ai/artifacts/agent/dQQPJTUPag2G8NM7.webp
+- https://a.lovart.ai/artifacts/agent/xNDwKtWKWCAscx7x.png
+- https://a.lovart.ai/artifacts/agent/pFznSgGRbL6p5i0k.png
+- https://a.lovart.ai/artifacts/agent/mJb3GEQTH2IUMbIk.png
+featured: none distinct from Examples.
+video: none inside the dialog (a background card video was ignored).
+missing: exact title "AI Model Custom Generator" does not exist on Explore.

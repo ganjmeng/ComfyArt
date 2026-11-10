@@ -1,0 +1,20 @@
+id: youtube-channel-banner
+lovart_name: YouTube Channel Banner
+lovart_url: https://www.lovart.ai/skills
+how_opened: Explore search "YouTube Channel Banner" → exact card (Sophie_Bakes12). Not "Banner Design" or "YouTube Channel Kit Generator". URL stayed /skills.
+captured:
+- dialog-examples.png — SkillRunDialog on example 01 (UMAMI STUDIO banner) with carousel thumbs visible.
+- examples/ex-01.webp … ex-09.webp — original web-static3 sha256 webps for buttons 01–09.
+example_urls:
+- https://web-static3.lovart.ai/static-assets/v1/sha256/ff/ffbe418ccc24a8211ed5570eaa0da54325ef872e8888a91afc15e79a33f2c363.webp
+- https://web-static3.lovart.ai/static-assets/v1/sha256/3b/3b2bbcd4660dd5f41862d32b2b72ec06ce0e2463af583420172c5fe6bc07414b.webp
+- https://web-static3.lovart.ai/static-assets/v1/sha256/b3/b3a720579589333334c9a74259b1697e59cea77428c2f0adfa7ec8b816545a8f.webp
+- https://web-static3.lovart.ai/static-assets/v1/sha256/60/60de0f1f8a88c9714459c9a7ee4d223d93acff60d682637fea4070cbe8921363.webp
+- https://web-static3.lovart.ai/static-assets/v1/sha256/65/65b7870c216ad6ce7d68f4a050f9dfe5f5b486fa8ef2e45f876b198ab8d4a8dd.webp
+- https://web-static3.lovart.ai/static-assets/v1/sha256/8f/8f269c028cc15248f7cb71010e323613757c577dc619ee35643e730022ab70f4.webp
+- https://web-static3.lovart.ai/static-assets/v1/sha256/50/5020ceb5032b109363ceb76a962262e0c71a472d3b1a7f9319c064a4fd436795.webp
+- https://web-static3.lovart.ai/static-assets/v1/sha256/62/6245fce299cde2bb580311b799942f01435c42615c7d54f69dc87c3a78e0bbe2.webp
+- https://web-static3.lovart.ai/static-assets/v1/sha256/ec/eccff89849966e7a59e98d0ec25fab2119fdb7d12bb70ad4d0bffb701d9a7265.webp
+featured: none distinct from Examples.
+video: none.
+missing: none.

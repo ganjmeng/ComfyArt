@@ -1,0 +1,13 @@
+id: creator-identity
+lovart_name: Creator Visual Identity System
+lovart_url: https://www.lovart.ai/skills
+how_opened: Explore search "Creator Visual Identity System" → exact card (JMiller). Not "Creator's Personal Brand Kit" or "Creator Channel Growth Kit". URL stayed /skills.
+captured:
+- dialog-examples.png — SkillRunDialog; Examples is one video of "Spanish with Lucia" social cards, imagery visible.
+- video/example.mp4 — original mp4, 4.8MB.
+- examples/ex-01-poster.jpg — player poster snapshot (h_1200) of that mp4.
+example_urls:
+- https://web-static3.lovart.ai/static-assets/v1/sha256/05/05175e1426e00887864e66f3e23e27b43d1b9170f28fc1aba2b6ef19a7a7b4f7.mp4
+featured: none.
+video: yes, single example. No still carousel.
+missing: none.

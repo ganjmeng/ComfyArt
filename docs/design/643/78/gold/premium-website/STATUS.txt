@@ -1,0 +1,19 @@
+id: premium-website
+lovart_name: Premium Website Art Director
+lovart_url: https://www.lovart.ai/skills
+how_opened: Explore search "Premium Website Art Director" → exact card (Lovart.AI_Wen). Page URL stayed https://www.lovart.ai/skills.
+captured:
+- dialog-examples.png — SkillRunDialog on example 01 (Warm bread, bold mornings. bakery site) with Examples label and 7 carousel thumbs visible.
+- examples/ex-01.webp … ex-07.webp — original a.lovart.ai artifact webps for buttons 01–07 (no resize query).
+example_urls:
+- https://a.lovart.ai/artifacts/user/xDokFVafesFDOmRR.webp
+- https://a.lovart.ai/artifacts/user/wvmjoi4iboDgwhTW.webp
+- https://a.lovart.ai/artifacts/user/xkIwbIpQgYLAox5O.webp
+- https://a.lovart.ai/artifacts/user/ekdCTRuhdGKFcfXN.webp
+- https://a.lovart.ai/artifacts/user/Ona61mYRDxLMuscq.webp
+- https://a.lovart.ai/artifacts/user/MRVKDLfLCd1pTqh9.webp
+- https://a.lovart.ai/artifacts/user/k5JgAMZLHx5jgizc.webp
+featured: none distinct from Examples.
+video: none inside the dialog.
+missing: none. Seven example stills.
+note: Example 01 URL is the same file as the Explore card cover; saved from the Examples carousel, not cropped from the cover.

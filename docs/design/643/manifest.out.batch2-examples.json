@@ -1,0 +1,308 @@
+{
+  "issue": 643,
+  "tool": "scripts/kie_wash_phase3.py",
+  "model": "gpt-image-2-5-flare-image-to-image",
+  "assets": [
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 1,
+      "path": "ai-model/examples/01.png",
+      "sha256": "3f98cfa3f227fa5d2def28933188ee1f0b78916716066d3ed61e05bc81a62ee4",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "1d3c839a74f3aa9e27f039c868bb695c",
+      "source": "ex-01.png"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 2,
+      "path": "ai-model/examples/02.png",
+      "sha256": "27653c036b2ae1dc236d37206bbc7fa6860441a71457245331c67d9e1e112fea",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "36082b5df379b14344831ab8cf319848",
+      "source": "ex-02.png"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 3,
+      "path": "ai-model/examples/03.png",
+      "sha256": "84791f11b48ec31364bb29720b7372e9534cceb831d41587ab375262462d944c",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "bd7c09bdf51dca91e10758ec13a15255",
+      "source": "ex-03.webp"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 4,
+      "path": "ai-model/examples/04.png",
+      "sha256": "539884f399afe536bec35105cf388a266d3955d72fc918b62f806339ca01cf41",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "4ec01e83c173957f843c354651967860",
+      "source": "ex-04.png"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 5,
+      "path": "ai-model/examples/05.png",
+      "sha256": "db9934dee0aadec5d1f85a03774ae74ab48fe35b6f2aade8c077b08361cfdb72",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "ceac85aa354e21468ef665900905f9c0",
+      "source": "ex-05.png"
+    },
+    {
+      "skill_id": "ai-model",
+      "slot": "examples",
+      "index": 6,
+      "path": "ai-model/examples/06.png",
+      "sha256": "7bd4462fb7b405e3c6361743bf256c84778b8665c3fb82feea5a71a1a6cd763c",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "4275095d8cbf5499aff1dd7489d014a0",
+      "source": "ex-06.png"
+    },
+    {
+      "skill_id": "anim-2d",
+      "slot": "examples",
+      "index": 1,
+      "path": "anim-2d/examples/01.png",
+      "sha256": "1c853aa8cc61a1d1d4be470a370186c71e7eb23b0710891fec9e2fb3f2d0afde",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "fca156cffa7ca0b7fb8cbf7da90e2364",
+      "source": "ex-01-poster.jpg"
+    },
+    {
+      "skill_id": "anim-2d",
+      "slot": "examples",
+      "index": 2,
+      "path": "anim-2d/examples/02.png",
+      "sha256": "3511a4a007cf873709e233b6a335f09defeda2542359f0bd47b0e18f24152731",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "3b3aebab54e30396e391736417ecd99e",
+      "source": "ex-02.webp"
+    },
+    {
+      "skill_id": "anim-2d",
+      "slot": "examples",
+      "index": 3,
+      "path": "anim-2d/examples/03.png",
+      "sha256": "9ea114f14acfaa25fd9c795668105ebda3eb7b3ddeb9993b28b566fa2c49adcc",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "6d2959f3ffb4af17b028e5733d5053be",
+      "source": "ex-03.webp"
+    },
+    {
+      "skill_id": "creator-identity",
+      "slot": "examples",
+      "index": 1,
+      "path": "creator-identity/examples/01.png",
+      "sha256": "a9dee0e273ffc2cefab5f61029962db0a63178835ec23c2cb80dffeceb6f47ec",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "7ebdccc9714c667be826ff9b6568dbde",
+      "source": "ex-01-poster.jpg"
+    },
+    {
+      "skill_id": "logo-animation",
+      "slot": "examples",
+      "index": 1,
+      "path": "logo-animation/examples/01.png",
+      "sha256": "b51f1aac7ed38ce9f15e5277971f297109081bef6a9d4deb4255abb181aa56ac",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "5d66ab7df76f2a566b2a13c22ba39c3a",
+      "source": "ex-01-poster.jpg"
+    },
+    {
+      "skill_id": "logo-animation",
+      "slot": "examples",
+      "index": 2,
+      "path": "logo-animation/examples/02.png",
+      "sha256": "82558a3a9e89f03bf3cf5114424066b9306e7d7c5217a400386980fa9b87cde0",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "f1e88e426c288083b886eb44d4d8f67a",
+      "source": "ex-02-poster.jpg"
+    },
+    {
+      "skill_id": "logo-animation",
+      "slot": "examples",
+      "index": 3,
+      "path": "logo-animation/examples/03.png",
+      "sha256": "86bf7c03b1ed06d7a0744cdfaa1a33d4c4366a748e5c7bfd7a6269aba7c37961",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "c9b464ee21ac0f5efa2838890f6b42ee",
+      "source": "ex-03-poster.jpg"
+    },
+    {
+      "skill_id": "logo-animation",
+      "slot": "examples",
+      "index": 4,
+      "path": "logo-animation/examples/04.png",
+      "sha256": "a4bdb6a3ea9243e032a5cce2a8605d418cf8b399fcd16c0b5860d839238dbfb8",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "2e2f0675764a8639047422a384352fb0",
+      "source": "ex-04-poster.jpg"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 1,
+      "path": "premium-website/examples/01.png",
+      "sha256": "bbda9d9d645f31f14f82278d083f62cf11736700f83fd2cfc548c2f2264cad65",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "9945020cb77f84e1fcac465b3563f0a0",
+      "source": "ex-01.webp"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 2,
+      "path": "premium-website/examples/02.png",
+      "sha256": "cc14129929755f1a71424e8f4d07ea10caabde68b9798165458d34ac78e31694",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "d9146e7057b6811579e9fae7985eb620",
+      "source": "ex-02.webp"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 3,
+      "path": "premium-website/examples/03.png",
+      "sha256": "cb30d73a80b029384a3e8e28f4b2456dc10146dfee01499dece4c5bbf316701b",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "32b2729579ccc81b4d4248239729e1b4",
+      "source": "ex-03.webp"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 4,
+      "path": "premium-website/examples/04.png",
+      "sha256": "eb2db6ecc31a234471ba11642600638285c5c1bfd7e1e648a5aebe38ccd2c14f",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "1939d8d9071eda0facd29115b200cac1",
+      "source": "ex-04.webp"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 5,
+      "path": "premium-website/examples/05.png",
+      "sha256": "59c28de0f75b5759cecb8091c1202b9ad3134118fd86b76a54f98f0f8e2f07f4",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "622a9ada6dffd8af1bb8f9829a15a868",
+      "source": "ex-05.webp"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 6,
+      "path": "premium-website/examples/06.png",
+      "sha256": "0d6a64e5037fef2ce5397a47705f2155627cec07483fb5393c78b09a6ca6b841",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "118056a5e267809a3b245742fffa105b",
+      "source": "ex-06.webp"
+    },
+    {
+      "skill_id": "premium-website",
+      "slot": "examples",
+      "index": 7,
+      "path": "premium-website/examples/07.png",
+      "sha256": "84bf8b52bb5509d7f4fe0ecd15e8a537663fed2fd455df6e76abec0459cf3636",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "8c14c35351ee1f1580d7fec5089b7343",
+      "source": "ex-07.webp"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 1,
+      "path": "youtube-channel-banner/examples/01.png",
+      "sha256": "a0220cccdb5b8e2e3fdad3967063fd7c8023639c7a6f7bfeaa8c0421a6d918a5",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "0debd5a7c09f4efc3ccf13806fd4e447",
+      "source": "ex-01.webp"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 2,
+      "path": "youtube-channel-banner/examples/02.png",
+      "sha256": "95f9ae1d5345ec14953db53dd7e5db72abc026b284fa2c6e0a0a13067e0984d1",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "4bac2c032a7482b6033c8a0257c957d0",
+      "source": "ex-02.webp"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 3,
+      "path": "youtube-channel-banner/examples/03.png",
+      "sha256": "b2534cb22376aff8c0f9fae4e2bd7d02470f3790ca0dcc38e221874e8400becb",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "b5476ed1dad9ce98981063773a08ea4f",
+      "source": "ex-03.webp"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 4,
+      "path": "youtube-channel-banner/examples/04.png",
+      "sha256": "f992be7ac8cb88443c92f9ac8a067cc4d231e5d919f09b7c7d47c423cedf771c",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "22d9ee8992322eba33dd4740439be78a",
+      "source": "ex-04.webp"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 5,
+      "path": "youtube-channel-banner/examples/05.png",
+      "sha256": "0fc68cfe33f82e9370591aa403922c6891ae8d4565c8e28171d41ce0c9ba0df8",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "eabc2ac16c9c9cfb42d7b8bbcee7c6e7",
+      "source": "ex-05.webp"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 6,
+      "path": "youtube-channel-banner/examples/06.png",
+      "sha256": "57ff82b9bb41fadcddb1acf3c2d0a119006e6904fc75de036cfe3a2ba11fbf26",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "692c99972d28dae4127acd4513ca8164",
+      "source": "ex-06.webp"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 7,
+      "path": "youtube-channel-banner/examples/07.png",
+      "sha256": "116b158d5d25698b997e987b6f6faa63ab27e5d0a2679a9c32f90d479281121b",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "39dba3b9a880a536c690aaf9c2c3737e",
+      "source": "ex-07.webp"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 8,
+      "path": "youtube-channel-banner/examples/08.png",
+      "sha256": "3dc7c04d3b9e4aee5cfca00accd9408d2cd97d6e71f9cff497e9ef4f94acd79b",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "c6f5494d381ee8755508a4c8d9b26993",
+      "source": "ex-08.webp"
+    },
+    {
+      "skill_id": "youtube-channel-banner",
+      "slot": "examples",
+      "index": 9,
+      "path": "youtube-channel-banner/examples/09.png",
+      "sha256": "8e5401f03a9cab3073e73210af25be48c37582c779a0ba5a88819cc6da82abae",
+      "model": "gpt-image-2-5-flare-image-to-image",
+      "task_id": "b8afaf67a1ff4eb240b713c761faef75",
+      "source": "ex-09.webp"
+    }
+  ],
+  "errors": []
+}
