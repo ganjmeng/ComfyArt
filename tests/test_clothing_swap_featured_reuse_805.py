@@ -94,7 +94,7 @@ def _blob(pin: str, path: str) -> bytes:
     if tracked.is_file():
         return tracked.read_bytes()
     import pytest
-    pytest.skip(f"pin {pin}:{path} is not in git history and {path} is not in this checkout")
+    pytest.fail(f"pin {pin}:{path} is not in git history and {path} is not in this checkout")
 
 
 def test_reuse_featured_pins_and_single_cover_holds_stay_empty():

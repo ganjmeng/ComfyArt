@@ -45,7 +45,7 @@ def confirm_fixture_server():
     """Serve tests/js/confirm-fixture.html via the committed Vite config (port 5210)."""
     vite = ROOT / "node_modules" / ".bin" / "vite"
     if not vite.is_file():
-        pytest.skip("needs node + npm install")
+        pytest.fail("needs node + npm install (run via scripts/gate.sh); no skip allowed")
     log = Path(tempfile.mkdtemp(prefix="confirm-vite-")) / "vite.log"
     proc = subprocess.Popen(
         [str(vite), "--config", str(ROOT / "tests/js/confirm-fixture.vite.ts")],
@@ -84,7 +84,7 @@ def _page_html(url: str) -> str:
     Chrome --dump-dom often returns an empty string for this ESM page; Playwright
     waits until the dialog has actually run.
     """
-    pw = pytest.importorskip('playwright.sync_api')
+    import playwright.sync_api as pw  # no importorskip: must run on the gate machine
     with pw.sync_playwright() as p:
         try:
             browser = p.chromium.launch(channel='chrome', args=['--no-sandbox'])
