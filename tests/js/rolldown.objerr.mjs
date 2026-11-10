@@ -2,7 +2,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 const here = path.dirname(new URL(import.meta.url).pathname)
-const real = new Set(['elements', 'projects', 'bot', 'llm', 'wsErrors', 'object_errors', 'i18n_stub', 'objerr_comfy_stub'])
+// sizeLockPref must stay real: a noop stub makes isOwnSizeError() truthy, so mapUnknownError
+// (#721) would pass every plain string through and these tests would fail on 'project not found'.
+const real = new Set(['elements', 'projects', 'bot', 'llm', 'wsErrors', 'sizeLockPref', 'object_errors', 'i18n_stub', 'objerr_comfy_stub'])
 const stubs = { comfy: 'objerr_comfy_stub.ts', i18n: 'i18n_stub.ts' }
 const NOOP = 'const n = new Proxy(function () {}, { get: (_t, k) => (k === Symbol.toPrimitive ? () => "" : k === "then" ? undefined : n), apply: () => n, construct: () => n })\n'
 export default {
