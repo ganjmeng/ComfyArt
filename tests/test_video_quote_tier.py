@@ -146,8 +146,10 @@ def test_frontend_wiring():
     gs = (ROOT / "src/ui/GenSettings.tsx").read_text()
     assert "update({ resolution: vres })" in gs and "value={shownVideoRes(p, caps)}" in gs and "caps?.defaults?.resolution" in gs
     comfy = (ROOT / "src/comfy.ts").read_text()
-    assert "wsBody?.error?.estimate" in comfy and "jobs.confirmEstimateTier" in comfy
-    assert "wsBody?.error?.unpriced" in comfy and "jobs.confirmUnpriced" in comfy
+    text = (ROOT / "src/confirmText.ts").read_text()
+    # 246cdf09: comfy packs detail.estimate from wsBody.error.estimate; copy lives in confirmText.
+    assert "wsBody.error.estimate" in comfy and "jobs.confirmEstimateTier" in text
+    assert "wsBody?.error?.unpriced" in comfy and "jobs.confirmUnpriced" in text
     panel = (ROOT / "src/ui/GenPanel.tsx").read_text()
     assert "e?.source === 'estimate'" in panel and "e?.source === 'unpriced'" in panel and "wsKey.unpricedTag" in panel
 

@@ -74,8 +74,10 @@ def test_canvas_gen_frame_flat_pill() -> None:
     assert "ca-gen-frame__pill" in GEN
     assert "taskDetails.generating" in GEN
     assert "ca-gen-frame__pill" in CANVAS
-    # no shimmer while running
-    running = CANVAS.split(".ca-gen-card[data-running]")[1].split(".ca-gen-ring")[0]
+    # no shimmer while running. Split on the combined running-frame rule
+    # (163fa9ce added `.ca-gen-card[data-running] .ca-gen-card__error` earlier in the file).
+    running = CANVAS.split(".ca-gen-card[data-running],")[1].split("}")[0]
+    assert ".ca-gen-frame[data-running]" in CANVAS.split(".ca-gen-card[data-running],")[1].split("{")[0]
     assert "ca-shine" not in running
     assert "animation: none" in running or "animation:none" in running.replace(" ", "")
     assert "var(--ca-gen-frame-bg)" in running

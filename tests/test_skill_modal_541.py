@@ -116,7 +116,8 @@ def test_examples_carousel_is_data_driven(got):
             "logo-animation": 4,  # #643 per-slot PR
             "live-promo-decor": 12,  # #643 per-slot PR
             "ai-model": 6,  # #643 per-slot PR
-            "pose-fission": 4}  # #643 per-slot PR
+            "pose-fission": 4,  # #643 per-slot PR
+            "yingzao": 2, "crt-interface": 2, "crayon-sketch": 2, "fabric-collage": 2}  # #812 D-group unhide (0737c1f3)
     assert {k: v for k, v in got["examples"].items() if v} == want
     _j = json  # #748: Final 16 example cards = raw highlights length, exactly
     for sid, r in _j.loads((Path(__file__).parent.parent / "src/data/skills-748.json").read_text())["skills"].items():

@@ -969,7 +969,13 @@ async def test_estimate_uses_documented_price_endpoint_and_caches(ws):
 
 async def test_estimate_falls_back_to_catalog_price_marked_as_estimate(ws):
     est = await wavespeed.estimate({"feature": "music", "model": "elevenlabs/music-v2", "prompt": "x"})
-    assert est == {"price": 0.75, "currency": "USD", "source": "estimate", "confirm_usd": 0.5, "confirm": True}  # #159
+    # #842 fbe28e7f added model (the id submit will POST); do not require exact dict equality.
+    assert est["price"] == pytest.approx(0.75)
+    assert est["currency"] == "USD"
+    assert est["source"] == "estimate"
+    assert est["confirm_usd"] == 0.5
+    assert est["confirm"] is True
+    assert est["model"] == "elevenlabs/music-v2"
 
 
 async def test_storyboard_estimate_is_the_total(ws):

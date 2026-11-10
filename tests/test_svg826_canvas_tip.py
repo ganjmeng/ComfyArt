@@ -17,7 +17,6 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 HERE = ROOT / "tests" / "js" / "svg826"
-ART = Path("/opt/cursor/artifacts/svg826")
 pw = pytest.importorskip("playwright.sync_api")
 
 
@@ -89,9 +88,9 @@ def browser():
         launched.close()
 
 
-def _shot(page, name: str) -> None:
-    ART.mkdir(parents=True, exist_ok=True)
-    page.screenshot(path=str(ART / name), full_page=False)
+def _shot(page, art, name: str) -> None:
+    art.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=str(art / name), full_page=False)
 
 
 def _save_download(page, button_name: str, expected_name: str, expected: bytes) -> None:
@@ -104,8 +103,10 @@ def _save_download(page, button_name: str, expected_name: str, expected: bytes) 
     assert hashlib.sha256(got).hexdigest() == hashlib.sha256(expected).hexdigest()
 
 
-def test_three_product_states_are_local_fixtures(browser, fixture_page):
-    ART.mkdir(parents=True, exist_ok=True)
+def test_three_product_states_are_local_fixtures(browser, fixture_page, tmp_path):
+    # Do not write to /opt/cursor/artifacts (often unwritable in this environment).
+    art = tmp_path / "svg826"
+    art.mkdir(parents=True, exist_ok=True)
     page = browser.new_page(viewport={"width": 960, "height": 640})
     errors = []
     page.on("pageerror", lambda exc: errors.append(str(exc)))
@@ -121,7 +122,7 @@ def test_three_product_states_are_local_fixtures(browser, fixture_page):
     assert page.locator(".ca-toolbar--image").get_by_role("button", name="下载").count() >= 1
     assert page.locator(".ca-gen-card__error").count() == 0
     assert page.locator("[data-testid=svg-preview-failed]").count() == 0
-    checker = ART / "01-checker-face.png"
+    checker = art / "01-checker-face.png"
     page.locator("[data-testid=svg-checker]").screenshot(path=str(checker))
     face = Image.open(checker).convert("RGB")
     corner, neighbor = face.getpixel((4, 4)), face.getpixel((12, 4))
@@ -130,7 +131,7 @@ def test_three_product_states_are_local_fixtures(browser, fixture_page):
     mid = face.getpixel((face.size[0] // 2, face.size[1] // 2))
     assert mid[1] > 120 and mid[0] < 90
     _save_download(page, "下载", "path.svg", path_svg)
-    _shot(page, "01-path-preview.png")
+    _shot(page, art, "01-path-preview.png")
 
     page.goto(f"{fixture_page}/?state=failed")
     page.wait_for_function("() => window.__svg826Ready === true", timeout=30000)
@@ -140,13 +141,13 @@ def test_three_product_states_are_local_fixtures(browser, fixture_page):
     assert placeholder.locator("img").count() == 0
     assert "预览失败，原 SVG 仍可下载。" in placeholder.inner_text()
     assert page.locator(".ca-toolbar--image").get_by_role("button", name="预览失败，原 SVG 仍可下载。").count() >= 1
-    failed_face = ART / "02-fail-face.png"
+    failed_face = art / "02-fail-face.png"
     placeholder.screenshot(path=str(failed_face))
     blank = Image.open(failed_face).convert("RGB")
     assert blank.getpixel((2, 2))[0] > 200
     assert blank.getpixel((2, 2)) != (0, 0, 0)
     _save_download(page, "预览失败，原 SVG 仍可下载。", "text_only.svg", text_svg)
-    _shot(page, "02-preview-failed-download.png")
+    _shot(page, art, "02-preview-failed-download.png")
 
     page.goto(f"{fixture_page}/?state=rejected")
     page.wait_for_function("() => window.__svg826Ready === true", timeout=30000)
@@ -156,7 +157,7 @@ def test_three_product_states_are_local_fixtures(browser, fixture_page):
     assert page.locator("a[download]").count() == 0
     assert page.locator("[data-testid=svg-preview-failed]").count() == 0
     assert page.locator("[data-testid=svg-checker]").count() == 0
-    _shot(page, "03-rejected-no-download.png")
+    _shot(page, art, "03-rejected-no-download.png")
 
     page.close()
     assert not errors, errors

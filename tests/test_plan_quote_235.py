@@ -372,16 +372,23 @@ def test_card_reuses_the_confirm_component_and_skips_the_second_dialog():
     bot = (ROOT / "src/bot.ts").read_text()
     step = (ROOT / "src/ui/stepState.ts").read_text()
     css = "\n".join((ROOT / "src/styles").glob("*.css") and [p.read_text() for p in (ROOT / "src/styles").glob("*.css")])
-    assert "ca-panel__secondary" in confirm and "ca-panel__primary" in confirm
-    assert "ca-panel__val" in confirm and "ca-keys__row" in confirm and "ca-plan__head" in confirm
+    # 4f6e7186 / #850: modal confirm buttons live in ConfirmActions -> Button variants.
+    assert "ConfirmActions" in confirm
+    button = (ROOT / "src/ui/Button.tsx").read_text()
+    assert "ca-panel__secondary" in button and "ca-panel__primary" in button
+    # #854 (9defe5c3): plan quote is an in-message ChatInlineConfirm, not confirmAtom modal.
+    inline = (ROOT / "src/ui/ChatInlineConfirm.tsx").read_text()
+    assert "b.kind === 'plan_quote'" in chat and "ChatInlineConfirm" in chat
+    assert "confirmAtom" not in chat
+    assert "ca-panel__val" in inline and "ca-keys__row" in inline and "ca-plan__head" in inline
+    assert "ca-panel__secondary" in inline and "ca-panel__primary" in inline
+    assert "Modal" not in inline and "createPortal" not in inline
     assert "ca-quote" not in css and "plan_quote" not in css
-    assert "kind === 'plan_quote'" in chat and "confirmAtom.set" in chat
     assert "setAgentPlanConfirmed(true)" in chat and "t('jobs.confirmTitle')" in chat
+    assert "okLabel={t('jobs.confirmOk')}" in chat  # same 继续生成 label as the single-job card
     assert "planBypassNow" in comfy and "inputs.confirmed = true" in comfy
     assert "const skipConfirm = planBypassNow()" in jobs
     assert "queuePrompt(graph, opts.runOn, skipConfirm)" in jobs
     assert "pushAgentCommand()" in commands and "popAgentCommand()" in commands
     assert "setAgentPlanConfirmed(false)" in bot
     assert "已取消，没有扣费。" in step and "Cancelled\\. Nothing was charged\\." in step
-    # the per-job dialog keeps its own copy; the plan card does not reuse 继续生成
-    assert "jobs.confirmOk" not in chat

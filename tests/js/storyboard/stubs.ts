@@ -7,7 +7,22 @@ export const isShapeId = (s: string) => s.startsWith('shape:')
 export const AssetRecordType = { createId: () => `asset:sb${++n}` }
 // ui/Confirm: the cost dialog. Records what the user is asked, then presses OK.
 export const asked: { desc: string; title: string }[] = []
-export const confirmAtom = { get: () => null, set: (c: { desc: string; title: string; run: () => void } | null) => { if (c) { asked.push({ desc: c.desc, title: c.title }); c.run() } } }
+export const confirmAtom = {
+  get: () => null,
+  // #850 (aadbfda2): Confirm OK awaits submit() (the confirmed POST) when present, then run().
+  set: (c: { desc: string; title: string; run: () => void; submit?: () => Promise<void>; submissionFailed?: (e: unknown) => void } | null) => {
+    if (!c) return
+    asked.push({ desc: c.desc, title: c.title })
+    void (async () => {
+      try {
+        if (c.submit) await c.submit()
+        c.run()
+      } catch (err) {
+        c.submissionFailed?.(err)
+      }
+    })()
+  },
+}
 export const readLocal = () => null
 export const onComfyEvent = () => () => {}
 export const keySettingsOpenAtom = atom('k', false)

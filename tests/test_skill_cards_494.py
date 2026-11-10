@@ -149,7 +149,9 @@ def test_covers_ten_webps_with_source_manifest():
     phase2_d = ["yingzao", "crt-interface", "crayon-sketch", "fabric-collage"]
     for sid, e in _entries().items():
         head = e.split("inputs:", 1)[0]
-        if sid == "cover-design-director" or sid in NEW19:
+        if sid == "animated-poster":
+            assert "cover: pinned('805/reuse/animated-poster'" in head, sid  # #805 ed4b574b reuse cover, not cover643
+        elif sid == "cover-design-director" or sid in NEW19:
             assert f"cover: cover643('{sid}')" in head, sid  # #643 true-wash cover
         elif sid in ("rednote-cover-maker", "meta-ads-creative-director", "marketing-campaign-generator", "interior-architectural-visualization"):
             assert f"cover: cover687('{sid}')" in head, sid  # #687 cover687 (was cover())
