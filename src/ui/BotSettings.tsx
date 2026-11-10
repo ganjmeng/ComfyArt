@@ -156,11 +156,18 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
   const officialDisplayName = String(settings.official_llm_display_name ?? '')
   const officialReady = settings.official_llm_ready === true
   const hasCustomConfig = valuesAreCustom(draft) || Boolean(String(draft[KEY_KEY] ?? '').trim())
-  const incomplete = !String(draft[URL_KEY] ?? '').trim() || !String(draft[MODEL_KEY] ?? '').trim()
-  const testFailed = !!(testState && !testState.ok)
-  const modelReady = !!String(draft[MODEL_KEY] ?? '').trim()
   const draftUrl = String(draft[URL_KEY] ?? '')
   const draftKey = String(draft[KEY_KEY] ?? '')
+  const providerChosen = Boolean(provider)
+  const urlFilled = Boolean(draftUrl.trim())
+  const keyOptional = provider === 'wavespeed' || provider === 'ollama'
+  const keyFilled = Boolean(draftKey.trim()) || keyOptional
+  const modelReady = !!String(draft[MODEL_KEY] ?? '').trim()
+  const incomplete = !providerChosen || !urlFilled || !keyFilled || !modelReady
+  const notSetupCopy = (!providerChosen || !urlFilled || !keyFilled)
+    ? t('botSettings.customLlmNotSetup')
+    : t('botSettings.customLlmNotSetupModel')
+  const testFailed = !!(testState && !testState.ok)
 
   const fetchModels = () => {
     const url = draftUrl.trim()
@@ -306,7 +313,7 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
                 </>
               )}
               {mode === 'custom' && incomplete && (
-                <div className="ca-botsettings__notsetup" role="status" data-testid="llm-custom-not-setup">{t('botSettings.customLlmNotSetup')}</div>
+                <div className="ca-botsettings__notsetup" role="status" data-testid="llm-custom-not-setup">{notSetupCopy}</div>
               )}
               {mode === 'custom' && (
                 <>

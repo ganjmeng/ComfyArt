@@ -292,6 +292,28 @@ CUSTOM_LLM_NOT_SETUP = {
     "en": "Your model isn't set up yet. Choose a provider, enter your API key, then pick a model.",
 }
 
+CUSTOM_LLM_NOT_SETUP_MODEL = {
+    "zh": "还没配好：请选择模型。",
+    "en": "Your model isn't set up yet. Please choose a model.",
+}
+
+
+def settings_llm_not_setup_copy(lang: str = "") -> str:
+    """Settings-page and chat copy for an incomplete custom source.
+
+    Keep the long sentence when the URL is missing. When the URL is present
+    and only the model is blank, use the short 'please choose a model' line.
+    """
+    from .settings import get_setting
+    url = str(get_setting("bot-local-llm-url") or "").strip()
+    model = str(get_setting("bot-model-local-llm") or "").strip()
+    table = CUSTOM_LLM_NOT_SETUP_MODEL if url and not model else CUSTOM_LLM_NOT_SETUP
+    if lang == "zh":
+        return table["zh"]
+    if lang == "en":
+        return table["en"]
+    return f'{table["zh"]} / {table["en"]}'
+
 
 def _http_status_number(value) -> int | None:
     try:
@@ -1524,13 +1546,7 @@ def install() -> None:
             source = llm_source()
             if source == "settings" and settings_llm_incomplete():
                 lang = getattr(turn, "lang", "") or ""
-                if lang == "zh":
-                    copy = CUSTOM_LLM_NOT_SETUP["zh"]
-                elif lang == "en":
-                    copy = CUSTOM_LLM_NOT_SETUP["en"]
-                else:
-                    copy = f'{CUSTOM_LLM_NOT_SETUP["zh"]} / {CUSTOM_LLM_NOT_SETUP["en"]}'
-                return TurnResult(error=copy)  # not-set-up (5) has no 切回官方默认 button
+                return TurnResult(error=settings_llm_not_setup_copy(lang))  # not-set-up (5) has no 切回官方默认 button
             route = llm_route()
             if route is None:
                 result = await _llm_orig_send(turn, emit, handle)

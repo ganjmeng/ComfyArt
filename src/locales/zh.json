@@ -1864,6 +1864,7 @@
   "gen.svgPreviewHint": "画布为预览图；下载为原 SVG 文件",
   "botSettings.llmModeCustom": "使用我自己的 API Key",
   "botSettings.customLlmNotSetup": "还没配好：请选择服务商并填写 API Key，再选择模型",
+  "botSettings.customLlmNotSetupModel": "还没配好：请选择模型。",
   "botSettings.llmOfficialNotice": "无需填写你的 API Key。当前使用 {0}。",
   "botSettings.llmCustomKept": "不会使用你已保存的 API Key 和模型。改回「使用我自己的 API Key」即可恢复。",
   "botSettings.llmKeyProvidedByAdmin": "由管理员提供",

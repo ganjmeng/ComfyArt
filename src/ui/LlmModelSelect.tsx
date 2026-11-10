@@ -28,7 +28,8 @@ export function LlmModelSelect({
     const rows = q ? models.filter((id) => id.toLowerCase().includes(q)) : models
     return q ? rows : rows.slice(0, VISIBLE_CAP)
   }, [models, q])
-  const showCount = !q && models.length > VISIBLE_CAP
+  // Open-menu count is a search hint, not only a 100-row cap notice (design lock 02open uses 24 models).
+  const showCount = !q && models.length > 10
 
   if (typable) {
     return (
@@ -54,6 +55,7 @@ export function LlmModelSelect({
         onOpenChange={(next) => { setOpen(next); if (!next) setQuery('') }}
         side="bottom"
         align="start"
+        flip={false}
         trigger={({ open: o, toggle }) => (
           <button
             type="button"
@@ -81,6 +83,9 @@ export function LlmModelSelect({
               onKeyDown={(e) => e.stopPropagation()}
             />
           </label>
+          {showCount && (
+            <div className="ca-llm-model__count">{t('botSettings.modelCountHint', String(models.length))}</div>
+          )}
           {filtered.map((id) => (
             <button
               key={id}
@@ -94,9 +99,6 @@ export function LlmModelSelect({
               {value === id && <span className="ca-icon">{Icons.check}</span>}
             </button>
           ))}
-          {showCount && (
-            <div className="ca-llm-model__count">{t('botSettings.modelCountHint', String(models.length))}</div>
-          )}
           {!filtered.length && <div className="ca-menu__empty">{t('botSettings.chooseModel')}</div>}
         </div>
       </Popover>

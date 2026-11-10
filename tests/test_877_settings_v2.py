@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 import pytest
 from conftest import write_settings
 from ComfyArt.api import llm_byo, settings
-from ComfyArt.api.provider_admin import CUSTOM_LLM_NOT_SETUP, OFFICIAL_LLM_NOT_READY
+from ComfyArt.api.provider_admin import CUSTOM_LLM_NOT_SETUP, CUSTOM_LLM_NOT_SETUP_MODEL, OFFICIAL_LLM_NOT_READY
 
 ROOT = Path(__file__).resolve().parent.parent
 FORBIDDEN_SOURCE = ("官方默认", "官方模型", "切回官方默认", "Official default", "official model")
@@ -26,14 +26,21 @@ def _locales():
 
 def test_ac18_pins_and_auto_untouched():
     import subprocess
-    base = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
-    ).strip()
+
+    def git(*args, **kw):
+        return subprocess.check_output(["git", *args], cwd=ROOT, **kw)
+
+    # Compare to origin/main (or the merge-base), not HEAD. A pin/Auto
+    # change committed on this branch must still fail this test.
+    try:
+        base = git("merge-base", "HEAD", "origin/main", text=True).strip()
+    except subprocess.CalledProcessError:
+        base = git("rev-parse", "origin/main", text=True).strip()
+    assert base
     for path in ("api/auto_models.json", "src/skills.ts"):
         current = (ROOT / path).read_bytes()
-        origin = subprocess.check_output(["git", "show", f"HEAD:{path}"], cwd=ROOT)
+        origin = git("show", f"{base}:{path}")
         assert current == origin, path
-    assert base
 
 
 def test_infer_llm_provider_from_host_and_stored():
@@ -244,6 +251,7 @@ def test_ac1_ac2_frontend_copy_and_cards():
             "botSettings.llmManagedByAdmin", "botSettings.llmSourceOfficial",
             "botSettings.llmSourceCustom", "botSettings.llmSourceAdmin",
             "botSettings.builtinAgentHint", "botSettings.customLlmNotSetup",
+            "botSettings.customLlmNotSetupModel",
         ):
             text = loc[key]
             assert "官方默认" not in text and "切回官方默认" not in text
@@ -259,6 +267,18 @@ def test_ac1_ac2_frontend_copy_and_cards():
     assert zh["botSettings.llmOfficialNotReady"] == OFFICIAL_LLM_NOT_READY["zh"]
     assert en["botSettings.llmOfficialNotReady"] == OFFICIAL_LLM_NOT_READY["en"]
     assert zh["botSettings.customLlmNotSetup"] == CUSTOM_LLM_NOT_SETUP["zh"]
+    assert en["botSettings.customLlmNotSetup"] == CUSTOM_LLM_NOT_SETUP["en"]
+    assert zh["botSettings.customLlmNotSetupModel"] == "还没配好：请选择模型。"
+    assert en["botSettings.customLlmNotSetupModel"] == "Your model isn't set up yet. Please choose a model."
+    assert zh["botSettings.customLlmNotSetupModel"] == CUSTOM_LLM_NOT_SETUP_MODEL["zh"]
+    assert en["botSettings.customLlmNotSetupModel"] == CUSTOM_LLM_NOT_SETUP_MODEL["en"]
+    assert "botSettings.customLlmNotSetupModel" in settings_src
+    assert "notSetupCopy" in settings_src
+    assert zh["botSettings.chooseModelFirst"] == "请先选择模型"
+    assert en["botSettings.chooseModelFirst"] == "Choose a model first"
+    # Open model list must stack above the settings dialog (modal is z-index 2000).
+    assert ".ca-pop:has(.ca-llm-model__menu)" in (ROOT / "src/styles/base.css").read_text()
+    assert "z-index: 2200" in (ROOT / "src/styles/base.css").read_text()
     assert "listLocalLlmModels" in settings_src
     assert "disabled={testing || !modelReady}" in settings_src
     assert "botSettings.chooseModelFirst" in settings_src
@@ -286,7 +306,10 @@ def test_frontend_providers_and_model_cap():
         "http://localhost:11434/v1",
     ):
         assert url in prov
-    assert "VISIBLE_CAP = 100" in (ROOT / "src/ui/LlmModelSelect.tsx").read_text()
+    select = (ROOT / "src/ui/LlmModelSelect.tsx").read_text()
+    assert "VISIBLE_CAP = 100" in select
+    assert "flip={false}" in select
+    assert "models.length > 10" in select
     assert "pickDefaultModel" in prov
     assert "openrouter" in prov and "recommended: []" in prov
 

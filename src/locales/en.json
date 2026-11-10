@@ -1864,6 +1864,7 @@
   "gen.svgPreviewHint": "Canvas shows a preview; download is the original SVG",
   "botSettings.llmModeCustom": "Use my own API key",
   "botSettings.customLlmNotSetup": "Your model isn't set up yet. Choose a provider, enter your API key, then pick a model.",
+  "botSettings.customLlmNotSetupModel": "Your model isn't set up yet. Please choose a model.",
   "botSettings.llmOfficialNotice": "No API key needed. Currently using {0}.",
   "botSettings.llmCustomKept": "Your saved API key and model are kept, but not used. Switch back to “Use my own API key” to restore them.",
   "botSettings.llmKeyProvidedByAdmin": "Provided by your admin",

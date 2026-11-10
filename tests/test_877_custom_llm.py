@@ -330,11 +330,11 @@ async def test_empty_custom_key_does_not_leak_wavespeed_or_official_keys(monkeyp
         assert ws_key not in (h["headers"] or {}) and ds_key not in str(h["headers"])
 
 
-@pytest.mark.parametrize("patch", [
-    {"bot-local-llm-url": "", "bot-model-local-llm": CUSTOM_MODEL},
-    {"bot-local-llm-url": CUSTOM_URL, "bot-model-local-llm": ""},
+@pytest.mark.parametrize("patch, expected", [
+    ({"bot-local-llm-url": "", "bot-model-local-llm": CUSTOM_MODEL}, "还没配好：请选择服务商并填写 API Key，再选择模型"),
+    ({"bot-local-llm-url": CUSTOM_URL, "bot-model-local-llm": ""}, "还没配好：请选择模型。"),
 ])
-async def test_custom_mode_blank_url_or_model_is_flagged(monkeypatch, patch):
+async def test_custom_mode_blank_url_or_model_is_flagged(monkeypatch, patch, expected):
     write_settings(**{"llm_mode": "custom", **patch})
     assert provider_admin.settings_llm_incomplete()
     p = get_provider("local-llm")
@@ -347,7 +347,7 @@ async def test_custom_mode_blank_url_or_model_is_flagged(monkeypatch, patch):
     monkeypatch.setattr(p, "_request_json", fake)
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-official-877")
     res = await p.send(TurnRequest(chat_id="c", user_text="hi", model="x", lang="zh"), _collect(), TurnHandle())
-    assert res.error == "还没配好：请选择服务商并填写 API Key，再选择模型"
+    assert res.error == expected
     assert not res.action
     assert hits == []
     assert all(OFFICIAL not in u for u in hits)
@@ -583,6 +583,13 @@ def test_frontend_shows_mode_switch_and_copy():
     assert en["botSettings.customLlmNotSetup"] == "Your model isn't set up yet. Choose a provider, enter your API key, then pick a model."
     assert zh["botSettings.customLlmNotSetup"] == provider_admin.CUSTOM_LLM_NOT_SETUP["zh"]
     assert en["botSettings.customLlmNotSetup"] == provider_admin.CUSTOM_LLM_NOT_SETUP["en"]
+    assert zh["botSettings.customLlmNotSetupModel"] == "还没配好：请选择模型。"
+    assert en["botSettings.customLlmNotSetupModel"] == "Your model isn't set up yet. Please choose a model."
+    assert zh["botSettings.customLlmNotSetupModel"] == provider_admin.CUSTOM_LLM_NOT_SETUP_MODEL["zh"]
+    assert en["botSettings.customLlmNotSetupModel"] == provider_admin.CUSTOM_LLM_NOT_SETUP_MODEL["en"]
+    assert "notSetupCopy" in settings_src
+    assert "botSettings.customLlmNotSetupModel" in settings_src
+    assert zh["botSettings.chooseModelFirst"] == "请先选择模型"
     for key, loc_key in (("host", "customLlmFailHost"), ("auth", "customLlmFailAuth"), ("timeout", "customLlmFailTimeout")):
         assert zh[f"botSettings.{loc_key}"] == provider_admin._SETTINGS_FAIL["zh"][key]
         assert en[f"botSettings.{loc_key}"] == provider_admin._SETTINGS_FAIL["en"][key]

@@ -196,7 +196,7 @@ def test_locales_only_add_memory_retrieved_430():
         "botSettings.customLlmFailTimeout", "botSettings.customLlmFailHttp",
         "botSettings.llmManagedByAdmin", "botSettings.llmModeCustom",
         "botSettings.llmModeOfficial", "botSettings.llmModeOfficialSub", "botSettings.llmModeCustomSub",
-        "botSettings.customLlmNotSetup", "botSettings.llmOfficialNotice",
+        "botSettings.customLlmNotSetup", "botSettings.customLlmNotSetupModel", "botSettings.llmOfficialNotice",
         "botSettings.llmCustomKept", "botSettings.llmKeyProvidedByAdmin",
         "botSettings.builtinAgentHint", "botSettings.llmOfficialNotReady",
         "botSettings.llmProvider", "botSettings.useCustomUrl",
