@@ -2,10 +2,10 @@
   "pilot_start_balance": 30.765899,
   "after_linkedin_stop": 30.666899,
   "pose_segment_before": 30.666899,
-  "balance_after": 30.414899,
-  "spend_delta_full": 0.351,
+  "balance_after": 30.384899,
+  "spend_delta_full": 0.381,
   "spend_pose_segment": 0.252,
-  "spend_sum_costs": 0.351,
+  "spend_sum_costs": 0.381,
   "results_first_segment": [
     {
       "event": "done",
@@ -145,6 +145,49 @@
   "ts_first": "2026-11-10 22:38:07 +0800 (Asia/Shanghai)",
   "ts_pose": "2026-11-10 22:44:41 +0800 (Asia/Shanghai)",
   "linkedin_product_path": {
+    "event": "done",
+    "path": "api/mcp_tools/canvas.py generate_image / apply_generate / select_model, live WaveSpeed catalog, no model named in the call",
+    "skill": "linkedin-banner",
+    "refs": "docs/design/640/78/gold/linkedin-banner/cover.webp",
+    "typifying_gold_lr_left": "704-lr/linkedin-banner/fixed-input-v1/RIGHT.png",
+    "model": "wavespeed-ai/qwen-image-2.0/edit",
+    "size": "1584*396",
+    "output_px": [
+      1584,
+      396
+    ],
+    "submitted": true,
+    "http_status": 200,
+    "prediction_id": "45781033a4074f10b4cb207db2cceeac",
+    "status": "completed",
+    "quoted_list": 0.03,
+    "quoted_discounted": 0.03,
+    "cost": 0.03,
+    "balance_before": 30.414899,
+    "balance_after": 30.384899,
+    "spend_pilot_total": 0.381,
+    "checkout": "99f05190ced8aa6660a942a7113f59247dcf59b5",
+    "dry_run": {
+      "routed_model": "wavespeed-ai/qwen-image-2.0/edit",
+      "provider_submit": {
+        "size": "1584*396"
+      },
+      "width": 1584,
+      "height": 396,
+      "submitted": false,
+      "balance_unchanged": 30.414899
+    },
+    "out": {
+      "png": "docs/qa/707-pilot/linkedin-banner.png",
+      "webp": "docs/qa/707-pilot/linkedin-banner.webp",
+      "lr": "docs/qa/707-pilot/linkedin-banner-lr.png"
+    },
+    "ts": "2026-11-11 01:45:19 +0800 (Asia/Shanghai)"
+  },
+  "after_product_linkedin": 30.384899,
+  "spend_linkedin_product": 0.03,
+  "ts_linkedin_product": "2026-11-11 01:45:19 +0800 (Asia/Shanghai)",
+  "linkedin_product_path_blocked_2026_11_10": {
     "event": "blocked_before_submit",
     "path": "api/mcp_tools/canvas.py generate_image / apply_generate / linkedin_decision, live WaveSpeed catalog, no model named in the call",
     "skill": "linkedin-banner",
