@@ -18,7 +18,7 @@ Product choices this set locks in, where the table is silent (see the PR):
 - 1 reference or a base image stays on the image-edit default (#153), even if the
   prompt also matches another row.
 - When several rows match, the first row in api/auto_models.json wins. Character /
-  product consistency is last, so an explicit logo / poster / anime / photoreal cue
+  product consistency is last, so an explicit logo / poster / anime / person / photoreal cue
   keeps that row.
 """
 from __future__ import annotations
@@ -39,9 +39,9 @@ NAMED = "alibaba/qwen-image-3.0/text-to-image"
 
 # Rows that must have at least one zh case and one en case.
 TABLE_ROWS = (
-    "t2i_general", "t2i_poster", "t2i_photoreal", "t2i_consistency",
+    "t2i_general", "t2i_poster", "t2i_person", "t2i_photoreal", "t2i_consistency",
     "t2i_multi_ref", "t2i_one_ref", "t2i_anime", "t2i_logo",
-    "edit_general", "edit_identity", "edit_retouch", "user_named",
+    "edit_general", "edit_identity", "edit_retouch", "edit_person", "user_named",
 )
 
 
@@ -82,18 +82,18 @@ CASES = [
     case("zh", "t2i_poster", "generate_image", "海报，不要太小的文字，标题要大", SUNBURST_T2I, "poster_text"),
 
     # --- photoreal portrait / product photo / e-commerce hero → seedream ---
-    case("en", "t2i_photoreal", "generate_image", "Photorealistic portrait of an old fisherman", SEEDREAM, "photoreal"),
-    case("en", "t2i_photoreal", "generate_image", "professional head shot of a CEO, soft studio light", SEEDREAM, "photoreal"),
+    case("en", "t2i_person", "generate_image", "Photorealistic portrait of an old fisherman", SEEDREAM, "person"),
+    case("en", "t2i_person", "generate_image", "professional head shot of a CEO, soft studio light", SEEDREAM, "person"),
     case("en", "t2i_photoreal", "generate_image", "packshot of a perfume bottle on white", SEEDREAM, "photoreal"),
     case("en", "t2i_photoreal", "generate_image", "studio product photography of white sneakers", SEEDREAM, "photoreal"),
     case("en", "t2i_photoreal", "generate_image", "e-commerce hero image of a skincare bottle", SEEDREAM, "photoreal"),
-    case("en", "t2i_photoreal", "generate_image", "a realistic portrait of a smiling woman", SEEDREAM, "photoreal"),
+    case("en", "t2i_person", "generate_image", "a realistic portrait of a smiling woman", SEEDREAM, "person"),
     case("en", "t2i_photoreal", "generate_image", "no headline, just a product photo of a shoe", SEEDREAM, "photoreal"),
-    case("zh", "t2i_photoreal", "generate_image", "一张写实人像，自然光", SEEDREAM, "photoreal"),
+    case("zh", "t2i_person", "generate_image", "一张写实人像，自然光", SEEDREAM, "person"),
     case("zh", "t2i_photoreal", "generate_image", "电商主图，白底，香水瓶", SEEDREAM, "photoreal"),
     case("zh", "t2i_photoreal", "generate_image", "产品摄影，运动鞋，棚拍", SEEDREAM, "photoreal"),
-    case("zh", "t2i_photoreal", "generate_image", "证件照风格的半身照", SEEDREAM, "photoreal"),
-    case("zh", "t2i_photoreal", "generate_image", "真人照片，女士，微笑", SEEDREAM, "photoreal"),
+    case("zh", "t2i_person", "generate_image", "证件照风格的半身照", SEEDREAM, "person"),
+    case("zh", "t2i_person", "generate_image", "真人照片，女士，微笑", SEEDREAM, "person"),
     case("zh", "t2i_photoreal", "generate_image", "商品白底图，用于上架", SEEDREAM, "photoreal"),
 
     # --- character / product consistency, no extra images → nano text-to-image ---
@@ -107,7 +107,7 @@ CASES = [
     case("zh", "t2i_consistency", "generate_image", "同一张脸，换三套衣服", NANO_T2I, "consistency"),
     # a clearer style row wins over consistency
     case("en", "t2i_anime", "generate_image", "anime girl, same character, three views", MJ, "anime_art"),
-    case("en", "t2i_photoreal", "generate_image", "photorealistic portrait of the same girl", SEEDREAM, "photoreal"),
+    case("en", "t2i_person", "generate_image", "photorealistic portrait of the same girl", SEEDREAM, "person"),
 
     # --- 2+ refs → nano edit (#153); 1 ref / base → edit default. Prompt category does not override. ---
     case("en", "t2i_multi_ref", "generate_image", "the mug from picture 1 on the desk from picture 2", NANO_EDIT, "multi_reference", refs=["shape:a", "shape:b"]),
@@ -182,6 +182,9 @@ CASES = [
     case("zh", "edit_retouch", "edit_image", "祛痘去皱，修一下脸", SEEDREAM_EDIT, "photo_retouch"),
     case("zh", "edit_retouch", "edit_image", "美颜，不要过度", SEEDREAM_EDIT, "photo_retouch"),
     case("zh", "edit_retouch", "edit_image", "这张照片太暗，补光修一下", SEEDREAM_EDIT, "photo_retouch"),
+    # --- realistic-person edit (no retouch / identity-lock keywords) → seedream edit ---
+    case("en", "edit_person", "edit_image", "edit this photorealistic portrait and make her smile", SEEDREAM_EDIT, "person"),
+    case("zh", "edit_person", "edit_image", "编辑这张写实人像，让她微笑", SEEDREAM_EDIT, "person"),
 
     # --- the user named a model → that model, and the note says so ---
     case("en", "user_named", "generate_image", "Anime poster", NAMED, "user", model=NAMED),

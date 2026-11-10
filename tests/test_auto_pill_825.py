@@ -163,3 +163,56 @@ def test_resolve_model_choice_auto_and_manual(catalog):
     assert model2 == default
     assert choice2 and choice2["auto"] is False
     assert choice2["reason"] == {"zh": "你指定了这个模型", "en": "you named this model"}
+
+
+
+SEEDREAM = "bytedance/seedream-v5.0-pro"
+SEEDREAM_EDIT = "bytedance/seedream-v5.0-pro/edit"
+
+
+def test_realistic_person_auto_label_and_hover_reason(catalog):
+    """Hover on a realistic-person Auto card is exactly 「自动选择：写实人物」 (#871 tip + prefix)."""
+    choice = auto_models.choose("text_to_image", "一张写实人像", None, catalog)
+    assert choice["auto"] is True
+    assert choice["category"] == "person"
+    assert choice["model"] == SEEDREAM
+    assert choice["reason"] == {"zh": "写实人物", "en": "realistic person"}
+    assert auto_models.pill_tooltip(choice, "zh") == "自动选择：写实人物"
+    assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: realistic person"
+    assert auto_models.pill_label(choice) == "Auto · Seedream v5 Pro"
+    src = (ROOT / "src/autoPill.ts").read_text()
+    assert "'bytedance/seedream-v5.0-pro': 'Seedream v5 Pro'" in src
+    assert "Seedream 5.0 Pro" not in src
+
+    edit = auto_models.choose("image_edit", "编辑这张写实人像，让她微笑", None, catalog)
+    assert edit["auto"] is True and edit["category"] == "person" and edit["model"] == SEEDREAM_EDIT
+    assert auto_models.pill_tooltip(edit, "zh") == "自动选择：写实人物"
+    assert auto_models.pill_label(edit) == "Auto · Seedream v5 Pro"
+
+
+def test_anime_illustration_poster_and_masked_rows_unchanged(catalog):
+    """Person-row PR must not touch anime/illustration, poster, or masked-edit (Sunburst→Flare)."""
+    table = auto_models.load_table()
+    anime = next(c for c in table["text_to_image"]["categories"] if c["id"] == "anime_art")
+    assert anime["model"] == "midjourney/text-to-image"
+    assert "illustration" in anime["keywords"] and "插画" in anime["keywords"]
+    assert anime.get("fallback") in (None, "", [])
+    poster = next(c for c in table["text_to_image"]["categories"] if c["id"] == "poster_text")
+    assert poster["model"] == "openai/gpt-image-2.6-sunburst/text-to-image"
+    assert poster["fallback"] == "openai/gpt-image-2.6-flare/text-to-image"
+    assert poster["tip"] == {"zh": "海报/带字", "en": "poster / text"}
+    masked = table["image_edit"]["masked"]
+    assert masked["model"] == "openai/gpt-image-2.6-sunburst/edit"
+    assert masked["fallback"] == "openai/gpt-image-2.6-flare/edit"
+    assert masked["tip"] == {"zh": "选区编辑", "en": "selection edit"}
+
+    # Live matcher still routes those rows the same way as main
+    assert auto_models.choose("text_to_image", "Anime girl under cherry blossoms", None, catalog)["category"] == "anime_art"
+    assert auto_models.choose("text_to_image", "an illustrated children's book page with a fox", None, catalog)["category"] == "anime_art"
+    poster_choice = auto_models.choose("text_to_image", 'Movie poster with the headline "SUMMER"', None, catalog)
+    assert poster_choice["category"] == "poster_text" and poster_choice["model"] == poster["model"]
+    masked_choice = auto_models.choose("image_edit", "edit the selected area", None, catalog, masked=True)
+    assert masked_choice["category"] == "masked" and masked_choice["model"] == masked["model"]
+    assert auto_models.registered_runtime_fallback(
+        "image_edit", masked_choice, {masked["model"], masked["fallback"]}
+    ) == masked["fallback"]
