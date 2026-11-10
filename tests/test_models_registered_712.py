@@ -3,6 +3,7 @@ user naming one is registered in the runtime catalog (api/wavespeed.py load_conf
 UnregisteredModel error. Explicit fallbacks on auto rows must be registered too."""
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -18,6 +19,33 @@ VENDORS = ("wavespeed-ai/", "minimax/", "recraft-ai/", "google/", "openai/", "by
 
 def _catalog() -> dict[str, set[str]]:
     return {f: {m["id"] for m in v["models"]} for f, v in wavespeed.load_config()["features"].items()}
+
+
+def _registered() -> set[str]:
+    """Ids a built-in path may legally route to without hitting UnregisteredModel.
+
+    load_config is the curated dropdown. size_lock may also name a raw
+    wavespeed_models.json id (resolve_model). Replicate Admin / coverage-audit
+    counterparts live in provider_catalog and are not WaveSpeed catalog ids.
+    """
+    cat = _catalog()
+    every = set().union(*cat.values()) if cat else set()
+    with open(wavespeed.CONFIG, encoding="utf-8") as f:
+        raw = json.load(f)
+    for feat in (raw.get("features") or {}).values():
+        for m in feat.get("models") or []:
+            if isinstance(m, dict) and m.get("id"):
+                every.add(m["id"])
+    from ComfyArt.api import provider_catalog as pc
+    for group in (getattr(pc, "IMAGE_PROVIDERS", []), getattr(pc, "LLM_PROVIDERS", [])):
+        for provider in group:
+            for m in provider.get("models") or []:
+                if isinstance(m, dict) and m.get("id"):
+                    every.add(m["id"])
+    for _mid, row in getattr(pc, "_EXACT", {}).items():
+        if isinstance(row, tuple) and len(row) >= 2 and isinstance(row[1], str):
+            every.add(row[1])
+    return every
 
 
 def used_ids() -> dict[str, str]:
@@ -43,8 +71,7 @@ def used_ids() -> dict[str, str]:
 
 
 def test_builtin_paths_use_only_registered_models():
-    cat = _catalog()
-    every = set().union(*cat.values())
+    every = _registered()
     missing = {m: where for m, where in used_ids().items() if m not in every}
     assert not missing, f"unregistered model ids used by built-in paths: {missing}"
 
