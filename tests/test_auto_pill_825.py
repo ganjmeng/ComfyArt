@@ -55,52 +55,46 @@ def test_auto_before_model_known_shows_just_auto():
 
 def test_skill_pin_tooltip_has_no_auto_prefix():
     choice = {
-        "model": "google/nano-banana-pro/edit",
+        "model": "bytedance/seedream-v5.0-pro/edit",
         "auto": True,
         "category": "skill",
         "skill": "pose-fission",
         "reason": auto_models.skill_pin_reason("pose-fission"),
     }
-    assert auto_models.pill_label(choice) == "Auto · Nano Banana Pro"
+    assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
     assert auto_models.pill_tooltip(choice, "zh") == "pose-fission 技能固定模型"
     assert auto_models.pill_tooltip(choice, "en") == "pose-fission skill pinned model"
     assert not auto_models.pill_tooltip(choice, "zh").startswith("自动选择")
 
 
-def test_pose_fission_fallback_matches_table_and_tip():
-    """09 fixture / real route: preferred in tip is the table's pinned model (no hardcoding)."""
+def test_pose_fission_has_no_registered_fallback():
+    """#707: pose-fission is Seedream-only; no Banana (or other) registered fallback."""
     pin = auto_models.skill_pin("pose-fission")
-    assert pin and pin.get("fallback"), "pose-fission must list a fallback in auto_models.json"
-    choice = auto_models.skill_fallback_choice("pose-fission")
-    # Used model is the registered fallback; failed (首选) is the pin primary
-    assert choice["model"] == pin["fallback"]
-    assert choice["fallback"] == pin["model"]
-    assert choice["category"] == "skill_fallback"
-    assert choice["reason"] == auto_models.skill_pin_reason("pose-fission")
-    # 首选 model in tip text must be whatever the table configures as primary
-    preferred_short = auto_models.short_name(pin["model"])
-    used_short = auto_models.short_name(pin["fallback"])
-    tip = auto_models.pill_tooltip(choice, "zh")
-    assert tip == f"pose-fission 技能固定模型 · 首选 {preferred_short} 失败，改用 {used_short}"
-    assert preferred_short in tip and f"首选 {preferred_short}" in tip
-    assert not tip.startswith("自动选择")
-    assert auto_models.pill_label(choice) == f"Auto · {used_short}"
-    tip_en = auto_models.pill_tooltip(choice, "en")
-    assert tip_en == (
-        f"pose-fission skill pinned model · Preferred {preferred_short} failed, used {used_short}"
-    )
+    assert pin and pin["model"] == "bytedance/seedream-v5.0-pro/edit"
+    assert not pin.get("fallback")
+    with pytest.raises(ValueError, match="no registered model/fallback"):
+        auto_models.skill_fallback_choice("pose-fission")
+    choice = {
+        "model": pin["model"],
+        "auto": True,
+        "category": "skill",
+        "skill": "pose-fission",
+        "reason": auto_models.skill_pin_reason("pose-fission"),
+    }
+    assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
+    assert auto_models.pill_tooltip(choice, "zh") == "pose-fission 技能固定模型"
+    assert auto_models.pill_tooltip(choice, "en") == "pose-fission skill pinned model"
 
 
 def test_fallback_fixture_pair_is_registered_in_table():
-    """pill825 fallback case must use a real skills.*.fallback pair from auto_models.json."""
+    """pill825 skill case uses the real pose-fission pin; that row has no fallback."""
     table = json.loads((ROOT / "api/auto_models.json").read_text(encoding="utf-8"))
     main = (ROOT / "tests/js/pill825/main.tsx").read_text()
-    # Fixture imports the table and uses posePin.model / posePin.fallback
     assert "auto_models.json" in main and "pose-fission" in main
     pin = table["skills"]["pose-fission"]
-    assert pin["fallback"] == "google/nano-banana-2.1/edit"
-    assert pin["model"] == "google/nano-banana-pro/edit"
-    # Any skills row that lists fallback: model/fallback must match that row
+    assert pin["model"] == "bytedance/seedream-v5.0-pro/edit"
+    assert not pin.get("fallback")
+    # Any skills row that still lists fallback: model/fallback must match that row
     for name, row in table["skills"].items():
         if name.startswith("_") or not isinstance(row, dict):
             continue

@@ -26,12 +26,11 @@ const seedreamEdit = 'bytedance/seedream-v5.0-pro/edit'
 const bananaEdit = 'google/nano-banana-2.1/edit'
 const longId = 'openai/gpt-image-2.6-sunburst-with-an-extremely-long-marketing-name-that-must-ellipsis/text-to-image'
 
-/** Real pose-fission pin from api/auto_models.json — not invented fixture pairs. */
-const posePin = (autoTable as { skills: Record<string, { model: string; fallback: string }> }).skills['pose-fission']
-if (!posePin?.model || !posePin?.fallback) throw new Error('pose-fission missing from auto_models.json')
+/** Real pose-fission pin from api/auto_models.json — Seedream 5.0 Pro edit, no Banana fallback. */
+const posePin = (autoTable as { skills: Record<string, { model: string; fallback?: string }> }).skills['pose-fission']
+if (!posePin?.model) throw new Error('pose-fission missing from auto_models.json')
 const poseSkill = 'pose-fission'
-const posePrimary = posePin.model       // what failed / pinned primary
-const poseFallback = posePin.fallback   // what ran after fallback
+const posePrimary = posePin.model
 const poseReason = skillPinReason(poseSkill)
 
 function choice(partial: Record<string, unknown>) {
@@ -110,17 +109,17 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
       ],
     },
   },
+  // #707: pose-fission has no registered fallback. Keep the case id so old shot URLs load
+  // the successful skill pin (Seedream), not an invented Banana pair.
   fallback: {
-    // Real table pair: pose-fission primary failed → registered fallback ran (mirrors skill_fallback_choice)
     thumbs: true,
     msg: {
       id: 'a', role: 'assistant', status: 'done', blocks: [
         { type: 'thinking', text: 'pose' },
         use('g1', 'mcp__comfyart__generate_image', { prompt: 'pose', skill: poseSkill, auto_model: true }),
         res('g1', 'mcp__comfyart__generate_image', choice({
-          model: poseFallback, auto: true, category: 'skill_fallback', skill: poseSkill,
-          fallback: posePrimary,
-          edit_model: poseFallback,
+          model: posePrimary, auto: true, category: 'skill', skill: poseSkill,
+          edit_model: posePrimary,
           reason: poseReason,
         })),
         { type: 'text', text: 'ok' },

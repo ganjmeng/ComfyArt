@@ -211,7 +211,7 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     // A size lock that skipped a disabled candidate must edit with the model that is still allowed.
     ...(lockId && (wantsRefs || args.base) ? { featureModels: { image_edit: lockId } } : {}),
     ...(lockId ? { sizeLockModel: lockId } : {}),
-    // #708: a skill-pinned edit model's tier (e.g. pose-fission → nano-banana-pro/edit at 2k)
+    // #708: a skill-pinned edit model's tier (e.g. pose-fission → seedream-v5.0-pro/edit at 2k)
     ...(!video && typeof args.edit_resolution === 'string' ? { editResolution: args.edit_resolution } : {}),
     ...(!video && args.base ? { base: refUrls(editor, [args.base])[0], strength: Number(args.base_strength) || 60 } : {}),
     ...(video && !mode && args.last_frame ? { lastFrame: refUrls(editor, [args.last_frame])[0] } : {}),

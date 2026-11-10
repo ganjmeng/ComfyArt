@@ -4,12 +4,11 @@
   "_comment": "#708/#712: per-skill model pins. Registered explicitly: the skill's model runs at its resolution; fallback runs only after the primary call fails (logged). A pinned model missing from the catalog is an error, never a silent switch to the feature default.",
   "pose-fission": {
    "feature": "image_edit",
-   "model": "google/nano-banana-pro/edit",
+   "model": "bytedance/seedream-v5.0-pro/edit",
    "resolution": "2k",
    "ratio": "3:4",
-   "fallback": "google/nano-banana-2.1/edit",
-   "zh": "pose-fission 技能固定用 Nano Banana Pro 编辑（2K），同人同衣同景换姿态",
-   "en": "the pose-fission skill is pinned to Nano Banana Pro edit at 2K for same-person, same-scene pose changes"
+   "zh": "pose-fission 技能固定用 Seedream 5.0 Pro 编辑（2K），同人同衣同景换姿态，无 Banana 回退",
+   "en": "the pose-fission skill is pinned to Seedream 5.0 Pro edit at 2K for same-person, same-scene pose changes, with no Banana fallback"
   }
  },
  "features": {

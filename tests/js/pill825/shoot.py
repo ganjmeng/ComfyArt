@@ -90,9 +90,9 @@ def main():
             elif case == "poster_fb":
                 assert label.inner_text().strip() == "Auto · GPT Image 2.6 Sunburst", label.inner_text()
             elif case == "fallback":
-                assert label.inner_text().strip() == "Auto · Nano Banana 2.1", label.inner_text()
+                assert label.inner_text().strip() == "Auto · Seedream 5.0 Pro", label.inner_text()
             elif case == "skill":
-                assert label.inner_text().strip() == "Auto · Nano Banana Pro", label.inner_text()
+                assert label.inner_text().strip() == "Auto · Seedream 5.0 Pro", label.inner_text()
             elif case == "ellipsis":
                 assert label.count() == 1
                 overflow = page.evaluate(
@@ -135,11 +135,10 @@ def main():
                         assert "首选" in geom["text"] and "GPT Image 2.6 Sunburst" in geom["text"]
                         assert "GPT Image 2.6 Flare" in geom["text"], geom["text"]
                     if case == "fallback":
-                        # Skill-pin fallback: no 自动选择：; tip =「pose-fission 技能固定模型 · 首选 …」
-                        assert geom["text"].startswith("pose-fission 技能固定模型"), geom["text"]
-                        assert "首选" in geom["text"] and "改用" in geom["text"], geom["text"]
+                        # #707: pose-fission has no Banana fallback; this case now shows the Seedream pin.
+                        assert geom["text"] == "pose-fission 技能固定模型", geom["text"]
                         assert "自动选择：" not in geom["text"], geom["text"]
-                        assert "Nano Banana Pro" in geom["text"] and "Nano Banana 2.1" in geom["text"], geom["text"]
+                        assert "Nano Banana" not in geom["text"], geom["text"]
                     if case == "skill":
                         assert geom["text"] == "pose-fission 技能固定模型", geom["text"]
                         assert "自动选择：" not in geom["text"], geom["text"]
