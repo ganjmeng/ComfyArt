@@ -92,7 +92,8 @@ def _page_html(url: str) -> str:
             browser = p.chromium.launch(args=['--no-sandbox'])
         page = browser.new_page()
         try:
-            page.goto(url, wait_until='domcontentloaded', timeout=30000)
+            # cold Vite start pre-bundles deps on the first request (seen >30s on the gate box); allow it
+            page.goto(url, wait_until='domcontentloaded', timeout=120000)
             page.wait_for_function("() => document.documentElement.dataset.ready === '1'", timeout=20000)
             return page.content()
         finally:
