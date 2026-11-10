@@ -467,6 +467,27 @@ def test_select_model_without_catalog_does_not_block_unpinned_exact_skills():
     assert str((blocked or {}).get("model") or "") == ""
 
 
+def test_relay_and_price_survive_when_catalog_raises(relay, monkeypatch):
+    """generate_image / _auto_choice must not fail closed if catalog() raises."""
+
+    async def boom(refresh=False):
+        raise RuntimeError("catalog down")
+
+    monkeypatch.setattr(wavespeed, "catalog", boom)
+    # A plain Auto call never needed the catalog.
+    out = _run("generate_image", prompt="a red apple on a table")
+    assert SENT and SENT[-1][0] == "generate_image"
+    assert (out.get("model_choice") or {}).get("model")
+    SENT.clear()
+    # An unpinned exact-size skill without a catalog falls through to Auto, not a block.
+    out = _run("generate_image", prompt="skill canvas", skill="game-art")
+    assert SENT, out
+    assert out.get("submitted") is not False
+    assert "block" not in (out or {})
+    priced = str((out.get("model_choice") or {}).get("model") or "")
+    assert priced and priced != QWEN
+
+
 def test_relay_before_after_uses_exact_size_not_flare(relay):
     out = _run("generate_image", prompt="beauty before after comparison banner", skill="before-after")
     assert SENT

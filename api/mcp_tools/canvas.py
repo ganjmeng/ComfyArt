@@ -105,8 +105,19 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             # Auto pick, recording the original value and why on the result (model_choice).
             log.warning("model %r for %s is not registered; falling back to Auto", requested, action)
             args = {k: v for k, v in args.items() if k not in ("model", "auto_model")}
-        from .. import wavespeed
-        choice = select_model(action, args, catalog=await wavespeed.catalog(), cfg=load_config())
+        # Only exact-size routing needs the WaveSpeed catalog. Fetching it for every
+        # Auto call would fail closed (and fail tests) when the catalog is down or
+        # unmocked. A failed or missing catalog is passed as None: select_model then
+        # skips linkedin_decision instead of treating the catalog as {}.
+        catalog = None
+        if action == "generate_image" and args.get("skill") in EXACT_SKILLS:
+            from .. import wavespeed
+            try:
+                catalog = await wavespeed.catalog()
+            except Exception as e:  # catalog down must not block Auto / pin
+                log.warning("WaveSpeed catalog unavailable; skipping exact-size routing: %s", e)
+                catalog = None
+        choice = select_model(action, args, catalog=catalog, cfg=load_config())
         if choice and choice.get("block"):
             return choice["block"]
         if choice and choice.get("_exact_args") is not None:
