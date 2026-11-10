@@ -266,6 +266,23 @@
   color: var(--ca-text);
   pointer-events: auto;
 }
+.ca-panel[data-move] { transition: left 150ms ease, top 150ms ease; }
+.ca-panel[data-narrow] { width: 220px; }
+.ca-panel[data-narrow] .ca-panel__row {
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+}
+.ca-panel[data-narrow] .ca-panel__row > span { white-space: nowrap; }
+.ca-panel[data-narrow] .ca-panel__row input { min-width: 0; }
+.ca-panel[data-narrow] .ca-panel__val { white-space: nowrap; }
+.ca-panel[data-narrow] .ca-chat__hint,
+.ca-panel[data-narrow] .ca-angle__fee { white-space: nowrap; }
+.ca-panel[data-narrow] .ca-panel__foot { flex-wrap: nowrap; }
+.ca-panel[data-narrow] .ca-panel__foot > button {
+  flex: 1 0 auto;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
 .ca-panel[data-wide] { width: 480px; padding: 12px 16px; }
 .ca-panel--angle {
   --ca-angle-sub: rgba(0,0,0,.55);

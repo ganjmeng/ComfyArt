@@ -13,6 +13,7 @@ import { usd } from '../usd'
 import { featurePrice, loadCloudModels } from '../wavespeed'
 import { isEnter } from './keys'
 import { useEscape } from './escape'
+import { expandBox, MOVE_MS, PANEL_NARROW_W, obstacleRects, placeExpandPanel } from './panelPlace'
 
 const GAP = 12
 const EDGE = 8
@@ -111,7 +112,9 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
   const [loop, setLoop] = useState(true)
   const [lines, setLines] = useState<string[] | null>(null)
   const [edits, setEdits] = useState<string[]>([])
-  const [held, setHeld] = useState<{ left: number; top: number } | null>(null)
+  const [held, setHeld] = useState<{ left: number; top: number; width: number } | null>(null)
+  const heightMemo = useRef({ full: 200, narrow: 0 })
+  const [moving, setMoving] = useState(false)
 
   useEffect(() => {
     setPrompt('')
@@ -149,6 +152,12 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
 
   useEscape(!!mode, exitMode)
 
+  useEffect(() => {
+    if (!moving) return
+    const id = window.setTimeout(() => setMoving(false), MOVE_MS + 50)
+    return () => window.clearTimeout(id)
+  }, [moving])
+
   if (!mode || OWN_PANEL.includes(mode) || !shape || !rect) return null
   const asset = shape.props.assetId ? editor.getAsset(shape.props.assetId) : null
   if (asset?.type !== 'image') return null
@@ -158,14 +167,29 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
   const below = PROMPT_MODES.includes(mode)
   let left: number
   let top: number
+  let panelW = size.w
   if (below) {
     left = Math.min(Math.max(rect.l, EDGE), host.width - size.w - EDGE)
     top = rect.b + GAP
     if (top + size.h > host.height - 72) top = Math.max(EDGE, rect.t - size.h - GAP)
-  } else {
+  } else if (mode === 'expand') {
     const s = (rect.r - rect.l) / iw
-    const right = rect.r + (mode === 'expand' ? pads.r * s : 0)
-    const leftEdge = rect.l - (mode === 'expand' ? pads.l * s : 0)
+    const box = expandBox({ l: rect.l, t: rect.t, r: rect.r, b: rect.b }, pads, s)
+    if (size.w > 250) heightMemo.current.full = size.h
+    else heightMemo.current.narrow = size.h
+    const placed = placeExpandPanel(
+      box,
+      { full: heightMemo.current.full, narrow: heightMemo.current.narrow || heightMemo.current.full },
+      { width: host.width, height: host.height },
+      obstacleRects(editor.getContainer(), host),
+      box.t,
+    )
+    left = placed.left
+    top = placed.top
+    panelW = placed.width
+  } else {
+    const right = rect.r
+    const leftEdge = rect.l
     left = right + GAP + size.w > host.width - EDGE ? Math.max(EDGE, leftEdge - size.w - GAP) : right + GAP
     top = Math.min(Math.max(rect.t, EDGE), host.height - size.h - EDGE)
     if (mode === 'angles') {
@@ -176,7 +200,7 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
       top = Math.min(top, Math.max(EDGE, bottom - size.h))
     }
   }
-  if (held) ({ left, top } = held)
+  if (held) ({ left, top, width: panelW } = held)
 
   const textEdits = (): [string, string][] => (lines ?? []).flatMap((line, i) => ((edits[i] ?? '').trim() !== line ? [[line, (edits[i] ?? '').trim()] as [string, string]] : []))
   const tooBig = Math.max(iw + pads.l + pads.r, ih + pads.t + pads.b) > EXPAND_LIMIT
@@ -245,14 +269,20 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
       ref={panel}
       className={mode === 'angles' ? 'ca-panel ca-panel--angle' : 'ca-panel'}
       data-wide={below || undefined}
+      data-move={moving || undefined}
+      data-narrow={(mode === 'expand' && panelW === PANEL_NARROW_W) || undefined}
       style={{ left, top }}
       onPointerDown={(e) => {
         e.stopPropagation()
         if (!(e.target instanceof HTMLInputElement) || e.target.type !== 'range') return
         e.target.setPointerCapture(e.pointerId)
-        setHeld({ left, top })
+        setMoving(false)
+        setHeld({ left, top, width: panelW })
       }}
-      onLostPointerCapture={() => setHeld(null)}
+      onLostPointerCapture={() => {
+        setHeld(null)
+        setMoving(true)
+      }}
       onWheel={(e) => e.stopPropagation()}
     >
       {below ? (
