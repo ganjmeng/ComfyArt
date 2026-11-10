@@ -52,3 +52,70 @@ def test_no_local_krea_workflow_or_weights():
     ])
     for needle in ("krea2_turbo_int8_convrot", "krea2-turbo-t2i.api.json"):
         assert needle not in blob
+
+
+def _walk_strings(obj):
+    if isinstance(obj, str):
+        yield obj
+    elif isinstance(obj, dict):
+        for v in obj.values():
+            yield from _walk_strings(v)
+    elif isinstance(obj, list):
+        for v in obj:
+            yield from _walk_strings(v)
+
+
+def test_krea_turbo_dropdown_only_not_auto_or_skill_pin():
+    """#868 / product: Krea 2 Turbo is a user-selectable picker entry only.
+
+    It must not enter Auto routing and must not become a skill pin or default.
+    api/auto_models.json and src/skills.ts stay unchanged vs main for this PR.
+    """
+    auto_path = ROOT / "api/auto_models.json"
+    skills_path = ROOT / "src/skills.ts"
+    auto_text = auto_path.read_text(encoding="utf-8")
+    skills_text = skills_path.read_text(encoding="utf-8")
+    needles = (KREA, "krea-v2/turbo", "krea-v2/turbo-lora", "Krea 2 Turbo")
+    for needle in needles:
+        assert needle not in auto_text
+        assert needle not in skills_text
+
+    auto = json.loads(auto_text)
+    for s in _walk_strings(auto):
+        assert "krea" not in s.lower()
+
+    # Skill pins / fallbacks in the Auto table (currently pose-fission only).
+    for skill, row in (auto.get("skills") or {}).items():
+        if skill.startswith("_") or not isinstance(row, dict):
+            continue
+        for key in ("model", "fallback", "default"):
+            val = row.get(key)
+            if val:
+                assert val != KREA, f"skill {skill} {key} is pinned to Krea 2 Turbo"
+
+    # Feature Auto defaults and category models.
+    for feature, spec in (auto.get("features") or {}).items():
+        if not isinstance(spec, dict):
+            continue
+        default = spec.get("default")
+        if isinstance(default, str):
+            assert default != KREA, f"features.{feature}.default is Krea 2 Turbo"
+        for cat in spec.get("categories") or []:
+            if isinstance(cat, dict):
+                assert cat.get("model") != KREA, f"auto category {feature}/{cat.get('id')} uses Krea 2 Turbo"
+        for section in ("multi_reference", "masked"):
+            row = spec.get(section) or {}
+            if isinstance(row, dict):
+                assert row.get("model") != KREA and row.get("fallback") != KREA
+
+    # Present in the user-selectable dropdown (curated more + assembled picker list).
+    curated = wavespeed.load_curated()["text_to_image"]
+    cfg = wavespeed.load_config()["features"]["text_to_image"]
+    ids = [m["id"] for m in cfg["models"]]
+    names = [m.get("name") or m.get("local") for m in cfg["models"]]
+    assert KREA in curated["more"]
+    assert KREA not in curated["models"]
+    assert KREA in ids
+    assert "Krea 2 Turbo" in names
+    assert curated["default"] != KREA
+    assert cfg["default"] != KREA
