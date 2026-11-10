@@ -53,7 +53,7 @@ export function targetSize({ ratio, resolution, workflow, cw, ch }: GeneratorSha
 }
 
 /** #707: a skill canvas (1584×396 and other exact pixels) is not snapped to a multiple of 16. */
-/** #707: a skill size lock names a catalog model that is not on the Lovart dropdown. */
+/** #707: a skill size lock names a catalog model that is not on the reference product dropdown. */
 function sizeLockModel(shape: { meta?: { sizeLockModel?: unknown } }): ModelDef | undefined {
   const id = typeof shape.meta?.sizeLockModel === 'string' ? shape.meta.sizeLockModel : ''
   return id ? { id, label: id, desc: '', files: [], cloud: true, lora: null, refs: 'qwen', control: 'wavespeed' } : undefined

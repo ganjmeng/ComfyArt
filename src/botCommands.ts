@@ -138,7 +138,7 @@ function sizeLockCandidates(args: Args): string[] {
 async function startGenerator(editor: Editor, video: boolean, args: Args, onError: ErrorSink, chat: string) {
   const models = agentModels(video)
   const wantsRefs = !video && Array.isArray(args.refs) && args.refs.length > 0
-  // #707: a size lock always audits the file. An id that is not on the Lovart dropdown
+  // #707: a size lock always audits the file. An id that is not on the reference product dropdown
   // goes through the preference gate and is not replaced by the feature default.
   // A dropdown model keeps the normal preference fallback, then the file is still audited.
   const listed = IMAGE_MODELS.map((m) => m.id)
