@@ -1,0 +1,83 @@
+{
+  "balance_before": 30.765899,
+  "balance_after": 30.666899,
+  "spend_delta": 0.099,
+  "spend_sum_costs": 0.099,
+  "results": [
+    {
+      "event": "done",
+      "id": "before-after",
+      "model": "bytedance/seedream-v5.0-pro/edit",
+      "prediction_id": "bfb3daf0f5b148f4bc11db076e00f767",
+      "attempt": 1,
+      "balance_before": 30.765899,
+      "balance_after": 30.725399,
+      "cost": 0.0405,
+      "ok": true,
+      "status": "completed",
+      "size": [
+        915,
+        1144
+      ],
+      "out": {
+        "png": "docs/qa/707-pilot/before-after.png",
+        "webp": "docs/qa/707-pilot/before-after.webp",
+        "size": [
+          915,
+          1144
+        ]
+      },
+      "lr": "docs/qa/707-pilot/before-after-lr.png",
+      "error": null,
+      "latency_s": 90.483,
+      "quoted_list": 0.045,
+      "quoted_discounted": 0.0405
+    },
+    {
+      "event": "done",
+      "id": "game-art",
+      "model": "openai/gpt-image-2.6-flare/edit",
+      "prediction_id": "16f615d83d814b3cb0da8936dc154a44",
+      "attempt": 1,
+      "balance_before": 30.725399,
+      "balance_after": 30.666899,
+      "cost": 0.0585,
+      "ok": true,
+      "status": "completed",
+      "size": [
+        768,
+        1360
+      ],
+      "out": {
+        "png": "docs/qa/707-pilot/game-art.png",
+        "webp": "docs/qa/707-pilot/game-art.webp",
+        "size": [
+          768,
+          1360
+        ]
+      },
+      "lr": "docs/qa/707-pilot/game-art-lr.png",
+      "error": null,
+      "latency_s": 42.704,
+      "quoted_list": 0.05,
+      "quoted_discounted": 0.045
+    },
+    {
+      "id": "linkedin-banner",
+      "model": "openai/gpt-image-2.6-flare/edit",
+      "ok": false,
+      "status": "submit_failed",
+      "prediction_id": null,
+      "attempt": 2,
+      "balance_before": 30.666899,
+      "balance_after": 30.666899,
+      "cost": 0.0,
+      "error": {
+        "code": 400,
+        "message": "Invalid request body: field \"aspect_ratio\" must be one of [\"1:1\", \"1:2\", \"2:1\", \"1:3\", \"3:1\", \"2:3\", \"3:2\", \"3:4\", ... 7 more], got string \"4:1\"; please use one of the allowed values"
+      },
+      "size": null
+    }
+  ],
+  "ts": "2026-11-10 22:38:07 +0800 (Asia/Shanghai)"
+}
