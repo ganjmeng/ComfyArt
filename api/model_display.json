@@ -128,6 +128,12 @@
    "Highly artistic, stylized images"
   ],
   [
+   "krea-v2/turbo",
+   "Krea 2 Turbo",
+   "8 步快速出图，擅长艺术风格和创意表现",
+   "Fast 8-step generation, great for expressive, artistic styles"
+  ],
+  [
    "ideogram-v4.5",
    "Ideogram",
    "擅长排版和文字设计",
@@ -397,6 +403,7 @@
    "Qwen-Image 3.0",
    "Qwen-Image 3.0 Pro",
    "Midjourney",
+   "Krea 2 Turbo",
    "Ideogram 4",
    "Ideogram",
    "Ideogram P-Image",

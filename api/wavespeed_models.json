@@ -27,6 +27,10 @@
      "local": "Z-Image Turbo"
     },
     {
+     "id": "wavespeed-ai/krea-v2/turbo",
+     "local": "Krea 2 Turbo"
+    },
+    {
      "id": "wavespeed-ai/flux-2-klein-9b/text-to-image",
      "local": "Flux.2 Klein 9B"
     },

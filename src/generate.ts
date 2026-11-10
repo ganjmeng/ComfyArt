@@ -219,7 +219,8 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
   }
   if (model && (model.cloud || isCloudModel(model.id))) {
     const base = baseOf(shape)
-    const images = [...(base ? [base.src] : []), ...refs].map(annotated)
+    // #868: models without refs/control (Krea 2 Turbo) keep leftover chips greyed and stay on t2i
+    const images = [...(base ? [base.src] : []), ...(model.refs || model.control ? refs : [])].map(annotated)
     const { controls, prep } = applyRefs(picked, refStrengthsOf(shape), refControlsOf(shape))
     const seed = seedOf(shape) ?? undefined
     const negative_prompt = negativeFor(shape, model)
@@ -302,7 +303,8 @@ function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
   }
   const askedEdit = featureModelsOf(shape).image_edit
   const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
-  return refs.length || baseOf(shape) ? { feature: 'image_edit', model: editModel, width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: imageParams(shape, model, null) }
+  const useRefs = !!(model.refs || model.control)
+  return (useRefs && refs.length) || baseOf(shape) ? { feature: 'image_edit', model: editModel, width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: imageParams(shape, model, null) }
 }
 
 function imageParams(shape: GeneratorShape, model: { qualities?: string[]; complexities?: string[] } | null | undefined, gif: GifSpec | null, svg: SvgSpec | null = null): Record<string, unknown> | undefined {
