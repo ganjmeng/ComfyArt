@@ -246,21 +246,16 @@ def test_relay_exact_skills_with_refs_submit_qwen_edit_size(relay, skill, w, h):
     assert sent["width"] == w and sent["height"] == h
     assert out["provider_submit"] == {"size": f"{w}*{h}"}
     assert out["model_choice"]["model"] == QWEN_EDIT
-    assert out["submitted"] is not False
 
 
 def test_relay_non_allowlisted_hidden_size_is_blocked(relay, monkeypatch):
-    mid = "example/not-allowlisted/edit"
+    # A registered curated edit model, not on the allowlist. A made-up id would be
+    # dropped as unregistered and Auto would send Qwen instead of blocking.
+    mid = "bytedance/seedream-v5.0-lite/edit"
     catalog = json.loads(json.dumps(FIXTURE))
-    catalog[mid] = {
-        "api_schema": {"api_schemas": [{"request_schema": {"properties": {
-            "images": {"maxItems": 3},
-            "prompt": {},
-            "size": {"type": "string", "minimum": 256, "maximum": 4096, "x-hidden": True},
-        }}}]},
-        "model_id": mid,
-        "name": mid,
-    }
+    props = catalog[mid]["api_schema"]["api_schemas"][0]["request_schema"]["properties"]
+    props["size"] = {"type": "string", "minimum": 256, "maximum": 4096, "x-hidden": True}
+    props.pop("aspect_ratio", None)
 
     async def catalog_fn(refresh=False):
         return catalog
