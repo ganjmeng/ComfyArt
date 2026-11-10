@@ -270,6 +270,9 @@ def test_ac1_ac2_frontend_copy_and_cards():
     # frontend never calls a third-party /models URL
     assert "llm.wavespeed.ai/models" not in settings_src
     assert "api.deepseek.com" in (ROOT / "src/ui/llmProviders.ts").read_text()
+    # AC / product: list-fail reason and "couldn't fetch list" must not run together on one line
+    assert "${failCopyOf(code, r.status)}\\n${t('botSettings.fetchModelsFailed')}" in settings_src
+    assert "white-space: pre-line" in (ROOT / "src/styles/shell.css").read_text()
 
 
 def test_frontend_providers_and_model_cap():
