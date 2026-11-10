@@ -8,7 +8,7 @@ Branch: `docs/707-prompt-prep`, based on main `2e1ad04c9978dca315e2b5a04980f479f
 
 Raw GitHub URLs below are pinned to this tip's full SHA:
 
-`TIP_SHA`
+`a888711ea7e346263b510f035f69bc82b0eb1013`
 
 ---
 
@@ -89,14 +89,14 @@ The 643 pose-fission examples already have the #670 new face (dark-brown bob wit
 
 **Gold base:** `docs/design/640/78/gold/before-after/cover.webp` (1600×1200, 4:3 plate; the cream card is 683×910 at x=459, y=145, about 3:4).
 
-- Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/docs/design/640/78/gold/before-after/cover.webp`
+- Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/docs/design/640/78/gold/before-after/cover.webp`
 
 **Mask** (feathered, $0, committed; white = composite in):
 
 - Faces only: `docs/qa/707-prompt-prep/masks/before-after-cover-faces.png`
-  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/docs/qa/707-prompt-prep/masks/before-after-cover-faces.png`
+  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/docs/qa/707-prompt-prep/masks/before-after-cover-faces.png`
 - Faces + headline + disclaimer (recommended): `docs/qa/707-prompt-prep/masks/before-after-cover-faces-and-copy.png`
-  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/docs/qa/707-prompt-prep/masks/before-after-cover-faces-and-copy.png`
+  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/docs/qa/707-prompt-prep/masks/before-after-cover-faces-and-copy.png`
 - Overlay: `docs/qa/707-prompt-prep/previews/before-after-cover-mask-overlay.jpg`
 
 `BEFORE` / `AFTER` labels, the cream card, the 2px gutter, and the dark plate stay mask = 0 (gold pixels).
@@ -139,18 +139,18 @@ No brand name on this gold. The same new woman is used on both panels. Do not re
 **Gold / base:**
 
 - Typifying single-frame gold family: `docs/design/640/78/gold/pose-fission/cover.webp` (1600×1200 collage; output is **not** a collage).
-  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/docs/design/640/78/gold/pose-fission/cover.webp`
+  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/docs/design/640/78/gold/pose-fission/cover.webp`
 - Paid-run `baseImage` (already the #670 washed face, same camel belted blazer, black shorts, gold sandals, hard street sun): `643/wash/pose-fission/examples/01.webp` (1529×2048, 3:4).
-  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/643/wash/pose-fission/examples/01.webp`
+  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/643/wash/pose-fission/examples/01.webp`
 
 **Mask:** none on the pose-changing calls (full-frame Seedream edit; the skill must change pose). Optional face+scene masks, rebuilt $0 from the #670 coords with a tighter ex04 wall box so the left sleeve stays gold:
 
 | File | Raw | Notes |
 | --- | --- | --- |
-| `docs/qa/707-prompt-prep/masks/pose-fission-ex01-face-scene.png` | `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/docs/qa/707-prompt-prep/masks/pose-fission-ex01-face-scene.png` | face ellipse + collar ramp + grate box; ~8.8% |
-| `docs/qa/707-prompt-prep/masks/pose-fission-ex02-face-scene.png` | `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/docs/qa/707-prompt-prep/masks/pose-fission-ex02-face-scene.png` | ~7.3% |
-| `docs/qa/707-prompt-prep/masks/pose-fission-ex03-face-scene.png` | `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/docs/qa/707-prompt-prep/masks/pose-fission-ex03-face-scene.png` | ~4.6% |
-| `docs/qa/707-prompt-prep/masks/pose-fission-ex04-face-scene.png` | `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/docs/qa/707-prompt-prep/masks/pose-fission-ex04-face-scene.png` | face + upper-left wall/window only. The #670 `scene_rect [0,0,500,1450]` painted the left sleeve and was **not** reused. |
+| `docs/qa/707-prompt-prep/masks/pose-fission-ex01-face-scene.png` | `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/docs/qa/707-prompt-prep/masks/pose-fission-ex01-face-scene.png` | face ellipse + collar ramp + grate box; ~8.8% |
+| `docs/qa/707-prompt-prep/masks/pose-fission-ex02-face-scene.png` | `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/docs/qa/707-prompt-prep/masks/pose-fission-ex02-face-scene.png` | ~7.3% |
+| `docs/qa/707-prompt-prep/masks/pose-fission-ex03-face-scene.png` | `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/docs/qa/707-prompt-prep/masks/pose-fission-ex03-face-scene.png` | ~4.6% |
+| `docs/qa/707-prompt-prep/masks/pose-fission-ex04-face-scene.png` | `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/docs/qa/707-prompt-prep/masks/pose-fission-ex04-face-scene.png` | face + upper-left wall/window only. The #670 `scene_rect [0,0,500,1450]` painted the left sleeve and was **not** reused. |
 
 Overlays are under `docs/qa/707-prompt-prep/previews/`. Parameters are in `masks.json`.
 
@@ -185,7 +185,7 @@ Plan lines (four different cameras, at most one frontal, subject on a third):
 
 **Gold base / layout ref:** `643/wash/game-art/examples/01.webp` (1536×2736, 9:16, 奔秋围棋 list). **Do not** use `docs/design/640/78/gold/game-art/cover.webp` or `643/wash/game-art/cover.webp` (anime posters; rejected as the typifying gold for #707).
 
-- Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/643/wash/game-art/examples/01.webp`
+- Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/643/wash/game-art/examples/01.webp`
 
 The pre-wash dialog gold used the brand 云山棋梦. The 643 wash locked 奔秋围棋 across the twenty examples. This paid run invents a **third** consistent brand, `听潮弈社`, same four-character length, same ink-wash / maple-and-indigo family.
 
@@ -231,9 +231,9 @@ Same brand `听潮弈社` on this still and on any later example in the slot.
 **Gold base / family:**
 
 - Cover (page mockup, typifying family): `docs/design/640/78/gold/linkedin-banner/cover.webp` (1440×1080). Headline lives in the right two thirds; a grey avatar sits in the left quarter.
-  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/docs/design/640/78/gold/linkedin-banner/cover.webp`
+  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/docs/design/640/78/gold/linkedin-banner/cover.webp`
 - Size / safe-area proof: `704-lr/linkedin-banner/fixed-input-v1/RIGHT.png` (1584×396). Visual family is different (Product Designer / mint cubes). Used for pixels and safe area, not as copy to clone.
-  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/TIP_SHA/704-lr/linkedin-banner/fixed-input-v1/RIGHT.png`
+  - Raw: `https://raw.githubusercontent.com/ganjmeng/ComfyArt/a888711ea7e346263b510f035f69bc82b0eb1013/704-lr/linkedin-banner/fixed-input-v1/RIGHT.png`
 
 **Mask:** none. Text-to-image at banner size. No local type overlay.
 
