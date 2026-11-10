@@ -182,14 +182,15 @@ button.ca-head__logo:hover, button.ca-head__logo[data-open] { background: var(--
 .ca-chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border-radius: 8px; background: var(--ca-field); font-size: 13px; color: var(--ca-text); }
 .ca-chip .ca-icon { width: 16px; height: 16px; }
 .ca-chip button { display: inline-flex; width: 16px; height: 16px; padding: 0; border: none; background: none; color: var(--ca-muted); cursor: pointer; }
-.ca-chip--skill { max-width: 160px; background: var(--ca-float); border: 1px solid var(--ca-rail); }
+.ca-chip--skill { max-width: 160px; box-sizing: border-box; background: var(--ca-float); border: 1px solid var(--ca-rail); }
 .ca-chip--skill .ca-icon { flex: none; }
 /* #462: chip + text on one row; the chip gives way first (truncates with …), the text wraps only when even it cannot fit */
 .ca-chat__bubble--skill { display: flex; align-items: center; gap: 6px; }
+/* #710: wrap only on bubbles that have reference image-N chips; skill-only stays on the #462 single row */
 .ca-chat__bubble--refs { flex-wrap: wrap; }
 .ca-chip--ref { background: var(--ca-float); border: 1px solid var(--ca-rail); font: 500 12px/16px var(--ca-font); }
-.ca-chat__bubble--skill > .ca-chip--skill { flex: 0 999 auto; min-width: 48px; overflow: hidden; white-space: nowrap; }
-.ca-chat__bubble--skill > .ca-chat__text { flex: 0 0 auto; min-width: 0; max-width: calc(100% - 54px); } /* never shrinks while the chip can; caps at bubble − chip min − gap, then wraps */
+.ca-chat__bubble--skill > .ca-chip--skill { flex: 0 999 auto; min-width: 66px; overflow: hidden; white-space: nowrap; } /* 66 = #462's 48px content min + 16 padding + 2 border, now border-box */
+.ca-chat__bubble--skill > .ca-chat__text { flex: 0 0 auto; min-width: 0; max-width: calc(100% - 72px); } /* never shrinks while the chip can; caps at bubble − chip min − gap, then wraps */
 .ca-chip__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* #491 design: the Skill Creator chip never shrinks — full label, no ellipsis; the bubble text wraps instead.
    Keyed on the chip's title (= label from composer.skillCreator, zh/en), so no component change is needed and the

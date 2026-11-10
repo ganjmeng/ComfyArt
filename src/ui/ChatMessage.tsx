@@ -1368,7 +1368,7 @@ export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMes
       {m.blocks.filter((b) => b.type === 'file').map((b) => <a key={b.url} className="ca-chip" href={b.url} target="_blank" rel="noreferrer"><span className="ca-icon">{Icons.page}</span>{b.name}</a>)}
       {/* #462 skill chip stays; #710 reference images are image-N chips, not a thumbnail wall */}
       {(text || bubble) && (
-        <div className={bubble ? 'ca-chat__bubble ca-chat__bubble--skill ca-chat__bubble--refs' : 'ca-chat__bubble'} data-testid="user-bubble">
+        <div className={bubble ? `ca-chat__bubble ca-chat__bubble--skill${images.length > 0 ? ' ca-chat__bubble--refs' : ''}` : 'ca-chat__bubble'} data-testid="user-bubble">
           {skills.map((b) => <SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" />)}
           {images.map((b, i) => <span key={b.url ?? i} className="ca-chip ca-chip--ref" data-testid="user-ref-chip">{`image-${i + 1}`}</span>)}
           {bubble ? <span className="ca-chat__text" data-testid="user-bubble-text">{text}</span> : text}
