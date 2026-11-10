@@ -168,6 +168,7 @@ def test_resolve_model_choice_auto_and_manual(catalog):
 
 SEEDREAM = "bytedance/seedream-v5.0-pro"
 SEEDREAM_EDIT = "bytedance/seedream-v5.0-pro/edit"
+NANO_EDIT = "google/nano-banana-2.1/edit"
 
 
 def test_realistic_person_auto_label_and_hover_reason(catalog):
@@ -241,3 +242,243 @@ def test_anime_illustration_poster_and_masked_rows_unchanged(catalog):
     assert auto_models.registered_runtime_fallback(
         "image_edit", masked_choice, {masked["model"], masked["fallback"]}
     ) == masked["fallback"]
+
+
+KEEP_IDENTITY_REASON = {
+    "zh": "这是要保持人物一致的局部修改",
+    "en": "this is a local edit that must keep the person consistent",
+}
+KEEP_PRODUCT_REASON = {
+    "zh": "这是要保持商品一致的局部修改",
+    "en": "this is a local edit that must keep the product consistent",
+}
+KEEP_IDENTITY_TIP = {"zh": "保留同一人物", "en": "keep the same person"}
+KEEP_PRODUCT_TIP = {"zh": "保留商品不变", "en": "keep the product unchanged"}
+KEEP_GENERIC_TIP = {"zh": "保持原图一致", "en": "keep the original consistent"}
+KEEP_GENERIC_REASON = {
+    "zh": "这是要保持原图一致的局部修改",
+    "en": "this is a local edit that must keep the original consistent",
+}
+KEEP_FACE_PROMPTS = [
+    "保留同一个人，换衣服",
+    "保留同一个人，只把衣服换成深色西装、背景换成办公室",
+    "保留脸，换背景",
+    "keep the face, new background",
+    "keep the same face",
+    "new background, keep the same person",
+    "same person, only change the clothes",
+]
+KEEP_PRODUCT_PROMPTS = [
+    "保留产品，只换背景",
+    "产品不变，只改背景",
+    "preserve the product, recolor the backdrop",
+    "keep the product, only change the background",
+]
+
+
+def test_keep_identity_keep_face_prompt_routes_to_seedream_edit(catalog):
+    """#825: identity-lock / keep-the-face edits now Auto-pick Seedream 5.0 Pro edit."""
+    for prompt in KEEP_FACE_PROMPTS:
+        choice = auto_models.choose("image_edit", prompt, None, catalog)
+        assert choice["auto"] is True, prompt
+        assert choice["category"] == "keep_identity", prompt
+        assert choice["model"] == SEEDREAM_EDIT, prompt
+        assert choice["reason"] == KEEP_IDENTITY_TIP, prompt
+        assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保留同一人物"
+        assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the same person"
+        assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
+
+
+
+def test_keep_product_prompt_routes_to_banana_edit(catalog):
+    """#825: product / background-only keep phrases stay on Banana 2.1 with the 保留商品不变 tip."""
+    for prompt in KEEP_PRODUCT_PROMPTS:
+        choice = auto_models.choose("image_edit", prompt, None, catalog)
+        assert choice["auto"] is True, prompt
+        assert choice["category"] == "keep_product", prompt
+        assert choice["model"] == NANO_EDIT, prompt
+        assert choice["reason"] == KEEP_PRODUCT_TIP, prompt
+        assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保留商品不变"
+        assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the product unchanged"
+        assert auto_models.pill_label(choice) == "Auto · Nano Banana 2.1"
+
+
+def test_keep_identity_wins_when_prompt_has_person_and_product_words(catalog):
+    """First-match: keep_identity is above keep_product, so person/face words win over product words."""
+    prompt = "只换背景，人脸不要动"
+    choice = auto_models.choose("image_edit", prompt, None, catalog)
+    assert choice["category"] == "keep_identity"
+    assert choice["model"] == SEEDREAM_EDIT
+    assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
+    assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保留同一人物"
+    assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the same person"
+
+    # "keep the same face" must not fall through to keep_generic's "keep the same" prefix.
+    choice = auto_models.choose("image_edit", "keep the same face", None, catalog)
+    assert choice["category"] == "keep_identity"
+    assert choice["model"] == SEEDREAM_EDIT
+    assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保留同一人物"
+
+    # Generic keep + person/face words: keep_identity still wins over keep_generic.
+    choice = auto_models.choose("image_edit", "保持一致，人脸不要动", None, catalog)
+    assert choice["category"] == "keep_identity"
+    assert choice["model"] == SEEDREAM_EDIT
+    assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
+    assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保留同一人物"
+    assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the same person"
+
+
+KEEP_GENERIC_PROMPTS = [
+    "keep the same bottle, change the background",
+    "保持原样，把香水瓶放到海边",
+    "保持一致",
+    "背景改成海边，其他保持不变",
+    "保持一致，只换背景",
+    "商品保持原样，只换背景",
+]
+
+
+def test_keep_generic_prompts_route_to_banana(catalog):
+    """#825: generic keep phrases stay on Banana 2.1 with the 保持原图一致 tip."""
+    for prompt in KEEP_GENERIC_PROMPTS:
+        choice = auto_models.choose("image_edit", prompt, None, catalog)
+        assert choice["auto"] is True, prompt
+        assert choice["category"] == "keep_generic", prompt
+        assert choice["model"] == NANO_EDIT, prompt
+        assert choice["reason"] == KEEP_GENERIC_TIP, prompt
+        assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保持原图一致", prompt
+        assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the original consistent", prompt
+        assert auto_models.pill_label(choice) == "Auto · Nano Banana 2.1", prompt
+
+
+def test_keep_consistent_and_only_change_background_is_keep_generic(catalog):
+    """只换背景 now lives on keep_generic, so 「保持一致，只换背景」 stays Banana with the generic tip."""
+    choice = auto_models.choose("image_edit", "保持一致，只换背景", None, catalog)
+    assert choice["category"] == "keep_generic"
+    assert choice["model"] == NANO_EDIT
+    assert auto_models.pill_label(choice) == "Auto · Nano Banana 2.1"
+    assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保持原图一致"
+    assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the original consistent"
+
+
+def test_keep_row_hover_tips(catalog):
+    """Hover tips for all three keep_* rows."""
+    ident = auto_models.choose("image_edit", "保留同一个人，换衣服", None, catalog)
+    assert ident["category"] == "keep_identity"
+    assert auto_models.pill_tooltip(ident, "zh") == "自动选择：保留同一人物"
+    assert auto_models.pill_tooltip(ident, "en") == "Auto-picked: keep the same person"
+
+    product = auto_models.choose("image_edit", "保留产品，只换背景", None, catalog)
+    assert product["category"] == "keep_product"
+    assert auto_models.pill_tooltip(product, "zh") == "自动选择：保留商品不变"
+    assert auto_models.pill_tooltip(product, "en") == "Auto-picked: keep the product unchanged"
+
+    generic = auto_models.choose("image_edit", "保持一致", None, catalog)
+    assert generic["category"] == "keep_generic"
+    assert auto_models.pill_tooltip(generic, "zh") == "自动选择：保持原图一致"
+    assert auto_models.pill_tooltip(generic, "en") == "Auto-picked: keep the original consistent"
+
+
+def test_keep_identity_move_leaves_other_auto_rows_unchanged(catalog):
+    """Frozen check: keep_identity (Seedream), then keep_product and keep_generic (Banana)."""
+    table = auto_models.load_table()
+    ie_cats = table["image_edit"]["categories"]
+    assert [c["id"] for c in ie_cats] == [
+        "keep_identity", "keep_product", "keep_generic", "photo_retouch", "person",
+    ]
+
+    keep = ie_cats[0]
+    assert keep["id"] == "keep_identity"
+    assert keep["model"] == SEEDREAM_EDIT
+    assert keep["zh"] == KEEP_IDENTITY_REASON["zh"] and keep["en"] == KEEP_IDENTITY_REASON["en"]
+    assert keep["tip"] == KEEP_IDENTITY_TIP
+    assert keep.get("fallback") in (None, "", [])
+    keywords = keep["keywords"]
+    for token in (
+        "保留同一个人", "保留脸", "同一个人", "same person", "same face",
+        "keep the face", "keep the same face", "keep the same person",
+    ):
+        # 「保留同一个人」 is a substring hit on 同一个人; the others are listed verbatim.
+        if token == "保留同一个人":
+            assert "同一个人" in keywords
+        else:
+            assert token in keywords, token
+    product_keywords = [
+        "keep the product", "don't change the product", "same product", "preserve the product",
+        "保持产品", "产品不变", "保留产品",
+    ]
+    generic_keywords = [
+        "keep the same", "保持一致", "保持原样", "保持原貌", "保持不变",
+        "只换背景", "只改背景",
+    ]
+    for token in product_keywords + generic_keywords:
+        assert token not in keywords, token
+    assert len(keywords) == 30
+
+    product = ie_cats[1]
+    assert product["id"] == "keep_product"
+    assert product["model"] == NANO_EDIT
+    assert product["zh"] == KEEP_PRODUCT_REASON["zh"] and product["en"] == KEEP_PRODUCT_REASON["en"]
+    assert product["tip"] == KEEP_PRODUCT_TIP
+    assert product.get("fallback") in (None, "", [])
+    assert product["keywords"] == product_keywords
+
+    generic = ie_cats[2]
+    assert generic["id"] == "keep_generic"
+    assert generic["model"] == NANO_EDIT
+    assert generic["zh"] == KEEP_GENERIC_REASON["zh"] and generic["en"] == KEEP_GENERIC_REASON["en"]
+    assert generic["tip"] == KEEP_GENERIC_TIP
+    assert generic.get("fallback") in (None, "", [])
+    assert generic["keywords"] == generic_keywords
+
+    # person t2i / person edit (Seedream) — model + short tip unchanged
+    person = next(c for c in table["text_to_image"]["categories"] if c["id"] == "person")
+    assert person["model"] == SEEDREAM
+    assert person["tip"] == {"zh": "写实人物", "en": "realistic person"}
+    person_edit = next(c for c in ie_cats if c["id"] == "person")
+    assert person_edit["model"] == SEEDREAM_EDIT
+    assert person_edit["tip"] == {"zh": "写实人物", "en": "realistic person"}
+
+    # product photoreal (产品摄影)
+    photoreal = next(c for c in table["text_to_image"]["categories"] if c["id"] == "photoreal")
+    assert photoreal["model"] == SEEDREAM
+    assert photoreal["tip"] == {"zh": "产品摄影", "en": "product photography"}
+
+    # poster (Flare, no registered fallback — as on #882)
+    poster = next(c for c in table["text_to_image"]["categories"] if c["id"] == "poster_text")
+    assert poster["model"] == "openai/gpt-image-2.6-flare/text-to-image"
+    assert poster.get("fallback") in (None, "", [])
+    assert poster["tip"] == {"zh": "海报/带字", "en": "poster / text"}
+
+    # anime / illustration (Midjourney)
+    anime = next(c for c in table["text_to_image"]["categories"] if c["id"] == "anime_art")
+    assert anime["model"] == "midjourney/text-to-image"
+    assert "illustration" in anime["keywords"] and "插画" in anime["keywords"]
+
+    # logo
+    logo = next(c for c in table["text_to_image"]["categories"] if c["id"] == "logo")
+    assert logo["model"] == "recraft-ai/recraft-v3"
+
+    # masked edit (Sunburst → Flare)
+    masked = table["image_edit"]["masked"]
+    assert masked["model"] == "openai/gpt-image-2.6-sunburst/edit"
+    assert masked["fallback"] == "openai/gpt-image-2.6-flare/edit"
+    assert masked["tip"] == {"zh": "选区编辑", "en": "selection edit"}
+
+    # photo_retouch stays Seedream edit
+    retouch = next(c for c in ie_cats if c["id"] == "photo_retouch")
+    assert retouch["model"] == SEEDREAM_EDIT
+
+    # multi-reference stays Banana 2.1 edit
+    assert table["image_edit"]["multi_reference"]["model"] == "google/nano-banana-2.1/edit"
+
+    # Live matcher: other rows still route the same way
+    assert auto_models.choose("text_to_image", "一张写实人像，自然光", None, catalog)["category"] == "person"
+    assert auto_models.choose("image_edit", "编辑这张写实人像，让她微笑", None, catalog)["category"] == "person"
+    assert auto_models.choose("text_to_image", "电商主图，白底，香水瓶", None, catalog)["category"] == "photoreal"
+    assert auto_models.choose("text_to_image", 'Movie poster with the headline "SUMMER"', None, catalog)["category"] == "poster_text"
+    assert auto_models.choose("text_to_image", "Anime girl under cherry blossoms", None, catalog)["category"] == "anime_art"
+    assert auto_models.choose("text_to_image", "Minimal logo for a tea brand", None, catalog)["category"] == "logo"
+    assert auto_models.choose("image_edit", "retouch the portrait, natural skin", None, catalog)["category"] == "photo_retouch"
+    masked_choice = auto_models.choose("image_edit", "edit the selected area", None, catalog, masked=True)
+    assert masked_choice["category"] == "masked" and masked_choice["model"] == masked["model"]
