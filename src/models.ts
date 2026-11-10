@@ -105,7 +105,8 @@ async function useCloudImageModels() {
       // reference-style row (#95 design): display name + one-line description; the raw id only in the tooltip
       id: m.id, label: m.name || m.label, price: m.price, vendor: m.vendor, recommended: m.recommended, qualities: m.qualities, complexities: m.complexities, outputFormats: m.output_formats, ratios: m.aspect_ratios, durations: m.durations, resolutions: m.resolutions, maxImages: m.max_images, defaults: m.defaults, inputs: m.inputs, desc: m.blurb?.[lang] ?? '', about: m.desc || undefined, files: [], cloud: true, lora: null,
       // control: structure refs run on WaveSpeed control models (#80), so the ControlNet knobs show like upstream
-      ...(video ? { video: true } : { refs: 'qwen' as const, control: 'wavespeed' }),
+      // #868: Krea 2 Turbo has no refs (upstream none). Optional cloud `image` is I2I only, not a picker ref.
+      ...(video ? { video: true } : (m.id === 'wavespeed-ai/krea-v2/turbo' ? {} : { refs: 'qwen' as const, control: 'wavespeed' })),
     }))
   }
   for (const f of [...IMAGE_FEATURES, ...VIDEO_FEATURES]) {

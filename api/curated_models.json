@@ -21,6 +21,7 @@
       "wavespeed-ai/flux-2-max/text-to-image",
       "alibaba/qwen-image-3.0-pro/text-to-image",
       "midjourney/text-to-image",
+        "wavespeed-ai/krea-v2/turbo",
       "ideogram-ai/ideogram-v4",
       "ideogram-ai/ideogram-v4.5",
       "pruna-ai/p-image/ideogram",
