@@ -248,6 +248,8 @@ KEEP_IDENTITY_REASON = {
     "zh": "这是要保持人物或产品一致的局部修改",
     "en": "this is a local edit that must keep the person or product consistent",
 }
+KEEP_IDENTITY_TIP = {"zh": "保留同一人物", "en": "keep the same person"}
+KEEP_PRODUCT_TIP = {"zh": "保留商品不变", "en": "keep the product unchanged"}
 KEEP_FACE_PROMPTS = [
     "保留同一个人，换衣服",
     "保留同一个人，只把衣服换成深色西装、背景换成办公室",
@@ -271,11 +273,9 @@ def test_keep_identity_keep_face_prompt_routes_to_seedream_edit(catalog):
         assert choice["auto"] is True, prompt
         assert choice["category"] == "keep_identity", prompt
         assert choice["model"] == SEEDREAM_EDIT, prompt
-        assert choice["reason"] == KEEP_IDENTITY_REASON, prompt
-        assert auto_models.pill_tooltip(choice, "zh") == "自动选择：这是要保持人物或产品一致的局部修改"
-        assert auto_models.pill_tooltip(choice, "en") == (
-            "Auto-picked: this is a local edit that must keep the person or product consistent"
-        )
+        assert choice["reason"] == KEEP_IDENTITY_TIP, prompt
+        assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保留同一人物"
+        assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the same person"
         assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
 
 
@@ -287,11 +287,9 @@ def test_keep_product_prompt_routes_to_banana_edit(catalog):
         assert choice["auto"] is True, prompt
         assert choice["category"] == "keep_product", prompt
         assert choice["model"] == NANO_EDIT, prompt
-        assert choice["reason"] == KEEP_IDENTITY_REASON, prompt
-        assert auto_models.pill_tooltip(choice, "zh") == "自动选择：这是要保持人物或产品一致的局部修改"
-        assert auto_models.pill_tooltip(choice, "en") == (
-            "Auto-picked: this is a local edit that must keep the person or product consistent"
-        )
+        assert choice["reason"] == KEEP_PRODUCT_TIP, prompt
+        assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保留商品不变"
+        assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the product unchanged"
         assert auto_models.pill_label(choice) == "Auto · Nano Banana 2.1"
 
 
@@ -302,11 +300,12 @@ def test_keep_identity_wins_when_prompt_has_person_and_product_words(catalog):
     assert choice["category"] == "keep_identity"
     assert choice["model"] == SEEDREAM_EDIT
     assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
-    assert auto_models.pill_tooltip(choice, "zh") == "自动选择：这是要保持人物或产品一致的局部修改"
+    assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保留同一人物"
+    assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the same person"
 
 
 def test_keep_identity_move_leaves_other_auto_rows_unchanged(catalog):
-    """Frozen check: keep_identity (Seedream) then keep_product (Banana). Hover wording stays."""
+    """Frozen check: keep_identity (Seedream) then keep_product (Banana). Short tips are locked."""
     table = auto_models.load_table()
     ie_cats = table["image_edit"]["categories"]
     assert [c["id"] for c in ie_cats] == ["keep_identity", "keep_product", "photo_retouch", "person"]
@@ -315,7 +314,7 @@ def test_keep_identity_move_leaves_other_auto_rows_unchanged(catalog):
     assert keep["id"] == "keep_identity"
     assert keep["model"] == SEEDREAM_EDIT
     assert keep["zh"] == KEEP_IDENTITY_REASON["zh"] and keep["en"] == KEEP_IDENTITY_REASON["en"]
-    assert keep.get("tip") in (None, {}, "")
+    assert keep["tip"] == KEEP_IDENTITY_TIP
     assert keep.get("fallback") in (None, "", [])
     keywords = keep["keywords"]
     for token in ("保留同一个人", "保留脸", "同一个人", "same person", "keep the face", "keep the same"):
@@ -336,7 +335,7 @@ def test_keep_identity_move_leaves_other_auto_rows_unchanged(catalog):
     assert product["id"] == "keep_product"
     assert product["model"] == NANO_EDIT
     assert product["zh"] == KEEP_IDENTITY_REASON["zh"] and product["en"] == KEEP_IDENTITY_REASON["en"]
-    assert product.get("tip") in (None, {}, "")
+    assert product["tip"] == KEEP_PRODUCT_TIP
     assert product.get("fallback") in (None, "", [])
     assert product["keywords"] == product_keywords
 

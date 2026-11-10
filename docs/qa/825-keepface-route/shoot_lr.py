@@ -17,10 +17,9 @@ FONT = ImageFont.truetype("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.tt
 FONT_B = ImageFont.truetype("/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc", 22)
 VP = {"width": 440, "height": 520}
 HOVER_VP = {"width": 480, "height": 560}
-KEEP_HOVER = "自动选择：这是要保持人物或产品一致的局部修改"
 
 
-def _shot(browser, base, name, case, expected, *, hover=False, vp=None):
+def _shot(browser, base, name, case, expected, *, hover=False, vp=None, expected_tip=None):
     page = browser.new_page(viewport=vp or VP, device_scale_factor=2)
     page.route("**/*", lambda r: r.continue_() if r.request.url.startswith(base) else r.abort())
     page.goto(f"{base}/index.html?case={case}&lang=zh&theme=light")
@@ -31,7 +30,7 @@ def _shot(browser, base, name, case, expected, *, hover=False, vp=None):
         page.evaluate(
             """() => {
               const root = document.querySelector('.ca-root');
-              if (root) root.style.paddingTop = '88px';
+              if (root) root.style.paddingTop = '40px';
               // Hide the harness case caption so it doesn't peek out behind the tip.
               const cap = root && root.firstElementChild;
               if (cap && cap.style && cap.textContent.includes('·')) cap.style.visibility = 'hidden';
@@ -48,7 +47,8 @@ def _shot(browser, base, name, case, expected, *, hover=False, vp=None):
         tip = page.locator(".ca-tip")
         assert tip.count() == 1, f"{case}: expected 1 .ca-tip, got {tip.count()}"
         tip_text = tip.inner_text().strip()
-        assert tip_text == KEEP_HOVER, f"{case}: tip {tip_text!r}"
+        assert expected_tip, f"{case}: hover shot needs expected_tip"
+        assert tip_text == expected_tip, f"{case}: tip {tip_text!r}"
         geom = tip.evaluate(
             "e => ({ sw: e.scrollWidth, cw: e.clientWidth, sh: e.scrollHeight, ch: e.clientHeight })"
         )
@@ -108,10 +108,12 @@ def main() -> None:
         ident = _shot(
             browser, base, "02-hover-keep-identity", "keepface",
             "Auto · Seedream 5.0 Pro", hover=True, vp=HOVER_VP,
+            expected_tip="自动选择：保留同一人物",
         )
         product = _shot(
             browser, base, "03-hover-keep-product", "keepproduct",
             "Auto · Nano Banana 2.1", hover=True, vp=HOVER_VP,
+            expected_tip="自动选择：保留商品不变",
         )
         browser.close()
     srv.shutdown()

@@ -221,7 +221,7 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
         use('g1', 'mcp__comfyart__edit_image', { prompt: '保留同一个人，只把衣服换成深色西装、背景换成办公室' }),
         res('g1', 'mcp__comfyart__edit_image', choice({
           model: seedreamEdit, auto: true, category: 'keep_identity',
-          reason: { zh: '这是要保持人物或产品一致的局部修改', en: 'this is a local edit that must keep the person or product consistent' },
+          reason: { zh: '保留同一人物', en: 'keep the same person' },
         })),
         { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
       ],
@@ -236,7 +236,7 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
         use('g1', 'mcp__comfyart__edit_image', { prompt: '保留产品，只换背景' }),
         res('g1', 'mcp__comfyart__edit_image', choice({
           model: bananaEdit, auto: true, category: 'keep_product',
-          reason: { zh: '这是要保持人物或产品一致的局部修改', en: 'this is a local edit that must keep the person or product consistent' },
+          reason: { zh: '保留商品不变', en: 'keep the product unchanged' },
         })),
         { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
       ],
