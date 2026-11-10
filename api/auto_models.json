@@ -272,8 +272,8 @@
     {
      "id": "keep_identity",
      "model": "bytedance/seedream-v5.0-pro/edit",
-     "zh": "这是要保持人物或产品一致的局部修改",
-     "en": "this is a local edit that must keep the person or product consistent",
+     "zh": "这是要保持人物一致的局部修改",
+     "en": "this is a local edit that must keep the person consistent",
      "tip": {
       "zh": "保留同一人物",
       "en": "keep the same person"
@@ -314,8 +314,8 @@
     {
      "id": "keep_product",
      "model": "google/nano-banana-2.1/edit",
-     "zh": "这是要保持人物或产品一致的局部修改",
-     "en": "this is a local edit that must keep the person or product consistent",
+     "zh": "这是要保持商品一致的局部修改",
+     "en": "this is a local edit that must keep the product consistent",
      "tip": {
       "zh": "保留商品不变",
       "en": "keep the product unchanged"

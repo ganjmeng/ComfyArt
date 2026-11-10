@@ -245,8 +245,12 @@ def test_anime_illustration_poster_and_masked_rows_unchanged(catalog):
 
 
 KEEP_IDENTITY_REASON = {
-    "zh": "这是要保持人物或产品一致的局部修改",
-    "en": "this is a local edit that must keep the person or product consistent",
+    "zh": "这是要保持人物一致的局部修改",
+    "en": "this is a local edit that must keep the person consistent",
+}
+KEEP_PRODUCT_REASON = {
+    "zh": "这是要保持商品一致的局部修改",
+    "en": "this is a local edit that must keep the product consistent",
 }
 KEEP_IDENTITY_TIP = {"zh": "保留同一人物", "en": "keep the same person"}
 KEEP_PRODUCT_TIP = {"zh": "保留商品不变", "en": "keep the product unchanged"}
@@ -414,7 +418,7 @@ def test_keep_identity_move_leaves_other_auto_rows_unchanged(catalog):
     product = ie_cats[1]
     assert product["id"] == "keep_product"
     assert product["model"] == NANO_EDIT
-    assert product["zh"] == KEEP_IDENTITY_REASON["zh"] and product["en"] == KEEP_IDENTITY_REASON["en"]
+    assert product["zh"] == KEEP_PRODUCT_REASON["zh"] and product["en"] == KEEP_PRODUCT_REASON["en"]
     assert product["tip"] == KEEP_PRODUCT_TIP
     assert product.get("fallback") in (None, "", [])
     assert product["keywords"] == product_keywords
