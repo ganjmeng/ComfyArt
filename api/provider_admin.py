@@ -15,9 +15,11 @@ Do not put tokens in settings.json, this file, logs, or screenshots.
 from __future__ import annotations
 
 import contextvars
+from urllib.parse import urlparse
 import json
 import logging
 import os
+import re
 import time
 
 from aiohttp import web
@@ -214,6 +216,173 @@ def image_revision() -> int:
     return int(load_doc()["image"]["revision"])
 
 
+OFFICIAL_NO_KEY_ERROR = (
+    "DeepSeek 官方未配置 DEEPSEEK_API_KEY，未发送请求 / "
+    "Official DeepSeek has no DEEPSEEK_API_KEY, so nothing was sent."
+)
+
+# Official default catalog / request id and display name live in settings (the defaults module).
+from .settings import OFFICIAL_LLM_DISPLAY_NAME, OFFICIAL_LLM_MODEL
+
+# #877: full user-facing lines (must match botSettings.customLlmFail* in zh.json / en.json).
+_SETTINGS_FAIL = {
+    "zh": {
+        "host": "你设置的模型服务连接失败：连不上该地址，请检查地址是否正确、服务是否已启动",
+        "auth": "你设置的模型服务拒绝了访问：请检查 API Key 是否正确、是否还有效",
+        "timeout": "你设置的模型服务响应超时：服务可能繁忙或网络较慢，请稍后再试",
+    },
+    "en": {
+        "host": "Couldn't connect to your model service. Check that the address is correct and the service is running.",
+        "auth": "Your model service rejected the request. Check that your API key is correct and still valid.",
+        "timeout": "Your model service took too long to respond. It may be busy or the network may be slow, so try again later.",
+    },
+}
+
+
+def _norm_setting(value) -> str:
+    return str(value or "").strip().rstrip("/")
+
+
+def settings_llm_is_custom() -> bool:
+    """True when the saved URL or model differs from SETTINGS_SPEC (used only to infer an empty llm_mode)."""
+    from .settings import llm_values_are_custom
+    return llm_values_are_custom()
+
+
+def llm_settings_host() -> str:
+    from .settings import get_setting
+    return (urlparse(str(get_setting("bot-local-llm-url") or "").strip()).hostname or "")
+
+
+def llm_source() -> str:
+    """How the built-in agent picks an LLM: admin, then llm_mode, else infer from URL/model vs default.
+
+    Never writes back. Empty llm_mode uses the old differ-from-default rule.
+    llm_mode=custom uses the saved URL and model as they are (no extra has-a-custom-value check).
+    """
+    if active_llm() is not None:
+        return "admin"
+    from .settings import get_setting
+    mode = str(get_setting("llm_mode") or "").strip()
+    if mode == "custom":
+        return "settings"
+    if mode == "official":
+        return "default"
+    if settings_llm_is_custom():
+        return "settings"
+    return "default"
+
+
+def settings_llm_incomplete() -> bool:
+    """Custom mode with a blank URL or blank model (default WaveSpeed values are valid)."""
+    if llm_source() != "settings":
+        return False
+    from .settings import get_setting
+    url = str(get_setting("bot-local-llm-url") or "").strip()
+    model = str(get_setting("bot-model-local-llm") or "").strip()
+    return not url or not model
+
+
+CUSTOM_LLM_NOT_SETUP = {
+    "zh": "自定义模型还没配好：请填写模型地址和模型名",
+    "en": "Your custom model isn't set up yet. Fill in the model address and model name.",
+}
+
+
+def _http_status_number(value) -> int | None:
+    try:
+        code = int(value)
+    except (TypeError, ValueError):
+        return None
+    if 400 <= code <= 599:
+        return code
+    return None
+
+
+def _structured_http_status(error=None, status=None) -> int | None:
+    """Prefer a structured status from the provider result or exception, if present."""
+    found = _http_status_number(status)
+    if found is not None:
+        return found
+    if error is None:
+        return None
+    for attr in ("status", "status_code", "http_status"):
+        found = _http_status_number(getattr(error, attr, None))
+        if found is not None:
+            return found
+    return None
+
+
+# Only read a status when it sits next to HTTP / status / status_code (not a bare port like :443).
+_HTTP_STATUS_RE = re.compile(r"(?:http(?:/\d+\.\d+)?|status_code|status)\s*[=:/]?\s*(\d{3})", re.IGNORECASE)
+
+
+def _settings_fail_http_status(error: str | BaseException | None = None, status: int | None = None) -> int | None:
+    """HTTP 4xx/5xx from a structured status, or from text next to HTTP / status / status_code."""
+    found = _structured_http_status(error, status)
+    if found is not None:
+        return found
+    text = _error_text(error)
+    for m in _HTTP_STATUS_RE.finditer(text):
+        found = _http_status_number(m.group(1))
+        if found is not None:
+            return found
+    return None
+
+
+def _error_text(error: str | BaseException | None) -> str:
+    if isinstance(error, BaseException):
+        return (str(error) or type(error).__name__ or "")
+    return error or ""
+
+
+def _settings_fail_reason(error: str | BaseException | None, status: int | None = None) -> str | None:
+    """Map a settings-source connection failure to host / auth / timeout / http. None if it is some other error."""
+    text = _error_text(error).lower()
+    if not text:
+        return None
+    code = _settings_fail_http_status(error, status)
+    if code in (401, 403):
+        return "auth"
+    if code is not None:
+        return "http"
+    if any(k in text for k in ("timeout", "timed out", "超时")):
+        return "timeout"
+    if any(k in text for k in ("401", "403", "unauthorized", "forbidden", "invalid api", "authentication", "鉴权")):
+        return "auth"
+    # Never count "http ", "429" or "5xx" as host-unreachable; those belong to the HTTP-n service line.
+    if any(k in text for k in (
+        "cannot connect", "connecterror", "clientconnector", "connection refused",
+        "name or service not known", "nodename nor servname", "network is unreachable",
+        "unreachable", "ssl", "connection reset", "主机连不上",
+        "server disconnected", "clienterror", "网络中断", "network dropped", "network error",
+    )):
+        return "host"
+    return None
+
+
+def settings_llm_fail_copy(error: str | BaseException | None, lang: str = "", status: int | None = None) -> str | None:
+    """#877: never silently switch; return the failure copy + one reason, or None if this is not a connect fail."""
+    reason = _settings_fail_reason(error, status)
+    if not reason:
+        return None
+    code = _settings_fail_http_status(error, status)
+    if reason == "http" and code is not None:
+        zh_line = f"你设置的模型服务返回了错误（HTTP {code}），请检查模型名是否正确，或稍后再试"
+        en_line = (
+            f"Your model service returned an error (HTTP {code}). "
+            "Check the model name, or try again later."
+        )
+    else:
+        zh_line = _SETTINGS_FAIL["zh"][reason]
+        en_line = _SETTINGS_FAIL["en"][reason]
+    if lang == "zh":
+        return zh_line
+    if lang == "en":
+        return en_line
+    return f"{zh_line} / {en_line}"
+
+
 def llm_model_override() -> str | None:
     """Model id for a new turn. None keeps the existing settings model."""
     route = llm_route()
@@ -223,14 +392,16 @@ def llm_model_override() -> str | None:
 
 
 def _llm_choice(active: dict | None) -> dict | None:
-    """No saved section means the official DeepSeek default. An explicit WaveSpeed save stays put."""
-    if active is None:
-        return {"provider": "deepseek", "model": "deepseek-flash"}
-    return active
+    """Admin section first; else custom settings (leave URL/model alone); else official DeepSeek."""
+    if active is not None:
+        return active
+    if llm_source() == "settings":
+        return None
+    return {"provider": "deepseek", "model": OFFICIAL_LLM_MODEL}
 
 
 def llm_route(active: dict | None = None) -> dict | None:
-    """Resolved official route, or None when an explicit WaveSpeed save must be left alone."""
+    """Resolved official route, or None when settings/WaveSpeed must be left alone."""
     if active is None:
         active = _llm_choice(active_llm())
     else:
@@ -290,6 +461,7 @@ def _public_state() -> dict:
             "revision": doc["llm"]["revision"],
             "active": llm_active,
             "effective": llm_route(),
+            "source": llm_source(),
             "ignored": doc["llm"]["active"] is not None and llm_active is None,
             "can_restore": doc["llm"]["previous"] is not None or (llm_active is not None and doc["llm"]["revision"] > 0),
             "providers": public_llm_providers(llm_on),
@@ -1333,13 +1505,42 @@ def install() -> None:
             body = adapt_llm_body(json_body, url)
             return await _llm_http(session, method, url, headers=headers, json_body=body, timeout=timeout)
 
+        from ..bot.providers import ProviderStatus
+        from dataclasses import replace
+
+        _llm_orig_probe = provider.probe
+
+        async def probe():
+            route = llm_route()
+            if route is not None and not _env_configured(route["secret_env"]):
+                return ProviderStatus(available=False, detail=OFFICIAL_NO_KEY_ERROR)
+            return await _llm_orig_probe()
+
         async def send(turn, emit, handle):
+            source = llm_source()
+            if source == "settings" and settings_llm_incomplete():
+                lang = getattr(turn, "lang", "") or ""
+                if lang == "zh":
+                    copy = CUSTOM_LLM_NOT_SETUP["zh"]
+                elif lang == "en":
+                    copy = CUSTOM_LLM_NOT_SETUP["en"]
+                else:
+                    copy = f'{CUSTOM_LLM_NOT_SETUP["zh"]} / {CUSTOM_LLM_NOT_SETUP["en"]}'
+                return TurnResult(error=copy)  # not-set-up (5) has no 切回官方默认 button
             route = llm_route()
             if route is None:
-                return await _llm_orig_send(turn, emit, handle)
+                result = await _llm_orig_send(turn, emit, handle)
+                if source == "settings" and result and result.error:
+                    copy = settings_llm_fail_copy(
+                        result.error,
+                        getattr(turn, "lang", "") or "",
+                        status=getattr(result, "http_status", None) or getattr(result, "status", None),
+                    )
+                    if copy:
+                        return replace(result, error=copy, action="use_official_llm")
+                return result
             if not _env_configured(route["secret_env"]):
-                return TurnResult(error="DeepSeek 官方未配置 DEEPSEEK_API_KEY，未发送请求 / Official DeepSeek has no DEEPSEEK_API_KEY, so nothing was sent.")
-            from dataclasses import replace
+                return TurnResult(error=OFFICIAL_NO_KEY_ERROR)
             locked_turn = replace(turn, model=route["model"])
             token = _llm_lock.set(route)
             try:
@@ -1369,6 +1570,7 @@ def install() -> None:
         provider._api_headers = _api_headers
         provider._request_json = _request_json
         provider.send = send
+        provider.probe = probe
     install.done = True
 
 

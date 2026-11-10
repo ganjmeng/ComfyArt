@@ -11,11 +11,33 @@ from .settings import bot_disabled, bot_enabled, get_setting, mcp_enabled
 EXTERNAL_NEEDS_MCP = "external agents need MCP: turn on MCP in Agent settings"
 
 
+def _llm_status() -> dict:
+    from .provider_admin import llm_route, llm_settings_host, llm_source
+    from .settings import OFFICIAL_LLM_DISPLAY_NAME, OFFICIAL_LLM_MODEL, get_setting
+    source = llm_source()
+    out = {
+        "source": source,
+        "host": llm_settings_host() if source == "settings" else "",
+        "official_model": OFFICIAL_LLM_MODEL,
+        "official_display_name": OFFICIAL_LLM_DISPLAY_NAME,
+    }
+    if source == "admin":
+        route = llm_route()
+        if route:
+            out["url"] = route.get("base_url") or ""
+            out["model"] = route.get("catalog_model") or route.get("model") or ""
+        else:
+            out["url"] = str(get_setting("bot-local-llm-url") or "")
+            out["model"] = str(get_setting("bot-model-local-llm") or "")
+    return out
+
+
 @routes.get("/comfyart/bot/status")
 async def bot_status(request: web.Request) -> web.Response:
     user = request_user(request)
     if not bot_enabled():
         return web.json_response({"enabled": False, "user": user, "providers": []})
+    llm = _llm_status()
     refresh = request.rel_url.query.get("refresh") == "1"
     out = []
     for provider in list_providers():
@@ -42,7 +64,7 @@ async def bot_status(request: web.Request) -> web.Response:
         if options:
             entry["model_options"] = options
         out.append(entry)
-    return web.json_response({"enabled": True, "user": user, "providers": out})
+    return web.json_response({"enabled": True, "user": user, "providers": out, "llm": llm})
 
 
 def _owned_chat(request: web.Request) -> dict:
@@ -375,7 +397,6 @@ async def bot_test_local_llm(request: web.Request) -> web.Response:
         key = llm_api_key(url)
     result = await test_local_llm(base_url=url, api_key=key, model=model)
     return web.json_response(result)
-
 
 
 def reap_stale_messages() -> None:

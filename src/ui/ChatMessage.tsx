@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
 import { answerAsk, quoteAnswer, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
+import { openBotSettingsWithLlmMode } from './AgentPicker'
 import { setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
 import { errorText } from '../jobs'
@@ -21,6 +22,24 @@ import { attachSkill, loadSkills, skillCreatorAtom } from '../skills'
 import { openSkillEditor } from './SkillsDialog'
 import { Tip } from './Tip'
 import { autoPillLabel, autoPillTooltip, inputIsAuto, modelChoiceOfResult } from '../autoPill'
+
+function CustomLlmFailNotice({ text, action }: { text?: string; action?: string }) {
+  return (
+    <div className="ca-chat__notice" data-level="error" data-testid="custom-llm-fail">
+      <span>{text}</span>
+      {action === 'use_official_llm' && (
+        <button
+          type="button"
+          className="ca-panel__secondary"
+          data-testid="use-official-llm"
+          onClick={() => openBotSettingsWithLlmMode('official')}
+        >
+          {t('botSettings.useOfficialDefault')}
+        </button>
+      )}
+    </div>
+  )
+}
 
 const GEN_TOOLS = new Set(['generate_image', 'generate_video', 'edit_image', 'animate_image', 'upscale_image', 'remove_background', 'expand_image', 'split_layers', 'change_angle', 'replace_text', 'edit_region', 'erase_region', 'move_object', 'style_transfer', 'extend_video', 'upscale_video', 'remove_video_background', 'generate_music', 'generate_sound_effect', 'text_to_speech', 'image_to_3d', 'edit_elements', 'create_mockup', 'create_slides'])
 
@@ -1326,7 +1345,9 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
           items.push(<RunStop key={i} b={b} latest={!m.blocks.slice(i + 1).some((x) => x.type === 'run_stop')} />)
         }
       }
-      if (b.type === 'notice') items.push(<div key={i} className="ca-chat__notice" data-level={b.level}>{b.text}</div>)
+      if (b.type === 'notice') items.push(b.action === 'use_official_llm'
+        ? <CustomLlmFailNotice key={i} text={b.text} action={b.action} />
+        : <div key={i} className="ca-chat__notice" data-level={b.level}>{b.text}</div>)
     }
   })
   // Streaming with process rail but no live row yet → Outputting… wait state
