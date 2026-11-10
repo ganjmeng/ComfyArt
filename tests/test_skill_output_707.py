@@ -192,15 +192,15 @@ def test_game_art_template_requires_bottom_nav_only_on_home_and_list_pages():
     assert "may omit the bottom nav" in game
 
 
-def test_game_art_template_locks_brand_tingchao_and_go_only():
+def test_game_art_template_locks_brand_tingsong_and_single_category():
     game = _instr("game-art")
-    assert "The game name must be exactly 「听潮弈社」" in game
-    assert "never write 「听潮奔社」" in game
-    assert "Guard against 奔 leaking" in game
-    assert "Go (围棋) game only" in game
+    assert "The game name must be exactly 「听松棋院」" in game
+    for ch in ("弈", "奔", "秋"):
+        assert ch not in game
+    assert "All cards, thumbnails and copy stay in the single game category the user named (Go/围棋 by default)" in game
     assert "xiangqi / 象棋" in game
     assert "帅" in game and "将" in game
-    assert "playing cards" in game and "牌缘" in game and "扑克" in game
+    assert "playing cards" in game and "card-game theme" in game
     assert "Invent a new game name" not in game
 
 
