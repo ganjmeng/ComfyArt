@@ -366,7 +366,7 @@ def subtitle(model_id: str, display_name: str | None) -> str:
 
 _VENDORS = (("nano-banana", "Nano Banana"), ("gpt-image", "GPT Image"), ("seedream", "Seedream"), ("seedance", "Seedance"),
             ("uni-v1", "Luma"), ("flux", "Flux"), ("qwen-image", "Qwen-Image"), ("midjourney", "Midjourney"),
-            ("ideogram", "Ideogram"), ("recraft", "Recraft"), ("kling", "Kling"), ("veo", "Veo"), ("gemini-omni", "Gemini Omni"),
+            ("krea", "Krea"), ("ideogram", "Ideogram"), ("recraft", "Recraft"), ("kling", "Kling"), ("veo", "Veo"), ("gemini-omni", "Gemini Omni"),
             ("wan-", "Wan"), ("vidu", "Vidu"), ("hailuo", "Hailuo"), ("minimax", "MiniMax"), ("ltx", "LTX"))
 
 

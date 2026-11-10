@@ -6056,6 +6056,51 @@
 "model_id": "wavespeed-ai/infinitetalk-fast",
 "name": "wavespeed-ai/infinitetalk-fast"
 },
+"wavespeed-ai/krea-v2/turbo": {
+"api_schema": {
+"api_schemas": [
+{
+"request_schema": {
+"properties": {
+"aspect_ratio": {
+"enum": [
+"1:1",
+"1:2",
+"2:1",
+"1:3",
+"3:1",
+"2:3",
+"3:2",
+"3:4",
+"4:3",
+"4:5",
+"5:4",
+"9:16",
+"16:9",
+"9:21",
+"21:9"
+]
+},
+"image": {},
+"prompt": {},
+"resolution": {
+"enum": [
+"1k",
+"2k"
+]
+},
+"seed": {},
+"strength": {}
+}
+}
+}
+]
+},
+"base_price": 0.012,
+"description": "Krea 2 Turbo is Krea's 12.9B open-weights diffusion transformer distilled to 8 steps, generating aesthetic-first images natively at 1K to 2K resolution in seconds, with both text-to-image and image-to-image supported. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+"model_id": "wavespeed-ai/krea-v2/turbo",
+"name": "wavespeed-ai/krea-v2/turbo"
+},
 "wavespeed-ai/minimax-h3/image-to-video": {
 "api_schema": {
 "api_schemas": [
