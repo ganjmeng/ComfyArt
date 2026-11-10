@@ -22,11 +22,13 @@ def _catalog() -> dict[str, set[str]]:
 
 
 def _registered() -> set[str]:
-    """Ids a built-in path may legally route to without hitting UnregisteredModel.
+    """Ids a built-in WaveSpeed path may legally route to.
 
     load_config is the curated dropdown. size_lock may also name a raw
-    wavespeed_models.json id (resolve_model). Replicate Admin / coverage-audit
-    counterparts live in provider_catalog and are not WaveSpeed catalog ids.
+    wavespeed_models.json id (resolve_model). Replicate Admin short ids and
+    coverage-audit counterparts are not added here: a typo of those shorts
+    in a builtin path must still fail this test (it would hit
+    UnregisteredModel in production).
     """
     cat = _catalog()
     every = set().union(*cat.values()) if cat else set()
@@ -36,16 +38,20 @@ def _registered() -> set[str]:
         for m in feat.get("models") or []:
             if isinstance(m, dict) and m.get("id"):
                 every.add(m["id"])
-    from ComfyArt.api import provider_catalog as pc
-    for group in (getattr(pc, "IMAGE_PROVIDERS", []), getattr(pc, "LLM_PROVIDERS", [])):
-        for provider in group:
-            for m in provider.get("models") or []:
-                if isinstance(m, dict) and m.get("id"):
-                    every.add(m["id"])
-    for _mid, row in getattr(pc, "_EXACT", {}).items():
-        if isinstance(row, tuple) and len(row) >= 2 and isinstance(row[1], str):
-            every.add(row[1])
     return every
+
+
+# Admin UI + provider catalog / route config hold Replicate short ids and
+# _EXACT audit counterparts. Those are not WaveSpeed submit paths. Skip the
+# sources so the shorts never enter used_ids() — and never enter _registered().
+# A typo of the same short id in a real builtin path is still scanned and
+# must fail (it would hit UnregisteredModel in production).
+_ADMIN_OR_CATALOG = {
+    "src/ui/ProviderAdmin.tsx",
+    "api/provider_catalog.py",
+    "api/provider_admin.py",
+    "api/tool_routing.py",
+}
 
 
 def used_ids() -> dict[str, str]:
@@ -62,11 +68,12 @@ def used_ids() -> dict[str, str]:
             out.setdefault(v["default"], f"curated default {f}")
     files = [*sorted((ROOT / "src").rglob("*.ts")), *sorted((ROOT / "src").rglob("*.tsx")), *sorted((ROOT / "api").rglob("*.py"))]
     for p in files:
-        if "locales" in p.parts:
+        rel = str(p.relative_to(ROOT))
+        if "locales" in p.parts or rel in _ADMIN_OR_CATALOG:
             continue
         for m in ID.findall(p.read_text(encoding="utf-8")):
             if m.startswith(VENDORS) and not m.endswith((".png", ".json", ".mp4", ".svg")):
-                out.setdefault(m, str(p.relative_to(ROOT)))
+                out.setdefault(m, rel)
     return out
 
 
