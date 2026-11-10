@@ -203,7 +203,7 @@ def test_photoreal_product_hover_tip(catalog):
 
 def test_anime_illustration_poster_and_masked_rows_unchanged(catalog):
     """Frozen rows: anime/illustration, logo, person model+tip, photo_retouch, masked (Sunburst→Flare).
-    poster_text is now Flare primary with Sunburst fallback (this PR)."""
+    poster_text is Flare primary with no registered fallback (this PR)."""
     table = auto_models.load_table()
     anime = next(c for c in table["text_to_image"]["categories"] if c["id"] == "anime_art")
     assert anime["model"] == "midjourney/text-to-image"
@@ -211,7 +211,7 @@ def test_anime_illustration_poster_and_masked_rows_unchanged(catalog):
     assert anime.get("fallback") in (None, "", [])
     poster = next(c for c in table["text_to_image"]["categories"] if c["id"] == "poster_text")
     assert poster["model"] == "openai/gpt-image-2.6-flare/text-to-image"
-    assert poster["fallback"] == "openai/gpt-image-2.6-sunburst/text-to-image"
+    assert poster.get("fallback") in (None, "", [])
     assert poster["tip"] == {"zh": "海报/带字", "en": "poster / text"}
     masked = table["image_edit"]["masked"]
     assert masked["model"] == "openai/gpt-image-2.6-sunburst/edit"

@@ -218,12 +218,10 @@ def _fallback_choice(action: str, args: dict, failed: str) -> dict | None:
     cfg = load_config()["features"][feature]
     ids = {m["id"] for m in cfg["models"]}
     default = cfg["default"]
-    # #872: if the registered row fallback itself failed on an Auto / edit hop, do not bounce back to the primary.
-    # A manual first pick of that same id still follows the #236 table/default path.
+    # #872: if the registered Flare fallback itself failed, do not bounce back to Sunburst
     from ..auto_models import registered_runtime_fallback
     registered_fb = registered_runtime_fallback(feature, primary, ids)
-    manual_named = bool(named_or_none(args.get("model")) and not args.get("auto_model"))
-    if registered_fb and failed == registered_fb and not manual_named:
+    if registered_fb and failed == registered_fb:
         log.warning("#872: registered fallback %s also failed; not retrying primary %s", failed, primary.get("model"))
         return None
     # #872/#873: runtime table fallback (Sunburst → Flare) only for Auto rows, never manual picks (#236 confirm path).
