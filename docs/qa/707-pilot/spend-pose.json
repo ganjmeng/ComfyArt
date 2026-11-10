@@ -1,0 +1,68 @@
+{
+  "segment": "pose-fission",
+  "balance_before": 30.666899,
+  "balance_after": 30.414899,
+  "spend_delta": 0.252,
+  "spend_pilot_total": 0.351,
+  "results": [
+    {
+      "event": "done",
+      "id": "pose-fission-profile",
+      "model": "google/nano-banana-pro/edit",
+      "prediction_id": "c4903a74e972468b949b759aad45a910",
+      "attempt": 1,
+      "balance_before": 30.666899,
+      "balance_after": 30.540899,
+      "cost": 0.126,
+      "ok": true,
+      "status": "completed",
+      "size": [
+        1792,
+        2400
+      ],
+      "out": {
+        "png": "docs/qa/707-pilot/pose-fission-profile.png",
+        "webp": "docs/qa/707-pilot/pose-fission-profile.webp",
+        "size": [
+          1792,
+          2400
+        ]
+      },
+      "lr": "docs/qa/707-pilot/pose-fission-profile-lr.png",
+      "error": null,
+      "latency_s": 68.213,
+      "quoted_list": 0.14,
+      "quoted_discounted": 0.126
+    },
+    {
+      "event": "done",
+      "id": "pose-fission-lookback",
+      "model": "google/nano-banana-pro/edit",
+      "prediction_id": "125aa37871f644218c44439c0167c878",
+      "attempt": 1,
+      "balance_before": 30.540899,
+      "balance_after": 30.414899,
+      "cost": 0.126,
+      "ok": true,
+      "status": "completed",
+      "size": [
+        1792,
+        2400
+      ],
+      "out": {
+        "png": "docs/qa/707-pilot/pose-fission-lookback.png",
+        "webp": "docs/qa/707-pilot/pose-fission-lookback.webp",
+        "size": [
+          1792,
+          2400
+        ]
+      },
+      "lr": "docs/qa/707-pilot/pose-fission-lookback-lr.png",
+      "error": null,
+      "latency_s": 62.824,
+      "quoted_list": 0.14,
+      "quoted_discounted": 0.126
+    }
+  ],
+  "ts": "2026-11-10 22:44:41 +0800 (Asia/Shanghai)"
+}
