@@ -492,7 +492,7 @@ textarea.ca-genblock__text { flex: 1; resize: none; border: none; outline: none;
 .ca-botsettings__fieldhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
 .ca-botsettings__fieldlink { border: none; background: none; padding: 0; color: var(--ca-muted); font: inherit; font-size: 12px; line-height: 18px; cursor: pointer; white-space: nowrap; }
 .ca-botsettings__fieldlink:disabled { opacity: .55; cursor: default; }
-.ca-botsettings__listerr { font-size: 12px; line-height: 18px; color: #dc2626; }
+.ca-botsettings__listerr { font-size: 12px; line-height: 18px; color: #dc2626; white-space: pre-line; }
 .ca-llm-mark {
   display: inline-flex; align-items: center; justify-content: center;
   width: 16px; height: 16px; border-radius: 4px; flex: none;

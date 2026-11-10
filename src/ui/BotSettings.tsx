@@ -180,7 +180,7 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
         setListState({ loading: false, typable: false, text: '' })
       } else {
         const code = (r.code in TEST_MSG ? r.code : 'unreachable') as LocalLlmTestCode
-        setListState({ loading: false, typable: true, text: `${failCopyOf(code, r.status)} ${t('botSettings.fetchModelsFailed')}` })
+        setListState({ loading: false, typable: true, text: `${failCopyOf(code, r.status)}\n${t('botSettings.fetchModelsFailed')}` })
       }
     }).catch(() => {
       if (seq !== fetchSeq.current) return
