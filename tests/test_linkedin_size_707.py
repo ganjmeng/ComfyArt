@@ -432,6 +432,41 @@ def test_relay_unpinned_exact_skills_with_refs_still_qwen(relay, skill, w, h, si
     assert out["model_choice"]["model"] == QWEN_EDIT
 
 
+def test_select_model_without_catalog_does_not_block_unpinned_exact_skills():
+    """_price_call and local_llm fallback call _auto_choice with no catalog.
+
+    A missing catalog must not run linkedin_decision (an empty {} catalog would
+    look like there is no eligible exact-size model and block the call).
+    Unpinned exact-size skills fall through to the Auto table, and reading
+    the chosen model must not raise KeyError.
+    """
+    # Mirror bot/local_llm.py: _price_call uses _auto_choice(...) or {}; the
+    # fallback path used to do picked["model"] and throw on a block dict.
+    cases = [
+        {"prompt": "price/local_llm no-catalog path", "skill": "linkedin-banner"},
+        {"prompt": "price/local_llm no-catalog path", "skill": "before-after"},
+        {"prompt": "price/local_llm no-catalog path", "skill": "game-art"},
+        {"prompt": "price/local_llm no-catalog path", "skill": "linkedin-banner", "refs": ["shape:r"]},
+        {"prompt": "price/local_llm no-catalog path", "skill": "before-after", "refs": ["shape:r"]},
+        {"prompt": "price/local_llm no-catalog path", "skill": "game-art", "refs": ["shape:r"]},
+    ]
+    for args in cases:
+        choice = canvas.select_model("generate_image", args)  # catalog omitted on purpose
+        assert choice is not None, args
+        assert "block" not in choice, args
+        # same access pattern as local_llm after the fix (and _price_call)
+        failed = str((choice or {}).get("model") or "")
+        priced = str(choice.get("edit_model") or choice.get("model") or "")
+        assert failed and priced, (args, choice)
+        # Auto table, not a Qwen exact-size pick (no catalog to prove the schema)
+        assert priced != QWEN and priced != QWEN_EDIT, (args, priced)
+
+    # The KeyError path: a block-shaped result must not blow up .get("model")
+    blocked = canvas.select_model("generate_image", {"prompt": "p", "skill": "pose-fission"})
+    assert blocked and blocked.get("block")
+    assert str((blocked or {}).get("model") or "") == ""
+
+
 def test_relay_before_after_uses_exact_size_not_flare(relay):
     out = _run("generate_image", prompt="beauty before after comparison banner", skill="before-after")
     assert SENT

@@ -403,8 +403,11 @@ def select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict
     if pin:
         return _skill_choice(args, pin)
     from ..skill_size import EXACT_SKILLS, linkedin_decision
-    if action == "generate_image" and args.get("skill") in EXACT_SKILLS:
-        decision = linkedin_decision(args, catalog if catalog is not None else {}, cfg or load_config())
+    # A missing catalog must not be treated as {}. That would make unpinned
+    # exact-size skills look like they have no eligible model and get blocked.
+    # _price_call and local_llm fallback call _auto_choice without a catalog.
+    if action == "generate_image" and args.get("skill") in EXACT_SKILLS and catalog is not None:
+        decision = linkedin_decision(args, catalog, cfg or load_config())
         if decision.get("block"):
             return {"block": decision["block"], "category": "skill_size_block", "auto": True}
         choice = dict(decision["choice"])
