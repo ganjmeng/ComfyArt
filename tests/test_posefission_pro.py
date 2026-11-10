@@ -78,7 +78,7 @@ def _template():
 @pytest.mark.parametrize("needle", [
     "Plan first, then confirm", "是否生成这 4 张", "A 开始生成", "B 换一组", "C 其他",
     "画面下边缘切在腰线/肚脐处", "正侧面 90°，看不到对侧眼睛", "头转向肩后 90°，下巴越过肩线",
-    "保留金标的硬光方向和斑驳投影，落在脸部和衣服上", "change ONLY camera angle and framing", "Same person, same identity",
+    "保留金标的硬光方向和斑驳投影，落在脸部和衣服上", "change only pose and angle", "Same person, same identity",
     "same outfit", "same light direction", "3:4", "never a grid", "no repeats", "at most 1 frontal 0°",
     "head and body at 0°", "head turned 45° from camera", "strict 90° side profile", "head turned 90° back over the shoulder",
     "body and head at 180°", "bottom edge of the frame cuts exactly at the navel", "bottom edge of the frame cuts at the collarbones",

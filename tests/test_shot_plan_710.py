@@ -31,19 +31,30 @@ def teardown_function():
 
 
 def test_default_batch_fields_and_angle_pool():
-    shots = shot_plan.build_shots(4, 0, "同参考图街景，背景压暗")
+    shots = shot_plan.build_shots(4, 0, "同参考图街景，街道和建筑完整可读，背景保持明亮可读")
     assert len(shots) == 4
     angles = [s.angle for s in shots]
     assert len(angles) == len(set(angles))
     fronts = [s for s in shots if s.angle.startswith("0°")]
     assert len(fronts) <= 1
-    assert fronts and "三分" in fronts[0].composition and "不居中" in fronts[0].composition
+    # Gold ex-01 is a near-frontal full-length standing frame and may be centered.
+    assert fronts and "允许居中" in fronts[0].composition
+    poses = " ".join(s.pose for s in shots)
+    angles = " ".join(s.angle for s in shots)
+    cuts = " ".join(s.cut for s in shots)
+    assert "回头" in poses or "回头" in angles
+    assert "侧脸" in poses or "正侧面" in angles
+    assert "低头" in poses or "低头" in angles
+    assert "双脚完整入画" in cuts
     for s in shots:
         line = s.zh()
-        for token in ("景别：", "角度：", "机位：", "姿态：", "构图：", "焦段：", "光：", "场景：", "°", "mm", "三分", "不居中"):
+        for token in ("景别：", "角度：", "机位：", "姿态：", "构图：", "焦段：", "光：", "场景：", "°", "mm"):
             assert token in line, token
         for bare in ("full body", "waist-up", "半身", "全身"):
             assert bare not in line
+        assert "软阴影" not in s.light and "顺光软光" not in s.light
+        assert "压暗" not in s.scene
+        assert "硬" in s.light and "斑驳" in s.light
         assert shot_plan.trace_ok(s.prompt_en, s)
     spec = shot_plan.ask_spec(shots)
     assert spec["prompt"].count("\n") == 4
@@ -53,16 +64,16 @@ def test_default_batch_fields_and_angle_pool():
 
 
 def test_regenerate_differs_and_stays_in_the_pool():
-    scene = "同参考图场景，背景压暗"
+    scene = "同参考图场景，街道和建筑完整可读，背景保持明亮可读"
     first = shot_plan.build_shots(4, 0, scene)
     second = shot_plan.build_shots(4, 1, scene)
     assert [s.zh() for s in first] != [s.zh() for s in second]
     assert {s.angle for s in first}.isdisjoint({s.angle for s in second})
-    assert all(not s.angle.startswith("0°") or ("三分" in s.composition and "不居中" in s.composition) for s in second)
+    assert sum(1 for s in second if s.angle.startswith("0°")) <= 1
 
 
 def test_other_text_lands_in_the_new_plan_and_prompt():
-    shots = shot_plan.build_shots(4, 1, "同参考图场景，背景压暗", "加一条红围巾")
+    shots = shot_plan.build_shots(4, 1, "同参考图场景，街道和建筑完整可读，背景保持明亮可读", "加一条红围巾")
     assert all("加一条红围巾" in s.zh() and "加一条红围巾" in s.prompt_en for s in shots)
 
 
@@ -132,7 +143,7 @@ async def test_confirm_a_binds_n_prompts_and_never_generates_early(monkeypatch, 
     assert stop_of(res)["reason"] == "done", stop_of(res)
     gens = _gens(rig)
     assert len(gens) == 4
-    shots = shot_plan.build_shots(4, 0, "同参考图街景，背景压暗")
+    shots = shot_plan.build_shots(4, 0, "同参考图街景，街道和建筑完整可读，背景保持明亮可读")
     for shot, call in zip(shots, gens):
         assert shot_plan.trace_ok(call[1]["prompt"], shot), call[1]["prompt"]
         assert call[1]["skill"] == "pose-fission"
@@ -201,7 +212,7 @@ async def test_skip_generates_the_current_plan(monkeypatch, store):  # noqa: F81
     res, _ = await rig.send(compose_provider_text("同参考图", skill_name=ZH), goal="", handle=h)
     await task
     assert stop_of(res)["reason"] == "done", stop_of(res)
-    shots = shot_plan.build_shots(4, 0, "同参考图场景，背景压暗")
+    shots = shot_plan.build_shots(4, 0, "同参考图场景，街道和建筑完整可读，背景保持明亮可读")
     gens = _gens(rig)
     assert len(gens) == 4
     for shot, call in zip(shots, gens):

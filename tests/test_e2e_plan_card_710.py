@@ -26,7 +26,7 @@ OUT = ROOT / "docs" / "qa" / "710"
 LOVART = "821762885248abef007feb308e09d5132ade7fe1"
 
 
-def _prompt(scene="同参考图街景，背景压暗"):
+def _prompt(scene="同参考图街景，街道和建筑完整可读，背景保持明亮可读"):
     return ask_spec(build_shots(4, 0, scene))["prompt"]
 
 
@@ -96,7 +96,7 @@ def test_plan_lines_are_separate_and_pre_line(page):
     assert lines.nth(0).inner_text() != text
     for i in range(4):
         line = lines.nth(i).inner_text()
-        for token in ("景别：", "角度：", "机位：", "姿态：", "构图：", "焦段：", "光：", "场景：", "°", "mm", "三分", "不居中"):
+        for token in ("景别：", "角度：", "机位：", "姿态：", "构图：", "焦段：", "光：", "场景：", "°", "mm"):
             assert token in line, (i, token, line)
         assert "半身" not in line and "全身" not in line
     angles = []
@@ -105,7 +105,7 @@ def test_plan_lines_are_separate_and_pre_line(page):
         angles.append(bit)
     assert len(set(angles)) == 4
     fronts = [lines.nth(i).inner_text() for i in range(4) if "角度：0°" in lines.nth(i).inner_text()]
-    assert len(fronts) <= 1 and fronts and "三分" in fronts[0] and "不居中" in fronts[0]
+    assert len(fronts) <= 1 and fronts and "允许居中" in fronts[0]
     assert page.locator(".ca-q__prompt").inner_text().strip() == "是否生成这 4 张？"
     assert page.locator(".ca-q__submit").is_disabled()
     # question open: primary is not Stop (#763/#764)
