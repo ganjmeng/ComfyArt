@@ -291,18 +291,145 @@ def test_build_payload_sends_allowlisted_hidden_size_only():
     assert t2i["size"] == "1024*1824"
 
 
-@pytest.mark.parametrize("skill,w,h", [
-    ("pose-fission", 1536, 2048),
-    ("game-art", 1024, 1824),
-])
-def test_relay_pose_and_game_use_exact_size_not_flare(relay, skill, w, h):
-    out = _run("generate_image", prompt="skill canvas", skill=skill)
+PRO_EDIT = "google/nano-banana-pro/edit"
+NANO_EDIT = "google/nano-banana-2.1/edit"
+
+
+def test_relay_game_art_uses_exact_size_not_flare(relay):
+    out = _run("generate_image", prompt="skill canvas", skill="game-art")
     sent = SENT[-1][1]
     assert sent["model"] == QWEN and sent.get("model") != FLARE
     assert sent["size_lock"] is True and sent["size_candidates"] == [QWEN]
-    assert sent["width"] == w and sent["height"] == h
+    assert sent["width"] == 1024 and sent["height"] == 1824
     assert out["model_choice"]["model"] == QWEN
-    assert out["provider_submit"] == {"size": f"{w}*{h}"}
+    assert out["provider_submit"] == {"size": "1024*1824"}
+
+
+def test_relay_pose_fission_without_refs_refuses_before_submit(relay):
+    out = _run("generate_image", prompt="skill canvas", skill="pose-fission")
+    assert SENT == []
+    assert out.get("submitted") is False
+    blob = " ".join(str(out.get(k) or "") for k in ("user_message", "error", "note"))
+    assert "请上传一张人物照片" in blob
+    dumped = json.dumps(out)
+    assert QWEN not in dumped and QWEN_EDIT not in dumped
+
+
+def test_relay_pose_fission_with_refs_uses_skill_pin(relay):
+    out = _run("generate_image", prompt="Change only: profile", skill="pose-fission", refs=["shape:base"])
+    assert SENT and SENT[0][0] == "generate_image"
+    sent = SENT[0][1]
+    assert sent["edit_model"] == PRO_EDIT
+    assert sent.get("edit_resolution") == "2k"
+    assert sent.get("ratio") == "3:4"
+    assert sent.get("size_lock") is not True
+    assert sent.get("width") != 1536 and sent.get("height") != 2048
+    assert "1536*2048" not in json.dumps(sent)
+    assert sent.get("model") not in {QWEN, QWEN_EDIT, FLARE}
+    assert out["model_choice"]["model"] == PRO_EDIT
+    assert out["model_choice"]["category"] == "skill"
+
+
+def test_relay_pose_fission_with_base_uses_skill_pin(relay):
+    out = _run("generate_image", prompt="Change only: profile", skill="pose-fission", base="shape:base")
+    assert SENT
+    sent = SENT[-1][1]
+    assert sent["edit_model"] == PRO_EDIT
+    assert sent.get("edit_resolution") == "2k" and sent.get("ratio") == "3:4"
+    assert sent.get("size_lock") is not True
+    assert out["model_choice"]["model"] == PRO_EDIT
+
+
+def test_relay_pose_fission_fallback_only_nano_banana_21(relay):
+    out = _run("generate_image", prompt="Change only: profile", skill="pose-fission",
+               refs=["shape:base"], fallback_for=PRO_EDIT)
+    assert SENT
+    sent = SENT[-1][1]
+    assert sent["edit_model"] == NANO_EDIT
+    assert sent.get("edit_resolution") == "2k" and sent.get("ratio") == "3:4"
+    assert sent.get("size_lock") is not True
+    assert sent.get("width") != 1536 and sent.get("height") != 2048
+    assert QWEN not in (sent.get("model"), sent.get("edit_model"))
+    assert QWEN_EDIT not in (sent.get("model"), sent.get("edit_model"))
+    assert out["model_choice"]["model"] == NANO_EDIT
+    assert out["model_choice"]["category"] == "skill_fallback"
+    assert out["model_choice"].get("fallback") == PRO_EDIT
+
+
+def test_relay_pose_fission_second_failure_does_not_use_qwen(relay):
+    out = _run("generate_image", prompt="Change only: profile", skill="pose-fission",
+               refs=["shape:base"], fallback_for=NANO_EDIT)
+    assert SENT == []
+    dumped = json.dumps(out)
+    assert QWEN not in dumped and QWEN_EDIT not in dumped
+
+
+def test_exact_skills_pin_inventory():
+    from ComfyArt.api.auto_models import skill_pin
+    from ComfyArt.api.skill_size import EXACT_SKILLS
+    pins = {s: skill_pin(s) for s in sorted(EXACT_SKILLS)}
+    pinned = {s: p for s, p in pins.items() if p}
+    assert set(EXACT_SKILLS) == {"linkedin-banner", "before-after", "pose-fission", "game-art"}
+    assert set(pinned) == {"pose-fission"}
+    row = pinned["pose-fission"]
+    assert row["model"] == PRO_EDIT
+    assert row["resolution"] == "2k" and row["ratio"] == "3:4"
+    assert row["fallback"] == NANO_EDIT
+    assert row["feature"] == "image_edit"
+
+
+def test_relay_every_auto_models_pin_is_honoured_with_refs(relay, monkeypatch):
+    """Every skill pin in api/auto_models.json must reach generate_image as that full model id.
+
+    A reference image is present so the image_edit pin applies. The real
+    generate_image entry must go through select_model (pin → exact size → Auto
+    table). Exact-size routing and Auto must not substitute another model.
+    """
+    table = json.loads((ROOT / "api/auto_models.json").read_text(encoding="utf-8")).get("skills") or {}
+    pins = {name: row for name, row in table.items()
+            if name != "_comment" and isinstance(row, dict) and row.get("model")}
+    assert pins, "auto_models.json must list at least one skill pin"
+    through = []
+    real = canvas.select_model
+
+    def wrapped(*a, **k):
+        choice = real(*a, **k)
+        through.append(choice)
+        return choice
+
+    monkeypatch.setattr(canvas, "select_model", wrapped)
+    seen = []
+    for skill, pin in sorted(pins.items()):
+        SENT.clear()
+        out = _run("generate_image", prompt=f"{skill} pin honour", skill=skill, refs=["shape:base"])
+        assert SENT, f"{skill}: expected a submit of the pinned model, nothing was sent"
+        sent = SENT[-1][1]
+        submitted = sent.get("edit_model") or sent.get("model")
+        assert submitted == pin["model"], (
+            f"{skill}: submitted {submitted!r}, expected pin {pin['model']!r}")
+        assert submitted not in {QWEN, QWEN_EDIT, FLARE}
+        assert out.get("model_choice", {}).get("model") == pin["model"]
+        seen.append((skill, submitted))
+    assert through, "generate_image must pick the model via select_model"
+    assert any((c or {}).get("model") == pin["model"] and (c or {}).get("category") == "skill"
+               for pin in pins.values() for c in through)
+    # Today only pose-fission is pinned; the scan must still visit whatever the table lists.
+    assert "pose-fission" in {s for s, _m in seen}
+
+
+@pytest.mark.parametrize("skill,w,h,size", [
+    ("before-after", 1024, 1280, "1024*1280"),
+    ("game-art", 1024, 1824, "1024*1824"),
+    ("linkedin-banner", 1584, 396, "1584*396"),
+])
+def test_relay_unpinned_exact_skills_with_refs_still_qwen(relay, skill, w, h, size):
+    out = _run("generate_image", prompt="skill canvas", skill=skill, refs=["shape:ref1"])
+    sent = SENT[-1][1]
+    assert sent["edit_model"] == QWEN_EDIT
+    assert sent.get("model") not in {FLARE, PRO_EDIT, NANO_EDIT}
+    assert sent["size_lock"] is True and sent["width"] == w and sent["height"] == h
+    assert out["provider_submit"] == {"size": size}
+    assert out["model_choice"]["model"] == QWEN_EDIT
 
 
 def test_relay_before_after_uses_exact_size_not_flare(relay):

@@ -74,7 +74,12 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
         if blocked_gif is not None:
             return blocked_gif
     from ..skill_size import EXACT_SKILLS
-    if fallback_for and action == "generate_image" and args.get("skill") in EXACT_SKILLS:
+    # Every primary pick goes through select_model (pin → exact size → Auto table).
+    # A missing person photo is refused there; this early return covers the fallback path too.
+    if action == "generate_image" and _exact_skill_missing_ref(args):
+        return _need_person_photo_block()
+    use_pin = _exact_skill_pin(args) if action == "generate_image" else None
+    if fallback_for and action == "generate_image" and args.get("skill") in EXACT_SKILLS and not use_pin:
         # #707: do not retry a banner on a model that would snap 1584×396 to an aspect ratio.
         from ..skill_size import linkedin_fallback_block
         return linkedin_fallback_block(args, fallback_for)
@@ -100,19 +105,15 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
             # Auto pick, recording the original value and why on the result (model_choice).
             log.warning("model %r for %s is not registered; falling back to Auto", requested, action)
             args = {k: v for k, v in args.items() if k not in ("model", "auto_model")}
-        if action == "generate_image" and args.get("skill") in EXACT_SKILLS:
-            # #707: auto must submit a schema that accepts 1584×396. A named incompatible model stops here.
-            from .. import wavespeed
-            from ..skill_size import linkedin_decision
-            decision = linkedin_decision(args, await wavespeed.catalog(), load_config())
-            if decision.get("block"):
-                return decision["block"]
-            args = decision["args"]
-            choice = decision["choice"]
-            if requested:
-                choice = {**choice, "requested_model": requested, "fallback_reason": _unregistered_reason(requested)}
-        else:
-            choice = _auto_choice(action, args)
+        from .. import wavespeed
+        choice = select_model(action, args, catalog=await wavespeed.catalog(), cfg=load_config())
+        if choice and choice.get("block"):
+            return choice["block"]
+        if choice and choice.get("_exact_args") is not None:
+            args = choice["_exact_args"]
+            choice = {k: v for k, v in choice.items() if k != "_exact_args"}
+        if requested and choice:
+            choice = {**choice, "requested_model": requested, "fallback_reason": _unregistered_reason(requested)}
         if choice and choice.get("category") == "skill_unregistered":
             return _unregistered_block(choice)
         if requested:
@@ -297,12 +298,54 @@ def _skill_fallback(args: dict, pin: dict, failed: str) -> dict | None:
             "reason": skill_pin_reason(skill)}
 
 
+def _exact_skill_missing_ref(args: dict) -> bool:
+    """True when a pinned EXACT skill is called with no refs/base.
+
+    The pin is image_edit only. Do not fall through to text-to-image or Qwen.
+    """
+    from ..skill_size import EXACT_SKILLS
+    skill = str(args.get("skill") or "")
+    if skill not in EXACT_SKILLS or not skill_pin(skill):
+        return False
+    return not (args.get("refs") or args.get("base"))
+
+
+def _need_person_photo_block() -> dict:
+    why = "请上传一张人物照片"
+    return {
+        "status": "failed",
+        "submitted": False,
+        "generation_succeeded": False,
+        "error": why,
+        "note": why,
+        "user_message": why,
+    }
+
+
+def _exact_skill_pin(args: dict) -> dict | None:
+    """Registered skill pin when an EXACT_SKILLS Auto call has refs/base.
+
+    Without refs/base the call is refused (see _exact_skill_missing_ref).
+    The pin row itself is not modified.
+    """
+    from ..skill_size import EXACT_SKILLS
+    if str(args.get("skill") or "") not in EXACT_SKILLS:
+        return None
+    if named_or_none(args.get("model")):
+        return None
+    if not (args.get("refs") or args.get("base")):
+        return None
+    return skill_pin(args.get("skill"))
+
+
 def _pin_args(args: dict, choice: dict) -> dict:
-    args = {k: v for k, v in args.items() if k not in ("model", "auto_model")}
+    # Drop size_lock / exact pixels so a resolution+ratio pin is not forced to
+    # the skill's declared canvas (pose-fission 1536×2048 vs pin 2k 3:4).
+    args = {k: v for k, v in args.items() if k not in ("model", "auto_model", "size_lock", "size_candidates", "width", "height")}
     args["edit_model"] = choice["edit_model"]
     if choice.get("resolution"):
         args["edit_resolution"] = choice["resolution"]
-    if choice.get("ratio") and not args.get("ratio"):
+    if choice.get("ratio"):
         args["ratio"] = choice["ratio"]
     return args
 
@@ -334,12 +377,16 @@ def _unregistered_reason(model: str) -> dict:
             "en": f"{model} is not a registered model, so Auto picked the model instead"}
 
 
-def _auto_choice(action: str, args: dict) -> dict | None:
-    """#133: which model runs and why (user-named wins, else the Auto table). #708: a skill pin wins over Auto.
-    #825: front-end Auto tokens ``auto`` / ``auto:video`` are unnamed (consult the table), not category user."""
-    feature = tool_feature(action)
-    if not feature:
-        return None
+def select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict | None = None) -> dict | None:
+    """Single model-selection entry used by every route.
+
+    Order: skill pin → exact-size (EXACT_SKILLS) → Auto table.
+    A missing person photo for a pinned exact skill is a ``block``. Exact-size
+    refusal is also a ``block``. Helpers (``_skill_choice``, ``linkedin_decision``,
+    the Auto table) are only reached from here.
+    """
+    if action == "generate_image" and _exact_skill_missing_ref(args):
+        return {"block": _need_person_photo_block(), "category": "need_person_photo", "auto": True}
     named = named_or_none(args.get("model"))
     if action == "generate_image" and requests_gif(args):
         # #825: GIF / 动图 is text-to-image on GPT Image 2.6. Checked before refs, which otherwise
@@ -355,7 +402,29 @@ def _auto_choice(action: str, args: dict) -> dict | None:
     pin = _skill_row(action, args)
     if pin:
         return _skill_choice(args, pin)
-    cfg = load_config()
+    from ..skill_size import EXACT_SKILLS, linkedin_decision
+    if action == "generate_image" and args.get("skill") in EXACT_SKILLS:
+        decision = linkedin_decision(args, catalog if catalog is not None else {}, cfg or load_config())
+        if decision.get("block"):
+            return {"block": decision["block"], "category": "skill_size_block", "auto": True}
+        choice = dict(decision["choice"])
+        choice["_exact_args"] = decision["args"]
+        return choice
+    return _auto_table_choice(action, args, cfg)
+
+
+def _auto_choice(action: str, args: dict, catalog: dict | None = None, cfg: dict | None = None) -> dict | None:
+    """Compatibility wrapper. Every pick goes through select_model."""
+    return select_model(action, args, catalog=catalog, cfg=cfg)
+
+
+def _auto_table_choice(action: str, args: dict, cfg: dict | None = None) -> dict | None:
+    """#133 Auto table only. Not a public entry — select_model runs pin and exact-size first."""
+    feature = tool_feature(action)
+    if not feature:
+        return None
+    named = named_or_none(args.get("model"))
+    cfg = cfg or load_config()
     if action == "generate_image" and (args.get("refs") or args.get("base")):
         # refs/base run on image_edit (src/generate.ts). Auto (#133 ruling): 2+ refs -> the multi-reference row,
         # else the edit default. A user-named (text-to-image) model keeps the page's edit default as before.
