@@ -332,29 +332,67 @@ def _gate_guard() -> None:
 
     socket.getaddrinfo = getaddrinfo
 
-    # #870 B1: if a test still reaches official DeepSeek (or any other real upstream) under GATE=1, fail
-    # immediately with a clear error instead of hanging on a missing-key notice or a generic DNS block.
+    # #870 B1: block every real upstream at the HTTP clients the code actually uses, not only
+    # local-llm._request_json. Localhost (e2e / TestServer / mocks) stays open.
+    import urllib.request
     from urllib.parse import urlparse
-    from ComfyArt.bot import get_provider
 
-    def _gate_check_url(url: str) -> None:
-        host = urlparse(str(url or "")).hostname
+    def _gate_check_url(url) -> None:
+        raw = url.full_url if hasattr(url, "full_url") else url
+        host = urlparse(str(raw or "")).hostname
         if host in _LOCAL or not host:
             return
         raise GateNetworkBlocked(
-            f"GATE=1: test called real upstream {host} ({url}); "
-            "write an explicit admin LLM config pointing at a localhost mock (#870 B1)"
+            f"GATE=1: test called real upstream {host} ({raw}); "
+            "use a localhost mock, not WaveSpeed / Replicate / kie / DeepSeek (#870 B1 / #712)"
         )
 
-    provider = get_provider("local-llm")
-    if provider is not None and hasattr(provider, "_request_json"):
-        _llm_http = provider._request_json
+    _url_open = urllib.request.OpenerDirector.open
 
-        async def _gate_request_json(session, method, url, *, headers, json_body=None, timeout=120):
+    def _gate_url_open(self, fullurl, *args, **kwargs):
+        _gate_check_url(fullurl)
+        return _url_open(self, fullurl, *args, **kwargs)
+
+    urllib.request.OpenerDirector.open = _gate_url_open
+
+    import aiohttp
+    _aio_request = aiohttp.ClientSession._request
+
+    async def _gate_aio_request(self, method, str_or_url, **kwargs):
+        _gate_check_url(str_or_url)
+        return await _aio_request(self, method, str_or_url, **kwargs)
+
+    aiohttp.ClientSession._request = _gate_aio_request
+
+    try:
+        import requests
+        _req = requests.sessions.Session.request
+
+        def _gate_requests(self, method, url, *args, **kwargs):
             _gate_check_url(url)
-            return await _llm_http(session, method, url, headers=headers, json_body=json_body, timeout=timeout)
+            return _req(self, method, url, *args, **kwargs)
 
-        provider._request_json = _gate_request_json
+        requests.sessions.Session.request = _gate_requests
+    except ImportError:
+        pass
+
+    try:
+        import httpx
+        _httpx = httpx.Client.request
+        _httpx_async = httpx.AsyncClient.request
+
+        def _gate_httpx(self, method, url, *args, **kwargs):
+            _gate_check_url(url)
+            return _httpx(self, method, url, *args, **kwargs)
+
+        async def _gate_httpx_async(self, method, url, *args, **kwargs):
+            _gate_check_url(url)
+            return await _httpx_async(self, method, url, *args, **kwargs)
+
+        httpx.Client.request = _gate_httpx
+        httpx.AsyncClient.request = _gate_httpx_async
+    except ImportError:
+        pass
 
 
 if os.environ.get("GATE") == "1":
