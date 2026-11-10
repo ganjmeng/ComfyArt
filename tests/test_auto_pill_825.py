@@ -179,32 +179,57 @@ def test_realistic_person_auto_label_and_hover_reason(catalog):
     assert choice["reason"] == {"zh": "写实人物", "en": "realistic person"}
     assert auto_models.pill_tooltip(choice, "zh") == "自动选择：写实人物"
     assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: realistic person"
-    assert auto_models.pill_label(choice) == "Auto · Seedream v5 Pro"
+    assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
     src = (ROOT / "src/autoPill.ts").read_text()
-    assert "'bytedance/seedream-v5.0-pro': 'Seedream v5 Pro'" in src
-    assert "Seedream 5.0 Pro" not in src
+    assert "'bytedance/seedream-v5.0-pro': 'Seedream 5.0 Pro'" in src
+    assert "Seedream v5 Pro" not in src
 
     edit = auto_models.choose("image_edit", "编辑这张写实人像，让她微笑", None, catalog)
     assert edit["auto"] is True and edit["category"] == "person" and edit["model"] == SEEDREAM_EDIT
     assert auto_models.pill_tooltip(edit, "zh") == "自动选择：写实人物"
-    assert auto_models.pill_label(edit) == "Auto · Seedream v5 Pro"
+    assert auto_models.pill_label(edit) == "Auto · Seedream 5.0 Pro"
 
+
+
+
+def test_photoreal_product_hover_tip(catalog):
+    """Hover on a product Auto card is exactly 「自动选择：产品摄影」."""
+    choice = auto_models.choose("text_to_image", "电商主图，白底，香水瓶", None, catalog)
+    assert choice["auto"] is True and choice["category"] == "photoreal" and choice["model"] == SEEDREAM
+    assert choice["reason"] == {"zh": "产品摄影", "en": "product photography"}
+    assert auto_models.pill_tooltip(choice, "zh") == "自动选择：产品摄影"
+    assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: product photography"
+    assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
 
 def test_anime_illustration_poster_and_masked_rows_unchanged(catalog):
-    """Person-row PR must not touch anime/illustration, poster, or masked-edit (Sunburst→Flare)."""
+    """Frozen rows: anime/illustration, logo, person model+tip, photo_retouch, masked (Sunburst→Flare).
+    poster_text is Flare primary with no registered fallback (this PR)."""
     table = auto_models.load_table()
     anime = next(c for c in table["text_to_image"]["categories"] if c["id"] == "anime_art")
     assert anime["model"] == "midjourney/text-to-image"
     assert "illustration" in anime["keywords"] and "插画" in anime["keywords"]
     assert anime.get("fallback") in (None, "", [])
     poster = next(c for c in table["text_to_image"]["categories"] if c["id"] == "poster_text")
-    assert poster["model"] == "openai/gpt-image-2.6-sunburst/text-to-image"
-    assert poster["fallback"] == "openai/gpt-image-2.6-flare/text-to-image"
+    assert poster["model"] == "openai/gpt-image-2.6-flare/text-to-image"
+    assert poster.get("fallback") in (None, "", [])
     assert poster["tip"] == {"zh": "海报/带字", "en": "poster / text"}
     masked = table["image_edit"]["masked"]
     assert masked["model"] == "openai/gpt-image-2.6-sunburst/edit"
     assert masked["fallback"] == "openai/gpt-image-2.6-flare/edit"
     assert masked["tip"] == {"zh": "选区编辑", "en": "selection edit"}
+    logo = next(c for c in table["text_to_image"]["categories"] if c["id"] == "logo")
+    assert logo["model"] == "recraft-ai/recraft-v3"
+    person = next(c for c in table["text_to_image"]["categories"] if c["id"] == "person")
+    assert person["model"] == SEEDREAM
+    assert person["tip"] == {"zh": "写实人物", "en": "realistic person"}
+    photoreal = next(c for c in table["text_to_image"]["categories"] if c["id"] == "photoreal")
+    assert photoreal["model"] == SEEDREAM
+    assert photoreal["tip"] == {"zh": "产品摄影", "en": "product photography"}
+    retouch = next(c for c in table["image_edit"]["categories"] if c["id"] == "photo_retouch")
+    assert retouch["model"] == SEEDREAM_EDIT
+    person_edit = next(c for c in table["image_edit"]["categories"] if c["id"] == "person")
+    assert person_edit["model"] == SEEDREAM_EDIT
+    assert person_edit["tip"] == {"zh": "写实人物", "en": "realistic person"}
 
     # Live matcher still routes those rows the same way as main
     assert auto_models.choose("text_to_image", "Anime girl under cherry blossoms", None, catalog)["category"] == "anime_art"

@@ -34,32 +34,27 @@ def test_catalog_has_flare_edit_for_masked(catalog):
 def test_table_registers_sunburst_to_flare():
     table = json.loads((ROOT / "api/auto_models.json").read_text(encoding="utf-8"))
     poster = next(c for c in table["features"]["text_to_image"]["categories"] if c["id"] == "poster_text")
-    assert poster["model"] == SUN_T2I and poster["fallback"] == FLARE_T2I
+    assert poster["model"] == FLARE_T2I and "fallback" not in poster
     masked = table["features"]["image_edit"]["masked"]
     assert masked["model"] == SUN_EDIT and masked["fallback"] == FLARE_EDIT
 
 
-def test_poster_choose_tip_and_runtime_fallback(catalog):
+def test_poster_choose_tip_and_no_runtime_fallback(catalog):
+    """poster_text is Flare with no registered fallback; a failure goes through #236."""
     primary = auto_models.choose("text_to_image", POSTER, None, catalog)
-    assert primary["model"] == SUN_T2I and primary["category"] == "poster_text"
+    assert primary["model"] == FLARE_T2I and primary["category"] == "poster_text"
     assert primary["reason"]["zh"] == "海报/带字"
+    assert auto_models.pill_tooltip(primary, "zh") == "自动选择：海报/带字"
+    assert auto_models.pill_label(primary) == "Auto · GPT Image 2.6 Flare"
     ids = {m["id"] for m in catalog["features"]["text_to_image"]["models"]}
-    fb = auto_models.table_runtime_fallback_choice("text_to_image", primary, SUN_T2I, ids)
-    assert fb and fb["model"] == FLARE_T2I and fb["fallback"] == SUN_T2I
-    assert fb["fallback"] == primary["model"]
-    tip = auto_models.pill_tooltip(fb, "zh")
-    preferred = auto_models.short_name(fb["fallback"])
-    used = auto_models.short_name(fb["model"])
-    assert tip == f"自动选择：海报/带字 · 首选 {preferred} 失败，改用 {used}"
-    assert auto_models.pill_label(fb) == f"Auto · {used}"
+    assert auto_models.table_runtime_fallback_choice("text_to_image", primary, FLARE_T2I, ids) is None
+    assert auto_models.registered_runtime_fallback("text_to_image", primary, ids) in (None, "", [])
 
 
-def test_canvas_fallback_choice_uses_row_fallback(catalog):
-    choice = canvas._fallback_choice("generate_image", {"prompt": POSTER, "auto_model": True}, SUN_T2I)
-    assert choice["model"] == FLARE_T2I and choice["fallback"] == SUN_T2I
-    assert choice["category"] == "poster_text"
-    poster = next(c for c in auto_models.load_table()["text_to_image"]["categories"] if c["id"] == "poster_text")
-    assert choice["fallback"] == poster["model"]
+def test_canvas_fallback_choice_has_no_poster_row_fallback(catalog):
+    """Auto Flare on a poster prompt has no registered row fallback; #236 also has no distinct default."""
+    choice = canvas._fallback_choice("generate_image", {"prompt": POSTER, "auto_model": True}, FLARE_T2I)
+    assert choice is None
 
 
 def test_masked_fallback_choice_uses_flare_edit(catalog):
@@ -75,12 +70,13 @@ def test_masked_fallback_choice_uses_flare_edit(catalog):
 
 
 def test_preferred_in_tip_equals_table_row_model_not_hardcoded(catalog):
-    poster = next(c for c in auto_models.load_table()["text_to_image"]["categories"] if c["id"] == "poster_text")
-    primary = auto_models.choose("text_to_image", POSTER, None, catalog)
-    ids = {m["id"] for m in catalog["features"]["text_to_image"]["models"]}
-    fb = auto_models.table_runtime_fallback_choice("text_to_image", primary, primary["model"], ids)
-    assert fb["fallback"] == poster["model"]
-    assert auto_models.short_name(poster["model"]) in auto_models.pill_tooltip(fb, "zh")
+    """Masked still registers a runtime fallback; the tip names the table row model (not a hardcoded id)."""
+    masked = auto_models.load_table()["image_edit"]["masked"]
+    primary = auto_models.choose("image_edit", "redo the sky", None, catalog, masked=True)
+    ids = {m["id"] for m in catalog["features"]["image_edit"]["models"]}
+    fb = auto_models.table_runtime_fallback_choice("image_edit", primary, primary["model"], ids)
+    assert fb["fallback"] == masked["model"]
+    assert auto_models.short_name(masked["model"]) in auto_models.pill_tooltip(fb, "zh")
 
 
 @pytest.mark.parametrize("kind,eligible", [
@@ -108,20 +104,19 @@ def test_result_error_kind_parses_balance():
     assert auto_models.fallback_kind_eligible("insufficientCredit") is False
 
 
-def test_sunburst_success_no_fallback_when_failed_is_other(catalog):
+def test_poster_has_no_table_runtime_fallback(catalog):
     primary = auto_models.choose("text_to_image", POSTER, None, catalog)
     ids = {m["id"] for m in catalog["features"]["text_to_image"]["models"]}
+    assert auto_models.table_runtime_fallback_choice("text_to_image", primary, SUN_T2I, ids) is None
     assert auto_models.table_runtime_fallback_choice("text_to_image", primary, FLARE_T2I, ids) is None
 
 
-def test_both_fail_never_retries_sunburst(catalog):
+def test_poster_flare_failure_has_no_registered_retry(catalog):
     primary = auto_models.choose("text_to_image", POSTER, None, catalog)
     ids = {m["id"] for m in catalog["features"]["text_to_image"]["models"]}
-    fb = auto_models.table_runtime_fallback_choice("text_to_image", primary, SUN_T2I, ids)
-    assert fb["model"] == FLARE_T2I
-    assert auto_models.table_runtime_fallback_choice("text_to_image", fb, FLARE_T2I, ids) is None
+    assert auto_models.table_runtime_fallback_choice("text_to_image", primary, FLARE_T2I, ids) is None
     choice = canvas._fallback_choice("generate_image", {"prompt": POSTER, "auto_model": True}, FLARE_T2I)
-    assert choice is None  # registered fallback failed → stop
+    assert choice is None  # no registered fallback; default is also Flare
 
 
 @pytest.mark.asyncio
@@ -214,5 +209,6 @@ def test_manual_sunburst_never_triggers_872_auto_fallback(catalog):
     assert choice["model"] == FLARE_T2I and choice["fallback"] == SUN_T2I
     assert "首选" not in (choice.get("reason") or {}).get("zh", "")
     tip = auto_models.pill_tooltip(choice, "zh")
-    # #873 auto tip shape is category · 首选 …; #236 fallback tip must not claim auto-picked poster row
-    assert "海报/带字 · 首选" not in tip
+    # #873 auto tip-row starts with 「自动选择：海报/带字」; #236 must stay on the table/default fallback shape
+    assert not tip.startswith("自动选择：海报/带字"), tip
+    assert "按对应表改用备用模型" in tip
