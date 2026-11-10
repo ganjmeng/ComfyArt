@@ -1267,12 +1267,12 @@ class _PlanGate:
 TEST_TIMEOUT_S = 10.0
 
 
-async def test_local_llm(*, base_url: str, api_key: str = "", model: str = "",
-                         timeout: float = TEST_TIMEOUT_S) -> dict:
-    """#321: light probe — reachability, auth, optional model id. No chat completion."""
+async def fetch_local_llm_models(*, base_url: str, api_key: str = "",
+                                 timeout: float = TEST_TIMEOUT_S) -> dict:
+    """#877 v2: GET {base}/models via this server. No chat completion. Never echoes the key."""
     base = (base_url or "").strip().rstrip("/")
     if not base:
-        return {"ok": False, "code": "no_url"}
+        return {"ok": False, "code": "no_url", "models": []}
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
@@ -1285,17 +1285,17 @@ async def test_local_llm(*, base_url: str, api_key: str = "", model: str = "",
             ) as resp:
                 body = await resp.text()
                 if resp.status in (401, 403):
-                    return {"ok": False, "code": "auth_failed", "status": resp.status}
+                    return {"ok": False, "code": "auth_failed", "status": resp.status, "models": []}
                 if resp.status >= 400:
-                    return {"ok": False, "code": "unreachable", "status": resp.status}
+                    return {"ok": False, "code": "unreachable", "status": resp.status, "models": []}
                 try:
                     data = json.loads(body) if body else {}
                 except ValueError:
                     data = {}
     except asyncio.TimeoutError:
-        return {"ok": False, "code": "timeout"}
+        return {"ok": False, "code": "timeout", "models": []}
     except (aiohttp.ClientError, OSError) as e:
-        return {"ok": False, "code": "unreachable", "detail": str(e)[:200]}
+        return {"ok": False, "code": "unreachable", "detail": str(e)[:200], "models": []}
 
     rows = data.get("data") if isinstance(data, dict) else None
     models = [
@@ -1303,6 +1303,21 @@ async def test_local_llm(*, base_url: str, api_key: str = "", model: str = "",
         for m in (rows or [])
         if isinstance(m, dict) and m.get("id")
     ]
+    return {"ok": True, "code": "ok", "models": models, "total": len(models)}
+
+
+async def test_local_llm(*, base_url: str, api_key: str = "", model: str = "",
+                         timeout: float = TEST_TIMEOUT_S) -> dict:
+    """#321: light probe — reachability, auth, optional model id. No chat completion."""
+    result = await fetch_local_llm_models(base_url=base_url, api_key=api_key, timeout=timeout)
+    if not result.get("ok"):
+        out = {"ok": False, "code": result.get("code") or "unreachable"}
+        if "status" in result:
+            out["status"] = result["status"]
+        if "detail" in result:
+            out["detail"] = result["detail"]
+        return out
+    models = list(result.get("models") or [])
     want = (model or "").strip()
     if want and models and want not in models:
         return {

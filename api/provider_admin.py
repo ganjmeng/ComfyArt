@@ -216,9 +216,13 @@ def image_revision() -> int:
     return int(load_doc()["image"]["revision"])
 
 
+OFFICIAL_LLM_NOT_READY = {
+    "zh": "Loomi 内置模型还没就绪。请联系管理员完成服务端配置，或改用你自己的 API Key。",
+    "en": "The Loomi built-in model isn't ready. Ask your admin to finish server setup, or switch to your own API key.",
+}
+
 OFFICIAL_NO_KEY_ERROR = (
-    "DeepSeek 官方未配置 DEEPSEEK_API_KEY，未发送请求 / "
-    "Official DeepSeek has no DEEPSEEK_API_KEY, so nothing was sent."
+    f'{OFFICIAL_LLM_NOT_READY["zh"]} / {OFFICIAL_LLM_NOT_READY["en"]}'
 )
 
 # Official default catalog / request id and display name live in settings (the defaults module).
@@ -284,8 +288,8 @@ def settings_llm_incomplete() -> bool:
 
 
 CUSTOM_LLM_NOT_SETUP = {
-    "zh": "自定义模型还没配好：请填写模型地址和模型名",
-    "en": "Your custom model isn't set up yet. Fill in the model address and model name.",
+    "zh": "还没配好：请选择服务商并填写 API Key，再选择模型",
+    "en": "Your model isn't set up yet. Choose a provider, enter your API key, then pick a model.",
 }
 
 

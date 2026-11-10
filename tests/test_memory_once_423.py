@@ -189,15 +189,26 @@ def test_locales_only_add_memory_retrieved_430():
         "wsErr.timeout", "wsErr.timeoutNoAmount", "wsErr.taskRef",  # #712: 后台 -> 控制台, {0} carries the $
         # #825/#871: auto-pick pill reason prefix and skill-pin reason (not memory copy)
         "chatMessage.autoPickedPrefix", "chatMessage.skillPinnedModel",
-        # #877: official vs custom LLM source label, failure reason, 切回官方默认
+        # #877 / #877 v2: conversation-model settings copy
         "botSettings.llmSourceOfficial", "botSettings.llmSourceCustom",
-        "botSettings.useOfficialDefault", "botSettings.customLlmFailed",
+        "botSettings.llmSourceAdmin", "botSettings.useOfficialDefault", "botSettings.customLlmFailed",
         "botSettings.customLlmFailHost", "botSettings.customLlmFailAuth",
         "botSettings.customLlmFailTimeout", "botSettings.customLlmFailHttp",
         "botSettings.llmManagedByAdmin", "botSettings.llmModeCustom",
+        "botSettings.llmModeOfficial", "botSettings.llmModeOfficialSub", "botSettings.llmModeCustomSub",
         "botSettings.customLlmNotSetup", "botSettings.llmOfficialNotice",
         "botSettings.llmCustomKept", "botSettings.llmKeyProvidedByAdmin",
-        "botSettings.builtinAgentHint",
+        "botSettings.builtinAgentHint", "botSettings.llmOfficialNotReady",
+        "botSettings.llmProvider", "botSettings.useCustomUrl",
+        "botSettings.fetchModels", "botSettings.refetchModels",
+        "botSettings.chooseModel", "botSettings.searchModels", "botSettings.modelCountHint",
+        "botSettings.chooseModelFirst", "botSettings.fetchModelsFailed",
+        "botSettings.enterUrlFirst", "botSettings.testOkWithModel", "botSettings.modelComboboxHint",
+        "botSettings.localLlmUrl", "botSettings.localLlmModel",
+        "botSettings.localLlmUrlHint", "botSettings.localLlmModelHint", "botSettings.localLlmKeyHint",
+        "botSettings.provider.wavespeed", "botSettings.provider.deepseek",
+        "botSettings.provider.siliconflow", "botSettings.provider.openrouter",
+        "botSettings.provider.openai", "botSettings.provider.ollama", "botSettings.provider.custom",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)

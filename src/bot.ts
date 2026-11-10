@@ -151,7 +151,7 @@ export const providersAtom = atom<ProviderInfo[]>('bot providers', [])
 export const botEnabledAtom = atom<boolean | null>('bot enabled', null)
 export const settingsAtom = atom<BotSettings>('bot settings', {})
 export type LlmSource = 'admin' | 'settings' | 'default'
-export type LlmStatus = { source: LlmSource; host: string; officialModel?: string; official_model?: string; url?: string; model?: string }
+export type LlmStatus = { source: LlmSource; host: string; officialModel?: string; official_model?: string; officialDisplayName?: string; official_display_name?: string; officialReady?: boolean; official_ready?: boolean; provider?: string; url?: string; model?: string }
 export const llmSourceAtom = atom<LlmStatus>('bot llm source', { source: 'default', host: '' })
 export const chatsAtom = atom<BotChat[]>('bot chats', [])
 export const chatIdAtom = atom<string | null>('bot chat id', null)
@@ -192,6 +192,9 @@ export async function loadProviders(opts?: { refresh?: boolean }) {
     source: status.llm?.source ?? 'default',
     host: status.llm?.host ?? '',
     officialModel: status.llm?.officialModel ?? status.llm?.official_model,
+    officialDisplayName: status.llm?.officialDisplayName ?? status.llm?.official_display_name,
+    officialReady: status.llm?.officialReady ?? status.llm?.official_ready,
+    provider: status.llm?.provider,
     url: status.llm?.url,
     model: status.llm?.model,
   })
@@ -214,6 +217,11 @@ export type LocalLlmTestCode = 'ok' | 'no_url' | 'unreachable' | 'auth_failed' |
 export type LocalLlmTestResult = { ok: boolean; code: LocalLlmTestCode; model?: string; status?: number; models?: string[]; detail?: string }
 export async function testLocalLlm(draft: { url?: string; key?: string; model?: string }) {
   return json<LocalLlmTestResult>('/comfyart/bot/local-llm/test', send(draft))
+}
+
+export type LocalLlmModelsResult = { ok: boolean; code: LocalLlmTestCode | string; status?: number; models: { id: string }[]; total?: number; truncated?: boolean }
+export async function listLocalLlmModels(draft: { url?: string; key?: string }) {
+  return json<LocalLlmModelsResult>('/comfyart/bot/local-llm/models', send(draft))
 }
 
 

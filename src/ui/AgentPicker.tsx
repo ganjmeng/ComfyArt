@@ -1,13 +1,14 @@
 import { useEffect } from 'react'
 import { atom, useValue } from 'tldraw'
 
-import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, lostProvider, NO_KEY_DETAIL, providerLabel, messagesAtom, newProviderAtom, openChat, providersAtom, providersStateAtom, saveSettings, settingsAtom, updateChat, type ProviderInfo } from '../bot'
+import { BUILTIN_AGENT, chatIdAtom, chatsAtom, defaultProvider, llmSourceAtom, lostProvider, NO_KEY_DETAIL, providerLabel, messagesAtom, newProviderAtom, openChat, providersAtom, providersStateAtom, saveSettings, settingsAtom, updateChat, type ProviderInfo } from '../bot'
 import { errorText } from '../jobs'
 import { confirmAtom } from './Confirm'
 import { AgentLogo } from './agentLogos'
 import { FieldSelect } from './FieldSelect'
 import { Icons } from './icons'
 import { t } from '../i18n'
+import { llmSourceLabel } from './llmProviders'
 
 export const botSettingsOpenAtom = atom('bot settings open', false)
 /** #877: chat「切回官方默认」pre-moves the settings switch; takes effect only on Save. */
@@ -119,6 +120,8 @@ export function AgentItems({ onError, current, close, onChosen }: { onError: (ms
   const pending = useValue(newProviderAtom)
   const providerId = chat?.provider ?? (pending || defaultProvider())
   const provider = providers.find((p) => p.id === providerId)
+  const llmSource = useValue(llmSourceAtom)
+  const settings = useValue(settingsAtom)
   const fail = (e: unknown) => onError(errorText(e))
   const lost = lostProvider()
   const choose = (id: string) => {
@@ -151,7 +154,7 @@ export function AgentItems({ onError, current, close, onChosen }: { onError: (ms
       ) : (
         <button key={p.id} type="button" className="ca-menu__item ca-agentpick__row" disabled={!p.available} title={p.detail || p.version} onClick={() => pick(p.id)}>
           <AgentLogo id={p.id} />
-          <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span>{!p.available && <span className="ca-agentpick__status">{t('botSettings.unavailable')}</span>}</span>
+          <span className="ca-agentpick__text"><span className="ca-agentpick__name">{providerLabel(p)}</span>{p.id === BUILTIN_AGENT ? <span className="ca-agentpick__status" data-testid="llm-source-label">{llmSourceLabel(llmSource, settings)}</span> : !p.available ? <span className="ca-agentpick__status">{t('botSettings.unavailable')}</span> : null}</span>
           <span className="ca-agentpick__check">{current && p.id === providerId ? <span className="ca-icon">{Icons.check}</span> : null}</span>
         </button>
       ))}
