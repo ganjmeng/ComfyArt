@@ -329,9 +329,6 @@ KEEP_GENERIC_PROMPTS = [
     "保持原样，把香水瓶放到海边",
     "保持一致",
     "背景改成海边，其他保持不变",
-]
-# These also contain 只换背景, so first-match hits keep_product (still Banana 2.1).
-KEEP_GENERIC_WITH_PRODUCT_PROMPTS = [
     "保持一致，只换背景",
     "商品保持原样，只换背景",
 ]
@@ -349,12 +346,15 @@ def test_keep_generic_prompts_route_to_banana(catalog):
         assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the original consistent", prompt
         assert auto_models.pill_label(choice) == "Auto · Nano Banana 2.1", prompt
 
-    for prompt in KEEP_GENERIC_WITH_PRODUCT_PROMPTS:
-        choice = auto_models.choose("image_edit", prompt, None, catalog)
-        assert choice["model"] == NANO_EDIT, prompt
-        # 只换背景 is a keep_product keyword and that row sits above keep_generic.
-        assert choice["category"] == "keep_product", prompt
-        assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保留商品不变", prompt
+
+def test_keep_consistent_and_only_change_background_is_keep_generic(catalog):
+    """只换背景 now lives on keep_generic, so 「保持一致，只换背景」 stays Banana with the generic tip."""
+    choice = auto_models.choose("image_edit", "保持一致，只换背景", None, catalog)
+    assert choice["category"] == "keep_generic"
+    assert choice["model"] == NANO_EDIT
+    assert auto_models.pill_label(choice) == "Auto · Nano Banana 2.1"
+    assert auto_models.pill_tooltip(choice, "zh") == "自动选择：保持原图一致"
+    assert auto_models.pill_tooltip(choice, "en") == "Auto-picked: keep the original consistent"
 
 
 def test_keep_row_hover_tips(catalog):
@@ -401,9 +401,12 @@ def test_keep_identity_move_leaves_other_auto_rows_unchanged(catalog):
             assert token in keywords, token
     product_keywords = [
         "keep the product", "don't change the product", "same product", "preserve the product",
-        "保持产品", "产品不变", "保留产品", "只换背景", "只改背景",
+        "保持产品", "产品不变", "保留产品",
     ]
-    generic_keywords = ["keep the same", "保持一致", "保持原样", "保持原貌", "保持不变"]
+    generic_keywords = [
+        "keep the same", "保持一致", "保持原样", "保持原貌", "保持不变",
+        "只换背景", "只改背景",
+    ]
     for token in product_keywords + generic_keywords:
         assert token not in keywords, token
     assert len(keywords) == 30

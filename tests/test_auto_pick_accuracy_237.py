@@ -159,8 +159,9 @@ CASES = [
     case("zh", "edit_general", "edit_image", "把标题文字改成「特价」", FLARE_EDIT, "default"),
 
     # --- local edit that must keep the person / face → seedream edit ---
-    # Product / background-only keep phrases are a separate keep_product row (Banana 2.1).
-    # First-match: keep_identity is above keep_product, so a mixed prompt like
+    # Product keep phrases are a separate keep_product row (Banana 2.1).
+    # 只换背景 / 只改背景 live on keep_generic (also Banana 2.1).
+    # First-match: keep_identity is first, so a mixed prompt like
     # 「只换背景，人脸不要动」 still routes to Seedream (person wins).
     case("en", "edit_identity", "edit_image", "new background, keep the same person", SEEDREAM_EDIT, "keep_identity"),
     case("en", "edit_identity", "edit_image", "change the shirt to red but don't change her face", SEEDREAM_EDIT, "keep_identity"),
