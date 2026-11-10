@@ -20,6 +20,7 @@ const res = (id: string, name: string, text: string, status = 'success') => (
 
 const sunburst = 'openai/gpt-image-2.6-sunburst/text-to-image'
 const flare = 'openai/gpt-image-2.6-flare/text-to-image'
+const seedream = 'bytedance/seedream-v5.0-pro'
 const longId = 'openai/gpt-image-2.6-sunburst-with-an-extremely-long-marketing-name-that-must-ellipsis/text-to-image'
 
 /** Real pose-fission pin from api/auto_models.json — not invented fixture pairs. */
@@ -175,6 +176,21 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
           reason: { zh: '海报/带字', en: 'poster / text' },
         })),
         { type: 'text', text: lang === 'en' ? 'After refresh.' : '刷新后。' },
+      ],
+    },
+  },
+  // Realistic-person Auto card. reason/model follow the live table (updated with the person row).
+  person: {
+    thumbs: true,
+    msg: {
+      id: 'a', role: 'assistant', status: 'done', blocks: [
+        { type: 'thinking', text: 'pick' },
+        use('g1', 'mcp__comfyart__generate_image', { prompt: '一张写实人像' }),
+        res('g1', 'mcp__comfyart__generate_image', choice({
+          model: seedream, auto: true, category: 'person',
+          reason: { zh: '写实人物', en: 'realistic person' },
+        })),
+        { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
       ],
     },
   },
