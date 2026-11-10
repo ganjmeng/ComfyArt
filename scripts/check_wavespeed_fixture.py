@@ -8,7 +8,6 @@ Key: $WAVESPEED_API_KEY, else WAVESPEED_API_KEY=... in --env-file
 (default ~/.config/comfyart/wavespeed.env). The key is never printed.
 
   python scripts/check_wavespeed_fixture.py
-  python scripts/check_wavespeed_fixture.py --env-file /home/box/.secrets/comfyart-test.env
 """
 from __future__ import annotations
 
