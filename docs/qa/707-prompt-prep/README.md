@@ -6,7 +6,7 @@ Design should check these prompts against the gold images, then Angela confirms,
 
 Branch: `docs/707-prompt-prep`, based on main `2e1ad04c9978dca315e2b5a04980f479f61e6023`.
 
-Raw GitHub URLs below are pinned to this tip's full SHA:
+Raw GitHub URLs below are pinned to the content commit (masks, previews, and this document's body):
 
 `a888711ea7e346263b510f035f69bc82b0eb1013`
 
