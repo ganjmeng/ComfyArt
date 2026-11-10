@@ -83,13 +83,18 @@ async def test_list_models_recommended_first_and_footer_at_bottom():
 async def test_list_models_text_to_image_recommended_first():
     out = await canvas._list_models({"type": "text_to_image", "all": True})
     pages = [out] + [await canvas._list_models({"type": "text_to_image", "all": True, "page": p}) for p in range(2, out.get("pages", 1) + 1)]
-    text = "\n".join(json.dumps(p, ensure_ascii=False, default=str) for p in pages)
+    ids = []
+    for p in pages:
+        for f in p["features"].values():
+            ids.extend((m["id"] if isinstance(m, dict) else m) for m in f["models"])
     d = CURATED["text_to_image"].get("default")
     rec = [i for i in ([d] if d else []) + CURATED["text_to_image"]["models"] if i in FIXTURE and (i == d or i != d and i not in ([d] if d else []))]
     rec = list(dict.fromkeys(rec))  # #134: the agent list shows the default first
-    more = [i for i in CURATED["text_to_image"].get("more", []) if i in FIXTURE]
-    pos = [text.index(i) for i in rec + more if i in text]
-    assert pos == sorted(pos)
+    # more may repeat the default; compact_models lists each id once. text.index is
+    # also wrong here: seedream-v4 is a prefix of seedream-v4.5.
+    more = [i for i in CURATED["text_to_image"].get("more", []) if i in FIXTURE and i not in rec]
+    expected = rec + more
+    assert ids[:len(expected)] == expected
 
 
 @pytest.mark.parametrize("feature", FEATS)

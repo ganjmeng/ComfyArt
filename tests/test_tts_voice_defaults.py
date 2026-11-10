@@ -51,7 +51,7 @@ def test_voice_clone_has_no_default_and_asks_for_sample_before_any_charge(monkey
 
     monkeypatch.setattr(wavespeed, "catalog", cat)
     monkeypatch.setattr(wavespeed, "quote", no_quote)
-    monkeypatch.setattr(wavespeed, "resolve_model", lambda feature, picked: "minimax/voice-clone")
+    monkeypatch.setattr(wavespeed, "resolve_model", lambda feature, picked, **k: "minimax/voice-clone")
     monkeypatch.setattr(wavespeed, "_check_limits", lambda: None)
     wavespeed._submits.clear()
     with pytest.raises(wavespeed.WaveSpeedError) as e:

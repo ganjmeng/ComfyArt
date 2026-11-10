@@ -3,6 +3,7 @@ user naming one is registered in the runtime catalog (api/wavespeed.py load_conf
 UnregisteredModel error. Explicit fallbacks on auto rows must be registered too."""
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -20,6 +21,39 @@ def _catalog() -> dict[str, set[str]]:
     return {f: {m["id"] for m in v["models"]} for f, v in wavespeed.load_config()["features"].items()}
 
 
+def _registered() -> set[str]:
+    """Ids a built-in WaveSpeed path may legally route to.
+
+    load_config is the curated dropdown. size_lock may also name a raw
+    wavespeed_models.json id (resolve_model). Replicate Admin short ids and
+    coverage-audit counterparts are not added here: a typo of those shorts
+    in a builtin path must still fail this test (it would hit
+    UnregisteredModel in production).
+    """
+    cat = _catalog()
+    every = set().union(*cat.values()) if cat else set()
+    with open(wavespeed.CONFIG, encoding="utf-8") as f:
+        raw = json.load(f)
+    for feat in (raw.get("features") or {}).values():
+        for m in feat.get("models") or []:
+            if isinstance(m, dict) and m.get("id"):
+                every.add(m["id"])
+    return every
+
+
+# Admin UI + provider catalog / route config hold Replicate short ids and
+# _EXACT audit counterparts. Those are not WaveSpeed submit paths. Skip the
+# sources so the shorts never enter used_ids() — and never enter _registered().
+# A typo of the same short id in a real builtin path is still scanned and
+# must fail (it would hit UnregisteredModel in production).
+_ADMIN_OR_CATALOG = {
+    "src/ui/ProviderAdmin.tsx",
+    "api/provider_catalog.py",
+    "api/provider_admin.py",
+    "api/tool_routing.py",
+}
+
+
 def used_ids() -> dict[str, str]:
     """id -> where it is used (first source)."""
     cfg, out = wavespeed.load_config(), {}
@@ -34,17 +68,17 @@ def used_ids() -> dict[str, str]:
             out.setdefault(v["default"], f"curated default {f}")
     files = [*sorted((ROOT / "src").rglob("*.ts")), *sorted((ROOT / "src").rglob("*.tsx")), *sorted((ROOT / "api").rglob("*.py"))]
     for p in files:
-        if "locales" in p.parts:
+        rel = str(p.relative_to(ROOT))
+        if "locales" in p.parts or rel in _ADMIN_OR_CATALOG:
             continue
         for m in ID.findall(p.read_text(encoding="utf-8")):
             if m.startswith(VENDORS) and not m.endswith((".png", ".json", ".mp4", ".svg")):
-                out.setdefault(m, str(p.relative_to(ROOT)))
+                out.setdefault(m, rel)
     return out
 
 
 def test_builtin_paths_use_only_registered_models():
-    cat = _catalog()
-    every = set().union(*cat.values())
+    every = _registered()
     missing = {m: where for m, where in used_ids().items() if m not in every}
     assert not missing, f"unregistered model ids used by built-in paths: {missing}"
 
