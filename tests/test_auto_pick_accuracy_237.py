@@ -158,17 +158,17 @@ CASES = [
     case("zh", "edit_general", "edit_image", "让光线统一一点，不要改别的", FLARE_EDIT, "default"),
     case("zh", "edit_general", "edit_image", "把标题文字改成「特价」", FLARE_EDIT, "default"),
 
-    # --- local edit that must keep the person or product → nano edit ---
-    case("en", "edit_identity", "edit_image", "new background, keep the same person", NANO_EDIT, "keep_identity"),
-    case("en", "edit_identity", "edit_image", "change the shirt to red but don't change her face", NANO_EDIT, "keep_identity"),
-    case("en", "edit_identity", "edit_image", "the person should look identical, only the background changes", NANO_EDIT, "keep_identity"),
-    case("en", "edit_identity", "edit_image", "preserve the product, recolor the backdrop", NANO_EDIT, "keep_identity"),
-    case("en", "edit_identity", "edit_image", "keep her face, new hairstyle", NANO_EDIT, "keep_identity"),
-    case("zh", "edit_identity", "edit_image", "换背景，保持同一个人", NANO_EDIT, "keep_identity"),
-    case("zh", "edit_identity", "edit_image", "只换背景，人脸不要动", NANO_EDIT, "keep_identity"),
-    case("zh", "edit_identity", "edit_image", "衣服改成红色，五官不变", NANO_EDIT, "keep_identity"),
-    case("zh", "edit_identity", "edit_image", "保留产品外观，只改背景颜色", NANO_EDIT, "keep_identity"),
-    case("zh", "edit_identity", "edit_image", "人物不要变，把季节换成冬天", NANO_EDIT, "keep_identity"),
+    # --- local edit that must keep the person or product → seedream edit ---
+    case("en", "edit_identity", "edit_image", "new background, keep the same person", SEEDREAM_EDIT, "keep_identity"),
+    case("en", "edit_identity", "edit_image", "change the shirt to red but don't change her face", SEEDREAM_EDIT, "keep_identity"),
+    case("en", "edit_identity", "edit_image", "the person should look identical, only the background changes", SEEDREAM_EDIT, "keep_identity"),
+    case("en", "edit_identity", "edit_image", "preserve the product, recolor the backdrop", SEEDREAM_EDIT, "keep_identity"),
+    case("en", "edit_identity", "edit_image", "keep her face, new hairstyle", SEEDREAM_EDIT, "keep_identity"),
+    case("zh", "edit_identity", "edit_image", "换背景，保持同一个人", SEEDREAM_EDIT, "keep_identity"),
+    case("zh", "edit_identity", "edit_image", "只换背景，人脸不要动", SEEDREAM_EDIT, "keep_identity"),
+    case("zh", "edit_identity", "edit_image", "衣服改成红色，五官不变", SEEDREAM_EDIT, "keep_identity"),
+    case("zh", "edit_identity", "edit_image", "保留产品外观，只改背景颜色", SEEDREAM_EDIT, "keep_identity"),
+    case("zh", "edit_identity", "edit_image", "人物不要变，把季节换成冬天", SEEDREAM_EDIT, "keep_identity"),
 
     # --- photoreal photo retouch → seedream edit ---
     case("en", "edit_retouch", "edit_image", "retouch the portrait, natural skin", SEEDREAM_EDIT, "photo_retouch"),

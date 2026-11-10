@@ -271,7 +271,7 @@
    "categories": [
     {
      "id": "keep_identity",
-     "model": "google/nano-banana-2.1/edit",
+     "model": "bytedance/seedream-v5.0-pro/edit",
      "zh": "这是要保持人物或产品一致的局部修改",
      "en": "this is a local edit that must keep the person or product consistent",
      "keywords": [

@@ -12,6 +12,7 @@ const caseId = q.get('case') || 'auto'
 setLang(lang)
 if (q.get('theme') === 'dark') document.documentElement.dataset.theme = 'dark'
 TOOL_LABELS.generate_image = t('bot.generateImage')
+TOOL_LABELS.edit_image = t('bot.editImage')
 
 const use = (id: string, name: string, input: any) => ({ type: 'tool_use' as const, id, name, input })
 const res = (id: string, name: string, text: string, status = 'success') => (
@@ -21,6 +22,8 @@ const res = (id: string, name: string, text: string, status = 'success') => (
 const sunburst = 'openai/gpt-image-2.6-sunburst/text-to-image'
 const flare = 'openai/gpt-image-2.6-flare/text-to-image'
 const seedream = 'bytedance/seedream-v5.0-pro'
+const seedreamEdit = 'bytedance/seedream-v5.0-pro/edit'
+const bananaEdit = 'google/nano-banana-2.1/edit'
 const longId = 'openai/gpt-image-2.6-sunburst-with-an-extremely-long-marketing-name-that-must-ellipsis/text-to-image'
 
 /** Real pose-fission pin from api/auto_models.json — not invented fixture pairs. */
@@ -204,6 +207,36 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
         res('g1', 'mcp__comfyart__generate_image', choice({
           model: seedream, auto: true, category: 'photoreal',
           reason: { zh: '产品摄影', en: 'product photography' },
+        })),
+        { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
+      ],
+    },
+  },
+  // #825 keep-face / keep-identity Auto edit card (reason follows the live keep_identity row).
+  keepface: {
+    thumbs: true,
+    msg: {
+      id: 'a', role: 'assistant', status: 'done', blocks: [
+        { type: 'thinking', text: 'pick' },
+        use('g1', 'mcp__comfyart__edit_image', { prompt: '保留同一个人，只把衣服换成深色西装、背景换成办公室' }),
+        res('g1', 'mcp__comfyart__edit_image', choice({
+          model: seedreamEdit, auto: true, category: 'keep_identity',
+          reason: { zh: '这是要保持人物或产品一致的局部修改', en: 'this is a local edit that must keep the person or product consistent' },
+        })),
+        { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
+      ],
+    },
+  },
+  // Same card on main: keep_identity still routed to Nano Banana 2.1 edit (L/R before).
+  keepface_main: {
+    thumbs: true,
+    msg: {
+      id: 'a', role: 'assistant', status: 'done', blocks: [
+        { type: 'thinking', text: 'pick' },
+        use('g1', 'mcp__comfyart__edit_image', { prompt: '保留同一个人，只把衣服换成深色西装、背景换成办公室' }),
+        res('g1', 'mcp__comfyart__edit_image', choice({
+          model: bananaEdit, auto: true, category: 'keep_identity',
+          reason: { zh: '这是要保持人物或产品一致的局部修改', en: 'this is a local edit that must keep the person or product consistent' },
         })),
         { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
       ],

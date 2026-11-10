@@ -241,3 +241,105 @@ def test_anime_illustration_poster_and_masked_rows_unchanged(catalog):
     assert auto_models.registered_runtime_fallback(
         "image_edit", masked_choice, {masked["model"], masked["fallback"]}
     ) == masked["fallback"]
+
+
+KEEP_IDENTITY_REASON = {
+    "zh": "这是要保持人物或产品一致的局部修改",
+    "en": "this is a local edit that must keep the person or product consistent",
+}
+KEEP_FACE_PROMPTS = [
+    "保留同一个人，只把衣服换成深色西装、背景换成办公室",
+    "保留脸，换背景",
+    "keep the face, new background",
+    "new background, keep the same person",
+    "same person, only change the clothes",
+]
+
+
+def test_keep_identity_keep_face_prompt_routes_to_seedream_edit(catalog):
+    """#825: identity-lock / keep-the-face edits now Auto-pick Seedream 5.0 Pro edit."""
+    for prompt in KEEP_FACE_PROMPTS:
+        choice = auto_models.choose("image_edit", prompt, None, catalog)
+        assert choice["auto"] is True, prompt
+        assert choice["category"] == "keep_identity", prompt
+        assert choice["model"] == SEEDREAM_EDIT, prompt
+        assert choice["reason"] == KEEP_IDENTITY_REASON, prompt
+        assert auto_models.pill_tooltip(choice, "zh") == "自动选择：这是要保持人物或产品一致的局部修改"
+        assert auto_models.pill_tooltip(choice, "en") == (
+            "Auto-picked: this is a local edit that must keep the person or product consistent"
+        )
+        assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
+
+
+def test_keep_identity_move_leaves_other_auto_rows_unchanged(catalog):
+    """Frozen check: only the keep_identity model id changes. Hover wording and position stay."""
+    table = auto_models.load_table()
+    ie_cats = table["image_edit"]["categories"]
+    assert [c["id"] for c in ie_cats] == ["keep_identity", "photo_retouch", "person"]
+
+    keep = ie_cats[0]
+    assert keep["id"] == "keep_identity"
+    assert keep["model"] == SEEDREAM_EDIT
+    assert keep["zh"] == KEEP_IDENTITY_REASON["zh"] and keep["en"] == KEEP_IDENTITY_REASON["en"]
+    assert keep.get("tip") in (None, {}, "")
+    assert keep.get("fallback") in (None, "", [])
+    keywords = keep["keywords"]
+    for token in ("保留同一个人", "保留脸", "同一个人", "same person", "keep the face", "keep the same"):
+        # 「保留同一个人」 is a substring hit on 同一个人; the others are listed verbatim.
+        if token == "保留同一个人":
+            assert "同一个人" in keywords
+        else:
+            assert token in keywords, token
+    assert len(keywords) == 42
+
+    # person t2i / person edit (Seedream) — model + short tip unchanged
+    person = next(c for c in table["text_to_image"]["categories"] if c["id"] == "person")
+    assert person["model"] == SEEDREAM
+    assert person["tip"] == {"zh": "写实人物", "en": "realistic person"}
+    person_edit = next(c for c in ie_cats if c["id"] == "person")
+    assert person_edit["model"] == SEEDREAM_EDIT
+    assert person_edit["tip"] == {"zh": "写实人物", "en": "realistic person"}
+
+    # product photoreal (产品摄影)
+    photoreal = next(c for c in table["text_to_image"]["categories"] if c["id"] == "photoreal")
+    assert photoreal["model"] == SEEDREAM
+    assert photoreal["tip"] == {"zh": "产品摄影", "en": "product photography"}
+
+    # poster (Flare, no registered fallback — as on #882)
+    poster = next(c for c in table["text_to_image"]["categories"] if c["id"] == "poster_text")
+    assert poster["model"] == "openai/gpt-image-2.6-flare/text-to-image"
+    assert poster.get("fallback") in (None, "", [])
+    assert poster["tip"] == {"zh": "海报/带字", "en": "poster / text"}
+
+    # anime / illustration (Midjourney)
+    anime = next(c for c in table["text_to_image"]["categories"] if c["id"] == "anime_art")
+    assert anime["model"] == "midjourney/text-to-image"
+    assert "illustration" in anime["keywords"] and "插画" in anime["keywords"]
+
+    # logo
+    logo = next(c for c in table["text_to_image"]["categories"] if c["id"] == "logo")
+    assert logo["model"] == "recraft-ai/recraft-v3"
+
+    # masked edit (Sunburst → Flare)
+    masked = table["image_edit"]["masked"]
+    assert masked["model"] == "openai/gpt-image-2.6-sunburst/edit"
+    assert masked["fallback"] == "openai/gpt-image-2.6-flare/edit"
+    assert masked["tip"] == {"zh": "选区编辑", "en": "selection edit"}
+
+    # photo_retouch stays Seedream edit
+    retouch = next(c for c in ie_cats if c["id"] == "photo_retouch")
+    assert retouch["model"] == SEEDREAM_EDIT
+
+    # multi-reference stays Banana 2.1 edit
+    assert table["image_edit"]["multi_reference"]["model"] == "google/nano-banana-2.1/edit"
+
+    # Live matcher: other rows still route the same way
+    assert auto_models.choose("text_to_image", "一张写实人像，自然光", None, catalog)["category"] == "person"
+    assert auto_models.choose("image_edit", "编辑这张写实人像，让她微笑", None, catalog)["category"] == "person"
+    assert auto_models.choose("text_to_image", "电商主图，白底，香水瓶", None, catalog)["category"] == "photoreal"
+    assert auto_models.choose("text_to_image", 'Movie poster with the headline "SUMMER"', None, catalog)["category"] == "poster_text"
+    assert auto_models.choose("text_to_image", "Anime girl under cherry blossoms", None, catalog)["category"] == "anime_art"
+    assert auto_models.choose("text_to_image", "Minimal logo for a tea brand", None, catalog)["category"] == "logo"
+    assert auto_models.choose("image_edit", "retouch the portrait, natural skin", None, catalog)["category"] == "photo_retouch"
+    masked_choice = auto_models.choose("image_edit", "edit the selected area", None, catalog, masked=True)
+    assert masked_choice["category"] == "masked" and masked_choice["model"] == masked["model"]
