@@ -323,3 +323,28 @@ def test_chat_source_labels_wired():
     assert zh["botSettings.llmSourceAdmin"] == "由管理员统一配置"
     assert "官方默认" not in zh["botSettings.llmSourceOfficial"]
     assert "自定义" not in zh["botSettings.llmSourceCustom"]
+
+
+def test_ac12_switching_source_keeps_unsaved_byo_draft():
+    """AC12: 「改用 Loomi 内置模型」 only changes the draft source.
+
+    Unsaved URL / provider / model / Key stay when switching to built-in and
+    back to 「使用我自己的 API Key」. Save is when the built-in source takes
+    effect. Cancel discards unsaved source and field edits; the next open
+    shows the previously saved settings.
+    """
+    settings_src = (ROOT / "src/ui/BotSettings.tsx").read_text()
+    # Regression: hydrating on modeOverride rebuilt the draft from saved
+    # settings (WaveSpeed defaults) and dropped unsaved example.com values.
+    assert "}, [settings, modeOverride])" not in settings_src
+    assert "}, [open, settings])" in settings_src
+    # Source switch (card click or 「改用 Loomi 内置模型」) only writes llm_mode.
+    assert "setDraft({ ...draft, llm_mode: id })" in settings_src
+    assert "setModeOverride(id)" in settings_src
+    # Hydrate still copies saved settings when the dialog opens or settings change.
+    assert "if (!open) return" in settings_src
+    assert "const next = { ...settings } as Settings" in settings_src
+    # Save materializes the draft source; close / cancel drops the override.
+    assert "llm_mode: modeOf({ ...draft, llm_mode: modeOverride ?? draft.llm_mode })" in settings_src
+    assert "const close = () => { setModeOverride(null); botSettingsOpenAtom.set(false) }" in settings_src
+    assert "if (!open) {\n      setModeOverride(null)" in settings_src

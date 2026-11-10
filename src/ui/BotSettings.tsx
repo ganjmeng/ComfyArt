@@ -129,17 +129,25 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
       setModeOverride(null)
       return
     }
+    void refreshBot().catch((e) => onError(errorText(e)))
+  }, [open])
+
+  // Hydrate from saved settings when the dialog opens or when saved settings
+  // actually change (save / refresh). Do not depend on modeOverride: setMode
+  // already writes llm_mode onto the current draft and must keep unsaved URL /
+  // provider / model / Key (AC12). Cancel clears modeOverride; the next open
+  // runs this effect and shows the previously saved settings.
+  useEffect(() => {
+    if (!open) return
+    const next = { ...settings } as Settings
     const pending = pendingLlmModeAtom.get()
     if (pending === 'official' || pending === 'custom') {
       setModeOverride(pending)
       pendingLlmModeAtom.set(null)
+      next.llm_mode = pending
+    } else if (modeOverride) {
+      next.llm_mode = modeOverride
     }
-    void refreshBot().catch((e) => onError(errorText(e)))
-  }, [open])
-
-  useEffect(() => {
-    const next = { ...settings } as Settings
-    if (modeOverride) next.llm_mode = modeOverride
     setDraft(next)
     setTestState(null)
     const inferred = inferLlmProvider(String(next[URL_KEY] ?? ''), String(next.llm_provider ?? ''))
@@ -149,7 +157,9 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
     setUrlEditable(inferred === 'custom' || (!!normLlm(current) && normLlm(current) !== normLlm(preset)))
     setModels(String(next[MODEL_KEY] ?? '').trim() ? [String(next[MODEL_KEY])] : [])
     setListState({ loading: false, typable: false, text: '' })
-  }, [settings, modeOverride])
+    // modeOverride is applied only while hydrating from saved settings, not as a trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, settings])
 
   const managed = llmSource.source === 'admin'
   const mode = modeOverride ?? modeOf(draft)
