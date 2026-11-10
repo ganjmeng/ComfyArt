@@ -1,4 +1,4 @@
-"""#868 follow-up: expand panel placement after slider release (design 4 rules). $0, no network."""
+"""#868 follow-up: expand panel placement after slider release. $0, no network."""
 import json
 import os
 import shutil
@@ -13,8 +13,8 @@ node = pytest.mark.skipif(
     reason="needs node + npm install",
 )
 
-SIDE_GAP, CLEAR, EDGE = 16, 12, 8
-SIZE_W, SIZE_H = 280, 520
+SIDE_GAP, CLEAR, EDGE, VIEW_CLEAR = 16, 12, 8, 12
+PANEL_W, PANEL_NARROW_W = 280, 220
 
 
 @node
@@ -28,45 +28,51 @@ def test_place_expand_panel_follows_design_rules(tmp_path):
         env={**os.environ, "OUT": str(out), "ENTRY": "panel_place.ts"},
     )
     data = json.loads(subprocess.run(["node", str(out)], check=True, capture_output=True, text=True).stdout)
-    assert data["constants"] == {"SIDE_GAP": SIDE_GAP, "CLEAR": CLEAR, "EDGE": EDGE}
+    assert data["constants"] == {
+        "SIDE_GAP": SIDE_GAP,
+        "CLEAR": CLEAR,
+        "EDGE": EDGE,
+        "VIEW_CLEAR": VIEW_CLEAR,
+        "PANEL_W": PANEL_W,
+        "PANEL_NARROW_W": PANEL_NARROW_W,
+    }
 
-    # 1/2: room on the right → right of the expand box with a 16px gap.
-    right = data["right"]
-    assert right["side"] == "right"
-    assert right["left"] == 740 + SIDE_GAP
-    assert right["top"] >= EDGE
-    assert data["gaps"]["rightBox"] == SIDE_GAP
-    assert data["gaps"]["rightTools"] >= CLEAR
-    assert data["gaps"]["rightDock"] >= CLEAR
-    assert right["top"] + SIZE_H <= 900 - 64 - 44 - CLEAR  # above .ca-tools
+    # 1× / 2× path: 280px on the right, then the left. Unchanged.
+    right, left = data["right"], data["left"]
+    assert right == {"left": 740 + SIDE_GAP, "top": 200, "side": "right", "width": PANEL_W}
+    assert left["side"] == "left" and left["width"] == PANEL_W
+    assert left["left"] + PANEL_W == 400 - SIDE_GAP
 
-    # No room on the right, room on the left → left side, 16px gap.
-    left = data["left"]
-    assert left["side"] == "left"
-    assert left["left"] + SIZE_W == 400 - SIDE_GAP
-    assert data["gaps"]["leftBox"] == SIDE_GAP
-    assert data["gaps"]["leftTools"] >= CLEAR
-    assert data["gaps"]["leftDock"] >= CLEAR
+    # 280px fits neither side → narrow to 220px and try right, then left.
+    n_right, n_both, n_left = data["nRight"], data["nBoth"], data["nLeft"]
+    assert n_right == {"left": 1160 + SIDE_GAP, "top": 40, "side": "narrow-right", "width": PANEL_NARROW_W}
+    assert n_right["left"] >= VIEW_CLEAR and n_right["left"] + PANEL_NARROW_W <= 1440 - VIEW_CLEAR
+    # When 220px fits on both sides, the right side wins.
+    assert n_both["side"] == "narrow-right" and n_both["left"] == n_right["left"]
+    assert n_left == {"left": 250 - SIDE_GAP - PANEL_NARROW_W, "top": 40, "side": "narrow-left", "width": PANEL_NARROW_W}
+    assert n_left["left"] >= VIEW_CLEAR
 
-    # Neither side fits → pin to the viewport right edge, bottom above the toolbar.
-    pin = data["pin"]
-    assert pin["side"] == "pin"
-    assert pin["left"] == 1440 - EDGE - SIZE_W
-    assert pin["top"] + SIZE_H <= 900 - 64 - 44 - CLEAR
-    assert data["gaps"]["pinTools"] >= CLEAR
-    assert data["gaps"]["pinDock"] >= CLEAR
-    assert pin["top"] >= EDGE
+    # 220px still fits neither side → dock to the viewport right edge at 220px.
+    docked = data["docked"]
+    assert docked["side"] == "dock" and docked["width"] == PANEL_NARROW_W
+    assert docked["left"] == 1440 - VIEW_CLEAR - PANEL_NARROW_W
 
-    # Narrow 1280 viewport: still pins with 12px clearance from the zoom bar.
-    narrow = data["narrow"]
-    assert narrow["side"] == "pin"
-    assert data["gaps"]["narrowRight"] == 0
-    assert narrow["left"] == 1280 - EDGE - SIZE_W
-    assert data["gaps"]["narrowTools"] >= CLEAR
-    assert narrow["top"] + SIZE_H <= 800 - 64 - 44 - CLEAR
+    # Docked: shift vertically to stay ≥12px from the right handle when a slot exists.
+    shifted = data["shifted"]
+    assert shifted["side"] == "dock" and shifted["width"] == PANEL_NARROW_W
+    assert shifted["left"] == 800 - VIEW_CLEAR - PANEL_NARROW_W
+    assert shifted["top"] == data["handle"]["shift"]["b"] + CLEAR  # below the handle
+    assert data["handle"]["shiftedClearsHandle"] is True
+
+    # If no vertical slot clears the handle, covering it is allowed, but toolbars / 生成 stay clear.
+    covered = data["covered"]
+    assert covered["side"] == "dock" and data["handle"]["coveredHitsHandle"] is True
 
     # expandBox applies pads in screen pixels (scale is screen/image).
-    assert data["scaled"] == {"l": 500 - 90, "t": 300 - 120, "r": 680 + 90, "b": 540 + 120}
+    assert data["scaled"] == {"l": 410, "t": 180, "r": 770, "b": 660}
+
+    for name, flags in data["clear"].items():
+        assert flags == {"tools": True, "dock": True, "gen": True}, name
 
 
 def test_mode_panel_wires_placement_and_transition():
@@ -74,7 +80,16 @@ def test_mode_panel_wires_placement_and_transition():
     css = (ROOT / "src/styles/canvas.css").read_text(encoding="utf-8")
     assert "from './panelPlace'" in src
     assert "placeExpandPanel(" in src
+    assert "PANEL_NARROW_W" in src
     assert "obstacleRects(editor.getContainer(), host)" in src
-    assert "if (held) ({ left, top } = held)" in src
+    assert "if (held) ({ left, top, width: panelW } = held)" in src
     assert "data-move={moving || undefined}" in src
+    assert "data-narrow={(mode === 'expand' && panelW === PANEL_NARROW_W) || undefined}" in src
     assert ".ca-panel[data-move] { transition: left 150ms ease, top 150ms ease; }" in css
+    assert ".ca-panel[data-narrow] { width: 220px; }" in css
+    # 220px layout: slider + value, size/price line, and 取消/生成 stay on one row.
+    assert "grid-template-columns: max-content minmax(0, 1fr) max-content;" in css
+    assert ".ca-panel[data-narrow] .ca-panel__foot { flex-wrap: nowrap; }" in css
+    assert ".ca-panel[data-narrow] .ca-panel__foot > button" in css
+    assert "white-space: nowrap" in css
+    assert "text-overflow: clip" in css
