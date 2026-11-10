@@ -41,7 +41,8 @@ def test_preview_markup():
     assert "ca-bar__sep" not in preview
     # main toolbar: #283 version A (supersedes #244) puts the upstream 5231d59 sep back right before download
     main = src[src.index("export function ImageToolbar"):src.index("export function CustomizeDialog")]
-    assert 'hint={t(\'common.download\')}' in main or 'hint={t("common.download")}' in main
+    # #826 (4e241700): failed SVG preview uses wsErr.svgPreviewFailed; otherwise common.download.
+    assert "hint={svgState === 'preview_failed' ? t('wsErr.svgPreviewFailed') : t('common.download')}" in main
     # #570: the transform swap bar has its own download; check the normal bar only
     bar = main[main.index("{pinned.map(barTool)}"):]
     assert bar.split("Icons.download")[0].split("Popover")[-1].count("ca-bar__sep") == 1

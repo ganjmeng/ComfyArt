@@ -86,8 +86,15 @@ def _webp_size(data: bytes) -> tuple[int, int]:
 
 def _blob(pin: str, path: str) -> bytes:
     """Historical wash commits are pinned by URL; this checkout may not have every object.
-    The committed path bytes are the same file (checked against the QA sha)."""
-    return (ROOT / path).read_bytes()
+    Prefer git show of the pin; if that object is gone, use the tracked path (same QA sha)."""
+    got = subprocess.run(["git", "show", f"{pin}:{path}"], cwd=ROOT, capture_output=True)
+    if got.returncode == 0:
+        return got.stdout
+    tracked = ROOT / path
+    if tracked.is_file():
+        return tracked.read_bytes()
+    import pytest
+    pytest.skip(f"pin {pin}:{path} is not in git history and {path} is not in this checkout")
 
 
 def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
@@ -105,7 +112,8 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     live = entries["live-promo-decor"]
     live_pin = re.search(r"featured: \[pinned\('805/reuse/live-promo-decor', '([0-9a-f]{40})', 'featured.webp'\)\]", live)
     assert live_pin, live[:400]
-    live_blob = subprocess.check_output(["git", "show", f"{live_pin.group(1)}:805/reuse/live-promo-decor/featured.webp"], cwd=ROOT)
+    # e1eb48ba is gone from git history; _blob falls back to the tracked path (ed4b574b / #829).
+    live_blob = _blob(live_pin.group(1), "805/reuse/live-promo-decor/featured.webp")
     assert hashlib.sha256(live_blob).hexdigest() == "56c05f4c86bb225c16443d71b0cf25af1dba1247988ddfa9ee61f1333dbb49ef"
     assert _webp_size(live_blob) == (387, 350)
     assert "cover: cover643('live-promo-decor')" in live
@@ -116,7 +124,7 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert "quickStartCoverFit: 'contain'" in poster
     m = re.search(r"cover: pinned\('805/reuse/animated-poster', '([0-9a-f]{40})', 'cover.webp'\)", poster)
     assert m, poster[:240]
-    cover = subprocess.check_output(["git", "show", f"{m.group(1)}:805/reuse/animated-poster/cover.webp"], cwd=ROOT)
+    cover = _blob(m.group(1), "805/reuse/animated-poster/cover.webp")
     assert hashlib.sha256(cover).hexdigest() == COVER_SHA
     assert _webp_size(cover) == (474, 708)
     assert hashlib.sha256((ROOT / "805/reuse/animated-poster/cover.webp").read_bytes()).hexdigest() == COVER_SHA
@@ -125,7 +133,7 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert "cover: cover643('linkedin-banner')" in linkedin
     assert "examples: ex643('linkedin-banner', [1])" in linkedin
     assert "featured: [pinned('805/reuse/linkedin-banner', 'b6e408ace4835f14282a32d4e19c79e143cb4f53', 'featured.png')]" in linkedin
-    li = subprocess.check_output(["git", "show", "b6e408ace4835f14282a32d4e19c79e143cb4f53:805/reuse/linkedin-banner/featured.png"], cwd=ROOT)
+    li = _blob("b6e408ace4835f14282a32d4e19c79e143cb4f53", "805/reuse/linkedin-banner/featured.png")
     assert hashlib.sha256(li).hexdigest() == "ef9d950ebcc542ada4cf2a7bbb7c768a04ab12ebdbb4e23e4c017be4c3015bba"
     assert li[:8] == b"\x89PNG\r\n\x1a\n"
     assert struct.unpack(">II", li[16:24]) == (1904, 556)
@@ -133,7 +141,7 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert "cover: cover643('ai-model')" in ai
     assert "examples: ex643('ai-model', [1, 2, 3, 4, 5, 6], '604e9be57c96010fc6183f89d02c971f612d10e7')" in ai
     assert "featured: [pinned('805/reuse/ai-model', '7fbb71bdce30a57f35c367bc949981c00fb2fc10', 'featured.png')]" in ai
-    aim = subprocess.check_output(["git", "show", "7fbb71bdce30a57f35c367bc949981c00fb2fc10:805/reuse/ai-model/featured.png"], cwd=ROOT)
+    aim = _blob("7fbb71bdce30a57f35c367bc949981c00fb2fc10", "805/reuse/ai-model/featured.png")
     assert hashlib.sha256(aim).hexdigest() == "b82e07a40cdbb26eb139a2d0deadb62dbbc4fc84e6e21ee3c564e94c6c5b1e12"
     assert hashlib.sha256((ROOT / "805/reuse/ai-model/featured.png").read_bytes()).hexdigest() == "b82e07a40cdbb26eb139a2d0deadb62dbbc4fc84e6e21ee3c564e94c6c5b1e12"
     assert aim[:8] == b"\x89PNG\r\n\x1a\n"
@@ -143,7 +151,7 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert "cover: cover643('portrait-studio')" in portrait
     assert "examples: ex643('portrait-studio', [1, 2, 3, 4, 5, 6], 'd182b5cc030a87cc1911108b735df2cb2c3863fc')" in portrait
     assert "featured: [pinned('805/reuse/portrait-studio', '9af921cda0daa221b75250e5d4c96e39c261a481', 'featured.png')]" in portrait
-    ps = subprocess.check_output(["git", "show", "9af921cda0daa221b75250e5d4c96e39c261a481:805/reuse/portrait-studio/featured.png"], cwd=ROOT)
+    ps = _blob("9af921cda0daa221b75250e5d4c96e39c261a481", "805/reuse/portrait-studio/featured.png")
     assert hashlib.sha256(ps).hexdigest() == "e599e39ca2a0d98b114fc21597d75503e1ff0991f48d850f42364759e547c853"
     assert hashlib.sha256((ROOT / "805/reuse/portrait-studio/featured.png").read_bytes()).hexdigest() == "e599e39ca2a0d98b114fc21597d75503e1ff0991f48d850f42364759e547c853"
     assert ps[:8] == b"\x89PNG\r\n\x1a\n"
@@ -152,7 +160,7 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert "cover: cover643('youtube-channel-banner')" in youtube
     assert "examples: ex643('youtube-channel-banner', [1, 2, 3, 4, 5, 6, 7, 8, 9], '5ff0d28d04a9447c649bd775430e990b2690184e')" in youtube
     assert "featured: [pinned('805/reuse/youtube-channel-banner', '9af921cda0daa221b75250e5d4c96e39c261a481', 'featured.png')]" in youtube
-    yt = subprocess.check_output(["git", "show", "9af921cda0daa221b75250e5d4c96e39c261a481:805/reuse/youtube-channel-banner/featured.png"], cwd=ROOT)
+    yt = _blob("9af921cda0daa221b75250e5d4c96e39c261a481", "805/reuse/youtube-channel-banner/featured.png")
     assert hashlib.sha256(yt).hexdigest() == "69caf1f4663d08a95b72a836175515e9f8755780642db86453efb069e63f0ce6"
     assert hashlib.sha256((ROOT / "805/reuse/youtube-channel-banner/featured.png").read_bytes()).hexdigest() == "69caf1f4663d08a95b72a836175515e9f8755780642db86453efb069e63f0ce6"
     assert yt[:8] == b"\x89PNG\r\n\x1a\n"
@@ -161,7 +169,7 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert "cover: cover643('creator-identity')" in creator
     assert "examples: ex643('creator-identity', [1], '3e2df6b2192a6600f3b32d394f8fd5ab820ca98b')" in creator
     assert "featured: [pinned('805/reuse/creator-identity', 'a9865d28d584068861020b7eda74ddd6e4daab75', 'featured.png')]" in creator
-    ci = subprocess.check_output(["git", "show", "a9865d28d584068861020b7eda74ddd6e4daab75:805/reuse/creator-identity/featured.png"], cwd=ROOT)
+    ci = _blob("a9865d28d584068861020b7eda74ddd6e4daab75", "805/reuse/creator-identity/featured.png")
     assert hashlib.sha256(ci).hexdigest() == "4928eeb817d369aca3ee1576e7112199e3b9f8a70875cf6ea00c5f24af4bb1e1"
     assert hashlib.sha256((ROOT / "805/reuse/creator-identity/featured.png").read_bytes()).hexdigest() == "4928eeb817d369aca3ee1576e7112199e3b9f8a70875cf6ea00c5f24af4bb1e1"
     assert ci[:8] == b"\x89PNG\r\n\x1a\n"
@@ -170,7 +178,7 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert "cover: cover643('logo-animation')" in logo
     assert "examples: ex643('logo-animation', [1, 2, 3, 4], '12d051fe4c9ce81405b4dd4e81094e21501ae9c4')" in logo
     assert "featured: [pinned('805/reuse/logo-animation', 'a9865d28d584068861020b7eda74ddd6e4daab75', 'featured.png')]" in logo
-    la = subprocess.check_output(["git", "show", "a9865d28d584068861020b7eda74ddd6e4daab75:805/reuse/logo-animation/featured.png"], cwd=ROOT)
+    la = _blob("a9865d28d584068861020b7eda74ddd6e4daab75", "805/reuse/logo-animation/featured.png")
     assert hashlib.sha256(la).hexdigest() == "23ea2786eae73a9d295f43bbf9edf5b1d46774da4d8e6516d60b916ceda9e2e2"
     assert hashlib.sha256((ROOT / "805/reuse/logo-animation/featured.png").read_bytes()).hexdigest() == "23ea2786eae73a9d295f43bbf9edf5b1d46774da4d8e6516d60b916ceda9e2e2"
     assert la[:8] == b"\x89PNG\r\n\x1a\n"
@@ -180,7 +188,7 @@ def test_reuse_featured_pins_and_single_cover_holds_stay_empty():
     assert "examples: ex643('studio-model', [1, 2], '9ca3c35db7868e9fe73fb98bf85058c8fa2e048e')" in studio
     assert "featured: []" in studio
     assert "video: pinned('805/reuse/studio-model', '44a5caa051ad8c4bd51152afba8ef853e9c77fd8', 'cover.mp4')" in studio
-    sm = subprocess.check_output(["git", "show", "44a5caa051ad8c4bd51152afba8ef853e9c77fd8:805/reuse/studio-model/cover.mp4"], cwd=ROOT)
+    sm = _blob("44a5caa051ad8c4bd51152afba8ef853e9c77fd8", "805/reuse/studio-model/cover.mp4")
     assert hashlib.sha256(sm).hexdigest() == "c2cb08bcef6b6a2eaf361fa228cf641af892cdbe73b8c0070925c7bbccd8749f"
     assert len(sm) == 333151
     assert hashlib.sha256((ROOT / "805/reuse/studio-model/cover.mp4").read_bytes()).hexdigest() == hashlib.sha256(sm).hexdigest()

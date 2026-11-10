@@ -68,7 +68,11 @@ def test_motion_title_desc_poster_806():
     from tests.lovart_fields_687 import MOTION_TITLE
     src = (ROOT / "src/skills.ts").read_text()
     assert "MOTION_REMAKE_INPUTS_687" not in src and "refVideo" not in src and "remakeBrief" not in src
-    assert "remake" not in src.lower() and "重制" not in src
+    # #805 comment mentions a first-frame remake; ignore // and /* */ comments.
+    import re as _re
+    code = _re.sub(r"/\*[\s\S]*?\*/", "", src)
+    code = _re.sub(r"//.*?$", "", code, flags=_re.M)
+    assert "remake" not in code.lower() and "重制" not in code
     assert "source_image" in src and "start_frame" in src and "motion_brief" in src and "visual_direction" in src
     for lang in ("zh", "en"):
         loc = json.loads((ROOT / f"src/locales/{lang}.json").read_text())
