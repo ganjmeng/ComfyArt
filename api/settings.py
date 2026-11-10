@@ -24,6 +24,8 @@ SETTINGS_SPEC: dict[str, object] = {
     "bot-local-llm-key": "",
     # #877: official | custom; empty = not chosen yet (inferred on read, written only on Save)
     "llm_mode": "",
+    # #877 v2: optional BYO provider id; empty = infer from hostname on read
+    "llm_provider": "",
     # #232/#391: hard step cap of one agent run (clamped to 1..500); budgets + progress stop runs first
     "bot-max-steps": 300,
     # #391: budget + progress loop (off = legacy fixed-step loop); per-run wall time and credit quote
@@ -46,13 +48,17 @@ SETTINGS_SPEC: dict[str, object] = {
 SECRET_KEYS = ("bot-local-llm-key",)
 MASK = "********"
 
-CHOICES: dict[str, tuple[str, ...]] = {"ocr-engine": ("local", "agent"), "llm_mode": ("official", "custom")}
+CHOICES: dict[str, tuple[str, ...]] = {
+    "ocr-engine": ("local", "agent"),
+    "llm_mode": ("official", "custom"),
+    "llm_provider": ("wavespeed", "deepseek", "siliconflow", "openrouter", "openai", "ollama", "custom"),
+}
 
 # Official built-in LLM default (catalog/request id + user-facing display name).
 # Not writable; GET/PUT /comfyart/settings include these as read-only fields.
 OFFICIAL_LLM_MODEL = "deepseek-flash"
 OFFICIAL_LLM_DISPLAY_NAME = "DeepSeek V4.1 Flash"
-_READ_ONLY_SETTINGS = frozenset({"official_llm_model", "official_llm_display_name"})
+_READ_ONLY_SETTINGS = frozenset({"official_llm_model", "official_llm_display_name", "official_llm_ready"})
 
 
 def _norm_llm_setting(value) -> str:
@@ -96,11 +102,18 @@ def bot_disabled() -> web.Response:
     return error("the ComfyArt Agent is off: turn it on in Agent settings", 403)
 
 
+def official_llm_ready() -> bool:
+    """True when the built-in official route has a server-side DEEPSEEK_API_KEY."""
+    import os
+    return bool(os.environ.get("DEEPSEEK_API_KEY", "").strip())
+
+
 def public_settings(values: dict | None = None) -> dict:
     """Masked settings plus the official LLM default (id + display name). Display name is not writable."""
     out = _masked(values if values is not None else all_settings())
     out["official_llm_model"] = OFFICIAL_LLM_MODEL
     out["official_llm_display_name"] = OFFICIAL_LLM_DISPLAY_NAME
+    out["official_llm_ready"] = official_llm_ready()
     return out
 
 

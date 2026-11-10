@@ -77,7 +77,7 @@ async def test_no_wavespeed_key_gives_a_clear_status_not_a_401(no_env_keys, monk
     from ComfyArt.api.provider_admin import OFFICIAL_NO_KEY_ERROR
     assert not st.available and st.detail == OFFICIAL_NO_KEY_ERROR and not called
     res = await get_provider("local-llm").send(None, None, None)
-    assert "Official DeepSeek" in res.error and "未配置" in res.error and "401" not in res.error
+    assert "还没就绪" in res.error and "isn't ready" in res.error and "DEEPSEEK_API_KEY" not in res.error and "401" not in res.error
 
 
 def test_custom_url_key_used_and_wavespeed_key_never_sent_there(no_env_keys, monkeypatch):
@@ -133,7 +133,7 @@ def test_frontend_default_and_copy():
     for lang, name, nd in (("zh", "{brand} Agent（内置）", "未检测到"), ("en", "{brand} Agent (built-in)", "Not detected")):
         loc = json.loads((root / f"src/locales/{lang}.json").read_text())
         assert loc["agentPicker.builtinAgent"] == name and loc["agentPicker.notDetected"] == nd
-        assert "127.0.0.1" not in loc["botSettings.localLlmUrlHint"] and "llm.wavespeed.ai" in loc["botSettings.localLlmUrlHint"]
+        assert "127.0.0.1" not in loc["botSettings.localLlmUrlHint"] and "/v1" in loc["botSettings.localLlmUrlHint"] and "example.com" in loc["botSettings.localLlmUrlHint"]
         for k in ("agentPanel.noWavespeedKey", "agentPanel.setWavespeedKey", "botSettings.localLlmModel", "botSettings.localLlmKey", "agentPicker.fellBackToBuiltin"):
             assert loc[k]
     assert "'password'" in (root / "src/ui/BotSettings.tsx").read_text()

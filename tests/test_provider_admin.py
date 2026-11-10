@@ -601,7 +601,7 @@ async def test_gif_defaults_to_replicate_26_and_llm_defaults_official(monkeypatc
     assert route["model"] == "deepseek-flash" and route["base_url"] == "https://api.deepseek.com"
     monkeypatch.delenv("DEEPSEEK_API_KEY")
     missed = await get_provider("local-llm").send(TurnRequest(chat_id="c", user_text="hi"), None, None)
-    assert "DEEPSEEK_API_KEY" in missed.error and "未发送" in missed.error
+    assert "还没就绪" in missed.error and "isn't ready" in missed.error and "DEEPSEEK_API_KEY" not in missed.error
     provider_admin._save_section("llm", {"provider": "wavespeed", "model": "existing"})
     assert provider_admin.llm_route() is None
     assert provider_admin.active_llm()["provider"] == "wavespeed"

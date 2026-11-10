@@ -11,15 +11,39 @@ from .settings import bot_disabled, bot_enabled, get_setting, mcp_enabled
 EXTERNAL_NEEDS_MCP = "external agents need MCP: turn on MCP in Agent settings"
 
 
+def _draft_local_llm_key(body: dict, url: str) -> str:
+    """Resolve a draft or saved key for /local-llm/test and /models. Never returns a WaveSpeed image key to a non-WaveSpeed host."""
+    import os
+
+    from ..bot.local_llm import _API_KEY_ENV
+    from .llm_key import is_wavespeed_url, llm_api_key
+    from .settings import MASK
+
+    raw_key = body.get("key")
+    env = os.environ.get(_API_KEY_ENV, "")
+    if env:
+        return env
+    if raw_key is not None and raw_key != MASK:
+        key = str(raw_key).strip()
+        if not key and is_wavespeed_url(url):
+            return llm_api_key(url)
+        return key
+    return llm_api_key(url)
+
+
 def _llm_status() -> dict:
+    from .llm_byo import infer_llm_provider
     from .provider_admin import llm_route, llm_settings_host, llm_source
-    from .settings import OFFICIAL_LLM_DISPLAY_NAME, OFFICIAL_LLM_MODEL, get_setting
+    from .settings import OFFICIAL_LLM_DISPLAY_NAME, OFFICIAL_LLM_MODEL, get_setting, official_llm_ready
     source = llm_source()
+    url = str(get_setting("bot-local-llm-url") or "")
     out = {
         "source": source,
         "host": llm_settings_host() if source == "settings" else "",
         "official_model": OFFICIAL_LLM_MODEL,
         "official_display_name": OFFICIAL_LLM_DISPLAY_NAME,
+        "official_ready": official_llm_ready(),
+        "provider": infer_llm_provider(url, str(get_setting("llm_provider") or "")),
     }
     if source == "admin":
         route = llm_route()
@@ -399,7 +423,27 @@ async def bot_test_local_llm(request: web.Request) -> web.Response:
     return web.json_response(result)
 
 
+
+@routes.post("/comfyart/bot/local-llm/models")
+async def bot_list_local_llm_models(request: web.Request) -> web.Response:
+    """#877 v2: proxy GET {base}/models. Frontend must never send the user key to a third party."""
+    from ..bot.local_llm import fetch_local_llm_models
+    from .llm_byo import public_models_payload
+    from .settings import get_setting
+
+    body = await json_body(request)
+    url = str(body["url"] if "url" in body else get_setting("bot-local-llm-url") or "").strip()
+    key = _draft_local_llm_key(body, url)
+    result = await fetch_local_llm_models(base_url=url, api_key=key)
+    payload = public_models_payload(result)
+    # Never echo a key, even if an upstream body somehow included one.
+    for banned in ("key", "api_key", "authorization", "token"):
+        payload.pop(banned, None)
+    return web.json_response(payload)
+
+
 def reap_stale_messages() -> None:
+
     chat_store.abort_unfinished()
 
 

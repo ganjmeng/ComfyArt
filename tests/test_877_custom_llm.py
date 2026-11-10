@@ -330,11 +330,11 @@ async def test_empty_custom_key_does_not_leak_wavespeed_or_official_keys(monkeyp
         assert ws_key not in (h["headers"] or {}) and ds_key not in str(h["headers"])
 
 
-@pytest.mark.parametrize("patch", [
-    {"bot-local-llm-url": "", "bot-model-local-llm": CUSTOM_MODEL},
-    {"bot-local-llm-url": CUSTOM_URL, "bot-model-local-llm": ""},
+@pytest.mark.parametrize("patch, expected", [
+    ({"bot-local-llm-url": "", "bot-model-local-llm": CUSTOM_MODEL}, "还没配好：请选择服务商并填写 API Key，再选择模型"),
+    ({"bot-local-llm-url": CUSTOM_URL, "bot-model-local-llm": ""}, "还没配好：请选择模型。"),
 ])
-async def test_custom_mode_blank_url_or_model_is_flagged(monkeypatch, patch):
+async def test_custom_mode_blank_url_or_model_is_flagged(monkeypatch, patch, expected):
     write_settings(**{"llm_mode": "custom", **patch})
     assert provider_admin.settings_llm_incomplete()
     p = get_provider("local-llm")
@@ -347,7 +347,7 @@ async def test_custom_mode_blank_url_or_model_is_flagged(monkeypatch, patch):
     monkeypatch.setattr(p, "_request_json", fake)
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-official-877")
     res = await p.send(TurnRequest(chat_id="c", user_text="hi", model="x", lang="zh"), _collect(), TurnHandle())
-    assert res.error == "自定义模型还没配好：请填写模型地址和模型名"
+    assert res.error == expected
     assert not res.action
     assert hits == []
     assert all(OFFICIAL not in u for u in hits)
@@ -533,7 +533,7 @@ def test_frontend_shows_mode_switch_and_copy():
     assert "ca-botsettings__officialnotice" in settings_src
     assert "botSettings.llmOfficialNotice" in settings_src
     assert "botSettings.llmCustomKept" in settings_src
-    assert "mode === 'custom' && llmFields.map" in settings_src
+    assert "mode === 'custom'" in settings_src and "ProviderSelect" in settings_src
     assert "mode === 'official'" in settings_src
     assert "botSettings.llmKeyProvidedByAdmin" in settings_src
     assert "common.close" in settings_src
@@ -563,31 +563,38 @@ def test_frontend_shows_mode_switch_and_copy():
     assert "pendingLlmModeAtom" in picker and "openBotSettingsWithLlmMode" in picker
     zh = json.loads((ROOT / "src/locales/zh.json").read_text())
     en = json.loads((ROOT / "src/locales/en.json").read_text())
-    assert zh["botSettings.useOfficialDefault"] == "切回官方默认"
-    assert zh["botSettings.llmManagedByAdmin"] == "由管理员配置"
-    assert en["botSettings.llmManagedByAdmin"] == "Managed by your admin"
-    assert zh["botSettings.llmModeCustom"] == "自定义"
-    assert zh["botSettings.llmOfficialNotice"] == "使用官方 {0}"
-    assert en["botSettings.llmOfficialNotice"] == "Using official {0}"
-    assert zh["botSettings.llmOfficialNotice"].format(settings.OFFICIAL_LLM_DISPLAY_NAME) == "使用官方 DeepSeek V4.1 Flash"
-    assert en["botSettings.llmOfficialNotice"].format(settings.OFFICIAL_LLM_DISPLAY_NAME) == "Using official DeepSeek V4.1 Flash"
-    assert zh["botSettings.llmCustomKept"] == "官方默认下不使用你的自定义设置，切回自定义即恢复"
-    assert en["botSettings.llmCustomKept"] == "Your custom settings aren't used in Official default. Switch back to Custom to restore them."
+    assert zh["botSettings.useOfficialDefault"] == "改用 Loomi 内置模型"
+    assert zh["botSettings.llmManagedByAdmin"] == "由管理员统一配置的对话模型"
+    assert en["botSettings.llmManagedByAdmin"] == "Conversation model configured by your admin"
+    assert zh["botSettings.llmModeCustom"] == "使用我自己的 API Key"
+    assert zh["botSettings.llmOfficialNotice"] == "无需填写你的 API Key。当前使用 {0}。"
+    assert en["botSettings.llmOfficialNotice"] == "No API key needed. Currently using {0}."
+    assert zh["botSettings.llmOfficialNotice"].format(settings.OFFICIAL_LLM_DISPLAY_NAME) == "无需填写你的 API Key。当前使用 DeepSeek V4.1 Flash。"
+    assert en["botSettings.llmOfficialNotice"].format(settings.OFFICIAL_LLM_DISPLAY_NAME) == "No API key needed. Currently using DeepSeek V4.1 Flash."
+    assert zh["botSettings.llmCustomKept"] == "不会使用你已保存的 API Key 和模型。改回「使用我自己的 API Key」即可恢复。"
+    assert "Use my own API key" in en["botSettings.llmCustomKept"] and "Official default" not in en["botSettings.llmCustomKept"]
     assert zh["botSettings.llmKeyProvidedByAdmin"] == "由管理员提供"
     assert en["botSettings.llmKeyProvidedByAdmin"] == "Provided by your admin"
-    assert "默认使用官方模型，也可以接入你自己的模型服务" in zh["botSettings.builtinAgentHint"]
-    assert "Uses the official model by default" in en["botSettings.builtinAgentHint"]
+    assert "Loomi 内置模型" in zh["botSettings.builtinAgentHint"] and "官方模型" not in zh["botSettings.builtinAgentHint"]
+    assert "Loomi built-in model" in en["botSettings.builtinAgentHint"] and "official model" not in en["botSettings.builtinAgentHint"]
     assert zh["botSettings.customLlmFailHttp"] == "你设置的模型服务返回了错误（HTTP {0}），请检查模型名是否正确，或稍后再试"
     assert en["botSettings.customLlmFailHttp"] == "Your model service returned an error (HTTP {0}). Check the model name, or try again later."
-    assert zh["botSettings.customLlmNotSetup"] == "自定义模型还没配好：请填写模型地址和模型名"
-    assert en["botSettings.customLlmNotSetup"] == "Your custom model isn't set up yet. Fill in the model address and model name."
+    assert zh["botSettings.customLlmNotSetup"] == "还没配好：请选择服务商并填写 API Key，再选择模型"
+    assert en["botSettings.customLlmNotSetup"] == "Your model isn't set up yet. Choose a provider, enter your API key, then pick a model."
     assert zh["botSettings.customLlmNotSetup"] == provider_admin.CUSTOM_LLM_NOT_SETUP["zh"]
     assert en["botSettings.customLlmNotSetup"] == provider_admin.CUSTOM_LLM_NOT_SETUP["en"]
+    assert zh["botSettings.customLlmNotSetupModel"] == "还没配好：请选择模型。"
+    assert en["botSettings.customLlmNotSetupModel"] == "Your model isn't set up yet. Please choose a model."
+    assert zh["botSettings.customLlmNotSetupModel"] == provider_admin.CUSTOM_LLM_NOT_SETUP_MODEL["zh"]
+    assert en["botSettings.customLlmNotSetupModel"] == provider_admin.CUSTOM_LLM_NOT_SETUP_MODEL["en"]
+    assert "notSetupCopy" in settings_src
+    assert "botSettings.customLlmNotSetupModel" in settings_src
+    assert zh["botSettings.chooseModelFirst"] == "请先选择模型"
     for key, loc_key in (("host", "customLlmFailHost"), ("auth", "customLlmFailAuth"), ("timeout", "customLlmFailTimeout")):
         assert zh[f"botSettings.{loc_key}"] == provider_admin._SETTINGS_FAIL["zh"][key]
         assert en[f"botSettings.{loc_key}"] == provider_admin._SETTINGS_FAIL["en"][key]
     assert "customLlmFailed')}：${reason}" not in settings_src
-    assert "failCopy ? failCopy" in settings_src
+    assert "failCopyOf" in settings_src
     assert provider_admin.OFFICIAL_LLM_MODEL == settings.OFFICIAL_LLM_MODEL == "deepseek-flash"
     assert provider_admin.OFFICIAL_LLM_DISPLAY_NAME == settings.OFFICIAL_LLM_DISPLAY_NAME == "DeepSeek V4.1 Flash"
     api_bot = (ROOT / "api/bot.py").read_text()

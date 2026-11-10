@@ -180,6 +180,7 @@ body { font-family: var(--ca-font); color: var(--ca-text); }
 
 .ca-pop-anchor { display: inline-flex; }
 .ca-pop { position: fixed; z-index: 1000; }
+.ca-pop:has(.ca-llm-model__menu) { z-index: 2200; }
 .ca-menu {
   display: flex;
   flex-direction: column;

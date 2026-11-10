@@ -8,7 +8,7 @@ import { EachButton, EachRole, useEach } from './EachToggle'
 import { RefFrameButton } from './RefFrameButton'
 import { listAssets, placeAsset, type AssetItem } from '../assets'
 import { imageUrl } from '../comfy'
-import { botEnabledAtom, loadProviders, loadSettings, messagesAtom, providerLabel, providersStateAtom, stopTurn } from '../bot'
+import { BUILTIN_AGENT, botEnabledAtom, llmSourceAtom, loadProviders, loadSettings, messagesAtom, providerLabel, providersStateAtom, settingsAtom, stopTurn } from '../bot'
 import { errorText } from '../jobs'
 import { KIND_LABELS, libraryAtom } from '../library'
 import type { AudioShape } from '../shapes/EmbedShapes'
@@ -16,6 +16,7 @@ import { loadListedSkills, saveSkill, skillAtom, skillCreatorAtom, skillNoticeAt
 import { AssetGrid } from './AssetPicker'
 import { schedulesOpenAtom } from '../schedules'
 import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPicker'
+import { llmSourceLabel } from './llmProviders'
 import { AgentLogo } from './agentLogos'
 import { Icons } from './icons'
 import { SkillChip, chipBackspace } from './SkillChip'
@@ -229,6 +230,8 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
   }
   const modeInfo = modeOf(mode)
   const agent = useCurrentAgent()
+  const llmSource = useValue(llmSourceAtom)
+  const botSettings = useValue(settingsAtom)
 
   // #371: typing = non-empty draft (CN --typing); play = busy after send
   const typing = content
@@ -484,7 +487,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
           side="top"
           within=".ca-composer"
           trigger={({ open, toggle }) => (
-            <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' && agent ? providerLabel(agent) : modeInfo[1]} data-agent={mode === 'agent' && agent ? agent.id : undefined} data-open={open || undefined} onClick={toggle}>
+            <button type="button" className="ca-bar__btn ca-composer__mode" title={mode === 'agent' && agent?.id === BUILTIN_AGENT ? llmSourceLabel(llmSource, botSettings) : mode === 'agent' && agent ? providerLabel(agent) : modeInfo[1]} data-agent={mode === 'agent' && agent ? agent.id : undefined} data-open={open || undefined} onClick={toggle}>
               {/* Ashley: agent pill shows product shortLabel (e.g. ComfyArt); image/video keep mode name. Home matches. */}
               {mode === 'agent' && agent ? <><AgentLogo id={agent.id} /><span className="ca-composer__modetext">{shortLabel(agent)}</span></> : <><span className="ca-icon">{Icons[modeInfo[2]]}</span><span className="ca-composer__modetext">{modeInfo[1]}</span></>}<span className="ca-icon">{Icons.chevron}</span>
             </button>

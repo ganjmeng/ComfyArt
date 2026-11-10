@@ -216,9 +216,13 @@ def image_revision() -> int:
     return int(load_doc()["image"]["revision"])
 
 
+OFFICIAL_LLM_NOT_READY = {
+    "zh": "Loomi 内置模型还没就绪。请联系管理员完成服务端配置，或改用你自己的 API Key。",
+    "en": "The Loomi built-in model isn't ready. Ask your admin to finish server setup, or switch to your own API key.",
+}
+
 OFFICIAL_NO_KEY_ERROR = (
-    "DeepSeek 官方未配置 DEEPSEEK_API_KEY，未发送请求 / "
-    "Official DeepSeek has no DEEPSEEK_API_KEY, so nothing was sent."
+    f'{OFFICIAL_LLM_NOT_READY["zh"]} / {OFFICIAL_LLM_NOT_READY["en"]}'
 )
 
 # Official default catalog / request id and display name live in settings (the defaults module).
@@ -284,9 +288,31 @@ def settings_llm_incomplete() -> bool:
 
 
 CUSTOM_LLM_NOT_SETUP = {
-    "zh": "自定义模型还没配好：请填写模型地址和模型名",
-    "en": "Your custom model isn't set up yet. Fill in the model address and model name.",
+    "zh": "还没配好：请选择服务商并填写 API Key，再选择模型",
+    "en": "Your model isn't set up yet. Choose a provider, enter your API key, then pick a model.",
 }
+
+CUSTOM_LLM_NOT_SETUP_MODEL = {
+    "zh": "还没配好：请选择模型。",
+    "en": "Your model isn't set up yet. Please choose a model.",
+}
+
+
+def settings_llm_not_setup_copy(lang: str = "") -> str:
+    """Settings-page and chat copy for an incomplete custom source.
+
+    Keep the long sentence when the URL is missing. When the URL is present
+    and only the model is blank, use the short 'please choose a model' line.
+    """
+    from .settings import get_setting
+    url = str(get_setting("bot-local-llm-url") or "").strip()
+    model = str(get_setting("bot-model-local-llm") or "").strip()
+    table = CUSTOM_LLM_NOT_SETUP_MODEL if url and not model else CUSTOM_LLM_NOT_SETUP
+    if lang == "zh":
+        return table["zh"]
+    if lang == "en":
+        return table["en"]
+    return f'{table["zh"]} / {table["en"]}'
 
 
 def _http_status_number(value) -> int | None:
@@ -1520,13 +1546,7 @@ def install() -> None:
             source = llm_source()
             if source == "settings" and settings_llm_incomplete():
                 lang = getattr(turn, "lang", "") or ""
-                if lang == "zh":
-                    copy = CUSTOM_LLM_NOT_SETUP["zh"]
-                elif lang == "en":
-                    copy = CUSTOM_LLM_NOT_SETUP["en"]
-                else:
-                    copy = f'{CUSTOM_LLM_NOT_SETUP["zh"]} / {CUSTOM_LLM_NOT_SETUP["en"]}'
-                return TurnResult(error=copy)  # not-set-up (5) has no 切回官方默认 button
+                return TurnResult(error=settings_llm_not_setup_copy(lang))  # not-set-up (5) has no 切回官方默认 button
             route = llm_route()
             if route is None:
                 result = await _llm_orig_send(turn, emit, handle)
