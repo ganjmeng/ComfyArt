@@ -145,6 +145,16 @@ def write_settings(**values) -> None:
     settings.write_json(settings.app_path("settings.json"), current)
 
 
+def write_admin_llm_passthrough() -> None:
+    """Save an explicit WaveSpeed/existing admin LLM section so tests use the settings URL (localhost mock).
+
+    Commit 90073499 made a missing admin section default to official DeepSeek. Product routing is
+    unchanged (#877); tests that talk to a mock must write this themselves (#870 B1).
+    """
+    from ComfyArt.api.provider_admin import _save_section
+    _save_section("llm", {"provider": "wavespeed", "model": "existing"})
+
+
 class FakeProvider(AgentProvider):
     id = "fake-test"
     label = "Fake"
@@ -283,7 +293,7 @@ def pytest_collection_finish(session):
 
 
 # --- #712 no-spend: under scripts/gate.sh (GATE=1) paid keys are unset and outbound network is blocked ---
-GATE_PAID_KEYS = ("WAVESPEED_API_KEY", "KIE_API_KEY")
+GATE_PAID_KEYS = ("WAVESPEED_API_KEY", "KIE_API_KEY", "DEEPSEEK_API_KEY")
 _LOCAL = ("127.0.0.1", "::1", "localhost", "0.0.0.0")
 
 
@@ -321,6 +331,30 @@ def _gate_guard() -> None:
         return real_gai(host, *a, **kw)
 
     socket.getaddrinfo = getaddrinfo
+
+    # #870 B1: if a test still reaches official DeepSeek (or any other real upstream) under GATE=1, fail
+    # immediately with a clear error instead of hanging on a missing-key notice or a generic DNS block.
+    from urllib.parse import urlparse
+    from ComfyArt.bot import get_provider
+
+    def _gate_check_url(url: str) -> None:
+        host = urlparse(str(url or "")).hostname
+        if host in _LOCAL or not host:
+            return
+        raise GateNetworkBlocked(
+            f"GATE=1: test called real upstream {host} ({url}); "
+            "write an explicit admin LLM config pointing at a localhost mock (#870 B1)"
+        )
+
+    provider = get_provider("local-llm")
+    if provider is not None and hasattr(provider, "_request_json"):
+        _llm_http = provider._request_json
+
+        async def _gate_request_json(session, method, url, *, headers, json_body=None, timeout=120):
+            _gate_check_url(url)
+            return await _llm_http(session, method, url, headers=headers, json_body=json_body, timeout=timeout)
+
+        provider._request_json = _gate_request_json
 
 
 if os.environ.get("GATE") == "1":

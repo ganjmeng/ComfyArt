@@ -19,6 +19,10 @@ def test_defaults_resolve_to_wavespeed_deepseek(monkeypatch):
 
 
 def test_saved_custom_endpoint_and_model_still_win(monkeypatch):
+    from conftest import write_admin_llm_passthrough
+    # Explicit admin passthrough (WaveSpeed/existing): no-section now defaults to official DeepSeek (90073499).
+    # Custom settings winning with no admin section is #877, not this harness fix.
+    write_admin_llm_passthrough()
     monkeypatch.setattr(settings, "read_json", lambda *_a, **_k: {"bot-local-llm-url": "http://127.0.0.1:8081/v1", "bot-model-local-llm": "qwen3"})
     assert settings.get_setting("bot-local-llm-url") == "http://127.0.0.1:8081/v1"
     assert provider_model("local-llm") == "qwen3"
