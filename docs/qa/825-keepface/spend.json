@@ -1,0 +1,53 @@
+{
+  "event": "run_end",
+  "balance_start": 30.958199,
+  "balance_end": 30.879899,
+  "spent_from_balance": 0.0783,
+  "quotes": [
+    {
+      "model": "bytedance/seedream-v5.0-pro/edit",
+      "list_price": 0.045,
+      "discounted_price": 0.0405
+    },
+    {
+      "model": "google/nano-banana-2.1/edit",
+      "list_price": 0.04,
+      "discounted_price": 0.036
+    }
+  ],
+  "discounted_sum": 0.0765,
+  "list_sum": 0.085,
+  "cap": 0.1,
+  "prompt": "保留同一个人，脸、发型和坐姿都不变，只把衣服换成深色西装、背景换成办公室，去掉画面上所有文字",
+  "reference": "docs/qa/825/inputs/portrait-studio-01.webp",
+  "results": [
+    {
+      "event": "done",
+      "id": "seedream",
+      "model": "bytedance/seedream-v5.0-pro/edit",
+      "prediction_id": "d0e72871cc254bad96e989fb76f26fc3",
+      "ok": true,
+      "status": "completed",
+      "balance_before": 30.958199,
+      "balance_after": 30.917699,
+      "cost": 0.0405,
+      "latency_s": 41.718,
+      "out": "/workspace/wtkeepface/docs/qa/825-keepface/out/seedream.png",
+      "error": null
+    },
+    {
+      "event": "done",
+      "id": "banana",
+      "model": "google/nano-banana-2.1/edit",
+      "prediction_id": "6f24fa27a7cb40ca825a245e4f93d971",
+      "ok": true,
+      "status": "completed",
+      "balance_before": 30.917699,
+      "balance_after": 30.879899,
+      "cost": 0.0378,
+      "latency_s": 18.887,
+      "out": "/workspace/wtkeepface/docs/qa/825-keepface/out/banana.png",
+      "error": null
+    }
+  ]
+}
