@@ -13,7 +13,7 @@ import { usd } from '../usd'
 import { featurePrice, loadCloudModels } from '../wavespeed'
 import { isEnter } from './keys'
 import { useEscape } from './escape'
-import { expandBox, MOVE_MS, obstacleRects, placeExpandPanel } from './panelPlace'
+import { expandBox, MOVE_MS, PANEL_NARROW_W, obstacleRects, placeExpandPanel } from './panelPlace'
 
 const GAP = 12
 const EDGE = 8
@@ -112,7 +112,8 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
   const [loop, setLoop] = useState(true)
   const [lines, setLines] = useState<string[] | null>(null)
   const [edits, setEdits] = useState<string[]>([])
-  const [held, setHeld] = useState<{ left: number; top: number } | null>(null)
+  const [held, setHeld] = useState<{ left: number; top: number; width: number } | null>(null)
+  const heightMemo = useRef({ full: 200, narrow: 0 })
   const [moving, setMoving] = useState(false)
 
   useEffect(() => {
@@ -166,6 +167,7 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
   const below = PROMPT_MODES.includes(mode)
   let left: number
   let top: number
+  let panelW = size.w
   if (below) {
     left = Math.min(Math.max(rect.l, EDGE), host.width - size.w - EDGE)
     top = rect.b + GAP
@@ -173,15 +175,18 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
   } else if (mode === 'expand') {
     const s = (rect.r - rect.l) / iw
     const box = expandBox({ l: rect.l, t: rect.t, r: rect.r, b: rect.b }, pads, s)
+    if (size.w > 250) heightMemo.current.full = size.h
+    else heightMemo.current.narrow = size.h
     const placed = placeExpandPanel(
       box,
-      size,
+      { full: heightMemo.current.full, narrow: heightMemo.current.narrow || heightMemo.current.full },
       { width: host.width, height: host.height },
       obstacleRects(editor.getContainer(), host),
       box.t,
     )
     left = placed.left
     top = placed.top
+    panelW = placed.width
   } else {
     const right = rect.r
     const leftEdge = rect.l
@@ -195,7 +200,7 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
       top = Math.min(top, Math.max(EDGE, bottom - size.h))
     }
   }
-  if (held) ({ left, top } = held)
+  if (held) ({ left, top, width: panelW } = held)
 
   const textEdits = (): [string, string][] => (lines ?? []).flatMap((line, i) => ((edits[i] ?? '').trim() !== line ? [[line, (edits[i] ?? '').trim()] as [string, string]] : []))
   const tooBig = Math.max(iw + pads.l + pads.r, ih + pads.t + pads.b) > EXPAND_LIMIT
@@ -265,13 +270,14 @@ export function ModePanel({ onError }: { onError: (msg: string) => void }) {
       className={mode === 'angles' ? 'ca-panel ca-panel--angle' : 'ca-panel'}
       data-wide={below || undefined}
       data-move={moving || undefined}
+      data-narrow={(mode === 'expand' && panelW === PANEL_NARROW_W) || undefined}
       style={{ left, top }}
       onPointerDown={(e) => {
         e.stopPropagation()
         if (!(e.target instanceof HTMLInputElement) || e.target.type !== 'range') return
         e.target.setPointerCapture(e.pointerId)
         setMoving(false)
-        setHeld({ left, top })
+        setHeld({ left, top, width: panelW })
       }}
       onLostPointerCapture={() => {
         setHeld(null)

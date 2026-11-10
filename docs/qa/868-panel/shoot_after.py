@@ -3,12 +3,15 @@
 
 1x / 2x / 3x at 1440x900, plus 3x at a 1280px-wide viewport. Localhost only.
 Requires a built dist in this worktree (do not commit it).
+
+By default this retakes the 3x / 3x@1280 cropped shots (handle + panel edge).
+Pass --all to also reshoot the full-canvas 1x / 2x frames.
 """
 from __future__ import annotations
 
+import io
 import os
 import sys
-import time
 from pathlib import Path
 
 from PIL import Image
@@ -19,7 +22,6 @@ PR_ROOT = HERE.parents[2]
 SYS868 = HERE.parent / "868"
 sys.path.insert(0, str(SYS868))
 from shoot_lr import (  # noqa: E402
-    PY,
     boot,
     make_src,
     open_expand,
@@ -28,11 +30,9 @@ from shoot_lr import (  # noqa: E402
     stop,
 )
 
-# Re-import Page helpers we wrap, because shoot_lr.new_page hardcodes 1440x900.
 OUT = HERE
 PORT = 8868
 CLEAR = 12
-CANVAS_ZOOM = 50
 
 
 def new_page(browser, url: str, vp: dict) -> Page:
@@ -53,43 +53,7 @@ def new_page(browser, url: str, vp: dict) -> Page:
     return page
 
 
-def zoom_to(page: Page, pct: int) -> None:
-    btn = page.locator(".ca-zoom__btn")
-    btn.wait_for(timeout=8000)
-    if btn.inner_text().strip().rstrip("%") == str(pct):
-        return
-    btn.click()
-    page.locator(".ca-menu__item", has_text=f"缩放至 {pct}%").click()
-    page.wait_for_timeout(450)
-
-
-def hold_slider(page: Page) -> None:
-    slider = page.locator(".ca-panel input[type=range]").first
-    slider.wait_for()
-    box = slider.bounding_box()
-    assert box
-    page.mouse.move(box["x"] + 6, box["y"] + box["height"] / 2)
-    slider.dispatch_event(
-        "pointerdown",
-        {
-            "button": 0,
-            "buttons": 1,
-            "pointerId": 1,
-            "pointerType": "mouse",
-            "isPrimary": True,
-            "bubbles": True,
-            "composed": True,
-        },
-    )
-    page.wait_for_timeout(80)
-
-
-def release_slider(page: Page) -> None:
-    page.mouse.up()
-    page.wait_for_timeout(250)  # 150ms move transition + settle
-
-
-def clearance(page: Page, gap: int = CLEAR) -> dict:
+def geom(page: Page, gap: int = CLEAR) -> dict:
     return page.evaluate(
         """(gap) => {
           const panel = document.querySelector('.ca-panel');
@@ -97,6 +61,7 @@ def clearance(page: Page, gap: int = CLEAR) -> dict:
           const tools = document.querySelector('.ca-tools');
           const dock = document.querySelector('.ca-dock');
           const box = document.querySelector('.ca-expand');
+          const handle = document.querySelector('.ca-expand__handle[data-side=r]');
           if (!panel || !gen || !tools || !dock) return { ok: false, reason: 'missing el' };
           const r = (el) => {
             const b = el.getBoundingClientRect();
@@ -105,29 +70,37 @@ def clearance(page: Page, gap: int = CLEAR) -> dict:
           const overlaps = (a, b, g) =>
             a.l < b.r + g && a.r > b.l - g && a.t < b.b + g && a.b > b.t - g;
           const p = r(panel), g = r(gen), t = r(tools), d = r(dock);
-          const handles = [...document.querySelectorAll('.ca-expand__handle')].map(r);
-          const handleHit = handles.some((h) => overlaps(p, h, gap));
           const boxR = box ? r(box) : null;
-          // Side placement must keep 16px from the expand box. Pin may overlap the interior
-          // but must still clear handles, the dock, and the zoom bar.
-          const scale = document.querySelector('.ca-panel input[type=range]')?.value;
-          // Pin fallback (rule 2): panel is flush with the viewport right edge.
-          // In that case the box may be too wide for a 16px side gap, so a handle
-          // hit is accepted; toolbars and the Generate button must still stay clear.
-          const pinned = Math.abs((window.innerWidth - 8) - p.r) <= 1;
+          const handleR = handle ? r(handle) : null;
+          const handleHit = !!(handleR && overlaps(p, handleR, gap));
+          const narrow = panel.hasAttribute('data-narrow') || Math.abs(p.w - 220) < 1;
+          const besideRight = !!(boxR && Math.abs(p.l - (boxR.r + 16)) <= 1.5);
+          const besideLeft = !!(boxR && Math.abs(p.r - (boxR.l - 16)) <= 1.5);
+          const docked = narrow && !besideRight && !besideLeft;
+          const side = besideRight ? 'narrow-right' : besideLeft ? 'narrow-left' : (docked ? 'dock' : 'other');
           const ok = !overlaps(p, t, gap) && !overlaps(p, d, gap) && !overlaps(g, t, 0)
-            && (pinned || (!handleHit && !overlaps(p, boxR || {l:0,t:0,r:0,b:0}, 16)));
+            && (docked || (!handleHit && !(boxR && overlaps(p, boxR, 16))));
+          const row = panel.querySelector('.ca-panel__row');
+          const hint = panel.querySelector('.ca-chat__hint');
+          const foot = panel.querySelector('.ca-panel__foot');
+          const btns = foot ? [...foot.querySelectorAll('button')] : [];
+          const oneLine = (el) => !!el && el.scrollWidth <= el.clientWidth + 1;
           return {
-            ok, pinned,
-            panel: p, gen: g, tools: t, dock: d, box: boxR,
+            ok, narrow, docked, side, handleHit,
+            panel: p, gen: g, tools: t, dock: d, box: boxR, handle: handleR,
             overlapTools: overlaps(p, t, gap),
             overlapDock: overlaps(p, d, gap),
             overlapBox: !!(boxR && overlaps(p, boxR, 16)),
-            handleHit,
             genCovered: overlaps(g, t, 0),
-            scale,
+            scale: document.querySelector('.ca-panel input[type=range]')?.value,
             moving: panel.getAttribute('data-move'),
             style: { left: panel.style.left, top: panel.style.top },
+            layout: narrow ? {
+              rowOneLine: !!(row && oneLine(row) && row.getBoundingClientRect().height <= 36),
+              hintOneLine: !hint || (oneLine(hint) && hint.getBoundingClientRect().height <= 28),
+              footOneRow: btns.length === 2 && Math.abs(btns[0].getBoundingClientRect().top - btns[1].getBoundingClientRect().top) <= 2,
+              btnNoEllipsis: btns.every((b) => oneLine(b) && getComputedStyle(b).textOverflow !== 'ellipsis'),
+            } : null,
           };
         }""",
         gap,
@@ -135,15 +108,19 @@ def clearance(page: Page, gap: int = CLEAR) -> dict:
 
 
 def assert_clear(page: Page, label: str) -> dict:
-    data = clearance(page)
+    data = geom(page)
     print(label, data, flush=True)
     if not data.get("ok"):
         raise SystemExit(f"clearance failed for {label}: {data}")
+    if data.get("narrow") and data.get("layout"):
+        lay = data["layout"]
+        missing = [k for k, v in lay.items() if not v]
+        if missing:
+            raise SystemExit(f"220px layout failed for {label}: {missing} {lay}")
     return data
 
 
 def shoot_canvas(page: Page, vp: dict) -> Image.Image:
-    # Crop to the canvas, but keep the zoom bar and dock (they sit on the canvas).
     el = page.locator(".tl-canvas")
     b = el.bounding_box()
     assert b
@@ -151,11 +128,58 @@ def shoot_canvas(page: Page, vp: dict) -> Image.Image:
     x, y = max(0, b["x"]), max(0, b["y"])
     w, h = min(vw - x, b["width"]), min(vh - y, b["height"])
     raw = page.screenshot(clip={"x": x, "y": y, "width": w, "height": h})
-    import io
     return Image.open(io.BytesIO(raw)).convert("RGB")
 
 
+def shoot_handle_panel(page: Page, vp: dict, *, docked: bool = False) -> Image.Image:
+    """Crop/zoom on the right drag handle and the adjacent panel edge."""
+    info = page.evaluate(
+        """() => {
+          const panel = document.querySelector('.ca-panel');
+          const handle = document.querySelector('.ca-expand__handle[data-side=r]');
+          const box = document.querySelector('.ca-expand');
+          if (!panel || !handle) return null;
+          const p = panel.getBoundingClientRect();
+          const h = handle.getBoundingClientRect();
+          const b = box ? box.getBoundingClientRect() : h;
+          return {
+            p: { l: p.left, t: p.top, r: p.right, b: p.bottom },
+            h: { l: h.left, t: h.top, r: h.right, b: h.bottom, cx: h.left + h.width / 2, cy: h.top + h.height / 2 },
+            box: { l: b.left, t: b.top, r: b.right, b: b.bottom },
+          };
+        }"""
+    )
+    assert info, "missing panel or right handle"
+    vw, vh = vp["width"], vp["height"]
+    if docked:
+        # Show the panel's left edge and the box edge where it exits below the panel,
+        # so the covered handle location is in context.
+        x = max(0, min(info["p"]["l"], info["h"]["l"]) - 80)
+        y = max(0, info["h"]["t"] - 120)
+        x1 = min(vw, max(info["p"]["l"] + 280, info["h"]["r"] + 80))
+        y1 = min(vh, max(info["p"]["b"] + 80, info["h"]["b"] + 80))
+        w, h = x1 - x, y1 - y
+    else:
+        nearer = info["p"]["l"] if abs(info["p"]["l"] - info["h"]["cx"]) <= abs(info["p"]["r"] - info["h"]["cx"]) else info["p"]["r"]
+        cx = (info["h"]["cx"] + nearer) / 2
+        cy = info["h"]["cy"]
+        w, h = 480, 400
+        x = min(max(0, cx - w / 2), max(0, vw - w))
+        y = min(max(0, cy - h / 2), max(0, vh - h))
+        w, h = min(w, vw - x), min(h, vh - y)
+    raw = page.screenshot(clip={"x": x, "y": y, "width": w, "height": h})
+    return Image.open(io.BytesIO(raw)).convert("RGB")
+
+
+def setup_expand(page: Page, src, scale: float) -> None:
+    open_project(page, src)
+    open_expand(page)
+    set_scale_js(page, scale)
+    page.wait_for_timeout(300)
+
+
 def main() -> None:
+    only_3x = "--all" not in sys.argv
     if not (PR_ROOT / "dist/index.html").is_file():
         raise SystemExit(f"dist missing in {PR_ROOT}; run npm run build first (do not commit dist)")
     OUT.mkdir(parents=True, exist_ok=True)
@@ -167,34 +191,37 @@ def main() -> None:
         with sync_playwright() as p:
             browser = p.chromium.launch()
             wide = {"width": 1440, "height": 900}
+            if not only_3x:
+                page = new_page(browser, url, wide)
+                open_project(page, src)
+                open_expand(page)
+                for v in (1.0, 2.0):
+                    set_scale_js(page, v)
+                    page.wait_for_timeout(250)
+                    assert_clear(page, f"{int(v)}x")
+                    im = shoot_canvas(page, wide)
+                    path = OUT / f"0{int(v)}-after-release-{int(v)}x.png"
+                    im.save(path, optimize=True)
+                    print("wrote", path, im.size, path.stat().st_size, flush=True)
+                page.close()
+
             page = new_page(browser, url, wide)
-            open_project(page, src)
-            # open_project already zooms to 50%
-            open_expand(page)
-            shots = {}
-            for v in (1.0, 2.0, 3.0):
-                # Settled position after release (pads applied, held cleared).
-                set_scale_js(page, v)
-                page.wait_for_timeout(250)
-                assert_clear(page, f"{int(v)}x")
-                im = shoot_canvas(page, wide)
-                path = OUT / f"0{int(v)}-after-release-{int(v)}x.png"
-                im.save(path, optimize=True)
-                print("wrote", path, im.size, path.stat().st_size, flush=True)
-                shots[v] = im
+            setup_expand(page, src, 3.0)
+            d3 = assert_clear(page, "3x")
+            im = shoot_handle_panel(page, wide, docked=bool(d3.get('docked')))
+            path = OUT / "03-after-release-3x.png"
+            im.save(path, optimize=True)
+            print("wrote", path, im.size, path.stat().st_size, "side", d3.get("side"), "handleHit", d3.get("handleHit"), flush=True)
             page.close()
 
             narrow = {"width": 1280, "height": 800}
             npage = new_page(browser, url, narrow)
-            open_project(npage, src)
-            open_expand(npage)
-            set_scale_js(npage, 3.0)
-            npage.wait_for_timeout(250)
-            assert_clear(npage, "3x-1280")
-            nim = shoot_canvas(npage, narrow)
+            setup_expand(npage, src, 3.0)
+            d4 = assert_clear(npage, "3x-1280")
+            nim = shoot_handle_panel(npage, narrow, docked=bool(d4.get('docked')))
             npath = OUT / "04-after-release-3x-1280.png"
             nim.save(npath, optimize=True)
-            print("wrote", npath, nim.size, npath.stat().st_size, flush=True)
+            print("wrote", npath, nim.size, npath.stat().st_size, "side", d4.get("side"), "handleHit", d4.get("handleHit"), flush=True)
             npage.close()
             browser.close()
     finally:
