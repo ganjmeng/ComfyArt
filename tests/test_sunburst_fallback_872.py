@@ -34,18 +34,18 @@ def test_catalog_has_flare_edit_for_masked(catalog):
 def test_table_registers_sunburst_to_flare():
     table = json.loads((ROOT / "api/auto_models.json").read_text(encoding="utf-8"))
     poster = next(c for c in table["features"]["text_to_image"]["categories"] if c["id"] == "poster_text")
-    assert poster["model"] == SUN_T2I and poster["fallback"] == FLARE_T2I
+    assert poster["model"] == FLARE_T2I and poster["fallback"] == SUN_T2I
     masked = table["features"]["image_edit"]["masked"]
     assert masked["model"] == SUN_EDIT and masked["fallback"] == FLARE_EDIT
 
 
 def test_poster_choose_tip_and_runtime_fallback(catalog):
     primary = auto_models.choose("text_to_image", POSTER, None, catalog)
-    assert primary["model"] == SUN_T2I and primary["category"] == "poster_text"
+    assert primary["model"] == FLARE_T2I and primary["category"] == "poster_text"
     assert primary["reason"]["zh"] == "海报/带字"
     ids = {m["id"] for m in catalog["features"]["text_to_image"]["models"]}
-    fb = auto_models.table_runtime_fallback_choice("text_to_image", primary, SUN_T2I, ids)
-    assert fb and fb["model"] == FLARE_T2I and fb["fallback"] == SUN_T2I
+    fb = auto_models.table_runtime_fallback_choice("text_to_image", primary, FLARE_T2I, ids)
+    assert fb and fb["model"] == SUN_T2I and fb["fallback"] == FLARE_T2I
     assert fb["fallback"] == primary["model"]
     tip = auto_models.pill_tooltip(fb, "zh")
     preferred = auto_models.short_name(fb["fallback"])
@@ -55,8 +55,8 @@ def test_poster_choose_tip_and_runtime_fallback(catalog):
 
 
 def test_canvas_fallback_choice_uses_row_fallback(catalog):
-    choice = canvas._fallback_choice("generate_image", {"prompt": POSTER, "auto_model": True}, SUN_T2I)
-    assert choice["model"] == FLARE_T2I and choice["fallback"] == SUN_T2I
+    choice = canvas._fallback_choice("generate_image", {"prompt": POSTER, "auto_model": True}, FLARE_T2I)
+    assert choice["model"] == SUN_T2I and choice["fallback"] == FLARE_T2I
     assert choice["category"] == "poster_text"
     poster = next(c for c in auto_models.load_table()["text_to_image"]["categories"] if c["id"] == "poster_text")
     assert choice["fallback"] == poster["model"]
@@ -111,16 +111,16 @@ def test_result_error_kind_parses_balance():
 def test_sunburst_success_no_fallback_when_failed_is_other(catalog):
     primary = auto_models.choose("text_to_image", POSTER, None, catalog)
     ids = {m["id"] for m in catalog["features"]["text_to_image"]["models"]}
-    assert auto_models.table_runtime_fallback_choice("text_to_image", primary, FLARE_T2I, ids) is None
+    assert auto_models.table_runtime_fallback_choice("text_to_image", primary, SUN_T2I, ids) is None
 
 
 def test_both_fail_never_retries_sunburst(catalog):
     primary = auto_models.choose("text_to_image", POSTER, None, catalog)
     ids = {m["id"] for m in catalog["features"]["text_to_image"]["models"]}
-    fb = auto_models.table_runtime_fallback_choice("text_to_image", primary, SUN_T2I, ids)
-    assert fb["model"] == FLARE_T2I
-    assert auto_models.table_runtime_fallback_choice("text_to_image", fb, FLARE_T2I, ids) is None
-    choice = canvas._fallback_choice("generate_image", {"prompt": POSTER, "auto_model": True}, FLARE_T2I)
+    fb = auto_models.table_runtime_fallback_choice("text_to_image", primary, FLARE_T2I, ids)
+    assert fb["model"] == SUN_T2I
+    assert auto_models.table_runtime_fallback_choice("text_to_image", fb, SUN_T2I, ids) is None
+    choice = canvas._fallback_choice("generate_image", {"prompt": POSTER, "auto_model": True}, SUN_T2I)
     assert choice is None  # registered fallback failed → stop
 
 
@@ -214,5 +214,6 @@ def test_manual_sunburst_never_triggers_872_auto_fallback(catalog):
     assert choice["model"] == FLARE_T2I and choice["fallback"] == SUN_T2I
     assert "首选" not in (choice.get("reason") or {}).get("zh", "")
     tip = auto_models.pill_tooltip(choice, "zh")
-    # #873 auto tip shape is category · 首选 …; #236 fallback tip must not claim auto-picked poster row
-    assert "海报/带字 · 首选" not in tip
+    # #873 auto tip-row starts with 「自动选择：海报/带字」; #236 must stay on the table/default fallback shape
+    assert not tip.startswith("自动选择：海报/带字"), tip
+    assert "按对应表改用备用模型" in tip

@@ -88,7 +88,7 @@ def main():
                 assert "Auto ·" in label.inner_text()
                 assert page.locator("#gen .ca-process__row[data-error]").count() >= 1
             elif case == "poster_fb":
-                assert label.inner_text().strip() == "Auto · GPT Image 2.6 Flare", label.inner_text()
+                assert label.inner_text().strip() == "Auto · GPT Image 2.6 Sunburst", label.inner_text()
             elif case == "fallback":
                 assert label.inner_text().strip() == "Auto · Nano Banana 2.1", label.inner_text()
             elif case == "skill":

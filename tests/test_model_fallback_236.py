@@ -49,7 +49,8 @@ def test_reply_contract_still_names_the_model():
 
 @pytest.mark.parametrize("action,args,failed,model,edit", [
     ("generate_image", {"prompt": PORTRAIT}, SEEDREAM, FLARE, False),
-    ("generate_image", {"prompt": 'Movie poster with the headline "SUMMER"'}, SUNBURST_T2I, FLARE, False),
+    # Poster Auto is Flare (this PR); a running/named Sunburst still #236-falls back to the table's Flare.
+    ("generate_image", {"prompt": 'Movie poster with the headline "SUMMER"', "model": SUNBURST_T2I}, SUNBURST_T2I, FLARE, False),
     ("generate_image", {"prompt": "Minimal logo for a tea brand"}, RECRAFT, FLARE, False),
     ("generate_image", {"prompt": ANIME, "model": "alibaba/qwen-image-3.0/text-to-image"},
      "alibaba/qwen-image-3.0/text-to-image", MJ, False),

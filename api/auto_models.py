@@ -314,8 +314,8 @@ _SHORT = {
     "google/nano-banana-2.1/text-to-image": "Nano Banana 2.1",
     "google/nano-banana-2.1/edit": "Nano Banana 2.1",
     "google/nano-banana-pro/edit": "Nano Banana Pro",
-    "bytedance/seedream-v5.0-pro": "Seedream v5 Pro",
-    "bytedance/seedream-v5.0-pro/edit": "Seedream v5 Pro",
+    "bytedance/seedream-v5.0-pro": "Seedream 5.0 Pro",
+    "bytedance/seedream-v5.0-pro/edit": "Seedream 5.0 Pro",
     "recraft-ai/recraft-v3": "Recraft V3",
 }
 

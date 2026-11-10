@@ -27,7 +27,6 @@ from ComfyArt.api import auto_models
 from ComfyArt.api.mcp_tools import canvas
 
 FLARE_T2I = "openai/gpt-image-2.6-flare/text-to-image"
-SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
 FLARE_EDIT = "openai/gpt-image-2.6-flare/edit"
 SEEDREAM = "bytedance/seedream-v5.0-pro"
 SEEDREAM_EDIT = "bytedance/seedream-v5.0-pro/edit"
@@ -69,17 +68,17 @@ CASES = [
     case("zh", "t2i_general", "generate_image", "写实风格的山川风景", FLARE_T2I, "default"),
 
     # --- poster / infographic / title or a lot of text → 2.6 sunburst (#825) ---
-    case("en", "t2i_poster", "generate_image", 'Movie poster with the headline "SUMMER"', SUNBURST_T2I, "poster_text"),
-    case("en", "t2i_poster", "generate_image", "an infographic explaining how coffee is roasted", SUNBURST_T2I, "poster_text"),
-    case("en", "t2i_poster", "generate_image", "a conference brochure with a big slogan", SUNBURST_T2I, "poster_text"),
-    case("en", "t2i_poster", "generate_image", "restaurant menu board, dish names in large type", SUNBURST_T2I, "poster_text"),
-    case("en", "t2i_poster", "generate_image", "a billboard with the words GRAND OPENING", SUNBURST_T2I, "poster_text"),
-    case("zh", "t2i_poster", "generate_image", "一张电影海报，大标题是「夏日」", SUNBURST_T2I, "poster_text"),
-    case("zh", "t2i_poster", "generate_image", "咖啡烘焙流程信息图", SUNBURST_T2I, "poster_text"),
-    case("zh", "t2i_poster", "generate_image", "促销宣传单，标语要醒目", SUNBURST_T2I, "poster_text"),
-    case("zh", "t2i_poster", "generate_image", "餐厅菜单设计，菜名用大字", SUNBURST_T2I, "poster_text"),
-    case("zh", "t2i_poster", "generate_image", "易拉宝，上面写着开业大吉", SUNBURST_T2I, "poster_text"),
-    case("zh", "t2i_poster", "generate_image", "海报，不要太小的文字，标题要大", SUNBURST_T2I, "poster_text"),
+    case("en", "t2i_poster", "generate_image", 'Movie poster with the headline "SUMMER"', FLARE_T2I, "poster_text"),
+    case("en", "t2i_poster", "generate_image", "an infographic explaining how coffee is roasted", FLARE_T2I, "poster_text"),
+    case("en", "t2i_poster", "generate_image", "a conference brochure with a big slogan", FLARE_T2I, "poster_text"),
+    case("en", "t2i_poster", "generate_image", "restaurant menu board, dish names in large type", FLARE_T2I, "poster_text"),
+    case("en", "t2i_poster", "generate_image", "a billboard with the words GRAND OPENING", FLARE_T2I, "poster_text"),
+    case("zh", "t2i_poster", "generate_image", "一张电影海报，大标题是「夏日」", FLARE_T2I, "poster_text"),
+    case("zh", "t2i_poster", "generate_image", "咖啡烘焙流程信息图", FLARE_T2I, "poster_text"),
+    case("zh", "t2i_poster", "generate_image", "促销宣传单，标语要醒目", FLARE_T2I, "poster_text"),
+    case("zh", "t2i_poster", "generate_image", "餐厅菜单设计，菜名用大字", FLARE_T2I, "poster_text"),
+    case("zh", "t2i_poster", "generate_image", "易拉宝，上面写着开业大吉", FLARE_T2I, "poster_text"),
+    case("zh", "t2i_poster", "generate_image", "海报，不要太小的文字，标题要大", FLARE_T2I, "poster_text"),
 
     # --- photoreal portrait / product photo / e-commerce hero → seedream ---
     case("en", "t2i_person", "generate_image", "Photorealistic portrait of an old fisherman", SEEDREAM, "person"),

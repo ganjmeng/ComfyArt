@@ -47,7 +47,7 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
         { type: 'thinking', text: 'pick' },
         use('g1', 'mcp__comfyart__generate_image', { prompt: '海报大字' }),
         res('g1', 'mcp__comfyart__generate_image', choice({
-          model: sunburst, auto: true, category: 'poster_text',
+          model: flare, auto: true, category: 'poster_text',
           reason: { zh: '海报/带字', en: 'poster / text' },
         })),
         { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
@@ -84,14 +84,14 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
         { type: 'thinking', text: 'pick' },
         use('g1', 'mcp__comfyart__generate_image', { prompt: 'x' }),
         res('g1', 'mcp__comfyart__generate_image', choice({
-          model: sunburst, auto: true, category: 'poster_text',
+          model: flare, auto: true, category: 'poster_text',
           reason: { zh: '海报/带字', en: 'poster / text' },
         }), 'error'),
         { type: 'text', text: lang === 'en' ? 'Generation failed.' : '生成失败。' },
       ],
     },
   },
-  // #872: poster_text Sunburst → Flare runtime fallback (table tip + models)
+  // #872: poster_text Flare → Sunburst runtime fallback (table tip + models)
   poster_fb: {
     thumbs: true,
     msg: {
@@ -99,8 +99,8 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
         { type: 'thinking', text: 'pick' },
         use('g1', 'mcp__comfyart__generate_image', { prompt: '海报大字' }),
         res('g1', 'mcp__comfyart__generate_image', choice({
-          model: flare, auto: true, category: 'poster_text',
-          fallback: sunburst,
+          model: sunburst, auto: true, category: 'poster_text',
+          fallback: flare,
           reason: { zh: '海报/带字', en: 'poster / text' },
         })),
         { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
@@ -172,7 +172,7 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
         { type: 'thinking', text: 'pick' },
         use('g1', 'mcp__comfyart__generate_image', { prompt: '海报' }),
         res('g1', 'mcp__comfyart__generate_image', choice({
-          model: sunburst, auto: true, category: 'poster_text',
+          model: flare, auto: true, category: 'poster_text',
           reason: { zh: '海报/带字', en: 'poster / text' },
         })),
         { type: 'text', text: lang === 'en' ? 'After refresh.' : '刷新后。' },
@@ -194,6 +194,21 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
       ],
     },
   },
+  // Product / photoreal Auto card (tip follows the live photoreal row).
+  product: {
+    thumbs: true,
+    msg: {
+      id: 'a', role: 'assistant', status: 'done', blocks: [
+        { type: 'thinking', text: 'pick' },
+        use('g1', 'mcp__comfyart__generate_image', { prompt: '电商主图，白底，香水瓶' }),
+        res('g1', 'mcp__comfyart__generate_image', choice({
+          model: seedream, auto: true, category: 'photoreal',
+          reason: { zh: '产品摄影', en: 'product photography' },
+        })),
+        { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
+      ],
+    },
+  },
   // Tip at top edge → auto-flip below the label (no reply line so tip has room)
   flip: {
     thumbs: true,
@@ -202,7 +217,7 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
       id: 'a', role: 'assistant', status: 'done', blocks: [
         use('g1', 'mcp__comfyart__generate_image', { prompt: '海报大字' }),
         res('g1', 'mcp__comfyart__generate_image', choice({
-          model: sunburst, auto: true, category: 'poster_text',
+          model: flare, auto: true, category: 'poster_text',
           reason: { zh: '海报/带字', en: 'poster / text' },
         })),
       ],

@@ -51,7 +51,7 @@ def test_same_prompt_many_turns_same_model():
 
 
 @pytest.mark.parametrize("prompt,model", [
-    ("Movie poster with the headline \"SUMMER\"", "openai/gpt-image-2.6-sunburst/text-to-image"),
+    ("Movie poster with the headline \"SUMMER\"", "openai/gpt-image-2.6-flare/text-to-image"),
     ("Photorealistic portrait of an old fisherman", "bytedance/seedream-v5.0-pro"),
     ("Anime girl under cherry blossoms", "midjourney/text-to-image"),
     ("一张写实人像", "bytedance/seedream-v5.0-pro"),
@@ -206,17 +206,16 @@ def test_runs_do_not_share_the_noturn_cap():
     assert picks == [default("text_to_image")] * 6
 
 
-# --- #825: poster/text + masked -> 2.6 sunburst; explicit auto does not bypass the table ---
-SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
+# --- #825: poster/text -> 2.6 Flare (Sunburst fallback); masked stays 2.6 Sunburst; explicit auto does not bypass the table ---
 SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
 FLARE_T2I = "openai/gpt-image-2.6-flare/text-to-image"
 FLARE_EDIT = "openai/gpt-image-2.6-flare/edit"
 POSTER = 'Movie poster with the headline "SUMMER"'
 
 
-def test_825_poster_uses_sunburst_with_poster_reason():
+def test_825_poster_uses_flare_with_poster_reason():
     choice = run("generate_image", prompt=POSTER)["model_choice"]
-    assert choice["model"] == SUNBURST_T2I and choice["auto"] and choice["category"] == "poster_text"
+    assert choice["model"] == FLARE_T2I and choice["auto"] and choice["category"] == "poster_text"
     assert "海报" in choice["reason"]["zh"] or "poster" in choice["reason"]["en"].lower()
     assert "poster" in choice["note"].lower() or "海报" in choice["note"]
 
