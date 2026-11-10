@@ -58,6 +58,7 @@ class TurnResult:
     aborted: bool = False
     usage: Optional[dict] = None
     run: Optional[dict] = None  # #391: {"run_id", "status", "stop": {...}, "self_check": {...}}
+    action: str = ""  # #877: "use_official_llm" offers 切回官方默认 after a custom-endpoint failure
 
 
 class TurnHandle:

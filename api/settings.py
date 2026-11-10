@@ -22,6 +22,8 @@ SETTINGS_SPEC: dict[str, object] = {
     "bot-model-local-llm": "deepseek/deepseek-v4.1-flash-1017",
     # #219: key for a custom endpoint; empty = WaveSpeed key, but only on WaveSpeed URLs. Never returned in clear.
     "bot-local-llm-key": "",
+    # #877: official | custom; empty = not chosen yet (inferred on read, written only on Save)
+    "llm_mode": "",
     # #232/#391: hard step cap of one agent run (clamped to 1..500); budgets + progress stop runs first
     "bot-max-steps": 300,
     # #391: budget + progress loop (off = legacy fixed-step loop); per-run wall time and credit quote
@@ -44,7 +46,27 @@ SETTINGS_SPEC: dict[str, object] = {
 SECRET_KEYS = ("bot-local-llm-key",)
 MASK = "********"
 
-CHOICES: dict[str, tuple[str, ...]] = {"ocr-engine": ("local", "agent")}
+CHOICES: dict[str, tuple[str, ...]] = {"ocr-engine": ("local", "agent"), "llm_mode": ("official", "custom")}
+
+# Official built-in LLM default (catalog/request id + user-facing display name).
+# Not writable; GET/PUT /comfyart/settings include these as read-only fields.
+OFFICIAL_LLM_MODEL = "deepseek-flash"
+OFFICIAL_LLM_DISPLAY_NAME = "DeepSeek V4.1 Flash"
+_READ_ONLY_SETTINGS = frozenset({"official_llm_model", "official_llm_display_name"})
+
+
+def _norm_llm_setting(value) -> str:
+    return str(value or "").strip().rstrip("/")
+
+
+def llm_values_are_custom(values: dict | None = None) -> bool:
+    """True when the saved URL or model differs from the SETTINGS_SPEC default (strip + trailing /)."""
+    values = values if values is not None else all_settings()
+    url = _norm_llm_setting(values.get("bot-local-llm-url"))
+    model = _norm_llm_setting(values.get("bot-model-local-llm"))
+    def_url = _norm_llm_setting(SETTINGS_SPEC["bot-local-llm-url"])
+    def_model = _norm_llm_setting(SETTINGS_SPEC["bot-model-local-llm"])
+    return url != def_url or model != def_model
 
 
 def _file() -> str:
@@ -74,9 +96,17 @@ def bot_disabled() -> web.Response:
     return error("the ComfyArt Agent is off: turn it on in Agent settings", 403)
 
 
+def public_settings(values: dict | None = None) -> dict:
+    """Masked settings plus the official LLM default (id + display name). Display name is not writable."""
+    out = _masked(values if values is not None else all_settings())
+    out["official_llm_model"] = OFFICIAL_LLM_MODEL
+    out["official_llm_display_name"] = OFFICIAL_LLM_DISPLAY_NAME
+    return out
+
+
 @routes.get("/comfyart/settings")
 async def get_settings(_request: web.Request) -> web.Response:
-    return web.json_response(_masked(all_settings()))
+    return web.json_response(public_settings())
 
 
 def _host(url: str) -> str:
@@ -90,22 +120,27 @@ def _masked(values: dict) -> dict:
 @routes.put("/comfyart/settings")
 async def put_settings(request: web.Request) -> web.Response:
     body = await json_body(request)
-    unknown = [k for k in body if k not in SETTINGS_SPEC]
+    unknown = [k for k in body if k not in SETTINGS_SPEC and k not in _READ_ONLY_SETTINGS]
     if unknown:
         return error(f"unknown settings: {', '.join(unknown)}", 400)
-    for key, value in body.items():
+    writable = {k: v for k, v in body.items() if k not in _READ_ONLY_SETTINGS}
+    for key, value in writable.items():
         if type(value) is not type(SETTINGS_SPEC[key]):
             return error(f"{key} must be a {type(SETTINGS_SPEC[key]).__name__}", 400)
-        if key in CHOICES and value not in CHOICES[key]:
+        # The SETTINGS_SPEC default remains valid even when it is not in CHOICES (llm_mode="" = not chosen yet).
+        if key in CHOICES and value not in CHOICES[key] and value != SETTINGS_SPEC[key]:
             return error(f"{key} must be one of {', '.join(CHOICES[key])}", 400)
     current = all_settings()
     old_host = _host(current["bot-local-llm-url"])
     # the UI echoes the mask back for an untouched key: keep the stored value
-    current.update({k: v for k, v in body.items() if not (k in SECRET_KEYS and v == MASK)})
+    current.update({k: v for k, v in writable.items() if not (k in SECRET_KEYS and v == MASK)})
     # #219: a stored custom key belongs to its host; a new hostname clears it unless a new key came with it.
     # Back on a WaveSpeed host the key is cleared too and the WaveSpeed key is used as usual.
     new_key = body.get("bot-local-llm-key")
     if _host(current["bot-local-llm-url"]) != old_host and (new_key is None or new_key == MASK):
         current["bot-local-llm-key"] = ""
+    # #877: first Save of an unchosen mode persists the inferred official/custom value. Never write back on read.
+    if str(current.get("llm_mode") or "").strip() not in CHOICES["llm_mode"]:
+        current["llm_mode"] = "custom" if llm_values_are_custom(current) else "official"
     write_json(_file(), current, mode=0o600)  # holds the custom endpoint key
-    return web.json_response(_masked(current))
+    return web.json_response(public_settings(current))

@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useValue } from 'tldraw'
 
-import { BUILTIN_AGENT, botEnabledAtom, providerLabel, providersAtom, refreshBot, saveSettings, settingsAtom, testLocalLlm, type BotSettings as Settings, type LocalLlmTestCode, type ProviderInfo } from '../bot'
+import { BUILTIN_AGENT, botEnabledAtom, llmSourceAtom, providerLabel, providersAtom, refreshBot, saveSettings, settingsAtom, testLocalLlm, type BotSettings as Settings, type LocalLlmTestCode, type ProviderInfo } from '../bot'
 import { errorText } from '../jobs'
-import { agentSetupFocusAtom, botSettingsOpenAtom } from './AgentPicker'
+import { agentSetupFocusAtom, botSettingsOpenAtom, pendingLlmModeAtom } from './AgentPicker'
 import { docsUrl } from './SettingsMenu'
 import { FieldSelect } from './FieldSelect'
 import { AgentLogo } from './agentLogos'
@@ -32,6 +32,15 @@ const KEY_KEY = 'bot-local-llm-key'
 const MODEL_KEY = 'bot-model-local-llm'
 const WAVESPEED_HOST = 'llm.wavespeed.ai'
 const hostOf = (url: unknown) => { try { return new URL(String(url ?? '').trim()).hostname.toLowerCase() } catch { return '' } }
+const DEFAULT_URL = 'https://llm.wavespeed.ai/v1'
+const DEFAULT_MODEL = 'deepseek/deepseek-v4.1-flash-1017'
+const normLlm = (v: unknown) => String(v ?? '').trim().replace(/\/+$/, '')
+const valuesAreCustom = (s: Settings) => normLlm(s[URL_KEY]) !== normLlm(DEFAULT_URL) || normLlm(s[MODEL_KEY]) !== normLlm(DEFAULT_MODEL)
+const modeOf = (s: Settings): 'official' | 'custom' => {
+  const m = String(s.llm_mode ?? '').trim()
+  if (m === 'official' || m === 'custom') return m
+  return valuesAreCustom(s) ? 'custom' : 'official'
+}
 
 const TEST_MSG: Record<LocalLlmTestCode, (model?: string) => string> = {
   ok: () => t('botSettings.testOk'),
@@ -47,9 +56,11 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
   const settings = useValue(settingsAtom)
   const providers = useValue(providersAtom)
   const enabled = useValue(botEnabledAtom)
+  const llmSource = useValue(llmSourceAtom)
   const [draft, setDraft] = useState<Settings>({})
   const [testing, setTesting] = useState(false)
   const [testState, setTestState] = useState<{ ok: boolean; text: string } | null>(null)
+  const [modeOverride, setModeOverride] = useState<'official' | 'custom' | null>(null)
   // #345: Advanced (comfy-mcp) starts collapsed
   const [advancedOpen, setAdvancedOpen] = useState(false)
   // #219: a stored custom key belongs to its host; a new host clears it (the backend enforces the same rule)
@@ -64,14 +75,28 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
   }
 
   useEffect(() => {
-    if (open) void refreshBot().catch((e) => onError(errorText(e)))
+    if (!open) {
+      setModeOverride(null)
+      return
+    }
+    const pending = pendingLlmModeAtom.get()
+    if (pending === 'official' || pending === 'custom') {
+      setModeOverride(pending)
+      pendingLlmModeAtom.set(null)
+    }
+    void refreshBot().catch((e) => onError(errorText(e)))
   }, [open])
 
-  useEffect(() => { setDraft(settings); setTestState(null) }, [settings])
+  useEffect(() => {
+    const next = { ...settings } as Settings
+    if (modeOverride) next.llm_mode = modeOverride
+    setDraft(next)
+    setTestState(null)
+  }, [settings, modeOverride])
 
   if (!open) return null
-  const close = () => botSettingsOpenAtom.set(false)
-  const save = () => void saveSettings(draft).then(() => refreshBot()).then(close).catch((e) => onError(errorText(e)))
+  const close = () => { setModeOverride(null); botSettingsOpenAtom.set(false) }
+  const save = () => void saveSettings({ ...draft, llm_mode: modeOf({ ...draft, llm_mode: modeOverride ?? draft.llm_mode }) }).then(() => refreshBot()).then(close).catch((e) => onError(errorText(e)))
   const testConnection = () => {
     if (testing) return
     setTesting(true)
@@ -82,7 +107,10 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
       model: String(draft[MODEL_KEY] ?? ''),
     }).then((r) => {
       const code = (r.code in TEST_MSG ? r.code : 'unreachable') as LocalLlmTestCode
-      setTestState({ ok: !!r.ok, text: TEST_MSG[code](r.model) })
+      const status = Number(r.status)
+      const failCopy = ({ unreachable: t('botSettings.customLlmFailHost'), auth_failed: t('botSettings.customLlmFailAuth'), timeout: t('botSettings.customLlmFailTimeout') } as Partial<Record<LocalLlmTestCode, string>>)[code]
+      const httpCopy = !r.ok && code === 'unreachable' && status >= 400 ? t('botSettings.customLlmFailHttp', String(status)) : ''
+      setTestState({ ok: !!r.ok, text: httpCopy || (!r.ok && failCopy ? failCopy : TEST_MSG[code](r.model)) })
     }).catch(() => {
       setTestState({ ok: false, text: t('botSettings.testFailed') })
     }).finally(() => setTesting(false))
@@ -90,6 +118,18 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
 
   const llmFields = TEXT_FIELDS.filter(([key]) => LLM_FIELD_KEYS.has(key))
   const otherFields = TEXT_FIELDS.filter(([key]) => !LLM_FIELD_KEYS.has(key))
+  const managed = llmSource.source === 'admin'
+  const mode = modeOverride ?? modeOf(draft)
+  const incomplete = !String(draft[URL_KEY] ?? '').trim() || !String(draft[MODEL_KEY] ?? '').trim()
+  const officialDisplayName = String(settings.official_llm_display_name ?? '')
+  const hasCustomConfig = valuesAreCustom(draft) || Boolean(String(draft[KEY_KEY] ?? '').trim())
+  const testFailed = !!(testState && !testState.ok)
+  const setMode = (id: 'official' | 'custom') => {
+    if (managed) return
+    setModeOverride(id)
+    setDraft({ ...draft, llm_mode: id })
+    if (id === 'official') setTestState(null)
+  }
 
   return (
     <Modal className="ca-botsettings" title={t('botSettings.agentSettings')} onClose={close}>
@@ -98,24 +138,82 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
         <section className="ca-botsettings__section" data-testid="botsettings-builtin">
           <div className="ca-botsettings__sectiontitle">{t('botSettings.builtinAgent')}</div>
           <div className="ca-chat__hint">{t('botSettings.builtinAgentHint')}</div>
-          {llmFields.map(([key, label, hint, type]) => (
-            <label key={key} className="ca-rename__field">
-              <span>{label}</span>
-              <input className="ca-panel__input" type={type ?? 'text'} autoComplete="off" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => edit(key, e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
-              {key === KEY_KEY && keyCleared && !draft[KEY_KEY] && <span className="ca-adv__help">{t('botSettings.urlChangedReenterKey')}</span>}
-              {key === KEY_KEY && <span className="ca-adv__help">{t('botSettings.localLlmKeyEnvHint')}</span>}
-            </label>
-          ))}
-          <div className="ca-botsettings__test" data-testid="local-llm-test">
-            <button type="button" className="ca-panel__secondary" disabled={testing} onClick={testConnection}>
-              {testing ? t('botSettings.testing') : t('botSettings.testConnection')}
-            </button>
-            {testState && (
-              <span className="ca-botsettings__testmsg" data-ok={testState.ok || undefined} data-err={!testState.ok || undefined} role="status">
-                {testState.text}
-              </span>
-            )}
-          </div>
+          {managed ? (
+            <>
+              <div className="ca-botsettings__adminnotice" data-testid="llm-source">
+                {t('botSettings.llmManagedByAdmin')}
+              </div>
+              <label className="ca-rename__field">
+                <span>{t('botSettings.localLlmUrl')}</span>
+                <input className="ca-panel__input" type="text" autoComplete="off" readOnly value={llmSource.url || ''} onKeyDown={(e) => e.stopPropagation()} />
+              </label>
+              <label className="ca-rename__field">
+                <span>{t('botSettings.localLlmModel')}</span>
+                <input className="ca-panel__input" type="text" autoComplete="off" readOnly value={llmSource.model || ''} onKeyDown={(e) => e.stopPropagation()} />
+              </label>
+              <div className="ca-botsettings__adminkey" data-testid="llm-admin-key">{t('botSettings.llmKeyProvidedByAdmin')}</div>
+            </>
+          ) : (
+            <>
+              <div className="ca-botsettings__modeswitch" role="tablist" aria-label={t('botSettings.llmSourceOfficial')} data-testid="llm-mode">
+                {(['official', 'custom'] as const).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === id}
+                    data-on={mode === id || undefined}
+                    data-err={(id === 'custom' && testFailed) || undefined}
+                    data-testid={`llm-mode-${id}`}
+                    onClick={() => setMode(id)}
+                  >
+                    {id === 'official' ? t('botSettings.llmSourceOfficial') : t('botSettings.llmModeCustom')}
+                  </button>
+                ))}
+              </div>
+              {mode === 'official' && (
+                <>
+                  <div className="ca-botsettings__officialnotice" data-testid="llm-official-notice">{t('botSettings.llmOfficialNotice', officialDisplayName)}</div>
+                  {hasCustomConfig && (
+                    <div className="ca-botsettings__customkept" data-testid="llm-custom-kept">{t('botSettings.llmCustomKept')}</div>
+                  )}
+                </>
+              )}
+              {mode === 'custom' && incomplete && (
+                <div className="ca-botsettings__notsetup" role="status" data-testid="llm-custom-not-setup">{t('botSettings.customLlmNotSetup')}</div>
+              )}
+              {mode === 'custom' && llmFields.map(([key, label, hint, type]) => (
+                <label key={key} className="ca-rename__field">
+                  <span>{label}</span>
+                  <input className="ca-panel__input" type={type ?? 'text'} autoComplete="off" value={String(draft[key] ?? '')} placeholder={hint} onChange={(e) => edit(key, e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
+                  {key === KEY_KEY && keyCleared && !draft[KEY_KEY] && <span className="ca-adv__help">{t('botSettings.urlChangedReenterKey')}</span>}
+                  {key === KEY_KEY && <span className="ca-adv__help">{t('botSettings.localLlmKeyEnvHint')}</span>}
+                </label>
+              ))}
+              {mode === 'custom' && (
+              <div className="ca-botsettings__test" data-testid="local-llm-test">
+                <button type="button" className="ca-panel__secondary" disabled={testing} onClick={testConnection}>
+                  {testing ? t('botSettings.testing') : t('botSettings.testConnection')}
+                </button>
+                {testState && (
+                  <span className="ca-botsettings__testmsg" data-ok={testState.ok || undefined} data-err={!testState.ok || undefined} role="status">
+                    {testState.text}
+                  </span>
+                )}
+                {testFailed && !incomplete && (
+                  <button
+                    type="button"
+                    className="ca-panel__secondary ca-botsettings__switchback"
+                    data-testid="use-official-llm"
+                    onClick={() => setMode('official')}
+                  >
+                    {t('botSettings.useOfficialDefault')}
+                  </button>
+                )}
+              </div>
+              )}
+            </>
+          )}
         </section>
 
         {/* #364 Agent「审核」— post-image review thought on Done (default ON) */}
@@ -182,8 +280,14 @@ export function BotSettings({ onError }: { onError: (msg: string) => void }) {
           />
         </label>
         <div className="ca-panel__foot">
-          <button type="button" className="ca-panel__secondary" onClick={close}>{t('common.cancel')}</button>
-          <button type="button" className="ca-panel__primary" onClick={save}>{t('common.save')}</button>
+          {managed ? (
+            <button type="button" className="ca-panel__secondary" data-testid="botsettings-close" onClick={close}>{t('common.close')}</button>
+          ) : (
+            <>
+              <button type="button" className="ca-panel__secondary" onClick={close}>{t('common.cancel')}</button>
+              <button type="button" className="ca-panel__primary" onClick={save}>{t('common.save')}</button>
+            </>
+          )}
         </div>
       </div>
     </Modal>

@@ -10,6 +10,12 @@ import { Icons } from './icons'
 import { t } from '../i18n'
 
 export const botSettingsOpenAtom = atom('bot settings open', false)
+/** #877: chat「切回官方默认」pre-moves the settings switch; takes effect only on Save. */
+export const pendingLlmModeAtom = atom<'official' | 'custom' | null>('pending llm mode', null)
+export function openBotSettingsWithLlmMode(mode: 'official' | 'custom') {
+  pendingLlmModeAtom.set(mode)
+  botSettingsOpenAtom.set(true)
+}
 // #247: which tool card the Agent settings should scroll to when opened from 去配置
 export const agentSetupFocusAtom = atom<string | null>('agent setup focus', null)
 
