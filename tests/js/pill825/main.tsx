@@ -227,6 +227,21 @@ const cases: Record<string, { width?: number; msg: any; live?: boolean; thumbs?:
       ],
     },
   },
+  // #825 keep_product Auto edit card (same hover wording, Banana 2.1).
+  keepproduct: {
+    thumbs: true,
+    msg: {
+      id: 'a', role: 'assistant', status: 'done', blocks: [
+        { type: 'thinking', text: 'pick' },
+        use('g1', 'mcp__comfyart__edit_image', { prompt: '保留产品，只换背景' }),
+        res('g1', 'mcp__comfyart__edit_image', choice({
+          model: bananaEdit, auto: true, category: 'keep_product',
+          reason: { zh: '这是要保持人物或产品一致的局部修改', en: 'this is a local edit that must keep the person or product consistent' },
+        })),
+        { type: 'text', text: lang === 'en' ? 'Done.' : '好了。' },
+      ],
+    },
+  },
   // Same card on main: keep_identity still routed to Nano Banana 2.1 edit (L/R before).
   keepface_main: {
     thumbs: true,

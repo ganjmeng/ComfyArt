@@ -168,6 +168,7 @@ def test_resolve_model_choice_auto_and_manual(catalog):
 
 SEEDREAM = "bytedance/seedream-v5.0-pro"
 SEEDREAM_EDIT = "bytedance/seedream-v5.0-pro/edit"
+NANO_EDIT = "google/nano-banana-2.1/edit"
 
 
 def test_realistic_person_auto_label_and_hover_reason(catalog):
@@ -248,11 +249,18 @@ KEEP_IDENTITY_REASON = {
     "en": "this is a local edit that must keep the person or product consistent",
 }
 KEEP_FACE_PROMPTS = [
+    "保留同一个人，换衣服",
     "保留同一个人，只把衣服换成深色西装、背景换成办公室",
     "保留脸，换背景",
     "keep the face, new background",
     "new background, keep the same person",
     "same person, only change the clothes",
+]
+KEEP_PRODUCT_PROMPTS = [
+    "保留产品，只换背景",
+    "产品不变，只改背景",
+    "preserve the product, recolor the backdrop",
+    "keep the product, only change the background",
 ]
 
 
@@ -271,11 +279,37 @@ def test_keep_identity_keep_face_prompt_routes_to_seedream_edit(catalog):
         assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
 
 
+
+def test_keep_product_prompt_routes_to_banana_edit(catalog):
+    """#825: product / background-only keep phrases stay on Banana 2.1 (same hover as keep_identity)."""
+    for prompt in KEEP_PRODUCT_PROMPTS:
+        choice = auto_models.choose("image_edit", prompt, None, catalog)
+        assert choice["auto"] is True, prompt
+        assert choice["category"] == "keep_product", prompt
+        assert choice["model"] == NANO_EDIT, prompt
+        assert choice["reason"] == KEEP_IDENTITY_REASON, prompt
+        assert auto_models.pill_tooltip(choice, "zh") == "自动选择：这是要保持人物或产品一致的局部修改"
+        assert auto_models.pill_tooltip(choice, "en") == (
+            "Auto-picked: this is a local edit that must keep the person or product consistent"
+        )
+        assert auto_models.pill_label(choice) == "Auto · Nano Banana 2.1"
+
+
+def test_keep_identity_wins_when_prompt_has_person_and_product_words(catalog):
+    """First-match: keep_identity is above keep_product, so person/face words win over product words."""
+    prompt = "只换背景，人脸不要动"
+    choice = auto_models.choose("image_edit", prompt, None, catalog)
+    assert choice["category"] == "keep_identity"
+    assert choice["model"] == SEEDREAM_EDIT
+    assert auto_models.pill_label(choice) == "Auto · Seedream 5.0 Pro"
+    assert auto_models.pill_tooltip(choice, "zh") == "自动选择：这是要保持人物或产品一致的局部修改"
+
+
 def test_keep_identity_move_leaves_other_auto_rows_unchanged(catalog):
-    """Frozen check: only the keep_identity model id changes. Hover wording and position stay."""
+    """Frozen check: keep_identity (Seedream) then keep_product (Banana). Hover wording stays."""
     table = auto_models.load_table()
     ie_cats = table["image_edit"]["categories"]
-    assert [c["id"] for c in ie_cats] == ["keep_identity", "photo_retouch", "person"]
+    assert [c["id"] for c in ie_cats] == ["keep_identity", "keep_product", "photo_retouch", "person"]
 
     keep = ie_cats[0]
     assert keep["id"] == "keep_identity"
@@ -290,7 +324,21 @@ def test_keep_identity_move_leaves_other_auto_rows_unchanged(catalog):
             assert "同一个人" in keywords
         else:
             assert token in keywords, token
-    assert len(keywords) == 42
+    product_keywords = [
+        "keep the product", "don't change the product", "same product", "preserve the product",
+        "保持产品", "产品不变", "保留产品", "只换背景", "只改背景",
+    ]
+    for token in product_keywords:
+        assert token not in keywords, token
+    assert len(keywords) == 33
+
+    product = ie_cats[1]
+    assert product["id"] == "keep_product"
+    assert product["model"] == NANO_EDIT
+    assert product["zh"] == KEEP_IDENTITY_REASON["zh"] and product["en"] == KEEP_IDENTITY_REASON["en"]
+    assert product.get("tip") in (None, {}, "")
+    assert product.get("fallback") in (None, "", [])
+    assert product["keywords"] == product_keywords
 
     # person t2i / person edit (Seedream) — model + short tip unchanged
     person = next(c for c in table["text_to_image"]["categories"] if c["id"] == "person")

@@ -40,7 +40,7 @@ NAMED = "alibaba/qwen-image-3.0/text-to-image"
 TABLE_ROWS = (
     "t2i_general", "t2i_poster", "t2i_person", "t2i_photoreal", "t2i_consistency",
     "t2i_multi_ref", "t2i_one_ref", "t2i_anime", "t2i_logo",
-    "edit_general", "edit_identity", "edit_retouch", "edit_person", "user_named",
+    "edit_general", "edit_identity", "edit_product", "edit_retouch", "edit_person", "user_named",
 )
 
 
@@ -158,17 +158,22 @@ CASES = [
     case("zh", "edit_general", "edit_image", "让光线统一一点，不要改别的", FLARE_EDIT, "default"),
     case("zh", "edit_general", "edit_image", "把标题文字改成「特价」", FLARE_EDIT, "default"),
 
-    # --- local edit that must keep the person or product → seedream edit ---
+    # --- local edit that must keep the person / face → seedream edit ---
+    # Product / background-only keep phrases are a separate keep_product row (Banana 2.1).
+    # First-match: keep_identity is above keep_product, so a mixed prompt like
+    # 「只换背景，人脸不要动」 still routes to Seedream (person wins).
     case("en", "edit_identity", "edit_image", "new background, keep the same person", SEEDREAM_EDIT, "keep_identity"),
     case("en", "edit_identity", "edit_image", "change the shirt to red but don't change her face", SEEDREAM_EDIT, "keep_identity"),
     case("en", "edit_identity", "edit_image", "the person should look identical, only the background changes", SEEDREAM_EDIT, "keep_identity"),
-    case("en", "edit_identity", "edit_image", "preserve the product, recolor the backdrop", SEEDREAM_EDIT, "keep_identity"),
+    case("en", "edit_product", "edit_image", "preserve the product, recolor the backdrop", NANO_EDIT, "keep_product"),
     case("en", "edit_identity", "edit_image", "keep her face, new hairstyle", SEEDREAM_EDIT, "keep_identity"),
     case("zh", "edit_identity", "edit_image", "换背景，保持同一个人", SEEDREAM_EDIT, "keep_identity"),
     case("zh", "edit_identity", "edit_image", "只换背景，人脸不要动", SEEDREAM_EDIT, "keep_identity"),
     case("zh", "edit_identity", "edit_image", "衣服改成红色，五官不变", SEEDREAM_EDIT, "keep_identity"),
-    case("zh", "edit_identity", "edit_image", "保留产品外观，只改背景颜色", SEEDREAM_EDIT, "keep_identity"),
+    case("zh", "edit_product", "edit_image", "保留产品外观，只改背景颜色", NANO_EDIT, "keep_product"),
     case("zh", "edit_identity", "edit_image", "人物不要变，把季节换成冬天", SEEDREAM_EDIT, "keep_identity"),
+    case("zh", "edit_product", "edit_image", "保留产品，只换背景", NANO_EDIT, "keep_product"),
+    case("zh", "edit_identity", "edit_image", "保留同一个人，换衣服", SEEDREAM_EDIT, "keep_identity"),
 
     # --- photoreal photo retouch → seedream edit ---
     case("en", "edit_retouch", "edit_image", "retouch the portrait, natural skin", SEEDREAM_EDIT, "photo_retouch"),
