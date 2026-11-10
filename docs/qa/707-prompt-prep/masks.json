@@ -1,0 +1,163 @@
+{
+  "before-after": {
+    "base": "docs/design/640/78/gold/before-after/cover.webp",
+    "base_px": [
+      1600,
+      1200
+    ],
+    "card_xywh": [
+      459,
+      145,
+      683,
+      910
+    ],
+    "photo_on_card": {
+      "x0": 8,
+      "y0": 176,
+      "x1": 675,
+      "y1": 772,
+      "split": 340
+    },
+    "headline_on_card": {
+      "x0": 24,
+      "y0": 36,
+      "x1": 659,
+      "y1": 155
+    },
+    "disclaimer_on_card": {
+      "x0": 180,
+      "y0": 848,
+      "x1": 503,
+      "y1": 880
+    },
+    "face_boxes_on_cover": [
+      [
+        469,
+        323,
+        797,
+        915
+      ],
+      [
+        802,
+        323,
+        1132,
+        915
+      ]
+    ],
+    "files": {
+      "faces_only": "docs/qa/707-prompt-prep/masks/before-after-cover-faces.png",
+      "faces_and_copy": "docs/qa/707-prompt-prep/masks/before-after-cover-faces-and-copy.png"
+    },
+    "note": "Use faces_and_copy when the same Seedream edit also replaces the headline and disclaimer in-model; composite those regions back. BEFORE/AFTER labels stay gold (mask=0)."
+  },
+  "pose-fission": [
+    {
+      "base": "643/wash/pose-fission/examples/01.webp",
+      "base_px": [
+        1529,
+        2048
+      ],
+      "spec": {
+        "face_ellipse": [
+          640,
+          140,
+          960,
+          560
+        ],
+        "face_blur": 28,
+        "collar_clip_y": 430,
+        "collar_ramp_px": 40,
+        "scene_box": [
+          0,
+          1480,
+          480,
+          1800
+        ],
+        "box_feather": 14,
+        "scene": "optional: drain area only if a face re-wash is requested"
+      },
+      "file": "docs/qa/707-prompt-prep/masks/pose-fission-ex01-face-scene.png"
+    },
+    {
+      "base": "643/wash/pose-fission/examples/02.webp",
+      "base_px": [
+        1529,
+        2048
+      ],
+      "spec": {
+        "face_ellipse": [
+          690,
+          60,
+          980,
+          390
+        ],
+        "face_blur": 24,
+        "collar_clip_y": 345,
+        "collar_ramp_px": 40,
+        "scene_box": [
+          60,
+          1320,
+          600,
+          1545
+        ],
+        "box_feather": 14,
+        "scene": "optional drain grate box"
+      },
+      "file": "docs/qa/707-prompt-prep/masks/pose-fission-ex02-face-scene.png"
+    },
+    {
+      "base": "643/wash/pose-fission/examples/03.webp",
+      "base_px": [
+        1529,
+        2048
+      ],
+      "spec": {
+        "face_ellipse": [
+          500,
+          95,
+          775,
+          420
+        ],
+        "face_blur": 24,
+        "collar_clip_y": 360,
+        "collar_ramp_px": 40,
+        "scene_box": [
+          0,
+          1385,
+          316,
+          1535
+        ],
+        "box_feather": 10,
+        "scene": "optional lower-left sidewalk box"
+      },
+      "file": "docs/qa/707-prompt-prep/masks/pose-fission-ex03-face-scene.png"
+    },
+    {
+      "base": "643/wash/pose-fission/examples/04.webp",
+      "base_px": [
+        1529,
+        2048
+      ],
+      "spec": {
+        "face_ellipse": [
+          600,
+          45,
+          1110,
+          560
+        ],
+        "face_blur": 34,
+        "collar_clip_y": 620,
+        "collar_ramp_px": 50,
+        "scene_rect": [
+          0,
+          40,
+          190,
+          720
+        ],
+        "box_feather": 24,
+        "scene": "optional upper-left wall/window only (tightened vs #670 rect)"
+      },
+      "file": "docs/qa/707-prompt-prep/masks/pose-fission-ex04-face-scene.png"
+    }
+  ]
+}
