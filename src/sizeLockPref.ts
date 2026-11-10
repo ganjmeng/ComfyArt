@@ -1,4 +1,4 @@
-/** #707: a LinkedIn size lock may use a model that is not on the Lovart dropdown.
+/** #707: a LinkedIn size lock may use a model that is not on the reference product dropdown.
  *  That absence is not a disable. Auto off is an allowlist (`enabled`): an id the
  *  user did not check is an active disable, and the lock must not turn it back on.
  *  Nothing here calls a provider. */
