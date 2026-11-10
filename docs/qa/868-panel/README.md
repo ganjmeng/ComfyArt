@@ -10,14 +10,16 @@ Canvas zoom is 50% so 3× pads still fit in frame.
 | 缩放 2×，1440×900（全画布） | [02-after-release-2x.png](02-after-release-2x.png) |
 | 缩放 3×，1440×900（右把手 + 面板边裁切） | [03-after-release-3x.png](03-after-release-3x.png) |
 | 缩放 3×，窄视口 1280×800（右把手 + 面板边裁切） | [04-after-release-3x-1280.png](04-after-release-3x-1280.png) |
+| 缩放 3×，窄视口 1280×800（整屏，含底部工具栏和右下角缩放栏） | [05-after-release-3x-1280-full.png](05-after-release-3x-1280-full.png) |
 
 ## How to reshoot
 
 Build `dist` in this worktree (do not commit it), then:
 
 ```bash
-/workspace/ca-venv/bin/python docs/qa/868-panel/shoot_after.py          # retake 3× crops only
-/workspace/ca-venv/bin/python docs/qa/868-panel/shoot_after.py --all    # also reshoot 1× / 2×
+/workspace/ca-venv/bin/python docs/qa/868-panel/shoot_after.py            # retake 3× crops + 1280 full-viewport
+/workspace/ca-venv/bin/python docs/qa/868-panel/shoot_after.py --all      # also reshoot 1× / 2×
+/workspace/ca-venv/bin/python docs/qa/868-panel/shoot_after.py --full-only  # only the uncropped 1280 full-viewport frame
 ```
 
 `docs/qa/868/boot_app.py` serves the tree on 127.0.0.1:8868 with a stub host and the local WaveSpeed catalog fixture. Keys are unset except a fake in-process value that is never printed. No LAN / internal addresses.

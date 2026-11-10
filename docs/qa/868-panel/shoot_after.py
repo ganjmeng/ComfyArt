@@ -4,8 +4,10 @@
 1x / 2x / 3x at 1440x900, plus 3x at a 1280px-wide viewport. Localhost only.
 Requires a built dist in this worktree (do not commit it).
 
-By default this retakes the 3x / 3x@1280 cropped shots (handle + panel edge).
+By default this retakes the 3x / 3x@1280 cropped shots (handle + panel edge)
+and the uncropped 1280 full-viewport frame (05).
 Pass --all to also reshoot the full-canvas 1x / 2x frames.
+Pass --full-only to take only the uncropped 1280 full-viewport shot.
 """
 from __future__ import annotations
 
@@ -120,6 +122,53 @@ def assert_clear(page: Page, label: str) -> dict:
     return data
 
 
+
+def axis_gaps(a: dict, b: dict) -> tuple[float, float]:
+    """Signed CSS-px gaps. Positive = separated; negative = overlap depth."""
+    if a["b"] <= b["t"]:
+        v = b["t"] - a["b"]
+    elif b["b"] <= a["t"]:
+        v = a["t"] - b["b"]
+    else:
+        v = -min(a["b"] - b["t"], b["b"] - a["t"])
+    if a["r"] <= b["l"]:
+        h = b["l"] - a["r"]
+    elif b["r"] <= a["l"]:
+        h = a["l"] - b["r"]
+    else:
+        h = -min(a["r"] - b["l"], b["r"] - a["l"])
+    return h, v
+
+
+def measure_gaps(data: dict, vp: dict) -> dict:
+    p = data["panel"]
+    h_zoom, v_zoom = axis_gaps(p, data["tools"])
+    h_dock, v_dock = axis_gaps(p, data["dock"])
+    vw, vh = vp["width"], vp["height"]
+    out = {
+        "panel_to_zoom_bar_h": round(h_zoom, 2),
+        "panel_to_zoom_bar_v": round(v_zoom, 2),
+        "panel_to_toolbar_h": round(h_dock, 2),
+        "panel_to_toolbar_v": round(v_dock, 2),
+        "viewport": {
+            "left": round(p["l"], 2),
+            "top": round(p["t"], 2),
+            "right": round(vw - p["r"], 2),
+            "bottom": round(vh - p["b"], 2),
+        },
+        "panel": {k: round(p[k], 2) for k in ("l", "t", "r", "b", "w", "h")},
+        "tools": {k: round(data["tools"][k], 2) for k in ("l", "t", "r", "b", "w", "h")},
+        "dock": {k: round(data["dock"][k], 2) for k in ("l", "t", "r", "b", "w", "h")},
+    }
+    print("GAPS", out, flush=True)
+    return out
+
+
+def shoot_full_viewport(page: Page) -> Image.Image:
+    raw = page.screenshot(type="png")
+    return Image.open(io.BytesIO(raw)).convert("RGB")
+
+
 def shoot_canvas(page: Page, vp: dict) -> Image.Image:
     el = page.locator(".tl-canvas")
     b = el.bounding_box()
@@ -180,6 +229,7 @@ def setup_expand(page: Page, src, scale: float) -> None:
 
 def main() -> None:
     only_3x = "--all" not in sys.argv
+    full_only = "--full-only" in sys.argv
     if not (PR_ROOT / "dist/index.html").is_file():
         raise SystemExit(f"dist missing in {PR_ROOT}; run npm run build first (do not commit dist)")
     OUT.mkdir(parents=True, exist_ok=True)
@@ -191,7 +241,7 @@ def main() -> None:
         with sync_playwright() as p:
             browser = p.chromium.launch()
             wide = {"width": 1440, "height": 900}
-            if not only_3x:
+            if not only_3x and not full_only:
                 page = new_page(browser, url, wide)
                 open_project(page, src)
                 open_expand(page)
@@ -205,23 +255,34 @@ def main() -> None:
                     print("wrote", path, im.size, path.stat().st_size, flush=True)
                 page.close()
 
-            page = new_page(browser, url, wide)
-            setup_expand(page, src, 3.0)
-            d3 = assert_clear(page, "3x")
-            im = shoot_handle_panel(page, wide, docked=bool(d3.get('docked')))
-            path = OUT / "03-after-release-3x.png"
-            im.save(path, optimize=True)
-            print("wrote", path, im.size, path.stat().st_size, "side", d3.get("side"), "handleHit", d3.get("handleHit"), flush=True)
-            page.close()
+            if not full_only:
+                page = new_page(browser, url, wide)
+                setup_expand(page, src, 3.0)
+                d3 = assert_clear(page, "3x")
+                im = shoot_handle_panel(page, wide, docked=bool(d3.get('docked')))
+                path = OUT / "03-after-release-3x.png"
+                im.save(path, optimize=True)
+                print("wrote", path, im.size, path.stat().st_size, "side", d3.get("side"), "handleHit", d3.get("handleHit"), flush=True)
+                page.close()
 
             narrow = {"width": 1280, "height": 800}
             npage = new_page(browser, url, narrow)
             setup_expand(npage, src, 3.0)
             d4 = assert_clear(npage, "3x-1280")
-            nim = shoot_handle_panel(npage, narrow, docked=bool(d4.get('docked')))
-            npath = OUT / "04-after-release-3x-1280.png"
-            nim.save(npath, optimize=True)
-            print("wrote", npath, nim.size, npath.stat().st_size, "side", d4.get("side"), "handleHit", d4.get("handleHit"), flush=True)
+            measure_gaps(d4, narrow)
+            if not full_only:
+                nim = shoot_handle_panel(npage, narrow, docked=bool(d4.get('docked')))
+                npath = OUT / "04-after-release-3x-1280.png"
+                nim.save(npath, optimize=True)
+                print("wrote", npath, nim.size, npath.stat().st_size, "side", d4.get("side"), "handleHit", d4.get("handleHit"), flush=True)
+            full = shoot_full_viewport(npage)
+            fpath = OUT / "05-after-release-3x-1280-full.png"
+            full.save(fpath, optimize=True)
+            print(
+                "wrote", fpath, full.size, fpath.stat().st_size,
+                "side", d4.get("side"), "handleHit", d4.get("handleHit"),
+                "full-viewport uncropped", flush=True,
+            )
             npage.close()
             browser.close()
     finally:
