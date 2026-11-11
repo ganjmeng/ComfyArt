@@ -176,6 +176,8 @@ def test_before_after_template_has_no_default_side_profile():
     assert "Do not default to a 45° or 90° side profile" in ba
     assert "mostly frontal or near-frontal" in ba
     assert "Default to a 45° or 90° side profile" not in ba
+    assert "The before half must show clearly visible under-eye darkness and uneven tone; the after half is visibly brighter and more even, readable at thumbnail size." in ba
+    assert "BEFORE/AFTER labels in small, thin, widely letter-spaced serif caps like the reference." in ba
 
 
 def test_pose_fission_template_changes_only_pose_and_angle():
@@ -196,7 +198,11 @@ def test_game_art_template_locks_brand_tingsong_and_single_category():
     game = _instr("game-art")
     assert "The game title text is exactly 听松棋院 (four characters, no quotation marks or brackets drawn)" in game
     assert "「听松棋院」" not in game
-    assert "Do not copy the gold title word 「奔秋围棋」 verbatim. A single shared character such as 棋 is fine." in game
+    assert "Do not copy the reference image's game title." in game.replace("\\'", "'")
+    assert "Do not copy the reference image\\'s game title." in game
+    assert "A single shared character such as 棋 is fine." in game
+    assert "Do not copy the gold title word" not in game
+    assert "「奔秋围棋」" not in game
     assert "reuse any character from it" not in game
     assert (
         "Every player name and list title must be newly invented, Go-themed Chinese, "
@@ -207,21 +213,22 @@ def test_game_art_template_locks_brand_tingsong_and_single_category():
         "小目守角要诀", "三三点入攻防", "劫争取舍心得", "厚势围空思路",
         "青松听雨", "云山落墨", "竹林闲客", "白鹤临池",
         "188手", "156手", "243手", "172手",
-        "2026年5月8日", "5月15日", "5月22日", "5月29日",
+        "2026年5月8日", "2026年5月15日", "2026年5月22日", "2026年5月29日",
         "学棋", "对局厅", "商店", "我的",
         "card i uses list title i, player i, move count i, date i",
         "no other text from the reference may remain",
     ):
         assert required in game, required
+    assert "Dates, in this order: 2026年5月8日, 2026年5月15日, 2026年5月22日, 2026年5月29日." in game
+    assert "Dates, in this order: 2026年5月8日, 5月15日, 5月22日, 5月29日." not in game
     assert "弈" not in game
-    # 奔/秋 may appear only in the verbatim gold-title prohibition 「奔秋围棋」
-    stripped = game.replace("「奔秋围棋」", "")
-    assert "奔" not in stripped and "秋" not in stripped
+    assert "奔" not in game and "秋" not in game
     assert "All cards, thumbnails and copy stay in the single game category the user named (Go/围棋 by default)" in game
     assert "xiangqi / 象棋" in game
     assert "帅" in game and "将" in game
     assert "playing cards" in game and "card-game theme" in game
     assert "Invent a new game name" not in game
+    assert "No other text may appear on the image besides the hard-coded copy above, including buttons and labels (e.g. no extra action button text)." in game
 
 
 def test_linkedin_banner_template_keeps_avatar_safe_area_empty():
