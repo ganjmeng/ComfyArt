@@ -382,9 +382,15 @@ def _exact_skill_pin(args: dict) -> dict | None:
 
 
 def _pin_args(args: dict, choice: dict) -> dict:
-    # Drop size_lock / exact pixels so a resolution+ratio pin is not forced to
-    # the skill's declared canvas (pose-fission 1536×2048 vs pin 2k 3:4).
-    args = {k: v for k, v in args.items() if k not in ("model", "auto_model", "size_lock", "size_candidates", "width", "height")}
+    # Always drop Auto model keys. Drop size_lock / exact pixels only when the
+    # pin itself names resolution or ratio (pose-fission 2k 3:4 must not be
+    # forced to a skill canvas). Pins with no size (ai-model, clothing-swap,
+    # studio-model) keep width/height/ratio from apply_generate so #911
+    # clothing-swap can still follow image 1 (e.g. 3:4 1536×2048).
+    drop = ["model", "auto_model"]
+    if choice.get("resolution") or choice.get("ratio"):
+        drop += ["size_lock", "size_candidates", "width", "height"]
+    args = {k: v for k, v in args.items() if k not in drop}
     if "edit_model" in choice:
         args["edit_model"] = choice["edit_model"]
     else:
