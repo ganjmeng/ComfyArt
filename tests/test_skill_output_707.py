@@ -195,6 +195,10 @@ def test_game_art_template_requires_bottom_nav_only_on_home_and_list_pages():
 def test_game_art_template_locks_brand_tingsong_and_single_category():
     game = _instr("game-art")
     assert "The game name must be exactly 「听松棋院」" in game
+    assert (
+        "Every player name and list title must be newly invented, Go-themed Chinese, "
+        "sharing no characters with any text in the reference image."
+    ) in game
     for ch in ("弈", "奔", "秋"):
         assert ch not in game
     assert "All cards, thumbnails and copy stay in the single game category the user named (Go/围棋 by default)" in game
