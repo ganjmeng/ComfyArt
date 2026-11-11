@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Editor } from 'tldraw'
 
 import { answerAsk, quoteAnswer, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
@@ -625,6 +625,14 @@ function QuestionCard({ b }: { b: BotBlock }) {
   const [furthest, setFurthest] = useState(1)
   const [states, setStates] = useState<Record<string, QState>>(() => initQStates(questions))
   const [error, setError] = useState('')
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const [atEnd, setAtEnd] = useState(false)
+  const syncEnd = () => {
+    const el = bodyRef.current
+    if (!el) return
+    setAtEnd(el.scrollHeight - el.clientHeight <= 2 || el.scrollTop + el.clientHeight >= el.scrollHeight - 2)
+  }
+  useLayoutEffect(() => { syncEnd() })
   if (b.status !== 'pending') return <QuestionAnswered b={b} />
 
   const onPage = questions.filter((q) => (q.page ?? 1) === page)
@@ -632,6 +640,10 @@ function QuestionCard({ b }: { b: BotBlock }) {
   const allOk = questions.every((q) => qFilled(q, states[q.id] ?? { selected: [], other: '' }))
   const isLast = page >= pageCount
   const showPager = pageCount > 1
+  // Payload-driven: every question shares one page, page_count is header chrome only (e.g. 1 of 3).
+  // Real multi-page cards (distinct page values, e.g. pose-fission) keep per-page Next.
+  const scrollCard = questions.length > 1 && new Set(questions.map((q) => q.page ?? 1)).size === 1
+  const shown = scrollCard ? questions : onPage
 
   const setQ = (id: string, next: QState) => setStates((s) => ({ ...s, [id]: next }))
   const go = (n: number) => {
@@ -648,32 +660,57 @@ function QuestionCard({ b }: { b: BotBlock }) {
   const onSkip = () => resolve(Object.fromEntries(questions.map((q) => [q.id, { selected: [] as string[] }])))
   const onNext = () => { if (!pageOk) return; go(page + 1) }
   const onSubmit = () => { if (!allOk) return; resolve(toAnswers(questions, states)) }
+  const onScrollNext = () => {
+    const el = bodyRef.current
+    if (!el) return
+    el.scrollBy({ top: Math.max(80, el.clientHeight * 0.85), behavior: 'smooth' })
+  }
 
   return (
-    <div className="ca-q">
+    <div className="ca-q" data-scroll-card={scrollCard || undefined}>
       <div className="ca-q__head">
         <div className="ca-q__label"><span className="ca-icon">{Icons.question}</span>{t('chatMessage.question')}</div>
         {showPager && (
           <div className="ca-q__page">
-            <button type="button" className="ca-q__chev" disabled={page <= 1} aria-label={t('chatMessage.prevPage')} onClick={() => go(page - 1)}>
-              <span className="ca-icon ca-q__chev-icon ca-q__chev-icon--left">{Icons.next}</span>
-            </button>
-            <span>{t('chatMessage.pageOf', page, pageCount)}</span>
-            <button type="button" className="ca-q__chev" disabled={page >= pageCount || (page >= furthest && !pageOk)} aria-label={t('chatMessage.nextPage')} onClick={() => { if (page < furthest || pageOk) go(page + 1) }}>
-              <span className="ca-icon ca-q__chev-icon">{Icons.next}</span>
-            </button>
+            {scrollCard ? (
+              <>
+                <button type="button" className="ca-q__chev" disabled={true} aria-label={t('chatMessage.prevPage')}>
+                  <span className="ca-icon ca-q__chev-icon ca-q__chev-icon--left">{Icons.next}</span>
+                </button>
+                <span>{t('chatMessage.pageOf', page, pageCount)}</span>
+                <button type="button" className="ca-q__chev" disabled={true} aria-label={t('chatMessage.nextPage')}>
+                  <span className="ca-icon ca-q__chev-icon">{Icons.next}</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="ca-q__chev" disabled={page <= 1} aria-label={t('chatMessage.prevPage')} onClick={() => go(page - 1)}>
+                  <span className="ca-icon ca-q__chev-icon ca-q__chev-icon--left">{Icons.next}</span>
+                </button>
+                <span>{t('chatMessage.pageOf', page, pageCount)}</span>
+                <button type="button" className="ca-q__chev" disabled={page >= pageCount || (page >= furthest && !pageOk)} aria-label={t('chatMessage.nextPage')} onClick={() => { if (page < furthest || pageOk) go(page + 1) }}>
+                  <span className="ca-icon ca-q__chev-icon">{Icons.next}</span>
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
-      <div className="ca-q__body">
-        {onPage.map((q) => (
+      <div className="ca-q__body" ref={bodyRef} onScroll={syncEnd} data-testid="question-body">
+        {shown.map((q) => (
           <QuestionBlock key={q.id} q={q} st={states[q.id] ?? { selected: [], other: '' }} onChange={(next) => setQ(q.id, next)} />
         ))}
       </div>
       {error && <div className="ca-chat__hint">{error}</div>}
       <div className="ca-q__foot">
         {allowSkip && <button type="button" className="ca-q__skip" onClick={onSkip}>{t('chatMessage.skip')}</button>}
-        {isLast ? (
+        {scrollCard ? (
+          atEnd ? (
+            <button type="button" className="ca-q__submit" disabled={!allOk} onClick={onSubmit}>{t('chatMessage.submit')} <span className="ca-q__key">↵</span></button>
+          ) : (
+            <button type="button" className="ca-q__submit" onClick={onScrollNext}>{t('chatMessage.next')} <span className="ca-q__key">→</span></button>
+          )
+        ) : isLast ? (
           <button type="button" className="ca-q__submit" disabled={!allOk} onClick={onSubmit}>{t('chatMessage.submit')} <span className="ca-q__key">↵</span></button>
         ) : (
           <button type="button" className="ca-q__submit" disabled={!pageOk} onClick={onNext}>{t('chatMessage.next')} <span className="ca-q__key">→</span></button>
