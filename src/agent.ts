@@ -23,7 +23,7 @@ export type AgentMode = 'agent' | 'image' | 'video'
 
 export const draftAtom = atom('agent draft', '')
 export const extraRefsAtom = atom<TLShapeId[]>('agent refs', [])
-/** #644: composer-only reference images (no canvas shape) — an old hidden-skill ?skill= link restores its refs here. */
+/** #644/#725: composer-only reference images (no canvas shape) — an old ?skill= link (visible or hidden) restores its refs here. */
 export interface LooseRef { src: string; name: string }
 export const looseRefsAtom = atom<LooseRef[]>('composer loose refs', [])
 export const agentModeAtom = atom<AgentMode>('agent mode', 'agent')

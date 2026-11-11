@@ -2,7 +2,7 @@
 (1) The live home + Skills page after #673: the Phase3 hard-lock 20 (19 NEW + upgrade `thumbnail`) are all on the Skills
     wall, none of the 9 hidden ids is anywhere, and QA644_SHOTS=/dir writes the 20-image regression set.
 (2) #812: yingzao is listed again — deep link shows NO hidden notice (guard kept for a future hide list).
-(3) #812: ?skill=yingzao deep link with refs attaches the listed skill; refs stay in the composer, canvas has 0 images.
+(3) #812/#725: ?skill=yingzao deep link with refs attaches the listed skill; refs stay in the composer only, canvas has 0 images, ask= stays a draft (no auto-send).
 (4) 技术经理 on #723: the Phase3 ids mounted on home + Skills == the hard-lock 20 (none extra / missing) + chip counts;
     `thumbnail` upgrade regression; zh-light / en-dark overview of the 20 Phase3 cards.
 (5) Design HOLD on #723: the dialog's 'N templates' equals its real thumbnail strip; home-featured shot from the page top."""
@@ -275,7 +275,7 @@ REF_FILES = ['r644a.png', 'r644b.png']
 
 @pytest.mark.parametrize("lang,theme", [("zh", "light"), ("en", "dark")])
 async def test_hidden_skill_deep_link_refs_composer_only(app_url, mock_ws, fake_agent, lang, theme):  # noqa: F811
-    """#812: yingzao listed — no hidden notice. Composer-only refs were the hidden-path rule; listed handoff may place/send."""
+    """#812/#725: yingzao listed — no hidden notice, refs in the composer only, ask= stays a draft, no auto-send."""
     import folder_paths
     for n in REF_FILES:
         (folder_paths.STATE["base"] / "input" / n).write_bytes(PNG)
@@ -289,13 +289,14 @@ async def test_hidden_skill_deep_link_refs_composer_only(app_url, mock_ws, fake_
         await _dismiss(pg)
         await pg.wait_for_timeout(800)
         assert await pg.locator(NOTICE).count() == 0  # #812 listed
-        # listed path (handoff.ts): ask= may auto-send (draft cleared); refs go through placeRefs (canvas ok)
+        # #725: listed path also restores composer-only (no canvas, no auto-send)
         caps = pg.get_by_test_id("composer-capsule")
         canvas = await pg.locator('.tl-shape[data-shape-type="image"], .tl-shape[data-shape-type="video"]').count()
         cap_n = await caps.count()
-        assert cap_n + canvas == len(REF_FILES), (cap_n, canvas, len(REF_FILES))  # every deep-link ref surfaced
+        assert canvas == 0 and cap_n == len(REF_FILES), (cap_n, canvas, len(REF_FILES))
+        assert await pg.locator(".ca-composer__input").input_value() == "keep644"
         await _shot(pg, f"notice-refs-{lang}-{theme}")
-        # listed ask= auto-sends via /bot/.../send (expected); still no WaveSpeed/KIE upstream ($0)
         assert not [u for u in reqs if any(k in u for k in ("wavespeed", "kie"))], reqs
+        assert not [u for u in reqs if u.endswith("/send") or "/generate" in u], reqs
         assert mock_ws["submits"] == []
         await browser.close()
