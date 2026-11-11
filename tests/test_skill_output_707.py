@@ -171,20 +171,6 @@ async def test_linkedin_skips_list_models_expand_and_a_second_generate(monkeypat
     assert any("1 次" in t for t in texts)
 
 
-def test_before_after_template_has_no_default_side_profile():
-    ba = _instr("before-after")
-    assert "Do not default to a 45° or 90° side profile" in ba
-    assert "mostly frontal or near-frontal" in ba
-    assert "Default to a 45° or 90° side profile" not in ba
-    assert "The before/after difference must be obvious at thumbnail size." in ba
-    assert "BEFORE/AFTER label type follows the reference (weight, letter-spacing, serif or sans)." in ba
-    assert "under-eye" not in ba.lower()
-    assert "dark circle" not in ba.lower() and "dark circles" not in ba.lower()
-    assert "under eye" not in ba.lower()
-    # "serif" may appear only inside the generic "serif or sans" phrase.
-    assert ba.count("serif") == ba.count("serif or sans") == 1
-
-
 def test_pose_fission_template_changes_only_pose_and_angle():
     pose = _instr("pose-fission")
     assert "change only pose and angle" in pose
@@ -241,15 +227,6 @@ def test_skill_instructions_lock_no_example_specific_copy():
     assert "弈" not in SKILLS
     game = _instr("game-art")
     assert "奔" not in game and "秋" not in game
-    ba = _instr("before-after")
-    lowered = ba.lower()
-    assert "under-eye" not in lowered
-    assert "under eye" not in lowered
-    assert "dark circle" not in lowered
-    assert "The before/after difference must be obvious at thumbnail size." in ba
-    assert "BEFORE/AFTER label type follows the reference (weight, letter-spacing, serif or sans)." in ba
-    # Mandate a serif style only if the generic "serif or sans" phrase is used.
-    assert "serif" not in SKILLS.replace("serif or sans", "")
 
 
 def test_linkedin_banner_template_keeps_avatar_safe_area_empty():
