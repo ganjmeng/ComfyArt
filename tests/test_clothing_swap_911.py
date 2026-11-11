@@ -210,7 +210,8 @@ def test_card_normalizer_locks_skeleton_not_option_contents():
     assert q["id"] == "upper_body_swap"
     assert q["prompt"] == live_prompt  # live title kept (garment-specific)
     assert q["allow_other"] is True
-    assert q["placeholder"] == "以上都不符合，我自己补充...（自填）"
+    assert q["placeholder"] == "其它穿法，我来说呢..."
+    assert q["placeholder"] != "以上都不符合，我自己补充...（自填）"
     assert legacy["allow_skip"] is True
     assert legacy["page_count"] == 1
     assert [o["label"] for o in q["options"]] == [o["label"] for o in live_opts]
@@ -273,6 +274,7 @@ def test_card_normalizer_locks_skeleton_not_option_contents():
     assert g["prompt"] == "由哪种性别的模特上身？"
     assert g["options"][0]["label"] == "女模特"
     assert "recommended" in g["options"][0]
+    assert g.get("placeholder") == "以上都不符合，我自己补充...（自填）"
     assert other.get("defaults") == ["A"]
 
 

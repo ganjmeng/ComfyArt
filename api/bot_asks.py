@@ -301,7 +301,7 @@ def normalize_studio_direction_card(args: dict) -> dict:
 # rewritten the same way.
 CLOTHING_SWAP_QUESTION_ID = "upper_body_swap"
 CLOTHING_SWAP_PROMPT_FALLBACK = "这件衣服要怎么替换模特的上身？"
-CLOTHING_SWAP_PLACEHOLDER = "以上都不符合，我自己补充...（自填）"
+CLOTHING_SWAP_PLACEHOLDER = "其它穿法，我来说呢..."
 _CLOTHING_SWAP_DROP_IDS = frozenset({
     "gender", "ethnicity", "angle", "angles", "shot", "shot_size", "shot-size",
 })
