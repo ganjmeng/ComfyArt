@@ -381,14 +381,20 @@ def _exact_skill_pin(args: dict) -> dict | None:
     return skill_pin(args.get("skill"))
 
 
+# #920: pins whose run keeps the canvas apply_generate set (width/height/size_lock).
+# clothing-swap follows image 1 (e.g. 3:4 1536×2048); studio-model keeps the
+# 3:4 1536×2048 canvas it had while unpinned on main d3f5ca4b. Every other pin
+# (ai-model, pose-fission) keeps the d3f5ca4b behavior: size keys are dropped.
+_PIN_KEEPS_SIZE = frozenset({"clothing-swap", "studio-model"})
+
+
 def _pin_args(args: dict, choice: dict) -> dict:
-    # Always drop Auto model keys. Drop size_lock / exact pixels only when the
-    # pin itself names resolution or ratio (pose-fission 2k 3:4 must not be
-    # forced to a skill canvas). Pins with no size (ai-model, clothing-swap,
-    # studio-model) keep width/height/ratio from apply_generate so #911
-    # clothing-swap can still follow image 1 (e.g. 3:4 1536×2048).
+    # Always drop Auto model keys. Drop size_lock / exact pixels unless the pin is
+    # in _PIN_KEEPS_SIZE and names no resolution/ratio itself (pose-fission 2k 3:4
+    # must not be forced to a skill canvas; ai-model stays as on d3f5ca4b).
     drop = ["model", "auto_model"]
-    if choice.get("resolution") or choice.get("ratio"):
+    keeps = str(choice.get("skill") or "") in _PIN_KEEPS_SIZE and not (choice.get("resolution") or choice.get("ratio"))
+    if not keeps:
         drop += ["size_lock", "size_candidates", "width", "height"]
     args = {k: v for k, v in args.items() if k not in drop}
     if "edit_model" in choice:
