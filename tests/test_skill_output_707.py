@@ -176,8 +176,13 @@ def test_before_after_template_has_no_default_side_profile():
     assert "Do not default to a 45° or 90° side profile" in ba
     assert "mostly frontal or near-frontal" in ba
     assert "Default to a 45° or 90° side profile" not in ba
-    assert "The before half must show clearly visible under-eye darkness and uneven tone; the after half is visibly brighter and more even, readable at thumbnail size." in ba
-    assert "BEFORE/AFTER labels in small, thin, widely letter-spaced serif caps like the reference." in ba
+    assert "The before/after difference must be obvious at thumbnail size." in ba
+    assert "BEFORE/AFTER label type follows the reference (weight, letter-spacing, serif or sans)." in ba
+    assert "under-eye" not in ba.lower()
+    assert "dark circle" not in ba.lower() and "dark circles" not in ba.lower()
+    assert "under eye" not in ba.lower()
+    # "serif" may appear only inside the generic "serif or sans" phrase.
+    assert ba.count("serif") == ba.count("serif or sans") == 1
 
 
 def test_pose_fission_template_changes_only_pose_and_angle():
@@ -194,21 +199,23 @@ def test_game_art_template_requires_bottom_nav_only_on_home_and_list_pages():
     assert "may omit the bottom nav" in game
 
 
-def test_game_art_template_locks_brand_tingsong_and_single_category():
+def test_game_art_template_keeps_generic_copy_rules_and_single_category():
     game = _instr("game-art")
-    assert "The game title text is exactly 听松棋院 (four characters, no quotation marks or brackets drawn)" in game
-    assert "「听松棋院」" not in game
-    assert "Do not copy the reference image's game title." in game.replace("\\'", "'")
-    assert "Do not copy the reference image\\'s game title." in game
-    assert "A single shared character such as 棋 is fine." in game
+    raw = game.replace("\\'", "'")
+    assert "use the names and copy the user gives" in raw
+    assert "invent fresh copy that fits the user" in raw and "theme" in raw
+    assert "Do not copy the reference image's title or any whole word or phrase from it." in raw
+    assert "Do not draw 「」 or other bracket marks around titles." in raw
+    assert "No extra text may appear beyond the intended copy, including extra buttons and labels." in raw
+    assert "every on-screen text string must be exactly" not in raw
     assert "Do not copy the gold title word" not in game
-    assert "「奔秋围棋」" not in game
     assert "reuse any character from it" not in game
     assert (
         "Every player name and list title must be newly invented, Go-themed Chinese, "
         "sharing no characters with any text in the reference image."
     ) not in game
-    for required in (
+    for forbidden in (
+        "听松棋院", "「听松棋院」", "「奔秋围棋」",
         "入门课堂", "实战演练", "每周精讲",
         "小目守角要诀", "三三点入攻防", "劫争取舍心得", "厚势围空思路",
         "青松听雨", "云山落墨", "竹林闲客", "白鹤临池",
@@ -216,11 +223,9 @@ def test_game_art_template_locks_brand_tingsong_and_single_category():
         "2026年5月8日", "2026年5月15日", "2026年5月22日", "2026年5月29日",
         "学棋", "对局厅", "商店", "我的",
         "card i uses list title i, player i, move count i, date i",
-        "no other text from the reference may remain",
+        "hard-coded copy",
     ):
-        assert required in game, required
-    assert "Dates, in this order: 2026年5月8日, 2026年5月15日, 2026年5月22日, 2026年5月29日." in game
-    assert "Dates, in this order: 2026年5月8日, 5月15日, 5月22日, 5月29日." not in game
+        assert forbidden not in game, forbidden
     assert "弈" not in game
     assert "奔" not in game and "秋" not in game
     assert "All cards, thumbnails and copy stay in the single game category the user named (Go/围棋 by default)" in game
@@ -228,7 +233,23 @@ def test_game_art_template_locks_brand_tingsong_and_single_category():
     assert "帅" in game and "将" in game
     assert "playing cards" in game and "card-game theme" in game
     assert "Invent a new game name" not in game
-    assert "No other text may appear on the image besides the hard-coded copy above, including buttons and labels (e.g. no extra action button text)." in game
+
+
+def test_skill_instructions_lock_no_example_specific_copy():
+    """Example-only copy must not live in skill instructions that every user reads."""
+    assert "听松棋院" not in SKILLS
+    assert "弈" not in SKILLS
+    game = _instr("game-art")
+    assert "奔" not in game and "秋" not in game
+    ba = _instr("before-after")
+    lowered = ba.lower()
+    assert "under-eye" not in lowered
+    assert "under eye" not in lowered
+    assert "dark circle" not in lowered
+    assert "The before/after difference must be obvious at thumbnail size." in ba
+    assert "BEFORE/AFTER label type follows the reference (weight, letter-spacing, serif or sans)." in ba
+    # Mandate a serif style only if the generic "serif or sans" phrase is used.
+    assert "serif" not in SKILLS.replace("serif or sans", "")
 
 
 def test_linkedin_banner_template_keeps_avatar_safe_area_empty():
