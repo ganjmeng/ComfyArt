@@ -33,7 +33,7 @@ def test_905_mild_before_flaw_and_verbatim_copy():
         "Only the effect changes (treatment, remodel, makeup, fitness). "
         "Keep the user\\'s own words for what changes. "
         "Describe both panels as finished states: Before is a slight, everyday version of that change, "
-        "still noticeable at thumbnail size (for skin: faint dullness or slight unevenness on otherwise natural skin). "
+        "still noticeable at thumbnail size. "
         "After is a modest, realistic improvement of the same change, with natural texture kept. "
         "Describe only the change the user named, at the intensity the user stated; if the user gave no intensity, keep it slight and everyday. "
         "Do not add symptoms, colors, causes or intensifiers the user did not mention."
@@ -41,7 +41,7 @@ def test_905_mild_before_flaw_and_verbatim_copy():
     assert rule2 in ba
     assert "slight, everyday version of that change" in ba
     assert "still noticeable at thumbnail size" in ba
-    assert "faint dullness or slight unevenness on otherwise natural skin" in ba
+    assert "faint dullness or slight unevenness on otherwise natural skin" not in ba
     assert "modest, realistic improvement of the same change" in ba
     assert "natural texture kept" in ba
     assert "Keep the user\\'s own words for what changes" in ba
