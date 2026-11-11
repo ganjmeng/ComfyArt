@@ -32,15 +32,16 @@ def test_ac18_pins_and_auto_untouched():
 
     # Compare to origin/main (or the merge-base), not HEAD. A pin/Auto
     # change committed on this branch must still fail this test.
+    # Skill model pins and Auto routing both live in api/auto_models.json;
+    # do not byte-compare src/skills.ts (template/preset copy may change).
     try:
         base = git("merge-base", "HEAD", "origin/main", text=True).strip()
     except subprocess.CalledProcessError:
         base = git("rev-parse", "origin/main", text=True).strip()
     assert base
-    for path in ("api/auto_models.json", "src/skills.ts"):
-        current = (ROOT / path).read_bytes()
-        origin = git("show", f"{base}:{path}")
-        assert current == origin, path
+    current = (ROOT / "api/auto_models.json").read_bytes()
+    origin = git("show", f"{base}:api/auto_models.json")
+    assert current == origin, "api/auto_models.json"
 
 
 def test_infer_llm_provider_from_host_and_stored():
