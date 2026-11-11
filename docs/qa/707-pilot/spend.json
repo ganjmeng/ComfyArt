@@ -1,0 +1,214 @@
+{
+  "pilot_start_balance": 30.765899,
+  "after_linkedin_stop": 30.666899,
+  "pose_segment_before": 30.666899,
+  "balance_after": 30.384899,
+  "spend_delta_full": 0.381,
+  "spend_pose_segment": 0.252,
+  "spend_sum_costs": 0.381,
+  "results_first_segment": [
+    {
+      "event": "done",
+      "id": "before-after",
+      "model": "bytedance/seedream-v5.0-pro/edit",
+      "prediction_id": "bfb3daf0f5b148f4bc11db076e00f767",
+      "attempt": 1,
+      "balance_before": 30.765899,
+      "balance_after": 30.725399,
+      "cost": 0.0405,
+      "ok": true,
+      "status": "completed",
+      "size": [
+        915,
+        1144
+      ],
+      "out": {
+        "png": "docs/qa/707-pilot/before-after.png",
+        "webp": "docs/qa/707-pilot/before-after.webp",
+        "size": [
+          915,
+          1144
+        ]
+      },
+      "lr": "docs/qa/707-pilot/before-after-lr.png",
+      "error": null,
+      "latency_s": 90.483,
+      "quoted_list": 0.045,
+      "quoted_discounted": 0.0405
+    },
+    {
+      "event": "done",
+      "id": "game-art",
+      "model": "openai/gpt-image-2.6-flare/edit",
+      "prediction_id": "16f615d83d814b3cb0da8936dc154a44",
+      "attempt": 1,
+      "balance_before": 30.725399,
+      "balance_after": 30.666899,
+      "cost": 0.0585,
+      "ok": true,
+      "status": "completed",
+      "size": [
+        768,
+        1360
+      ],
+      "out": {
+        "png": "docs/qa/707-pilot/game-art.png",
+        "webp": "docs/qa/707-pilot/game-art.webp",
+        "size": [
+          768,
+          1360
+        ]
+      },
+      "lr": "docs/qa/707-pilot/game-art-lr.png",
+      "error": null,
+      "latency_s": 42.704,
+      "quoted_list": 0.05,
+      "quoted_discounted": 0.045
+    },
+    {
+      "id": "linkedin-banner",
+      "model": "openai/gpt-image-2.6-flare/edit",
+      "ok": false,
+      "status": "submit_failed",
+      "prediction_id": null,
+      "attempt": 2,
+      "balance_before": 30.666899,
+      "balance_after": 30.666899,
+      "cost": 0.0,
+      "error": {
+        "code": 400,
+        "message": "Invalid request body: field \"aspect_ratio\" must be one of [\"1:1\", \"1:2\", \"2:1\", \"1:3\", \"3:1\", \"2:3\", \"3:2\", \"3:4\", ... 7 more], got string \"4:1\"; please use one of the allowed values"
+      },
+      "size": null
+    }
+  ],
+  "results_pose": [
+    {
+      "event": "done",
+      "id": "pose-fission-profile",
+      "model": "google/nano-banana-pro/edit",
+      "prediction_id": "c4903a74e972468b949b759aad45a910",
+      "attempt": 1,
+      "balance_before": 30.666899,
+      "balance_after": 30.540899,
+      "cost": 0.126,
+      "ok": true,
+      "status": "completed",
+      "size": [
+        1792,
+        2400
+      ],
+      "out": {
+        "png": "docs/qa/707-pilot/pose-fission-profile.png",
+        "webp": "docs/qa/707-pilot/pose-fission-profile.webp",
+        "size": [
+          1792,
+          2400
+        ]
+      },
+      "lr": "docs/qa/707-pilot/pose-fission-profile-lr.png",
+      "error": null,
+      "latency_s": 68.213,
+      "quoted_list": 0.14,
+      "quoted_discounted": 0.126
+    },
+    {
+      "event": "done",
+      "id": "pose-fission-lookback",
+      "model": "google/nano-banana-pro/edit",
+      "prediction_id": "125aa37871f644218c44439c0167c878",
+      "attempt": 1,
+      "balance_before": 30.540899,
+      "balance_after": 30.414899,
+      "cost": 0.126,
+      "ok": true,
+      "status": "completed",
+      "size": [
+        1792,
+        2400
+      ],
+      "out": {
+        "png": "docs/qa/707-pilot/pose-fission-lookback.png",
+        "webp": "docs/qa/707-pilot/pose-fission-lookback.webp",
+        "size": [
+          1792,
+          2400
+        ]
+      },
+      "lr": "docs/qa/707-pilot/pose-fission-lookback-lr.png",
+      "error": null,
+      "latency_s": 62.824,
+      "quoted_list": 0.14,
+      "quoted_discounted": 0.126
+    }
+  ],
+  "ts_first": "2026-11-10 22:38:07 +0800 (Asia/Shanghai)",
+  "ts_pose": "2026-11-10 22:44:41 +0800 (Asia/Shanghai)",
+  "linkedin_product_path": {
+    "event": "done",
+    "path": "api/mcp_tools/canvas.py generate_image / apply_generate / select_model, live WaveSpeed catalog, no model named in the call",
+    "skill": "linkedin-banner",
+    "refs": "docs/design/640/78/gold/linkedin-banner/cover.webp",
+    "typifying_gold_lr_left": "704-lr/linkedin-banner/fixed-input-v1/RIGHT.png",
+    "model": "wavespeed-ai/qwen-image-2.0/edit",
+    "size": "1584*396",
+    "output_px": [
+      1584,
+      396
+    ],
+    "submitted": true,
+    "http_status": 200,
+    "prediction_id": "45781033a4074f10b4cb207db2cceeac",
+    "status": "completed",
+    "quoted_list": 0.03,
+    "quoted_discounted": 0.03,
+    "cost": 0.03,
+    "balance_before": 30.414899,
+    "balance_after": 30.384899,
+    "spend_pilot_total": 0.381,
+    "checkout": "99f05190ced8aa6660a942a7113f59247dcf59b5",
+    "dry_run": {
+      "routed_model": "wavespeed-ai/qwen-image-2.0/edit",
+      "provider_submit": {
+        "size": "1584*396"
+      },
+      "width": 1584,
+      "height": 396,
+      "submitted": false,
+      "balance_unchanged": 30.414899
+    },
+    "out": {
+      "png": "docs/qa/707-pilot/linkedin-banner.png",
+      "webp": "docs/qa/707-pilot/linkedin-banner.webp",
+      "lr": "docs/qa/707-pilot/linkedin-banner-lr.png"
+    },
+    "ts": "2026-11-11 01:45:19 +0800 (Asia/Shanghai)"
+  },
+  "after_product_linkedin": 30.384899,
+  "spend_linkedin_product": 0.03,
+  "ts_linkedin_product": "2026-11-11 01:45:19 +0800 (Asia/Shanghai)",
+  "linkedin_product_path_blocked_2026_11_10": {
+    "event": "blocked_before_submit",
+    "path": "api/mcp_tools/canvas.py generate_image / apply_generate / linkedin_decision, live WaveSpeed catalog, no model named in the call",
+    "skill": "linkedin-banner",
+    "refs": "docs/design/640/78/gold/linkedin-banner/cover.webp",
+    "expected_model": "wavespeed-ai/qwen-image-2.0/edit",
+    "expected_size": "1584*396",
+    "submitted": false,
+    "prediction_id": null,
+    "cost": 0.0,
+    "balance_before": 30.414899,
+    "balance_after": 30.414899,
+    "spend_pilot_total_unchanged": 0.351,
+    "handler_error": "Not submitted: no listed model can submit size 1584*396. A ratio-only model was not substituted.",
+    "live_qwen_edit_size": {
+      "type": "string",
+      "minimum": 256,
+      "maximum": 4096,
+      "x-hidden": true
+    },
+    "accepts_exact_pixels": false,
+    "provider_submit": {},
+    "ts": "2026-11-10 23:00:59 +0800 (Asia/Shanghai)"
+  }
+}

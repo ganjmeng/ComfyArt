@@ -85,7 +85,7 @@ def test_templates_lock_layout_and_pixels():
     ba, pose, game, banner = (_instr(s) for s in ("before-after", "pose-fission", "game-art", "linkedin-banner"))
     assert "ONE comparison card" in ba and "1024" in ba and "1280" in ba and "4:5" in ba
     assert "separate portraits" in ba and "list_models" in ba
-    assert "1536" in pose and "2048" in pose and "3:4" in pose and "different angle" in pose
+    assert "1536" in pose and "2048" in pose and "3:4" in pose and "different pose and angle" in pose
     assert "white backdrop" in pose and "one generate_image call per plan line" in pose
     assert "title bar" in game and "bottom navigation" in game and "1024" in game and "1824" in game
     assert "not key art" in game.lower() or "not key art" in game
@@ -169,3 +169,69 @@ async def test_linkedin_skips_list_models_expand_and_a_second_generate(monkeypat
     texts = [e.text for e in events if e.t == "tool_result"]
     assert any("list_models" in t for t in texts)
     assert any("1 次" in t for t in texts)
+
+
+def test_pose_fission_template_changes_only_pose_and_angle():
+    pose = _instr("pose-fission")
+    assert "change only pose and angle" in pose
+    assert "change ONLY camera angle and framing" not in pose
+    assert "camera angle and framing" not in pose
+    assert "shot size" not in pose.lower()
+
+
+def test_game_art_template_requires_bottom_nav_only_on_home_and_list_pages():
+    game = _instr("game-art")
+    assert "bottom navigation is required on home and list pages" in game
+    assert "may omit the bottom nav" in game
+
+
+def test_game_art_template_keeps_generic_copy_rules_and_single_category():
+    game = _instr("game-art")
+    raw = game.replace("\\'", "'")
+    assert "use the names and copy the user gives" in raw
+    assert "invent fresh copy that fits the user" in raw and "theme" in raw
+    assert "Do not copy the reference image's title or any whole word or phrase from it." in raw
+    assert "Do not draw 「」 or other bracket marks around titles." in raw
+    assert "No extra text may appear beyond the intended copy, including extra buttons and labels." in raw
+    assert "every on-screen text string must be exactly" not in raw
+    assert "Do not copy the gold title word" not in game
+    assert "reuse any character from it" not in game
+    assert (
+        "Every player name and list title must be newly invented, Go-themed Chinese, "
+        "sharing no characters with any text in the reference image."
+    ) not in game
+    for forbidden in (
+        "听松棋院", "「听松棋院」", "「奔秋围棋」",
+        "入门课堂", "实战演练", "每周精讲",
+        "小目守角要诀", "三三点入攻防", "劫争取舍心得", "厚势围空思路",
+        "青松听雨", "云山落墨", "竹林闲客", "白鹤临池",
+        "188手", "156手", "243手", "172手",
+        "2026年5月8日", "2026年5月15日", "2026年5月22日", "2026年5月29日",
+        "学棋", "对局厅", "商店", "我的",
+        "card i uses list title i, player i, move count i, date i",
+        "hard-coded copy",
+    ):
+        assert forbidden not in game, forbidden
+    assert "弈" not in game
+    assert "奔" not in game and "秋" not in game
+    assert "All cards, thumbnails and copy stay in the single game category the user named (Go/围棋 by default)" in game
+    assert "xiangqi / 象棋" in game
+    assert "帅" in game and "将" in game
+    assert "playing cards" in game and "card-game theme" in game
+    assert "Invent a new game name" not in game
+
+
+def test_skill_instructions_lock_no_example_specific_copy():
+    """Example-only copy must not live in skill instructions that every user reads."""
+    assert "听松棋院" not in SKILLS
+    assert "弈" not in SKILLS
+    game = _instr("game-art")
+    assert "奔" not in game and "秋" not in game
+
+
+def test_linkedin_banner_template_keeps_avatar_safe_area_empty():
+    banner = _instr("linkedin-banner")
+    assert "leave the avatar safe area EMPTY" in banner
+    assert "no face" in banner
+    # Personal preset also keeps the safe area empty.
+    assert "avatar safe area empty (no face drawn there)" in SKILLS

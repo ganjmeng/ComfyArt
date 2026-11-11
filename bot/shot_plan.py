@@ -1,4 +1,4 @@
-"""#710 plan card for multi-shot portrait skills (angle rules #708).
+"""#710 plan card for multi-shot portrait skills (angle rules #708, #707 gold light/pose).
 
 Chinese plan lines are what the question card shows. English prompts keep the
 same cut / angle° / focal / light strings so a generate_image call can be
@@ -26,41 +26,48 @@ _COUNT = re.compile(r"(\d+)\s*(?:张|幅|images?|photos?)", re.I)
 # Bare framing words the card must not use as the shot description.
 BARE = ("full body", "waist-up", "半身", "全身")
 
-# Eight pairwise-distinct angles. Batches of 4 take a window; at most the
-# one 0° entry is frontal eye-level, and its composition is off-center.
+# Eight pairwise-distinct poses/angles. Batches of 4 take a window.
+# Default window (0-3) follows the gold family: look-back, side profile,
+# head-down, and one near-frontal full-length standing frame that may be
+# relatively centered. All lights stay hard and dappled, never soft fill.
+HARD_LIGHT = "沿用参考硬侧逆光，斑驳树影落在脸和衣服上"
+SCENE_STREET = "同参考图街景，街道和建筑完整可读，背景保持明亮可读"
+SCENE_STUDIO = "同参考图棚拍，场景完整可读，背景保持明亮可读"
+SCENE_DEFAULT = "同参考图场景，街道和建筑完整可读，背景保持明亮可读"
+
 _POOL: list[dict] = [
-    dict(cut="画面下边缘切在腰线/肚脐，头顶留白",
-         angle="45° 四分之三侧，远侧眼可见", height="平视",
-         pose="站立微侧身，手自然垂下", comp="主体在左三分线，右侧留白，不居中",
-         focal="50mm f/2", light="45° 侧逆光 + 轮廓光，硬阴影", frontal=False),
-    dict(cut="画面下边缘切在胸口/锁骨，腰部不入画",
-         angle="90° 正侧面，看不到对侧眼睛", height="腰位低机位，略微仰拍",
-         pose="站立，手臂自然下垂", comp="主体在右三分线，左侧留白，不居中",
-         focal="85mm f/1.8", light="侧光从相机左侧，硬阴影", frontal=False),
     dict(cut="头顶留白，双脚完整入画，地面在脚下可见",
-         angle="回头 90°，下巴越过肩线", height="略高",
-         pose="回头看向镜头", comp="主体在左三分线，不居中",
-         focal="35mm f/2.8", light="轮廓光从相机后方，软阴影", frontal=False),
-    dict(cut="画面下边缘切在锁骨，胸口不入画",
+         angle="回头 90°，下巴越过肩线", height="平视",
+         pose="过街行走，头转向肩后看向镜头", comp="主体在左三分线，右侧留白",
+         focal="35mm f/2.8", light=HARD_LIGHT, frontal=False),
+    dict(cut="头顶留白，双脚完整入画，地面在脚下可见",
+         angle="90° 正侧面，看不到对侧眼睛", height="平视",
+         pose="倚柱侧脸，双手自然", comp="主体在右三分线，左侧留白",
+         focal="35mm f/2.8", light=HARD_LIGHT, frontal=False),
+    dict(cut="画面下边缘切在腰线/肚脐，髋部不入画",
+         angle="低头约 30°，下颌内收，目光向下", height="略高",
+         pose="低头，下颌内收", comp="主体在左三分线，右侧留白",
+         focal="50mm f/2", light=HARD_LIGHT, frontal=False),
+    dict(cut="头顶留白，双脚完整入画，地面在脚下可见",
          angle="0° 正面平视", height="平视",
-         pose="站立，目光略偏向一侧", comp="主体在右三分线，不居中",
-         focal="50mm f/2", light="顺光软光，从相机正面偏左", frontal=True),
+         pose="近正面站立，一手插袋", comp="相对居中的站姿，允许居中",
+         focal="35mm f/2.8", light=HARD_LIGHT, frontal=True),
     dict(cut="头顶留白，双脚完整入画",
          angle="180° 背对镜头，脸不入画", height="略高",
-         pose="背对镜头站立", comp="主体在左三分线，右侧留白，不居中",
-         focal="35mm f/2.8", light="逆光从相机后方，硬轮廓", frontal=False),
+         pose="背对镜头站立", comp="主体在左三分线，右侧留白",
+         focal="35mm f/2.8", light=HARD_LIGHT, frontal=False),
     dict(cut="画面下边缘切在腰线/肚脐，髋部不入画",
          angle="45° 四分之三侧朝右，远侧眼可见", height="腰位低机位，略微仰拍",
-         pose="行走中微侧身", comp="主体在右三分线，左侧留白，不居中",
-         focal="50mm f/2", light="侧逆光从相机右侧，硬阴影", frontal=False),
+         pose="行走中微侧身", comp="主体在右三分线，左侧留白",
+         focal="50mm f/2", light=HARD_LIGHT, frontal=False),
     dict(cut="画面下边缘切在胸口，腰部不入画",
          angle="90° 正侧面朝右，看不到对侧眼睛", height="平视",
-         pose="坐姿微侧", comp="主体在左三分线，右侧留白，不居中",
-         focal="85mm f/1.8", light="侧光从相机右侧，软阴影", frontal=False),
+         pose="倚柱微侧", comp="主体在左三分线，右侧留白",
+         focal="85mm f/1.8", light=HARD_LIGHT, frontal=False),
     dict(cut="画面下边缘切在锁骨下方，胸口以下不入画",
          angle="回头 90° 朝右，下巴越过肩线", height="略高",
-         pose="拨发回头", comp="主体在右三分线，不居中",
-         focal="85mm f/1.8", light="轮廓光从相机左后方，硬阴影", frontal=False),
+         pose="拨发回头", comp="主体在右三分线，左侧留白",
+         focal="85mm f/1.8", light=HARD_LIGHT, frontal=False),
 ]
 
 
@@ -103,10 +110,10 @@ def count_of(text: str) -> int:
 def scene_of(text: str) -> str:
     raw = text or ""
     if "街景" in raw:
-        return "同参考图街景，背景压暗"
+        return SCENE_STREET
     if "棚" in raw:
-        return "同参考图棚拍，背景压暗"
-    return "同参考图场景，背景压暗"
+        return SCENE_STUDIO
+    return SCENE_DEFAULT
 
 
 def _prompt(shot: Shot) -> str:
@@ -121,10 +128,10 @@ def _prompt(shot: Shot) -> str:
 
 
 def build_shots(n: int, variant: int = 0, scene: str = "", note: str = "") -> list[Shot]:
-    """N plan lines. Angles in one batch are pairwise distinct; ≤1 frontal 0° and that one is off-center."""
+    """N plan lines. Poses/angles in one batch are pairwise distinct; ≤1 frontal 0°, which may be relatively centered."""
     n = max(1, min(len(_POOL), int(n)))
     start = (int(variant) * 4) % len(_POOL)
-    scene_text = scene or "同参考图场景，背景压暗"
+    scene_text = scene or SCENE_DEFAULT
     if note:
         scene_text = f"{scene_text}；用户补充：{note}"
     shots: list[Shot] = []
@@ -148,17 +155,19 @@ def _check_pool(shots: list[Shot]) -> None:
     fronts = [s for s in shots if s.frontal or s.angle.startswith("0°")]
     if len(fronts) > 1:
         raise RuntimeError("shot plan has more than one 0° frontal")
-    for s in fronts:
-        if "三分" not in s.composition or "不居中" not in s.composition:
-            raise RuntimeError("0° frontal plan is centered")
+    # A near-frontal full-length standing frame may be relatively centered (gold ex-01).
     for s in shots:
         line = s.zh()
         for bare in BARE:
             if bare in line:
                 raise RuntimeError(f"shot plan uses bare framing {bare!r}")
-        for token in ("景别：", "角度：", "机位：", "姿态：", "构图：", "焦段：", "光：", "场景：", "°", "mm", "三分", "不居中"):
+        for token in ("景别：", "角度：", "机位：", "姿态：", "构图：", "焦段：", "光：", "场景：", "°", "mm"):
             if token not in line:
                 raise RuntimeError(f"shot plan missing {token}")
+        if "软阴影" in s.light or "顺光软光" in s.light:
+            raise RuntimeError("shot plan light is soft, gold uses hard dappled light")
+        if "压暗" in s.scene:
+            raise RuntimeError("shot plan darkens the background, gold street must stay readable")
 
 
 def question(n: int) -> str:
@@ -242,7 +251,7 @@ internal_calls = 0
 def touch_internal(n: int = 1, scene: str = "") -> list[Shot]:
     global internal_calls
     internal_calls += 1
-    return build_shots(n, 0, scene or "同参考图场景，背景压暗")
+    return build_shots(n, 0, scene or SCENE_DEFAULT)
 
 
 def _refs_of(text: str) -> list[str]:
