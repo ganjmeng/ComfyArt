@@ -302,8 +302,6 @@ def normalize_studio_direction_card(args: dict) -> dict:
 CLOTHING_SWAP_QUESTION_ID = "upper_body_swap"
 CLOTHING_SWAP_PROMPT_FALLBACK = "这件衣服要怎么替换模特的上身？"
 CLOTHING_SWAP_PROMPT_FALLBACK_EN = "How should I replace the upper-body garment?"
-CLOTHING_SWAP_PLACEHOLDER = "以上都不符合，我自己补充...（自填）"
-CLOTHING_SWAP_PLACEHOLDER_EN = "None of these fit, I'll write my own..."
 _CLOTHING_SWAP_DROP_IDS = frozenset({
     "gender", "ethnicity", "angle", "angles", "shot", "shot_size", "shot-size",
 })
@@ -360,7 +358,10 @@ def _clothing_swap_card_lang(q: dict) -> str:
 
 
 def _skeleton_clothing_swap_question(raw: dict) -> dict:
-    """Force id, free-text row, nothing preselected. Leave live prompt + option labels."""
+    """Force id, allow_other, nothing preselected. Leave live prompt + option labels.
+
+    Do not set placeholder: the UI shared i18n other-row is used instead.
+    """
     q = dict(raw)
     q["id"] = CLOTHING_SWAP_QUESTION_ID
     if not str(q.get("prompt") or "").strip():
@@ -369,10 +370,10 @@ def _skeleton_clothing_swap_question(raw: dict) -> dict:
         q["prompt"] = (CLOTHING_SWAP_PROMPT_FALLBACK
                        if _clothing_swap_card_lang(peek) == "zh"
                        else CLOTHING_SWAP_PROMPT_FALLBACK_EN)
-    lang = _clothing_swap_card_lang(q)
     q["allow_other"] = True
-    q["placeholder"] = (CLOTHING_SWAP_PLACEHOLDER if lang == "zh"
-                        else CLOTHING_SWAP_PLACEHOLDER_EN)
+    # Do not force a skill-specific placeholder. ChatMessage.tsx falls back to
+    # the shared UI i18n other-row: t('chatMessage.other').
+    q.pop("placeholder", None)
     q["page"] = 1
     q.pop("defaults", None)
     opts = q.get("options")
@@ -423,7 +424,6 @@ def normalize_clothing_swap_card(args: dict) -> dict:
             "prompt": args.get("prompt") or "",
             "options": args.get("options") or [],
             "allow_other": True,
-            "placeholder": CLOTHING_SWAP_PLACEHOLDER,
             "page": args.get("page") or 1,
             **({"min_selections": args["min_selections"]} if "min_selections" in args else {}),
             **({"max_selections": args["max_selections"]} if "max_selections" in args else {}),

@@ -235,7 +235,7 @@ def test_card_normalizer_locks_skeleton_not_option_contents():
     assert q["id"] == "upper_body_swap"
     assert q["prompt"] == live_prompt  # live title kept (garment-specific)
     assert q["allow_other"] is True
-    assert q["placeholder"] == "以上都不符合，我自己补充...（自填）"
+    assert not q.get("placeholder")
     assert legacy["allow_skip"] is True
     assert legacy["page_count"] == 1
     assert [o["label"] for o in q["options"]] == [o["label"] for o in live_opts]
@@ -335,7 +335,8 @@ def test_empty_text_card_skip_and_submit_follow_ui_locale_table():
     assert zh["chatMessage.submit"] == "提交"
     assert en["chatMessage.skip"] == "Skip"
     assert en["chatMessage.submit"] == "Submit"
-    # Options + free-text row also follow the live card language (empty text + zh UI -> zh).
+    # Free-text row is not hardcoded here; wording comes from the UI i18n table
+    # (see test_clothing_swap_free_text_row_uses_shared_ui_i18n).
     from ComfyArt.api import bot_asks
     zh_card = bot_asks.validate_spec({
         "prompt": "这件衣服要怎么替换模特的上身？",
@@ -345,7 +346,8 @@ def test_empty_text_card_skip_and_submit_follow_ui_locale_table():
         ],
         "allow_other": True,
     })
-    assert zh_card["questions"][0]["placeholder"] == "以上都不符合，我自己补充...（自填）"
+    assert not zh_card["questions"][0].get("placeholder")
+    assert zh_card["questions"][0]["allow_other"] is True
     assert zh_card["allow_skip"] is True
 
 
@@ -382,9 +384,29 @@ def test_turn_path_passes_goal_text_not_provider_text_into_ask_card_lang():
     assert "goal_text=text," in turns
 
 
-def test_clothing_swap_placeholder_follows_card_language():
-    """Free-text row wording follows the live question language, not a fixed zh string."""
+def test_clothing_swap_free_text_row_uses_shared_ui_i18n():
+    """(a)(b) Other-row text is the shared ChatMessage i18n, not a skill-specific constant."""
     from ComfyArt.api import bot_asks
+
+    chat = (ROOT / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
+    # Choice cards (options + allow_other) use this fallback when placeholder is absent.
+    assert "placeholder={q.placeholder || t('chatMessage.other')}" in chat
+    zh_i18n = json.loads((ROOT / "src/locales/zh.json").read_text(encoding="utf-8"))
+    en_i18n = json.loads((ROOT / "src/locales/en.json").read_text(encoding="utf-8"))
+    zh_other = zh_i18n["chatMessage.other"]
+    en_other = en_i18n["chatMessage.other"]
+    assert zh_other == "其他（输入你的答案）…"
+    assert en_other == "Other (type your answer)..."
+    assert any("\u3400" <= ch <= "\u9fff" for ch in zh_other)
+    assert not any("\u3400" <= ch <= "\u9fff" for ch in en_other)
+    # Must not regress to the unreviewed typo wording.
+    assert "其它穿法，我来说呢" not in zh_other
+    assert "其它穿法，我来说呢" not in en_other
+
+    # Normalizer must not hardcode a placeholder; UI then renders t('chatMessage.other').
+    src = (ROOT / "api/bot_asks.py").read_text(encoding="utf-8")
+    assert "CLOTHING_SWAP_PLACEHOLDER" not in src
+    assert "其它穿法，我来说呢" not in src
 
     zh = bot_asks.validate_spec({
         "prompt": "这件衣服要怎么替换模特的上身？",
@@ -393,8 +415,10 @@ def test_clothing_swap_placeholder_follows_card_language():
             {"id": "B", "label": "只换掉外面的背心"},
         ],
         "allow_other": True,
+        "placeholder": "其它穿法，我来说呢...",
     })
-    assert zh["questions"][0]["placeholder"] == "以上都不符合，我自己补充...（自填）"
+    assert zh["questions"][0]["allow_other"] is True
+    assert not zh["questions"][0].get("placeholder")
 
     en = bot_asks.validate_spec({
         "prompt": "How should I replace the upper-body garment?",
@@ -403,11 +427,13 @@ def test_clothing_swap_placeholder_follows_card_language():
             {"id": "B", "label": "Replace only the black vest"},
         ],
         "allow_other": True,
+        "placeholder": "None of these fit, I'll write my own...",
     })
-    assert en["questions"][0]["placeholder"] == "None of these fit, I'll write my own..."
+    assert not en["questions"][0].get("placeholder")
     assert en["questions"][0]["prompt"] == "How should I replace the upper-body garment?"
+    assert en["questions"][0]["allow_other"] is True
 
-    # Empty title + English options -> English fallback title and placeholder.
+    # Empty title + English options -> English fallback title, still no placeholder.
     blank = bot_asks.validate_spec({
         "id": "upper_body_swap",
         "prompt": "",
@@ -418,7 +444,8 @@ def test_clothing_swap_placeholder_follows_card_language():
         "allow_other": True,
     })
     assert blank["questions"][0]["prompt"] == "How should I replace the upper-body garment?"
-    assert blank["questions"][0]["placeholder"] == "None of these fit, I'll write my own..."
+    assert not blank["questions"][0].get("placeholder")
+    assert blank["questions"][0]["allow_other"] is True
 
 
 def test_pins_and_auto_models_unchanged():
