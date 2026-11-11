@@ -1,0 +1,72 @@
+[
+  {
+    "ask_id": "5ad8e36d392e4c4cacaa602d091ac470",
+    "kind": null,
+    "prompt": null,
+    "spec": {
+      "prompt": "图1中人物目前穿的是白色长袖打底 + 黑色无袖背心。你想如何替换上半身服装？",
+      "options": [
+        {
+          "id": "a",
+          "label": "换成图2的蓝色T恤",
+          "description": "用图2的蓝色印花T恤替换白色长袖和黑色背心"
+        },
+        {
+          "id": "b",
+          "label": "只替换黑色背心",
+          "description": "保留白色长袖打底，把黑色背心换成图2的蓝色T恤"
+        },
+        {
+          "id": "c",
+          "label": "只替换白色长袖",
+          "description": "保留黑色背心，把白色长袖打底换成图2的蓝色T恤"
+        },
+        {
+          "id": "d",
+          "label": "蓝色T恤叠穿在黑色背心外",
+          "description": "保留白色长袖与黑色背心，把蓝色T恤作为外层"
+        }
+      ],
+      "min_selections": 1,
+      "max_selections": 1,
+      "allow_other": true,
+      "allow_skip": true,
+      "kind": "question",
+      "questions": [
+        {
+          "id": "upper_body_swap",
+          "prompt": "图1中人物目前穿的是白色长袖打底 + 黑色无袖背心。你想如何替换上半身服装？",
+          "options": [
+            {
+              "id": "a",
+              "label": "换成图2的蓝色T恤",
+              "description": "用图2的蓝色印花T恤替换白色长袖和黑色背心"
+            },
+            {
+              "id": "b",
+              "label": "只替换黑色背心",
+              "description": "保留白色长袖打底，把黑色背心换成图2的蓝色T恤"
+            },
+            {
+              "id": "c",
+              "label": "只替换白色长袖",
+              "description": "保留黑色背心，把白色长袖打底换成图2的蓝色T恤"
+            },
+            {
+              "id": "d",
+              "label": "蓝色T恤叠穿在黑色背心外",
+              "description": "保留白色长袖与黑色背心，把蓝色T恤作为外层"
+            }
+          ],
+          "min_selections": 1,
+          "max_selections": 1,
+          "allow_other": true,
+          "page": 1,
+          "placeholder": "其它穿法，我来说呢..."
+        }
+      ],
+      "page_count": 1
+    },
+    "status": null
+  }
+]
