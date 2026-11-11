@@ -19,3 +19,13 @@ Live card (verbatim, real ChatMessage.tsx render):
 - D: 其他（输入你的答案）…
 - Footer: 跳过 / 提交
 Nothing preselected. User bubble: clothing-swap + image-1 + image-2, no injected line.
+
+STEP 2 answered the same pending ask 6e0abeeaca2f4b1c8da96e0c8756d8fe
+by exact label A 「整体换成图2的蓝色T恤」 (option replace_all, HTTP 202).
+No regeneration of the card. generate_image stubbed, 1 call, 0 predicts.
+Balance $29.848866 before and after.
+
+Captured prompt sha256:
+b3c86c35367e7f9262d38487be6206573fc188ded67818c78df27a5f5b434ab6
+Routed Auto google/nano-banana-2.1/edit (multi_reference).
+Size 1536×2048, 3:4, count 1.
