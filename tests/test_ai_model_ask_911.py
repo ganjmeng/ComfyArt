@@ -446,3 +446,59 @@ def test_apply_generate_fills_omitted_ai_model_skill_without_size_lock():
     kept = apply_generate({"prompt": "x", "skill": "ai-model"}, "ai-model")
     assert kept["skill"] == "ai-model"
     assert "size_lock" not in kept
+    # An Auto token is not an explicit model, so skill is still filled.
+    auto = apply_generate({"prompt": "x", "model": "auto"}, "ai-model")
+    assert auto["skill"] == "ai-model"
+    assert auto.get("model") == "auto"
+
+
+def test_apply_generate_does_not_fill_skill_outside_ai_model_sessions(monkeypatch):
+    """A non-ai-model session (and a no-skill session) must not get skill filled.
+
+    The fill is not a generic skill_pin() hook: even if another skill were
+    pinned, it must stay unfilled. pose-fission keeps its pre-existing
+    OUTPUTS size fill only.
+    """
+    from ComfyArt.api import auto_models
+    from ComfyArt.bot.skill_output import apply_generate
+
+    def fake_pin(skill):
+        if str(skill) in {"studio-model", "clothing-swap"}:
+            return {"feature": "text_to_image", "model": "other/pin"}
+        return auto_models.skill_pin(skill)
+
+    monkeypatch.setattr(auto_models, "skill_pin", fake_pin)
+
+    none = apply_generate({"prompt": "x"}, "")
+    assert "skill" not in none
+
+    for sid in ("studio-model", "clothing-swap"):
+        out = apply_generate({"prompt": "x"}, sid)
+        assert "skill" not in out, sid
+
+    # Pre-existing OUTPUTS path: skill + size_lock, not the ai-model pin fill.
+    pf = apply_generate({"prompt": "x"}, "pose-fission")
+    assert pf["skill"] == "pose-fission"
+    assert pf.get("size_lock") is True
+    assert pf.get("width") == 1536 and pf.get("height") == 2048
+
+
+def test_apply_generate_does_not_override_explicit_model_on_ai_model():
+    """An ai-model call that already names a model must not get skill filled."""
+    from ComfyArt.bot.skill_output import apply_generate
+
+    named = "bytedance/seedream-v5.0-pro"
+    out = apply_generate({"prompt": "x", "model": named}, "ai-model")
+    assert "skill" not in out
+    assert out["model"] == named
+    assert "size_lock" not in out
+
+    kept = apply_generate({"prompt": "x", "skill": "ai-model", "model": named}, "ai-model")
+    assert kept["skill"] == "ai-model"
+    assert kept["model"] == named
+
+    edited = apply_generate(
+        {"prompt": "x", "edit_model": "openai/gpt-image-2.6-flare/edit"}, "ai-model"
+    )
+    assert "skill" not in edited
+    assert edited["edit_model"] == "openai/gpt-image-2.6-flare/edit"
