@@ -2,13 +2,14 @@
 and pin the skill to GPT Image 2.6 Sunburst.
 
 No WaveSpeed call. $0 static. Example/featured pins and the shared #708 constant stay
-unchanged. api/auto_models.json may differ from origin/main only in skills.ai-model.
+unchanged. Auto-table and 708 locks compare to a fixed snapshot of main
+dbed74e11b158917e7cf82b44bd4dbf6829af90d, not a moving origin/main ref.
 """
 from __future__ import annotations
 
 import hashlib
+import json
 import re
-import subprocess
 from pathlib import Path
 
 from ComfyArt.api import bot_asks
@@ -36,8 +37,13 @@ AI_MODEL_EXAMPLES = "examples: ex643('ai-model', [1, 2, 3, 4, 5, 6], '604e9be57c
 AI_MODEL_FEATURED = "featured: [pinned('805/reuse/ai-model', '7fbb71bdce30a57f35c367bc949981c00fb2fc10', 'featured.png')]"
 
 
-# Locked to origin/main 33d28eab5 (do not retune if a local origin/main ref is stale).
+# Locked to main dbed74e11 (same bytes as 33d28eab5). Do not retune unless the constant changes.
 PORTRAIT_SHOTS_708_CONST_SHA256 = "97edb7c18215e4a283b86633908872f3b3c4146d9bb748d71c0d3510798cfc8b"
+# Remaining 708 appenders on that same main tip. ai-model and studio-model stay off this list.
+# #911 (#919): clothing-swap was the last 708 appender on dbed74e11 and is now
+# detached, so no skill appends the shared block. The dbed74e11 clothing-swap
+# entry sha was 3ac12958fac29ab0d33067aafa98b67292ff2b8e577a88043491d451c1125bca.
+EXPECTED_708_APPENDER_SHA256: dict[str, str] = {}
 
 NO_ANGLE_SENTENCE = (
     "Do not state head angle, gaze direction or subject position unless the "
@@ -53,6 +59,17 @@ SKILL_PASS_SENTENCE = (
 )
 SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
 SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
+# api/auto_models.json snapshot copied from main dbed74e11. Update the fixture when the
+# table (features / non-ai-model skill rows) is intentionally changed.
+AUTO_MODELS_LOCK_SHA = "dbed74e11b158917e7cf82b44bd4dbf6829af90d"
+AUTO_MODELS_LOCK = ROOT / "tests/fixtures/auto_models_lock_dbed74e1.json"
+EXPECTED_AI_MODEL_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "ai-model 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the ai-model skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
 
 
 def _ai_model_instructions() -> str:
@@ -205,14 +222,6 @@ def test_pins_and_auto_models_unchanged():
 
 
 
-def _main_skills() -> str:
-    return subprocess.check_output(
-        ["git", "-C", str(ROOT), "show", "origin/main:src/skills.ts"],
-        text=True,
-        encoding="utf-8",
-    )
-
-
 def _skill_entry(src: str, sid: str) -> str:
     m = re.search(
         rf"{{ id: '{re.escape(sid)}', name: t\('[^']+'\), instructions: [\s\S]*?inputs: [^\n]+}},",
@@ -254,27 +263,27 @@ def test_qa1_ai_model_has_no_portrait_shots_708_or_frontal_sentence():
     assert "identity anchor shot may be frontal" not in SKILLS
 
 
-def test_qa2_other_708_skills_byte_identical_to_origin_main():
-    """QA (2): remaining 708 appenders stay byte-identical; studio-model already detached in #914."""
-    main = _main_skills()
-    # #914 already landed on origin/main, so studio-model no longer appends 708 there.
-    main_appenders = _708_appender_ids(main)
-    assert "studio-model" not in main_appenders
-    assert "ai-model" not in main_appenders
-    assert "clothing-swap" in main_appenders
-    # The shared constant itself is also unchanged.
-    assert _portrait_shots_708_const(SKILLS) == _portrait_shots_708_const(main)
-    branch_appenders = _708_appender_ids(SKILLS)
-    assert "studio-model" not in branch_appenders
-    assert "ai-model" not in branch_appenders
-    # #911: clothing-swap is the one intentional detach on this branch.
-    assert "clothing-swap" not in branch_appenders
+def test_qa2_other_708_skills_match_fixed_snapshot():
+    """QA (2): remaining 708 appenders match the dbed74e11 snapshot; ai-model and studio-model stay detached."""
+    appenders = _708_appender_ids(SKILLS)
+    assert "studio-model" not in appenders
+    assert "ai-model" not in appenders
     assert "+ PORTRAIT_SHOTS_708 +" not in _skill_entry(SKILLS, "studio-model")
-    for sid in main_appenders:
-        if sid == "clothing-swap":
-            continue
-        assert _skill_entry(SKILLS, sid) == _skill_entry(main, sid), sid
-        assert "+ PORTRAIT_SHOTS_708 +" in _skill_entry(SKILLS, sid)
+    assert "+ PORTRAIT_SHOTS_708 +" not in _skill_entry(SKILLS, "ai-model")
+    assert hashlib.sha256(_portrait_shots_708_const(SKILLS).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
+    assert appenders == list(EXPECTED_708_APPENDER_SHA256)
+    for sid, expected_sha in EXPECTED_708_APPENDER_SHA256.items():
+        entry = _skill_entry(SKILLS, sid)
+        assert "+ PORTRAIT_SHOTS_708 +" in entry, sid
+        assert hashlib.sha256(entry.encode()).hexdigest() == expected_sha, sid
+    # #911 (#919): clothing-swap no longer appends 708 and declares the 3:4 canvas.
+    assert "clothing-swap" not in appenders
+    assert "+ PORTRAIT_SHOTS_708 +" not in _skill_entry(SKILLS, "clothing-swap")
+    from ComfyArt.bot.skill_output import OUTPUTS
+    row = OUTPUTS["clothing-swap"]
+    assert (row["width"], row["height"], row["ratio"], row["images"]) == (1536, 2048, "3:4", 1)
+    block = re.search(r"export const SKILL_OUTPUT[\s\S]*?\n\}", SKILLS).group(0)
+    assert "'clothing-swap': { width: 1536, height: 2048, ratio: '3:4', images: 1 }" in block
 
 
 def test_qa3_ai_model_asks_card_before_generating():
@@ -322,47 +331,33 @@ def test_generate_image_must_pass_skill_ai_model():
     assert "GPT Image 2.6 Sunburst" in instr
 
 
-def _auto_models_ours_and_main() -> tuple[dict, dict]:
-    import json
-
-    ours = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))
-    main = json.loads(
-        subprocess.check_output(
-            ["git", "-C", str(ROOT), "show", "origin/main:api/auto_models.json"],
-            text=True,
-            encoding="utf-8",
-        )
-    )
-    return ours, main
-
-
-def test_auto_models_only_ai_model_skill_row_differs_from_origin_main():
-    """Compared to origin/main, the only Auto-table change is skills.ai-model.
-
-    features, pose-fission, every other skills row, and the file comment stay
-    byte-identical. The whole file is not identical because the pin lives here.
+def test_auto_models_ai_model_is_sunburst_and_rest_matches_fixed_snapshot():
+    """skills.ai-model is the Sunburst pin; every other skills row, features, and the
+    file comment match the fixed snapshot copied from main dbed74e11.
     """
-    import json
-
-    ours, main = _auto_models_ours_and_main()
-    assert ours["features"] == main["features"]
-    assert json.dumps(ours["features"], ensure_ascii=False, sort_keys=True) == json.dumps(
-        main["features"], ensure_ascii=False, sort_keys=True
-    )
-    assert ours.get("_comment") == main.get("_comment")
-    ours_skills = dict(ours["skills"])
-    main_skills = dict(main["skills"])
-    assert "ai-model" not in main_skills
-    assert "ai-model" in ours_skills
-    ours_ai = ours_skills.pop("ai-model")
-    assert ours_skills == main_skills
-    # pose-fission and the skills comment row are in the leftover dict
-    assert ours["skills"]["pose-fission"] == main["skills"]["pose-fission"]
-    assert ours["skills"]["_comment"] == main["skills"]["_comment"]
-    assert ours_ai["feature"] == "text_to_image"
+    ours = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))
+    snap = json.loads(AUTO_MODELS_LOCK.read_text(encoding="utf-8"))
+    assert AUTO_MODELS_LOCK_SHA == "dbed74e11b158917e7cf82b44bd4dbf6829af90d"
+    assert "ai-model" in ours["skills"]
+    ours_ai = ours["skills"]["ai-model"]
+    assert ours_ai == EXPECTED_AI_MODEL_PIN
     assert ours_ai["model"] == SUNBURST_T2I
     assert ours_ai["edit_model"] == SUNBURST_EDIT
     assert not ours_ai.get("fallback")
+    # Snapshot itself must carry the same pin, so a stale fixture cannot silently drift.
+    assert snap["skills"]["ai-model"] == EXPECTED_AI_MODEL_PIN
+    ours_rest = dict(ours["skills"])
+    snap_rest = dict(snap["skills"])
+    ours_rest.pop("ai-model")
+    snap_rest.pop("ai-model")
+    assert ours_rest == snap_rest
+    assert ours["skills"]["pose-fission"] == snap["skills"]["pose-fission"]
+    assert ours["skills"]["_comment"] == snap["skills"]["_comment"]
+    assert ours["features"] == snap["features"]
+    assert json.dumps(ours["features"], ensure_ascii=False, sort_keys=True) == json.dumps(
+        snap["features"], ensure_ascii=False, sort_keys=True
+    )
+    assert ours.get("_comment") == snap.get("_comment")
 
 
 def test_ai_model_pin_no_ref_is_sunburst_t2i():

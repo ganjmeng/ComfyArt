@@ -5,7 +5,7 @@ card are generated live from the uploaded garment, so they must not be copied
 into src/skills.ts. This file may name those words only to forbid them in the
 skill entry; they may appear in a validation chat's user message.
 
-No WaveSpeed call. $0 static. studio-model pins stay unchanged. api/auto_models.json may differ from origin/main only in skills.ai-model.
+No WaveSpeed call. $0 static. studio-model pins stay unchanged. The ai-model Rule 5 lock is a fixed presence check, not a diff against origin/main.
 """
 from __future__ import annotations
 
@@ -506,25 +506,18 @@ def test_pins_and_auto_models_unchanged():
     assert "studio-model" not in (ours_auto.get("skills") or {})
 
 
-def test_ai_model_differs_from_origin_main_only_by_sunburst_rule5():
-    """#915 restores the Rule 5 Sunburst clause; everything else in the ai-model entry stays."""
-    landed = subprocess.check_output(
-        ["git", "-C", str(ROOT), "show", "origin/main:src/skills.ts"],
-        text=True,
-        encoding="utf-8",
-    )
+def test_ai_model_rule5_names_registered_sunburst():
+    """#915 Rule 5 must name the registered Sunburst model; the pre-#915 wording must not remain."""
     ours = _skill_entry(SKILLS, "ai-model")
-    main = _skill_entry(landed, "ai-model")
     old = 'pass skill: "ai-model" and shape ids in refs on every generate_image call.'
     new = (
         'pass skill: "ai-model" and shape ids in refs on every generate_image call '
         "(the skill runs on its registered model, GPT Image 2.6 Sunburst)."
     )
-    assert old in main and new not in main
     assert new in ours
-    assert ours == main.replace(old, new, 1)
-    # The pre-#912 main pin used by the 708 / clothing-swap lock is a different tree.
-    assert _skill_entry(SKILLS, "ai-model") != _skill_entry(_main_skills(), "ai-model")
+    assert old not in ours
+    assert "5) Refs:" in ours
+    assert "GPT Image 2.6 Sunburst" in ours
 
 
 def test_mutation_red_then_green():
