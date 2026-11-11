@@ -1945,8 +1945,14 @@ class LocalLlmProvider(AgentProvider):
                 # #707: declared skill pixels, then the shot prompt, before the #706 identity check
                 # so multi-shot calls differ by angle and a repeated placeholder does not look identical.
                 from .shot_plan import bind_generate
-                from .skill_output import apply_generate
-                args = apply_generate(args, current_skill)
+                from .skill_output import apply_generate, follows_ref
+                _ref = None
+                if follows_ref(args.get("skill") or current_skill):
+                    # #911: image 1 (first of refs, else the turn's first attachment) sets the ratio
+                    from .ref_orientation import ref_image_bytes
+                    _ref = ref_image_bytes(args.get("refs"), getattr(turn, "user_text", "") or "",
+                                           getattr(turn, "attachments", None))
+                args = apply_generate(args, current_skill, ref_image=_ref)
                 preview, early_refuse = bind_generate(run, args, consume=False)
                 if not early_refuse:
                     args = preview

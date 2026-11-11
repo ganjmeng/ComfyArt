@@ -6,7 +6,8 @@ only to forbid them in the skill entry.
 
 No WaveSpeed call. $0 static. Pins and api/auto_models.json stay unchanged.
 The shared PORTRAIT_SHOTS_708 constant is untouched; clothing-swap no longer
-appends it. compose_provider_text is intentionally not changed in this slice.
+appends it. Output ratio follows image 1 (the person photo) on the server.
+compose_provider_text: skill + empty text gets a neutral model-only line.
 """
 from __future__ import annotations
 
@@ -146,8 +147,8 @@ def test_prompt_rules_keep_image1_and_describe_only_the_swap():
     assert "Output aspect follows image 1" in instr
 
 
-def test_output_aspect_follows_person_photo_3x4():
-    """3: 1776x2368 person photo is 3:4; path fills the in-limit 1536x2048 3:4 canvas."""
+def test_output_fallback_row_is_3x4_and_ts_table_in_sync():
+    """3: the declared row is the 3:4 fallback used when image 1 cannot be read."""
     w, h = PERSON_PHOTO_SIZE
     assert w * 4 == h * 3
     assert DECLARED_SIZE[0] * 4 == DECLARED_SIZE[1] * 3
@@ -275,8 +276,8 @@ def test_card_normalizer_locks_skeleton_not_option_contents():
     assert other.get("defaults") == ["A"]
 
 
-def test_pins_and_auto_models_and_empty_text_fallback_unchanged():
-    """No pin change, auto_models.json untouched, compose_provider_text not edited."""
+def test_pins_and_auto_models_unchanged():
+    """No pin change and api/auto_models.json byte-identical to the base."""
     main_entry = _skill_entry(_main_skills(), "clothing-swap")
     entry = _skill_entry(SKILLS, "clothing-swap")
     ours_tail = entry[entry.find("category:"):]
@@ -290,14 +291,6 @@ def test_pins_and_auto_models_and_empty_text_fallback_unchanged():
     assert ours_auto == main_auto
     skills = json.loads(ours_auto.decode("utf-8")).get("skills") or {}
     assert "clothing-swap" not in skills
-
-    ours_send = BOT_SEND.read_bytes()
-    main_send = subprocess.check_output(
-        ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:api/bot_send.py"]
-    )
-    assert ours_send == main_send
-    send_txt = BOT_SEND.read_text(encoding="utf-8")
-    assert "Look at the attached images and tell me what you see." in send_txt
 
 
 def test_mutation_red_then_green():
@@ -395,47 +388,189 @@ def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
     assert changed == []
 
 
-def test_qa5_output_ratio_follows_image1_1776x2368_is_3x4_never_16x9():
-    """QA 5: a 1776x2368 person photo yields 3:4, never the 16:9 default, even if the model asks for 16:9."""
-    w, h = PERSON_PHOTO_SIZE
-    assert (w, h) == (1776, 2368) and w * 4 == h * 3
+def _png(w: int, h: int) -> bytes:
+    import io
+
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (w, h), (200, 200, 200)).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+@pytest.mark.parametrize(
+    "size,ratio,pixels",
+    [
+        ((1776, 2368), "3:4", (1536, 2048)),   # Lovart person photo, exactly 3:4
+        ((2368, 1776), "4:3", (2048, 1536)),   # same photo landscape
+        ((1920, 1080), "16:9", (2048, 1152)),  # landscape 16:9
+        ((1080, 1920), "9:16", (1152, 2048)),
+        ((1024, 1024), "1:1", (1536, 1536)),
+    ],
+)
+def test_qa5_output_ratio_follows_image1(size, ratio, pixels):
+    """QA 5: ratio follows image 1's pixels, snapped to the closest supported ratio; model ratio ignored."""
+    data = _png(*size)
     for model_args in (
         {"prompt": "swap the top"},
-        {"prompt": "swap the top", "ratio": "16:9"},
-        {"prompt": "swap the top", "ratio": "16:9", "width": 1820, "height": 1024},
-        {"prompt": "swap the top", "width": 1024, "height": 1024},
-        {"prompt": "swap the top", "skill": "clothing-swap", "ratio": "16:9"},
+        {"prompt": "swap the top", "ratio": "16:9" if ratio != "16:9" else "3:4"},
+        {"prompt": "swap the top", "width": 1024, "height": 1024, "skill": "clothing-swap"},
     ):
-        out = apply_generate(dict(model_args), "clothing-swap")
-        assert out["ratio"] == "3:4", model_args
-        assert out["ratio"] != "16:9"
-        assert out["width"] * 4 == out["height"] * 3
-        assert (out["width"], out["height"]) == DECLARED_SIZE
-        assert out["width"] <= 2048 and out["height"] <= 2048
+        out = apply_generate(dict(model_args), "clothing-swap", ref_image=data)
+        assert out["skill"] == "clothing-swap"
+        assert out["ratio"] == ratio, (size, model_args)
+        assert (out["width"], out["height"]) == pixels
+        assert max(pixels) <= 2048
         assert out["size_lock"] is True and out["count"] == 1
+        # Relay pass (no bytes) keeps the ratio the chat loop read.
+        again = apply_generate(dict(out))
+        assert (again["width"], again["height"], again["ratio"]) == (*pixels, ratio)
 
 
-# --- Future QA 1-3 (empty-text provider line), pending tech's decision. ---
-# compose_provider_text is NOT changed in this PR. Once tech decides, drop the
-# skip and fill PENDING_PROVIDER_CASES expectations. Design rule: any injected
-# line is model-only — never in the user bubble or chat history.
+def test_qa5_1776x2368_is_3x4_never_16x9_and_landscape_is_landscape():
+    portrait = apply_generate({"prompt": "x", "ratio": "16:9"}, "clothing-swap", ref_image=_png(1776, 2368))
+    assert portrait["ratio"] == "3:4" and portrait["ratio"] != "16:9"
+    assert portrait["width"] * 4 == portrait["height"] * 3
+    landscape = apply_generate({"prompt": "x"}, "clothing-swap", ref_image=_png(2368, 1776))
+    assert landscape["width"] > landscape["height"] and landscape["ratio"] == "4:3"
+    wide = apply_generate({"prompt": "x"}, "clothing-swap", ref_image=_png(1920, 1080))
+    assert wide["width"] > wide["height"] and wide["ratio"] == "16:9"
+
+
+@pytest.mark.parametrize("ref_image", [None, b"", b"not an image"])
+def test_qa5_unreadable_image1_falls_back_to_3x4(ref_image):
+    out = apply_generate({"prompt": "x", "ratio": "16:9"}, "clothing-swap", ref_image=ref_image)
+    assert (out["width"], out["height"], out["ratio"]) == (1536, 2048, "3:4")
+    assert "_ref_ratio" not in out
+
+
+def test_qa5_image1_bytes_come_from_first_ref_or_first_attachment():
+    """Reuses #905's ref_image_bytes: first ref, else the turn's first attached image; never a later one."""
+    import base64
+
+    from ComfyArt.bot.ref_orientation import ref_image_bytes
+
+    person, garment = _png(2368, 1776), _png(960, 970)
+    atts = [
+        {"data": base64.b64encode(person).decode(), "media_type": "image/png"},
+        {"data": base64.b64encode(garment).decode(), "media_type": "image/png"},
+    ]
+    got = ref_image_bytes(["shape:unknown-person"], "", atts)
+    assert got == person
+    out = apply_generate({"prompt": "x", "refs": ["shape:unknown-person", "shape:g"]}, "clothing-swap", ref_image=got)
+    assert out["ratio"] == "4:3"
+    assert ref_image_bytes(None, "", None) is None
+
+
+def test_qa5_other_skills_do_not_follow_ref():
+    from ComfyArt.bot.skill_output import FOLLOW_REF_SIZES, follows_ref
+
+    assert list(FOLLOW_REF_SIZES) == ["clothing-swap"]
+    assert follows_ref("clothing-swap") and follows_ref("AI服装换装")
+    for sid in ("pose-fission", "before-after", "game-art", "linkedin-banner", "studio-model", "ai-model", ""):
+        assert not follows_ref(sid)
+    pose = apply_generate({"prompt": "x"}, "pose-fission", ref_image=_png(1920, 1080))
+    assert (pose["width"], pose["height"], pose["ratio"]) == (1536, 2048, "3:4")
+    assert "_ref_ratio" not in pose
+
+
+def test_run_hint_does_not_lock_a_fixed_size_for_clothing_swap():
+    from ComfyArt.bot.skill_output import run_hint
+
+    hint = run_hint("clothing-swap")
+    assert "size and ratio of image 1" in hint
+    assert "1536" not in hint and "2048" not in hint and "3:4" not in hint
+    instr = _clothing_swap_instructions()
+    assert "width=1536" not in instr and "ratio=3:4" not in instr
+    assert "refs in order [person image 1, garment image 2]" in instr
+
+
+# --- QA 1-3: empty-text provider line (tech option one). ---
 EMPTY_TEXT_LINE = "Look at the attached images and tell me what you see."
-PENDING_PROVIDER_CASES = [
-    # (case id, text, skill_name, expect_empty_line_in_provider_text)
-    ("qa1_skill_empty_text_no_look_line", "", "clothing-swap", False),
-    ("qa2_no_skill_empty_text_unchanged", "", "", True),
-    ("qa3_skill_nonempty_text_not_rewritten", "换成第二张图的T恤", "clothing-swap", False),
-]
+SKILL_EMPTY_LINE = "Process the attached images with the selected skill."
 
 
-@pytest.mark.skip(reason="#911 pending tech decision on compose_provider_text empty-text fallback")
-@pytest.mark.parametrize("case,text,skill,expect_line", PENDING_PROVIDER_CASES, ids=[c[0] for c in PENDING_PROVIDER_CASES])
-def test_pending_empty_text_provider_line(case, text, skill, expect_line):
+def _main_compose():
+    """compose_provider_text as it was on the base, exec'd standalone (no package import)."""
+    src = subprocess.check_output(
+        ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:api/bot_send.py"], text=True, encoding="utf-8"
+    )
+    m = re.search(r"^def compose_provider_text\(.*?(?=^def )", src, re.M | re.S)
+    assert m
+    # Package context so its relative `run_hint` import resolves (this branch's run_hint on
+    # both sides; the comparison is about compose_provider_text's own text handling).
+    ns: dict = {"__name__": "ComfyArt.api.bot_send", "__package__": "ComfyArt.api"}
+    exec(m.group(0), ns)  # noqa: S102 — test harness
+    return ns["compose_provider_text"]
+
+
+def test_qa1_skill_and_empty_text_gets_neutral_line():
     from ComfyArt.api.bot_send import compose_provider_text
 
-    out = compose_provider_text(text, skill_name=skill, memory="", lines=[], review=True)
-    assert (EMPTY_TEXT_LINE in out) is expect_line, case
-    if text:
-        assert text in out, case
-    # Bubble / history must keep the user's own text (model-only injection) — add
-    # a send-path assertion here once the fix lands (user_msg blocks == text).
+    for review in (True, False, None):
+        out = compose_provider_text("", skill_name="clothing-swap", memory="", lines=[], review=review)
+        assert SKILL_EMPTY_LINE in out
+        assert EMPTY_TEXT_LINE not in out
+        assert "tell me what you see" not in out
+        assert "Use the ComfyArt skill 'clothing-swap'" in out
+    # Neutral: no image-content words.
+    for word in ("person", "garment", "shirt", "describe", "see", "model", "woman", "T恤"):
+        assert word not in SKILL_EMPTY_LINE.lower()
+
+
+def test_qa2_no_skill_and_empty_text_is_byte_identical_to_base():
+    from ComfyArt.api.bot_send import compose_provider_text
+
+    base = _main_compose()
+    for kw in ({}, {"review": True}, {"review": False}, {"memory": "MEM", "lines": ["[ctx]"]}):
+        assert compose_provider_text("", **kw) == base("", **kw)
+    assert EMPTY_TEXT_LINE in compose_provider_text("")
+    assert SKILL_EMPTY_LINE not in compose_provider_text("")
+
+
+def test_qa3_skill_and_text_is_not_rewritten():
+    from ComfyArt.api.bot_send import compose_provider_text
+
+    base = _main_compose()
+    for text in ("换成第二张图的T恤", "swap the top", " "):
+        for skill in ("clothing-swap", "studio-model", ""):
+            ours = compose_provider_text(text, skill_name=skill, review=True)
+            assert ours == base(text, skill_name=skill, review=True), (text, skill)
+            assert SKILL_EMPTY_LINE not in ours
+
+
+async def test_neutral_line_is_model_only_not_in_bubble_or_history(bot_client, fake_provider, monkeypatch):
+    """Design: the injected line reaches the provider, never the stored user bubble or replayed history."""
+    from conftest import wait_bot_done
+
+    from ComfyArt.api import bot_send, chat_store
+    from ComfyArt.api.bot_turns import _replay_history
+
+    async def no_files(refs, kits, docs, page_images=True):
+        return [], []
+
+    monkeypatch.setattr(bot_send, "prepare_attachments", no_files)
+    chat = (await (await bot_client.post("/comfyart/bot/chats", json={"project": "p", "provider": "fake-test"})).json())["chat"]
+    resp = await bot_client.post(
+        f"/comfyart/bot/chats/{chat['id']}/send",
+        json={
+            "text": "",
+            "skill": "clothing-swap",
+            "refs": [
+                {"id": "shape:person", "src": "/api/view?filename=person.png&type=input"},
+                {"id": "shape:garment", "src": "/api/view?filename=garment.png&type=input"},
+            ],
+        },
+    )
+    assert resp.status == 200
+    data = await wait_bot_done(bot_client, chat["id"])
+    assert SKILL_EMPTY_LINE in fake_provider.last_turn.user_text
+    assert EMPTY_TEXT_LINE not in fake_provider.last_turn.user_text
+
+    user = data["messages"][0]
+    assert user["role"] == "user"
+    assert [b["type"] for b in user["blocks"]] == ["image", "image", "skill"]
+    stored = json.dumps(chat_store.list_messages(chat["id"]), ensure_ascii=False)
+    assert SKILL_EMPTY_LINE not in stored
+    assert "Use the ComfyArt skill" not in stored
+    replay = json.dumps(_replay_history(chat["id"], "none"), ensure_ascii=False)
+    assert SKILL_EMPTY_LINE not in replay
