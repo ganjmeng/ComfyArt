@@ -216,8 +216,86 @@ def _parse_question(raw: dict, index: int) -> dict:
     return q
 
 
+
+# #911 studio-model direction card: enforce only the card SKELETON in code.
+# Options stay whatever the model generated from the garment; do not write
+# option labels or append （推荐） here (that stays in the skill template).
+# Matched by the locked title or id so a legacy prompt+options call (which
+# would otherwise get id "_") is rewritten the same way.
+STUDIO_DIRECTION_PROMPT = "选一个棚拍方向继续生成："
+STUDIO_DIRECTION_ID = "studio_direction"
+STUDIO_DIRECTION_PLACEHOLDER = "以上都不符合，我自己描述方向…"
+
+
+def _is_studio_direction_question(raw: dict) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    qid = str(raw.get("id") or "").strip()
+    prompt = str(raw.get("prompt") or "").strip()
+    return qid == STUDIO_DIRECTION_ID or prompt == STUDIO_DIRECTION_PROMPT
+
+
+def _skeleton_studio_direction_question(raw: dict) -> dict:
+    """Force id, title, free-text row. Leave options / recommended / defaults alone."""
+    q = dict(raw)
+    q["id"] = STUDIO_DIRECTION_ID
+    q["prompt"] = STUDIO_DIRECTION_PROMPT
+    q["allow_other"] = True
+    q["placeholder"] = STUDIO_DIRECTION_PLACEHOLDER
+    q["page"] = 1
+    return q
+
+
+def normalize_studio_direction_card(args: dict) -> dict:
+    """Force direction-card skeleton: id, title, other-row placeholder, Skip/Submit footer."""
+    args = dict(args or {})
+    questions = args.get("questions")
+    touched = False
+    if isinstance(questions, list) and questions:
+        new_questions = []
+        for q in questions:
+            if _is_studio_direction_question(q) if isinstance(q, dict) else False:
+                new_questions.append(_skeleton_studio_direction_question(q))
+                touched = True
+            else:
+                new_questions.append(q)
+        if touched:
+            args["questions"] = new_questions
+            args["allow_skip"] = True
+            args["page_count"] = 1
+            args["allow_other"] = True
+            first = new_questions[0]
+            if isinstance(first, dict) and first.get("id") == STUDIO_DIRECTION_ID:
+                args["prompt"] = STUDIO_DIRECTION_PROMPT
+                if "options" in first:
+                    args["options"] = first.get("options")
+        return args
+    if (
+        str(args.get("prompt") or "").strip() == STUDIO_DIRECTION_PROMPT
+        or str(args.get("id") or "").strip() == STUDIO_DIRECTION_ID
+    ):
+        question = _skeleton_studio_direction_question({
+            "id": STUDIO_DIRECTION_ID,
+            "prompt": args.get("prompt") or STUDIO_DIRECTION_PROMPT,
+            "options": args.get("options") or [],
+            "allow_other": True,
+            "placeholder": STUDIO_DIRECTION_PLACEHOLDER,
+            "page": args.get("page") or 1,
+            **({"min_selections": args["min_selections"]} if "min_selections" in args else {}),
+            **({"max_selections": args["max_selections"]} if "max_selections" in args else {}),
+        })
+        args["questions"] = [question]
+        args["prompt"] = STUDIO_DIRECTION_PROMPT
+        args["options"] = question.get("options")
+        args["allow_other"] = True
+        args["page_count"] = 1
+        args["allow_skip"] = True
+    return args
+
+
 def validate_spec(args: dict) -> dict:
     """Accept legacy single-question OR questions[] multi form."""
+    args = normalize_studio_direction_card(args)
     allow_skip = bool(args["allow_skip"]) if "allow_skip" in args else True
     raw_questions = args.get("questions")
     if raw_questions is not None:

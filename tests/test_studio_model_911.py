@@ -219,10 +219,12 @@ def test_first_card_option_count_follows_the_question():
     assert "exactly A 女模特, B 男模特" in instr
     assert "do not add a third or fourth chip" in instr
     first = instr[instr.index("First card"):instr.index("Second card")]
-    assert "page_count 3" in first
-    assert "1 of 3" in first
-    assert "2 of 3" in first and "do not paginate" in first.lower() or "do not paginate with 下一步 into 2 of 3 or 3 of 3" in first
+    assert "page_count 1" in first
+    assert "only Skip and Submit" in first
+    assert "page_count 3" not in first
+    assert "header is 1 of 3" not in first
     assert "questions[] of three questions" in first
+    assert "Do not set page_count above 1 on either card" in instr
 
 
 def test_direction_card_title_footer_recommended_and_other_row():
@@ -246,12 +248,11 @@ def test_direction_card_title_footer_recommended_and_other_row():
     assert "framing words such as 半身 are optional" in second
     assert "正面 is allowed" in second
     assert "exactly 3 options" in second
-    # Second card stays a single-question card with no 1 of N pager.
-    assert "page_count 1" in second
-    assert "no 1 of N pager" in second
-    # First card (not this card) uses page_count 3 only for the 1 of 3 header.
+    # Both cards stay page_count 1 (transitional; no 1 of N pager).
     first = instr[instr.index("First card"):instr.index("Second card")]
-    assert "page_count 3" in first and "1 of 3" in first
+    assert "page_count 1" in first
+    assert "header is 1 of 3" not in first
+    assert "Do not set page_count above 1 on either card" in instr
     assert "page_count 4" not in instr and "1 of 4" not in instr
 
 
@@ -299,6 +300,129 @@ def test_generate_image_requires_skill_studio_model():
     assert bare == {"prompt": "cat", "ratio": "1:1"}
     other = apply_generate({"prompt": "x"}, "ai-model")
     assert other == {"prompt": "x"}
+
+    # Explicit model: do not auto-fill skill (and never invent or pin a model).
+    explicit = apply_generate(
+        {"prompt": "x", "model": "openai/gpt-image-2.6-sunburst"}, "studio-model"
+    )
+    assert explicit == {"prompt": "x", "model": "openai/gpt-image-2.6-sunburst"}
+
+
+def test_studio_model_skill_stays_unpinned_auto_flare_edit():
+    """skill=studio-model must not become a pin; Auto stays flare/edit on one ref."""
+    import json
+
+    from ComfyArt.api.mcp_tools import canvas
+
+    skills = json.loads(AUTO_MODELS.read_text(encoding="utf-8")).get("skills") or {}
+    assert "studio-model" not in skills
+    assert hashlib.sha256(AUTO_MODELS.read_bytes()).hexdigest() == AUTO_MODELS_SHA256
+
+    args = {
+        "prompt": "on-body studio still",
+        "skill": "studio-model",
+        "ratio": "3:4",
+        "count": 1,
+        "refs": ["shape:studio-model-garment"],
+    }
+    c = canvas._auto_choice("generate_image", dict(args))
+    assert c.get("model") == "openai/gpt-image-2.6-flare/edit"
+    assert c.get("auto") is True
+    assert c.get("category") == "references"
+    assert c.get("category") != "skill"
+    assert "sunburst" not in str(c.get("model") or "").lower()
+
+
+def test_direction_card_is_normalized_in_ask_user_validate_spec():
+    """Code enforces only the direction-card skeleton; live option text is left alone."""
+    from ComfyArt.api import bot_asks
+
+    live_opts = [
+        {"id": "a", "label": "浅灰无缝背景 + 正面站姿半身"},
+        {"id": "b", "label": "纯白无缝背景 + 正面全身站姿"},
+        {"id": "c", "label": "米白背景 + 侧身微转半身"},
+    ]
+
+    # Legacy prompt+options (the $0 miss: id became "_", no placeholder).
+    legacy = bot_asks.validate_spec({
+        "prompt": STUDIO_DIRECTION_PROMPT,
+        "options": live_opts,
+        "page_count": 3,
+        "allow_skip": False,
+    })
+    q = legacy["questions"][0]
+    assert q["id"] == "studio_direction"
+    assert q["prompt"] == STUDIO_DIRECTION_PROMPT
+    assert q["placeholder"] == DIRECTION_OTHER_PLACEHOLDER
+    assert q["allow_other"] is True
+    assert legacy["allow_skip"] is True
+    assert legacy["page_count"] == 1
+    # Option contents stay the model's live labels — no （推荐） appended in code.
+    assert [o["label"] for o in q["options"]] == [o["label"] for o in live_opts]
+    assert RECOMMENDED_SUFFIX not in q["options"][0]["label"]
+
+    # questions[] with the wrong id / missing placeholder / a title typo via id.
+    messy = bot_asks.validate_spec({
+        "questions": [{
+            "id": "_",
+            "prompt": STUDIO_DIRECTION_PROMPT,
+            "options": [
+                {"id": "A", "label": "浅灰无缝背景 + 正面站姿半身（推荐）"},
+                {"id": "B", "label": "纯白无缝背景 + 正面全身站姿"},
+                {"id": "C", "label": "米白背景 + 侧身微转半身"},
+            ],
+            "allow_other": False,
+            "page": 1,
+        }],
+        "page_count": 2,
+    })
+    q2 = messy["questions"][0]
+    assert q2["id"] == "studio_direction"
+    assert q2["prompt"] == STUDIO_DIRECTION_PROMPT
+    assert q2["placeholder"] == DIRECTION_OTHER_PLACEHOLDER
+    assert q2["allow_other"] is True
+    assert messy["allow_skip"] is True
+    assert messy["page_count"] == 1
+    assert q2["options"][0]["label"] == "浅灰无缝背景 + 正面站姿半身（推荐）"
+    assert q2["options"][0]["label"].count(RECOMMENDED_SUFFIX) == 1
+
+    # Id already correct but title drifted — force the locked title, keep options.
+    drifted = bot_asks.validate_spec({
+        "questions": [{
+            "id": "studio_direction",
+            "prompt": "选一个方向：",
+            "options": list(live_opts),
+            "page": 1,
+        }],
+    })
+    q3 = drifted["questions"][0]
+    assert q3["id"] == "studio_direction"
+    assert q3["prompt"] == STUDIO_DIRECTION_PROMPT
+    assert q3["placeholder"] == DIRECTION_OTHER_PLACEHOLDER
+    assert [o["label"] for o in q3["options"]] == [o["label"] for o in live_opts]
+
+    # Unrelated cards must not be rewritten.
+    other = bot_asks.validate_spec({
+        "questions": [{
+            "id": "gender",
+            "prompt": "由哪种性别的模特上身？",
+            "options": [
+                {"id": "A", "label": "女模特", "recommended": True},
+                {"id": "B", "label": "男模特"},
+            ],
+            "allow_other": True,
+            "placeholder": OTHER_PLACEHOLDER,
+            "page": 1,
+        }],
+        "allow_skip": True,
+        "page_count": 1,
+    })
+    g = other["questions"][0]
+    assert g["id"] == "gender"
+    assert g["placeholder"] == OTHER_PLACEHOLDER
+    assert g["options"][0]["label"] == "女模特"
+    assert "recommended" in g["options"][0]
+    assert other.get("defaults") == ["A"]
 
 
 def test_prompt_forbids_invented_lighting_and_full_length():

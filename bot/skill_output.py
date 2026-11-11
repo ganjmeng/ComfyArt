@@ -60,9 +60,17 @@ def apply_generate(args: dict | None, current_skill: str = "") -> dict:
         return args
     sid = named or resolve(current_skill)
     if not sid:
-        # #911: when the chat omits skill on a studio-model run, fill the id
-        # only. Do not invent width/height/ratio/count or set size_lock.
-        if not raw and str(current_skill or "").strip().casefold() == "studio-model":
+        # #911: studio-model is not in OUTPUTS (no declared canvas). Still
+        # pass skill= on generate_image so the call is attributable. Only in
+        # a studio-model session, only when skill is omitted, and only when
+        # the call did not name an explicit model. Do not invent a size and
+        # do not use this to pin a model.
+        cur = str(current_skill or "").strip()
+        if (
+            cur.casefold() == "studio-model"
+            and not raw
+            and not str(args.get("model") or "").strip()
+        ):
             args["skill"] = "studio-model"
         return args
     row = OUTPUTS[sid]
