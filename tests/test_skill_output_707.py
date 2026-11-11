@@ -196,7 +196,8 @@ def test_game_art_template_locks_brand_tingsong_and_single_category():
     game = _instr("game-art")
     assert "The game title text is exactly 听松棋院 (four characters, no quotation marks or brackets drawn)" in game
     assert "「听松棋院」" not in game
-    assert "「" not in game and "」" not in game
+    assert "Do not copy the gold title word 「奔秋围棋」 verbatim. A single shared character such as 棋 is fine." in game
+    assert "reuse any character from it" not in game
     assert (
         "Every player name and list title must be newly invented, Go-themed Chinese, "
         "sharing no characters with any text in the reference image."
@@ -212,8 +213,10 @@ def test_game_art_template_locks_brand_tingsong_and_single_category():
         "no other text from the reference may remain",
     ):
         assert required in game, required
-    for ch in ("弈", "奔", "秋"):
-        assert ch not in game
+    assert "弈" not in game
+    # 奔/秋 may appear only in the verbatim gold-title prohibition 「奔秋围棋」
+    stripped = game.replace("「奔秋围棋」", "")
+    assert "奔" not in stripped and "秋" not in stripped
     assert "All cards, thumbnails and copy stay in the single game category the user named (Go/围棋 by default)" in game
     assert "xiangqi / 象棋" in game
     assert "帅" in game and "将" in game
