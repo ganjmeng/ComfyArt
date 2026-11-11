@@ -348,7 +348,7 @@ EXPECTED_CLOTHING_SWAP_PIN = {
 }
 
 
-def test_studio_model_skill_stays_unpinned_auto_flare_edit():
+def test_studio_model_routes_sunburst_edit_or_t2i_3x4():
     """Rewritten lock (Angela 07:27): studio-model is pinned to Sunburst.
 
     No reference -> text-to-image; a reference or base -> edit. The pin has no
