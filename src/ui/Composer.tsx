@@ -13,6 +13,7 @@ import { errorText } from '../jobs'
 import { KIND_LABELS, libraryAtom } from '../library'
 import type { AudioShape } from '../shapes/EmbedShapes'
 import { loadListedSkills, saveSkill, skillAtom, skillCreatorAtom, skillNoticeAtom, type Skill } from '../skills'
+import { endSkillLinkRestore, persistSkillLinkRestore } from '../home/skillLinkSession'
 import { AssetGrid } from './AssetPicker'
 import { schedulesOpenAtom } from '../schedules'
 import { AgentExtras, AgentItems, shortLabel, useCurrentAgent } from './AgentPicker'
@@ -149,6 +150,10 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
     setHidden((h) => h.filter((id) => selected.some((s) => s.id === id)))
   }, [selected])
 
+  // #725: while a skill-link restore is active, keep draft + composer refs + skill across refresh
+  useEffect(() => { persistSkillLinkRestore() }, [draft, loose, skill, skillNotice])
+
+
   const addRef = (id: TLShapeId) => {
     setHidden((h) => h.filter((x) => x !== id))
     extraRefsAtom.set([...extraRefsAtom.get().filter((x) => x !== id), id])
@@ -193,6 +198,7 @@ export function Composer({ editor, busy, onError }: { editor: Editor; busy: bool
       draftAtom.set('')
       extraRefsAtom.set([])
       looseRefsAtom.set([])
+      endSkillLinkRestore()
       kitsAtom.set([])
       if (creating) skillCreatorAtom.set({ on: false })
       if (mode === 'agent') {

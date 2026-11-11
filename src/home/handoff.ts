@@ -1,6 +1,6 @@
 import { atom, createShapeId, type Editor, type TLImageShape, type TLShape } from 'tldraw'
 
-import { agentModeAtom, draftAtom, extraRefsAtom, looseRefsAtom, generateDirect, sendToAgent, type AgentMode } from '../agent'
+import { agentModeAtom, draftAtom, extraRefsAtom, generateDirect, sendToAgent, type AgentMode } from '../agent'
 import { refreshBot } from '../bot'
 import { t } from '../i18n'
 import { refFromUrl, refKind } from '../comfy'
@@ -8,6 +8,7 @@ import { editElements } from '../elements'
 import { createGenerator } from '../generate'
 import { placeMedia, toMedia, type ErrorSink } from '../jobs'
 import { attachSkill, CREATE_ENTRY_CHIP_KEY, loadSkills, skillAtom, skillCreatorAtom, withPreset } from '../skills'
+import { applyPersistedSkillLinkRestore, applySkillLinkHandoff, attachSkillForLink, e2eHiddenSkillIds, endSkillLinkRestore, rememberHiddenSkillId } from './skillLinkSession'
 import { chatViewAtom } from '../ui/AgentPanel'
 import { audioDialogAtom } from '../ui/AudioDialog'
 import { enterMode } from '../ui/mode'
@@ -135,9 +136,15 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   const tool = url.searchParams.get('tool')
   const createSkill = url.searchParams.get('createSkill') === '1'
   const editSkill = url.searchParams.get(EDIT_SKILL_PARAM)
-  if (!text && !refs.length && !skillId && !createSkill && !editSkill && !isHomeTool(tool) && tool !== 'elements') return
+  if (!text && !refs.length && !skillId && !createSkill && !editSkill && !isHomeTool(tool) && tool !== 'elements') {
+    await applyPersistedSkillLinkRestore()  // #725: after refresh, URL params are gone
+    return
+  }
   for (const k of KEYS) url.searchParams.delete(k)
   history.replaceState(null, '', url)
+  // #725 last-opened-link-wins: any new non-skill link (ask+ref, tool, createSkill, editSkill)
+  // drops the previous skill-link restore so a later refresh cannot revive it.
+  if (!skillId) endSkillLinkRestore()
   if (editSkill) {
     // #462 Edit in chat: one auto-sent turn in this fresh project; the composer stays empty with its normal placeholder
     const skill = (await loadSkills()).find((s) => s.custom && s.id === editSkill)
@@ -173,10 +180,12 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   agentModeAtom.set(mode)
   const found = skillId ? (await loadSkills()).find((s) => s.id === skillId) ?? null : null
   const skill = found && withPreset(found, presetId)
-  if (skill && !attachSkill(skill)) {  // #673: hidden skill from an old link — no chip, notice shown, nothing sent
-    if (text) draftAtom.set(text)
-    // #644 (product call): the link's reference images go back ONLY into the composer's attachments — never the canvas
-    if (refs.length) looseRefsAtom.set(refs.filter((r) => refKind(r) !== 'audio').map((src) => ({ src, name: refFromUrl(src).filename })))
+  if (skillId) {
+    // #725: visible and hidden old ?skill= links both restore refs into the composer only (never the canvas)
+    // and keep ask= as a draft. Nothing is auto-sent. ?tool= / createSkill / editSkill are unchanged above.
+    if (skill && e2eHiddenSkillIds().has(skill.id) && !skill.custom) attachSkillForLink(skill)
+    else if (skill && !attachSkill(skill)) rememberHiddenSkillId(skill.id)
+    applySkillLinkHandoff(text, refs)
     return
   }
   const shapes = await placeRefs(editor, refs)
