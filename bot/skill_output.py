@@ -60,6 +60,10 @@ def apply_generate(args: dict | None, current_skill: str = "") -> dict:
         return args
     sid = named or resolve(current_skill)
     if not sid:
+        # #911: when the chat omits skill on a studio-model run, fill the id
+        # only. Do not invent width/height/ratio/count or set size_lock.
+        if not raw and str(current_skill or "").strip().casefold() == "studio-model":
+            args["skill"] = "studio-model"
         return args
     row = OUTPUTS[sid]
     if not named:

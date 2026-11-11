@@ -219,8 +219,9 @@ def test_first_card_option_count_follows_the_question():
     assert "exactly A 女模特, B 男模特" in instr
     assert "do not add a third or fourth chip" in instr
     first = instr[instr.index("First card"):instr.index("Second card")]
-    assert "page_count 1" in first
-    assert "only Skip and Submit" in first
+    assert "page_count 3" in first
+    assert "1 of 3" in first
+    assert "2 of 3" in first and "do not paginate" in first.lower() or "do not paginate with 下一步 into 2 of 3 or 3 of 3" in first
     assert "questions[] of three questions" in first
 
 
@@ -245,8 +246,13 @@ def test_direction_card_title_footer_recommended_and_other_row():
     assert "framing words such as 半身 are optional" in second
     assert "正面 is allowed" in second
     assert "exactly 3 options" in second
-    # A page_count above 1 is forbidden on both cards.
-    assert "Do not set page_count above 1 on either card" in instr
+    # Second card stays a single-question card with no 1 of N pager.
+    assert "page_count 1" in second
+    assert "no 1 of N pager" in second
+    # First card (not this card) uses page_count 3 only for the 1 of 3 header.
+    first = instr[instr.index("First card"):instr.index("Second card")]
+    assert "page_count 3" in first and "1 of 3" in first
+    assert "page_count 4" not in instr and "1 of 4" not in instr
 
 
 def test_default_output_is_one_image_and_prompt_rules():
@@ -258,6 +264,8 @@ def test_default_output_is_one_image_and_prompt_rules():
     assert "inherent layout purpose" in instr
     assert "e-commerce detail-page on-body studio still" in instr
     assert "Do not invent a lens, lighting setup" in instr
+    assert "shot length" in instr
+    assert 'Do not write "even soft studio lighting" or "full-length".' in instr
     assert NO_ANGLE_SENTENCE in instr
     # Old rule-8 tail without the layout exception must not remain.
     assert (
@@ -265,6 +273,41 @@ def test_default_output_is_one_image_and_prompt_rules():
         in instr
     )
     assert "unless the user's words, a card answer or a reference give one." not in instr
+
+
+def test_generate_image_requires_skill_studio_model():
+    """Every generate_image call must pass skill: studio-model; apply_generate backfills if omitted."""
+    from ComfyArt.bot.skill_output import apply_generate
+
+    instr = _studio_model_instructions()
+    assert 'skill: "studio-model"' in instr
+    assert "Every generate_image call must pass skill:" in instr
+    assert "Every generate_image call must include skill:" in instr
+
+    filled = apply_generate({"prompt": "on-body still", "ratio": "3:4"}, "studio-model")
+    assert filled["skill"] == "studio-model"
+    assert filled["prompt"] == "on-body still"
+    assert filled["ratio"] == "3:4"
+    assert "width" not in filled and "height" not in filled
+    assert "size_lock" not in filled
+    assert "count" not in filled
+
+    already = apply_generate({"prompt": "x", "skill": "studio-model", "ratio": "3:4"}, "studio-model")
+    assert already == {"prompt": "x", "skill": "studio-model", "ratio": "3:4"}
+
+    bare = apply_generate({"prompt": "cat", "ratio": "1:1"})
+    assert bare == {"prompt": "cat", "ratio": "1:1"}
+    other = apply_generate({"prompt": "x"}, "ai-model")
+    assert other == {"prompt": "x"}
+
+
+def test_prompt_forbids_invented_lighting_and_full_length():
+    instr = _studio_model_instructions()
+    assert 'Do not write "even soft studio lighting" or "full-length".' in instr
+    lighting_idx = instr.index("even soft studio lighting")
+    length_idx = instr.index("full-length")
+    assert "Do not write" in instr[max(0, lighting_idx - 40):lighting_idx]
+    assert "Do not write" in instr[max(0, length_idx - 80):length_idx]
 
 
 def test_studio_model_entry_forbids_garment_specific_words_and_hardcoded_framing():
