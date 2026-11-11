@@ -144,9 +144,32 @@ def test_prompt_rules_keep_image1_and_describe_only_the_swap():
     assert "describe only the garment swap" in instr
     assert "keep the person, pose, composition, background, and all other clothing from image 1" in instr
     assert "Garment description comes only from image 2" in instr
-    assert "Do not invent or write angle, shot-size, background, or lighting words" in instr
+    assert "Do not invent or write angle, shot-size, or background words" in instr
     assert "Do not change pose or framing" in instr
     assert "Output aspect follows image 1" in instr
+    assert "Do not transcribe or spell out any text, letters, or words printed on the garment" in instr
+    assert "T 恤图案照第二张图保留" in instr
+    assert "Keep the T-shirt pattern as shown in image 2" in instr
+    assert "consistent lighting with the original photo" in instr
+    assert "KARO" not in instr
+    assert "KARO" not in _skill_entry(SKILLS, "clothing-swap")
+
+
+
+def test_prompt_rule_forbids_transcribing_garment_print_text():
+    """Print/graphic letters stay on image 2; the prompt must not spell them out."""
+    instr = _clothing_swap_instructions()
+    entry = _skill_entry(SKILLS, "clothing-swap")
+    assert "Do not transcribe or spell out any text, letters, or words printed on the garment" in instr
+    assert "T-shirt pattern is kept as in image 2" in instr or "T 恤图案照第二张图保留" in instr
+    assert "T 恤图案照第二张图保留" in instr
+    assert "Keep the T-shirt pattern as shown in image 2" in instr
+    # Lighting of the original photo may stay; do not invent a new setup.
+    assert "consistent lighting with the original photo" in instr
+    # Fixture print text must not be baked into the skill.
+    for word in ("KARO", "karo"):
+        assert word not in instr
+        assert word not in entry
 
 
 def test_output_fallback_row_is_3x4_and_ts_table_in_sync():
