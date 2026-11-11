@@ -405,20 +405,15 @@ def test_relay_every_auto_models_pin_is_honoured_with_refs(relay, monkeypatch):
         assert SENT, f"{skill}: expected a submit of the pinned model, nothing was sent"
         sent = SENT[-1][1]
         submitted = sent.get("edit_model") or sent.get("model")
-        # A dual t2i/edit pin (ai-model) submits edit_model when a reference is present.
-        expected = pin.get("edit_model") or pin["model"]
-        assert submitted == expected, (
-            f"{skill}: submitted {submitted!r}, expected pin {expected!r}")
+        assert submitted == pin["model"], (
+            f"{skill}: submitted {submitted!r}, expected pin {pin['model']!r}")
         assert submitted not in {QWEN, QWEN_EDIT, FLARE}
-        assert out.get("model_choice", {}).get("model") == expected
+        assert out.get("model_choice", {}).get("model") == pin["model"]
         seen.append((skill, submitted))
     assert through, "generate_image must pick the model via select_model"
-    assert any(
-        (c or {}).get("model") == (pin.get("edit_model") or pin["model"])
-        and (c or {}).get("category") == "skill"
-        for pin in pins.values() for c in through
-    )
-    # pose-fission stays pinned; ai-model is a dual t2i/edit pin. Visit whatever the table lists.
+    assert any((c or {}).get("model") == pin["model"] and (c or {}).get("category") == "skill"
+               for pin in pins.values() for c in through)
+    # Today only pose-fission is pinned; the scan must still visit whatever the table lists.
     assert "pose-fission" in {s for s, _m in seen}
 
 

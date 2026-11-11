@@ -1,8 +1,7 @@
 """#911 ai-model question chain: drop the frontal identity default, lock the Lovart ask card,
-and pin the skill to GPT Image 2.6 Sunburst.
+and keep the base-image layout sentence.
 
-No WaveSpeed call. $0 static. Example/featured pins and the shared #708 constant stay
-unchanged. api/auto_models.json may differ from origin/main only in skills.ai-model.
+No WaveSpeed call. $0 static. Pins and api/auto_models.json must stay unchanged.
 """
 from __future__ import annotations
 
@@ -37,6 +36,7 @@ AI_MODEL_FEATURED = "featured: [pinned('805/reuse/ai-model', '7fbb71bdce30a57f35
 
 
 # Locked to origin/main 33d28eab5 (do not retune if a local origin/main ref is stale).
+AUTO_MODELS_SHA256 = "776c7ff035d679ade4cde30633ccd421244d91bf6798b557aed268ed30986532"
 PORTRAIT_SHOTS_708_CONST_SHA256 = "97edb7c18215e4a283b86633908872f3b3c4146d9bb748d71c0d3510798cfc8b"
 
 NO_ANGLE_SENTENCE = (
@@ -48,11 +48,8 @@ LAYOUT_SENTENCE = (
     "subject off to one side with generous headroom."
 )
 SKILL_PASS_SENTENCE = (
-    'pass skill: "ai-model" and shape ids in refs on every generate_image call '
-    "(the skill runs on its registered model, GPT Image 2.6 Sunburst)."
+    'pass skill: "ai-model" and shape ids in refs on every generate_image call.'
 )
-SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
-SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
 
 
 def _ai_model_instructions() -> str:
@@ -193,7 +190,7 @@ def test_pins_and_auto_models_unchanged():
     entry = _ai_model_entry()
     assert AI_MODEL_EXAMPLES in entry
     assert AI_MODEL_FEATURED in entry
-    # Example/featured asset pins stay. The Auto table may add skills.ai-model only.
+    assert hashlib.sha256(AUTO_MODELS.read_bytes()).hexdigest() == AUTO_MODELS_SHA256
     # Shared #708 block is not edited; only ai-model may stop appending it later.
     assert hashlib.sha256(_portrait_shots_708_const(SKILLS).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
     # studio-model and clothing-swap still append the shared block.
@@ -308,119 +305,23 @@ def test_generate_image_must_pass_skill_ai_model():
     instr = _ai_model_instructions()
     assert SKILL_PASS_SENTENCE in instr
     assert 'pass skill: "ai-model"' in instr
-    assert "GPT Image 2.6 Sunburst" in instr
+    assert "GPT Image 2.6 Sunburst" not in instr
 
 
-def _auto_models_ours_and_main() -> tuple[dict, dict]:
+def test_ai_model_is_not_pinned_and_uses_unpinned_auto_route():
+    """No skills.ai-model row. generate_image with skill=ai-model is not a skill pin."""
     import json
 
-    ours = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))
-    main = json.loads(
-        subprocess.check_output(
-            ["git", "-C", str(ROOT), "show", "origin/main:api/auto_models.json"],
-            text=True,
-            encoding="utf-8",
-        )
-    )
-    return ours, main
-
-
-def test_auto_models_only_ai_model_skill_row_differs_from_origin_main():
-    """Compared to origin/main, the only Auto-table change is skills.ai-model.
-
-    features, pose-fission, every other skills row, and the file comment stay
-    byte-identical. The whole file is not identical because the pin lives here.
-    """
-    import json
-
-    ours, main = _auto_models_ours_and_main()
-    assert ours["features"] == main["features"]
-    assert json.dumps(ours["features"], ensure_ascii=False, sort_keys=True) == json.dumps(
-        main["features"], ensure_ascii=False, sort_keys=True
-    )
-    assert ours.get("_comment") == main.get("_comment")
-    ours_skills = dict(ours["skills"])
-    main_skills = dict(main["skills"])
-    assert "ai-model" not in main_skills
-    assert "ai-model" in ours_skills
-    ours_ai = ours_skills.pop("ai-model")
-    assert ours_skills == main_skills
-    # pose-fission and the skills comment row are in the leftover dict
-    assert ours["skills"]["pose-fission"] == main["skills"]["pose-fission"]
-    assert ours["skills"]["_comment"] == main["skills"]["_comment"]
-    assert ours_ai["feature"] == "text_to_image"
-    assert ours_ai["model"] == SUNBURST_T2I
-    assert ours_ai["edit_model"] == SUNBURST_EDIT
-    assert not ours_ai.get("fallback")
-
-
-def test_ai_model_pin_no_ref_is_sunburst_t2i():
     from ComfyArt.api.mcp_tools import canvas
 
+    skills = json.loads(AUTO_MODELS.read_text(encoding="utf-8")).get("skills") or {}
+    assert "ai-model" not in skills
     args = {"prompt": "head-and-shoulders base image", "skill": "ai-model", "ratio": "3:4", "count": 1}
     c = canvas._auto_choice("generate_image", dict(args))
-    assert c["model"] == SUNBURST_T2I
-    assert c["category"] == "skill"
-    assert "edit_model" not in c
-    pinned = canvas._pin_args(dict(args), c)
-    assert pinned["model"] == SUNBURST_T2I
-    assert pinned.get("auto_model") is True
-    assert "edit_model" not in pinned
+    assert c.get("category") != "skill"
+    assert "sunburst" not in str(c.get("model") or "").lower()
 
 
-def test_ai_model_pin_with_ref_is_sunburst_edit():
-    from ComfyArt.api.mcp_tools import canvas
-
-    args = {
-        "prompt": "head-and-shoulders base image",
-        "skill": "ai-model",
-        "refs": ["shape:ref1"],
-        "ratio": "3:4",
-        "count": 1,
-    }
-    c = canvas._auto_choice("generate_image", dict(args))
-    assert c["model"] == c["edit_model"] == SUNBURST_EDIT
-    assert c["category"] == "skill"
-    pinned = canvas._pin_args(dict(args), c)
-    assert pinned["edit_model"] == SUNBURST_EDIT
-    # t2i id must not be submitted on a ref call
-    assert pinned.get("model") != SUNBURST_T2I
-
-
-def test_ai_model_pin_with_base_is_sunburst_edit():
-    from ComfyArt.api.mcp_tools import canvas
-
-    args = {"prompt": "x", "skill": "ai-model", "base": "shape:base"}
-    c = canvas._auto_choice("generate_image", dict(args))
-    assert c["model"] == c["edit_model"] == SUNBURST_EDIT
-    assert c["category"] == "skill"
-
-
-def test_ai_model_pin_has_no_fallback_and_failure_does_not_switch():
-    """If Sunburst fails, error out. Never silently switch to Flare or Seedream."""
-    import json
-
-    from ComfyArt.api.mcp_tools import canvas
-
-    row = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))["skills"]["ai-model"]
-    assert "fallback" not in row or not row.get("fallback")
-    flare_t2i = "openai/gpt-image-2.6-flare/text-to-image"
-    flare_edit = "openai/gpt-image-2.6-flare/edit"
-    seedream = "bytedance/seedream-v5.0-pro"
-    no_ref = {"prompt": "x", "skill": "ai-model"}
-    with_ref = {"prompt": "x", "skill": "ai-model", "refs": ["shape:r"]}
-    for args, failed in ((no_ref, SUNBURST_T2I), (with_ref, SUNBURST_EDIT)):
-        choice = canvas._fallback_choice("generate_image", dict(args), failed)
-        assert choice is None, choice
-    # A user-named model still wins over the pin (unchanged pin rule).
-    named = canvas._auto_choice("generate_image", {**no_ref, "model": seedream})
-    assert named["category"] != "skill"
-    # The no-fallback path must not resolve to Flare/Seedream either.
-    for bad in (flare_t2i, flare_edit, seedream, "openai/gpt-image-2.6-flare/edit"):
-        assert canvas._fallback_choice("generate_image", dict(no_ref), SUNBURST_T2I) is None
-        assert canvas._fallback_choice("generate_image", dict(with_ref), SUNBURST_EDIT) is None
-        # choice is None so those ids cannot be selected as a fallback
-        del bad
 
 
 def test_pose_fission_pin_behavior_unchanged():

@@ -271,53 +271,26 @@ def _same_model_block(model: str) -> dict:
 
 
 def _skill_row(action: str, args: dict) -> dict | None:
-    """#708: the skill's pinned row when this call runs on that row's feature and names no model.
-
-    A dual t2i/edit pin (model + edit_model) also matches image_edit when a
-    reference or base is present, so a text_to_image pin can still apply.
-    """
+    """#708: the skill's pinned row when this call runs on that row's feature and names no model."""
     pin = skill_pin(args.get("skill"))
-    if not pin or named_or_none(args.get("model")):
+    if not pin or named_or_none(args.get("model")) or _running_feature(action, args) != pin.get("feature"):
         return None
-    feature = _running_feature(action, args)
-    if feature == pin.get("feature"):
-        return pin
-    if feature == "image_edit" and pin.get("edit_model"):
-        return pin
-    return None
+    return pin
 
 
 def _edit_ids() -> set:
     return {m["id"] for m in load_config()["features"]["image_edit"]["models"]}
 
 
-def _t2i_ids() -> set:
-    return {m["id"] for m in load_config()["features"]["text_to_image"]["models"]}
-
-
-def _pin_target(pin: dict, args: dict) -> tuple[str, bool, set]:
-    """Pinned model id, whether it is an edit submit, and the catalog it must be in."""
-    feature = _running_feature("generate_image", args)
-    if feature == "image_edit" and pin.get("edit_model"):
-        return str(pin["edit_model"]), True, _edit_ids()
-    if pin.get("feature") == "text_to_image" or feature == "text_to_image":
-        return str(pin["model"]), False, _t2i_ids()
-    return str(pin["model"]), True, _edit_ids()
-
-
 def _skill_choice(args: dict, pin: dict) -> dict:
     skill = str(args.get("skill"))
-    model, as_edit, catalog = _pin_target(pin, args)
-    if model not in catalog:
+    if pin["model"] not in _edit_ids():
         # #712: never a silent switch to the feature default
-        log.error("skill %s pins %s, which is not in the catalog; not submitting", skill, model)
-        return {"model": model, "auto": True, "category": "skill_unregistered", "skill": skill,
-                "reason": {"zh": f"{skill} 固定的模型 {model} 不在模型列表里", "en": f"{model} pinned by {skill} is not in the model catalog"}}
-    choice = {"model": model, "auto": True, "category": "skill", "skill": skill,
-              "resolution": pin.get("resolution"), "ratio": pin.get("ratio"), "reason": skill_pin_reason(skill)}
-    if as_edit:
-        choice["edit_model"] = model
-    return choice
+        log.error("skill %s pins %s, which is not in the catalog; not submitting", skill, pin["model"])
+        return {"model": pin["model"], "auto": True, "category": "skill_unregistered", "skill": skill,
+                "reason": {"zh": f"{skill} 固定的模型 {pin['model']} 不在模型列表里", "en": f"{pin['model']} pinned by {skill} is not in the model catalog"}}
+    return {"model": pin["model"], "auto": True, "category": "skill", "skill": skill, "edit_model": pin["model"],
+            "resolution": pin.get("resolution"), "ratio": pin.get("ratio"), "reason": skill_pin_reason(skill)}
 
 
 def _skill_fallback(args: dict, pin: dict, failed: str) -> dict | None:
@@ -380,12 +353,7 @@ def _pin_args(args: dict, choice: dict) -> dict:
     # Drop size_lock / exact pixels so a resolution+ratio pin is not forced to
     # the skill's declared canvas (pose-fission 1536×2048 vs pin 2k 3:4).
     args = {k: v for k, v in args.items() if k not in ("model", "auto_model", "size_lock", "size_candidates", "width", "height")}
-    if "edit_model" in choice:
-        args["edit_model"] = choice["edit_model"]
-    else:
-        args.pop("edit_model", None)
-        args["model"] = choice["model"]
-        args["auto_model"] = True
+    args["edit_model"] = choice["edit_model"]
     if choice.get("resolution"):
         args["edit_resolution"] = choice["resolution"]
     if choice.get("ratio"):
