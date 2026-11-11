@@ -26,6 +26,12 @@ OUTPUTS: dict[str, dict] = {
         "width": 1584, "height": 396, "images": 1,
         "names": ("linkedin-banner", "LinkedIn横幅", "LinkedIn Banner"),
     },
+    # #911: clothing-swap follows the person photo (image 1); see FOLLOW_REF_SIZES.
+    # This row is only the fallback when image 1's size cannot be read.
+    "clothing-swap": {
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
+        "names": ("clothing-swap", "AI服装换装", "AI Clothing Swap"),
+    },
 }
 
 _BY_NAME = {n.casefold(): sid for sid, row in OUTPUTS.items() for n in row["names"]}
@@ -47,11 +53,62 @@ def is_single(name: object) -> bool:
     return bool(row) and int(row["images"]) == 1
 
 
-def apply_generate(args: dict | None, current_skill: str = "") -> dict:
+# #911: skills whose output ratio follows image 1 (the first reference). The
+# server reads that image's pixel size and snaps to the closest ratio here
+# (api/wavespeed._nearest, the same snap used for a model's aspect_ratio enum;
+# the model's own enum snap still runs on submit). One in-limit size per ratio.
+# If image 1 cannot be read, the OUTPUTS row (3:4) is used.
+FOLLOW_REF_SIZES: dict[str, dict[str, tuple[int, int]]] = {
+    "clothing-swap": {
+        "1:1": (1536, 1536),
+        "4:5": (1600, 2000), "5:4": (2000, 1600),
+        "3:4": (1536, 2048), "4:3": (2048, 1536),
+        "2:3": (1344, 2016), "3:2": (2016, 1344),
+        "9:16": (1152, 2048), "16:9": (2048, 1152),
+    },
+}
+# Marker so the relay pass (no image bytes) keeps the ratio the chat loop read.
+REF_RATIO_KEY = "_ref_ratio"
+
+
+def follows_ref(name: object) -> bool:
+    sid = resolve(name)
+    return bool(sid) and sid in FOLLOW_REF_SIZES
+
+
+def image_size(data: bytes | None) -> tuple[int, int] | None:
+    """Pixel (width, height) of image bytes; None when absent or undecodable."""
+    if not data:
+        return None
+    try:
+        import io
+
+        from PIL import Image
+        with Image.open(io.BytesIO(data)) as img:
+            w, h = img.size
+    except Exception:
+        return None
+    return (int(w), int(h)) if w and h else None
+
+
+def ref_ratio(sid: str, data: bytes | None) -> str | None:
+    """Closest FOLLOW_REF_SIZES ratio to image 1's pixel aspect; None if unreadable."""
+    table = FOLLOW_REF_SIZES.get(sid)
+    size = image_size(data)
+    if not table or not size:
+        return None
+    from ..api.wavespeed import _nearest
+    return _nearest(list(table), size[0] / size[1])
+
+
+def apply_generate(args: dict | None, current_skill: str = "",
+                   ref_image: bytes | None = None) -> dict:
     """Fill the skill id and its declared pixels. Unknown skills are left alone.
 
     A declared size replaces a square default or a ratio the model invented.
     count stays 1: a multi-shot skill varies the prompt per call, not count.
+    #911: a FOLLOW_REF_SIZES skill takes image 1's ratio (ref_image bytes, or the
+    marker a previous pass set); unreadable -> the declared fallback row.
     """
     args = dict(args or {})
     raw = str(args.get("skill") or "").strip()
@@ -79,13 +136,25 @@ def apply_generate(args: dict | None, current_skill: str = "") -> dict:
     row = OUTPUTS[sid]
     if not named:
         args["skill"] = sid
-    args["width"] = int(row["width"])
-    args["height"] = int(row["height"])
-    args["count"] = 1
-    if row.get("ratio"):
-        args["ratio"] = row["ratio"]
+    picked = None
+    if sid in FOLLOW_REF_SIZES:
+        picked = ref_ratio(sid, ref_image) if ref_image is not None else None
+        if picked is None and ref_image is None:
+            marker = str(args.get(REF_RATIO_KEY) or "")
+            picked = marker if marker in FOLLOW_REF_SIZES[sid] else None
+    args.pop(REF_RATIO_KEY, None)
+    if picked:
+        args["width"], args["height"] = FOLLOW_REF_SIZES[sid][picked]
+        args["ratio"] = picked
+        args[REF_RATIO_KEY] = picked
     else:
-        args.pop("ratio", None)
+        args["width"] = int(row["width"])
+        args["height"] = int(row["height"])
+        if row.get("ratio"):
+            args["ratio"] = row["ratio"]
+        else:
+            args.pop("ratio", None)
+    args["count"] = 1
     # The page audits the downloaded file against these pixels. This does not change the model.
     args["size_lock"] = True
     return args
@@ -100,6 +169,9 @@ def run_hint(name: object) -> str:
     size = f"width={row['width']} height={row['height']}"
     if row.get("ratio"):
         size += f" ratio={row['ratio']}"
+    if sid in FOLLOW_REF_SIZES:
+        # #911: the server sets width/height/ratio from image 1; the model must not pick one.
+        size = "the size and ratio of image 1 (the server fills width, height and ratio; do not pass them)"
     if int(row["images"]) == 1:
         return (
             f"Output lock: call generate_image exactly once with skill={sid!r}, {size}, count=1. "

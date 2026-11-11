@@ -100,7 +100,16 @@ async def prepare_attachments(refs: list[dict], kits: list[dict], docs: list[dic
 
 def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
                           lines: list[str] = (), review: bool | None = None) -> str:
-    provider_text = text or "Look at the attached images and tell me what you see."
+    # #911: a selected skill with no typed text gets a neutral, model-only line
+    # (no image-content words) so the skill runs instead of a describe-and-stop.
+    # No skill + empty text keeps the original line; typed text is never rewritten.
+    # Kept inside this function: some tests exec it standalone.
+    if text:
+        provider_text = text
+    elif skill_name:
+        provider_text = "Process the attached images with the selected skill."
+    else:
+        provider_text = "Look at the attached images and tell me what you see."
     if skill_name:
         from ..bot.skill_output import run_hint
         hint = run_hint(skill_name)

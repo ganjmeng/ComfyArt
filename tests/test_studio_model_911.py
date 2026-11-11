@@ -156,11 +156,18 @@ def _studio_has_no_708(src: str) -> None:
     assert "just above the knee" not in instr
 
 
-def _clothing_swap_and_708_const_match_main(src: str, main: str) -> None:
+def _708_const_matches_main(src: str, main: str) -> None:
+    """Shared #708 block stays byte-identical; clothing-swap no longer appends it (#911)."""
     assert _portrait_shots_708_const(src) == _portrait_shots_708_const(main)
     assert hashlib.sha256(_portrait_shots_708_const(src).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
-    assert _skill_entry(src, "clothing-swap") == _skill_entry(main, "clothing-swap")
-    assert "+ PORTRAIT_SHOTS_708 +" in _skill_entry(src, "clothing-swap")
+
+
+def _clothing_swap_has_no_708(src: str) -> None:
+    entry = _skill_entry(src, "clothing-swap")
+    assert "+ PORTRAIT_SHOTS_708 +" not in entry
+    assert "PORTRAIT_SHOTS_708" not in entry
+    assert "Shot rules (#708)" not in entry
+    assert "6) Angles:" not in entry
 
 
 def test_ask_card_is_two_steps_with_structure_and_order():
@@ -309,8 +316,11 @@ def test_generate_image_requires_skill_studio_model():
     # After stacking #912, an ai-model session also fills skill= (no size).
     other = apply_generate({"prompt": "x"}, "ai-model")
     assert other == {"prompt": "x", "skill": "ai-model"}
+    # #911 clothing-swap now declares a 3:4 canvas (person-photo ratio, in-limit size).
     swap = apply_generate({"prompt": "x"}, "clothing-swap")
-    assert swap == {"prompt": "x"}
+    assert swap["skill"] == "clothing-swap"
+    assert (swap["width"], swap["height"], swap["ratio"], swap["count"]) == (1536, 2048, "3:4", 1)
+    assert swap["size_lock"] is True
 
     # Explicit model: do not auto-fill skill (and never invent or pin a model).
     explicit = apply_generate(
@@ -460,8 +470,9 @@ def test_qa_no_708_on_studio_model():
     _studio_has_no_708(SKILLS)
 
 
-def test_qa_708_constant_and_clothing_swap_byte_identical_to_origin_main():
-    _clothing_swap_and_708_const_match_main(SKILLS, _main_skills())
+def test_qa_708_constant_byte_identical_and_clothing_swap_detached():
+    _708_const_matches_main(SKILLS, _main_skills())
+    _clothing_swap_has_no_708(SKILLS)
 
 
 def test_pins_and_auto_models_unchanged():
@@ -514,7 +525,8 @@ def test_mutation_red_then_green():
     main = _main_skills()
     # Green on the real tree first.
     _studio_has_no_708(SKILLS)
-    _clothing_swap_and_708_const_match_main(SKILLS, main)
+    _708_const_matches_main(SKILLS, main)
+    _clothing_swap_has_no_708(SKILLS)
     assert _forbidden_hits(_skill_entry(SKILLS, "studio-model")) == []
 
     # Red: re-append 708 on studio-model only (in memory).
@@ -540,15 +552,19 @@ def test_mutation_red_then_green():
         red = True
     assert red, "re-adding 708 to studio-model should fail the no-708 lock"
 
-    # Red: clothing-swap assembly drifted.
+    # Red: re-append 708 on clothing-swap (in memory).
     swap = _skill_entry(SKILLS, "clothing-swap")
-    mutated_swap = SKILLS.replace(swap, swap.replace("You are a production", "You are a MUTATED production", 1), 1)
+    mutated_swap = SKILLS.replace(
+        swap,
+        swap.replace("',\n    category:", "' + PORTRAIT_SHOTS_708 + '',\n    category:", 1),
+        1,
+    )
     red = False
     try:
-        _clothing_swap_and_708_const_match_main(mutated_swap, main)
+        _clothing_swap_has_no_708(mutated_swap)
     except AssertionError:
         red = True
-    assert red, "editing clothing-swap should fail the byte-identical lock"
+    assert red, "re-adding 708 to clothing-swap should fail the detach lock"
 
     # Red: garment-specific word leaks into the studio-model entry.
     mutated_word = SKILLS.replace(
@@ -561,7 +577,8 @@ def test_mutation_red_then_green():
 
     # Green: the on-disk tree is unchanged and still passes.
     _studio_has_no_708(SKILLS)
-    _clothing_swap_and_708_const_match_main(SKILLS, main)
+    _708_const_matches_main(SKILLS, main)
+    _clothing_swap_has_no_708(SKILLS)
     assert _forbidden_hits(_skill_entry(SKILLS, "studio-model")) == []
     assert SKILLS == (ROOT / "src/skills.ts").read_text(encoding="utf-8")
 
