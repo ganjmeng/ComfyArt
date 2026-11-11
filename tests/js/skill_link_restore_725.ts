@@ -1,5 +1,6 @@
 /** #725: pure restore helpers (dedupe, persist, replace-on-refresh). No network, $0. */
 import {
+  clearAllSkillLinkRestores,
   clearSkillLinkRestore,
   dedupeLooseRefs,
   encodeSkillLinkRestore,
@@ -18,6 +19,8 @@ class MemoryStorage {
   getItem(k: string) { return this.map.has(k) ? this.map.get(k)! : null }
   setItem(k: string, v: string) { this.map.set(k, String(v)) }
   removeItem(k: string) { this.map.delete(k) }
+  get length() { return this.map.size }
+  key(i: number) { return [...this.map.keys()][i] ?? null }
 }
 
 const a = { src: '/api/view?filename=a.png&type=input', name: 'a.png' }
@@ -64,6 +67,26 @@ clearSkillLinkRestore(store, project)
 const afterClear = readSkillLinkRestore(store, project)
 const activeAfterClear = isSkillLinkRestoreActive(store, project)
 
+// last-opened-link-wins: a later non-skill (or home) navigation clears, so a refresh cannot revive link A
+const wins = new MemoryStorage() as unknown as Storage
+const projA = 'p725a'
+const projB = 'p725b'
+markSkillLinkRestoreActive(wins, projA)
+writeSkillLinkRestore(wins, projA, { draft: 'keep725', refs: [a, b], skillId: 'yingzao' })
+const savedA = readSkillLinkRestore(wins, projA)
+clearAllSkillLinkRestores(wins)
+const afterNonSkill = readSkillLinkRestore(wins, projA)
+const afterNonSkillActive = isSkillLinkRestoreActive(wins, projA)
+const afterRefresh = readSkillLinkRestore(wins, projA)  // refresh of the later link
+// a newer ?skill= on another project also drops A, then only B remains after refresh
+markSkillLinkRestoreActive(wins, projA)
+writeSkillLinkRestore(wins, projA, { draft: 'keep725', refs: [a, b], skillId: 'yingzao' })
+clearAllSkillLinkRestores(wins)
+markSkillLinkRestoreActive(wins, projB)
+writeSkillLinkRestore(wins, projB, { draft: 'newer', refs: [a], skillId: 'before-after' })
+const afterNewerA = readSkillLinkRestore(wins, projA)
+const afterNewerB = readSkillLinkRestore(wins, projB)
+
 console.log(JSON.stringify({
   deduped: deduped.map((r) => r.src),
   empty: empty.length,
@@ -79,4 +102,12 @@ console.log(JSON.stringify({
   afterClear,
   activeAfterClear,
   storeKey: skillLinkStoreKey(project),
+  lastLinkWins: {
+    savedA: { draft: savedA?.draft, n: savedA?.refs.length, skillId: savedA?.skillId },
+    afterNonSkill,
+    afterNonSkillActive,
+    afterRefresh,
+    afterNewerA,
+    afterNewerB: { draft: afterNewerB?.draft, n: afterNewerB?.refs.length, skillId: afterNewerB?.skillId },
+  },
 }))

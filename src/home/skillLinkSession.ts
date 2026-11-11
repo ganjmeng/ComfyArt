@@ -5,7 +5,7 @@ import { currentProject } from '../notices'
 import { t } from '../i18n'
 import { attachSkill, hiddenSkillNotice, loadSkills, skillAtom, skillNoticeAtom, type Skill } from '../skills'
 import {
-  clearSkillLinkRestore,
+  clearAllSkillLinkRestores,
   dedupeLooseRefs,
   isSkillLinkRestoreActive,
   markSkillLinkRestoreActive,
@@ -77,13 +77,17 @@ export function persistSkillLinkRestore() {
   writeSkillLinkRestore(s, project, capture())
 }
 
+/** #725 last-opened-link-wins: a newer link (or home) drops the previous skill-link restore. */
 export function endSkillLinkRestore() {
   persistReady = false
-  const s = store()
-  const project = currentProject()
   hiddenSkillId = null
-  if (!s || !project) return
-  clearSkillLinkRestore(s, project)
+  looseRefsAtom.set([])
+  draftAtom.set('')
+  skillAtom.set(null)
+  skillNoticeAtom.set(null)
+  const s = store()
+  if (!s) return
+  clearAllSkillLinkRestores(s)
 }
 
 export function applyLooseRefsFromHandoff(urls: string[]) {
@@ -92,9 +96,11 @@ export function applyLooseRefsFromHandoff(urls: string[]) {
 
 /** Apply a fresh ?skill= handoff after attachSkill: composer-only refs + draft. Never places canvas shapes. */
 export function applySkillLinkHandoff(text: string, refs: string[]) {
+  const s = store()
+  // last-opened-link-wins: drop any earlier link's restore (including other projects) first
+  if (s) clearAllSkillLinkRestores(s)
   draftAtom.set(text)
   looseRefsAtom.set(refs.length ? looseRefsFromHandoff(refs) : [])
-  const s = store()
   const project = currentProject()
   persistReady = true
   if (s && project) {

@@ -97,6 +97,18 @@ export function clearSkillLinkRestore(storage: Storage, project: string): void {
   } catch { /* private mode */ }
 }
 
+/** #725 last-opened-link-wins: drop every project's saved skill-link restore. */
+export function clearAllSkillLinkRestores(storage: Storage): void {
+  try {
+    const keys: string[] = []
+    for (let i = 0; i < storage.length; i++) {
+      const k = storage.key(i)
+      if (k && (k.startsWith(SKILL_LINK_STORE_PREFIX) || k.startsWith(SKILL_LINK_ACTIVE_PREFIX))) keys.push(k)
+    }
+    for (const k of keys) storage.removeItem(k)
+  } catch { /* private mode */ }
+}
+
 /** Replace (never append) so a second apply / refresh cannot grow the list. */
 export function replaceSkillLinkRestore(
   _prev: SkillLinkRestore | null,

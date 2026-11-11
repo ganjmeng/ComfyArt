@@ -8,7 +8,7 @@ import { editElements } from '../elements'
 import { createGenerator } from '../generate'
 import { placeMedia, toMedia, type ErrorSink } from '../jobs'
 import { attachSkill, CREATE_ENTRY_CHIP_KEY, loadSkills, skillAtom, skillCreatorAtom, withPreset } from '../skills'
-import { applyPersistedSkillLinkRestore, applySkillLinkHandoff, attachSkillForLink, e2eHiddenSkillIds, rememberHiddenSkillId } from './skillLinkSession'
+import { applyPersistedSkillLinkRestore, applySkillLinkHandoff, attachSkillForLink, e2eHiddenSkillIds, endSkillLinkRestore, rememberHiddenSkillId } from './skillLinkSession'
 import { chatViewAtom } from '../ui/AgentPanel'
 import { audioDialogAtom } from '../ui/AudioDialog'
 import { enterMode } from '../ui/mode'
@@ -142,6 +142,9 @@ export async function takeHandoff(editor: Editor, onError: ErrorSink) {
   }
   for (const k of KEYS) url.searchParams.delete(k)
   history.replaceState(null, '', url)
+  // #725 last-opened-link-wins: any new non-skill link (ask+ref, tool, createSkill, editSkill)
+  // drops the previous skill-link restore so a later refresh cannot revive it.
+  if (!skillId) endSkillLinkRestore()
   if (editSkill) {
     // #462 Edit in chat: one auto-sent turn in this fresh project; the composer stays empty with its normal placeholder
     const skill = (await loadSkills()).find((s) => s.custom && s.id === editSkill)

@@ -19,6 +19,7 @@ import { MemoryChooser, MemoryToast } from '../ui/MemoryChooser'
 import { MemoryDialog } from '../ui/MemoryDialog'
 import { SkillsDialog } from '../ui/SkillsDialog'
 import { showMemoryToast } from '../memory'
+import { clearAllSkillLinkRestores } from './skillLinkRestore'
 import { Confirm } from '../ui/Confirm'
 import { BrandMark } from '../ui/BrandMark'
 import { Icons } from '../ui/icons'
@@ -188,6 +189,12 @@ export function HomeApp({ view }: { view: View }) {
     if (expanded) reloadRecent()
     else setRecent(null)
   }, [expanded])
+
+  // #725 last-opened-link-wins: landing on home / projects / skills (no canvas handoff)
+  // drops the previous skill-link restore so reopening a project cannot revive it.
+  useEffect(() => {
+    try { clearAllSkillLinkRestores(sessionStorage) } catch { /* private mode */ }
+  }, [])
 
   const setRailCollapsed = (next: boolean) => {
     setCollapsed(next)

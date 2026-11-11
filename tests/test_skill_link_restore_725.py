@@ -141,3 +141,37 @@ def test_harness_refresh_twice_does_not_duplicate_or_drop(got: dict) -> None:
     assert got["encodedEmpty"] is None
     assert got["wasActive"] is True
     assert got["afterClear"] is None and got["activeAfterClear"] is False
+
+
+def test_last_opened_link_clears_prior_restore_in_handoff_and_home() -> None:
+    """AC last-opened-link-wins: a new non-skill link or home must call the clear *before* any later refresh rehydrate.
+    Mutation: drop `if (!skillId) endSkillLinkRestore()` or the HomeApp clear → this fails."""
+    handoff = (ROOT / "src/home/handoff.ts").read_text()
+    take = handoff[handoff.index("export async function takeHandoff"):]
+    # refresh path still rehydrates only when there is no new link
+    early = take[take.index("if (!text && !refs.length && !skillId"):take.index("for (const k of KEYS)")]
+    assert "await applyPersistedSkillLinkRestore()" in early
+    assert "endSkillLinkRestore()" not in early
+    # any new handoff without skill= clears first (ask+ref, tool, createSkill, editSkill)
+    assert "if (!skillId) endSkillLinkRestore()" in take
+    assert take.index("for (const k of KEYS)") < take.index("if (!skillId) endSkillLinkRestore()") < take.index("if (editSkill)")
+    # Home `/` (and other home views) also clear, since takeHandoff does not run there
+    home = (ROOT / "src/home/HomeApp.tsx").read_text()
+    assert "clearAllSkillLinkRestores(sessionStorage)" in home
+    assert "from './skillLinkRestore'" in home
+    session = (ROOT / "src/home/skillLinkSession.ts").read_text()
+    assert "clearAllSkillLinkRestores(s)" in session
+    # apply of a newer ?skill= also drops earlier stored restores first
+    apply = session[session.index("export function applySkillLinkHandoff"):]
+    assert apply.index("clearAllSkillLinkRestores(s)") < apply.index("writeSkillLinkRestore")
+
+
+@needs_node
+def test_harness_last_opened_link_wins_on_refresh(got: dict) -> None:
+    """Mutation: disable clearAllSkillLinkRestores (no-op) → afterNonSkill / afterRefresh still have link A."""
+    w = got["lastLinkWins"]
+    assert w["savedA"] == {"draft": "keep725", "n": 2, "skillId": "yingzao"}
+    assert w["afterNonSkill"] is None and w["afterNonSkillActive"] is False
+    assert w["afterRefresh"] is None
+    assert w["afterNewerA"] is None
+    assert w["afterNewerB"] == {"draft": "newer", "n": 1, "skillId": "before-after"}

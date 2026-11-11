@@ -210,3 +210,56 @@ async def test_e2e_725_visible_refs_only_no_ask(app_url, mock_ws, fake_agent):  
         await _reload_twice(pg)
         assert await _state(pg) == st
         await browser.close()
+
+
+async def test_e2e_725_last_link_wins_nonskill_ask_ref(app_url, mock_ws, fake_agent):  # noqa: F811
+    """AC last-opened-link-wins: ?skill= then a non-skill ?ask=&ref= on the same project;
+    after two refreshes the first link's draft/refs/chip must not come back."""
+    _write_refs()
+    async with pw.async_playwright() as p:
+        browser, pg = await _page(p)
+        await pg.goto(app_url + f"?project=p725win1&new=1&skill=yingzao&mode=agent&ask={DRAFT}{_ref_qs()}")
+        await _ready(pg)
+        st = await _state(pg)
+        assert st["draft"] == DRAFT and st["loose"] == 2 and st["chip"] == 1, st
+        # new non-skill link, same tab / same project
+        await pg.goto(app_url + f"?project=p725win1&ask=nonskill725{_ref_qs(1)}")
+        await _ready(pg)
+        mid = await _state(pg)
+        assert mid["draft"] != DRAFT, mid
+        assert mid["loose"] == 0, mid
+        assert mid["chip"] == 0, mid
+        await _reload_twice(pg)
+        after = await _state(pg)
+        assert after["draft"] != DRAFT and DRAFT not in after["draft"], after
+        assert after["loose"] == 0, after
+        assert after["chip"] == 0 and after["notice"] == 0, after
+        await _shot(pg, "05-skill-then-nonskill-refresh2")
+        await browser.close()
+
+
+async def test_e2e_725_last_link_wins_plain_home_then_project(app_url, mock_ws, fake_agent):  # noqa: F811
+    """AC last-opened-link-wins: ?skill= then plain home `/`, then reopen the same project
+    with no handoff params; the first link's draft/refs must not reappear, including after refresh."""
+    _write_refs()
+    async with pw.async_playwright() as p:
+        browser, pg = await _page(p)
+        await pg.goto(app_url + f"?project=p725win2&new=1&skill=yingzao&mode=agent&ask={DRAFT}{_ref_qs()}")
+        await _ready(pg)
+        st = await _state(pg)
+        assert st["draft"] == DRAFT and st["loose"] == 2 and st["chip"] == 1, st
+        await pg.goto(app_url)  # plain home, no project / no skill
+        await pg.get_by_test_id("home-shell").wait_for(timeout=30_000)
+        await pg.wait_for_timeout(400)
+        await pg.goto(app_url + "?project=p725win2")
+        await _ready(pg)
+        reopened = await _state(pg)
+        assert reopened["draft"] != DRAFT, reopened
+        assert reopened["loose"] == 0, reopened
+        assert reopened["chip"] == 0, reopened
+        await _reload_twice(pg)
+        after = await _state(pg)
+        assert after["draft"] != DRAFT, after
+        assert after["loose"] == 0 and after["chip"] == 0, after
+        await _shot(pg, "06-skill-then-home-project-refresh2")
+        await browser.close()
