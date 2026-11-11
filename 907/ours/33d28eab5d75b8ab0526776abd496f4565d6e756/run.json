@@ -1,0 +1,37 @@
+{
+  "main_sha": "33d28eab5d75b8ab0526776abd496f4565d6e756",
+  "skill": "taobao-product",
+  "input": {
+    "source": "/workspace/725/907-taobao/input (same files as issue #907 Lovart baseline)",
+    "msg_md5": "843dc97cddf826a560395279762d4e1c",
+    "ref_md5": "c129174a769533ffbfc86224933e0e13",
+    "ref_pixels": [
+      571,
+      1024
+    ]
+  },
+  "chat": {
+    "route": "official DeepSeek",
+    "model": "deepseek-flash",
+    "official_llm_ready": true,
+    "image_parts": 1
+  },
+  "routed_model": "openai/gpt-image-2.6-flare/edit",
+  "choice_category": "references",
+  "ratio": "1:1",
+  "size_px": [
+    1024,
+    1024
+  ],
+  "count": 1,
+  "prediction_id": "2a18c2812fbf40c285d0e3fe22ff58b2",
+  "quoted_list_usd": 0.05,
+  "quoted_discounted_usd": 0.045,
+  "cost_usd": 0.0585,
+  "balance_before_usd": 30.225366,
+  "balance_after_usd": 30.166866,
+  "completed_at": "2026-11-11 20:51:04 +0800 (Asia/Shanghai)",
+  "submitted_at": "2026-11-11 20:50:15 +0800 (Asia/Shanghai)",
+  "sha256_png": "47ce31ec14f3fb33b94fa5fb96b4fa461ceca1ac19a3c65cabdc34b2e450a609",
+  "bytes": 1059057
+}
