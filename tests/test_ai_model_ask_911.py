@@ -196,9 +196,9 @@ def test_pins_and_auto_models_unchanged():
     # Example/featured asset pins stay. The Auto table may add skills.ai-model only.
     # Shared #708 block is not edited; ai-model and studio-model stop appending it.
     assert hashlib.sha256(_portrait_shots_708_const(SKILLS).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
-    # clothing-swap still appends the shared block. studio-model detaches 708 in #914.
+    # #911: clothing-swap now detaches the shared block too. studio-model detached 708 in #914.
     m = re.search(r"\{ id: 'clothing-swap'.*?inputs:", SKILLS, re.S)
-    assert m and "+ PORTRAIT_SHOTS_708 +" in m.group(0)
+    assert m and "+ PORTRAIT_SHOTS_708 +" not in m.group(0)
     sm = re.search(r"\{ id: 'studio-model'.*?inputs:", SKILLS, re.S)
     assert sm and "+ PORTRAIT_SHOTS_708 +" not in sm.group(0)
 
@@ -267,8 +267,12 @@ def test_qa2_other_708_skills_byte_identical_to_origin_main():
     branch_appenders = _708_appender_ids(SKILLS)
     assert "studio-model" not in branch_appenders
     assert "ai-model" not in branch_appenders
+    # #911: clothing-swap is the one intentional detach on this branch.
+    assert "clothing-swap" not in branch_appenders
     assert "+ PORTRAIT_SHOTS_708 +" not in _skill_entry(SKILLS, "studio-model")
     for sid in main_appenders:
+        if sid == "clothing-swap":
+            continue
         assert _skill_entry(SKILLS, sid) == _skill_entry(main, sid), sid
         assert "+ PORTRAIT_SHOTS_708 +" in _skill_entry(SKILLS, sid)
 
@@ -460,12 +464,11 @@ def test_apply_generate_fills_omitted_ai_model_skill_without_size_lock():
 
 
 def test_apply_generate_does_not_fill_skill_outside_ai_model_sessions(monkeypatch):
-    """A no-skill session and a non-#911 session must not get skill filled.
+    """A no-skill session must not get skill filled.
 
-    The fill is not a generic skill_pin() hook: even if clothing-swap were
-    pinned, it must stay unfilled. studio-model is the second #911 slice and
-    now fills skill= with no size, same as ai-model. pose-fission keeps its
-    pre-existing OUTPUTS size fill only.
+    The fill is not a generic skill_pin() hook. clothing-swap is in OUTPUTS
+    (#911) and gets the declared 3:4 canvas, like pose-fission. studio-model
+    still fills skill= with no size, same as ai-model.
     """
     from ComfyArt.api import auto_models
     from ComfyArt.bot.skill_output import apply_generate
@@ -480,8 +483,11 @@ def test_apply_generate_does_not_fill_skill_outside_ai_model_sessions(monkeypatc
     none = apply_generate({"prompt": "x"}, "")
     assert "skill" not in none
 
+    # #911: clothing-swap declares 1536x2048 3:4 (person-photo ratio, in-limit).
     swap = apply_generate({"prompt": "x"}, "clothing-swap")
-    assert "skill" not in swap
+    assert swap["skill"] == "clothing-swap"
+    assert (swap["width"], swap["height"], swap["ratio"]) == (1536, 2048, "3:4")
+    assert swap["size_lock"] is True
 
     # #914: studio-model fills skill= without inventing a size or using skill_pin.
     studio = apply_generate({"prompt": "x"}, "studio-model")

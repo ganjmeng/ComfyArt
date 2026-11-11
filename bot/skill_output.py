@@ -26,6 +26,12 @@ OUTPUTS: dict[str, dict] = {
         "width": 1584, "height": 396, "images": 1,
         "names": ("linkedin-banner", "LinkedIn横幅", "LinkedIn Banner"),
     },
+    # #911: clothing-swap follows the person photo (image 1) aspect. A 1776x2368
+    # person photo is exactly 3:4; the declared canvas is the in-limit 3:4 size.
+    "clothing-swap": {
+        "width": 1536, "height": 2048, "ratio": "3:4", "images": 1,
+        "names": ("clothing-swap", "AI服装换装", "AI Clothing Swap"),
+    },
 }
 
 _BY_NAME = {n.casefold(): sid for sid, row in OUTPUTS.items() for n in row["names"]}

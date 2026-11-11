@@ -293,8 +293,131 @@ def normalize_studio_direction_card(args: dict) -> dict:
     return args
 
 
+
+# #911 clothing-swap: enforce only the card SKELETON in code.
+# Question title and option labels stay live (from the person outfit / garment);
+# do not copy a fixture-specific wording such as 宝蓝T恤. Matched by the locked
+# id or a how-to-replace-upper-body prompt so a legacy prompt+options call is
+# rewritten the same way.
+CLOTHING_SWAP_QUESTION_ID = "upper_body_swap"
+CLOTHING_SWAP_PROMPT_FALLBACK = "这件衣服要怎么替换模特的上身？"
+CLOTHING_SWAP_PLACEHOLDER = "以上都不符合，我自己补充...（自填）"
+_CLOTHING_SWAP_DROP_IDS = frozenset({
+    "gender", "ethnicity", "angle", "angles", "shot", "shot_size", "shot-size",
+})
+
+
+def _is_clothing_swap_question(raw: dict) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    qid = str(raw.get("id") or "").strip()
+    prompt = str(raw.get("prompt") or "").strip()
+    if qid == CLOTHING_SWAP_QUESTION_ID:
+        return True
+    # Structural how-to-replace-the-top question (live title may name the garment).
+    # Do not match studio-model "由哪种性别的模特上身？" (has 上身, no 怎么替换).
+    if "怎么替换" in prompt and ("上身" in prompt or "上衣" in prompt):
+        return True
+    low = prompt.lower()
+    if "how" in low and "replace" in low and any(
+        w in low for w in ("upper", "upper-body", "upper body", "top", "t-shirt", "tee")
+    ):
+        return True
+    return False
+
+
+def _is_clothing_swap_forbidden_extra(raw: object) -> bool:
+    """Gender / ethnicity / angle questions must not ride along with the swap card."""
+    if not isinstance(raw, dict):
+        return False
+    qid = str(raw.get("id") or "").strip().casefold()
+    if qid in _CLOTHING_SWAP_DROP_IDS:
+        return True
+    prompt = str(raw.get("prompt") or "")
+    low = prompt.lower()
+    if any(n in prompt for n in ("性别", "族裔", "角度")):
+        return True
+    if any(n in low for n in ("gender", "ethnicity", "ethnic", "angle", "shot size", "shot-size")):
+        return True
+    return False
+
+
+def _skeleton_clothing_swap_question(raw: dict) -> dict:
+    """Force id, free-text row, nothing preselected. Leave live prompt + option labels."""
+    q = dict(raw)
+    q["id"] = CLOTHING_SWAP_QUESTION_ID
+    if not str(q.get("prompt") or "").strip():
+        q["prompt"] = CLOTHING_SWAP_PROMPT_FALLBACK
+    q["allow_other"] = True
+    q["placeholder"] = CLOTHING_SWAP_PLACEHOLDER
+    q["page"] = 1
+    q.pop("defaults", None)
+    opts = q.get("options")
+    if isinstance(opts, list):
+        cleaned = []
+        for o in opts:
+            if isinstance(o, dict):
+                item = dict(o)
+                item.pop("recommended", None)
+                cleaned.append(item)
+            else:
+                cleaned.append(o)
+        q["options"] = cleaned
+    return q
+
+
+def normalize_clothing_swap_card(args: dict) -> dict:
+    """Force a single how-to-swap-the-top card: id, other-row, no preselect, no extras."""
+    args = dict(args or {})
+    questions = args.get("questions")
+    if isinstance(questions, list) and questions:
+        if not any(_is_clothing_swap_question(q) for q in questions if isinstance(q, dict)):
+            return args
+        kept = []
+        for q in questions:
+            if not isinstance(q, dict):
+                continue
+            if _is_clothing_swap_forbidden_extra(q):
+                continue
+            if _is_clothing_swap_question(q):
+                kept.append(_skeleton_clothing_swap_question(q))
+            # Drop anything else on this card so it stays ONE question.
+        if not kept:
+            return args
+        first = kept[0]
+        args["questions"] = [first]
+        args["allow_skip"] = True
+        args["page_count"] = 1
+        args["allow_other"] = True
+        args["prompt"] = first.get("prompt")
+        if "options" in first:
+            args["options"] = first.get("options")
+        args.pop("defaults", None)
+        return args
+    if _is_clothing_swap_question(args) or str(args.get("id") or "").strip() == CLOTHING_SWAP_QUESTION_ID:
+        question = _skeleton_clothing_swap_question({
+            "id": args.get("id") or CLOTHING_SWAP_QUESTION_ID,
+            "prompt": args.get("prompt") or CLOTHING_SWAP_PROMPT_FALLBACK,
+            "options": args.get("options") or [],
+            "allow_other": True,
+            "placeholder": CLOTHING_SWAP_PLACEHOLDER,
+            "page": args.get("page") or 1,
+            **({"min_selections": args["min_selections"]} if "min_selections" in args else {}),
+            **({"max_selections": args["max_selections"]} if "max_selections" in args else {}),
+        })
+        args["questions"] = [question]
+        args["prompt"] = question.get("prompt")
+        args["options"] = question.get("options")
+        args["allow_other"] = True
+        args["page_count"] = 1
+        args["allow_skip"] = True
+        args.pop("defaults", None)
+    return args
+
+
 def validate_spec(args: dict) -> dict:
     """Accept legacy single-question OR questions[] multi form."""
+    args = normalize_clothing_swap_card(args)
     args = normalize_studio_direction_card(args)
     allow_skip = bool(args["allow_skip"]) if "allow_skip" in args else True
     raw_questions = args.get("questions")
