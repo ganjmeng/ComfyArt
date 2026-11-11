@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import subprocess
 from pathlib import Path
 
 from ComfyArt.api import bot_asks
@@ -105,6 +106,7 @@ def test_ask_card_has_three_questions_in_order_with_verbatim_options_and_no_defa
     assert "换装" in instr and "换背景" in instr and "高清放大" in instr
     assert "only the user's words plus the card answers" in instr
     assert "Do not invent a lens, outfit, makeup" in instr
+    assert "Do not state head angle, gaze direction or subject position unless the user's words, a card answer or a reference give one." in instr
 
 
 def test_lovart_card_spec_validates_without_defaults():
@@ -171,3 +173,83 @@ def test_pins_and_auto_models_unchanged():
     for sid in ("studio-model", "clothing-swap"):
         m = re.search(rf"\{{ id: '{sid}'.*?inputs:", SKILLS, re.S)
         assert m and "+ PORTRAIT_SHOTS_708 +" in m.group(0), sid
+
+
+
+NO_ANGLE_SENTENCE = (
+    "Do not state head angle, gaze direction or subject position unless the "
+    "user's words, a card answer or a reference give one."
+)
+
+
+def _main_skills() -> str:
+    return subprocess.check_output(
+        ["git", "-C", str(ROOT), "show", "origin/main:src/skills.ts"],
+        text=True,
+        encoding="utf-8",
+    )
+
+
+def _skill_entry(src: str, sid: str) -> str:
+    m = re.search(
+        rf"{{ id: '{re.escape(sid)}', name: t\('[^']+'\), instructions: [\s\S]*?inputs: [^\n]+}},",
+        src,
+    )
+    assert m, f"skill entry missing: {sid}"
+    return m.group(0)
+
+
+def _708_appender_ids(src: str) -> list[str]:
+    ids: list[str] = []
+    seen: set[str] = set()
+    for sid in re.findall(r"\{ id: '([^']+)'", src):
+        if sid in seen:
+            continue
+        try:
+            entry = _skill_entry(src, sid)
+        except AssertionError:
+            continue
+        if "+ PORTRAIT_SHOTS_708 +" in entry:
+            seen.add(sid)
+            ids.append(sid)
+    return ids
+
+
+def test_qa1_ai_model_has_no_portrait_shots_708_or_frontal_sentence():
+    """QA (1): ai-model has no PORTRAIT_SHOTS_708 and no frontal identity-anchor sentence."""
+    entry = _ai_model_entry()
+    instr = _ai_model_instructions()
+    assert "+ PORTRAIT_SHOTS_708 +" not in entry
+    assert "PORTRAIT_SHOTS_708" not in entry
+    assert "Shot rules (#708)" not in entry
+    assert "Shot rules (#708)" not in instr
+    # 708 slot language must not leak into the ai-model instruction body.
+    assert "at most ONE frontal 0° eye-level shot per batch" not in instr
+    assert "subject on the left third, negative space on the right" not in instr
+    assert "the identity anchor shot may be frontal eye-level on a plain backdrop (it is the only one)" not in instr
+    assert "identity anchor shot may be frontal" not in instr
+    assert "identity anchor shot may be frontal" not in SKILLS
+
+
+def test_qa2_other_708_skills_byte_identical_to_origin_main():
+    """QA (2): studio-model, clothing-swap, and any other main 708 appender stay byte-identical."""
+    main = _main_skills()
+    appenders = [sid for sid in _708_appender_ids(main) if sid != "ai-model"]
+    assert "studio-model" in appenders
+    assert "clothing-swap" in appenders
+    # The shared constant itself is also unchanged.
+    assert _portrait_shots_708_const(SKILLS) == _portrait_shots_708_const(main)
+    for sid in appenders:
+        assert _skill_entry(SKILLS, sid) == _skill_entry(main, sid), sid
+        assert "+ PORTRAIT_SHOTS_708 +" in _skill_entry(SKILLS, sid)
+
+
+def test_qa3_ai_model_asks_card_before_generating():
+    """QA (3): ask_user card instruction is present, and the no-invented-angle sentence is present."""
+    instr = _ai_model_instructions()
+    assert "Before generating, call ask_user once with one card of three questions" in instr
+    assert "ask_user" in instr
+    assert "questions[]" in instr
+    assert "page_count 3" in instr
+    assert NO_ANGLE_SENTENCE in instr
+    assert "only the user's words plus the card answers" in instr
