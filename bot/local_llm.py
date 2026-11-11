@@ -242,6 +242,35 @@ def _reply_lang(user_text: str) -> str:
     return "zh" if _CJK_RE.search(text) else "en"
 
 
+def ask_card_lang(goal_text: str = "", ui_lang: str = "") -> str:
+    """Ask-card language: empty typed text follows the UI language; typed text follows the user.
+
+    Use goal_text (the user's own words), not provider_text: an empty skill turn
+    injects an English model-only line that must not count as the user's language.
+    """
+    text = (goal_text or "").strip()
+    if text:
+        return "zh" if _CJK_RE.search(text) else "en"
+    return ui_lang if ui_lang in ("zh", "en") else "zh"
+
+
+_ASK_CARD_LANG_RULE = (
+    "Ask-card language: when the user typed no text, write every ask_user "
+    "question, option label, option description, free-text placeholder, and "
+    "skip/submit wording in the UI language; when the user typed text, write "
+    "them in the user's language. No other language rule for ask cards."
+)
+
+
+def _ask_card_lang_directive(lang: str) -> str:
+    name = "Chinese (zh)" if lang == "zh" else "English (en)"
+    return (
+        f"Ask-card language for this turn is {name}. Write every ask_user "
+        "question, option label, description, free-text placeholder, and "
+        "skip/submit wording in that language."
+    )
+
+
 def _call_key(name: str, args: dict) -> str:
     return name + "\x00" + json.dumps(args, sort_keys=True, ensure_ascii=False)
 
@@ -625,7 +654,14 @@ _PLAN_QUOTE_RULE = (
     "Do not tell the user a per-step or running cost; the confirm card is the "
     "only cost display, and only when the total reaches the threshold."
 )
-_SYSTEM_PROMPT = AGENT_GUIDE + "\n\n" + _PLAN_QUOTE_RULE
+_SYSTEM_PROMPT = AGENT_GUIDE + "\n\n" + _PLAN_QUOTE_RULE + "\n\n" + _ASK_CARD_LANG_RULE
+
+
+def system_prompt_for_turn(goal_text: str = "", ui_lang: str = "") -> str:
+    return (_SYSTEM_PROMPT + "\n\n"
+            + _ask_card_lang_directive(ask_card_lang(goal_text, ui_lang)))
+
+
 _PLAN_REFUSE = {
     "zh": "[tool error] 这是多步付费任务。请先调用 quote_plan 列出每一个付费步骤，用户确认后再调用付费工具。这次调用没有执行。",
     "en": "[tool error] This is a multi-step paid task. Call quote_plan with every paid step and wait for the user before any paid tool. This call did not run.",
@@ -2305,7 +2341,7 @@ class LocalLlmProvider(AgentProvider):
                     await self._mcp_list_tools(session, turn.mcp_endpoint)) if turn.mcp_endpoint else []
                 if tools:  # #235 synthetic tool: not an MCP tool, so external agents never see it
                     tools = [*tools, _QUOTE_PLAN_TOOL]
-                system = _SYSTEM_PROMPT if tools else ""
+                system = (system_prompt_for_turn(turn.goal_text, turn.lang) if tools else "")
                 user_msg = _user_content(turn.user_text, turn.attachments)
                 window = await self._context_window(session, model)
                 history_msgs = await self._history_with_model_summary(

@@ -301,7 +301,9 @@ def normalize_studio_direction_card(args: dict) -> dict:
 # rewritten the same way.
 CLOTHING_SWAP_QUESTION_ID = "upper_body_swap"
 CLOTHING_SWAP_PROMPT_FALLBACK = "这件衣服要怎么替换模特的上身？"
+CLOTHING_SWAP_PROMPT_FALLBACK_EN = "How should I replace the upper-body garment?"
 CLOTHING_SWAP_PLACEHOLDER = "其它穿法，我来说呢..."
+CLOTHING_SWAP_PLACEHOLDER_EN = "None of these fit, I'll write my own..."
 _CLOTHING_SWAP_DROP_IDS = frozenset({
     "gender", "ethnicity", "angle", "angles", "shot", "shot_size", "shot-size",
 })
@@ -342,14 +344,35 @@ def _is_clothing_swap_forbidden_extra(raw: object) -> bool:
     return False
 
 
+def _clothing_swap_card_lang(q: dict) -> str:
+    """Language of a live clothing-swap question: CJK in title/options -> zh, else en."""
+    parts = [str(q.get("prompt") or "")]
+    for o in q.get("options") or []:
+        if isinstance(o, dict):
+            parts.append(str(o.get("label") or ""))
+            parts.append(str(o.get("description") or ""))
+        else:
+            parts.append(str(o))
+    blob = "".join(parts)
+    if any("\u3400" <= ch <= "\u9fff" or "\uf900" <= ch <= "\ufaff" for ch in blob):
+        return "zh"
+    return "en"
+
+
 def _skeleton_clothing_swap_question(raw: dict) -> dict:
     """Force id, free-text row, nothing preselected. Leave live prompt + option labels."""
     q = dict(raw)
     q["id"] = CLOTHING_SWAP_QUESTION_ID
     if not str(q.get("prompt") or "").strip():
-        q["prompt"] = CLOTHING_SWAP_PROMPT_FALLBACK
+        # Peek at option labels so an English card does not get a Chinese title.
+        peek = {"prompt": "", "options": q.get("options") or []}
+        q["prompt"] = (CLOTHING_SWAP_PROMPT_FALLBACK
+                       if _clothing_swap_card_lang(peek) == "zh"
+                       else CLOTHING_SWAP_PROMPT_FALLBACK_EN)
+    lang = _clothing_swap_card_lang(q)
     q["allow_other"] = True
-    q["placeholder"] = CLOTHING_SWAP_PLACEHOLDER
+    q["placeholder"] = (CLOTHING_SWAP_PLACEHOLDER if lang == "zh"
+                        else CLOTHING_SWAP_PLACEHOLDER_EN)
     q["page"] = 1
     q.pop("defaults", None)
     opts = q.get("options")
@@ -397,7 +420,7 @@ def normalize_clothing_swap_card(args: dict) -> dict:
     if _is_clothing_swap_question(args) or str(args.get("id") or "").strip() == CLOTHING_SWAP_QUESTION_ID:
         question = _skeleton_clothing_swap_question({
             "id": args.get("id") or CLOTHING_SWAP_QUESTION_ID,
-            "prompt": args.get("prompt") or CLOTHING_SWAP_PROMPT_FALLBACK,
+            "prompt": args.get("prompt") or "",
             "options": args.get("options") or [],
             "allow_other": True,
             "placeholder": CLOTHING_SWAP_PLACEHOLDER,

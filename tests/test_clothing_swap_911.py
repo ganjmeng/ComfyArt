@@ -127,6 +127,8 @@ def test_card_skeleton_is_one_live_upper_body_question():
     assert "Never ask gender, ethnicity, or angle" in instr
     assert 'id "upper_body_swap"' in instr
     assert "page_count 1" in instr
+    assert "in the UI language when the user typed no text" in instr
+    assert "in the language of the user when they typed text" in instr
     # Not a multi-card / gender path.
     assert "call ask_user twice" not in instr
     assert 'id "gender"' not in instr
@@ -276,6 +278,63 @@ def test_card_normalizer_locks_skeleton_not_option_contents():
     assert "recommended" in g["options"][0]
     assert g.get("placeholder") == "以上都不符合，我自己补充...（自填）"
     assert other.get("defaults") == ["A"]
+
+
+
+def test_ask_card_language_follows_ui_when_empty_and_user_when_typed():
+    """Generic rule: empty text -> UI language; typed text -> user's language."""
+    from ComfyArt.bot.local_llm import ask_card_lang, system_prompt_for_turn
+
+    assert ask_card_lang("", "zh") == "zh"
+    assert ask_card_lang("", "en") == "en"
+    assert ask_card_lang("换成第二张图的T恤", "en") == "zh"
+    assert ask_card_lang("swap the top", "zh") == "en"
+    # The English model-only provider line is not the user's typed text.
+    assert ask_card_lang("", "zh") == "zh"
+    prompt = system_prompt_for_turn("", "zh")
+    assert "Ask-card language for this turn is Chinese (zh)" in prompt
+    instr = _clothing_swap_instructions()
+    assert "in the UI language when the user typed no text" in instr
+    assert "in the language of the user when they typed text" in instr
+
+
+def test_clothing_swap_placeholder_follows_card_language():
+    """Free-text row wording follows the live question language, not a fixed zh string."""
+    from ComfyArt.api import bot_asks
+
+    zh = bot_asks.validate_spec({
+        "prompt": "这件衣服要怎么替换模特的上身？",
+        "options": [
+            {"id": "A", "label": "整套上身都换成它"},
+            {"id": "B", "label": "只换掉外面的背心"},
+        ],
+        "allow_other": True,
+    })
+    assert zh["questions"][0]["placeholder"] == "其它穿法，我来说呢..."
+
+    en = bot_asks.validate_spec({
+        "prompt": "How should I replace the upper-body garment?",
+        "options": [
+            {"id": "A", "label": "Replace the whole upper body with the blue graphic tee"},
+            {"id": "B", "label": "Replace only the black vest"},
+        ],
+        "allow_other": True,
+    })
+    assert en["questions"][0]["placeholder"] == "None of these fit, I'll write my own..."
+    assert en["questions"][0]["prompt"] == "How should I replace the upper-body garment?"
+
+    # Empty title + English options -> English fallback title and placeholder.
+    blank = bot_asks.validate_spec({
+        "id": "upper_body_swap",
+        "prompt": "",
+        "options": [
+            {"id": "A", "label": "Replace the whole upper body with the tee"},
+            {"id": "B", "label": "Layer the tee over the long sleeve"},
+        ],
+        "allow_other": True,
+    })
+    assert blank["questions"][0]["prompt"] == "How should I replace the upper-body garment?"
+    assert blank["questions"][0]["placeholder"] == "None of these fit, I'll write my own..."
 
 
 def test_pins_and_auto_models_unchanged():
