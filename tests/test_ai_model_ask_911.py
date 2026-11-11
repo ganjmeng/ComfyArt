@@ -191,12 +191,13 @@ def test_pins_and_auto_models_unchanged():
     assert AI_MODEL_EXAMPLES in entry
     assert AI_MODEL_FEATURED in entry
     assert hashlib.sha256(AUTO_MODELS.read_bytes()).hexdigest() == AUTO_MODELS_SHA256
-    # Shared #708 block is not edited; only ai-model may stop appending it later.
+    # Shared #708 block is not edited; ai-model and studio-model stop appending it.
     assert hashlib.sha256(_portrait_shots_708_const(SKILLS).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
-    # studio-model and clothing-swap still append the shared block.
-    for sid in ("studio-model", "clothing-swap"):
-        m = re.search(rf"\{{ id: '{sid}'.*?inputs:", SKILLS, re.S)
-        assert m and "+ PORTRAIT_SHOTS_708 +" in m.group(0), sid
+    # clothing-swap still appends the shared block. studio-model detaches 708 in #914.
+    m = re.search(r"\{ id: 'clothing-swap'.*?inputs:", SKILLS, re.S)
+    assert m and "+ PORTRAIT_SHOTS_708 +" in m.group(0)
+    sm = re.search(r"\{ id: 'studio-model'.*?inputs:", SKILLS, re.S)
+    assert sm and "+ PORTRAIT_SHOTS_708 +" not in sm.group(0)
 
 
 
@@ -251,14 +252,21 @@ def test_qa1_ai_model_has_no_portrait_shots_708_or_frontal_sentence():
 
 
 def test_qa2_other_708_skills_byte_identical_to_origin_main():
-    """QA (2): studio-model, clothing-swap, and any other main 708 appender stay byte-identical."""
+    """QA (2): remaining main 708 appenders stay byte-identical; studio-model detaches 708 in #914."""
     main = _main_skills()
-    appenders = [sid for sid in _708_appender_ids(main) if sid != "ai-model"]
-    assert "studio-model" in appenders
-    assert "clothing-swap" in appenders
+    # origin/main still appends 708 on studio-model until this second skill slice lands.
+    main_appenders = _708_appender_ids(main)
+    assert "studio-model" in main_appenders
+    assert "clothing-swap" in main_appenders
     # The shared constant itself is also unchanged.
     assert _portrait_shots_708_const(SKILLS) == _portrait_shots_708_const(main)
-    for sid in appenders:
+    branch_appenders = _708_appender_ids(SKILLS)
+    assert "studio-model" not in branch_appenders
+    assert "ai-model" not in branch_appenders
+    assert "+ PORTRAIT_SHOTS_708 +" not in _skill_entry(SKILLS, "studio-model")
+    for sid in main_appenders:
+        if sid in {"ai-model", "studio-model"}:
+            continue
         assert _skill_entry(SKILLS, sid) == _skill_entry(main, sid), sid
         assert "+ PORTRAIT_SHOTS_708 +" in _skill_entry(SKILLS, sid)
 
@@ -354,11 +362,12 @@ def test_apply_generate_fills_omitted_ai_model_skill_without_size_lock():
 
 
 def test_apply_generate_does_not_fill_skill_outside_ai_model_sessions(monkeypatch):
-    """A non-ai-model session (and a no-skill session) must not get skill filled.
+    """A no-skill session and a non-#911 session must not get skill filled.
 
-    The fill is not a generic skill_pin() hook: even if another skill were
-    pinned, it must stay unfilled. pose-fission keeps its pre-existing
-    OUTPUTS size fill only.
+    The fill is not a generic skill_pin() hook: even if clothing-swap were
+    pinned, it must stay unfilled. studio-model is the second #911 slice and
+    now fills skill= with no size, same as ai-model. pose-fission keeps its
+    pre-existing OUTPUTS size fill only.
     """
     from ComfyArt.api import auto_models
     from ComfyArt.bot.skill_output import apply_generate
@@ -373,9 +382,14 @@ def test_apply_generate_does_not_fill_skill_outside_ai_model_sessions(monkeypatc
     none = apply_generate({"prompt": "x"}, "")
     assert "skill" not in none
 
-    for sid in ("studio-model", "clothing-swap"):
-        out = apply_generate({"prompt": "x"}, sid)
-        assert "skill" not in out, sid
+    swap = apply_generate({"prompt": "x"}, "clothing-swap")
+    assert "skill" not in swap
+
+    # #914: studio-model fills skill= without inventing a size or using skill_pin.
+    studio = apply_generate({"prompt": "x"}, "studio-model")
+    assert studio["skill"] == "studio-model"
+    assert "width" not in studio and "height" not in studio
+    assert "size_lock" not in studio
 
     # Pre-existing OUTPUTS path: skill + size_lock, not the ai-model pin fill.
     pf = apply_generate({"prompt": "x"}, "pose-fission")

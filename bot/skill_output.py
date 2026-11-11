@@ -60,17 +60,21 @@ def apply_generate(args: dict | None, current_skill: str = "") -> dict:
         return args
     sid = named or resolve(current_skill)
     if not sid:
-        # #912: fill skill= only for an ai-model session when the call names
-        # no model. Do not invent a size, do not use a generic skill_pin hook,
-        # and do not fill when the call already names a model.
+        # #911 / #912: studio-model and ai-model are not in OUTPUTS (no
+        # declared canvas). Still pass skill= on generate_image so the call
+        # is attributable. Only in that skill's session, only when skill is
+        # omitted, and only when the call did not name an explicit model.
+        # Do not invent a size, do not use a generic skill_pin hook, and
+        # do not fill when the call already names a model.
         from ..api.auto_models import named_or_none
+        cur = str(current_skill or "").strip().casefold()
         if (
-            str(current_skill or "").strip().casefold() == "ai-model"
+            cur in {"studio-model", "ai-model"}
             and not raw
             and not named_or_none(args.get("model"))
             and not named_or_none(args.get("edit_model"))
         ):
-            args["skill"] = "ai-model"
+            args["skill"] = cur
         return args
     row = OUTPUTS[sid]
     if not named:
