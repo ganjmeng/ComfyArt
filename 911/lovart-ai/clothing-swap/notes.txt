@@ -1,0 +1,49 @@
+Lovart international-site generation audit: clothing swap
+
+Skill
+- Site: https://www.lovart.ai
+- Skill page: https://www.lovart.ai/skills/2oo2xnrezl6o
+- Exact title: AI Clothing Swap Skill
+- Exact author: xjcf7tzj8q (title and author confirmed on the skill detail page before use; no look-alike used)
+- Project URL: https://www.lovart.ai/canvas?projectId=2vntcvgcjv28
+
+Inputs and run
+- Image 1: /workspace/lovart-audit/clothing-swap/input/person-input.png (person)
+- Image 2: /workspace/lovart-audit/clothing-swap/input/garment-input.png (blue T-shirt)
+- Both attached directly to the chat (via + > Add files) in that order, plus the skill capsule.
+- Message typed: 把第二张图里的这件T恤换到第一张图这个人身上，其他不变，3:4竖版。不要加任何文字。
+- Note: the user-message bubble in the chat only displayed the skill/image chips, not the typed text; the skill nonetheless produced a 3:4 result and Lovart named the project "AI clothing swap with provided images".
+- No other prompt text. Exactly one image generated; no variants, upscale, retry or follow-up.
+
+Credits
+- Before: 1968
+- After: 1949
+- Spent: 19 (cap 200; balance stayed above 800). No top-up/settings changes.
+
+Q&A log
+Card A (single question; screenshots: question-card-before-answer.png, question-card-selected.png)
+- Pre-highlighted: none.
+- Question: 这件宝蓝T恤要怎么替换模特的上身？（影响最终穿搭效果）
+- Options: A 整套上身都换成它; B 换掉黑色背心，留白色长袖内搭; C 换掉白色长袖，留黑色背心; D [text-entry placeholder: 其它穿法，我来说明...]; also a Skip button
+- Chosen: A 整套上身都换成它 (first option; message did not answer it), then Submit.
+- No further cards appeared.
+
+Generation/result
+- On-screen model: GPT Image 2.6 Sunburst ("Generating images using GPT Image 2.6 Sunburst")
+- Output size: 1536 x 2048 (from downloaded original; 3:4)
+- Original: result-original.png from https://a.lovart.ai/artifacts/agent/BLb5cCQ8ExDPPeCN.png
+- Post-generation text from Lovart (not answered):
+换装完成 ✅
+
+输出：宝蓝印花T恤换装图（3:4 竖幅全身） https://a.lovart.ai/artifacts/agent/BLb5cCQ8ExDPPeCN.png
+
+本次执行要点
+
+上身整套替换：黑色无袖背心 + 白色长袖内搭全部去掉，只穿那件宝蓝圆领短袖T恤
+锁定项：宝蓝色调、宽松落肩版型、罗纹圆领、胸口长方形蓝白影像印花（眼睛图案 + 一排小人剪影）不改色不改款、不增减细节
+保留项：模特五官脸型肤色、表情神态、双手插兜的站姿、卡其阔腿裤 + 腰带 + 棕色皮鞋 + 迷彩帆布包 + 心形吊坠项链、原室内背景与原图光影方向
+
+如果实际出来印花位置或蓝色有色差，或者你想再看一版「T恤叠在白长袖外」的效果，告我一声我调参考强度重跑。
+
+Files
+- result-original.png (1536x2048), notes.txt, question-card-before-answer.png, question-card-selected.png, result-page.png
