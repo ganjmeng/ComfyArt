@@ -5,7 +5,7 @@ card are generated live from the uploaded garment, so they must not be copied
 into src/skills.ts. This file may name those words only to forbid them in the
 skill entry; they may appear in a validation chat's user message.
 
-No WaveSpeed call. $0 static. Pins and api/auto_models.json must stay unchanged.
+No WaveSpeed call. $0 static. studio-model pins stay unchanged. api/auto_models.json may differ from origin/main only in skills.ai-model.
 """
 from __future__ import annotations
 
@@ -18,8 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = (ROOT / "src/skills.ts").read_text(encoding="utf-8")
 AUTO_MODELS = ROOT / "api/auto_models.json"
 
-# Locked to origin/main 33d28eab5 (same bytes as PR #912's lock).
-AUTO_MODELS_SHA256 = "776c7ff035d679ade4cde30633ccd421244d91bf6798b557aed268ed30986532"
+# Locked to origin/main 33d28eab5 (same bytes as PR #912's lock), except skills.ai-model.
 PORTRAIT_SHOTS_708_CONST_SHA256 = "97edb7c18215e4a283b86633908872f3b3c4146d9bb748d71c0d3510798cfc8b"
 
 STUDIO_EXAMPLES = "examples: ex643('studio-model', [1, 2], '9ca3c35db7868e9fe73fb98bf85058c8fa2e048e')"
@@ -328,7 +327,7 @@ def test_studio_model_skill_stays_unpinned_auto_flare_edit():
 
     skills = json.loads(AUTO_MODELS.read_text(encoding="utf-8")).get("skills") or {}
     assert "studio-model" not in skills
-    assert hashlib.sha256(AUTO_MODELS.read_bytes()).hexdigest() == AUTO_MODELS_SHA256
+    # ai-model may be pinned (#915); studio-model must not be.
 
     args = {
         "prompt": "on-body studio still",
@@ -477,21 +476,42 @@ def test_pins_and_auto_models_unchanged():
     ours_tail = entry[entry.find("category:"):]
     main_tail = main_entry[main_entry.find("category:"):]
     assert ours_tail == main_tail
-    assert hashlib.sha256(AUTO_MODELS.read_bytes()).hexdigest() == AUTO_MODELS_SHA256
-    main_auto = subprocess.check_output(
-        ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:api/auto_models.json"]
+    import json
+    ours_auto = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))
+    main_auto = json.loads(
+        subprocess.check_output(
+            ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:api/auto_models.json"],
+            text=True,
+            encoding="utf-8",
+        )
     )
-    assert AUTO_MODELS.read_bytes() == main_auto
+    assert ours_auto["features"] == main_auto["features"]
+    assert ours_auto.get("_comment") == main_auto.get("_comment")
+    ours_skills = dict(ours_auto.get("skills") or {})
+    main_skills = dict(main_auto.get("skills") or {})
+    ours_skills.pop("ai-model", None)
+    main_skills.pop("ai-model", None)
+    assert ours_skills == main_skills, "only skills.ai-model may differ from the locked Auto table"
+    assert "studio-model" not in (ours_auto.get("skills") or {})
 
 
-def test_ai_model_matches_landed_912_on_origin_main():
-    """#914 stacks on current main (90c1413a / #912); ai-model stays byte-identical to that tip."""
+def test_ai_model_differs_from_origin_main_only_by_sunburst_rule5():
+    """#915 restores the Rule 5 Sunburst clause; everything else in the ai-model entry stays."""
     landed = subprocess.check_output(
         ["git", "-C", str(ROOT), "show", "origin/main:src/skills.ts"],
         text=True,
         encoding="utf-8",
     )
-    assert _skill_entry(SKILLS, "ai-model") == _skill_entry(landed, "ai-model")
+    ours = _skill_entry(SKILLS, "ai-model")
+    main = _skill_entry(landed, "ai-model")
+    old = 'pass skill: "ai-model" and shape ids in refs on every generate_image call.'
+    new = (
+        'pass skill: "ai-model" and shape ids in refs on every generate_image call '
+        "(the skill runs on its registered model, GPT Image 2.6 Sunburst)."
+    )
+    assert old in main and new not in main
+    assert new in ours
+    assert ours == main.replace(old, new, 1)
     # The pre-#912 main pin used by the 708 / clothing-swap lock is a different tree.
     assert _skill_entry(SKILLS, "ai-model") != _skill_entry(_main_skills(), "ai-model")
 
