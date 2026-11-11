@@ -321,6 +321,69 @@ def test_ask_card_language_follows_ui_when_empty_and_user_when_typed():
     assert "in the language of the user when they typed text" in instr
 
 
+
+def test_empty_text_card_skip_and_submit_follow_ui_locale_table():
+    """(1) Empty text: skip/submit wording comes from the UI-language table, not a hardcoded string."""
+    chat = (ROOT / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
+    card = chat.split("function QuestionCard")[1].split("function Ask(")[0]
+    assert "t('chatMessage.skip')" in card
+    assert "t('chatMessage.submit')" in card
+    # The zh/en labels live in the locale table; the component does not hardcode them.
+    assert "跳过" not in chat
+    assert "提交" not in chat
+    zh = json.loads((ROOT / "src/locales/zh.json").read_text(encoding="utf-8"))
+    en = json.loads((ROOT / "src/locales/en.json").read_text(encoding="utf-8"))
+    assert zh["chatMessage.skip"] == "跳过"
+    assert zh["chatMessage.submit"] == "提交"
+    assert en["chatMessage.skip"] == "Skip"
+    assert en["chatMessage.submit"] == "Submit"
+    # Options + free-text row also follow the live card language (empty text + zh UI -> zh).
+    from ComfyArt.api import bot_asks
+    zh_card = bot_asks.validate_spec({
+        "prompt": "这件衣服要怎么替换模特的上身？",
+        "options": [
+            {"id": "A", "label": "整体换成图2的蓝色T恤"},
+            {"id": "B", "label": "只把黑色背心换成图2蓝色T恤"},
+        ],
+        "allow_other": True,
+    })
+    assert zh_card["questions"][0]["placeholder"] == "其它穿法，我来说呢..."
+    assert zh_card["allow_skip"] is True
+
+
+def test_turn_path_passes_goal_text_not_provider_text_into_ask_card_lang():
+    """(2) Empty-text skill turn, UI zh: the turn path must use goal_text, not the English provider line."""
+    from ComfyArt.api.bot_send import compose_provider_text
+    from ComfyArt.bot.local_llm import ask_card_lang, system_prompt_for_turn
+    from ComfyArt.bot.providers import TurnRequest
+
+    provider = compose_provider_text("", skill_name="clothing-swap")
+    assert "Process the attached images with the selected skill." in provider
+
+    # Same construction as api/bot_turns.py: user_text is provider_text, goal_text is the typed text.
+    turn = TurnRequest(
+        chat_id="lock-911-ask-lang",
+        user_text=provider,
+        lang="zh",
+        goal_text="",
+    )
+    # Same call as bot/local_llm.py (the built-in turn path).
+    prompt = system_prompt_for_turn(turn.goal_text, turn.lang)
+    assert ask_card_lang(turn.goal_text, turn.lang) == "zh"
+    assert "Ask-card language for this turn is Chinese (zh)" in prompt
+
+    # Passing provider_text / user_text would wrongly switch the card to English.
+    assert ask_card_lang(turn.user_text, turn.lang) == "en"
+    wrong = system_prompt_for_turn(turn.user_text, turn.lang)
+    assert "Ask-card language for this turn is English (en)" in wrong
+
+    src = (ROOT / "bot/local_llm.py").read_text(encoding="utf-8")
+    assert "system_prompt_for_turn(turn.goal_text, turn.lang)" in src
+    assert "system_prompt_for_turn(turn.user_text" not in src
+    turns = (ROOT / "api/bot_turns.py").read_text(encoding="utf-8")
+    assert "goal_text=text," in turns
+
+
 def test_clothing_swap_placeholder_follows_card_language():
     """Free-text row wording follows the live question language, not a fixed zh string."""
     from ComfyArt.api import bot_asks
