@@ -1,0 +1,164 @@
+Lovart China (www.lovart.art) — 前后对比图 skill, beauty / 美妆 preset
+Project: https://www.lovart.art/canvas?projectId=2vme8blat2io
+Credits before: 1229 (homepage / skills page, before starting this project)
+Credits after project opened: 1223
+Credits after: 1173
+Stated image size: 1024 × 1024 (also stated as 1:1 方形)
+Did not download. Did not regenerate. Did not pay or top up.
+
+User message:
+「帮我做一张美妆前后对比图。同一个人、同一机位和光线，左边是素颜，右边是完整妆容，对比要在缩略图尺寸也能看出来。标签用 Before / After。除了标签不要加其他字，不要编品牌名和功效数字。」
+
+================================================================
+INTAKE CARD 1 — 提问 1/6 (all six questions on one scrollable card)
+Skip button was present; it was NOT used. Submitted with 提交.
+No option was pre-selected or marked recommended/default on any question
+(confirmed by screenshots before answering: all letter badges unselected,
+identical styling, no “推荐” / default highlight).
+
+Q1. 请描述对比主题和预期变化
+Type: free-text input (option A)
+Placeholder: 例如：咖啡渍清洁前后 / 护肤品使用前后 / 空间改造前后...
+Pre-selected / default / recommended: none (empty text field)
+Answer: 美妆前后对比图。同一个人、同一机位和光线，左边是素颜，右边是完整妆容，对比要在缩略图尺寸也能看出来。
+Source: from the message
+
+Q2. 你目前有哪些素材？
+Options:
+  A 有 Before 和 After 两张图
+  B 只有 Before 图
+  C 只有 After 图
+  D 都没有，需要 AI 生成
+  E 其它，请直接输入...
+Pre-selected / default / recommended: none
+Answer: D 都没有，需要 AI 生成
+Source: from the message (no source photos; need AI to generate both)
+
+Q3. 希望输出什么画幅/比例？
+Options:
+  A 1:1 方形
+  B 9:16 竖版
+  C 16:9 横版
+  D 其他
+  E 其它，请直接输入...
+Pre-selected / default / recommended: none
+Answer: A 1:1 方形
+Source: DEFAULT — no default highlighted, used first option
+  (aspect ratio / canvas format is not specified in the user message)
+
+Q4. 这张对比图的证据定位是什么？
+Options:
+  A 真实记录/授权证据
+  B 受控可视化示意
+  C 概念性演示
+  D 其它，请直接输入...
+Pre-selected / default / recommended: none
+Answer: A 真实记录/授权证据
+Source: DEFAULT — no default highlighted, used first option
+  (evidence mode is not specified in the user message)
+
+Q5. 希望交付形式是？
+Options:
+  A 干净对比图两张（可后期合成）
+  B 含排版设计的单张成品图
+  C 一组系列对比图
+  D 静态图 + 动态延伸
+  E 其它，请直接输入...
+Pre-selected / default / recommended: none
+Answer: B 含排版设计的单张成品图
+Source: from the message (final deliverable = a designed card with Before/After labels only)
+
+Q6. 文字层级和必须出现的文案
+Options:
+  A 无文字
+  B 仅 Before / After 标签
+  C 简洁说明文案
+  D 需要自定义文案
+  E 其它，请直接输入...
+Pre-selected / default / recommended: none
+Answer: B 仅 Before / After 标签
+Source: from the message (「标签用 Before / After。除了标签不要加其他字」)
+
+================================================================
+FOLLOW-UP CARD 2 — 提问 1/3 (three questions on one scrollable card)
+Asked in chat after the first card was submitted, before generation.
+Skip button was present; it was NOT used. Submitted with 提交.
+No option was pre-selected or marked recommended/default on any question
+(confirmed by screenshots before answering).
+
+Q7. 你未提供真实素材，因此无法做成“真实记录/授权证据”。我会按“受控可视化示意”处理，不标注为真实效果或临床证明，是否接受？
+Options:
+  A 接受，继续
+  B 我先提供真实素材
+  C 其他说明...
+Pre-selected / default / recommended: none
+Answer: A 接受，继续
+Source: from the message (no source photos; need AI to generate both — cannot provide real materials)
+
+Q8. 模特形象方向？
+Options:
+  A 亚洲年轻女性
+  B 欧美年轻女性
+  C 中性/无性别风格
+  D 其他，请描述...
+Pre-selected / default / recommended: none
+Answer: A 亚洲年轻女性
+Source: DEFAULT — no default highlighted, used first option
+  (casting / model look is not specified in the user message)
+
+Q9. 妆容风格？
+Options:
+  A 自然裸妆
+  B 精致日常妆
+  C 轻欧美妆
+  D 其他，请描述...
+Pre-selected / default / recommended: none
+Answer: B 精致日常妆
+Source: from the message (「右边是完整妆容」「对比要在缩略图尺寸也能看出来」.
+  自然裸妆 would conflict with a full-makeup contrast visible at thumbnail size.
+  精致日常妆 is the option that matches 完整妆容 without adding a style
+  preference such as 轻欧美妆 that the message does not mention.)
+
+================================================================
+POST-GENERATION TEXT (verbatim):
+
+已按你锁定的方向完成：1:1 方形、单张排版成品、亚洲年轻女性、精致日常妆，左素颜右上妆。
+
+说明：
+
+由于未提供真实素材，这张图按「受控可视化示意」处理，不标注为真实效果或临床证明。
+左右为同一人物、同一机位与光线，仅妆容变化。
+若需要动态延伸（如滑动 revealing 视频），可在确认这张静态图后再做。
+
+Result asset name shown on selection: 美妆前后对比成品图
+Stated size on selection chrome: 1024 × 1024
+
+================================================================
+SCREENSHOT PATHS (filenames in the capture set)
+
+credits-before-home.png          homepage, 1229 credits
+credits-before.png               skills modal for 前后对比图, 1229 credits
+credits-after.png                after generation, 1173 credits (same frame as zoomed.png)
+qa-01-theme.png                  Q1 before answering
+qa-02-source.png                 Q2 before answering
+qa-03-aspect.png                 Q3 before answering (no default)
+qa-04-evidence.png               Q4 before answering (no default)
+qa-05-delivery.png               Q5 before answering
+qa-06-text.png                   Q6 before answering
+qa-viewport-top.png              intake card viewport 1/6, no selections
+qa-viewport-bottom.png           intake card viewport 6/6, no selections
+qa-filled-top.png                intake card filled (Q1–Q2)
+qa-filled-bottom.png             intake card filled (Q6)
+qa-07-evidence-followup.png      Q7 before answering
+qa-08-casting.png                Q8 before answering (no default)
+qa-09-makeup-style.png           Q9 before answering
+qa-followup-viewport-top.png     follow-up card top, no selections
+qa-followup-viewport-bottom.png  follow-up card bottom, no selections
+qa-followup-filled-top.png       follow-up filled (Q7–Q8)
+qa-followup-filled-bottom.png    follow-up filled (Q8–Q9)
+qa-followup-submitted.png        follow-up answers submitted, “输出中...”
+post-gen-text.png                Lovart post-generation text
+canvas-full.png                  full canvas: two state portraits + labeled 1:1 card
+canvas-selected-1024.png         labeled result selected, size 1024 × 1024
+zoomed.png                       labeled result selected and zoomed to fill viewport
+qa-transcript.txt                this file
