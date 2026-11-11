@@ -129,3 +129,114 @@ def test_output_lock_line_follows_reference_card():
     assert "width=1024 height=1280 ratio=4:5" in run_hint("before-after", "make a card", COVER)
     assert "width=1920 height=1080 ratio=16:9" in run_hint("before-after", "ratio 16:9", COVER)
     assert "4:5" not in run_hint("game-art", "make it", COVER)
+
+
+def _put_input(name: str, data: bytes) -> str:
+    import folder_paths
+
+    root = Path(folder_paths.get_input_directory())
+    root.mkdir(parents=True, exist_ok=True)
+    (root / name).write_bytes(data)
+    return f"/api/view?filename={name}&type=input"
+
+
+def test_canvas_shape_ref_made_from_cover_webp_gives_4_5():
+    # #905 tech: a reference picked on the canvas reaches generate_image as a shape id in refs, with no
+    # chat attachment. Its bytes are resolved through the turn's Attached-line, so the rule still runs.
+    from ComfyArt.bot.ref_orientation import ref_image_bytes
+
+    src = _put_input("cover-905.webp", COVER)
+    text = f'Make it.\n[Attached image 1 "cover-905.webp": shape id shape:ba-ref \u2014 {src}. Use the shape id with edit tools or as a generation ref.]'
+    data = ref_image_bytes(["shape:ba-ref"], text, attachments=[])
+    assert data == COVER
+    out = apply_generate({"skill": "before-after", "refs": ["shape:ba-ref"], "width": 1920, "height": 1080, "ratio": "16:9"},
+                         "before-after", user_text=text, ref_image=data)
+    assert (out["width"], out["height"], out["ratio"]) == (1024, 1280, "4:5")
+
+
+def test_ref_url_is_read_directly_and_refs_beat_attachments():
+    from ComfyArt.bot.ref_orientation import ref_image_bytes
+
+    src = _put_input("cover-905b.webp", COVER)
+    other = base64.b64encode(_png(1600, 900)).decode()
+    assert ref_image_bytes([src], "", attachments=[{"media_type": "image/png", "data": other}]) == COVER
+    # an unresolvable shape id falls back to the chat attachment
+    assert ref_image_bytes(["shape:unknown"], "", attachments=[{"media_type": "image/png", "data": other}]) == _png(1600, 900)
+
+
+def test_chat_loop_resolves_reference_from_refs():
+    src = (ROOT / "bot/local_llm.py").read_text(encoding="utf-8")
+    assert 'ref_image_bytes(args.get("refs"), _ut, getattr(turn, "attachments", None))' in src
+
+
+def _landscape_att():
+    data = _png(1600, 900)
+    return data, [{"media_type": "image/png", "data": base64.b64encode(data).decode()}]
+
+
+def test_landscape_attachment_loses_to_cover_webp_shape_ref():
+    # (a) chat attachment is landscape, refs shape resolves to cover.webp → 4:5 (refs win)
+    from ComfyArt.bot.ref_orientation import ref_image_bytes
+
+    src = _put_input("cover-905-lock-a.webp", COVER)
+    landscape, attachments = _landscape_att()
+    assert reference_ratio(landscape) == "16:9"
+    text = (
+        f'Make it.\n[Attached image 1 "cover-905-lock-a.webp": shape id shape:ba-ref '
+        f'— {src}. Use the shape id with edit tools or as a generation ref.]'
+    )
+    data = ref_image_bytes(["shape:ba-ref"], text, attachments=attachments)
+    assert data == COVER
+    out = apply_generate(
+        {"skill": "before-after", "refs": ["shape:ba-ref"], "width": 1920, "height": 1080, "ratio": "16:9"},
+        "before-after", user_text=text, ref_image=data,
+    )
+    assert (out["width"], out["height"], out["ratio"]) == (1024, 1280, "4:5")
+
+
+def test_unreadable_shape_falls_back_to_attachment_orientation():
+    # (b) shape id missing from user_text, or src unreadable → attachment orientation (not another image)
+    from ComfyArt.bot.ref_orientation import ref_image_bytes
+
+    landscape, attachments = _landscape_att()
+    other_src = _put_input("cover-905-lock-b-other.webp", COVER)
+
+    # shape id not present in user_text
+    text_missing = "Make it. No attached shape line."
+    data = ref_image_bytes(["shape:missing"], text_missing, attachments=attachments)
+    assert data == landscape
+    out = apply_generate(
+        {"skill": "before-after", "refs": ["shape:missing"], "width": 1920, "height": 1080, "ratio": "16:9"},
+        "before-after", user_text=text_missing, ref_image=data,
+    )
+    assert (out["width"], out["height"], out["ratio"]) == (1920, 1080, "16:9")
+
+    # Attached-line points at a file that cannot be read; a later refs entry must not be used
+    text_bad = (
+        'Make it.\n[Attached image 1 "gone.webp": shape id shape:gone '
+        '— /api/view?filename=does-not-exist-905.webp&type=input. Use the shape id.]'
+    )
+    data = ref_image_bytes(["shape:gone", other_src], text_bad, attachments=attachments)
+    assert data == landscape
+    assert data != COVER
+    out = apply_generate(
+        {"skill": "before-after", "refs": ["shape:gone", other_src], "width": 1920, "height": 1080, "ratio": "16:9"},
+        "before-after", user_text=text_bad, ref_image=data,
+    )
+    assert (out["width"], out["height"], out["ratio"]) == (1920, 1080, "16:9")
+
+
+def test_unreadable_shape_and_no_attachment_defaults_to_16_9():
+    # (c) shape unreadable and no attachment → 16:9 default, no exception
+    from ComfyArt.bot.ref_orientation import ref_image_bytes
+
+    text = "Make it."
+    data = ref_image_bytes(["shape:gone"], text, attachments=[])
+    assert data is None
+    out = apply_generate(
+        {"skill": "before-after", "refs": ["shape:gone"], "width": 1920, "height": 1080, "ratio": "16:9"},
+        "before-after", user_text=text, ref_image=data,
+    )
+    assert (out["width"], out["height"], out["ratio"]) == (1920, 1080, "16:9")
+    data_none = ref_image_bytes(["shape:gone"], text, attachments=None)
+    assert data_none is None

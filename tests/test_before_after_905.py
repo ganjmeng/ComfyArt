@@ -21,13 +21,31 @@ def test_905_layout_two_separate_panels_never_split_face():
 
 def test_905_camera_follows_reference_angle_and_crop():
     ba = _instr("before-after")
-    assert "match its camera angle and crop exactly in both panels" in ba
+    assert "state in the prompt which features its frame includes and where it cuts, and copy that angle and crop exactly in both panels; never widen or tighten it" in ba
     assert "90 degree profile" not in ba
 
 
 def test_905_mild_before_flaw_and_verbatim_copy():
     ba = _instr("before-after")
-    assert "The before flaw is mild" in ba and "No bruises, injuries, rashes or wounds" in ba
+    # _instr reads the raw TS string, so the apostrophe is escaped as \'
+    rule2 = (
+        "2) Lock: the same person, the same camera, and the same light in both panels. "
+        "Only the effect changes (treatment, remodel, makeup, fitness). "
+        "Keep the user\\'s own words for what changes. "
+        "Describe both panels as finished states: Before is a slight, everyday version of that change, "
+        "still noticeable at thumbnail size (for skin: faint dullness or slight unevenness on otherwise natural skin). "
+        "After is a modest, realistic improvement of the same change, with natural texture kept."
+    )
+    assert rule2 in ba
+    assert "slight, everyday version of that change" in ba
+    assert "still noticeable at thumbnail size" in ba
+    assert "faint dullness or slight unevenness on otherwise natural skin" in ba
+    assert "modest, realistic improvement of the same change" in ba
+    assert "natural texture kept" in ba
+    assert "Keep the user\\'s own words for what changes" in ba
+    assert "under the eyes" not in ba.lower()
+    assert "forbidden words" not in ba
+    assert "Never use bruise" not in ba
     assert "use the typography the user specifies" in ba
     assert "use it word for word and add no other text" in ba
     assert "Never invent brand names, product names, percentages or efficacy numbers" in ba
@@ -127,7 +145,7 @@ def test_toast_layer_lifts_above_generator_panel():
 def test_rule6_and_headline_lines():
     from tests.test_skill_output_707 import _instr
     text = _instr("before-after")
-    assert "frontal, eye-level view (head-and-shoulders for faces/people)" in text
+    assert "Only when there is no reference: frontal, eye-level, head-and-shoulders, identical framing in both panels." in text
     assert "45 degree" not in text
     assert "never draw separator characters" in text
     assert "Typography: use the typography the user specifies; otherwise match the headline and label typography of the reference." in text

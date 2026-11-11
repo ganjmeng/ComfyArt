@@ -86,3 +86,50 @@ def first_image_bytes(attachments) -> bytes | None:
         except Exception:
             continue
     return None
+
+
+def _src_bytes(src: str) -> bytes | None:
+    """Bytes of a ComfyUI file reference (/api/view?... URL or 'name [input]'); None if not a local file."""
+    try:
+        from ..api.wavespeed import _local_path
+        path = _local_path(str(src or "").strip())
+    except Exception:
+        return None
+    if not path:
+        return None
+    try:
+        with open(path, "rb") as f:
+            return f.read()
+    except OSError:
+        return None
+
+
+def _shape_src(shape_id: str, text: str) -> str | None:
+    """src of a canvas shape from the turn's Attached-lines ('shape id <id> — <src>.')."""
+    import re
+
+    m = re.search(r"shape id " + re.escape(shape_id) + r" \u2014 (\S+?)\.?(?:\s|\]|$)", text or "")
+    return m.group(1) if m else None
+
+
+def ref_image_bytes(refs, user_text: str = "", attachments=None) -> bytes | None:
+    """Bytes of the reference a generate_image call will use.
+
+    Precedence (tech, #905): (1) the first image in `refs` — a URL/file is read directly; a canvas
+    shape id is resolved to bytes via the turn's Attached-line (`shape id <id> — <src>`) and
+    `_local_path`. (2) Only if that cannot be read, the first image attached to the chat turn.
+    (3) If neither is available, return None (apply_generate then defaults to 16:9). Never raise,
+    never use a later `refs` entry, and never use some other image.
+    """
+    first = refs[0] if isinstance(refs, list) and refs else refs
+    if isinstance(first, dict):
+        first = first.get("src") or first.get("url") or first.get("id")
+    if isinstance(first, str) and first.strip():
+        ref = first.strip()
+        data = _src_bytes(ref)
+        if data is None:
+            src = _shape_src(ref, user_text)
+            data = _src_bytes(src) if src else None
+        if data:
+            return data
+    return first_image_bytes(attachments)
