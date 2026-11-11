@@ -1,0 +1,21 @@
+#919 $0 clothing-swap STEP 1 capture on tip ef13a68108b81d6da59d0e6fdfa16b039832bc0f
+Official DeepSeek deepseek-flash, generate_image stubbed, 0 predicts.
+Inputs match Lovart pin 9967bf48 (person first, T-shirt second, no text, UI zh).
+Balance $29.848866 unchanged (no image generated).
+
+The clothing-swap normalizer no longer forces a skill-specific placeholder.
+The free-text row is the shared ChatMessage i18n t('chatMessage.other'):
+「其他（输入你的答案）…」 under zh UI.
+
+STEP 1 stopped at the first card WITHOUT answering. The capture API server
+is kept running so this exact pending ask stays answerable.
+No generate_image prompt / sha256 / routed model / size yet (awaiting product pick).
+
+Live card (verbatim, real ChatMessage.tsx render):
+- Title: 图1中人物现在穿的是白色长袖打底 + 黑色无袖针织背心。你想怎样替换上半身？
+- A: 整体换成图2的蓝色T恤
+- B: 蓝色T恤套在白色长袖外
+- C: 只把黑色背心换成蓝色T恤
+- D: 其他（输入你的答案）…
+- Footer: 跳过 / 提交
+Nothing preselected. User bubble: clothing-swap + image-1 + image-2, no injected line.

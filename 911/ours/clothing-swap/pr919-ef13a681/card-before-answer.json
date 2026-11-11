@@ -1,0 +1,61 @@
+[
+  {
+    "ask_id": "6e0abeeaca2f4b1c8da96e0c8756d8fe",
+    "kind": null,
+    "prompt": null,
+    "spec": {
+      "prompt": "图1中人物现在穿的是白色长袖打底 + 黑色无袖针织背心。你想怎样替换上半身？",
+      "options": [
+        {
+          "id": "replace_all",
+          "label": "整体换成图2的蓝色T恤",
+          "description": "去掉白色长袖和黑色背心，上半身只穿图2的蓝色印花T恤"
+        },
+        {
+          "id": "over_white",
+          "label": "蓝色T恤套在白色长袖外",
+          "description": "保留白色长袖打底，把图2的蓝色T恤穿在外面"
+        },
+        {
+          "id": "keep_vest",
+          "label": "只把黑色背心换成蓝色T恤",
+          "description": "保留白色长袖，用蓝色T恤替换黑色无袖背心"
+        }
+      ],
+      "min_selections": 1,
+      "max_selections": 1,
+      "allow_other": true,
+      "allow_skip": true,
+      "kind": "question",
+      "questions": [
+        {
+          "id": "upper_body_swap",
+          "prompt": "图1中人物现在穿的是白色长袖打底 + 黑色无袖针织背心。你想怎样替换上半身？",
+          "options": [
+            {
+              "id": "replace_all",
+              "label": "整体换成图2的蓝色T恤",
+              "description": "去掉白色长袖和黑色背心，上半身只穿图2的蓝色印花T恤"
+            },
+            {
+              "id": "over_white",
+              "label": "蓝色T恤套在白色长袖外",
+              "description": "保留白色长袖打底，把图2的蓝色T恤穿在外面"
+            },
+            {
+              "id": "keep_vest",
+              "label": "只把黑色背心换成蓝色T恤",
+              "description": "保留白色长袖，用蓝色T恤替换黑色无袖背心"
+            }
+          ],
+          "min_selections": 1,
+          "max_selections": 1,
+          "allow_other": true,
+          "page": 1
+        }
+      ],
+      "page_count": 1
+    },
+    "status": null
+  }
+]
