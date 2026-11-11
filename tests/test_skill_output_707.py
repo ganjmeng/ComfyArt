@@ -194,11 +194,24 @@ def test_game_art_template_requires_bottom_nav_only_on_home_and_list_pages():
 
 def test_game_art_template_locks_brand_tingsong_and_single_category():
     game = _instr("game-art")
-    assert "The game name must be exactly 「听松棋院」" in game
+    assert "The game title text is exactly 听松棋院 (four characters, no quotation marks or brackets drawn)" in game
+    assert "「听松棋院」" not in game
+    assert "「" not in game and "」" not in game
     assert (
         "Every player name and list title must be newly invented, Go-themed Chinese, "
         "sharing no characters with any text in the reference image."
-    ) in game
+    ) not in game
+    for required in (
+        "入门课堂", "实战演练", "每周精讲",
+        "小目守角要诀", "三三点入攻防", "劫争取舍心得", "厚势围空思路",
+        "青松听雨", "云山落墨", "竹林闲客", "白鹤临池",
+        "188手", "156手", "243手", "172手",
+        "2026年5月8日", "5月15日", "5月22日", "5月29日",
+        "学棋", "对局厅", "商店", "我的",
+        "card i uses list title i, player i, move count i, date i",
+        "no other text from the reference may remain",
+    ):
+        assert required in game, required
     for ch in ("弈", "奔", "秋"):
         assert ch not in game
     assert "All cards, thumbnails and copy stay in the single game category the user named (Go/围棋 by default)" in game
