@@ -33,8 +33,9 @@ ETHNICITY_LABELS = ("亚洲人", "白人", "黑人")
 SELLING_POINTS_PROMPT = "详情页这张图，你最想让买家第一眼看到什么？"
 ETHNICITY_PROMPT = "模特族裔："
 STUDIO_DIRECTION_PROMPT = "选一个棚拍方向继续生成："
+RECOMMENDED_SUFFIX = "（推荐）"
 OTHER_PLACEHOLDER = "以上都不符合，我自己补充...（自填）"
-DIRECTION_OTHER_PLACEHOLDER = "以上都不符合，我自己描述方向...（自填）"
+DIRECTION_OTHER_PLACEHOLDER = "以上都不符合，我自己描述方向…"
 
 NO_ANGLE_SENTENCE = (
     "Do not state head angle, gaze direction or subject position unless the "
@@ -163,24 +164,29 @@ def _clothing_swap_and_708_const_match_main(src: str, main: str) -> None:
     assert "+ PORTRAIT_SHOTS_708 +" in _skill_entry(src, "clothing-swap")
 
 
-def test_ask_card_structure_and_order_without_garment_options():
-    """Instructions lock question STRUCTURE and ORDER, not this garment's options."""
+def test_ask_card_is_two_steps_with_structure_and_order():
+    """Two ask_user steps: first card (gender, selling points, ethnicity), then direction."""
     instr = _studio_model_instructions()
-    assert "Before generating, call ask_user once with one card of four questions" in instr
-    assert "questions[]" in instr and "page_count 4" in instr
+    assert "call ask_user twice" in instr
+    assert "two steps" in instr
+    assert "Do not combine both cards into one ask_user call" in instr
+    # Not the previous single four-question card.
+    assert "one card of four questions" not in instr
+    assert "page_count 4" not in instr
+    assert "1 of 4" not in instr
+    assert "header 1 of 4" not in instr
     assert "allow_skip" in instr
-    assert "Put every question on page 1" in instr
-    assert "header 1 of 4" in instr
     assert "none are preselected" in instr or "Do not set defaults or recommended" in instr
-    assert "defaults or recommended" in instr
     for needle in ("recommended: true", '"recommended"', "defaults: ["):
         assert needle not in instr
-    assert "do not mark any option recommended" in instr
 
+    assert instr.index("First card") < instr.index("Second card")
     assert instr.index('id "gender"') < instr.index('id "selling_points"') < instr.index(
         'id "ethnicity"'
     ) < instr.index('id "studio_direction"')
-    # Every question is on page 1 (one scrollable card).
+    assert instr.index('id "gender"') < instr.index("Second card") < instr.index(
+        'id "studio_direction"'
+    )
     for qid in ("gender", "selling_points", "ethnicity", "studio_direction"):
         chunk_start = instr.index(f'id "{qid}"')
         chunk = instr[chunk_start:chunk_start + 80]
@@ -198,15 +204,49 @@ def test_ask_card_structure_and_order_without_garment_options():
 
     assert "selling points visible on the uploaded garment" in instr
     assert "never invent features that are not on the garment" in instr or "never invent garment features" in instr
-    assert "exactly 3 options, each stating a background + a pose" in instr or (
-        "each stating a background + a pose" in instr and "exactly 3" in instr
-    )
     assert OTHER_PLACEHOLDER in instr
-    assert DIRECTION_OTHER_PLACEHOLDER in instr
     assert "allow_other" in instr
-    assert "Skip / Next" in instr or "Skip" in instr
     assert "If the user skips or does not answer a question, use the user's own words" in instr
     assert "otherwise take the first option" in instr
+
+
+def test_first_card_option_count_follows_the_question():
+    """Gender is two chips + free text; do not pad a short question to four options."""
+    instr = _studio_model_instructions()
+    assert "Option counts must follow the question" in instr
+    assert "do not pad a short question to four chips" in instr
+    assert "gender is two options plus the free-text other row, not four options" in instr
+    assert "exactly A 女模特, B 男模特" in instr
+    assert "do not add a third or fourth chip" in instr
+    first = instr[instr.index("First card"):instr.index("Second card")]
+    assert "page_count 1" in first
+    assert "only Skip and Submit" in first
+    assert "questions[] of three questions" in first
+
+
+def test_direction_card_title_footer_recommended_and_other_row():
+    """Lovart direction card (review-assets 87857c35): exact title, no pager, Skip+Submit, (推荐) on A text only."""
+    instr = _studio_model_instructions()
+    second = instr[instr.index("Second card"):]
+    assert STUDIO_DIRECTION_PROMPT in second
+    assert f'prompt exactly "{STUDIO_DIRECTION_PROMPT}"' in second
+    assert "page_count 1" in second
+    assert "no 1 of N pager" in second
+    assert "only Skip and Submit" in second
+    assert "Skip / Next" not in second
+    assert DIRECTION_OTHER_PLACEHOLDER in second
+    assert f'the last option is "{DIRECTION_OTHER_PLACEHOLDER}"' in second
+    # Older wording with ASCII dots + （自填） must not remain.
+    assert "以上都不符合，我自己描述方向...（自填）" not in instr
+    assert RECOMMENDED_SUFFIX in second
+    assert "Append" in second and RECOMMENDED_SUFFIX in second and "option A" in second
+    assert "do not set recommended, defaults, or any preselect" in second
+    assert "each stating a background + a pose" in second
+    assert "framing words such as 半身 are optional" in second
+    assert "正面 is allowed" in second
+    assert "exactly 3 options" in second
+    # A page_count above 1 is forbidden on both cards.
+    assert "Do not set page_count above 1 on either card" in instr
 
 
 def test_default_output_is_one_image_and_prompt_rules():
