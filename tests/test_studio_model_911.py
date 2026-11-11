@@ -219,12 +219,19 @@ def test_first_card_option_count_follows_the_question():
     assert "exactly A 女模特, B 男模特" in instr
     assert "do not add a third or fourth chip" in instr
     first = instr[instr.index("First card"):instr.index("Second card")]
-    assert "page_count 1" in first
-    assert "only Skip and Submit" in first
-    assert "page_count 3" not in first
-    assert "header is 1 of 3" not in first
+    assert "page_count 3" in first
+    assert "header is 1 of 3" in first
+    assert "one scrollable card" in first
+    assert "page_count 3 only drives the header 1 of 3" in first
+    assert "Do not put these three questions on separate pages" in first
+    assert "do not paginate with 下一步 into 2 of 3 or 3 of 3" in first
+    assert "Skip + Next until the bottom" in first
+    assert "then Skip + Submit" in first
+    assert "page_count 1" not in first
     assert "questions[] of three questions" in first
-    assert "Do not set page_count above 1 on either card" in instr
+    assert "all page 1" in first
+    assert "Do not set page_count above 1 on either card" not in instr
+    assert "This is transitional" not in instr
 
 
 def test_direction_card_title_footer_recommended_and_other_row():
@@ -248,11 +255,13 @@ def test_direction_card_title_footer_recommended_and_other_row():
     assert "framing words such as 半身 are optional" in second
     assert "正面 is allowed" in second
     assert "exactly 3 options" in second
-    # Both cards stay page_count 1 (transitional; no 1 of N pager).
+    # First card is page_count 3 / header 1 of 3 on one scrollable page;
+    # the direction follow-up stays page_count 1 (no 1 of N pager).
     first = instr[instr.index("First card"):instr.index("Second card")]
-    assert "page_count 1" in first
-    assert "header is 1 of 3" not in first
-    assert "Do not set page_count above 1 on either card" in instr
+    assert "page_count 3" in first
+    assert "header is 1 of 3" in first
+    assert "one scrollable card" in first
+    assert "page_count 1" not in first
     assert "page_count 4" not in instr and "1 of 4" not in instr
 
 
@@ -298,8 +307,11 @@ def test_generate_image_requires_skill_studio_model():
 
     bare = apply_generate({"prompt": "cat", "ratio": "1:1"})
     assert bare == {"prompt": "cat", "ratio": "1:1"}
+    # After stacking #912, an ai-model session also fills skill= (no size).
     other = apply_generate({"prompt": "x"}, "ai-model")
-    assert other == {"prompt": "x"}
+    assert other == {"prompt": "x", "skill": "ai-model"}
+    swap = apply_generate({"prompt": "x"}, "clothing-swap")
+    assert swap == {"prompt": "x"}
 
     # Explicit model: do not auto-fill skill (and never invent or pin a model).
     explicit = apply_generate(
@@ -472,10 +484,16 @@ def test_pins_and_auto_models_unchanged():
     assert AUTO_MODELS.read_bytes() == main_auto
 
 
-def test_ai_model_untouched_on_this_branch():
-    """This PR branches from main, not #912; ai-model stays byte-identical."""
-    main = _main_skills()
-    assert _skill_entry(SKILLS, "ai-model") == _skill_entry(main, "ai-model")
+def test_ai_model_matches_landed_912_on_origin_main():
+    """#914 stacks on current main (90c1413a / #912); ai-model stays byte-identical to that tip."""
+    landed = subprocess.check_output(
+        ["git", "-C", str(ROOT), "show", "origin/main:src/skills.ts"],
+        text=True,
+        encoding="utf-8",
+    )
+    assert _skill_entry(SKILLS, "ai-model") == _skill_entry(landed, "ai-model")
+    # The pre-#912 main pin used by the 708 / clothing-swap lock is a different tree.
+    assert _skill_entry(SKILLS, "ai-model") != _skill_entry(_main_skills(), "ai-model")
 
 
 def test_mutation_red_then_green():
@@ -533,3 +551,18 @@ def test_mutation_red_then_green():
     _clothing_swap_and_708_const_match_main(SKILLS, main)
     assert _forbidden_hits(_skill_entry(SKILLS, "studio-model")) == []
     assert SKILLS == (ROOT / "src/skills.ts").read_text(encoding="utf-8")
+
+def test_first_card_reuses_912_same_page_scroll_renderer():
+    """First card page_count 3 + all questions on page 1 uses #912's scrollCard path."""
+    chat = (ROOT / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
+    css = (ROOT / "src/styles/shell.css").read_text(encoding="utf-8")
+    assert "const scrollCard = questions.length > 1 && new Set(questions.map((q) => q.page ?? 1)).size === 1" in chat
+    assert "const shown = scrollCard ? questions : onPage" in chat
+    assert "onScrollNext" in chat
+    assert "data-scroll-card={scrollCard || undefined}" in chat
+    assert ".ca-chat__dock .ca-q__body { max-height: none; }" in css
+    instr = _studio_model_instructions()
+    first = instr[instr.index("First card"):instr.index("Second card")]
+    assert "page_count 3" in first
+    assert "all page 1" in first
+    assert "one scrollable card" in first
