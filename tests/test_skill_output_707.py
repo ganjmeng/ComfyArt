@@ -27,9 +27,9 @@ def _instr(sid: str) -> str:
 
 
 def test_declared_sizes():
-    assert OUTPUTS["before-after"] == {"width": 1024, "height": 1280, "ratio": "4:5", "images": 1,
+    assert OUTPUTS["before-after"] == {"width": 1920, "height": 1080, "ratio": "16:9", "images": 1,
                                        "names": OUTPUTS["before-after"]["names"]}
-    assert (OUTPUTS["before-after"]["width"], OUTPUTS["before-after"]["height"], OUTPUTS["before-after"]["ratio"]) == (1024, 1280, "4:5")
+    assert (OUTPUTS["before-after"]["width"], OUTPUTS["before-after"]["height"], OUTPUTS["before-after"]["ratio"]) == (1920, 1080, "16:9")
     assert (OUTPUTS["pose-fission"]["width"], OUTPUTS["pose-fission"]["height"], OUTPUTS["pose-fission"]["ratio"]) == (1536, 2048, "3:4")
     assert (OUTPUTS["game-art"]["width"], OUTPUTS["game-art"]["height"], OUTPUTS["game-art"]["ratio"]) == (1024, 1824, "9:16")
     assert (OUTPUTS["linkedin-banner"]["width"], OUTPUTS["linkedin-banner"]["height"]) == (1584, 396)
@@ -54,7 +54,7 @@ def test_apply_fills_from_display_name_and_leaves_other_skills():
     custom = apply_generate({"skill": "poster", "prompt": "x", "ratio": "1:1"}, "LinkedIn Banner")
     assert custom == {"skill": "poster", "prompt": "x", "ratio": "1:1"}
     ba = apply_generate({"prompt": "x"}, "前后对比视觉")
-    assert ba["skill"] == "before-after" and (ba["width"], ba["height"], ba["ratio"], ba["count"]) == (1024, 1280, "4:5", 1)
+    assert ba["skill"] == "before-after" and (ba["width"], ba["height"], ba["ratio"], ba["count"]) == (1920, 1080, "16:9", 1)
     assert ba["size_lock"] is True
     game = apply_generate({"prompt": "key art", "skill": "game-art", "ratio": "1:1", "width": 1024, "height": 1024, "count": 3})
     assert (game["width"], game["height"], game["ratio"], game["count"]) == (1024, 1824, "9:16", 1)
@@ -83,8 +83,8 @@ def test_single_image_skip_does_not_touch_pose_or_the_first_generate():
 
 def test_templates_lock_layout_and_pixels():
     ba, pose, game, banner = (_instr(s) for s in ("before-after", "pose-fission", "game-art", "linkedin-banner"))
-    assert "ONE comparison card" in ba and "1024" in ba and "1280" in ba and "4:5" in ba
-    assert "separate portraits" in ba and "list_models" in ba
+    assert "ONE comparison card" in ba and "1920" in ba and "1080" in ba and "16:9" in ba and "4:5" not in ba
+    assert "separate images" in ba and "list_models" in ba
     assert "1536" in pose and "2048" in pose and "3:4" in pose and "different pose and angle" in pose
     assert "white backdrop" in pose and "one generate_image call per plan line" in pose
     assert "title bar" in game and "bottom navigation" in game and "1024" in game and "1824" in game
@@ -96,7 +96,7 @@ def test_templates_lock_layout_and_pixels():
         assert "you are a production" in text.lower()
         assert "lovart" not in text.lower() and "demo" not in text.lower()
     assert "Style: one 9:16 mobile game UI" in SKILLS
-    assert "Style: one 4:5 comparison card 1024x1280" in SKILLS
+    assert "Style: one 16:9 comparison card 1920x1080" in SKILLS and "1024x1280" not in SKILLS
     assert "1584x396" in AGENT_GUIDE and "1024x1824" in AGENT_GUIDE
     hint = run_hint("LinkedIn Banner")
     assert "width=1584" in hint and "height=396" in hint and "exactly once" in hint

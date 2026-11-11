@@ -225,9 +225,11 @@ async def bot_send(request: web.Request) -> web.Response:
     context = str(body.get("context") or "").strip()
     # #364: Review default ON — flag steers Done post-image 审图思考 in AGENT_GUIDE
     review_on = get_setting("bot-enable-review") is not False
+    from ..bot.ref_orientation import first_image_bytes
     provider_text = send_core.compose_provider_text(
         text, skill_name=skill_name, memory=str(body.get("memory") or ""),
-        lines=[*lines, *([context] if context else [])], review=review_on)
+        lines=[*lines, *([context] if context else [])], review=review_on,
+        ref_image=first_image_bytes(attachments) if skill_name else None)
     lang = str(body.get("lang") or "")
     # #388: turn run_mode (interactive|unattended) — distinct from chat auto|ask
     turn_run_mode = str(body.get("run_mode") or "interactive")

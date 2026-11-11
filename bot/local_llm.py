@@ -1946,7 +1946,9 @@ class LocalLlmProvider(AgentProvider):
                 # so multi-shot calls differ by angle and a repeated placeholder does not look identical.
                 from .shot_plan import bind_generate
                 from .skill_output import apply_generate
-                args = apply_generate(args, current_skill)
+                from .ref_orientation import first_image_bytes
+                args = apply_generate(args, current_skill, user_text=getattr(turn, "user_text", "") or "",
+                                      ref_image=first_image_bytes(getattr(turn, "attachments", None)))
                 preview, early_refuse = bind_generate(run, args, consume=False)
                 if not early_refuse:
                     args = preview

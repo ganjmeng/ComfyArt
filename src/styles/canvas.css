@@ -519,3 +519,8 @@ html[lang="en"] .ca-angle__chip { font-size: 11px; letter-spacing: -0.04em; }
 .ca-trim__handle { position: absolute; top: 0; bottom: 0; width: 12px; margin-left: -2px; border-radius: 8px 0 0 8px; background: var(--ca-strong); cursor: ew-resize; touch-action: none; }
 .ca-trim__handle[data-end] { margin-left: -10px; border-radius: 0 8px 8px 0; }
 .ca-trim__handle::after { content: ""; position: absolute; left: 5px; top: 16px; bottom: 16px; width: 2px; border-radius: 1px; background: var(--ca-float); }
+
+/* #905: tldraw toasts live inside .tlui-layout (z 300, its own stacking context), so the
+   generator panel (.ca-gen, z 301) covered the toast close button on wide 16:9 cards. While a
+   toast is showing, lift the layout above the panel; toast position is unchanged. */
+.tlui-layout:has(.tlui-toast__viewport > *) { z-index: 302; }

@@ -99,11 +99,12 @@ async def prepare_attachments(refs: list[dict], kits: list[dict], docs: list[dic
 
 
 def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
-                          lines: list[str] = (), review: bool | None = None) -> str:
+                          lines: list[str] = (), review: bool | None = None,
+                          ref_image: bytes | None = None) -> str:
     provider_text = text or "Look at the attached images and tell me what you see."
     if skill_name:
         from ..bot.skill_output import run_hint
-        hint = run_hint(skill_name)
+        hint = run_hint(skill_name, text or "", ref_image)
         provider_text = (
             f"Use the ComfyArt skill {skill_name!r} for this task: first call "
             f"the comfyart MCP tool skill with action='read' and "

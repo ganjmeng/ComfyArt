@@ -35,7 +35,7 @@ pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("index.html")), rea
 
 # Declared skill pixels. The pictures are solid local fixtures, not layouts and not supplier files.
 SKILLS = (
-    ("before-after", 1024, 1280, "4:5", (176, 48, 48)),
+    ("before-after", 1920, 1080, "16:9", (176, 48, 48)),
     ("pose-fission", 1536, 2048, "3:4", (36, 96, 168)),
     ("game-art", 1024, 1824, "9:16", (32, 128, 72)),
     ("linkedin-banner", 1584, 396, "4:1", (168, 120, 36)),
@@ -303,6 +303,10 @@ async def _case(page, mock_ws, skill, width, height, ratio, rgb, match: bool):
         assert "没有通过" in text, (skill, text)
         assert f"{wrong[0]}×{wrong[1]}" in text and f"{width}×{height}" in text
         assert await page.locator(".tl-image").count() == 0
+        # #905: with the error toast showing, the generator panel input and send button stay clickable.
+        assert await page.get_by_role("button", name="关闭").count() > 0
+        await page.locator(".ca-gen__prompt").click(trial=True, timeout=5000)
+        await page.locator(".ca-gen__send").click(trial=True, timeout=5000)
         await _close_toasts(page)
         await page.screenshot(path=str(SHOTS / f"{skill}-refused.png"))
 

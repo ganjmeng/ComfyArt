@@ -232,7 +232,7 @@ def test_hidden_size_allowlist_only_covers_qwen_image_20():
 
 @pytest.mark.parametrize("skill,w,h", [
     ("linkedin-banner", 1584, 396),
-    ("before-after", 1024, 1280),
+    ("before-after", 1920, 1080),
     ("game-art", 1024, 1824),
 ])
 def test_relay_exact_skills_with_refs_submit_qwen_edit_size(relay, skill, w, h):
@@ -418,7 +418,7 @@ def test_relay_every_auto_models_pin_is_honoured_with_refs(relay, monkeypatch):
 
 
 @pytest.mark.parametrize("skill,w,h,size", [
-    ("before-after", 1024, 1280, "1024*1280"),
+    ("before-after", 1920, 1080, "1920*1080"),
     ("game-art", 1024, 1824, "1024*1824"),
     ("linkedin-banner", 1584, 396, "1584*396"),
 ])
@@ -494,10 +494,10 @@ def test_relay_before_after_uses_exact_size_not_flare(relay):
     sent = SENT[-1][1]
     assert sent["model"] == QWEN and sent.get("model") != FLARE
     assert sent["size_lock"] is True and sent["size_candidates"] == [QWEN]
-    assert sent["width"] == 1024 and sent["height"] == 1280
+    assert sent["width"] == 1920 and sent["height"] == 1080
     assert out["model_choice"]["model"] == QWEN
     assert out["model_choice"]["category"] == "skill_size"
-    assert out["provider_submit"] == {"size": "1024*1280"}
+    assert out["provider_submit"] == {"size": "1920*1080"}
 
 
 def test_size_lock_model_submits_without_joining_the_dropdown():
