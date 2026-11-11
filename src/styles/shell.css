@@ -826,7 +826,8 @@ span.arti-mascot { cursor: default; pointer-events: none; }
 
 /* #763: pending question card docks directly above the composer (same width); bottom gap clears the 29px Arti mascot */
 .ca-chat__dock { margin: 0 12px 30px; box-sizing: border-box; align-self: stretch; flex: none; display: flex; flex-direction: column; gap: 8px; max-height: 55%; min-height: 0; }
-.ca-chat__dock .ca-q { box-sizing: border-box; overflow: auto; padding: 16px 8px; gap: 10px; border-radius: 16px; --ca-opt-h: 36px; --ca-opt-gap: 4px; }
+.ca-chat__dock .ca-q { box-sizing: border-box; overflow: hidden; padding: 16px 8px; gap: 10px; border-radius: 16px; --ca-opt-h: 36px; --ca-opt-gap: 4px; }
+.ca-chat__dock .ca-q__body { max-height: none; }
 .ca-chat__dock .ca-q__head, .ca-chat__dock .ca-q__prompt, .ca-chat__dock .ca-q__foot { padding: 0 8px; }
 .ca-chat__dock .ca-q__opt { box-sizing: border-box; padding: 0 8px; }
 .ca-chat__dock .ca-q__opt[data-on] .ca-q__letter { color: var(--ca-letter-fg); background: var(--ca-letter); }

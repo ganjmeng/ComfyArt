@@ -100,9 +100,18 @@ def test_ask_card_has_three_questions_in_order_with_verbatim_options_and_no_defa
         positions = [instr.index(lab) for lab in labels]
         assert positions == sorted(positions), labels
 
+    # One scrollable card: every question stays on page 1; page_count 3 is 1 of 3 chrome only.
+    assert "one scrollable card" in instr
+    assert "header 1 of 3" in instr
+    assert "Do not put questions on separate pages" in instr
+    assert "do not paginate with 下一步" in instr
+    assert "page 2" not in instr and 'page 3,' not in instr
+    assert instr.count("page 1") >= 3
+
     # Skip / Next and allow_other (D/C 其他 is the other row, not a fourth chip).
     assert "allow_other" in instr
     assert "Skip / Next" in instr or "Skip" in instr
+    assert "Skip / Submit" in instr
     assert "换装" in instr and "换背景" in instr and "高清放大" in instr
     assert "only the user's words plus the card answers" in instr
     assert "Do not invent a lens, outfit, makeup" in instr
@@ -130,7 +139,7 @@ def test_lovart_card_spec_validates_without_defaults():
                 "options": opts(*Q2_LABELS),
                 "allow_other": True,
                 "placeholder": Q2_OTHER,
-                "page": 2,
+                "page": 1,
             },
             {
                 "id": "output",
@@ -138,7 +147,7 @@ def test_lovart_card_spec_validates_without_defaults():
                 "options": opts(*Q3_LABELS),
                 "allow_other": True,
                 "placeholder": Q3_OTHER,
-                "page": 3,
+                "page": 1,
             },
         ],
         "page_count": 3,
@@ -147,7 +156,7 @@ def test_lovart_card_spec_validates_without_defaults():
     assert "defaults" not in spec
     assert len(spec["questions"]) == 3
     assert [q["id"] for q in spec["questions"]] == ["look", "backdrop", "output"]
-    assert [q["page"] for q in spec["questions"]] == [1, 2, 3]
+    assert [q["page"] for q in spec["questions"]] == [1, 1, 1]
     assert spec["page_count"] == 3
     assert spec["allow_skip"] is True
     for q, labels, other in (
@@ -253,3 +262,17 @@ def test_qa3_ai_model_asks_card_before_generating():
     assert "page_count 3" in instr
     assert NO_ANGLE_SENTENCE in instr
     assert "only the user's words plus the card answers" in instr
+
+
+def test_ask_card_renderer_lists_shared_page_questions_in_one_scrollable_card():
+    """All questions on one page + page_count > 1 → one scrollable card; multi-page path stays intact."""
+    chat = (ROOT / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
+    assert "const scrollCard = questions.length > 1 && new Set(questions.map((q) => q.page ?? 1)).size === 1" in chat
+    assert "const shown = scrollCard ? questions : onPage" in chat
+    assert "onScrollNext" in chat
+    assert "atEnd" in chat
+    # Existing multi-page Next / last-page Submit path is still in source (pose-fission etc.).
+    assert "const showPager = pageCount > 1" in chat
+    assert "const isLast = page >= pageCount" in chat
+    assert "const onNext = () => { if (!pageOk) return; go(page + 1) }" in chat
+    assert "disabled={page >= pageCount || (page >= furthest && !pageOk)}" in chat

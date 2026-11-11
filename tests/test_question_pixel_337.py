@@ -107,7 +107,8 @@ def test_letter_tokens_340_lock() -> None:
 
 def test_multi_block_page_chrome() -> None:
     """#340 Scope B: questions[] → multiple .ca-q__block + pager + mid-page Next."""
-    assert "onPage.map((q) => (" in CHAT
+    assert "shown.map((q) => (" in CHAT
+    assert "const shown = scrollCard ? questions : onPage" in CHAT
     assert 'className="ca-q__block"' in CHAT
     assert "showPager" in CHAT and "ca-q__page" in CHAT
     assert "chatMessage.next" in CHAT
