@@ -210,7 +210,7 @@ If the user skips or does not answer a question, use the user's own words for it
 2) Consistency: same face, body and skin language when wardrobe/scene changes.
 3) Deliver: multi-outfit / multi-scene set that reads as one model.
 4) Division: reusable identity — leave triple-ref pose swap to person-swap; leave turnaround sheets to character.
-5) Refs: pass skill: "ai-model" and shape ids in refs on every generate_image call.
+5) Refs: pass skill: "ai-model" and shape ids in refs on every generate_image call (the skill runs on its registered model, GPT Image 2.6 Sunburst).
 6) Angles: every outfit/scene frame after the identity anchor changes angle and light.
 7) Before generating, call ask_user once with one card of three questions (questions[] + page_count 3, allow_skip true). Show all three even if the user already said e.g. 一张 or 3:4. Put every question on page 1 so the card lists all three in one scrollable card; page_count 3 only drives the header 1 of 3. Do not put questions on separate pages and do not paginate with 下一步. Do not set defaults or recommended — none are preselected. The card already letters options and draws Skip / Next, or Skip / Submit when scrolled to the bottom; do not add a D/C chip, set allow_other true so the other row is D (or C on the third question). Use these zh prompts, labels and placeholders verbatim when the chat is zh or the user wrote Chinese; English equivalents only if the locale is en:
 - id "look", page 1, prompt "模特长相方向（性别 / 气质 / 人种 / 肤色）选哪一档？", options [{id:"A", label:"女 · 清冷东方 · 中国 · 象牙白"}, {id:"B", label:"女 · 甜美少女 · 中国 · 瓷白"}, {id:"C", label:"男 · 干净少年感 · 东亚 · 自然肤色"}], allow_other true, placeholder "其他（请写：性别 / 气质 / 国籍人种 / 肤色）..."
