@@ -235,8 +235,7 @@ def test_card_normalizer_locks_skeleton_not_option_contents():
     assert q["id"] == "upper_body_swap"
     assert q["prompt"] == live_prompt  # live title kept (garment-specific)
     assert q["allow_other"] is True
-    assert q["placeholder"] == "其它穿法，我来说呢..."
-    assert q["placeholder"] != "以上都不符合，我自己补充...（自填）"
+    assert not q.get("placeholder")
     assert legacy["allow_skip"] is True
     assert legacy["page_count"] == 1
     assert [o["label"] for o in q["options"]] == [o["label"] for o in live_opts]
@@ -274,7 +273,6 @@ def test_card_normalizer_locks_skeleton_not_option_contents():
     q2 = messy["questions"][0]
     assert q2["id"] == "upper_body_swap"
     assert q2["prompt"] == live_prompt
-    assert q2["placeholder"] == "其它穿法，我来说呢..."
     assert [o["label"] for o in q2["options"]] == [o["label"] for o in live_opts]
     assert messy["page_count"] == 1
     assert "defaults" not in q2
@@ -300,7 +298,6 @@ def test_card_normalizer_locks_skeleton_not_option_contents():
     assert g["prompt"] == "由哪种性别的模特上身？"
     assert g["options"][0]["label"] == "女模特"
     assert "recommended" in g["options"][0]
-    assert g.get("placeholder") == "以上都不符合，我自己补充...（自填）"
     assert other.get("defaults") == ["A"]
 
 
@@ -338,8 +335,8 @@ def test_empty_text_card_skip_and_submit_follow_ui_locale_table():
     assert zh["chatMessage.submit"] == "提交"
     assert en["chatMessage.skip"] == "Skip"
     assert en["chatMessage.submit"] == "Submit"
-    # Skip/submit stay UI i18n; the clothing-swap free-text row is the gold
-    # skill-specific placeholder (see test_clothing_swap_free_text_row_uses_gold_placeholder).
+    # Free-text row is not hardcoded here; wording comes from the UI i18n table
+    # (see test_clothing_swap_free_text_row_uses_shared_ui_i18n).
     from ComfyArt.api import bot_asks
     zh_card = bot_asks.validate_spec({
         "prompt": "这件衣服要怎么替换模特的上身？",
@@ -349,7 +346,7 @@ def test_empty_text_card_skip_and_submit_follow_ui_locale_table():
         ],
         "allow_other": True,
     })
-    assert zh_card["questions"][0].get("placeholder") == "其它穿法，我来说呢..."
+    assert not zh_card["questions"][0].get("placeholder")
     assert zh_card["questions"][0]["allow_other"] is True
     assert zh_card["allow_skip"] is True
 
@@ -387,37 +384,30 @@ def test_turn_path_passes_goal_text_not_provider_text_into_ask_card_lang():
     assert "goal_text=text," in turns
 
 
-def test_clothing_swap_free_text_row_uses_gold_placeholder():
-    """Other-row text is the clothing-swap gold placeholder, not shared UI i18n."""
+def test_clothing_swap_free_text_row_uses_shared_ui_i18n():
+    """(a)(b) Other-row text is the shared ChatMessage i18n, not a skill-specific constant."""
     from ComfyArt.api import bot_asks
 
-    gold = "其它穿法，我来说呢..."
-    assert bot_asks.CLOTHING_SWAP_PLACEHOLDER == gold
-    assert "…" not in gold  # ASCII "...", not a unicode ellipsis
-    assert gold.endswith("...")
-
     chat = (ROOT / "src/ui/ChatMessage.tsx").read_text(encoding="utf-8")
-    # UI still prefers an explicit placeholder over t('chatMessage.other').
+    # Choice cards (options + allow_other) use this fallback when placeholder is absent.
     assert "placeholder={q.placeholder || t('chatMessage.other')}" in chat
     zh_i18n = json.loads((ROOT / "src/locales/zh.json").read_text(encoding="utf-8"))
     en_i18n = json.loads((ROOT / "src/locales/en.json").read_text(encoding="utf-8"))
     zh_other = zh_i18n["chatMessage.other"]
     en_other = en_i18n["chatMessage.other"]
-    # Shared i18n stays the generic fallback for other cards; clothing-swap must not use it.
     assert zh_other == "其他（输入你的答案）…"
     assert en_other == "Other (type your answer)..."
-    assert gold != zh_other
-    assert gold not in zh_other
-    assert gold not in en_other
+    assert any("\u3400" <= ch <= "\u9fff" for ch in zh_other)
+    assert not any("\u3400" <= ch <= "\u9fff" for ch in en_other)
+    # Must not regress to the unreviewed typo wording.
+    assert "其它穿法，我来说呢" not in zh_other
+    assert "其它穿法，我来说呢" not in en_other
 
+    # Normalizer must not hardcode a placeholder; UI then renders t('chatMessage.other').
     src = (ROOT / "api/bot_asks.py").read_text(encoding="utf-8")
-    assert "CLOTHING_SWAP_PLACEHOLDER" in src
-    assert gold in src
-    # No new Lovart-labelled string in src/; the gold wording lives in api/bot_asks.py.
-    skills = (ROOT / "src/skills.ts").read_text(encoding="utf-8")
-    assert gold not in skills
+    assert "CLOTHING_SWAP_PLACEHOLDER" not in src
+    assert "其它穿法，我来说呢" not in src
 
-    stale = "以上都不符合，我自己补充...（自填）"
     zh = bot_asks.validate_spec({
         "prompt": "这件衣服要怎么替换模特的上身？",
         "options": [
@@ -425,10 +415,10 @@ def test_clothing_swap_free_text_row_uses_gold_placeholder():
             {"id": "B", "label": "只换掉外面的背心"},
         ],
         "allow_other": True,
-        "placeholder": stale,
+        "placeholder": "其它穿法，我来说呢...",
     })
     assert zh["questions"][0]["allow_other"] is True
-    assert zh["questions"][0].get("placeholder") == gold
+    assert not zh["questions"][0].get("placeholder")
 
     en = bot_asks.validate_spec({
         "prompt": "How should I replace the upper-body garment?",
@@ -439,11 +429,11 @@ def test_clothing_swap_free_text_row_uses_gold_placeholder():
         "allow_other": True,
         "placeholder": "None of these fit, I'll write my own...",
     })
-    assert en["questions"][0].get("placeholder") == gold
+    assert not en["questions"][0].get("placeholder")
     assert en["questions"][0]["prompt"] == "How should I replace the upper-body garment?"
     assert en["questions"][0]["allow_other"] is True
 
-    # Empty title + English options -> English fallback title, gold other-row.
+    # Empty title + English options -> English fallback title, still no placeholder.
     blank = bot_asks.validate_spec({
         "id": "upper_body_swap",
         "prompt": "",
@@ -454,7 +444,7 @@ def test_clothing_swap_free_text_row_uses_gold_placeholder():
         "allow_other": True,
     })
     assert blank["questions"][0]["prompt"] == "How should I replace the upper-body garment?"
-    assert blank["questions"][0].get("placeholder") == gold
+    assert not blank["questions"][0].get("placeholder")
     assert blank["questions"][0]["allow_other"] is True
 
 
