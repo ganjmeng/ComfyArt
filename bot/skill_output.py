@@ -60,6 +60,17 @@ def apply_generate(args: dict | None, current_skill: str = "") -> dict:
         return args
     sid = named or resolve(current_skill)
     if not sid:
+        # #912: fill skill= only for an ai-model session when the call names
+        # no model. Do not invent a size, do not use a generic skill_pin hook,
+        # and do not fill when the call already names a model.
+        from ..api.auto_models import named_or_none
+        if (
+            str(current_skill or "").strip().casefold() == "ai-model"
+            and not raw
+            and not named_or_none(args.get("model"))
+            and not named_or_none(args.get("edit_model"))
+        ):
+            args["skill"] = "ai-model"
         return args
     row = OUTPUTS[sid]
     if not named:
