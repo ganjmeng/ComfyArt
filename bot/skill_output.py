@@ -60,6 +60,13 @@ def apply_generate(args: dict | None, current_skill: str = "") -> dict:
         return args
     sid = named or resolve(current_skill)
     if not sid:
+        # A pinned skill that is not in OUTPUTS still needs skill= on the call
+        # so the registered model pin applies. Do not invent a canvas size.
+        pin_sid = str(current_skill or "").strip()
+        if pin_sid and not raw:
+            from ..api.auto_models import skill_pin
+            if skill_pin(pin_sid):
+                args["skill"] = pin_sid
         return args
     row = OUTPUTS[sid]
     if not named:

@@ -10,6 +10,13 @@
    "fallback": "google/nano-banana-2.1/edit",
    "zh": "pose-fission 技能固定用 Nano Banana Pro 编辑（2K），同人同衣同景换姿态",
    "en": "the pose-fission skill is pinned to Nano Banana Pro edit at 2K for same-person, same-scene pose changes"
+  },
+  "ai-model": {
+   "feature": "text_to_image",
+   "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+   "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+   "zh": "ai-model 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+   "en": "the ai-model skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
   }
  },
  "features": {
