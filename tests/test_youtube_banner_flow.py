@@ -220,16 +220,20 @@ def test_stage_request_bodies(relay, stage, clause, refs):
         assert '"Loomi Studio"' in sent["prompt"]
     from ComfyArt.api.auto_models import skill_pin
     if skill_pin("youtube-channel-banner"):
-        # After #922: Sunburst (edit with a ref), ratio-only 2k fill -> 2048x1152.
+        # After #922 (main 30ade316): Sunburst (edit with a ref), ratio-only 2k: aspect_ratio + resolution,
+        # no width/height on the page args (Sunburst takes no size).
         if refs:
             assert sent["edit_model"] == SUNBURST_EDIT
         else:
             assert sent["model"] == SUNBURST_T2I and "edit_model" not in sent
         assert sent.get("edit_resolution") == "2k"
-    assert (sent["width"], sent["height"]) == (2048, 1152)
+        assert "width" not in sent and "height" not in sent
+    else:
+        assert (sent["width"], sent["height"]) == (2048, 1152)
     model = sent.get("edit_model") or (SUNBURST_EDIT if refs else SUNBURST_T2I)
     model = model if model in (SUNBURST_T2I, SUNBURST_EDIT) else SUNBURST_T2I
-    inputs = {"prompt": sent["prompt"], "width": sent["width"], "height": sent["height"], "ratio": sent["ratio"],
+    inputs = {"prompt": sent["prompt"], "ratio": sent["ratio"],
+              **({"width": sent["width"], "height": sent["height"]} if "width" in sent else {}),
               **({"resolution": sent["edit_resolution"]} if sent.get("edit_resolution") else {})}
     body = asyncio.run(wavespeed.build_payload(None, _schema(model), inputs, model))
     assert body["aspect_ratio"] == "16:9"
