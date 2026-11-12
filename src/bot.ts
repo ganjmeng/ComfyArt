@@ -127,6 +127,7 @@ export const TOOL_LABELS: Record<string, string> = {
   edit_elements: t('imageToolbar.editElements'),
   create_mockup: t('mockup.title'),
   place_design: t('mockup.design'),
+  compose_banner_text: t('bot.composeBannerText'),
   image_to_3d: t('imageToolbar.imageTo3d'),
   wait_generation: t('bot.waitForResults'),
   place_html: t('bot.placeWebPage'),

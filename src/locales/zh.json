@@ -204,6 +204,7 @@
   "bot.agentListLoading": "正在加载 Agent 列表，请稍候",
   "bot.askYou": "向你提问",
   "bot.checkStatus": "查看状态",
+  "bot.composeBannerText": "排版横幅文字",
   "bot.createArtboard": "创建画板",
   "bot.createPpt": "制作 PPT",
   "bot.deleteElements": "删除元素",

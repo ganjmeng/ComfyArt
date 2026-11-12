@@ -178,6 +178,7 @@ CORE_MCP_TOOLS = [
     "edit_elements",
     "create_mockup",
     "place_design",
+    "compose_banner_text",
     "image_to_3d",
     "wait_generation",
     "place_html",
