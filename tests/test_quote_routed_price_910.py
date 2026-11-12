@@ -17,6 +17,7 @@ import aiohttp
 import pytest
 
 from ComfyArt.api import gif_image, wavespeed
+from ComfyArt.api.auto_models import skill_pin
 from ComfyArt.api.mcp_tools import canvas
 from ComfyArt.bot.plan_quote import build_quote
 
@@ -48,6 +49,10 @@ def _mock_price(inputs: dict, model: str) -> float:
     if model.endswith("/text-to-image"):
         n = 0
     return _live(model, str(inputs.get("quality") or "medium"), str(inputs.get("resolution") or "1k"), min(n, 2))["price"]
+
+
+async def _no_models(feature):
+    return []
 
 
 @pytest.fixture
@@ -123,14 +128,55 @@ async def test_price_api_down_estimate_counts_input_images(cat, monkeypatch, mod
 # ---- the quote card: routed model + its references ----
 
 def test_quote_route_counts_refs_and_base_like_the_page():
-    model, inputs = canvas.quote_route("generate_image", {"prompt": "p", "refs": ["shape:a"], "ratio": "3:4", "skill": "studio-model"})
-    assert model == wavespeed.load_config()["features"]["image_edit"]["default"]
-    assert inputs["images"] == ["ref-1"] and inputs["ratio"] == "3:4"
-    assert "refs" not in inputs
     _m, both = canvas.quote_route("generate_image", {"prompt": "p", "refs": ["shape:a"], "base": "shape:b"})
     assert both["images"] == ["ref-1", "ref-2"]
     t2i, plain = canvas.quote_route("generate_image", {"prompt": "a cat"})
     assert t2i and "images" not in plain
+
+
+async def test_studio_model_skill_quotes_the_pinned_edit_model_price():
+    """#920 pin (main 88cbd358): studio-model with a reference is quoted as its skills pin, not the
+    image_edit feature default. The expected model is read from api/auto_models.json (not hardcoded)."""
+    pinned = skill_pin("studio-model")["edit_model"]
+    args = {"prompt": "p", "refs": ["shape:a"], "ratio": "3:4", "skill": "studio-model"}
+    model, inputs = canvas.quote_route("generate_image", args)
+    assert model == pinned
+    assert inputs["images"] == ["ref-1"] and inputs["ratio"] == "3:4"
+    assert "refs" not in inputs
+    expected = _mock_price(inputs, pinned)
+
+    async def pricer(m, inp):
+        return _mock_price(inp, m)
+
+    quote = await build_quote(
+        [{"text": "棚拍", "tool": "generate_image", "model": "", "arguments": args}],
+        "zh", threshold=0.0, pricer=pricer, models_for=_no_models, router=canvas.quote_route)
+    assert quote is not None and not quote.lines[0].approx
+    assert quote.lines[0].amount == expected
+    if pinned in (FLARE_EDIT, SUNBURST_EDIT):
+        assert expected == 0.065
+
+
+async def test_no_skill_quotes_the_feature_default_flare_edit_price():
+    """With no skill, one reference routes to the image_edit feature default
+    (openai/gpt-image-2.6-flare/edit) and is priced as that model."""
+    default = wavespeed.load_config()["features"]["image_edit"]["default"]
+    assert default == FLARE_EDIT
+    args = {"prompt": "p", "refs": ["shape:a"]}
+    model, inputs = canvas.quote_route("generate_image", args)
+    assert model == default
+    assert inputs["images"] == ["ref-1"]
+    expected = _mock_price(inputs, default)
+    assert expected == 0.065
+
+    async def pricer(m, inp):
+        return _mock_price(inp, m)
+
+    quote = await build_quote(
+        [{"text": "修图", "tool": "generate_image", "model": "", "arguments": args}],
+        "zh", threshold=0.0, pricer=pricer, models_for=_no_models, router=canvas.quote_route)
+    assert quote is not None and not quote.lines[0].approx
+    assert quote.lines[0].amount == expected
 
 
 async def test_auto_card_names_and_prices_the_routed_edit_model_not_the_dearest():

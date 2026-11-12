@@ -1443,14 +1443,14 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
             return float(price), "quote"
     except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
         pass
-    if model in gif_image.GIF_T2I or model in gif_image.GIF_EDIT:
-        # Published 2.6 table when the price API is down. GIF uses the still cell; frames are not a multiplier.
-        # Unset quality/resolution are the schema defaults (medium / 1k), which #189 also leaves unpinned.
-        # #910: an edit adds $0.015 per input image (images + mask_image), not the catalog's one-image base_price.
-        n = len(priced.get("images") or []) + (1 if priced.get("mask_image") else 0)
-        stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"), n)
-        if stub is not None:
-            return float(stub), "estimate"
+    # Published GPT Image 2.6 / 2.5 table when the price API is down. GIF uses the still cell; frames are
+    # not a multiplier. Unset quality/resolution are the schema defaults (medium / 1k), which #189 also
+    # leaves unpinned. #910: an edit adds $0.015 per input image (images + mask_image), not the catalog's
+    # one-image base_price. documented_usd returns None for models with no lock table.
+    n = len(priced.get("images") or []) + (1 if priced.get("mask_image") else 0)
+    stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"), n)
+    if stub is not None:
+        return float(stub), "estimate"
     meta = (await catalog()).get(model) or {}
     base = base_price_of(model, meta)
     if model in DURATION_BILLED and isinstance(base, (int, float)) and not isinstance(base, bool) and priced.get("duration"):
