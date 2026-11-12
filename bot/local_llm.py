@@ -214,6 +214,7 @@ _STEP_LABELS: dict[str, tuple[str, str]] = {
     'edit_elements': ('编辑元素', 'Edit Elements'),
     'create_mockup': ('样机', 'Mockup'),
     'place_design': ('设计稿', 'Design'),
+    'compose_banner_text': ('排版横幅文字', 'Set banner text'),
     'image_to_3d': ('转 3D', 'Image to 3D'),
     'wait_generation': ('等待生成结果', 'Wait for results'),
     'place_html': ('放置网页', 'Place web page'),

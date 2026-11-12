@@ -438,10 +438,141 @@ def normalize_clothing_swap_card(args: dict) -> dict:
     return args
 
 
+# youtube-channel-banner (reference run review-assets d7672d03): two cards.
+# Card 1 (pager 1 of 3, all on page 1): delivery, banner text, brand assets.
+# Card 2 (pager 1 of 2): direction, how the final text is set.
+# Code enforces the card SKELETON: ids, titles, fixed option labels, free-text rows
+# and their placeholders, nothing preselected. Live options (the banner-text tiers
+# from the user's words, the three directions from the board) stay as generated.
+YT_SKILL = "youtube-channel-banner"
+YT_DELIVERY = {
+    "id": "yt_delivery",
+    "prompt": "这次横幅想怎么交付？（影响后续步骤与文字精度）",
+    "options": [
+        {"id": "A", "label": "先出三方向选择板，再做终稿"},
+        {"id": "B", "label": "直接出一张终稿，文字用精确排版渲染"},
+        {"id": "C", "label": "直接出一张终稿，文字由图像模型生成"},
+    ],
+    "placeholder": "其它想法（比如一次出多个方向终稿）...",
+}
+YT_BANNER_TEXT = {
+    "id": "yt_banner_text",
+    "prompt": "横幅上实际要出现哪些文字？",
+    "options": None,  # live: three tiers from the user's words, full text down to channel name only
+    "placeholder": "自己指定文案（含大小写、符号、换行）...",
+}
+YT_BRAND_ASSETS = {
+    "id": "yt_brand_assets",
+    "prompt": "有需要放进去的品牌资产吗？（Logo／头像／真人）",
+    "options": [
+        {"id": "A", "label": "没有，纯图形＋文字构成识别"},
+        {"id": "B", "label": "有 Logo／头像，我上传给你"},
+        {"id": "C", "label": "需要预留真人出镜位置"},
+    ],
+    "placeholder": "其它（比如指定参考图／配色）...",
+}
+YT_DIRECTION = {
+    "id": "yt_direction",
+    "prompt": "选哪个方向做 2560×1440 终稿？",
+    "options": None,  # live: directions A/B/C from the board, one-line description each
+    "placeholder": "想调整（说哪里改）或让我直接定...",
+}
+YT_TEXT_MODE = {
+    "id": "yt_text_mode",
+    "prompt": "终稿的文字怎么上？",
+    "options": [
+        {"id": "A", "label": "精确排版（推荐）"},
+        {"id": "B", "label": "图像模型直出"},
+    ],
+    "placeholder": "其它要求...",
+}
+YT_CARD_1 = (YT_DELIVERY, YT_BANNER_TEXT, YT_BRAND_ASSETS)
+YT_CARD_2 = (YT_DIRECTION, YT_TEXT_MODE)
+YT_RECOMMENDED = "（推荐）"
+_YT_LIVE_MAX = 3
+
+
+def _yt_match(raw: object, locked: dict) -> bool:
+    if not isinstance(raw, dict):
+        return False
+    qid = str(raw.get("id") or "").strip()
+    prompt = str(raw.get("prompt") or "").strip()
+    base = locked["prompt"].split("（")[0].rstrip("？?")
+    return qid == locked["id"] or (bool(prompt) and prompt.startswith(base))
+
+
+def _yt_live_options(raw_opts: object, *, one_recommended: bool) -> list:
+    opts = []
+    for o in raw_opts if isinstance(raw_opts, list) else []:
+        if not isinstance(o, dict):
+            continue
+        item = {k: v for k, v in o.items() if k != "recommended"}
+        opts.append(item)
+    opts = opts[:_YT_LIVE_MAX]
+    if one_recommended:
+        seen = False
+        for item in opts:
+            label = str(item.get("label") or "")
+            if YT_RECOMMENDED in label:
+                if seen:
+                    item["label"] = label.replace(YT_RECOMMENDED, "").strip()
+                seen = True
+    return opts
+
+
+def _yt_question(raw: dict, locked: dict) -> dict:
+    q = {
+        "id": locked["id"],
+        "prompt": locked["prompt"],
+        "allow_other": True,
+        "placeholder": locked["placeholder"],
+        "page": 1,
+    }
+    if locked["options"] is not None:
+        q["options"] = [dict(o) for o in locked["options"]]
+    else:
+        q["options"] = _yt_live_options(raw.get("options"), one_recommended=locked is YT_DIRECTION)
+    for k in ("min_selections", "max_selections"):
+        if k in raw:
+            q[k] = raw[k]
+    return q
+
+
+def normalize_youtube_banner_card(args: dict) -> dict:
+    """Force the youtube-channel-banner card skeletons (review-assets d7672d03)."""
+    args = dict(args or {})
+    questions = args.get("questions")
+    if not isinstance(questions, list) or not questions:
+        legacy = {"id": args.get("id"), "prompt": args.get("prompt"), "options": args.get("options")}
+        if any(_yt_match(legacy, lk) for lk in (*YT_CARD_1, *YT_CARD_2)):
+            questions = [legacy]
+        else:
+            return args
+    for card, pages in ((YT_CARD_1, 3), (YT_CARD_2, 2)):
+        if not any(_yt_match(q, lk) for q in questions for lk in card):
+            continue
+        kept = []
+        for lk in card:
+            raw = next((q for q in questions if _yt_match(q, lk)), None)
+            if raw is not None:
+                kept.append(_yt_question(raw, lk))
+        args["questions"] = kept
+        args["page_count"] = pages
+        args["allow_skip"] = True
+        args["allow_other"] = True
+        args["prompt"] = kept[0]["prompt"]
+        args["options"] = kept[0]["options"]
+        args.pop("defaults", None)
+        args.pop("id", None)
+        return args
+    return args
+
+
 def validate_spec(args: dict) -> dict:
     """Accept legacy single-question OR questions[] multi form."""
     args = normalize_clothing_swap_card(args)
     args = normalize_studio_direction_card(args)
+    args = normalize_youtube_banner_card(args)
     allow_skip = bool(args["allow_skip"]) if "allow_skip" in args else True
     raw_questions = args.get("questions")
     if raw_questions is not None:

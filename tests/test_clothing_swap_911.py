@@ -580,7 +580,8 @@ def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
     assert _all_skill_ids(SKILLS) == ids
     changed = []
     for sid in ids:
-        if sid == "clothing-swap":
+        # youtube-channel-banner: rewritten by the banner-flow PR; locked in tests/test_youtube_banner_flow.py.
+        if sid in ("clothing-swap", "youtube-channel-banner"):
             continue
         try:
             ours, base = _skill_entry(SKILLS, sid), _skill_entry(main, sid)

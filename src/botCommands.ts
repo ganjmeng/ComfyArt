@@ -6,7 +6,7 @@ import { generateAudio, imageTo3d, musicModels, viewsTo3d, voices } from './asse
 import { clampMusicSeconds, musicMissing } from './music'
 import { editElements } from './elements'
 import { bakeToImage, createMockup } from './mockup'
-import { api, popAgentCommand, pushAgentCommand } from './comfy'
+import { api, popAgentCommand, pushAgentCommand, type ImageRef } from './comfy'
 import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate, nearestRatio } from './generate'
@@ -15,7 +15,7 @@ import { GIF_STILL_REFUSAL, clampFrameCount, clampFrameMs, gifHasStill, gifModel
 import { svgModelId } from './svgFile'
 import { t, tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
-import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom, whenSubmitted } from './jobs'
+import { type ErrorSink, errorText, fileSrc, GAP, placeMedia, resultsAtom, toMedia, whenSubmitted } from './jobs'
 import { agentModels, IMAGE_MODELS, modelPrefsAtom, type ModelDef } from './models'
 import { pickSizeModel, SIZE_LOCK_REFUSED } from './sizeLockPref'
 import { modesFor } from './refModes'
@@ -366,6 +366,18 @@ const HANDLERS: Record<string, Handler> = {
       },
     })
     return args.bake ? { image: await bakeToImage(editor, editor.getShape<MockupShape>(shape.id as MockupShape['id'])!) } : { updated: shape.id }
+  },
+  // youtube-channel-banner 精确排版: the server composed the 2560×1440 final (compose_banner_text); place it.
+  place_banner: async (editor, args, _onError, chat) => {
+    const ref = args.image as ImageRef | undefined
+    if (!ref?.filename) throw new Error('image is required')
+    const media = await toMedia(ref, 'image')
+    const near = typeof args.near === 'string' && args.near ? editor.getShape(args.near as TLShapeId) : undefined
+    const b = near ? editor.getShapePageBounds(near) : undefined
+    const id = placeMedia(editor, media, String(args.name ?? 'YouTube banner'), b ? b.maxX + GAP : 0, b ? b.y : 0, b ? b.w : media.w / 2)
+    if (chat) placeInChatFrame(editor, id, chat)
+    editor.select(id)
+    return { id, url: media.src, pixels: `${media.w}x${media.h}` }
   },
   image_to_3d: (editor, args, onError) => started(editor, Array.isArray(args.views) && args.views.length
     ? viewsTo3d(editor, args.views.map((v: unknown) => imageOf(editor, v)), onError)
