@@ -640,6 +640,9 @@ def test_qa4_clothing_swap_drops_rule6_and_708_others_unchanged():
     for sid in ids:
         if sid == "clothing-swap":
             continue
+        # portrait-studio flow: rewritten by the portrait-studio flow PR; locked in tests/test_portrait_studio_flow.py.
+        if sid == "portrait-studio":
+            continue
         try:
             ours, base = _skill_entry(SKILLS, sid), _skill_entry(main, sid)
         except AssertionError:

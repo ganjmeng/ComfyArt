@@ -166,6 +166,8 @@ class TurnGuard:
     # #238: external CLIs only. The built-in agent counts steps in its own loop.
     external_steps: int = 0
     screenshots_sent: int = 0
+    # User's own words for ask-card language (same rule as ask_card_lang).
+    goal_text: str = ""
 
     def summary(self) -> str:
         counts: dict[str, int] = {}
@@ -222,7 +224,8 @@ def begin_turn(chat_id: str, *, text: str, provider_text: str, lang: str = "",
         lang=lang if lang in ("zh", "en") else _reply_lang(text),
         cap=requested_count(text) or DEFAULT_CAP,
         refs=product_refs(provider_text),
-        on_stop=on_stop)
+        on_stop=on_stop,
+        goal_text=text)
     TURNS[chat_id] = guard
     return guard
 
