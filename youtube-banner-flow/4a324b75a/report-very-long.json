@@ -1,0 +1,140 @@
+{
+ "width": 2560,
+ "height": 1440,
+ "base_size": [
+  2048,
+  1152
+ ],
+ "base_crop": null,
+ "scale": 0.48,
+ "wrapped": true,
+ "lines": [
+  {
+   "role": "channel",
+   "text": "Loomi Studio 创意工作室官方频道",
+   "px": 46,
+   "ink_bbox": [
+    824,
+    557,
+    1544,
+    602
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "channel",
+   "text": "Creative Workflow Lab International",
+   "px": 46,
+   "ink_bbox": [
+    822,
+    615,
+    1640,
+    654
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "channel",
+   "text": "Edition",
+   "px": 46,
+   "ink_bbox": [
+    824,
+    671,
+    981,
+    710
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "tagline",
+   "text": "AI 绘画教程 · 创意工作流 · Stable Diffusion / ComfyUI / Midjourney / Flux / Krea 全流程实",
+   "px": 22,
+   "ink_bbox": [
+    820,
+    726,
+    1728,
+    751
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "tagline",
+   "text": "战，从零基础到商业交付的完整课程体系",
+   "px": 22,
+   "ink_bbox": [
+    821,
+    756,
+    1215,
+    778
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "schedule",
+   "text": "每周二、周五晚上 8 点更新，周末不定期直播答疑，会",
+   "px": 37,
+   "ink_bbox": [
+    821,
+    799,
+    1707,
+    835
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "schedule",
+   "text": "员专属工作流模板每月更新一次（北京时间）",
+   "px": 37,
+   "ink_bbox": [
+    822,
+    844,
+    1535,
+    880
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "accent",
+   "text": "",
+   "px": 2,
+   "ink_bbox": [
+    822,
+    787,
+    918,
+    789
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  }
+ ],
+ "target_box": [
+  820,
+  610,
+  1740,
+  818
+ ],
+ "strict_core": [
+  642,
+  551,
+  1918,
+  889
+ ],
+ "hard_boundary": [
+  482,
+  509,
+  2078,
+  931
+ ],
+ "all_inside_strict_core": true,
+ "all_inside_hard_boundary": true,
+ "graphic_overlap": 0.0,
+ "text_area_clear": true,
+ "font": "ComfyArtBannerSansSC"
+}
