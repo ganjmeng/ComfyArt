@@ -818,6 +818,47 @@ def _resolution(options: list[str], long_side: int) -> str:
     return min(fits, key=px) if fits else max(options, key=px)
 
 
+def canvas_pixels(inputs: dict) -> tuple[int, int] | None:
+    """Pixel width and height from `width`+`height`, or from a size string such as 1536*2048 (also x/×)."""
+    try:
+        w, h = int(inputs.get("width")), int(inputs.get("height"))
+        if w > 0 and h > 0:
+            return w, h
+    except (TypeError, ValueError):
+        pass
+    size = inputs.get("size")
+    if not isinstance(size, str):
+        return None
+    for sep in ("*", "×", "x", "X"):
+        if sep in size:
+            left, right = size.split(sep, 1)
+            try:
+                w, h = int(left.strip()), int(right.strip())
+            except ValueError:
+                return None
+            return (w, h) if w > 0 and h > 0 else None
+    return None
+
+
+def resolution_from_inputs(inputs: dict, enum, default=None) -> str | None:
+    """The resolution build_payload will submit, and the one the quote must use.
+
+    An explicit `resolution` is snapped with `_pick` and wins over the size guess
+    (#708, including typo/nearest). Otherwise the long edge of canvas_pixels is
+    snapped with `_resolution`. None when neither applies (caller may apply default).
+    """
+    options = [str(v) for v in (enum or [])]
+    if not options:
+        return None
+    asked = inputs.get("resolution")
+    if asked is not None and str(asked) != "":
+        return _pick(options, asked, default)
+    pixels = canvas_pixels(inputs)
+    if pixels:
+        return _resolution(options, max(pixels))
+    return None
+
+
 MEDIA_FIELDS = ("video", "audio", "last_image")
 MEDIA_LISTS = ("reference_images", "reference_videos", "reference_audios")
 
@@ -1068,17 +1109,18 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
         if not path:
             raise WaveSpeedError("mask file not found", 400)
         payload["mask_image"] = await _upload(session, path, mask_to_white(_read(path)), f"mask-{uuid.uuid4().hex[:8]}.png")
-    w, h = inputs.get("width"), inputs.get("height")
-    if w and h:
+    pixels = canvas_pixels(inputs)
+    if pixels:
+        w, h = pixels
         if "size" in props and submits_size_field(props.get("size"), model):
             payload["size"] = _size_value(props["size"], int(w), int(h))
         if props.get("aspect_ratio", {}).get("enum"):
             payload["aspect_ratio"] = _nearest(props["aspect_ratio"]["enum"], w / h)
-        if props.get("resolution", {}).get("enum"):
-            payload["resolution"] = _resolution(props["resolution"]["enum"], max(int(w), int(h)))
-    if inputs.get("resolution") and str(inputs["resolution"]) in (props.get("resolution", {}).get("enum") or []):
-        payload["resolution"] = str(inputs["resolution"])  # #708: an explicit tier (skill pin) wins over the size guess
-    if not (w and h) and inputs.get("ratio") and props.get("aspect_ratio", {}).get("enum"):
+    res_enum = (props.get("resolution") or {}).get("enum")
+    tier = resolution_from_inputs(inputs, res_enum)
+    if tier:
+        payload["resolution"] = tier  # explicit in-enum value wins over the long-edge snap (#708)
+    if not pixels and inputs.get("ratio") and props.get("aspect_ratio", {}).get("enum"):
         a, b = str(inputs["ratio"]).split(":")
         payload["aspect_ratio"] = _nearest(props["aspect_ratio"]["enum"], float(a) / float(b))
     await _media_fields(session, props, inputs, payload)
@@ -1274,21 +1316,21 @@ def _submitted_tier(props: dict, inputs: dict, priced: dict) -> dict:
     out = dict(priced)
     if "duration" in out and (enum := (props.get("duration") or {}).get("enum")):
         out["duration"] = fit_duration(enum, out["duration"])  # #128
-    w, h = inputs.get("width"), inputs.get("height")
+    merged = {**inputs, **out}
+    pixels = canvas_pixels(merged)
     res_enum = (props.get("resolution") or {}).get("enum")
     ar_enum = (props.get("aspect_ratio") or {}).get("enum")
     if res_enum:
         res_default = (props.get("resolution") or {}).get("default")
-        if out.get("resolution"):
-            out["resolution"] = _pick(res_enum, out["resolution"], res_default)
-        elif w and h:
-            out["resolution"] = _resolution(res_enum, max(int(w), int(h)))
+        tier = resolution_from_inputs(merged, res_enum, res_default)
+        if tier:
+            out["resolution"] = tier
         elif res_default in res_enum:
             out["resolution"] = res_default  # not sent: WaveSpeed runs its schema default, so that is the tier
     if ar_enum:
         try:
-            if w and h:
-                out["aspect_ratio"] = _nearest(ar_enum, int(w) / int(h))
+            if pixels:
+                out["aspect_ratio"] = _nearest(ar_enum, pixels[0] / pixels[1])
             elif out.get("aspect_ratio") and ":" in str(out["aspect_ratio"]):
                 a, b = str(out["aspect_ratio"]).split(":")
                 out["aspect_ratio"] = _nearest(ar_enum, float(a) / float(b))

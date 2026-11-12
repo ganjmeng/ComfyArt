@@ -243,8 +243,8 @@ async def test_clothing_swap_quote_uses_resolution_tier_and_two_images():
 
     resolution 2k → list $0.13, charged $0.117 = 0.9 x (tier base + $0.015 x images).
     resolution 1k → list $0.08, charged $0.072 (locks both tier and image count).
-    size '1536*2048' alone, without a resolution field, must not be used to infer the 2k price
-    (price API 2026-11-12 08:50 Asia/Shanghai, /workspace/910-capture/price-probe-clothing-swap-2k.json).
+    size '1536*2048' alone (no width/height/resolution) is snapped by the same
+    resolution_from_inputs used in build_payload, so build_quote also quotes $0.117.
     """
     pinned = skill_pin("clothing-swap")["model"]
     cell = lambda res: gif_image.TABLE_26[("medium", res)]
@@ -306,13 +306,61 @@ async def test_clothing_swap_quote_uses_resolution_tier_and_two_images():
     assert seen[0][1]["resolution"] == "1k" and seen[0][1]["images"] == ["ref-1", "ref-2"]
     assert quote.lines[0].amount == 0.072
 
-    # --- size 1536*2048 alone must not infer 2k ---
+    # --- size 1536*2048 alone: same snap as build_payload → 2k, quote $0.117 ---
     size_only = args_of(size="1536*2048")
     assert "resolution" not in size_only and "width" not in size_only and "height" not in size_only
     model, inputs = canvas.quote_route("generate_image", size_only)
-    assert model == pinned and inputs.get("resolution") != "2k" and inputs.get("size") == "1536*2048"
+    assert model == pinned and inputs["resolution"] == "2k" and inputs.get("size") == "1536*2048"
     assert inputs["images"] == ["ref-1", "ref-2"]
+    assert wavespeed.resolution_from_inputs(size_only, ["1k", "2k", "4k"]) == "2k"
     quote, seen = await quoted(size_only)
-    assert seen[0][1].get("resolution") != "2k"
-    assert quote.lines[0].amount == 0.072  # 1k default + 2 images, not the 2k $0.117
-    assert gif_image.documented_usd(pinned, "medium", str(inputs.get("resolution") or "1k"), 2) == 0.08
+    assert seen[0][1]["resolution"] == "2k"
+    assert quote.lines[0].amount == 0.117
+
+
+async def test_clothing_swap_size_only_build_payload_submits_2k():
+    """Real build_payload (network stubbed: https images are passed through, no upload, $0)
+    for a clothing-swap call with only size=1536*2048 submits resolution=2k, matching the quote.
+    """
+    pinned = skill_pin("clothing-swap")["model"]
+    assert pinned == SUNBURST_EDIT
+    schema = wavespeed._schema(CATALOG[pinned])
+    enum = ((schema.get("properties") or {}).get("resolution") or {}).get("enum")
+    assert enum == ["1k", "2k", "4k"]
+    inputs = {
+        "prompt": "换装",
+        "size": "1536*2048",
+        "images": ["https://example.invalid/person.png", "https://example.invalid/garment.png"],
+        "quality": "medium",
+        "ratio": "3:4",
+    }
+    assert "width" not in inputs and "height" not in inputs and "resolution" not in inputs
+    payload = await wavespeed.build_payload(None, schema, inputs, pinned)
+    assert payload["resolution"] == "2k"
+    assert payload.get("aspect_ratio") == "3:4"
+    assert len(payload.get("images") or []) == 2
+    # Quote and payload share this function; no second snap.
+    assert wavespeed.resolution_from_inputs(inputs, enum) == payload["resolution"] == "2k"
+    routed_model, routed = canvas.quote_route(
+        "generate_image",
+        {"prompt": "换装", "skill": "clothing-swap", "refs": ["shape:person", "shape:garment"],
+         "ratio": "3:4", "quality": "medium", "size": "1536*2048"})
+    assert routed_model == pinned and routed["resolution"] == payload["resolution"] == "2k"
+
+
+def test_price_endpoint_ignores_size_string_endpoint_behavior_only():
+    """Endpoint behavior only — not the product quote or submit path.
+
+    WaveSpeed POST /api/v3/model/price with size=1536*2048 and no resolution
+    (recorded 2026-11-12 08:52:39-08:52:41 Asia/Shanghai, balance 29.731866
+    unchanged, /workspace/910-capture/price-probe-clothing-swap-2k.json) returns
+    the default 1k cell: 2 images list $0.08 / charged $0.072; no images $0.05 /
+    $0.045. The product path does not send that body: it snaps to 2k via
+    resolution_from_inputs before quote and submit.
+    """
+    assert _live(SUNBURST_EDIT, "medium", "1k", 2)["price"] == 0.08
+    assert _live(SUNBURST_EDIT, "medium", "1k", 2)["discounted_price"] == 0.072
+    assert _live(SUNBURST_EDIT, "medium", "1k", 0)["price"] == 0.05
+    assert _live(SUNBURST_EDIT, "medium", "1k", 0)["discounted_price"] == 0.045
+    assert wavespeed.resolution_from_inputs({"size": "1536*2048"}, ["1k", "2k", "4k"]) == "2k"
+    assert gif_image.documented_usd(SUNBURST_EDIT, "medium", "2k", 2) == 0.13
