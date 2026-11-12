@@ -6,7 +6,7 @@
  *  No skill ids are named here. 「详情」 keeps main's #484 edit page (openSkillEditor). */
 import { useRef, useState } from 'react'
 
-import { uploadSkillImage, isSkillMediaVideo, loc, loadFavourites, missingInputs, presetImage, recordSkillUse, skillAuthor, skillCover, skillCoverVideoHover, skillMeta, skillMetaLabel, skillDefaults, skillDescription, skillPreset, skillRunParams, skillShareUrl, skillMedia, selectedMedia, withTemplateInputs, recordTemplateUse, toggleFavourite, type SkillMediaItem, type Skill, type SkillPreset } from '../skills'
+import { uploadSkillImage, isSkillMediaVideo, loc, loadFavourites, missingInputs, presetImage, recordSkillUse, skillAuthor, skillCover, skillCoverVideoHover, skillMeta, skillMetaLabel, skillDefaults, skillDescription, skillPreset, skillRunParams, skillShareUrl, skillMedia, selectedMedia, withTemplateInputs, recordTemplateUse, unrecordTemplateUse, toggleFavourite, type SkillMediaItem, type Skill, type SkillPreset } from '../skills'
 import { newProject } from '../projects'
 import { BRAND } from '../brand'
 import { copyText } from '../clipboard'
@@ -153,7 +153,11 @@ export function SkillRunDialog({ skill: baseSkill, presetId, onClose, run = newP
     if (missing.length) { setTried(true); document.getElementById(`skill-run-${missing[0]}`)?.focus(); return }
     setRunError(false)
     recordSkillUse(skill.id)
-    try { run(skillRunParams(skill, values, preset)); if (preset) recordTemplateUse(skill.id, preset) } catch { setRunError(true) }
+    if (preset) recordTemplateUse(skill.id, preset)
+    try { run(skillRunParams(skill, values, preset)) } catch {
+      if (preset) unrecordTemplateUse(skill.id, preset)
+      setRunError(true)
+    }
   }
   useEscape(true, onClose)
   return (
