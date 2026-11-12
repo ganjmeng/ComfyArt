@@ -155,6 +155,8 @@ def test_locales_only_add_memory_retrieved_430():
         "toolPanel.reset", "toolPanel.useNow", "toolPanel.model", "toolPanel.mode", "toolPanel.faithful", "toolPanel.enhance", "toolPanel.resolution",
         # #423: 「已保存 N 条」 under the memory row
         "chatMessage.memorySavedCount",
+        # portrait-studio redo-one PR (stacked on #926): step labels for the three portrait-studio tools
+        "bot.portraitStudioPlan", "bot.portraitStudioDone", "bot.portraitStudioRedo",
         # #494: 技能页标签中文化、作者行「个人」，移除旧作者与浏览量文案
         "home.skillsFavourites", "home.skillsExplore", "home.skillsPersonal",
         "home.skillsAuthorPersonal", "home.skillsCommunity", "home.skillsViews",

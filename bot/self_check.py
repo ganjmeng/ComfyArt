@@ -147,6 +147,9 @@ def check(goal_text: str, blocks: list[dict], canvas_ids: Optional[set] = None) 
             text_out += 1
     rec = turn_result_from_blocks(blocks) or {"shapes": [], "failures": []}
     want = {"image": {"image"}, "video": {"video"}, "text": {"text"}}[goal.kind]
+    # portrait_studio_redo is in _SHAPE_TYPE as "image", so a redo's wait_generation
+    # node is already typed as an image here. Do not count a generic "shape" as an
+    # image (other skills / no skill must still fail when nothing is on the canvas).
     ids = [s["id"] for s in rec["shapes"] if s.get("type") in want]
     if canvas_ids is not None:
         ids = [i for i in ids if i in canvas_ids]

@@ -486,29 +486,59 @@ def test_self_check_still_reports_a_failed_set(lang, goal, warn):
 
 # --- untouched -----------------------------------------------------------------------------------
 
+def _git_bytes(rev: str, path: str) -> bytes:
+    return subprocess.run(["git", "show", f"{rev}:{path}"], cwd=ROOT, check=True, capture_output=True).stdout
+
+
 def _main_bytes(path: str) -> bytes:
-    return subprocess.run(["git", "show", f"{MAIN}:{path}"], cwd=ROOT, check=True, capture_output=True).stdout
+    return _git_bytes(MAIN, path)
 
 
 @pytest.mark.parametrize("path", ["api/auto_models.json", "api/skill_size.py", "api/curated_models.json",
-                                  "api/wavespeed_models.json", "bot/skill_output.py", "bot/self_check.py",
-                                  "api/portrait_studio.py"])
+                                  "api/wavespeed_models.json", "bot/skill_output.py"])
 def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_main_bytes(path)).hexdigest(), path
 
 
+# #927 versions of these two files, pinned by literal sha256 of the working-tree
+# bytes (no git-object lookup — the lock tip will not be on main after squash).
+PINNED_SHA256 = {
+    "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
+    "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
+}
+
+
+@pytest.mark.parametrize("path", ["api/portrait_studio.py", "bot/self_check.py"])
+def test_portrait_studio_and_self_check_match_pinned_sha256(path):
+    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == PINNED_SHA256[path], path
+
+
 # Locales are compared as JSON so a sibling skill can add its own keys. product-to-packaging
-# still adds none; youtube-channel-banner adds bot.composeBannerText only.
+# still adds none. Allowed extras only:
+# - youtube-channel-banner: bot.composeBannerText
+# - portrait-studio redo/follow-up (#927): bot.portraitStudioPlan / Done / Redo
 BANNER_LOCALE = {"zh": "排版横幅文字", "en": "Set banner text"}
+PORTRAIT_LOCALE = {
+    "zh": {
+        "bot.portraitStudioPlan": "形象照方案",
+        "bot.portraitStudioDone": "形象照小结",
+        "bot.portraitStudioRedo": "重做一张",
+    },
+    "en": {
+        "bot.portraitStudioPlan": "Portrait plan",
+        "bot.portraitStudioDone": "Portrait summary",
+        "bot.portraitStudioRedo": "Redo one image",
+    },
+}
 
 
 @pytest.mark.parametrize("path,lang", [("src/locales/zh.json", "zh"), ("src/locales/en.json", "en")])
-def test_locales_match_main_except_youtube_banner_compose_key(path, lang):
+def test_locales_match_main_except_banner_and_portrait_studio_keys(path, lang):
     ours = json.loads((ROOT / path).read_text(encoding="utf-8"))
     main = json.loads(_main_bytes(path))
     assert {k: main[k] for k in main} == {k: ours[k] for k in main}
     extra = {k: ours[k] for k in ours if k not in main}
-    assert extra == {"bot.composeBannerText": BANNER_LOCALE[lang]}
+    assert extra == {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang]}
 
 
 # --- question 3: live wording per letter, locked skeleton (Product, final) ----------------------
