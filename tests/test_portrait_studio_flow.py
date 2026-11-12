@@ -515,6 +515,8 @@ def test_shot_never_reaches_the_request_for_other_skills(relay, skill):
         args["skill"] = skill
     _run_turn("zh", [args])
     assert all("shot" not in a for _, a in SENT), (skill, SENT)
+    lines = list(ps.SHOT_LINE.values()) + list(ps.POSE_LINE.values())
+    assert not any(l in str(a.get("prompt", "")) for _, a in SENT for l in lines), (skill, SENT)
 
 # --- untouched -----------------------------------------------------------------------------------
 
