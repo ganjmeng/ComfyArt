@@ -487,13 +487,23 @@ EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN = {
     "en": "the youtube-channel-banner skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
 }
 
+EXPECTED_PORTRAIT_STUDIO_PIN = {
+    "feature": "image_edit",
+    "model": "openai/gpt-image-2.6-sunburst/edit",
+    "resolution": "2k",
+    "ratio": "3:4",
+    "zh": "portrait-studio 技能固定用 GPT Image 2.6 Sunburst 编辑（2K，3:4）",
+    "en": "the portrait-studio skill is pinned to GPT Image 2.6 Sunburst edit at 2K 3:4",
+}
+
 
 def test_pins_and_auto_models_unchanged():
     """Angela 07:27 lock: clothing-swap, studio-model, product-to-packaging
-    (Lovart e304e2fa7), cover-design-director (Lovart 98af4eee), and
-    youtube-channel-banner (Lovart d7672d03) are Sunburst pins; features
-    and every other skills entry stay byte-identical to MAIN_SHA. Skill-entry
-    assets in src/skills.ts stay unchanged.
+    (Lovart e304e2fa7), cover-design-director (Lovart 98af4eee),
+    youtube-channel-banner (Lovart d7672d03), and portrait-studio
+    (Lovart 7fc60c86) are Sunburst pins; features and every other skills
+    entry stay byte-identical to MAIN_SHA. Skill-entry assets in
+    src/skills.ts stay unchanged.
     """
     main_entry = _skill_entry(_main_skills(), "clothing-swap")
     entry = _skill_entry(SKILLS, "clothing-swap")
@@ -525,6 +535,11 @@ def test_pins_and_auto_models_unchanged():
     assert ours_auto["skills"]["youtube-channel-banner"] == EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN
     assert ours_auto["skills"]["youtube-channel-banner"]["model"] == "openai/gpt-image-2.6-sunburst/text-to-image"
     assert ours_auto["skills"]["youtube-channel-banner"]["edit_model"] == "openai/gpt-image-2.6-sunburst/edit"
+    assert ours_auto["skills"]["portrait-studio"] == EXPECTED_PORTRAIT_STUDIO_PIN
+    assert ours_auto["skills"]["portrait-studio"]["model"] == "openai/gpt-image-2.6-sunburst/edit"
+    assert ours_auto["skills"]["portrait-studio"]["resolution"] == "2k"
+    assert ours_auto["skills"]["portrait-studio"]["ratio"] == "3:4"
+    assert "edit_model" not in ours_auto["skills"]["portrait-studio"]
     ours_rest = dict(ours_auto["skills"])
     main_rest = dict(main_auto["skills"])
     ours_rest.pop("clothing-swap")
@@ -532,11 +547,13 @@ def test_pins_and_auto_models_unchanged():
     ours_rest.pop("product-to-packaging")
     ours_rest.pop("cover-design-director")
     ours_rest.pop("youtube-channel-banner")
+    ours_rest.pop("portrait-studio")
     main_rest.pop("clothing-swap", None)
     main_rest.pop("studio-model", None)
     main_rest.pop("product-to-packaging", None)
     main_rest.pop("cover-design-director", None)
     main_rest.pop("youtube-channel-banner", None)
+    main_rest.pop("portrait-studio", None)
     assert ours_rest == main_rest
 
 

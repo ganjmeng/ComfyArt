@@ -225,9 +225,10 @@ def test_ratio_only_2k_fill_does_not_change_other_skills():
     assert "product-to-packaging" not in canvas._PIN_KEEPS_SIZE
     assert "cover-design-director" not in canvas._PIN_KEEPS_SIZE
     assert "youtube-channel-banner" not in canvas._PIN_KEEPS_SIZE
+    assert "portrait-studio" not in canvas._PIN_KEEPS_SIZE
     assert canvas._PIN_KEEPS_SIZE == frozenset({"clothing-swap", "studio-model"})
     assert canvas._RATIO_ONLY_2K_SKILLS == frozenset(
-        {"studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner"}
+        {"studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner", "portrait-studio"}
     )
 
     # ai-model ratio-only still has no 2k fill and no invented pixels (d3f5ca4b).
@@ -328,3 +329,38 @@ def test_youtube_channel_banner_ratio_only_fills_2k_aspect_ratio():
         assert got["ratio"] == "16:9"
         assert "width" not in got and "height" not in got
         assert_sunburst_2k(got, "16:9")
+
+
+def test_portrait_studio_ratio_only_fills_2k_aspect_ratio():
+    """Ratio-only portrait-studio fills resolution 2k + 3:4 (Lovart 7fc60c86).
+
+    Lovart baseline review-assets 7fc60c86a25765e778614fd8d608dfe8deaab166
+    (911/lovart-ai/portrait-studio) used GPT Image 2.6 Sunburst and produced
+    3 images at 1536×2048. The skill is pinned to
+    openai/gpt-image-2.6-sunburst/edit only (no t2i / edit_model split) at
+    resolution 2k and ratio 3:4. It is not in _PIN_KEEPS_SIZE; incoming
+    pixels drop and the pin supplies 2k + 3:4. The submitted payload is
+    resolution 2k + aspect_ratio 3:4, not exact pixels (native 2k 3:4 is
+    1664×2224). No-ref behavior, cards, and default count are not changed
+    here (later flow PR).
+    """
+    from ComfyArt.api.mcp_tools import canvas
+
+    assert "portrait-studio" not in canvas._PIN_KEEPS_SIZE
+    assert "portrait-studio" in canvas._RATIO_ONLY_2K_SKILLS
+
+    for refk in ("refs", "base"):
+        _, got = _pipeline("portrait-studio", refk, {"ratio": "3:4"})
+        assert got["edit_model"] == SUNBURST_EDIT
+        assert got.get("model") != SUNBURST_T2I
+        assert got["edit_resolution"] == "2k"
+        assert got["ratio"] == "3:4"
+        assert "width" not in got and "height" not in got
+        assert_sunburst_2k(got, "3:4")
+
+        # The pin names ratio 3:4, so a different incoming ratio is overwritten.
+        _, got = _pipeline("portrait-studio", refk, {"ratio": "16:9"})
+        assert got["edit_resolution"] == "2k"
+        assert got["ratio"] == "3:4"
+        assert "width" not in got and "height" not in got
+        assert_sunburst_2k(got, "3:4")

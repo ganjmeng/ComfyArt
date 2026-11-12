@@ -51,6 +51,14 @@
    "edit_model": "openai/gpt-image-2.6-sunburst/edit",
    "zh": "youtube-channel-banner 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
    "en": "the youtube-channel-banner skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
+  },
+  "portrait-studio": {
+   "feature": "image_edit",
+   "model": "openai/gpt-image-2.6-sunburst/edit",
+   "resolution": "2k",
+   "ratio": "3:4",
+   "zh": "portrait-studio 技能固定用 GPT Image 2.6 Sunburst 编辑（2K，3:4）",
+   "en": "the portrait-studio skill is pinned to GPT Image 2.6 Sunburst edit at 2K 3:4"
   }
  },
  "features": {

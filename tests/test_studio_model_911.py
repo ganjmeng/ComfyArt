@@ -371,6 +371,15 @@ EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN = {
     "en": "the youtube-channel-banner skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
 }
 
+EXPECTED_PORTRAIT_STUDIO_PIN = {
+    "feature": "image_edit",
+    "model": SUNBURST_EDIT,
+    "resolution": "2k",
+    "ratio": "3:4",
+    "zh": "portrait-studio 技能固定用 GPT Image 2.6 Sunburst 编辑（2K，3:4）",
+    "en": "the portrait-studio skill is pinned to GPT Image 2.6 Sunburst edit at 2K 3:4",
+}
+
 
 def test_studio_model_routes_sunburst_edit_or_t2i_3x4():
     """Rewritten lock (Angela 07:27): studio-model is pinned to Sunburst.
@@ -575,9 +584,14 @@ def test_pins_and_auto_models_unchanged():
     assert ours_auto["skills"]["youtube-channel-banner"] == EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN
     assert ours_auto["skills"]["youtube-channel-banner"]["model"] == SUNBURST_T2I
     assert ours_auto["skills"]["youtube-channel-banner"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["portrait-studio"] == EXPECTED_PORTRAIT_STUDIO_PIN
+    assert ours_auto["skills"]["portrait-studio"]["model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["portrait-studio"]["resolution"] == "2k"
+    assert ours_auto["skills"]["portrait-studio"]["ratio"] == "3:4"
+    assert "edit_model" not in ours_auto["skills"]["portrait-studio"]
     ours_skills = dict(ours_auto.get("skills") or {})
     main_skills = dict(main_auto.get("skills") or {})
-    for key in ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner"):
+    for key in ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner", "portrait-studio"):
         ours_skills.pop(key, None)
         main_skills.pop(key, None)
     assert ours_skills == main_skills, (

@@ -385,19 +385,21 @@ def _exact_skill_pin(args: dict) -> dict | None:
 # clothing-swap follows image 1 (e.g. 3:4 1536×2048); studio-model keeps the
 # 3:4 1536×2048 canvas it had while unpinned on main d3f5ca4b. Every other pin
 # (ai-model, pose-fission, product-to-packaging, cover-design-director,
-# youtube-channel-banner) keeps the d3f5ca4b drop of incoming size keys.
-# product-to-packaging, cover-design-director, and youtube-channel-banner are
-# intentionally not in this set; they still get the ratio-only 2k fill below
-# after those keys are dropped.
+# youtube-channel-banner, portrait-studio) keeps the d3f5ca4b drop of incoming size keys.
+# product-to-packaging, cover-design-director, youtube-channel-banner, and
+# portrait-studio are intentionally not in this set; they still get the
+# ratio-only 2k fill below after those keys are dropped.
 _PIN_KEEPS_SIZE = frozenset({"clothing-swap", "studio-model"})
 
 # Ratio-only 2k fill (no width/height/resolution): studio-model, product-to-packaging,
-# cover-design-director, and youtube-channel-banner. Sunburst has no size/width/height
-# params, only aspect_ratio + resolution (1k/2k/4k). Fill edit_resolution 2k and keep
-# the given ratio. Do not invent exact pixels: 2k 3:4 natively outputs 1664×2224, not
+# cover-design-director, youtube-channel-banner, and portrait-studio. Sunburst has no
+# size/width/height params, only aspect_ratio + resolution (1k/2k/4k). Fill
+# edit_resolution 2k and keep the given ratio (portrait-studio's pin also names
+# ratio 3:4). Do not invent exact pixels: 2k 3:4 natively outputs 1664×2224, not
 # 1536×2048. Explicit width/height/resolution are left untouched.
 _RATIO_ONLY_2K_SKILLS = frozenset({
-    "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner",
+    "studio-model", "product-to-packaging", "cover-design-director",
+    "youtube-channel-banner", "portrait-studio",
 })
 
 
@@ -421,8 +423,9 @@ def _pin_args(args: dict, choice: dict) -> dict:
     if choice.get("ratio"):
         args["ratio"] = choice["ratio"]
     # Ratio-only studio-model / product-to-packaging / cover-design-director /
-    # youtube-channel-banner (no width/height/resolution): fill resolution 2k
-    # and keep the given aspect ratio. Sunburst is submitted as
+    # youtube-channel-banner / portrait-studio (no width/height/resolution):
+    # fill resolution 2k and keep the given aspect ratio (portrait-studio's
+    # pin already names resolution 2k and ratio 3:4). Sunburst is submitted as
     # resolution + aspect_ratio, not exact pixels. An explicit size or
     # resolution is left untouched. Other skills are not filled.
     if (
