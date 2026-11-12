@@ -1,0 +1,1169 @@
+{
+ "_comment": "#910: WaveSpeed POST https://api.wavespeed.ai/api/v3/model/price (free, no prediction), 2026-11-12 08:27:29-08:28:25 Asia/Shanghai. Balance unchanged (29.848866 before and after). images = number of placeholder entries in inputs.images; mask_image / markup_image = that field was sent. price = list USD; discounted_price = what the account is charged (discount_rate 100 on all 2.5 cells, so list == charged). A 2.5 edit is its text-to-image cell + $0.015 per input image (each images entry, and mask_image). markup_image did not change the price (the 2.5 edit schema has no markup_image field).",
+ "balance_before": 29.848866,
+ "balance_after": 29.848866,
+ "ts_start": "2026-11-12T08:27:29.432900+08:00",
+ "ts_end": "2026-11-12T08:28:25.683649+08:00",
+ "rows": [
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "low",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.01,
+   "discounted_price": 0.01,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "low",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.02,
+   "discounted_price": 0.02,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "low",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.024,
+   "discounted_price": 0.024,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "medium",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.04,
+   "discounted_price": 0.04,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "medium",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.07,
+   "discounted_price": 0.07,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "high",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.09,
+   "discounted_price": 0.09,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "high",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.15,
+   "discounted_price": 0.15,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "high",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.27,
+   "discounted_price": 0.27,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "xhigh",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.16,
+   "discounted_price": 0.16,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "xhigh",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.27,
+   "discounted_price": 0.27,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "xhigh",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.48,
+   "discounted_price": 0.48,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "max",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.36,
+   "discounted_price": 0.36,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "max",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.6,
+   "discounted_price": 0.6,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "max",
+   "resolution": "4k",
+   "images": 0,
+   "price": 1,
+   "discounted_price": 1,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/text-to-image",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.024,
+   "discounted_price": 0.024,
+   "discount_rate": 100,
+   "default_inputs": true
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "low",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.01,
+   "discounted_price": 0.01,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "low",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.02,
+   "discounted_price": 0.02,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "low",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.024,
+   "discounted_price": 0.024,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "medium",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.04,
+   "discounted_price": 0.04,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "medium",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.07,
+   "discounted_price": 0.07,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "high",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.09,
+   "discounted_price": 0.09,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "high",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.15,
+   "discounted_price": 0.15,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "high",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.27,
+   "discounted_price": 0.27,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "xhigh",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.16,
+   "discounted_price": 0.16,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "xhigh",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.27,
+   "discounted_price": 0.27,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "xhigh",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.48,
+   "discounted_price": 0.48,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "max",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.36,
+   "discounted_price": 0.36,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "max",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.6,
+   "discounted_price": 0.6,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "max",
+   "resolution": "4k",
+   "images": 0,
+   "price": 1,
+   "discounted_price": 1,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/text-to-image",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.024,
+   "discounted_price": 0.024,
+   "discount_rate": 100,
+   "default_inputs": true
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "low",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.01,
+   "discounted_price": 0.01,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "low",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.025,
+   "discounted_price": 0.025,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "low",
+   "resolution": "1k",
+   "images": 2,
+   "price": 0.04,
+   "discounted_price": 0.04,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "low",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.02,
+   "discounted_price": 0.02,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "low",
+   "resolution": "2k",
+   "images": 1,
+   "price": 0.035,
+   "discounted_price": 0.035,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "low",
+   "resolution": "2k",
+   "images": 2,
+   "price": 0.05,
+   "discounted_price": 0.05,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "low",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "low",
+   "resolution": "4k",
+   "images": 1,
+   "price": 0.045,
+   "discounted_price": 0.045,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "low",
+   "resolution": "4k",
+   "images": 2,
+   "price": 0.06,
+   "discounted_price": 0.06,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.024,
+   "discounted_price": 0.024,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.039,
+   "discounted_price": 0.039,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 2,
+   "price": 0.054,
+   "discounted_price": 0.054,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.04,
+   "discounted_price": 0.04,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "2k",
+   "images": 1,
+   "price": 0.055,
+   "discounted_price": 0.055,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "2k",
+   "images": 2,
+   "price": 0.07,
+   "discounted_price": 0.07,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.07,
+   "discounted_price": 0.07,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "4k",
+   "images": 1,
+   "price": 0.085,
+   "discounted_price": 0.085,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "4k",
+   "images": 2,
+   "price": 0.1,
+   "discounted_price": 0.1,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "high",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.09,
+   "discounted_price": 0.09,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "high",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.105,
+   "discounted_price": 0.105,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "high",
+   "resolution": "1k",
+   "images": 2,
+   "price": 0.12,
+   "discounted_price": 0.12,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "high",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.15,
+   "discounted_price": 0.15,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "high",
+   "resolution": "2k",
+   "images": 1,
+   "price": 0.165,
+   "discounted_price": 0.165,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "high",
+   "resolution": "2k",
+   "images": 2,
+   "price": 0.18,
+   "discounted_price": 0.18,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "high",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.27,
+   "discounted_price": 0.27,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "high",
+   "resolution": "4k",
+   "images": 1,
+   "price": 0.285,
+   "discounted_price": 0.285,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "high",
+   "resolution": "4k",
+   "images": 2,
+   "price": 0.3,
+   "discounted_price": 0.3,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "xhigh",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.16,
+   "discounted_price": 0.16,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "xhigh",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.175,
+   "discounted_price": 0.175,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "xhigh",
+   "resolution": "1k",
+   "images": 2,
+   "price": 0.19,
+   "discounted_price": 0.19,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "xhigh",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.27,
+   "discounted_price": 0.27,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "xhigh",
+   "resolution": "2k",
+   "images": 1,
+   "price": 0.285,
+   "discounted_price": 0.285,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "xhigh",
+   "resolution": "2k",
+   "images": 2,
+   "price": 0.3,
+   "discounted_price": 0.3,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "xhigh",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.48,
+   "discounted_price": 0.48,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "xhigh",
+   "resolution": "4k",
+   "images": 1,
+   "price": 0.495,
+   "discounted_price": 0.495,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "xhigh",
+   "resolution": "4k",
+   "images": 2,
+   "price": 0.51,
+   "discounted_price": 0.51,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "max",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.36,
+   "discounted_price": 0.36,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "max",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.375,
+   "discounted_price": 0.375,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "max",
+   "resolution": "1k",
+   "images": 2,
+   "price": 0.39,
+   "discounted_price": 0.39,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "max",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.6,
+   "discounted_price": 0.6,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "max",
+   "resolution": "2k",
+   "images": 1,
+   "price": 0.615,
+   "discounted_price": 0.615,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "max",
+   "resolution": "2k",
+   "images": 2,
+   "price": 0.63,
+   "discounted_price": 0.63,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "max",
+   "resolution": "4k",
+   "images": 0,
+   "price": 1,
+   "discounted_price": 1,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "max",
+   "resolution": "4k",
+   "images": 1,
+   "price": 1.015,
+   "discounted_price": 1.015,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "max",
+   "resolution": "4k",
+   "images": 2,
+   "price": 1.03,
+   "discounted_price": 1.03,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.024,
+   "discounted_price": 0.024,
+   "discount_rate": 100,
+   "default_inputs": true
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.054,
+   "discounted_price": 0.054,
+   "discount_rate": 100,
+   "mask_image": true
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-flare/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.039,
+   "discounted_price": 0.039,
+   "discount_rate": 100,
+   "markup_image": true
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "low",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.01,
+   "discounted_price": 0.01,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "low",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.025,
+   "discounted_price": 0.025,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "low",
+   "resolution": "1k",
+   "images": 2,
+   "price": 0.04,
+   "discounted_price": 0.04,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "low",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.02,
+   "discounted_price": 0.02,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "low",
+   "resolution": "2k",
+   "images": 1,
+   "price": 0.035,
+   "discounted_price": 0.035,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "low",
+   "resolution": "2k",
+   "images": 2,
+   "price": 0.05,
+   "discounted_price": 0.05,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "low",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "low",
+   "resolution": "4k",
+   "images": 1,
+   "price": 0.045,
+   "discounted_price": 0.045,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "low",
+   "resolution": "4k",
+   "images": 2,
+   "price": 0.06,
+   "discounted_price": 0.06,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.024,
+   "discounted_price": 0.024,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.039,
+   "discounted_price": 0.039,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 2,
+   "price": 0.054,
+   "discounted_price": 0.054,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.04,
+   "discounted_price": 0.04,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "2k",
+   "images": 1,
+   "price": 0.055,
+   "discounted_price": 0.055,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "2k",
+   "images": 2,
+   "price": 0.07,
+   "discounted_price": 0.07,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.07,
+   "discounted_price": 0.07,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "4k",
+   "images": 1,
+   "price": 0.085,
+   "discounted_price": 0.085,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "4k",
+   "images": 2,
+   "price": 0.1,
+   "discounted_price": 0.1,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "high",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.09,
+   "discounted_price": 0.09,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "high",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.105,
+   "discounted_price": 0.105,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "high",
+   "resolution": "1k",
+   "images": 2,
+   "price": 0.12,
+   "discounted_price": 0.12,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "high",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.15,
+   "discounted_price": 0.15,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "high",
+   "resolution": "2k",
+   "images": 1,
+   "price": 0.165,
+   "discounted_price": 0.165,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "high",
+   "resolution": "2k",
+   "images": 2,
+   "price": 0.18,
+   "discounted_price": 0.18,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "high",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.27,
+   "discounted_price": 0.27,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "high",
+   "resolution": "4k",
+   "images": 1,
+   "price": 0.285,
+   "discounted_price": 0.285,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "high",
+   "resolution": "4k",
+   "images": 2,
+   "price": 0.3,
+   "discounted_price": 0.3,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "xhigh",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.16,
+   "discounted_price": 0.16,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "xhigh",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.175,
+   "discounted_price": 0.175,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "xhigh",
+   "resolution": "1k",
+   "images": 2,
+   "price": 0.19,
+   "discounted_price": 0.19,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "xhigh",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.27,
+   "discounted_price": 0.27,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "xhigh",
+   "resolution": "2k",
+   "images": 1,
+   "price": 0.285,
+   "discounted_price": 0.285,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "xhigh",
+   "resolution": "2k",
+   "images": 2,
+   "price": 0.3,
+   "discounted_price": 0.3,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "xhigh",
+   "resolution": "4k",
+   "images": 0,
+   "price": 0.48,
+   "discounted_price": 0.48,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "xhigh",
+   "resolution": "4k",
+   "images": 1,
+   "price": 0.495,
+   "discounted_price": 0.495,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "xhigh",
+   "resolution": "4k",
+   "images": 2,
+   "price": 0.51,
+   "discounted_price": 0.51,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "max",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.36,
+   "discounted_price": 0.36,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "max",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.375,
+   "discounted_price": 0.375,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "max",
+   "resolution": "1k",
+   "images": 2,
+   "price": 0.39,
+   "discounted_price": 0.39,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "max",
+   "resolution": "2k",
+   "images": 0,
+   "price": 0.6,
+   "discounted_price": 0.6,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "max",
+   "resolution": "2k",
+   "images": 1,
+   "price": 0.615,
+   "discounted_price": 0.615,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "max",
+   "resolution": "2k",
+   "images": 2,
+   "price": 0.63,
+   "discounted_price": 0.63,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "max",
+   "resolution": "4k",
+   "images": 0,
+   "price": 1,
+   "discounted_price": 1,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "max",
+   "resolution": "4k",
+   "images": 1,
+   "price": 1.015,
+   "discounted_price": 1.015,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "max",
+   "resolution": "4k",
+   "images": 2,
+   "price": 1.03,
+   "discounted_price": 1.03,
+   "discount_rate": 100
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 0,
+   "price": 0.024,
+   "discounted_price": 0.024,
+   "discount_rate": 100,
+   "default_inputs": true
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.054,
+   "discounted_price": 0.054,
+   "discount_rate": 100,
+   "mask_image": true
+  },
+  {
+   "model_id": "openai/gpt-image-2.5-sunburst/edit",
+   "quality": "medium",
+   "resolution": "1k",
+   "images": 1,
+   "price": 0.039,
+   "discounted_price": 0.039,
+   "discount_rate": 100,
+   "markup_image": true
+  }
+ ]
+}
