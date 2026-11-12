@@ -500,14 +500,17 @@ def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_main_bytes(path)).hexdigest(), path
 
 
-# #927 versions of these two files, pinned byte-for-byte to tip 7bb9f8ed (same
-# git-show + sha256 check as the main pin list above).
-PORTRAIT_LOCK = "7bb9f8ed4e6cf0a06c138b0df38922b4268eb3eb"
+# #927 versions of these two files, pinned by literal sha256 of the working-tree
+# bytes (no git-object lookup — the lock tip will not be on main after squash).
+PINNED_SHA256 = {
+    "api/portrait_studio.py": "61257848a9e23d13c066d01c103c565d6804e58c926d3905c6ed8b0890569224",
+    "bot/self_check.py": "1a9b4f7eda7e915adf83df42ff31ccf3c27e83253d9636ba5c85aead447993b6",
+}
 
 
 @pytest.mark.parametrize("path", ["api/portrait_studio.py", "bot/self_check.py"])
-def test_portrait_studio_and_self_check_are_unchanged_from_7bb9f8ed(path):
-    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_git_bytes(PORTRAIT_LOCK, path)).hexdigest(), path
+def test_portrait_studio_and_self_check_match_pinned_sha256(path):
+    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == PINNED_SHA256[path], path
 
 
 # Locales are compared as JSON so a sibling skill can add its own keys. product-to-packaging
