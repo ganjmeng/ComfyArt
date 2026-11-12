@@ -8,7 +8,8 @@ import type { Built } from './workflows'
 import { t } from './i18n'
 import { uiCredits } from './usd'
 import { takePendingModel, withModel } from './wavespeed'
-import { lockedDeliveryError } from './sizeLockPref'
+import { lockedDeliveryNotice } from './sizeLockPref'
+import { reportWarning } from './ui/ErrorToasts'
 import { mapUnknownError, OWN_ERROR_ALLOWLIST } from './wsErrors'
 import en from './locales/en.json'
 import zh from './locales/zh.json'
@@ -99,7 +100,7 @@ function logJobResponse(jobId: string, kind: string) {
 }
 const placers: Record<string, Placer> = {}
 
-export interface JobResult { srcs: string[]; error?: string; pending?: boolean }
+export interface JobResult { srcs: string[]; error?: string; pending?: boolean; /** P1 #911: zh/en size notice for a delivered image */ notice?: string }
 export const resultsAtom = atom<Record<string, JobResult>>('job results', {})
 // #282/#408: e2e tip shoots set the card banner without a live waiter
 if (typeof window !== 'undefined') (window as unknown as { __caResultsAtom?: typeof resultsAtom }).__caResultsAtom = resultsAtom
@@ -313,11 +314,16 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
     const media = await Promise.all(refs.map((r) => toMedia(r, refKind(viewUrl(r)) === 'video' ? 'video' : job.kind)))
     const holder = editor.getShape(holderId)
     if (!holder) return
-    // #707: a size-locked job is not placed when the decoded file is not the locked pixels.
-    const refused = lockedDeliveryError(holder.meta, media)
-    if (refused) throw new Error(refused)
+    // #707 + P1 hotfix (#911): a size-locked file is checked, but it is already charged, so it is
+    // ALWAYS placed as returned (no resize, no crop). A failed check is logged and shown as a notice.
+    const sized = lockedDeliveryNotice(holder.meta, media)
     await (placers[job.placer ?? ''] ?? defaultPlacer)(editor, holder, media, job, onError)
-    report(holderId, { srcs: media.map((m) => m.src) })
+    if (sized) {
+      console.warn('[size-lock] charged job %s delivered despite size check (%s): want %o got %o', job.id, sized.mode, sized.want, sized.got)
+      const want = `${sized.want.width}×${sized.want.height}`
+      reportWarning(sized.got ? t('jobs.sizeNotice', `${sized.got.width}×${sized.got.height}`, want) : t('jobs.sizeNoticeUnread', want))
+    }
+    report(holderId, { srcs: media.map((m) => m.src), ...(sized ? { notice: sized.notice } : {}) })
   } catch (e) {
     const seq = logJobResponse(job.id, 'error')
     const prior = terminals.get(job.id)

@@ -1864,6 +1864,11 @@ async def submit(inputs: dict) -> str:
         except (TypeError, ValueError):
             w = h = 0
         _jobs[task]["expect_pixels"] = (w, h) if w > 0 and h > 0 else None
+        # P1 hotfix (#911): Sunburst cannot take exact pixels. A ratio-mode lock (set by the
+        # Sunburst skill pins) checks ratio <= 1% and long side >= target instead.
+        from .skill_size import RATIO_MODE, is_sunburst
+        if inputs.get("size_lock_mode") == RATIO_MODE and is_sunburst(model):
+            _jobs[task]["size_mode"] = RATIO_MODE
     log.info("WaveSpeed task %s submitted (%s)", task, model)
     await _record_submit_usage(task, model, feature, inputs)  # #498 Usage ledger (submit quote)
     return task
@@ -2444,16 +2449,18 @@ def _audit_locked_files(job: dict, refs: list) -> dict | None:
     """
     if not job.get("size_lock"):
         return None
-    from .skill_size import audit_file, size_reject
+    from .skill_size import audit_file, size_notice, size_reject
 
     expect = job.get("expect_pixels")
     if not (isinstance(expect, (list, tuple)) and len(expect) == 2 and int(expect[0]) > 0 and int(expect[1]) > 0):
         return {"match": False, "requested": None, "provider_output": None, "delivered": None, "read_error": True,
-                "error": "没有通过：尺寸已锁定，但没有可核对的宽高。没有拉伸，没有重试，没有换模型。 / Not accepted: size was locked but there was no pixel size to check. It was not stretched, retried, or sent to another model."}
+                "error": "没有通过：尺寸已锁定，但没有可核对的宽高。没有拉伸，没有重试，没有换模型。 / Not accepted: size was locked but there was no pixel size to check. It was not stretched, retried, or sent to another model.",
+                "notice": size_notice(None, None)}
     requested = (int(expect[0]), int(expect[1]))
+    mode = str(job.get("size_mode") or "")
     measured = None
     for ref in refs:
-        audit = audit_file(_ref_bytes(ref) if isinstance(ref, dict) else b"", requested)
+        audit = audit_file(_ref_bytes(ref) if isinstance(ref, dict) else b"", requested, mode)
         if isinstance(ref, dict) and audit.get("provider_output"):
             ref["metadata"] = {"width": audit["provider_output"]["width"], "height": audit["provider_output"]["height"]}
         if not audit["match"]:
@@ -2461,7 +2468,8 @@ def _audit_locked_files(job: dict, refs: list) -> dict | None:
         measured = audit
     if measured is None:
         return {"match": False, "requested": {"width": requested[0], "height": requested[1]},
-                "provider_output": None, "delivered": None, "read_error": True, "error": size_reject(requested, None)}
+                "provider_output": None, "delivered": None, "read_error": True, "error": size_reject(requested, None),
+                "notice": size_notice(requested, None, mode)}
     return measured
 
 
@@ -2498,17 +2506,25 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
                                               502, kind="noOutput", charged=cost))
         # CDN URLs expire after 7 days: keep a local copy right away
         refs = [await _download(session, task, i, url) for i, url in enumerate(outputs) if isinstance(url, str)]
-    # #707: a size lock is accepted only when the saved file's pixels match. No stretch, crop, or second submit.
+    # #707: the saved file's pixels are checked against the lock. No stretch, crop, or second submit.
+    # P1 hotfix (#911): the job completed, so it was charged. A failed size check never drops the
+    # image: it is delivered as returned, logged, and carries a zh/en size_notice for the user.
     audit = _audit_locked_files(job, refs)
-    if audit is not None and not audit.get("match"):
-        return _fail(task, WaveSpeedError(str(audit.get("error") or "没有通过：尺寸核对失败。没有拉伸，没有重试，没有换模型。 / Not accepted: the size check failed. It was not stretched, retried, or sent to another model.")))
     job["done"] = True
     job["result"] = _history(task, "completed", [], {"ws": {"images": refs}})
-    if audit is not None and audit.get("match"):
+    if audit is not None:
         entry = job["result"][f"ws:{task}"]
-        entry["requested_size"] = audit["requested"]
-        entry["provider_output"] = audit["provider_output"]
-        entry["delivered_size"] = audit["delivered"]
+        entry["requested_size"] = audit.get("requested")
+        entry["provider_output"] = audit.get("provider_output")
+        entry["delivered_size"] = audit.get("delivered")
+        entry["size_check"] = {"match": bool(audit.get("match")), "mode": audit.get("mode") or "exact",
+                               **({"ratio_error_pct": audit["ratio_error_pct"]} if "ratio_error_pct" in audit else {})}
+        if not audit.get("match"):
+            entry["size_notice"] = audit.get("notice") or {"zh": "尺寸提示：尺寸核对没通过，图已照原文件交付。",
+                                                           "en": "Size notice: the size check failed; the image was delivered as returned."}
+            log.warning("P1 size check failed for charged task %s (model=%s, requested=%s, provider=%s, mode=%s); "
+                        "delivered as returned: %s", task, job.get("model"), audit.get("requested"),
+                        audit.get("provider_output"), audit.get("mode") or "exact", audit.get("error"))
     if job.get("model"):
         gen_ledger.mark_succeeded(task, len(refs))
     log.info("WaveSpeed task %s completed (%d output%s)", task, len(refs), "" if len(refs) == 1 else "s")

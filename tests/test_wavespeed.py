@@ -210,29 +210,38 @@ async def test_size_lock_poll_accepts_the_downloaded_file(ws):
     assert len(ws["submits"]) == submits
 
 
-async def test_size_lock_poll_rejects_a_different_file(ws):
-    task, out = await _locked_banner(ws, _png(2048, 682))
-    assert out["generation_succeeded"] is False
-    assert out["status"]["status_str"] == "error"
-    assert out["outputs"] == {}
-    msg = out["status"]["messages"][0][1]["exception_message"]
-    assert msg.startswith("没有通过：")
-    assert "2048×682" in msg and "1584×396" in msg
-    assert "没有拉伸" in msg and "没有换模型" in msg
-    assert "ws_kind" not in out["status"]["messages"][0][1]
+async def test_size_lock_poll_delivers_a_different_file_with_a_notice(ws):
+    """P1 hotfix (#911): the job completed, so it was charged. A size mismatch is delivered as returned
+    (no stretch, no crop, no retry) with a zh/en notice, never dropped."""
+    from PIL import Image
+    import folder_paths
+    body = _png(2048, 682)
+    task, out = await _locked_banner(ws, body)
+    assert out["generation_succeeded"] is True
+    assert out["status"]["status_str"] == "completed"
+    ref = out["outputs"]["ws"]["images"][0]
+    saved = wavespeed._read(os.path.join(folder_paths.get_output_directory(), ref["subfolder"], ref["filename"]))
+    assert saved == body
+    with Image.open(io.BytesIO(saved)) as img:
+        assert img.size == (2048, 682)
+    assert out["requested_size"] == {"width": 1584, "height": 396}
+    assert out["provider_output"] == out["delivered_size"] == {"width": 2048, "height": 682}
+    assert out["size_check"] == {"match": False, "mode": "exact"}
+    notice = out["size_notice"]
+    assert notice["zh"].startswith("尺寸提示：") and "2048×682" in notice["zh"] and "1584×396" in notice["zh"]
+    assert "没有拉伸或裁切" in notice["zh"] and "not stretched or cropped" in notice["en"]
     submits = len(ws["submits"])
     again = await wavespeed.poll(task)
     assert len(ws["submits"]) == submits == 1
-    assert again[f"ws:{task}"]["generation_succeeded"] is False
+    assert again[f"ws:{task}"]["generation_succeeded"] is True
 
 
-async def test_size_lock_poll_rejects_unreadable_bytes(ws):
+async def test_size_lock_poll_delivers_unreadable_bytes_with_a_notice(ws):
     _task, out = await _locked_banner(ws, b"NOTPNG")
-    assert out["generation_succeeded"] is False
-    assert out["outputs"] == {}
-    msg = out["status"]["messages"][0][1]["exception_message"]
-    assert "读不出像素" in msg and "1584×396" in msg
-    assert msg.startswith("没有通过：")
+    assert out["generation_succeeded"] is True
+    assert out["outputs"]["ws"]["images"]
+    assert out["provider_output"] is None and out["delivered_size"] is None
+    assert "没能读出" in out["size_notice"]["zh"] and "1584×396" in out["size_notice"]["zh"]
     assert len(ws["submits"]) == 1
 
 

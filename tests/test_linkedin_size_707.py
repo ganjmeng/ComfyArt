@@ -575,7 +575,9 @@ def test_size_lock_preference_cases():
     body = poll.split("async def _poll_once", 1)[1].split("\nasync def ", 1)[0]
     assert "_audit_locked_files(job, refs)" in body and "audit_file(" in poll
     assert "isOwnSizeError(msg)" in (ROOT / "src/wsErrors.ts").read_text(encoding="utf-8")
-    assert "lockedDeliveryError(holder.meta, media)" in (ROOT / "src/jobs.ts").read_text(encoding="utf-8")
+    # P1 hotfix (#911): the page checks the lock but always places a charged file (notice, not refusal).
+    jobs = (ROOT / "src/jobs.ts").read_text(encoding="utf-8")
+    assert "lockedDeliveryNotice(holder.meta, media)" in jobs and "throw new Error(refused)" not in jobs
     assert wavespeed.load_config()["features"]["text_to_image"]["default"] == DEFAULT_T2I
 
 

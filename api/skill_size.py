@@ -11,6 +11,8 @@ No WaveSpeed call lives here.
 """
 from __future__ import annotations
 
+from fractions import Fraction
+
 from .wavespeed import _nearest, _resolution, _schema, _size_value, submits_size_field
 
 SKILL = "linkedin-banner"
@@ -73,6 +75,61 @@ def reconcile(requested: tuple[int, int], provider_pixels: tuple[int, int] | Non
     return {"requested": req, "provider_output": got, "delivered": dict(got), "match": got == req}
 
 
+# P1 hotfix (#911): GPT Image 2.6 Sunburst takes only aspect_ratio + resolution (1k/2k/4k), never
+# exact pixels. 2k 3:4 comes back as 1664×2224, not the 1536×2048 Lovart shows. For the
+# Sunburst-pinned skills the lock is a ratio + long-side check, not an exact-pixel match.
+RATIO_MODE = "ratio"
+RATIO_TOLERANCE = Fraction(1, 100)
+SUNBURST_MARK = "gpt-image-2.6-sunburst"
+
+
+def is_sunburst(model: object) -> bool:
+    return SUNBURST_MARK in str(model or "")
+
+
+def ratio_error(requested: tuple[int, int], got: tuple[int, int]) -> Fraction:
+    """|got ratio / target ratio - 1| as an exact fraction (no float edge at exactly 1%)."""
+    tw, th = int(requested[0]), int(requested[1])
+    gw, gh = int(got[0]), int(got[1])
+    return Fraction(abs(gw * th - tw * gh), tw * gh)
+
+
+def ratio_ok(requested: tuple[int, int], got: tuple[int, int] | None) -> bool:
+    """Ratio error <= 1% and the long side is at least the target long side."""
+    if got is None or int(got[0]) < 1 or int(got[1]) < 1:
+        return False
+    if ratio_error(requested, got) > RATIO_TOLERANCE:
+        return False
+    return max(int(got[0]), int(got[1])) >= max(int(requested[0]), int(requested[1]))
+
+
+def reconcile_ratio(requested: tuple[int, int], provider_pixels: tuple[int, int] | None) -> dict:
+    """Ratio-mode reconcile. ``delivered`` is always the provider file pixels: no resize, no crop."""
+    out = reconcile(requested, provider_pixels)
+    out["match"] = ratio_ok(requested, provider_pixels)
+    out["mode"] = RATIO_MODE
+    if provider_pixels is not None:
+        out["ratio_error_pct"] = round(float(ratio_error(requested, provider_pixels)) * 100, 4)
+    return out
+
+
+def size_notice(requested: tuple[int, int] | None, provider: tuple[int, int] | None, mode: str = "") -> dict:
+    """User-facing notice (zh/en) for a charged image that did not pass the size check but is delivered."""
+    want = f"{int(requested[0])}×{int(requested[1])}" if requested else "?"
+    if provider is None:
+        return {"zh": f"尺寸提示：没能读出供应商原文件的像素，无法和目标 {want} 核对。图已照原文件放到画布上，没有拉伸或裁切。",
+                "en": f"Size notice: the provider file's pixels could not be read, so it was not checked against {want}. "
+                      "The image was placed on the canvas as returned, not stretched or cropped."}
+    got = f"{int(provider[0])}×{int(provider[1])}"
+    if mode == RATIO_MODE:
+        return {"zh": f"尺寸提示：供应商原文件是 {got}，目标是 {want}，比例或长边没达标。图已照原文件放到画布上，没有拉伸或裁切。",
+                "en": f"Size notice: the provider file is {got} and the target is {want}; its ratio or long side is off. "
+                      "The image was placed on the canvas as returned, not stretched or cropped."}
+    return {"zh": f"尺寸提示：供应商原文件是 {got}，锁定尺寸是 {want}，两者不一致。图已照原文件放到画布上，没有拉伸或裁切。",
+            "en": f"Size notice: the provider file is {got} and the locked size is {want}. "
+                  "The image was placed on the canvas as returned, not stretched or cropped."}
+
+
 def file_pixels(data: bytes) -> tuple[int, int] | None:
     """Pixel size of a downloaded provider file, or None when the bytes are not an image."""
     import io
@@ -102,12 +159,16 @@ def size_reject(requested: tuple[int, int], provider: tuple[int, int] | None) ->
             "It was not stretched, cropped, retried, or sent to another model.")
 
 
-def audit_file(data: bytes, requested: tuple[int, int]) -> dict:
-    """Read one provider file and reconcile it with the locked size. No network, no resize."""
+def audit_file(data: bytes, requested: tuple[int, int], mode: str = "") -> dict:
+    """Read one provider file and reconcile it with the locked size. No network, no resize.
+
+    ``mode == "ratio"`` (Sunburst pins) accepts ratio error <= 1% with long side >= target.
+    """
     got = file_pixels(data)
-    out = reconcile(requested, got)
+    out = reconcile_ratio(requested, got) if mode == RATIO_MODE else reconcile(requested, got)
     out["read_error"] = got is None
     out["error"] = None if out["match"] else size_reject(requested, got)
+    out["notice"] = None if out["match"] else size_notice(requested, got, mode)
     return out
 
 

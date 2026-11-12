@@ -211,6 +211,8 @@ async function startGenerator(editor: Editor, video: boolean, args: Args, onErro
     // A size lock that skipped a disabled candidate must edit with the model that is still allowed.
     ...(lockId && (wantsRefs || args.base) ? { featureModels: { image_edit: lockId } } : {}),
     ...(lockId ? { sizeLockModel: lockId } : {}),
+    // P1 hotfix (#911): Sunburst pins lock ratio + long side, not exact pixels (set by the backend pin).
+    ...(lockId && args.size_lock_mode === 'ratio' ? { sizeLockMode: 'ratio' } : {}),
     // #708: a skill-pinned edit model's tier (e.g. pose-fission → nano-banana-pro/edit at 2k)
     ...(!video && typeof args.edit_resolution === 'string' ? { editResolution: args.edit_resolution } : {}),
     ...(!video && args.base ? { base: refUrls(editor, [args.base])[0], strength: Number(args.base_strength) || 60 } : {}),
@@ -266,7 +268,7 @@ function waitResults(editor: Editor, ids: string[], timeout: number) {
     return ids.map((id) => {
       const r = results[id]
       if (!r) return { id, status: unknown.has(id) ? 'unknown id' : 'running' }
-      if (!r.error) return { id, status: 'done', urls: r.srcs, shapes: shapesWithSrc(editor, r.srcs) }
+      if (!r.error) return { id, status: 'done', urls: r.srcs, shapes: shapesWithSrc(editor, r.srcs), ...(r.notice ? { size_notice: r.notice, note: 'the image is on the canvas; tell the user this size notice in their language' } : {}) }
       // Intentional cost-confirm cancel is not a failure (#127).
       if (/已取消该生成，未扣费|Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed/.test(r.error)) {
         return { id, status: 'declined', cancelled: true, error: r.error }
