@@ -364,3 +364,80 @@ def test_portrait_studio_ratio_only_fills_2k_aspect_ratio():
         assert got["ratio"] == "3:4"
         assert "width" not in got and "height" not in got
         assert_sunburst_2k(got, "3:4")
+
+
+# --- feat/packaging-sunburst-2k: lock the product-to-packaging / studio-model pins and 2k sizing ---
+# Lovart baseline review-assets e304e2fa7d22fc6c560d3ba1cb628423f03ebc46
+# (911/lovart-ai/product-to-packaging): GPT Image 2.6 Sunburst, 4 outputs,
+# result-01 1536×2048 (3:4), result-02..04 2048×1536 (4:3).
+
+AUTO_MODELS = Path(__file__).resolve().parent.parent / "api" / "auto_models.json"
+
+
+def _sunburst_ratios() -> list[str]:
+    a = (_sunburst_schema(SUNBURST_T2I)["properties"]["aspect_ratio"]["enum"])
+    b = (_sunburst_schema(SUNBURST_EDIT)["properties"]["aspect_ratio"]["enum"])
+    assert a == b
+    return list(a)
+
+
+def test_packaging_and_studio_model_pins_use_full_sunburst_ids():
+    skills = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))["skills"]
+    for skill in ("studio-model", "product-to-packaging"):
+        row = skills[skill]
+        assert row["model"] == SUNBURST_T2I
+        assert row["edit_model"] == SUNBURST_EDIT
+        assert row["feature"] == "text_to_image"
+        # The pin row names no size; 2k comes from the ratio-only fill.
+        assert "resolution" not in row and "ratio" not in row and "fallback" not in row
+
+
+def test_lovart_packaging_ratios_fill_2k_on_sunburst():
+    """Lovart e304e2fa: 3:4 anchor + 4:3 extensions, both at 2k (1536×2048 / 2048×1536 on Lovart)."""
+    assert {"3:4", "4:3"} <= set(_sunburst_ratios())
+    for ratio in ("3:4", "4:3"):
+        for refk, model_key, model_id in (("none", "model", SUNBURST_T2I),
+                                          ("refs", "edit_model", SUNBURST_EDIT),
+                                          ("base", "edit_model", SUNBURST_EDIT)):
+            for skill in ("product-to-packaging", "studio-model"):
+                category, got = _pipeline(skill, refk, {"ratio": ratio})
+                assert category == "skill"
+                assert got[model_key] == model_id
+                assert (got["edit_resolution"], got["ratio"]) == ("2k", ratio)
+                assert "width" not in got and "height" not in got and "size_lock" not in got
+                assert_sunburst_2k(got, ratio)
+
+
+@pytest.mark.parametrize("ratio", _sunburst_ratios())
+def test_packaging_and_studio_model_any_sunburst_ratio_fills_2k(ratio):
+    """Every aspect ratio the Sunburst schema accepts goes out as resolution 2k + that ratio."""
+    for skill in ("product-to-packaging", "studio-model"):
+        for refk in ("none", "refs"):
+            _, got = _pipeline(skill, refk, {"ratio": ratio})
+            assert (got["edit_resolution"], got["ratio"]) == ("2k", ratio)
+            assert "width" not in got and "height" not in got
+            assert_sunburst_2k(got, ratio)
+
+
+def test_4x3_fill_does_not_reach_other_skills():
+    """4:3 ratio-only: ai-model gets no 2k, pose-fission keeps its own 2k 3:4 pin."""
+    from ComfyArt.api.mcp_tools import canvas
+
+    assert canvas._PIN_KEEPS_SIZE == frozenset({"clothing-swap", "studio-model"})
+    _, got = _pipeline("ai-model", "none", {"ratio": "4:3"})
+    assert got == {"auto_model": True, "model": SUNBURST_T2I, "ratio": "4:3"}
+    _, got = _pipeline("ai-model", "refs", {"ratio": "4:3"})
+    assert got == {"edit_model": SUNBURST_EDIT, "ratio": "4:3"}
+    _, got = _pipeline("pose-fission", "refs", {"ratio": "4:3"})
+    assert (got["edit_model"], got["edit_resolution"], got["ratio"]) == ("google/nano-banana-pro/edit", "2k", "3:4")
+
+
+def test_models_doc_lists_full_pin_ids_matching_auto_models():
+    skills = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))["skills"]
+    root = Path(__file__).resolve().parent.parent / "docs-site"
+    for doc in (root / "guides" / "models.mdx", root / "zh" / "guides" / "models.mdx"):
+        text = doc.read_text(encoding="utf-8")
+        for skill in ("studio-model", "product-to-packaging"):
+            line = next(ln for ln in text.splitlines() if ln.startswith(f"| {skill} |"))
+            assert f"`{skills[skill]['model']}`" in line
+            assert f"`{skills[skill]['edit_model']}`" in line
