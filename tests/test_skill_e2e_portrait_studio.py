@@ -115,7 +115,8 @@ async def _page(p, app_url, lang, sockets):  # noqa: F811
         if await pg.locator(".ca-modal").count():
             await pg.keyboard.press("Escape")
             await pg.wait_for_timeout(300)
-    assert LOC[lang]["skills.portraitStudio"] in await pg.locator(".ca-composer").inner_text()
+    # ?skill= waits on loadSkills(); the bot label can appear before the skill chip.
+    await pg.locator(".ca-composer").get_by_text(LOC[lang]["skills.portraitStudio"], exact=True).wait_for(timeout=15000)
     await pg.locator(".ca-composer").get_by_text(ScriptedAgent.label, exact=True).wait_for(timeout=15000)
     return browser, pg
 
