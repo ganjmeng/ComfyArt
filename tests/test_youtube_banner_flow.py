@@ -277,13 +277,17 @@ CASES = {
     "short": ("Loomi Studio", "AI 绘画教程 · 创意工作流", "每周二 / 周五更新"),
     "long": ("Loomi Studio 创意工作室官方频道", "AI 绘画教程 · 创意工作流 · Stable Diffusion / ComfyUI / Midjourney 全流程实战",
              "每周二、周五晚上 8 点更新，周末不定期直播答疑"),
-    "very_long": ("Loomi Studio 创意工作室官方频道 Creative Workflow Lab International Edition",
-                  "AI 绘画教程 · 创意工作流 · Stable Diffusion / ComfyUI / Midjourney / Flux / Krea 全流程实战，从零基础到商业交付的完整课程体系",
-                  "每周二、周五晚上 8 点更新，周末不定期直播答疑，会员专属工作流模板每月更新一次（北京时间）"),
     "unbreakable_latin": ("Supercalifragilisticexpialidocious_ChannelName_WithNoSpacesAtAll_2026",
                           "Tutorials-and-workflows-without-any-break-opportunity-for-the-wrapper", "Tue/Fri"),
     "channel_only": ("只有 Loomi Studio", "", ""),
 }
+
+# Fits width if hierarchy is ignored, but cannot keep title ink the largest at the 36px floors.
+VERY_LONG_COPY = (
+    "Loomi Studio 创意工作室官方频道 Creative Workflow Lab International Edition",
+    "AI 绘画教程 · 创意工作流 · Stable Diffusion / ComfyUI / Midjourney / Flux / Krea 全流程实战，从零基础到商业交付的完整课程体系",
+    "每周二、周五晚上 8 点更新，周末不定期直播答疑，会员专属工作流模板每月更新一次（北京时间）",
+)
 
 
 def _inside(b, box) -> bool:
@@ -387,24 +391,29 @@ def _line_texts(rep, role: str) -> list[str]:
     return [r["text"] for r in rep["lines"] if r["role"] == role]
 
 
-_FIT_CASES = ("short", "long", "very_long")
+_FIT_CASES = ("short", "long")
 _LATIN_WORD = re.compile(r"[A-Za-z]+")
 _SHORT_LATIN = 8
 
 
 @pytest.mark.parametrize("case", list(_FIT_CASES))
-def test_tagline_and_schedule_ink_height_is_at_least_36px(case):
+def test_title_tagline_schedule_hierarchy_and_36px_ink_floors(case):
     copy = CASES[case]
     _, rep = bc.compose(_synthetic_base(), channel=copy[0], tagline=copy[1], schedule=copy[2],
                         skill="youtube-channel-banner", purpose=bc.PURPOSE_USER_FINAL)
-    for role in ("tagline", "schedule"):
+    for role in ("channel", "tagline", "schedule"):
         heights = _ink_heights(rep, role)
         assert heights, (case, role)
         assert all(h >= bc.LINE_MIN_INK for h in heights), (case, role, heights)
+    ch_px = [r["px"] for r in rep["lines"] if r["role"] == "channel"]
     tag_px = [r["px"] for r in rep["lines"] if r["role"] == "tagline"]
     sch_px = [r["px"] for r in rep["lines"] if r["role"] == "schedule"]
-    assert tag_px and sch_px
+    assert ch_px and tag_px and sch_px
+    assert min(ch_px) > max(tag_px) >= max(sch_px), (case, ch_px, tag_px, sch_px)
     assert min(tag_px) >= max(sch_px), (case, tag_px, sch_px)
+    ch_ink = _ink_heights(rep, "channel")
+    tag_ink = _ink_heights(rep, "tagline")
+    assert min(ch_ink) > max(tag_ink), (case, ch_ink, tag_ink)
 
 
 @pytest.mark.parametrize("case", list(_FIT_CASES))
@@ -449,6 +458,14 @@ def test_line3_overflow_at_floor_raises_instead_of_shrinking_below_36px():
     with pytest.raises(bc.LayoutError):
         bc.compose(_synthetic_base(), channel=OVERFLOW_COPY[0], tagline=OVERFLOW_COPY[1],
                    schedule=OVERFLOW_COPY[2], skill="youtube-channel-banner", purpose=bc.PURPOSE_USER_FINAL)
+
+
+def test_very_long_copy_raises_when_title_cannot_stay_largest():
+    with pytest.raises(bc.LayoutError):
+        bc.layout(*VERY_LONG_COPY)
+    with pytest.raises(bc.LayoutError):
+        bc.compose(_synthetic_base(), channel=VERY_LONG_COPY[0], tagline=VERY_LONG_COPY[1],
+                   schedule=VERY_LONG_COPY[2], skill="youtube-channel-banner", purpose=bc.PURPOSE_USER_FINAL)
 
 
 def test_wrap_breaks_at_preferred_punctuation_and_spaces_without_splitting_english():
@@ -605,15 +622,17 @@ def test_base_preflight_overflow_returns_shorten_card_and_does_not_submit(relay)
     assert out["ask"]["questions"][0]["id"] == "yt_shorten_copy"
 
 
+@pytest.mark.parametrize("copy", ["overflow", "very_long"])
 @pytest.mark.parametrize("lang,prompt", [
     ("zh", "横幅上的文字排在安全区内有点长，请缩短后再继续。"),
     ("en", "The banner text is a bit long for the safe area. Please shorten it to continue."),
 ])
-def test_base_preflight_shorten_card_follows_ui_language(relay, lang, prompt):
+def test_base_preflight_shorten_card_follows_ui_language(relay, lang, prompt, copy):
+    src = OVERFLOW_COPY if copy == "overflow" else VERY_LONG_COPY
     out = _run(lang=lang, goal_text="",
                prompt="text-free brand plate, brand blue #2F6BFF",
                skill="youtube-channel-banner", banner_stage="base",
-               channel_name=OVERFLOW_COPY[0], tagline=OVERFLOW_COPY[1], schedule=OVERFLOW_COPY[2])
+               channel_name=src[0], tagline=src[1], schedule=src[2])
     assert SENT == []
     assert out.get("submitted") is False and out.get("charged") is False
     assert out["status"] == "needs_input" and out["kind"] == "bannerTextShorten"
@@ -624,10 +643,12 @@ def test_base_preflight_shorten_card_follows_ui_language(relay, lang, prompt):
     assert "重跑" not in out["prompt"] and "rerun" not in out["prompt"].lower()
 
 
-def test_base_preflight_fitting_copy_proceeds_to_submit(relay):
+@pytest.mark.parametrize("case", ["short", "long"])
+def test_base_preflight_fitting_copy_proceeds_to_submit(relay, case):
+    ch, tg, sc = CASES[case]
     out = _run(prompt="text-free brand plate, brand blue #2F6BFF",
                skill="youtube-channel-banner", banner_stage="base",
-               channel_name="Loomi Studio", tagline="AI 绘画教程 · 创意工作流", schedule="每周二 / 周五更新")
+               channel_name=ch, tagline=tg, schedule=sc)
     assert out.get("status") != "failed" and out.get("kind") != "bannerTextShorten", out
     assert len(SENT) == 1 and SENT[0][0] == "generate_image"
     assert "channel_name" not in SENT[0][1]

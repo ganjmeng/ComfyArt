@@ -88,7 +88,7 @@ class CompositorRefused(PermissionError):
 
 
 class LayoutError(ValueError):
-    """The text cannot be placed inside the strict core at the line-3 size floor."""
+    """The text cannot be placed inside the strict core at the size floors and title > tagline hierarchy."""
 
 
 def _color(value: object, fallback: str) -> tuple[int, int, int]:
@@ -415,20 +415,19 @@ class Layout:
 
 def _plan(channel: str, tagline: str, schedule: str, scale: float, allow_wrap: bool,
           colors: dict, box_w: int, schedule_px: int | None = None,
-          tagline_px: int | None = None,
+          tagline_px: int | None = None, channel_px: int | None = None,
           ) -> tuple[list[tuple[str, list[str], Path, int, tuple]], int] | None:
     rows = []
     specs = (("channel", channel, FONT_BOLD, CHANNEL_PX, colors["brand"]),
              ("tagline", tagline, FONT_REGULAR, TAGLINE_PX, colors["text"]),
              ("schedule", schedule, FONT_REGULAR, SCHEDULE_PX, colors["schedule"]))
+    forced = {"channel": channel_px, "tagline": tagline_px, "schedule": schedule_px}
     for role, text, path, base, color in specs:
         text = " ".join(str(text or "").split())
         if not text:
             continue
-        if role == "schedule" and schedule_px is not None:
-            px = max(6, int(schedule_px))
-        elif role == "tagline" and tagline_px is not None:
-            px = max(6, int(tagline_px))
+        if forced[role] is not None:
+            px = max(6, int(forced[role]))
         else:
             px = max(6, int(round(base * scale)))
         font = _font(path, px)
@@ -444,14 +443,17 @@ def _plan(channel: str, tagline: str, schedule: str, scale: float, allow_wrap: b
     return rows, 0
 
 
-def _line_px_for(text: str, scale: float, base_px: int, title_ink: int, parts: list[str] | None = None) -> int:
-    """Font size for tagline or schedule: scaled size, never below the ink floor for this copy."""
-    need = _schedule_min_ink(title_ink)
+def _line_px_for(text: str, scale: float, base_px: int, title_ink: int, parts: list[str] | None = None,
+                 path: Path = FONT_REGULAR, min_ink: int | None = None) -> int:
+    """Font size: scaled size, never below the ink floor for this copy (each wrapped row)."""
+    need = LINE_MIN_INK if min_ink is None else min_ink
+    if min_ink is None and path == FONT_REGULAR:
+        need = _schedule_min_ink(title_ink)
     texts = [p for p in (parts or []) if p] or [" ".join(str(text or "").split())]
     texts = [t for t in texts if t]
     if not texts:
         return 6
-    floor = max(_px_for_min_ink(FONT_REGULAR, t, need) for t in texts)
+    floor = max(_px_for_min_ink(path, t, need) for t in texts)
     return max(floor, int(round(base_px * scale)))
 
 
@@ -503,9 +505,10 @@ def _inside(bbox, box) -> bool:
 def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict | None = None) -> Layout:
     """Fit the lines into the target box (wrap first, then shrink other lines); ink-checked against the strict core.
 
-    Tagline and schedule never shrink below LINE_MIN_INK (36px), or 0.3× the title ink height when that
-    is larger and still smaller than the title. The tagline font size is always at least the update-line
-    font size. If the text still cannot fit after wrapping, this raises.
+    Every title, tagline and schedule row never shrinks below LINE_MIN_INK (36px). Tagline/schedule may
+    use 0.3× the title ink height when that is larger and still smaller than the title. Shrink order
+    keeps title font size strictly greater than tagline, and tagline at least the update-line size.
+    If the text still cannot fit after wrapping while holding that hierarchy, this raises.
     """
     colors = colors or {"brand": _color(None, DEFAULT_BRAND), "text": _color(None, DEFAULT_TEXT),
                         "schedule": _color(None, DEFAULT_SCHEDULE), "accent": _color(None, DEFAULT_ACCENT)}
@@ -517,52 +520,62 @@ def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict 
     tall = (STRICT_CORE[3] - STRICT_MARGIN) - (STRICT_CORE[1] + STRICT_MARGIN)
     target_h = ty1 - ty0
     steps = [round(1.0 - 0.02 * i, 2) for i in range(int((1.0 - MIN_SCALE) / 0.02) + 1)]
-    # In order: one row per line in the target box; wrap first in the target box;
-    # wrap in the strict-core height while shrinking other lines, never line 3.
-    # Other lines stop shrinking once the title ink would no longer stay above the
-    # 36px line-3 floor (consistent hierarchy). They do not drop to MIN_SCALE.
-    ch_text = " ".join(str(channel or "").split())
-    other_floor = WRAP_FLOOR
-    for s in reversed(steps):
-        ink = _glyph_ink_height(FONT_BOLD, max(6, int(round(CHANNEL_PX * s))), ch_text)
-        if ink > SCHEDULE_MIN_INK:
-            other_floor = s
-            break
+    # One row per line in the target box; wrap first in the target box; then wrap in
+    # the strict-core height. Tagline and schedule may shrink toward their ink floors;
+    # title stays strictly larger than the tagline, and every title row stays >= 36px ink.
     passes = ((False, target_h, WRAP_FLOOR), (True, target_h, WRAP_FLOOR),
-              (True, tall, other_floor))
+              (True, tall, MIN_SCALE))
     for allow_wrap, max_h, floor in passes:
         for scale in steps:
             if scale < floor:
                 break
             ch_px = max(6, int(round(CHANNEL_PX * scale)))
-            ch_text = " ".join(str(channel or "").split())
-            title_ink = _glyph_ink_height(FONT_BOLD, ch_px, ch_text)
-            sched_px = _line_px_for(schedule, scale, SCHEDULE_PX, title_ink) if schedule else 6
-            tag_px = _line_px_for(tagline, scale, TAGLINE_PX, title_ink) if tagline else 6
-            # Subtitle font size is always at least the update-line size; never shrink only the subtitle.
-            if tagline and schedule:
-                tag_px = max(tag_px, sched_px)
+            sched_px = max(6, int(round(SCHEDULE_PX * scale))) if schedule else None
+            tag_px = max(6, int(round(TAGLINE_PX * scale))) if tagline else None
             planned = _plan(channel, tagline, schedule, scale, allow_wrap, colors, box_w,
-                            schedule_px=sched_px, tagline_px=tag_px)
+                            channel_px=ch_px, schedule_px=sched_px, tagline_px=tag_px)
             if planned is None:
                 continue
             rows, _ = planned
-            # After wrapping, bump tagline/schedule if a row would fall below the floor, then re-wrap.
-            by = {row[0]: row for row in rows}
-            need_px = {}
-            if "schedule" in by:
-                need_px["schedule"] = _line_px_for(schedule, scale, SCHEDULE_PX, title_ink, parts=by["schedule"][1])
-            if "tagline" in by:
-                need_px["tagline"] = _line_px_for(tagline, scale, TAGLINE_PX, title_ink, parts=by["tagline"][1])
-            if "tagline" in need_px and "schedule" in need_px:
-                need_px["tagline"] = max(need_px["tagline"], need_px["schedule"])
-            if any(need_px[role] > by[role][3] for role in need_px):
-                planned = _plan(channel, tagline, schedule, scale, allow_wrap, colors, box_w,
-                                schedule_px=need_px.get("schedule", sched_px),
-                                tagline_px=need_px.get("tagline", tag_px))
-                if planned is None:
-                    continue
-                rows, _ = planned
+            # After wrapping, bump every role to its ink floor and keep title > tagline >= schedule.
+            stable = False
+            for _ in range(6):
+                by = {row[0]: row for row in rows}
+                ch_parts = by["channel"][1] if "channel" in by else []
+                title_ink = max((_glyph_ink_height(FONT_BOLD, ch_px, p) for p in ch_parts), default=LINE_MIN_INK)
+                need = _schedule_min_ink(title_ink)
+                new_ch = _line_px_for(channel, scale, CHANNEL_PX, title_ink, parts=ch_parts,
+                                      path=FONT_BOLD, min_ink=LINE_MIN_INK) if ch_parts else ch_px
+                new_sch = (_line_px_for(schedule, scale, SCHEDULE_PX, title_ink,
+                                        parts=by["schedule"][1], min_ink=need)
+                           if "schedule" in by else sched_px)
+                new_tag = (_line_px_for(tagline, scale, TAGLINE_PX, title_ink,
+                                        parts=by["tagline"][1], min_ink=need)
+                           if "tagline" in by else tag_px)
+                if new_tag is not None and new_sch is not None:
+                    new_tag = max(new_tag, new_sch)
+                if new_tag is not None and new_ch <= new_tag:
+                    new_ch = new_tag + 1
+                # Title ink must stay the largest: at least 36px, and above the tallest tagline row.
+                if ch_parts and "tagline" in by and new_tag is not None:
+                    tag_inks = [_glyph_ink_height(FONT_REGULAR, new_tag, p) for p in by["tagline"][1]]
+                    if tag_inks:
+                        new_ch = max(new_ch, _line_px_for(channel, scale, CHANNEL_PX, title_ink,
+                                                          parts=ch_parts, path=FONT_BOLD,
+                                                          min_ink=max(LINE_MIN_INK, max(tag_inks) + 1)))
+                if (new_ch, new_tag, new_sch) == (ch_px, tag_px, sched_px):
+                    stable = True
+                    break
+                nxt = _plan(channel, tagline, schedule, scale, allow_wrap, colors, box_w,
+                            channel_px=new_ch, schedule_px=new_sch, tagline_px=new_tag)
+                if nxt is None:
+                    planned = None
+                    break
+                ch_px, tag_px, sched_px = new_ch, new_tag, new_sch
+                rows, _ = nxt
+                planned = nxt
+            if planned is None or not stable:
+                continue
             placed, accent, h = _block(rows, scale)
             if h > max_h:
                 continue
@@ -579,26 +592,30 @@ def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict 
                     break
             if not ok:
                 continue
-            ch_inks = [ln.ink[3] - ln.ink[1] for ln in lines if ln.role == "channel" and ln.ink]
-            title_ink_m = max(ch_inks) if ch_inks else title_ink
-            need = _schedule_min_ink(title_ink_m)
-            floored = [ln for ln in lines if ln.role in ("tagline", "schedule") and ln.ink]
-            if any((ln.ink[3] - ln.ink[1]) < need for ln in floored):
+            floored = [ln for ln in lines if ln.role in ("channel", "tagline", "schedule") and ln.ink]
+            if any((ln.ink[3] - ln.ink[1]) < LINE_MIN_INK for ln in floored):
                 continue
+            ch_pxs = [ln.px for ln in lines if ln.role == "channel"]
             tag_pxs = [ln.px for ln in lines if ln.role == "tagline"]
             sch_pxs = [ln.px for ln in lines if ln.role == "schedule"]
             if tag_pxs and sch_pxs and min(tag_pxs) < max(sch_pxs):
                 continue
+            if tag_pxs and ch_pxs and min(ch_pxs) <= max(tag_pxs):
+                continue
+            ch_inks = [ln.ink[3] - ln.ink[1] for ln in lines if ln.role == "channel" and ln.ink]
+            tag_inks = [ln.ink[3] - ln.ink[1] for ln in lines if ln.role == "tagline" and ln.ink]
+            if ch_inks and tag_inks and min(ch_inks) <= max(tag_inks):
+                continue
             acc = None
             if accent:
                 ay, t = accent
-                length = max(24, int(round(ACCENT_LEN * scale)))
+                length = max(24, int(round(ACCENT_LEN * max(scale, 0.5))))
                 acc = (tx0 + 2, top + ay, tx0 + 2 + length, top + ay + t)
                 if not _inside(acc, STRICT_CORE):
                     continue
             return Layout(scale=scale, lines=lines, accent=acc, accent_color=colors["accent"],
                           wrapped=any(len(r[1]) > 1 for r in rows))
-    raise LayoutError("三行文字换行后仍排不进横幅安全区（副标题与更新行需保持至少 36px），请缩短后再继续。")
+    raise LayoutError("三行文字换行后仍排不进横幅安全区（标题须大于副标题且各行需保持至少 36px），请缩短后再继续。")
 
 
 def _to_canvas(base_bytes: bytes):
