@@ -6,7 +6,8 @@ declared pixels and a size lock, then the user presses generate.
 
 The CDN returns a PNG this file drew in memory and labeled LOCAL FIXTURE.
 A matching file is placed on the canvas; the browser reads that image's
-natural pixels. A different file is refused and no image is placed.
+natural pixels. A different file was charged, so it is placed as returned with a
+size notice (P1 hotfix #911), never dropped.
 Nothing here calls a paid API or claims the picture is a real supplier result.
 """
 from __future__ import annotations
@@ -219,8 +220,8 @@ async def test_auto_entry_respects_disabled_qwen_and_does_not_call_upstream(app_
         await browser.close()
 
 
-async def test_skill_cards_place_matching_fixture_and_refuse_a_different_one(app_url, mock_ws):
-    """Real generate button, local fixture file, canvas pixels or an explicit refusal."""
+async def test_skill_cards_place_matching_fixture_and_place_a_different_one_with_notice(app_url, mock_ws):
+    """Real generate button, local fixture file, canvas pixels; a mismatch is placed with a notice (#911 P1)."""
     SHOTS.mkdir(parents=True, exist_ok=True)
     async with pw.async_playwright() as p:
         try:
@@ -298,13 +299,30 @@ async def _case(page, mock_ws, skill, width, height, ratio, rgb, match: bool):
         await _close_toasts(page)
         await page.screenshot(path=str(SHOTS / f"{skill}-placed.png"))
     else:
-        await _until(lambda: _error(page), 25)
-        text = await page.locator(".ca-gen-card__error").inner_text()
-        assert "没有通过" in text, (skill, text)
-        assert f"{wrong[0]}×{wrong[1]}" in text and f"{width}×{height}" in text
-        assert await page.locator(".tl-image").count() == 0
+        # P1 hotfix (#911): the file was charged, so it is placed as returned (no stretch, no crop)
+        # and a size notice is shown. It is never dropped.
+        await _until(lambda: _images(page), 25)
+        await page.wait_for_timeout(600)
+        # The asset file itself (tldraw may render a smaller DOM variant of a wide image).
+        placed = await page.evaluate(
+            """async () => {
+              const ed = window.__caEditor
+              const shape = ed.getCurrentPageShapes().filter((s) => s.type === 'image').at(-1)
+              const asset = shape && ed.getAsset(shape.props.assetId)
+              if (!asset) return null
+              const img = new Image()
+              img.src = asset.props.src
+              await img.decode()
+              return { asset: [asset.props.w, asset.props.h], natural: [img.naturalWidth, img.naturalHeight] }
+            }"""
+        )
+        assert placed and placed["natural"] == [wrong[0], wrong[1]], (skill, placed)
+        assert placed["asset"] == [wrong[0], wrong[1]], (skill, placed)
+        assert await page.locator(".ca-gen-card__error").count() == 0
+        expected = f"出图尺寸低于预期（实际 {wrong[0]}×{wrong[1]}），已按原图交付。"
+        await _until(lambda: _toast(page, expected), 10)
         await _close_toasts(page)
-        await page.screenshot(path=str(SHOTS / f"{skill}-refused.png"))
+        await page.screenshot(path=str(SHOTS / f"{skill}-placed-with-notice.png"))
 
 
 async def _close_toasts(page):
@@ -325,3 +343,7 @@ async def _images(page):
 
 async def _error(page):
     return await page.locator(".ca-gen-card__error").count() >= 1
+
+
+async def _toast(page, text):
+    return any(text in t for t in await page.locator(".tlui-toast__title").all_inner_texts())
