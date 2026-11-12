@@ -45,7 +45,41 @@ export function lockedFileError(want: { width: number; height: number }, got: { 
   return `没有通过：供应商原文件是 ${got.width}×${got.height}，锁定尺寸是 ${want.width}×${want.height}。没有拉伸，没有裁切，没有重试，没有换模型。 / Not accepted: the provider file is ${got.width}×${got.height} and the locked size is ${want.width}×${want.height}. It was not stretched, cropped, retried, or sent to another model.`
 }
 
-/** Canvas delivery. No size lock on the holder means this gate stays quiet. */
+/** P1 hotfix (#911): ratio-mode lock for Sunburst pins. Sunburst takes only aspect_ratio + 1k/2k/4k,
+ *  so 2k 3:4 is 1664×2224, not 1536×2048. Pass = ratio error <= 1% and long side >= target long side.
+ *  Integer cross-multiplication keeps exactly 1% on the accepted side. */
+export function ratioLockOk(want: { width: number; height: number }, got: { width: number; height: number } | null): boolean {
+  if (!got || !(got.width > 0) || !(got.height > 0) || !(want.width > 0) || !(want.height > 0)) return false
+  const diff = Math.abs(got.width * want.height - want.width * got.height)
+  const base = want.width * got.height
+  if (diff * 100 > base) return false
+  return Math.max(got.width, got.height) >= Math.max(want.width, want.height)
+}
+
+/** 'size' = ratio off > 1% or long side short (or exact pixels differ); 'unread' = no readable pixels.
+ *  One user message for 'size' (jobs.sizeNotice, actual W×H); jobs.sizeNoticeUnread otherwise. */
+export type SizeNoticeKind = 'size' | 'unread'
+export interface SizeDeliveryNotice { kind: SizeNoticeKind; want: { width: number; height: number }; got: { width: number; height: number } | null; mode: 'ratio' | 'exact' }
+
+/** P1 hotfix (#911): the image is already charged, so delivery is never refused.
+ *  Null = passed (or no lock). Otherwise a notice kind to log and show (UI language, neutral copy);
+ *  the caller still places the file as returned. */
+export function lockedDeliveryNotice(meta: { sizeLockModel?: unknown; pixelSize?: unknown; sizeLockMode?: unknown } | null | undefined, media: { w: number; h: number }[]): SizeDeliveryNotice | null {
+  if (!meta || typeof meta.sizeLockModel !== 'string' || !meta.sizeLockModel) return null
+  const raw = meta.pixelSize
+  const want = { width: Array.isArray(raw) ? Math.round(Number(raw[0])) : 0, height: Array.isArray(raw) ? Math.round(Number(raw[1])) : 0 }
+  const mode = meta.sizeLockMode === 'ratio' ? 'ratio' as const : 'exact' as const
+  const items = media.length ? media : [{ w: 0, h: 0 }]
+  for (const item of items) {
+    const got = item.w > 0 && item.h > 0 ? { width: item.w, height: item.h } : null
+    const ok = mode === 'ratio' ? ratioLockOk(want, got) : lockedFileError(want.width > 0 ? want : { width: 0, height: 0 }, got) === null
+    if (!ok) return { kind: got ? 'size' : 'unread', want, got, mode }
+  }
+  return null
+}
+
+/** Canvas delivery. No size lock on the holder means this gate stays quiet.
+ *  P1 hotfix (#911): no longer used to refuse placement (see lockedDeliveryNotice); kept for callers that only report. */
 export function lockedDeliveryError(meta: { sizeLockModel?: unknown; pixelSize?: unknown } | null | undefined, media: { w: number; h: number }[]): string | null {
   if (!meta || typeof meta.sizeLockModel !== 'string' || !meta.sizeLockModel) return null
   const raw = meta.pixelSize
