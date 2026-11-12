@@ -1,0 +1,108 @@
+Lovart same-input audit notes
+
+Skill URL: https://www.lovart.ai/skills/2ouy4hiipxj4
+Skill page resolved to: https://www.lovart.ai/skills?skillId=2ouy4hiipxj4
+Title confirmed exactly: E-commerce Same-scene Character Pose Variation
+Author confirmed exactly: mulsanne_ultimate2
+Project URL: https://www.lovart.ai/canvas?projectId=2voj2h3vbvnk
+Credits before: 1900
+Credits after: 1900
+
+Setup and input
+- The official skill page's Try this skill opened the new canvas. The canvas initially showed no capsule, so I added the same official skill via Start from skill and selected its exact title before sending.
+- Uploaded exactly one input file: /workspace/lovart-audit/pose-fission/input/person-input.png (verified 1776x2368 px).
+- Exact message sent once: 用这张模特图，同一场景做一组不同姿势的电商图。
+
+Question card 1
+- Pager: no pager/count displayed; only one question page was visible.
+- Before selection: no option was highlighted.
+- Selection type: single-choice (A/B option buttons; C provides a link textbox).
+- Question label: Question:
+- Question text: 我这边还没有收到你说的模特图，能提供一下吗？
+- Option A: 我这就上传模特图
+- Option B: 用画布里已有的图
+- Option C: C; textbox placeholder: 直接粘贴模特图的图片链接...
+- Buttons: Skip; Submit
+- Chosen: first option, A — 我这就上传模特图
+- Submitted. No second card appeared.
+- Screenshots before and after selection are saved below.
+
+Model / generation / credits
+- Model label shown while generating: none; image generation did not start, so no “Generating images using …” label was displayed.
+- The skill capsule instruction text referenced “nano banana pro” at 3:4 / 4K, but that was not a live generation label.
+- Outputs: 0. No result image pixel sizes or artifact URLs exist.
+- Credits remained 1900; no top-up or mode change.
+
+Lovart final reply (verbatim)
+好的，等你把模特图发过来。
+图片到位后我会这样做：
+- 先出 4 条镜头提示词（同一场景、同一模特，只换构图/机位/姿势），以参数行形式列出，方便你逐条看。
+- 你点选确认：可以直接开始生图，也可以让我换一批。
+- 确认后一次性出 4 张图：3:4 画幅、4K，角色长相、服装、场景、光影与色调全部锁定为你那张原图。
+你上传就行，我接着往下走。
+
+Caveats
+- Although the one image was uploaded to the canvas Reference panel, the skill asked for the model image again and the final reply says it had not received it. I did not send another prompt or upload another copy, to preserve the one-send/same-input audit instructions. Therefore no generation or downloadable outputs were produced.
+- A second Untitled project link appeared in Recent Projects during the Try flow; possible stray empty project URL: https://www.lovart.ai/canvas?projectId=2voj2p3e4oow (not inspected).
+
+Saved files
+- notes.txt
+- question-card-01.png — pre-selection card screenshot, 1920x1072 px
+- question-card-01-selected.png — card screenshot after selecting A, 1920x1072 px
+- result-page.png — full-page final canvas screenshot; no generated images, 3840x1072 px
+- No result-01.png etc. because no outputs were generated.
+
+
+Follow-up (same project; continued 2026-11-12)
+
+Project URL: https://www.lovart.ai/canvas?projectId=2voj2h3vbvnk
+Credits before follow-up message: 1900 (above the 300-credit stop threshold)
+Credits after generation: 1741
+- Used the chat input + / Add files control (not the Reference panel) to attach /workspace/lovart-audit/pose-fission/input/person-input.png.
+- Exact follow-up sent: 模特图已上传，请继续。
+- The same project was used; no new project was opened and 2voj2p3e4oow was not touched.
+
+Prompt-confirm card
+- Pager: none displayed; one page.
+- Preselected: none.
+- Question label/text: Question: 这 4 条提示词可以吗？
+- Option A: 开始生图
+- Option B: 换一批
+- Option C: C; textbox placeholder: 其它，请直接输入...
+- Buttons: Skip; Submit
+- Choice: A — 开始生图 (first option); submitted.
+- No additional card appeared.
+- Card screenshots: follow-up-card-01.png (before selection) and follow-up-card-01-selected.png (after selecting A).
+
+Four shot prompts (verbatim)
+1. 第一条： 构图：全身 视角：正面 + 平视 姿势：自然站立，双手插兜，重心略偏向一侧，肩线放松 取景：人物居中，头顶与脚下留白均衡，构图端正稳定
+2. 第二条： 构图：七分景 视角：四分之三侧面（约45°）+ 平视 姿势：侧身倚靠，双手在身前自然交叠，头部微侧 取景：人物偏画面右侧，左侧留出空间，视线朝向画外
+3. 第三条： 构图：半身（膝盖以上） 视角：微俯拍 姿势：向前行走的动态，双肩放松，双臂自然摆动，一步踏前 取景：人物居中略偏左，取景干脆，突出上身与步态
+4. 第四条： 构图：全身 视角：正侧面 + 平视 姿势：双脚交叉站立，身体侧向一边，回头看向镜头，一手垂落一手轻抬 取景：人物落在画面下三分之一处，横向留白充足，画面通透
+
+Model label
+- While generating, Lovart displayed exactly: “Generating images using Nano Banana Pro”.
+- The completed result card displayed: “Nano Banana Pro”. This was one batch label; no separate per-image model label was shown.
+
+Outputs (downloaded originals from the query-free a.lovart.ai artifact URLs)
+1. result-01.png — 同场景姿势01·全身正面 — 3584x4800 px; 18,140,440 bytes
+   Artifact URL: https://a.lovart.ai/artifacts/agent/CIDw63B8VWGLo7KJ.png
+2. result-02.png — 同场景姿势02·七分侧身倚靠 — 3584x4800 px; 17,884,144 bytes
+   Artifact URL: https://a.lovart.ai/artifacts/agent/NlUvn850T1Bap0DQ.png
+3. result-03.png — 同场景姿势03·半身行走 — 3584x4800 px; 17,988,324 bytes
+   Artifact URL: https://a.lovart.ai/artifacts/agent/T8XcHYw2k13HO06L.png
+4. result-04.png — 同场景姿势04·全身侧面回眸 — 3584x4800 px; 18,045,872 bytes
+   Artifact URL: https://a.lovart.ai/artifacts/agent/Q88Rn9R7WmD0juK5.png
+
+Lovart completion reply
+4 张同场景换姿势的电商图已完成，均为 3:4、4K，共用你那张模特图作为一致性锚点：
+01 | 全身 · 正面平视 | 自然站立，双手插兜，重心略偏一侧
+02 | 七分景 · 四分之三侧面（45°） | 侧身倚靠，双手身前交叠，头部微侧
+03 | 半身（膝盖以上）· 微俯拍 | 向前行走动态，双臂自然摆动
+04 | 全身 · 正侧面平视 | 双脚交叉站立，回头看向镜头
+逐张建议对照原图检查模特长相、背心+卡其裤+迷彩包+心形项链这套搭配，以及白色空间和左侧凹槽圆柱是否走样。哪一张有问题，告诉我序号，我用同一张参考图和同一条提示词单独重出那一张。
+
+Follow-up evidence files
+- follow-up-card-01.png — confirmation card before choice (1920x1072 px)
+- follow-up-card-01-selected.png — card after choosing A (1920x1072 px)
+- result-page-2.png — full-canvas screenshot with all four images (1920x1072 px)
