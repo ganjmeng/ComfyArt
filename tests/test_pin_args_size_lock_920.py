@@ -13,7 +13,16 @@ compared, including absence (main drops width/height/size_lock for ai-model).
 """
 from __future__ import annotations
 
+import asyncio
+import json
+from pathlib import Path
+
 import pytest
+from ComfyArt.api import wavespeed
+
+FIXTURE = json.loads((Path(__file__).parent / "fixtures" / "wavespeed_catalog_subset.json").read_text(encoding="utf-8"))
+SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
+SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
 
 MAIN_SHA = "d3f5ca4b2c76b591cda812746a0b55df6fcc0ba7"
 SIZE_KEYS = ("model", "edit_model", "auto_model", "width", "height", "ratio", "size_lock",
@@ -82,6 +91,41 @@ def _pipeline(skill: str, refk: str, size: dict) -> tuple[str | None, dict]:
     return category, {k: out[k] for k in SIZE_KEYS if k in out}
 
 
+def _sunburst_schema(mid: str) -> dict:
+    return FIXTURE[mid]["api_schema"]["api_schemas"][0]["request_schema"]
+
+
+def sunburst_submitted_payload(pinned: dict) -> dict:
+    """WaveSpeed payload for a Sunburst pin. Maps edit_resolution → resolution.
+
+    Width/height are forwarded only when _pin_args kept an explicit canvas
+    (studio-model / clothing-swap). Ratio-only 2k fill must not invent pixels:
+    Sunburst has no size/width/height, only aspect_ratio + resolution.
+    """
+    mid = pinned.get("edit_model") or pinned.get("model")
+    inputs = {"prompt": "x"}
+    if pinned.get("ratio"):
+        inputs["ratio"] = pinned["ratio"]
+    res = pinned.get("edit_resolution") or pinned.get("resolution")
+    if res:
+        inputs["resolution"] = res
+    if pinned.get("width") and pinned.get("height"):
+        inputs["width"] = pinned["width"]
+        inputs["height"] = pinned["height"]
+    return asyncio.run(wavespeed.build_payload(None, _sunburst_schema(mid), inputs, mid))
+
+
+def assert_sunburst_2k(pinned: dict, aspect: str) -> None:
+    mid = pinned.get("edit_model") or pinned.get("model")
+    assert mid in (SUNBURST_T2I, SUNBURST_EDIT)
+    props = (_sunburst_schema(mid).get("properties") or {})
+    assert "size" not in props and "width" not in props and "height" not in props
+    payload = sunburst_submitted_payload(pinned)
+    assert payload.get("resolution") == "2k"
+    assert payload.get("aspect_ratio") == aspect
+    assert "size" not in payload and "width" not in payload and "height" not in payload
+
+
 @pytest.mark.parametrize("skill,refk,size,category,pinned", EXPECTED,
                          ids=[f"{s}-{r}-{i}" for i, (s, r, *_rest) in enumerate(EXPECTED)])
 def test_pin_args_size_matches_main_d3f5ca4b(skill, refk, size, category, pinned):
@@ -123,24 +167,27 @@ def test_only_clothing_swap_and_studio_model_keep_canvas():
 
 
 
-def test_studio_model_ratio_only_fills_2k_1536x2048():
+def test_studio_model_ratio_only_fills_2k_aspect_ratio():
     """Ratio-only studio-model (no width/height/resolution) fills resolution 2k.
 
-    3:4 at 2k is 1536×2048 (Lovart review-assets 87857c35). This is new
-    behavior after #920: EXPECTED above stays the d3f5ca4b capture for
-    ai-model and pose-fission and is not edited. The keep-canvas cases in
+    The submitted Sunburst payload is resolution 2k + aspect_ratio 3:4, not
+    exact pixels. 2k 3:4 natively outputs 1664×2224, not 1536×2048. EXPECTED
+    above stays the d3f5ca4b capture for ai-model and pose-fission and is not
+    edited. The keep-canvas cases in
     test_only_clothing_swap_and_studio_model_keep_canvas already pass an
     explicit 1536×2048, so they are unchanged.
     """
     for refk, model_key, model_id in (
-        ("none", "model", "openai/gpt-image-2.6-sunburst/text-to-image"),
-        ("refs", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
-        ("base", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
+        ("none", "model", SUNBURST_T2I),
+        ("refs", "edit_model", SUNBURST_EDIT),
+        ("base", "edit_model", SUNBURST_EDIT),
     ):
         _, got = _pipeline("studio-model", refk, {"ratio": "3:4"})
         assert got[model_key] == model_id
         assert got["edit_resolution"] == "2k"
-        assert (got["width"], got["height"], got["ratio"]) == (1536, 2048, "3:4")
+        assert got["ratio"] == "3:4"
+        assert "width" not in got and "height" not in got
+        assert_sunburst_2k(got, "3:4")
 
 
 def test_studio_model_explicit_size_untouched():
@@ -150,7 +197,8 @@ def test_studio_model_explicit_size_untouched():
     _, got = _pipeline("studio-model", "none", {"ratio": "3:4", "width": 1536, "height": 2048})
     assert (got["width"], got["height"], got["ratio"]) == (1536, 2048, "3:4")
     assert "edit_resolution" not in got
-    assert got["model"] == "openai/gpt-image-2.6-sunburst/text-to-image"
+    assert got["model"] == SUNBURST_T2I
+    assert_sunburst_2k(got, "3:4")
 
     # A non-default explicit canvas must stay as given.
     _, got = _pipeline("studio-model", "refs", {"ratio": "1:1", "width": 1024, "height": 1024})
@@ -199,12 +247,12 @@ def test_ratio_only_2k_fill_does_not_change_other_skills():
 
 
 
-def test_cover_design_director_ratio_only_fills_2k_2048x1152():
+def test_cover_design_director_ratio_only_fills_2k_aspect_ratio():
     """Ratio-only cover-design-director (no width/height/resolution) fills 2k.
 
-    16:9 at 2k is 2048×1152 (Lovart review-assets 98af4eee). The skill is
-    not in _PIN_KEEPS_SIZE. Explicit size on other skills stays untouched;
-    this fill is the same ratio-only path as studio-model.
+    The submitted Sunburst payload is resolution 2k + aspect_ratio 16:9, not
+    exact pixels (Lovart review-assets 98af4eee used 16:9 at 2k). The skill is
+    not in _PIN_KEEPS_SIZE. This fill is the same ratio-only path as studio-model.
     """
     from ComfyArt.api.mcp_tools import canvas
 
@@ -213,23 +261,25 @@ def test_cover_design_director_ratio_only_fills_2k_2048x1152():
     assert "cover-design-director" in canvas._RATIO_ONLY_2K_SKILLS
 
     for refk, model_key, model_id in (
-        ("none", "model", "openai/gpt-image-2.6-sunburst/text-to-image"),
-        ("refs", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
-        ("base", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
+        ("none", "model", SUNBURST_T2I),
+        ("refs", "edit_model", SUNBURST_EDIT),
+        ("base", "edit_model", SUNBURST_EDIT),
     ):
         _, got = _pipeline("cover-design-director", refk, {"ratio": "16:9"})
         assert got[model_key] == model_id
         assert got["edit_resolution"] == "2k"
-        assert (got["width"], got["height"], got["ratio"]) == (2048, 1152, "16:9")
+        assert got["ratio"] == "16:9"
+        assert "width" not in got and "height" not in got
+        assert_sunburst_2k(got, "16:9")
 
 
 def test_product_to_packaging_ratio_only_fills_2k_both_ratios():
     """Ratio-only product-to-packaging fills resolution 2k (Lovart e304e2fa7).
 
-    The Lovart same-input run produced 1536×2048 (3:4) and 2048×1536 (4:3).
-    The skill is not in _PIN_KEEPS_SIZE; the fill runs after incoming pixels
-    are dropped, so a ratio-only (or ratio + dropped pixels) call lands on
-    these 2k canvases.
+    The Lovart same-input run used 3:4 and 4:3 at 2k. The skill is not in
+    _PIN_KEEPS_SIZE; the fill runs after incoming pixels are dropped. The
+    submitted payload is resolution 2k + the given aspect_ratio, not exact
+    pixels (2k 3:4 natively outputs 1664×2224).
     """
     from ComfyArt.api.mcp_tools import canvas
 
@@ -237,27 +287,30 @@ def test_product_to_packaging_ratio_only_fills_2k_both_ratios():
     assert "product-to-packaging" in canvas._RATIO_ONLY_2K_SKILLS
 
     cases = (
-        ("none", "model", "openai/gpt-image-2.6-sunburst/text-to-image", "3:4", (1536, 2048)),
-        ("refs", "edit_model", "openai/gpt-image-2.6-sunburst/edit", "3:4", (1536, 2048)),
-        ("base", "edit_model", "openai/gpt-image-2.6-sunburst/edit", "3:4", (1536, 2048)),
-        ("none", "model", "openai/gpt-image-2.6-sunburst/text-to-image", "4:3", (2048, 1536)),
-        ("refs", "edit_model", "openai/gpt-image-2.6-sunburst/edit", "4:3", (2048, 1536)),
-        ("base", "edit_model", "openai/gpt-image-2.6-sunburst/edit", "4:3", (2048, 1536)),
+        ("none", "model", SUNBURST_T2I, "3:4"),
+        ("refs", "edit_model", SUNBURST_EDIT, "3:4"),
+        ("base", "edit_model", SUNBURST_EDIT, "3:4"),
+        ("none", "model", SUNBURST_T2I, "4:3"),
+        ("refs", "edit_model", SUNBURST_EDIT, "4:3"),
+        ("base", "edit_model", SUNBURST_EDIT, "4:3"),
     )
-    for refk, model_key, model_id, ratio, pixels in cases:
+    for refk, model_key, model_id, ratio in cases:
         _, got = _pipeline("product-to-packaging", refk, {"ratio": ratio})
         assert got[model_key] == model_id
         assert got["edit_resolution"] == "2k"
-        assert (got["width"], got["height"], got["ratio"]) == (*pixels, ratio)
+        assert got["ratio"] == ratio
+        assert "width" not in got and "height" not in got
+        assert_sunburst_2k(got, ratio)
 
 
-def test_youtube_channel_banner_ratio_only_fills_2k_2048x1152():
+def test_youtube_channel_banner_ratio_only_fills_2k_aspect_ratio():
     """Ratio-only youtube-channel-banner fills resolution 2k (Lovart d7672d03).
 
-    Both Sunburst artifacts in the same-input run were 16:9 2048×1152
+    Both Sunburst artifacts in the same-input run were 16:9 at 2k
     (review-assets 911/lovart-ai/youtube-channel-banner/). The skill is not
     in _PIN_KEEPS_SIZE; the fill runs after incoming pixels are dropped.
-    Card / direction-board / final-text flow is not changed here.
+    The submitted payload is resolution 2k + aspect_ratio 16:9, not exact
+    pixels. Card / direction-board / final-text flow is not changed here.
     """
     from ComfyArt.api.mcp_tools import canvas
 
@@ -265,11 +318,13 @@ def test_youtube_channel_banner_ratio_only_fills_2k_2048x1152():
     assert "youtube-channel-banner" in canvas._RATIO_ONLY_2K_SKILLS
 
     for refk, model_key, model_id in (
-        ("none", "model", "openai/gpt-image-2.6-sunburst/text-to-image"),
-        ("refs", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
-        ("base", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
+        ("none", "model", SUNBURST_T2I),
+        ("refs", "edit_model", SUNBURST_EDIT),
+        ("base", "edit_model", SUNBURST_EDIT),
     ):
         _, got = _pipeline("youtube-channel-banner", refk, {"ratio": "16:9"})
         assert got[model_key] == model_id
         assert got["edit_resolution"] == "2k"
-        assert (got["width"], got["height"], got["ratio"]) == (2048, 1152, "16:9")
+        assert got["ratio"] == "16:9"
+        assert "width" not in got and "height" not in got
+        assert_sunburst_2k(got, "16:9")

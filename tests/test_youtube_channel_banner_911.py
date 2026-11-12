@@ -2,12 +2,12 @@
 
 Lovart's same-input run (review-assets d7672d038e6705b2399981c0bb775c5406c7460e,
 911/lovart-ai/youtube-channel-banner/) used GPT Image 2.6 Sunburst and produced
-16:9 2048×1152 images (direction board and no-text background; no reference
+16:9 2k images (direction board and no-text background; no reference
 images were attached). This skill is pinned the same way as studio-model:
 text-to-image with no reference, edit when a reference or base is given.
-Ratio-only calls fill resolution 2k (16:9 → 2048×1152). It is not added to
-_PIN_KEEPS_SIZE. The card, direction-board, and final-text flow are not
-changed here (pending Angela).
+Ratio-only calls fill resolution 2k + aspect_ratio 16:9 (Sunburst has no
+size/width/height params). It is not added to _PIN_KEEPS_SIZE. The card,
+direction-board, and final-text flow are not changed here (pending Angela).
 
 No WaveSpeed call. $0 static.
 """
@@ -53,7 +53,8 @@ def test_youtube_channel_banner_routes_sunburst_t2i_or_edit():
     assert pinned.get("auto_model") is True
     assert "edit_model" not in pinned
     assert pinned["edit_resolution"] == "2k"
-    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (2048, 1152, "16:9")
+    assert pinned["ratio"] == "16:9"
+    assert "width" not in pinned and "height" not in pinned
 
     with_ref = {**no_ref, "refs": ["shape:banner-ref"]}
     c = canvas._auto_choice("generate_image", dict(with_ref))
@@ -63,7 +64,8 @@ def test_youtube_channel_banner_routes_sunburst_t2i_or_edit():
     assert pinned["edit_model"] == SUNBURST_EDIT
     assert pinned.get("model") != SUNBURST_T2I
     assert pinned["edit_resolution"] == "2k"
-    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (2048, 1152, "16:9")
+    assert pinned["ratio"] == "16:9"
+    assert "width" not in pinned and "height" not in pinned
 
     with_base = {
         "prompt": "YouTube channel banner, 16:9",
@@ -76,4 +78,6 @@ def test_youtube_channel_banner_routes_sunburst_t2i_or_edit():
     pinned = canvas._pin_args(dict(with_base), c)
     assert pinned["edit_model"] == SUNBURST_EDIT
     assert pinned.get("model") != SUNBURST_T2I
-    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (2048, 1152, "16:9")
+    assert pinned["edit_resolution"] == "2k"
+    assert pinned["ratio"] == "16:9"
+    assert "width" not in pinned and "height" not in pinned

@@ -376,9 +376,11 @@ def test_studio_model_routes_sunburst_edit_or_t2i_3x4():
     """Rewritten lock (Angela 07:27): studio-model is pinned to Sunburst.
 
     No reference -> text-to-image; a reference or base -> edit. The pin has no
-    resolution/ratio, so a 3:4 1536×2048 canvas (Lovart 87857c35) is kept by
-    _pin_args. studio-model stays out of EXACT_SKILLS, so the exact-size path
-    is not used.
+    resolution/ratio, so an explicit 3:4 1536×2048 canvas is kept by _pin_args
+    (_PIN_KEEPS_SIZE). The submitted Sunburst payload is still resolution 2k
+    + aspect_ratio 3:4, not exact pixels (native 2k 3:4 is 1664×2224).
+    studio-model stays out of EXACT_SKILLS, so the exact-size path is not used.
+    Ratio-only calls fill edit_resolution 2k and do not invent pixels.
     """
     import json
 

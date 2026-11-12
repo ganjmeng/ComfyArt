@@ -392,14 +392,13 @@ def _exact_skill_pin(args: dict) -> dict | None:
 _PIN_KEEPS_SIZE = frozenset({"clothing-swap", "studio-model"})
 
 # Ratio-only 2k fill (no width/height/resolution): studio-model, product-to-packaging,
-# cover-design-director, and youtube-channel-banner. Pixels: 3:4 → 1536×2048
-# (Lovart 87857c35 / e304e2fa7), 4:3 → 2048×1536 (Lovart e304e2fa7),
-# 16:9 → 2048×1152 (Lovart 98af4eee / d7672d03). Explicit width/height/resolution
-# are left untouched.
+# cover-design-director, and youtube-channel-banner. Sunburst has no size/width/height
+# params, only aspect_ratio + resolution (1k/2k/4k). Fill edit_resolution 2k and keep
+# the given ratio. Do not invent exact pixels: 2k 3:4 natively outputs 1664×2224, not
+# 1536×2048. Explicit width/height/resolution are left untouched.
 _RATIO_ONLY_2K_SKILLS = frozenset({
     "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner",
 })
-_RATIO_ONLY_2K_PIXELS = {"3:4": (1536, 2048), "4:3": (2048, 1536), "16:9": (2048, 1152)}
 
 
 def _pin_args(args: dict, choice: dict) -> dict:
@@ -423,9 +422,9 @@ def _pin_args(args: dict, choice: dict) -> dict:
         args["ratio"] = choice["ratio"]
     # Ratio-only studio-model / product-to-packaging / cover-design-director /
     # youtube-channel-banner (no width/height/resolution): fill resolution 2k
-    # so 3:4 is 1536×2048 (Lovart 87857c35 / e304e2fa7), 4:3 is 2048×1536
-    # (Lovart e304e2fa7), and 16:9 is 2048×1152 (Lovart 98af4eee / d7672d03).
-    # An explicit size or resolution is left untouched. Other skills are not filled.
+    # and keep the given aspect ratio. Sunburst is submitted as
+    # resolution + aspect_ratio, not exact pixels. An explicit size or
+    # resolution is left untouched. Other skills are not filled.
     if (
         str(choice.get("skill") or "") in _RATIO_ONLY_2K_SKILLS
         and args.get("ratio")
@@ -433,9 +432,6 @@ def _pin_args(args: dict, choice: dict) -> dict:
                  or args.get("resolution") or args.get("edit_resolution"))
     ):
         args["edit_resolution"] = "2k"
-        pixels = _RATIO_ONLY_2K_PIXELS.get(str(args["ratio"]).strip())
-        if pixels:
-            args["width"], args["height"] = pixels
     return args
 
 
