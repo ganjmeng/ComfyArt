@@ -1,0 +1,71 @@
+Lovart international-site generation audit: product to packaging
+
+Skill
+- Site: https://www.lovart.ai
+- Skill page: https://www.lovart.ai/skills/2q60dfulue4g
+- Exact title: Product to Packaging System
+- Exact author: Lovart.AI_Wen (confirmed on skill detail page before use)
+- Project URL: https://www.lovart.ai/canvas?projectId=2vodlmlzkbuo (project title "用产品图设计一套包装")
+- (Two stray empty projects were created by clicks on the skill page: canvas?projectId=2vod3kwmtzpc [Skill Creator capsule, nothing sent] and 2vod6epnuo00 [skill capsule, nothing sent].)
+
+Inputs and run
+- Image: /workspace/lovart-audit/product-to-packaging/input/product-input.jpg (amber dropper bottle)
+- Message: 用这张产品图做一套包装。
+- Skill capsule + image + message were sent via one script call that reported an error but executed; the question-card screenshots were nonetheless auto-saved (question-card-1-before.png, -before-scrolled.png, -selected.png, -selected-q3.png). Option A chosen for all 3 questions, then Submit.
+- No variants/upscale/retry/follow-up requested.
+
+Credits
+- Before: 2049 (shown in UI; task expected ~1949)
+- After: 1960
+- Spent: 89 (cap 200)
+
+Q&A log
+Card: ONE card with 3 questions, indicator '1 of 3' -> '3 of 3'; header 'Question'; buttons Skip / Next (Q1-2) then Skip / Submit; no option pre-highlighted.
+Q1 options (as read from screenshot): A 护肤精华油 / Serum（30ml 滴管瓶）; B 口服酊剂 / 保健滴剂 (small text, approx.); C 香氛 / 身体护理油; D [placeholder: 自己填：品类 → 品牌名 → 产品名（不给的话我会先用常见一版）…]
+Q2 options: A 琥珀棕 ＋ 暖沙白，延续产品照片; B 琥珀为主 ＋ 蓝色品牌色点缀; C 深墨绿 ＋ 暖沙白; D 其它方向…(placeholder)
+Q3 (可多选)(Multi-select) options: A 核心三件：外盒 ＋ 瓶标 ＋ 内托; B 延伸件：运输箱 ＋ 手提袋 ＋ 封条/感谢卡; C 变体家族：同系列多支 / 多香型陈列; D 技术件：标注尺寸的结构图纸 ＋ 平面刀版稿; E 其它，请直接输入…(placeholder)
+Chosen answers (A each):
+Q: 这瓶滴管产品具体是什么？品牌名/产品名怎么定（直接决定包装上的文案与必要信息版面）
+A: 护肤精华油 / Serum（30ml 滴管瓶）  [analytics shows button "A 护肤精华油 / Serum（30ml 滴管瓶）"]
+Q: 包装的主色方向选哪个？
+A: 琥珀棕 ＋ 暖沙白，延续产品照片  [button "A ..."]
+Q: 这套包装要交付到哪个范围？（可多选）
+A: 核心三件：外盒 ＋ 瓶标 ＋ 内托  [button "A ..."]
+Then Submit.
+
+Generation/result
+- On-screen model: GPT Image 2.6 Sunburst (shown twice, anchor image and the 3 parallel extensions)
+- Outputs: 4
+  result-01.png 1536x2048 https://a.lovart.ai/artifacts/agent/POSae3wPggLdInIv.png (anchor: box + bottle)
+  result-02.png 2048x1536 https://a.lovart.ai/artifacts/agent/Q3xIf0U39HG2uRV3.png
+  result-03.png 2048x1536 https://a.lovart.ai/artifacts/agent/kzrDnlqeyPERyKdd.png
+  result-04.png 2048x1536 https://a.lovart.ai/artifacts/agent/5U7FOT4Eq94R6ZZc.png
+  (02-04 = box multi-angle board, label close-ups, unboxing tray; exact mapping to each URL not verified; originals fetched via curl from a.lovart.ai)
+
+Lovart final reply (verbatim)
+核心三件已完成，全部基于同一张锚点图延伸，色彩、字标与金线棕榈叶母题一致。
+
+交付清单
+锚点图 外盒 + 瓶身同框主视觉
+外盒多角度 正面 / 四分之三 / 侧 / 背 / 顶 五视角视图板
+瓶标专项 四角度环绕特写 + 360° 展开条带 + 材质微距
+内托开箱 翻盖开启、印字薄页、模塑纸浆内托承托
+
+视觉系统（贯穿四张）
+色彩：暖沙白 #EFE7DA 底 × 赤陶琥珀 #B4632A 色块 × 纯黑 #1C1917 字标，金色仅作线描与局部亮墨 UV
+辅助图形：单枝极简金线棕榈叶，各组件位置不同但画法统一
+材质：350gsm 未覆膜哑光象牙卡纸 / 未漂白模塑纸浆内托 / 暖沙白哑光标签纸 + 叶脉局部 UV
+版式层级：品牌名 → 产品名 → 品类说明 → 容量与必要信息，正面下 1/3 固定琥珀色带
+光影：统一沿用你原片那道斜切棕榈叶硬光，作为整套图的识别特征
+
+需要你注意的两点
+- SOLAMBER / AMBER RENEWAL SERUM 是我提的概念命名，不是既定品牌事实——要换名我重跑一轮即可，锚点改动会同步到全套。
+- 我没有逐字校验渲染出来的小号文字。图像模型在细小说明文字（背面成分表、侧排 DERMATOLOGIST TESTED 一类）上容易拼错，请你放大看一眼；以我上面写的这套文字与色值为准则，实际制版前的文字仍需你方提供定稿。
+
+另外：30ml 滴管瓶的成分表、警示语、产地、条码等法规内容我一律没有编造，图上只做了版面占位。你定了真实文案后再排背标。
+
+下一步可以往哪走，你说一个我就接着做：① 补上标注尺寸的结构图纸 + 平面刀版稿（概念级，非印刷文件）／② 延伸到运输箱、手提袋、封条感谢卡／③ 出同系列变体家族／④ 换品牌名重来。
+(minor list formatting/line breaks and item ③ abbreviated here; full text visible in the project chat)
+
+Files
+- result-01..04.png, result-page.png, notes.txt question-card-1-before.png, question-card-1-before-scrolled.png, question-card-1-selected.png, question-card-1-selected-q3.png
