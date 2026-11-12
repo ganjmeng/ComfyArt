@@ -435,6 +435,13 @@ def _pin_args(args: dict, choice: dict) -> dict:
                  or args.get("resolution") or args.get("edit_resolution"))
     ):
         args["edit_resolution"] = "2k"
+    # P1 hotfix (#911): a Sunburst pin cannot submit exact pixels (only aspect_ratio + 1k/2k/4k),
+    # so its size lock is checked as ratio <= 1% and long side >= target, not exact pixels.
+    from ..skill_size import RATIO_MODE, is_sunburst
+    if keeps and args.get("size_lock") and is_sunburst(args.get("edit_model") or args.get("model")):
+        args["size_lock_mode"] = RATIO_MODE
+    else:
+        args.pop("size_lock_mode", None)
     return args
 
 

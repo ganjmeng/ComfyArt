@@ -224,7 +224,9 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     const { controls, prep } = applyRefs(picked, refStrengthsOf(shape), refControlsOf(shape))
     const seed = seedOf(shape) ?? undefined
     const negative_prompt = negativeFor(shape, model)
-    const sizeLock = shape.meta?.sizeLockModel ? { size_lock: true as const } : {}
+    const sizeLock = shape.meta?.sizeLockModel
+      ? { size_lock: true as const, ...(shape.meta?.sizeLockMode === 'ratio' ? { size_lock_mode: 'ratio' as const } : {}) }
+      : {}
     const gif = gifSpec(shape.meta)
     const svg = svgSpec(shape.meta)
     if (svg) {

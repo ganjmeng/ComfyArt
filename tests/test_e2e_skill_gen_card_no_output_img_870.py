@@ -1,8 +1,9 @@
 """#870: Auto · model is header-only; gen-card frame never paints .ca-gen-frame__model.
 
-Across data-running, data-pending, and failed/refused: (1) no in-frame model row,
-(2) SelectionLabel header contains Auto · <model>, (3) with no output, no <img>
-with empty/missing src. Mock WaveSpeed, $0.
+Across data-running, data-pending, a size-lock mismatch (image delivered + notice,
+no error card), and a failed stub: (1) no in-frame model row on a gen card,
+(2) SelectionLabel header contains Auto · <model> when a card is present, (3) with no
+output, no <img> with empty/missing src. Mock WaveSpeed, $0.
 """
 from __future__ import annotations
 
@@ -126,7 +127,7 @@ async def test_header_only_auto_label_running_pending_and_no_output(app_url, moc
         pend = await _assert_header_only(page, "pending", expect_error=False)
         assert pend["pending"] == "true", pend
 
-        # --- refused (size-lock → null-job + error) ---
+        # --- size-lock mismatch: charged image is delivered, info notice shown, no error card ---
         await page.evaluate(
             """() => {
               const ed = window.__caEditor
@@ -136,36 +137,54 @@ async def test_header_only_auto_label_running_pending_and_no_output(app_url, moc
             }"""
         )
         before = len(mock_ws["submits"])
+        want = "出图尺寸低于预期（实际 2048×682），已按原图交付。"
         await page.locator(".ca-gen__send").click()
+        delivered = False
         for _ in range(300):
-            if len(mock_ws["submits"]) > before and await page.locator(".ca-gen-card__error").count():
+            nimg = await page.evaluate(
+                "() => window.__caEditor.getCurrentPageShapes().filter((s) => s.type === 'image').length"
+            )
+            if len(mock_ws["submits"]) > before and nimg >= 1:
+                delivered = True
                 break
             await asyncio.sleep(0.1)
-        await page.evaluate(
-            """() => {
-              const ed = window.__caEditor
-              const id = [...ed.getCurrentPageShapes()].find((s) => s.type === 'generator').id
-              ed.select(id)
-            }"""
-        )
-        await page.wait_for_timeout(200)
-        await page.locator(".ca-label").wait_for()
-        refused = await _assert_header_only(page, "refused", expect_error=True)
-        assert "没有通过" in await page.locator(".ca-gen-card__error").inner_text()
-        assert not refused["running"] and not refused["pending"], refused
+        assert delivered, "size-lock mismatch must still place the charged image on the canvas"
+        notice_shown = False
+        for _ in range(100):
+            titles = await page.locator(".tlui-toast__title").all_inner_texts()
+            if any(want in t for t in titles):
+                notice_shown = True
+                break
+            await asyncio.sleep(0.1)
+        assert notice_shown, "expected the size-delivery info toast"
+        assert await page.locator(".ca-gen-card__error").count() == 0
+        toast = page.locator(".tlui-toast__container").filter(has_text=want)
+        assert await toast.count() >= 1
+        assert (await toast.first.get_attribute("data-severity")) == "info"
 
         # --- failed (job stub + error, still no in-frame model) ---
+        # defaultPlacer removes the generator after a successful delivery; open a new one for this stub.
+        await page.get_by_role("button", name="图像生成").first.click()
+        await page.locator(".ca-gen__prompt").wait_for()
         await page.evaluate(
-            """() => {
+            """([w, h, model, prompt]) => {
               const ed = window.__caEditor
-              const id = [...ed.getCurrentPageShapes()].find((s) => s.type === 'generator').id
+              const id = ed.getSelectedShapeIds()[0] || [...ed.getCurrentPageShapes()].find((s) => s.type === 'generator')?.id
               const shape = ed.getShape(id)
-              ed.updateShape({ id, type: 'generator', meta: { ...shape.meta, job: { id: 'fail', phase: 'running' } } })
+              ed.updateShape({
+                id, type: 'generator',
+                props: { ...shape.props, prompt, resolution: 'custom', ratio: '4:5', cw: w, ch: h, w, h },
+                meta: { ...shape.meta, pixelSize: [w, h], sizeLockModel: model, quiet: false, job: { id: 'fail', phase: 'running' },
+                  modelChoice: { auto: true, model, category: 'poster_text',
+                    reason: { zh: '自动选择：海报/带字', en: 'Auto-picked: poster/text' } } },
+              })
               ed.select(id)
               const atom = window.__caResultsAtom
               if (atom) atom.update((r) => ({ ...r, [id]: { srcs: [], error: '生成失败 / Generation failed' } }))
-            }"""
+            }""",
+            [W, H, QWEN, "870 failed stub"],
         )
         await page.wait_for_timeout(200)
+        await page.locator(".ca-label").wait_for()
         await _assert_header_only(page, "failed", expect_error=True)
         await browser.close()

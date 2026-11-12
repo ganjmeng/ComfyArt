@@ -25,6 +25,8 @@ export interface WsInputs {
   height?: number
   /** #707: the downloaded file must match width×height. Not sent to the provider. */
   size_lock?: boolean
+  /** P1 hotfix (#911): 'ratio' for Sunburst pins (ratio <= 1%, long side >= target). Not sent to the provider. */
+  size_lock_mode?: 'ratio'
   ratio?: string
   seed?: number
   /** #201: sent only for models whose schema has negative_prompt. */
