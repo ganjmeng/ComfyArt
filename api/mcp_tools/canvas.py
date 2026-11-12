@@ -38,7 +38,7 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
             blocked_gif = still_block(ensure_gif_args(dict(args)))
             if blocked_gif is not None:
                 return blocked_gif
-            # portrait-studio (Lovart 7fc60c86): no reference photo -> ask for one; no approval, no submit.
+            # portrait-studio (reference run 7fc60c86): no reference photo -> ask for one; no approval, no submit.
             from .. import portrait_studio
             if portrait_studio.missing_reference(args):
                 return portrait_studio.needs_reference_result()
@@ -646,11 +646,11 @@ SPECS: dict[str, dict] = {
          "width": {"type": "integer"}, "height": {"type": "integer"},
          "count": {"type": "integer"}, "refs": _IDS, "ref_modes": {"type": "array", "items": {"type": "string"}}, "base": {"type": "string"},
          "base_strength": {"type": "integer"}, "skill": {"type": "string"},
+         "shot": {"type": "string", "enum": ["closeup", "half", "three_quarter", "full"],
+                  "description": "portrait-studio only: the shot size of this one image"},
          "output_format": {"type": "string", "enum": ["png", "jpeg", "webp", "gif", "svg"]},
          "frame_count": {"type": "integer"}, "frame_duration_ms": {"type": "integer"},
          "complexity": {"type": "string", "enum": ["low", "medium", "high"]},
-         "shot": {"type": "string", "enum": ["closeup", "half", "three_quarter", "full"],
-                  "description": "portrait-studio only: the shot size of this one image"},
          **_PLACE},
         ["prompt"], approval="生成图像"),
     "generate_video": _tool(

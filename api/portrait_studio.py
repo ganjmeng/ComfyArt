@@ -177,17 +177,23 @@ SHOT_KEYS = ("closeup", "half", "three_quarter", "full")
 SHOTS_BY_OPTION = {"A": ("closeup", "half", "three_quarter"),
                    "B": ("closeup", "half", "three_quarter", "full"),
                    "C": ("half",)}
-SHOT_LINE = {
-    "closeup": "Shot size: face close-up, head and shoulders, the face fills most of the frame.",
-    "half": "Shot size: half body, framed from the waist up.",
-    "three_quarter": "Shot size: three-quarter body, framed from mid-thigh up.",
+SHOT_LINE = {  # crops from notes.txt (7fc60c86): 头肩 / 大腿上缘以上 / 小腿中部以上 / 全身
+    "closeup": "Shot size: face close-up, head and shoulders.",
+    "half": "Shot size: half body, framed from the upper thigh up.",
+    "three_quarter": "Shot size: three-quarter body, framed from mid-calf up.",
     "full": "Shot size: full body, head to feet in frame.",
 }
+# Shared posing from notes.txt (7fc60c86): S 型脊柱 + 一肩微高一肩微低 + 下巴前伸微低拉紧下颌线；手部统一走
+# "插兜 / 自然垂落侧手"路线，规避手指畸变，腰侧保留负空间. Every shot uses all of it; each line only says
+# what that framing shows. Nothing else is added.
+POSE_SHARED = ("S-curve spine, one shoulder slightly higher than the other, chin slightly forward and down "
+               "to tighten the jawline, hands in pockets or hanging naturally at the sides (avoid finger "
+               "distortion), negative space kept at the sides of the waist.")
 POSE_LINE = {
-    "closeup": "Pose: face toward the camera or turned slightly, eyes to the lens, shoulders relaxed.",
-    "half": "Pose: torso angled slightly, arms relaxed or lightly crossed, natural expression.",
-    "three_quarter": "Pose: weight on one leg, one hand relaxed at the side or in a pocket, confident stance.",
-    "full": "Pose: standing naturally, full stance visible, rebuilt for the full-body framing.",
+    "closeup": "Pose: " + POSE_SHARED + " In this framing only the shoulders, chin and jawline show.",
+    "half": "Pose: " + POSE_SHARED + " In this framing the spine curve, shoulders, hands and waist show.",
+    "three_quarter": "Pose: " + POSE_SHARED + " In this framing the S-curve down to the legs, the hands and waist show.",
+    "full": "Pose: " + POSE_SHARED + " In this framing the whole S-curve stance shows, head to feet.",
 }
 IDENTITY_LINE = ("Same person as the reference photo: face, facial features, hairstyle and body proportions "
                  "exactly as in the reference; do not change them.")

@@ -464,6 +464,34 @@ def test_shot_and_pose_are_the_only_per_image_lines():
     assert canvas.SPECS["generate_image"]["inputSchema"]["properties"]["shot"]["enum"] == list(ps.SHOT_KEYS)
 
 
+def test_shot_crops_follow_the_reference_notes():
+    """notes.txt 7fc60c86: 面部特写（头肩） / 半身（大腿上缘以上） / 七分身（小腿中部以上）."""
+    assert ps.SHOT_LINE["closeup"] == "Shot size: face close-up, head and shoulders."
+    assert ps.SHOT_LINE["half"] == "Shot size: half body, framed from the upper thigh up."
+    assert ps.SHOT_LINE["three_quarter"] == "Shot size: three-quarter body, framed from mid-calf up."
+    assert ps.SHOT_LINE["full"] == "Shot size: full body, head to feet in frame."
+    assert "waist up" not in ps.SHOT_LINE["half"] and "mid-thigh" not in ps.SHOT_LINE["three_quarter"]
+
+
+_SHARED_POSE_POINTS = ("S-curve spine", "one shoulder slightly higher than the other",
+                       "chin slightly forward and down to tighten the jawline",
+                       "hands in pockets or hanging naturally at the sides", "avoid finger distortion",
+                       "negative space kept at the sides of the waist")
+
+
+@pytest.mark.parametrize("shot", ps.SHOT_KEYS)
+def test_every_pose_line_is_the_shared_reference_posing(shot):
+    """notes.txt 摆姿: S 型脊柱 + 一肩微高一肩微低 + 下巴前伸微低拉紧下颌线；插兜 / 自然垂落侧手，规避手指畸变，腰侧保留负空间."""
+    pose = ps.POSE_LINE[shot]
+    for point in _SHARED_POSE_POINTS:
+        assert point in pose, (shot, point)
+    assert pose.startswith(ps.POSE_HEAD + " " + ps.POSE_SHARED)
+    for line in (pose, ps.SHOT_LINE[shot]):
+        low = line.lower()
+        for banned in ("cross", "eyes to the lens", "weight on one leg", "lens", "confident"):
+            assert banned not in low, (shot, banned)
+
+
 def test_other_skills_prompts_are_not_rewritten(relay):
     _run_turn("zh", [{"prompt": "a cat", "count": 1, "refs": ["shape:a"], "shot": "closeup"},
                      {"prompt": "a dog", "count": 1, "skill": "youtube-channel-banner", "refs": ["shape:b"]}])
