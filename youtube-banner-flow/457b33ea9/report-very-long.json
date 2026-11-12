@@ -1,0 +1,7 @@
+{
+ "kind": "bannerTextShorten",
+ "note": "very-long copy cannot keep title > tagline at the 36px floors; this preview is the shorten-copy card the user sees (zh + en).",
+ "zh": "横幅上的文字排在安全区内有点长，请缩短后再继续。",
+ "en": "The banner text is a bit long for the safe area. Please shorten it to continue.",
+ "submitted": false
+}
