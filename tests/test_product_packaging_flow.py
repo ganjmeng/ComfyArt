@@ -492,9 +492,23 @@ def _main_bytes(path: str) -> bytes:
 
 @pytest.mark.parametrize("path", ["api/auto_models.json", "api/skill_size.py", "api/curated_models.json",
                                   "api/wavespeed_models.json", "bot/skill_output.py", "bot/self_check.py",
-                                  "api/portrait_studio.py", "src/locales/zh.json", "src/locales/en.json"])
+                                  "api/portrait_studio.py"])
 def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_main_bytes(path)).hexdigest(), path
+
+
+# Locales are compared as JSON so a sibling skill can add its own keys. product-to-packaging
+# still adds none; youtube-channel-banner adds bot.composeBannerText only.
+BANNER_LOCALE = {"zh": "排版横幅文字", "en": "Set banner text"}
+
+
+@pytest.mark.parametrize("path,lang", [("src/locales/zh.json", "zh"), ("src/locales/en.json", "en")])
+def test_locales_match_main_except_youtube_banner_compose_key(path, lang):
+    ours = json.loads((ROOT / path).read_text(encoding="utf-8"))
+    main = json.loads(_main_bytes(path))
+    assert {k: main[k] for k in main} == {k: ours[k] for k in main}
+    extra = {k: ours[k] for k in ours if k not in main}
+    assert extra == {"bot.composeBannerText": BANNER_LOCALE[lang]}
 
 
 # --- question 3: live wording per letter, locked skeleton (Product, final) ----------------------

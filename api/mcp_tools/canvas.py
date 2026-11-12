@@ -34,6 +34,16 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
     async def handler(args: dict) -> dict:
         args = dict(args)
         if action == "generate_image":
+            # youtube-channel-banner: dry-run 精确排版 copy before any paid base call; then
+            # one 16:9 2k image per step + the stage's fixed clause (no-text base etc.).
+            from ..banner_compose import preflight_base_text, stage_args
+            blocked = preflight_base_text(args)
+            if blocked is not None:
+                return blocked
+            try:
+                args = stage_args(args)
+            except ValueError as e:
+                return {"status": "failed", "generation_succeeded": False, "submitted": False, "error": str(e)}
             # #825: still→GIF is refused before approval, quote, confirm, and submit.
             blocked_gif = still_block(ensure_gif_args(dict(args)))
             if blocked_gif is not None:
@@ -655,6 +665,15 @@ SPECS: dict[str, dict] = {
          "output_format": {"type": "string", "enum": ["png", "jpeg", "webp", "gif", "svg"]},
          "frame_count": {"type": "integer"}, "frame_duration_ms": {"type": "integer"},
          "complexity": {"type": "string", "enum": ["low", "medium", "high"]},
+         "banner_stage": {"type": "string", "enum": ["board", "base", "direct"],
+                          "description": "youtube-channel-banner only: board (three-direction board), base (text-free "
+                                         "base for compose_banner_text) or direct (model draws the text)"},
+         "channel_name": {"type": "string",
+                          "description": "youtube-channel-banner base stage: card-1 channel name. The server dry-runs "
+                                         "the 2560×1440 text layout before any model call."},
+         "tagline": {"type": "string", "description": "youtube-channel-banner base stage: card-1 tagline"},
+         "schedule": {"type": "string",
+                      "description": "youtube-channel-banner base stage: card-1 schedule / small info line"},
          **_PLACE},
         ["prompt"], approval="生成图像"),
     "generate_video": _tool(

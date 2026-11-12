@@ -204,6 +204,7 @@
   "bot.agentListLoading": "Loading the Agent list…",
   "bot.askYou": "Ask you",
   "bot.checkStatus": "Check status",
+  "bot.composeBannerText": "Set banner text",
   "bot.createArtboard": "Create artboard",
   "bot.createPpt": "Create PPT",
   "bot.deleteElements": "Delete elements",
