@@ -42,6 +42,13 @@ TABLE_26 = {
     ("max", "1k"): 0.25, ("max", "2k"): 0.47, ("max", "4k"): 0.85,
 }
 
+# #910: the 2.6 edit models price the same (quality, resolution) cell plus $0.015 for every input image the
+# request carries (each `images` entry, and a mask_image or markup_image). Checked 2026-11-12 08:05-08:07
+# Asia/Shanghai against WaveSpeed's free POST /api/v3/model/price for all 15 cells x 0/1/2 images on
+# openai/gpt-image-2.6-flare/edit and openai/gpt-image-2.6-sunburst/edit (catalog base_price $0.065 is medium 1k
+# with one image). An edit quoted without its images was priced as $0.05 and charged $0.065 (list, #910).
+EDIT_INPUT_USD = 0.015
+
 # Fields sent to the price API. Frame timing is shown on the confirm line and then dropped so it cannot be billed.
 UNBILLED = ("frame_count", "frame_duration_ms")
 
@@ -291,10 +298,11 @@ def billable(priced: dict) -> dict:
     return {k: v for k, v in priced.items() if k not in UNBILLED}
 
 
-def documented_usd(model: str, quality: str = "medium", resolution: str = "1k") -> float | None:
+def documented_usd(model: str, quality: str = "medium", resolution: str = "1k", inputs: int = 0) -> float | None:
     """Published still price for the quote stub. None when this cell is not in the lock table.
 
     GIF uses the same number. Callers must not multiply by frame_count.
+    #910: a 2.6 edit model is its cell plus EDIT_INPUT_USD per input image (`inputs`: images + mask/markup).
     """
     q = str(quality or "medium").lower()
     res = str(resolution or "1k").lower()
@@ -302,6 +310,10 @@ def documented_usd(model: str, quality: str = "medium", resolution: str = "1k") 
         return STILL_MEDIUM_1K[FLARE_25_T2I]
     if model in GIF_T2I:
         return TABLE_26.get((q, res))
+    if model in GIF_EDIT:
+        cell = TABLE_26.get((q, res))
+        n = inputs if isinstance(inputs, int) and not isinstance(inputs, bool) and inputs > 0 else 0
+        return None if cell is None else round(cell + EDIT_INPUT_USD * n, 4)
     return None
 
 

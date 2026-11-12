@@ -1387,6 +1387,10 @@ async def priced_inputs(model: str, inputs: dict) -> dict:
         # #192: WaveSpeed prices image edits by the number of reference images (sunburst +$0.015 per extra image; the
         # free price API only counts them, verified with placeholder strings), so quote the count build_payload submits
         out["images"] = [f"ref-{i + 1}" for i in range(n)]
+    if inputs.get("mask") and "mask_image" in props:
+        # #910: build_payload submits the mask as mask_image, and WaveSpeed prices it like one more input image
+        # (2.6 edit: +$0.015, price API 2026-11-12), so the quote carries it too (a placeholder; only presence counts)
+        out["mask_image"] = "mask-1"
     if model in DURATION_BILLED and "duration" not in props:
         out["duration"] = media_seconds(inputs) or DURATION_FALLBACK_S  # #185: pricing only
     if props and (loras := lora_payload(props, inputs)):
@@ -1439,10 +1443,12 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
             return float(price), "quote"
     except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
         pass
-    if model in gif_image.GIF_T2I:
+    if model in gif_image.GIF_T2I or model in gif_image.GIF_EDIT:
         # Published 2.6 table when the price API is down. GIF uses the still cell; frames are not a multiplier.
         # Unset quality/resolution are the schema defaults (medium / 1k), which #189 also leaves unpinned.
-        stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"))
+        # #910: an edit adds $0.015 per input image (images + mask_image), not the catalog's one-image base_price.
+        n = len(priced.get("images") or []) + (1 if priced.get("mask_image") else 0)
+        stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"), n)
         if stub is not None:
             return float(stub), "estimate"
     meta = (await catalog()).get(model) or {}

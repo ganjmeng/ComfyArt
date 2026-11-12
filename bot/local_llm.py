@@ -1656,7 +1656,7 @@ class LocalLlmProvider(AgentProvider):
             return None
         # #734: an unregistered model falls back to Auto in the tool, so price what will really run. A pricing
         # error here propagates and paid_gate fails closed (#732).
-        from ..api.mcp_tools.canvas import _auto_choice, unregistered_model
+        from ..api.mcp_tools.canvas import _auto_choice, quote_route, unregistered_model
         if unregistered_model(name, args):
             clean = {k: v for k, v in args.items() if k not in ("model", "auto_model")}
             choice = _auto_choice(name, clean) or {}
@@ -1664,6 +1664,11 @@ class LocalLlmProvider(AgentProvider):
             if not model:
                 return None
             args = clean
+        if name == "generate_image" and (args.get("refs") or args.get("base")):
+            # #910: refs/base run on image_edit and every reference is billed, so price the routed edit call
+            routed = quote_route(name, args)
+            if routed:
+                model, args = routed
         return await self._price_one(model, args)
 
     async def _llm_request(self, session: aiohttp.ClientSession, url: str,
@@ -1802,7 +1807,13 @@ class LocalLlmProvider(AgentProvider):
     async def _quote_steps(self, steps, lang: str):
         from .plan_quote import build_quote
         return await build_quote(steps, lang, threshold=self._threshold(),
-                                 pricer=self._price_one, models_for=self._models_for)
+                                 pricer=self._price_one, models_for=self._models_for, router=self._quote_route)
+
+    @staticmethod
+    def _quote_route(tool: str, args: dict):
+        """#910: the routed model and price inputs of one step (canvas.quote_route); None when not routable."""
+        from ..api.mcp_tools.canvas import quote_route
+        return quote_route(tool, args)
 
     async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle, *,
                             run=None, messages: Optional[list] = None) -> str:
