@@ -566,8 +566,6 @@ def _sel(*letters, other=""):
     (_sel("A"), ["外盒", "瓶标", "内托"]),
     (_sel("B"), ["运输箱", "手提袋", "封条/感谢卡"]),
     (_sel("B", "A"), ["外盒; 内托", "运输箱; 手提袋; 封条/感谢卡", "瓶标"]),  # A-D order, round-robin
-    (_sel("D", "C", "B", "A"), ["外盒; 瓶标; 内托; 标注尺寸的结构的构图纸; 平面刀版稿", "运输箱; 手提袋; 封条/感谢卡",
-                                "同系列多支 / 多香型陈列"]),
     ({}, ["外盒", "瓶标", "内托"]),  # whole card skipped -> A
     (_sel(), ["外盒", "瓶标", "内托"]),  # Q3 not answered -> A
     (None, ["外盒", "瓶标", "内托"]),
@@ -577,7 +575,8 @@ def _sel(*letters, other=""):
 def test_extension_images_follow_the_q3_answer(answers, expected):
     plan, reqs = _answered_turn(answers)
     assert [r["ratio"] for r in reqs] == ["3:4", "4:3", "4:3", "4:3"]
-    assert _shows(reqs[0]) is None  # the anchor is the model's own prompt
+    assert _shows(reqs[0]) is None  # three scopes or fewer: the anchor is the model's own prompt
+    assert plan[0] == pk.ANCHOR_PLAN
     assert [_shows(r) for r in reqs[1:]] == expected
     assert plan[1:] == expected and len(plan) == 4
     for n, r in enumerate(reqs):
@@ -655,3 +654,39 @@ def test_locks_drop_ended_and_replaced_turns():
     finally:
         GUARD_CHAT_ID.reset(token)
         paid_guard.TURNS.pop(c, None)
+
+
+# --- more than three scopes with A: the anchor is A (Product, 22:25) ------------------------------
+
+@pytest.mark.parametrize("answers,anchor,expected", [
+    # A+B+C+D (any click order): anchor A, then B / C / D, no A+D squeeze.
+    (_sel("D", "C", "B", "A"), "外盒; 瓶标; 内托",
+     ["运输箱; 手提袋; 封条/感谢卡", "同系列多支 / 多香型陈列", "标注尺寸的结构的构图纸; 平面刀版稿"]),
+    # A+B+C+D + free text: anchor A; B, C, D, E round-robin over images 2-4 (E shares image 2 with B).
+    (_sel("A", "B", "C", "D", other="金属礼盒"), "外盒; 瓶标; 内托",
+     ["运输箱; 手提袋; 封条/感谢卡; 金属礼盒", "同系列多支 / 多香型陈列", "标注尺寸的结构的构图纸; 平面刀版稿"]),
+    # A+B+C + free text (4 scopes incl. E): anchor A, then B / C / E.
+    (_sel("A", "B", "C", other="金属礼盒"), "外盒; 瓶标; 内托",
+     ["运输箱; 手提袋; 封条/感谢卡", "同系列多支 / 多香型陈列", "金属礼盒"]),
+])
+def test_more_than_three_scopes_with_a_put_a_on_the_anchor(answers, anchor, expected):
+    plan, reqs = _answered_turn(answers)
+    assert [r["ratio"] for r in reqs] == ["3:4", "4:3", "4:3", "4:3"]
+    assert _shows(reqs[0]) == anchor
+    assert [_shows(r) for r in reqs[1:]] == expected
+    assert plan[0] == f"{pk.ANCHOR_PLAN}; it shows {anchor}" and plan[1:] == expected
+    assert reqs[0]["prompt"].startswith("image 1")
+
+
+def test_more_than_three_scopes_without_a_keep_the_anchor_free():
+    """B+C+D + free text: no A, so the anchor has no scope line; the four share images 2-4 round-robin."""
+    plan, reqs = _answered_turn(_sel("B", "C", "D", other="金属礼盒"))
+    assert _shows(reqs[0]) is None and plan[0] == pk.ANCHOR_PLAN
+    assert [_shows(r) for r in reqs[1:]] == ["运输箱; 手提袋; 封条/感谢卡; 金属礼盒", "同系列多支 / 多香型陈列",
+                                            "标注尺寸的结构的构图纸; 平面刀版稿"]
+
+
+def test_skill_text_puts_a_on_the_anchor_for_all_four():
+    instr = _instructions()
+    assert "More than three scopes with A among them: image 1, the anchor, is A" in instr
+    assert "A+B+C+D is A / B / C / D" in instr

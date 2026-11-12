@@ -347,9 +347,24 @@ def extension_plan(scopes: list[str] | None, items_map: dict | None = None) -> l
     return ["; ".join(s) for s in slots]
 
 
+ANCHOR_PLAN = "the anchor: the package and the product together in one key visual"
+
+
+def plan_lines(scopes: list[str] | None, items_map: dict | None = None) -> tuple[str | None, list[str]]:
+    """(what the anchor shows, what images 2-4 show). More than three scopes with A among them: the
+    anchor is A and the other scopes fill images 2-4 (extension_plan, round-robin past three).
+    Otherwise the anchor has no scope line and every scope goes to images 2-4."""
+    scopes = list(scopes or [DEFAULT_SCOPE])
+    if len(scopes) > EXTENSION_IMAGES and "A" in scopes:
+        rest = [sc for sc in scopes if sc != "A"]
+        return "; ".join(_items("A", items_map)), extension_plan(rest, items_map)
+    return None, extension_plan(scopes, items_map)
+
+
 def image_plan(scopes: list[str] | None, items_map: dict | None = None) -> list[str]:
     """All 4 images: the anchor, then the 3 extensions."""
-    return ["the anchor: the package and the product together in one key visual"] + extension_plan(scopes, items_map)
+    anchor, ext = plan_lines(scopes, items_map)
+    return [ANCHOR_PLAN + (f"; it shows {anchor}" if anchor else "")] + ext
 
 
 def is_card_spec(spec: dict) -> bool:
@@ -397,8 +412,11 @@ def lock_request(args: dict) -> dict:
         args.pop(k, None)
     args["ratio"] = ratio_for(index)
     args["count"] = 1
-    if lock["scopes"] is not None and 1 <= index <= EXTENSION_IMAGES:
-        args["prompt"] = _with_shows(args.get("prompt") or "", extension_plan(lock["scopes"], lock["items"])[index - 1])
+    if lock["scopes"] is not None and 0 <= index <= EXTENSION_IMAGES:
+        anchor, ext = plan_lines(lock["scopes"], lock["items"])
+        shows = anchor if index == 0 else ext[index - 1]
+        if shows:
+            args["prompt"] = _with_shows(args.get("prompt") or "", shows)
     if not retry:
         lock["n"] += 1
     return args
