@@ -5,7 +5,7 @@ card are generated live from the uploaded garment, so they must not be copied
 into src/skills.ts. This file may name those words only to forbid them in the
 skill entry; they may appear in a validation chat's user message.
 
-No WaveSpeed call. $0 static. studio-model pins stay unchanged. The ai-model Rule 5 lock is a fixed presence check, not a diff against origin/main.
+No WaveSpeed call. $0 static. Angela 07:27 pins studio-model to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given). The ai-model Rule 5 lock is a fixed presence check, not a diff against origin/main.
 """
 from __future__ import annotations
 
@@ -329,29 +329,66 @@ def test_generate_image_requires_skill_studio_model():
     assert explicit == {"prompt": "x", "model": "openai/gpt-image-2.6-sunburst"}
 
 
-def test_studio_model_skill_stays_unpinned_auto_flare_edit():
-    """skill=studio-model must not become a pin; Auto stays flare/edit on one ref."""
+SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
+SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
+
+EXPECTED_STUDIO_MODEL_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "studio-model 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the studio-model skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
+EXPECTED_CLOTHING_SWAP_PIN = {
+    "feature": "image_edit",
+    "model": SUNBURST_EDIT,
+    "zh": "clothing-swap 技能固定用 GPT Image 2.6 Sunburst 编辑",
+    "en": "the clothing-swap skill is pinned to GPT Image 2.6 Sunburst edit",
+}
+
+
+def test_studio_model_routes_sunburst_edit_or_t2i_3x4():
+    """Rewritten lock (Angela 07:27): studio-model is pinned to Sunburst.
+
+    No reference -> text-to-image; a reference or base -> edit. The pin has no
+    resolution/ratio, so a 3:4 1536×2048 canvas (Lovart 87857c35) is kept by
+    _pin_args. studio-model stays out of EXACT_SKILLS, so the exact-size path
+    is not used.
+    """
     import json
 
     from ComfyArt.api.mcp_tools import canvas
+    from ComfyArt.api.skill_size import EXACT_SKILLS
 
     skills = json.loads(AUTO_MODELS.read_text(encoding="utf-8")).get("skills") or {}
-    assert "studio-model" not in skills
-    # ai-model may be pinned (#915); studio-model must not be.
+    assert skills["studio-model"] == EXPECTED_STUDIO_MODEL_PIN
+    assert "studio-model" not in EXACT_SKILLS
 
-    args = {
-        "prompt": "on-body studio still",
-        "skill": "studio-model",
-        "ratio": "3:4",
-        "count": 1,
-        "refs": ["shape:studio-model-garment"],
-    }
-    c = canvas._auto_choice("generate_image", dict(args))
-    assert c.get("model") == "openai/gpt-image-2.6-flare/edit"
-    assert c.get("auto") is True
-    assert c.get("category") == "references"
-    assert c.get("category") != "skill"
-    assert "sunburst" not in str(c.get("model") or "").lower()
+    size = {"ratio": "3:4", "width": 1536, "height": 2048, "count": 1}
+    no_ref = {"prompt": "on-body studio still", "skill": "studio-model", **size}
+    c = canvas._auto_choice("generate_image", dict(no_ref))
+    assert c["model"] == SUNBURST_T2I
+    assert c["category"] == "skill"
+    assert "edit_model" not in c
+    pinned = canvas._pin_args(dict(no_ref), c)
+    assert pinned["model"] == SUNBURST_T2I
+    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (1536, 2048, "3:4")
+
+    with_ref = {**no_ref, "refs": ["shape:studio-model-garment"]}
+    c = canvas._auto_choice("generate_image", dict(with_ref))
+    assert c["model"] == c["edit_model"] == SUNBURST_EDIT
+    assert c["category"] == "skill"
+    pinned = canvas._pin_args(dict(with_ref), c)
+    assert pinned["edit_model"] == SUNBURST_EDIT
+    assert pinned.get("model") != SUNBURST_T2I
+    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (1536, 2048, "3:4")
+
+    with_base = {"prompt": "on-body studio still", "skill": "studio-model", "base": "shape:base", **size}
+    c = canvas._auto_choice("generate_image", dict(with_base))
+    assert c["model"] == c["edit_model"] == SUNBURST_EDIT
+    pinned = canvas._pin_args(dict(with_base), c)
+    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (1536, 2048, "3:4")
 
 
 def test_direction_card_is_normalized_in_ask_user_validate_spec():
@@ -498,12 +535,19 @@ def test_pins_and_auto_models_unchanged():
     )
     assert ours_auto["features"] == main_auto["features"]
     assert ours_auto.get("_comment") == main_auto.get("_comment")
+    assert ours_auto["skills"]["studio-model"] == EXPECTED_STUDIO_MODEL_PIN
+    assert ours_auto["skills"]["studio-model"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["studio-model"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["clothing-swap"] == EXPECTED_CLOTHING_SWAP_PIN
+    assert ours_auto["skills"]["clothing-swap"]["model"] == SUNBURST_EDIT
     ours_skills = dict(ours_auto.get("skills") or {})
     main_skills = dict(main_auto.get("skills") or {})
-    ours_skills.pop("ai-model", None)
-    main_skills.pop("ai-model", None)
-    assert ours_skills == main_skills, "only skills.ai-model may differ from the locked Auto table"
-    assert "studio-model" not in (ours_auto.get("skills") or {})
+    for key in ("ai-model", "clothing-swap", "studio-model"):
+        ours_skills.pop(key, None)
+        main_skills.pop(key, None)
+    assert ours_skills == main_skills, (
+        "features and every other skills entry stay byte-identical to the locked snapshot"
+    )
 
 
 def test_ai_model_rule5_names_registered_sunburst():
