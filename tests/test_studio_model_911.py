@@ -363,6 +363,14 @@ EXPECTED_COVER_DESIGN_DIRECTOR_PIN = {
     "en": "the cover-design-director skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
 }
 
+EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "youtube-channel-banner 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the youtube-channel-banner skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
 
 def test_studio_model_routes_sunburst_edit_or_t2i_3x4():
     """Rewritten lock (Angela 07:27): studio-model is pinned to Sunburst.
@@ -562,9 +570,12 @@ def test_pins_and_auto_models_unchanged():
     assert ours_auto["skills"]["cover-design-director"] == EXPECTED_COVER_DESIGN_DIRECTOR_PIN
     assert ours_auto["skills"]["cover-design-director"]["model"] == SUNBURST_T2I
     assert ours_auto["skills"]["cover-design-director"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["youtube-channel-banner"] == EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN
+    assert ours_auto["skills"]["youtube-channel-banner"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["youtube-channel-banner"]["edit_model"] == SUNBURST_EDIT
     ours_skills = dict(ours_auto.get("skills") or {})
     main_skills = dict(main_auto.get("skills") or {})
-    for key in ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director"):
+    for key in ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner"):
         ours_skills.pop(key, None)
         main_skills.pop(key, None)
     assert ours_skills == main_skills, (

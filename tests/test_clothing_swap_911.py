@@ -479,12 +479,21 @@ EXPECTED_COVER_DESIGN_DIRECTOR_PIN = {
     "en": "the cover-design-director skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
 }
 
+EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN = {
+    "feature": "text_to_image",
+    "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+    "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+    "zh": "youtube-channel-banner 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the youtube-channel-banner skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
 
 def test_pins_and_auto_models_unchanged():
     """Angela 07:27 lock: clothing-swap, studio-model, product-to-packaging
-    (Lovart e304e2fa7), and cover-design-director (Lovart 98af4eee) are
-    Sunburst pins; features and every other skills entry stay byte-identical
-    to MAIN_SHA. Skill-entry assets in src/skills.ts stay unchanged.
+    (Lovart e304e2fa7), cover-design-director (Lovart 98af4eee), and
+    youtube-channel-banner (Lovart d7672d03) are Sunburst pins; features
+    and every other skills entry stay byte-identical to MAIN_SHA. Skill-entry
+    assets in src/skills.ts stay unchanged.
     """
     main_entry = _skill_entry(_main_skills(), "clothing-swap")
     entry = _skill_entry(SKILLS, "clothing-swap")
@@ -513,16 +522,21 @@ def test_pins_and_auto_models_unchanged():
     assert ours_auto["skills"]["cover-design-director"] == EXPECTED_COVER_DESIGN_DIRECTOR_PIN
     assert ours_auto["skills"]["cover-design-director"]["model"] == "openai/gpt-image-2.6-sunburst/text-to-image"
     assert ours_auto["skills"]["cover-design-director"]["edit_model"] == "openai/gpt-image-2.6-sunburst/edit"
+    assert ours_auto["skills"]["youtube-channel-banner"] == EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN
+    assert ours_auto["skills"]["youtube-channel-banner"]["model"] == "openai/gpt-image-2.6-sunburst/text-to-image"
+    assert ours_auto["skills"]["youtube-channel-banner"]["edit_model"] == "openai/gpt-image-2.6-sunburst/edit"
     ours_rest = dict(ours_auto["skills"])
     main_rest = dict(main_auto["skills"])
     ours_rest.pop("clothing-swap")
     ours_rest.pop("studio-model")
     ours_rest.pop("product-to-packaging")
     ours_rest.pop("cover-design-director")
+    ours_rest.pop("youtube-channel-banner")
     main_rest.pop("clothing-swap", None)
     main_rest.pop("studio-model", None)
     main_rest.pop("product-to-packaging", None)
     main_rest.pop("cover-design-director", None)
+    main_rest.pop("youtube-channel-banner", None)
     assert ours_rest == main_rest
 
 

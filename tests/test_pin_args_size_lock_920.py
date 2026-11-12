@@ -176,9 +176,10 @@ def test_ratio_only_2k_fill_does_not_change_other_skills():
 
     assert "product-to-packaging" not in canvas._PIN_KEEPS_SIZE
     assert "cover-design-director" not in canvas._PIN_KEEPS_SIZE
+    assert "youtube-channel-banner" not in canvas._PIN_KEEPS_SIZE
     assert canvas._PIN_KEEPS_SIZE == frozenset({"clothing-swap", "studio-model"})
     assert canvas._RATIO_ONLY_2K_SKILLS == frozenset(
-        {"studio-model", "product-to-packaging", "cover-design-director"}
+        {"studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner"}
     )
 
     # ai-model ratio-only still has no 2k fill and no invented pixels (d3f5ca4b).
@@ -248,3 +249,27 @@ def test_product_to_packaging_ratio_only_fills_2k_both_ratios():
         assert got[model_key] == model_id
         assert got["edit_resolution"] == "2k"
         assert (got["width"], got["height"], got["ratio"]) == (*pixels, ratio)
+
+
+def test_youtube_channel_banner_ratio_only_fills_2k_2048x1152():
+    """Ratio-only youtube-channel-banner fills resolution 2k (Lovart d7672d03).
+
+    Both Sunburst artifacts in the same-input run were 16:9 2048×1152
+    (review-assets 911/lovart-ai/youtube-channel-banner/). The skill is not
+    in _PIN_KEEPS_SIZE; the fill runs after incoming pixels are dropped.
+    Card / direction-board / final-text flow is not changed here.
+    """
+    from ComfyArt.api.mcp_tools import canvas
+
+    assert "youtube-channel-banner" not in canvas._PIN_KEEPS_SIZE
+    assert "youtube-channel-banner" in canvas._RATIO_ONLY_2K_SKILLS
+
+    for refk, model_key, model_id in (
+        ("none", "model", "openai/gpt-image-2.6-sunburst/text-to-image"),
+        ("refs", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
+        ("base", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
+    ):
+        _, got = _pipeline("youtube-channel-banner", refk, {"ratio": "16:9"})
+        assert got[model_key] == model_id
+        assert got["edit_resolution"] == "2k"
+        assert (got["width"], got["height"], got["ratio"]) == (2048, 1152, "16:9")

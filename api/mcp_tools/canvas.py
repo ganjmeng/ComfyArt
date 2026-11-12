@@ -384,17 +384,21 @@ def _exact_skill_pin(args: dict) -> dict | None:
 # #920: pins whose run keeps the canvas apply_generate set (width/height/size_lock).
 # clothing-swap follows image 1 (e.g. 3:4 1536×2048); studio-model keeps the
 # 3:4 1536×2048 canvas it had while unpinned on main d3f5ca4b. Every other pin
-# (ai-model, pose-fission, product-to-packaging, cover-design-director) keeps
-# the d3f5ca4b drop of incoming size keys. product-to-packaging and
-# cover-design-director are intentionally not in this set; they still get the
-# ratio-only 2k fill below after those keys are dropped.
+# (ai-model, pose-fission, product-to-packaging, cover-design-director,
+# youtube-channel-banner) keeps the d3f5ca4b drop of incoming size keys.
+# product-to-packaging, cover-design-director, and youtube-channel-banner are
+# intentionally not in this set; they still get the ratio-only 2k fill below
+# after those keys are dropped.
 _PIN_KEEPS_SIZE = frozenset({"clothing-swap", "studio-model"})
 
 # Ratio-only 2k fill (no width/height/resolution): studio-model, product-to-packaging,
-# and cover-design-director. Pixels: 3:4 → 1536×2048 (Lovart 87857c35 / e304e2fa7),
-# 4:3 → 2048×1536 (Lovart e304e2fa7), 16:9 → 2048×1152 (Lovart 98af4eee).
-# Explicit width/height/resolution are left untouched.
-_RATIO_ONLY_2K_SKILLS = frozenset({"studio-model", "product-to-packaging", "cover-design-director"})
+# cover-design-director, and youtube-channel-banner. Pixels: 3:4 → 1536×2048
+# (Lovart 87857c35 / e304e2fa7), 4:3 → 2048×1536 (Lovart e304e2fa7),
+# 16:9 → 2048×1152 (Lovart 98af4eee / d7672d03). Explicit width/height/resolution
+# are left untouched.
+_RATIO_ONLY_2K_SKILLS = frozenset({
+    "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner",
+})
 _RATIO_ONLY_2K_PIXELS = {"3:4": (1536, 2048), "4:3": (2048, 1536), "16:9": (2048, 1152)}
 
 
@@ -417,11 +421,11 @@ def _pin_args(args: dict, choice: dict) -> dict:
         args["edit_resolution"] = choice["resolution"]
     if choice.get("ratio"):
         args["ratio"] = choice["ratio"]
-    # Ratio-only studio-model / product-to-packaging / cover-design-director
-    # (no width/height/resolution): fill resolution 2k so 3:4 is 1536×2048
-    # (Lovart 87857c35 / e304e2fa7), 4:3 is 2048×1536 (Lovart e304e2fa7), and
-    # 16:9 is 2048×1152 (Lovart 98af4eee). An explicit size or resolution is
-    # left untouched. Other skills are not filled.
+    # Ratio-only studio-model / product-to-packaging / cover-design-director /
+    # youtube-channel-banner (no width/height/resolution): fill resolution 2k
+    # so 3:4 is 1536×2048 (Lovart 87857c35 / e304e2fa7), 4:3 is 2048×1536
+    # (Lovart e304e2fa7), and 16:9 is 2048×1152 (Lovart 98af4eee / d7672d03).
+    # An explicit size or resolution is left untouched. Other skills are not filled.
     if (
         str(choice.get("skill") or "") in _RATIO_ONLY_2K_SKILLS
         and args.get("ratio")

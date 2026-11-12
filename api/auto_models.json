@@ -44,6 +44,13 @@
    "edit_model": "openai/gpt-image-2.6-sunburst/edit",
    "zh": "cover-design-director 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
    "en": "the cover-design-director skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
+  },
+  "youtube-channel-banner": {
+   "feature": "text_to_image",
+   "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+   "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+   "zh": "youtube-channel-banner 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+   "en": "the youtube-channel-banner skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
   }
  },
  "features": {
