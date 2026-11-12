@@ -166,3 +166,76 @@ def needs_reference_result(lang: str | None = None) -> dict:
         "note": "No reference photo: nothing was generated. Reply to the user with user_message verbatim "
                 "and wait for the upload; do not call ask_user or generate_image until a photo is attached.",
     }
+
+
+# --- one generate_image per image: same person, same outfit, same scene ------------------------------
+# Lovart 7fc60c86 delivered the set in one step: 「只变景别与姿态」「姿态相应重建」. We make one call per
+# image, so the server writes each prompt: the same reference photo and the same person / outfit /
+# background text on every call of the turn; only the shot-size line and the pose line differ.
+
+SHOT_KEYS = ("closeup", "half", "three_quarter", "full")
+SHOTS_BY_OPTION = {"A": ("closeup", "half", "three_quarter"),
+                   "B": ("closeup", "half", "three_quarter", "full"),
+                   "C": ("half",)}
+SHOT_LINE = {
+    "closeup": "Shot size: face close-up, head and shoulders, the face fills most of the frame.",
+    "half": "Shot size: half body, framed from the waist up.",
+    "three_quarter": "Shot size: three-quarter body, framed from mid-thigh up.",
+    "full": "Shot size: full body, head to feet in frame.",
+}
+POSE_LINE = {
+    "closeup": "Pose: face toward the camera or turned slightly, eyes to the lens, shoulders relaxed.",
+    "half": "Pose: torso angled slightly, arms relaxed or lightly crossed, natural expression.",
+    "three_quarter": "Pose: weight on one leg, one hand relaxed at the side or in a pocket, confident stance.",
+    "full": "Pose: standing naturally, full stance visible, rebuilt for the full-body framing.",
+}
+IDENTITY_LINE = ("Same person as the reference photo: face, facial features, hairstyle and body proportions "
+                 "exactly as in the reference; do not change them.")
+SHOT_HEAD, POSE_HEAD = "Shot size:", "Pose:"
+
+# chat id -> {"guard": TurnGuard | None, "subject": str, "refs": list, "base": str, "shots": [shot keys]}
+_LOCKS: dict[str, dict] = {}
+
+
+def compose_prompt(subject: str, shot: str) -> str:
+    """identity + shared person/outfit/background text + shot-size line + pose line."""
+    return "\n".join([IDENTITY_LINE, subject.strip(), SHOT_LINE[shot], POSE_LINE[shot]])
+
+
+def applies(args: dict) -> bool:
+    return str((args or {}).get("skill") or "") == SKILL and not missing_reference(args)
+
+
+def _turn_lock() -> dict:
+    from . import paid_guard
+    chat = paid_guard.resolve_guard_chat_id()
+    guard = paid_guard.TURNS.get(chat)
+    lock = _LOCKS.get(chat)
+    if lock is None or lock["guard"] is not guard:  # a new turn starts a new set
+        lock = _LOCKS[chat] = {"guard": guard, "subject": None, "refs": None, "base": None, "shots": []}
+    return lock
+
+
+def lock_request(args: dict) -> dict:
+    """Rewrite one portrait-studio generate_image call of this turn. The first call fixes the reference
+    photo and the person / outfit / background text (its prompt); later calls reuse both verbatim and
+    only get their own shot-size and pose lines. One image per call."""
+    args = dict(args)
+    lock = _turn_lock()
+    shot = str(args.pop("shot", "") or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if shot not in SHOT_KEYS:
+        shot = next((s for s in SHOT_KEYS if s not in lock["shots"]), SHOT_KEYS[0])
+    if lock["subject"] is None:
+        lock["subject"] = str(args.get("prompt") or "").strip()
+        lock["refs"] = list(args.get("refs") or [])
+        lock["base"] = args.get("base") or None
+    lock["shots"].append(shot)
+    args["prompt"] = compose_prompt(lock["subject"], shot)
+    args.pop("refs", None)
+    args.pop("base", None)
+    if lock["refs"]:
+        args["refs"] = list(lock["refs"])
+    if lock["base"]:
+        args["base"] = lock["base"]
+    args["count"] = 1
+    return args

@@ -239,6 +239,18 @@ function processLabel(
   return opts?.fallback || t('chatMessage.inProgress')
 }
 
+/** #926: a tool result that only asks the user for input (status needs_input, submitted false, e.g.
+ * portrait-studio without a reference photo). Nothing ran, so its call paints no tool row. */
+export function needsInputOnly(result?: BotBlock): boolean {
+  if (!result?.text) return false
+  try {
+    const data = JSON.parse(result.text) as { status?: unknown; submitted?: unknown }
+    return data?.status === 'needs_input' && data.submitted === false
+  } catch {
+    return false
+  }
+}
+
 export function textOf(m: BotMessage): string {
   return m.blocks.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('').trim()
 }
@@ -1215,6 +1227,8 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
   m.blocks.forEach((b, i) => {
     // #763: ask_user never paints its own 向你提问 timeline row (the docked card is the status)
     if ((b.type === 'tool_use' || b.type === 'tool_result') && toolName(b.name) === 'ask_user') return
+    // #926: a call that only asked the user for input (nothing submitted) has no 生成图像 / tool row
+    if (b.type === 'tool_use' && needsInputOnly(resultOf(b, i))) return
     if (hideMemCall(b)) {
       // #437: memory write in flight → 记忆更新中 (no ›); becomes 记忆已更新 › when memory_updated lands
       if (

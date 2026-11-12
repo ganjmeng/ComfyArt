@@ -42,6 +42,10 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
             from .. import portrait_studio
             if portrait_studio.missing_reference(args):
                 return portrait_studio.needs_reference_result()
+            if portrait_studio.applies(args):
+                # One call per image: same reference + person/outfit/background text; only shot size and pose differ.
+                args = portrait_studio.lock_request(args)
+            args.pop("shot", None)  # portrait-studio only
         fallback_for = str(args.pop("fallback_for", "") or "")
         if approval:
             label = str(args.get("prompt") or args.get("to") or "")[:80]
@@ -645,6 +649,8 @@ SPECS: dict[str, dict] = {
          "output_format": {"type": "string", "enum": ["png", "jpeg", "webp", "gif", "svg"]},
          "frame_count": {"type": "integer"}, "frame_duration_ms": {"type": "integer"},
          "complexity": {"type": "string", "enum": ["low", "medium", "high"]},
+         "shot": {"type": "string", "enum": ["closeup", "half", "three_quarter", "full"],
+                  "description": "portrait-studio only: the shot size of this one image"},
          **_PLACE},
         ["prompt"], approval="生成图像"),
     "generate_video": _tool(

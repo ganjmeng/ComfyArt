@@ -176,6 +176,14 @@ async def test_skill_e2e_portrait_studio_no_reference_asks_to_upload(app_url, mo
         text = await bot.inner_text()
         assert "Goal check failed" not in text and "目标核对未通过" not in text, text
         assert UPLOAD[lang] in text, text
+        # Design (#926): nothing was generated, so no 生成图像 / Generate image tool row on the upload request.
+        label = LOC[lang]["bot.generateImage"]
+        assert label not in text, text
+        panel = await pg.locator(".ca-chat").first.inner_text()
+        assert label not in panel and LOC[other]["bot.generateImage"] not in panel, panel
+        rows = await bot.locator(".ca-process__labeltext").all_inner_texts()
+        assert label not in [r.strip() for r in rows], rows
+        assert await bot.locator(".ca-chat__tool, .ca-chat__step").count() == 0
         await _shot(pg, f"upload-prompt-{lang}")
         assert _paid(mock_ws) == []  # no model submit, no price quote
         await browser.close()

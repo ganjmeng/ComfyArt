@@ -304,6 +304,173 @@ def test_no_reference_rule_is_only_for_portrait_studio(relay):
     assert len(SENT) == 1
 
 
+# --- goal self-check: waiting for input vs real failures (all skills; Tech on #926) --------------
+
+def _blocks(*results):
+    """tool_use + tool_result pairs; each item is (tool, result dict, block status or None)."""
+    import json as _json
+    out = []
+    for n, (tool, data, status) in enumerate(results):
+        out.append({"type": "tool_use", "id": f"t{n}", "name": f"mcp__comfyart__{tool}", "input": {}})
+        res = {"type": "tool_result", "id": f"t{n}", "name": f"mcp__comfyart__{tool}", "text": _json.dumps(data, ensure_ascii=False)}
+        if status:
+            res["status"] = status
+        out.append(res)
+    return out
+
+
+_NEEDS_INPUT = {"status": "needs_input", "submitted": False, "generation_succeeded": False, "charged": False}
+_SELF_CHECK_SKILLS = ["portrait-studio", "youtube-channel-banner", "game-art", None]  # None: no skill
+
+
+@pytest.mark.parametrize("lang,goal", [("zh", "帮我生成 3 张图"), ("en", "Make 3 images for me")])
+@pytest.mark.parametrize("tool", ["generate_image", "edit_image", "generate_video"])
+def test_self_check_skips_any_tool_that_only_asked_for_input(lang, goal, tool):
+    """Any skill / tool: a needs_input result with nothing submitted waits for the user, no warn notice."""
+    from ComfyArt.bot import self_check
+    blocks = _blocks((tool, {**_NEEDS_INPUT, "user_message": "please upload"}, None)) + [{"type": "text", "text": "please upload"}]
+    out, info = self_check.apply_to_blocks(goal, blocks, lang)
+    assert info == {"self_check": "skip", "reason": "awaiting_input"}
+    assert out == blocks and not any(b.get("type") == "notice" for b in out)
+
+
+def _fail_cases():
+    submitted_zero = [("generate_image", {"ids": ["j1"], "submitted": True}, None),
+                      ("wait_generation", {"results": [{"id": "j1", "status": "error", "error": "content filter"}]}, "error")]
+    call_errored = [("generate_image", {"status": "failed", "generation_succeeded": False, "error": "HTTP 500"}, "error")]
+    submitted_none_back = [("generate_image", {"ids": ["j1"]}, None),
+                           ("wait_generation", {"results": []}, None)]
+    return {"submitted_0_images": submitted_zero, "call_errored": call_errored, "submitted_none_back": submitted_none_back}
+
+
+@pytest.mark.parametrize("case", list(_fail_cases()))
+@pytest.mark.parametrize("with_needs_input", [False, True])
+@pytest.mark.parametrize("skill", _SELF_CHECK_SKILLS)
+@pytest.mark.parametrize("lang,goal,warn", [("zh", "帮我生成 3 张图", "目标核对未通过"), ("en", "Make 3 images for me", "Goal check failed")])
+def test_self_check_still_reports_real_failures(lang, goal, warn, skill, with_needs_input, case):
+    """0 images after a submit, or an errored generation call, still fail and show the warn notice,
+    for portrait-studio and other skills, even when a needs_input result is in the same turn."""
+    from ComfyArt.bot import self_check
+    steps = list(_fail_cases()[case])
+    if with_needs_input:
+        steps.insert(0, ("generate_image", dict(_NEEDS_INPUT), None))
+    blocks = _blocks(*steps)
+    for b in blocks:
+        if b["type"] == "tool_use" and b["name"].endswith("generate_image") and skill:
+            b["input"] = {"skill": skill}
+    blocks.append({"type": "text", "text": "完成。" if lang == "zh" else "Done."})
+    out, info = self_check.apply_to_blocks(goal, blocks, lang)
+    assert info["self_check"] == "fail" and info["generated"] == 0 and info["expected"] == 3, info
+    notes = [b for b in out if b.get("type") == "notice"]
+    assert len(notes) == 1 and notes[0]["level"] == "warn" and notes[0]["text"].startswith(warn), notes
+
+
+@pytest.mark.parametrize("skill", _SELF_CHECK_SKILLS)
+def test_self_check_passes_a_full_delivery_after_an_input_request(skill):
+    """Asked for the photo, then generated all 3 in the same turn: the normal check runs and passes."""
+    from ComfyArt.bot import self_check
+    steps = [("generate_image", dict(_NEEDS_INPUT), None)]
+    steps += [("generate_image", {"ids": [f"j{n}"]}, None) for n in range(3)]
+    steps += [("wait_generation", {"results": [{"id": f"j{n}", "status": "done", "shapes": [{"id": f"shape:{n}"}]} for n in range(3)]}, None)]
+    sc = self_check.check("帮我生成 3 张图", _blocks(*steps))
+    assert sc.awaiting_input is False and sc.applies
+    assert sc.generated == 3
+
+
+# --- one call per image: same reference, same person / outfit / background; only shot + pose differ -
+
+def _run_turn(lang, calls):
+    """Several generate_image calls in ONE turn (same paid-guard turn), like the agent loop."""
+    async def go():
+        out = []
+        for args in calls:
+            out.append(await canvas.TOOLS["generate_image"]["handler"](dict(args)))
+        return out
+    return _with_lang(lang, "", lambda: asyncio.run(go()))
+
+
+SUBJECT = ("Professional portrait of the woman in the reference photo, wearing a navy business suit with a white shirt, "
+           "solid light-grey studio backdrop, soft key light from the left.")
+
+
+def _split(prompt: str) -> tuple[list[str], str, str]:
+    lines = prompt.split("\n")
+    shot = [ln for ln in lines if ln.startswith(ps.SHOT_HEAD)]
+    pose = [ln for ln in lines if ln.startswith(ps.POSE_HEAD)]
+    assert len(shot) == 1 and len(pose) == 1, prompt
+    return [ln for ln in lines if ln not in shot and ln not in pose], shot[0], pose[0]
+
+
+def _assert_only_shot_and_pose_differ(sent: list, shots: tuple) -> None:
+    assert [a for a, _ in sent] == ["generate_image"] * len(shots)
+    reqs = [args for _, args in sent]
+    shared, shot_lines, pose_lines = zip(*(_split(r["prompt"]) for r in reqs))
+    assert all(sh == shared[0] for sh in shared)  # identical person + outfit + background text
+    assert ps.IDENTITY_LINE in shared[0] and SUBJECT in shared[0]
+    assert list(shot_lines) == [ps.SHOT_LINE[s] for s in shots]
+    assert list(pose_lines) == [ps.POSE_LINE[s] for s in shots]
+    assert len(set(shot_lines)) == len(shots)  # each image its own shot size
+    for r in reqs:
+        assert r["refs"] == ["shape:person"]  # the same single reference photo on every call
+        assert r.get("count", 1) == 1 and "shot" not in r
+        assert r["edit_model"] == SUNBURST_EDIT
+    # Everything except the prompt's shot/pose lines is the same request.
+    rest = [{k: v for k, v in r.items() if k != "prompt"} for r in reqs]
+    assert all(x == rest[0] for x in rest), rest
+
+
+@pytest.mark.parametrize("option", ["A", "B", "C"])
+def test_per_image_calls_share_reference_and_description_only_shot_and_pose_differ(relay, option):
+    shots = ps.SHOTS_BY_OPTION[option]
+    assert len(shots) == ps.IMAGES_BY_SHOTS[option]
+    calls = [{"prompt": SUBJECT, "skill": "portrait-studio", "refs": ["shape:person"], "count": 1, "shot": s} for s in shots]
+    outs = _run_turn("zh", calls)
+    assert all(o.get("status") != "needs_input" for o in outs), outs
+    _assert_only_shot_and_pose_differ(SENT, shots)
+
+
+def test_per_image_calls_lock_the_first_description_and_reference_when_the_model_drifts(relay):
+    """The model rewrites the person/outfit or swaps refs on a later call: the server keeps the first call's."""
+    calls = [{"prompt": SUBJECT, "skill": "portrait-studio", "refs": ["shape:person"], "count": 1, "shot": "closeup"},
+             {"prompt": "Half body portrait of a man in a red hoodie, office background", "skill": "portrait-studio",
+              "refs": ["shape:other"], "count": 2, "shot": "half"},
+             {"prompt": SUBJECT + " Three-quarter body.", "skill": "portrait-studio", "refs": ["shape:person", "shape:x"],
+              "count": 1, "shot": "three_quarter"}]
+    _run_turn("en", calls)
+    _assert_only_shot_and_pose_differ(SENT, ("closeup", "half", "three_quarter"))
+
+
+def test_per_image_calls_without_shot_take_the_lovart_order(relay):
+    calls = [{"prompt": SUBJECT, "skill": "portrait-studio", "refs": ["shape:person"], "count": 1}] * 4
+    _run_turn("zh", calls)
+    _assert_only_shot_and_pose_differ(SENT, ps.SHOTS_BY_OPTION["B"])
+
+
+def test_a_new_turn_starts_a_new_set(relay):
+    _run_turn("zh", [{"prompt": SUBJECT, "skill": "portrait-studio", "refs": ["shape:person"], "count": 1, "shot": "closeup"}])
+    _run_turn("zh", [{"prompt": "Portrait of the man in the reference, grey suit, modern office.", "skill": "portrait-studio",
+                      "refs": ["shape:p2"], "count": 1, "shot": "closeup"}])
+    assert "grey suit" in SENT[1][1]["prompt"] and SENT[1][1]["refs"] == ["shape:p2"]
+
+
+def test_shot_and_pose_are_the_only_per_image_lines():
+    """Lovart 7fc60c86: 「只变景别与姿态」「姿态相应重建」: per shot, exactly a shot-size line and a pose line."""
+    assert set(ps.SHOT_LINE) == set(ps.POSE_LINE) == set(ps.SHOT_KEYS)
+    for s in ps.SHOT_KEYS:
+        p = ps.compose_prompt("X", s)
+        assert p.split("\n") == [ps.IDENTITY_LINE, "X", ps.SHOT_LINE[s], ps.POSE_LINE[s]]
+    instr = _instructions()
+    assert "only shot size and pose change between the images" in instr
+    assert canvas.SPECS["generate_image"]["inputSchema"]["properties"]["shot"]["enum"] == list(ps.SHOT_KEYS)
+
+
+def test_other_skills_prompts_are_not_rewritten(relay):
+    _run_turn("zh", [{"prompt": "a cat", "count": 1, "refs": ["shape:a"], "shot": "closeup"},
+                     {"prompt": "a dog", "count": 1, "skill": "youtube-channel-banner", "refs": ["shape:b"]}])
+    assert [a["prompt"] for _, a in SENT] == ["a cat", "a dog"]
+    assert all("shot" not in a for _, a in SENT)
+
+
 # --- untouched -----------------------------------------------------------------------------------
 
 def _main_bytes(path: str) -> bytes:
