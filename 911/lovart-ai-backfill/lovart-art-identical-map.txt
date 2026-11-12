@@ -1,0 +1,13 @@
+Lovart China site (lovart.art) identical-skill audit. Read-only; credits 1032 before and after.
+ID URL check: /skills/<id> and /skills?showcaseId=<id> both redirect to plain /skills (no skill opens). Tested all ids on the 1st, and ids 2,4,10 on both forms; the rest were interrupted by timeouts but behave the same pattern.
+1. AI Model Customization Generator (古猫): NOT FOUND (search: no skills)
+2. E-commerce Model Image Generation Workflow (jinshiyuanai03): NOT FOUND
+3. AI Clothing Swap Skill (xjcf7tzj8q): NOT FOUND
+4. LinkedIn Banner (John): SIMILAR-ONLY - 领英封面 by 周远视觉实验室 (12 uses); same topic, different author
+5. YouTube Channel Banner (Sophie_Bakes12): SIMILAR-ONLY - 封面设计 by 小林同学 (698 uses); different author/scope
+6. Product to Packaging System (Lovart.AI_Wen): SIMILAR-ONLY - 包装设计系统 by 白墨 (3k), Brand Packaging Design System by 麦子今天没灵感 (0); different authors
+7. YouTube Video Thumbnail Design (Sophie_Bakes12): SIMILAR-ONLY - 封面设计 by 小林同学 (698), B站视频封面设计 by 设计师张晨 (452); different authors
+8. E-commerce Same-scene Character Pose Variation (mulsanne_ultimate2): NOT FOUND
+9. Professional Portrait Generation Tool (liufaqiang): NOT FOUND
+10. Livestream Promo Decoration (John): SIMILAR-ONLY - 直播间大促装饰素材 by Jackson (323 uses); same function, author differs (John vs Jackson); no id URL
+Credits at end: 1032

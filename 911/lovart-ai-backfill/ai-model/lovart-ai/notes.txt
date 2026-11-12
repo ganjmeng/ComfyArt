@@ -1,0 +1,107 @@
+Lovart official international skill — one same-input generation audit
+====================================================================
+
+Project URL: https://www.lovart.ai/canvas?projectId=2vmrewr59h4w
+Start URL: https://www.lovart.ai/skills/2nos12pl80zk
+  (307-redirected to https://www.lovart.ai/skills?skillId=2nos12pl80zk)
+
+Skill id: 2nos12pl80zk
+Skill title (on screen, exact): AI Model Customization Generator
+Skill author (on screen, exact): 古猫
+Site: www.lovart.ai (international). Did not use lovart.art.
+Account: [account redacted] (already signed in). Did not change account settings.
+Did not click Recent Projects. Did not start a second generation, variants, upscale, or top-up.
+
+User message (typed exactly, no reference image, no extra text):
+帮我做一张电商详情页用的模特头肩底图，3:4竖版。不要编品牌名、价格和数字。
+
+Credits
+-------
+Credit before: 2000
+Quoted cost: none shown. No pre-spend confirmation / quote dialog appeared.
+  After the Q&A Submit, the skill proceeded automatically to
+  "Generating images using GPT Image 2.6 Sunburst".
+  Remaining balance at the moment of Submit: 2000.
+Credit after: 1985
+Delta: 15 (2000 - 1985 = 15)
+The actual deduction (15) was under the 200-credit cap, and the remaining
+balance (1985) stayed above 800.
+
+Q&A log
+-------
+The skill presented one Question card labeled "1 of 3" (later "3 of 3" after
+scrolling to the last item). All three questions were on the same card.
+Before any selection, no option was highlighted / pre-selected (all options
+shared the same unselected style; no aria-pressed/checked/selected).
+
+Question 1:
+  模特长相方向（性别 / 气质 / 人种 / 肤色）选哪一档？
+  Visible options:
+    A 女 · 清冷东方 · 中国 · 象牙白
+    B 女 · 甜美少女 · 中国 · 瓷白
+    C 男 · 干净少年感 · 东亚 · 自然肤色
+    D 其他（请写：性别 / 气质 / 国籍人种 / 肤色）...
+  Highlighted: none
+  Answered: A 女 · 清冷东方 · 中国 · 象牙白
+  Source: first unhighlighted option
+    (the user message does not specify gender, temperament, ethnicity, or skin tone)
+
+Question 2:
+  头肩底图的背景用哪个？
+  Visible options:
+    A 纯白
+    B 浅灰
+    C 米白暖调
+    D 其他（颜色或渐变说明）...
+  Highlighted: none
+  Answered: A 纯白
+  Source: first unhighlighted option
+    (the user message does not specify background)
+
+Question 3:
+  出图方式要哪种？
+  Visible options:
+    A 直接出 1 张 3:4 成品
+    B 先出 4 张面孔候选让我挑
+    C 其他想法...
+  Highlighted: none
+  Answered: A 直接出 1 张 3:4 成品
+  Source: from the user message
+    (the message asks for 一张 / one 3:4竖版 头肩底图, not four candidates)
+
+After Submit, the chat showed the same Q&A summary. The skill then output:
+  Skill file read
+  Thought: 明白，直接出一张 3:4 成品。
+  Generating images using GPT Image 2.6 Sunburst
+  Then a completion message "头肩底图已完成：" describing the 3:4 head-and-shoulder
+  shot, and a follow-up "要哪个？" offering clothing swap / alternate background /
+  高清放大. Those follow-ups were not answered (one generation only; no upscale).
+
+Download
+--------
+Download type: original / full-size (free). Not a canvas screenshot.
+  Method: hovered the completed image in the chat and clicked the download
+  button. No paywall appeared. File saved by the browser as:
+  电商详情页模特头肩底图·清冷东方女模.png
+Image pixel dimensions: 1536 × 2048 (PNG, RGB, exactly 3:4)
+Watermark: none visible (checked full image and corners / bottom / right edges).
+  No brand name, price, or numbers in the image.
+  The skill's own completion text also stated: 画面无任何文字、字母、数字、品牌名、价格与水印.
+
+Saved files under /workspace/lovart-audit/ai-model/lovart-ai/:
+  credits-before.png
+  credits-after.png
+  skill-page-before.png
+  qa-01-questions-top.png
+  qa-01-questions-bottom.png
+  qa-01-page.png
+  qa-01-answers-top.png
+  qa-01-answers-bottom.png
+  qa-01-answers-page.png
+  qa-01-submitted.png
+  result-original-电商详情页模特头肩底图·清冷东方女模.png
+  result-original.png  (same original file, ASCII alias)
+  result-preview-768.png  (local thumbnail of the original, for inspection only)
+  result-page.png  (page screenshot while result was zoomed in)
+  canvas-zoom-to-fit.png  (page screenshot after Zoom to fit; chrome still crops the bottom)
+  notes.txt

@@ -1,0 +1,81 @@
+Lovart China skills map (Explore / skills)
+Checked: 2026-11-11 (UTC+8)
+Scope: Read-only only. Opened skill detail panels and copied their showcaseId share URLs. Did not start a project or spend credits.
+
+1. Studio model / 棚拍模特
+   Match: 营销风格 · 高级棚拍
+   Author: Jackson
+   Usage: 146
+   URL: https://www.lovart.art/skills?showcaseId=ppDmvqev96
+   Description: Full-category commercial studio-shot visuals, using models, close-ups, hand-held product use, or still-life staging to emphasize product benefits and premium quality.
+   Uploaded file: Yes — a product/reference image is expected for accurate product marketing visuals (upload control shown).
+
+2. Clothing swap / 换装
+   Match: 服装参考·一键换装
+   Author: 微信用户609352
+   Usage: 8
+   URL: https://www.lovart.art/skills?showcaseId=2ujmra7cfo5c
+   Description: Uses a wardrobe of thousands of outfits to change a character's clothes and produce images or video.
+   Uploaded file: Yes — a character/photo reference is expected.
+
+3. LinkedIn banner
+   Match: 领英封面
+   Author: 周远视觉实验室
+   Usage: 12
+   URL: https://www.lovart.art/skills?showcaseId=pnVzWDd9o4
+   Description: Creates professional LinkedIn personal or company page covers, accounting for positioning, brand identity, and avatar/logo safe areas.
+   Uploaded file: No required upload indicated; a file can be optionally supplied.
+
+4. YouTube channel banner
+   Match: Banner 设计 (closest general banner skill; no YouTube-channel-specific banner skill surfaced)
+   Author: 周远视觉实验室
+   Usage: 994
+   URL: https://www.lovart.art/skills?showcaseId=pnVzfvBneo
+   Description: Creates responsive static banners across platforms and sizes for websites, e-commerce, social media, and email; not specifically YouTube channel art.
+   Uploaded file: No required upload indicated; a file can be optionally supplied.
+
+5. Product to packaging / 包装
+   Match: 产品包装三视图设计师
+   Author: 188****1312
+   Usage: 67
+   URL: https://www.lovart.art/skills?showcaseId=2oe6jeywtgcg
+   Description: Turns an uploaded product image into coordinated front/side/back packaging views, with English packaging and OEM logo placement support.
+   Uploaded file: Yes — the description explicitly says it is based on an uploaded product image.
+
+6. Thumbnail / cover design
+   Match: 封面设计
+   Author: 小林同学
+   Usage: 698
+   URL: https://www.lovart.art/skills?showcaseId=pnVxmBZpde
+   Description: Designs covers for YouTube, Bilibili, Xiaohongshu, TikTok, Reels, Shorts, podcasts, courses, and short dramas, adapting to platform formats.
+   Uploaded file: No required upload indicated; content can be supplied as text, while portraits/logos/screenshots are optional source assets.
+
+7. Pose fission / 姿势裂变
+   Match: 姿势参考·一图定姿
+   Author: 微信用户609352
+   Usage: 2
+   URL: https://www.lovart.art/skills?showcaseId=2ubskb60ba4g
+   Description: Upload a character, choose a pose, and generate an action image or video with the same character identity.
+   Uploaded file: Yes — the description explicitly starts with uploading a character reference.
+
+8. Portrait studio / 写真
+   Match: none
+   Searched 写真, 证件照, portrait, and 人像; no reasonable portrait-studio/portrait-photography skill surfaced.
+
+9. Live-stream promo decor / 直播
+   Match: 直播间大促装饰素材
+   Author: Jackson
+   Usage: 323
+   URL: https://www.lovart.art/skills?showcaseId=2q1x82cvqio0
+   Description: Generates e-commerce live-stream backgrounds, overlays/stickers, covers, and promotional hand-held signs.
+   Uploaded file: No required upload indicated; the requested decorative assets can be generated from a brief.
+
+10. AI Model (e-commerce virtual model base portrait)
+    Match: none
+    In addition to the already-tried 模特 / AI Model / AI模特, searched 虚拟模特, 数字人, 电商模特, and 模特定制. No dedicated head-and-shoulders e-commerce virtual-model base-portrait skill surfaced; results were broader try-on/pose or unrelated skills.
+
+Explore page controls:
+- No English/international language toggle was visible on the skills page.
+- Category filters are present: 为你推荐, 营销素材, 品牌视觉, 社媒内容, 产品设计, 创意风格. Selecting 产品设计 surfaced more skills, including English-language entries such as App Visual Direction, App Core Screens, and App Store Screenshots.
+
+Credits at end: 1032 (unchanged).

@@ -1,0 +1,13 @@
+Lovart AI Model skill expects a text brief (optional upload) to generate a
+reusable e-commerce model base / head-and-shoulder / styling portrait — not
+"put this garment on a model". International gold dialog (docs/design/640/78/
+gold/ai-model/dialog.webp) is titled "AI Model Customization Generator"; the
+description starts: "Triggered when users need to generate reference images
+for e-commerce fashion model head-and-shoulder shots, model base images, or
+styling model portraits. First collects 1-...". Fields are Upload Files +
+Additional Details only, no chips; Start making works without a file. Cover
+is a frontal head-and-shoulders; the first example is a slight three-quarter
+portrait. Wash examples (643/wash/ai-model/examples/01–06.webp) are all
+generated model portraits, so they were not cropped in as a reference.
+msg.txt therefore is text-only, states 电商详情页用 + 3:4竖版, forbids
+invented brand names / prices / numbers, and does not force a frontal face.

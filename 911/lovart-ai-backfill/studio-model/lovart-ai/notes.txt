@@ -1,0 +1,72 @@
+Lovart international-site generation audit
+
+Skill
+- Site: https://www.lovart.ai (international Lovart; not lovart.art)
+- Skill page URL: https://www.lovart.ai/skills
+- Exact title: E-commerce Premium Studio On-Body Shot Designer
+- Exact author: Sophie_Bakes12
+- Skill card ID (observed data-testid): pofOuM75Vm
+- Skill mention identifier shown in the selected skill capsule: @industry/marketing-style-studio-apparel/32643853-bda8-4ce1-adce-4f3bb21539b6
+- The exact title and author were confirmed on the search result and skill detail panel before using it. No look-alike skill was used.
+- Project URL: https://www.lovart.ai/canvas?projectId=2vn0zq8tmo00
+
+Inputs and run
+- File: /workspace/lovart-audit/studio-model/garment-input.png (uploaded; same supplied file attached to chat so the skill could analyze it).
+- Message typed exactly: 用这件衣服做电商详情页的棚拍上身图，3:4竖版。不要加任何文字。
+- No additional user-authored prompt text was entered. The skill first reported no garment image when the file was only in the reference panel; the same supplied image was then attached directly to chat, analyzed, and used.
+- Exactly one image generation completed. No variants, upscale, or post-generation follow-up was run.
+
+Credits
+- Before: 1985 (screenshot: credits-before.png)
+- After: 1968 (screenshot: credits-after.png)
+- Spent: 17 credits. This is within the 200-credit cap; balance stayed above 800. No top-up or account/settings changes.
+
+Q&A log
+Card A (transient pre-upload card; screenshot: question-preliminary.png)
+- Question: 出镜模特的族裔偏好？
+- Options: A 亚洲人; B 白人; C 黑人; D [text-entry placeholder: 以上都不符合，我自己补充...]
+- Pre-highlighted: none.
+- The card disappeared after the image attachment was submitted, before a separate answer was sent. The same ethnicity choice was subsequently included in Card B and answered there as A 亚洲人 (first non-highlighted option; the user message did not specify ethnicity).
+
+Card B (three-question card; screenshots question-card-top-before-answer.png and question-card-bottom-before-answer.png)
+- Pre-highlighted before answering: none of the options. The card was scrolled internally; the two screenshots capture the top and remaining questions/options.
+1) Question: 这件是中性落肩款，出镜模特性别选哪个？
+   Options: A 女模特; B 男模特; C [text-entry placeholder: 以上都不符合，我自己补充...]
+   Chosen: A 女模特. Why: the user message did not specify model gender; selected the first non-highlighted option.
+2) Question: 详情页这张图，你最想让买家第一眼看到什么？
+   Options: A 皇家蓝高饱和纯色; B 落肩宽松廓形; C 胸前横向艺术印花; D 细罗纹圆领; E [text-entry placeholder: 以上都不符合，我自己补充...]
+   Chosen: A 皇家蓝高饱和纯色. Why: the user did not rank product attributes; selected the first non-highlighted option, consistent with the blue shirt input.
+3) Question: 模特族裔：
+   Options: A 亚洲人; B 白人; C 黑人; D [text-entry placeholder: 以上都不符合，我自己补充...]
+   Chosen: A 亚洲人. Why: ethnicity was not specified; selected the first non-highlighted option.
+
+Card C (follow-up studio direction; screenshots: question-followup-before-answer.png and question-followup-selected.png)
+- Question: 选一个棚拍方向继续生成：
+- Options: A 暖米色色纸背景 + 侧身站姿（推荐）; B 浅灰无缝纸 + 正面半身直视; C 燕麦色轻纹理背景 + 佰靠松弛姿态; D [text-entry placeholder: 以上都不符合，我自己描述方向...]
+- Pre-highlighted: none.
+- Chosen: A 暖米色色纸背景 + 侧身站姿（推荐）. Why: no studio direction was specified; chose the first non-highlighted option (also marked recommended).
+
+Generation/result
+- On-screen model name: GPT Image 2.6 Sunburst (shown as “Generating images using GPT Image 2.6 Sunburst”).
+- Output size shown on canvas: 1536 × 2048 pixels.
+- Downloaded original: result-original.png (1536 × 2048 pixels).
+- Post-generation follow-up text (not answered):
+  “出来了。暖米色纸把这块皇家蓝顶得很前，落肩的宽松廓形和胸前印花位置都按原品走的，画面全程无字。
+
+  麻烦你盯两处确认下：一是蓝色的饱和度有没有偏色（详情页主图这块蓝是命门），二是胸前印花的图案和比例是否和原品一致。有任何一处不对，我按同方向重打一版修掉。”
+
+Files in this folder
+- result-original.png — 1536x2048
+- credits-before.png — 1920x1072
+- credits-after.png — 63x27
+- skill-page.png — 1920x1072
+- skill-detail.png — 1920x1072
+- question-preliminary.png — 719x296
+- question-card-top-before-answer.png — 719x440
+- question-card-bottom-before-answer.png — 719x440
+- question-card-top-selected.png — 1920x1072
+- question-card-bottom-selected.png — 719x440
+- question-followup-before-answer.png — 719x296
+- question-followup-selected.png — 1920x1072
+- submitted-state.png — 3840x1072
+- result-page.png — 1920x1072
