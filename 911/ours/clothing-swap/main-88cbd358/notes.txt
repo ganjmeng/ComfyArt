@@ -1,0 +1,20 @@
+clothing-swap paid L/R on main 88cbd35874028f0c9f30a33c7f8dbd7fcc91ca3f
+Sunburst vs Sunburst. Times are Asia/Shanghai (UTC+8).
+
+Inputs (Lovart pin 9967bf48b536969da61e0938d5c3cb07506837c7, exact bytes, person first, garment second, no typed text):
+- person-input.png sha256 008150f530fce6a6d2d7f956d93afae2b4d1c190150b734a43379f20a1cd1dc4 (1776×2368)
+- garment-input.png sha256 fc5b929f447fd698f7496913d63a37ce614589888d50186fd3d410bfcc181165 (960×970)
+
+Card question: 图1中人物目前穿着白色长袖打底衫外搭黑色无袖背心，你想怎样替换上装？
+Chosen exact label: 整体换成蓝色T恤 (option replace_all). Product picked this label. One image, no retry.
+
+Model: openai/gpt-image-2.6-sunburst/edit (clothing-swap skill pin). Prediction a266bb741a514ee8b664402a4a825854.
+Requested size: 1536×2048, 3:4, size_lock true.
+Actual provider file (original.png): 1664×2224. Product size_lock rejected it (no stretch/crop/retry/model change); raw file was still saved.
+Lovart result: 1536×2048.
+
+Quote at submit: discounted $0.045 / list $0.05, quote_inputs {aspect_ratio: 3:4, output_format: png} only.
+Actual charge (balance delta): $0.117. Balance $29.848866 → $29.731866 (08:39:45–08:40:40).
+Prompt sha256 595066abb3be15c54af0ecded0bb600a5e8a32cd3390ea37a946fbdc23b6541f.
+
+L/R labels sit in a header band above the images (title "Sunburst vs Sunburst"; L / R). No overlay on the image pixels.

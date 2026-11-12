@@ -1,0 +1,42 @@
+[
+  {
+    "id": "a266bb741a514ee8b664402a4a825854",
+    "status": "failed",
+    "urls": [
+      "/tmp/comfyart-chat-capture-911-clothing-veonwci2/output/wavespeed/ws_a266bb741a51_0.png"
+    ],
+    "shapes": [
+      "a266bb741a514ee8b664402a4a825854"
+    ],
+    "poll": {
+      "ws:a266bb741a514ee8b664402a4a825854": {
+        "status": {
+          "completed": true,
+          "status_str": "error",
+          "messages": [
+            [
+              "execution_error",
+              {
+                "exception_message": "没有通过：供应商原文件是 1664×2224，锁定尺寸是 1536×2048。没有拉伸，没有裁切，没有重试，没有换模型。 / Not accepted: the provider file is 1664×2224 and the locked size is 1536×2048. It was not stretched, cropped, retried, or sent to another model."
+              }
+            ]
+          ]
+        },
+        "outputs": {},
+        "generation_succeeded": false,
+        "model_choice": {
+          "model": "openai/gpt-image-2.6-sunburst/edit",
+          "auto": false,
+          "category": "user",
+          "reason": {
+            "zh": "你指定了这个模型",
+            "en": "you named this model"
+          },
+          "note": "用了 openai/gpt-image-2.6-sunburst/edit，因为你指定了这个模型。/ Used openai/gpt-image-2.6-sunburst/edit because you named this model."
+        },
+        "model": "openai/gpt-image-2.6-sunburst/edit"
+      }
+    },
+    "output_png": "/workspace/911-clothing-capture/main-88cbd358-paid/clothing-swap-output.png"
+  }
+]

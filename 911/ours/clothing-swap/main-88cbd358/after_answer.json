@@ -1,0 +1,53 @@
+{
+  "event": "step2_answered",
+  "ts": "2026-11-12 08:40:40 CST",
+  "tip": "88cbd35874028f0c9f30a33c7f8dbd7fcc91ca3f",
+  "chat_id": "09223bb19f5044b3b5ba512409afc3ae",
+  "ask_id": "33659c0b1e40493a99c478972061db75",
+  "status": "done",
+  "usage": {
+    "input_tokens": 74563,
+    "output_tokens": 809
+  },
+  "captured_prompt": "Virtual try-on clothing swap. Keep the person in image 1 exactly: same face, hair, body, pose, hands in pockets, framing, camera angle, background and lighting. Replace the entire upper-body outfit (the white long-sleeve top and the black sleeveless vest) with the royal blue short-sleeve crew-neck T-shirt from image 2, worn as the only upper garment, with the same oversized relaxed fit, dropped shoulders and short sleeves as in image 2. Keep the T-shirt pattern as shown in image 2, printed on the chest. Keep the beige wide-leg trousers, black belt, necklace, shoulder bag and brown shoes unchanged. Realistic cotton fabric texture, natural folds and shadows, clean edges at the neckline and sleeves, consistent lighting with the original photo.",
+  "captured_prompt_sha256": "595066abb3be15c54af0ecded0bb600a5e8a32cd3390ea37a946fbdc23b6541f",
+  "routed": {
+    "model": "openai/gpt-image-2.6-sunburst/edit",
+    "auto": true,
+    "category": "skill",
+    "skill": "clothing-swap",
+    "resolution": null,
+    "ratio": null,
+    "reason": {
+      "zh": "clothing-swap 技能固定模型",
+      "en": "clothing-swap skill pinned model"
+    },
+    "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+    "note": "用了 openai/gpt-image-2.6-sunburst/edit，因为clothing-swap 技能固定模型。/ Used openai/gpt-image-2.6-sunburst/edit because clothing-swap skill pinned model."
+  },
+  "routed_model": "openai/gpt-image-2.6-sunburst/edit",
+  "size": {
+    "width": 1536,
+    "height": 2048,
+    "ratio": "3:4",
+    "count": 1
+  },
+  "generate_image_count": 1,
+  "prediction_id": "a266bb741a514ee8b664402a4a825854",
+  "quoted_discounted": 0.045,
+  "quoted_list": 0.05,
+  "quote_inputs": {
+    "aspect_ratio": "3:4",
+    "output_format": "png"
+  },
+  "actual_charge": 0.117,
+  "output_png": "/workspace/911-clothing-capture/main-88cbd358-paid/clothing-swap-output.png",
+  "stubbed": false,
+  "submit_attempts": 1,
+  "blocked_predict_attempts": [],
+  "balance_before": 29.848866,
+  "balance_after": 29.731866,
+  "balance_unchanged": false,
+  "asks": [],
+  "error": null
+}

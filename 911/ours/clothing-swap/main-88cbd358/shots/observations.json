@@ -1,0 +1,150 @@
+[
+  {
+    "scene": "before",
+    "bubbleText": "",
+    "bubbleFull": "clothing-swapimage-1image-2",
+    "refChips": [
+      "image-1",
+      "image-2"
+    ],
+    "skillChips": [
+      "clothing-swap"
+    ],
+    "hasDock": true,
+    "hasCard": true,
+    "prompts": [
+      "图1中人物目前穿着白色长袖打底衫外搭黑色无袖背心，你想怎样替换上装？"
+    ],
+    "options": [
+      {
+        "letter": "A",
+        "text": "整体换成蓝色T恤",
+        "on": null,
+        "other": false
+      },
+      {
+        "letter": "B",
+        "text": "只把黑色背心换成蓝色T恤",
+        "on": null,
+        "other": false
+      },
+      {
+        "letter": "C",
+        "text": "只把白色长袖换成蓝色T恤",
+        "on": null,
+        "other": false
+      },
+      {
+        "letter": "D",
+        "text": "蓝色T恤叠穿在黑色背心外",
+        "on": null,
+        "other": false
+      },
+      {
+        "letter": "E",
+        "text": "其他（输入你的答案）…",
+        "on": null,
+        "other": true
+      }
+    ],
+    "selected": [],
+    "skip": "跳过",
+    "primary": "提交 ↵",
+    "injectedLineInDom": false,
+    "oldEmptyLineInDom": false,
+    "user_bubble_shot": {
+      "path": "/workspace/911-clothing-capture/main-88cbd358-paid/shots/user-bubble-before-answer.png",
+      "box": {
+        "x": 138.65625,
+        "y": 459.609375,
+        "width": 302.34375,
+        "height": 50
+      },
+      "clip": {
+        "x": 126.65625,
+        "y": 447.609375,
+        "width": 326.34375,
+        "height": 74
+      }
+    },
+    "card_shot": {
+      "path": "/workspace/911-clothing-capture/main-88cbd358-paid/shots/question-card-before-answer.png",
+      "box": {
+        "x": 37,
+        "y": 626,
+        "width": 406,
+        "height": 339
+      },
+      "clip": {
+        "x": 33,
+        "y": 622,
+        "width": 414,
+        "height": 347
+      }
+    },
+    "compact": {
+      "x": 21,
+      "y": 443.609375,
+      "width": 438,
+      "height": 537.390625
+    }
+  },
+  {
+    "scene": "after",
+    "bubbleText": "",
+    "bubbleFull": "clothing-swapimage-1image-2",
+    "refChips": [
+      "image-1",
+      "image-2"
+    ],
+    "skillChips": [
+      "clothing-swap"
+    ],
+    "hasDock": false,
+    "hasCard": false,
+    "prompts": [],
+    "options": [],
+    "selected": [],
+    "skip": null,
+    "primary": null,
+    "injectedLineInDom": false,
+    "oldEmptyLineInDom": false,
+    "user_bubble_shot": {
+      "path": "/workspace/911-clothing-capture/main-88cbd358-paid/shots/user-bubble-after-A.png",
+      "box": {
+        "x": 138.65625,
+        "y": 557.875,
+        "width": 302.34375,
+        "height": 50
+      },
+      "clip": {
+        "x": 126.65625,
+        "y": 545.875,
+        "width": 326.34375,
+        "height": 74
+      }
+    },
+    "card_shot": {
+      "path": "/workspace/911-clothing-capture/main-88cbd358-paid/shots/question-card-after-A.png",
+      "box": {
+        "x": 39,
+        "y": 623.875,
+        "width": 402,
+        "height": 433.125
+      },
+      "clip": {
+        "x": 31,
+        "y": 615.875,
+        "width": 418,
+        "height": 449.125
+      }
+    },
+    "note": "no dock after answer; captured assistant column (answered card as bubble)",
+    "compact": {
+      "x": 23,
+      "y": 541.875,
+      "width": 434,
+      "height": 531.125
+    }
+  }
+]

@@ -1,0 +1,118 @@
+[
+  {
+    "ts": "2026-11-12 08:39:43 CST",
+    "args": {
+      "prompt": "Virtual try-on clothing swap. Keep the person in image 1 exactly: same face, hair, body, pose, hands in pockets, framing, camera angle, background and lighting. Replace the entire upper-body outfit (the white long-sleeve top and the black sleeveless vest) with the royal blue short-sleeve crew-neck T-shirt from image 2, worn as the only upper garment, with the same oversized relaxed fit, dropped shoulders and short sleeves as in image 2. Keep the T-shirt pattern as shown in image 2, printed on the chest. Keep the beige wide-leg trousers, black belt, necklace, shoulder bag and brown shoes unchanged. Realistic cotton fabric texture, natural folds and shadows, clean edges at the neckline and sleeves, consistent lighting with the original photo.",
+      "refs": [
+        "shape:clothing-swap-person",
+        "shape:clothing-swap-garment"
+      ],
+      "ref_modes": [
+        "content",
+        "content"
+      ],
+      "count": 1,
+      "width": 1536,
+      "height": 2048,
+      "ratio": "3:4",
+      "size_lock": true,
+      "_ref_ratio": "3:4",
+      "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "auto": true,
+        "category": "skill",
+        "skill": "clothing-swap",
+        "resolution": null,
+        "ratio": null,
+        "reason": {
+          "zh": "clothing-swap 技能固定模型",
+          "en": "clothing-swap skill pinned model"
+        },
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "note": "用了 openai/gpt-image-2.6-sunburst/edit，因为clothing-swap 技能固定模型。/ Used openai/gpt-image-2.6-sunburst/edit because clothing-swap skill pinned model."
+      }
+    },
+    "product_path": "api/mcp_tools/canvas.py -> wavespeed.submit",
+    "source": "real_generate_image",
+    "routed": {
+      "model": "openai/gpt-image-2.6-sunburst/edit",
+      "auto": true,
+      "category": "skill",
+      "skill": "clothing-swap",
+      "resolution": null,
+      "ratio": null,
+      "reason": {
+        "zh": "clothing-swap 技能固定模型",
+        "en": "clothing-swap skill pinned model"
+      },
+      "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+      "note": "用了 openai/gpt-image-2.6-sunburst/edit，因为clothing-swap 技能固定模型。/ Used openai/gpt-image-2.6-sunburst/edit because clothing-swap skill pinned model."
+    },
+    "routed_model": "openai/gpt-image-2.6-sunburst/edit",
+    "args_after_apply_generate": {
+      "prompt": "Virtual try-on clothing swap. Keep the person in image 1 exactly: same face, hair, body, pose, hands in pockets, framing, camera angle, background and lighting. Replace the entire upper-body outfit (the white long-sleeve top and the black sleeveless vest) with the royal blue short-sleeve crew-neck T-shirt from image 2, worn as the only upper garment, with the same oversized relaxed fit, dropped shoulders and short sleeves as in image 2. Keep the T-shirt pattern as shown in image 2, printed on the chest. Keep the beige wide-leg trousers, black belt, necklace, shoulder bag and brown shoes unchanged. Realistic cotton fabric texture, natural folds and shadows, clean edges at the neckline and sleeves, consistent lighting with the original photo.",
+      "refs": [
+        "shape:clothing-swap-person",
+        "shape:clothing-swap-garment"
+      ],
+      "ref_modes": [
+        "content",
+        "content"
+      ],
+      "count": 1,
+      "width": 1536,
+      "height": 2048,
+      "ratio": "3:4",
+      "size_lock": true,
+      "_ref_ratio": "3:4",
+      "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "auto": true,
+        "category": "skill",
+        "skill": "clothing-swap",
+        "resolution": null,
+        "ratio": null,
+        "reason": {
+          "zh": "clothing-swap 技能固定模型",
+          "en": "clothing-swap skill pinned model"
+        },
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "note": "用了 openai/gpt-image-2.6-sunburst/edit，因为clothing-swap 技能固定模型。/ Used openai/gpt-image-2.6-sunburst/edit because clothing-swap skill pinned model."
+      }
+    },
+    "balance_before_post": 29.848866,
+    "quote_inputs": {
+      "aspect_ratio": "3:4",
+      "output_format": "png"
+    },
+    "quoted_discounted": 0.045,
+    "quoted_list": 0.05,
+    "quoted_model": "openai/gpt-image-2.6-sunburst/edit",
+    "cost_gate": null,
+    "ws_inputs_keys": [
+      "aspect_ratio",
+      "confirmed",
+      "count",
+      "feature",
+      "height",
+      "images",
+      "model",
+      "n",
+      "png",
+      "prompt",
+      "ratio",
+      "size_lock",
+      "width"
+    ],
+    "ws_image_count": 2,
+    "ws_images": [
+      "/api/view?filename=person-input.png&type=input",
+      "/api/view?filename=garment-input.png&type=input"
+    ],
+    "prediction_id": "a266bb741a514ee8b664402a4a825854",
+    "submitted": true,
+    "turn": "clothing-swap"
+  }
+]
