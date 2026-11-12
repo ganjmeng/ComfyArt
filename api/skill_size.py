@@ -113,21 +113,15 @@ def reconcile_ratio(requested: tuple[int, int], provider_pixels: tuple[int, int]
     return out
 
 
+# Same copy as the page's jobs.sizeNotice / jobs.sizeNoticeUnread. The image is delivered, so this is
+# info: no "failed" wording and no hint to run it again. One message for any tolerated-fail size.
 def size_notice(requested: tuple[int, int] | None, provider: tuple[int, int] | None, mode: str = "") -> dict:
-    """User-facing notice (zh/en) for a charged image that did not pass the size check but is delivered."""
-    want = f"{int(requested[0])}×{int(requested[1])}" if requested else "?"
+    """Neutral zh/en note for a charged image that did not pass the size check but is delivered."""
     if provider is None:
-        return {"zh": f"尺寸提示：没能读出供应商原文件的像素，无法和目标 {want} 核对。图已照原文件放到画布上，没有拉伸或裁切。",
-                "en": f"Size notice: the provider file's pixels could not be read, so it was not checked against {want}. "
-                      "The image was placed on the canvas as returned, not stretched or cropped."}
-    got = f"{int(provider[0])}×{int(provider[1])}"
-    if mode == RATIO_MODE:
-        return {"zh": f"尺寸提示：供应商原文件是 {got}，目标是 {want}，比例或长边没达标。图已照原文件放到画布上，没有拉伸或裁切。",
-                "en": f"Size notice: the provider file is {got} and the target is {want}; its ratio or long side is off. "
-                      "The image was placed on the canvas as returned, not stretched or cropped."}
-    return {"zh": f"尺寸提示：供应商原文件是 {got}，锁定尺寸是 {want}，两者不一致。图已照原文件放到画布上，没有拉伸或裁切。",
-            "en": f"Size notice: the provider file is {got} and the locked size is {want}. "
-                  "The image was placed on the canvas as returned, not stretched or cropped."}
+        return {"kind": "unread", "zh": "出图尺寸未能核对，已按原图交付。", "en": "Output size could not be checked. Delivered as generated."}
+    w, h = int(provider[0]), int(provider[1])
+    return {"kind": "size", "zh": f"出图尺寸低于预期（实际 {w}×{h}），已按原图交付。",
+            "en": f"Output is smaller than expected ({w}×{h}). Delivered as generated."}
 
 
 def file_pixels(data: bytes) -> tuple[int, int] | None:

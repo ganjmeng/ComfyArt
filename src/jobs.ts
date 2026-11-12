@@ -9,7 +9,7 @@ import { t } from './i18n'
 import { uiCredits } from './usd'
 import { takePendingModel, withModel } from './wavespeed'
 import { lockedDeliveryNotice } from './sizeLockPref'
-import { reportWarning } from './ui/ErrorToasts'
+import { reportInfo } from './ui/ErrorToasts'
 import { mapUnknownError, OWN_ERROR_ALLOWLIST } from './wsErrors'
 import en from './locales/en.json'
 import zh from './locales/zh.json'
@@ -318,12 +318,13 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
     // ALWAYS placed as returned (no resize, no crop). A failed check is logged and shown as a notice.
     const sized = lockedDeliveryNotice(holder.meta, media)
     await (placers[job.placer ?? ''] ?? defaultPlacer)(editor, holder, media, job, onError)
+    // Neutral copy in the UI language only; the image is delivered, so this is info, not a failure.
+    const notice = !sized ? '' : sized.got ? t('jobs.sizeNotice', String(sized.got.width), String(sized.got.height)) : t('jobs.sizeNoticeUnread')
     if (sized) {
       console.warn('[size-lock] charged job %s delivered despite size check (%s): want %o got %o', job.id, sized.mode, sized.want, sized.got)
-      const want = `${sized.want.width}×${sized.want.height}`
-      reportWarning(sized.got ? t('jobs.sizeNotice', `${sized.got.width}×${sized.got.height}`, want) : t('jobs.sizeNoticeUnread', want))
+      reportInfo(notice)
     }
-    report(holderId, { srcs: media.map((m) => m.src), ...(sized ? { notice: sized.notice } : {}) })
+    report(holderId, { srcs: media.map((m) => m.src), ...(notice ? { notice } : {}) })
   } catch (e) {
     const seq = logJobResponse(job.id, 'error')
     const prior = terminals.get(job.id)

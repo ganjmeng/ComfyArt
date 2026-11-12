@@ -319,9 +319,8 @@ async def _case(page, mock_ws, skill, width, height, ratio, rgb, match: bool):
         assert placed and placed["natural"] == [wrong[0], wrong[1]], (skill, placed)
         assert placed["asset"] == [wrong[0], wrong[1]], (skill, placed)
         assert await page.locator(".ca-gen-card__error").count() == 0
-        await _until(lambda: _toast(page, "尺寸提示"), 10)
-        titles = " ".join(await page.locator(".tlui-toast__title").all_inner_texts())
-        assert f"{wrong[0]}×{wrong[1]}" in titles and f"{width}×{height}" in titles, (skill, titles)
+        expected = f"出图尺寸低于预期（实际 {wrong[0]}×{wrong[1]}），已按原图交付。"
+        await _until(lambda: _toast(page, expected), 10)
         await _close_toasts(page)
         await page.screenshot(path=str(SHOTS / f"{skill}-placed-with-notice.png"))
 

@@ -7,12 +7,19 @@ command handler the agent uses. The mock returns Sunburst's native 2k 3:4 file (
 the size of pred a266bb741a514ee8b664402a4a825854 on main 88cbd358) or a 1k file (768×1024).
 
 Both must be placed on the canvas as returned (natural pixels checked in the browser). The
-1k file fails the ratio-mode check, so a size notice toast is shown, but it is still placed.
+1k file fails the ratio-mode check, so a light info toast is shown in the UI language only,
+but it is still placed. The native 2k file shows no toast. What goes back to the agent
+(wait_generation) is a success with the image placed: no 「0 张成功」, no rerun hint.
+
+This e2e never skips silently. dist/ must be a local build of this tree (gate: `npx vite build`,
+not committed); a missing or stale dist/ or a missing Chromium is a hard failure.
+Set CA_911_SHOTS=<dir> to save the review screenshots.
 """
 from __future__ import annotations
 
 import io
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -21,7 +28,7 @@ from aiohttp.test_utils import TestServer
 from PIL import Image
 
 from ComfyArt.api import wavespeed
-from test_e2e_skill_canvas_707 import _boot, _close_toasts, _png, _until, app_url  # noqa: F401 - app_url fixture
+from test_e2e_skill_canvas_707 import _close_toasts, _png, _until, app_url  # noqa: F401 - app_url fixture
 from test_wavespeed import MODELS
 
 pw = pytest.importorskip("playwright.async_api")
@@ -30,7 +37,25 @@ ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = json.loads((ROOT / "tests/fixtures/wavespeed_catalog_subset.json").read_text(encoding="utf-8"))
 SB_EDIT = "openai/gpt-image-2.6-sunburst/edit"
 SB_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
-pytestmark = pytest.mark.skipif(not any((ROOT / "dist").glob("index.html")), reason="needs built dist/")
+COPY = {
+    "zh": "出图尺寸低于预期（实际 {w}×{h}），已按原图交付。",
+    "en": "Output is smaller than expected ({w}×{h}). Delivered as generated.",
+}
+# Must never reach the agent or the page for a delivered image.
+BANNED = ("0 张成功", "0 succeeded", "重跑", "再发起", "重新生成", "rerun", "re-run", "run it again", "try again",
+          "没有通过", "Not accepted", "失败", "failed")
+
+
+@pytest.fixture(autouse=True, scope="module")
+def built_dist():
+    """Fail loudly (never skip) when dist/ is missing or was not built from this tree's sources."""
+    index = ROOT / "dist" / "index.html"
+    if not index.is_file():
+        pytest.fail("dist/index.html is missing: run `npx vite build` (local build, not committed) before this e2e")
+    bundle = "".join(p.read_text(encoding="utf-8", errors="ignore") for p in (ROOT / "dist").rglob("*.js"))
+    for marker in ("已按原图交付", "Delivered as generated", "size_lock_mode"):
+        if marker not in bundle:
+            pytest.fail(f"dist/ is stale (no {marker!r}): run `npx vite build` (local, not committed) before this e2e")
 
 
 @pytest.fixture
@@ -125,27 +150,41 @@ CASES = [
 ]
 
 
-async def test_clothing_swap_and_studio_model_results_land_on_canvas(app_url, mock_ws):
+async def _boot(page, app_url: str, lang: str):
+    await page.add_init_script(f"localStorage.setItem('comfyart.lang','{lang}'); localStorage.setItem('comfyart.e2e','1')")
+    await page.goto(app_url)
+    await page.wait_for_timeout(1500)
+    await page.mouse.click(28, 83)
+    await page.locator(".tl-canvas").wait_for()
+    await page.wait_for_timeout(800)
+    if await page.locator(".ca-modal").count():
+        await page.locator(".ca-modal button").nth(-2).click()
+    await page.wait_for_function("() => window.__comfyartE2E && window.__comfyartE2E.listed().length > 0")
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+async def test_skill_clothing_swap_and_studio_model_results_land_on_canvas(app_url, mock_ws, lang):
     refs = _write_inputs()
     async with pw.async_playwright() as p:
         try:
             browser = await p.chromium.launch()
-        except Exception as e:
-            pytest.skip(f"chromium not available: {e}")
-        page = await browser.new_page(viewport={"width": 1280, "height": 800}, locale="zh-CN")
-        await _boot(page, app_url)
+        except Exception as e:  # noqa: BLE001
+            pytest.fail(f"chromium not available, this e2e must not skip: {e}")
+        page = await browser.new_page(viewport={"width": 1280, "height": 800}, locale="zh-CN" if lang == "zh" else "en-US")
+        await _boot(page, app_url, lang)
         await page.evaluate("() => window.__comfyartE2E.setPrefs({ auto: true, enabled: [] })")
         for skill, with_refs, size in CASES:
             for (fw, fh), passes in (((1664, 2224), True), ((768, 1024), False)):
-                await _case(page, mock_ws, skill, refs if with_refs else None, size, fw, fh, passes)
+                await _case(page, mock_ws, lang, skill, refs if with_refs else None, size, fw, fh, passes)
         await browser.close()
 
 
-async def _case(page, mock_ws, skill, refs, size, fw, fh, passes):
-    label = f"{skill}-{'edit' if refs else 't2i'}-{fw}x{fh}"
+async def _case(page, mock_ws, lang, skill, refs, size, fw, fh, passes):
+    label = f"{lang}-{skill}-{'edit' if refs else 't2i'}-{fw}x{fh}"
     mock_ws["png"] = _png(fw, fh, (36, 96, 168), label)
     await page.evaluate("() => { const ed = window.__caEditor; ed.selectAll(); ed.deleteShapes(ed.getSelectedShapeIds()) }")
     await _close_toasts(page)
+    await _dismiss_all(page)
     before = len(mock_ws["submits"])
     args = _page_args(skill, refs, size)
     started = await page.evaluate("async (args) => window.__comfyartE2E.command('generate_image', args)", args)
@@ -153,9 +192,17 @@ async def _case(page, mock_ws, skill, refs, size, fw, fh, passes):
     ids = started["result"]["ids"]
     waited = await page.evaluate("async (ids) => window.__comfyartE2E.command('wait_generation', { ids, timeout_s: 25 })", ids)
     assert waited["ok"] is True, (label, waited)
-    res = waited["result"]["results"][0]
-    assert res["status"] == "done", (label, res)
-    assert res["urls"], (label, res)
+
+    # Agent-facing result: a success with the image placed, size note as info only.
+    agent = waited["result"]
+    assert agent["status"] == "done", (label, agent)
+    res = agent["results"][0]
+    assert res["status"] == "done" and res["placed"] is True and res["generation_succeeded"] is True, (label, res)
+    assert res["delivered"] == 1 and res["urls"], (label, res)
+    assert "error" not in res, (label, res)
+    agent_text = json.dumps(agent, ensure_ascii=False)
+    for bad in BANNED:
+        assert bad.lower() not in agent_text.lower(), (label, bad, agent_text)
 
     assert len(mock_ws["submits"]) == before + 1
     model, payload = mock_ws["submits"][-1]
@@ -181,13 +228,47 @@ async def _case(page, mock_ws, skill, refs, size, fw, fh, passes):
     assert placed["natural"] == [fw, fh], (label, placed)
     assert placed["asset"] == [fw, fh], (label, placed)
     assert await page.locator(".ca-gen-card__error").count() == 0, label
-    toasts = await page.locator(".tlui-toast__title").all_inner_texts()
+
+    other = "en" if lang == "zh" else "zh"
     if passes:
-        assert "size_notice" not in res, (label, res)
-        assert not any("尺寸提示" in t for t in toasts), (label, toasts)
+        assert "size_info" not in res, (label, res)
+        await page.wait_for_timeout(1200)  # give a (wrong) toast time to appear
+        assert await page.locator(".tlui-toast__container").count() == 0, (label, await _toast_texts(page))
     else:
-        assert "768×1024" in res["size_notice"] and "1536×2048" in res["size_notice"], (label, res)
-        await _until(lambda: _toast(page, "尺寸提示"), 10)
+        want = COPY[lang].format(w=fw, h=fh)
+        assert res["size_info"] == want, (label, res)
+        await _until(lambda: _toast(page, want), 10)
+        toast = page.locator(".tlui-toast__container").filter(has_text=want)
+        assert await toast.count() == 1
+        # light info toast: not the error style, and no action (retry) button
+        assert (await toast.first.get_attribute("data-severity")) == "info", label
+        assert await toast.locator(".tlui-toast__actions").count() == 0, label
+        texts = " ".join(await _toast_texts(page))
+        assert COPY[other].format(w=fw, h=fh) not in texts, (label, texts)  # UI language only
+    body = await page.evaluate("() => document.body.innerText")
+    for bad in BANNED:
+        assert bad.lower() not in body.lower(), (label, bad)
+    shots = os.environ.get("CA_911_SHOTS")
+    if shots and skill == "clothing-swap":
+        Path(shots).mkdir(parents=True, exist_ok=True)
+        await page.evaluate("() => { window.__caEditor.zoomToFit({ animation: { duration: 0 } }) }")
+        await page.wait_for_timeout(500)
+        await page.screenshot(path=str(Path(shots) / f"{lang}-clothing-swap-{fw}x{fh}-{'no-toast' if passes else 'toast'}.png"))
+
+
+async def _dismiss_all(page):
+    for _ in range(30):
+        if await page.locator(".tlui-toast__container").count() == 0:
+            return
+        close = page.locator(".tlui-toast__close")
+        if await close.count():
+            await close.first.click()
+        await page.wait_for_timeout(100)
+    raise AssertionError(f"toasts did not close: {await _toast_texts(page)}")
+
+
+async def _toast_texts(page):
+    return await page.locator(".tlui-toast__container").all_inner_texts()
 
 
 async def _image_count(page):

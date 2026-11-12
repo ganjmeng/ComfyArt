@@ -11,6 +11,7 @@ const out = {
   exact1_34: ratioLockOk({ width: 1536, height: 2048 }, { width: 1818, height: 2400 }),
   over1_34: ratioLockOk({ width: 1536, height: 2048 }, { width: 30303, height: 40000 }),
   short: lockedDeliveryNotice(meta(1536, 2048), [{ w: 768, h: 1024 }]),
+  ratioOff: lockedDeliveryNotice(meta(1536, 2048), [{ w: 2048, h: 2048 }]),
   exactMismatch: lockedDeliveryNotice({ sizeLockModel: 'wavespeed-ai/qwen-image-2.0/text-to-image', pixelSize: [1584, 396] }, [{ w: 2048, h: 682 }]),
   unread: lockedDeliveryNotice(meta(1536, 2048), [{ w: 0, h: 0 }]),
   noLock: lockedDeliveryNotice({ pixelSize: [1536, 2048] }, [{ w: 768, h: 1024 }]),

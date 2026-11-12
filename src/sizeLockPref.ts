@@ -56,10 +56,14 @@ export function ratioLockOk(want: { width: number; height: number }, got: { widt
   return Math.max(got.width, got.height) >= Math.max(want.width, want.height)
 }
 
-export interface SizeDeliveryNotice { notice: string; want: { width: number; height: number }; got: { width: number; height: number } | null; mode: 'ratio' | 'exact' }
+/** 'size' = ratio off > 1% or long side short (or exact pixels differ); 'unread' = no readable pixels.
+ *  One user message for 'size' (jobs.sizeNotice, actual W×H); jobs.sizeNoticeUnread otherwise. */
+export type SizeNoticeKind = 'size' | 'unread'
+export interface SizeDeliveryNotice { kind: SizeNoticeKind; want: { width: number; height: number }; got: { width: number; height: number } | null; mode: 'ratio' | 'exact' }
 
 /** P1 hotfix (#911): the image is already charged, so delivery is never refused.
- *  Null = passed (or no lock). Otherwise a zh/en notice to log and show; the caller still places the file as returned. */
+ *  Null = passed (or no lock). Otherwise a notice kind to log and show (UI language, neutral copy);
+ *  the caller still places the file as returned. */
 export function lockedDeliveryNotice(meta: { sizeLockModel?: unknown; pixelSize?: unknown; sizeLockMode?: unknown } | null | undefined, media: { w: number; h: number }[]): SizeDeliveryNotice | null {
   if (!meta || typeof meta.sizeLockModel !== 'string' || !meta.sizeLockModel) return null
   const raw = meta.pixelSize
@@ -69,17 +73,9 @@ export function lockedDeliveryNotice(meta: { sizeLockModel?: unknown; pixelSize?
   for (const item of items) {
     const got = item.w > 0 && item.h > 0 ? { width: item.w, height: item.h } : null
     const ok = mode === 'ratio' ? ratioLockOk(want, got) : lockedFileError(want.width > 0 ? want : { width: 0, height: 0 }, got) === null
-    if (!ok) return { notice: sizeNoticeText(want, got, mode), want, got, mode }
+    if (!ok) return { kind: got ? 'size' : 'unread', want, got, mode }
   }
   return null
-}
-
-export function sizeNoticeText(want: { width: number; height: number }, got: { width: number; height: number } | null, mode: 'ratio' | 'exact'): string {
-  const w = want.width > 0 && want.height > 0 ? `${want.width}×${want.height}` : '?'
-  if (!got) return `尺寸提示：没能读出供应商原文件的像素，无法和目标 ${w} 核对。图已照原文件放到画布上，没有拉伸或裁切。 / Size notice: the provider file's pixels could not be read, so it was not checked against ${w}. The image was placed on the canvas as returned, not stretched or cropped.`
-  const g = `${got.width}×${got.height}`
-  if (mode === 'ratio') return `尺寸提示：供应商原文件是 ${g}，目标是 ${w}，比例或长边没达标。图已照原文件放到画布上，没有拉伸或裁切。 / Size notice: the provider file is ${g} and the target is ${w}; its ratio or long side is off. The image was placed on the canvas as returned, not stretched or cropped.`
-  return `尺寸提示：供应商原文件是 ${g}，锁定尺寸是 ${w}，两者不一致。图已照原文件放到画布上，没有拉伸或裁切。 / Size notice: the provider file is ${g} and the locked size is ${w}. The image was placed on the canvas as returned, not stretched or cropped.`
 }
 
 /** Canvas delivery. No size lock on the holder means this gate stays quiet.

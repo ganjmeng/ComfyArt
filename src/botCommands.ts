@@ -268,7 +268,12 @@ function waitResults(editor: Editor, ids: string[], timeout: number) {
     return ids.map((id) => {
       const r = results[id]
       if (!r) return { id, status: unknown.has(id) ? 'unknown id' : 'running' }
-      if (!r.error) return { id, status: 'done', urls: r.srcs, shapes: shapesWithSrc(editor, r.srcs), ...(r.notice ? { size_notice: r.notice, note: 'the image is on the canvas; tell the user this size notice in their language' } : {}) }
+      // P1 #911: a delivered result is a success. A size note is info only; it never turns this into a failure.
+      if (!r.error) return {
+        id, status: 'done', placed: r.srcs.length > 0, generation_succeeded: r.srcs.length > 0, delivered: r.srcs.length,
+        urls: r.srcs, shapes: shapesWithSrc(editor, r.srcs),
+        ...(r.notice ? { size_info: r.notice, note: `${r.srcs.length} image(s) generated and placed on the canvas: report this as a success with the image delivered. size_info is a neutral note you may pass on as is.` } : {}),
+      }
       // Intentional cost-confirm cancel is not a failure (#127).
       if (/已取消该生成，未扣费|Cancelled this generation; nothing was charged|已取消：未确认费用|Cancelled: cost not confirmed/.test(r.error)) {
         return { id, status: 'declined', cancelled: true, error: r.error }

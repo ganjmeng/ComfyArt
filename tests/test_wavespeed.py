@@ -228,8 +228,8 @@ async def test_size_lock_poll_delivers_a_different_file_with_a_notice(ws):
     assert out["provider_output"] == out["delivered_size"] == {"width": 2048, "height": 682}
     assert out["size_check"] == {"match": False, "mode": "exact"}
     notice = out["size_notice"]
-    assert notice["zh"].startswith("尺寸提示：") and "2048×682" in notice["zh"] and "1584×396" in notice["zh"]
-    assert "没有拉伸或裁切" in notice["zh"] and "not stretched or cropped" in notice["en"]
+    assert notice["zh"] == "出图尺寸低于预期（实际 2048×682），已按原图交付。"
+    assert notice["en"] == "Output is smaller than expected (2048×682). Delivered as generated."
     submits = len(ws["submits"])
     again = await wavespeed.poll(task)
     assert len(ws["submits"]) == submits == 1
@@ -241,7 +241,8 @@ async def test_size_lock_poll_delivers_unreadable_bytes_with_a_notice(ws):
     assert out["generation_succeeded"] is True
     assert out["outputs"]["ws"]["images"]
     assert out["provider_output"] is None and out["delivered_size"] is None
-    assert "没能读出" in out["size_notice"]["zh"] and "1584×396" in out["size_notice"]["zh"]
+    assert out["size_notice"] == {"kind": "unread", "zh": "出图尺寸未能核对，已按原图交付。",
+                                  "en": "Output size could not be checked. Delivered as generated."}
     assert len(ws["submits"]) == 1
 
 
