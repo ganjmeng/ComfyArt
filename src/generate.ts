@@ -255,9 +255,12 @@ async function generateGraph(shape: GeneratorShape): Promise<Built> {
     // reference images go to the image-edit feature; its default model is used unless the agent picked one
     const askedEdit = featureModelsOf(shape).image_edit
     const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
+    // Skill-pinned tier (edit_resolution) must be sent on both edit and t2i.
+    // Sunburst has no size/width/height; the submitted fields are resolution + aspect_ratio.
+    const pinnedRes = typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}
     return images.length
-      ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...(typeof shape.meta.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}), seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock })
-      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: imageParams(shape, model, null, svgSpec(shape.meta)), width, height, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
+      ? wsBuilt({ feature: 'image_edit', model: editModel, prompt, images, width, height, ...pinnedRes, seed, negative_prompt, png: transparent, prep: refPrep.some(Boolean) ? refPrep : undefined, ...sizeLock })
+      : wsBuilt({ feature: 'text_to_image', model: model.auto ? undefined : model.id, prompt, params: imageParams(shape, model, null, svgSpec(shape.meta)), width, height, ...pinnedRes, seed: seedOf(shape) ?? undefined, negative_prompt, png: transparent, ...sizeLock })
   }
   // local diffusion models are gone: cloud image models are handled above
   throw new Error(model ? t('jobs.notInCloud') : 'unknown image model')
@@ -306,7 +309,8 @@ function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
   const askedEdit = featureModelsOf(shape).image_edit
   const editModel = modelIn('image_edit', askedEdit) ?? (askedEdit && askedEdit === model.id ? askedEdit : undefined)
   const useRefs = !!(model.refs || model.control)
-  return (useRefs && refs.length) || baseOf(shape) ? { feature: 'image_edit', model: editModel, width, height } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, params: imageParams(shape, model, null) }
+  const pinnedRes = typeof shape.meta?.editResolution === 'string' ? { resolution: shape.meta.editResolution } : {}
+  return (useRefs && refs.length) || baseOf(shape) ? { feature: 'image_edit', model: editModel, width, height, ...pinnedRes } : { feature: 'text_to_image', model: model.auto ? undefined : model.id, width, height, ...pinnedRes, params: imageParams(shape, model, null) }
 }
 
 function imageParams(shape: GeneratorShape, model: { qualities?: string[]; complexities?: string[] } | null | undefined, gif: GifSpec | null, svg: SvgSpec | null = null): Record<string, unknown> | undefined {

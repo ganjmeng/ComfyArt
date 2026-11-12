@@ -384,8 +384,23 @@ def _exact_skill_pin(args: dict) -> dict | None:
 # #920: pins whose run keeps the canvas apply_generate set (width/height/size_lock).
 # clothing-swap follows image 1 (e.g. 3:4 1536×2048); studio-model keeps the
 # 3:4 1536×2048 canvas it had while unpinned on main d3f5ca4b. Every other pin
-# (ai-model, pose-fission) keeps the d3f5ca4b behavior: size keys are dropped.
+# (ai-model, pose-fission, product-to-packaging, cover-design-director,
+# youtube-channel-banner, portrait-studio) keeps the d3f5ca4b drop of incoming size keys.
+# product-to-packaging, cover-design-director, youtube-channel-banner, and
+# portrait-studio are intentionally not in this set; they still get the
+# ratio-only 2k fill below after those keys are dropped.
 _PIN_KEEPS_SIZE = frozenset({"clothing-swap", "studio-model"})
+
+# Ratio-only 2k fill (no width/height/resolution): studio-model, product-to-packaging,
+# cover-design-director, youtube-channel-banner, and portrait-studio. Sunburst has no
+# size/width/height params, only aspect_ratio + resolution (1k/2k/4k). Fill
+# edit_resolution 2k and keep the given ratio (portrait-studio's pin also names
+# ratio 3:4). Do not invent exact pixels: 2k 3:4 natively outputs 1664×2224, not
+# 1536×2048. Explicit width/height/resolution are left untouched.
+_RATIO_ONLY_2K_SKILLS = frozenset({
+    "studio-model", "product-to-packaging", "cover-design-director",
+    "youtube-channel-banner", "portrait-studio",
+})
 
 
 def _pin_args(args: dict, choice: dict) -> dict:
@@ -407,6 +422,19 @@ def _pin_args(args: dict, choice: dict) -> dict:
         args["edit_resolution"] = choice["resolution"]
     if choice.get("ratio"):
         args["ratio"] = choice["ratio"]
+    # Ratio-only studio-model / product-to-packaging / cover-design-director /
+    # youtube-channel-banner / portrait-studio (no width/height/resolution):
+    # fill resolution 2k and keep the given aspect ratio (portrait-studio's
+    # pin already names resolution 2k and ratio 3:4). Sunburst is submitted as
+    # resolution + aspect_ratio, not exact pixels. An explicit size or
+    # resolution is left untouched. Other skills are not filled.
+    if (
+        str(choice.get("skill") or "") in _RATIO_ONLY_2K_SKILLS
+        and args.get("ratio")
+        and not (args.get("width") or args.get("height")
+                 or args.get("resolution") or args.get("edit_resolution"))
+    ):
+        args["edit_resolution"] = "2k"
     # P1 hotfix (#911): a Sunburst pin cannot submit exact pixels (only aspect_ratio + 1k/2k/4k),
     # so its size lock is checked as ratio <= 1% and long side >= target, not exact pixels.
     from ..skill_size import RATIO_MODE, is_sunburst

@@ -347,14 +347,49 @@ EXPECTED_CLOTHING_SWAP_PIN = {
     "en": "the clothing-swap skill is pinned to GPT Image 2.6 Sunburst edit",
 }
 
+EXPECTED_PRODUCT_TO_PACKAGING_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "product-to-packaging 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the product-to-packaging skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
+EXPECTED_COVER_DESIGN_DIRECTOR_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "cover-design-director 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the cover-design-director skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
+EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "youtube-channel-banner 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the youtube-channel-banner skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
+EXPECTED_PORTRAIT_STUDIO_PIN = {
+    "feature": "image_edit",
+    "model": SUNBURST_EDIT,
+    "resolution": "2k",
+    "ratio": "3:4",
+    "zh": "portrait-studio 技能固定用 GPT Image 2.6 Sunburst 编辑（2K，3:4）",
+    "en": "the portrait-studio skill is pinned to GPT Image 2.6 Sunburst edit at 2K 3:4",
+}
+
 
 def test_studio_model_routes_sunburst_edit_or_t2i_3x4():
     """Rewritten lock (Angela 07:27): studio-model is pinned to Sunburst.
 
     No reference -> text-to-image; a reference or base -> edit. The pin has no
-    resolution/ratio, so a 3:4 1536×2048 canvas (Lovart 87857c35) is kept by
-    _pin_args. studio-model stays out of EXACT_SKILLS, so the exact-size path
-    is not used.
+    resolution/ratio, so an explicit 3:4 1536×2048 canvas is kept by _pin_args
+    (_PIN_KEEPS_SIZE). The submitted Sunburst payload is still resolution 2k
+    + aspect_ratio 3:4, not exact pixels (native 2k 3:4 is 1664×2224).
+    studio-model stays out of EXACT_SKILLS, so the exact-size path is not used.
+    Ratio-only calls fill edit_resolution 2k and do not invent pixels.
     """
     import json
 
@@ -540,9 +575,23 @@ def test_pins_and_auto_models_unchanged():
     assert ours_auto["skills"]["studio-model"]["edit_model"] == SUNBURST_EDIT
     assert ours_auto["skills"]["clothing-swap"] == EXPECTED_CLOTHING_SWAP_PIN
     assert ours_auto["skills"]["clothing-swap"]["model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["product-to-packaging"] == EXPECTED_PRODUCT_TO_PACKAGING_PIN
+    assert ours_auto["skills"]["product-to-packaging"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["product-to-packaging"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["cover-design-director"] == EXPECTED_COVER_DESIGN_DIRECTOR_PIN
+    assert ours_auto["skills"]["cover-design-director"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["cover-design-director"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["youtube-channel-banner"] == EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN
+    assert ours_auto["skills"]["youtube-channel-banner"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["youtube-channel-banner"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["portrait-studio"] == EXPECTED_PORTRAIT_STUDIO_PIN
+    assert ours_auto["skills"]["portrait-studio"]["model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["portrait-studio"]["resolution"] == "2k"
+    assert ours_auto["skills"]["portrait-studio"]["ratio"] == "3:4"
+    assert "edit_model" not in ours_auto["skills"]["portrait-studio"]
     ours_skills = dict(ours_auto.get("skills") or {})
     main_skills = dict(main_auto.get("skills") or {})
-    for key in ("ai-model", "clothing-swap", "studio-model"):
+    for key in ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner", "portrait-studio"):
         ours_skills.pop(key, None)
         main_skills.pop(key, None)
     assert ours_skills == main_skills, (
