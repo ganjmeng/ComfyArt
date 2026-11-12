@@ -88,6 +88,11 @@ async def ask_user(args: dict) -> dict:
         result["skipped"] = True
     else:
         result["note"] = bot_asks.answer_note()
+    # product-to-packaging: images 2-4 follow the card's scope answer (skipped -> core three).
+    from .. import product_packaging
+    plan = product_packaging.record_card_answer(spec, answers)
+    if plan is not None:
+        result["image_plan"] = plan
     return result
 
 

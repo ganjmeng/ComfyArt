@@ -46,6 +46,10 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
                 # One call per image: same reference + person/outfit/background text; only shot size and pose differ.
                 args = portrait_studio.lock_request(args)
             args.pop("shot", None)  # portrait-studio only
+            # product-to-packaging (reference run e304e2fa): one call per image; image 1 3:4, later images 4:3.
+            from .. import product_packaging
+            if product_packaging.applies(args):
+                args = product_packaging.lock_request(args)
         fallback_for = str(args.pop("fallback_for", "") or "")
         if approval:
             label = str(args.get("prompt") or args.get("to") or "")[:80]
