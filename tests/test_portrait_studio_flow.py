@@ -499,6 +499,23 @@ def test_other_skills_prompts_are_not_rewritten(relay):
     assert all("shot" not in a for _, a in SENT)
 
 
+
+_OTHER_SKILL_IDS = sorted(set(re.findall(r"\{ id: '([a-z0-9-]+)'", SKILLS)) - {"portrait-studio"})
+
+
+def test_other_skill_ids_cover_every_skill():
+    assert len(_OTHER_SKILL_IDS) >= 40 and "youtube-channel-banner" in _OTHER_SKILL_IDS
+
+
+@pytest.mark.parametrize("skill", [None] + _OTHER_SKILL_IDS)
+def test_shot_never_reaches_the_request_for_other_skills(relay, skill):
+    """Tech #926: `shot` is portrait-studio only; every other skill (and no skill) must not carry it in the request."""
+    args = {"prompt": "a cat on a sofa", "count": 1, "refs": ["shape:a"], "shot": "half"}
+    if skill:
+        args["skill"] = skill
+    _run_turn("zh", [args])
+    assert all("shot" not in a for _, a in SENT), (skill, SENT)
+
 # --- untouched -----------------------------------------------------------------------------------
 
 def _main_bytes(path: str) -> bytes:
