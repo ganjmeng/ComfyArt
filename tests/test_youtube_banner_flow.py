@@ -181,10 +181,12 @@ def relay(monkeypatch):
     monkeypatch.setattr(canvas, "maybe_ask_run_approval", no_approval)
 
 
-def _run(**args):
+def _run(*, lang: str | None = None, goal_text: str = "", **args):
     chat = paid_guard.noturn_key(f"ytb-{uuid.uuid4().hex}")
     token = GUARD_CHAT_ID.set(chat)
     try:
+        if lang is not None:
+            paid_guard.begin_turn(chat, text=goal_text, provider_text="", lang=lang)
         return asyncio.run(canvas.TOOLS["generate_image"]["handler"](args))
     finally:
         GUARD_CHAT_ID.reset(token)
@@ -373,20 +375,62 @@ def test_bundled_font_is_not_referenced_from_frontend_src_or_dist():
             assert needle not in text, f"{path.relative_to(ROOT)} references {needle}"
 
 
+def _ink_heights(rep, role: str) -> list[int]:
+    return [r["ink_bbox"][3] - r["ink_bbox"][1] for r in rep["lines"] if r["role"] == role]
+
+
 def _schedule_ink_heights(rep) -> list[int]:
-    return [r["ink_bbox"][3] - r["ink_bbox"][1] for r in rep["lines"] if r["role"] == "schedule"]
+    return _ink_heights(rep, "schedule")
 
 
-@pytest.mark.parametrize("case,copy", [
-    ("short", CASES["short"]),
-    ("long", CASES["long"]),
-])
-def test_line3_ink_height_is_at_least_36px(case, copy):
+def _line_texts(rep, role: str) -> list[str]:
+    return [r["text"] for r in rep["lines"] if r["role"] == role]
+
+
+_FIT_CASES = ("short", "long", "very_long")
+_LATIN_WORD = re.compile(r"[A-Za-z]+")
+_SHORT_LATIN = 8
+
+
+@pytest.mark.parametrize("case", list(_FIT_CASES))
+def test_tagline_and_schedule_ink_height_is_at_least_36px(case):
+    copy = CASES[case]
     _, rep = bc.compose(_synthetic_base(), channel=copy[0], tagline=copy[1], schedule=copy[2],
                         skill="youtube-channel-banner", purpose=bc.PURPOSE_USER_FINAL)
-    heights = _schedule_ink_heights(rep)
-    assert heights, case
-    assert all(h >= bc.SCHEDULE_MIN_INK for h in heights), (case, heights)
+    for role in ("tagline", "schedule"):
+        heights = _ink_heights(rep, role)
+        assert heights, (case, role)
+        assert all(h >= bc.LINE_MIN_INK for h in heights), (case, role, heights)
+    tag_px = [r["px"] for r in rep["lines"] if r["role"] == "tagline"]
+    sch_px = [r["px"] for r in rep["lines"] if r["role"] == "schedule"]
+    assert tag_px and sch_px
+    assert min(tag_px) >= max(sch_px), (case, tag_px, sch_px)
+
+
+@pytest.mark.parametrize("case", list(_FIT_CASES))
+def test_wrap_keeps_english_words_and_rejects_orphan_lines(case):
+    channel, tagline, schedule = CASES[case]
+    _, rep = bc.compose(_synthetic_base(), channel=channel, tagline=tagline, schedule=schedule,
+                        skill="youtube-channel-banner", purpose=bc.PURPOSE_USER_FINAL)
+    box_w = TARGET[2] - TARGET[0]
+    for role, src in (("channel", channel), ("tagline", tagline), ("schedule", schedule)):
+        rows = _line_texts(rep, role)
+        if not src:
+            assert rows == []
+            continue
+        assert rows, (case, role)
+        assert all(len(r.strip()) != 1 for r in rows), (case, role, rows)
+        if len(rows) > 1:
+            orphans = [r for r in rows if re.fullmatch(r"[A-Za-z]+", r.strip()) and len(r.strip()) <= _SHORT_LATIN]
+            assert orphans == [], (case, role, rows)
+        # Space-delimited English words that fit in the box stay intact (never split).
+        px = next(r["px"] for r in rep["lines"] if r["role"] == role)
+        font = bc._font(bc.FONT_BOLD if role == "channel" else bc.FONT_REGULAR, px)
+        joined = " ".join(rows)
+        got = _LATIN_WORD.findall(joined)
+        for word in _LATIN_WORD.findall(src):
+            if bc._width(font, word) <= box_w:
+                assert word in got, (case, role, word, rows)
 
 
 # 120 characters is the field cap. Dense CJK at the 36px line-3 floor wraps to more rows
@@ -400,11 +444,62 @@ OVERFLOW_COPY = (
 
 
 def test_line3_overflow_at_floor_raises_instead_of_shrinking_below_36px():
-    with pytest.raises(bc.LayoutError, match="请缩短后再继续"):
+    with pytest.raises(bc.LayoutError):
         bc.layout(*OVERFLOW_COPY)
-    with pytest.raises(bc.LayoutError, match="请缩短后再继续"):
+    with pytest.raises(bc.LayoutError):
         bc.compose(_synthetic_base(), channel=OVERFLOW_COPY[0], tagline=OVERFLOW_COPY[1],
                    schedule=OVERFLOW_COPY[2], skill="youtube-channel-banner", purpose=bc.PURPOSE_USER_FINAL)
+
+
+def test_wrap_breaks_at_preferred_punctuation_and_spaces_without_splitting_english():
+    font = bc._font(bc.FONT_REGULAR, 40)
+    text = "AI 绘画教程 · 创意工作流 · Stable Diffusion / ComfyUI / Midjourney 全流程实战"
+    # Wide enough that a mid-word split is not required; a preferred break must be used.
+    lines = bc.wrap(font, text, 800)
+    assert lines and all(bc._width(font, ln) <= 800 for ln in lines)
+    assert all(len(ln.strip()) != 1 for ln in lines)
+    joined = " ".join(lines)
+    for word in ("Stable", "Diffusion", "ComfyUI", "Midjourney"):
+        assert word in _LATIN_WORD.findall(joined)
+        assert all(word not in ln or word in _LATIN_WORD.findall(ln) for ln in lines)
+    # Breaks happen at · or / or spaces, not inside an English word.
+    for ln in lines[:-1]:
+        assert ln[-1] in "·、，/" or ln[-1].isspace() or ln.split()[-1] in _LATIN_WORD.findall(text)
+
+
+def test_wrap_does_not_leave_edition_alone_or_split_international():
+    font = bc._font(bc.FONT_BOLD, 46)
+    text = "Creative Workflow Lab International Edition"
+    # Width that would naturally park "Edition" on its own line under a naive wrap.
+    edition_w = bc._width(font, "Edition")
+    intl_ed_w = bc._width(font, "International Edition")
+    naive_cut = bc._width(font, "Creative Workflow Lab International")
+    width = max(edition_w + 1, naive_cut)  # "International" fits; "International Edition" may not
+    width = naive_cut  # first five words fit exactly-ish; Edition would be the remainder
+    lines = bc.wrap(font, text, width)
+    if lines is not None:
+        assert all(len(ln.strip()) != 1 for ln in lines)
+        if len(lines) > 1:
+            assert not any(re.fullmatch(r"[A-Za-z]+", ln.strip()) and len(ln.strip()) <= _SHORT_LATIN for ln in lines)
+            assert "Edition" not in [ln.strip() for ln in lines] or len(lines) == 1
+        assert "International" in _LATIN_WORD.findall(" ".join(lines))
+        # International itself fits, so it must not be character-split.
+        assert any("International" in _LATIN_WORD.findall(ln) for ln in lines)
+    else:
+        # Refusing this width is also legal; layout will shrink or raise the shorten card.
+        assert bc._width(font, "International Edition") > width
+
+
+def test_wrap_character_break_never_leaves_a_single_char():
+    font = bc._font(bc.FONT_BOLD, 48)
+    token = "Supercalifragilisticexpialidocious"
+    # Force a character break: no preferred break point, token wider than the box.
+    width = bc._width(font, token) - 10
+    assert width < bc._width(font, token)
+    lines = bc.wrap(font, token, width)
+    assert lines is not None and len(lines) >= 2
+    assert all(len(ln.strip()) >= 2 for ln in lines)
+    assert "".join(ln.strip() for ln in lines) == token
 
 
 # --- wash pipelines cannot call the compositor --------------------------------------------------------
@@ -488,21 +583,45 @@ def test_compose_tool_writes_2560x1440_and_places_it_next_to_the_base(monkeypatc
     assert Image.open(path).size == (2560, 1440)
 
 
+_ZH_SHORTEN = "横幅上的文字排在安全区内有点长，请缩短后再继续。"
+_EN_SHORTEN = "The banner text is a bit long for the safe area. Please shorten it to continue."
+
+
 def test_base_preflight_overflow_returns_shorten_card_and_does_not_submit(relay):
-    out = _run(prompt="text-free brand plate, brand blue #2F6BFF",
+    out = _run(lang="zh", goal_text="",
+               prompt="text-free brand plate, brand blue #2F6BFF",
                skill="youtube-channel-banner", banner_stage="base",
                channel_name=OVERFLOW_COPY[0], tagline=OVERFLOW_COPY[1], schedule=OVERFLOW_COPY[2])
     assert SENT == []
     assert out.get("submitted") is False and out.get("charged") is False
     assert out["status"] == "needs_input" and out["kind"] == "bannerTextShorten"
-    assert out["prompt"] == bc.SHORTEN_COPY_PROMPT
+    assert out["prompt"] == _ZH_SHORTEN == bc.SHORTEN_COPY["zh"]["prompt"]
     assert "失败" not in out["prompt"] and "重跑" not in out["prompt"] and "不通过" not in out["prompt"]
     questions = out["questions"]
     assert [q["id"] for q in questions] == ["yt_shorten_copy"]
-    assert questions[0]["prompt"] == bc.SHORTEN_COPY_PROMPT
+    assert questions[0]["prompt"] == _ZH_SHORTEN
     assert questions[0]["allow_other"] is True
-    assert questions[0]["placeholder"] == bc.SHORTEN_COPY_PLACEHOLDER
+    assert questions[0]["placeholder"] == bc.SHORTEN_COPY["zh"]["placeholder"]
     assert out["ask"]["questions"][0]["id"] == "yt_shorten_copy"
+
+
+@pytest.mark.parametrize("lang,prompt", [
+    ("zh", "横幅上的文字排在安全区内有点长，请缩短后再继续。"),
+    ("en", "The banner text is a bit long for the safe area. Please shorten it to continue."),
+])
+def test_base_preflight_shorten_card_follows_ui_language(relay, lang, prompt):
+    out = _run(lang=lang, goal_text="",
+               prompt="text-free brand plate, brand blue #2F6BFF",
+               skill="youtube-channel-banner", banner_stage="base",
+               channel_name=OVERFLOW_COPY[0], tagline=OVERFLOW_COPY[1], schedule=OVERFLOW_COPY[2])
+    assert SENT == []
+    assert out.get("submitted") is False and out.get("charged") is False
+    assert out["status"] == "needs_input" and out["kind"] == "bannerTextShorten"
+    assert out["prompt"] == prompt
+    assert out["questions"][0]["prompt"] == prompt
+    assert out["questions"][0]["placeholder"] == bc.SHORTEN_COPY[lang]["placeholder"]
+    assert "失败" not in out["prompt"] and "fail" not in out["prompt"].lower()
+    assert "重跑" not in out["prompt"] and "rerun" not in out["prompt"].lower()
 
 
 def test_base_preflight_fitting_copy_proceeds_to_submit(relay):

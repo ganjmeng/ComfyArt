@@ -13,11 +13,14 @@ right/bottom exclusive):
 Ink is measured on the rendered pixels (alpha of each line's own layer), not on font
 metrics. There is no stroke or shadow, so the glyph alpha is all the visible ink.
 Font size is fitted to the box width. A line that does not fit wraps first; the
-third line (schedule / small info, e.g. 「每周二 / 周五更新」) never shrinks below a
-measured glyph height of 36px on the 2560×1440 canvas (or 0.3× the title ink height
-when that is larger and still smaller than the title). Other lines may shrink within
-their own limits. If the text still cannot be placed inside the strict core at that
-floor, the call raises instead of clipping or going below the floor.
+tagline (subtitle) and third line (schedule / update line, e.g. 「每周二 / 周五更新」)
+never shrink below a measured glyph height of 36px on the 2560×1440 canvas (or 0.3×
+the title ink height when that is larger and still smaller than the title). The
+tagline font size is always at least the update-line font size. Lines wrap at
+· 、 ， / and spaces first, without splitting English words; character breaks are a
+last resort and must not leave a single character or a short word (e.g. Edition)
+alone. If the text still cannot be placed inside the strict core at that floor, the
+call raises instead of clipping or going below the floor.
 
 This path is only for the youtube-channel-banner user-side final. It must not be used
 by the gold / example wash pipelines (they keep the no-local-text rule): compose()
@@ -50,8 +53,9 @@ FONT_REGULAR = FONT_DIR / "ComfyArtBannerSansSC-Regular.otf"
 CHANNEL_PX = 96
 TAGLINE_PX = 46
 SCHEDULE_PX = 40
-# Line 3 (schedule) measured ink height floor on the 2560×1440 canvas.
-SCHEDULE_MIN_INK = 36
+# Tagline (subtitle) and schedule (update line) measured ink height floor on the 2560×1440 canvas.
+LINE_MIN_INK = 36
+SCHEDULE_MIN_INK = LINE_MIN_INK  # alias
 SCHEDULE_TITLE_RATIO = 0.3
 GAP_AFTER_CHANNEL = 22
 GAP_AROUND_ACCENT = 18
@@ -188,14 +192,6 @@ def _glyph_sig(path: Path, ch: str) -> tuple:
     return mask.size, bytes(mask)
 
 
-def _tokens(text: str) -> list[str]:
-    """Wrap units: a Latin/number word (with its trailing spaces) or one CJK character."""
-    out: list[str] = []
-    for m in re.finditer(r"[A-Za-z0-9_@#&+\-'’./:]+\s*|\s+|.", text):
-        out.append(m.group(0))
-    return out
-
-
 def _width(font, text: str) -> int:
     if not text:
         return 0
@@ -203,54 +199,197 @@ def _width(font, text: str) -> int:
     return r - l
 
 
-def _break_word(font, word: str, width: int) -> list[str]:
-    parts, cur = [], ""
-    for ch in word:
-        if cur and _width(font, cur + ch) > width:
-            parts.append(cur)
+# Preferred wrap points (no jieba): middle dot, enumeration/comma, slash, and spaces.
+_WRAP_BREAKS = set("·、，/")
+_SHORT_LATIN = 8  # "Edition" is 8; a lone shorter Latin word on a line is an orphan
+_LATIN_ATOM = re.compile(r"[A-Za-z]+")
+
+
+def _segments(text: str) -> list[str]:
+    """Split on preferred breaks, keeping the break character on the preceding segment."""
+    segs, buf = [], ""
+    for ch in text:
+        buf += ch
+        if ch in _WRAP_BREAKS or ch.isspace():
+            segs.append(buf)
+            buf = ""
+    if buf:
+        segs.append(buf)
+    return segs
+
+
+def _latin_words(text: str) -> list[str]:
+    return _LATIN_ATOM.findall(text or "")
+
+
+def _is_short_latin_line(text: str) -> bool:
+    s = text.strip()
+    return bool(re.fullmatch(r"[A-Za-z]+", s)) and len(s) <= _SHORT_LATIN
+
+
+def _short_source_words(text: str) -> set[str]:
+    """Space-delimited short Latin words in the source (e.g. Edition). Punctuation-only splits do not count."""
+    out: set[str] = set()
+    for tok in (text or "").split():
+        core = tok.strip("".join(_WRAP_BREAKS))
+        if re.fullmatch(r"[A-Za-z]+", core) and len(core) <= _SHORT_LATIN:
+            out.add(core)
+    return out
+
+
+def _is_orphan_short_word(line: str, source: str) -> bool:
+    s = line.strip()
+    return _is_short_latin_line(s) and s in _short_source_words(source)
+
+
+def _is_single_char_line(text: str) -> bool:
+    return len(text.strip()) == 1
+
+
+def _join_segs(a: str, b: str) -> str:
+    if not a:
+        return b.lstrip() if b[:1].isspace() else b
+    if a[-1:].isspace() or a[-1:] in _WRAP_BREAKS or b[:1].isspace() or b[:1] in _WRAP_BREAKS:
+        return a + b
+    return a + b
+
+
+def _break_chars(font, text: str, width: int) -> list[str] | None:
+    """Character wrap as a last resort. No 1-character piece. None if it cannot be done."""
+    text = text.strip()
+    if not text:
+        return []
+    if _width(font, text) <= width:
+        return [text]
+    if len(text) < 2 or _width(font, text[:2]) > width:
+        return None
+    lines, cur = [], ""
+    for ch in text:
+        trial = cur + ch
+        if cur and _width(font, trial) > width:
+            if len(cur) < 2:
+                return None
+            lines.append(cur)
             cur = ch
         else:
-            cur += ch
+            cur = trial
     if cur:
-        parts.append(cur)
-    return parts
+        if len(cur) == 1 and lines:
+            prev = lines[-1]
+            if len(prev) < 3 or _width(font, cur) > width:
+                return None
+            # Don't leave a single char alone: move one character down.
+            lines[-1] = prev[:-1]
+            cur = prev[-1] + cur
+            if _width(font, lines[-1]) > width or _width(font, cur) > width or len(lines[-1]) < 2:
+                return None
+        if len(cur.strip()) < 2:
+            return None
+        lines.append(cur)
+    if any(len(ln.strip()) < 2 for ln in lines):
+        return None
+    return lines
 
 
-def wrap(font, text: str, width: int) -> list[str]:
-    """Greedy wrap for mixed CJK + Latin text; never returns a line wider than width."""
+def wrap(font, text: str, width: int) -> list[str] | None:
+    """Wrap mixed CJK + Latin text.
+
+    Break first at · 、 ， / and spaces, and never split an English word. Only when a
+    segment has no break point and is wider than the box, break by character — and
+    then never leave a single character at a line end or alone, or a short word
+    (e.g. Edition) alone on a line. Returns None when the text cannot be wrapped
+    legally at this width (the caller should shrink other lines or raise).
+    """
     text = " ".join(str(text or "").split())
     if not text:
         return []
+    if _width(font, text) <= width:
+        return [text]
     lines: list[str] = []
     cur = ""
-    for tok in _tokens(text):
-        if _width(font, (cur + tok).rstrip()) <= width:
-            cur += tok
+    for seg in _segments(text):
+        trial = _join_segs(cur, seg)
+        if _width(font, trial.rstrip()) <= width:
+            cur = trial
             continue
         if not cur.strip():
-            # A single token wider than the box: break it by characters.
-            pieces = _break_word(font, tok.strip(), width)
-            lines.extend(pieces[:-1])
-            cur = pieces[-1] if pieces else ""
+            # A single segment wider than the box: no preferred break remains; character-break.
+            parts = _break_chars(font, seg, width)
+            if parts is None:
+                return None
+            lines.extend(parts[:-1])
+            cur = parts[-1]
             continue
-        # Kinsoku: carry an opening bracket to the next line; pull a closing mark back.
-        if tok[:1] in _NO_LINE_START and _width(font, (cur + tok).rstrip()) <= width * 1.04:
-            cur += tok
-            continue
-        carry = ""
-        if cur and cur.rstrip()[-1:] in _NO_LINE_END:
-            carry = cur.rstrip()[-1]
-            cur = cur.rstrip()[:-1]
         lines.append(cur.rstrip())
-        nxt = (carry + tok).lstrip()
-        if _width(font, nxt) > width:
-            pieces = _break_word(font, nxt, width)
-            lines.extend(pieces[:-1])
-            nxt = pieces[-1] if pieces else ""
-        cur = nxt
+        body = seg.lstrip()
+        if _width(font, body.rstrip()) <= width:
+            cur = body
+        else:
+            parts = _break_chars(font, body, width)
+            if parts is None:
+                return None
+            lines.extend(parts[:-1])
+            cur = parts[-1]
     if cur.strip():
         lines.append(cur.rstrip())
-    return [ln for ln in lines if ln]
+    lines = [ln for ln in lines if ln.strip()]
+
+    def _glue(a: str, b: str) -> str:
+        b = b.strip()
+        if not a:
+            return b
+        if a[-1:].isspace() or a[-1:] in _WRAP_BREAKS or b[:1] in _WRAP_BREAKS:
+            return (a.rstrip() if a[-1:].isspace() and b[:1] in _WRAP_BREAKS else a) + (b if a[-1:].isspace() or b[:1] in _WRAP_BREAKS or a[-1:] in _WRAP_BREAKS else " " + b)
+        return a + " " + b
+
+    def _split_last_unit(text: str) -> tuple[str, str] | None:
+        segs = [s for s in _segments(text) if s.strip()]
+        if len(segs) < 2:
+            return None
+        head = "".join(segs[:-1]).rstrip()
+        tail = segs[-1].strip()
+        if not head or not tail:
+            return None
+        return head, tail
+
+    # Pull a short orphan word (or lone character) up onto the previous line.
+    # If that overflows, move the previous line's last unit down with the orphan.
+    # If neither fits, this width is illegal (do not leave the orphan).
+    changed = True
+    while changed:
+        changed = False
+        for i, ln in enumerate(lines):
+            orphan = _is_orphan_short_word(ln, text) or _is_single_char_line(ln)
+            if not orphan or len(lines) == 1:
+                continue
+            if i > 0:
+                merged = _glue(lines[i - 1], ln)
+                if _width(font, merged.rstrip()) <= width:
+                    lines[i - 1] = merged.rstrip()
+                    lines.pop(i)
+                    changed = True
+                    break
+                moved = _split_last_unit(lines[i - 1])
+                if moved:
+                    head, tail = moved
+                    nxt = _glue(tail, ln)
+                    if (_width(font, head) <= width and _width(font, nxt) <= width
+                            and not _is_single_char_line(head)
+                            and not (len(lines) > 2 and _is_short_latin_line(head))):
+                        lines[i - 1] = head
+                        lines[i] = nxt
+                        changed = True
+                        break
+            return None
+    if any(_is_single_char_line(ln) for ln in lines):
+        return None
+    if len(lines) > 1 and any(_is_orphan_short_word(ln, text) for ln in lines):
+        return None
+    # English words stay intact when packing at preferred breaks. Character-break
+    # of a segment wider than the box may cut a letter-run that had no break point.
+    if any(_width(font, ln) > width for ln in lines):
+        return None
+    return lines
 
 
 @dataclass
@@ -276,6 +415,7 @@ class Layout:
 
 def _plan(channel: str, tagline: str, schedule: str, scale: float, allow_wrap: bool,
           colors: dict, box_w: int, schedule_px: int | None = None,
+          tagline_px: int | None = None,
           ) -> tuple[list[tuple[str, list[str], Path, int, tuple]], int] | None:
     rows = []
     specs = (("channel", channel, FONT_BOLD, CHANNEL_PX, colors["brand"]),
@@ -287,11 +427,15 @@ def _plan(channel: str, tagline: str, schedule: str, scale: float, allow_wrap: b
             continue
         if role == "schedule" and schedule_px is not None:
             px = max(6, int(schedule_px))
+        elif role == "tagline" and tagline_px is not None:
+            px = max(6, int(tagline_px))
         else:
             px = max(6, int(round(base * scale)))
         font = _font(path, px)
         if allow_wrap:
             parts = wrap(font, text, box_w)
+            if parts is None:
+                return None
         else:
             if _width(font, text) > box_w:
                 return None
@@ -300,15 +444,19 @@ def _plan(channel: str, tagline: str, schedule: str, scale: float, allow_wrap: b
     return rows, 0
 
 
-def _schedule_px_for(schedule: str, scale: float, title_ink: int, parts: list[str] | None = None) -> int:
-    """Font size for line 3: scaled size, never below the ink floor for this copy."""
+def _line_px_for(text: str, scale: float, base_px: int, title_ink: int, parts: list[str] | None = None) -> int:
+    """Font size for tagline or schedule: scaled size, never below the ink floor for this copy."""
     need = _schedule_min_ink(title_ink)
-    texts = [p for p in (parts or []) if p] or [" ".join(str(schedule or "").split())]
+    texts = [p for p in (parts or []) if p] or [" ".join(str(text or "").split())]
     texts = [t for t in texts if t]
     if not texts:
         return 6
     floor = max(_px_for_min_ink(FONT_REGULAR, t, need) for t in texts)
-    return max(floor, int(round(SCHEDULE_PX * scale)))
+    return max(floor, int(round(base_px * scale)))
+
+
+def _schedule_px_for(schedule: str, scale: float, title_ink: int, parts: list[str] | None = None) -> int:
+    return _line_px_for(schedule, scale, SCHEDULE_PX, title_ink, parts)
 
 
 def _block(rows, scale: float):
@@ -355,8 +503,9 @@ def _inside(bbox, box) -> bool:
 def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict | None = None) -> Layout:
     """Fit the lines into the target box (wrap first, then shrink other lines); ink-checked against the strict core.
 
-    Line 3 never shrinks below SCHEDULE_MIN_INK (36px), or 0.3× the title ink height when that is larger
-    and still smaller than the title. If it still cannot fit after wrapping, this raises.
+    Tagline and schedule never shrink below LINE_MIN_INK (36px), or 0.3× the title ink height when that
+    is larger and still smaller than the title. The tagline font size is always at least the update-line
+    font size. If the text still cannot fit after wrapping, this raises.
     """
     colors = colors or {"brand": _color(None, DEFAULT_BRAND), "text": _color(None, DEFAULT_TEXT),
                         "schedule": _color(None, DEFAULT_SCHEDULE), "accent": _color(None, DEFAULT_ACCENT)}
@@ -388,27 +537,32 @@ def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict 
             ch_px = max(6, int(round(CHANNEL_PX * scale)))
             ch_text = " ".join(str(channel or "").split())
             title_ink = _glyph_ink_height(FONT_BOLD, ch_px, ch_text)
-            sched_px = _schedule_px_for(schedule, scale, title_ink)
-            planned = _plan(channel, tagline, schedule, scale, allow_wrap, colors, box_w, schedule_px=sched_px)
+            sched_px = _line_px_for(schedule, scale, SCHEDULE_PX, title_ink) if schedule else 6
+            tag_px = _line_px_for(tagline, scale, TAGLINE_PX, title_ink) if tagline else 6
+            # Subtitle font size is always at least the update-line size; never shrink only the subtitle.
+            if tagline and schedule:
+                tag_px = max(tag_px, sched_px)
+            planned = _plan(channel, tagline, schedule, scale, allow_wrap, colors, box_w,
+                            schedule_px=sched_px, tagline_px=tag_px)
             if planned is None:
                 continue
             rows, _ = planned
-            # After wrapping, bump line 3 if a shorter-ink row would fall below the floor, then re-wrap.
-            for row in rows:
-                if row[0] != "schedule":
+            # After wrapping, bump tagline/schedule if a row would fall below the floor, then re-wrap.
+            by = {row[0]: row for row in rows}
+            need_px = {}
+            if "schedule" in by:
+                need_px["schedule"] = _line_px_for(schedule, scale, SCHEDULE_PX, title_ink, parts=by["schedule"][1])
+            if "tagline" in by:
+                need_px["tagline"] = _line_px_for(tagline, scale, TAGLINE_PX, title_ink, parts=by["tagline"][1])
+            if "tagline" in need_px and "schedule" in need_px:
+                need_px["tagline"] = max(need_px["tagline"], need_px["schedule"])
+            if any(need_px[role] > by[role][3] for role in need_px):
+                planned = _plan(channel, tagline, schedule, scale, allow_wrap, colors, box_w,
+                                schedule_px=need_px.get("schedule", sched_px),
+                                tagline_px=need_px.get("tagline", tag_px))
+                if planned is None:
                     continue
-                need = _schedule_min_ink(title_ink)
-                bumped = _schedule_px_for(schedule, scale, title_ink, parts=row[1])
-                if bumped > row[3]:
-                    replanned = _plan(channel, tagline, schedule, scale, allow_wrap, colors, box_w,
-                                      schedule_px=bumped)
-                    if replanned is None:
-                        planned = None
-                        break
-                    rows, _ = replanned
-                break
-            if planned is None:
-                continue
+                rows, _ = planned
             placed, accent, h = _block(rows, scale)
             if h > max_h:
                 continue
@@ -428,7 +582,12 @@ def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict 
             ch_inks = [ln.ink[3] - ln.ink[1] for ln in lines if ln.role == "channel" and ln.ink]
             title_ink_m = max(ch_inks) if ch_inks else title_ink
             need = _schedule_min_ink(title_ink_m)
-            if any(ln.role == "schedule" and ln.ink and (ln.ink[3] - ln.ink[1]) < need for ln in lines):
+            floored = [ln for ln in lines if ln.role in ("tagline", "schedule") and ln.ink]
+            if any((ln.ink[3] - ln.ink[1]) < need for ln in floored):
+                continue
+            tag_pxs = [ln.px for ln in lines if ln.role == "tagline"]
+            sch_pxs = [ln.px for ln in lines if ln.role == "schedule"]
+            if tag_pxs and sch_pxs and min(tag_pxs) < max(sch_pxs):
                 continue
             acc = None
             if accent:
@@ -439,7 +598,7 @@ def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict 
                     continue
             return Layout(scale=scale, lines=lines, accent=acc, accent_color=colors["accent"],
                           wrapped=any(len(r[1]) > 1 for r in rows))
-    raise LayoutError("三行文字换行后仍排不进横幅安全区（第三行需保持至少 36px），请缩短后再继续。")
+    raise LayoutError("三行文字换行后仍排不进横幅安全区（副标题与更新行需保持至少 36px），请缩短后再继续。")
 
 
 def _to_canvas(base_bytes: bytes):
@@ -566,43 +725,65 @@ _QUOTED = re.compile(r"[\"“”「」『』][^\"“”「」『』]{1,200}[\"�
 
 
 SHORTEN_COPY_ID = "yt_shorten_copy"
-SHORTEN_COPY_PROMPT = "横幅上的文字排在安全区内有点长，请缩短后再继续。"
-SHORTEN_COPY_PLACEHOLDER = "请输入缩短后的频道名、标语和更新信息..."
+SHORTEN_COPY = {
+    "zh": {
+        "prompt": "横幅上的文字排在安全区内有点长，请缩短后再继续。",
+        "placeholder": "请输入缩短后的频道名、标语和更新信息...",
+    },
+    "en": {
+        "prompt": "The banner text is a bit long for the safe area. Please shorten it to continue.",
+        "placeholder": "Enter a shorter channel name, tagline and update line...",
+    },
+}
+# Backward-compatible aliases (zh).
+SHORTEN_COPY_PROMPT = SHORTEN_COPY["zh"]["prompt"]
+SHORTEN_COPY_PLACEHOLDER = SHORTEN_COPY["zh"]["placeholder"]
 
 
-def shorten_copy_card() -> dict:
-    """Ask-user card: shorten the banner copy. Chinese, neutral, no failure/rerun wording."""
+def shorten_copy_lang() -> str:
+    """Same ask-card language rule as the other cards (`bot_asks.card_lang`)."""
+    from . import bot_asks
+    lang = bot_asks.card_lang()
+    return lang if lang in SHORTEN_COPY else "zh"
+
+
+def shorten_copy_card(lang: str | None = None) -> dict:
+    """Ask-user card: shorten the banner copy. Neutral wording, follows the UI/ask-card language."""
     from . import bot_asks
 
+    copy = SHORTEN_COPY[lang if lang in SHORTEN_COPY else shorten_copy_lang()]
     return bot_asks.validate_spec({
         "questions": [{
             "id": SHORTEN_COPY_ID,
-            "prompt": SHORTEN_COPY_PROMPT,
+            "prompt": copy["prompt"],
             "allow_other": True,
-            "placeholder": SHORTEN_COPY_PLACEHOLDER,
+            "placeholder": copy["placeholder"],
             "page": 1,
         }],
         "page_count": 1,
         "allow_skip": False,
         "allow_other": True,
-        "prompt": SHORTEN_COPY_PROMPT,
+        "prompt": copy["prompt"],
     })
 
 
-def shorten_copy_result() -> dict:
-    card = shorten_copy_card()
+def shorten_copy_result(lang: str | None = None) -> dict:
+    lang = lang if lang in SHORTEN_COPY else shorten_copy_lang()
+    card = shorten_copy_card(lang)
+    copy = SHORTEN_COPY[lang]
     return {
         "status": "needs_input",
         "submitted": False,
         "generation_succeeded": False,
         "charged": False,
         "kind": "bannerTextShorten",
+        "lang": lang,
         "prompt": card["prompt"],
         "questions": card["questions"],
         "page_count": card.get("page_count", 1),
         "allow_skip": False,
         "allow_other": True,
-        "placeholder": SHORTEN_COPY_PLACEHOLDER,
+        "placeholder": copy["placeholder"],
         "ask": card,
     }
 
