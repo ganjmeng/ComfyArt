@@ -9,7 +9,6 @@ import { t } from './i18n'
 import { uiCredits } from './usd'
 import { takePendingModel, withModel } from './wavespeed'
 import { lockedDeliveryNotice } from './sizeLockPref'
-import { reportInfo } from './ui/ErrorToasts'
 import { mapUnknownError, OWN_ERROR_ALLOWLIST } from './wsErrors'
 import en from './locales/en.json'
 import zh from './locales/zh.json'
@@ -322,8 +321,8 @@ async function finish(editor: Editor, holderId: TLShapeId, job: Job, onError: Er
     const notice = !sized ? '' : sized.got ? t('jobs.sizeNotice', String(sized.got.width), String(sized.got.height)) : t('jobs.sizeNoticeUnread')
     if (sized) {
       console.warn('[size-lock] charged job %s delivered despite size check (%s): want %o got %o', job.id, sized.mode, sized.want, sized.got)
-      reportInfo(notice)
     }
+    // Notice rides on the result (resultsAtom). The UI layer shows the info toast; jobs.ts stays UI-free.
     report(holderId, { srcs: media.map((m) => m.src), ...(notice ? { notice } : {}) })
   } catch (e) {
     const seq = logJobResponse(job.id, 'error')

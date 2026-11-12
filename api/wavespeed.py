@@ -2453,9 +2453,10 @@ def _audit_locked_files(job: dict, refs: list) -> dict | None:
 
     expect = job.get("expect_pixels")
     if not (isinstance(expect, (list, tuple)) and len(expect) == 2 and int(expect[0]) > 0 and int(expect[1]) > 0):
+        n = size_notice(None, None)
         return {"match": False, "requested": None, "provider_output": None, "delivered": None, "read_error": True,
-                "error": "没有通过：尺寸已锁定，但没有可核对的宽高。没有拉伸，没有重试，没有换模型。 / Not accepted: size was locked but there was no pixel size to check. It was not stretched, retried, or sent to another model.",
-                "notice": size_notice(None, None)}
+                "error": f"{n['zh']} / {n['en']}",
+                "notice": n}
     requested = (int(expect[0]), int(expect[1]))
     mode = str(job.get("size_mode") or "")
     measured = None

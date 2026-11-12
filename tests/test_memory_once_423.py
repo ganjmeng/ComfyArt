@@ -209,6 +209,8 @@ def test_locales_only_add_memory_retrieved_430():
         "botSettings.provider.wavespeed", "botSettings.provider.deepseek",
         "botSettings.provider.siliconflow", "botSettings.provider.openrouter",
         "botSettings.provider.openai", "botSettings.provider.ollama", "botSettings.provider.custom",
+        # #911 P1: Sunburst size-tolerance info toast (not memory copy)
+        "jobs.sizeNotice", "jobs.sizeNoticeUnread",
     }
     for p, v in (("src/locales/zh.json", "记忆已读取"), ("src/locales/en.json", "Memory retrieved")):
         m = _git_main(p)

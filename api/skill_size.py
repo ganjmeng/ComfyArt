@@ -141,16 +141,9 @@ def file_pixels(data: bytes) -> tuple[int, int] | None:
 
 
 def size_reject(requested: tuple[int, int], provider: tuple[int, int] | None) -> str:
-    """Explicit completion failure. The prefix is kept by the UI error allowlist."""
-    w, h = int(requested[0]), int(requested[1])
-    if provider is None:
-        return (f"没有通过：供应商原文件读不出像素，不能当成 {w}×{h} 交付。没有拉伸，没有裁切，没有重试，没有换模型。"
-                f" / Not accepted: the provider file has no readable pixels, so it was not delivered as {w}×{h}. "
-                "It was not stretched, cropped, retried, or sent to another model.")
-    gw, gh = int(provider[0]), int(provider[1])
-    return (f"没有通过：供应商原文件是 {gw}×{gh}，锁定尺寸是 {w}×{h}。没有拉伸，没有裁切，没有重试，没有换模型。"
-            f" / Not accepted: the provider file is {gw}×{gh} and the locked size is {w}×{h}. "
-            "It was not stretched, cropped, retried, or sent to another model.")
+    """Same two #924 notice sentences (zh / en). The charged image is delivered, so this is not a failure."""
+    n = size_notice(requested, provider)
+    return f"{n['zh']} / {n['en']}"
 
 
 def audit_file(data: bytes, requested: tuple[int, int], mode: str = "") -> dict:

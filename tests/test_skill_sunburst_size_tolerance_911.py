@@ -28,7 +28,7 @@ from PIL import Image
 
 from ComfyArt.api import wavespeed
 from ComfyArt.api.skill_size import (RATIO_MODE, audit_file, is_sunburst, ratio_error, ratio_ok,
-                                     size_notice)
+                                     size_notice, size_reject)
 from test_wavespeed import MODELS, ws  # noqa: F401 - pytest fixture (local mock WaveSpeed)
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -127,6 +127,18 @@ def _saved(out) -> bytes:
     return wavespeed._read(os.path.join(folder_paths.get_output_directory(), ref["subfolder"], ref["filename"]))
 
 
+
+# Neutral copy: no failure wording and no hint to run it again. Covers ratio and exact mode.
+_NEUTRAL_BANNED = ("失败", "0 张成功", "重跑", "再发起", "重新生成", "fail", "rerun", "retry", "try again",
+                   "没有通过", "Not accepted")
+
+
+def _assert_neutral(*texts: str) -> None:
+    for text in texts:
+        low = text.lower()
+        for bad in _NEUTRAL_BANNED:
+            assert bad.lower() not in low, (bad, text)
+
 async def test_qa1_poll_accepts_1664x2224_and_saves_original_bytes(ws, sunburst_catalog):
     body = _png(1664, 2224)
     task, payload, out = await _locked(ws, SB_T2I, "text_to_image", body)
@@ -152,9 +164,8 @@ async def test_qa5_rejected_but_charged_is_delivered_logged_and_noticed(ws, sunb
     notice = out["size_notice"]
     assert notice["zh"] == "出图尺寸低于预期（实际 768×1024），已按原图交付。"
     assert notice["en"] == "Output is smaller than expected (768×1024). Delivered as generated."
-    for text in (notice["zh"], notice["en"]):  # neutral: no failure wording, no hint to run it again
-        for bad in ("失败", "0 张成功", "重跑", "再发起", "重新生成", "fail", "rerun", "retry", "try again"):
-            assert bad not in text.lower()
+    _assert_neutral(notice["zh"], notice["en"])
+    _assert_neutral(size_reject((1536, 2048), (768, 1024)), audit_file(body, (1536, 2048), RATIO_MODE)["error"] or "")
     assert any("P1 size check failed for charged task" in r.getMessage() and task in r.getMessage() for r in caplog.records)
     submits = len(ws["submits"])
     await wavespeed.poll(task)
@@ -170,6 +181,9 @@ async def test_qa5_main_bug_exact_lock_on_sunburst_no_longer_drops_the_image(ws,
     assert _saved(out) == body
     assert out["size_check"] == {"match": False, "mode": "exact"}
     assert "1664×2224" in out["size_notice"]["zh"] and "1664×2224" in out["size_notice"]["en"]
+    _assert_neutral(out["size_notice"]["zh"], out["size_notice"]["en"],
+                    size_reject((1536, 2048), (1664, 2224)),
+                    audit_file(body, (1536, 2048))["error"] or "")
 
 
 async def test_qa5_exact_skill_mismatch_and_unreadable_also_delivered(ws, sunburst_catalog):
@@ -179,9 +193,15 @@ async def test_qa5_exact_skill_mismatch_and_unreadable_also_delivered(ws, sunbur
     assert payload.get("size") == "1584*396"
     assert out["generation_succeeded"] is True and out["outputs"]["ws"]["images"]
     assert "2048×682" in out["size_notice"]["zh"]
+    _assert_neutral(out["size_notice"]["zh"], out["size_notice"]["en"],
+                    size_reject((1584, 396), (2048, 682)),
+                    audit_file(_png(2048, 682), (1584, 396))["error"] or "")
     _t, _p, dead = await _locked(ws, t2i, "text_to_image", b"NOTPNG", w=1584, h=396, mode=None)
     assert dead["generation_succeeded"] is True and dead["outputs"]["ws"]["images"]
     assert dead["size_notice"]["kind"] == "unread" and "已按原图交付" in dead["size_notice"]["zh"]
+    _assert_neutral(dead["size_notice"]["zh"], dead["size_notice"]["en"],
+                    size_reject((1584, 396), None),
+                    audit_file(b"NOTPNG", (1584, 396))["error"] or "")
 
 
 async def test_ratio_mode_flag_ignored_for_non_sunburst_model(ws, sunburst_catalog):
@@ -195,8 +215,18 @@ async def test_ratio_mode_flag_ignored_for_non_sunburst_model(ws, sunburst_catal
 def test_size_notice_is_bilingual():
     n = size_notice((1536, 2048), (768, 1024), RATIO_MODE)
     assert set(n) == {"kind", "zh", "en"}
-    # one message for any tolerated-fail size (ratio off > 1% or long side short)
+    # one message for any tolerated-fail size (ratio off > 1% or long side short); exact mode reuses the same two sentences
     assert size_notice((1000, 1000), (10101, 10000), RATIO_MODE)["zh"] == "出图尺寸低于预期（实际 10101×10000），已按原图交付。"
+    exact = size_notice((1024, 1280), (2048, 682))
+    unread = size_notice((1024, 1280), None)
+    assert exact["zh"] == "出图尺寸低于预期（实际 2048×682），已按原图交付。"
+    assert exact["en"] == "Output is smaller than expected (2048×682). Delivered as generated."
+    assert unread["zh"] == "出图尺寸未能核对，已按原图交付。"
+    assert unread["en"] == "Output size could not be checked. Delivered as generated."
+    assert size_reject((1024, 1280), (2048, 682)) == f"{exact['zh']} / {exact['en']}"
+    assert size_reject((1024, 1280), None) == f"{unread['zh']} / {unread['en']}"
+    _assert_neutral(n["zh"], n["en"], exact["zh"], exact["en"], unread["zh"], unread["en"],
+                    size_reject((1024, 1280), (2048, 682)), size_reject((1024, 1280), None))
 
 
 # ---------- pin wiring: which skills lock in ratio mode ----------
@@ -295,10 +325,13 @@ def test_page_ratio_check_and_delivery_notice():
     finish = jobs.split("async function finish(", 1)[1].split("\n}\n", 1)[0]
     assert "lockedDeliveryNotice(holder.meta, media)" in finish
     assert "throw new Error(refused)" not in finish
-    # placement happens before (and regardless of) the notice
-    assert finish.index("placers[job.placer") < finish.index("reportInfo(")
+    assert "from './ui/ErrorToasts'" not in jobs and "reportInfo" not in jobs
+    # placement happens before (and regardless of) the notice carried on the result
+    assert finish.index("placers[job.placer") < finish.index("report(holderId")
+    assert "notice" in finish
     toasts = (ROOT / "src/ui/ErrorToasts.tsx").read_text(encoding="utf-8")
     assert "export const reportInfo = (text: string) => errorAtom.set({ text, n: ++count, severity: 'info' })" in toasts
+    assert "resultsAtom" in toasts and "reportInfo(r.notice)" in toasts
     zh = json.loads((ROOT / "src/locales/zh.json").read_text(encoding="utf-8"))
     en = json.loads((ROOT / "src/locales/en.json").read_text(encoding="utf-8"))
     assert zh["jobs.sizeNotice"] == "出图尺寸低于预期（实际 {0}×{1}），已按原图交付。"
