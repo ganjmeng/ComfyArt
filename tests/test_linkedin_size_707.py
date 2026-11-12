@@ -532,10 +532,11 @@ def test_audit_file_reads_bytes_then_reconciles():
     assert bad["match"] is False and bad["read_error"] is False
     assert bad["provider_output"] == {"width": 2048, "height": 682}
     assert bad["delivered"] == bad["provider_output"]
-    assert "2048×682" in bad["error"] and bad["error"].startswith("没有通过：")
+    assert "2048×682" in bad["error"] and "已按原图交付" in bad["error"]
+    assert bad["error"] == "出图尺寸低于预期（实际 2048×682），已按原图交付。 / Output is smaller than expected (2048×682). Delivered as generated."
     dead = audit_file(b"NOTPNG", (1584, 396))
     assert dead["read_error"] is True and dead["provider_output"] is None and dead["delivered"] is None
-    assert "读不出像素" in dead["error"]
+    assert dead["error"] == "出图尺寸未能核对，已按原图交付。 / Output size could not be checked. Delivered as generated."
     # The same three facts stay distinct from a request that merely named the size.
     assert reconcile((1584, 396), (2048, 682))["match"] is False
 
@@ -575,7 +576,9 @@ def test_size_lock_preference_cases():
     body = poll.split("async def _poll_once", 1)[1].split("\nasync def ", 1)[0]
     assert "_audit_locked_files(job, refs)" in body and "audit_file(" in poll
     assert "isOwnSizeError(msg)" in (ROOT / "src/wsErrors.ts").read_text(encoding="utf-8")
-    assert "lockedDeliveryError(holder.meta, media)" in (ROOT / "src/jobs.ts").read_text(encoding="utf-8")
+    # P1 hotfix (#911): the page checks the lock but always places a charged file (notice, not refusal).
+    jobs = (ROOT / "src/jobs.ts").read_text(encoding="utf-8")
+    assert "lockedDeliveryNotice(holder.meta, media)" in jobs and "throw new Error(refused)" not in jobs
     assert wavespeed.load_config()["features"]["text_to_image"]["default"] == DEFAULT_T2I
 
 

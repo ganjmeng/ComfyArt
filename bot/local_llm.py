@@ -242,6 +242,35 @@ def _reply_lang(user_text: str) -> str:
     return "zh" if _CJK_RE.search(text) else "en"
 
 
+def ask_card_lang(goal_text: str = "", ui_lang: str = "") -> str:
+    """Ask-card language: empty typed text follows the UI language; typed text follows the user.
+
+    Use goal_text (the user's own words), not provider_text: an empty skill turn
+    injects an English model-only line that must not count as the user's language.
+    """
+    text = (goal_text or "").strip()
+    if text:
+        return "zh" if _CJK_RE.search(text) else "en"
+    return ui_lang if ui_lang in ("zh", "en") else "zh"
+
+
+_ASK_CARD_LANG_RULE = (
+    "Ask-card language: when the user typed no text, write every ask_user "
+    "question, option label, option description, free-text placeholder, and "
+    "skip/submit wording in the UI language; when the user typed text, write "
+    "them in the user's language. No other language rule for ask cards."
+)
+
+
+def _ask_card_lang_directive(lang: str) -> str:
+    name = "Chinese (zh)" if lang == "zh" else "English (en)"
+    return (
+        f"Ask-card language for this turn is {name}. Write every ask_user "
+        "question, option label, description, free-text placeholder, and "
+        "skip/submit wording in that language."
+    )
+
+
 def _call_key(name: str, args: dict) -> str:
     return name + "\x00" + json.dumps(args, sort_keys=True, ensure_ascii=False)
 
@@ -625,7 +654,14 @@ _PLAN_QUOTE_RULE = (
     "Do not tell the user a per-step or running cost; the confirm card is the "
     "only cost display, and only when the total reaches the threshold."
 )
-_SYSTEM_PROMPT = AGENT_GUIDE + "\n\n" + _PLAN_QUOTE_RULE
+_SYSTEM_PROMPT = AGENT_GUIDE + "\n\n" + _PLAN_QUOTE_RULE + "\n\n" + _ASK_CARD_LANG_RULE
+
+
+def system_prompt_for_turn(goal_text: str = "", ui_lang: str = "") -> str:
+    return (_SYSTEM_PROMPT + "\n\n"
+            + _ask_card_lang_directive(ask_card_lang(goal_text, ui_lang)))
+
+
 _PLAN_REFUSE = {
     "zh": "[tool error] 这是多步付费任务。请先调用 quote_plan 列出每一个付费步骤，用户确认后再调用付费工具。这次调用没有执行。",
     "en": "[tool error] This is a multi-step paid task. Call quote_plan with every paid step and wait for the user before any paid tool. This call did not run.",
@@ -1620,7 +1656,7 @@ class LocalLlmProvider(AgentProvider):
             return None
         # #734: an unregistered model falls back to Auto in the tool, so price what will really run. A pricing
         # error here propagates and paid_gate fails closed (#732).
-        from ..api.mcp_tools.canvas import _auto_choice, unregistered_model
+        from ..api.mcp_tools.canvas import _auto_choice, quote_route, unregistered_model
         if unregistered_model(name, args):
             clean = {k: v for k, v in args.items() if k not in ("model", "auto_model")}
             choice = _auto_choice(name, clean) or {}
@@ -1628,6 +1664,11 @@ class LocalLlmProvider(AgentProvider):
             if not model:
                 return None
             args = clean
+        if name == "generate_image" and (args.get("refs") or args.get("base")):
+            # #910: refs/base run on image_edit and every reference is billed, so price the routed edit call
+            routed = quote_route(name, args)
+            if routed:
+                model, args = routed
         return await self._price_one(model, args)
 
     async def _llm_request(self, session: aiohttp.ClientSession, url: str,
@@ -1766,7 +1807,13 @@ class LocalLlmProvider(AgentProvider):
     async def _quote_steps(self, steps, lang: str):
         from .plan_quote import build_quote
         return await build_quote(steps, lang, threshold=self._threshold(),
-                                 pricer=self._price_one, models_for=self._models_for)
+                                 pricer=self._price_one, models_for=self._models_for, router=self._quote_route)
+
+    @staticmethod
+    def _quote_route(tool: str, args: dict):
+        """#910: the routed model and price inputs of one step (canvas.quote_route); None when not routable."""
+        from ..api.mcp_tools.canvas import quote_route
+        return quote_route(tool, args)
 
     async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle, *,
                             run=None, messages: Optional[list] = None) -> str:
@@ -1948,7 +1995,10 @@ class LocalLlmProvider(AgentProvider):
                 from .skill_output import apply_generate
                 from .ref_orientation import ref_image_bytes
                 _ut = getattr(turn, "user_text", "") or ""
-                # #905: the reference the call uses (first of refs: canvas shape or file), else the turn's attachment
+                # #905: user_text lets before-after honor a ratio the user named.
+                # #905/#911: image 1 (first of refs: canvas shape or file, else the turn's
+                # attachment) is passed through; apply_generate uses it for before-after
+                # card orientation and for FOLLOW_REF_SIZES skills (clothing-swap).
                 args = apply_generate(args, current_skill, user_text=_ut,
                                       ref_image=ref_image_bytes(args.get("refs"), _ut, getattr(turn, "attachments", None)))
                 preview, early_refuse = bind_generate(run, args, consume=False)
@@ -2303,7 +2353,7 @@ class LocalLlmProvider(AgentProvider):
                     await self._mcp_list_tools(session, turn.mcp_endpoint)) if turn.mcp_endpoint else []
                 if tools:  # #235 synthetic tool: not an MCP tool, so external agents never see it
                     tools = [*tools, _QUOTE_PLAN_TOOL]
-                system = _SYSTEM_PROMPT if tools else ""
+                system = (system_prompt_for_turn(turn.goal_text, turn.lang) if tools else "")
                 user_msg = _user_content(turn.user_text, turn.attachments)
                 window = await self._context_window(session, model)
                 history_msgs = await self._history_with_model_summary(

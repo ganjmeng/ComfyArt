@@ -5,7 +5,7 @@ card are generated live from the uploaded garment, so they must not be copied
 into src/skills.ts. This file may name those words only to forbid them in the
 skill entry; they may appear in a validation chat's user message.
 
-No WaveSpeed call. $0 static. studio-model pins stay unchanged. The ai-model Rule 5 lock is a fixed presence check, not a diff against origin/main.
+No WaveSpeed call. $0 static. Angela 07:27 pins studio-model to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given). The ai-model Rule 5 lock is a fixed presence check, not a diff against origin/main.
 """
 from __future__ import annotations
 
@@ -156,11 +156,18 @@ def _studio_has_no_708(src: str) -> None:
     assert "just above the knee" not in instr
 
 
-def _clothing_swap_and_708_const_match_main(src: str, main: str) -> None:
+def _708_const_matches_main(src: str, main: str) -> None:
+    """Shared #708 block stays byte-identical; clothing-swap no longer appends it (#911)."""
     assert _portrait_shots_708_const(src) == _portrait_shots_708_const(main)
     assert hashlib.sha256(_portrait_shots_708_const(src).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
-    assert _skill_entry(src, "clothing-swap") == _skill_entry(main, "clothing-swap")
-    assert "+ PORTRAIT_SHOTS_708 +" in _skill_entry(src, "clothing-swap")
+
+
+def _clothing_swap_has_no_708(src: str) -> None:
+    entry = _skill_entry(src, "clothing-swap")
+    assert "+ PORTRAIT_SHOTS_708 +" not in entry
+    assert "PORTRAIT_SHOTS_708" not in entry
+    assert "Shot rules (#708)" not in entry
+    assert "6) Angles:" not in entry
 
 
 def test_ask_card_is_two_steps_with_structure_and_order():
@@ -309,8 +316,11 @@ def test_generate_image_requires_skill_studio_model():
     # After stacking #912, an ai-model session also fills skill= (no size).
     other = apply_generate({"prompt": "x"}, "ai-model")
     assert other == {"prompt": "x", "skill": "ai-model"}
+    # #911 clothing-swap now declares a 3:4 canvas (person-photo ratio, in-limit size).
     swap = apply_generate({"prompt": "x"}, "clothing-swap")
-    assert swap == {"prompt": "x"}
+    assert swap["skill"] == "clothing-swap"
+    assert (swap["width"], swap["height"], swap["ratio"], swap["count"]) == (1536, 2048, "3:4", 1)
+    assert swap["size_lock"] is True
 
     # Explicit model: do not auto-fill skill (and never invent or pin a model).
     explicit = apply_generate(
@@ -319,29 +329,101 @@ def test_generate_image_requires_skill_studio_model():
     assert explicit == {"prompt": "x", "model": "openai/gpt-image-2.6-sunburst"}
 
 
-def test_studio_model_skill_stays_unpinned_auto_flare_edit():
-    """skill=studio-model must not become a pin; Auto stays flare/edit on one ref."""
+SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
+SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
+
+EXPECTED_STUDIO_MODEL_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "studio-model 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the studio-model skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
+EXPECTED_CLOTHING_SWAP_PIN = {
+    "feature": "image_edit",
+    "model": SUNBURST_EDIT,
+    "zh": "clothing-swap 技能固定用 GPT Image 2.6 Sunburst 编辑",
+    "en": "the clothing-swap skill is pinned to GPT Image 2.6 Sunburst edit",
+}
+
+EXPECTED_PRODUCT_TO_PACKAGING_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "product-to-packaging 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the product-to-packaging skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
+EXPECTED_COVER_DESIGN_DIRECTOR_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "cover-design-director 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the cover-design-director skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
+EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "youtube-channel-banner 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the youtube-channel-banner skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
+EXPECTED_PORTRAIT_STUDIO_PIN = {
+    "feature": "image_edit",
+    "model": SUNBURST_EDIT,
+    "resolution": "2k",
+    "ratio": "3:4",
+    "zh": "portrait-studio 技能固定用 GPT Image 2.6 Sunburst 编辑（2K，3:4）",
+    "en": "the portrait-studio skill is pinned to GPT Image 2.6 Sunburst edit at 2K 3:4",
+}
+
+
+def test_studio_model_routes_sunburst_edit_or_t2i_3x4():
+    """Rewritten lock (Angela 07:27): studio-model is pinned to Sunburst.
+
+    No reference -> text-to-image; a reference or base -> edit. The pin has no
+    resolution/ratio, so an explicit 3:4 1536×2048 canvas is kept by _pin_args
+    (_PIN_KEEPS_SIZE). The submitted Sunburst payload is still resolution 2k
+    + aspect_ratio 3:4, not exact pixels (native 2k 3:4 is 1664×2224).
+    studio-model stays out of EXACT_SKILLS, so the exact-size path is not used.
+    Ratio-only calls fill edit_resolution 2k and do not invent pixels.
+    """
     import json
 
     from ComfyArt.api.mcp_tools import canvas
+    from ComfyArt.api.skill_size import EXACT_SKILLS
 
     skills = json.loads(AUTO_MODELS.read_text(encoding="utf-8")).get("skills") or {}
-    assert "studio-model" not in skills
-    # ai-model may be pinned (#915); studio-model must not be.
+    assert skills["studio-model"] == EXPECTED_STUDIO_MODEL_PIN
+    assert "studio-model" not in EXACT_SKILLS
 
-    args = {
-        "prompt": "on-body studio still",
-        "skill": "studio-model",
-        "ratio": "3:4",
-        "count": 1,
-        "refs": ["shape:studio-model-garment"],
-    }
-    c = canvas._auto_choice("generate_image", dict(args))
-    assert c.get("model") == "openai/gpt-image-2.6-flare/edit"
-    assert c.get("auto") is True
-    assert c.get("category") == "references"
-    assert c.get("category") != "skill"
-    assert "sunburst" not in str(c.get("model") or "").lower()
+    size = {"ratio": "3:4", "width": 1536, "height": 2048, "count": 1}
+    no_ref = {"prompt": "on-body studio still", "skill": "studio-model", **size}
+    c = canvas._auto_choice("generate_image", dict(no_ref))
+    assert c["model"] == SUNBURST_T2I
+    assert c["category"] == "skill"
+    assert "edit_model" not in c
+    pinned = canvas._pin_args(dict(no_ref), c)
+    assert pinned["model"] == SUNBURST_T2I
+    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (1536, 2048, "3:4")
+
+    with_ref = {**no_ref, "refs": ["shape:studio-model-garment"]}
+    c = canvas._auto_choice("generate_image", dict(with_ref))
+    assert c["model"] == c["edit_model"] == SUNBURST_EDIT
+    assert c["category"] == "skill"
+    pinned = canvas._pin_args(dict(with_ref), c)
+    assert pinned["edit_model"] == SUNBURST_EDIT
+    assert pinned.get("model") != SUNBURST_T2I
+    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (1536, 2048, "3:4")
+
+    with_base = {"prompt": "on-body studio still", "skill": "studio-model", "base": "shape:base", **size}
+    c = canvas._auto_choice("generate_image", dict(with_base))
+    assert c["model"] == c["edit_model"] == SUNBURST_EDIT
+    pinned = canvas._pin_args(dict(with_base), c)
+    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (1536, 2048, "3:4")
 
 
 def test_direction_card_is_normalized_in_ask_user_validate_spec():
@@ -460,8 +542,9 @@ def test_qa_no_708_on_studio_model():
     _studio_has_no_708(SKILLS)
 
 
-def test_qa_708_constant_and_clothing_swap_byte_identical_to_origin_main():
-    _clothing_swap_and_708_const_match_main(SKILLS, _main_skills())
+def test_qa_708_constant_byte_identical_and_clothing_swap_detached():
+    _708_const_matches_main(SKILLS, _main_skills())
+    _clothing_swap_has_no_708(SKILLS)
 
 
 def test_pins_and_auto_models_unchanged():
@@ -487,12 +570,33 @@ def test_pins_and_auto_models_unchanged():
     )
     assert ours_auto["features"] == main_auto["features"]
     assert ours_auto.get("_comment") == main_auto.get("_comment")
+    assert ours_auto["skills"]["studio-model"] == EXPECTED_STUDIO_MODEL_PIN
+    assert ours_auto["skills"]["studio-model"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["studio-model"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["clothing-swap"] == EXPECTED_CLOTHING_SWAP_PIN
+    assert ours_auto["skills"]["clothing-swap"]["model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["product-to-packaging"] == EXPECTED_PRODUCT_TO_PACKAGING_PIN
+    assert ours_auto["skills"]["product-to-packaging"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["product-to-packaging"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["cover-design-director"] == EXPECTED_COVER_DESIGN_DIRECTOR_PIN
+    assert ours_auto["skills"]["cover-design-director"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["cover-design-director"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["youtube-channel-banner"] == EXPECTED_YOUTUBE_CHANNEL_BANNER_PIN
+    assert ours_auto["skills"]["youtube-channel-banner"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["youtube-channel-banner"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["portrait-studio"] == EXPECTED_PORTRAIT_STUDIO_PIN
+    assert ours_auto["skills"]["portrait-studio"]["model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["portrait-studio"]["resolution"] == "2k"
+    assert ours_auto["skills"]["portrait-studio"]["ratio"] == "3:4"
+    assert "edit_model" not in ours_auto["skills"]["portrait-studio"]
     ours_skills = dict(ours_auto.get("skills") or {})
     main_skills = dict(main_auto.get("skills") or {})
-    ours_skills.pop("ai-model", None)
-    main_skills.pop("ai-model", None)
-    assert ours_skills == main_skills, "only skills.ai-model may differ from the locked Auto table"
-    assert "studio-model" not in (ours_auto.get("skills") or {})
+    for key in ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner", "portrait-studio"):
+        ours_skills.pop(key, None)
+        main_skills.pop(key, None)
+    assert ours_skills == main_skills, (
+        "features and every other skills entry stay byte-identical to the locked snapshot"
+    )
 
 
 def test_ai_model_rule5_names_registered_sunburst():
@@ -514,7 +618,8 @@ def test_mutation_red_then_green():
     main = _main_skills()
     # Green on the real tree first.
     _studio_has_no_708(SKILLS)
-    _clothing_swap_and_708_const_match_main(SKILLS, main)
+    _708_const_matches_main(SKILLS, main)
+    _clothing_swap_has_no_708(SKILLS)
     assert _forbidden_hits(_skill_entry(SKILLS, "studio-model")) == []
 
     # Red: re-append 708 on studio-model only (in memory).
@@ -540,15 +645,19 @@ def test_mutation_red_then_green():
         red = True
     assert red, "re-adding 708 to studio-model should fail the no-708 lock"
 
-    # Red: clothing-swap assembly drifted.
+    # Red: re-append 708 on clothing-swap (in memory).
     swap = _skill_entry(SKILLS, "clothing-swap")
-    mutated_swap = SKILLS.replace(swap, swap.replace("You are a production", "You are a MUTATED production", 1), 1)
+    mutated_swap = SKILLS.replace(
+        swap,
+        swap.replace("',\n    category:", "' + PORTRAIT_SHOTS_708 + '',\n    category:", 1),
+        1,
+    )
     red = False
     try:
-        _clothing_swap_and_708_const_match_main(mutated_swap, main)
+        _clothing_swap_has_no_708(mutated_swap)
     except AssertionError:
         red = True
-    assert red, "editing clothing-swap should fail the byte-identical lock"
+    assert red, "re-adding 708 to clothing-swap should fail the detach lock"
 
     # Red: garment-specific word leaks into the studio-model entry.
     mutated_word = SKILLS.replace(
@@ -561,7 +670,8 @@ def test_mutation_red_then_green():
 
     # Green: the on-disk tree is unchanged and still passes.
     _studio_has_no_708(SKILLS)
-    _clothing_swap_and_708_const_match_main(SKILLS, main)
+    _708_const_matches_main(SKILLS, main)
+    _clothing_swap_has_no_708(SKILLS)
     assert _forbidden_hits(_skill_entry(SKILLS, "studio-model")) == []
     assert SKILLS == (ROOT / "src/skills.ts").read_text(encoding="utf-8")
 

@@ -49,6 +49,17 @@ These tables are generated from `api/curated_models.json` and `api/wavespeed_mod
 | Speech to text | `wavespeed-ai/openai-whisper-turbo` |
 {/* models:end */}
 
+## Skill model pins
+
+Some skills always run on one model, whatever the picker or Auto would choose. The pins are in the `skills` section of `api/auto_models.json`.
+
+| Skill | No reference | With a reference | Size |
+|---|---|---|---|
+| studio-model | `openai/gpt-image-2.6-sunburst/text-to-image` | `openai/gpt-image-2.6-sunburst/edit` | 2K at the requested ratio (3:4 by default) |
+| product-to-packaging | `openai/gpt-image-2.6-sunburst/text-to-image` | `openai/gpt-image-2.6-sunburst/edit` | 2K at the requested ratio |
+
+GPT Image 2.6 Sunburst takes an aspect ratio and a resolution (1K, 2K or 4K), not exact pixels. A 2K 3:4 image therefore comes back at the size Sunburst produces for 2K 3:4 (for example 1664×2224), not exactly 1536×2048. An explicit width, height or resolution is kept as given.
+
 ## What is free
 
 Canvas editing, exports (PNG, JPG, PDF, PPTX, PSD, ZIP), the video editor export and the WaveSpeed balance check call no paid model.

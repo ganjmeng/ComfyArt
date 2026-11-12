@@ -17,6 +17,48 @@
    "edit_model": "openai/gpt-image-2.6-sunburst/edit",
    "zh": "ai-model 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
    "en": "the ai-model skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
+  },
+  "clothing-swap": {
+   "feature": "image_edit",
+   "model": "openai/gpt-image-2.6-sunburst/edit",
+   "zh": "clothing-swap 技能固定用 GPT Image 2.6 Sunburst 编辑",
+   "en": "the clothing-swap skill is pinned to GPT Image 2.6 Sunburst edit"
+  },
+  "studio-model": {
+   "feature": "text_to_image",
+   "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+   "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+   "zh": "studio-model 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+   "en": "the studio-model skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
+  },
+  "product-to-packaging": {
+   "feature": "text_to_image",
+   "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+   "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+   "zh": "product-to-packaging 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+   "en": "the product-to-packaging skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
+  },
+  "cover-design-director": {
+   "feature": "text_to_image",
+   "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+   "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+   "zh": "cover-design-director 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+   "en": "the cover-design-director skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
+  },
+  "youtube-channel-banner": {
+   "feature": "text_to_image",
+   "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+   "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+   "zh": "youtube-channel-banner 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+   "en": "the youtube-channel-banner skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
+  },
+  "portrait-studio": {
+   "feature": "image_edit",
+   "model": "openai/gpt-image-2.6-sunburst/edit",
+   "resolution": "2k",
+   "ratio": "3:4",
+   "zh": "portrait-studio 技能固定用 GPT Image 2.6 Sunburst 编辑（2K，3:4）",
+   "en": "the portrait-studio skill is pinned to GPT Image 2.6 Sunburst edit at 2K 3:4"
   }
  },
  "features": {

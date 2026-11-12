@@ -40,9 +40,10 @@ AI_MODEL_FEATURED = "featured: [pinned('805/reuse/ai-model', '7fbb71bdce30a57f35
 # Locked to main dbed74e11 (same bytes as 33d28eab5). Do not retune unless the constant changes.
 PORTRAIT_SHOTS_708_CONST_SHA256 = "97edb7c18215e4a283b86633908872f3b3c4146d9bb748d71c0d3510798cfc8b"
 # Remaining 708 appenders on that same main tip. ai-model and studio-model stay off this list.
-EXPECTED_708_APPENDER_SHA256 = {
-    "clothing-swap": "3ac12958fac29ab0d33067aafa98b67292ff2b8e577a88043491d451c1125bca",
-}
+# #911 (#919): clothing-swap was the last 708 appender on dbed74e11 and is now
+# detached, so no skill appends the shared block. The dbed74e11 clothing-swap
+# entry sha was 3ac12958fac29ab0d33067aafa98b67292ff2b8e577a88043491d451c1125bca.
+EXPECTED_708_APPENDER_SHA256: dict[str, str] = {}
 
 NO_ANGLE_SENTENCE = (
     "Do not state head angle, gaze direction or subject position unless the "
@@ -58,7 +59,8 @@ SKILL_PASS_SENTENCE = (
 )
 SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
 SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
-# api/auto_models.json snapshot copied from main dbed74e11. Update the fixture when the
+# api/auto_models.json snapshot copied from main dbed74e11, plus later allowed skill pins
+# (Angela 07:27: clothing-swap + studio-model + product-to-packaging + cover-design-director + youtube-channel-banner + portrait-studio Sunburst). Update the fixture when the
 # table (features / non-ai-model skill rows) is intentionally changed.
 AUTO_MODELS_LOCK_SHA = "dbed74e11b158917e7cf82b44bd4dbf6829af90d"
 AUTO_MODELS_LOCK = ROOT / "tests/fixtures/auto_models_lock_dbed74e1.json"
@@ -212,9 +214,9 @@ def test_pins_and_auto_models_unchanged():
     # Example/featured asset pins stay. The Auto table may add skills.ai-model only.
     # Shared #708 block is not edited; ai-model and studio-model stop appending it.
     assert hashlib.sha256(_portrait_shots_708_const(SKILLS).encode()).hexdigest() == PORTRAIT_SHOTS_708_CONST_SHA256
-    # clothing-swap still appends the shared block. studio-model detaches 708 in #914.
+    # #911: clothing-swap now detaches the shared block too. studio-model detached 708 in #914.
     m = re.search(r"\{ id: 'clothing-swap'.*?inputs:", SKILLS, re.S)
-    assert m and "+ PORTRAIT_SHOTS_708 +" in m.group(0)
+    assert m and "+ PORTRAIT_SHOTS_708 +" not in m.group(0)
     sm = re.search(r"\{ id: 'studio-model'.*?inputs:", SKILLS, re.S)
     assert sm and "+ PORTRAIT_SHOTS_708 +" not in sm.group(0)
 
@@ -275,6 +277,14 @@ def test_qa2_other_708_skills_match_fixed_snapshot():
         entry = _skill_entry(SKILLS, sid)
         assert "+ PORTRAIT_SHOTS_708 +" in entry, sid
         assert hashlib.sha256(entry.encode()).hexdigest() == expected_sha, sid
+    # #911 (#919): clothing-swap no longer appends 708 and declares the 3:4 canvas.
+    assert "clothing-swap" not in appenders
+    assert "+ PORTRAIT_SHOTS_708 +" not in _skill_entry(SKILLS, "clothing-swap")
+    from ComfyArt.bot.skill_output import OUTPUTS
+    row = OUTPUTS["clothing-swap"]
+    assert (row["width"], row["height"], row["ratio"], row["images"]) == (1536, 2048, "3:4", 1)
+    block = re.search(r"export const SKILL_OUTPUT[\s\S]*?\n\}", SKILLS).group(0)
+    assert "'clothing-swap': { width: 1536, height: 2048, ratio: '3:4', images: 1 }" in block
 
 
 def test_qa3_ai_model_asks_card_before_generating():
@@ -323,8 +333,12 @@ def test_generate_image_must_pass_skill_ai_model():
 
 
 def test_auto_models_ai_model_is_sunburst_and_rest_matches_fixed_snapshot():
-    """skills.ai-model is the Sunburst pin; every other skills row, features, and the
-    file comment match the fixed snapshot copied from main dbed74e11.
+    """skills.ai-model is the Sunburst pin; clothing-swap, studio-model,
+    product-to-packaging (Lovart e304e2fa7), cover-design-director
+    (Lovart 98af4eee), youtube-channel-banner (Lovart d7672d03), and
+    portrait-studio (Lovart 7fc60c86) are the Angela 07:27 Sunburst pins.
+    Every other skills row, features, and the file comment match the fixed
+    snapshot (dbed74e11 plus those allowed pins).
     """
     ours = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))
     snap = json.loads(AUTO_MODELS_LOCK.read_text(encoding="utf-8"))
@@ -337,10 +351,30 @@ def test_auto_models_ai_model_is_sunburst_and_rest_matches_fixed_snapshot():
     assert not ours_ai.get("fallback")
     # Snapshot itself must carry the same pin, so a stale fixture cannot silently drift.
     assert snap["skills"]["ai-model"] == EXPECTED_AI_MODEL_PIN
+    assert ours["skills"]["clothing-swap"] == snap["skills"]["clothing-swap"]
+    assert ours["skills"]["clothing-swap"]["model"] == SUNBURST_EDIT
+    assert ours["skills"]["studio-model"] == snap["skills"]["studio-model"]
+    assert ours["skills"]["studio-model"]["model"] == SUNBURST_T2I
+    assert ours["skills"]["studio-model"]["edit_model"] == SUNBURST_EDIT
+    assert ours["skills"]["product-to-packaging"] == snap["skills"]["product-to-packaging"]
+    assert ours["skills"]["product-to-packaging"]["model"] == SUNBURST_T2I
+    assert ours["skills"]["product-to-packaging"]["edit_model"] == SUNBURST_EDIT
+    assert ours["skills"]["cover-design-director"] == snap["skills"]["cover-design-director"]
+    assert ours["skills"]["cover-design-director"]["model"] == SUNBURST_T2I
+    assert ours["skills"]["cover-design-director"]["edit_model"] == SUNBURST_EDIT
+    assert ours["skills"]["youtube-channel-banner"] == snap["skills"]["youtube-channel-banner"]
+    assert ours["skills"]["youtube-channel-banner"]["model"] == SUNBURST_T2I
+    assert ours["skills"]["youtube-channel-banner"]["edit_model"] == SUNBURST_EDIT
+    assert ours["skills"]["portrait-studio"] == snap["skills"]["portrait-studio"]
+    assert ours["skills"]["portrait-studio"]["model"] == SUNBURST_EDIT
+    assert ours["skills"]["portrait-studio"]["resolution"] == "2k"
+    assert ours["skills"]["portrait-studio"]["ratio"] == "3:4"
+    assert "edit_model" not in ours["skills"]["portrait-studio"]
     ours_rest = dict(ours["skills"])
     snap_rest = dict(snap["skills"])
-    ours_rest.pop("ai-model")
-    snap_rest.pop("ai-model")
+    for key in ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner", "portrait-studio"):
+        ours_rest.pop(key)
+        snap_rest.pop(key)
     assert ours_rest == snap_rest
     assert ours["skills"]["pose-fission"] == snap["skills"]["pose-fission"]
     assert ours["skills"]["_comment"] == snap["skills"]["_comment"]
@@ -450,12 +484,11 @@ def test_apply_generate_fills_omitted_ai_model_skill_without_size_lock():
 
 
 def test_apply_generate_does_not_fill_skill_outside_ai_model_sessions(monkeypatch):
-    """A no-skill session and a non-#911 session must not get skill filled.
+    """A no-skill session must not get skill filled.
 
-    The fill is not a generic skill_pin() hook: even if clothing-swap were
-    pinned, it must stay unfilled. studio-model is the second #911 slice and
-    now fills skill= with no size, same as ai-model. pose-fission keeps its
-    pre-existing OUTPUTS size fill only.
+    The fill is not a generic skill_pin() hook. clothing-swap is in OUTPUTS
+    (#911) and gets the declared 3:4 canvas, like pose-fission. studio-model
+    still fills skill= with no size, same as ai-model.
     """
     from ComfyArt.api import auto_models
     from ComfyArt.bot.skill_output import apply_generate
@@ -470,8 +503,11 @@ def test_apply_generate_does_not_fill_skill_outside_ai_model_sessions(monkeypatc
     none = apply_generate({"prompt": "x"}, "")
     assert "skill" not in none
 
+    # #911: clothing-swap declares 1536x2048 3:4 (person-photo ratio, in-limit).
     swap = apply_generate({"prompt": "x"}, "clothing-swap")
-    assert "skill" not in swap
+    assert swap["skill"] == "clothing-swap"
+    assert (swap["width"], swap["height"], swap["ratio"]) == (1536, 2048, "3:4")
+    assert swap["size_lock"] is True
 
     # #914: studio-model fills skill= without inventing a size or using skill_pin.
     studio = apply_generate({"prompt": "x"}, "studio-model")

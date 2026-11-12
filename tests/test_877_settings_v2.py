@@ -39,17 +39,26 @@ def test_ac18_pins_and_auto_untouched():
     except subprocess.CalledProcessError:
         base = git("rev-parse", "origin/main", text=True).strip()
     assert base
-    # #911/#912 pins ai-model in this file. Everything else — features, pose-fission,
-    # and every other skills row — must stay byte-identical to origin/main.
+    # #911/#912 pins ai-model; Angela 07:27 also pins clothing-swap,
+    # studio-model, product-to-packaging (Lovart e304e2fa7),
+    # cover-design-director (Lovart 98af4eee), youtube-channel-banner
+    # (Lovart d7672d03), and portrait-studio (Lovart 7fc60c86) to
+    # GPT Image 2.6 Sunburst.
+    # Everything else — features, pose-fission, and every other skills
+    # row — must stay byte-identical to origin/main.
     current = json.loads((ROOT / "api/auto_models.json").read_text(encoding="utf-8"))
     origin = json.loads(git("show", f"{base}:api/auto_models.json"))
     assert current["features"] == origin["features"]
     assert current.get("_comment") == origin.get("_comment")
+    allowed = ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director", "youtube-channel-banner", "portrait-studio")
     ours_skills = dict(current.get("skills") or {})
     main_skills = dict(origin.get("skills") or {})
-    ours_skills.pop("ai-model", None)
-    main_skills.pop("ai-model", None)
-    assert ours_skills == main_skills, "only skills.ai-model may differ from origin/main"
+    for key in allowed:
+        ours_skills.pop(key, None)
+        main_skills.pop(key, None)
+    assert ours_skills == main_skills, (
+        "only skills.ai-model, clothing-swap, studio-model, product-to-packaging, cover-design-director, youtube-channel-banner, and portrait-studio may differ from origin/main"
+    )
 
 
 def test_infer_llm_provider_from_host_and_stored():

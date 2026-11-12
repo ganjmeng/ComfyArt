@@ -388,6 +388,37 @@ class TestStepLabels:
                 "then follow those instructions.\n\nmake a poster")
         assert _reply_lang(hint) == "en"
 
+    def test_ask_card_lang_follows_ui_when_empty_and_user_when_typed(self):
+        from bot.local_llm import (
+            _ASK_CARD_LANG_RULE, _SYSTEM_PROMPT, ask_card_lang,
+            system_prompt_for_turn,
+        )
+        # Empty typed text (goal_text) follows the UI language, not the
+        # English injected provider line that would fool _reply_lang.
+        assert ask_card_lang("", "zh") == "zh"
+        assert ask_card_lang("   ", "zh") == "zh"
+        assert ask_card_lang("", "en") == "en"
+        assert ask_card_lang("", "") == "zh"  # UI unknown -> product default zh
+        # Typed text follows the user, even when it disagrees with the UI.
+        assert ask_card_lang("整套上身都换成它", "en") == "zh"
+        assert ask_card_lang("replace the whole upper body", "zh") == "en"
+        # Injected English provider line is not the user's text — callers pass goal_text.
+        injected = "Process the attached images with the selected skill."
+        assert ask_card_lang(injected, "zh") == "en"  # if mis-passed, detects English
+        assert ask_card_lang("", "zh") == "zh"
+
+        assert "when the user typed no text" in _ASK_CARD_LANG_RULE
+        assert "in the UI language" in _ASK_CARD_LANG_RULE
+        assert "when the user typed text" in _ASK_CARD_LANG_RULE
+        assert "in the user's language" in _ASK_CARD_LANG_RULE
+        assert _ASK_CARD_LANG_RULE in _SYSTEM_PROMPT
+
+        zh_prompt = system_prompt_for_turn("", "zh")
+        en_prompt = system_prompt_for_turn("swap the top", "zh")
+        assert "Ask-card language for this turn is Chinese (zh)" in zh_prompt
+        assert "Ask-card language for this turn is English (en)" in en_prompt
+        assert _ASK_CARD_LANG_RULE in zh_prompt and _ASK_CARD_LANG_RULE in en_prompt
+
     def test_empty_summary(self):
         from bot.local_llm import _stop_summary
         assert _stop_summary([], "zh").endswith("已完成：无。")
