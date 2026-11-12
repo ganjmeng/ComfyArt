@@ -13,8 +13,10 @@ wording names the parts for that product (瓶标 / 多香型 for the bottle). Co
 SKELETON in the ask-card language: ids, the fixed title text, question 3's letters / order / count,
 the free-text placeholders, question 3 multi-select, nothing preselected. Question 1's product noun,
 the options of questions 1 and 2 and the wording of question 3's options stay as the model wrote
-them from the photo (the same split as the clothing-swap card: live labels, locked skeleton); a
-missing or wrong-language question 3 label falls back to the reference wording for that letter.
+them from the photo (the same split as the clothing-swap card: live labels, locked skeleton). A
+missing or unusable question 1 noun falls back to 「这款产品」 / "this product", not the
+dropper-bottle noun. A missing or wrong-language question 3 label falls back to the
+reference wording for that letter.
 
 zh text is verbatim from the Lovart card (question-card-1-*.png at e304e2fa; where notes.txt
 differs from the screenshot, the screenshot wins). Lovart showed only zh; en is our translation
@@ -39,18 +41,21 @@ QUESTION_IDS = (PK_PRODUCT, PK_COLOR, PK_SCOPE)
 PAGE_COUNT = 3
 LIVE_MAX = 3  # Lovart wrote three options for questions 1 and 2
 
-# Question 1 title: "<product noun><rest>". Lovart's noun for its dropper-bottle input is
-# 「这瓶滴管产品」; the model writes the noun for the uploaded product.
+# Question 1 title: "<product noun><rest>". The model writes the noun live from the
+# uploaded product; when it can't be identified, fall back to 「这款产品」 / "this product".
+# Lovart's noun for its dropper-bottle input was 「这瓶滴管产品」; that is kept only when
+# the model actually writes it, and is not the default.
 PRODUCT_REST = {
     "zh": "具体是什么？品牌名/产品名怎么定（直接决定包装上的文案与必要信息版面）",
     "en": "? How should the brand name / product name be set (it decides the copy and the required-info layout on the packaging)",
 }
 PRODUCT_HEAD = {"zh": "", "en": "What exactly is "}
+FALLBACK_SUBJECT = {"zh": "这款产品", "en": "this product"}
 LOVART_SUBJECT = {"zh": "这瓶滴管产品", "en": "this dropper product"}
 
 CARD: dict[str, list[dict]] = {
     "zh": [
-        {"id": PK_PRODUCT, "prompt": LOVART_SUBJECT["zh"] + PRODUCT_REST["zh"], "options": None,
+        {"id": PK_PRODUCT, "prompt": FALLBACK_SUBJECT["zh"] + PRODUCT_REST["zh"], "options": None,
          "placeholder": "自己填：品类 ＋ 品牌名 ＋ 产品名（不给的话我会先提案一版）..."},
         {"id": PK_COLOR, "prompt": "包装的主色方向选哪个？", "options": None,
          "placeholder": "其它方向..."},
@@ -62,7 +67,7 @@ CARD: dict[str, list[dict]] = {
          "placeholder": "其它，请直接输入..."},
     ],
     "en": [
-        {"id": PK_PRODUCT, "prompt": PRODUCT_HEAD["en"] + LOVART_SUBJECT["en"] + PRODUCT_REST["en"], "options": None,
+        {"id": PK_PRODUCT, "prompt": PRODUCT_HEAD["en"] + FALLBACK_SUBJECT["en"] + PRODUCT_REST["en"], "options": None,
          "placeholder": "Write your own: category + brand name + product name (if not, I'll propose one first)..."},
         {"id": PK_COLOR, "prompt": "Which main color direction for the packaging?", "options": None,
          "placeholder": "Another direction..."},
@@ -120,7 +125,7 @@ def is_packaging_card(args: dict) -> bool:
 
 def product_subject(prompt: object, lang: str) -> str:
     """The product noun the model wrote in front of question 1's fixed text, in the card language.
-    Lovart's own noun (「这瓶滴管产品」 / "this dropper product") when there is none to keep."""
+    「这款产品」 / "this product" when there is none to keep."""
     text = str(prompt or "").strip()
     subject = ""
     if lang == "zh":
@@ -133,7 +138,7 @@ def product_subject(prompt: object, lang: str) -> str:
         ok = bool(subject) and not _CJK.search(subject)
     if ok and len(subject) <= _SUBJECT_MAX[lang] and not any(ch in subject for ch in "？?（）()\n"):
         return subject
-    return LOVART_SUBJECT[lang]
+    return FALLBACK_SUBJECT[lang]
 
 
 def product_prompt(subject: str, lang: str) -> str:

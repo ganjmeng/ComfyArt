@@ -57,6 +57,10 @@ EN_Q3_OPTS = ["Core three: outer box + bottle label + inner tray",
               "Extensions: shipping carton + tote bag + seal / thank-you card",
               "Variant family: several in the same line / multi-scent display",
               "Technical: dimensioned structural drawing + flat dieline"]
+# Default / missing-noun fallback (product #930: not Lovart's dropper-bottle noun).
+FALLBACK_Q1 = "这款产品具体是什么？品牌名/产品名怎么定（直接决定包装上的文案与必要信息版面）"
+FALLBACK_Q1_EN = ("What exactly is this product? How should the brand name / product name be set "
+                  "(it decides the copy and the required-info layout on the packaging)")
 FIXED = {"zh": (LOVART_Q1, LOVART_Q2, LOVART_Q3, LOVART_Q3_OPTS), "en": (EN_Q1, EN_Q2, EN_Q3, EN_Q3_OPTS)}
 IDS = ["pk_product", "pk_color", "pk_scope"]
 
@@ -153,7 +157,9 @@ def test_lovart_card_goes_through_unchanged(lang):
 
 def test_zh_fixed_text_is_lovart_e304e2fa_verbatim():
     zh = {q["id"]: q for q in pk.CARD["zh"]}
-    assert zh["pk_product"]["prompt"] == LOVART_Q1
+    # Q1 noun is live from the photo; the locked default is the generic fallback.
+    assert zh["pk_product"]["prompt"] == FALLBACK_Q1
+    assert pk.FALLBACK_SUBJECT["zh"] + pk.PRODUCT_REST["zh"] == FALLBACK_Q1
     assert pk.LOVART_SUBJECT["zh"] + pk.PRODUCT_REST["zh"] == LOVART_Q1
     assert zh["pk_color"]["prompt"] == LOVART_Q2
     assert zh["pk_scope"]["prompt"] == LOVART_Q3
@@ -183,8 +189,10 @@ def test_model_card_is_rewritten_to_the_locked_skeleton_in_the_ask_card_language
     }
     spec = _with_lang(ui, goal, lambda: bot_asks.validate_spec(raw))
     # Q3 wording is live per letter (matched by position here); wrong language -> reference wording.
+    # The raw Q1 noun is zh (这瓶滴管产品); kept on a zh card, generic fallback on an en card.
     scope = ["只要外盒", "全套"] + LOVART_Q3_OPTS[2:] if lang == "zh" else EN_Q3_OPTS
-    _assert_card(spec, lang, scope_labels=scope)
+    q1 = LOVART_Q1 if lang == "zh" else FALLBACK_Q1_EN
+    _assert_card(spec, lang, q1=q1, scope_labels=scope)
     qs = spec["questions"]
     assert [o["label"] for o in qs[0]["options"]] == ["护肤精华油", "口服酊剂", "香氛"]  # live, cut to 3, no 推荐
     assert [o["label"] for o in qs[1]["options"]] == ["琥珀棕", "深墨绿"]
@@ -200,10 +208,10 @@ def test_model_card_is_rewritten_to_the_locked_skeleton_in_the_ask_card_language
     ("What exactly is this jar of face cream? How should the brand name / product name be set", "en",
      "What exactly is this jar of face cream? How should the brand name / product name be set "
      "(it decides the copy and the required-info layout on the packaging)"),
-    ("", "zh", LOVART_Q1),  # no noun written: Lovart's noun
-    ("", "en", EN_Q1),
-    ("What exactly is this jar of face cream? How should the brand name / product name be set", "zh", LOVART_Q1),  # other language
-    ("这罐面霜具体是什么？品牌名/产品名怎么定", "en", EN_Q1),
+    ("", "zh", FALLBACK_Q1),  # no noun written: generic fallback, not the dropper-bottle noun
+    ("", "en", FALLBACK_Q1_EN),
+    ("What exactly is this jar of face cream? How should the brand name / product name be set", "zh", FALLBACK_Q1),  # other language
+    ("这罐面霜具体是什么？品牌名/产品名怎么定", "en", FALLBACK_Q1_EN),
 ])
 def test_question_1_keeps_the_product_noun_from_the_photo(prompt, lang, expected):
     raw = {"questions": [{"id": "pk_product", "prompt": prompt or "x", "options": _opts(["a", "b", "c"])}]}
@@ -221,13 +229,13 @@ def test_live_options_need_two_else_the_question_is_free_text():
 def test_legacy_single_question_call_becomes_the_full_card():
     raw = {"prompt": LOVART_Q2, "options": _opts(LOVART_Q2_OPTS), "defaults": ["A"]}
     spec = _with_lang("zh", "", lambda: bot_asks.validate_spec(raw))
-    _assert_card(spec, "zh")
+    _assert_card(spec, "zh", q1=FALLBACK_Q1)
     assert [o["label"] for o in spec["questions"][1]["options"]] == LOVART_Q2_OPTS
 
 
 def test_unknown_ui_language_defaults_to_zh():
     spec = _with_lang(None, "", lambda: bot_asks.validate_spec({"questions": [{"id": "pk_scope", "prompt": "x", "allow_other": True}]}))
-    _assert_card(spec, "zh")
+    _assert_card(spec, "zh", q1=FALLBACK_Q1)
 
 
 def test_other_skill_cards_are_untouched():
@@ -281,8 +289,11 @@ def test_no_reference_brand_name_in_shared_ask_and_bot_files():
 
 def test_skill_text_carries_the_card_and_default_4():
     instr = _instructions()
-    for qid, prompt, placeholder in zip(IDS, (LOVART_Q1, LOVART_Q2, LOVART_Q3), PLACEHOLDERS["zh"]):
+    for qid, prompt, placeholder in zip(IDS, (FALLBACK_Q1, LOVART_Q2, LOVART_Q3), PLACEHOLDERS["zh"]):
         assert f'id "{qid}"' in instr and prompt in instr and placeholder in instr, qid
+    assert "这款产品 is only the fallback when it cannot be identified" in instr
+    assert "as is for a dropper bottle" not in instr
+    assert 'prompt "这瓶滴管产品具体是什么' not in instr
     for label in LOVART_Q3_OPTS:  # the reference wording, as the example for a dropper bottle
         assert f'label:"{label}"' in instr, label
     assert "exactly four options in this order: A 核心三件, B 延伸件, C 变体家族, D 技术件" in instr
