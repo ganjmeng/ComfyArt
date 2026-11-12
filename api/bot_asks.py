@@ -479,7 +479,7 @@ YT_DIRECTION = {
 }
 YT_TEXT_MODE = {
     "id": "yt_text_mode",
-    "prompt": "终稿的文字怎么上？",
+    "prompt": "终稿的文字怎么上？（中文＋三行信息，精度差异较大）",
     "options": [
         {"id": "A", "label": "精确排版（推荐）"},
         {"id": "B", "label": "图像模型直出"},
@@ -501,6 +501,10 @@ def _yt_match(raw: object, locked: dict) -> bool:
     return qid == locked["id"] or (bool(prompt) and prompt.startswith(base))
 
 
+def _yt_strip_recommended(text: str) -> str:
+    return str(text or "").replace(YT_RECOMMENDED, "").strip()
+
+
 def _yt_live_options(raw_opts: object, *, one_recommended: bool) -> list:
     opts = []
     for o in raw_opts if isinstance(raw_opts, list) else []:
@@ -510,13 +514,19 @@ def _yt_live_options(raw_opts: object, *, one_recommended: bool) -> list:
         opts.append(item)
     opts = opts[:_YT_LIVE_MAX]
     if one_recommended:
+        # Reference card: （推荐） goes at the start of one direction's description, never in the label.
         seen = False
         for item in opts:
             label = str(item.get("label") or "")
-            if YT_RECOMMENDED in label:
-                if seen:
-                    item["label"] = label.replace(YT_RECOMMENDED, "").strip()
+            desc = str(item.get("description") or "")
+            marked = YT_RECOMMENDED in label or YT_RECOMMENDED in desc
+            item["label"] = _yt_strip_recommended(label)
+            desc = _yt_strip_recommended(desc)
+            if marked and not seen:
+                item["description"] = YT_RECOMMENDED + desc
                 seen = True
+            elif "description" in item:
+                item["description"] = desc
     return opts
 
 

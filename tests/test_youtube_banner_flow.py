@@ -52,7 +52,7 @@ CARD1 = [
 ]
 CARD2 = [
     ("yt_direction", "选哪个方向做 2560×1440 终稿？", None, "想调整（说哪里改）或让我直接定..."),
-    ("yt_text_mode", "终稿的文字怎么上？", ["精确排版（推荐）", "图像模型直出"], "其它要求..."),
+    ("yt_text_mode", "终稿的文字怎么上？（中文＋三行信息，精度差异较大）", ["精确排版（推荐）", "图像模型直出"], "其它要求..."),
 ]
 LIVE_TEXT = [
     {"id": "A", "label": "Loomi Studio ＋ AI 绘画教程·创意工作流 ＋ 每周二/五更新"},
@@ -107,19 +107,27 @@ def test_card1_skeleton_is_exact_and_nothing_preselected():
     _assert_card(spec, CARD1, 3, {"yt_banner_text": [o["label"] for o in LIVE_TEXT]})
 
 
-def test_card2_skeleton_is_exact_and_recommended_is_label_text_only():
+def test_card2_skeleton_is_exact_and_recommended_is_description_prefix_only():
+    # Short Q2 prompt must be restored to the full reference text including the bracket.
+    # （推荐） in two labels + a recommended flag: move it to the start of the first description only.
     spec = bot_asks.validate_spec({
         "questions": [
             {"id": "direction", "prompt": "选哪个方向做 2560×1440 终稿？", "options": LIVE_DIRECTIONS},
-            {"id": "text", "prompt": "终稿的文字怎么上？（中文＋三行信息，精度差异较大）",
+            {"id": "text", "prompt": "终稿的文字怎么上？",
              "options": [{"id": "A", "label": "精确排版", "recommended": True}, {"id": "B", "label": "模型直出"}]},
         ],
     })
-    labels = ["方向 A：品牌主导·大留白（推荐）", "方向 B：全画幅叙事场景", "方向 C：模块化工作流网格"]
+    labels = ["方向 A：品牌主导·大留白", "方向 B：全画幅叙事场景", "方向 C：模块化工作流网格"]
     _assert_card(spec, CARD2, 2, {"yt_direction": labels})
     directions = spec["questions"][0]["options"]
-    assert [o["description"] for o in directions] == [o["description"] for o in LIVE_DIRECTIONS]
-    assert sum("（推荐）" in o["label"] for o in directions) == 1
+    assert [o["description"] for o in directions] == [
+        "（推荐）选择板顶部：最干净，缩到移动端也不丢信息",
+        "选择板中部：画面最丰富",
+        "选择板底部：最贴工作流主题",
+    ]
+    assert sum(o["description"].startswith("（推荐）") for o in directions) == 1
+    assert not any("（推荐）" in o["label"] for o in directions)
+    assert not any(o.get("recommended") for o in directions)
 
 
 def test_other_skill_cards_are_untouched():
@@ -147,6 +155,10 @@ def test_skill_text_matches_card_skeleton_and_flow():
         assert needle not in instr
     # Card text is not in English-only wording, and the old one-shot brief is gone.
     assert "1) Brief: channel name, niche and series identity" not in instr
+    assert 'Put "（推荐）" at the start of the description' in instr
+    assert 'Append "（推荐）" to the label' not in instr
+    assert "yt_shorten_copy" in instr and "dry-runs the 2560×1440 text layout" in instr
+    assert "pass channel_name, tagline and schedule" in instr
 
 
 # --- request bodies ($0) -----------------------------------------------------------------------------
@@ -187,7 +199,8 @@ def _schema(mid: str) -> dict:
 @pytest.mark.parametrize("refs", [None, ["shape:logo"]])
 def test_stage_request_bodies(relay, stage, clause, refs):
     args = {"prompt": 'Bright watercolor brand world, brand blue #2F6BFF, coral accents, copy "Loomi Studio"',
-            "skill": "youtube-channel-banner", "banner_stage": stage, "count": 3, "width": 1024, "height": 1024, "ratio": "1:1"}
+            "skill": "youtube-channel-banner", "banner_stage": stage, "count": 3, "width": 1024, "height": 1024, "ratio": "1:1",
+            "channel_name": "Loomi Studio", "tagline": "AI 绘画教程 · 创意工作流", "schedule": "每周二 / 周五更新"}
     if refs:
         args["refs"] = refs
     out = _run(**args)
@@ -195,6 +208,7 @@ def test_stage_request_bodies(relay, stage, clause, refs):
     assert len(SENT) == 1 and SENT[0][0] == "generate_image"
     sent = SENT[0][1]
     assert "banner_stage" not in sent and "skill" not in sent
+    assert "channel_name" not in sent and "tagline" not in sent and "schedule" not in sent
     assert sent["ratio"] == "16:9" and sent["count"] == 1
     assert sent["prompt"].endswith(clause)
     if stage == "base":
@@ -234,8 +248,10 @@ def test_stage_is_ignored_for_other_skills():
 def test_generate_image_schema_and_tool_registry():
     from ComfyArt.api.mcp_tools import TOOLS
     from ComfyArt.bot.guide import CORE_MCP_TOOLS, PAID_TOOLS
-    stage = canvas.TOOLS["generate_image"]["inputSchema"]["properties"]["banner_stage"]
-    assert stage["enum"] == ["board", "base", "direct"]
+    props = canvas.TOOLS["generate_image"]["inputSchema"]["properties"]
+    assert props["banner_stage"]["enum"] == ["board", "base", "direct"]
+    for key in ("channel_name", "tagline", "schedule"):
+        assert props[key]["type"] == "string"
     assert "compose_banner_text" in TOOLS and "compose_banner_text" in CORE_MCP_TOOLS
     assert "compose_banner_text" not in PAID_TOOLS  # no model call, no charge
 
@@ -340,6 +356,57 @@ def test_bundled_font_is_ofl_renamed_and_draws_chinese():
     assert bc.missing_glyphs("Loomi 🎨 \U00020000") == ["🎨", "\U00020000"]
 
 
+def test_bundled_font_is_not_referenced_from_frontend_src_or_dist():
+    needles = ("api/fonts", "ComfyArtBannerSansSC")
+    files = []
+    for rel in ("src", "dist"):
+        root = ROOT / rel
+        if root.exists():
+            files.extend(path for path in root.rglob("*") if path.is_file())
+    for cfg in (ROOT / "vite.config.ts", ROOT / "tests/js/rolldown.config.mjs",
+                ROOT / "tests/js/rolldown.error721.mjs", ROOT / "tests/js/rolldown.objerr.mjs"):
+        if cfg.exists():
+            files.append(cfg)
+    for path in files:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for needle in needles:
+            assert needle not in text, f"{path.relative_to(ROOT)} references {needle}"
+
+
+def _schedule_ink_heights(rep) -> list[int]:
+    return [r["ink_bbox"][3] - r["ink_bbox"][1] for r in rep["lines"] if r["role"] == "schedule"]
+
+
+@pytest.mark.parametrize("case,copy", [
+    ("short", CASES["short"]),
+    ("long", CASES["long"]),
+])
+def test_line3_ink_height_is_at_least_36px(case, copy):
+    _, rep = bc.compose(_synthetic_base(), channel=copy[0], tagline=copy[1], schedule=copy[2],
+                        skill="youtube-channel-banner", purpose=bc.PURPOSE_USER_FINAL)
+    heights = _schedule_ink_heights(rep)
+    assert heights, case
+    assert all(h >= bc.SCHEDULE_MIN_INK for h in heights), (case, heights)
+
+
+# 120 characters is the field cap. Dense CJK at the 36px line-3 floor wraps to more rows
+# than the strict core can hold, even after shrinking the title and tagline to the
+# consistency limit (title ink stays above 36px).
+OVERFLOW_COPY = (
+    ("创意工作室官方频道全流程商业交付与案例复盘国际版" * 5)[:120],
+    ("人工智能绘画教程创意工作流从零基础到商业交付的完整课程体系与案例库" * 5)[:120],
+    ("每周二周五晚上八点更新周末不定期直播答疑会员专属工作流模板每月更新一次另加专题加更与一对一复盘并附下载与作业点评" * 5)[:120],
+)
+
+
+def test_line3_overflow_at_floor_raises_instead_of_shrinking_below_36px():
+    with pytest.raises(bc.LayoutError, match="请缩短后再继续"):
+        bc.layout(*OVERFLOW_COPY)
+    with pytest.raises(bc.LayoutError, match="请缩短后再继续"):
+        bc.compose(_synthetic_base(), channel=OVERFLOW_COPY[0], tagline=OVERFLOW_COPY[1],
+                   schedule=OVERFLOW_COPY[2], skill="youtube-channel-banner", purpose=bc.PURPOSE_USER_FINAL)
+
+
 # --- wash pipelines cannot call the compositor --------------------------------------------------------
 
 def test_guard_refuses_other_skills_and_purposes():
@@ -419,6 +486,32 @@ def test_compose_tool_writes_2560x1440_and_places_it_next_to_the_base(monkeypatc
     import folder_paths
     path = Path(folder_paths.get_output_directory()) / place["image"]["subfolder"] / place["image"]["filename"]
     assert Image.open(path).size == (2560, 1440)
+
+
+def test_base_preflight_overflow_returns_shorten_card_and_does_not_submit(relay):
+    out = _run(prompt="text-free brand plate, brand blue #2F6BFF",
+               skill="youtube-channel-banner", banner_stage="base",
+               channel_name=OVERFLOW_COPY[0], tagline=OVERFLOW_COPY[1], schedule=OVERFLOW_COPY[2])
+    assert SENT == []
+    assert out.get("submitted") is False and out.get("charged") is False
+    assert out["status"] == "needs_input" and out["kind"] == "bannerTextShorten"
+    assert out["prompt"] == bc.SHORTEN_COPY_PROMPT
+    assert "失败" not in out["prompt"] and "重跑" not in out["prompt"] and "不通过" not in out["prompt"]
+    questions = out["questions"]
+    assert [q["id"] for q in questions] == ["yt_shorten_copy"]
+    assert questions[0]["prompt"] == bc.SHORTEN_COPY_PROMPT
+    assert questions[0]["allow_other"] is True
+    assert questions[0]["placeholder"] == bc.SHORTEN_COPY_PLACEHOLDER
+    assert out["ask"]["questions"][0]["id"] == "yt_shorten_copy"
+
+
+def test_base_preflight_fitting_copy_proceeds_to_submit(relay):
+    out = _run(prompt="text-free brand plate, brand blue #2F6BFF",
+               skill="youtube-channel-banner", banner_stage="base",
+               channel_name="Loomi Studio", tagline="AI 绘画教程 · 创意工作流", schedule="每周二 / 周五更新")
+    assert out.get("status") != "failed" and out.get("kind") != "bannerTextShorten", out
+    assert len(SENT) == 1 and SENT[0][0] == "generate_image"
+    assert "channel_name" not in SENT[0][1]
 
 
 def test_place_banner_page_handler_exists():

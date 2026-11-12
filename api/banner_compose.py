@@ -12,9 +12,12 @@ right/bottom exclusive):
 
 Ink is measured on the rendered pixels (alpha of each line's own layer), not on font
 metrics. There is no stroke or shadow, so the glyph alpha is all the visible ink.
-Font size is fitted to the box width; a line that does not fit wraps or shrinks, and
-nothing is ever clipped. If the text cannot be placed inside the strict core the call
-fails instead of delivering clipped or out-of-area text.
+Font size is fitted to the box width. A line that does not fit wraps first; the
+third line (schedule / small info, e.g. 「每周二 / 周五更新」) never shrinks below a
+measured glyph height of 36px on the 2560×1440 canvas (or 0.3× the title ink height
+when that is larger and still smaller than the title). Other lines may shrink within
+their own limits. If the text still cannot be placed inside the strict core at that
+floor, the call raises instead of clipping or going below the floor.
 
 This path is only for the youtube-channel-banner user-side final. It must not be used
 by the gold / example wash pipelines (they keep the no-local-text rule): compose()
@@ -46,7 +49,10 @@ FONT_REGULAR = FONT_DIR / "ComfyArtBannerSansSC-Regular.otf"
 # Base sizes at scale 1.0 (channel name is the largest, schedule the smallest).
 CHANNEL_PX = 96
 TAGLINE_PX = 46
-SCHEDULE_PX = 32
+SCHEDULE_PX = 40
+# Line 3 (schedule) measured ink height floor on the 2560×1440 canvas.
+SCHEDULE_MIN_INK = 36
+SCHEDULE_TITLE_RATIO = 0.3
 GAP_AFTER_CHANNEL = 22
 GAP_AROUND_ACCENT = 18
 ACCENT_PX = 4
@@ -78,7 +84,7 @@ class CompositorRefused(PermissionError):
 
 
 class LayoutError(ValueError):
-    """The text cannot be placed inside the strict core without clipping."""
+    """The text cannot be placed inside the strict core at the line-3 size floor."""
 
 
 def _color(value: object, fallback: str) -> tuple[int, int, int]:
@@ -114,6 +120,45 @@ def _font(path: Path, px: int):
     from PIL import ImageFont
 
     return ImageFont.truetype(str(path), max(6, int(round(px))))
+
+
+def _glyph_ink_height(path: Path, px: int, text: str) -> int:
+    """Measured ink height of `text` at `px`, same method as the compositor's layers."""
+    from PIL import Image, ImageDraw
+
+    text = " ".join(str(text or "").split())
+    if not text:
+        return 0
+    px = max(6, int(round(px)))
+    w = max(64, px * (len(text) + 4) + 16)
+    h = max(64, px * 4)
+    layer = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(layer).text((px, px * 2), text, fill=255, font=_font(path, px), anchor="ls")
+    box = layer.getbbox()
+    return 0 if box is None else box[3] - box[1]
+
+
+def _px_for_min_ink(path: Path, text: str, min_ink: int) -> int:
+    """Smallest font size whose measured ink height is at least `min_ink`."""
+    text = " ".join(str(text or "").split())
+    if not text:
+        return 6
+    lo, hi = 6, 240
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if _glyph_ink_height(path, mid, text) >= min_ink:
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo
+
+
+def _schedule_min_ink(title_ink: int) -> int:
+    """Primary floor is 36px. Use 0.3× title ink when that is larger and still below the title."""
+    ratio = int(round(SCHEDULE_TITLE_RATIO * title_ink)) if title_ink else 0
+    if ratio > SCHEDULE_MIN_INK and ratio < title_ink:
+        return ratio
+    return SCHEDULE_MIN_INK
 
 
 def missing_glyphs(text: str) -> list[str]:
@@ -230,7 +275,8 @@ class Layout:
 
 
 def _plan(channel: str, tagline: str, schedule: str, scale: float, allow_wrap: bool,
-          colors: dict, box_w: int) -> tuple[list[tuple[str, list[str], Path, int, tuple]], int] | None:
+          colors: dict, box_w: int, schedule_px: int | None = None,
+          ) -> tuple[list[tuple[str, list[str], Path, int, tuple]], int] | None:
     rows = []
     specs = (("channel", channel, FONT_BOLD, CHANNEL_PX, colors["brand"]),
              ("tagline", tagline, FONT_REGULAR, TAGLINE_PX, colors["text"]),
@@ -239,7 +285,10 @@ def _plan(channel: str, tagline: str, schedule: str, scale: float, allow_wrap: b
         text = " ".join(str(text or "").split())
         if not text:
             continue
-        px = max(6, int(round(base * scale)))
+        if role == "schedule" and schedule_px is not None:
+            px = max(6, int(schedule_px))
+        else:
+            px = max(6, int(round(base * scale)))
         font = _font(path, px)
         if allow_wrap:
             parts = wrap(font, text, box_w)
@@ -249,6 +298,17 @@ def _plan(channel: str, tagline: str, schedule: str, scale: float, allow_wrap: b
             parts = [text]
         rows.append((role, parts, path, px, color))
     return rows, 0
+
+
+def _schedule_px_for(schedule: str, scale: float, title_ink: int, parts: list[str] | None = None) -> int:
+    """Font size for line 3: scaled size, never below the ink floor for this copy."""
+    need = _schedule_min_ink(title_ink)
+    texts = [p for p in (parts or []) if p] or [" ".join(str(schedule or "").split())]
+    texts = [t for t in texts if t]
+    if not texts:
+        return 6
+    floor = max(_px_for_min_ink(FONT_REGULAR, t, need) for t in texts)
+    return max(floor, int(round(SCHEDULE_PX * scale)))
 
 
 def _block(rows, scale: float):
@@ -293,7 +353,11 @@ def _inside(bbox, box) -> bool:
 
 
 def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict | None = None) -> Layout:
-    """Fit the lines into the target box (wrap/shrink); ink-checked against the strict core."""
+    """Fit the lines into the target box (wrap first, then shrink other lines); ink-checked against the strict core.
+
+    Line 3 never shrinks below SCHEDULE_MIN_INK (36px), or 0.3× the title ink height when that is larger
+    and still smaller than the title. If it still cannot fit after wrapping, this raises.
+    """
     colors = colors or {"brand": _color(None, DEFAULT_BRAND), "text": _color(None, DEFAULT_TEXT),
                         "schedule": _color(None, DEFAULT_SCHEDULE), "accent": _color(None, DEFAULT_ACCENT)}
     if not " ".join(str(channel or "").split()):
@@ -304,18 +368,47 @@ def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict 
     tall = (STRICT_CORE[3] - STRICT_MARGIN) - (STRICT_CORE[1] + STRICT_MARGIN)
     target_h = ty1 - ty0
     steps = [round(1.0 - 0.02 * i, 2) for i in range(int((1.0 - MIN_SCALE) / 0.02) + 1)]
-    # In order: one row per line in the target box; wrapped rows in the target box;
-    # wrapped rows in the strict-core height; then shrink below the readability floor.
+    # In order: one row per line in the target box; wrap first in the target box;
+    # wrap in the strict-core height while shrinking other lines, never line 3.
+    # Other lines stop shrinking once the title ink would no longer stay above the
+    # 36px line-3 floor (consistent hierarchy). They do not drop to MIN_SCALE.
+    ch_text = " ".join(str(channel or "").split())
+    other_floor = WRAP_FLOOR
+    for s in reversed(steps):
+        ink = _glyph_ink_height(FONT_BOLD, max(6, int(round(CHANNEL_PX * s))), ch_text)
+        if ink > SCHEDULE_MIN_INK:
+            other_floor = s
+            break
     passes = ((False, target_h, WRAP_FLOOR), (True, target_h, WRAP_FLOOR),
-              (True, tall, WRAP_FLOOR), (True, tall, MIN_SCALE))
+              (True, tall, other_floor))
     for allow_wrap, max_h, floor in passes:
         for scale in steps:
             if scale < floor:
                 break
-            planned = _plan(channel, tagline, schedule, scale, allow_wrap, colors, box_w)
+            ch_px = max(6, int(round(CHANNEL_PX * scale)))
+            ch_text = " ".join(str(channel or "").split())
+            title_ink = _glyph_ink_height(FONT_BOLD, ch_px, ch_text)
+            sched_px = _schedule_px_for(schedule, scale, title_ink)
+            planned = _plan(channel, tagline, schedule, scale, allow_wrap, colors, box_w, schedule_px=sched_px)
             if planned is None:
                 continue
             rows, _ = planned
+            # After wrapping, bump line 3 if a shorter-ink row would fall below the floor, then re-wrap.
+            for row in rows:
+                if row[0] != "schedule":
+                    continue
+                need = _schedule_min_ink(title_ink)
+                bumped = _schedule_px_for(schedule, scale, title_ink, parts=row[1])
+                if bumped > row[3]:
+                    replanned = _plan(channel, tagline, schedule, scale, allow_wrap, colors, box_w,
+                                      schedule_px=bumped)
+                    if replanned is None:
+                        planned = None
+                        break
+                    rows, _ = replanned
+                break
+            if planned is None:
+                continue
             placed, accent, h = _block(rows, scale)
             if h > max_h:
                 continue
@@ -332,6 +425,11 @@ def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict 
                     break
             if not ok:
                 continue
+            ch_inks = [ln.ink[3] - ln.ink[1] for ln in lines if ln.role == "channel" and ln.ink]
+            title_ink_m = max(ch_inks) if ch_inks else title_ink
+            need = _schedule_min_ink(title_ink_m)
+            if any(ln.role == "schedule" and ln.ink and (ln.ink[3] - ln.ink[1]) < need for ln in lines):
+                continue
             acc = None
             if accent:
                 ay, t = accent
@@ -341,7 +439,7 @@ def layout(channel: str, tagline: str = "", schedule: str = "", *, colors: dict 
                     continue
             return Layout(scale=scale, lines=lines, accent=acc, accent_color=colors["accent"],
                           wrapped=any(len(r[1]) > 1 for r in rows))
-    raise LayoutError("the banner text cannot fit inside the YouTube strict safe area without clipping")
+    raise LayoutError("三行文字换行后仍排不进横幅安全区（第三行需保持至少 36px），请缩短后再继续。")
 
 
 def _to_canvas(base_bytes: bytes):
@@ -467,6 +565,71 @@ _CLAUSES = {"board": BOARD_CLAUSE, "base": BASE_CLAUSE, "direct": DIRECT_CLAUSE}
 _QUOTED = re.compile(r"[\"“”「」『』][^\"“”「」『』]{1,200}[\"“”「」『』]")
 
 
+SHORTEN_COPY_ID = "yt_shorten_copy"
+SHORTEN_COPY_PROMPT = "横幅上的文字排在安全区内有点长，请缩短后再继续。"
+SHORTEN_COPY_PLACEHOLDER = "请输入缩短后的频道名、标语和更新信息..."
+
+
+def shorten_copy_card() -> dict:
+    """Ask-user card: shorten the banner copy. Chinese, neutral, no failure/rerun wording."""
+    from . import bot_asks
+
+    return bot_asks.validate_spec({
+        "questions": [{
+            "id": SHORTEN_COPY_ID,
+            "prompt": SHORTEN_COPY_PROMPT,
+            "allow_other": True,
+            "placeholder": SHORTEN_COPY_PLACEHOLDER,
+            "page": 1,
+        }],
+        "page_count": 1,
+        "allow_skip": False,
+        "allow_other": True,
+        "prompt": SHORTEN_COPY_PROMPT,
+    })
+
+
+def shorten_copy_result() -> dict:
+    card = shorten_copy_card()
+    return {
+        "status": "needs_input",
+        "submitted": False,
+        "generation_succeeded": False,
+        "charged": False,
+        "kind": "bannerTextShorten",
+        "prompt": card["prompt"],
+        "questions": card["questions"],
+        "page_count": card.get("page_count", 1),
+        "allow_skip": False,
+        "allow_other": True,
+        "placeholder": SHORTEN_COPY_PLACEHOLDER,
+        "ask": card,
+    }
+
+
+def preflight_base_text(args: dict) -> dict | None:
+    """Dry-run the 2560×1440 layout for a youtube-channel-banner base generate, before any model call.
+
+    Returns a shorten-copy card when the chosen copy will not fit at the line-3 floor.
+    Returns None when this is not a base-stage call, or when the copy fits.
+    """
+    if str(args.get("skill") or "") != SKILL:
+        return None
+    if str(args.get("banner_stage") or "").strip().lower() != "base":
+        return None
+    channel = str(args.get("channel_name") or "")
+    tagline = str(args.get("tagline") or "")
+    schedule = str(args.get("schedule") or "")
+    for value in (channel, tagline, schedule):
+        if len(value) > MAX_FIELD_CHARS:
+            return shorten_copy_result()
+    try:
+        layout(channel, tagline, schedule)
+    except LayoutError:
+        return shorten_copy_result()
+    return None
+
+
 def stage_args(args: dict) -> dict:
     """generate_image args for one youtube-channel-banner model step.
 
@@ -492,6 +655,7 @@ def stage_args(args: dict) -> dict:
     args["ratio"] = STAGE_RATIO
     args["width"], args["height"] = STAGE_WIDTH, STAGE_HEIGHT
     args["count"] = 1
-    for k in ("n", "base", "base_strength", "output_format", "frame_count", "frame_duration_ms"):
+    for k in ("n", "base", "base_strength", "output_format", "frame_count", "frame_duration_ms",
+              "channel_name", "tagline", "schedule"):
         args.pop(k, None)
     return args
