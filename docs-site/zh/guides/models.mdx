@@ -49,6 +49,17 @@ Loomi 没有本地模型。所有用到模型的功能都把任务发到 [WaveSp
 | 语音转文字 | `wavespeed-ai/openai-whisper-turbo` |
 {/* models:end */}
 
+## 技能固定模型
+
+部分技能始终使用固定模型，不受模型选择器或 Auto 影响。固定关系写在 `api/auto_models.json` 的 `skills` 部分。
+
+| 技能 | 无参考图 | 有参考图 | 尺寸 |
+|---|---|---|---|
+| studio-model | `openai/gpt-image-2.6-sunburst/text-to-image` | `openai/gpt-image-2.6-sunburst/edit` | 按所选比例出 2K（默认 3:4） |
+| product-to-packaging | `openai/gpt-image-2.6-sunburst/text-to-image` | `openai/gpt-image-2.6-sunburst/edit` | 按所选比例出 2K |
+
+GPT Image 2.6 Sunburst 只接受比例和分辨率（1K、2K、4K），不接受精确像素。所以 2K 3:4 的出图是 Sunburst 在 2K 3:4 下的实际尺寸（例如 1664×2224），不一定正好是 1536×2048。明确传入的宽高或分辨率保持不变。
+
 ## 哪些是免费的
 
 画布编辑、导出（PNG、JPG、PDF、PPTX、PSD、ZIP）、视频剪辑器导出和 WaveSpeed 余额查询都不调用付费模型。
