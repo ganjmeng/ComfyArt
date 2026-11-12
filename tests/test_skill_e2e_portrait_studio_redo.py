@@ -314,7 +314,22 @@ async def test_skill_e2e_portrait_studio_note_then_redo_one(app_url, mock_ws, ag
         await _shot(pg, f"note-{lang}")
         close = "也可以顺手换背景色（米白 / 深灰）或补一版横版构图" if lang == "zh" else "I can also swap the background color (ivory / dark gray) or add a landscape version"
         assert close in text
-        await pg.locator(".ca-chat__bot", has_text=close).last.scroll_into_view_if_needed()
+        await pg.evaluate(
+            """(needle) => {
+              const el = [...document.querySelectorAll('.ca-chat__bot')].reverse()
+                .find((e) => (e.innerText || '').includes(needle));
+              if (!el) return;
+              let s = el.parentElement;
+              while (s && s.scrollHeight <= s.clientHeight + 1) s = s.parentElement;
+              const composer = document.querySelector('.ca-composer');
+              const pad = composer ? composer.getBoundingClientRect().height + 24 : 96;
+              if (!s) { el.scrollIntoView({ block: 'end' }); return; }
+              const er = el.getBoundingClientRect();
+              const sr = s.getBoundingClientRect();
+              s.scrollTop += er.bottom - (sr.bottom - pad);
+            }""",
+            close,
+        )
         await _shot(pg, f"close-{lang}")
 
         # --- turn 2: redo exactly the half-body image ------------------------------------------------
