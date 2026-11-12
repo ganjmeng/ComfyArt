@@ -42,6 +42,11 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
             from .. import portrait_studio
             if portrait_studio.missing_reference(args):
                 return portrait_studio.needs_reference_result()
+            # portrait-studio set: portrait_slot N -> one image with that slot's shot / outfit / scene / lens.
+            try:
+                args = portrait_studio.apply_slot(args, str(BOT_CHAT_ID.get() or ""))
+            except portrait_studio.PlanError as e:
+                return {"status": "failed", "generation_succeeded": False, "submitted": False, "error": str(e)}
         fallback_for = str(args.pop("fallback_for", "") or "")
         if approval:
             label = str(args.get("prompt") or args.get("to") or "")[:80]
@@ -908,3 +913,10 @@ TOOLS["wait_generation"] = {
     "inputSchema": _schema({"ids": _IDS, "timeout_s": {"type": "integer"}}, ["ids"]),
     "handler": _wait_generation,
 }
+
+# portrait-studio set replies + single-image redo (api/mcp_tools/portrait.py).
+SPECS["generate_image"]["inputSchema"]["properties"]["portrait_slot"] = {
+    "type": "integer", "description": "portrait-studio only: the slot number from portrait_studio_plan (one image per call)"}
+TOOLS["generate_image"]["inputSchema"] = SPECS["generate_image"]["inputSchema"]
+from .portrait import TOOLS as _PORTRAIT_TOOLS  # noqa: E402
+TOOLS.update(_PORTRAIT_TOOLS)
