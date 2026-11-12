@@ -30,6 +30,20 @@
    "edit_model": "openai/gpt-image-2.6-sunburst/edit",
    "zh": "studio-model 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
    "en": "the studio-model skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
+  },
+  "product-to-packaging": {
+   "feature": "text_to_image",
+   "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+   "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+   "zh": "product-to-packaging 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+   "en": "the product-to-packaging skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
+  },
+  "cover-design-director": {
+   "feature": "text_to_image",
+   "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+   "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+   "zh": "cover-design-director 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+   "en": "the cover-design-director skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)"
   }
  },
  "features": {

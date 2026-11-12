@@ -120,3 +120,131 @@ def test_only_clothing_swap_and_studio_model_keep_canvas():
     _, got = _pipeline("clothing-swap", "refs", {})
     assert got["edit_model"] == "openai/gpt-image-2.6-sunburst/edit"
     assert (got["width"], got["height"], got["ratio"], got["size_lock"]) == (1536, 2048, "3:4", True)
+
+
+
+def test_studio_model_ratio_only_fills_2k_1536x2048():
+    """Ratio-only studio-model (no width/height/resolution) fills resolution 2k.
+
+    3:4 at 2k is 1536×2048 (Lovart review-assets 87857c35). This is new
+    behavior after #920: EXPECTED above stays the d3f5ca4b capture for
+    ai-model and pose-fission and is not edited. The keep-canvas cases in
+    test_only_clothing_swap_and_studio_model_keep_canvas already pass an
+    explicit 1536×2048, so they are unchanged.
+    """
+    for refk, model_key, model_id in (
+        ("none", "model", "openai/gpt-image-2.6-sunburst/text-to-image"),
+        ("refs", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
+        ("base", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
+    ):
+        _, got = _pipeline("studio-model", refk, {"ratio": "3:4"})
+        assert got[model_key] == model_id
+        assert got["edit_resolution"] == "2k"
+        assert (got["width"], got["height"], got["ratio"]) == (1536, 2048, "3:4")
+
+
+def test_studio_model_explicit_size_untouched():
+    """An explicit width/height/resolution on studio-model is not rewritten."""
+    # 3:4 1536×2048 already set: pixels stay, and 2k is not injected (the
+    # 2048 long side already maps to 2k on submit).
+    _, got = _pipeline("studio-model", "none", {"ratio": "3:4", "width": 1536, "height": 2048})
+    assert (got["width"], got["height"], got["ratio"]) == (1536, 2048, "3:4")
+    assert "edit_resolution" not in got
+    assert got["model"] == "openai/gpt-image-2.6-sunburst/text-to-image"
+
+    # A non-default explicit canvas must stay as given.
+    _, got = _pipeline("studio-model", "refs", {"ratio": "1:1", "width": 1024, "height": 1024})
+    assert (got["width"], got["height"], got["ratio"]) == (1024, 1024, "1:1")
+    assert "edit_resolution" not in got
+    assert got["edit_model"] == "openai/gpt-image-2.6-sunburst/edit"
+
+    # Pixels only, no ratio: still untouched, no 2k fill.
+    _, got = _pipeline("studio-model", "none", {"width": 1024, "height": 1536})
+    assert (got["width"], got["height"]) == (1024, 1536)
+    assert "ratio" not in got
+    assert "edit_resolution" not in got
+
+
+def test_ratio_only_2k_fill_does_not_change_other_skills():
+    """ai-model, pose-fission, and clothing-swap are unchanged by the 2k fill.
+
+    product-to-packaging is not in _PIN_KEEPS_SIZE (incoming pixels still drop)
+    but it does get the ratio-only 2k fill; that is locked in
+    test_product_to_packaging_ratio_only_fills_2k_both_ratios.
+    """
+    from ComfyArt.api.mcp_tools import canvas
+
+    assert "product-to-packaging" not in canvas._PIN_KEEPS_SIZE
+    assert "cover-design-director" not in canvas._PIN_KEEPS_SIZE
+    assert canvas._PIN_KEEPS_SIZE == frozenset({"clothing-swap", "studio-model"})
+    assert canvas._RATIO_ONLY_2K_SKILLS == frozenset(
+        {"studio-model", "product-to-packaging", "cover-design-director"}
+    )
+
+    # ai-model ratio-only still has no 2k fill and no invented pixels (d3f5ca4b).
+    _, got = _pipeline("ai-model", "none", {"ratio": "3:4"})
+    assert got == {"auto_model": True, "model": "openai/gpt-image-2.6-sunburst/text-to-image", "ratio": "3:4"}
+
+    # pose-fission still comes from its own pin (2k 3:4), not this fill.
+    _, got = _pipeline("pose-fission", "refs", {"ratio": "3:4"})
+    assert (got["edit_resolution"], got["ratio"]) == ("2k", "3:4")
+    assert "width" not in got and "height" not in got
+
+    # clothing-swap without a passed size still follows apply_generate (1536×2048),
+    # not the ratio-only 2k fill (no edit_resolution injected).
+    _, got = _pipeline("clothing-swap", "refs", {})
+    assert (got["width"], got["height"], got["ratio"], got["size_lock"]) == (1536, 2048, "3:4", True)
+    assert "edit_resolution" not in got
+
+
+
+def test_cover_design_director_ratio_only_fills_2k_2048x1152():
+    """Ratio-only cover-design-director (no width/height/resolution) fills 2k.
+
+    16:9 at 2k is 2048×1152 (Lovart review-assets 98af4eee). The skill is
+    not in _PIN_KEEPS_SIZE. Explicit size on other skills stays untouched;
+    this fill is the same ratio-only path as studio-model.
+    """
+    from ComfyArt.api.mcp_tools import canvas
+
+    assert "cover-design-director" not in canvas._PIN_KEEPS_SIZE
+    assert canvas._PIN_KEEPS_SIZE == frozenset({"clothing-swap", "studio-model"})
+    assert "cover-design-director" in canvas._RATIO_ONLY_2K_SKILLS
+
+    for refk, model_key, model_id in (
+        ("none", "model", "openai/gpt-image-2.6-sunburst/text-to-image"),
+        ("refs", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
+        ("base", "edit_model", "openai/gpt-image-2.6-sunburst/edit"),
+    ):
+        _, got = _pipeline("cover-design-director", refk, {"ratio": "16:9"})
+        assert got[model_key] == model_id
+        assert got["edit_resolution"] == "2k"
+        assert (got["width"], got["height"], got["ratio"]) == (2048, 1152, "16:9")
+
+
+def test_product_to_packaging_ratio_only_fills_2k_both_ratios():
+    """Ratio-only product-to-packaging fills resolution 2k (Lovart e304e2fa7).
+
+    The Lovart same-input run produced 1536×2048 (3:4) and 2048×1536 (4:3).
+    The skill is not in _PIN_KEEPS_SIZE; the fill runs after incoming pixels
+    are dropped, so a ratio-only (or ratio + dropped pixels) call lands on
+    these 2k canvases.
+    """
+    from ComfyArt.api.mcp_tools import canvas
+
+    assert "product-to-packaging" not in canvas._PIN_KEEPS_SIZE
+    assert "product-to-packaging" in canvas._RATIO_ONLY_2K_SKILLS
+
+    cases = (
+        ("none", "model", "openai/gpt-image-2.6-sunburst/text-to-image", "3:4", (1536, 2048)),
+        ("refs", "edit_model", "openai/gpt-image-2.6-sunburst/edit", "3:4", (1536, 2048)),
+        ("base", "edit_model", "openai/gpt-image-2.6-sunburst/edit", "3:4", (1536, 2048)),
+        ("none", "model", "openai/gpt-image-2.6-sunburst/text-to-image", "4:3", (2048, 1536)),
+        ("refs", "edit_model", "openai/gpt-image-2.6-sunburst/edit", "4:3", (2048, 1536)),
+        ("base", "edit_model", "openai/gpt-image-2.6-sunburst/edit", "4:3", (2048, 1536)),
+    )
+    for refk, model_key, model_id, ratio, pixels in cases:
+        _, got = _pipeline("product-to-packaging", refk, {"ratio": ratio})
+        assert got[model_key] == model_id
+        assert got["edit_resolution"] == "2k"
+        assert (got["width"], got["height"], got["ratio"]) == (*pixels, ratio)

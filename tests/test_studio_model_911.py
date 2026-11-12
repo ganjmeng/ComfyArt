@@ -347,6 +347,22 @@ EXPECTED_CLOTHING_SWAP_PIN = {
     "en": "the clothing-swap skill is pinned to GPT Image 2.6 Sunburst edit",
 }
 
+EXPECTED_PRODUCT_TO_PACKAGING_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "product-to-packaging 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the product-to-packaging skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
+EXPECTED_COVER_DESIGN_DIRECTOR_PIN = {
+    "feature": "text_to_image",
+    "model": SUNBURST_T2I,
+    "edit_model": SUNBURST_EDIT,
+    "zh": "cover-design-director 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the cover-design-director skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
 
 def test_studio_model_routes_sunburst_edit_or_t2i_3x4():
     """Rewritten lock (Angela 07:27): studio-model is pinned to Sunburst.
@@ -540,9 +556,15 @@ def test_pins_and_auto_models_unchanged():
     assert ours_auto["skills"]["studio-model"]["edit_model"] == SUNBURST_EDIT
     assert ours_auto["skills"]["clothing-swap"] == EXPECTED_CLOTHING_SWAP_PIN
     assert ours_auto["skills"]["clothing-swap"]["model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["product-to-packaging"] == EXPECTED_PRODUCT_TO_PACKAGING_PIN
+    assert ours_auto["skills"]["product-to-packaging"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["product-to-packaging"]["edit_model"] == SUNBURST_EDIT
+    assert ours_auto["skills"]["cover-design-director"] == EXPECTED_COVER_DESIGN_DIRECTOR_PIN
+    assert ours_auto["skills"]["cover-design-director"]["model"] == SUNBURST_T2I
+    assert ours_auto["skills"]["cover-design-director"]["edit_model"] == SUNBURST_EDIT
     ours_skills = dict(ours_auto.get("skills") or {})
     main_skills = dict(main_auto.get("skills") or {})
-    for key in ("ai-model", "clothing-swap", "studio-model"):
+    for key in ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director"):
         ours_skills.pop(key, None)
         main_skills.pop(key, None)
     assert ours_skills == main_skills, (

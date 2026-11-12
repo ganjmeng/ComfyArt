@@ -60,7 +60,7 @@ SKILL_PASS_SENTENCE = (
 SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
 SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
 # api/auto_models.json snapshot copied from main dbed74e11, plus later allowed skill pins
-# (Angela 07:27: clothing-swap + studio-model Sunburst). Update the fixture when the
+# (Angela 07:27: clothing-swap + studio-model + product-to-packaging + cover-design-director Sunburst). Update the fixture when the
 # table (features / non-ai-model skill rows) is intentionally changed.
 AUTO_MODELS_LOCK_SHA = "dbed74e11b158917e7cf82b44bd4dbf6829af90d"
 AUTO_MODELS_LOCK = ROOT / "tests/fixtures/auto_models_lock_dbed74e1.json"
@@ -333,9 +333,11 @@ def test_generate_image_must_pass_skill_ai_model():
 
 
 def test_auto_models_ai_model_is_sunburst_and_rest_matches_fixed_snapshot():
-    """skills.ai-model is the Sunburst pin; clothing-swap and studio-model are the
-    Angela 07:27 Sunburst pins. Every other skills row, features, and the file
-    comment match the fixed snapshot (dbed74e11 plus those allowed pins).
+    """skills.ai-model is the Sunburst pin; clothing-swap, studio-model,
+    product-to-packaging (Lovart e304e2fa7), and cover-design-director
+    (Lovart 98af4eee) are the Angela 07:27 Sunburst pins. Every other skills
+    row, features, and the file comment match the fixed snapshot (dbed74e11
+    plus those allowed pins).
     """
     ours = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))
     snap = json.loads(AUTO_MODELS_LOCK.read_text(encoding="utf-8"))
@@ -353,9 +355,15 @@ def test_auto_models_ai_model_is_sunburst_and_rest_matches_fixed_snapshot():
     assert ours["skills"]["studio-model"] == snap["skills"]["studio-model"]
     assert ours["skills"]["studio-model"]["model"] == SUNBURST_T2I
     assert ours["skills"]["studio-model"]["edit_model"] == SUNBURST_EDIT
+    assert ours["skills"]["product-to-packaging"] == snap["skills"]["product-to-packaging"]
+    assert ours["skills"]["product-to-packaging"]["model"] == SUNBURST_T2I
+    assert ours["skills"]["product-to-packaging"]["edit_model"] == SUNBURST_EDIT
+    assert ours["skills"]["cover-design-director"] == snap["skills"]["cover-design-director"]
+    assert ours["skills"]["cover-design-director"]["model"] == SUNBURST_T2I
+    assert ours["skills"]["cover-design-director"]["edit_model"] == SUNBURST_EDIT
     ours_rest = dict(ours["skills"])
     snap_rest = dict(snap["skills"])
-    for key in ("ai-model", "clothing-swap", "studio-model"):
+    for key in ("ai-model", "clothing-swap", "studio-model", "product-to-packaging", "cover-design-director"):
         ours_rest.pop(key)
         snap_rest.pop(key)
     assert ours_rest == snap_rest
