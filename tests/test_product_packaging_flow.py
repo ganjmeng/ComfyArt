@@ -491,24 +491,40 @@ def _main_bytes(path: str) -> bytes:
 
 
 @pytest.mark.parametrize("path", ["api/auto_models.json", "api/skill_size.py", "api/curated_models.json",
-                                  "api/wavespeed_models.json", "bot/skill_output.py", "bot/self_check.py",
-                                  "api/portrait_studio.py"])
+                                  "api/wavespeed_models.json", "bot/skill_output.py"])
 def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_main_bytes(path)).hexdigest(), path
 
 
 # Locales are compared as JSON so a sibling skill can add its own keys. product-to-packaging
-# still adds none; youtube-channel-banner adds bot.composeBannerText only.
+# still adds none. Allowed extras only:
+# - youtube-channel-banner: bot.composeBannerText
+# - portrait-studio redo/follow-up (#927): bot.portraitStudioPlan / Done / Redo
+# bot/self_check.py and api/portrait_studio.py are not byte-locked here: #927 adds a
+# 3-line comment in self_check (logic unchanged vs main 31935428) and owns the
+# portrait_studio module (redo / follow-up).
 BANNER_LOCALE = {"zh": "排版横幅文字", "en": "Set banner text"}
+PORTRAIT_LOCALE = {
+    "zh": {
+        "bot.portraitStudioPlan": "形象照方案",
+        "bot.portraitStudioDone": "形象照小结",
+        "bot.portraitStudioRedo": "重做一张",
+    },
+    "en": {
+        "bot.portraitStudioPlan": "Portrait plan",
+        "bot.portraitStudioDone": "Portrait summary",
+        "bot.portraitStudioRedo": "Redo one image",
+    },
+}
 
 
 @pytest.mark.parametrize("path,lang", [("src/locales/zh.json", "zh"), ("src/locales/en.json", "en")])
-def test_locales_match_main_except_youtube_banner_compose_key(path, lang):
+def test_locales_match_main_except_banner_and_portrait_studio_keys(path, lang):
     ours = json.loads((ROOT / path).read_text(encoding="utf-8"))
     main = json.loads(_main_bytes(path))
     assert {k: main[k] for k in main} == {k: ours[k] for k in main}
     extra = {k: ours[k] for k in ours if k not in main}
-    assert extra == {"bot.composeBannerText": BANNER_LOCALE[lang]}
+    assert extra == {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang]}
 
 
 # --- question 3: live wording per letter, locked skeleton (Product, final) ----------------------
