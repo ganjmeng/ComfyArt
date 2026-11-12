@@ -1,0 +1,42 @@
+{
+  "ask_id": "0d4516c3eb3041fdb4d3fcbf59cfdab7",
+  "kind": null,
+  "prompt": null,
+  "questions": [
+    {
+      "id": "upper_body_swap",
+      "prompt": "图1中人物目前穿的是白色长袖内搭 + 黑色无袖背心。你想怎么替换上半身？",
+      "placeholder": null,
+      "allow_other": true,
+      "options": [
+        {
+          "id": "replace_all",
+          "label": "整体换成蓝色T恤"
+        },
+        {
+          "id": "over_white",
+          "label": "蓝色T恤套在白色长袖外"
+        },
+        {
+          "id": "over_black",
+          "label": "蓝色T恤套在黑色背心外"
+        },
+        {
+          "id": "keep_necklace",
+          "label": "整体换成蓝色T恤，保留项链"
+        }
+      ]
+    }
+  ],
+  "spec": null,
+  "n": 1,
+  "stopped": true,
+  "stop_reason": "question 'upper_body_swap': 0 exact label match(es)",
+  "ts": "2026-11-12 08:07:31 CST",
+  "answer_file": "/workspace/911-clothing-capture/pr920-71b32880/clothing-swap/answer-card1.json",
+  "format": {
+    "labels": [
+      "<exact option label per question>"
+    ]
+  }
+}

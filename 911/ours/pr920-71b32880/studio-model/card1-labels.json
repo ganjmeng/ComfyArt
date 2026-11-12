@@ -1,0 +1,78 @@
+{
+  "ask_id": "3d5a8f28487e4a6fae8715cdd806cb17",
+  "kind": null,
+  "prompt": null,
+  "questions": [
+    {
+      "id": "gender",
+      "prompt": "这件宝蓝色宽松落肩短袖T恤，你想让哪种性别的模特上身？",
+      "placeholder": "以上都不符合，我自己补充...（自填）",
+      "allow_other": true,
+      "options": [
+        {
+          "id": "female",
+          "label": "女模特"
+        },
+        {
+          "id": "male",
+          "label": "男模特"
+        }
+      ]
+    },
+    {
+      "id": "selling_points",
+      "prompt": "详情页这张图，你最想让买家第一眼看到什么？",
+      "placeholder": "以上都不符合，我自己补充...（自填）",
+      "allow_other": true,
+      "options": [
+        {
+          "id": "fit",
+          "label": "宽松落肩的版型与垂坠感"
+        },
+        {
+          "id": "print",
+          "label": "胸前蓝白拼贴印花图案"
+        },
+        {
+          "id": "color",
+          "label": "宝蓝色纯色衣身与圆领"
+        },
+        {
+          "id": "fabric",
+          "label": "面料质感与短袖袖口"
+        }
+      ]
+    },
+    {
+      "id": "ethnicity",
+      "prompt": "模特族裔：",
+      "placeholder": "以上都不符合，我自己补充...（自填）",
+      "allow_other": true,
+      "options": [
+        {
+          "id": "asian",
+          "label": "亚洲人"
+        },
+        {
+          "id": "white",
+          "label": "白人"
+        },
+        {
+          "id": "black",
+          "label": "黑人"
+        }
+      ]
+    }
+  ],
+  "spec": null,
+  "n": 1,
+  "stopped": true,
+  "stop_reason": "question 'selling_points': 0 exact label match(es)",
+  "ts": "2026-11-12 08:07:34 CST",
+  "answer_file": "/workspace/911-clothing-capture/pr920-71b32880/studio-model/answer-card1.json",
+  "format": {
+    "labels": [
+      "<exact option label per question>"
+    ]
+  }
+}

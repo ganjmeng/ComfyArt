@@ -1,0 +1,13 @@
+{
+  "tip": "71b328802f362b647e5e679e2bb3d5aa258ec4f0",
+  "skill": "studio-model",
+  "stopped_at_card": 1,
+  "submitted_labels": [],
+  "generate_image_calls": 0,
+  "wavespeed_predicts": 0,
+  "wavespeed_key_in_chat_process": false,
+  "chat_llm": "official DeepSeek deepseek-flash @ https://api.deepseek.com",
+  "balance_before": 29.848866,
+  "balance_now": 29.848866,
+  "cost_usd": 0
+}

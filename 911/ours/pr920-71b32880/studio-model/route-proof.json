@@ -1,0 +1,28 @@
+{
+  "event": "route",
+  "ts": "2026-11-12 08:07:26 CST",
+  "tip": "71b328802f362b647e5e679e2bb3d5aa258ec4f0",
+  "llm_source": "default",
+  "llm_mode": "",
+  "llm_route": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "catalog_model": "deepseek-flash",
+    "base_url": "https://api.deepseek.com",
+    "secret_env": "DEEPSEEK_API_KEY",
+    "adapter": "deepseek_official",
+    "passthrough": false,
+    "quote": "unknown"
+  },
+  "official_llm_ready": true,
+  "official_llm_model": "deepseek-flash",
+  "official_llm_display_name": "DeepSeek V4.1 Flash",
+  "official_key_present": true,
+  "resolved_base_url": "https://api.deepseek.com",
+  "wavespeed_key_in_process": false,
+  "balance_before": 29.848866,
+  "msg_md5": "a3370c695be7bdf88d42357fb4488394",
+  "ref": null,
+  "expected_msg_md5": "a3370c695be7bdf88d42357fb4488394",
+  "input_matches_lovart": true
+}

@@ -1,0 +1,369 @@
+{
+  "repo": "/workspace/wt911-clothing",
+  "tip": "71b328802f362b647e5e679e2bb3d5aa258ec4f0",
+  "via": "canvas._relay_run (apply_generate -> select_model/_auto_choice -> _pin_args -> submit_command recorder)",
+  "rows": [
+    {
+      "ref": "none",
+      "in": {},
+      "sent": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "auto_model": true
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "none",
+      "in": {
+        "ratio": "3:4",
+        "width": 1536,
+        "height": 2048
+      },
+      "sent": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "auto_model": true,
+        "ratio": "3:4"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "none",
+      "in": {
+        "ratio": "1:1",
+        "width": 1024,
+        "height": 1024
+      },
+      "sent": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "auto_model": true,
+        "ratio": "1:1"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "none",
+      "in": {
+        "ratio": "16:9",
+        "width": 2048,
+        "height": 1152
+      },
+      "sent": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "auto_model": true,
+        "ratio": "16:9"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "none",
+      "in": {
+        "ratio": "3:4"
+      },
+      "sent": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "auto_model": true,
+        "ratio": "3:4"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "none",
+      "in": {
+        "width": 1024,
+        "height": 1536
+      },
+      "sent": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "auto_model": true
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "none",
+      "in": {
+        "ratio": "3:4",
+        "width": 1536,
+        "height": 2048,
+        "size_lock": true
+      },
+      "sent": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "auto_model": true,
+        "ratio": "3:4"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "refs",
+      "in": {},
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "refs",
+      "in": {
+        "ratio": "3:4",
+        "width": 1536,
+        "height": 2048
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "ratio": "3:4"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "refs",
+      "in": {
+        "ratio": "1:1",
+        "width": 1024,
+        "height": 1024
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "ratio": "1:1"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "refs",
+      "in": {
+        "ratio": "16:9",
+        "width": 2048,
+        "height": 1152
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "ratio": "16:9"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "refs",
+      "in": {
+        "ratio": "3:4"
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "ratio": "3:4"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "refs",
+      "in": {
+        "width": 1024,
+        "height": 1536
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "refs",
+      "in": {
+        "ratio": "3:4",
+        "width": 1536,
+        "height": 2048,
+        "size_lock": true
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "ratio": "3:4"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "base",
+      "in": {},
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "base",
+      "in": {
+        "ratio": "3:4",
+        "width": 1536,
+        "height": 2048
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "ratio": "3:4"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "base",
+      "in": {
+        "ratio": "1:1",
+        "width": 1024,
+        "height": 1024
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "ratio": "1:1"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "base",
+      "in": {
+        "ratio": "16:9",
+        "width": 2048,
+        "height": 1152
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "ratio": "16:9"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "base",
+      "in": {
+        "ratio": "3:4"
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "ratio": "3:4"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "base",
+      "in": {
+        "width": 1024,
+        "height": 1536
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    },
+    {
+      "ref": "base",
+      "in": {
+        "ratio": "3:4",
+        "width": 1536,
+        "height": 2048,
+        "size_lock": true
+      },
+      "sent": {
+        "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+        "ratio": "3:4"
+      },
+      "model_choice": {
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "category": "skill",
+        "skill": "ai-model"
+      },
+      "result_status": null
+    }
+  ],
+  "wavespeed_submit_called": false
+}
