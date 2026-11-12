@@ -483,6 +483,38 @@ def test_goal_check_still_fails_a_generic_shape_from_other_skills(lang, goal, wa
         assert len(notes) == 1 and warn in notes[0]["text"], notes
 
 
+@pytest.mark.parametrize("lang,goal,warn", [
+    ("zh", "帮我生成 1 张图", "目标核对未通过"),
+    ("en", "Make 1 image for me", "Goal check failed"),
+])
+@pytest.mark.parametrize("owner", ["generate_video", "add_text"])
+def test_goal_check_still_fails_when_only_a_non_image_node_is_placed(lang, goal, warn, owner):
+    """A 1-image goal is not met by the turn's only wait_generation result being a video- or text-typed
+    node, even when that node is on the canvas."""
+    import json as _json
+    from ComfyArt.bot import self_check
+    sid = "shape:vid1" if owner == "generate_video" else "shape:txt1"
+    result = {"ids": ["j1"]} if owner == "generate_video" else {"id": sid}
+    blocks = [
+        {"type": "tool_use", "id": "t0", "name": f"mcp__comfyart__{owner}",
+         "input": {"prompt": "a clip"} if owner == "generate_video" else {"text": "hello"}},
+        {"type": "tool_result", "id": "t0", "name": f"mcp__comfyart__{owner}",
+         "text": _json.dumps(result)},
+        {"type": "tool_use", "id": "t1", "name": "mcp__comfyart__wait_generation",
+         "input": {"ids": ["j1"]}},
+        {"type": "tool_result", "id": "t1", "name": "mcp__comfyart__wait_generation",
+         "text": _json.dumps({"results": [{"id": "j1", "status": "done", "placed": True,
+                                           "generation_succeeded": True, "shapes": [sid]}]})},
+        {"type": "text", "text": "完成。" if lang == "zh" else "Done."},
+    ]
+    sc = self_check.check(goal, blocks, canvas_ids={sid})
+    assert sc.generated == 1 and sc.placed == 0 and not sc.passed, sc.to_dict()
+    out, info = self_check.apply_to_blocks(goal, blocks, lang, canvas_ids={sid})
+    assert info["self_check"] == "fail" and info["placed"] == 0 and info["missing"] == 1, info
+    notes = [b for b in out if b.get("type") == "notice"]
+    assert len(notes) == 1 and warn in notes[0]["text"], notes
+
+
 def test_tools_are_exposed_to_the_built_in_agent():
     from ComfyArt.bot.guide import CORE_MCP_TOOLS
     for name in ("portrait_studio_plan", "portrait_studio_done", "portrait_studio_redo"):
