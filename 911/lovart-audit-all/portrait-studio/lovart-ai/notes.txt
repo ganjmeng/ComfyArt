@@ -1,0 +1,44 @@
+Lovart Portrait Studio run (lovart.ai), 2026-11-12
+Project URL: https://www.lovart.ai/canvas?projectId=2vojdqew8ao0  (title: 使用照片生成专业形象照)
+Skill: Professional Portrait Generation Tool (liufaqiang). NOTE: "Try this skill" on the skill page opened a new project in a new tab but WITHOUT a capsule; capsule was attached via "Start from skill" -> /Portrait -> Professional Portrait Generation Tool inside that same new project. Capsule visible before send.
+Input: person-input.png (uploaded once). Message typed and sent fine: 帮我用这张照片做一组专业形象照。
+Balance: before send 1900; after send/analysis/cards submit 1900; mid-generation 1883; after 3 images 1849 (spend 51; teammate may share).
+Model label: "Generating images using GPT Image 2.6 Sunburst" (final label "GPT Image 2.6 Sunburst"). Only one generation step.
+Card (1 card, "1 of 3" pagination, 3 questions; no 推荐 marker; D = free text "其它…"):
+Q1 这组专业形象照想要几张、什么景别组合？ A 3 张：面部特写 + 半身 + 七分身 | B 4 张：特写 + 半身 + 七分身 + 全身 | C 只要 1 张半身标准照 | D 其它张数或景别，我来写…  -> chose A
+Q2 服装方向怎么定？（人物长相、发型与身材比例都会锁定参考图不变） A 保留原有休闲造型 | B 换成商务正装 | C 简约轻正装 | D 其它服装，我来描述… -> chose A
+Q3 场景与背景用哪种？ A 纯色棚拍背景 | B 现代办公空间 | C 沿用参考图的建筑空间 | D 其它场景，我来描述… -> chose A
+(D placeholder text partly illegible in screenshot; paraphrased.)
+Outputs: 3 images, 1536x2048 each (result-01..03.png; order close-up, half-body, 3/4 body as listed in DOM)
+
+Lovart reply (verbatim, in order):
+[Submitted answers echoed as user message] Q/A x3 as above.
+参考图已作为身份锚点分析完毕。按你的选择：3 张 / 保留原休闲造型 / 纯色棚拍背景，三张共用同一人物身份与服装，只变景别与姿态。
+
+0. 📸 参考图迁移维度解析
+迁移模式：C＋B 组合（人物身份 + 风格色彩为主，姿态按景别重新设计）
+锁定项：五官轮廓、眼神气质、黑色中长微卷发、暖调自然亚洲肤色、纤细高挑身材比例；服装完整保留（白长袖打底 + 黑 V 领针织背心露白边 + 卡其宽腿工装裤 + 棕皮带 + 深棕皮鞋 + 橄榄绿帆布斜挎包 + 心形吊坠长项链）
+变更项：背景由罗马柱建筑空间 → 暖灰无缝棚拍纸；景别拆为特写 / 半身 / 七分身三档，姿态相应重建
+色彩复刻：延续原片低饱和、干净通透的暖调，匹配 Kodak Portra 400
+1. 📷 摄影指导方案要点
+布光：Loop 环形光为主方案，大面积柔光箱从 camera-left 30° 高位切入，鼻影向脸颊斜下延伸不连唇；辅以弱发丝轮廓光把人从灰背景剥离——商业形象照最通用、最不挑肤质的光质
+肤色物理：亚洲自然中性肤色，采用中性偏暖主光（5500K）避免发黄发灰，保留次表面散射的温润感，强制可见毛孔与微纹理，拒绝塑料磨皮
+光学：85mm 黄金人像焦段；特写 f/2.0、半身 f/2.8、七分身 f/4.0 递进保证景深够用；1/250s 静态锐利；ISO 200 干净
+摆姿：S 型脊柱 + 一肩微高一肩微低 + 下巴前伸微低拉紧下颌线；手部统一走"插兜 / 自然垂落侧手"路线，规避手指畸变，腰侧保留负空间
+
+现在开始生成三张。
+
+[Generating images using GPT Image 2.6 Sunburst]
+
+三张已完成：
+景别 | 产物
+面部特写（头肩） | 专业形象照-面部特写
+半身（大腿上缘以上） | 专业形象照-半身
+七分身（小腿中部以上） | 专业形象照-七分身
+⚙️ 参数与负面提示词
+光学参数：85mm ｜ Loop 环形光 + 柔光 ｜ 特写 f/2.0 · 半身 f/2.8 · 七分身 f/4.0 ｜ 1/250s ｜ ISO 200
+胶片模拟：Kodak Portra 400（暖肤低饱和，延续原片通透调性）
+画幅：3:4 竖版 ×3
+Negative Prompt：plastic skin, smooth airbrushed face, bad anatomy, extra/fused fingers, distorted hands, mismatched pupils, asymmetric eyes, broken teeth, gibberish text, extra limbs, deformed face, cloned face, watermark, signature, oversaturated, waxy skin, CGI render, multiple key lights, conflicting light directions, different person, changed facial identity
+
+验收提示：三张的身份锚点（五官 / 黑色中长微卷发 / 白打底＋黑针织背心＋卡其工装裤＋帆布斜挎包＋心形吊坠）都按参考图锁定了，但我无法逐像素核对实际一致性。请你过一眼这三张，如果某张的脸型或发型偏离原片，告诉我具体是哪张、偏在哪里，我针对那一张重做；也可以顺手换背景色（米白 / 深灰）或补一版横版构图。

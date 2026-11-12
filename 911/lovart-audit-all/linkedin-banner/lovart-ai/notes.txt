@@ -1,0 +1,22 @@
+Lovart LinkedIn Banner audit — stopped at paid-plan prompt
+
+Skill URL: https://www.lovart.ai/skills/pjkAQhZ0ys
+Skill title: LinkedIn Banner
+Author: John
+Detail-page title and author matched the requested values.
+Project URL: https://www.lovart.ai/canvas?projectId=2vocy7hlcohs
+
+Credit balance before starting: 1949 (shown on the skill page before using the skill).
+Credit balance after project opened: 2049 (shown in the new canvas project).
+
+Stop condition: The new canvas displayed the paid-plan upsell text exactly: “Upgrade to unlock Image 2.6 unlimited gens.” Per instruction, stopped without sending the message or proceeding. No top-up or settings changes were made.
+
+Exact message requested (not sent):
+帮我做一张 LinkedIn 个人主页横幅。姓名 Alex Chen，职位 Product Lead · AI Creative Tools，关键词：AI 设计、产品增长、创意工作流。风格专业简洁，科技蓝。
+
+Question cards: None appeared; none answered.
+Model name: None shown; generation was not started.
+Lovart text replies: None; the message was not sent.
+Result: None generated; pixel size not applicable; no result image or result-page screenshot.
+Evidence file: stop-condition.png (canvas screenshot showing the paid-plan upsell and 2049 balance).
+Files: No question-card screenshots or result files were created because the paid-plan prompt triggered the stop condition.

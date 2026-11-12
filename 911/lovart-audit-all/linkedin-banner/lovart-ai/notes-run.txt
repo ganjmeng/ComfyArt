@@ -1,0 +1,86 @@
+Project URL: https://www.lovart.ai/canvas?projectId=2vocy7hlcohs
+
+Skill capsule: The LinkedIn Banner skill capsule was absent when the existing project first opened. I reopened the official skill page, then selected LinkedIn Banner from the chat input skill picker; the capsule was visible in the composer when the prompt was sent.
+
+Exact message:
+帮我做一张 LinkedIn 个人主页横幅。姓名 Alex Chen，职位 Product Lead · AI Creative Tools，关键词：AI 设计、产品增长、创意工作流。风格专业简洁，科技蓝。
+
+Question card 1 (header: Question 1 of 3; three prompts shown on the same card; no option was pre-highlighted):
+1. 横幅上需要放哪些文字？（姓名 Alex Chen 与职位 Product Lead · AI Creative Tools 默认保留）
+   A. 姓名 + 职位 + 一句价值主张
+   B. 姓名 + 职位 + 三个关键词标签
+   C. 只要姓名 + 职位
+   D. 我自己指定文案内容（可写中文/英文）...
+   Choice: A. 姓名 + 职位 + 一句价值主张 (first option)
+2. 有没有可用于横幅的个人肖像照？
+   A. 没有，用抽象科技图形
+   B. 没有，生成一位虚拟人物侧影
+   C. 我有照片，稍后上传
+   D. 其它，请直接输入...
+   Choice: A. 没有，用抽象科技图形 (first option)
+3. 这条横幅主要给谁看、想达成什么？
+   A. 求职/被猎头与招聘方看见
+   B. 获客/找合作与客户信任
+   C. 行业影响力/内容与演讲机会
+   D. 其它目的...
+   Choice: A. 求职/被猎头与招聘方看见 (first option)
+   Submitted.
+
+Question card 2 (no option was pre-highlighted):
+选哪个方向出成品横幅？
+A. 方向 C 差异化信号
+B. 方向 A 专业清晰
+C. 方向 B 品牌权威
+D. 帮我定 / 三个都出 / 说要改哪里...
+Choice: none; left unanswered. Submitting would have continued the workflow to another finished-image generation after the initial generation had already spent 70 credits, exceeding the 60-credit cap and the no-follow-ups instruction.
+
+Model name shown: Generating images using GPT Image 2.6 Sunburst (later status text: GPT Image 2.6 Sunburst)
+
+Lovart text replies, verbatim:
+Skill ready
+
+Skill file read
+
+Generating images using GPT Image 2.6 Sunburst
+
+方向板已出（一张图三条 4:1 横幅，共用同一套文案与科技蓝体系，结构各不相同）：
+
+三条都按 LinkedIn 个人主页规则处理了左下角头像遮挡区：头像覆盖区留空，文字块统一落在 x≈0.34 起的安全区内，横竖两端都留了响应式裁切余量。可见文字只有三行——PRODUCT LEAD · AI CREATIVE TOOLS / Turning AI ideas into shipped product growth / Alex Chen，面向猎头与招聘方，3 秒内能读懂定位。
+
+A 专业清晰：细网格 + 一条地平线，最克制，企业端阅读零障碍。
+B 品牌权威：右侧玻璃层叠体量，分量感强，适合冲资深管理岗。
+C 差异化信号：粒子汇聚成有序矩阵的生成带，直接映射「AI 设计 / 创意工作流」，最有辨识度。
+
+挑一条我就出 1584×396 的成品图。
+
+Result object: LinkedIn个人横幅方向板 A/B/C; one generated PNG image containing three labeled directions (A/B/C), not a single finished banner.
+Result pixel size: 2048 × 1536 (verified from the downloaded PNG).
+Artifact URL (original, no resize/format processing): https://a.lovart.ai/artifacts/agent/oIZ0Hey9VoCUjbjA.png
+
+Balance before: 2049
+Balance after: 1979
+Credits spent: 70 (10 over the requested 60-credit maximum). No top-up, upgrade, or settings change was made.
+
+
+=== Step 2 ===
+Choice: option A "方向 C 差异化信号" (clicked, Submit; no free text).
+Model on screen: "Generating images using Nano Banana 2" (result chip: "Nano Banana 2 / Wide").
+Downloaded file pixel size: 4128 x 1024 (original artifact is JPEG; final-original.png is a lossless PNG conversion; raw copy final-original.jpeg).
+Artifact URL: https://a.lovart.ai/artifacts/agent/5AThAOnp866nwztO.jpeg
+Lovart replies (verbatim):
+成品已出，方向 C：
+
+规格：4:1 单条横幅，2K 输出，直接可上传 LinkedIn 个人主页头部（平台建议 1584×396）。
+
+已按平台规则处理的部分
+
+左下角头像遮挡区（guard x 0.0126→0.2522 / y 0.3321→1.0000）留成纯色深navy底，没有任何笔画、粒子或光带压边，圆形头像落上去不会吃掉信息。
+三行文字全部排在内容安全区（x 0.2711→0.9521 / y 0.1344→0.7869）内，四周留了响应式裁切余量，桌面端与移动端裁切都不会切掉标题。
+画面无参考线、无蒙版描边、无 A/B/C 标签、无白色衬底残留，是干净的单条上传件。
+
+画面内容：左侧散落的青色粒子 → 汇聚成一道电光蓝发光带 → 在右端收束成规整点阵，把「AI 创意工作流」这件事直接画成了一条从混沌到交付的路径。文字三行：PRODUCT LEAD · AI CREATIVE TOOLS / Turning AI ideas into shipped product growth / Alex Chen。
+
+一点提醒：这三行字是生成模型直接绘制上屏的，请你在上传前逐字核对一遍拼写与中点符号；如果发现某个字母不对，告诉我，我用确定性排版的方式重出一版（先出无字底图、再精确压字），能保证零错字。另外需要的话我可以再出一张带头像遮挡的 LinkedIn 页面预览图，看真机上被压住后的观感。
+Balance before: 1960 on screen when I opened the page (task said 1979; Step 1 notes ended at 1979, so the header had already dropped by 19).
+Balance after: 1945 (15 credits spent for this step, within 120 cap).
+No second question card, no payment/upgrade gate.
