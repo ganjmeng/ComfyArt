@@ -503,9 +503,10 @@ def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
         inputs["resolution"] = choice["resolution"]
     if choice.get("ratio"):
         inputs["ratio"] = choice["ratio"]
-    # Clothing-swap (and studio-model) keep canvas width/height (e.g. 1536x2048), or a size
-    # string such as 1536*2048. build_payload snaps the long edge via resolution_from_inputs,
-    # so the paid body has resolution=2k. The quote uses that same function (no duplicate snap).
+    # Clothing-swap (and studio-model) keep canvas width/height (e.g. 1536x2048).
+    # build_payload snaps that long edge via resolution_from_inputs (same as main);
+    # a size string such as 1536*2048 is not used to infer a tier (WaveSpeed default 1k).
+    # The quote uses that same function (no duplicate snap).
     if not inputs.get("resolution"):
         from ..gif_image import EDIT_25, GIF_EDIT, GIF_T2I, T2I_25
         if model in GIF_EDIT or model in GIF_T2I or model in EDIT_25 or model in T2I_25:

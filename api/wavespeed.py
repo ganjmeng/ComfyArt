@@ -819,33 +819,27 @@ def _resolution(options: list[str], long_side: int) -> str:
 
 
 def canvas_pixels(inputs: dict) -> tuple[int, int] | None:
-    """Pixel width and height from `width`+`height`, or from a size string such as 1536*2048 (also x/×)."""
-    try:
-        w, h = int(inputs.get("width")), int(inputs.get("height"))
-        if w > 0 and h > 0:
-            return w, h
-    except (TypeError, ValueError):
-        pass
-    size = inputs.get("size")
-    if not isinstance(size, str):
+    """Pixel width and height from `width`+`height` only — same as build_payload on main.
+
+    A size string such as 1536*2048 is not parsed; WaveSpeed then runs its schema default (1k).
+    """
+    w, h = inputs.get("width"), inputs.get("height")
+    if not (w and h):
         return None
-    for sep in ("*", "×", "x", "X"):
-        if sep in size:
-            left, right = size.split(sep, 1)
-            try:
-                w, h = int(left.strip()), int(right.strip())
-            except ValueError:
-                return None
-            return (w, h) if w > 0 and h > 0 else None
-    return None
+    try:
+        w, h = int(w), int(h)
+    except (TypeError, ValueError):
+        return None
+    return (w, h) if w and h else None
 
 
 def resolution_from_inputs(inputs: dict, enum, default=None) -> str | None:
     """The resolution build_payload will submit, and the one the quote must use.
 
-    An explicit `resolution` is snapped with `_pick` and wins over the size guess
-    (#708, including typo/nearest). Otherwise the long edge of canvas_pixels is
-    snapped with `_resolution`. None when neither applies (caller may apply default).
+    Reproduces main (88cbd358) submit behavior: an explicit `resolution` is snapped
+    with `_pick` and wins (#708). Otherwise the long edge of width/height is snapped
+    with `_resolution`. A size string is not used. None when neither applies
+    (caller may apply the schema default — the payload omits the key, WaveSpeed runs 1k).
     """
     options = [str(v) for v in (enum or [])]
     if not options:

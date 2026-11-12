@@ -10,7 +10,11 @@ Mocks only: no key, no network, $0.
 """
 from __future__ import annotations
 
+import importlib.util
 import json
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
 import aiohttp
@@ -243,8 +247,9 @@ async def test_clothing_swap_quote_uses_resolution_tier_and_two_images():
 
     resolution 2k → list $0.13, charged $0.117 = 0.9 x (tier base + $0.015 x images).
     resolution 1k → list $0.08, charged $0.072 (locks both tier and image count).
-    size '1536*2048' alone (no width/height/resolution) is snapped by the same
-    resolution_from_inputs used in build_payload, so build_quote also quotes $0.117.
+    size '1536*2048' alone (no width/height/resolution) is not used to infer a
+    tier — same as build_payload on main — so the quote is the WaveSpeed default
+    1k, charged $0.072.
     """
     pinned = skill_pin("clothing-swap")["model"]
     cell = lambda res: gif_image.TABLE_26[("medium", res)]
@@ -306,27 +311,30 @@ async def test_clothing_swap_quote_uses_resolution_tier_and_two_images():
     assert seen[0][1]["resolution"] == "1k" and seen[0][1]["images"] == ["ref-1", "ref-2"]
     assert quote.lines[0].amount == 0.072
 
-    # --- size 1536*2048 alone: same snap as build_payload → 2k, quote $0.117 ---
+    # --- size 1536*2048 alone must not infer 2k (matches main submit: no resolution, default 1k) ---
     size_only = args_of(size="1536*2048")
     assert "resolution" not in size_only and "width" not in size_only and "height" not in size_only
     model, inputs = canvas.quote_route("generate_image", size_only)
-    assert model == pinned and inputs["resolution"] == "2k" and inputs.get("size") == "1536*2048"
+    assert model == pinned and inputs.get("resolution") != "2k" and inputs.get("size") == "1536*2048"
     assert inputs["images"] == ["ref-1", "ref-2"]
-    assert wavespeed.resolution_from_inputs(size_only, ["1k", "2k", "4k"]) == "2k"
+    assert wavespeed.resolution_from_inputs(size_only, ["1k", "2k", "4k"]) is None
     quote, seen = await quoted(size_only)
-    assert seen[0][1]["resolution"] == "2k"
-    assert quote.lines[0].amount == 0.117
+    assert seen[0][1].get("resolution") != "2k"
+    assert quote.lines[0].amount == 0.072  # 1k default + 2 images, not the 2k $0.117
+    assert gif_image.documented_usd(pinned, "medium", str(inputs.get("resolution") or "1k"), 2) == 0.08
 
 
-async def test_clothing_swap_size_only_build_payload_submits_2k():
+async def test_clothing_swap_size_only_build_payload_omits_resolution():
     """Real build_payload (network stubbed: https images are passed through, no upload, $0)
-    for a clothing-swap call with only size=1536*2048 submits resolution=2k, matching the quote.
+    for a clothing-swap call with only size=1536*2048 submits no resolution (main behavior:
+    WaveSpeed default 1k), matching the quote of $0.072.
     """
     pinned = skill_pin("clothing-swap")["model"]
     assert pinned == SUNBURST_EDIT
     schema = wavespeed._schema(CATALOG[pinned])
     enum = ((schema.get("properties") or {}).get("resolution") or {}).get("enum")
-    assert enum == ["1k", "2k", "4k"]
+    default = ((schema.get("properties") or {}).get("resolution") or {}).get("default")
+    assert enum == ["1k", "2k", "4k"] and default == "1k"
     inputs = {
         "prompt": "换装",
         "size": "1536*2048",
@@ -336,31 +344,138 @@ async def test_clothing_swap_size_only_build_payload_submits_2k():
     }
     assert "width" not in inputs and "height" not in inputs and "resolution" not in inputs
     payload = await wavespeed.build_payload(None, schema, inputs, pinned)
-    assert payload["resolution"] == "2k"
+    assert "resolution" not in payload  # WaveSpeed default 1k; no auto-upgrade from the size string
     assert payload.get("aspect_ratio") == "3:4"
     assert len(payload.get("images") or []) == 2
-    # Quote and payload share this function; no second snap.
-    assert wavespeed.resolution_from_inputs(inputs, enum) == payload["resolution"] == "2k"
+    assert wavespeed.resolution_from_inputs(inputs, enum) is None
     routed_model, routed = canvas.quote_route(
         "generate_image",
         {"prompt": "换装", "skill": "clothing-swap", "refs": ["shape:person", "shape:garment"],
          "ratio": "3:4", "quality": "medium", "size": "1536*2048"})
-    assert routed_model == pinned and routed["resolution"] == payload["resolution"] == "2k"
+    assert routed_model == pinned and routed.get("resolution") != "2k"
+    assert (payload.get("resolution") or default) == (wavespeed.resolution_from_inputs(inputs, enum) or default) == "1k"
 
 
 def test_price_endpoint_ignores_size_string_endpoint_behavior_only():
-    """Endpoint behavior only — not the product quote or submit path.
-
-    WaveSpeed POST /api/v3/model/price with size=1536*2048 and no resolution
+    """WaveSpeed POST /api/v3/model/price with size=1536*2048 and no resolution
     (recorded 2026-11-12 08:52:39-08:52:41 Asia/Shanghai, balance 29.731866
     unchanged, /workspace/910-capture/price-probe-clothing-swap-2k.json) returns
     the default 1k cell: 2 images list $0.08 / charged $0.072; no images $0.05 /
-    $0.045. The product path does not send that body: it snaps to 2k via
-    resolution_from_inputs before quote and submit.
+    $0.045. The product quote/submit path matches that 1k default (size is not
+    used to infer 2k).
     """
     assert _live(SUNBURST_EDIT, "medium", "1k", 2)["price"] == 0.08
     assert _live(SUNBURST_EDIT, "medium", "1k", 2)["discounted_price"] == 0.072
     assert _live(SUNBURST_EDIT, "medium", "1k", 0)["price"] == 0.05
     assert _live(SUNBURST_EDIT, "medium", "1k", 0)["discounted_price"] == 0.045
-    assert wavespeed.resolution_from_inputs({"size": "1536*2048"}, ["1k", "2k", "4k"]) == "2k"
-    assert gif_image.documented_usd(SUNBURST_EDIT, "medium", "2k", 2) == 0.13
+    assert wavespeed.resolution_from_inputs({"size": "1536*2048"}, ["1k", "2k", "4k"]) is None
+    assert gif_image.documented_usd(SUNBURST_EDIT, "medium", "1k", 2) == 0.08
+
+
+MAIN_SUBMIT_SHA = "88cbd35874028f0c9f30a33c7f8dbd7fcc91ca3f"
+
+# clothing-swap generate_image shapes used by the parity and main-byte-identical tests
+_PAYLOAD_BASE = {
+    "prompt": "换装",
+    "images": ["https://example.invalid/person.png", "https://example.invalid/garment.png"],
+    "quality": "medium",
+    "ratio": "3:4",
+}
+_PAYLOAD_SHAPES = {
+    "size-only": {"size": "1536*2048"},
+    "width-height": {"width": 1536, "height": 2048},
+    "explicit-2k": {"resolution": "2k"},
+    "explicit-1k": {"resolution": "1k"},
+    "none": {},
+    "explicit-2k-with-size": {"resolution": "2k", "size": "1536*2048"},
+    "explicit-1k-with-wh": {"resolution": "1k", "width": 1536, "height": 2048},
+}
+
+
+def _schema_tier(schema):
+    res = (schema.get("properties") or {}).get("resolution") or {}
+    return res.get("enum") or [], res.get("default")
+
+
+def _effective_tier(payload_or_inputs, schema, *, from_payload=False):
+    enum, default = _schema_tier(schema)
+    if from_payload:
+        return payload_or_inputs.get("resolution") or default
+    return wavespeed.resolution_from_inputs(payload_or_inputs, enum, default) or default
+
+
+def _main_wavespeed():
+    """Load api/wavespeed.py as of main 88cbd358, as a sibling of the current api package.
+
+    JSON catalogs are the current tree's files (symlinked next to the temp module) so
+    model_defaults match; the comparison is the submit logic, not catalog drift.
+    """
+    name = "ComfyArt.api._wavespeed_main_88cbd358"
+    if name in sys.modules and hasattr(sys.modules[name], "build_payload"):
+        return sys.modules[name]
+    src = subprocess.check_output(["git", "show", f"{MAIN_SUBMIT_SHA}:api/wavespeed.py"], cwd=ROOT)
+    tmp = Path(tempfile.mkdtemp(prefix="ws-main-88cbd358-"))
+    path = tmp / "wavespeed.py"
+    path.write_bytes(src)
+    api = ROOT / "api"
+    for fn in ("curated_models.json", "wavespeed_models.json", "model_display.json"):
+        (tmp / fn).symlink_to(api / fn)
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@pytest.mark.parametrize("shape_name", list(_PAYLOAD_SHAPES))
+async def test_quote_tier_matches_build_payload_resolution(shape_name):
+    """Submitted resolution (or schema default when omitted) equals the tier the quote uses."""
+    pinned = skill_pin("clothing-swap")["model"]
+    assert pinned == SUNBURST_EDIT
+    schema = wavespeed._schema(CATALOG[pinned])
+    enum, default = _schema_tier(schema)
+    shape = _PAYLOAD_SHAPES[shape_name]
+    inputs = {**_PAYLOAD_BASE, **shape}
+    payload = await wavespeed.build_payload(None, schema, inputs, pinned)
+    submitted = _effective_tier(payload, schema, from_payload=True)
+    quote_tier = _effective_tier(inputs, schema)
+    assert submitted == quote_tier
+    assert quote_tier == (wavespeed.resolution_from_inputs(inputs, enum, default) or default)
+
+    route_args = {"prompt": "换装", "skill": "clothing-swap",
+                  "refs": ["shape:person", "shape:garment"],
+                  "quality": "medium", "ratio": "3:4", **shape}
+    routed_model, routed = canvas.quote_route("generate_image", route_args)
+    assert routed_model == pinned
+    routed_tier = routed.get("resolution") or default
+    assert routed_tier == submitted
+
+    seen = []
+
+    async def pricer(model, price_inputs):
+        seen.append((model, dict(price_inputs)))
+        return _mock_charged(price_inputs, model)
+
+    quote = await build_quote(
+        [{"text": "换装", "tool": "generate_image", "model": "", "arguments": route_args}],
+        "zh", threshold=0.0, pricer=pricer, models_for=_no_models, router=canvas.quote_route)
+    priced_tier = seen[0][1].get("resolution") or default
+    assert priced_tier == submitted
+    expected_amount = 0.117 if submitted == "2k" else 0.072
+    assert quote is not None and quote.lines[0].amount == expected_amount
+
+
+@pytest.mark.parametrize("shape_name", list(_PAYLOAD_SHAPES))
+async def test_build_payload_byte_identical_to_main_88cbd358(shape_name):
+    """build_payload output is byte-identical to main 88cbd358 (no auto-upgrade from a size string)."""
+    pinned = skill_pin("clothing-swap")["model"]
+    schema = wavespeed._schema(CATALOG[pinned])
+    inputs = {**_PAYLOAD_BASE, **_PAYLOAD_SHAPES[shape_name]}
+    current = await wavespeed.build_payload(None, schema, dict(inputs), pinned)
+    main = await _main_wavespeed().build_payload(None, schema, dict(inputs), pinned)
+    cur_bytes = json.dumps(current, sort_keys=True, separators=(",", ":")).encode()
+    main_bytes = json.dumps(main, sort_keys=True, separators=(",", ":")).encode()
+    assert cur_bytes == main_bytes
+    # size-only / none must not grow a resolution key (WaveSpeed default 1k)
+    if shape_name in ("size-only", "none"):
+        assert "resolution" not in current
