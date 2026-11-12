@@ -745,11 +745,11 @@ SHORTEN_COPY_ID = "yt_shorten_copy"
 SHORTEN_COPY = {
     "zh": {
         "prompt": "横幅上的文字排在安全区内有点长，请缩短后再继续。",
-        "placeholder": "请输入缩短后的频道名、标语和更新信息...",
+        "placeholder": "请输入更短的频道名 / 标语 / 更新行",
     },
     "en": {
         "prompt": "The banner text is a bit long for the safe area. Please shorten it to continue.",
-        "placeholder": "Enter a shorter channel name, tagline and update line...",
+        "placeholder": "Shorter name / tagline / update line",
     },
 }
 # Backward-compatible aliases (zh).
