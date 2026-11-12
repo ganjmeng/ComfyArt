@@ -51,6 +51,13 @@ def _mock_price(inputs: dict, model: str) -> float:
     return _live(model, str(inputs.get("quality") or "medium"), str(inputs.get("resolution") or "1k"), min(n, 2))["price"]
 
 
+def _mock_charged(inputs: dict, model: str) -> float:
+    """What the account is charged (discounted_price). wavespeed.quote returns this for the card."""
+    row = _live(model, str(inputs.get("quality") or "medium"), str(inputs.get("resolution") or "1k"),
+                min(len(inputs.get("images") or []), 2) if not str(model).endswith("/text-to-image") else 0)
+    return row["discounted_price"]
+
+
 async def _no_models(feature):
     return []
 
@@ -228,3 +235,84 @@ async def test_budget_price_of_a_named_call_with_refs_counts_its_references(monk
     p = await provider._price_call("generate_image", {"prompt": "p", "model": FLARE_EDIT, "refs": ["shape:a"]})
     assert seen and seen[-1][1]["images"] == ["ref-1"]
     assert p == _mock_price({"images": ["ref-1"]}, seen[-1][0])
+
+
+async def test_clothing_swap_quote_uses_resolution_tier_and_two_images():
+    """Real paid clothing-swap request: openai/gpt-image-2.6-sunburst/edit, aspect_ratio 3:4,
+    medium quality, 2 input images (person + garment).
+
+    resolution 2k → list $0.13, charged $0.117 = 0.9 x (tier base + $0.015 x images).
+    resolution 1k → list $0.08, charged $0.072 (locks both tier and image count).
+    size '1536*2048' alone, without a resolution field, must not be used to infer the 2k price
+    (price API 2026-11-12 08:50 Asia/Shanghai, /workspace/910-capture/price-probe-clothing-swap-2k.json).
+    """
+    pinned = skill_pin("clothing-swap")["model"]
+    cell = lambda res: gif_image.TABLE_26[("medium", res)]
+    step = gif_image.EDIT_INPUT_USD
+
+    def args_of(*, resolution=None, size=None, width=None, height=None):
+        out = {"prompt": "换装", "skill": "clothing-swap", "refs": ["shape:person", "shape:garment"],
+               "ratio": "3:4", "quality": "medium"}
+        if resolution is not None:
+            out["resolution"] = resolution
+        if size is not None:
+            out["size"] = size
+        if width is not None:
+            out["width"] = width
+        if height is not None:
+            out["height"] = height
+        return out
+
+    async def quoted(args):
+        seen = []
+
+        async def pricer(model, inputs):
+            seen.append((model, dict(inputs)))
+            return _mock_charged(inputs, model)
+
+        quote = await build_quote(
+            [{"text": "换装", "tool": "generate_image", "model": "", "arguments": args}],
+            "zh", threshold=0.0, pricer=pricer, models_for=_no_models, router=canvas.quote_route)
+        return quote, seen
+
+    # --- 2k, 2 images: the real paid body ---
+    model, inputs = canvas.quote_route("generate_image", args_of(resolution="2k"))
+    assert model == pinned == SUNBURST_EDIT
+    assert inputs["resolution"] == "2k" and inputs["images"] == ["ref-1", "ref-2"]
+    list_2k, charged_2k = _live(pinned, "medium", "2k", 2)["price"], _live(pinned, "medium", "2k", 2)["discounted_price"]
+    assert list_2k == gif_image.documented_usd(pinned, "medium", "2k", 2) == round(cell("2k") + step * 2, 4) == 0.13
+    assert charged_2k == round(0.9 * (cell("2k") + step * 2), 6) == 0.117
+    quote, seen = await quoted(args_of(resolution="2k"))
+    assert quote is not None and not quote.lines[0].approx
+    assert seen[0][0] == pinned and seen[0][1]["resolution"] == "2k" and seen[0][1]["images"] == ["ref-1", "ref-2"]
+    assert quote.lines[0].amount == 0.117
+
+    # Product path: apply_generate keeps 1536x2048 and has no resolution key; quote must still
+    # use the submitted 2k tier (long side 2048), not default 1k ($0.045 / $0.072).
+    product = args_of(width=1536, height=2048)
+    assert "resolution" not in product and "size" not in product
+    model, inputs = canvas.quote_route("generate_image", product)
+    assert model == pinned and inputs["resolution"] == "2k" and inputs["images"] == ["ref-1", "ref-2"]
+    quote, seen = await quoted(product)
+    assert seen[0][1]["resolution"] == "2k" and quote.lines[0].amount == 0.117
+
+    # --- 1k, 2 images: locks both tier and image count ---
+    model, inputs = canvas.quote_route("generate_image", args_of(resolution="1k"))
+    assert model == pinned and inputs["resolution"] == "1k" and inputs["images"] == ["ref-1", "ref-2"]
+    list_1k, charged_1k = _live(pinned, "medium", "1k", 2)["price"], _live(pinned, "medium", "1k", 2)["discounted_price"]
+    assert list_1k == gif_image.documented_usd(pinned, "medium", "1k", 2) == round(cell("1k") + step * 2, 4) == 0.08
+    assert charged_1k == round(0.9 * (cell("1k") + step * 2), 6) == 0.072
+    quote, seen = await quoted(args_of(resolution="1k"))
+    assert seen[0][1]["resolution"] == "1k" and seen[0][1]["images"] == ["ref-1", "ref-2"]
+    assert quote.lines[0].amount == 0.072
+
+    # --- size 1536*2048 alone must not infer 2k ---
+    size_only = args_of(size="1536*2048")
+    assert "resolution" not in size_only and "width" not in size_only and "height" not in size_only
+    model, inputs = canvas.quote_route("generate_image", size_only)
+    assert model == pinned and inputs.get("resolution") != "2k" and inputs.get("size") == "1536*2048"
+    assert inputs["images"] == ["ref-1", "ref-2"]
+    quote, seen = await quoted(size_only)
+    assert seen[0][1].get("resolution") != "2k"
+    assert quote.lines[0].amount == 0.072  # 1k default + 2 images, not the 2k $0.117
+    assert gif_image.documented_usd(pinned, "medium", str(inputs.get("resolution") or "1k"), 2) == 0.08

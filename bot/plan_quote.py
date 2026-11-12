@@ -288,7 +288,7 @@ async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
     routed = router(tool, args) if router is not None and not step.get("svg_blocked") else None
     if routed and routed[0]:
         model = routed[0]
-        inputs = {**inputs, **{k: v for k, v in (routed[1] or {}).items() if k in _PRICE_KEYS or k == "images"}}
+        inputs = {**inputs, **{k: v for k, v in (routed[1] or {}).items() if k in _PRICE_KEYS or k in ("images", "width", "height")}}
     approx = False
     show = model
     unit: Optional[float] = None

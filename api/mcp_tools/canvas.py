@@ -503,6 +503,20 @@ def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
         inputs["resolution"] = choice["resolution"]
     if choice.get("ratio"):
         inputs["ratio"] = choice["ratio"]
+    # Clothing-swap (and studio-model) keep canvas width/height (e.g. 1536x2048). build_payload /
+    # _submitted_tier snap that long side to a resolution enum, so the paid body has resolution=2k.
+    # The quote must use that same submitted tier. Do not parse a `size` string such as 1536*2048:
+    # WaveSpeed's price API ignores it, and it must not be used to infer the price.
+    if not inputs.get("resolution"):
+        from ..gif_image import EDIT_25, GIF_EDIT, GIF_T2I, T2I_25
+        if model in GIF_EDIT or model in GIF_T2I or model in EDIT_25 or model in T2I_25:
+            try:
+                w, h = int(clean.get("width")), int(clean.get("height"))
+            except (TypeError, ValueError):
+                w = h = 0
+            if w > 0 and h > 0:
+                from ..wavespeed import _resolution
+                inputs["resolution"] = _resolution(["1k", "2k", "4k"], max(w, h))
     if action == "generate_image":
         refs = ([clean["base"]] if clean.get("base") else []) + [r for r in (clean.get("refs") or []) if r]
         if refs:
