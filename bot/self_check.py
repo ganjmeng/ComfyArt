@@ -34,10 +34,13 @@ class SelfCheck:
     placed_ids: list = field(default_factory=list)
     cancelled: bool = False      # the user declined the paid confirm: nothing to check against
     canvas_checked: bool = False  # placed shapes were verified against a live get_canvas read
+    # A tool asked the user for input instead of generating (status needs_input, nothing submitted,
+    # e.g. portrait-studio without a reference photo): the turn waits for the user, nothing to check yet.
+    awaiting_input: bool = False
 
     @property
     def applies(self) -> bool:
-        return self.goal is not None and not self.cancelled
+        return self.goal is not None and not self.cancelled and not self.awaiting_input
 
     @property
     def passed(self) -> bool:
@@ -56,6 +59,8 @@ class SelfCheck:
             return {"self_check": "skip"}
         if self.cancelled:
             return {"self_check": "skip", "reason": "user_cancelled"}
+        if self.awaiting_input:
+            return {"self_check": "skip", "reason": "awaiting_input"}
         return {"self_check": "pass" if self.passed else "fail", "kind": self.goal.kind,
                 "expected": self.goal.count, "generated": self.generated, "placed": self.placed,
                 "missing": self.missing, "placed_ids": list(self.placed_ids)}
@@ -112,6 +117,8 @@ def check(goal_text: str, blocks: list[dict], canvas_ids: Optional[set] = None) 
         if isinstance(data, dict) and name != "wait_generation" and \
                 (data.get("cancelled") is True or data.get("status") == "declined"):
             sc.cancelled = True
+        if isinstance(data, dict) and data.get("status") == "needs_input" and data.get("submitted") is False:
+            sc.awaiting_input = True
         if b.get("status") in ("error", "cancelled"):
             continue
         if not isinstance(data, dict):

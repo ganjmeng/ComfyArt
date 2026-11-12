@@ -38,6 +38,10 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
             blocked_gif = still_block(ensure_gif_args(dict(args)))
             if blocked_gif is not None:
                 return blocked_gif
+            # portrait-studio (Lovart 7fc60c86): no reference photo -> ask for one; no approval, no submit.
+            from .. import portrait_studio
+            if portrait_studio.missing_reference(args):
+                return portrait_studio.needs_reference_result()
         fallback_for = str(args.pop("fallback_for", "") or "")
         if approval:
             label = str(args.get("prompt") or args.get("to") or "")[:80]
