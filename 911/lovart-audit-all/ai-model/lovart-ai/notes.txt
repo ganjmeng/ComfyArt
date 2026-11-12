@@ -9,7 +9,7 @@ Skill id: 2nos12pl80zk
 Skill title (on screen, exact): AI Model Customization Generator
 Skill author (on screen, exact): 古猫
 Site: www.lovart.ai (international). Did not use lovart.art.
-Account: Jingmeng Han (already signed in). Did not change account settings.
+Account: [account redacted] (already signed in). Did not change account settings.
 Did not click Recent Projects. Did not start a second generation, variants, upscale, or top-up.
 
 User message (typed exactly, no reference image, no extra text):
