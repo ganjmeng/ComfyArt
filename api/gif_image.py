@@ -17,8 +17,13 @@ SUNBURST_T2I = "openai/gpt-image-2.6-sunburst/text-to-image"
 FLARE_EDIT = "openai/gpt-image-2.6-flare/edit"
 SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
 FLARE_25_T2I = "openai/gpt-image-2.5-flare/text-to-image"
+SUNBURST_25_T2I = "openai/gpt-image-2.5-sunburst/text-to-image"
+FLARE_25_EDIT = "openai/gpt-image-2.5-flare/edit"
+SUNBURST_25_EDIT = "openai/gpt-image-2.5-sunburst/edit"
 GIF_T2I = (FLARE_T2I, SUNBURST_T2I)
 GIF_EDIT = (FLARE_EDIT, SUNBURST_EDIT)
+T2I_25 = (FLARE_25_T2I, SUNBURST_25_T2I)
+EDIT_25 = (FLARE_25_EDIT, SUNBURST_25_EDIT)
 
 # (min, max, default). Docs: frame_count 2–16 default 9; frame_duration_ms 20–2000 default 200.
 FRAME_COUNT = (2, 16, 9)
@@ -41,6 +46,28 @@ TABLE_26 = {
     ("xhigh", "1k"): 0.11, ("xhigh", "2k"): 0.21, ("xhigh", "4k"): 0.38,
     ("max", "1k"): 0.25, ("max", "2k"): 0.47, ("max", "4k"): 0.85,
 }
+
+# Published 2.5 text-to-image table (quality, resolution) -> USD. Same for flare and sunburst.
+# https://wavespeed.ai/models/openai/gpt-image-2.5-flare/text-to-image
+# Re-measured 2026-11-12 08:27:29-08:28:25 Asia/Shanghai against WaveSpeed's free POST /api/v3/model/price
+# (no prediction; balance 29.848866 before and after). Every cell matched the published table.
+# STILL_MEDIUM_1K for openai/gpt-image-2.5-flare/text-to-image stays 0.024 (unchanged).
+TABLE_25 = {
+    ("low", "1k"): 0.01, ("low", "2k"): 0.02, ("low", "4k"): 0.03,
+    ("medium", "1k"): 0.024, ("medium", "2k"): 0.04, ("medium", "4k"): 0.07,
+    ("high", "1k"): 0.09, ("high", "2k"): 0.15, ("high", "4k"): 0.27,
+    ("xhigh", "1k"): 0.16, ("xhigh", "2k"): 0.27, ("xhigh", "4k"): 0.48,
+    ("max", "1k"): 0.36, ("max", "2k"): 0.60, ("max", "4k"): 1.00,
+}
+
+# #910: a 2.6 or 2.5 edit model prices the same (quality, resolution) cell plus $0.015 for every input image
+# the request carries. 2.6 (checked 2026-11-12 08:05-08:07 Asia/Shanghai): each `images` entry, and a
+# mask_image or markup_image, on openai/gpt-image-2.6-flare/edit and openai/gpt-image-2.6-sunburst/edit
+# (catalog base_price $0.065 is medium 1k with one image). 2.5 (re-measured 2026-11-12 08:27:29-08:28:25
+# Asia/Shanghai): each `images` entry and a mask_image, on openai/gpt-image-2.5-flare/edit and
+# openai/gpt-image-2.5-sunburst/edit (catalog base_price $0.039 is medium 1k with one image). Sending
+# markup_image did not change the 2.5 price (the 2.5 edit schema has no markup_image field).
+EDIT_INPUT_USD = 0.015
 
 # Fields sent to the price API. Frame timing is shown on the confirm line and then dropped so it cannot be billed.
 UNBILLED = ("frame_count", "frame_duration_ms")
@@ -291,17 +318,27 @@ def billable(priced: dict) -> dict:
     return {k: v for k, v in priced.items() if k not in UNBILLED}
 
 
-def documented_usd(model: str, quality: str = "medium", resolution: str = "1k") -> float | None:
+def documented_usd(model: str, quality: str = "medium", resolution: str = "1k", inputs: int = 0) -> float | None:
     """Published still price for the quote stub. None when this cell is not in the lock table.
 
     GIF uses the same number. Callers must not multiply by frame_count.
+    #910: a 2.6 or 2.5 edit model is its cell plus EDIT_INPUT_USD per input image.
+    For 2.6, `inputs` is images + mask_image + markup_image. For 2.5, `inputs` is images + mask_image
+    (markup_image is not billed).
     """
     q = str(quality or "medium").lower()
     res = str(resolution or "1k").lower()
-    if model == FLARE_25_T2I and q == "medium" and res == "1k":
-        return STILL_MEDIUM_1K[FLARE_25_T2I]
+    n = inputs if isinstance(inputs, int) and not isinstance(inputs, bool) and inputs > 0 else 0
+    if model in T2I_25:
+        return TABLE_25.get((q, res))
+    if model in EDIT_25:
+        cell = TABLE_25.get((q, res))
+        return None if cell is None else round(cell + EDIT_INPUT_USD * n, 4)
     if model in GIF_T2I:
         return TABLE_26.get((q, res))
+    if model in GIF_EDIT:
+        cell = TABLE_26.get((q, res))
+        return None if cell is None else round(cell + EDIT_INPUT_USD * n, 4)
     return None
 
 

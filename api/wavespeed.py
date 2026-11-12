@@ -818,6 +818,41 @@ def _resolution(options: list[str], long_side: int) -> str:
     return min(fits, key=px) if fits else max(options, key=px)
 
 
+def canvas_pixels(inputs: dict) -> tuple[int, int] | None:
+    """Pixel width and height from `width`+`height` only — same as build_payload on main.
+
+    A size string such as 1536*2048 is not parsed; WaveSpeed then runs its schema default (1k).
+    """
+    w, h = inputs.get("width"), inputs.get("height")
+    if not (w and h):
+        return None
+    try:
+        w, h = int(w), int(h)
+    except (TypeError, ValueError):
+        return None
+    return (w, h) if w and h else None
+
+
+def resolution_from_inputs(inputs: dict, enum, default=None) -> str | None:
+    """The resolution build_payload will submit, and the one the quote must use.
+
+    Reproduces main (88cbd358) submit behavior: an explicit `resolution` is snapped
+    with `_pick` and wins (#708). Otherwise the long edge of width/height is snapped
+    with `_resolution`. A size string is not used. None when neither applies
+    (caller may apply the schema default — the payload omits the key, WaveSpeed runs 1k).
+    """
+    options = [str(v) for v in (enum or [])]
+    if not options:
+        return None
+    asked = inputs.get("resolution")
+    if asked is not None and str(asked) != "":
+        return _pick(options, asked, default)
+    pixels = canvas_pixels(inputs)
+    if pixels:
+        return _resolution(options, max(pixels))
+    return None
+
+
 MEDIA_FIELDS = ("video", "audio", "last_image")
 MEDIA_LISTS = ("reference_images", "reference_videos", "reference_audios")
 
@@ -1068,17 +1103,18 @@ async def build_payload(session: aiohttp.ClientSession, schema: dict, inputs: di
         if not path:
             raise WaveSpeedError("mask file not found", 400)
         payload["mask_image"] = await _upload(session, path, mask_to_white(_read(path)), f"mask-{uuid.uuid4().hex[:8]}.png")
-    w, h = inputs.get("width"), inputs.get("height")
-    if w and h:
+    pixels = canvas_pixels(inputs)
+    if pixels:
+        w, h = pixels
         if "size" in props and submits_size_field(props.get("size"), model):
             payload["size"] = _size_value(props["size"], int(w), int(h))
         if props.get("aspect_ratio", {}).get("enum"):
             payload["aspect_ratio"] = _nearest(props["aspect_ratio"]["enum"], w / h)
-        if props.get("resolution", {}).get("enum"):
-            payload["resolution"] = _resolution(props["resolution"]["enum"], max(int(w), int(h)))
-    if inputs.get("resolution") and str(inputs["resolution"]) in (props.get("resolution", {}).get("enum") or []):
-        payload["resolution"] = str(inputs["resolution"])  # #708: an explicit tier (skill pin) wins over the size guess
-    if not (w and h) and inputs.get("ratio") and props.get("aspect_ratio", {}).get("enum"):
+    res_enum = (props.get("resolution") or {}).get("enum")
+    tier = resolution_from_inputs(inputs, res_enum)
+    if tier:
+        payload["resolution"] = tier  # explicit in-enum value wins over the long-edge snap (#708)
+    if not pixels and inputs.get("ratio") and props.get("aspect_ratio", {}).get("enum"):
         a, b = str(inputs["ratio"]).split(":")
         payload["aspect_ratio"] = _nearest(props["aspect_ratio"]["enum"], float(a) / float(b))
     await _media_fields(session, props, inputs, payload)
@@ -1274,21 +1310,21 @@ def _submitted_tier(props: dict, inputs: dict, priced: dict) -> dict:
     out = dict(priced)
     if "duration" in out and (enum := (props.get("duration") or {}).get("enum")):
         out["duration"] = fit_duration(enum, out["duration"])  # #128
-    w, h = inputs.get("width"), inputs.get("height")
+    merged = {**inputs, **out}
+    pixels = canvas_pixels(merged)
     res_enum = (props.get("resolution") or {}).get("enum")
     ar_enum = (props.get("aspect_ratio") or {}).get("enum")
     if res_enum:
         res_default = (props.get("resolution") or {}).get("default")
-        if out.get("resolution"):
-            out["resolution"] = _pick(res_enum, out["resolution"], res_default)
-        elif w and h:
-            out["resolution"] = _resolution(res_enum, max(int(w), int(h)))
+        tier = resolution_from_inputs(merged, res_enum, res_default)
+        if tier:
+            out["resolution"] = tier
         elif res_default in res_enum:
             out["resolution"] = res_default  # not sent: WaveSpeed runs its schema default, so that is the tier
     if ar_enum:
         try:
-            if w and h:
-                out["aspect_ratio"] = _nearest(ar_enum, int(w) / int(h))
+            if pixels:
+                out["aspect_ratio"] = _nearest(ar_enum, pixels[0] / pixels[1])
             elif out.get("aspect_ratio") and ":" in str(out["aspect_ratio"]):
                 a, b = str(out["aspect_ratio"]).split(":")
                 out["aspect_ratio"] = _nearest(ar_enum, float(a) / float(b))
@@ -1387,6 +1423,10 @@ async def priced_inputs(model: str, inputs: dict) -> dict:
         # #192: WaveSpeed prices image edits by the number of reference images (sunburst +$0.015 per extra image; the
         # free price API only counts them, verified with placeholder strings), so quote the count build_payload submits
         out["images"] = [f"ref-{i + 1}" for i in range(n)]
+    if inputs.get("mask") and "mask_image" in props:
+        # #910: build_payload submits the mask as mask_image, and WaveSpeed prices it like one more input image
+        # (2.6 edit: +$0.015, price API 2026-11-12), so the quote carries it too (a placeholder; only presence counts)
+        out["mask_image"] = "mask-1"
     if model in DURATION_BILLED and "duration" not in props:
         out["duration"] = media_seconds(inputs) or DURATION_FALLBACK_S  # #185: pricing only
     if props and (loras := lora_payload(props, inputs)):
@@ -1439,12 +1479,14 @@ async def _quote(model: str, inputs: dict) -> tuple[float | None, str]:
             return float(price), "quote"
     except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
         pass
-    if model in gif_image.GIF_T2I:
-        # Published 2.6 table when the price API is down. GIF uses the still cell; frames are not a multiplier.
-        # Unset quality/resolution are the schema defaults (medium / 1k), which #189 also leaves unpinned.
-        stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"))
-        if stub is not None:
-            return float(stub), "estimate"
+    # Published GPT Image 2.6 / 2.5 table when the price API is down. GIF uses the still cell; frames are
+    # not a multiplier. Unset quality/resolution are the schema defaults (medium / 1k), which #189 also
+    # leaves unpinned. #910: an edit adds $0.015 per input image (images + mask_image), not the catalog's
+    # one-image base_price. documented_usd returns None for models with no lock table.
+    n = len(priced.get("images") or []) + (1 if priced.get("mask_image") else 0)
+    stub = gif_image.documented_usd(model, str(priced.get("quality") or "medium"), str(priced.get("resolution") or "1k"), n)
+    if stub is not None:
+        return float(stub), "estimate"
     meta = (await catalog()).get(model) or {}
     base = base_price_of(model, meta)
     if model in DURATION_BILLED and isinstance(base, (int, float)) and not isinstance(base, bool) and priced.get("duration"):
@@ -1864,6 +1906,11 @@ async def submit(inputs: dict) -> str:
         except (TypeError, ValueError):
             w = h = 0
         _jobs[task]["expect_pixels"] = (w, h) if w > 0 and h > 0 else None
+        # P1 hotfix (#911): Sunburst cannot take exact pixels. A ratio-mode lock (set by the
+        # Sunburst skill pins) checks ratio <= 1% and long side >= target instead.
+        from .skill_size import RATIO_MODE, is_sunburst
+        if inputs.get("size_lock_mode") == RATIO_MODE and is_sunburst(model):
+            _jobs[task]["size_mode"] = RATIO_MODE
     log.info("WaveSpeed task %s submitted (%s)", task, model)
     await _record_submit_usage(task, model, feature, inputs)  # #498 Usage ledger (submit quote)
     return task
@@ -2444,16 +2491,19 @@ def _audit_locked_files(job: dict, refs: list) -> dict | None:
     """
     if not job.get("size_lock"):
         return None
-    from .skill_size import audit_file, size_reject
+    from .skill_size import audit_file, size_notice, size_reject
 
     expect = job.get("expect_pixels")
     if not (isinstance(expect, (list, tuple)) and len(expect) == 2 and int(expect[0]) > 0 and int(expect[1]) > 0):
+        n = size_notice(None, None)
         return {"match": False, "requested": None, "provider_output": None, "delivered": None, "read_error": True,
-                "error": "没有通过：尺寸已锁定，但没有可核对的宽高。没有拉伸，没有重试，没有换模型。 / Not accepted: size was locked but there was no pixel size to check. It was not stretched, retried, or sent to another model."}
+                "error": f"{n['zh']} / {n['en']}",
+                "notice": n}
     requested = (int(expect[0]), int(expect[1]))
+    mode = str(job.get("size_mode") or "")
     measured = None
     for ref in refs:
-        audit = audit_file(_ref_bytes(ref) if isinstance(ref, dict) else b"", requested)
+        audit = audit_file(_ref_bytes(ref) if isinstance(ref, dict) else b"", requested, mode)
         if isinstance(ref, dict) and audit.get("provider_output"):
             ref["metadata"] = {"width": audit["provider_output"]["width"], "height": audit["provider_output"]["height"]}
         if not audit["match"]:
@@ -2461,7 +2511,8 @@ def _audit_locked_files(job: dict, refs: list) -> dict | None:
         measured = audit
     if measured is None:
         return {"match": False, "requested": {"width": requested[0], "height": requested[1]},
-                "provider_output": None, "delivered": None, "read_error": True, "error": size_reject(requested, None)}
+                "provider_output": None, "delivered": None, "read_error": True, "error": size_reject(requested, None),
+                "notice": size_notice(requested, None, mode)}
     return measured
 
 
@@ -2498,17 +2549,25 @@ async def _poll_once(task: str, job: dict, now: float) -> dict:
                                               502, kind="noOutput", charged=cost))
         # CDN URLs expire after 7 days: keep a local copy right away
         refs = [await _download(session, task, i, url) for i, url in enumerate(outputs) if isinstance(url, str)]
-    # #707: a size lock is accepted only when the saved file's pixels match. No stretch, crop, or second submit.
+    # #707: the saved file's pixels are checked against the lock. No stretch, crop, or second submit.
+    # P1 hotfix (#911): the job completed, so it was charged. A failed size check never drops the
+    # image: it is delivered as returned, logged, and carries a zh/en size_notice for the user.
     audit = _audit_locked_files(job, refs)
-    if audit is not None and not audit.get("match"):
-        return _fail(task, WaveSpeedError(str(audit.get("error") or "没有通过：尺寸核对失败。没有拉伸，没有重试，没有换模型。 / Not accepted: the size check failed. It was not stretched, retried, or sent to another model.")))
     job["done"] = True
     job["result"] = _history(task, "completed", [], {"ws": {"images": refs}})
-    if audit is not None and audit.get("match"):
+    if audit is not None:
         entry = job["result"][f"ws:{task}"]
-        entry["requested_size"] = audit["requested"]
-        entry["provider_output"] = audit["provider_output"]
-        entry["delivered_size"] = audit["delivered"]
+        entry["requested_size"] = audit.get("requested")
+        entry["provider_output"] = audit.get("provider_output")
+        entry["delivered_size"] = audit.get("delivered")
+        entry["size_check"] = {"match": bool(audit.get("match")), "mode": audit.get("mode") or "exact",
+                               **({"ratio_error_pct": audit["ratio_error_pct"]} if "ratio_error_pct" in audit else {})}
+        if not audit.get("match"):
+            from .skill_size import size_notice
+            entry["size_notice"] = audit.get("notice") or size_notice(None, None)
+            log.warning("P1 size check failed for charged task %s (model=%s, requested=%s, provider=%s, mode=%s); "
+                        "delivered as returned: %s", task, job.get("model"), audit.get("requested"),
+                        audit.get("provider_output"), audit.get("mode") or "exact", audit.get("error"))
     if job.get("model"):
         gen_ledger.mark_succeeded(task, len(refs))
     log.info("WaveSpeed task %s completed (%d output%s)", task, len(refs), "" if len(refs) == 1 else "s")

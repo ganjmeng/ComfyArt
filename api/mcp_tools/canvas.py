@@ -394,8 +394,23 @@ def _exact_skill_pin(args: dict) -> dict | None:
 # #920: pins whose run keeps the canvas apply_generate set (width/height/size_lock).
 # clothing-swap follows image 1 (e.g. 3:4 1536×2048); studio-model keeps the
 # 3:4 1536×2048 canvas it had while unpinned on main d3f5ca4b. Every other pin
-# (ai-model, pose-fission) keeps the d3f5ca4b behavior: size keys are dropped.
+# (ai-model, pose-fission, product-to-packaging, cover-design-director,
+# youtube-channel-banner, portrait-studio) keeps the d3f5ca4b drop of incoming size keys.
+# product-to-packaging, cover-design-director, youtube-channel-banner, and
+# portrait-studio are intentionally not in this set; they still get the
+# ratio-only 2k fill below after those keys are dropped.
 _PIN_KEEPS_SIZE = frozenset({"clothing-swap", "studio-model"})
+
+# Ratio-only 2k fill (no width/height/resolution): studio-model, product-to-packaging,
+# cover-design-director, youtube-channel-banner, and portrait-studio. Sunburst has no
+# size/width/height params, only aspect_ratio + resolution (1k/2k/4k). Fill
+# edit_resolution 2k and keep the given ratio (portrait-studio's pin also names
+# ratio 3:4). Do not invent exact pixels: 2k 3:4 natively outputs 1664×2224, not
+# 1536×2048. Explicit width/height/resolution are left untouched.
+_RATIO_ONLY_2K_SKILLS = frozenset({
+    "studio-model", "product-to-packaging", "cover-design-director",
+    "youtube-channel-banner", "portrait-studio",
+})
 
 
 def _pin_args(args: dict, choice: dict) -> dict:
@@ -417,6 +432,26 @@ def _pin_args(args: dict, choice: dict) -> dict:
         args["edit_resolution"] = choice["resolution"]
     if choice.get("ratio"):
         args["ratio"] = choice["ratio"]
+    # Ratio-only studio-model / product-to-packaging / cover-design-director /
+    # youtube-channel-banner / portrait-studio (no width/height/resolution):
+    # fill resolution 2k and keep the given aspect ratio (portrait-studio's
+    # pin already names resolution 2k and ratio 3:4). Sunburst is submitted as
+    # resolution + aspect_ratio, not exact pixels. An explicit size or
+    # resolution is left untouched. Other skills are not filled.
+    if (
+        str(choice.get("skill") or "") in _RATIO_ONLY_2K_SKILLS
+        and args.get("ratio")
+        and not (args.get("width") or args.get("height")
+                 or args.get("resolution") or args.get("edit_resolution"))
+    ):
+        args["edit_resolution"] = "2k"
+    # P1 hotfix (#911): a Sunburst pin cannot submit exact pixels (only aspect_ratio + 1k/2k/4k),
+    # so its size lock is checked as ratio <= 1% and long side >= target, not exact pixels.
+    from ..skill_size import RATIO_MODE, is_sunburst
+    if keeps and args.get("size_lock") and is_sunburst(args.get("edit_model") or args.get("model")):
+        args["size_lock_mode"] = RATIO_MODE
+    else:
+        args.pop("size_lock_mode", None)
     return args
 
 
@@ -489,6 +524,46 @@ def select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict
 def _auto_choice(action: str, args: dict, catalog: dict | None = None, cfg: dict | None = None) -> dict | None:
     """Compatibility wrapper. Every pick goes through select_model."""
     return select_model(action, args, catalog=catalog, cfg=cfg)
+
+
+def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
+    """#910: the model a paid call will actually run on and the inputs to price it with, so a quote card names and
+    prices the routed model (not the dearest model of the feature). Same pick as the tool: an unregistered model
+    falls back to Auto (#734), refs/base run on image_edit, a skill pin brings its resolution/ratio. The references
+    are counted as `images` (base first, then refs, as src/generate.ts sends them): WaveSpeed prices every input
+    image of a 2.6 edit (+$0.015 each). None when the call is refused or no model can be picked."""
+    if not isinstance(args, dict):
+        return None
+    clean = dict(args)
+    if unregistered_model(action, clean):
+        clean = {k: v for k, v in clean.items() if k not in ("model", "auto_model")}
+    choice = select_model(action, clean) or {}
+    if choice.get("block") or choice.get("svg_error"):
+        return None
+    model = str(choice.get("edit_model") or choice.get("model") or "")
+    if not model:
+        return None
+    inputs = {k: v for k, v in clean.items() if k not in ("refs", "base", "ref_modes", "model", "auto_model", "edit_model")}
+    if choice.get("resolution"):
+        inputs["resolution"] = choice["resolution"]
+    if choice.get("ratio"):
+        inputs["ratio"] = choice["ratio"]
+    # Clothing-swap (and studio-model) keep canvas width/height (e.g. 1536x2048).
+    # build_payload snaps that long edge via resolution_from_inputs (same as main);
+    # a size string such as 1536*2048 is not used to infer a tier (WaveSpeed default 1k).
+    # The quote uses that same function (no duplicate snap).
+    if not inputs.get("resolution"):
+        from ..gif_image import EDIT_25, GIF_EDIT, GIF_T2I, T2I_25
+        if model in GIF_EDIT or model in GIF_T2I or model in EDIT_25 or model in T2I_25:
+            from ..wavespeed import resolution_from_inputs
+            tier = resolution_from_inputs(inputs, ["1k", "2k", "4k"])
+            if tier:
+                inputs["resolution"] = tier
+    if action == "generate_image":
+        refs = ([clean["base"]] if clean.get("base") else []) + [r for r in (clean.get("refs") or []) if r]
+        if refs:
+            inputs["images"] = [f"ref-{i + 1}" for i in range(len(refs))]
+    return model, inputs
 
 
 def _auto_table_choice(action: str, args: dict, cfg: dict | None = None) -> dict | None:

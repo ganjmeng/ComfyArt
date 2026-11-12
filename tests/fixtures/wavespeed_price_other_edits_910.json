@@ -1,0 +1,1282 @@
+{
+ "_comment": "#910: WaveSpeed POST https://api.wavespeed.ai/api/v3/model/price (free, no prediction), 2026-11-12 08:27:29-08:28:25 Asia/Shanghai. Balance unchanged (29.848866 before and after). Other edit models referenced on gif_image / canvas quote paths (api/wavespeed_models.json features.image_edit and api/auto_models.json pins). price = list USD; discounted_price = charged (discount_rate 90 or 100 as recorded). Recorded only; #921 does not add a price-API-down table for these models.",
+ "balance_before": 29.848866,
+ "balance_after": 29.848866,
+ "ts_start": "2026-11-12T08:27:29.432900+08:00",
+ "ts_end": "2026-11-12T08:28:25.683649+08:00",
+ "rows": [
+  {
+   "model_id": "alibaba/qwen-image-3.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k"
+   },
+   "images": 0,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit default"
+  },
+  {
+   "model_id": "alibaba/qwen-image-3.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.033,
+   "discounted_price": 0.033,
+   "discount_rate": 100,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit default"
+  },
+  {
+   "model_id": "alibaba/qwen-image-3.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.036,
+   "discounted_price": 0.036,
+   "discount_rate": 100,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit default"
+  },
+  {
+   "model_id": "alibaba/qwen-image-3.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1",
+     "ref-2",
+     "ref-3"
+    ]
+   },
+   "images": 3,
+   "price": 0.039,
+   "discounted_price": 0.039,
+   "discount_rate": 100,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit default"
+  },
+  {
+   "model_id": "alibaba/qwen-image-3.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k"
+   },
+   "images": 0,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit default"
+  },
+  {
+   "model_id": "alibaba/qwen-image-3.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.033,
+   "discounted_price": 0.033,
+   "discount_rate": 100,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit default"
+  },
+  {
+   "model_id": "alibaba/qwen-image-3.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.036,
+   "discounted_price": 0.036,
+   "discount_rate": 100,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit default"
+  },
+  {
+   "model_id": "alibaba/qwen-image-3.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1",
+     "ref-2",
+     "ref-3"
+    ]
+   },
+   "images": 3,
+   "price": 0.039,
+   "discounted_price": 0.039,
+   "discount_rate": 100,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit default"
+  },
+  {
+   "model_id": "alibaba/qwen-image-3.0/edit",
+   "group": "other-edit-default",
+   "inputs": {},
+   "images": 0,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit default"
+  },
+  {
+   "model_id": "alibaba/qwen-image-3.0/edit",
+   "group": "other-edit-mask",
+   "inputs": {
+    "images": [
+     "ref-1"
+    ],
+    "mask_image": "mask-1"
+   },
+   "images": 1,
+   "price": 0.033,
+   "discounted_price": 0.033,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit default",
+   "mask_image": true
+  },
+  {
+   "model_id": "wavespeed-ai/qwen-image-2.0/edit",
+   "group": "other-edit",
+   "inputs": {},
+   "images": 0,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "wavespeed-ai/qwen-image-2.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "wavespeed-ai/qwen-image-2.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "wavespeed-ai/qwen-image-2.0/edit",
+   "group": "other-edit",
+   "inputs": {
+    "images": [
+     "ref-1",
+     "ref-2",
+     "ref-3"
+    ]
+   },
+   "images": 3,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "wavespeed-ai/qwen-image-2.0/edit",
+   "group": "other-edit-default",
+   "inputs": {},
+   "images": 0,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "wavespeed-ai/qwen-image-2.0/edit",
+   "group": "other-edit-mask",
+   "inputs": {
+    "images": [
+     "ref-1"
+    ],
+    "mask_image": "mask-1"
+   },
+   "images": 1,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit",
+   "mask_image": true
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k"
+   },
+   "images": 0,
+   "price": 0.04,
+   "discounted_price": 0.036,
+   "discount_rate": 90,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.042,
+   "discounted_price": 0.0378,
+   "discount_rate": 90,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.044,
+   "discounted_price": 0.0396,
+   "discount_rate": 90,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k"
+   },
+   "images": 0,
+   "price": 0.06,
+   "discounted_price": 0.054,
+   "discount_rate": 90,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.062,
+   "discounted_price": 0.0558,
+   "discount_rate": 90,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.064,
+   "discounted_price": 0.0576,
+   "discount_rate": 90,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "4k"
+   },
+   "images": 0,
+   "price": 0.135,
+   "discounted_price": 0.1215,
+   "discount_rate": 90,
+   "resolution": "4k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "4k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.137,
+   "discounted_price": 0.1233,
+   "discount_rate": 90,
+   "resolution": "4k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "4k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.139,
+   "discounted_price": 0.1251,
+   "discount_rate": 90,
+   "resolution": "4k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit-default",
+   "inputs": {},
+   "images": 0,
+   "price": 0.04,
+   "discounted_price": 0.036,
+   "discount_rate": 90,
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "google/nano-banana-2.1/edit",
+   "group": "other-edit-mask",
+   "inputs": {
+    "images": [
+     "ref-1"
+    ],
+    "mask_image": "mask-1"
+   },
+   "images": 1,
+   "price": 0.042,
+   "discounted_price": 0.0378,
+   "discount_rate": 90,
+   "source": "wavespeed_models.json features.image_edit + auto_models.json",
+   "mask_image": true
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k"
+   },
+   "images": 0,
+   "price": 0.14,
+   "discounted_price": 0.126,
+   "discount_rate": 90,
+   "resolution": "1k",
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)"
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.14,
+   "discounted_price": 0.126,
+   "discount_rate": 90,
+   "resolution": "1k",
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)"
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.14,
+   "discounted_price": 0.126,
+   "discount_rate": 90,
+   "resolution": "1k",
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)"
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k"
+   },
+   "images": 0,
+   "price": 0.14,
+   "discounted_price": 0.126,
+   "discount_rate": 90,
+   "resolution": "2k",
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)"
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.14,
+   "discounted_price": 0.126,
+   "discount_rate": 90,
+   "resolution": "2k",
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)"
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.14,
+   "discounted_price": 0.126,
+   "discount_rate": 90,
+   "resolution": "2k",
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)"
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "4k"
+   },
+   "images": 0,
+   "price": 0.24,
+   "discounted_price": 0.216,
+   "discount_rate": 90,
+   "resolution": "4k",
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)"
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "4k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.24,
+   "discounted_price": 0.216,
+   "discount_rate": 90,
+   "resolution": "4k",
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)"
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "4k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.24,
+   "discounted_price": 0.216,
+   "discount_rate": 90,
+   "resolution": "4k",
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)"
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit-default",
+   "inputs": {},
+   "images": 0,
+   "price": 0.14,
+   "discounted_price": 0.126,
+   "discount_rate": 90,
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)"
+  },
+  {
+   "model_id": "google/nano-banana-pro/edit",
+   "group": "other-edit-mask",
+   "inputs": {
+    "images": [
+     "ref-1"
+    ],
+    "mask_image": "mask-1"
+   },
+   "images": 1,
+   "price": 0.14,
+   "discounted_price": 0.126,
+   "discount_rate": 90,
+   "source": "auto_models.json (canvas quote_route multi-ref / dearest)",
+   "mask_image": true
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k"
+   },
+   "images": 0,
+   "price": 0.045,
+   "discounted_price": 0.0405,
+   "discount_rate": 90,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.045,
+   "discounted_price": 0.0405,
+   "discount_rate": 90,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.048,
+   "discounted_price": 0.0432,
+   "discount_rate": 90,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1.5k"
+   },
+   "images": 0,
+   "price": 0.045,
+   "discounted_price": 0.0405,
+   "discount_rate": 90,
+   "resolution": "1.5k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1.5k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.045,
+   "discounted_price": 0.0405,
+   "discount_rate": 90,
+   "resolution": "1.5k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1.5k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.048,
+   "discounted_price": 0.0432,
+   "discount_rate": 90,
+   "resolution": "1.5k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k"
+   },
+   "images": 0,
+   "price": 0.09,
+   "discounted_price": 0.081,
+   "discount_rate": 90,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.09,
+   "discounted_price": 0.081,
+   "discount_rate": 90,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.093,
+   "discounted_price": 0.0837,
+   "discount_rate": 90,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit-default",
+   "inputs": {},
+   "images": 0,
+   "price": 0.045,
+   "discounted_price": 0.0405,
+   "discount_rate": 90,
+   "source": "wavespeed_models.json features.image_edit + auto_models.json"
+  },
+  {
+   "model_id": "bytedance/seedream-v5.0-pro/edit",
+   "group": "other-edit-mask",
+   "inputs": {
+    "images": [
+     "ref-1"
+    ],
+    "mask_image": "mask-1"
+   },
+   "images": 1,
+   "price": 0.045,
+   "discounted_price": 0.0405,
+   "discount_rate": 90,
+   "source": "wavespeed_models.json features.image_edit + auto_models.json",
+   "mask_image": true
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k"
+   },
+   "images": 0,
+   "price": 0.048,
+   "discounted_price": 0.048,
+   "discount_rate": 100,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.048,
+   "discounted_price": 0.048,
+   "discount_rate": 100,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "1k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.048,
+   "discounted_price": 0.048,
+   "discount_rate": 100,
+   "resolution": "1k",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k"
+   },
+   "images": 0,
+   "price": 0.1,
+   "discounted_price": 0.1,
+   "discount_rate": 100,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.1,
+   "discounted_price": 0.1,
+   "discount_rate": 100,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "2k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.1,
+   "discounted_price": 0.1,
+   "discount_rate": 100,
+   "resolution": "2k",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "4k"
+   },
+   "images": 0,
+   "price": 0.607,
+   "discounted_price": 0.607,
+   "discount_rate": 100,
+   "resolution": "4k",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "4k",
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.607,
+   "discounted_price": 0.607,
+   "discount_rate": 100,
+   "resolution": "4k",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit",
+   "inputs": {
+    "resolution": "4k",
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.607,
+   "discounted_price": 0.607,
+   "discount_rate": 100,
+   "resolution": "4k",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit-default",
+   "inputs": {},
+   "images": 0,
+   "price": 0.048,
+   "discounted_price": 0.048,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "black-forest-labs/flux-3/image-edit",
+   "group": "other-edit-mask",
+   "inputs": {
+    "images": [
+     "ref-1"
+    ],
+    "mask_image": "mask-1"
+   },
+   "images": 1,
+   "price": 0.048,
+   "discounted_price": 0.048,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit",
+   "mask_image": true
+  },
+  {
+   "model_id": "wavespeed-ai/flux-2-klein-9b/edit",
+   "group": "other-edit",
+   "inputs": {},
+   "images": 0,
+   "price": 0.016,
+   "discounted_price": 0.016,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "wavespeed-ai/flux-2-klein-9b/edit",
+   "group": "other-edit",
+   "inputs": {
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.016,
+   "discounted_price": 0.016,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "wavespeed-ai/flux-2-klein-9b/edit",
+   "group": "other-edit",
+   "inputs": {
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.016,
+   "discounted_price": 0.016,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "wavespeed-ai/flux-2-klein-9b/edit",
+   "group": "other-edit",
+   "inputs": {
+    "images": [
+     "ref-1",
+     "ref-2",
+     "ref-3"
+    ]
+   },
+   "images": 3,
+   "price": 0.016,
+   "discounted_price": 0.016,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "wavespeed-ai/flux-2-klein-9b/edit",
+   "group": "other-edit-default",
+   "inputs": {},
+   "images": 0,
+   "price": 0.016,
+   "discounted_price": 0.016,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "wavespeed-ai/flux-2-klein-9b/edit",
+   "group": "other-edit-mask",
+   "inputs": {
+    "images": [
+     "ref-1"
+    ],
+    "mask_image": "mask-1"
+   },
+   "images": 1,
+   "price": 0.016,
+   "discounted_price": 0.016,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit",
+   "mask_image": true
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "very_low"
+   },
+   "images": 0,
+   "price": 0.008,
+   "discounted_price": 0.008,
+   "discount_rate": 100,
+   "quality": "very_low",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "very_low",
+    "image": "ref-1"
+   },
+   "images": 1,
+   "price": 0.008,
+   "discounted_price": 0.008,
+   "discount_rate": 100,
+   "quality": "very_low",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "very_low",
+    "image": "ref-1",
+    "reference_images": [
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.008,
+   "discounted_price": 0.008,
+   "discount_rate": 100,
+   "quality": "very_low",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "very_low",
+    "image": "ref-1",
+    "reference_images": [
+     "ref-2",
+     "ref-3"
+    ]
+   },
+   "images": 3,
+   "price": 0.008,
+   "discounted_price": 0.008,
+   "discount_rate": 100,
+   "quality": "very_low",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "low"
+   },
+   "images": 0,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "quality": "low",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "low",
+    "image": "ref-1"
+   },
+   "images": 1,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "quality": "low",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "low",
+    "image": "ref-1",
+    "reference_images": [
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "quality": "low",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "low",
+    "image": "ref-1",
+    "reference_images": [
+     "ref-2",
+     "ref-3"
+    ]
+   },
+   "images": 3,
+   "price": 0.03,
+   "discounted_price": 0.03,
+   "discount_rate": 100,
+   "quality": "low",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "medium"
+   },
+   "images": 0,
+   "price": 0.06,
+   "discounted_price": 0.06,
+   "discount_rate": 100,
+   "quality": "medium",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "medium",
+    "image": "ref-1"
+   },
+   "images": 1,
+   "price": 0.06,
+   "discounted_price": 0.06,
+   "discount_rate": 100,
+   "quality": "medium",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "medium",
+    "image": "ref-1",
+    "reference_images": [
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.06,
+   "discounted_price": 0.06,
+   "discount_rate": 100,
+   "quality": "medium",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "medium",
+    "image": "ref-1",
+    "reference_images": [
+     "ref-2",
+     "ref-3"
+    ]
+   },
+   "images": 3,
+   "price": 0.06,
+   "discounted_price": 0.06,
+   "discount_rate": 100,
+   "quality": "medium",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "high"
+   },
+   "images": 0,
+   "price": 0.22,
+   "discounted_price": 0.22,
+   "discount_rate": 100,
+   "quality": "high",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "high",
+    "image": "ref-1"
+   },
+   "images": 1,
+   "price": 0.22,
+   "discounted_price": 0.22,
+   "discount_rate": 100,
+   "quality": "high",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "high",
+    "image": "ref-1",
+    "reference_images": [
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.22,
+   "discounted_price": 0.22,
+   "discount_rate": 100,
+   "quality": "high",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram",
+   "inputs": {
+    "quality": "high",
+    "image": "ref-1",
+    "reference_images": [
+     "ref-2",
+     "ref-3"
+    ]
+   },
+   "images": 3,
+   "price": 0.22,
+   "discounted_price": 0.22,
+   "discount_rate": 100,
+   "quality": "high",
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram-default",
+   "inputs": {},
+   "images": 0,
+   "price": 0.06,
+   "discounted_price": 0.06,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram-mask",
+   "inputs": {
+    "image": "ref-1",
+    "mask_url": "mask-1"
+   },
+   "images": 1,
+   "price": 0.06,
+   "discounted_price": 0.06,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit",
+   "mask_url": true
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram-images-field",
+   "inputs": {
+    "images": [
+     "ref-1"
+    ]
+   },
+   "images": 1,
+   "price": 0.06,
+   "discounted_price": 0.06,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  },
+  {
+   "model_id": "ideogram-ai/ideogram-v4.5/edit",
+   "group": "other-edit-ideogram-images-field",
+   "inputs": {
+    "images": [
+     "ref-1",
+     "ref-2"
+    ]
+   },
+   "images": 2,
+   "price": 0.06,
+   "discounted_price": 0.06,
+   "discount_rate": 100,
+   "source": "wavespeed_models.json features.image_edit"
+  }
+ ]
+}

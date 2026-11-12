@@ -892,6 +892,8 @@
   "jobs.stoppedCharged": "已停止。任务已提交到 WaveSpeed，按报价可能已扣费约 {0} 积分。",
   "jobs.queryingStatus": "正在查询任务状态",
   "jobs.resultPendingShort": "结果待确认",
+  "jobs.sizeNotice": "出图尺寸低于预期（实际 {0}×{1}），已按原图交付。",
+  "jobs.sizeNoticeUnread": "出图尺寸未能核对，已按原图交付。",
   "jobs.resultPendingHint": "暂时无法确认处理结果，请勿重复提交",
   "jobs.lost": "生成任务已不在 ComfyUI 队列中（服务器可能已重启）",
   "jobs.needSegTarget": "请先框选或描述要分割的对象",

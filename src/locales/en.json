@@ -892,6 +892,8 @@
   "jobs.stoppedCharged": "Stopped. The task was submitted to WaveSpeed; about {0} credits may have been charged at the quoted price.",
   "jobs.queryingStatus": "Checking task status",
   "jobs.resultPendingShort": "Result unconfirmed",
+  "jobs.sizeNotice": "Output is smaller than expected ({0}×{1}). Delivered as generated.",
+  "jobs.sizeNoticeUnread": "Output size could not be checked. Delivered as generated.",
   "jobs.resultPendingHint": "Couldn't confirm the result yet. Do not submit again",
   "jobs.lost": "The generation disappeared from the ComfyUI queue (the server may have restarted)",
   "jobs.needSegTarget": "Select or describe the object to segment first",
