@@ -1,0 +1,88 @@
+{
+ "width": 2560,
+ "height": 1440,
+ "base_size": [
+  2048,
+  1152
+ ],
+ "base_crop": null,
+ "scale": 0.54,
+ "wrapped": false,
+ "lines": [
+  {
+   "role": "channel",
+   "text": "Loomi Studio 创意工作室官方频道",
+   "px": 52,
+   "ink_bbox": [
+    824,
+    649,
+    1639,
+    699
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "tagline",
+   "text": "AI 绘画教程 · 创意工作流 · Stable Diffusion / ComfyUI / Midjourney 全流程实战",
+   "px": 25,
+   "ink_bbox": [
+    820,
+    712,
+    1734,
+    741
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "schedule",
+   "text": "每周二、周五晚上 8 点更新，周末不定期直播答疑",
+   "px": 17,
+   "ink_bbox": [
+    820,
+    763,
+    1194,
+    780
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "accent",
+   "text": "",
+   "px": 2,
+   "ink_bbox": [
+    822,
+    751,
+    930,
+    753
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  }
+ ],
+ "target_box": [
+  820,
+  610,
+  1740,
+  818
+ ],
+ "strict_core": [
+  642,
+  551,
+  1918,
+  889
+ ],
+ "hard_boundary": [
+  482,
+  509,
+  2078,
+  931
+ ],
+ "all_inside_strict_core": true,
+ "all_inside_hard_boundary": true,
+ "graphic_overlap": 0.0,
+ "text_area_clear": true,
+ "font": "ComfyArtBannerSansSC"
+}

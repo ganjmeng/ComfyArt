@@ -1,0 +1,215 @@
+{
+ "note": "$0: relay mocked (no page, no WaveSpeed); body = wavespeed.build_payload on the catalog-fixture Sunburst t2i schema. Branch off main 88cbd358: the youtube-channel-banner pin arrives with #922, so the relay args carry no model yet (Auto); after #922 the pin sets openai/gpt-image-2.6-sunburst/text-to-image (edit with refs).",
+ "pin_on_this_branch": null,
+ "card1": {
+  "prompt": "这次横幅想怎么交付？（影响后续步骤与文字精度）",
+  "options": [
+   {
+    "id": "A",
+    "label": "先出三方向选择板，再做终稿"
+   },
+   {
+    "id": "B",
+    "label": "直接出一张终稿，文字用精确排版渲染"
+   },
+   {
+    "id": "C",
+    "label": "直接出一张终稿，文字由图像模型生成"
+   }
+  ],
+  "min_selections": 1,
+  "max_selections": 1,
+  "allow_other": true,
+  "allow_skip": true,
+  "kind": "question",
+  "questions": [
+   {
+    "id": "yt_delivery",
+    "prompt": "这次横幅想怎么交付？（影响后续步骤与文字精度）",
+    "options": [
+     {
+      "id": "A",
+      "label": "先出三方向选择板，再做终稿"
+     },
+     {
+      "id": "B",
+      "label": "直接出一张终稿，文字用精确排版渲染"
+     },
+     {
+      "id": "C",
+      "label": "直接出一张终稿，文字由图像模型生成"
+     }
+    ],
+    "min_selections": 1,
+    "max_selections": 1,
+    "allow_other": true,
+    "page": 1,
+    "placeholder": "其它想法（比如一次出多个方向终稿）..."
+   },
+   {
+    "id": "yt_banner_text",
+    "prompt": "横幅上实际要出现哪些文字？",
+    "options": [
+     {
+      "id": "A",
+      "label": "Loomi Studio ＋ AI 绘画教程·创意工作流 ＋ 每周二/五更新"
+     },
+     {
+      "id": "B",
+      "label": "Loomi Studio ＋ AI 绘画教程·创意工作流"
+     },
+     {
+      "id": "C",
+      "label": "只有 Loomi Studio"
+     }
+    ],
+    "min_selections": 1,
+    "max_selections": 1,
+    "allow_other": true,
+    "page": 1,
+    "placeholder": "自己指定文案（含大小写、符号、换行）..."
+   },
+   {
+    "id": "yt_brand_assets",
+    "prompt": "有需要放进去的品牌资产吗？（Logo／头像／真人）",
+    "options": [
+     {
+      "id": "A",
+      "label": "没有，纯图形＋文字构成识别"
+     },
+     {
+      "id": "B",
+      "label": "有 Logo／头像，我上传给你"
+     },
+     {
+      "id": "C",
+      "label": "需要预留真人出镜位置"
+     }
+    ],
+    "min_selections": 1,
+    "max_selections": 1,
+    "allow_other": true,
+    "page": 1,
+    "placeholder": "其它（比如指定参考图／配色）..."
+   }
+  ],
+  "page_count": 3
+ },
+ "card2": {
+  "prompt": "选哪个方向做 2560×1440 终稿？",
+  "options": [
+   {
+    "id": "A",
+    "label": "方向 A：品牌主导·大留白（推荐）",
+    "description": "选择板顶部：最干净，缩到移动端也不丢信息"
+   },
+   {
+    "id": "B",
+    "label": "方向 B：全画幅叙事场景",
+    "description": "选择板中部：画面最丰富"
+   },
+   {
+    "id": "C",
+    "label": "方向 C：模块化工作流网格",
+    "description": "选择板底部：最贴工作流主题"
+   }
+  ],
+  "min_selections": 1,
+  "max_selections": 1,
+  "allow_other": true,
+  "allow_skip": true,
+  "kind": "question",
+  "questions": [
+   {
+    "id": "yt_direction",
+    "prompt": "选哪个方向做 2560×1440 终稿？",
+    "options": [
+     {
+      "id": "A",
+      "label": "方向 A：品牌主导·大留白（推荐）",
+      "description": "选择板顶部：最干净，缩到移动端也不丢信息"
+     },
+     {
+      "id": "B",
+      "label": "方向 B：全画幅叙事场景",
+      "description": "选择板中部：画面最丰富"
+     },
+     {
+      "id": "C",
+      "label": "方向 C：模块化工作流网格",
+      "description": "选择板底部：最贴工作流主题"
+     }
+    ],
+    "min_selections": 1,
+    "max_selections": 1,
+    "allow_other": true,
+    "page": 1,
+    "placeholder": "想调整（说哪里改）或让我直接定..."
+   },
+   {
+    "id": "yt_text_mode",
+    "prompt": "终稿的文字怎么上？",
+    "options": [
+     {
+      "id": "A",
+      "label": "精确排版（推荐）"
+     },
+     {
+      "id": "B",
+      "label": "图像模型直出"
+     }
+    ],
+    "min_selections": 1,
+    "max_selections": 1,
+    "allow_other": true,
+    "page": 1,
+    "placeholder": "其它要求..."
+   }
+  ],
+  "page_count": 2
+ },
+ "requests": {
+  "board": {
+   "relay_args_to_page": {
+    "prompt": "Bright watercolor brand world for Loomi Studio, brand blue #2F6BFF, coral and cream accents, copy \"Loomi Studio\" / \"AI 绘画教程 · 创意工作流\" / \"每周二 / 周五更新\"\nDirection board: ONE 16:9 image made of three stacked 16:3 horizontal YouTube channel banners (top, middle, bottom) separated by thin light gutters. The three directions differ in structure, not only in color: top = brand-led layout with generous white space and one simple graphic device; middle = full-frame illustrated scene spanning the whole banner; bottom = modular grid / node system with the text set inside the grid. All three share the same brand colors, the same Chinese sans-serif typeface and the same copy, exactly as quoted. No panel labels, no captions, no direction names, no fake UI, no buttons, no invented dates, accounts, handles or contact details, no prompt text.",
+    "ratio": "16:9",
+    "width": 2048,
+    "height": 1152,
+    "count": 1
+   },
+   "wavespeed_body_on_sunburst_t2i_schema": {
+    "aspect_ratio": "16:9",
+    "resolution": "2k",
+    "prompt": "Bright watercolor brand world for Loomi Studio, brand blue #2F6BFF, coral and cream accents, copy \"Loomi Studio\" / \"AI 绘画教程 · 创意工作流\" / \"每周二 / 周五更新\"\nDirection board: ONE 16:9 image made of three stacked 16:3 horizontal YouTube channel banners (top, middle, bottom) separated by thin light gutters. The three directions differ in structure, not only in color: top = brand-led layout with generous white space and one simple graphic device; middle = full-frame illustrated scene spanning the whole banner; bottom = modular grid / node system with the text set inside the grid. All three share the same brand colors, the same Chinese sans-serif typeface and the same copy, exactly as quoted. No panel labels, no captions, no direction names, no fake UI, no buttons, no invented dates, accounts, handles or contact details, no prompt text."
+   }
+  },
+  "base": {
+   "relay_args_to_page": {
+    "prompt": "Bright watercolor brand world for Loomi Studio, brand blue #2F6BFF, coral and cream accents, copy\nText-free background plate for a 2560x1440 YouTube channel banner: absolutely NO text of any kind - no letters, words, numbers, logos, wordmarks, watermarks, signatures, captions, labels, signage, user-interface elements, buttons, icons, frames or fake UI anywhere in the image. Keep the chosen direction's main graphic and place it in the right part of the middle horizontal band (about 70%-81% across, 36%-64% down), fully inside that band. Leave the left and center of the middle band (about 30%-68% across) as a light, calm, empty area for text that will be added later. Soft extension of the same light texture toward the top, bottom and edges.",
+    "ratio": "16:9",
+    "width": 2048,
+    "height": 1152,
+    "count": 1
+   },
+   "wavespeed_body_on_sunburst_t2i_schema": {
+    "aspect_ratio": "16:9",
+    "resolution": "2k",
+    "prompt": "Bright watercolor brand world for Loomi Studio, brand blue #2F6BFF, coral and cream accents, copy\nText-free background plate for a 2560x1440 YouTube channel banner: absolutely NO text of any kind - no letters, words, numbers, logos, wordmarks, watermarks, signatures, captions, labels, signage, user-interface elements, buttons, icons, frames or fake UI anywhere in the image. Keep the chosen direction's main graphic and place it in the right part of the middle horizontal band (about 70%-81% across, 36%-64% down), fully inside that band. Leave the left and center of the middle band (about 30%-68% across) as a light, calm, empty area for text that will be added later. Soft extension of the same light texture toward the top, bottom and edges."
+   }
+  },
+  "direct": {
+   "relay_args_to_page": {
+    "prompt": "Bright watercolor brand world for Loomi Studio, brand blue #2F6BFF, coral and cream accents, copy \"Loomi Studio\" / \"AI 绘画教程 · 创意工作流\" / \"每周二 / 周五更新\"\nFinal 16:9 YouTube channel banner with the text drawn by the image model. Render only the quoted text, spelled exactly, in a clean Chinese sans-serif, left-aligned inside the central safe band (about 25%-75% across, 38%-62% down): the channel name largest in the brand color, the tagline smaller in a dark color, the schedule smallest. No other text, no fake UI, no invented dates, accounts or contact details, no prompt text.",
+    "ratio": "16:9",
+    "width": 2048,
+    "height": 1152,
+    "count": 1
+   },
+   "wavespeed_body_on_sunburst_t2i_schema": {
+    "aspect_ratio": "16:9",
+    "resolution": "2k",
+    "prompt": "Bright watercolor brand world for Loomi Studio, brand blue #2F6BFF, coral and cream accents, copy \"Loomi Studio\" / \"AI 绘画教程 · 创意工作流\" / \"每周二 / 周五更新\"\nFinal 16:9 YouTube channel banner with the text drawn by the image model. Render only the quoted text, spelled exactly, in a clean Chinese sans-serif, left-aligned inside the central safe band (about 25%-75% across, 38%-62% down): the channel name largest in the brand color, the tagline smaller in a dark color, the schedule smallest. No other text, no fake UI, no invented dates, accounts or contact details, no prompt text."
+   }
+  }
+ }
+}

@@ -1,0 +1,127 @@
+{
+ "width": 2560,
+ "height": 1440,
+ "base_size": [
+  2048,
+  1152
+ ],
+ "base_crop": null,
+ "scale": 0.6,
+ "wrapped": true,
+ "lines": [
+  {
+   "role": "channel",
+   "text": "Loomi Studio 创意工作室官方频道",
+   "px": 58,
+   "ink_bbox": [
+    825,
+    557,
+    1733,
+    614
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "channel",
+   "text": "Creative Workflow Lab",
+   "px": 58,
+   "ink_bbox": [
+    823,
+    631,
+    1462,
+    680
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "channel",
+   "text": "International Edition",
+   "px": 58,
+   "ink_bbox": [
+    825,
+    702,
+    1412,
+    751
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "tagline",
+   "text": "AI 绘画教程 · 创意工作流 · Stable Diffusion / ComfyUI / Midjourney /",
+   "px": 28,
+   "ink_bbox": [
+    820,
+    771,
+    1715,
+    802
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "tagline",
+   "text": "Flux / Krea 全流程实战，从零基础到商业交付的完整课程体系",
+   "px": 28,
+   "ink_bbox": [
+    822,
+    809,
+    1579,
+    839
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "schedule",
+   "text": "每周二、周五晚上 8 点更新，周末不定期直播答疑，会员专属工作流模板每月更新一次（北京时间）",
+   "px": 19,
+   "ink_bbox": [
+    820,
+    863,
+    1643,
+    882
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  },
+  {
+   "role": "accent",
+   "text": "",
+   "px": 2,
+   "ink_bbox": [
+    822,
+    850,
+    942,
+    852
+   ],
+   "inside_strict_core": true,
+   "inside_hard_boundary": true
+  }
+ ],
+ "target_box": [
+  820,
+  610,
+  1740,
+  818
+ ],
+ "strict_core": [
+  642,
+  551,
+  1918,
+  889
+ ],
+ "hard_boundary": [
+  482,
+  509,
+  2078,
+  931
+ ],
+ "all_inside_strict_core": true,
+ "all_inside_hard_boundary": true,
+ "graphic_overlap": 0.0,
+ "text_area_clear": true,
+ "font": "ComfyArtBannerSansSC"
+}

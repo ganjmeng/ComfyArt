@@ -1,0 +1,14 @@
+youtube-channel-banner flow PR (branch feat/youtube-banner-flow, tip 28113f152faa320776344916fd8dc24b1cae5897)
+
+$0. No WaveSpeed call, no paid generation.
+- synthetic-base-2048x1152.png: synthetic stand-in for the Sunburst text-free base (light paper, one
+  blue/coral graphic right of the middle band). NOT a model output.
+- 01..04: api/banner_compose.compose() on that base with the reference copy
+  Loomi Studio / AI 绘画教程 · 创意工作流 / 每周二 / 周五更新, brand_color #2F6BFF.
+  01 TV full canvas 2560x1440; 02 desktop band [0,509,2560,931]; 03 all-device area [482,509,2078,931];
+  04 guides: grey desktop band, red hard boundary, orange strict core, green target box, purple = measured ink boxes.
+- 05: long and very long CJK+Latin copy, all-device crop (wrap/shrink, never clipped).
+- report-*.json: per-line ink boxes measured on rendered pixels.
+- zero-cost-check.json: normalized card 1 / card 2 specs and the request args + WaveSpeed body
+  (catalog-fixture Sunburst t2i schema) for banner_stage board / base / direct.
+- generate_previews.py: the script that made these files.
