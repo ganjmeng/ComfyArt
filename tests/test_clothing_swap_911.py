@@ -4,7 +4,7 @@ Options are generated live from what the person in image 1 is wearing, so they
 must not be copied into src/skills.ts. This file may name Lovart fixture words
 only to forbid them in the skill entry.
 
-No WaveSpeed call. $0 static. Pins and api/auto_models.json stay unchanged.
+No WaveSpeed call. $0 static. Angela 07:27 pins clothing-swap to GPT Image 2.6 Sunburst edit.
 The shared PORTRAIT_SHOTS_708 constant is untouched; clothing-swap no longer
 appends it. Output ratio follows image 1 (the person photo) on the server.
 compose_provider_text: skill + empty text gets a neutral model-only line.
@@ -448,21 +448,55 @@ def test_clothing_swap_free_text_row_uses_shared_ui_i18n():
     assert blank["questions"][0]["allow_other"] is True
 
 
+EXPECTED_CLOTHING_SWAP_PIN = {
+    "feature": "image_edit",
+    "model": "openai/gpt-image-2.6-sunburst/edit",
+    "zh": "clothing-swap 技能固定用 GPT Image 2.6 Sunburst 编辑",
+    "en": "the clothing-swap skill is pinned to GPT Image 2.6 Sunburst edit",
+}
+
+EXPECTED_STUDIO_MODEL_PIN = {
+    "feature": "text_to_image",
+    "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+    "edit_model": "openai/gpt-image-2.6-sunburst/edit",
+    "zh": "studio-model 技能固定用 GPT Image 2.6 Sunburst（无参考文生，有参考编辑）",
+    "en": "the studio-model skill is pinned to GPT Image 2.6 Sunburst (text-to-image with no reference, edit when a reference is given)",
+}
+
+
 def test_pins_and_auto_models_unchanged():
-    """No pin change and api/auto_models.json byte-identical to the base."""
+    """Angela 07:27 lock: clothing-swap and studio-model are Sunburst pins;
+    features and every other skills entry stay byte-identical to MAIN_SHA.
+    Skill-entry assets in src/skills.ts stay unchanged.
+    """
     main_entry = _skill_entry(_main_skills(), "clothing-swap")
     entry = _skill_entry(SKILLS, "clothing-swap")
     ours_tail = entry[entry.find("category:"):]
     main_tail = main_entry[main_entry.find("category:"):]
     assert ours_tail == main_tail
 
-    ours_auto = AUTO_MODELS.read_bytes()
-    main_auto = subprocess.check_output(
-        ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:api/auto_models.json"]
+    ours_auto = json.loads(AUTO_MODELS.read_text(encoding="utf-8"))
+    main_auto = json.loads(
+        subprocess.check_output(
+            ["git", "-C", str(ROOT), "show", f"{MAIN_SHA}:api/auto_models.json"],
+            text=True,
+            encoding="utf-8",
+        )
     )
-    assert ours_auto == main_auto
-    skills = json.loads(ours_auto.decode("utf-8")).get("skills") or {}
-    assert "clothing-swap" not in skills
+    assert ours_auto["features"] == main_auto["features"]
+    assert ours_auto.get("_comment") == main_auto.get("_comment")
+    assert ours_auto["skills"]["clothing-swap"] == EXPECTED_CLOTHING_SWAP_PIN
+    assert ours_auto["skills"]["clothing-swap"]["model"] == "openai/gpt-image-2.6-sunburst/edit"
+    assert ours_auto["skills"]["studio-model"] == EXPECTED_STUDIO_MODEL_PIN
+    assert ours_auto["skills"]["studio-model"]["model"] == "openai/gpt-image-2.6-sunburst/text-to-image"
+    assert ours_auto["skills"]["studio-model"]["edit_model"] == "openai/gpt-image-2.6-sunburst/edit"
+    ours_rest = dict(ours_auto["skills"])
+    main_rest = dict(main_auto["skills"])
+    ours_rest.pop("clothing-swap")
+    ours_rest.pop("studio-model")
+    main_rest.pop("clothing-swap", None)
+    main_rest.pop("studio-model", None)
+    assert ours_rest == main_rest
 
 
 def test_mutation_red_then_green():
@@ -643,6 +677,50 @@ def test_qa5_other_skills_do_not_follow_ref():
     pose = apply_generate({"prompt": "x"}, "pose-fission", ref_image=_png(1920, 1080))
     assert (pose["width"], pose["height"], pose["ratio"]) == (1536, 2048, "3:4")
     assert "_ref_ratio" not in pose
+
+
+SUNBURST_EDIT = "openai/gpt-image-2.6-sunburst/edit"
+
+
+def test_clothing_swap_two_refs_routes_to_sunburst_edit_and_follows_image1():
+    """Angela 07:27: two reference images route to Sunburst edit; size still follows image 1.
+
+    A 3:4 person photo (Lovart 1776×2368) fills 1536×2048. The pin has no
+    resolution/ratio, so _pin_args keeps those pixels. Sunburst edit lists 3:4
+    in its aspect_ratio enum; a 2048 long side maps to resolution 2k.
+    clothing-swap is not added to EXACT_SKILLS: the pin is honored via
+    select_model's skill-pin path, and the exact-size (Qwen) path is skipped.
+    """
+    from ComfyArt.api.mcp_tools import canvas
+    from ComfyArt.api.wavespeed import _resolution
+    from ComfyArt.api.skill_size import EXACT_SKILLS
+
+    assert "clothing-swap" not in EXACT_SKILLS
+
+    person = _png(1776, 2368)  # exact 3:4, same as Lovart person photo
+    filled = apply_generate(
+        {
+            "prompt": "swap the top",
+            "refs": ["shape:person", "shape:garment"],
+            "skill": "clothing-swap",
+        },
+        "clothing-swap",
+        ref_image=person,
+    )
+    assert filled["skill"] == "clothing-swap"
+    assert (filled["width"], filled["height"], filled["ratio"]) == (1536, 2048, "3:4")
+    assert filled["size_lock"] is True
+
+    c = canvas.select_model("generate_image", dict(filled))
+    assert c["model"] == c["edit_model"] == SUNBURST_EDIT
+    assert c["category"] == "skill"
+    assert not c.get("resolution") and not c.get("ratio")
+
+    pinned = canvas._pin_args(dict(filled), c)
+    assert pinned["edit_model"] == SUNBURST_EDIT
+    assert (pinned["width"], pinned["height"], pinned["ratio"]) == (1536, 2048, "3:4")
+    assert pinned["size_lock"] is True
+    assert _resolution(["1k", "2k", "4k"], 2048) == "2k"
 
 
 def test_run_hint_does_not_lock_a_fixed_size_for_clothing_swap():
