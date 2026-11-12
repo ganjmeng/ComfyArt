@@ -5,7 +5,8 @@ Product acceptance (modeled on Lovart's replies, nothing extra):
    built from the card answers + what the agent read off the reference, not a fixed text.
 2. after generating: a shot-size -> image table, then only the parameters actually written into the prompts
    (focal length, aperture, lighting, aspect ratio). No shutter, ISO, film stock, negative prompt or price.
-3. closing: look at the images, name the one whose face shape or hair drifted, only that one is redone.
+3. closing: look at the images, name the one whose face shape or hair drifted, only that one is redone;
+   also offer to swap the background color (米白 / 深灰) or add a landscape version.
 4. single redo: exactly ONE paid call (same reference, same shot, same outfit/scene, count 1), placed next to
    the original; the original and the other images untouched.
 5. en UI is all English.
@@ -17,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import re
 import uuid
+from pathlib import Path
 
 import pytest
 
@@ -59,7 +61,7 @@ ZH_DONE = "\n".join([
     "画幅：3:4 竖版 ×3",
 ])
 ZH_CLOSE = ("验收提示：三张的身份锚点（五官轮廓、眼神气质、黑色中长微卷发、暖调自然亚洲肤色、纤细高挑身材比例）都按参考图锁定了，"
-            "但我无法逐像素核对实际一致性。请你过一眼这三张，如果某张的脸型或发型偏离原片，告诉我具体是哪张、偏在哪里，我针对那一张重做。")
+            "但我无法逐像素核对实际一致性。请你过一眼这三张，如果某张的脸型或发型偏离原片，告诉我具体是哪张、偏在哪里，我针对那一张重做；也可以顺手换背景色（米白 / 深灰）或补一版横版构图。")
 EN_PLAN = "\n".join([
     "The reference photo has been analyzed as the identity anchor. As you chose: 3 photos / keep the original casual look / "
     "solid-color studio backdrop; all three share the same person and outfit, only the shot size and pose change.",
@@ -86,7 +88,7 @@ EN_DONE = "\n".join([
 ])
 EN_CLOSE = ("Check: the identity anchors of all three (facial features, black shoulder-length wavy hair, warm natural skin tone, "
             "slim build) are locked to the reference, but I can't verify the match pixel by pixel. Please look over the three "
-            "photos; if one drifts from the original in face shape or hair, tell me which one and where, and I'll redo just that one.")
+            "photos; if one drifts from the original in face shape or hair, tell me which one and where, and I'll redo just that one. I can also swap the background color (ivory / dark gray) or add a landscape version.")
 LOCK = {"zh": (ZH_ARGS, ZH_PLAN, ZH_DONE, ZH_CLOSE), "en": (EN_ARGS, EN_PLAN, EN_DONE, EN_CLOSE)}
 # One marker per reply part; each must appear exactly once in the whole set's chat text.
 MARKERS = {"zh": ("现在开始生成", "| 景别 | 产物 |", "验收提示："), "en": ("Starting the", "| Shot size | Image |", "Check: ")}
@@ -517,6 +519,91 @@ def test_goal_check_still_fails_when_only_a_non_image_node_is_placed(lang, goal,
 
 def test_tools_are_exposed_to_the_built_in_agent():
     from ComfyArt.bot.guide import CORE_MCP_TOOLS
-    for name in ("portrait_studio_plan", "portrait_studio_done", "portrait_studio_redo"):
+    for name in ("portrait_studio_plan", "portrait_studio_done", "portrait_studio_redo", "portrait_studio_followup"):
         assert name in CORE_MCP_TOOLS and name in canvas.TOOLS
     assert "shot" in canvas.TOOLS["generate_image"]["inputSchema"]["properties"]
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_closing_offers_background_swap_or_landscape(lang):
+    plan = ps.make_plan(LOCK[lang][0], lang)
+    close = ps.closing_text(plan)
+    if lang == "zh":
+        assert close.endswith("也可以顺手换背景色（米白 / 深灰）或补一版横版构图。")
+        assert "我针对那一张重做；也可以顺手" in close
+    else:
+        assert "I can also swap the background color (ivory / dark gray) or add a landscape version." in close
+        assert not CJK.search(close)
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("ask,kind,color,needle", [
+    ({"kind": "background", "color": "米白"}, "background", "ivory", "ivory off-white solid studio backdrop"),
+    ({"kind": "background", "color": "ivory"}, "background", "ivory", "ivory off-white solid studio backdrop"),
+    ({"kind": "background", "color": "深灰"}, "background", "dark_gray", "dark gray solid studio backdrop"),
+    ({"kind": "landscape"}, "landscape", None, "Format: 4:3 landscape."),
+    ({"kind": "横版构图"}, "landscape", None, "Format: 4:3 landscape."),
+])
+def test_followup_issues_exactly_one_call_and_keeps_the_original(relay, lang, ask, kind, color, needle):
+    chat = f"ps-{uuid.uuid4().hex}"
+    _run_set(lang, LOCK[lang][0], chat)
+    SENT.clear()
+    APPROVALS.clear()
+    out = _tool("portrait_studio_followup", {**ask, "slot": 2}, lang, chat)
+    assert len(SENT) == 1, SENT
+    assert len(APPROVALS) == 1
+    action, sent = SENT[0]
+    assert action == "generate_image" and sent["count"] == 1
+    assert sent["refs"] == ["shape:person"]
+    assert sent["near"] == "shape:img2" and sent.get("near_fit") is True
+    assert needle in sent["prompt"]
+    if kind == "landscape":
+        assert sent.get("ratio") == "4:3"
+        assert "Format: 3:4 vertical portrait." not in sent["prompt"]
+    else:
+        assert ps.FOLLOWUP_COLORS[color]["prompt"] in sent["prompt"]
+        scene = ps.PROMPT_SCENE.get(ps.PLANS[chat]["scene_opt"])
+        if scene:
+            assert scene not in sent["prompt"]
+    assert out["slot"] == 2 and out["near"] == "shape:img2" and out.get("ids")
+    assert out["kind"] == kind
+    msg = out["user_message"]
+    assert bool(CJK.search(msg)) is (lang == "zh"), msg
+    assert "delete" not in sent and "replace" not in sent
+
+
+def test_followup_without_a_set_submits_nothing(relay):
+    SENT.clear()
+    out = _tool("portrait_studio_followup", {"kind": "landscape"}, "zh", f"ps-{uuid.uuid4().hex}")
+    assert SENT == []
+    assert out["submitted"] is False and out["user_message"] == "没有可重做的一组"
+
+
+def test_skill_text_routes_followup_to_the_tool():
+    root = Path(__file__).resolve().parents[1]
+    m = re.search(
+        r"\{ id: 'portrait-studio', name: t\('skills.portraitStudio'\), instructions: '((?:\\.|[^'\\])*)'",
+        (root / "src/skills.ts").read_text(encoding="utf-8"),
+    )
+    assert m, "portrait-studio instructions did not parse"
+    instr = m.group(1).replace("\\n", "\n").replace("\\'", "'")
+    assert "portrait_studio_followup" in instr
+    assert 'kind "background"' in instr and 'kind "landscape"' in instr
+    assert "never call generate_image yourself for this follow-up" in instr
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_followup_does_not_overwrite_original_slot_args(relay, lang):
+    chat = f"ps-{uuid.uuid4().hex}"
+    _run_set(lang, LOCK[lang][0], chat)
+    original = dict(ps.PLANS[chat]["slot_args"][2])
+    SENT.clear()
+    APPROVALS.clear()
+    _tool("portrait_studio_followup", {"kind": "landscape", "slot": 2}, lang, chat)
+    assert ps.PLANS[chat]["slot_args"][2] == original
+    SENT.clear()
+    APPROVALS.clear()
+    _tool("portrait_studio_redo", {"slot": 2}, lang, chat)
+    action, sent = SENT[0]
+    assert action == "generate_image" and sent.get("ratio") != "4:3"
+    assert "Format: 4:3 landscape." not in sent["prompt"]
+    assert ps.PROMPT_SCENE["A"] in sent["prompt"]

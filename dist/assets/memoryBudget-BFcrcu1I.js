@@ -1,0 +1,1 @@
+export{l as insertMemoryUpdatedBlock}from"./memoryBudget-BT449_jh.js";

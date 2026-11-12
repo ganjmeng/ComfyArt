@@ -139,7 +139,7 @@ curl -X POST "http://127.0.0.1:8188/comfyart/mcp?project=<项目 id>" \
 | 分类 | 工具 |
 |---|---|
 | 查看 | `server_info`、`get_canvas`、`view_canvas`、`focus`、`list_models`、`brand_kits` |
-| 生成 | `generate_image`、`generate_video`（首帧 / 尾帧，或最多 9 张 `reference_images`）、`wait_generation`、`portrait_studio_plan` / `portrait_studio_done` / `portrait_studio_redo`（仅 portrait-studio：出图前后的说明，以及只重做其中一张） |
+| 生成 | `generate_image`、`generate_video`（首帧 / 尾帧，或最多 9 张 `reference_images`）、`wait_generation`、`portrait_studio_plan` / `portrait_studio_done` / `portrait_studio_redo` / `portrait_studio_followup`（仅 portrait-studio：出图前后的说明，只重做其中一张，或换背景色 / 补横版） |
 | 编辑图片 | `edit_image`、`replace_text`、`edit_region`、`erase_region`、`move_object`、`style_transfer`、`upscale_image`、`remove_background`、`expand_image`、`split_layers`、`change_angle`、`animate_image`、`vectorize_image` |
 | 重建与样机 | `edit_elements`、`create_mockup`、`place_design` |
 | 视频 | `extend_video`、`upscale_video`、`remove_video_background` |

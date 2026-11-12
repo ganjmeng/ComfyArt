@@ -433,6 +433,10 @@ def _pin_args(args: dict, choice: dict) -> dict:
         args["edit_resolution"] = choice["resolution"]
     if choice.get("ratio"):
         args["ratio"] = choice["ratio"]
+    # portrait-studio landscape follow-up: keep 4:3 after the skill pin's 3:4.
+    override = args.pop("_ratio_override", None)
+    if override:
+        args["ratio"] = override
     # Ratio-only studio-model / product-to-packaging / cover-design-director /
     # youtube-channel-banner / portrait-studio (no width/height/resolution):
     # fill resolution 2k and keep the given aspect ratio (portrait-studio's

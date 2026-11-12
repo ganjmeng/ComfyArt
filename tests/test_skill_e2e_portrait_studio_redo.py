@@ -312,6 +312,10 @@ async def test_skill_e2e_portrait_studio_note_then_redo_one(app_url, mock_ws, ag
         assert await tables.count() == 1
         await tables.first.scroll_into_view_if_needed()
         await _shot(pg, f"note-{lang}")
+        close = "也可以顺手换背景色（米白 / 深灰）或补一版横版构图" if lang == "zh" else "I can also swap the background color (ivory / dark gray) or add a landscape version"
+        assert close in text
+        await pg.locator(".ca-chat__bot", has_text=close).last.scroll_into_view_if_needed()
+        await _shot(pg, f"close-{lang}")
 
         # --- turn 2: redo exactly the half-body image ------------------------------------------------
         agent.steps = redo_steps

@@ -184,6 +184,7 @@ CORE_MCP_TOOLS = [
     "portrait_studio_plan",
     "portrait_studio_done",
     "portrait_studio_redo",
+    "portrait_studio_followup",
     "create_slides",
     "add_text",
     "add_shape",

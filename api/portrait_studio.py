@@ -513,15 +513,15 @@ def closing_text(plan: dict) -> str:
     if lang == "zh":
         if n > 1:
             return (f"验收提示：{NUM_ZH[n]}张的身份锚点（{anchors}）都按参考图锁定了，但我无法逐像素核对实际一致性。"
-                    f"请你过一眼这{NUM_ZH[n]}张，如果某张的脸型或发型偏离原片，告诉我具体是哪张、偏在哪里，我针对那一张重做。")
+                    f"请你过一眼这{NUM_ZH[n]}张，如果某张的脸型或发型偏离原片，告诉我具体是哪张、偏在哪里，我针对那一张重做；也可以顺手换背景色（米白 / 深灰）或补一版横版构图。")
         return (f"验收提示：这张的身份锚点（{anchors}）都按参考图锁定了，但我无法逐像素核对实际一致性。"
-                "请你过一眼，如果脸型或发型偏离原片，告诉我偏在哪里，我重做这一张。")
+                "请你过一眼，如果脸型或发型偏离原片，告诉我偏在哪里，我重做这一张；也可以顺手换背景色（米白 / 深灰）或补一版横版构图。")
     if n > 1:
         return (f"Check: the identity anchors of all {NUM_EN[n]} ({anchors}) are locked to the reference, but I can't verify "
                 f"the match pixel by pixel. Please look over the {NUM_EN[n]} photos; if one drifts from the original in face shape "
-                "or hair, tell me which one and where, and I'll redo just that one.")
+                "or hair, tell me which one and where, and I'll redo just that one. I can also swap the background color (ivory / dark gray) or add a landscape version.")
     return (f"Check: the identity anchors ({anchors}) are locked to the reference, but I can't verify the match pixel by pixel. "
-            "Please look it over; if the face shape or hair drifts from the original, tell me where and I'll redo this one.")
+            "Please look it over; if the face shape or hair drifts from the original, tell me where and I'll redo this one. I can also swap the background color (ivory / dark gray) or add a landscape version.")
 
 
 def plan_lines(plan: dict, shot: str) -> str:
@@ -532,6 +532,51 @@ def plan_lines(plan: dict, shot: str) -> str:
     aperture = SHOTS[shot]["aperture"] if shot in SHOTS else SHOTS["half"]["aperture"]
     return "\n".join([outfit, scene, LIGHT["prompt"], f"Lens: {FOCAL} portrait lens at {aperture}.",
                        f"Format: {RATIO} vertical portrait."])
+
+
+
+FOLLOWUP_LANDSCAPE_RATIO = "4:3"
+FOLLOWUP_COLORS = {
+    "ivory": {
+        "zh": "米白", "en": "ivory",
+        "keys": ("米白", "ivory", "off-white", "offwhite", "off white"),
+        "prompt": "Background: an ivory off-white solid studio backdrop.",
+    },
+    "dark_gray": {
+        "zh": "深灰", "en": "dark gray",
+        "keys": ("深灰", "dark gray", "dark grey", "charcoal"),
+        "prompt": "Background: a dark gray solid studio backdrop.",
+    },
+}
+FOLLOWUP_TEXT = {
+    "zh": {
+        "ivory": "好的，给你换一版米白背景（基于第 {i} 张（{shot}）），原图保留，新图放在旁边。",
+        "dark_gray": "好的，给你换一版深灰背景（基于第 {i} 张（{shot}）），原图保留，新图放在旁边。",
+        "landscape": "好的，补一版横版构图（基于第 {i} 张（{shot}）），原图保留，新图放在旁边。",
+    },
+    "en": {
+        "ivory": "OK, making an ivory-background version from image {i} ({shot}). The original is kept; the new one goes next to it.",
+        "dark_gray": "OK, making a dark-gray-background version from image {i} ({shot}). The original is kept; the new one goes next to it.",
+        "landscape": "OK, adding a landscape version from image {i} ({shot}). The original is kept; the new one goes next to it.",
+    },
+}
+
+
+def resolve_followup(kind: object = None, color: object = None) -> tuple[str, str | None]:
+    """kind is background or landscape; color (米白 / 深灰 / ivory / dark gray) is required for background."""
+    k = str(kind or "").strip().lower().replace("-", "_").replace(" ", "_")
+    raw = str(color or "").strip().lower()
+    if k in ("landscape", "horizontal", "横版", "横版构图"):
+        return "landscape", None
+    if k in ("background", "backdrop", "换背景", "换背景色", "背景色"):
+        k = "background"
+    if k != "background":
+        raise PlanError('kind must be "background" (with color 米白 / 深灰) or "landscape"')
+    blob = f"{k} {raw}"
+    for key, meta in FOLLOWUP_COLORS.items():
+        if raw == key or any(n.lower() in blob for n in meta["keys"]):
+            return "background", key
+    raise PlanError("name a background color: 米白 / 深灰 (ivory / dark gray)")
 
 
 def current_shot() -> str:
@@ -547,9 +592,33 @@ def apply_plan(args: dict, chat_id: str) -> dict:
         return args
     args = dict(args)
     shot = current_shot()
-    args["prompt"] = f"{str(args.get('prompt') or '').rstrip()}\n{plan_lines(plan, shot)}"
+    follow = args.pop("ps_followup", None)
+    extra = plan_lines(plan, shot)
+    if isinstance(follow, dict) and follow.get("kind") == "background" and follow.get("color") in FOLLOWUP_COLORS:
+        color_line = FOLLOWUP_COLORS[follow["color"]]["prompt"]
+        rebuilt = []
+        replaced = False
+        for line in extra.split("\n"):
+            scene_line = PROMPT_SCENE.get(plan.get("scene_opt"))
+            if line.startswith("Background:") or (scene_line and line == scene_line):
+                rebuilt.append(color_line)
+                replaced = True
+            else:
+                rebuilt.append(line)
+        if not replaced:
+            rebuilt.append(color_line)
+        extra = "\n".join(rebuilt)
+    if isinstance(follow, dict) and follow.get("kind") == "landscape":
+        extra = extra.replace(
+            f"Format: {RATIO} vertical portrait.",
+            f"Format: {FOLLOWUP_LANDSCAPE_RATIO} landscape.",
+        )
+        args["ratio"] = FOLLOWUP_LANDSCAPE_RATIO
+        args["_ratio_override"] = FOLLOWUP_LANDSCAPE_RATIO
+    args["prompt"] = f"{str(args.get('prompt') or '').rstrip()}\n{extra}"
     args["count"] = 1
-    if shot in plan["shots"]:
+    # Follow-up must not overwrite the original slot snapshot; redo still uses the first set.
+    if shot in plan["shots"] and not follow:
         slot = plan["shots"].index(shot) + 1
         if plan.get("subject") is None:
             plan["subject"] = _turn_lock()["subject"]
@@ -606,4 +675,15 @@ def redo_args(plan: dict, slot: int, fix: str = "") -> dict:
     if near:
         out["near"] = near
         out["near_fit"] = True  # page: right of the original when free, else below / above / left; never on top
+    return out
+
+
+def followup_args(plan: dict, slot: int, kind: str, color: str | None = None) -> dict:
+    """ONE generate_image for a post-set follow-up: swap background color or add a landscape version.
+    Same reference and shot as the named image; the original stays, the new one is placed next to it."""
+    out = redo_args(plan, slot)
+    out["ps_followup"] = {"kind": kind, "color": color}
+    if kind == "landscape":
+        out["ratio"] = FOLLOWUP_LANDSCAPE_RATIO
+        out["_ratio_override"] = FOLLOWUP_LANDSCAPE_RATIO
     return out

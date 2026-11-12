@@ -11,8 +11,11 @@ portrait_studio_done   after wait_generation: records the placed image per slot 
 portrait_studio_redo   the user names ONE image (「半身那张脸不像」 / "redo #2"): exactly one
                        generate_image (same reference, same shot, same outfit/scene, count 1), placed
                        next to the original. The original and the other images are not touched.
-None of these tools call a model themselves; redo goes through the normal generate_image handler
-(run approval, pin, quote for that one image).
+portrait_studio_followup  after the set is done, the user asks to swap the background color
+                       (米白 / 深灰) or add a landscape version: exactly one generate_image,
+                       placed next to the original, which is kept.
+None of these tools call a model themselves; redo and follow-up go through the normal
+generate_image handler (run approval, pin, quote for that one image).
 """
 from __future__ import annotations
 
@@ -88,6 +91,45 @@ async def portrait_studio_redo(args: dict) -> dict:
     return out
 
 
+
+async def portrait_studio_followup(args: dict) -> dict:
+    plan = ps.PLANS.get(_chat())
+    if not plan:
+        lang = ps.card_lang()
+        msg = ps.NO_REDO[lang]
+        return {
+            "status": "failed", "submitted": False, "charged": False, "generation_succeeded": False,
+            "lang": lang, "user_message": msg, "error": msg, "kind": "portraitStudioNoSet",
+            "note": "Post user_message verbatim, once. Do not call generate_image or wait_generation.",
+        }
+    try:
+        kind, color = ps.resolve_followup(args.get("kind"), args.get("color"))
+        if args.get("slot") not in (None, "") or args.get("shot") not in (None, ""):
+            slot = ps.resolve_slot(plan, args.get("slot"), args.get("shot"))
+        else:
+            slot = 1
+    except ps.PlanError as e:
+        return _failed(str(e))
+    from .canvas import TOOLS
+    gen = ps.followup_args(plan, slot, kind, color)
+    result = await TOOLS["generate_image"]["handler"](gen)
+    if isinstance(result, dict) and result.get("ids"):
+        plan.setdefault("followups", []).append(
+            {"slot": slot, "kind": kind, "color": color, "near": plan["images"].get(slot), "ids": result.get("ids")}
+        )
+    lang = plan["lang"]
+    shot = ps.SHOTS[plan["shots"][slot - 1]][lang]
+    key = "landscape" if kind == "landscape" else color
+    out = dict(result) if isinstance(result, dict) else {"result": result}
+    out.update(slot=slot, shot=plan["shots"][slot - 1], kind=kind, color=color,
+               near=plan["images"].get(slot),
+               user_message=ps.FOLLOWUP_TEXT[lang][key].format(i=slot, shot=shot if lang == "zh" else shot.lower()),
+               note=("Exactly one image is being generated. Post user_message, call wait_generation with these ids, "
+                     "and do not delete or replace the original set. Do not call portrait_studio_done again."))
+    return out
+
+
+
 _STR = {"type": "string"}
 TOOLS: dict[str, dict] = {
     "portrait_studio_plan": {
@@ -126,4 +168,18 @@ TOOLS: dict[str, dict] = {
                         "additionalProperties": False},
         "handler": portrait_studio_redo,
     },
+    "portrait_studio_followup": {
+        "description": (
+            "portrait-studio only, after the set is done: the user asks to swap the background color "
+            "(米白 / 深灰, ivory / dark gray) or add a landscape version. Starts exactly one "
+            "generate_image, placed next to the original, which is kept. kind: background (also pass "
+            "color ivory or dark_gray, or 米白 / 深灰) or landscape. slot or shot if they named one "
+            "image; otherwise the first image is used. Returns ids for wait_generation. Never call "
+            "generate_image yourself for this follow-up, and never delete or replace the original set."),
+        "inputSchema": {"type": "object", "properties": {
+            "kind": _STR, "color": _STR, "slot": {"type": "integer"}, "shot": _STR},
+            "required": ["kind"], "additionalProperties": False},
+        "handler": portrait_studio_followup,
+    },
 }
+
