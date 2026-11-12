@@ -109,6 +109,27 @@ def _attempt_tools() -> frozenset:
     return _ATTEMPT_TOOLS | PAID_TOOLS
 
 
+def _wait_generation_shape_ids(blocks: list[dict]) -> list[str]:
+    """Shape ids reported by successful wait_generation results this turn."""
+    from .local_llm import _json_obj, _shape_ids, _tool_base
+    ids: list[str] = []
+    for b in blocks or []:
+        if not isinstance(b, dict) or b.get("type") != "tool_result":
+            continue
+        if _tool_base(str(b.get("name") or "")) != "wait_generation":
+            continue
+        if b.get("status") in ("error", "cancelled"):
+            continue
+        data = _json_obj(str(b.get("text") or ""))
+        if not isinstance(data, dict):
+            continue
+        for r in data.get("results") or []:
+            if isinstance(r, dict) and not r.get("error") and not r.get("cancelled") and \
+                    r.get("status") not in ("error", "declined", "cancelled", "running"):
+                ids.extend(_shape_ids(r.get("shapes")))
+    return ids
+
+
 def check(goal_text: str, blocks: list[dict], canvas_ids: Optional[set] = None) -> SelfCheck:
     """Count successful generations and shapes placed on the canvas (from tool results). When
     `canvas_ids` is given, a placed shape must also still exist on the canvas."""
@@ -148,6 +169,18 @@ def check(goal_text: str, blocks: list[dict], canvas_ids: Optional[set] = None) 
     rec = turn_result_from_blocks(blocks) or {"shapes": [], "failures": []}
     want = {"image": {"image"}, "video": {"video"}, "text": {"text"}}[goal.kind]
     ids = [s["id"] for s in rec["shapes"] if s.get("type") in want]
+    # portrait_studio_redo submits generate_image internally, so wait_generation may
+    # record the placed node as a generic "shape". Count those ids as placements.
+    if goal.kind == "image":
+        waited = _wait_generation_shape_ids(blocks)
+        have = set(ids)
+        for sid in waited:
+            if sid in have:
+                continue
+            rec_type = next((s.get("type") for s in rec["shapes"] if s.get("id") == sid), None)
+            if rec_type in (None, "shape"):
+                ids.append(sid)
+                have.add(sid)
     if canvas_ids is not None:
         ids = [i for i in ids if i in canvas_ids]
         sc.canvas_checked = True

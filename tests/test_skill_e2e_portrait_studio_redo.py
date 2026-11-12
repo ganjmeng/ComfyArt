@@ -346,6 +346,8 @@ async def test_skill_e2e_portrait_studio_note_then_redo_one(app_url, mock_ws, ag
             assert not CJK.search(text), text
         for m in MARKERS[lang]:  # the set's replies are not repeated by the redo
             assert text.count(m) == 1, (m, text)
+        # A successful redo placement must not trip the goal self-check (zh or en).
+        assert "目标核对未通过" not in text and "Goal check failed" not in text, text
         await _shot(pg, f"redo-{lang}")
         await browser.close()
 

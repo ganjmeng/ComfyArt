@@ -731,6 +731,7 @@ _DECISION_RE = re.compile(
 _FAIL_RE = re.compile(r"(?:失败|出错|报错|failed|failure|error)\s*[:：]?\s*[^\n]{0,120}", re.I)
 _SHAPE_TYPE = {
     "generate_image": "image", "edit_image": "image", "upscale_image": "image",
+    "portrait_studio_redo": "image",
     "remove_background": "image", "expand_image": "image", "animate_image": "image",
     "replace_text": "image", "edit_region": "image", "erase_region": "image",
     "move_object": "image", "style_transfer": "image", "vectorize_image": "image",

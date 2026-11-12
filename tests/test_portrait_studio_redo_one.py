@@ -148,12 +148,22 @@ def _run_set(lang, args, chat):
     return msgs, plan
 
 
+def _seed_sent(plan):
+    """Record the prompts and ratio this server would send, so done_text reads them rather than constants."""
+    for i, shot in enumerate(plan["shots"], 1):
+        plan["slot_args"][i] = {
+            "prompt": f"{ps.compose_prompt(plan['prompt'], shot)}\n{ps.plan_lines(plan, shot)}",
+            "ratio": "3:4",
+        }
+    return plan
+
+
 # --- reply text (lock) ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("lang", ["zh", "en"])
 def test_reply_text_is_locked(lang):
     args, want_plan, want_done, want_close = LOCK[lang]
-    plan = ps.make_plan(args, lang)
+    plan = _seed_sent(ps.make_plan(args, lang))
     assert ps.plan_text(plan) == want_plan
     assert ps.done_text(plan) == want_done
     assert ps.closing_text(plan) == want_close
@@ -161,7 +171,7 @@ def test_reply_text_is_locked(lang):
 
 def test_zh_reply_keeps_lovart_7fc60c86_wording():
     """The fixed phrases come from Lovart's reply in notes.txt (the run's own answers were A/A/A)."""
-    plan = ps.make_plan(ZH_ARGS, "zh")
+    plan = _seed_sent(ps.make_plan(ZH_ARGS, "zh"))
     text = ps.plan_text(plan) + "\n" + ps.done_text(plan) + "\n" + ps.closing_text(plan)
     for lovart in ("参考图已作为身份锚点分析完毕。按你的选择：3 张 / 保留原休闲造型 / 纯色棚拍背景，三张共用同一人物身份与服装，只变景别与姿态。",
                    "景别拆为特写 / 半身 / 七分身三档，姿态相应重建",
@@ -180,7 +190,7 @@ def test_zh_reply_keeps_lovart_7fc60c86_wording():
                                                 ("我要 2 张", "A", "B")])
 def test_reply_follows_the_answers_and_the_reference(lang, shots, outfit, scene):
     args = {**LOCK[lang][0], "shots": shots, "outfit": outfit, "scene": scene}
-    plan = ps.make_plan(args, lang)
+    plan = _seed_sent(ps.make_plan(args, lang))
     want = ps.shots_for(shots)
     assert tuple(plan["shots"]) == want
     n = len(want)
@@ -227,7 +237,7 @@ def test_listed_parameters_are_the_ones_written_into_every_prompt(relay, lang, s
 
 def test_en_reply_is_all_english_and_rejects_chinese_reference_notes():
     for shots in ("A", "B", "C"):
-        plan = ps.make_plan({**EN_ARGS, "shots": shots, "outfit": "B", "scene": "B"}, "en")
+        plan = _seed_sent(ps.make_plan({**EN_ARGS, "shots": shots, "outfit": "B", "scene": "B"}, "en"))
         for text in (ps.plan_text(plan), ps.done_text(plan), ps.closing_text(plan)):
             assert not CJK.search(text), text
         assert not CJK.search(ps.REDO_TEXT["en"])
@@ -236,12 +246,65 @@ def test_en_reply_is_all_english_and_rejects_chinese_reference_notes():
 
 
 def test_one_image_set_reads_as_one():
-    zh = ps.make_plan({**ZH_ARGS, "shots": "C"}, "zh")
+    zh = _seed_sent(ps.make_plan({**ZH_ARGS, "shots": "C"}, "zh"))
     assert "现在开始生成一张。" in ps.plan_text(zh) and "共用" not in ps.plan_text(zh)
     assert ps.done_text(zh).startswith("这张已完成：") and "×1" in ps.done_text(zh)
     assert "我重做这一张" in ps.closing_text(zh)
-    en = ps.make_plan({**EN_ARGS, "shots": "C"}, "en")
+    en = _seed_sent(ps.make_plan({**EN_ARGS, "shots": "C"}, "en"))
     assert "Starting the photo now." in ps.plan_text(en) and "redo this one" in ps.closing_text(en)
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_done_table_parameters_are_substrings_of_the_sent_prompts(relay, lang):
+    """Every parameter listed after generating is in that image's actually sent prompt (or its ratio arg)."""
+    chat = f"ps-{uuid.uuid4().hex}"
+    msgs, _ = _run_set(lang, LOCK[lang][0], chat)
+    done = msgs[1]
+    assert len(SENT) == 3
+    plan = ps.PLANS[chat]
+    shots = list(plan["shots"])
+    # tokens shown on the shared optics / format lines
+    listed = []
+    if "85mm" in done:
+        listed.append(("85mm", None))  # must be in every sent prompt
+    light = ps.LIGHT_SHORT[lang]
+    if light in done:
+        listed.append((ps.LIGHT["prompt"], None))  # display label maps to the sent light line
+    for shot in shots:
+        ap = ps.SHOTS[shot]["aperture"]
+        if ap in done:
+            listed.append((ap, shot))
+    if "3:4" in done:
+        listed.append(("3:4", "ratio"))
+    assert listed, done
+    for token, scope in listed:
+        for (_, sent), shot in zip(SENT, shots):
+            if scope is None:
+                assert token in sent["prompt"], (token, shot, sent["prompt"])
+            elif scope == "ratio":
+                assert token in sent["prompt"] or sent.get("ratio") == token or sent.get("aspect_ratio") == token, sent
+            elif scope == shot:
+                assert token in sent["prompt"], (token, shot, sent["prompt"])
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_done_table_omits_lens_and_lighting_when_the_prompt_lacks_them(lang):
+    """Stubbed composition: no lens / lighting / format in the recorded prompts → the table omits them."""
+    plan = ps.make_plan(LOCK[lang][0], lang)
+    for i, shot in enumerate(plan["shots"], 1):
+        plan["slot_args"][i] = {
+            "prompt": "\n".join([plan["prompt"], ps.PROMPT_OUTFIT["A"], ps.PROMPT_SCENE["A"], ps.SHOT_LINE[shot]]),
+        }
+    after = ps.done_text(plan)
+    assert "85mm" not in after and "3:4" not in after
+    assert ps.LIGHT_SHORT[lang] not in after
+    assert "Loop 环形光" not in after and "Loop lighting" not in after
+    for shot in plan["shots"]:
+        assert ps.SHOTS[shot]["aperture"] not in after
+    # the shot table itself is still written
+    frame = ps.SHOTS[plan["shots"][0]]["zh_frame" if lang == "zh" else "en_frame"]
+    assert frame in after
+    assert "⚙️" not in after  # no parameter block at all
 
 
 # --- the set through the real tool handlers ------------------------------------------------------
@@ -342,7 +405,55 @@ def test_redo_that_names_no_single_image_submits_nothing(relay, ask):
 
 def test_redo_without_a_set_submits_nothing(relay):
     out = _tool("portrait_studio_redo", {"slot": 1}, "zh", f"ps-{uuid.uuid4().hex}")
-    assert out["status"] == "failed" and SENT == []
+    assert out["status"] == "failed" and SENT == [] and APPROVALS == []
+    assert out["user_message"] == "没有可重做的一组"
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_redo_after_server_restart_replies_no_set_and_generates_nothing(relay, lang):
+    """Clearing the in-memory store simulates a restart: exact no-set reply, 0 submit, 0 quote."""
+    chat = f"ps-{uuid.uuid4().hex}"
+    _run_set(lang, LOCK[lang][0], chat)
+    SENT.clear()
+    APPROVALS.clear()
+    ps.PLANS.clear()
+    out = _tool("portrait_studio_redo", {"slot": 2}, lang, chat)
+    assert out["user_message"] == ps.NO_REDO[lang]
+    assert out["user_message"] == ("没有可重做的一组" if lang == "zh" else "There is no set to redo.")
+    assert SENT == [] and APPROVALS == []
+    assert out.get("submitted") is False and out.get("generation_succeeded") is False
+
+
+@pytest.mark.parametrize("lang,goal,warn", [
+    ("zh", "半身那张脸不像，重做一下", "目标核对未通过"),
+    ("en", "Make 1 image: the half-body one doesn't look like me, redo it", "Goal check failed"),
+])
+def test_goal_check_passes_a_successful_redo_placement(lang, goal, warn):
+    """A redo placed via wait_generation (no generate_image tool_use on the turn) must pass."""
+    import json as _json
+    from ComfyArt.bot import self_check
+    assert self_check.parse_goal(goal) is not None
+    blocks = [
+        {"type": "tool_use", "id": "t1", "name": "mcp__comfyart__portrait_studio_redo",
+         "input": {"shot": "半身" if lang == "zh" else "half body"}},
+        {"type": "tool_result", "id": "t1", "name": "mcp__comfyart__portrait_studio_redo",
+         "text": _json.dumps({"ids": ["gen:1"], "slot": 2, "near": "shape:img2",
+                              "user_message": "ok"})},
+        {"type": "tool_use", "id": "t2", "name": "mcp__comfyart__wait_generation",
+         "input": {"ids": ["gen:1"]}},
+        {"type": "tool_result", "id": "t2", "name": "mcp__comfyart__wait_generation",
+         "text": _json.dumps({"results": [{"id": "gen:1", "status": "done", "placed": True,
+                                           "generation_succeeded": True, "shapes": ["shape:redo1"]}]})},
+        {"type": "text", "text": "好的，只重做第 2 张（半身），其它几张不动；新图放在原图旁边，原图保留。"
+         if lang == "zh" else "OK, redoing only image 2 (half body)."},
+    ]
+    canvas = {"shape:img1", "shape:img2", "shape:img3", "shape:redo1"}
+    sc = self_check.check(goal, blocks, canvas_ids=canvas)
+    assert sc.generated == 1 and sc.placed == 1 and sc.passed, sc.to_dict()
+    out, info = self_check.apply_to_blocks(goal, blocks, lang, canvas_ids=canvas)
+    assert info["self_check"] == "pass", info
+    assert not any(b.get("type") == "notice" for b in out)
+    assert not any(warn in str(b.get("text") or "") for b in out)
 
 
 def test_tools_are_exposed_to_the_built_in_agent():

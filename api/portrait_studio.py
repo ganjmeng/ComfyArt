@@ -254,8 +254,9 @@ def lock_request(args: dict) -> dict:
 # what changes, then lighting / optics / pose and 「现在开始生成三张。」; (2) after generating, a
 # shot-size -> image table and the parameters; (3) a closing check asking which image drifted in
 # face shape or hair, and redoes only that one. The server writes all three from the card answers
-# plus what the agent read off the reference photo, and every listed parameter is one this server
-# actually writes into each image's prompt (no shutter / ISO / film stock / negative prompt / price).
+# plus what the agent read off the reference photo, and every listed parameter in the after-generation
+# table is taken from the prompts (or ratio / aspect_ratio args) actually recorded for this set — never
+# hard-coded when it was not sent (no shutter / ISO / film stock / negative prompt / price).
 # Per-image prompts are built by lock_request above (identity, shared subject, shot line, pose line);
 # apply_plan adds the card's outfit / scene and the light and lens the replies list.
 # ---------------------------------------------------------------------------------------------
@@ -432,24 +433,76 @@ def image_name(lang: str, shot: str) -> str:
     return f"专业形象照-{SHOTS[shot]['zh']}" if lang == "zh" else f"Professional portrait - {SHOTS[shot]['en'].lower()}"
 
 
-def done_text(plan: dict) -> str:
-    """Reply (2): shot -> image table, then only the parameters this server put in every prompt."""
+def _slot_sent(plan: dict, slot: int) -> dict:
+    """The generate_image args recorded for this slot (prompt, ratio / aspect_ratio, …)."""
+    return (plan.get("slot_args") or {}).get(slot) or {}
+
+
+def _sent_prompt(plan: dict, shot: str) -> str:
+    if shot not in plan["shots"]:
+        return ""
+    return str(_slot_sent(plan, plan["shots"].index(shot) + 1).get("prompt") or "")
+
+
+def _sent_ratio(plan: dict, shot: str) -> str:
+    """Aspect ratio actually sent for this image (arg, else a Format: line in the prompt)."""
+    if shot not in plan["shots"]:
+        return ""
+    args = _slot_sent(plan, plan["shots"].index(shot) + 1)
+    for key in ("ratio", "aspect_ratio"):
+        got = str(args.get(key) or "").strip()
+        if got:
+            return got
+    prompt = str(args.get("prompt") or "")
+    m = _re.search(r"Format:\s*(\d+:\d+)", prompt)
+    return m.group(1) if m else ""
+
+
+def _done_param_lines(plan: dict) -> list[str]:
+    """Optics / format lines built only from parameters present in the recorded prompts (or ratio args).
+
+    A parameter that was not sent (85mm, a shot's aperture, lighting, 3:4) is omitted. The zh wording
+    of each kept item stays the locked phrase (光学参数 / Loop 环形光 + 柔光 / 竖版 …).
+    """
     lang, shots = plan["lang"], tuple(plan["shots"])
     n = len(shots)
+    optics: list[str] = []
+    prompts = [_sent_prompt(plan, s) for s in shots]
+    if any(FOCAL in p for p in prompts):
+        optics.append(FOCAL)
+    if any(LIGHT["prompt"] in p or ("loop lighting" in p.lower() and "softbox" in p.lower()) for p in prompts):
+        optics.append(LIGHT_SHORT[lang])
+    apertures = [f"{_short(lang, s)} {SHOTS[s]['aperture']}"
+                 for s in shots if SHOTS[s]["aperture"] in _sent_prompt(plan, s)]
+    if apertures:
+        optics.append(" · ".join(apertures))
+    lines: list[str] = []
+    if optics:
+        lines.append(("光学参数：" + " ｜ ".join(optics)) if lang == "zh"
+                     else ("Optics: " + " | ".join(optics)))
+    ratios = [_sent_ratio(plan, s) for s in shots]
+    shown = next((r for r in ratios if r), "")
+    if shown:
+        lines.append(f"画幅：{shown} 竖版 ×{n}" if lang == "zh" else f"Format: {shown} portrait ×{n}")
+    return lines
+
+
+def done_text(plan: dict) -> str:
+    """Reply (2): shot -> image table, then only the parameters actually sent in this set's prompts."""
+    lang, shots = plan["lang"], tuple(plan["shots"])
+    n = len(shots)
+    params = _done_param_lines(plan)
+    param_block = (["⚙️ 参数" if lang == "zh" else "⚙️ Parameters", *params] if params else [])
     if lang == "zh":
         rows = [f"| {SHOTS[s]['zh_frame']} | 第 {i} 张：{image_name(lang, s)} |" for i, s in enumerate(shots, 1)]
         return "\n".join([
             f"{NUM_ZH[n]}张已完成：" if n > 1 else "这张已完成：", "| 景别 | 产物 |", "|---|---|", *rows,
-            "⚙️ 参数",
-            f"光学参数：{FOCAL} ｜ {LIGHT_SHORT['zh']} ｜ {_apertures(lang, shots, ' · ')}",
-            f"画幅：{RATIO} 竖版 ×{n}",
+            *param_block,
         ])
     rows = [f"| {SHOTS[s]['en_frame']} | Image {i}: {image_name(lang, s)} |" for i, s in enumerate(shots, 1)]
     return "\n".join([
         f"All {NUM_EN[n]} are done:" if n > 1 else "The photo is done:", "| Shot size | Image |", "|---|---|", *rows,
-        "⚙️ Parameters",
-        f"Optics: {FOCAL} | {LIGHT_SHORT['en']} | {_apertures(lang, shots, ' · ')}",
-        f"Format: {RATIO} portrait ×{n}",
+        *param_block,
     ])
 
 
@@ -534,6 +587,11 @@ def resolve_slot(plan: dict, slot: object = None, shot: object = None) -> int:
 REDO_TEXT = {
     "zh": "好的，只重做第 {i} 张（{shot}），其它几张不动；新图放在原图旁边，原图保留。",
     "en": "OK, redoing only image {i} ({shot}); the others stay as they are. The new one goes next to the original, which is kept.",
+}
+# In-memory plan is gone (server restart): reply this, generate nothing, no quote.
+NO_REDO = {
+    "zh": "没有可重做的一组",
+    "en": "There is no set to redo.",
 }
 
 

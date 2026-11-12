@@ -62,7 +62,13 @@ async def portrait_studio_done(args: dict) -> dict:
 async def portrait_studio_redo(args: dict) -> dict:
     plan = ps.PLANS.get(_chat())
     if not plan:
-        return _failed("no portrait-studio set in this chat to redo: run the portrait-studio flow first")
+        lang = ps.card_lang()
+        msg = ps.NO_REDO[lang]
+        return {
+            "status": "failed", "submitted": False, "charged": False, "generation_succeeded": False,
+            "lang": lang, "user_message": msg, "error": msg, "kind": "portraitStudioNoSet",
+            "note": "Post user_message verbatim, once. Do not call generate_image or wait_generation.",
+        }
     try:
         slot = ps.resolve_slot(plan, args.get("slot"), args.get("shot"))
     except ps.PlanError as e:
