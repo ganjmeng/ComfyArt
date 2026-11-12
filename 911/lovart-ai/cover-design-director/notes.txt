@@ -1,0 +1,56 @@
+Lovart international-site generation audit: YouTube Video Thumbnail Design (cover-design-director)
+
+Skill
+- Site: https://www.lovart.ai
+- Skill page: https://www.lovart.ai/skills/pj5Uf8HjNe (opens as modal over /skills)
+- Exact title: YouTube Video Thumbnail Design
+- Exact author: Sophie_Bakes12 (confirmed on the skill detail before use; no look-alike)
+- Project URL: https://www.lovart.ai/canvas?projectId=2voervujeosg (auto-titled "在家用平底锅煎出完美牛排 YouTube 视频封面")
+
+Inputs and run
+- No images attached.
+- Message typed (with skill capsule): 帮我做一张 YouTube 视频封面：视频主题是「在家用平底锅煎出完美牛排」，16:9。
+- Note: skill capsule was initially lost after a stray click/typing in the box; removed text, re-added skill via "/" menu (single match "YouTube Video Thumbnail Design") in the same, still-unsent project, then sent. Exactly one project, one send.
+- No variants/upscale/retry/follow-up requested.
+
+Credits
+- Before: 1960
+- After: 1930
+- Spent: 30 (cap 200). No top-up/settings changes. (1945 immediately after send, 1930 after image.)
+
+Q&A log
+Pre-card Lovart text: 先按 YouTube 封面的逻辑把方向铺好，再让你拍板几个会影响成图的关键点。 + three directions A 稳妥竞争型 / B 最优点击率 / C 激进 CTR (16:9 1280×720) and a note about warm tones / dark kitchen default.
+Card 1: header "Question", pager "1 of 3" with ‹ › arrows (3 pages, each page = one question, but all three questions are listed in a scrolling list; page indicator follows scroll; selecting an option auto-advances page). Buttons: Skip, Next (becomes Submit on last page / once answered). Single-select (letter badges A-E); no multi-select markers. Pre-highlighted: none.
+Screenshots: question-card-1-q1-before.png, question-card-1-q2-before.png, question-card-1-q3-before.png, -q1/q2/q3-selected, after-submit.
+- Q1: 封面上实际出现的主文案，选哪一句？
+  A 别再煎老了 | B 完美牛排 | C 餐厅不传的秘诀 | D [text-entry placeholder: 其他（直接写你要的文字）…]
+- Q2: 画面主体与基调走哪种？
+  A 厨师出镜＋深色厨房 | B 纯食物特写 | C 左右成败对比 | D 明亮浅色厨房＋留白 | E [placeholder: 其它，请直接输入…]
+- Q3: 方向强度选哪个，或者要我一次出三版？
+  A B 最优点击率 | B A 稳妥竞争型 | C C 激进CTR | D 三版都出 | E [placeholder: 其它，请直接输入…]
+- Chosen: A for all (别再煎老了 / 厨师出镜＋深色厨房 / B 最优点击率), then Submit. Echoed in chat as:
+  Q: 封面上实际出现的主文案，选哪一句？ A: 别再煎老了 Q: 画面主体与基调走哪种？ A: 厨师出镜＋深色厨房 Q: 方向强度选哪个，或者要我一次出三版？ A: B 最优点击率
+- No follow-up cards.
+
+Generation/result
+- Lovart: 方向锁定：B 最优点击率 · 厨师出镜＋深色厨房 · 主文案「别再煎老了」。开始出图。
+- On-screen model: GPT Image 2.6 Sunburst ("Generating images using GPT Image 2.6 Sunburst")
+- Outputs: 1
+  1. result-01.png, 2048 x 1152 (16:9), https://a.lovart.ai/artifacts/agent/vY8WeUXCGw74G4Qs.png
+- Final reply from Lovart (verbatim):
+封面已出：
+
+「别再煎老了」· 16:9 · 1280×720 同级高清
+
+结构：face plus object —— 厨师出镜＋铸铁锅＋被夹子掀起的牛排，锅与截面构成第一焦点
+CTR 抓手：Curiosity Gap ＋ Identity Mirror（家常厨房、普通人，"我也能做到"）
+光线：左上暖主光＋牛排后方暖橙逆光勾蒸汽，深炭黑背景把焦糖橙／黄油金／玫红截面顶出来
+文字层级：主标题粗黑奶白字＋深棕描边，占宽约 40–45%；下方琥珀色副标「平底锅 · 家常牛排」；右下角时长标签区已留空
+比例：熟悉 70%（厨师＋锅＋蒸汽）／新奇 30%（掀起牛排露截面的"证据动作"）
+
+需要你实际看一眼确认两点：中文标题的字形有没有笔画错乱，以及蒸汽和黄油气泡的细节在缩略图尺寸下是否还清晰。任何一处不满意，告诉我改哪一项（换文案排布、去掉副标、加大主体占比、或改成更暗的高对比），我在这版基础上迭代，不用重开方向。
+
+如果想要 A、C 两版做 A/B 测试对比点击率，也说一声，我按同一套锚点（同一位厨师、同一口锅）补齐。
+
+Files
+- result-01.png (2048x1152), result-page.png, notes.txt, question-card-1-*.png
