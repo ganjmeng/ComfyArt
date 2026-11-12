@@ -1023,6 +1023,14 @@ export function recordTemplateUse(skillId: string, presetId: string): number {
   try { localStorage.setItem(TEMPLATE_USAGE_KEY, JSON.stringify(map)) } catch { /* private mode */ }
   return map[k]
 }
+/** Inverse of recordTemplateUse: drop the last +1 (used when run() throws after we already counted). */
+export function unrecordTemplateUse(skillId: string, presetId: string): void {
+  const map = loadTemplateUsage(); const k = `${skillId}/${presetId}`
+  const n = (map[k] ?? 0) - 1
+  if (n <= 0) delete map[k]
+  else map[k] = n
+  try { localStorage.setItem(TEMPLATE_USAGE_KEY, JSON.stringify(map)) } catch { /* private mode */ }
+}
 export function recordSkillUse(id: string): number {
   const map = loadSkillUsage()
   const next = (map[id] ?? 0) + 1
