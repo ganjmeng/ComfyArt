@@ -486,8 +486,12 @@ def test_self_check_still_reports_a_failed_set(lang, goal, warn):
 
 # --- untouched -----------------------------------------------------------------------------------
 
+def _git_bytes(rev: str, path: str) -> bytes:
+    return subprocess.run(["git", "show", f"{rev}:{path}"], cwd=ROOT, check=True, capture_output=True).stdout
+
+
 def _main_bytes(path: str) -> bytes:
-    return subprocess.run(["git", "show", f"{MAIN}:{path}"], cwd=ROOT, check=True, capture_output=True).stdout
+    return _git_bytes(MAIN, path)
 
 
 @pytest.mark.parametrize("path", ["api/auto_models.json", "api/skill_size.py", "api/curated_models.json",
@@ -496,13 +500,20 @@ def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_main_bytes(path)).hexdigest(), path
 
 
+# #927 versions of these two files, pinned byte-for-byte to tip 7bb9f8ed (same
+# git-show + sha256 check as the main pin list above).
+PORTRAIT_LOCK = "7bb9f8ed4e6cf0a06c138b0df38922b4268eb3eb"
+
+
+@pytest.mark.parametrize("path", ["api/portrait_studio.py", "bot/self_check.py"])
+def test_portrait_studio_and_self_check_are_unchanged_from_7bb9f8ed(path):
+    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_git_bytes(PORTRAIT_LOCK, path)).hexdigest(), path
+
+
 # Locales are compared as JSON so a sibling skill can add its own keys. product-to-packaging
 # still adds none. Allowed extras only:
 # - youtube-channel-banner: bot.composeBannerText
 # - portrait-studio redo/follow-up (#927): bot.portraitStudioPlan / Done / Redo
-# bot/self_check.py and api/portrait_studio.py are not byte-locked here: #927 adds a
-# 3-line comment in self_check (logic unchanged vs main 31935428) and owns the
-# portrait_studio module (redo / follow-up).
 BANNER_LOCALE = {"zh": "排版横幅文字", "en": "Set banner text"}
 PORTRAIT_LOCALE = {
     "zh": {
