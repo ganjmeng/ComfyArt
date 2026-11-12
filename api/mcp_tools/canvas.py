@@ -516,6 +516,46 @@ def _auto_choice(action: str, args: dict, catalog: dict | None = None, cfg: dict
     return select_model(action, args, catalog=catalog, cfg=cfg)
 
 
+def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
+    """#910: the model a paid call will actually run on and the inputs to price it with, so a quote card names and
+    prices the routed model (not the dearest model of the feature). Same pick as the tool: an unregistered model
+    falls back to Auto (#734), refs/base run on image_edit, a skill pin brings its resolution/ratio. The references
+    are counted as `images` (base first, then refs, as src/generate.ts sends them): WaveSpeed prices every input
+    image of a 2.6 edit (+$0.015 each). None when the call is refused or no model can be picked."""
+    if not isinstance(args, dict):
+        return None
+    clean = dict(args)
+    if unregistered_model(action, clean):
+        clean = {k: v for k, v in clean.items() if k not in ("model", "auto_model")}
+    choice = select_model(action, clean) or {}
+    if choice.get("block") or choice.get("svg_error"):
+        return None
+    model = str(choice.get("edit_model") or choice.get("model") or "")
+    if not model:
+        return None
+    inputs = {k: v for k, v in clean.items() if k not in ("refs", "base", "ref_modes", "model", "auto_model", "edit_model")}
+    if choice.get("resolution"):
+        inputs["resolution"] = choice["resolution"]
+    if choice.get("ratio"):
+        inputs["ratio"] = choice["ratio"]
+    # Clothing-swap (and studio-model) keep canvas width/height (e.g. 1536x2048).
+    # build_payload snaps that long edge via resolution_from_inputs (same as main);
+    # a size string such as 1536*2048 is not used to infer a tier (WaveSpeed default 1k).
+    # The quote uses that same function (no duplicate snap).
+    if not inputs.get("resolution"):
+        from ..gif_image import EDIT_25, GIF_EDIT, GIF_T2I, T2I_25
+        if model in GIF_EDIT or model in GIF_T2I or model in EDIT_25 or model in T2I_25:
+            from ..wavespeed import resolution_from_inputs
+            tier = resolution_from_inputs(inputs, ["1k", "2k", "4k"])
+            if tier:
+                inputs["resolution"] = tier
+    if action == "generate_image":
+        refs = ([clean["base"]] if clean.get("base") else []) + [r for r in (clean.get("refs") or []) if r]
+        if refs:
+            inputs["images"] = [f"ref-{i + 1}" for i in range(len(refs))]
+    return model, inputs
+
+
 def _auto_table_choice(action: str, args: dict, cfg: dict | None = None) -> dict | None:
     """#133 Auto table only. Not a public entry — select_model runs pin and exact-size first."""
     feature = tool_feature(action)

@@ -26,6 +26,9 @@ def _svg():
 
 Pricer = Callable[[str, dict], Awaitable[Optional[float]]]
 ModelsFor = Callable[[str], Awaitable[list[tuple[str, Optional[float]]]]]
+# #910: (tool, arguments) -> (routed model id, price inputs) or None. The built-in agent passes
+# api.mcp_tools.canvas.quote_route, so an Auto step is named and priced as the model it will run on.
+Router = Callable[[str, dict], Optional[tuple[str, dict]]]
 
 QUOTE_TOOL = "quote_plan"
 
@@ -273,12 +276,19 @@ async def _max_model(feature: str, models_for: ModelsFor) -> tuple[str, Optional
     return best_id, best
 
 
-async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor) -> tuple[Optional[float], bool, str]:
-    """(line amount, approx, model id to show). Unknown prices use the dearest model of that type."""
+async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
+                      router: Optional[Router] = None) -> tuple[Optional[float], bool, str]:
+    """(line amount, approx, model id to show). Unknown prices use the dearest model of that type.
+    #910: with a router, the step is shown and priced as the model it is routed to (Auto included), with its
+    reference images counted, so the card's model and price are the ones that will run."""
     tool, args, model = step["tool"], step["arguments"], step["model"]
     inputs = price_inputs(args)
     units = units_of(tool, args)
     feature = feature_of_step(tool, args)
+    routed = router(tool, args) if router is not None and not step.get("svg_blocked") else None
+    if routed and routed[0]:
+        model = routed[0]
+        inputs = {**inputs, **{k: v for k, v in (routed[1] or {}).items() if k in _PRICE_KEYS or k in ("images", "width", "height")}}
     approx = False
     show = model
     unit: Optional[float] = None
@@ -303,7 +313,7 @@ def _needs_ask(total: float, threshold: float, force: bool) -> bool:
 
 
 async def build_quote(steps: object, lang: str, *, threshold: float,
-                      pricer: Pricer, models_for: ModelsFor) -> Optional[Quote]:
+                      pricer: Pricer, models_for: ModelsFor, router: Optional[Router] = None) -> Optional[Quote]:
     """A quote for 2+ priced steps. #418: a single step gets a quote only when it needs asking
     (estimate >= threshold, threshold 0, or unpriced); otherwise None (no card, run as before)."""
     lang = _lang(lang)
@@ -318,7 +328,7 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
                 unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"]),
             ))
             continue
-        amount, approx, show = await _price_step(step, pricer, models_for)
+        amount, approx, show = await _price_step(step, pricer, models_for, router)
         unpriced = amount is None
         name = step["text"] or step["tool"]
         label = model_label(show) if show else AUTO_LABEL[lang]
