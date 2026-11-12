@@ -596,6 +596,8 @@ def normalize_youtube_banner_card(args: dict) -> dict:
 
 def validate_spec(args: dict) -> dict:
     """Accept legacy single-question OR questions[] multi form."""
+    from .portrait_studio import normalize_card as normalize_portrait_studio_card
+    args = normalize_portrait_studio_card(args)  # portrait-studio (reference run 7fc60c86)
     args = normalize_clothing_swap_card(args)
     args = normalize_studio_direction_card(args)
     args = normalize_youtube_banner_card(args)

@@ -34,10 +34,14 @@ class SelfCheck:
     placed_ids: list = field(default_factory=list)
     cancelled: bool = False      # the user declined the paid confirm: nothing to check against
     canvas_checked: bool = False  # placed shapes were verified against a live get_canvas read
+    # A tool asked the user for input instead of generating (status needs_input, submitted false, e.g.
+    # portrait-studio without a reference photo) and no generation was attempted this turn: the turn
+    # waits for the user, nothing to check yet.
+    awaiting_input: bool = False
 
     @property
     def applies(self) -> bool:
-        return self.goal is not None and not self.cancelled
+        return self.goal is not None and not self.cancelled and not self.awaiting_input
 
     @property
     def passed(self) -> bool:
@@ -56,6 +60,8 @@ class SelfCheck:
             return {"self_check": "skip"}
         if self.cancelled:
             return {"self_check": "skip", "reason": "user_cancelled"}
+        if self.awaiting_input:
+            return {"self_check": "skip", "reason": "awaiting_input"}
         return {"self_check": "pass" if self.passed else "fail", "kind": self.goal.kind,
                 "expected": self.goal.count, "generated": self.generated, "placed": self.placed,
                 "missing": self.missing, "placed_ids": list(self.placed_ids)}
@@ -94,6 +100,15 @@ def parse_goal(text: str) -> Optional[Goal]:
     return None
 
 
+# Tool results that mean a generation was attempted this turn (paid tools + their wait_generation).
+_ATTEMPT_TOOLS = frozenset({"wait_generation"})
+
+
+def _attempt_tools() -> frozenset:
+    from .guide import PAID_TOOLS
+    return _ATTEMPT_TOOLS | PAID_TOOLS
+
+
 def check(goal_text: str, blocks: list[dict], canvas_ids: Optional[set] = None) -> SelfCheck:
     """Count successful generations and shapes placed on the canvas (from tool results). When
     `canvas_ids` is given, a placed shape must also still exist on the canvas."""
@@ -104,6 +119,8 @@ def check(goal_text: str, blocks: list[dict], canvas_ids: Optional[set] = None) 
         return sc
     generated = 0
     text_out = 0
+    asked_input = attempted = False
+    attempt_tools = _attempt_tools()
     for b in blocks or []:
         if not isinstance(b, dict) or b.get("type") != "tool_result":
             continue
@@ -112,6 +129,11 @@ def check(goal_text: str, blocks: list[dict], canvas_ids: Optional[set] = None) 
         if isinstance(data, dict) and name != "wait_generation" and \
                 (data.get("cancelled") is True or data.get("status") == "declined"):
             sc.cancelled = True
+        if isinstance(data, dict) and data.get("status") == "needs_input" and data.get("submitted") is False:
+            asked_input = True
+            continue
+        if name in attempt_tools:
+            attempted = True  # a generation was submitted (or errored) this turn: the check applies
         if b.get("status") in ("error", "cancelled"):
             continue
         if not isinstance(data, dict):
@@ -133,6 +155,9 @@ def check(goal_text: str, blocks: list[dict], canvas_ids: Optional[set] = None) 
     sc.placed = len(ids)
     sc.generated = text_out if goal.kind == "text" else generated
     sc.failures = rec["failures"]
+    # Waiting for the user only when nothing was submitted this turn; a submit that produced too few
+    # results, or a generation call that errored, still fails the check.
+    sc.awaiting_input = asked_input and not attempted
     return sc
 
 
