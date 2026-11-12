@@ -348,6 +348,9 @@ async def test_skill_e2e_portrait_studio_note_then_redo_one(app_url, mock_ws, ag
             assert text.count(m) == 1, (m, text)
         # A successful redo placement must not trip the goal self-check (zh or en).
         assert "目标核对未通过" not in text and "Goal check failed" not in text, text
+        # Scroll the redo reply into view (the English shot used to stop on the done summary).
+        needle = "只重做第 2 张" if lang == "zh" else "redoing only image 2"
+        await pg.locator(".ca-chat__bot", has_text=needle).last.scroll_into_view_if_needed()
         await _shot(pg, f"redo-{lang}")
         await browser.close()
 

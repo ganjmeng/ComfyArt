@@ -456,6 +456,33 @@ def test_goal_check_passes_a_successful_redo_placement(lang, goal, warn):
     assert not any(warn in str(b.get("text") or "") for b in out)
 
 
+@pytest.mark.parametrize("lang,goal,warn", [
+    ("zh", "帮我生成 1 张图", "目标核对未通过"),
+    ("en", "Make 1 image for me", "Goal check failed"),
+])
+@pytest.mark.parametrize("skill", ["studio-model", None])
+def test_goal_check_still_fails_a_generic_shape_from_other_skills(lang, goal, warn, skill):
+    """wait_generation reporting a generic `shape` is not a placed image for studio-model or no skill,
+    even when the canvas is not re-read (canvas_ids is None) and when the canvas is empty."""
+    import json as _json
+    from ComfyArt.bot import self_check
+    blocks = [
+        {"type": "tool_use", "id": "t1", "name": "mcp__comfyart__wait_generation",
+         "input": {"ids": ["j1"], **({"skill": skill} if skill else {})}},
+        {"type": "tool_result", "id": "t1", "name": "mcp__comfyart__wait_generation",
+         "text": _json.dumps({"results": [{"id": "j1", "status": "done", "placed": True,
+                                           "generation_succeeded": True, "shapes": ["shape:ghost"]}]})},
+        {"type": "text", "text": "完成。" if lang == "zh" else "Done."},
+    ]
+    for canvas in (None, set()):
+        sc = self_check.check(goal, blocks, canvas_ids=canvas)
+        assert sc.generated == 1 and sc.placed == 0 and not sc.passed, (skill, canvas, sc.to_dict())
+        out, info = self_check.apply_to_blocks(goal, blocks, lang, canvas_ids=canvas)
+        assert info["self_check"] == "fail" and info["placed"] == 0 and info["missing"] == 1, info
+        notes = [b for b in out if b.get("type") == "notice"]
+        assert len(notes) == 1 and warn in notes[0]["text"], notes
+
+
 def test_tools_are_exposed_to_the_built_in_agent():
     from ComfyArt.bot.guide import CORE_MCP_TOOLS
     for name in ("portrait_studio_plan", "portrait_studio_done", "portrait_studio_redo"):
