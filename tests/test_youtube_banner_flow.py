@@ -643,6 +643,41 @@ def test_base_preflight_shorten_card_follows_ui_language(relay, lang, prompt, co
     assert "重跑" not in out["prompt"] and "rerun" not in out["prompt"].lower()
 
 
+def _visible_shorten_fields(payload: dict) -> list[str]:
+    """User-visible ask-card strings (prompt, placeholder, labels, descriptions)."""
+    out: list[str] = []
+    for key in ("prompt", "placeholder"):
+        if payload.get(key):
+            out.append(str(payload[key]))
+    for q in payload.get("questions") or []:
+        for key in ("prompt", "placeholder", "title"):
+            if q.get(key):
+                out.append(str(q[key]))
+        for opt in q.get("options") or []:
+            for key in ("label", "description"):
+                if opt.get(key):
+                    out.append(str(opt[key]))
+    if payload.get("ask"):
+        out.extend(_visible_shorten_fields(payload["ask"]))
+    return out
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_shorten_card_is_one_language_and_has_no_debug_copy(lang):
+    other = "en" if lang == "zh" else "zh"
+    card = bc.shorten_copy_card(lang)
+    result = bc.shorten_copy_result(lang)
+    visible = "\n".join(_visible_shorten_fields(card) + _visible_shorten_fields(result))
+    assert bc.SHORTEN_COPY[lang]["prompt"] in visible
+    assert bc.SHORTEN_COPY[lang]["placeholder"] in visible
+    # Only the current language: the other locale's sentence must not appear.
+    assert bc.SHORTEN_COPY[other]["prompt"] not in visible
+    assert bc.SHORTEN_COPY[other]["placeholder"] not in visible
+    # Debug / internal strings must not reach user-visible card fields.
+    for needle in ("dry-run", "未提交生成", "id yt_shorten_copy", "yt_shorten_copy", "bannerTextShorten"):
+        assert needle not in visible, needle
+
+
 @pytest.mark.parametrize("case", ["short", "long"])
 def test_base_preflight_fitting_copy_proceeds_to_submit(relay, case):
     ch, tg, sc = CASES[case]
