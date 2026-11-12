@@ -116,7 +116,7 @@ def _with_lang(lang: str | None, goal_text: str, fn):
         paid_guard.TURNS.pop(chat, None)
 
 
-def _assert_card(spec: dict, lang: str, q1: str | None = None, live: dict | None = None) -> None:
+def _assert_card(spec: dict, lang: str, q1: str | None = None, live: dict | None = None, scope_labels: list | None = None) -> None:
     p1, p2, p3, scope = FIXED[lang]
     assert spec["page_count"] == 3
     assert spec["allow_skip"] is True
@@ -131,7 +131,7 @@ def _assert_card(spec: dict, lang: str, q1: str | None = None, live: dict | None
         assert "defaults" not in q, q["id"]
         assert not any(o.get("recommended") for o in q["options"]), q["id"]
         assert not any("推荐" in o["label"] or "ecommended" in o["label"] for o in q["options"]), q["id"]
-    assert [o["label"] for o in qs[2]["options"]] == scope
+    assert [o["label"] for o in qs[2]["options"]] == (scope_labels or scope)
     assert [o["id"] for o in qs[2]["options"]] == ["A", "B", "C", "D"]
     assert qs[2]["min_selections"] == 1 and qs[2]["max_selections"] == 4  # 可多选
     for q in qs[:2]:
@@ -182,7 +182,9 @@ def test_model_card_is_rewritten_to_the_locked_skeleton_in_the_ask_card_language
         "allow_skip": False,
     }
     spec = _with_lang(ui, goal, lambda: bot_asks.validate_spec(raw))
-    _assert_card(spec, lang)
+    # Q3 wording is live per letter (matched by position here); wrong language -> reference wording.
+    scope = ["只要外盒", "全套"] + LOVART_Q3_OPTS[2:] if lang == "zh" else EN_Q3_OPTS
+    _assert_card(spec, lang, scope_labels=scope)
     qs = spec["questions"]
     assert [o["label"] for o in qs[0]["options"]] == ["护肤精华油", "口服酊剂", "香氛"]  # live, cut to 3, no 推荐
     assert [o["label"] for o in qs[1]["options"]] == ["琥珀棕", "深墨绿"]
@@ -281,8 +283,12 @@ def test_skill_text_carries_the_card_and_default_4():
     instr = _instructions()
     for qid, prompt, placeholder in zip(IDS, (LOVART_Q1, LOVART_Q2, LOVART_Q3), PLACEHOLDERS["zh"]):
         assert f'id "{qid}"' in instr and prompt in instr and placeholder in instr, qid
-    for label in LOVART_Q3_OPTS:
+    for label in LOVART_Q3_OPTS:  # the reference wording, as the example for a dropper bottle
         assert f'label:"{label}"' in instr, label
+    assert "exactly four options in this order: A 核心三件, B 延伸件, C 变体家族, D 技术件" in instr
+    assert "a box or pouch has no 瓶标 or 多香型" in instr
+    assert "round-robin in A-D order" in instr and "pk_scope skipped or not answered: A." in instr
+    assert "image_plan" in instr and "This image shows:" in instr
     assert LOVART_Q1_OPTS[0] in instr and LOVART_Q2_OPTS[0] in instr  # examples of live options
     assert instr.index('id "pk_product"') < instr.index('id "pk_color"') < instr.index('id "pk_scope"')
     assert "page_count 3, so the header is 1 of 3" in instr
@@ -478,3 +484,174 @@ def _main_bytes(path: str) -> bytes:
                                   "api/portrait_studio.py", "src/locales/zh.json", "src/locales/en.json"])
 def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_main_bytes(path)).hexdigest(), path
+
+
+# --- question 3: live wording per letter, locked skeleton (Product, final) ----------------------
+
+BOX_Q3 = ["核心三件：外盒 ＋ 内衬 ＋ 封口贴", "延伸件：快递箱 ＋ 手提袋 ＋ 感谢卡",
+          "变体家族：同系列多口味 / 礼盒装", "技术件：标注尺寸的结构图 ＋ 平面刀版稿"]
+
+
+def _q3(options, lang="zh"):
+    spec = pk.card_spec([{"id": "pk_scope", "prompt": LOVART_Q3, "options": options}], lang)
+    return _with_lang(lang, "", lambda: bot_asks.validate_spec(spec))["questions"][2]
+
+
+def test_q3_model_wording_is_used():
+    q = _q3(_opts(BOX_Q3))
+    assert [o["label"] for o in q["options"]] == BOX_Q3
+    assert q["prompt"] == LOVART_Q3 and q["placeholder"] == "其它，请直接输入..."
+    assert (q["min_selections"], q["max_selections"]) == (1, 4) and q["allow_other"] is True
+    assert not any("瓶标" in o["label"] or "多香型" in o["label"] for o in q["options"])
+    en = _q3(_opts(["Core three: pouch + label + mailer", "Extensions: carton + bag + card",
+                    "Variant family: flavors", "Technical: dieline + drawing"]), "en")
+    assert [o["label"] for o in en["options"]][0] == "Core three: pouch + label + mailer"
+
+
+@pytest.mark.parametrize("bad", [None, "", "   ", "Core three: box", "（推荐）"])
+def test_q3_falls_back_per_missing_option(bad):
+    opts = _opts(BOX_Q3)
+    if bad is None:
+        opts = [o for o in opts if o["id"] != "B"]  # B missing
+    else:
+        opts[1]["label"] = bad  # B empty / wrong language / only a 推荐 marker
+    q = _q3(opts)
+    assert [o["label"] for o in q["options"]] == [BOX_Q3[0], LOVART_Q3_OPTS[1], BOX_Q3[2], BOX_Q3[3]]
+    en = _q3(_opts(BOX_Q3), "en")  # all zh wording on an en card -> every option falls back
+    assert [o["label"] for o in en["options"]] == EN_Q3_OPTS
+
+
+def test_q3_skeleton_cannot_be_reordered_or_expanded():
+    reordered = [{"id": i, "label": BOX_Q3["ABCD".index(i)]} for i in "DCBA"]
+    q = _q3(reordered + [{"id": "E", "label": "其它：多一个"}, {"id": "F", "label": "再来一个"}])
+    assert [o["id"] for o in q["options"]] == ["A", "B", "C", "D"]
+    assert [o["label"] for o in q["options"]] == BOX_Q3  # each wording stays on its own letter
+    six = _q3([{"id": str(n), "label": f"第{n}项：内容"} for n in range(6)])
+    assert [o["id"] for o in six["options"]] == ["A", "B", "C", "D"]
+    assert [o["label"] for o in six["options"]] == [f"第{n}项：内容" for n in range(4)]
+    assert _q3([])["options"] == [{"id": i, "label": lb} for i, lb in zip("ABCD", LOVART_Q3_OPTS)]
+    for o in _q3([{"id": "A", "label": "核心三件：外盒", "recommended": True}])["options"]:
+        assert set(o) == {"id", "label"}
+
+
+# --- images 2-4 follow the Q3 answer (Product point 4) -------------------------------------------
+
+def _spec_with_q3(labels=LOVART_Q3_OPTS):
+    return bot_asks.validate_spec(pk.card_spec([{"id": "pk_scope", "prompt": LOVART_Q3, "options": _opts(labels)}], "zh"))
+
+
+def _answered_turn(answers, labels=LOVART_Q3_OPTS, calls=4):
+    """ask_user answered in this turn, then `calls` generate_image calls through the per-image hook."""
+    def go():
+        plan = pk.record_card_answer(_spec_with_q3(labels), answers)
+        reqs = [pk.lock_request(_call(f"image {n + 1}", ["shape:p"])) for n in range(calls)]
+        return plan, reqs
+    return _with_lang("zh", "", go)
+
+
+def _shows(req):
+    lines = [ln for ln in req["prompt"].split("\n") if ln.startswith(pk.SHOWS_HEAD)]
+    assert len(lines) <= 1
+    return lines[0][len(pk.SHOWS_HEAD):].strip().rstrip(".") if lines else None
+
+
+def _sel(*letters, other=""):
+    a = {"selected": list(letters)}
+    if other:
+        a["other_text"] = other
+    return {"pk_product": {"selected": ["A"]}, "pk_color": {"selected": ["A"]}, "pk_scope": a}
+
+
+@pytest.mark.parametrize("answers,expected", [
+    (_sel("A"), ["外盒", "瓶标", "内托"]),
+    (_sel("B"), ["运输箱", "手提袋", "封条/感谢卡"]),
+    (_sel("B", "A"), ["外盒; 内托", "运输箱; 手提袋; 封条/感谢卡", "瓶标"]),  # A-D order, round-robin
+    (_sel("D", "C", "B", "A"), ["外盒; 瓶标; 内托; 标注尺寸的结构的构图纸; 平面刀版稿", "运输箱; 手提袋; 封条/感谢卡",
+                                "同系列多支 / 多香型陈列"]),
+    ({}, ["外盒", "瓶标", "内托"]),  # whole card skipped -> A
+    (_sel(), ["外盒", "瓶标", "内托"]),  # Q3 not answered -> A
+    (None, ["外盒", "瓶标", "内托"]),
+    (_sel(other="金属礼盒"), ["金属礼盒", "金属礼盒", "金属礼盒"]),  # free text alone is the scope
+    (_sel("A", other="金属礼盒"), ["外盒; 内托", "金属礼盒", "瓶标"]),  # free text counts after D
+])
+def test_extension_images_follow_the_q3_answer(answers, expected):
+    plan, reqs = _answered_turn(answers)
+    assert [r["ratio"] for r in reqs] == ["3:4", "4:3", "4:3", "4:3"]
+    assert _shows(reqs[0]) is None  # the anchor is the model's own prompt
+    assert [_shows(r) for r in reqs[1:]] == expected
+    assert plan[1:] == expected and len(plan) == 4
+    for n, r in enumerate(reqs):
+        assert r["prompt"].startswith(f"image {n + 1}")
+
+
+def test_extension_images_use_the_wording_shown_on_the_card():
+    _, reqs = _answered_turn(_sel("A"), labels=BOX_Q3)
+    assert [_shows(r) for r in reqs[1:]] == ["外盒", "内衬", "封口贴"]
+
+
+def test_shows_line_is_replaced_not_stacked_and_kept_on_retry():
+    def go():
+        pk.record_card_answer(_spec_with_q3(), _sel("B"))
+        a = pk.lock_request(_call("anchor", ["shape:p"]))
+        b = pk.lock_request(_call("x\nThis image shows: something else.", ["shape:p"]))
+        c = pk.lock_request({**_call("x", ["shape:p"]), "fallback_for": "m"})
+        return a, b, c
+    a, b, c = _with_lang("zh", "", go)
+    assert _shows(b) == _shows(c) == "运输箱" and b["prompt"].count(pk.SHOWS_HEAD) == 1
+
+
+def test_no_card_answer_this_turn_leaves_prompts_alone():
+    reqs = _with_lang("zh", "", lambda: [pk.lock_request(_call(f"p{n}", ["shape:p"])) for n in range(4)])
+    assert [r["prompt"] for r in reqs] == ["p0", "p1", "p2", "p3"]
+
+
+def test_other_cards_record_nothing():
+    def go():
+        assert pk.record_card_answer({"questions": [{"id": "ps_shots"}]}, {"ps_shots": {"selected": ["A"]}}) is None
+        return pk.lock_request(_call("p", ["shape:p"]))
+    assert _with_lang("zh", "", go)["prompt"] == "p"
+
+
+def test_ask_user_returns_the_image_plan(monkeypatch):
+    from ComfyArt.api.mcp_tools import bot_tools
+
+    async def fake_await(chat_id, state, spec):
+        return {"status": "answered", "selected": [], "other_text": "", "answers": _sel("B")}
+    monkeypatch.setattr(bot_tools, "_await_ask", fake_await)
+    monkeypatch.setattr(bot_tools, "bot_turn_state", lambda: ("chat-x", object()))
+    out = _with_lang("zh", "", lambda: asyncio.run(bot_tools.ask_user(json.loads(json.dumps(LOVART_CALL)))))
+    assert out["image_plan"][1:] == ["运输箱", "手提袋", "封条/感谢卡"]
+    assert "image_plan" not in _with_lang("zh", "", lambda: asyncio.run(bot_tools.ask_user(
+        {"questions": [{"id": "x", "prompt": "随便问问？", "options": _opts(["a", "b"])}]})))
+
+
+# --- _LOCKS only holds live turns (Tech) ----------------------------------------------------------
+
+def test_locks_drop_ended_and_replaced_turns():
+    pk._LOCKS.clear()
+    chats = [paid_guard.noturn_key(f"pk-lock-{n}") for n in range(3)]
+    for c in chats:  # three turns that start, use the hook, then end
+        token = GUARD_CHAT_ID.set(c)
+        try:
+            paid_guard.begin_turn(c, text="", provider_text="", lang="zh")
+            pk.lock_request(_call("p", ["shape:p"]))
+            assert c in pk._LOCKS
+            paid_guard.end_turn(c)
+        finally:
+            GUARD_CHAT_ID.reset(token)
+    _with_lang("zh", "", lambda: pk.lock_request(_call("p", ["shape:p"])))
+    assert not any(c in pk._LOCKS for c in chats)  # ended turns are gone
+    assert len(pk._LOCKS) <= 1
+    # Same chat, new turn: the old entry is replaced, not kept beside it.
+    c = paid_guard.noturn_key("pk-lock-same")
+    token = GUARD_CHAT_ID.set(c)
+    try:
+        g1 = paid_guard.begin_turn(c, text="", provider_text="", lang="zh")
+        pk.lock_request(_call("p", ["shape:p"]))
+        g2 = paid_guard.begin_turn(c, text="", provider_text="", lang="zh")
+        out = pk.lock_request(_call("p", ["shape:p"]))
+        assert out["ratio"] == "3:4" and pk._LOCKS[c]["guard"] is g2 is not g1
+        assert sum(1 for lk in pk._LOCKS.values() if lk["guard"] in (g1, g2)) == 1
+    finally:
+        GUARD_CHAT_ID.reset(token)
+        paid_guard.TURNS.pop(c, None)

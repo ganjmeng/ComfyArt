@@ -8,11 +8,13 @@ anchor image (box + product together, 3:4, 1536x2048) and three extensions of th
 
 Question 1 and 2 are written by Lovart from the uploaded product: the product noun in the
 question 1 title (「这瓶滴管产品」 for the dropper bottle) and the options of questions 1 and 2.
-Question 3 is the same scope list for the product. Code enforces the card SKELETON in the
-ask-card language: ids, the fixed title text, question 3's options, the free-text placeholders,
-question 3 multi-select, nothing preselected. Question 1's product noun and the options of
-questions 1 and 2 stay as the model wrote them from the photo (the same split as the
-clothing-swap card: live labels, locked skeleton).
+Question 3 is four fixed scopes (A core three, B extensions, C variant family, D technical) whose
+wording names the parts for that product (瓶标 / 多香型 for the bottle). Code enforces the card
+SKELETON in the ask-card language: ids, the fixed title text, question 3's letters / order / count,
+the free-text placeholders, question 3 multi-select, nothing preselected. Question 1's product noun,
+the options of questions 1 and 2 and the wording of question 3's options stay as the model wrote
+them from the photo (the same split as the clothing-swap card: live labels, locked skeleton); a
+missing or wrong-language question 3 label falls back to the reference wording for that letter.
 
 zh text is verbatim from the Lovart card (question-card-1-*.png at e304e2fa; where notes.txt
 differs from the screenshot, the screenshot wins). Lovart showed only zh; en is our translation
@@ -164,6 +166,36 @@ def live_options(raw_opts: object) -> list[dict]:
     return out if len(out) >= 2 else []
 
 
+def _right_lang(text: str, lang: str) -> bool:
+    return bool(_CJK.search(text)) is (lang == "zh")
+
+
+def scope_options(raw_opts: object, locked: list[dict], lang: str) -> list[dict]:
+    """Question 3: the skeleton is locked (A-D, the four scopes in that order, no more, no fewer);
+    each label is the model's wording for this product when it gives one in the card language,
+    else the reference wording for that letter. A model option is matched by its letter id, else
+    by its position; anything past D is dropped."""
+    raw = [o for o in raw_opts] if isinstance(raw_opts, list) else []
+    letters = [o["id"] for o in locked]
+    by_letter: dict[str, object] = {}
+    for o in raw:
+        oid = str(o.get("id") or "").strip().upper() if isinstance(o, dict) else ""
+        if oid in letters and oid not in by_letter:
+            by_letter[oid] = o
+    for i, o in enumerate(raw[:len(letters)]):
+        oid = str(o.get("id") or "").strip().upper() if isinstance(o, dict) else ""
+        if oid not in letters:
+            by_letter.setdefault(letters[i], o)
+    out = []
+    for lk in locked:
+        o = by_letter.get(lk["id"])
+        label = _strip_rec(o.get("label") if isinstance(o, dict) else o) if o is not None else ""
+        if not label or not _right_lang(label, lang):
+            label = lk["label"]
+        out.append({"id": lk["id"], "label": label})
+    return out
+
+
 def card_questions(raw_questions: list | None = None, lang: str | None = None) -> list[dict]:
     lang = card_lang(lang)
     by_id: dict[str, dict] = {}
@@ -175,7 +207,7 @@ def card_questions(raw_questions: list | None = None, lang: str | None = None) -
     for locked in CARD[lang]:
         raw = by_id.get(locked["id"]) or {}
         if locked["options"] is not None:
-            options = [dict(o) for o in locked["options"]]
+            options = scope_options(raw.get("options"), locked["options"], lang)
             min_sel, max_sel = 1, len(options)  # 可多选
         else:
             options = live_options(raw.get("options"))
@@ -225,9 +257,23 @@ def normalize_card(args: dict, lang: str | None = None) -> dict:
 
 # --- one generate_image per image: image 1 anchor 3:4, images 2-4 4:3 -----------------------------
 
-# chat id -> {"guard": TurnGuard | None, "refs": list | None, "n": calls so far this turn}
+# chat id -> {"guard": TurnGuard | None, "refs": list | None, "n": calls so far this turn,
+#             "scopes": Q3 scopes answered on this turn's card, or None when no card answer was seen}
+# Only live turns are kept: an entry whose turn ended (or was replaced by a newer turn) is dropped.
 _LOCKS: dict[str, dict] = {}
 _SIZE_KEYS = ("width", "height", "ratio", "resolution", "edit_resolution", "size_lock", "size_candidates")
+EXTENSION_IMAGES = DEFAULT_IMAGES - 1
+
+# What each Q3 scope shows on the extension images (A: what the reference run delivered for 核心三件).
+SCOPE_ITEMS: dict[str, tuple[str, ...]] = {
+    "A": ("the outer box from several angles", "the label close up", "the unboxing with the inner tray"),
+    "B": ("the shipping carton", "the tote bag", "the seal and thank-you card"),
+    "C": ("several products of the same line together", "a multi-scent display of the line"),
+    "D": ("a structural drawing with dimensions", "the flat dieline"),
+}
+SCOPE_ORDER = ("A", "B", "C", "D")
+DEFAULT_SCOPE = "A"  # Q3 skipped / not answered: 核心三件
+SHOWS_HEAD = "This image shows:"
 
 
 def applies(args: dict) -> bool:
@@ -243,20 +289,100 @@ def _turn_lock() -> dict:
     from . import paid_guard
     chat = paid_guard.resolve_guard_chat_id()
     guard = paid_guard.TURNS.get(chat)
+    for stale in [c for c, lk in _LOCKS.items() if paid_guard.TURNS.get(c) is not lk["guard"]]:
+        del _LOCKS[stale]  # ended or replaced turns (this chat's previous turn included)
     lock = _LOCKS.get(chat)
-    if lock is None or lock["guard"] is not guard:  # a new turn starts a new set
-        lock = _LOCKS[chat] = {"guard": guard, "refs": None, "n": 0}
+    if lock is None:  # a new turn starts a new set
+        lock = _LOCKS[chat] = {"guard": guard, "refs": None, "n": 0, "scopes": None, "items": None}
     return lock
+
+
+def scopes_from_answers(answers: object) -> list[str]:
+    """Q3 answer -> scopes in A-D order, then the free-text answer. Nothing chosen -> [A]."""
+    ans = (answers or {}).get(PK_SCOPE) if isinstance(answers, dict) else None
+    ans = ans if isinstance(ans, dict) else {}
+    picked = {str(s).strip().upper() for s in ans.get("selected") or []}
+    scopes = [s for s in SCOPE_ORDER if s in picked]
+    other = str(ans.get("other_text") or "").strip()
+    if other:
+        scopes.append(other)
+    return scopes or [DEFAULT_SCOPE]
+
+
+def label_items(label: str) -> tuple[str, ...]:
+    """Parts named in a question-3 label: the text after the scope name, split on ＋ / +."""
+    body = re.split(r"[：:]", str(label or ""), maxsplit=1)[-1]
+    parts = tuple(p.strip() for p in re.split(r"\s*[＋+]\s*", body) if p.strip())
+    return parts
+
+
+def _items(scope: str, items_map: dict | None = None) -> tuple[str, ...]:
+    if items_map and items_map.get(scope):
+        return tuple(items_map[scope])  # the wording the user saw on the card
+    return SCOPE_ITEMS.get(scope, (scope,))  # a free-text scope is shown as the user wrote it
+
+
+def extension_plan(scopes: list[str] | None, items_map: dict | None = None) -> list[str]:
+    """What images 2-4 show, one line each. Scopes take the extension images round-robin in A-D order
+    (free text last). One scope per image shows all of that scope; a scope with several images splits
+    its items across them (round-robin); more scopes than images share images (scope i -> image i mod 3)."""
+    scopes = list(scopes or [DEFAULT_SCOPE])
+    slots: list[list[str]] = [[] for _ in range(EXTENSION_IMAGES)]
+    if len(scopes) >= EXTENSION_IMAGES:
+        for i, sc in enumerate(scopes):
+            slots[i % EXTENSION_IMAGES].extend(_items(sc, items_map))
+        return ["; ".join(s) for s in slots]
+    owner = [scopes[k % len(scopes)] for k in range(EXTENSION_IMAGES)]
+    for sc in scopes:
+        mine = [k for k, o in enumerate(owner) if o == sc]
+        items = _items(sc, items_map)
+        if len(mine) == 1:
+            slots[mine[0]].extend(items)
+        else:
+            for j, it in enumerate(items):
+                slots[mine[j % len(mine)]].append(it)
+            for j, k in enumerate(mine):  # a scope with fewer items than images repeats them
+                if not slots[k]:
+                    slots[k].append(items[j % len(items)])
+    return ["; ".join(s) for s in slots]
+
+
+def image_plan(scopes: list[str] | None, items_map: dict | None = None) -> list[str]:
+    """All 4 images: the anchor, then the 3 extensions."""
+    return ["the anchor: the package and the product together in one key visual"] + extension_plan(scopes, items_map)
+
+
+def is_card_spec(spec: dict) -> bool:
+    return any(isinstance(q, dict) and q.get("id") == PK_SCOPE for q in (spec or {}).get("questions") or [])
+
+
+def record_card_answer(spec: dict, answers: object) -> list[str] | None:
+    """Called by ask_user after this card was answered (Skip included): remember the Q3 scopes for
+    this turn's extension images. Returns the image plan for the agent; None for other cards."""
+    if not is_card_spec(spec):
+        return None
+    lock = _turn_lock()
+    lock["scopes"] = scopes_from_answers(answers)
+    q3 = next(q for q in spec["questions"] if isinstance(q, dict) and q.get("id") == PK_SCOPE)
+    lock["items"] = {str(o.get("id")): label_items(o.get("label")) for o in q3.get("options") or [] if isinstance(o, dict)}
+    return image_plan(lock["scopes"], lock["items"])
+
+
+def _with_shows(prompt: str, shows: str) -> str:
+    lines = [ln for ln in str(prompt or "").split("\n") if not ln.startswith(SHOWS_HEAD)]
+    return "\n".join(lines + [f"{SHOWS_HEAD} {shows}."]).strip()
 
 
 def lock_request(args: dict) -> dict:
     """One product-to-packaging generate_image call of this turn: ratio by its place in the set
     (anchor 3:4, then 4:3), count 1, and the first call's product photo kept first in refs
-    (later calls add the anchor image to it)."""
+    (later calls add the anchor image to it). When this turn's card was answered, images 2-4 get a
+    "This image shows:" line from the Q3 scopes (extension_plan)."""
     args = dict(args)
     lock = _turn_lock()
     # A fallback_for retry re-submits the same image on another model: same place in the set.
     retry = bool(args.get("fallback_for")) and lock["n"] > 0
+    index = lock["n"] - 1 if retry else lock["n"]
     if lock["refs"] is None:
         lock["refs"] = [str(r) for r in (args.get("refs") or [])]
     refs = list(lock["refs"])
@@ -269,8 +395,10 @@ def lock_request(args: dict) -> dict:
         args.pop("refs", None)
     for k in _SIZE_KEYS:
         args.pop(k, None)
-    args["ratio"] = ratio_for(lock["n"] - 1 if retry else lock["n"])
+    args["ratio"] = ratio_for(index)
     args["count"] = 1
+    if lock["scopes"] is not None and 1 <= index <= EXTENSION_IMAGES:
+        args["prompt"] = _with_shows(args.get("prompt") or "", extension_plan(lock["scopes"], lock["items"])[index - 1])
     if not retry:
         lock["n"] += 1
     return args
