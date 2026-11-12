@@ -1,0 +1,352 @@
+"""portrait-studio replies around the set + single-image redo (Lovart 7fc60c86 reply, notes.txt).
+
+Product acceptance (modeled on Lovart's replies, nothing extra):
+1. before generating: locked from the reference / what changes, then lighting, optics, pose, then 「现在开始生成」;
+   built from the card answers + what the agent read off the reference, not a fixed text.
+2. after generating: a shot-size -> image table, then only the parameters actually written into the prompts
+   (focal length, aperture, lighting, aspect ratio). No shutter, ISO, film stock, negative prompt or price.
+3. closing: look at the images, name the one whose face shape or hair drifted, only that one is redone.
+4. single redo: exactly ONE paid call (same reference, same shot, same outfit/scene, count 1), placed next to
+   the original; the original and the other images untouched.
+5. en UI is all English.
+
+$0: submit_command and the run approval are mocked; no WaveSpeed call.
+"""
+from __future__ import annotations
+
+import asyncio
+import re
+import uuid
+
+import pytest
+
+from ComfyArt.api import portrait_studio as ps
+from ComfyArt.api.mcp_tools import canvas
+from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID
+from test_portrait_studio_flow import SUNBURST_EDIT, _with_lang
+
+CJK = re.compile(r"[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]")
+BANNED = ("ISO", "1/250", "Portra", "Kodak", "Negative", "负面", "$", "¥", "美元", "费用", "price", "film")
+
+ZH_ARGS = {"refs": ["shape:person"], "shots": "A", "outfit": "A", "scene": "A",
+           "locked": ["五官轮廓", "眼神气质", "黑色中长微卷发", "暖调自然亚洲肤色", "纤细高挑身材比例"],
+           "outfit_desc": "白长袖打底 + 黑 V 领针织背心 + 卡其宽腿工装裤",
+           "reference_background": "罗马柱建筑空间", "prompt": "young East Asian woman, black shoulder-length wavy hair"}
+EN_ARGS = {"refs": ["shape:person"], "shots": "A", "outfit": "A", "scene": "A",
+           "locked": ["facial features", "black shoulder-length wavy hair", "warm natural skin tone", "slim build"],
+           "outfit_desc": "white long-sleeve top, black V-neck knit vest, khaki wide-leg cargo pants",
+           "reference_background": "a columned hall", "prompt": "young East Asian woman, black shoulder-length wavy hair"}
+
+# Lock: zh A/A/A, Lovart's reply shape with this run's answers (notes.txt «Lovart reply (verbatim, in order)»).
+ZH_PLAN = "\n".join([
+    "参考图已作为身份锚点分析完毕。按你的选择：3 张 / 保留原休闲造型 / 纯色棚拍背景，三张共用同一人物身份与服装，只变景别与姿态。",
+    "锁定项：五官轮廓、眼神气质、黑色中长微卷发、暖调自然亚洲肤色、纤细高挑身材比例、服装完整保留（白长袖打底 + 黑 V 领针织背心 + 卡其宽腿工装裤）",
+    "变更项：背景由罗马柱建筑空间 → 纯色棚拍背景；景别拆为特写 / 半身 / 七分身三档，姿态相应重建",
+    "布光：Loop 环形光为主方案，大面积柔光箱从机位左侧 30° 高位切入，辅以弱发丝轮廓光",
+    "光学：85mm 黄金人像焦段；特写 f/2.0、半身 f/2.8、七分身 f/4.0",
+    "摆姿：S 型脊柱 + 一肩微高一肩微低 + 下巴前伸微低拉紧下颌线；手部统一走\"插兜 / 自然垂落侧手\"路线，规避手指畸变，腰侧保留负空间",
+    "现在开始生成三张。",
+])
+ZH_DONE = "\n".join([
+    "三张已完成：",
+    "| 景别 | 产物 |",
+    "|---|---|",
+    "| 面部特写（头肩） | 第 1 张：专业形象照-面部特写 |",
+    "| 半身（大腿上缘以上） | 第 2 张：专业形象照-半身 |",
+    "| 七分身（小腿中部以上） | 第 3 张：专业形象照-七分身 |",
+    "⚙️ 参数",
+    "光学参数：85mm ｜ Loop 环形光 + 柔光 ｜ 特写 f/2.0 · 半身 f/2.8 · 七分身 f/4.0",
+    "画幅：3:4 竖版 ×3",
+])
+ZH_CLOSE = ("验收提示：三张的身份锚点（五官轮廓、眼神气质、黑色中长微卷发、暖调自然亚洲肤色、纤细高挑身材比例）都按参考图锁定了，"
+            "但我无法逐像素核对实际一致性。请你过一眼这三张，如果某张的脸型或发型偏离原片，告诉我具体是哪张、偏在哪里，我针对那一张重做。")
+EN_PLAN = "\n".join([
+    "The reference photo has been analyzed as the identity anchor. As you chose: 3 photos / keep the original casual look / "
+    "solid-color studio backdrop; all three share the same person and outfit, only the shot size and pose change.",
+    "Locked: facial features, black shoulder-length wavy hair, warm natural skin tone, slim build, outfit kept in full "
+    "(white long-sleeve top, black V-neck knit vest, khaki wide-leg cargo pants)",
+    "Changed: background from a columned hall → solid-color studio backdrop; shot sizes split into face close-up / half body / "
+    "three-quarter body, with the pose rebuilt for each",
+    "Lighting: Loop lighting as the main setup: a large softbox high from camera-left at 30°, plus a soft hair light for rim separation",
+    "Optics: 85mm portrait focal length; face close-up f/2.0, half body f/2.8, three-quarter body f/4.0",
+    "Pose: S-curve spine, one shoulder slightly higher, chin slightly forward and down to tighten the jawline; hands in pockets "
+    "or hanging naturally at the sides, avoiding finger distortion, with negative space at the sides of the waist",
+    "Starting the three photos now.",
+])
+EN_DONE = "\n".join([
+    "All three are done:",
+    "| Shot size | Image |",
+    "|---|---|",
+    "| Face close-up (head and shoulders) | Image 1: Professional portrait - face close-up |",
+    "| Half body (from the upper thigh up) | Image 2: Professional portrait - half body |",
+    "| Three-quarter body (from mid-calf up) | Image 3: Professional portrait - three-quarter body |",
+    "⚙️ Parameters",
+    "Optics: 85mm | Loop lighting + softbox | face close-up f/2.0 · half body f/2.8 · three-quarter body f/4.0",
+    "Format: 3:4 portrait ×3",
+])
+EN_CLOSE = ("Check: the identity anchors of all three (facial features, black shoulder-length wavy hair, warm natural skin tone, "
+            "slim build) are locked to the reference, but I can't verify the match pixel by pixel. Please look over the three "
+            "photos; if one drifts from the original in face shape or hair, tell me which one and where, and I'll redo just that one.")
+LOCK = {"zh": (ZH_ARGS, ZH_PLAN, ZH_DONE, ZH_CLOSE), "en": (EN_ARGS, EN_PLAN, EN_DONE, EN_CLOSE)}
+# One marker per reply part; each must appear exactly once in the whole set's chat text.
+MARKERS = {"zh": ("现在开始生成", "| 景别 | 产物 |", "验收提示："), "en": ("Starting the", "| Shot size | Image |", "Check: ")}
+
+
+@pytest.fixture(autouse=True)
+def no_paid_keys(monkeypatch):
+    for key in ("WAVESPEED_API_KEY", "DEEPSEEK_API_KEY", "REPLICATE_API_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+
+
+SENT: list = []
+APPROVALS: list = []
+
+
+@pytest.fixture
+def relay(monkeypatch):
+    """Mocked page/WaveSpeed hop: every generate_image that would reach the provider lands in SENT."""
+    SENT.clear()
+    APPROVALS.clear()
+    ps.PLANS.clear()
+
+    async def submit(action, args, project, timeout, chat=""):
+        SENT.append((action, dict(args)))
+        return {"ids": [f"gen:{len(SENT)}"], "model": args.get("edit_model") or args.get("model")}
+
+    async def approval(label):
+        APPROVALS.append(label)
+        return None
+
+    monkeypatch.setattr(canvas, "submit_command", submit)
+    monkeypatch.setattr(canvas, "maybe_ask_run_approval", approval)
+    yield
+    ps.PLANS.clear()
+
+
+def _tool(name, args, lang, chat):
+    async def run():
+        token = BOT_CHAT_ID.set(chat)
+        try:
+            return await canvas.TOOLS[name]["handler"](dict(args))
+        finally:
+            BOT_CHAT_ID.reset(token)
+    return _with_lang(lang, "", lambda: asyncio.run(run()))
+
+
+def _run_set(lang, args, chat):
+    """The agent's whole set: plan -> one generate_image per slot -> done. Returns (messages, plan result)."""
+    plan = _tool("portrait_studio_plan", args, lang, chat)
+    assert plan["status"] == "planned", plan
+    msgs = [plan["user_message"]]
+    for s in plan["slots"]:
+        out = _tool("generate_image", {"prompt": args["prompt"], "skill": "portrait-studio", "refs": args["refs"],
+                                       "count": 1, "shot": s["shot"]}, lang, chat)
+        assert out.get("ids"), out
+    done = _tool("portrait_studio_done", {"images": [f"shape:img{s['slot']}" for s in plan["slots"]]}, lang, chat)
+    assert done["status"] == "done", done
+    msgs.append(done["user_message"])
+    return msgs, plan
+
+
+# --- reply text (lock) ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_reply_text_is_locked(lang):
+    args, want_plan, want_done, want_close = LOCK[lang]
+    plan = ps.make_plan(args, lang)
+    assert ps.plan_text(plan) == want_plan
+    assert ps.done_text(plan) == want_done
+    assert ps.closing_text(plan) == want_close
+
+
+def test_zh_reply_keeps_lovart_7fc60c86_wording():
+    """The fixed phrases come from Lovart's reply in notes.txt (the run's own answers were A/A/A)."""
+    plan = ps.make_plan(ZH_ARGS, "zh")
+    text = ps.plan_text(plan) + "\n" + ps.done_text(plan) + "\n" + ps.closing_text(plan)
+    for lovart in ("参考图已作为身份锚点分析完毕。按你的选择：3 张 / 保留原休闲造型 / 纯色棚拍背景，三张共用同一人物身份与服装，只变景别与姿态。",
+                   "景别拆为特写 / 半身 / 七分身三档，姿态相应重建",
+                   "Loop 环形光为主方案，大面积柔光箱从", "辅以弱发丝轮廓光",
+                   "85mm 黄金人像焦段；特写 f/2.0、半身 f/2.8、七分身 f/4.0",
+                   "S 型脊柱 + 一肩微高一肩微低 + 下巴前伸微低拉紧下颌线；手部统一走\"插兜 / 自然垂落侧手\"路线，规避手指畸变，腰侧保留负空间",
+                   "三张已完成：", "| 面部特写（头肩） |", "| 半身（大腿上缘以上） |", "| 七分身（小腿中部以上） |",
+                   "专业形象照-面部特写", "专业形象照-半身", "专业形象照-七分身",
+                   "85mm ｜ Loop 环形光 + 柔光 ｜ 特写 f/2.0 · 半身 f/2.8 · 七分身 f/4.0", "3:4 竖版 ×3",
+                   "都按参考图锁定了，但我无法逐像素核对实际一致性。请你过一眼这三张，如果某张的脸型或发型偏离原片，告诉我具体是哪张、偏在哪里，我针对那一张重做"):
+        assert lovart in text, lovart
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("shots,outfit,scene", [("A", "A", "A"), ("B", "B", "B"), ("C", "C", "C"), ("", "B", "C"),
+                                                ("我要 2 张", "A", "B")])
+def test_reply_follows_the_answers_and_the_reference(lang, shots, outfit, scene):
+    args = {**LOCK[lang][0], "shots": shots, "outfit": outfit, "scene": scene}
+    plan = ps.make_plan(args, lang)
+    want = ps.shots_for(shots)
+    assert tuple(plan["shots"]) == want
+    n = len(want)
+    before, after, close = ps.plan_text(plan), ps.done_text(plan), ps.closing_text(plan)
+    for item in args["locked"]:  # what the agent read off the reference is in the reply, not a fixed list
+        assert item in before and item in close
+    echo = ps.ECHO[lang]
+    assert echo[ps.PS_OUTFIT][outfit] in before and echo[ps.PS_SCENE][scene] in before
+    if outfit == "A":
+        assert args["outfit_desc"] in before
+    else:
+        assert args["outfit_desc"] not in before
+    if scene == "C":
+        assert args["reference_background"] not in before
+    else:
+        assert args["reference_background"] in before
+    for s in want:  # only the shots in this set, each with its aperture, in both replies
+        assert ps.SHOTS[s]["aperture"] in before and ps.SHOTS[s]["aperture"] in after
+        assert (ps.SHOTS[s]["zh_frame"] if lang == "zh" else ps.SHOTS[s]["en_frame"]) in after
+    for s in set(ps.SHOTS) - set(want):
+        assert (ps.SHOTS[s]["zh_frame"] if lang == "zh" else ps.SHOTS[s]["en_frame"]) not in after
+    assert len(re.findall(r"\| 第 \d 张：" if lang == "zh" else r"\| Image \d: ", after)) == n
+    assert (f"×{n}") in after and "3:4" in after and "85mm" in before and "85mm" in after
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("shots", ["A", "B", "C"])
+def test_listed_parameters_are_the_ones_written_into_every_prompt(relay, lang, shots):
+    plan = ps.make_plan({**LOCK[lang][0], "shots": shots}, lang)
+    text = ps.plan_text(plan) + ps.done_text(plan) + ps.closing_text(plan)
+    for bad in BANNED:
+        assert bad not in text, bad
+    _run_set(lang, {**LOCK[lang][0], "shots": shots}, f"ps-{uuid.uuid4().hex}")
+    assert len(SENT) == len(plan["shots"])
+    for (_, sent), s in zip(SENT, plan["shots"]):
+        prompt = sent["prompt"]
+        assert ps.SHOT_LINE[s] in prompt and ps.POSE_LINE[s] in prompt and ps.IDENTITY_LINE in prompt
+        assert f"85mm portrait lens at {ps.SHOTS[s]['aperture']}" in prompt and "loop lighting" in prompt
+        assert "softbox" in prompt and "3:4 vertical portrait" in prompt
+        assert ps.PROMPT_OUTFIT["A"] in prompt and ps.PROMPT_SCENE["A"] in prompt
+        for other in set(ps.SHOT_KEYS) - {s}:
+            assert ps.SHOT_LINE[other] not in prompt and f"at {ps.SHOTS[other]['aperture']}" not in prompt
+
+
+def test_en_reply_is_all_english_and_rejects_chinese_reference_notes():
+    for shots in ("A", "B", "C"):
+        plan = ps.make_plan({**EN_ARGS, "shots": shots, "outfit": "B", "scene": "B"}, "en")
+        for text in (ps.plan_text(plan), ps.done_text(plan), ps.closing_text(plan)):
+            assert not CJK.search(text), text
+        assert not CJK.search(ps.REDO_TEXT["en"])
+    with pytest.raises(ps.PlanError):
+        ps.make_plan({**EN_ARGS, "locked": ["五官轮廓"]}, "en")
+
+
+def test_one_image_set_reads_as_one():
+    zh = ps.make_plan({**ZH_ARGS, "shots": "C"}, "zh")
+    assert "现在开始生成一张。" in ps.plan_text(zh) and "共用" not in ps.plan_text(zh)
+    assert ps.done_text(zh).startswith("这张已完成：") and "×1" in ps.done_text(zh)
+    assert "我重做这一张" in ps.closing_text(zh)
+    en = ps.make_plan({**EN_ARGS, "shots": "C"}, "en")
+    assert "Starting the photo now." in ps.plan_text(en) and "redo this one" in ps.closing_text(en)
+
+
+# --- the set through the real tool handlers ------------------------------------------------------
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+def test_each_reply_part_appears_exactly_once(relay, lang):
+    chat = f"ps-{uuid.uuid4().hex}"
+    msgs, _ = _run_set(lang, LOCK[lang][0], chat)
+    chat_text = "\n\n".join(msgs)
+    for marker in MARKERS[lang]:
+        assert chat_text.count(marker) == 1, (marker, chat_text)
+    assert chat_text.index(MARKERS[lang][0]) < chat_text.index(MARKERS[lang][1]) < chat_text.index(MARKERS[lang][2])
+    assert msgs == [LOCK[lang][1], LOCK[lang][2] + "\n\n" + LOCK[lang][3]]
+    assert len(SENT) == 3  # the set itself: one call per slot
+
+
+def test_each_slot_is_one_image_with_its_own_shot(relay):
+    chat = f"ps-{uuid.uuid4().hex}"
+    _run_set("zh", {**ZH_ARGS, "shots": "B"}, chat)
+    assert [a for a, _ in SENT] == ["generate_image"] * 4
+    for (_, sent), shot in zip(SENT, ("closeup", "half", "three_quarter", "full")):
+        assert sent["count"] == 1 and sent["refs"] == ["shape:person"]
+        assert sent["edit_model"] == SUNBURST_EDIT and sent.get("ratio") == "3:4"
+        assert ps.SHOT_LINE[shot] in sent["prompt"] and f"at {ps.SHOTS[shot]['aperture']}." in sent["prompt"]
+        assert "shot" not in sent
+
+
+def test_without_a_plan_generate_image_is_unchanged_and_done_checks_the_count(relay):
+    chat = f"ps-{uuid.uuid4().hex}"
+    _tool("generate_image", {"prompt": "p", "skill": "portrait-studio", "refs": ["shape:person"], "shot": "half"}, "zh", chat)
+    assert len(SENT) == 1 and "85mm" not in SENT[0][1]["prompt"]  # #926's per-image prompt only
+    assert _tool("portrait_studio_done", {"images": ["shape:a"]}, "zh", chat)["status"] == "failed"
+    _tool("portrait_studio_plan", ZH_ARGS, "zh", chat)
+    assert _tool("portrait_studio_done", {"images": ["shape:a"]}, "zh", chat)["status"] == "failed"  # 3 slots
+
+
+def test_plan_needs_a_reference_and_what_stays_locked(relay):
+    chat = f"ps-{uuid.uuid4().hex}"
+    assert _tool("portrait_studio_plan", {**ZH_ARGS, "refs": []}, "zh", chat)["status"] == "failed"
+    assert _tool("portrait_studio_plan", {**ZH_ARGS, "locked": []}, "zh", chat)["status"] == "failed"
+    assert _tool("portrait_studio_plan", {**EN_ARGS, "locked": ["黑发"]}, "en", chat)["status"] == "failed"
+    assert SENT == [] and APPROVALS == []
+
+
+# --- single redo ---------------------------------------------------------------------------------
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("ask,slot", [({"shot": "半身"}, 2), ({"shot": "半身那张脸不像"}, 2), ({"slot": 2}, 2),
+                                      ({"shot": "half body, the face looks off"}, 2), ({"shot": "七分身"}, 3), ({"shot": "特写"}, 1),
+                                      ({"slot": 1}, 1), ({"shot": "three-quarter"}, 3)])
+def test_redo_one_issues_exactly_one_call_with_that_slots_shot(relay, lang, ask, slot):
+    chat = f"ps-{uuid.uuid4().hex}"
+    _run_set(lang, LOCK[lang][0], chat)
+    first = [dict(a) for _, a in SENT]
+    SENT.clear()
+    APPROVALS.clear()
+    out = _tool("portrait_studio_redo", {**ask, "fix": "match the face shape of the reference"}, lang, chat)
+    assert len(SENT) == 1, SENT  # exactly one paid call
+    assert len(APPROVALS) == 1  # the run approval covers that one image
+    action, sent = SENT[0]
+    assert action == "generate_image" and sent["count"] == 1
+    assert sent["refs"] == ["shape:person"] and sent["edit_model"] == SUNBURST_EDIT
+    assert sent["near"] == f"shape:img{slot}"  # placed next to the original; nothing deletes or replaces it
+    shot = ps.PLANS[chat]["shots"][slot - 1]
+    assert ps.SHOT_LINE[shot] in sent["prompt"] and f"at {ps.SHOTS[shot]['aperture']}." in sent["prompt"]
+    # the same prompt as that slot's first run, plus only the correction
+    fixed = sent["prompt"].replace(" Correction for this redo: match the face shape of the reference.", "")
+    assert fixed == first[slot - 1]["prompt"]
+    assert "match the face shape of the reference" in sent["prompt"]
+    for other in set(ps.SHOT_KEYS) - {shot}:
+        assert ps.SHOT_LINE[other] not in sent["prompt"]
+    assert out["slot"] == slot and out["near"] == f"shape:img{slot}" and out.get("ids")
+    msg = out["user_message"]
+    assert bool(CJK.search(msg)) is (lang == "zh"), msg
+    assert str(slot) in msg
+    assert "delete" not in sent and "replace" not in sent
+
+
+def test_redo_keeps_the_answers_outfit_and_scene(relay):
+    chat = f"ps-{uuid.uuid4().hex}"
+    _run_set("en", {**EN_ARGS, "outfit": "B", "scene": "B"}, chat)
+    SENT.clear()
+    _tool("portrait_studio_redo", {"slot": 3}, "en", chat)
+    assert len(SENT) == 1
+    prompt = SENT[0][1]["prompt"]
+    assert ps.PROMPT_OUTFIT["B"] in prompt and ps.PROMPT_SCENE["B"] in prompt and ps.SHOT_LINE["three_quarter"] in prompt
+
+
+@pytest.mark.parametrize("ask", [{}, {"slot": 5}, {"slot": 0}, {"shot": "全身"}, {"shot": "背景"}])
+def test_redo_that_names_no_single_image_submits_nothing(relay, ask):
+    chat = f"ps-{uuid.uuid4().hex}"
+    _run_set("zh", ZH_ARGS, chat)  # A: no full-body slot
+    SENT.clear()
+    APPROVALS.clear()
+    out = _tool("portrait_studio_redo", ask, "zh", chat)
+    assert out["status"] == "failed" and SENT == [] and APPROVALS == []
+
+
+def test_redo_without_a_set_submits_nothing(relay):
+    out = _tool("portrait_studio_redo", {"slot": 1}, "zh", f"ps-{uuid.uuid4().hex}")
+    assert out["status"] == "failed" and SENT == []
+
+
+def test_tools_are_exposed_to_the_built_in_agent():
+    from ComfyArt.bot.guide import CORE_MCP_TOOLS
+    for name in ("portrait_studio_plan", "portrait_studio_done", "portrait_studio_redo"):
+        assert name in CORE_MCP_TOOLS and name in canvas.TOOLS
+    assert "shot" in canvas.TOOLS["generate_image"]["inputSchema"]["properties"]

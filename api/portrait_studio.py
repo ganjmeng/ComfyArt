@@ -245,3 +245,307 @@ def lock_request(args: dict) -> dict:
         args["base"] = lock["base"]
     args["count"] = 1
     return args
+
+
+# ---------------------------------------------------------------------------------------------
+# Replies around the generation and single-image redo (Lovart 7fc60c86 reply, notes.txt).
+#
+# Lovart's run replies three times: (1) before generating, what is locked from the reference and
+# what changes, then lighting / optics / pose and 「现在开始生成三张。」; (2) after generating, a
+# shot-size -> image table and the parameters; (3) a closing check asking which image drifted in
+# face shape or hair, and redoes only that one. The server writes all three from the card answers
+# plus what the agent read off the reference photo, and every listed parameter is one this server
+# actually writes into each image's prompt (no shutter / ISO / film stock / negative prompt / price).
+# Per-image prompts are built by lock_request above (identity, shared subject, shot line, pose line);
+# apply_plan adds the card's outfit / scene and the light and lens the replies list.
+# ---------------------------------------------------------------------------------------------
+import re as _re
+
+SHOTS: dict[str, dict] = {  # reply wording; the prompt's crop is SHOT_LINE above
+    "closeup": {"zh": "面部特写", "zh_short": "特写", "zh_frame": "面部特写（头肩）", "en": "Face close-up",
+                "en_frame": "Face close-up (head and shoulders)", "aperture": "f/2.0"},
+    "half": {"zh": "半身", "zh_frame": "半身（大腿上缘以上）", "en": "Half body",
+             "en_frame": "Half body (from the upper thigh up)", "aperture": "f/2.8"},
+    "three_quarter": {"zh": "七分身", "zh_frame": "七分身（小腿中部以上）", "en": "Three-quarter body",
+                      "en_frame": "Three-quarter body (from mid-calf up)", "aperture": "f/4.0"},
+    # Lovart's run did not include a full-body shot (option B); framing and aperture are ours.
+    "full": {"zh": "全身", "zh_frame": "全身（头到脚）", "en": "Full body",
+             "en_frame": "Full body (head to feet)", "aperture": "f/5.6"},
+}
+SHOTS_BY_ANSWER = SHOTS_BY_OPTION
+FOCAL = "85mm"
+RATIO = "3:4"
+LIGHT = {
+    "zh": "Loop 环形光为主方案，大面积柔光箱从机位左侧 30° 高位切入，辅以弱发丝轮廓光",
+    "en": "Loop lighting as the main setup: a large softbox high from camera-left at 30°, plus a soft hair light for rim separation",
+    "prompt": "Light: loop lighting, a large softbox high from camera-left at 30 degrees, a soft hair light for rim separation.",
+}
+LIGHT_SHORT = {"zh": "Loop 环形光 + 柔光", "en": "Loop lighting + softbox"}
+POSE = {  # the posing lock_request writes on every shot (POSE_SHARED); zh is Lovart's line verbatim
+    "zh": "S 型脊柱 + 一肩微高一肩微低 + 下巴前伸微低拉紧下颌线；手部统一走\"插兜 / 自然垂落侧手\"路线，规避手指畸变，腰侧保留负空间",
+    "en": "S-curve spine, one shoulder slightly higher, chin slightly forward and down to tighten the jawline; hands in pockets or hanging naturally at the sides, avoiding finger distortion, with negative space at the sides of the waist",
+}
+# Card answer -> how the reply echoes it. zh outfit A is Lovart's own echo (「保留原休闲造型」).
+ECHO = {
+    "zh": {PS_OUTFIT: {"A": "保留原休闲造型", "B": "换成商务正装", "C": "简约轻正装"},
+           PS_SCENE: {"A": "纯色棚拍背景", "B": "现代办公空间", "C": "沿用参考图的建筑空间"}},
+    "en": {PS_OUTFIT: {"A": "keep the original casual look", "B": "switch to business formal", "C": "simple smart casual"},
+           PS_SCENE: {"A": "solid-color studio backdrop", "B": "modern office space", "C": "keep the architectural space from the reference"}},
+}
+PROMPT_OUTFIT = {"A": "Outfit: exactly the same outfit as in the reference photo.",
+                 "B": "Outfit: business formal wear.", "C": "Outfit: simple smart casual wear."}
+PROMPT_SCENE = {"A": "Background: seamless solid-color studio backdrop.", "B": "Background: modern office space.",
+                "C": "Background: the architectural space from the reference photo."}
+NUM_ZH = {1: "一", 2: "两", 3: "三", 4: "四"}
+NUM_EN = {1: "one", 2: "two", 3: "three", 4: "four"}
+_CJK = _re.compile(r"[\u3000-\u303f\u4e00-\u9fff\uff00-\uffef]")
+
+# chat id -> the set this chat is generating / generated (in memory; a server restart forgets it).
+PLANS: dict[str, dict] = {}
+
+
+class PlanError(ValueError):
+    pass
+
+
+def _answer(raw: object) -> tuple[str, str]:
+    """Card answer -> (option id A/B/C or "", free text)."""
+    s = str(raw or "").strip()
+    return (s.upper(), "") if s.upper() in ("A", "B", "C") else ("", s)
+
+
+def shots_for(shots_answer: object) -> tuple[str, ...]:
+    opt, _ = _answer(shots_answer)
+    return SHOTS_BY_ANSWER.get(opt, SHOTS_BY_ANSWER["A"])
+
+
+def _items(raw: object) -> list[str]:
+    if isinstance(raw, str):
+        raw = [p for p in _re.split(r"[、,，/;；\n]+", raw)]
+    return [str(x).strip() for x in (raw or []) if str(x).strip()]
+
+
+def _join(lang: str, items: list[str]) -> str:
+    return ("、" if lang == "zh" else ", ").join(items)
+
+
+def _short(lang: str, shot: str) -> str:
+    """Shot word inside a sentence: Lovart writes 特写 / 半身 / 七分身 there."""
+    return SHOTS[shot].get("zh_short", SHOTS[shot]["zh"]) if lang == "zh" else SHOTS[shot]["en"].lower()
+
+
+def _shot_list(lang: str, shots: tuple[str, ...]) -> str:
+    return " / ".join(_short(lang, s) for s in shots)
+
+
+def _apertures(lang: str, shots: tuple[str, ...], sep: str) -> str:
+    return sep.join(f"{_short(lang, s)} {SHOTS[s]['aperture']}" for s in shots)
+
+
+def make_plan(args: dict, lang: str | None = None) -> dict:
+    """Validate the agent's portrait_studio_plan args into a plan (raises PlanError)."""
+    lang = card_lang(lang)
+    refs = [str(r) for r in (args.get("refs") or []) if str(r).strip()]
+    if not refs:
+        raise PlanError("refs is required: the reference photo (shape id or URL)")
+    shots = shots_for(args.get("shots"))
+    outfit_opt, outfit_text = _answer(args.get("outfit") or "A")
+    scene_opt, scene_text = _answer(args.get("scene") or "A")
+    locked = _items(args.get("locked"))
+    if not locked:
+        raise PlanError("locked is required: what you read off the reference photo that stays (face, hair, build...)")
+    outfit_desc = str(args.get("outfit_desc") or "").strip()
+    ref_bg = str(args.get("reference_background") or "").strip()
+    if lang == "en":
+        bad = [t for t in [*locked, outfit_desc, ref_bg, outfit_text, scene_text] if t and _CJK.search(t)]
+        if bad:
+            raise PlanError(f"the reply language is English: resend locked / outfit_desc / reference_background in English (got {bad!r})")
+    return {"lang": lang, "refs": refs, "shots": list(shots), "outfit": outfit_opt or outfit_text,
+            "outfit_opt": outfit_opt, "outfit_text": outfit_text, "scene_opt": scene_opt, "scene_text": scene_text,
+            "locked": locked, "outfit_desc": outfit_desc, "reference_background": ref_bg,
+            "prompt": str(args.get("prompt") or "professional portrait of the same person as the reference photo").strip(),
+            "subject": None, "slot_args": {}, "images": {}, "redos": []}
+
+
+def _echo(plan: dict, qid: str) -> str:
+    opt, text = (plan["outfit_opt"], plan["outfit_text"]) if qid == PS_OUTFIT else (plan["scene_opt"], plan["scene_text"])
+    return ECHO[plan["lang"]][qid][opt] if opt else text
+
+
+def _outfit_kept(plan: dict) -> bool:
+    return plan["outfit_opt"] == "A"
+
+
+def plan_text(plan: dict) -> str:
+    """Reply (1), before generating: locked / changed, lighting, optics, pose, then 「现在开始生成」."""
+    lang, shots = plan["lang"], tuple(plan["shots"])
+    n = len(shots)
+    outfit, scene = _echo(plan, PS_OUTFIT), _echo(plan, PS_SCENE)
+    locked = list(plan["locked"])
+    changed: list[str] = []
+    if lang == "zh":
+        if _outfit_kept(plan):
+            locked.append(f"服装完整保留（{plan['outfit_desc']}）" if plan["outfit_desc"] else "服装完整保留")
+        else:
+            changed.append(f"服装换为{outfit}")
+        if plan["scene_opt"] == "C":
+            locked.append("背景沿用参考图的建筑空间")
+        else:
+            changed.append(f"背景由{plan['reference_background'] or '原片背景'} → {scene}")
+        changed.append(f"景别拆为{_shot_list(lang, shots)}{NUM_ZH[n]}档，姿态相应重建" if n > 1
+                       else f"景别为{_shot_list(lang, shots)}，姿态相应重建")
+        share = (f"，{NUM_ZH[n]}张共用同一人物身份与服装，只变景别与姿态" if n > 1 else "")
+        lines = [
+            f"参考图已作为身份锚点分析完毕。按你的选择：{n} 张 / {outfit} / {scene}{share}。",
+            f"锁定项：{_join(lang, locked)}",
+            f"变更项：{'；'.join(changed)}",
+            f"布光：{LIGHT['zh']}",
+            f"光学：{FOCAL} 黄金人像焦段；{_apertures(lang, shots, '、')}",
+            f"摆姿：{POSE['zh']}",
+            f"现在开始生成{NUM_ZH[n]}张。",
+        ]
+    else:
+        if _outfit_kept(plan):
+            locked.append(f"outfit kept in full ({plan['outfit_desc']})" if plan["outfit_desc"] else "outfit kept in full")
+        else:
+            changed.append(f"outfit changed to {outfit}")
+        if plan["scene_opt"] == "C":
+            locked.append("background kept from the reference's architectural space")
+        else:
+            changed.append(f"background from {plan['reference_background'] or 'the original background'} → {scene}")
+        changed.append(f"shot sizes split into {_shot_list(lang, shots)}, with the pose rebuilt for each" if n > 1
+                       else f"shot size {_shot_list(lang, shots)}, with the pose rebuilt for it")
+        share = (f"; all {NUM_EN[n]} share the same person and outfit, only the shot size and pose change" if n > 1 else "")
+        lines = [
+            f"The reference photo has been analyzed as the identity anchor. As you chose: {n} {'photos' if n > 1 else 'photo'} / {outfit} / {scene}{share}.",
+            f"Locked: {_join(lang, locked)}",
+            f"Changed: {'; '.join(changed)}",
+            f"Lighting: {LIGHT['en']}",
+            f"Optics: {FOCAL} portrait focal length; {_apertures(lang, shots, ', ')}",
+            f"Pose: {POSE['en']}",
+            f"Starting the {NUM_EN[n]} {'photos' if n > 1 else 'photo'} now." if n > 1 else "Starting the photo now.",
+        ]
+    return "\n".join(lines)
+
+
+def image_name(lang: str, shot: str) -> str:
+    return f"专业形象照-{SHOTS[shot]['zh']}" if lang == "zh" else f"Professional portrait - {SHOTS[shot]['en'].lower()}"
+
+
+def done_text(plan: dict) -> str:
+    """Reply (2): shot -> image table, then only the parameters this server put in every prompt."""
+    lang, shots = plan["lang"], tuple(plan["shots"])
+    n = len(shots)
+    if lang == "zh":
+        rows = [f"| {SHOTS[s]['zh_frame']} | 第 {i} 张：{image_name(lang, s)} |" for i, s in enumerate(shots, 1)]
+        return "\n".join([
+            f"{NUM_ZH[n]}张已完成：" if n > 1 else "这张已完成：", "| 景别 | 产物 |", "|---|---|", *rows,
+            "⚙️ 参数",
+            f"光学参数：{FOCAL} ｜ {LIGHT_SHORT['zh']} ｜ {_apertures(lang, shots, ' · ')}",
+            f"画幅：{RATIO} 竖版 ×{n}",
+        ])
+    rows = [f"| {SHOTS[s]['en_frame']} | Image {i}: {image_name(lang, s)} |" for i, s in enumerate(shots, 1)]
+    return "\n".join([
+        f"All {NUM_EN[n]} are done:" if n > 1 else "The photo is done:", "| Shot size | Image |", "|---|---|", *rows,
+        "⚙️ Parameters",
+        f"Optics: {FOCAL} | {LIGHT_SHORT['en']} | {_apertures(lang, shots, ' · ')}",
+        f"Format: {RATIO} portrait ×{n}",
+    ])
+
+
+def closing_text(plan: dict) -> str:
+    """Reply (3): ask which one drifted in face shape or hair; only that one is redone."""
+    lang, n = plan["lang"], len(plan["shots"])
+    anchors = _join(lang, list(plan["locked"]))
+    if lang == "zh":
+        if n > 1:
+            return (f"验收提示：{NUM_ZH[n]}张的身份锚点（{anchors}）都按参考图锁定了，但我无法逐像素核对实际一致性。"
+                    f"请你过一眼这{NUM_ZH[n]}张，如果某张的脸型或发型偏离原片，告诉我具体是哪张、偏在哪里，我针对那一张重做。")
+        return (f"验收提示：这张的身份锚点（{anchors}）都按参考图锁定了，但我无法逐像素核对实际一致性。"
+                "请你过一眼，如果脸型或发型偏离原片，告诉我偏在哪里，我重做这一张。")
+    if n > 1:
+        return (f"Check: the identity anchors of all {NUM_EN[n]} ({anchors}) are locked to the reference, but I can't verify "
+                f"the match pixel by pixel. Please look over the {NUM_EN[n]} photos; if one drifts from the original in face shape "
+                "or hair, tell me which one and where, and I'll redo just that one.")
+    return (f"Check: the identity anchors ({anchors}) are locked to the reference, but I can't verify the match pixel by pixel. "
+            "Please look it over; if the face shape or hair drifts from the original, tell me where and I'll redo this one.")
+
+
+def plan_lines(plan: dict, shot: str) -> str:
+    """What this server adds to one image's prompt: the card's outfit / scene and the light, lens and format
+    the replies list. Nothing in the replies is missing here."""
+    outfit = PROMPT_OUTFIT.get(plan["outfit_opt"]) or f"Outfit: {plan['outfit_text']}."
+    scene = PROMPT_SCENE.get(plan["scene_opt"]) or f"Background: {plan['scene_text']}."
+    aperture = SHOTS[shot]["aperture"] if shot in SHOTS else SHOTS["half"]["aperture"]
+    return "\n".join([outfit, scene, LIGHT["prompt"], f"Lens: {FOCAL} portrait lens at {aperture}.",
+                       f"Format: {RATIO} vertical portrait."])
+
+
+def current_shot() -> str:
+    """The shot lock_request just gave this call."""
+    shots = _turn_lock()["shots"]
+    return shots[-1] if shots else SHOT_KEYS[0]
+
+
+def apply_plan(args: dict, chat_id: str) -> dict:
+    """After lock_request: add the plan's lines to this image's prompt and remember the call for a redo."""
+    plan = PLANS.get(chat_id)
+    if not plan:
+        return args
+    args = dict(args)
+    shot = current_shot()
+    args["prompt"] = f"{str(args.get('prompt') or '').rstrip()}\n{plan_lines(plan, shot)}"
+    args["count"] = 1
+    if shot in plan["shots"]:
+        slot = plan["shots"].index(shot) + 1
+        if plan.get("subject") is None:
+            plan["subject"] = _turn_lock()["subject"]
+        plan["slot_args"][slot] = {k: v for k, v in args.items() if k not in ("near", "frame")}
+    return args
+
+
+SHOT_WORDS = (("three_quarter", ("七分身", "七分", "three-quarter", "three quarter", "3/4")),
+              ("half", ("半身", "half")),
+              ("closeup", ("面部特写", "特写", "close-up", "closeup", "close up")),
+              ("full", ("全身", "full body", "full-body")))
+_NUM_WORDS = {"一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "first": 1, "second": 2, "third": 3, "fourth": 4}
+
+
+def resolve_slot(plan: dict, slot: object = None, shot: object = None) -> int:
+    """Slot number from a number (1-based) or a shot-size word in zh/en (raises PlanError)."""
+    n = len(plan["shots"])
+    if slot not in (None, ""):
+        s = str(slot).strip().lstrip("#")
+        num = _NUM_WORDS.get(s.lower()) or (int(s) if s.isdigit() else 0)
+        if 1 <= num <= n:
+            return num
+        raise PlanError(f"slot must be 1..{n}")
+    words = str(shot or "").strip().lower()
+    if words in SHOTS and words in plan["shots"]:
+        return plan["shots"].index(words) + 1
+    for key, needles in SHOT_WORDS:
+        if any(w in words for w in needles):
+            if key in plan["shots"]:
+                return plan["shots"].index(key) + 1
+            break
+    raise PlanError(f"name one image: slot 1..{n} or one of {', '.join(plan['shots'])}")
+
+
+REDO_TEXT = {
+    "zh": "好的，只重做第 {i} 张（{shot}），其它几张不动；新图放在原图旁边，原图保留。",
+    "en": "OK, redoing only image {i} ({shot}); the others stay as they are. The new one goes next to the original, which is kept.",
+}
+
+
+def redo_args(plan: dict, slot: int, fix: str = "") -> dict:
+    """The ONE generate_image call that redoes a slot: same reference, same shot, same subject / outfit /
+    scene / light / lens (lock_request + apply_plan rebuild the same prompt), next to the original."""
+    subject = plan.get("subject") or plan["prompt"]
+    if fix:
+        subject = f"{subject.rstrip()} Correction for this redo: {fix.strip()}."
+    out = {"prompt": subject, "shot": plan["shots"][slot - 1], "refs": list(plan["refs"]), "skill": SKILL, "count": 1}
+    near = plan["images"].get(slot)
+    if near:
+        out["near"] = near
+        out["near_fit"] = True  # page: right of the original when free, else below / above / left; never on top
+    return out

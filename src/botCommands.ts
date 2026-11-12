@@ -65,6 +65,17 @@ function regionOf(args: Args): Crop {
   return r
 }
 
+/** portrait-studio redo (near_fit): right of the original if that spot is free, else below, above, left. */
+function nextToFree(editor: Editor, id: TLShapeId, b: { x: number; y: number; w: number; h: number; maxX: number; maxY: number }) {
+  const own = editor.getShapePageBounds(id)
+  const w = own?.w || b.w
+  const h = own?.h || b.h
+  const others = editor.getCurrentPageShapes().filter((s) => s.id !== id && s.type !== 'frame').map((s) => editor.getShapePageBounds(s.id)).filter((r): r is NonNullable<typeof r> => !!r)
+  const free = (x: number, y: number) => others.every((r) => x >= r.maxX || r.x >= x + w || y >= r.maxY || r.y >= y + h)
+  const spots = [{ x: b.maxX + GAP, y: b.y }, { x: b.x, y: b.maxY + GAP }, { x: b.x, y: b.y - GAP - h }, { x: b.x - GAP - w, y: b.y }]
+  return spots.find((p) => free(p.x, p.y)) ?? spots[0]
+}
+
 function place(editor: Editor, id: TLShapeId, args: Args, chat: string) {
   const shape = editor.getShape(id)!
   if (args.frame) {
@@ -74,7 +85,7 @@ function place(editor: Editor, id: TLShapeId, args: Args, chat: string) {
     editor.updateShape({ id, type: shape.type, x: GAP, y: GAP })
   } else if (args.near) {
     const b = editor.getShapePageBounds(shapeOf(editor, args.near))!
-    editor.updateShape({ id, type: shape.type, x: b.maxX + GAP, y: b.y })
+    editor.updateShape({ id, type: shape.type, ...(args.near_fit ? nextToFree(editor, id, b) : { x: b.maxX + GAP, y: b.y }) })
   } else if (chat) {
     placeInChatFrame(editor, id, chat)
   }

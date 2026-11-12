@@ -45,6 +45,9 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
             if portrait_studio.applies(args):
                 # One call per image: same reference + person/outfit/background text; only shot size and pose differ.
                 args = portrait_studio.lock_request(args)
+                # portrait-studio set (portrait_studio_plan): the card's outfit / scene and the light and lens
+                # the reply lists, written into this image's prompt (api/mcp_tools/portrait.py).
+                args = portrait_studio.apply_plan(args, str(BOT_CHAT_ID.get() or ""))
             args.pop("shot", None)  # portrait-studio only
         fallback_for = str(args.pop("fallback_for", "") or "")
         if approval:
@@ -914,3 +917,7 @@ TOOLS["wait_generation"] = {
     "inputSchema": _schema({"ids": _IDS, "timeout_s": {"type": "integer"}}, ["ids"]),
     "handler": _wait_generation,
 }
+
+# portrait-studio set replies + single-image redo (api/mcp_tools/portrait.py).
+from .portrait import TOOLS as _PORTRAIT_TOOLS  # noqa: E402
+TOOLS.update(_PORTRAIT_TOOLS)
