@@ -1,0 +1,17 @@
+Lovart read-only skill inspection
+Date: 2026-11-13 (UTC+8; task timestamp 7:53 PM)
+Requested URL: https://www.lovart.ai/skills/pj7ljezKxy
+Resolved URL: https://www.lovart.ai/skills?skillId=pj7ljezKxy
+Skill: Multi-Angle Image Generator (skillKey universal-multi-angle-grid)
+Visible description: “Multi-angle images for products and people.”
+Visible counts: “3.9k” and “1.2k”; adjacent icon marks, no metric names visible.
+Visible tags: Multi-Angle Grid; Product Photography; Portrait; Editorial; Character Sheet; Commercial; Campaign.
+Gallery: 11 named static image items (01–11) in a carousel. Visible outputs are individual portrait images, not one assembled grid: multiple distinct views of a model and separate product photos. No visible video/play controls.
+No separate template section or template label was visible; gallery and tags were visible.
+Current form fields, required markers, and limits: not shown in the detail overlay. Did not press Try this skill because it may start a project/task flow; no project, upload, generation, or credit use was initiated. Historical Nov 5 raw limits are not live-verified.
+Visible text did not mention planning, per-frame verification, or single-frame export. “Multi-Angle Grid” appears only as a category tag here.
+Scope: inspected this one skill only; no other skills searched.
+
+Try-entry follow-up (2026-11-13, UTC+8): Clicked “Try this skill” once. The browser opened a blank canvas project (title field “Untitled”; canvas “Page 1”) and the composer showed “Multi-Angle Image Generator” as a skill chip. No prompt text, uploaded file, or generated output was present. No generation/send control was clicked; no credit use was observed.
+Visible composer context: “What do you want to design?”; buttons “Add your reference”, “Start from skill”, “Add your brand kit”, “Connect Pinterest”; “Agent” control; icon-only upward-arrow button. The composer textbox is contenteditable=true with no visible required marker or limit attribute; it contains only the skill chip. The title textbox is default “Untitled”, maxlength=120; no required or disabled attribute.
+The visible buttons and fields inspected had no disabled attribute. No file picker was opened. Screenshot: try-entry.png.
