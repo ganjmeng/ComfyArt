@@ -51,7 +51,7 @@ async def test_full_app_still_generating_card(app_url, fake_tools, lang, theme):
         user = await pg.evaluate("async()=>(await (await fetch('/api/comfyart/bot/status')).json()).user")
         proj = await pg.evaluate(
             "()=>{for (const e of performance.getEntriesByType('resource')){"
-            "const m=e.name.match(/bot\\\\/chats\\\\?project=([^&]+)/); if(m) return decodeURIComponent(m[1])}"
+            "const m=e.name.match(/bot\\/chats\\?project=([^&]+)/); if(m) return decodeURIComponent(m[1])}"
             "return null}"
         )
         assert proj
