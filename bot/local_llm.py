@@ -1878,10 +1878,11 @@ class LocalLlmProvider(AgentProvider):
                                  pricer=self._price_one, models_for=self._models_for, router=self._quote_route)
 
     @staticmethod
-    def _quote_route(tool: str, args: dict):
-        """#910: the routed model and price inputs of one step (canvas.quote_route); None when not routable."""
+    def _quote_route(tool: str, args: dict, position: int = 0):
+        """#910: the routed model and price inputs of one step (canvas.quote_route); None when not routable.
+        #959: `position` is the step's 0-based place in the quoted plan (per-image skills preview 1..n)."""
         from ..api.mcp_tools.canvas import quote_route
-        return quote_route(tool, args)
+        return quote_route(tool, args, position)
 
     async def _confirm_plan(self, spec: dict, turn: TurnRequest, handle: TurnHandle, *,
                             run=None, messages: Optional[list] = None) -> str:

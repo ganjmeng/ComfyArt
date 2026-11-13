@@ -448,6 +448,12 @@ _RATIO_ONLY_2K_SKILLS = frozenset({
     "youtube-channel-banner", "portrait-studio",
 })
 
+# #959: the quote must run the same _pin_args post-processing as the submit for these
+# skills, because their per-image plan supplies the ratio the ratio-only 2k fill needs.
+# Scope is product-to-packaging in this card; other pinned skills keep their previous
+# quote inputs (portrait-studio already matched: its pin names resolution itself).
+_QUOTE_PIN_POSTPROCESS_SKILLS = frozenset({"product-to-packaging"})
+
 
 def _pin_args(args: dict, choice: dict) -> dict:
     # Always drop Auto model keys. Drop size_lock / exact pixels unless the pin is
@@ -566,12 +572,16 @@ def _auto_choice(action: str, args: dict, catalog: dict | None = None, cfg: dict
     return select_model(action, args, catalog=catalog, cfg=cfg)
 
 
-def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
+def quote_route(action: str, args: dict, position: int | None = None) -> tuple[str, dict] | None:
     """#910: the model a paid call will actually run on and the inputs to price it with, so a quote card names and
     prices the routed model (not the dearest model of the feature). Same pick as the tool: an unregistered model
     falls back to Auto (#734), refs/base run on image_edit, a skill pin brings its resolution/ratio. The references
     are counted as `images` (base first, then refs, as src/generate.ts sends them): WaveSpeed prices every input
-    image of a 2.6 edit (+$0.015 each). None when the call is refused or no model can be picked."""
+    image of a 2.6 edit (+$0.015 each). None when the call is refused or no model can be picked.
+
+    #959 `position`: the step's 0-based place in a quoted multi-image plan. The validated preview then carries
+    that image's virtual number (ratio/role like the real submit) instead of always previewing image 1.
+    """
     if not isinstance(args, dict):
         return None
     clean = dict(args)
@@ -583,7 +593,7 @@ def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
             clean = resolve_loose_refs(clean, BOT_CHAT_ID.get() or "")
         except ValueError:
             return None
-        validated, blocked = prepare_for_quote(clean, BOT_CHAT_ID.get() or "")
+        validated, blocked = prepare_for_quote(clean, BOT_CHAT_ID.get() or "", position)
         if blocked is not None:
             return "", {"param_blocked": blocked}
         clean = validated
@@ -592,10 +602,20 @@ def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
     choice = select_model(action, clean) or {}
     if choice.get("block") or choice.get("svg_error"):
         return None
+    if (action == "generate_image" and choice.get("category") in ("skill", "skill_fallback")
+            and str(clean.get("skill") or "") in _QUOTE_PIN_POSTPROCESS_SKILLS):
+        # #959: the submit runs _pin_args after the image lock; the quote prices the same args.
+        # product-to-packaging's lock sets ratio 3:4/4:3 and the pin then fills the 2k tier;
+        # skipping this priced every image at the 1k default.
+        clean = _pin_args(clean, choice)
     model = str(choice.get("edit_model") or choice.get("model") or "")
     if not model:
         return None
     inputs = {k: v for k, v in clean.items() if k not in ("refs", "base", "ref_modes", "model", "auto_model", "edit_model")}
+    if clean.get("edit_resolution") and not clean.get("resolution"):
+        # #959: src/generate.ts sends a pinned edit tier as `resolution` (shape.meta.editResolution),
+        # which is the field the price table reads. Map it exactly like the submit does.
+        inputs["resolution"] = clean["edit_resolution"]
     if choice.get("resolution"):
         inputs["resolution"] = choice["resolution"]
     if choice.get("ratio"):

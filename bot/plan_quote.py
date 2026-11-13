@@ -28,7 +28,9 @@ Pricer = Callable[[str, dict], Awaitable[Optional[float]]]
 ModelsFor = Callable[[str], Awaitable[list[tuple[str, Optional[float]]]]]
 # #910: (tool, arguments) -> (routed model id, price inputs) or None. The built-in agent passes
 # api.mcp_tools.canvas.quote_route, so an Auto step is named and priced as the model it will run on.
-Router = Callable[[str, dict], Optional[tuple[str, dict]]]
+# #959: the third argument is the step's 0-based place in the quoted plan, so a per-image skill
+# previews image 1..n instead of pricing every step as image 1.
+Router = Callable[[str, dict, int], Optional[tuple[str, dict]]]
 
 QUOTE_TOOL = "quote_plan"
 
@@ -276,16 +278,36 @@ async def _max_model(feature: str, models_for: ModelsFor) -> tuple[str, Optional
     return best_id, best
 
 
+def _plan_positions(steps: list[dict]) -> list[int]:
+    """0-based place of each step among the earlier steps of the same tool + skill (#959).
+
+    A per-image skill (product-to-packaging) puts all its images in one plan; the quote must
+    walk that sequence (image 1, then 2..n) instead of previewing every step as image 1.
+    This is computed per quote build and never executes anything, so repeating the quote
+    starts again from the turn's real next place.
+    """
+    seen: dict[tuple[str, str], int] = {}
+    out: list[int] = []
+    for step in steps:
+        args = step.get("arguments") if isinstance(step.get("arguments"), dict) else {}
+        key = (str(step.get("tool") or ""), str(args.get("skill") or ""))
+        at = seen.get(key, 0)
+        out.append(at)
+        seen[key] = at + 1
+    return out
+
+
 async def _price_step(step: dict, pricer: Pricer, models_for: ModelsFor,
-                      router: Optional[Router] = None) -> tuple[Optional[float], bool, str, Optional[dict]]:
+                      router: Optional[Router] = None, position: int = 0) -> tuple[Optional[float], bool, str, Optional[dict]]:
     """(line amount, approx, model id to show, optional param-block). Unknown prices use the dearest model of that type.
     #910: with a router, the step is shown and priced as the model it is routed to (Auto included), with its
-    reference images counted, so the card's model and price are the ones that will run."""
+    reference images counted, so the card's model and price are the ones that will run.
+    #959: `position` is the step's place in the quoted plan (see _plan_positions)."""
     tool, args, model = step["tool"], step["arguments"], step["model"]
     inputs = price_inputs(args)
     units = units_of(tool, args)
     feature = feature_of_step(tool, args)
-    routed = router(tool, args) if router is not None and not step.get("svg_blocked") else None
+    routed = router(tool, args, position) if router is not None and not step.get("svg_blocked") else None
     if routed and isinstance(routed, tuple) and (routed[1] or {}).get("param_blocked"):
         # #956 / #957: do not price a silent text-to-image fallback when required params are missing.
         return None, True, "", routed[1]["param_blocked"]
@@ -328,14 +350,15 @@ async def build_quote(steps: object, lang: str, *, threshold: float,
     if not prepared:
         return None
     lines: list[Line] = []
-    for step in prepared:
+    positions = _plan_positions(prepared)
+    for step, position in zip(prepared, positions):
         if step.get("svg_blocked"):
             lines.append(Line(
                 text=step["svg_blocked"]["message"], price=ABOUT[lang], amount=0.0, approx=True,
                 unpriced=True, key=canon_key(step["tool"], step["arguments"], step["model"]),
             ))
             continue
-        amount, approx, show, blocked = await _price_step(step, pricer, models_for, router)
+        amount, approx, show, blocked = await _price_step(step, pricer, models_for, router, position)
         if blocked:
             lines.append(Line(
                 text=str(blocked.get("error") or blocked.get("user_message") or ""),

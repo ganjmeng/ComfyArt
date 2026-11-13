@@ -25,6 +25,8 @@ for the en UI (same rule as every other ask card: `bot_asks.card_lang`).
 Per image: the server sets the ratio (image 1 of the turn 3:4, later images 4:3) and count 1, and
 keeps the turn's first product photo in refs. The pin (api/auto_models.json, Sunburst edit with
 refs / text-to-image without) and its 2k fill (canvas._pin_args) are not touched here.
+#959: a multi-step pre-quote walks this same plan through `lock_request(preview_position=...)`:
+the quoted image 1..n gets the ratio/role/refs of the real submit, without advancing the turn.
 """
 from __future__ import annotations
 
@@ -285,9 +287,17 @@ def applies(args: dict) -> bool:
     return str((args or {}).get("skill") or "") == SKILL
 
 
+ANCHOR_ROLE, EXTENSION_ROLE = "anchor", "extension"
+
+
 def ratio_for(index: int) -> str:
     """Ratio of the index-th image of a turn (0-based): the anchor is 3:4, every later image 4:3."""
     return ANCHOR_RATIO if index <= 0 else EXTENSION_RATIO
+
+
+def role_for(index: int) -> str:
+    """Role of the index-th image of a turn (0-based): image 1 anchors the set, images 2-4 extend it."""
+    return ANCHOR_ROLE if index <= 0 else EXTENSION_ROLE
 
 
 def _turn_lock() -> dict:
@@ -393,16 +403,27 @@ def _with_shows(prompt: str, shows: str) -> str:
     return "\n".join(lines + [f"{SHOWS_HEAD} {shows}."]).strip()
 
 
-def lock_request(args: dict) -> dict:
+def lock_request(args: dict, preview_position: int | None = None) -> dict:
     """One product-to-packaging generate_image call of this turn: ratio by its place in the set
     (anchor 3:4, then 4:3), count 1, and the first call's product photo kept first in refs
     (later calls add the anchor image to it). When this turn's card was answered, images 2-4 get a
-    "This image shows:" line from the Q3 scopes (extension_plan)."""
+    "This image shows:" line from the Q3 scopes (extension_plan).
+
+    #959 `preview_position`: this step's 0-based place in a quoted plan. The plan is walked from
+    the turn's real next place, so a quote shows image 1..n with the same ratio/role/refs a real
+    submit would get, without advancing the turn (the preview caller restores _LOCKS). None is a
+    real submit and advances the turn as before.
+    """
     args = dict(args)
     lock = _turn_lock()
     # A fallback_for retry re-submits the same image on another model: same place in the set.
     retry = bool(args.get("fallback_for")) and lock["n"] > 0
-    index = lock["n"] - 1 if retry else lock["n"]
+    if preview_position is None:
+        index = lock["n"] - 1 if retry else lock["n"]
+    else:
+        # #959: virtual image number. A quoted step is never a fallback retry of the image before it.
+        index = lock["n"] + max(0, int(preview_position))
+        retry = False
     if lock["refs"] is None:
         lock["refs"] = [str(r) for r in (args.get("refs") or [])]
     refs = list(lock["refs"])
@@ -417,11 +438,16 @@ def lock_request(args: dict) -> dict:
         args.pop(k, None)
     args["ratio"] = ratio_for(index)
     args["count"] = 1
+    # #959: the quoted plan names its image number/role so the preview can be compared with
+    # the real submit item by item. Preview only: a real submit's arguments are not changed.
+    if preview_position is not None:
+        args["image_index"] = index + 1
+        args["image_role"] = role_for(index)
     if lock["scopes"] is not None and 0 <= index <= EXTENSION_IMAGES:
         anchor, ext = plan_lines(lock["scopes"], lock["items"])
         shows = anchor if index == 0 else ext[index - 1]
         if shows:
             args["prompt"] = _with_shows(args.get("prompt") or "", shows)
-    if not retry:
+    if not retry and preview_position is None:
         lock["n"] += 1
     return args
