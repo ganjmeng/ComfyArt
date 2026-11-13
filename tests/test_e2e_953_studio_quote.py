@@ -411,6 +411,86 @@ async def test_studio_manual_pick_of_the_same_model_after_auto_is_manual(app_url
         assert choice.get("model") == FLARE
 
 
+async def test_studio_auto_estimate_then_reference_does_not_use_a_stale_t2i_record(app_url, mock_ws):
+    """#953: an Auto T2I record cached by the estimate must not become the model of an edit job.
+
+    Studio Auto estimate (Flare T2I) → add a reference (the card now runs image_edit) → Generate.
+    The old branch attached the T2I record to the edit node, so estimate/submit asked
+    image_edit for a text-to-image id (400). The model and its source must follow the card.
+    """
+    SHOT.mkdir(parents=True, exist_ok=True)
+    mock_ws["png"] = _label_png(SHOT / "studio-ref-mock.png", 1024, 1024, (32, 96, 64), "MOCK #953 reference")
+    ref = SHOT / "upload-subject-953.png"
+    _label_png(ref, 768, 768, (120, 64, 32), "MOCK #953 reference input")
+    estimates: list[dict] = []
+    async with pw.async_playwright() as p:
+        browser = await _launch(p)
+        page = await browser.new_page(viewport={"width": 1600, "height": 1000})
+        await page.add_init_script("localStorage.setItem('comfyart.lang','en'); localStorage.setItem('comfyart.e2e','1')")
+
+        async def watch_estimate(route):
+            response = await route.fetch()
+            try:
+                body = await response.json()
+            except Exception:
+                body = {}
+            estimates.append({"status": response.status, "request": route.request.post_data_json, "response": body})
+            await route.fulfill(response=response)
+
+        await page.route("**/comfyart/wavespeed/estimate", watch_estimate)
+        await page.goto(app_url)
+        await page.wait_for_timeout(1500)
+        for attempt in range(3):  # the app shell can be slow to paint under a loaded CI box
+            await page.mouse.click(28, 83)
+            try:
+                await page.locator(".tl-canvas").wait_for(timeout=8000)
+                break
+            except Exception:
+                if attempt == 2:
+                    raise
+                await page.wait_for_timeout(500)
+        await page.wait_for_timeout(600)
+        if await page.locator(".ca-modal").count():
+            await page.keyboard.press("Escape")
+        await page.locator(".ca-dock .ca-split .ca-bar__btn").first.click()
+        await page.locator(".ca-gen__prompt").wait_for()
+        await page.locator(".ca-gen__prompt").fill("a cup of coffee on a table")
+        # Auto estimate for text_to_image is cached on the card
+        await page.wait_for_function(
+            "() => { const e = document.querySelector('[data-testid=auto-model-label]');"
+            " return !!e && (e.textContent || '').includes('Auto') }", timeout=30000)
+        # a reference switches the job to image_edit; the stale T2I record must not follow it
+        await page.locator(".ca-gen input[type=file]").set_input_files(str(ref))
+        await page.locator(".ca-gen__refs .ca-gen__ref").first.wait_for(timeout=15000)
+        edit_estimates: list[dict] = []
+        for _ in range(100):
+            edit_estimates = [e for e in estimates
+                              if ((e.get("request") or {}).get("inputs") or {}).get("feature") == "image_edit"]
+            if edit_estimates:
+                break
+            await page.wait_for_timeout(100)
+        assert edit_estimates, [e.get("request") for e in estimates]
+        assert edit_estimates[-1]["status"] == 200, edit_estimates[-1]
+        choice = (edit_estimates[-1].get("response") or {}).get("model_choice") or {}
+        assert str(choice.get("model") or "").endswith("/edit"), choice
+        assert choice.get("auto") is True, choice
+        await page.locator(".ca-gen__send").click()
+        for _ in range(120):
+            if mock_ws["submits"]:
+                break
+            b = page.locator(".ca-modal .ca-panel__primary")
+            if await b.count() and await b.first.is_visible():
+                await b.first.click()
+            await page.wait_for_timeout(150)
+        await page.wait_for_timeout(1000)
+        await page.screenshot(path=str(SHOT / "studio-ref-submitted.png"))
+        await browser.close()
+        assert len(mock_ws["submits"]) == 1, mock_ws["submits"]
+        submitted = mock_ws["submits"][0][0]
+        assert submitted.endswith("/edit"), submitted
+        assert submitted == choice.get("model"), (submitted, choice)
+
+
 CASES = {
     "auto": (
         {"prompt": "beauty before after card", "skill": "before-after", "width": 1920, "height": 1080,
