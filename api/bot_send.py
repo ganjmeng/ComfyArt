@@ -99,11 +99,13 @@ async def prepare_attachments(refs: list[dict], kits: list[dict], docs: list[dic
 
 
 def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
-                          lines: list[str] = (), review: bool | None = None) -> str:
+                          lines: list[str] = (), review: bool | None = None,
+                          ref_image: bytes | None = None) -> str:
     # #911: a selected skill with no typed text gets a neutral, model-only line
     # (no image-content words) so the skill runs instead of a describe-and-stop.
     # No skill + empty text keeps the original line; typed text is never rewritten.
     # Kept inside this function: some tests exec it standalone.
+    # #905: ref_image is forwarded to run_hint so a before-after lock can follow the card.
     if text:
         provider_text = text
     elif skill_name:
@@ -112,7 +114,7 @@ def compose_provider_text(text: str, *, skill_name: str = "", memory: str = "",
         provider_text = "Look at the attached images and tell me what you see."
     if skill_name:
         from ..bot.skill_output import run_hint
-        hint = run_hint(skill_name)
+        hint = run_hint(skill_name, text or "", ref_image)
         provider_text = (
             f"Use the ComfyArt skill {skill_name!r} for this task: first call "
             f"the comfyart MCP tool skill with action='read' and "

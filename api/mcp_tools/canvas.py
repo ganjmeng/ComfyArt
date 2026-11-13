@@ -646,7 +646,7 @@ SPECS: dict[str, dict] = {
         "Start generating images on the canvas. Returns ids at once; call wait_generation with them. "
         "prompt: detailed English description (put exact text to render in quotes). ratio like 1:1, "
         "3:4, 16:9. width and height are pixels when a skill declares an exact canvas "
-        "(linkedin-banner 1584x396, before-after 1024x1280, game-art 1024x1824, pose-fission 1536x2048); "
+        "(linkedin-banner 1584x396, before-after 1920x1080, game-art 1024x1824, pose-fission 1536x2048); "
         "pass them so the result is not 1024x1024. count 1-4. refs: image shape ids or image URLs the result must follow (subject, "
         "product, style); naming a reference in the prompt does not send it, only refs do. ref_modes: one mode per ref, same order, saying how to use it: content, style, "
         "composition, or a structure guide canny, lineart, depth, normal, pose, mlsd, scribble, softedge, seg, "

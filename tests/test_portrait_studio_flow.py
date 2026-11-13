@@ -525,6 +525,18 @@ def _main_bytes(path: str) -> bytes:
 
 
 @pytest.mark.parametrize("path", ["api/auto_models.json", "api/skill_size.py", "api/curated_models.json",
-                                  "api/wavespeed_models.json", "bot/skill_output.py"])
+                                  "api/wavespeed_models.json"])
 def test_pins_sizes_and_model_tables_are_unchanged_from_main(path):
     assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == hashlib.sha256(_main_bytes(path)).hexdigest(), path
+
+
+def test_skill_output_keeps_follow_ref_and_905_user_ratio():
+    """#926 locked skill_output.py to main; #905/#908 also lives in this file.
+
+    Keep clothing-swap FOLLOW_REF_SIZES from main, plus before-after USER_RATIOS.
+    Full wording/size locks live in test_clothing_swap_911 / test_before_after_905.
+    """
+    from ComfyArt.bot import skill_output as so
+    assert "clothing-swap" in so.FOLLOW_REF_SIZES
+    assert "before-after" in so.USER_RATIOS
+    assert so.follows_ref("clothing-swap") and not so.follows_ref("before-after")
