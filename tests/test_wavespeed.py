@@ -312,8 +312,9 @@ async def test_timeout(ws, monkeypatch):
     assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["completed"] is False
     monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 0.0)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
-    msgs = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"]
-    assert "timed out" in msgs[0][1]["exception_message"]
+    st = (await wavespeed.poll(task))[f"ws:{task}"]["status"]
+    assert st["completed"] is False and st["status_str"] == "processing" and not st["messages"]
+    assert len(ws["submits"]) == 1
 
 
 async def test_401_on_submit_and_poll(ws):
@@ -876,14 +877,18 @@ async def test_poll_401_still_fails(ws):
     assert len(ws["submits"]) == 1
 
 
-async def test_transient_errors_still_hit_job_timeout(ws, monkeypatch):
+async def test_transient_errors_past_job_timeout_keep_polling(ws, monkeypatch):
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
     ws["result_status"] = 502
     assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["status_str"] == "processing"
     monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 0.0)
     monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
-    msgs = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"]
-    assert "timed out" in msgs[0][1]["exception_message"]
+    st = (await wavespeed.poll(task))[f"ws:{task}"]["status"]
+    assert st["status_str"] == "processing" and not st["messages"]
+    assert len(ws["submits"]) == 1
+    ws["result_status"] = 200
+    wavespeed._jobs[task]["next_poll"] = 0
+    assert (await wavespeed.poll(task))[f"ws:{task}"]["status"]["status_str"] == "completed"
     assert len(ws["submits"]) == 1
 
 
@@ -1180,13 +1185,13 @@ async def test_170_3d_submit_server_error_is_readable(ws):
 
 
 async def test_170_task_timeout_has_readable_kind(ws, monkeypatch):
-    ws["status"] = "processing"
+    """WaveSpeed-reported timeout still carries kind=timeout for the zh/en card copy."""
+    ws["status"] = "timeout"
     task = await wavespeed.submit({"feature": "text_to_image", "prompt": "x"})
-    monkeypatch.setattr(wavespeed, "IMAGE_JOB_TIMEOUT", 0.0)
-    monkeypatch.setattr(wavespeed, "JOB_TIMEOUT", 0.0)
     info = (await wavespeed.poll(task))[f"ws:{task}"]["status"]["messages"][0][1]
-    assert "timed out" in info["exception_message"]
+    assert "timed out" in info["exception_message"] or info.get("ws_kind") == "timeout"
     assert info.get("ws_kind") == "timeout"  # #174
+    assert len(ws["submits"]) == 1
 
 
 def test_insufficient_permissions_is_not_balance():

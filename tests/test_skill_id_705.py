@@ -158,9 +158,9 @@ def test_wait_generation_own_limit_timeout() -> None:
     t = ProgressTracker()  # 120 polls ok, 121st trips; polls never touch the 30 cap
     assert [t.wait_timeout(w(["job1"]), now=1000.0 + i) for i in range(1, 122)] == [False] * 120 + [True]
     assert not t.over_budget(w(["job1"]))
-    t = ProgressTracker()  # 10 minutes from the first poll of that task
+    t = ProgressTracker()  # 30 minutes from the first poll of that task
     assert t.wait_timeout(w(["a"]), now=0.0) is False
-    assert t.wait_timeout(w(["a"]), now=600.0) is False
-    assert t.wait_timeout(w(["b"]), now=601.0) is False      # a new task has its own clock
-    assert t.wait_timeout(w(["a"]), now=600.5) is True
+    assert t.wait_timeout(w(["a"]), now=1800.0) is False
+    assert t.wait_timeout(w(["b"]), now=1801.0) is False      # a new task has its own clock
+    assert t.wait_timeout(w(["a"]), now=1800.5) is True
     assert ProgressTracker.restore(t.snapshot()).wait_polls == {"a": 3, "b": 1}

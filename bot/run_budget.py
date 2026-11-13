@@ -602,8 +602,8 @@ class ProgressTracker:
     plan_items: list[str] = field(default_factory=list)
     total_calls: int = 0
     gen_calls: int = 0
-    # #705: wait_generation is outside the 30 cap but each task gets max 10 min OR 120 polls -> stuck:timeout
-    wait_max_s: float = 600.0
+    # wait_generation is outside the 30-call cap; each task may wait up to 30 min or 120 polls.
+    wait_max_s: float = 30 * 60
     wait_max_polls: int = 120
     wait_first: dict = field(default_factory=dict)   # task id -> run-clock time of first poll
     wait_waited_s: float = 0.0                       # #709: longest wait so far (run clock), for the card copy

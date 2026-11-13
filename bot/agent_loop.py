@@ -72,9 +72,9 @@ _DIM = {"zh": {"tokens": "token ", "credits": "积分", "time": "时长"},
 NON_RETRYABLE_MARK = "[non-retryable]"  # #705: keep in sync with SKILL_NON_RETRYABLE (src/skills.ts)
 _STALL_LABEL = {
     "zh": {"no_progress": "连续多步没有新产出", "repeat": "同一调用反复出现", "tool_error": "工具连续失败",
-           "readonly_limit": "连续只读步骤过多", "same_tool": "同一工具连续调用超过 3 次", "non_retryable": "工具返回不可重试的错误", "budget": "超过单次运行的付费/工具调用上限", "timeout": "等待生成结果超时（10 分钟或 120 次轮询）", "self_check_failed": "结果未通过自检"},
+           "readonly_limit": "连续只读步骤过多", "same_tool": "同一工具连续调用超过 3 次", "non_retryable": "工具返回不可重试的错误", "budget": "超过单次运行的付费/工具调用上限", "timeout": "等待生成结果超时（30 分钟或 120 次轮询）", "self_check_failed": "结果未通过自检"},
     "en": {"no_progress": "no new output for several steps", "repeat": "the same call repeated",
-           "tool_error": "tool failed repeatedly", "readonly_limit": "too many read-only steps in a row", "same_tool": "the same tool was called more than 3 times in a row", "non_retryable": "a tool returned a non-retryable error", "budget": "the run hit its paid or total tool-call cap", "timeout": "waiting for a generation took over 10 minutes or 120 polls",
+           "tool_error": "tool failed repeatedly", "readonly_limit": "too many read-only steps in a row", "same_tool": "the same tool was called more than 3 times in a row", "non_retryable": "a tool returned a non-retryable error", "budget": "the run hit its paid or total tool-call cap", "timeout": "waiting for a generation took over 30 minutes or 120 polls",
            "self_check_failed": "the result failed the self-check"},
 }
 _SELF_CHECK_NUDGE = {
@@ -948,7 +948,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     return await finish(Stop(StopReason.HARD_CAP, step=ctx.budget.used.steps),
                                         remaining=_remaining_steps(ctx))
                 return await finish(Stop(StopReason.STUCK, "budget", step=ctx.budget.used.steps))
-            if ctx.tracker.wait_timeout(obs, now=clock()):  # #705: one generation task waited > 10 min or > 120 polls
+            if ctx.tracker.wait_timeout(obs, now=clock()):  # one generation task waited > 30 min or > 120 polls
                 _log.warning("[ComfyArt/agent] run %s wait_generation timeout: %s", ctx.run_id, ctx.tracker.wait_polls)
                 return await finish(Stop(StopReason.STUCK, "timeout", step=ctx.budget.used.steps))
             stall = ctx.tracker.observe(ctx.budget.used.steps, obs, canvas_fp="|".join(ctx.artifacts[-200:]))
