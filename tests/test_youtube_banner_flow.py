@@ -27,8 +27,9 @@ from PIL import Image, ImageDraw
 
 from ComfyArt.api import banner_compose as bc
 from ComfyArt.api import bot_asks, paid_guard, wavespeed
+from ComfyArt.api import chat_store
 from ComfyArt.api.mcp_tools import banner, canvas
-from ComfyArt.api.mcp_tools._context import GUARD_CHAT_ID
+from ComfyArt.api.mcp_tools._context import BOT_CHAT_ID, GUARD_CHAT_ID
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = (ROOT / "src/skills.ts").read_text(encoding="utf-8")
@@ -250,14 +251,17 @@ def relay(monkeypatch):
     monkeypatch.setattr(canvas, "maybe_ask_run_approval", no_approval)
 
 
-def _run(*, lang: str | None = None, goal_text: str = "", **args):
+def _run(*, lang: str | None = None, goal_text: str = "", chat_id: str | None = None, **args):
     chat = paid_guard.noturn_key(f"ytb-{uuid.uuid4().hex}")
     token = GUARD_CHAT_ID.set(chat)
+    bot_token = BOT_CHAT_ID.set(chat_id) if chat_id else None
     try:
         if lang is not None:
             paid_guard.begin_turn(chat, text=goal_text, provider_text="", lang=lang)
         return asyncio.run(canvas.TOOLS["generate_image"]["handler"](args))
     finally:
+        if bot_token is not None:
+            BOT_CHAT_ID.reset(bot_token)
         GUARD_CHAT_ID.reset(token)
         paid_guard.TURNS.pop(chat, None)
 
@@ -329,6 +333,456 @@ def test_generate_image_schema_and_tool_registry():
         assert props[key]["type"] == "string"
     assert "compose_banner_text" in TOOLS and "compose_banner_text" in CORE_MCP_TOOLS
     assert "compose_banner_text" not in PAID_TOOLS  # no model call, no charge
+
+
+# --- #948: missing stage defaults to the direction board; agent model/size are ignored ---------------
+
+_USER_NAMED_REASON = {"zh": "你指定了这个模型", "en": "you named this model"}
+
+
+def test_stage_args_missing_stage_defaults_to_board():
+    """#948: omitting banner_stage while card 2 is unanswered is the board, not a no-op or refusal."""
+    from ComfyArt.api.auto_models import skill_pin_reason
+
+    args = {
+        "prompt": 'Bright watercolor brand world, copy "Loomi Studio"',
+        "skill": "youtube-channel-banner",
+        "count": 3,
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "channel_name": "Loomi Studio",
+        "tagline": "AI 绘画教程",
+    }
+    out = bc.stage_args(args)
+    assert "banner_stage" not in out
+    assert out["ratio"] == "16:9"
+    assert (out["width"], out["height"]) == (2048, 1152)
+    assert out["count"] == 1
+    assert out["prompt"].endswith(bc.BOARD_CLAUSE)
+    assert '"Loomi Studio"' in out["prompt"]
+    # stage_args rewrites size; the pin path (not this helper) drops the agent model.
+    assert out.get("model") == args["model"]
+    # An explicit stage is still honored and is not forced back to board.
+    explicit = bc.stage_args({**args, "banner_stage": "direct"})
+    assert explicit["prompt"].endswith(bc.DIRECT_CLAUSE)
+    assert bc.BOARD_CLAUSE not in explicit["prompt"]
+    assert (explicit["width"], explicit["height"]) == (2048, 1152)
+    # Other skills still ignore banner_stage, including a missing one.
+    other = {"prompt": "x", "skill": "studio-model", "ratio": "3:4", "width": 1024, "height": 1024}
+    assert bc.stage_args(other) == other
+    assert skill_pin_reason("youtube-channel-banner") != _USER_NAMED_REASON
+
+
+def test_missing_stage_agent_model_uses_board_pin_not_user_reason(relay):
+    """#948: agent-filled model + 1024 square, no banner_stage → board + pin, not 「你指定了这个模型」."""
+    from ComfyArt.api.auto_models import skill_pin_reason
+
+    out = _run(
+        prompt='Bright watercolor brand world, brand blue #2F6BFF, copy "Loomi Studio"',
+        skill="youtube-channel-banner",
+        model="openai/gpt-image-2.6-sunburst/text-to-image",
+        width=1024,
+        height=1024,
+        ratio="1:1",
+        count=3,
+        channel_name="Loomi Studio",
+        tagline="AI 绘画教程",
+    )
+    assert out.get("status") != "failed", out
+    assert len(SENT) == 1 and SENT[0][0] == "generate_image"
+    sent = SENT[0][1]
+    assert "banner_stage" not in sent and "skill" not in sent
+    assert sent["ratio"] == "16:9" and sent["count"] == 1
+    assert sent["prompt"].endswith(bc.BOARD_CLAUSE)
+    assert sent["model"] == SUNBURST_T2I and "edit_model" not in sent
+    assert sent.get("edit_resolution") == "2k"
+    assert "width" not in sent and "height" not in sent
+    choice = out.get("model_choice") or sent.get("model_choice")
+    assert choice, out
+    assert choice["category"] == "skill"
+    assert choice["auto"] is True
+    assert choice["model"] == SUNBURST_T2I
+    assert choice["reason"] == skill_pin_reason("youtube-channel-banner")
+    assert choice["reason"] != _USER_NAMED_REASON
+    assert "你指定了这个模型" not in (choice["reason"].get("zh") or "")
+    assert "you named this model" not in (choice["reason"].get("en") or "")
+
+
+def test_explicit_stages_still_work_when_agent_passes_model(relay):
+    """#948: a normal banner_stage is honored; the agent model still does not become a user pick."""
+    from ComfyArt.api.auto_models import skill_pin_reason
+
+    for stage, clause in (("board", bc.BOARD_CLAUSE), ("base", bc.BASE_CLAUSE), ("direct", bc.DIRECT_CLAUSE)):
+        SENT.clear()
+        args = {
+            "prompt": 'Bright watercolor brand world, copy "Loomi Studio"',
+            "skill": "youtube-channel-banner",
+            "banner_stage": stage,
+            "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+            "width": 1024,
+            "height": 1024,
+            "ratio": "1:1",
+            "channel_name": "Loomi Studio",
+            "tagline": "AI 绘画教程",
+            "schedule": "每周二 / 周五更新",
+        }
+        out = _run(**args)
+        assert out.get("status") != "failed", (stage, out)
+        sent = SENT[0][1]
+        assert sent["prompt"].endswith(clause)
+        assert sent["ratio"] == "16:9"
+        assert sent.get("edit_resolution") == "2k"
+        assert "width" not in sent and "height" not in sent
+        choice = out.get("model_choice") or sent.get("model_choice")
+        assert choice["category"] == "skill" and choice["auto"] is True
+        assert choice["reason"] == skill_pin_reason("youtube-channel-banner")
+        assert choice["reason"] != _USER_NAMED_REASON
+
+
+def test_banner_pin_ignores_agent_model_in_select_model():
+    """#948: select_model uses the skill pin even when the agent filled in a model."""
+    from ComfyArt.api.auto_models import skill_pin_reason
+
+    args = {
+        "prompt": "YouTube channel banner",
+        "skill": "youtube-channel-banner",
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+    }
+    choice = canvas.select_model("generate_image", dict(args))
+    assert choice["category"] == "skill"
+    assert choice["auto"] is True
+    assert choice["model"] == SUNBURST_T2I
+    assert "edit_model" not in choice
+    assert choice["reason"] == skill_pin_reason("youtube-channel-banner")
+    assert choice["reason"] != _USER_NAMED_REASON
+    pinned = canvas._pin_args(dict(args), choice)
+    assert pinned["model"] == SUNBURST_T2I
+    assert pinned.get("auto_model") is True
+    # The pin row has no ratio, so a bare _pin_args call keeps whatever ratio was
+    # passed; generate_image runs stage_args first, which forces 16:9 (covered above).
+    assert "width" not in pinned and "height" not in pinned
+    # Other pinned skills still let a user-named model win (unchanged pin rule).
+    named = canvas.select_model("generate_image", {"prompt": "x", "skill": "ai-model", "model": "bytedance/seedream-v5.0-pro"})
+    assert named["category"] != "skill"
+
+
+
+# --- #948: omit banner_stage after looking up card 2 ----------------------------------------------
+
+_CARD2_PROMPT = 'Bright watercolor brand world, brand blue #2F6BFF, copy "Loomi Studio"'
+_CARD2_ARGS = {
+    "prompt": _CARD2_PROMPT,
+    "skill": "youtube-channel-banner",
+    "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+    "width": 1024,
+    "height": 1024,
+    "ratio": "1:1",
+    "count": 3,
+    "channel_name": "Loomi Studio",
+    "tagline": "AI 绘画教程",
+    "schedule": "每周二/五更新",
+}
+
+
+def _card1_block(*, delivery="A", other_text=""):
+    spec = bot_asks.validate_spec({
+        "questions": [
+            {"id": "yt_delivery", "prompt": "这次横幅想怎么交付？",
+             "options": [{"id": "A", "label": "先出三方向选择板，再做终稿"},
+                         {"id": "B", "label": "直接出一张终稿，文字用精确排版渲染"},
+                         {"id": "C", "label": "直接出一张终稿，文字由图像模型生成"}]},
+            {"id": "yt_banner_text", "prompt": "横幅上实际要出现哪些文字？", "options": LIVE_TEXT},
+            {"id": "yt_brand_assets", "prompt": "有需要放进去的品牌资产吗？",
+             "options": [{"id": "A", "label": "没有，纯图形＋文字构成识别"},
+                         {"id": "B", "label": "有 Logo／头像，我上传给你"},
+                         {"id": "C", "label": "需要预留真人出镜位置"}]},
+        ],
+    })
+    return {
+        "type": "ask", "ask_id": uuid.uuid4().hex, "status": "answered", **spec,
+        "answers": {
+            "yt_delivery": {"selected": [delivery] if delivery else [], "other_text": other_text},
+            "yt_banner_text": {"selected": ["A"], "other_text": ""},
+            "yt_brand_assets": {"selected": ["A"], "other_text": ""},
+        },
+    }
+
+
+def _card2_block(*, text_mode=None, direction="A", other_text="", status="answered"):
+    spec = bot_asks.validate_spec({
+        "questions": [
+            {"id": "yt_direction", "prompt": "选哪个方向做 2560×1440 终稿？", "options": LIVE_DIRECTIONS},
+            {"id": "yt_text_mode", "prompt": "终稿的文字怎么上？",
+             "options": [{"id": "A", "label": "精确排版（推荐）"}, {"id": "B", "label": "图像模型直出"}]},
+        ],
+    })
+    answers = {
+        "yt_direction": {"selected": [direction] if direction else [], "other_text": ""},
+        "yt_text_mode": {"selected": [text_mode] if text_mode else [], "other_text": other_text},
+    }
+    return {"type": "ask", "ask_id": uuid.uuid4().hex, "status": status, **spec, "answers": answers}
+
+
+def _seed_chat(*blocks):
+    return _seed_chat_rounds(list(blocks))
+
+
+def _seed_chat_rounds(*rounds):
+    chat = chat_store.create_chat(user="default", project="p948", provider="local-llm")
+    for blocks in rounds:
+        chat_store.create_message(chat_id=chat["id"], role="assistant", blocks=list(blocks), status="done")
+    return chat["id"]
+
+
+def _assert_board(out):
+    assert out.get("status") != "failed", out
+    assert len(SENT) == 1 and SENT[0][0] == "generate_image"
+    sent = SENT[0][1]
+    assert sent["ratio"] == "16:9" and sent["count"] == 1
+    assert sent["prompt"].endswith(bc.BOARD_CLAUSE)
+    assert bc.BASE_CLAUSE not in sent["prompt"] and bc.DIRECT_CLAUSE not in sent["prompt"]
+    assert "width" not in sent and "height" not in sent
+    return sent
+
+
+def _assert_inferred(out, clause):
+    assert out.get("status") != "failed", out
+    assert len(SENT) == 1 and SENT[0][0] == "generate_image"
+    sent = SENT[0][1]
+    assert sent["prompt"].endswith(clause)
+    assert bc.BOARD_CLAUSE not in sent["prompt"]
+    assert sent["ratio"] == "16:9" and sent["count"] == 1
+    assert "width" not in sent and "height" not in sent
+    return sent
+
+
+def _assert_refused(out):
+    assert out.get("status") == "failed", out
+    assert out.get("submitted") is False
+    assert out.get("generation_succeeded") is False
+    assert SENT == []
+    err = str(out.get("error") or "")
+    assert "banner_stage" in err
+    assert "card 2" in err.lower() or "yt_text_mode" in err
+    return err
+
+
+def _assert_refused_delivery(out):
+    assert out.get("status") == "failed", out
+    assert out.get("submitted") is False
+    assert out.get("generation_succeeded") is False
+    assert SENT == []
+    err = str(out.get("error") or "")
+    assert "banner_stage" in err
+    assert "yt_delivery" in err or "card 1" in err.lower()
+    return err
+
+
+def test_missing_stage_card2_unanswered_defaults_to_board(relay):
+    """#948 (a): card 2 unanswered + missing stage → direction board at 2048×1152."""
+    chat_id = _seed_chat(_card1_block())
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    sent = _assert_board(out)
+    # stage_args itself also reports the 2k board size before the pin drops width/height.
+    sized = bc.stage_args({**_CARD2_ARGS, "skill": "youtube-channel-banner"})
+    # No BOT_CHAT_ID here, so this path is also "unanswered".
+    assert (sized["width"], sized["height"]) == (2048, 1152)
+    assert sized["prompt"].endswith(bc.BOARD_CLAUSE)
+    assert sent.get("edit_resolution") == "2k"
+
+
+def test_missing_stage_card2_answered_infers_stage(relay):
+    """#948 (b): card 2 answered + missing stage → inferred base/direct, no board clause."""
+    for mode, clause in (("A", bc.BASE_CLAUSE), ("B", bc.DIRECT_CLAUSE)):
+        SENT.clear()
+        chat_id = _seed_chat(_card1_block(), _card2_block(text_mode=mode))
+        out = _run(chat_id=chat_id, **_CARD2_ARGS)
+        _assert_inferred(out, clause)
+
+
+def test_missing_stage_card2_answered_indeterminate_refuses(relay):
+    """#948 (c): card 2 answered but yt_text_mode cannot be mapped → refuse, no generate."""
+    chat_id = _seed_chat(_card1_block(), _card2_block(text_mode=None, other_text="随便看看再说"))
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_refused(out)
+
+
+def test_mutation_reverting_card2_inference_fails_b_and_c(relay, monkeypatch):
+    """Reverting omitted-stage inference to always-board must fail (b) and (c)."""
+    real = bc.infer_omitted_stage
+    monkeypatch.setattr(bc, "infer_omitted_stage", lambda: "board")
+
+    chat_b = _seed_chat(_card1_block(), _card2_block(text_mode="A"))
+    SENT.clear()
+    red_b = False
+    try:
+        _assert_inferred(_run(chat_id=chat_b, **_CARD2_ARGS), bc.BASE_CLAUSE)
+    except AssertionError:
+        red_b = True
+    assert red_b, "always-board inference should fail the answered-card-2 → base lock"
+
+    chat_c = _seed_chat(_card1_block(), _card2_block(text_mode=None, other_text="随便看看再说"))
+    SENT.clear()
+    red_c = False
+    try:
+        _assert_refused(_run(chat_id=chat_c, **_CARD2_ARGS))
+    except AssertionError:
+        red_c = True
+    assert red_c, "always-board inference should fail the indeterminate-card-2 refusal lock"
+
+    monkeypatch.setattr(bc, "infer_omitted_stage", real)
+    SENT.clear()
+    _assert_inferred(_run(chat_id=_seed_chat(_card1_block(), _card2_block(text_mode="A")), **_CARD2_ARGS), bc.BASE_CLAUSE)
+    SENT.clear()
+    _assert_refused(_run(chat_id=_seed_chat(_card1_block(), _card2_block(text_mode=None, other_text="随便看看再说")), **_CARD2_ARGS))
+
+
+def _second_banner_chat():
+    """Round 1 answered card 1 + card 2; round 2 answered a new card 1 only."""
+    return _seed_chat_rounds(
+        [_card1_block(), _card2_block(text_mode="A")],
+        [_card1_block()],
+    )
+
+
+def _assert_second_banner_board(chat_id):
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    sent = _assert_board(out)
+    assert sent.get("edit_resolution") == "2k"
+    token = BOT_CHAT_ID.set(chat_id)
+    try:
+        sized = bc.stage_args(dict(_CARD2_ARGS))
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert (sized["width"], sized["height"]) == (2048, 1152)
+    assert sized["prompt"].endswith(bc.BOARD_CLAUSE)
+    assert bc.BASE_CLAUSE not in sized["prompt"]
+    return sent
+
+
+def test_missing_stage_newer_card1_after_prior_card2_defaults_to_board(relay):
+    """#948: second banner in the same chat — newer card 1 than card 2 → board 2048×1152."""
+    _assert_second_banner_board(_second_banner_chat())
+
+
+def test_mutation_ignoring_card_order_fails_second_banner(relay, monkeypatch):
+    """Using the latest card 2 and ignoring a newer card 1 must fail the second-banner board lock."""
+    def latest_card2_only():
+        chat_id = bc._banner_chat_id()
+        block = bc._latest_answered_card2(chat_id) if chat_id else None
+        if block is None:
+            return "board"
+        stage = bc.stage_from_card2(block)
+        if stage in ("base", "direct"):
+            return stage
+        raise ValueError(bc._MISSING_STAGE_ERROR)
+
+    real = bc.infer_omitted_stage
+    monkeypatch.setattr(bc, "infer_omitted_stage", latest_card2_only)
+    SENT.clear()
+    red = False
+    try:
+        _assert_second_banner_board(_second_banner_chat())
+    except AssertionError:
+        red = True
+    assert red, "ignoring card order should fail: a newer card 1 must start a board, not reuse the old card 2"
+
+    monkeypatch.setattr(bc, "infer_omitted_stage", real)
+    SENT.clear()
+    _assert_second_banner_board(_second_banner_chat())
+
+
+def test_missing_stage_card1_delivery_b_skips_board_uses_base(relay):
+    """yt_delivery B + omitted stage (no card 2) → base; skips the direction board."""
+    chat_id = _seed_chat(_card1_block(delivery="B"))
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_inferred(out, bc.BASE_CLAUSE)
+
+
+def test_missing_stage_card1_delivery_c_skips_board_uses_direct(relay):
+    """yt_delivery C + omitted stage (no card 2) → direct; skips the direction board."""
+    chat_id = _seed_chat(_card1_block(delivery="C"))
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_inferred(out, bc.DIRECT_CLAUSE)
+
+
+def test_missing_stage_card1_delivery_unknown_refuses(relay):
+    """yt_delivery free text that cannot be mapped → refuse, zero submit, no paid fallback."""
+    chat_id = _seed_chat(_card1_block(delivery=None, other_text="一次出多个方向终稿"))
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_refused_delivery(out)
+
+
+def test_missing_stage_card1_delivery_skipped_defaults_to_board(relay):
+    """yt_delivery skipped + omitted stage → direction board."""
+    chat_id = _seed_chat(_card1_block(delivery=None))
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_board(out)
+
+
+def test_second_banner_new_card1_delivery_b_uses_base_not_prior_card2(relay):
+    """Second banner uses the new card 1: delivery B → base, not the prior card 2 and not a board."""
+    chat_id = _seed_chat_rounds(
+        [_card1_block(), _card2_block(text_mode="B")],
+        [_card1_block(delivery="B")],
+    )
+    out = _run(chat_id=chat_id, **_CARD2_ARGS)
+    _assert_inferred(out, bc.BASE_CLAUSE)
+
+
+def test_mutation_ignoring_card1_delivery_fails_b_and_c(relay, monkeypatch):
+    """Always-board when card 1 is latest must fail the B→base and C→direct locks."""
+    def always_board_when_card1_latest():
+        chat_id = bc._banner_chat_id()
+        if not chat_id:
+            return "board"
+        card1_i, card2_i, _ignored_card1, card2_block = bc._latest_answered_card_positions(chat_id)
+        if card2_i is None or (card1_i is not None and card1_i > card2_i):
+            return "board"
+        stage = bc.stage_from_card2(card2_block)
+        if stage in ("base", "direct"):
+            return stage
+        raise ValueError(bc._MISSING_STAGE_ERROR)
+
+    real = bc.infer_omitted_stage
+    monkeypatch.setattr(bc, "infer_omitted_stage", always_board_when_card1_latest)
+
+    SENT.clear()
+    red_b = False
+    try:
+        _assert_inferred(_run(chat_id=_seed_chat(_card1_block(delivery="B")), **_CARD2_ARGS), bc.BASE_CLAUSE)
+    except AssertionError:
+        red_b = True
+    assert red_b, "ignoring yt_delivery B should fail: omitted stage must use base, not a paid board"
+
+    SENT.clear()
+    red_c = False
+    try:
+        _assert_inferred(_run(chat_id=_seed_chat(_card1_block(delivery="C")), **_CARD2_ARGS), bc.DIRECT_CLAUSE)
+    except AssertionError:
+        red_c = True
+    assert red_c, "ignoring yt_delivery C should fail: omitted stage must use direct, not a paid board"
+
+    SENT.clear()
+    red_unk = False
+    try:
+        _assert_refused_delivery(_run(chat_id=_seed_chat(_card1_block(delivery=None, other_text="一次出多个方向终稿")), **_CARD2_ARGS))
+    except AssertionError:
+        red_unk = True
+    assert red_unk, "ignoring unmapped yt_delivery should fail: the call must be refused, not a paid board"
+
+    monkeypatch.setattr(bc, "infer_omitted_stage", real)
+    SENT.clear()
+    _assert_inferred(_run(chat_id=_seed_chat(_card1_block(delivery="B")), **_CARD2_ARGS), bc.BASE_CLAUSE)
+    SENT.clear()
+    _assert_inferred(_run(chat_id=_seed_chat(_card1_block(delivery="C")), **_CARD2_ARGS), bc.DIRECT_CLAUSE)
+    SENT.clear()
+    _assert_refused_delivery(_run(chat_id=_seed_chat(_card1_block(delivery=None, other_text="一次出多个方向终稿")), **_CARD2_ARGS))
 
 
 # --- compositing lock --------------------------------------------------------------------------------
