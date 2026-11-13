@@ -17,6 +17,10 @@ TABLE = Path(__file__).with_name("auto_models.json")
 
 AUTO_TOKENS = frozenset({"auto", "auto:video"})
 
+# #953: only a model the user themselves named may use this reason.
+USER_NAMED_REASON = {"zh": "你指定了这个模型", "en": "you named this model"}
+AUTO_PICKED_REASON = {"zh": "自动选择", "en": "Auto picked it"}
+
 
 def named_or_none(model: str | None) -> str | None:
     """Return a real user-named model id, or None when omitted / explicit Auto (#825).
@@ -266,7 +270,7 @@ def choose(feature: str, prompt: str, named: str | None, catalog: dict, masked: 
     named = named_or_none(named)
     if named:
         return {"model": named, "auto": False, "category": "user",
-                "reason": {"zh": "你指定了这个模型", "en": "you named this model"}}
+                "reason": dict(USER_NAMED_REASON)}
     spec = load_table()[feature]
     row = spec.get("masked") if masked else None
     ids = {m["id"] for m in cfg["models"]}
@@ -349,6 +353,102 @@ def short_name(model: str | None) -> str:
     if len(parts) >= 2:
         return _humanize_id_segment(parts[-2])
     return str(model)
+
+
+def user_named_this_model(model: str | None, user_text: str | None) -> bool:
+    """True when the user's own words name this model (full id or short label).
+
+    #953: a model id the agent filled into generate_image is not a user pick
+    just because it is present in the tool arguments.
+    """
+    mid = named_or_none(model)
+    blob = str(user_text or "").strip()
+    if not mid or not blob:
+        return False
+    low = blob.lower()
+    if mid.lower() in low:
+        return True
+    name = short_name(mid)
+    if name and len(name) >= 4 and name.lower() in low:
+        return True
+    # Unique path segments such as qwen-image-2.0 or gpt-image-2.6-sunburst.
+    for seg in reversed([p for p in mid.split("/") if p]):
+        token = seg.lower().replace("_", "-")
+        if len(token) >= 8 and token in low:
+            return True
+    return False
+
+
+def is_user_named_reason(reason: object) -> bool:
+    """True when reason is the user-named copy (plain or the skill-size variant)."""
+    if not reason:
+        return False
+    if isinstance(reason, dict):
+        zh, en = str(reason.get("zh") or ""), str(reason.get("en") or "")
+    else:
+        zh = en = str(reason)
+    return "你指定了这个模型" in zh or "you named this model" in en.lower()
+
+
+def relabel_agent_filled_choice(choice: dict | None, args: dict | None, user_text: str | None) -> dict | None:
+    """#953 display-only: keep the selected model, but do not write「你指定了这个模型」
+    unless the user themselves named it. Skill pin / skill_size / Auto copy is used
+    instead. Selection (the model id) is unchanged.
+    """
+    if not isinstance(choice, dict) or choice.get("block") or choice.get("svg_error"):
+        return choice
+    args = args or {}
+    named = named_or_none(args.get("model"))
+    if not named:
+        return choice
+    if user_named_this_model(named, user_text):
+        return choice
+    skill = str(args.get("skill") or choice.get("skill") or "")
+    # #825: a named model with no skill and no auto_model is a studio / tool user pick.
+    if not skill and not args.get("auto_model"):
+        return choice
+    if choice.get("auto") and not is_user_named_reason(choice.get("reason")):
+        return choice
+    out = {**choice, "auto": True, "model": choice.get("model") or named}
+    if skill and skill_pin(skill):
+        out["category"] = "skill" if out.get("category") not in ("skill", "skill_fallback", "skill_size") else out["category"]
+        out["skill"] = skill
+        if out.get("category") != "skill_size" or is_user_named_reason(out.get("reason")):
+            if out.get("category") != "skill_size":
+                out["reason"] = skill_pin_reason(skill)
+    elif skill:
+        out["category"] = "skill_size" if out.get("category") in ("user", "skill_size", None) else out.get("category") or "skill_size"
+        out["skill"] = skill
+        if is_user_named_reason(out.get("reason")):
+            # Prefer the skill-size wording already computed; otherwise the pin-style skill copy.
+            w = (out.get("requested_size") or {}).get("width")
+            h = (out.get("requested_size") or {}).get("height")
+            model = str(out.get("model") or named)
+            if w and h:
+                out["reason"] = {
+                    "zh": f"{skill} 需要 {w}×{h}，{model} 的 size 字段能按这个宽高提交",
+                    "en": f"{skill} needs {w}×{h}, and {model} accepts that exact size",
+                }
+            else:
+                out["reason"] = skill_pin_reason(skill)
+    else:
+        if out.get("category") == "user":
+            out["category"] = "default"
+        if is_user_named_reason(out.get("reason")):
+            out["reason"] = dict(AUTO_PICKED_REASON)
+    return out
+
+
+def quote_model_copy(choice: dict | None, model_id: str, lang: str) -> str:
+    """Quote-card model wording: Auto · name + skill/auto reason, or just the name when the user named it."""
+    if isinstance(choice, dict):
+        label = pill_label(choice) or short_name(choice.get("model") or model_id) or model_id
+        if choice.get("auto") and not is_user_named_reason(choice.get("reason")):
+            reason = reason_text(choice, lang)
+            if reason and reason not in label:
+                return f"{label}（{reason}）"
+        return label
+    return short_name(model_id) or model_id
 
 
 def reason_text(choice: dict, lang: str = "zh") -> str:

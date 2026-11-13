@@ -1,6 +1,6 @@
 import logging
 
-from ..auto_models import UnregisteredModel, choose, load_table, named_or_none, note, registered, skill_pin, skill_pin_reason, table_runtime_fallback_choice, tool_feature
+from ..auto_models import UnregisteredModel, choose, load_table, named_or_none, note, registered, relabel_agent_filled_choice, skill_pin, skill_pin_reason, table_runtime_fallback_choice, tool_feature
 from ..gif_image import choice as gif_choice, ensure_args as ensure_gif_args, requests_gif, still_block
 from ..svg_image import block_reason as svg_block, choice as svg_choice, ensure_args as ensure_svg_args, requests_svg
 from ..mcp_commands import submit_command
@@ -203,6 +203,8 @@ async def _relay_run(action: str, args: dict, fallback_for: str, timeout: float)
     # #825: page stashes model_choice on the gen card / GenInfo (Auto · name + hover reason).
     if choice and isinstance(choice, dict):
         args = {**args, "model_choice": {**choice, "note": note(choice) if choice.get("model") else (choice.get("fallback_reason") or {}).get("en", "")}}
+        if choice.get("auto"):
+            args["auto_model"] = True
     result = await submit_command(action, args, PROJECT.get(), timeout, chat=BOT_CHAT_ID.get())
     if choice and isinstance(result, dict) and not result.get("cancelled"):
         ran = result.get("model")
@@ -508,7 +510,21 @@ def _unregistered_reason(model: str) -> dict:
             "en": f"{model} is not a registered model, so Auto picked the model instead"}
 
 
-def select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict | None = None) -> dict | None:
+def _current_user_text() -> str:
+    """The user's own words for this turn, when generate_image runs inside a chat turn."""
+    chat_id = BOT_CHAT_ID.get()
+    if not chat_id:
+        return ""
+    try:
+        from ..paid_guard import TURNS
+        guard = TURNS.get(chat_id)
+    except Exception:
+        return ""
+    return str((guard.goal_text if guard else "") or "")
+
+
+def select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict | None = None,
+                 user_text: str | None = None) -> dict | None:
     """Single model-selection entry used by every route.
 
     Order: skill pin → exact-size (EXACT_SKILLS) → Auto table.
@@ -516,23 +532,29 @@ def select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict
     refusal is also a ``block``. Helpers (``_skill_choice``, ``linkedin_decision``,
     the Auto table) are only reached from here.
     """
+    return _select_model(action, args, catalog=catalog, cfg=cfg, user_text=user_text)
+
+
+def _select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict | None = None,
+                  user_text: str | None = None) -> dict | None:
+    text = user_text if user_text is not None else _current_user_text()
     if action == "generate_image" and _exact_skill_missing_ref(args):
         return {"block": _need_person_photo_block(), "category": "need_person_photo", "auto": True}
     named = named_or_none(args.get("model"))
     if action == "generate_image" and requests_gif(args):
         # #825: GIF / 动图 is text-to-image on GPT Image 2.6. Checked before refs, which otherwise
         # become an image_edit (edit has no gif) or could be read as a video.
-        return gif_choice(named or "", bool(args.get("refs") or args.get("base")))
+        return relabel_agent_filled_choice(gif_choice(named or "", bool(args.get("refs") or args.get("base"))), args, text)
     if action == "generate_image" and requests_svg(args):
         # #826: SVG is 2.6 text-to-image, n=1. Edit and references are refused. Checked before the
         # reference branch, which would otherwise select an edit model.
         blocked = svg_block(args)
         if blocked:
             return {"model": "", "auto": True, "category": "svg_rejected", "svg_error": blocked, "reason": blocked["reason"]}
-        return svg_choice(named or "")
+        return relabel_agent_filled_choice(svg_choice(named or ""), args, text)
     pin = _skill_row(action, args)
     if pin:
-        return _skill_choice(args, pin)
+        return relabel_agent_filled_choice(_skill_choice(args, pin), args, text)
     from ..skill_size import EXACT_SKILLS, linkedin_decision
     # A missing catalog must not be treated as {}. That would make unpinned
     # exact-size skills look like they have no eligible model and get blocked.
@@ -543,8 +565,8 @@ def select_model(action: str, args: dict, catalog: dict | None = None, cfg: dict
             return {"block": decision["block"], "category": "skill_size_block", "auto": True}
         choice = dict(decision["choice"])
         choice["_exact_args"] = decision["args"]
-        return choice
-    return _auto_table_choice(action, args, cfg)
+        return relabel_agent_filled_choice(choice, args, text)
+    return relabel_agent_filled_choice(_auto_table_choice(action, args, cfg), args, text)
 
 
 def _auto_choice(action: str, args: dict, catalog: dict | None = None, cfg: dict | None = None) -> dict | None:
@@ -552,7 +574,7 @@ def _auto_choice(action: str, args: dict, catalog: dict | None = None, cfg: dict
     return select_model(action, args, catalog=catalog, cfg=cfg)
 
 
-def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
+def quote_route(action: str, args: dict, user_text: str | None = None) -> tuple[str, dict] | None:
     """#910: the model a paid call will actually run on and the inputs to price it with, so a quote card names and
     prices the routed model (not the dearest model of the feature). Same pick as the tool: an unregistered model
     falls back to Auto (#734), refs/base run on image_edit, a skill pin brings its resolution/ratio. The references
@@ -563,7 +585,7 @@ def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
     clean = dict(args)
     if unregistered_model(action, clean):
         clean = {k: v for k, v in clean.items() if k not in ("model", "auto_model")}
-    choice = select_model(action, clean) or {}
+    choice = select_model(action, clean, user_text=user_text) or {}
     if choice.get("block") or choice.get("svg_error"):
         return None
     model = str(choice.get("edit_model") or choice.get("model") or "")
@@ -589,6 +611,8 @@ def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
         refs = ([clean["base"]] if clean.get("base") else []) + [r for r in (clean.get("refs") or []) if r]
         if refs:
             inputs["images"] = [f"ref-{i + 1}" for i in range(len(refs))]
+    # #953: display-only payload for the quote card; plan_quote pops this before pricing.
+    inputs["_model_choice"] = {k: v for k, v in choice.items() if k != "_exact_args"}
     return model, inputs
 
 

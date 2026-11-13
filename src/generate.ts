@@ -271,7 +271,31 @@ export function estimateInputsOf(shape: GeneratorShape): Record<string, unknown>
   const inputs = estimateBase(shape)
   const loras = lorasOf(shape)
   // #202: quoted with the LoRAs it is submitted with, so the quote is the charge
-  return inputs && loras.length ? { ...inputs, loras } : inputs
+  const priced = inputs && loras.length ? { ...inputs, loras } : inputs
+  return priced ? attachModelChoice(shape, priced) : priced
+}
+
+/** #953: pass the already-routed model_choice (and auto_model) so estimate/submit
+ *  do not relabel a skill/Auto pick as a user-named model. */
+function attachModelChoice(shape: GeneratorShape, inputs: Record<string, unknown>): Record<string, unknown> {
+  const choice = shape.meta?.modelChoice as import('./autoPill').ModelChoice | undefined
+  if (!choice || typeof choice !== 'object') return inputs
+  return {
+    ...inputs,
+    model_choice: choice,
+    ...(choice.auto ? { auto_model: true } : {}),
+  }
+}
+
+function applyModelChoice(graph: PromptGraph, shape: GeneratorShape) {
+  const choice = shape.meta?.modelChoice as import('./autoPill').ModelChoice | undefined
+  if (!choice || typeof choice !== 'object') return
+  for (const node of Object.values(graph)) {
+    if (node.class_type === WS_NODE) {
+      node.inputs.model_choice = choice
+      if (choice.auto) node.inputs.auto_model = true
+    }
+  }
 }
 
 function estimateBase(shape: GeneratorShape): Record<string, unknown> | null {
@@ -328,7 +352,7 @@ export function generate(editor: Editor, shape: GeneratorShape, onError: ErrorSi
   const kind = isVideo(shape.props.workflow) ? 'video' : 'image'
   const name = shape.props.prompt || scenesOf(shape)[0]?.prompt || ''
   const seed = seedOf(shape) ?? randomSeed()
-  const built = generateGraph(shape).then((b) => { applySeed(b.graph, seed); applyLoras(b.graph, shape); return b })
+  const built = generateGraph(shape).then((b) => { applySeed(b.graph, seed); applyLoras(b.graph, shape); applyModelChoice(b.graph, shape); return b })
   return startJob(editor, shape.id, built, { name: name.slice(0, 32), kind, extra: { seed }, runOn: runOnOf(shape) }, onError)
 }
 

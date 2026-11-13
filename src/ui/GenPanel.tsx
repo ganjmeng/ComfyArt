@@ -76,8 +76,15 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
       if (!live) return
       setEstDetail(e); setEstimate(e?.price ?? null); setEstimated(e?.source === 'estimate'); setUnpriced(e?.source === 'unpriced')
       // #825: same model_choice estimate quotes → confirm → card
+      // #953: do not replace an Auto/skill reason with「你指定了这个模型」when the
+      // estimate only saw a filled-in model id.
       if (e?.model_choice && shape) {
-        editor.updateShape<GeneratorShape>({ id: shape.id, type: shape.type, meta: { ...editor.getShape(shape.id)?.meta, modelChoice: e.model_choice } as GeneratorShape['meta'] })
+        const prev = (editor.getShape(shape.id)?.meta as GeneratorShape['meta'] | undefined)?.modelChoice as import('../autoPill').ModelChoice | undefined
+        const next = e.model_choice
+        const clobber = prev?.auto && next && next.auto === false
+        if (!clobber) {
+          editor.updateShape<GeneratorShape>({ id: shape.id, type: shape.type, meta: { ...editor.getShape(shape.id)?.meta, modelChoice: next } as GeneratorShape['meta'] })
+        }
       }
     }).catch(() => {}) }, 300)
     return () => { live = false; clearTimeout(timer) }
