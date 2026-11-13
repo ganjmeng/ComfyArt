@@ -95,6 +95,57 @@ def refs_from_blocks(blocks: list[dict]) -> list[dict]:
     return out
 
 
+# #952: chat uploads are minted as loose:N (src/agent.ts) and stored on the user
+# message as display blocks {type, url, shape}. generate_image (and other tools
+# that take a shape/ref id) must resolve that id to the upload URL before the
+# page looks the id up as a canvas shape.
+_LOOSE_ID = re.compile(r"^loose:(\d+)$")
+_LOOSE_REF_KEYS = (
+    "refs", "base", "reference_images", "reference_videos", "reference_audios",
+    "first_frame", "last_frame", "motion_video", "speech_audio", "ref", "design", "views",
+)
+
+
+def loose_src_map(chat_id: str) -> dict[str, str]:
+    """loose:N → upload URL from this chat's messages. A later message wins."""
+    if not chat_id:
+        return {}
+    found: dict[str, str] = {}
+    for msg in chat_store.list_messages(chat_id):
+        for r in refs_from_blocks(msg.get("blocks") or []):
+            rid, src = r.get("id") or "", r.get("src") or ""
+            if _LOOSE_ID.match(rid) and src:
+                found[rid] = src
+    return found
+
+
+def resolve_loose_ref(value: str, srcs: dict[str, str]) -> str:
+    """Return value unchanged unless it is loose:N. Unknown index raises ValueError."""
+    if not isinstance(value, str) or not _LOOSE_ID.match(value):
+        return value
+    if value in srcs:
+        return srcs[value]
+    raise ValueError(f"no loose upload {json.dumps(value)}")
+
+
+def resolve_loose_refs(args: dict, chat_id: str = "") -> dict:
+    """Rewrite loose:N ids in generate/ref fields to the upload URL. Same dict is returned."""
+    if not isinstance(args, dict):
+        return args
+    srcs = None
+    for key in _LOOSE_REF_KEYS:
+        raw = args.get(key)
+        if raw is None:
+            continue
+        if srcs is None:
+            srcs = loose_src_map(chat_id)
+        if isinstance(raw, list):
+            args[key] = [resolve_loose_ref(v, srcs) if isinstance(v, str) else v for v in raw]
+        elif isinstance(raw, str):
+            args[key] = resolve_loose_ref(raw, srcs)
+    return args
+
+
 def format_ref_lines(refs: list[dict], *, sheet_frames: int = 4) -> list[str]:
     """Canonical Attached-lines with shape ids — same form as the current turn.
 
