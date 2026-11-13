@@ -192,6 +192,31 @@ class GenContext:
         return self.portrait() and bool(self.uploads)
 
 
+
+def _explicit_new_text_task(msg: dict, blocks: list) -> bool:
+    """A direct user end + reference-free new request, never agent inference."""
+    if msg.get("role") != "user":
+        return False
+    text = "\n".join(_text_of(b) for b in blocks
+                     if isinstance(b, dict) and b.get("type") == "text").strip()
+    if not blocks:
+        text = str(msg.get("content") or "").strip()
+    zh_end = re.match(
+        r"^(?:请|现在|先|我们)?(?:结束|停止|取消)(?:当前|这个|这次|这组|之前的|刚才的)?"
+        r"(?:形象照|人像照|人像摄影|人像|肖像)(?:任务|流程|生成)?[了吧]?[，,。；;！!\s]", text)
+    en_end = re.match(
+        r"^(?:please\s+)?(?:end|stop|cancel)\s+(?:(?:the|this)\s+)?(?:(?:current|previous)\s+)?"
+        r"portrait(?:[ -]studio)?(?:\s+(?:task|session|workflow))?[.,;!\s]", text, re.I)
+    no_ref = re.search(
+        r"(?:不(?:再)?(?:用|使用|要)(?:任何|之前的|上传的|这张)?(?:参考图|照片|上传照)|"
+        r"无参考图|纯文生图|without\s+(?:any\s+)?(?:reference(?:\s+images?)?|photos?)|"
+        r"(?:no|do not use|don't use)\s+(?:any\s+)?(?:reference(?:\s+images?)?|photos?))", text, re.I)
+    new_task = re.search(
+        r"(?:另(?:做|开|生成)|重新(?:做|生成)|新(?:任务|的图)|生成|画一|文生图|"
+        r"(?:new|separate)\s+(?:task|image)|(?:generate|create|draw)\b|text[ -]to[ -]image)", text, re.I)
+    return bool((zh_end or en_end) and no_ref and new_task)
+
+
 def context_from_chat(chat_id: str) -> GenContext:
     """Latest skill start and answered card win. Uploads are those of the current skill run."""
     ctx = GenContext()
@@ -207,6 +232,12 @@ def context_from_chat(chat_id: str) -> GenContext:
         blocks = msg.get("blocks") or []
         if not isinstance(blocks, list):
             blocks = []
+        # Plain user text can end the current task without selecting another skill.
+        # Clear only inferred context, never rewrite stored uploads or tool args.
+        if ctx.portrait() and _explicit_new_text_task(msg, blocks):
+            ctx = GenContext(skill="text-to-image")
+            skill_at = i
+            uploads_from = i
         # Skill start: display chip or the provider-text regex if it was stored.
         found_skill = ""
         for b in blocks:

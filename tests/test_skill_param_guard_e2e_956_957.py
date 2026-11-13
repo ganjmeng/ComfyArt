@@ -310,3 +310,72 @@ async def test_fullapp_packaging_upload_card_reject_and_valid(
         await pg.wait_for_timeout(800)
         await _shot(pg, f"956-957-{lang}-packaging-valid")
         await browser.close()
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+async def test_fullapp_portrait_all_omitted_then_text_only_switch(
+    app_url, mock_ws, agent, ws_forward, lang,
+):
+    """Real skill upload + card, continuation refusal, then same-chat text switch."""
+    from ComfyArt.bot.providers import BotEvent
+    from ComfyArt.api import portrait_studio as ps
+
+    agent.phase = 0
+    agent.outcomes = []
+    agent.chat_ids = []
+
+    async def steps(a, turn, emit):
+        a.chat_ids.append(turn.chat_id)
+        phase = a.phase
+        a.phase += 1
+        if phase == 0:
+            await _call(a, emit, "ask_user", {"questions": ps.card_questions(lang)}, 10)
+        result = await _call(a, emit, "generate_image", {
+            "prompt": "professional portrait" if phase < 2 else "a landscape poster",
+            "count": 1,
+        }, 11 + phase)
+        a.outcomes.append(result)
+        await emit(BotEvent(t="delta", text=result.get("user_message") or
+                           result.get("error") or "Mock text-to-image completed ($0)."))
+
+    async def ready(pg, count):
+        for _ in range(200):
+            if len(agent.outcomes) >= count and not await pg.get_by_test_id("composer-stop").count():
+                return
+            await asyncio.sleep(0.1)
+        pytest.fail(f"turn {count} did not finish: {agent.outcomes}")
+
+    agent.steps = steps
+    async with pw.async_playwright() as p:
+        browser, pg = await _open_skill(p, app_url, lang, "portrait-studio", ws_forward)
+        try:
+            await _answer_first_options(pg, lang)
+            await ready(pg, 1)
+            for key in ("submitted", "charged"):
+                assert agent.outcomes[0].get(key) is False
+            assert set(agent.outcomes[0].get("missing", [])) == {"refs", "skill", "shot"}
+            assert not mock_ws["submits"]
+            await _shot(pg, f"958-{lang}-portrait-all-omitted-reject")
+            box = pg.locator(".ca-composer__input")
+            await box.fill("继续形象照，换蓝色背景。" if lang == "zh" else
+                           "Continue the portrait, change the background to blue.")
+            await box.press("Enter")
+            await ready(pg, 2)
+            assert agent.outcomes[1].get("kind") == "missingSkillParams"
+            assert agent.outcomes[1].get("submitted") is False
+            assert not mock_ws["submits"]
+            capsules = pg.locator('[data-testid="composer-capsule"]')
+            while await capsules.count():
+                await capsules.first.locator('button').click()
+            await box.fill('结束刚才的人像任务，不要使用之前上传的照片。这是全新的独立文生图请求：画一张山间湖泊风景，不要人物，也不要参考图。' if lang == "zh" else
+                           'End the previous portrait task. Do not use the uploaded photo. This is a new independent text-to-image request: draw a mountain lake landscape, no person and no reference image.')
+            await box.press("Enter")
+            await ready(pg, 3)
+            assert len(set(agent.chat_ids)) == 1, agent.chat_ids
+            assert not agent.last_turn.attachments, agent.last_turn.attachments
+            assert agent.outcomes[2].get("kind") != "missingSkillParams", agent.outcomes[2]
+            assert mock_ws["submits"], agent.outcomes[2]
+            await pg.wait_for_timeout(800)
+            await _shot(pg, f"958-{lang}-same-chat-text-only-t2i")
+        finally:
+            await browser.close()
