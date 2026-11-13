@@ -146,6 +146,32 @@ async def test_settings_validate_keys_and_types(bot_client):
     assert saved["ocr-engine"] == "agent"
 
 
+async def test_float_settings_accept_int_and_reject_bool(bot_client):
+    """Browser JSON has no 5.0 vs 5; a float setting must accept either and still reject bool."""
+    from ComfyArt.api import settings
+    float_keys = [k for k, v in settings.SETTINGS_SPEC.items() if type(v) is float]
+    assert "agent-credits-usd" in float_keys
+    for key in float_keys:
+        for raw in (5, 5.0):
+            resp = await bot_client.put("/comfyart/settings", json={key: raw})
+            assert resp.status == 200, await resp.text()
+            saved = await resp.json()
+            assert saved[key] == 5.0
+            assert type(saved[key]) is float
+            stored = settings.read_json(settings.app_path("settings.json"), {})
+            assert type(stored[key]) is float and stored[key] == 5.0
+        for bad in (True, False):
+            resp = await bot_client.put("/comfyart/settings", json={key: bad})
+            assert resp.status == 400
+            body = await resp.json()
+            assert "must be a float" in body["error"]
+        stored = settings.read_json(settings.app_path("settings.json"), {})
+        assert stored[key] == 5.0 and type(stored[key]) is float
+        resp = await bot_client.put("/comfyart/settings", json={key: "5"})
+        assert resp.status == 400
+        assert "must be a float" in (await resp.json())["error"]
+
+
 async def test_status_survives_a_failing_probe(bot_client, fake_provider, monkeypatch):
     async def boom(self):
         raise OSError(448, "untrusted mount point")
