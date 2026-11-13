@@ -65,6 +65,9 @@ EXAMPLE = {  # sid: (media, n inputs)
     "mobile-app-visual-design": ("i" * 13, 2), "web-product-visual-design": ("i" * 9, 2), "universal-multi-angle-grid": ("i" * 11, 2),
     "interior-architectural-visualization": ("ii", 2), "rednote-cover-maker": ("i" * 5, 2),  # skills-748 highlights (#748 hard cut; was iiii / i*10)
 }
+# convert_raw_748.py emits the full raw highlight list (no cap). skills-748.json
+# later kept a prefix by order: interior 4→2, rednote 10→5. Lengths match EXAMPLE.
+_HARD_CUT = {"interior-architectural-visualization": 2, "rednote-cover-maker": 5}
 TEMPLATE = {  # sid: ([media depth per template], n inputs per template)
     "character-sheet-design": ([1] * 8, None), "packaging-design-director": ([1, 3, 4, 1, 1], None), "motion-poster-generator": ([1, 1], None),
     "product-tvc-advertisement-generator": ([1] * 7, 5), "brand-identity-director": ([4] * 6, None),
@@ -88,7 +91,12 @@ def test_example_media_and_inputs_match_raw(sid):
     if RAW.exists():
         ct = _raw(sid).get("content") or {}
         hl = sorted(ct.get("highlights") or [], key=lambda h: h.get("order", 0))
-        assert "".join("v" if h.get("mediaType") == "video" else "i" for h in hl) == media
+        raw_media = "".join("v" if h.get("mediaType") == "video" else "i" for h in hl)
+        if sid in _HARD_CUT:
+            cut = _HARD_CUT[sid]
+            assert len(raw_media) >= cut and raw_media[:cut] == media
+        else:
+            assert raw_media == media
         assert len(((ct.get("template") or {}).get("questions")) or []) == n
 
 
