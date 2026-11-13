@@ -33,6 +33,13 @@ def _schema(properties: dict, required: list[str] = ()) -> dict:
 def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
     async def handler(args: dict) -> dict:
         args = dict(args)
+        # #952: chat-uploaded images are exposed as loose:N; resolve to the
+        # upload URL before the page looks the id up as a canvas shape.
+        try:
+            from ..bot_turns import resolve_loose_refs
+            args = resolve_loose_refs(args, BOT_CHAT_ID.get() or "")
+        except ValueError as e:
+            return {"status": "failed", "generation_succeeded": False, "submitted": False, "error": str(e)}
         if action == "generate_image":
             # youtube-channel-banner: dry-run 精确排版 copy before any paid base call; then
             # one 16:9 2k image per step + the stage's fixed clause (no-text base etc.).
