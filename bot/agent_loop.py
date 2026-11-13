@@ -968,14 +968,24 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             messages.append({"role": "assistant", "content": content or None, "tool_calls": tool_calls})
             n_before = len(messages)
             b_before = len(ctx.blocks)
-            if _tool_calls_wait(tool_calls):
-                # Freeze the 15 min run clock while we wait on a submitted, charged job.
-                ctx.budget.pause_wall()
+            has_wait = _tool_calls_wait(tool_calls)
+            pure_wait = has_wait and all(
+                _is_wait_tool(str((tc.get("function") or {}).get("name") or tc.get("name") or ""))
+                for tc in tool_calls)
+            if has_wait:
                 _note_wait_start(ctx.tracker, tool_calls, clock())
-            stopped = await provider._dispatch_tools(
-                tool_calls, session=session, turn=turn, emit=rec_emit, handle=handle,
-                messages=messages, done=ctx.done, lang=ctx.lang, skill_cache=skill_cache,
-                loop=loop, gate=gate, usage=usage, llm_model=model)
+            # Exclude only blocking pure-wait dispatch time, never later work.
+            # Mixed steps count in full so non-wait tools cannot bypass the cap.
+            if pure_wait:
+                ctx.budget.pause_wall()
+            try:
+                stopped = await provider._dispatch_tools(
+                    tool_calls, session=session, turn=turn, emit=rec_emit, handle=handle,
+                    messages=messages, done=ctx.done, lang=ctx.lang, skill_cache=skill_cache,
+                    loop=loop, gate=gate, usage=usage, llm_model=model)
+            finally:
+                if pure_wait:
+                    ctx.budget.resume_wall()
             reason_next = reasoning_boost.wrote_memory(ctx.blocks[b_before:])
             # Tool results are charged as input of the next request (they are re-sent with it).
             ctx.budget.end_step()
@@ -1004,10 +1014,6 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     for a in sorted(artifact_ids(o.result)):
                         if a not in ctx.artifacts:
                             ctx.artifacts.append(a)
-            if _wait_still_running(obs):
-                ctx.budget.pause_wall()
-            elif _tool_calls_wait(tool_calls) or any(_is_wait_tool(o.tool) for o in obs):
-                ctx.budget.resume_wall()
             fatal = next((o for o in obs if o.failed and NON_RETRYABLE_MARK in o.result), None)
             if fatal is not None:  # #705: never let the model retry a call the tool says cannot succeed
                 _log.warning("[ComfyArt/agent] run %s non-retryable %s error, stopping", ctx.run_id, fatal.tool)

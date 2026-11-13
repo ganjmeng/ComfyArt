@@ -29,11 +29,11 @@ def test_wait_timeout_uses_fake_clock_not_wall_time(monkeypatch):
     monkeypatch.setattr(time, "time", lambda: (_ for _ in ()).throw(AssertionError("time.time used")))
     clk, tr = FakeClock(), tracker()
     assert not tr.wait_timeout(poll(), now=clk())
-    clk.t += 599
+    clk.t += 1799
     assert not tr.wait_timeout(poll(), now=clk())
-    clk.t += 2                                   # 601 s on the run clock since the first poll
+    clk.t += 2                                   # 1801 s on the run clock since the first poll
     assert tr.wait_timeout(poll(), now=clk())
-    assert tr.wait_waited_s == 601
+    assert tr.wait_waited_s == 1801
 
 
 def test_wall_clock_jump_does_not_trip_timeout(monkeypatch):

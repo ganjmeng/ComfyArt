@@ -152,3 +152,42 @@ async def test_past_30_min_still_generating_card_not_stuck(monkeypatch, store):
     assert "任务卡住了" not in blob
     assert "已停止" not in blob
     assert "Continue generating" not in blob
+
+
+@pytest.mark.parametrize("mixed", [False, True])
+async def test_running_wait_cannot_hide_non_wait_work(monkeypatch, store, mixed):
+    """Running polls must not exempt 2400s add_text, including mixed steps."""
+    r = None
+
+    def script(m, n):
+        if n == 0:
+            return calls(("generate_image", {"prompt": "banner", "model": "m"}))
+        if n == 1:
+            items = [("wait_generation", {"ids": ["holder1"]})]
+            if mixed:
+                items.append(("add_text", {"text": "caption"}))
+            return calls(*items)
+        if n == 2 and not mixed:
+            return calls(("add_text", {"text": "caption"}))
+        return reply("done")
+
+    def mcp(name, a, i):
+        if name == "generate_image":
+            return json.dumps({"ids": ["holder1"]})
+        if name == "wait_generation":
+            r.clock.t += 10
+            return json.dumps({"status": "running", "results": [{"id": "holder1", "status": "running"}]})
+        if name == "add_text":
+            r.clock.t += 2400
+        return json.dumps({})
+
+    r = Rig(monkeypatch, script, store=store, prices={"generate_image": 0.09}, mcp=mcp)
+    res, ev = await r.send("draw a banner", goal="")
+    s = stop_of(res)
+    if mixed:
+        # The elapsed 30-minute pending-job guard is reached in this same step.
+        assert (s["reason"], s.get("sub")) == ("stuck", "timeout"), s
+    else:
+        assert (s["reason"], s.get("sub"), s["dimension"]) == ("budget", "exhausted", "time"), s
+    assert res.run["log"]["wall_s"] >= 2400
+    assert len(r.paid_mcp()) == 1
