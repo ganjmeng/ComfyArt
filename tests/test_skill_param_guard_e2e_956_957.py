@@ -312,11 +312,12 @@ async def test_fullapp_packaging_upload_card_reject_and_valid(
         await browser.close()
 
 
+@pytest.mark.parametrize("switch_copy", ["original", "expanded"])
 @pytest.mark.parametrize("lang", ["zh", "en"])
 async def test_fullapp_portrait_all_omitted_then_text_only_switch(
-    app_url, mock_ws, agent, ws_forward, lang,
+    app_url, mock_ws, agent, ws_forward, lang, switch_copy,
 ):
-    """Real skill upload + card, continuation refusal, then same-chat text switch."""
+    """Real skill upload + card; negative switch refuses, affirmative switch succeeds."""
     from ComfyArt.bot.providers import BotEvent
     from ComfyArt.api import portrait_studio as ps
 
@@ -367,15 +368,29 @@ async def test_fullapp_portrait_all_omitted_then_text_only_switch(
             capsules = pg.locator('[data-testid="composer-capsule"]')
             while await capsules.count():
                 await capsules.first.locator('button').click()
-            await box.fill('结束刚才的人像任务，不要使用之前上传的照片。这是全新的独立文生图请求：画一张山间湖泊风景，不要人物，也不要参考图。' if lang == "zh" else
-                           'End the previous portrait task. Do not use the uploaded photo. This is a new independent text-to-image request: draw a mountain lake landscape, no person and no reference image.')
+            await box.fill("结束形象照任务；不要另做无参考图任务，继续用原照。" if lang == "zh" else
+                           "End the portrait task; do not create a new image without references; keep using the old photo.")
             await box.press("Enter")
             await ready(pg, 3)
+            assert not agent.last_turn.attachments
+            assert agent.outcomes[2].get("kind") == "missingSkillParams", agent.outcomes[2]
+            assert agent.outcomes[2].get("submitted") is False
+            assert agent.outcomes[2].get("charged") is False
+            assert not mock_ws["submits"]
+            await _shot(pg, f"958-{lang}-negated-switch-reject-{switch_copy}")
+            if switch_copy == "original":
+                await box.fill("结束形象照；另做一张猫咪海报，不用之前照片" if lang == "zh" else
+                               "End the portrait task; make a cat poster, do not use the previous photo.")
+            else:
+                await box.fill('结束刚才的人像任务，不要使用之前上传的照片。这是全新的独立文生图请求：画一张山间湖泊风景，不要人物，也不要参考图。' if lang == "zh" else
+                               'End the previous portrait task. Do not use the uploaded photo. This is a new independent text-to-image request: draw a mountain lake landscape, no person and no reference image.')
+            await box.press("Enter")
+            await ready(pg, 4)
             assert len(set(agent.chat_ids)) == 1, agent.chat_ids
             assert not agent.last_turn.attachments, agent.last_turn.attachments
-            assert agent.outcomes[2].get("kind") != "missingSkillParams", agent.outcomes[2]
-            assert mock_ws["submits"], agent.outcomes[2]
+            assert agent.outcomes[3].get("kind") != "missingSkillParams", agent.outcomes[3]
+            assert mock_ws["submits"], agent.outcomes[3]
             await pg.wait_for_timeout(800)
-            await _shot(pg, f"958-{lang}-same-chat-text-only-t2i")
+            await _shot(pg, f"958-{lang}-same-chat-text-only-t2i-{switch_copy}")
         finally:
             await browser.close()

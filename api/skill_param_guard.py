@@ -82,8 +82,8 @@ _ERR = {
         "en": "generate_image is missing refs. This portrait-studio task is using the uploaded reference photo; pass that image in refs. Do not fall back to text-to-image. Nothing was submitted or charged. Do not auto-fill or auto-pick a historical image.",
     },
     "skill_shot_refs": {
-        "zh": "generate_image 缺少 skill、当前景别 shot，以及 refs。当前人像任务正在使用上传的参考图，请传入 skill='portrait-studio'、shot（closeup / half / three_quarter / full 之一），并把该参考图放入 refs。不能改走文生图。未提交，未扣费。不要猜测景别，不要擅自补图。",
-        "en": "generate_image is missing skill, the current shot, and refs. This portrait-studio task is using the uploaded reference photo; pass skill='portrait-studio', shot as one of: closeup, half, three_quarter, full, and that image in refs. Do not fall back to text-to-image. Nothing was submitted or charged. Do not guess the shot or auto-fill the photo.",
+        "zh": "generate_image 缺少 skill、当前景别 shot，以及 refs。当前人像任务正在使用上传的参考图，请传入 skill='portrait-studio'、shot（closeup / half / three_quarter / full 之一），并把该参考图放入 refs。不能改走文生图。未提交，未扣费。不要猜测景别，不要擅自补图。若用户的任务切换或是否继续用图不明确，请先向用户澄清，不要自行解除保护。",
+        "en": "generate_image is missing skill, the current shot, and refs. This portrait-studio task is using the uploaded reference photo; pass skill='portrait-studio', shot as one of: closeup, half, three_quarter, full, and that image in refs. Do not fall back to text-to-image. Nothing was submitted or charged. Do not guess the shot or auto-fill the photo. If task switching or reference use is unclear, ask the user to clarify; do not release the guard yourself.",
     },
 }
 
@@ -193,28 +193,94 @@ class GenContext:
 
 
 
+# Narrow, clause-scoped directives, not a bag of words from the whole message.
+# Inconclusive / contradictory language keeps the current upload protection.
+_REF_ZH = r"(?:(?:之前|先前|刚才|上传|原来|原|旧|任何|这张|那张|这些)(?:的)?)*(?:参考图|照片|图片|原照|上传照)"
+_REF_EN = r"(?:(?:the|any|a|an|previous|old|uploaded|original|reference|portrait|this|that|my|these|her|his|our|their)\s+)*(?:photos?|images?|references?)\b"
+_END_ZH = (r"(?:结束|停止|取消)(?:当前|这个|这次|这组|之前的|刚才的)?"
+           r"(?:形象照|人像照|人像摄影|人像|肖像)(?:任务|流程|生成)?(?:了|吧)?")
+_END_EN = (r"(?:end|stop|cancel)\s+(?:(?:the|this)\s+)?(?:(?:current|previous)\s+)?"
+           r"portrait(?:[ -]studio)?(?:\s+(?:task|session|workflow))?")
+
+
+def _task_directives(text: str) -> set[str]:
+    """Recognize affirmative/negative user clauses with local negation scope.
+
+    Never mine directives from quoted examples, subordinate conditions, or
+    agent output. All three affirmative facts are needed; a conflicting
+    continuation or negated new-task directive vetoes the transition.
+    This deliberately does not claim general natural-language understanding.
+    """
+    text = re.sub(r'```.*?```|`[^`]*`|“[^”]*”|「[^」]*」|『[^』]*』|"[^"\n]*"', '', text, flags=re.S)
+    evidence: set[str] = set()
+    # Split only clause boundaries, not arbitrary spans inside a directive.
+    clauses = re.split(r"[\n，,。；;！!：:]|(?<!\w)\.(?!\w)|(?<=\w)\.(?=\s|$)|\b(?:but|however|and)\b|但(?:是)?|不过|然而|并且|同时", text, flags=re.I)
+    for clause in clauses:
+        c = re.sub(r"^(?:(?:请|现在|先|我们|也)\s*|please\s+)+", "", clause.strip(), flags=re.I)
+        if not c or re.search(r"[？?]", c):
+            continue
+        ended = bool(re.fullmatch(_END_ZH + "|" + _END_EN, c, re.I))
+        if ended:
+            evidence.add("end")
+        # Veto an explicit continuation, reference reuse, or negated new task.
+        # Unlike a global '无参考图' hit, '不要另做无参考图任务' is not a release.
+        veto = (
+            r"(?:不要|别|不想|不用)(?:再)?(?:结束|停止|取消|另做|另开|重新生成)|"
+            r"继续(?:形象照|人像|肖像)|"
+            r"(?:继续|仍然|还是)?(?:使用|用|沿用)" + _REF_ZH + "|"
+            r"(?:(?:do not|don't|never)\s+(?:end|stop|cancel|create|generate|draw)|"
+            r"continue\s+(?:the\s+)?portrait|"
+            r"(?:continue\s+using|keep\s+using|reuse|use)\s+" + _REF_EN + ")"
+        )
+        if re.match(veto, c, re.I):
+            evidence.add("keep")
+        # A negation applies to the immediately following use/reference object,
+        # not to an unrelated new-task verb elsewhere in the same message.
+        no_ref = (
+            r"(?:(?:不(?:再)?(?:用|使用)|不要(?:再)?(?:用|使用)|别(?:再)?(?:用|使用))" + _REF_ZH + "|"
+            r"(?:不要|无)" + _REF_ZH + "|纯文生图|"
+            r"(?:do not use|don't use|never use)\s+" + _REF_EN + r"|no\s+" + _REF_EN + ")"
+        )
+        excluded = bool(re.fullmatch(no_ref + r"[了吧]?", c, re.I))
+        if excluded:
+            evidence.add("no_ref")
+        new = re.match(
+            r"(?:另(?:做|开|生成)|重新(?:做|生成)|生成|画一|(?:这是)?全新的独立文生图请求|"
+            r"(?:create|generate|draw|make)\b|(?:this is a )?(?:new|separate) (?:independent )?text[ -]to[ -]image request)", c, re.I)
+        reference_free_new = False
+        if new:
+            evidence.add("new")
+            # Reference-free modifiers count only inside an affirmative request;
+            # embedded negations/conditions are ambiguous, not permission.
+            if (not re.search(r"(?:不是|并非|不要|不需要|如果|\bnot\b|\bif\b)", c, re.I)
+                    and re.search(r"无参考图|纯文生图|without\s+(?:using\s+)?" + _REF_EN, c, re.I)):
+                evidence.add("no_ref")
+                reference_free_new = True
+        # An unparsed reference/continuation clause is not permission. In
+        # particular, a later affirmative reuse cannot be cancelled by an
+        # earlier "do not use" clause. Ask for clarification instead.
+        reference_mention = (
+            r"(?:(?:之前|先前|上传|原来|旧|这张|那张)(?:的)?)+(?:照片|图片)|参考图|原照|上传照|"
+            r"(?:(?:previous|old|uploaded|original|reference)\s+)+(?:photos?|images?)\b|\breferences?\b|"
+            r"\b(?:with|using|from)\s+" + _REF_EN
+        )
+        if (not ended and not excluded and not reference_free_new and
+                (re.search(reference_mention + r"|形象照|人像|肖像|\bportrait\b", c, re.I)
+                 or re.match(r"继续|沿用|(?:continue|reuse|keep using)\b|use\s+(?:it|them|her|him)\b", c, re.I))):
+            evidence.add("keep")
+    return evidence
+
+
 def _explicit_new_text_task(msg: dict, blocks: list) -> bool:
-    """A direct user end + reference-free new request, never agent inference."""
-    if msg.get("role") != "user":
+    """Only consistent, direct user end + new + no-reference directives release."""
+    if msg.get("role") != "user" or any(_upload_id(b) for b in blocks):
         return False
     text = "\n".join(_text_of(b) for b in blocks
                      if isinstance(b, dict) and b.get("type") == "text").strip()
     if not blocks:
         text = str(msg.get("content") or "").strip()
-    zh_end = re.match(
-        r"^(?:请|现在|先|我们)?(?:结束|停止|取消)(?:当前|这个|这次|这组|之前的|刚才的)?"
-        r"(?:形象照|人像照|人像摄影|人像|肖像)(?:任务|流程|生成)?[了吧]?[，,。；;！!\s]", text)
-    en_end = re.match(
-        r"^(?:please\s+)?(?:end|stop|cancel)\s+(?:(?:the|this)\s+)?(?:(?:current|previous)\s+)?"
-        r"portrait(?:[ -]studio)?(?:\s+(?:task|session|workflow))?[.,;!\s]", text, re.I)
-    no_ref = re.search(
-        r"(?:不(?:再)?(?:用|使用|要)(?:任何|之前的|上传的|这张)?(?:参考图|照片|上传照)|"
-        r"无参考图|纯文生图|without\s+(?:any\s+)?(?:reference(?:\s+images?)?|photos?)|"
-        r"(?:no|do not use|don't use)\s+(?:any\s+)?(?:reference(?:\s+images?)?|photos?))", text, re.I)
-    new_task = re.search(
-        r"(?:另(?:做|开|生成)|重新(?:做|生成)|新(?:任务|的图)|生成|画一|文生图|"
-        r"(?:new|separate)\s+(?:task|image)|(?:generate|create|draw)\b|text[ -]to[ -]image)", text, re.I)
-    return bool((zh_end or en_end) and no_ref and new_task)
+    facts = _task_directives(text)
+    return {"end", "new", "no_ref"}.issubset(facts) and "keep" not in facts
 
 
 def context_from_chat(chat_id: str) -> GenContext:

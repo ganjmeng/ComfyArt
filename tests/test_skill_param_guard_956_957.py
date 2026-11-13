@@ -509,6 +509,8 @@ def test_mutation_ignoring_portrait_upload_would_allow_silent_t2i(relay, monkeyp
     '结束刚才的人像任务，不要使用之前上传的照片。这是全新的独立文生图请求：画一张山间湖泊风景，不要人物，也不要参考图。',
     'End the previous portrait task. Do not use the uploaded photo. This is a new independent text-to-image request: draw a mountain lake landscape, no person and no reference image.',
     "结束形象照任务，另做一张无参考图的猫咪海报。",
+    "结束形象照；另做一张猫咪海报，不用之前照片",
+    "End the portrait task; make a cat poster, do not use the previous photo.",
     "请结束当前形象照任务，不使用上传的照片，生成一张山水画。",
     "End the portrait task. Create a new landscape without reference images.",
     "Please stop this portrait session; generate a cat poster, no photos.",
@@ -551,3 +553,54 @@ def test_portrait_chip_after_text_switch_restores_guard(relay):
         {"type": "skill", "name": "portrait-studio"},
         {"type": "image", "url": PERSON}, {"type": "text", "text": "重新拍形象照"}])
     _refused(_run(chat["id"], {"prompt": "portrait", "count": 1}), "refs", "skill", "shot")
+
+
+# Polarity / ordering matrix: replacing one affirmative directive with its
+# negation must not release a historical-upload task. Quoted examples are not
+# user instructions, and explicit reuse vetoes even an otherwise valid switch.
+_DIRECTIVES = {
+    "zh": ("结束形象照", "另做一张猫咪海报", "不用之前照片"),
+    "en": ("End the portrait task", "Create a cat poster", "Do not use the old photo"),
+}
+_NEGATED_DIRECTIVES = {
+    "zh": ("不要结束形象照", "不要另做一张猫咪海报", "继续用之前照片"),
+    "en": ("Do not end the portrait task", "Do not create a cat poster", "Keep using the old photo"),
+}
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("order", [(0, 1, 2), (2, 0, 1), (1, 2, 0)])
+def test_directive_order_does_not_change_explicit_transition(relay, lang, order):
+    text = "; ".join(_DIRECTIVES[lang][i] for i in order)
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": text}])
+    result = _run(chat["id"], {"prompt": "cat poster", "count": 1})
+    assert SENT and result.get("kind") != guard.KIND_MISSING, result
+
+
+@pytest.mark.parametrize("lang", ["zh", "en"])
+@pytest.mark.parametrize("negated", [0, 1, 2])
+def test_negating_each_directive_preserves_upload_protection(relay, lang, negated):
+    parts = list(_DIRECTIVES[lang])
+    parts[negated] = _NEGATED_DIRECTIVES[lang][negated]
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": "; ".join(parts)}])
+    _refused(_run(chat["id"], {"prompt": "cat poster", "count": 1}), "refs", "skill", "shot")
+
+
+@pytest.mark.parametrize("text", [
+    "结束形象照任务；不要另做无参考图任务，继续用原照。",
+    "结束形象照；另做一张无参考图的海报，但继续用原照。",
+    "结束形象照；另做一张猫咪海报，不用之前照片；继续用原照。",
+    "继续用原照；结束形象照；另做一张猫咪海报，不用之前照片。",
+    "End the portrait task; create a cat poster without reference images; keep using the old photo.",
+    "End the portrait task; do not create a new image without references; use the old photo.",
+    "请分析这个例句：『结束形象照；另做一张猫咪海报，不用之前照片』。",
+    '“结束形象照；另做一张猫咪海报，不用之前照片”',
+    '"End the portrait task; create a cat poster; do not use the old photo"',
+    "如果结束形象照；另做一张猫咪海报，不用之前照片。",
+])
+def test_contradictions_quoted_and_conditional_switches_keep_guard(relay, text):
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    chat_store.create_message(chat_id=chat["id"], role="user", blocks=[{"type": "text", "text": text}])
+    _refused(_run(chat["id"], {"prompt": "cat poster", "count": 1}), "refs", "skill", "shot")
