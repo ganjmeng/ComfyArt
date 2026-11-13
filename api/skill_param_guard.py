@@ -1,8 +1,10 @@
 """#956 / #957: refuse a generate_image call before submit when required skill params are missing.
 
 Applicability is inferred from the current skill and answered cards in this chat,
-not from the agent-supplied skill argument alone. The guard never injects a
-shot, picks a historical image, or overrides an explicit user change; it only
+not from the agent-supplied skill argument alone. When the current portrait
+task is still using an uploaded photo, omitting refs, skill, and shot together
+is also refused (no silent text-to-image). The guard never injects a shot,
+picks a historical image, or overrides an explicit user change; it only
 refuses and tells the agent which parameter is missing. Quotes use the same
 check and, when the args are complete, the validated parameters that will
 actually be submitted.
@@ -74,6 +76,14 @@ _ERR = {
     "refs": {
         "zh": "generate_image 缺少 refs。当前 product-to-packaging 任务正在使用上传的产品图，请把该产品图放入 refs。不能改走文生图。未提交，未扣费。不要擅自挑选历史图片。",
         "en": "generate_image is missing refs. This product-to-packaging task is using the uploaded product photo; pass that image in refs. Do not fall back to text-to-image. Nothing was submitted or charged. Do not auto-pick a historical image.",
+    },
+    "portrait_refs": {
+        "zh": "generate_image 缺少 refs。当前人像任务正在使用上传的参考图，请把该参考图放入 refs。不能改走文生图。未提交，未扣费。不要擅自补图或挑选历史图片。",
+        "en": "generate_image is missing refs. This portrait-studio task is using the uploaded reference photo; pass that image in refs. Do not fall back to text-to-image. Nothing was submitted or charged. Do not auto-fill or auto-pick a historical image.",
+    },
+    "skill_shot_refs": {
+        "zh": "generate_image 缺少 skill、当前景别 shot，以及 refs。当前人像任务正在使用上传的参考图，请传入 skill='portrait-studio'、shot（closeup / half / three_quarter / full 之一），并把该参考图放入 refs。不能改走文生图。未提交，未扣费。不要猜测景别，不要擅自补图。",
+        "en": "generate_image is missing skill, the current shot, and refs. This portrait-studio task is using the uploaded reference photo; pass skill='portrait-studio', shot as one of: closeup, half, three_quarter, full, and that image in refs. Do not fall back to text-to-image. Nothing was submitted or charged. Do not guess the shot or auto-fill the photo.",
     },
 }
 
@@ -177,6 +187,10 @@ class GenContext:
         """True only when this packaging run is explicitly using an uploaded product photo."""
         return self.packaging() and bool(self.uploads)
 
+    def portrait_uses_upload(self) -> bool:
+        """True when this portrait run is still using an uploaded reference photo."""
+        return self.portrait() and bool(self.uploads)
+
 
 def context_from_chat(chat_id: str) -> GenContext:
     """Latest skill start and answered card win. Uploads are those of the current skill run."""
@@ -261,25 +275,34 @@ def missing_params(args: dict, ctx: GenContext | None = None, *, chat_id: str = 
     ctx = ctx if ctx is not None else context_from_chat(chat_id)
     args = args or {}
     missing: list[str] = []
-    if _portrait_applies(ctx, args) and _has_ref(args):
+    has_ref = _has_ref(args)
+    # Current portrait task still using the uploaded photo: refs/skill/shot
+    # cannot all be omitted (no silent t2i). Never auto-fill the photo or shot.
+    uses_photo = ctx.portrait_uses_upload()
+    if _portrait_applies(ctx, args) and (has_ref or uses_photo):
         skill = str(args.get("skill") or "").strip()
         shot = _norm_shot(args.get("shot"))
         if skill != PORTRAIT:
             missing.append("skill")
         if shot not in portrait.SHOT_KEYS:
             missing.append("shot")
-    if _packaging_refs_required(ctx) and not _has_ref(args):
+        if uses_photo and not has_ref:
+            missing.append("refs")
+    if _packaging_refs_required(ctx) and not has_ref and "refs" not in missing:
         missing.append("refs")
     return missing
 
 
-def refuse_result(missing: list[str], lang: str | None = None) -> dict:
+def refuse_result(missing: list[str], lang: str | None = None, *, task: str = "") -> dict:
     lang = lang if lang in ("zh", "en") else _lang()
-    if "refs" in missing and not (set(missing) - {"refs"}):
-        key = "refs"
-    elif set(missing) >= {"skill", "shot"}:
+    names = set(missing)
+    if names >= {"skill", "shot", "refs"}:
+        key = "skill_shot_refs"
+    elif "refs" in names and not (names - {"refs"}):
+        key = "portrait_refs" if task == "portrait" else "refs"
+    elif names >= {"skill", "shot"}:
         key = "skill_shot"
-    elif "shot" in missing:
+    elif "shot" in names:
         key = "shot"
     else:
         key = "skill"
@@ -300,10 +323,12 @@ def refuse_result(missing: list[str], lang: str | None = None) -> dict:
 
 def preflight(args: dict, chat_id: str = "") -> dict | None:
     """Refuse dict when required params are missing; None when the call may proceed."""
-    missing = missing_params(args, chat_id=chat_id)
+    ctx = context_from_chat(chat_id)
+    missing = missing_params(args, ctx=ctx, chat_id=chat_id)
     if not missing:
         return None
-    return refuse_result(missing)
+    task = "portrait" if (ctx.portrait() or "skill" in missing or "shot" in missing) else "packaging"
+    return refuse_result(missing, task=task)
 
 
 def _freeze_locks(locks: dict) -> dict:

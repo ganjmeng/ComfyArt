@@ -1,6 +1,8 @@
 """#956 / #957: server validation of generate_image skill params. $0 mocks only.
 
 Portrait-studio: missing skill or current shot is refused before submit.
+When the current portrait task is still using an uploaded photo, omitting
+refs/skill/shot together is also refused (no silent text-to-image).
 Product-to-packaging that is using an uploaded product photo: missing refs is
 refused before submit (no silent text-to-image). Applicability comes from the
 current skill and answered cards, not from the agent-supplied skill alone.
@@ -233,6 +235,66 @@ def test_portrait_user_passed_shot_is_not_overridden(relay):
     assert ps.SHOT_LINE["closeup"] not in prompt
 
 
+def test_portrait_all_omitted_with_upload_is_refused_not_silent_t2i(relay):
+    """#957 P0: chip + answered card + upload still in play; agent sends only prompt+count."""
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    result = _run(chat["id"], {"prompt": "professional portrait set", "count": 1})
+    _refused(result, "refs", "skill", "shot")
+    assert SENT == []
+    # Do not auto-fill the uploaded photo or a shot onto the refused result or a submit.
+    assert not result.get("refs") and not result.get("shot")
+    err = (result.get("error") or "") + (result.get("user_message") or "")
+    assert "text-to-image" in err.lower() or "文生图" in err
+
+
+def test_portrait_partial_omissions_with_upload_are_refused(relay):
+    """Any incomplete combo while the uploaded photo is in use is zero-submit."""
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    cases = [
+        ({"prompt": "p", "skill": "portrait-studio", "shot": "closeup", "count": 1}, ("refs",)),
+        ({"prompt": "p", "skill": "portrait-studio", "count": 1}, ("refs", "shot")),
+        ({"prompt": "p", "shot": "closeup", "count": 1}, ("refs", "skill")),
+        ({"prompt": "p", "refs": [PERSON], "count": 1}, ("skill", "shot")),
+        ({"prompt": "p", "skill": "portrait-studio", "refs": [PERSON], "count": 1}, ("shot",)),
+        ({"prompt": "p", "shot": "half", "refs": [PERSON], "count": 1}, ("skill",)),
+    ]
+    for args, missing in cases:
+        SENT.clear()
+        _refused(_run(chat["id"], args), *missing)
+        assert SENT == []
+
+
+def test_portrait_all_omitted_does_not_auto_fill_photo_or_shot(relay):
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    result = _run(chat["id"], {"prompt": "professional portrait set", "count": 1})
+    _refused(result, "refs", "skill", "shot")
+    assert SENT == []
+    # The historical upload must not be injected into a submit.
+    assert all(not (a[1] or {}).get("refs") for a in SENT)
+
+
+def test_explicit_new_t2i_task_is_not_blocked(relay):
+    """User starts a separate text-to-image task; do not apply leftover portrait-upload rules."""
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait",
+                 later_skill="studio-model")
+    result = _run(chat["id"], {"prompt": "a poster from a text brief", "count": 1})
+    assert result.get("kind") != guard.KIND_MISSING, result
+    assert SENT, result
+    SENT.clear()
+    # Fresh chat, no portrait context: bare t2i is allowed.
+    chat2 = _chat()
+    result = _run(chat2["id"], {"prompt": "a cat on a windowsill", "count": 1})
+    assert result.get("kind") != guard.KIND_MISSING, result
+    assert SENT, result
+
+
+def test_portrait_without_upload_all_omitted_is_not_this_guard(relay):
+    """The expanded rule applies only when the current portrait run is using an upload."""
+    chat = _chat(skill="portrait-studio", uploads=(), card="portrait")
+    result = _run(chat["id"], {"prompt": "professional portrait set", "count": 1})
+    assert result.get("kind") != guard.KIND_MISSING, result
+
+
 # --- #956 packaging: missing refs zero submit, no t2i ----------------------------------
 
 def test_packaging_missing_refs_refused_when_upload_is_in_use(relay):
@@ -414,5 +476,30 @@ def test_mutation_ignoring_upload_context_would_allow_packaging_t2i(relay, monke
     monkeypatch.setattr(guard, "_packaging_refs_required", lambda ctx: False)
     chat = _chat(skill="product-to-packaging", uploads=[PRODUCT], card="packaging")
     result = _run(chat["id"], {"prompt": "hero", "count": 1})
+    assert SENT, result
+    assert result.get("kind") != guard.KIND_MISSING
+
+
+def test_quote_route_blocks_portrait_all_omitted_when_upload_in_use():
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    token = BOT_CHAT_ID.set(chat["id"])
+    try:
+        routed = canvas.quote_route("generate_image", {
+            "prompt": "professional portrait set", "count": 1,
+        })
+    finally:
+        BOT_CHAT_ID.reset(token)
+    assert routed is not None and routed[0] == ""
+    blocked = (routed[1] or {}).get("param_blocked") or {}
+    assert blocked.get("kind") == guard.KIND_MISSING
+    for name in ("refs", "skill", "shot"):
+        assert name in (blocked.get("missing") or []), blocked
+
+
+def test_mutation_ignoring_portrait_upload_would_allow_silent_t2i(relay, monkeypatch):
+    """Must-red: if upload context is ignored, the all-omitted portrait call would t2i."""
+    monkeypatch.setattr(guard.GenContext, "portrait_uses_upload", lambda self: False)
+    chat = _chat(skill="portrait-studio", uploads=[PERSON], card="portrait")
+    result = _run(chat["id"], {"prompt": "professional portrait set", "count": 1})
     assert SENT, result
     assert result.get("kind") != guard.KIND_MISSING
