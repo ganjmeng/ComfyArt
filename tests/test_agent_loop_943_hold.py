@@ -191,3 +191,84 @@ async def test_running_wait_cannot_hide_non_wait_work(monkeypatch, store, mixed)
         assert (s["reason"], s.get("sub"), s["dimension"]) == ("budget", "exhausted", "time"), s
     assert res.run["log"]["wall_s"] >= 2400
     assert len(r.paid_mcp()) == 1
+
+
+# Ported from QA review-assets 71b964dc
+# (944/qa/0e57674c/test_zz_qa944_clock.py, tests D and E).
+# Pause is scoped to pure-wait dispatch; resume_wall in the finally block
+# must still run when wait_generation returns an error or _dispatch_tools raises.
+
+
+async def test_wait_error_resumes_clock(monkeypatch, store):
+    """A wait_generation error must resume the run clock so later work counts."""
+    r = None
+
+    def script(m, n):
+        if n == 0:
+            return calls(("generate_image", {"prompt": "banner", "model": "m"}))
+        if n == 1:
+            return calls(("wait_generation", {"ids": ["holder1"]}))
+        if n <= 4:
+            return calls(("add_text", {"text": f"t{n}"}))
+        return reply("done")
+
+    def mcp(name, a, i):
+        if name == "generate_image":
+            return json.dumps({"ids": ["holder1"]})
+        if name == "wait_generation":
+            r.clock.t += 100
+            return RuntimeError("boom inside wait")
+        if name == "add_text":
+            r.clock.t += 400
+        return json.dumps({})
+
+    r = Rig(monkeypatch, script, store=store, prices={"generate_image": 0.09}, mcp=mcp)
+    res, ev = await r.send("draw a banner", goal="")
+    s = stop_of(res)
+    wall = res.run["log"]["wall_s"]
+    # 100s wait is excluded; 3×400s add_text is counted and hits the 15-min cap.
+    assert wall >= 1200 and wall < 1300, wall
+    assert (s["reason"], s.get("dimension")) == ("budget", "time"), s
+    assert len(r.paid_mcp()) == 1
+
+
+async def test_dispatch_exception_resumes_clock(monkeypatch, store):
+    """An exception raised by _dispatch_tools itself must still leave the clock running."""
+    seen = {}
+    orig_resume = RunBudget.resume_wall
+
+    def spy(self):
+        if self._paused:
+            seen["resumed"] = seen.get("resumed", 0) + 1
+        return orig_resume(self)
+
+    monkeypatch.setattr(RunBudget, "resume_wall", spy)
+    r = None
+
+    def script(m, n):
+        if n == 0:
+            return calls(("generate_image", {"prompt": "banner", "model": "m"}))
+        if n == 1:
+            return calls(("wait_generation", {"ids": ["holder1"]}))
+        return reply("done")
+
+    def mcp(name, a, i):
+        if name == "generate_image":
+            return json.dumps({"ids": ["holder1"]})
+        return json.dumps({"status": "running", "results": [{"id": "holder1", "status": "running"}]})
+
+    r = Rig(monkeypatch, script, store=store, prices={"generate_image": 0.09}, mcp=mcp)
+    orig = r.p._dispatch_tools
+
+    async def boom(*a, **k):
+        tool_calls = a[0] if a else k.get("tool_calls", [])
+        if any("wait_generation" in json.dumps(tc) for tc in tool_calls):
+            raise ValueError("dispatch blew up")
+        return await orig(*a, **k)
+
+    monkeypatch.setattr(r.p, "_dispatch_tools", boom)
+    try:
+        await r.send("draw a banner", goal="")
+    except ValueError:
+        pass
+    assert seen.get("resumed", 0) >= 1, seen
