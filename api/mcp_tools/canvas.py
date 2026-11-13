@@ -956,9 +956,17 @@ SPECS: dict[str, dict] = {
         "(and optional path for a bundled file); save with name and instructions to store a reusable workflow the "
         "user wants to keep, plus an optional one-line description. To edit an existing skill, save with its id "
         "(several skills can share a name); instructions and description you leave out are kept. "
+        "A long read is paged: it returns content plus offset, total_chars, next_offset and has_more. When "
+        "has_more is true, call action='read' again with the same id/name and offset=next_offset (same path for "
+        "a bundled file) to read the rest; a page is the real text, never a summary, and one page is never the "
+        "whole skill. "
         "When a task matches a skill, read it first and follow it.",
         {"action": {"type": "string", "enum": ["list", "read", "save"]}, "id": {"type": "string"}, "name": {"type": "string"},
-         "path": {"type": "string"}, "instructions": {"type": "string"}, "description": {"type": "string"}},
+         "path": {"type": "string"},
+         "offset": {"type": "integer", "description": "Character offset into the skill text for a paged read; "
+                                                       "use next_offset from the previous page."},
+         "limit": {"type": "integer", "description": "Characters to return from offset (max 3000)."},
+         "instructions": {"type": "string"}, "description": {"type": "string"}},
         ["action"]),
     "custom_workflow": _tool(
         "Connect the user's own WaveSpeed model to a ComfyArt feature (image generation, edit, inpaint, "

@@ -281,10 +281,60 @@ def _call_key(name: str, args: dict) -> str:
 
 
 def _skill_read_key(name: str, args: dict) -> str:
+    """#960: one cache entry per skill ref + path + page, so reading page 2 (or a bundled
+    file) is a new read instead of a replay of page 1."""
     if name != "skill" or str(args.get("action") or "").lower() != "read":
         return ""
     ref = args.get("name") or args.get("id") or ""
-    return str(ref).strip().lower()
+    ref = str(ref).strip().lower()
+    if not ref:
+        return ""
+    path = str(args.get("path") or "").strip()
+
+    def _int(key: str) -> int:
+        try:
+            return max(0, int(args.get(key) or 0))
+        except (TypeError, ValueError):
+            return 0
+
+    return f"{ref}\x00{path}\x00{_int('offset')}\x00{_int('limit')}"
+
+
+_CACHED_SKILL_NOTE = {
+    "zh": ("[cached] 这次技能读取（同一 id/name、path、offset）本回合已经读过，内容没有变化，下面重复给出。"
+           "不要再读同一段：直接用这份内容继续任务；需要后面的内容就改 offset，或换 path。\n"),
+    "en": ("[cached] This exact skill read (same id/name, path and offset) already ran earlier in this turn "
+           "and the content is unchanged; it is repeated below. Do not read this page again: use it and "
+           "continue the task, or read a different offset/path.\n"),
+}
+
+
+def cap_tool_result(text: str, name: str, args: dict, lang: str) -> str:
+    """#960: keep the head, but say the tail is missing and how to fetch it.
+
+    A head-only cut used to end with a bare `…[truncated N chars]`, so the model could
+    mistake it for the full text (e.g. a skill's card spec in the dropped tail).
+    """
+    if len(text) <= TOOL_RESULT_CAP:
+        return text
+    dropped = len(text) - TOOL_RESULT_CAP
+    zh = lang == "zh"
+    base = _tool_base(name)
+    if base == "skill" and str((args or {}).get("action") or "").lower() == "read":
+        ref = str((args or {}).get("name") or (args or {}).get("id") or "").strip()
+        hint = (f"…[truncated {dropped} chars: 这不是完整结果，尾部没有返回，不能当作全文。"
+                f"用 skill action=\"read\"、id 或 name=\"{ref}\"，加 offset=<已读到的字符数> 和 limit=2500 分段继续读。]"
+                if zh else
+                f"…[truncated {dropped} chars: this is NOT the complete result; the tail was dropped, so do not "
+                f"treat it as the full text. Continue in pages with skill action=\"read\", id or name=\"{ref}\", "
+                f"offset=<chars already read> and limit=2500.]")
+    else:
+        hint = (f"…[truncated {dropped} chars: 这不是完整结果，尾部没有返回；不要把它当成全文。"
+                "请缩小查询范围（分页、ids 或更具体的参数）后重试。"
+                if zh else
+                f"…[truncated {dropped} chars: this is NOT the complete result; the tail was dropped, so do not "
+                "treat it as the full text. Make the call narrower (page, ids or more specific arguments) and retry.")
+    return text[:TOOL_RESULT_CAP] + f"\n{hint}"
 
 
 def _step_label(name: str, args: dict, lang: str) -> str:
@@ -1904,7 +1954,7 @@ class LocalLlmProvider(AgentProvider):
 
     async def _emit_mcp(self, item: dict, *, session, turn, emit, handle,
                         done: list, lang: str, skill_cache: dict, llm_model: str,
-                        run=None) -> list[dict]:
+                        run=None, cache_hits: int = 0) -> list[dict]:
         """Run one real MCP tool and return the chat messages for it. Emits the tool row."""
         name, args, tc_id = item["name"], item["args"], item["id"]
         skill_key, cached = item["skill_key"], item["cached"]
@@ -1937,7 +1987,12 @@ class LocalLlmProvider(AgentProvider):
         try:
             async with lease_heartbeat(run if (run is not None and not cached) else None):
                 if cached:
-                    result_text = skill_cache[skill_key]
+                    # #960: a silent replay looked like fresh content, so the model re-read the same
+                    # page. Say it is cached and name the recovery path instead.
+                    _log.info("[ComfyArt/agent] skill read from cache (%d this turn): %s",
+                              cache_hits, skill_key.replace("\x00", " | "))
+                    note = _CACHED_SKILL_NOTE["zh" if lang == "zh" else "en"]
+                    result_text = note + skill_cache[skill_key]
                 elif name == "wait_generation":
                     result_text = await self._wait_stage_done(
                         session, turn.mcp_endpoint, args, llm_model, handle)
@@ -1957,9 +2012,7 @@ class LocalLlmProvider(AgentProvider):
             skill_cache.setdefault(skill_key, result_text)
         if not cached:
             done.append(_step_label(name, args, lang))
-        if len(result_text) > TOOL_RESULT_CAP:
-            result_text = (result_text[:TOOL_RESULT_CAP]
-                           + f"\n…[truncated {len(result_text) - TOOL_RESULT_CAP} chars]")
+        result_text = cap_tool_result(result_text, name, args, lang)
         if run is not None and name in PAID_TOOLS:
             from . import agent_loop
             agent_loop.paid_done(run, name, args, result_text, price,
@@ -1967,9 +2020,12 @@ class LocalLlmProvider(AgentProvider):
         # #421: model/payload failures (not only transport) must be is_error so the UI
         # shows a failed step instead of the success/done generation row.
         model_failed = bool(model_call_failed(name, args, result_text))
+        # #960: a tool's own `[tool error]` result (e.g. an ask_user spec rejection) is a
+        # failed step in the UI too, not a normal success row.
+        rejected = result_text.lstrip().startswith(("[tool error]", "[error]"))
         await emit(BotEvent(
             t="tool_result", name=name, text=result_text, id=tc_id,
-            is_error=tool_failed or model_failed,
+            is_error=tool_failed or model_failed or rejected,
             detail="cancelled" if _CANCEL_RE.search(result_text) else ""))
         if user_notice:
             await emit(BotEvent(t="notify", text=user_notice))
@@ -2046,7 +2102,8 @@ class LocalLlmProvider(AgentProvider):
             if guard is not None and guard.blocks(name, args):
                 # #706: 4th identical call does not run. The stop is stuck:repeat (clear error)
                 # instead of a second set of three after the one-time nudge.
-                _log.warning("[ComfyArt/agent] identical-call guard: %s x%d, blocking", name, guard.run)
+                _log.warning("[ComfyArt/agent] identical-call guard: %s args=%s x%d, blocking",
+                             name, json.dumps(args, ensure_ascii=False, default=str)[:400], guard.run)
                 loop["identical_stop"] = (name, dict(args))
                 tripped = True
                 break
@@ -2089,7 +2146,7 @@ class LocalLlmProvider(AgentProvider):
             chunks[i] = await self._emit_mcp(
                 parsed[i], session=session, turn=turn, emit=emit, handle=handle,
                 done=done, lang=lang, skill_cache=skill_cache, llm_model=llm_model,
-                run=loop.get("run"))
+                run=loop.get("run"), cache_hits=loop["cache_hits"])
 
         # Checklist (and any other free tool) lands before the confirm card.
         for i, it in enumerate(parsed):
@@ -2246,8 +2303,7 @@ class LocalLlmProvider(AgentProvider):
         except _NET_ERRORS as e:
             result_text = f"[error] {type(e).__name__}: {e}"
         if len(result_text) > TOOL_RESULT_CAP:
-            result_text = (result_text[:TOOL_RESULT_CAP]
-                           + f"\n…[truncated {len(result_text) - TOOL_RESULT_CAP} chars]")
+            result_text = cap_tool_result(result_text, base, args, lang)
         detail = "cancelled" if _CANCEL_RE.search(result_text) else ""
         messages.append({"role": "tool", "tool_call_id": tc_id, "content": result_text})
         await emit(BotEvent(t="tool_result", name=base, text=result_text, id=tc_id,
