@@ -34,12 +34,29 @@ def test_905_mild_before_flaw_and_verbatim_copy():
         "Keep the user\\'s own words for what changes. "
         "Describe both panels as finished states: Before is a slight, everyday version of that change, "
         "still noticeable at thumbnail size. "
+        "Describe Before\\'s darkness or unevenness only as a soft shade slightly deeper than the person\\'s own surrounding skin tone; "
+        "do not name a color for it and do not use intensifiers like \"distinct\", \"clearly visible\" or \"deep\". "
+        "Describe After\\'s area only as the person\\'s own surrounding skin tone, even and natural, with texture kept. "
         "After is a modest, realistic improvement of the same change, with natural texture kept. "
         "Describe only the change the user named, at the intensity the user stated; if the user gave no intensity, keep it slight and everyday. "
         "Do not add symptoms, colors, causes or intensifiers the user did not mention."
     )
     assert rule2 in ba
     assert "slight, everyday version of that change" in ba
+    # Product lock (PR #908 comment 6840013211): soft shade, no color, no intensifiers
+    assert "only as a soft shade slightly deeper than the person\\'s own surrounding skin tone" in ba
+    assert (
+        "Describe Before\\'s darkness or unevenness only as a soft shade slightly deeper than the person\\'s own surrounding skin tone; "
+        "do not name a color for it and do not use intensifiers like \"distinct\", \"clearly visible\" or \"deep\"."
+    ) in ba
+    # Product ruling (PR #908 comment 6840099658): After wording + default label typography
+    assert "Describe After\\'s area only as the person\\'s own surrounding skin tone, even and natural, with texture kept." in ba
+    assert (
+        "Typography: use the typography the user specifies; otherwise match the headline and label typography of the reference. "
+        "When the user specifies no typography, set the labels as small, thin-weight, widely letter-spaced grey sans-serif capitals "
+        "\"BEFORE\" and \"AFTER\"."
+    ) in ba
+    assert "serif capitals" in ba and "thin serif" not in ba
     assert "still noticeable at thumbnail size" in ba
     assert "faint dullness or slight unevenness on otherwise natural skin" not in ba
     assert "modest, realistic improvement of the same change" in ba
