@@ -492,19 +492,41 @@ async def test_studio_auto_estimate_then_reference_does_not_use_a_stale_t2i_reco
 
 
 CASES = {
+    # before-after: a skill_size skill (extra coverage, not one of the four #953 sources)
     "auto": (
         {"prompt": "beauty before after card", "skill": "before-after", "width": 1920, "height": 1080,
          "ratio": "16:9", "model": QEDIT, "refs": ["loose:0"]},
         "帮我做个前后对比，暗疮和肉色不均",
     ),
+    # user explicitly names the model
     "manual": (
         {"prompt": "a cup of coffee on a table", "model": FLARE},
         "Please use GPT Image 2.6 Flare for a cup of coffee",
     ),
+    # generic Auto: no skill, no model
+    "generic-auto": (
+        {"prompt": "a cup of coffee on a table"},
+        "做一张咖啡桌面图，模型你来定",
+    ),
+    # agent auto-fill: the tool call carries a model the user never named ("你来选")
+    "agent-fill": (
+        {"prompt": "a cup of coffee on a table", "model": FLARE},
+        "你来选一个模型，做一张咖啡桌面图",
+    ),
+    # skill pin: pose-fission is pinned to Nano Banana Pro edit (2K, 3:4)
+    "pose-fission": (
+        {"prompt": "same person, same outfit, one new standing pose", "skill": "pose-fission",
+         "refs": ["loose:0"]},
+        "帮我换一个姿势",
+    ),
 }
 
+AGENT_CASES = [("auto", "zh"), ("auto", "en"), ("manual", "zh"), ("manual", "en"),
+               ("generic-auto", "zh"), ("generic-auto", "en"), ("agent-fill", "zh"), ("agent-fill", "en"),
+               ("pose-fission", "zh"), ("pose-fission", "en")]
 
-@pytest.mark.parametrize("case,lang", [("auto", "zh"), ("auto", "en"), ("manual", "zh"), ("manual", "en")])
+
+@pytest.mark.parametrize("case,lang", AGENT_CASES)
 async def test_agent_quote_and_history_agree(app_url, mock_ws, monkeypatch, case, lang):
     """Quote copy, task-history pill, and the submitted model must agree."""
     from server import PromptServer
@@ -513,7 +535,7 @@ async def test_agent_quote_and_history_agree(app_url, mock_ws, monkeypatch, case
     SHOT.mkdir(parents=True, exist_ok=True)
     upload = SHOT / "upload-subject.png"
     _label_png(upload, 480, 640, (100, 50, 80), "MOCK #953 uploaded subject")
-    dims = (1920, 1080) if case == "auto" else (1024, 1024)
+    dims = {"auto": (1920, 1080), "pose-fission": (1536, 2048)}.get(case, (1024, 1024))
     mock_ws["png"] = _label_png(SHOT / "mock-result.png", *dims, (32, 96, 64), "MOCK #953 (no paid call)")
     args, user = CASES[case]
     fake = ChoiceProvider(args, user)
@@ -585,9 +607,20 @@ async def test_agent_quote_and_history_agree(app_url, mock_ws, monkeypatch, case
             assert "你指定了这个模型" not in blob and "you named this model" not in blob.lower()
             assert any("Auto ·" in t for t in lines)
             assert any("before-after" in t or "Qwen" in t for t in lines)
-        else:
+        elif case == "manual":
             assert "你指定了这个模型" not in blob and "you named this model" not in blob.lower()
             assert all("Auto ·" not in t for t in lines)
+        else:
+            # Auto / agent-filled / skill-pinned: never wording the user's own pick, always Auto copy.
+            assert "你指定了这个模型" not in blob and "you named this model" not in blob.lower()
+            assert any("Auto ·" in t for t in lines)
+            assert "text-to-image" not in blob  # endpoint slug is not a model name
+            if case == "generic-auto":
+                assert "通用生图" in blob or "general image" in blob
+            elif case == "agent-fill":
+                assert "自动选择" in blob or "Auto picked" in blob
+            else:  # pose-fission: the skill pin wording, not a user pick
+                assert "pose-fission" in blob and "Nano Banana Pro" in blob
         await page.locator(".ca-chat-confirm button").last.click()
         for _ in range(150):
             if fake.results and len(fake.results) > 1:
@@ -616,9 +649,20 @@ async def test_agent_quote_and_history_agree(app_url, mock_ws, monkeypatch, case
                 assert "Auto ·" in label
                 assert "你指定了这个模型" not in tip_text and "you named this model" not in tip_text.lower()
                 assert "before-after" in tip_text or "1920" in tip_text or "Qwen" in tip_text
-            else:
+            elif case == "manual":
                 assert "Auto ·" not in label
                 assert await tip.count() == 0
+            else:
+                # task-history pill + hover reason agree with the quote card (no user-named copy)
+                assert "Auto ·" in label
+                assert "你指定了这个模型" not in tip_text and "you named this model" not in tip_text.lower()
+                assert "text-to-image" not in label
+                if case == "generic-auto":
+                    assert "通用生图" in tip_text or "general image" in tip_text
+                elif case == "agent-fill":
+                    assert "自动选择" in tip_text or "Auto picked" in tip_text
+                else:  # pose-fission
+                    assert "pose-fission" in tip_text and "Nano Banana Pro" in label
         assert len(mock_ws["submits"]) == 1, mock_ws["submits"]
         submitted = mock_ws["submits"][0][0]
         if case == "auto":
@@ -626,6 +670,14 @@ async def test_agent_quote_and_history_agree(app_url, mock_ws, monkeypatch, case
             choice = (fake.results[0] or {}).get("model_choice") or {}
             assert choice.get("auto") is True
             assert "你指定了这个模型" not in str(choice.get("reason"))
-        else:
+        elif case == "manual":
             assert submitted == FLARE
+        else:
+            # display fix changes nothing about the route: one submit on the model the quote named
+            expected = "google/nano-banana-pro/edit" if case == "pose-fission" else FLARE
+            assert submitted == expected
+            choice = (fake.results[0] or {}).get("model_choice") or {}
+            assert choice.get("auto") is True
+            assert choice.get("model") == submitted
+            assert "你指定了这个模型" not in str(choice.get("reason"))
         await browser.close()

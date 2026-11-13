@@ -373,3 +373,41 @@ def test_quote_route_uses_cached_catalog_for_before_after(monkeypatch):
             wavespeed._catalog.pop("stale", None)
         else:
             wavespeed._catalog["stale"] = prev_stale
+
+
+async def test_priced_inputs_never_carry_display_only_keys(monkeypatch):
+    """#953: the quote-card payload (`_model_choice`) must not reach the pricer.
+
+    `_price_call` routes through quote_route, which attaches the display-only choice, and
+    `_price_one` -> wavespeed.quote prices whatever it is handed. Strip every underscore key
+    so the pricing inputs stay byte-for-byte what they were before the display field existed,
+    on the unregistered->Auto fallback (#734), named and #910 routed-edit paths alike.
+    """
+    from ComfyArt.bot.local_llm import LocalLlmProvider
+
+    provider = LocalLlmProvider(base_url=lambda: "http://x/v1")
+    seen: list[tuple[str, dict]] = []
+
+    async def price_one(model, inputs):
+        seen.append((model, dict(inputs)))
+        return 0.0378
+
+    monkeypatch.setattr(provider, "_price_one", price_one)
+    display = {"model": QWEN, "auto": True, "category": "default",
+               "reason": {"zh": "自动选择", "en": "Auto picked it"}}
+    cases = [
+        {"prompt": "Naive hand-drawn giant coffee cup", "model": "gpt-image-1.5"},  # #734 unknown -> Auto
+        {"prompt": "a cup of coffee on a table", "model": QWEN},                   # user-named model
+        {"prompt": "p", "model": QWEN_EDIT, "refs": ["shape:a"]},                  # #910 routed edit
+    ]
+    for clean in cases:
+        polluted = {**clean, "_model_choice": dict(display)}
+        base_price = await provider._price_call("generate_image", clean)
+        polluted_price = await provider._price_call("generate_image", polluted)
+        assert polluted_price == base_price
+        assert polluted_price is not None
+    assert len(seen) == 2 * len(cases)
+    for _model, inputs in seen:
+        assert not [k for k in inputs if str(k).startswith("_")], inputs
+    # the display field changes nothing: clean and polluted price calls are identical pairs
+    assert seen[0::2] == seen[1::2]

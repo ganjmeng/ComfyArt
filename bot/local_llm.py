@@ -1372,6 +1372,16 @@ async def test_local_llm(*, base_url: str, api_key: str = "", model: str = "",
     return {"ok": True, "code": "ok", "models": models[:20]}
 
 
+def _call_price_params(args: dict) -> dict:
+    """#953: display-only fields must never reach the pricer.
+
+    A routed quote carries ``_model_choice`` (quote-card / task-history copy) next to the real
+    call parameters. Every display field is underscore-prefixed, so dropping those keys keeps
+    the pricing inputs exactly what they were before the display payload existed.
+    """
+    return {k: v for k, v in (args or {}).items() if not str(k).startswith("_")}
+
+
 class LocalLlmProvider(AgentProvider):
     id = "local-llm"
     label = "Local LLM"
@@ -1665,6 +1675,7 @@ class LocalLlmProvider(AgentProvider):
 
     async def _price_call(self, name: str, args: dict):
         """#391: price of one paid call (the quote it is capped by). None when unknown."""
+        args = _call_price_params(args)  # #953: display-only keys stay out of routing/pricing
         model = str(args.get("model") or "")
         if not model:
             return None
@@ -1686,7 +1697,8 @@ class LocalLlmProvider(AgentProvider):
             if routed and (routed[1] or {}).get("param_blocked"):
                 raise ValueError(routed[1]["param_blocked"]["error"])
             if routed and routed[0]:
-                model, args = routed
+                # #953: quote_route adds the display-only `_model_choice`; the pricer sees the call only.
+                model, args = routed[0], _call_price_params(routed[1] or {})
         return await self._price_one(model, args)
 
     async def _llm_request(self, session: aiohttp.ClientSession, url: str,
