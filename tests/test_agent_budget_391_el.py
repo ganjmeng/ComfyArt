@@ -146,14 +146,16 @@ async def test_up_to_8_identical_polls_are_not_stuck(monkeypatch, store, polls):
     assert stop_of(res)["reason"] == "done", stop_of(res)
 
 
-async def test_more_than_8_polls_is_stuck(monkeypatch, store):
+async def test_more_than_8_wait_polls_are_not_readonly_limit(monkeypatch, store):
+    """A long wait_generation streak must not nudge or stop as stuck:readonly_limit (HOLD 6840583182)."""
     r = Rig(monkeypatch, _poll_script(20), store=store, prices={"generate_image": 0.1},
             mcp=lambda n, a, i: json.dumps({"id": "shape:g1"}) if n == "generate_image" else json.dumps({"status": "running"}))
-    res, _ = await r.send("画一张猫", goal="")
+    res, ev = await r.send("画一张猫", goal="")
     s = stop_of(res)
-    assert (s["reason"], s["sub"]) == ("stuck", "readonly_limit")
-    # cap: >8 consecutive read-only steps -> one nudge (counters reset), then stuck on the next 9
-    assert res.run["log"]["steps"] == 1 + 9 + 9
+    assert s["reason"] == "done", s
+    assert s.get("sub") != "readonly_limit"
+    # script: 1 generate + 20 waits + 1 done reply
+    assert res.run["log"]["steps"] == 1 + 20 + 1
 
 
 # 6. tokens: input + output + reasoning + image, per request -----------------------------------------------------
@@ -190,6 +192,7 @@ LOCKED = {
     "budget": ("已自动暂停", "{reason}", "继续生成", "先到这里"),
     "hard_cap": ("已自动暂停", "已完成 {n}/{m}，继续大约需要 {x} 积分", "继续生成", "先到这里"),
     "stuck": ("已暂停", "{reason}", "继续生成", "先到这里"),
+    "stuck:timeout": ("图片还在生成，生成好后会自动出现在画布上，不会重复扣费。", None, None, None),
     "stuck:self_check_failed": ("结果未通过自检", "已交付 {n} 张，还差：{miss}", "继续", None),
     "user_stop": ("已停止", "已保留生成的 {n} 张", "继续", None),
     "user_stop:quote_declined": ("已取消", "报价没有确认，不会扣费；已保留之前生成的 {n} 张", "继续", None),
