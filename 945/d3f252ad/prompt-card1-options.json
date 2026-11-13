@@ -1,0 +1,36 @@
+{
+  "source": "official DeepSeek (api.deepseek.com deepseek-flash), $0, no WaveSpeed/KIE",
+  "user_message": "帮我做一张 YouTube 频道横幅。频道名 Loomi Studio，内容是 AI 绘画教程和创意工作流，每周二、周五更新。风格明亮活泼。",
+  "questions": [
+    {
+      "id": "yt_delivery",
+      "prompt": "这次横幅想怎么交付？（影响后续步骤与文字精度）",
+      "options": [
+        "先出三方向选择板，再做终稿",
+        "直接出一张终稿，文字用精确排版渲染",
+        "直接出一张终稿，文字由图像模型生成"
+      ],
+      "placeholder": "其它想法（比如一次出多个方向终稿）..."
+    },
+    {
+      "id": "yt_banner_text",
+      "prompt": "横幅上实际要出现哪些文字？",
+      "options": [
+        "Loomi Studio ＋ AI 绘画教程·创意工作流 ＋ 每周二/五更新",
+        "Loomi Studio ＋ AI 绘画教程·创意工作流",
+        "只有 Loomi Studio"
+      ],
+      "placeholder": "自己指定文案（含大小写、符号、换行）..."
+    },
+    {
+      "id": "yt_brand_assets",
+      "prompt": "有需要放进去的品牌资产吗？（Logo／头像／真人）",
+      "options": [
+        "没有，纯图形＋文字构成识别",
+        "有 Logo／头像，我上传给你",
+        "需要预留真人出镜位置"
+      ],
+      "placeholder": "其它（比如指定参考图／配色）..."
+    }
+  ]
+}
