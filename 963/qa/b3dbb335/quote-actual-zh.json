@@ -1,0 +1,78 @@
+{
+  "lang": "zh",
+  "total_mock_usd": 0.29,
+  "rows": [
+    {
+      "image": 1,
+      "role": "anchor",
+      "quote": {
+        "ratio": "3:4",
+        "resolution": "2k",
+        "refs": 1,
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "usd_mock": 0.05
+      },
+      "actual": {
+        "ratio": "3:4",
+        "resolution": "2k",
+        "refs": 1,
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "usd_mock": 0.05
+      }
+    },
+    {
+      "image": 2,
+      "role": "extension",
+      "quote": {
+        "ratio": "4:3",
+        "resolution": "2k",
+        "refs": 2,
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "usd_mock": 0.08
+      },
+      "actual": {
+        "ratio": "4:3",
+        "resolution": "2k",
+        "refs": 2,
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "usd_mock": 0.08
+      }
+    },
+    {
+      "image": 3,
+      "role": "extension",
+      "quote": {
+        "ratio": "4:3",
+        "resolution": "2k",
+        "refs": 2,
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "usd_mock": 0.08
+      },
+      "actual": {
+        "ratio": "4:3",
+        "resolution": "2k",
+        "refs": 2,
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "usd_mock": 0.08
+      }
+    },
+    {
+      "image": 4,
+      "role": "extension",
+      "quote": {
+        "ratio": "4:3",
+        "resolution": "2k",
+        "refs": 2,
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "usd_mock": 0.08
+      },
+      "actual": {
+        "ratio": "4:3",
+        "resolution": "2k",
+        "refs": 2,
+        "model": "openai/gpt-image-2.6-sunburst/edit",
+        "usd_mock": 0.08
+      }
+    }
+  ]
+}
