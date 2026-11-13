@@ -164,38 +164,45 @@ def test_skill_text_matches_card_skeleton_and_flow():
 def test_skill_locks_card1_banner_text_punctuation_rule():
     """#945: live card-1 copy options use · and /; rolling the instruction back fails this test."""
     instr = _instructions()
-    assert "Join two descriptive phrases the agent writes itself with a middle dot · instead of 和/与/、" in instr
-    assert "「AI 绘画教程·创意工作流」" in instr
+    assert "join two descriptive phrases with a middle dot · instead of 和/与/、" in instr
+    assert "「品牌叙事·视觉实验」" in instr
     assert "每周X/Y更新" in instr
     assert "「每周二/五更新」" in instr
     assert 'Join the lines with " ＋ "' in instr
-    assert "tightening their phrases into designed banner copy" in instr
     assert "word for word, punctuation included" in instr
+    # The overlapping user-phrase · form is only the forbidden example, not the agent-authored model.
+    assert "e.g. 「品牌叙事·视觉实验」" in instr
+    assert "e.g. 「AI 绘画教程·创意工作流」" not in instr
     # Spaced or 周五 forms are not the locked punctuation for agent-written descriptions (product 6840756336).
     assert "AI 绘画教程 · 创意工作流" not in instr
     assert "每周二 / 周五更新" not in instr
     assert "每周二 / 五更新" not in instr
     # Options stay live from the user's words — do not hard-code a full A/B/C label list.
     assert 'label:"Loomi Studio ＋ AI 绘画教程·创意工作流 ＋ 每周二/五更新"' not in instr
-    # Pre-#945 wording must not return.
+    # Pre-#945 wording that encouraged rewriting user text must not return.
     assert "from the full text down to the channel name only" not in instr
+    assert "tightening their phrases into designed banner copy" not in instr
 
 
 def test_skill_locks_user_typed_banner_text_verbatim():
-    """#945: user-typed input-box text stays verbatim; · and 每周X/Y更新 are only for agent-written descriptions.
+    """#945: user-typed phrases are copied verbatim first; · applies only to agent-composed descriptions.
 
-    Deleting the new verbatim-user rule sentence must fail this test.
+    Deleting the verbatim-first precedence sentence must fail this test.
     """
     instr = _instructions()
-    # The new rule sentence (mutation target).
+    # Precedence sentence (mutation target) comes before the · join rule.
+    assert "Copy the user's original words verbatim first" in instr
+    assert instr.index("Copy the user's original words verbatim first") < instr.index(
+        "join two descriptive phrases with a middle dot ·"
+    )
     assert (
-        "Any text the user typed in the input box, including 和, spaces and punctuation, "
-        "must be copied verbatim wherever it appears in an option or the image prompt"
+        "options A and B must reuse those exact characters, including 和, spaces and punctuation"
     ) in instr
-    assert "never convert the user-typed wording to ·" in instr
+    assert "do not tighten, rewrite or convert them to ·" in instr
     assert "the user writes 「AI 绘画教程和创意工作流」 → the option keeps 「AI 绘画教程和创意工作流」" in instr
-    # Separator / schedule forms are limited to descriptions the agent writes itself.
-    assert "Join two descriptive phrases the agent writes itself with a middle dot ·" in instr
+    assert "forbidden: 「AI 绘画教程·创意工作流」" in instr
+    # Separator / schedule forms are only for descriptions the user did not write.
+    assert "Only when the agent composes a description the user did not write" in instr
     assert "write a two-day schedule the agent writes itself as 每周X/Y更新" in instr
     assert "applies to English equivalents the agent writes" in instr
 
