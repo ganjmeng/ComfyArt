@@ -139,12 +139,12 @@ The result's `content` holds a text block with the tool's JSON output, plus imag
 | Group | Tools |
 |---|---|
 | Look | `server_info`, `get_canvas`, `view_canvas`, `focus`, `list_models`, `brand_kits` |
-| Generate | `generate_image`, `generate_video` (first / last frame or up to 9 `reference_images`), `wait_generation` |
+| Generate | `generate_image`, `generate_video` (first / last frame or up to 9 `reference_images`), `wait_generation`, `portrait_studio_plan` / `portrait_studio_done` / `portrait_studio_redo` / `portrait_studio_followup` (portrait-studio only: the replies before and after the set, redoing one image, or a background-color / landscape follow-up) |
 | Edit images | `edit_image`, `replace_text`, `edit_region`, `erase_region`, `move_object`, `style_transfer`, `upscale_image`, `remove_background`, `expand_image`, `split_layers`, `change_angle`, `animate_image`, `vectorize_image` |
 | Rebuild and mock up | `edit_elements`, `create_mockup`, `place_design` |
 | Video | `extend_video`, `upscale_video`, `remove_video_background` |
 | Audio and 3D | `generate_music`, `generate_sound_effect`, `text_to_speech`, `image_to_3d` |
-| Layout | `add_text`, `add_shape`, `create_frame`, `update_shapes`, `delete_shapes`, `place_html`, `create_slides` |
+| Layout | `add_text`, `add_shape`, `create_frame`, `update_shapes`, `delete_shapes`, `place_html`, `create_slides`, `compose_banner_text` (youtube-channel-banner only: sets the banner text on a text-free base, 2560×1440) |
 | Memory and skills | `memory`, `skill` |
 
 `tools/list` returns every tool's input schema. Inside built-in Agent chats the agent also gets a tool to ask you multiple-choice questions.

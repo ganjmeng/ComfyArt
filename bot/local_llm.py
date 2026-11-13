@@ -214,9 +214,14 @@ _STEP_LABELS: dict[str, tuple[str, str]] = {
     'edit_elements': ('编辑元素', 'Edit Elements'),
     'create_mockup': ('样机', 'Mockup'),
     'place_design': ('设计稿', 'Design'),
+    'compose_banner_text': ('排版横幅文字', 'Set banner text'),
     'image_to_3d': ('转 3D', 'Image to 3D'),
     'wait_generation': ('等待生成结果', 'Wait for results'),
     'place_html': ('放置网页', 'Place web page'),
+    'portrait_studio_plan': ('形象照方案', 'Portrait plan'),
+    'portrait_studio_done': ('形象照小结', 'Portrait summary'),
+    'portrait_studio_redo': ('重做一张', 'Redo one image'),
+    'portrait_studio_followup': ('换背景或横版', 'Background or landscape'),
     'create_slides': ('制作 PPT', 'Create PPT'),
     'add_text': ('添加文字', 'Add text'),
     'add_shape': ('添加形状', 'Add shape'),
@@ -728,6 +733,8 @@ _DECISION_RE = re.compile(
 _FAIL_RE = re.compile(r"(?:失败|出错|报错|failed|failure|error)\s*[:：]?\s*[^\n]{0,120}", re.I)
 _SHAPE_TYPE = {
     "generate_image": "image", "edit_image": "image", "upscale_image": "image",
+    "portrait_studio_redo": "image",
+    "portrait_studio_followup": "image",
     "remove_background": "image", "expand_image": "image", "animate_image": "image",
     "replace_text": "image", "edit_region": "image", "erase_region": "image",
     "move_object": "image", "style_transfer": "image", "vectorize_image": "image",

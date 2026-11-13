@@ -6,7 +6,7 @@ import { generateAudio, imageTo3d, musicModels, viewsTo3d, voices } from './asse
 import { clampMusicSeconds, musicMissing } from './music'
 import { editElements } from './elements'
 import { bakeToImage, createMockup } from './mockup'
-import { api, popAgentCommand, pushAgentCommand } from './comfy'
+import { api, popAgentCommand, pushAgentCommand, type ImageRef } from './comfy'
 import { LAYOUT_HANDLERS, shapeOf, type Args, type Handler } from './botLayout'
 import { placeInChatFrame } from './chatFrame'
 import { capRefs, createGenerator, generate, nearestRatio } from './generate'
@@ -15,7 +15,7 @@ import { GIF_STILL_REFUSAL, clampFrameCount, clampFrameMs, gifHasStill, gifModel
 import { svgModelId } from './svgFile'
 import { t, tl } from './i18n'
 import { VIDEO_TARGETS } from './videoGraphs'
-import { type ErrorSink, errorText, fileSrc, GAP, resultsAtom, whenSubmitted } from './jobs'
+import { type ErrorSink, errorText, fileSrc, GAP, placeMedia, resultsAtom, toMedia, whenSubmitted } from './jobs'
 import { agentModels, IMAGE_MODELS, modelPrefsAtom, type ModelDef } from './models'
 import { pickSizeModel, SIZE_LOCK_REFUSED } from './sizeLockPref'
 import { modesFor } from './refModes'
@@ -65,6 +65,17 @@ function regionOf(args: Args): Crop {
   return r
 }
 
+/** portrait-studio redo (near_fit): right of the original if that spot is free, else below, above, left. */
+function nextToFree(editor: Editor, id: TLShapeId, b: { x: number; y: number; w: number; h: number; maxX: number; maxY: number }) {
+  const own = editor.getShapePageBounds(id)
+  const w = own?.w || b.w
+  const h = own?.h || b.h
+  const others = editor.getCurrentPageShapes().filter((s) => s.id !== id && s.type !== 'frame').map((s) => editor.getShapePageBounds(s.id)).filter((r): r is NonNullable<typeof r> => !!r)
+  const free = (x: number, y: number) => others.every((r) => x >= r.maxX || r.x >= x + w || y >= r.maxY || r.y >= y + h)
+  const spots = [{ x: b.maxX + GAP, y: b.y }, { x: b.x, y: b.maxY + GAP }, { x: b.x, y: b.y - GAP - h }, { x: b.x - GAP - w, y: b.y }]
+  return spots.find((p) => free(p.x, p.y)) ?? spots[0]
+}
+
 function place(editor: Editor, id: TLShapeId, args: Args, chat: string) {
   const shape = editor.getShape(id)!
   if (args.frame) {
@@ -74,7 +85,7 @@ function place(editor: Editor, id: TLShapeId, args: Args, chat: string) {
     editor.updateShape({ id, type: shape.type, x: GAP, y: GAP })
   } else if (args.near) {
     const b = editor.getShapePageBounds(shapeOf(editor, args.near))!
-    editor.updateShape({ id, type: shape.type, x: b.maxX + GAP, y: b.y })
+    editor.updateShape({ id, type: shape.type, ...(args.near_fit ? nextToFree(editor, id, b) : { x: b.maxX + GAP, y: b.y }) })
   } else if (chat) {
     placeInChatFrame(editor, id, chat)
   }
@@ -373,6 +384,18 @@ const HANDLERS: Record<string, Handler> = {
       },
     })
     return args.bake ? { image: await bakeToImage(editor, editor.getShape<MockupShape>(shape.id as MockupShape['id'])!) } : { updated: shape.id }
+  },
+  // youtube-channel-banner 精确排版: the server composed the 2560×1440 final (compose_banner_text); place it.
+  place_banner: async (editor, args, _onError, chat) => {
+    const ref = args.image as ImageRef | undefined
+    if (!ref?.filename) throw new Error('image is required')
+    const media = await toMedia(ref, 'image')
+    const near = typeof args.near === 'string' && args.near ? editor.getShape(args.near as TLShapeId) : undefined
+    const b = near ? editor.getShapePageBounds(near) : undefined
+    const id = placeMedia(editor, media, String(args.name ?? 'YouTube banner'), b ? b.maxX + GAP : 0, b ? b.y : 0, b ? b.w : media.w / 2)
+    if (chat) placeInChatFrame(editor, id, chat)
+    editor.select(id)
+    return { id, url: media.src, pixels: `${media.w}x${media.h}` }
   },
   image_to_3d: (editor, args, onError) => started(editor, Array.isArray(args.views) && args.views.length
     ? viewsTo3d(editor, args.views.map((v: unknown) => imageOf(editor, v)), onError)
