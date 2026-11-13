@@ -539,7 +539,11 @@ def test_locales_match_main_except_banner_and_portrait_studio_keys(path, lang):
     main = json.loads(_main_bytes(path))
     assert {k: main[k] for k in main} == {k: ours[k] for k in main}
     extra = {k: ours[k] for k in ours if k not in main}
-    assert extra == {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang]}
+    assert extra == {"bot.composeBannerText": BANNER_LOCALE[lang], **PORTRAIT_LOCALE[lang],
+                     "runStop.stillGenerating": {
+                         "zh": "图片还在生成，生成好后会自动出现在画布上，不会重复扣费。",
+                         "en": "The image is still generating. It will appear on the canvas when it's ready, with no extra charge.",
+                     }[lang]}
 
 
 # --- question 3: live wording per letter, locked skeleton (Product, final) ----------------------

@@ -1,3 +1,4 @@
+import ipaddress
 from urllib.parse import urlparse
 
 from aiohttp import web
@@ -59,6 +60,20 @@ CHOICES: dict[str, tuple[str, ...]] = {
 OFFICIAL_LLM_MODEL = "deepseek-flash"
 OFFICIAL_LLM_DISPLAY_NAME = "DeepSeek V4.1 Flash"
 _READ_ONLY_SETTINGS = frozenset({"official_llm_model", "official_llm_display_name", "official_llm_ready"})
+
+# #937 (port of upstream 54b6a377): settings that decide what the agent runs on this machine. Only a request
+# from the machine running ComfyUI (loopback peer) may change them; LAN clients get 403 for a changed value.
+LOCAL_ONLY = ("enable-mcp", "enable-bot", "bot-enable-comfy-mcp", "bot-comfy-mcp-command", "bot-hermes-ssh-host")
+
+
+def request_is_local(request: web.Request) -> bool:
+    """True when the TCP peer is a loopback address. Uses the socket peer only, never X-Forwarded-For."""
+    try:
+        addr = ipaddress.ip_address(str(request.remote or "").strip().split("%", 1)[0])
+    except ValueError:
+        return False
+    mapped = getattr(addr, "ipv4_mapped", None)
+    return bool(addr.is_loopback or (mapped is not None and mapped.is_loopback))
 
 
 def _norm_llm_setting(value) -> str:
@@ -138,12 +153,21 @@ async def put_settings(request: web.Request) -> web.Response:
         return error(f"unknown settings: {', '.join(unknown)}", 400)
     writable = {k: v for k, v in body.items() if k not in _READ_ONLY_SETTINGS}
     for key, value in writable.items():
-        if type(value) is not type(SETTINGS_SPEC[key]):
-            return error(f"{key} must be a {type(SETTINGS_SPEC[key]).__name__}", 400)
+        expected = type(SETTINGS_SPEC[key])
+        # JSON has no 5.0 vs 5: the browser sends an int for a whole-number float (e.g. agent-credits-usd).
+        # Accept int/float and store float; bool is an int subclass and must still be rejected.
+        if expected is float and isinstance(value, (int, float)) and not isinstance(value, bool):
+            writable[key] = float(value)
+        elif type(value) is not expected:
+            return error(f"{key} must be a {expected.__name__}", 400)
         # The SETTINGS_SPEC default remains valid even when it is not in CHOICES (llm_mode="" = not chosen yet).
-        if key in CHOICES and value not in CHOICES[key] and value != SETTINGS_SPEC[key]:
+        if key in CHOICES and writable[key] not in CHOICES[key] and writable[key] != SETTINGS_SPEC[key]:
             return error(f"{key} must be one of {', '.join(CHOICES[key])}", 400)
     current = all_settings()
+    if not request_is_local(request):
+        blocked = [k for k in LOCAL_ONLY if k in writable and writable[k] != current[k]]
+        if blocked:
+            return error(f"{', '.join(blocked)} can only be changed from the machine running ComfyUI", 403)
     old_host = _host(current["bot-local-llm-url"])
     # the UI echoes the mask back for an untouched key: keep the stored value
     current.update({k: v for k, v in writable.items() if not (k in SECRET_KEYS and v == MASK)})

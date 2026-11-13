@@ -1599,8 +1599,15 @@ class LocalLlmProvider(AgentProvider):
         unloaded = bool(self.unloads_lms_during_waits) and bool(lms.lms_bin()) and await lms.unload_models()
         try:
             raw = ""
+            # Each MCP wait_generation blocks up to 170s; cap the whole stage at 30 min so the
+            # agent loop can surface "still generating" instead of blocking past the wait cap.
+            from .run_budget import ProgressTracker
+            limit = float(ProgressTracker.wait_max_s)
+            started = self._run_clock()
             for _ in range(_MAX_WAIT_SLICES):
                 if handle.stop_requested:
+                    break
+                if self._run_clock() - started >= limit:
                     break
                 raw, _images = await self._mcp_call_tool(
                     session, endpoint, self._host.wait_tool or "wait_generation", args)

@@ -117,6 +117,11 @@ class TestCommand:
         argv, reason = _provider(tmp_path, profile="a b; rm -rf ~")._command()
         assert argv is None and "not valid" in reason
 
+    def test_ssh_host_starting_with_dash_is_refused(self, tmp_path):
+        # #937 (upstream 54b6a377): a host like "-oProxyCommand=..." would be read by ssh as an option
+        argv, reason = _provider(tmp_path, host="-oProxyCommand=calc")._command()
+        assert argv is None and "cannot start with -" in reason
+
     def test_nothing_found_mentions_the_ssh_setting(self, monkeypatch, tmp_path):
         monkeypatch.setattr(hm.shutil, "which", lambda name: None)
         argv, reason = _provider(tmp_path, profile="")._command()

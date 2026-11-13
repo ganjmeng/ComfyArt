@@ -1537,6 +1537,7 @@
   "runStop.sub.self_check_failed": "result failed the self-check",
   "runStop.sub.quote_declined": "cancelled, nothing charged",
   "runStop.sub.network": "network dropped",
+  "runStop.stillGenerating": "The image is still generating. It will appear on the canvas when it's ready, with no extra charge.",
   "runStop.details": "Details",
   "runStop.continue": "Continue",
   "arti.evolutionEmpty": "No evolution log yet",

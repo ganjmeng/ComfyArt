@@ -72,9 +72,9 @@ _DIM = {"zh": {"tokens": "token ", "credits": "积分", "time": "时长"},
 NON_RETRYABLE_MARK = "[non-retryable]"  # #705: keep in sync with SKILL_NON_RETRYABLE (src/skills.ts)
 _STALL_LABEL = {
     "zh": {"no_progress": "连续多步没有新产出", "repeat": "同一调用反复出现", "tool_error": "工具连续失败",
-           "readonly_limit": "连续只读步骤过多", "same_tool": "同一工具连续调用超过 3 次", "non_retryable": "工具返回不可重试的错误", "budget": "超过单次运行的付费/工具调用上限", "timeout": "等待生成结果超时（10 分钟或 120 次轮询）", "self_check_failed": "结果未通过自检"},
+           "readonly_limit": "连续只读步骤过多", "same_tool": "同一工具连续调用超过 3 次", "non_retryable": "工具返回不可重试的错误", "budget": "超过单次运行的付费/工具调用上限", "timeout": "等待生成结果超时（30 分钟或 120 次轮询）", "self_check_failed": "结果未通过自检"},
     "en": {"no_progress": "no new output for several steps", "repeat": "the same call repeated",
-           "tool_error": "tool failed repeatedly", "readonly_limit": "too many read-only steps in a row", "same_tool": "the same tool was called more than 3 times in a row", "non_retryable": "a tool returned a non-retryable error", "budget": "the run hit its paid or total tool-call cap", "timeout": "waiting for a generation took over 10 minutes or 120 polls",
+           "tool_error": "tool failed repeatedly", "readonly_limit": "too many read-only steps in a row", "same_tool": "the same tool was called more than 3 times in a row", "non_retryable": "a tool returned a non-retryable error", "budget": "the run hit its paid or total tool-call cap", "timeout": "waiting for a generation took over 30 minutes or 120 polls",
            "self_check_failed": "the result failed the self-check"},
 }
 _SELF_CHECK_NUDGE = {
@@ -91,6 +91,62 @@ _PAID_PENDING_NOTE = {
     "en": "This paid call was submitted before the interruption; it is not resubmitted to avoid a duplicate "
           "charge. Use wait_generation / get_canvas to see its result.",
 }
+
+
+def _is_wait_tool(name: str) -> bool:
+    return re.sub(r"^mcp__\w+__", "", name or "") == "wait_generation"
+
+
+def _tool_calls_wait(tool_calls: list) -> bool:
+    for tc in tool_calls or []:
+        name = str((tc.get("function") or {}).get("name") or tc.get("name") or "")
+        if _is_wait_tool(name):
+            return True
+    return False
+
+
+def _wait_ids_from_calls(tool_calls: list) -> list[str]:
+    ids: list[str] = []
+    for tc in tool_calls or []:
+        fn = tc.get("function") or {}
+        name = str(fn.get("name") or tc.get("name") or "")
+        if not _is_wait_tool(name):
+            continue
+        raw = fn.get("arguments") or tc.get("input") or {}
+        if isinstance(raw, str):
+            try:
+                raw = json.loads(raw)
+            except ValueError:
+                raw = {}
+        if not isinstance(raw, dict):
+            continue
+        got = raw.get("ids") if raw.get("ids") is not None else raw.get("id")
+        if isinstance(got, list):
+            ids.extend(str(x) for x in got if x not in (None, ""))
+        elif got not in (None, ""):
+            ids.append(str(got))
+    return ids or ["*"]
+
+
+def _note_wait_start(tracker, tool_calls: list, now: float) -> None:
+    """Start the 30 min wait clock when wait_generation begins, not when it returns."""
+    for i in _wait_ids_from_calls(tool_calls):
+        tracker.wait_first.setdefault(i, now)
+
+
+def _wait_still_running(obs: list) -> bool:
+    for o in obs:
+        if not _is_wait_tool(o.tool):
+            continue
+        try:
+            data = json.loads(o.result) if isinstance(o.result, str) else o.result
+        except ValueError:
+            continue
+        if isinstance(data, dict) and data.get("status") == "running":
+            return True
+    return False
+
+
 
 
 
@@ -366,6 +422,10 @@ CARD_COPY = {
                         "Stop here")},
     "stuck": {"zh": ("已暂停", "{reason}", "继续生成", "先到这里"),
               "en": ("Paused", "{reason}", "Continue generating", "Stop here")},
+    # Product HOLD 6840583182: past the 30 min wait the job is still alive; not a stuck card, no 继续生成.
+    "stuck:timeout": {"zh": ("图片还在生成，生成好后会自动出现在画布上，不会重复扣费。", None, None, None),
+                      "en": ("The image is still generating. It will appear on the canvas when it's ready, with no extra charge.",
+                             None, None, None)},
     "stuck:self_check_failed": {"zh": ("结果未通过自检", "已交付 {n} 张，还差：{miss}", "继续", None),
                                 "en": ("Result failed the self-check", "Delivered {n}; still missing: {miss}",
                                        "Continue", None)},
@@ -461,6 +521,8 @@ def _card_body(key: str, lk: str, *, n: int, m: Optional[int], x: Optional[int],
     sep = "，" if lk == "zh" else "; "
     if key == "budget" and x is not None:   # #709: plain sentence + the real cost to continue
         return kw["reason"] + (f"继续大约需要 {x} 积分。" if lk == "zh" else f" Continuing needs about {x} credits.")
+    if key == "stuck:timeout":
+        return CARD_COPY[key][lk][1] or ""
     if key in ("budget", "stuck"):
         return kw["reason"]          # #709: one plain sentence, no separate duplicated reason line
     if key == "hard_cap":
@@ -564,7 +626,8 @@ def card_copy(ctx: RunContext, stop: Stop, check: sc_mod.SelfCheck, remaining: i
         out[lk] = {"title": title,
                    "body": _card_body(key, lk, n=n, m=m, x=x, kind=kind, step=step, miss=miss, reason=plain),
                    "primary": primary, "secondary": secondary}
-        if stop.reason in (StopReason.BUDGET, StopReason.STUCK) and key not in ("budget", "stuck"):
+        if (stop.reason in (StopReason.BUDGET, StopReason.STUCK) and key not in ("budget", "stuck")
+                and key != "stuck:timeout"):
             r = (_budget_reason(ctx, stop.dimension, lk) if stop.reason == StopReason.BUDGET
                  else _stuck_reason(ctx, stop.sub, lk))
             if r != out[lk]["body"]:
@@ -584,9 +647,9 @@ def _summary_card(ctx: RunContext, stop: Stop, remaining: int = 0,
         "remaining": ({"deliverables": check.missing, "kind": goal.kind, "steps": remaining} if goal
                       else {"deliverables": 0, "kind": "", "steps": remaining}),
         "estimate": ctx.budget.projection(remaining) if remaining else {},
-        "details": card_details(ctx),   # no limits / cap numbers on the card
+        "details": {} if stop.code == "stuck:timeout" else card_details(ctx),
         "self_check": check.to_dict(),
-        "can_continue": stop.reason != StopReason.DONE,
+        "can_continue": stop.reason != StopReason.DONE and stop.code != "stuck:timeout",
         "copy": card_copy(ctx, stop, check, remaining),
     }
 
@@ -597,6 +660,10 @@ def stop_text(stop: Stop, lang: str, done: list[str], hard_cap: int = 0, check: 
     if stop.reason == StopReason.HARD_CAP:
         # Same user copy as budget; the cap number is never shown to users.
         text = _with_done(_STOP_TEXT["hard_cap"][lk], done, lang)
+    elif stop.reason == StopReason.STUCK and stop.sub == "timeout":
+        # Product HOLD 6840583182: exact still-generating copy, not the stuck template.
+        text = ("图片还在生成，生成好后会自动出现在画布上，不会重复扣费。" if lk == "zh"
+                else "The image is still generating. It will appear on the canvas when it's ready, with no extra charge.")
     elif stop.reason == StopReason.STUCK:
         # #706: an identical-call stop carries the tool name in detail; other stuck stops keep the template.
         head = stop.detail if stop.sub == "repeat" and stop.detail else _STOP_TEXT["stuck"][lk].format(
@@ -773,7 +840,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             return TurnResult(usage=usage, aborted=True, run=run_info)
         if stop.reason == StopReason.AWAITING_CONFIRM:  # #418: not approved ends normally, never a user stop
             return TurnResult(usage=usage, run=run_info)
-        if stop.code == "budget:paused":
+        if stop.code == "budget:paused" or stop.code == "stuck:timeout":
             return TurnResult(usage=usage, run=run_info)
         text = extra_error or stop_text(stop, ctx.lang, ctx.done, ctx.budget.limits.hard_steps, check)
         return TurnResult(usage=usage, error=text, run=run_info)
@@ -901,10 +968,24 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
             messages.append({"role": "assistant", "content": content or None, "tool_calls": tool_calls})
             n_before = len(messages)
             b_before = len(ctx.blocks)
-            stopped = await provider._dispatch_tools(
-                tool_calls, session=session, turn=turn, emit=rec_emit, handle=handle,
-                messages=messages, done=ctx.done, lang=ctx.lang, skill_cache=skill_cache,
-                loop=loop, gate=gate, usage=usage, llm_model=model)
+            has_wait = _tool_calls_wait(tool_calls)
+            pure_wait = has_wait and all(
+                _is_wait_tool(str((tc.get("function") or {}).get("name") or tc.get("name") or ""))
+                for tc in tool_calls)
+            if has_wait:
+                _note_wait_start(ctx.tracker, tool_calls, clock())
+            # Exclude only blocking pure-wait dispatch time, never later work.
+            # Mixed steps count in full so non-wait tools cannot bypass the cap.
+            if pure_wait:
+                ctx.budget.pause_wall()
+            try:
+                stopped = await provider._dispatch_tools(
+                    tool_calls, session=session, turn=turn, emit=rec_emit, handle=handle,
+                    messages=messages, done=ctx.done, lang=ctx.lang, skill_cache=skill_cache,
+                    loop=loop, gate=gate, usage=usage, llm_model=model)
+            finally:
+                if pure_wait:
+                    ctx.budget.resume_wall()
             reason_next = reasoning_boost.wrote_memory(ctx.blocks[b_before:])
             # Tool results are charged as input of the next request (they are re-sent with it).
             ctx.budget.end_step()
@@ -948,7 +1029,7 @@ async def run(provider, *, session, turn, emit, handle, base: str, model: str, t
                     return await finish(Stop(StopReason.HARD_CAP, step=ctx.budget.used.steps),
                                         remaining=_remaining_steps(ctx))
                 return await finish(Stop(StopReason.STUCK, "budget", step=ctx.budget.used.steps))
-            if ctx.tracker.wait_timeout(obs, now=clock()):  # #705: one generation task waited > 10 min or > 120 polls
+            if ctx.tracker.wait_timeout(obs, now=clock()):  # one generation task waited > 30 min or > 120 polls
                 _log.warning("[ComfyArt/agent] run %s wait_generation timeout: %s", ctx.run_id, ctx.tracker.wait_polls)
                 return await finish(Stop(StopReason.STUCK, "timeout", step=ctx.budget.used.steps))
             stall = ctx.tracker.observe(ctx.budget.used.steps, obs, canvas_fp="|".join(ctx.artifacts[-200:]))
