@@ -184,7 +184,7 @@ button.ca-head__logo:hover, button.ca-head__logo[data-open] { background: var(--
 .ca-chip button { display: inline-flex; width: 16px; height: 16px; padding: 0; border: none; background: none; color: var(--ca-muted); cursor: pointer; }
 .ca-chip--skill { max-width: 160px; box-sizing: border-box; background: var(--ca-float); border: 1px solid var(--ca-rail); }
 .ca-chip--skill .ca-icon { flex: none; }
-/* #940: skill + reference chips are inline in the user bubble (lovart.ai).
+/* #940: skill + reference chips are inline in the user bubble.
    Chip keeps its natural width up to max-width and does not flex-shrink; text follows
    on the same line and wrapped lines start at the left edge. */
 .ca-chat__bubble--skill { display: block; }
