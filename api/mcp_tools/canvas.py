@@ -305,9 +305,16 @@ def _skill_row(action: str, args: dict) -> dict | None:
 
     A dual t2i/edit pin (model + edit_model) also matches image_edit when a
     reference or base is present, so a text_to_image pin can still apply.
+
+    #948: youtube-channel-banner pins its model and size, so an agent-passed
+    model is ignored and the pin still applies (the reason stays the skill-pin
+    wording, not 「你指定了这个模型」). Other skills keep the user-named-wins rule.
     """
     pin = skill_pin(args.get("skill"))
-    if not pin or named_or_none(args.get("model")):
+    if not pin:
+        return None
+    skill = str(args.get("skill") or "")
+    if named_or_none(args.get("model")) and skill != "youtube-channel-banner":
         return None
     feature = _running_feature(action, args)
     if feature == pin.get("feature"):
@@ -674,7 +681,8 @@ SPECS: dict[str, dict] = {
          "complexity": {"type": "string", "enum": ["low", "medium", "high"]},
          "banner_stage": {"type": "string", "enum": ["board", "base", "direct"],
                           "description": "youtube-channel-banner only: board (three-direction board), base (text-free "
-                                         "base for compose_banner_text) or direct (model draws the text)"},
+                                         "base for compose_banner_text) or direct (model draws the text). "
+                                         "If omitted before card 2 is answered, the server defaults to board."},
          "channel_name": {"type": "string",
                           "description": "youtube-channel-banner base stage: card-1 channel name. The server dry-runs "
                                          "the 2560×1440 text layout before any model call."},

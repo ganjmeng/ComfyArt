@@ -262,6 +262,142 @@ def test_generate_image_schema_and_tool_registry():
     assert "compose_banner_text" not in PAID_TOOLS  # no model call, no charge
 
 
+# --- #948: missing stage defaults to the direction board; agent model/size are ignored ---------------
+
+_USER_NAMED_REASON = {"zh": "你指定了这个模型", "en": "you named this model"}
+
+
+def test_stage_args_missing_stage_defaults_to_board():
+    """#948: omitting banner_stage is the board, not a no-op and not a refusal."""
+    from ComfyArt.api.auto_models import skill_pin_reason
+
+    args = {
+        "prompt": 'Bright watercolor brand world, copy "Loomi Studio"',
+        "skill": "youtube-channel-banner",
+        "count": 3,
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "channel_name": "Loomi Studio",
+        "tagline": "AI 绘画教程",
+    }
+    out = bc.stage_args(args)
+    assert "banner_stage" not in out
+    assert out["ratio"] == "16:9"
+    assert (out["width"], out["height"]) == (2048, 1152)
+    assert out["count"] == 1
+    assert out["prompt"].endswith(bc.BOARD_CLAUSE)
+    assert '"Loomi Studio"' in out["prompt"]
+    # stage_args rewrites size; the pin path (not this helper) drops the agent model.
+    assert out.get("model") == args["model"]
+    # An explicit stage is still honored and is not forced back to board.
+    explicit = bc.stage_args({**args, "banner_stage": "direct"})
+    assert explicit["prompt"].endswith(bc.DIRECT_CLAUSE)
+    assert bc.BOARD_CLAUSE not in explicit["prompt"]
+    assert (explicit["width"], explicit["height"]) == (2048, 1152)
+    # Other skills still ignore banner_stage, including a missing one.
+    other = {"prompt": "x", "skill": "studio-model", "ratio": "3:4", "width": 1024, "height": 1024}
+    assert bc.stage_args(other) == other
+    assert skill_pin_reason("youtube-channel-banner") != _USER_NAMED_REASON
+
+
+def test_missing_stage_agent_model_uses_board_pin_not_user_reason(relay):
+    """#948: agent-filled model + 1024 square, no banner_stage → board + pin, not 「你指定了这个模型」."""
+    from ComfyArt.api.auto_models import skill_pin_reason
+
+    out = _run(
+        prompt='Bright watercolor brand world, brand blue #2F6BFF, copy "Loomi Studio"',
+        skill="youtube-channel-banner",
+        model="openai/gpt-image-2.6-sunburst/text-to-image",
+        width=1024,
+        height=1024,
+        ratio="1:1",
+        count=3,
+        channel_name="Loomi Studio",
+        tagline="AI 绘画教程",
+    )
+    assert out.get("status") != "failed", out
+    assert len(SENT) == 1 and SENT[0][0] == "generate_image"
+    sent = SENT[0][1]
+    assert "banner_stage" not in sent and "skill" not in sent
+    assert sent["ratio"] == "16:9" and sent["count"] == 1
+    assert sent["prompt"].endswith(bc.BOARD_CLAUSE)
+    assert sent["model"] == SUNBURST_T2I and "edit_model" not in sent
+    assert sent.get("edit_resolution") == "2k"
+    assert "width" not in sent and "height" not in sent
+    choice = out.get("model_choice") or sent.get("model_choice")
+    assert choice, out
+    assert choice["category"] == "skill"
+    assert choice["auto"] is True
+    assert choice["model"] == SUNBURST_T2I
+    assert choice["reason"] == skill_pin_reason("youtube-channel-banner")
+    assert choice["reason"] != _USER_NAMED_REASON
+    assert "你指定了这个模型" not in (choice["reason"].get("zh") or "")
+    assert "you named this model" not in (choice["reason"].get("en") or "")
+
+
+def test_explicit_stages_still_work_when_agent_passes_model(relay):
+    """#948: a normal banner_stage is honored; the agent model still does not become a user pick."""
+    from ComfyArt.api.auto_models import skill_pin_reason
+
+    for stage, clause in (("board", bc.BOARD_CLAUSE), ("base", bc.BASE_CLAUSE), ("direct", bc.DIRECT_CLAUSE)):
+        SENT.clear()
+        args = {
+            "prompt": 'Bright watercolor brand world, copy "Loomi Studio"',
+            "skill": "youtube-channel-banner",
+            "banner_stage": stage,
+            "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+            "width": 1024,
+            "height": 1024,
+            "ratio": "1:1",
+            "channel_name": "Loomi Studio",
+            "tagline": "AI 绘画教程",
+            "schedule": "每周二 / 周五更新",
+        }
+        out = _run(**args)
+        assert out.get("status") != "failed", (stage, out)
+        sent = SENT[0][1]
+        assert sent["prompt"].endswith(clause)
+        assert sent["ratio"] == "16:9"
+        assert sent.get("edit_resolution") == "2k"
+        assert "width" not in sent and "height" not in sent
+        choice = out.get("model_choice") or sent.get("model_choice")
+        assert choice["category"] == "skill" and choice["auto"] is True
+        assert choice["reason"] == skill_pin_reason("youtube-channel-banner")
+        assert choice["reason"] != _USER_NAMED_REASON
+
+
+def test_banner_pin_ignores_agent_model_in_select_model():
+    """#948: select_model uses the skill pin even when the agent filled in a model."""
+    from ComfyArt.api.auto_models import skill_pin_reason
+
+    args = {
+        "prompt": "YouTube channel banner",
+        "skill": "youtube-channel-banner",
+        "model": "openai/gpt-image-2.6-sunburst/text-to-image",
+        "width": 1024,
+        "height": 1024,
+        "ratio": "1:1",
+    }
+    choice = canvas.select_model("generate_image", dict(args))
+    assert choice["category"] == "skill"
+    assert choice["auto"] is True
+    assert choice["model"] == SUNBURST_T2I
+    assert "edit_model" not in choice
+    assert choice["reason"] == skill_pin_reason("youtube-channel-banner")
+    assert choice["reason"] != _USER_NAMED_REASON
+    pinned = canvas._pin_args(dict(args), choice)
+    assert pinned["model"] == SUNBURST_T2I
+    assert pinned.get("auto_model") is True
+    # The pin row has no ratio, so a bare _pin_args call keeps whatever ratio was
+    # passed; generate_image runs stage_args first, which forces 16:9 (covered above).
+    assert "width" not in pinned and "height" not in pinned
+    # Other pinned skills still let a user-named model win (unchanged pin rule).
+    named = canvas.select_model("generate_image", {"prompt": "x", "skill": "ai-model", "model": "bytedance/seedream-v5.0-pro"})
+    assert named["category"] != "skill"
+
+
 # --- compositing lock --------------------------------------------------------------------------------
 
 def _synthetic_base(w: int = 2048, h: int = 1152) -> bytes:

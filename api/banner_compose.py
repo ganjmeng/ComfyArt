@@ -834,11 +834,18 @@ def stage_args(args: dict) -> dict:
     Forces one 16:9 image at 2k (2048×1152, the review-assets d7672d03 size) and appends the
     stage's fixed clause. The base stage also drops any quoted copy from the prompt so
     no exact text is ever requested on the text-free plate.
+
+    #948: a missing banner_stage (before card 2 has been answered) defaults to the
+    direction board — BOARD_CLAUSE plus 2048×1152 — and is not rejected. Agent-passed
+    width/height/ratio are overwritten by the stage size. Other skills are unchanged.
     """
     args = dict(args)
+    skill = str(args.get("skill") or "")
     stage = str(args.pop("banner_stage", "") or "").strip().lower()
-    if str(args.get("skill") or "") != SKILL or not stage:
+    if skill != SKILL:
         return args
+    if not stage:
+        stage = "board"
     if stage not in STAGES:
         raise ValueError(f"banner_stage must be one of {', '.join(STAGES)}")
     prompt = str(args.get("prompt") or "").strip()
