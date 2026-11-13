@@ -1,0 +1,13 @@
+A single skincare before/after comparison card, portrait 4:5, cream off-white (#F6F1E8) card background with generous margins. Layout: a headline block at the top, then two separate photo panels side by side with a clear vertical gap between them, then small labels under each panel, then a fine-print line at the bottom.
+
+Headline, centered, elegant high-contrast serif, dark warm charcoal, two lines, each sentence on its own line, no separator characters:
+"Gently replenished."
+"Clearly more even."
+
+Two photo panels: the SAME woman in both, identical camera, identical soft daylight, identical framing — a close three-quarter beauty crop of her face from the top of the forehead down to just below the mouth, the frame cutting at the top of the hair and at the chin, her face turned slightly toward camera, dark hair pulled back, bare skin, no makeup, neutral expression, plain warm off-white studio backdrop. Left panel is the BEFORE state: under-eye area shows a soft shade slightly deeper than her own surrounding skin tone, and the skin tone across the cheeks is a little uneven. Right panel is the AFTER state: the same under-eye area is her own surrounding skin tone, even and natural, and the overall tone is more even, with real skin texture, pores and fine lines kept in both panels. The difference must be readable at thumbnail size. Each panel is a complete photo, not one face split down the middle, not mirrored halves.
+
+Under the left panel, small thin widely letter-spaced serif capitals in soft grey: "BEFORE". Under the right panel, the same style: "AFTER".
+
+At the bottom, tiny fine print centered in light grey: "For illustration only."
+
+No other text, no logos, no product, no numbers, no extra words anywhere.
