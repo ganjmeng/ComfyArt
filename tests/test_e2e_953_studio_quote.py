@@ -501,23 +501,25 @@ CASES = {
     # user explicitly names the model
     "manual": (
         {"prompt": "a cup of coffee on a table", "model": FLARE},
-        "Please use GPT Image 2.6 Flare for a cup of coffee",
+        {"zh": "请用 GPT Image 2.6 Flare 做一张咖啡桌面图",
+         "en": "Please use GPT Image 2.6 Flare for a cup of coffee"},
     ),
     # generic Auto: no skill, no model
     "generic-auto": (
         {"prompt": "a cup of coffee on a table"},
-        "做一张咖啡桌面图，模型你来定",
+        {"zh": "做一张咖啡桌面图，模型你来定", "en": "Make a coffee table image, you pick the model"},
     ),
     # agent auto-fill: the tool call carries a model the user never named ("你来选")
     "agent-fill": (
         {"prompt": "a cup of coffee on a table", "model": FLARE},
-        "你来选一个模型，做一张咖啡桌面图",
+        {"zh": "你来选一个模型，做一张咖啡桌面图",
+         "en": "You pick a model and make a coffee table image"},
     ),
     # skill pin: pose-fission is pinned to Nano Banana Pro edit (2K, 3:4)
     "pose-fission": (
         {"prompt": "same person, same outfit, one new standing pose", "skill": "pose-fission",
          "refs": ["loose:0"]},
-        "帮我换一个姿势",
+        {"zh": "帮我换一个姿势", "en": "Give me a new pose"},
     ),
 }
 
@@ -538,6 +540,8 @@ async def test_agent_quote_and_history_agree(app_url, mock_ws, monkeypatch, case
     dims = {"auto": (1920, 1080), "pose-fission": (1536, 2048)}.get(case, (1024, 1024))
     mock_ws["png"] = _label_png(SHOT / "mock-result.png", *dims, (32, 96, 64), "MOCK #953 (no paid call)")
     args, user = CASES[case]
+    if isinstance(user, dict):
+        user = user[lang]
     fake = ChoiceProvider(args, user)
     register_provider(fake)
     write_settings(**{"enable-mcp": True, "enable-bot": True, "bot-provider": fake.id, "bot-enable-review": False})
