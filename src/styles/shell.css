@@ -186,11 +186,13 @@ button.ca-head__logo:hover, button.ca-head__logo[data-open] { background: var(--
 .ca-chip--skill .ca-icon { flex: none; }
 /* #940: skill + reference chips are inline in the user bubble.
    Chip keeps its natural width up to max-width and does not flex-shrink; text follows
-   on the same line and wrapped lines start at the left edge. */
+   on the same line and wrapped lines start at the left edge. Both chip kinds use
+   vertical-align: middle and a 4px bottom margin so a wrapped row has a gap and
+   the first line of text is centered on the 28px chip (line-height stays 24px). */
 .ca-chat__bubble--skill { display: block; }
-.ca-chat__bubble--skill > .ca-chip--skill { display: inline-flex; vertical-align: top; margin: 0 6px 0 0; max-width: 160px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.ca-chat__bubble--skill > .ca-chip--skill { display: inline-flex; vertical-align: middle; margin: 0 6px 4px 0; max-width: 160px; min-width: 0; overflow: hidden; white-space: nowrap; }
 .ca-chat__bubble--skill > .ca-chat__text { display: inline; max-width: none; }
-.ca-chat__bubble--refs > .ca-chip--ref { display: inline-flex; vertical-align: top; margin: 0 6px 4px 0; }
+.ca-chat__bubble--refs > .ca-chip--ref { display: inline-flex; vertical-align: middle; margin: 0 6px 4px 0; }
 .ca-chip--ref { box-sizing: border-box; max-width: 120px; overflow: hidden; white-space: nowrap; background: var(--ca-float); border: 1px solid var(--ca-rail); font: 500 12px/16px var(--ca-font); }
 .ca-chip--ref .ca-chip__thumb { flex: none; width: 16px; height: 16px; border-radius: 4px; object-fit: cover; }
 .ca-chip__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
