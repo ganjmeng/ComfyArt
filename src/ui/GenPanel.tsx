@@ -77,11 +77,13 @@ export function GenPanel({ onError }: { onError: (msg: string) => void }) {
       setEstDetail(e); setEstimate(e?.price ?? null); setEstimated(e?.source === 'estimate'); setUnpriced(e?.source === 'unpriced')
       // #825: same model_choice estimate quotes → confirm → card
       // #953: do not replace an Auto/skill reason with「你指定了这个模型」when the
-      // estimate only saw a filled-in model id.
+      // estimate only saw a filled-in model id. If the user picked a different
+      // model, always take the estimate for that model (stale Auto must not stick).
       if (e?.model_choice && shape) {
         const prev = (editor.getShape(shape.id)?.meta as GeneratorShape['meta'] | undefined)?.modelChoice as import('../autoPill').ModelChoice | undefined
         const next = e.model_choice
-        const clobber = prev?.auto && next && next.auto === false
+        const sameModel = !prev?.model || !next?.model || prev.model === next.model
+        const clobber = sameModel && prev?.auto && next && next.auto === false
         if (!clobber) {
           editor.updateShape<GeneratorShape>({ id: shape.id, type: shape.type, meta: { ...editor.getShape(shape.id)?.meta, modelChoice: next } as GeneratorShape['meta'] })
         }

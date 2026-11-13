@@ -283,6 +283,12 @@ async def _fetch_models(session: aiohttp.ClientSession) -> dict:
     return {m["model_id"]: m for m in data or [] if isinstance(m, dict) and "model_id" in m}
 
 
+def cached_models() -> dict:
+    """The in-process catalog snapshot, or {} if it has not been fetched yet."""
+    models = _catalog.get("models")
+    return models if isinstance(models, dict) else {}
+
+
 async def catalog(refresh: bool = False) -> dict:
     """WaveSpeed model metadata (price, schema), cached 24h; falls back to the stale cache on failure."""
     if refresh or not _catalog["models"] or time.time() - _catalog["at"] > CATALOG_TTL:
@@ -613,6 +619,13 @@ def resolve_model_choice(feature: str, inputs: dict) -> tuple[str, dict | None]:
         return model, None
     incoming = inputs.get("model_choice") if isinstance(inputs.get("model_choice"), dict) else None
     size_lock = bool(inputs.get("size_lock"))
+    named = named_or_none(picked if isinstance(picked, str) else None)
+    incoming_mid = named_or_none(str(incoming.get("model") or "") if incoming else None)
+    # Stale display metadata (a previous Auto pick still sitting on the shape) must not
+    # override the model the user just selected. This is a PR routing fix, not #910.
+    stale = bool(incoming and named and incoming_mid and named != incoming_mid)
+    if stale:
+        incoming = None
     if incoming and (incoming.get("model") or incoming.get("auto") is not None):
         mid = incoming.get("model") or (picked if isinstance(picked, str) else None)
         model = resolve_model(feature, mid, size_lock=size_lock)
@@ -623,9 +636,9 @@ def resolve_model_choice(feature: str, inputs: dict) -> tuple[str, dict | None]:
             except Exception:
                 pass
         return model, choice
-    named = named_or_none(picked if isinstance(picked, str) else None)
     # A model already filled in by Auto / a skill must keep auto copy, not the user-named reason.
-    if named and (inputs.get("auto_model") is True or (incoming and incoming.get("auto"))):
+    # Ignore auto_model when it arrived with a stale, mismatched model_choice.
+    if named and (inputs.get("auto_model") is True) and not stale:
         model = resolve_model(feature, named, size_lock=size_lock)
         skill = str(inputs.get("skill") or "")
         if skill and skill_pin(skill):

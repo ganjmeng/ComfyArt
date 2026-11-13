@@ -372,8 +372,16 @@ def user_named_this_model(model: str | None, user_text: str | None) -> bool:
     if name and len(name) >= 4 and name.lower() in low:
         return True
     # Unique path segments such as qwen-image-2.0 or gpt-image-2.6-sunburst.
+    # Generic feature/endpoint slugs (text-to-image, image-to-video, …) are not a model name.
+    generic = {
+        "text-to-image", "image-to-image", "text-to-video", "image-to-video",
+        "reference-to-video", "image-to-3d", "text-to-speech", "text-to-audio",
+        "voice-clone", "edit-lora", "text-to-image-lora",
+    }
     for seg in reversed([p for p in mid.split("/") if p]):
         token = seg.lower().replace("_", "-")
+        if token in generic:
+            continue
         if len(token) >= 8 and token in low:
             return True
     return False
@@ -404,9 +412,12 @@ def relabel_agent_filled_choice(choice: dict | None, args: dict | None, user_tex
     if user_named_this_model(named, user_text):
         return choice
     skill = str(args.get("skill") or choice.get("skill") or "")
-    # #825: a named model with no skill and no auto_model is a studio / tool user pick.
-    if not skill and not args.get("auto_model"):
+    # No user words: a studio / API / unit caller passed this model. Keep it
+    # (a named model still wins over a skill pin). Do not guess agent-fill.
+    if not str(user_text or "").strip():
         return choice
+    # The user spoke but did not name this model: the agent filled it in,
+    # even when there is no skill / auto_model (not a studio pick).
     if choice.get("auto") and not is_user_named_reason(choice.get("reason")):
         return choice
     out = {**choice, "auto": True, "model": choice.get("model") or named}

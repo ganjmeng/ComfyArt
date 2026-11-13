@@ -574,7 +574,7 @@ def _auto_choice(action: str, args: dict, catalog: dict | None = None, cfg: dict
     return select_model(action, args, catalog=catalog, cfg=cfg)
 
 
-def quote_route(action: str, args: dict, user_text: str | None = None) -> tuple[str, dict] | None:
+def quote_route(action: str, args: dict, user_text: str | None = None, catalog: dict | None = None) -> tuple[str, dict] | None:
     """#910: the model a paid call will actually run on and the inputs to price it with, so a quote card names and
     prices the routed model (not the dearest model of the feature). Same pick as the tool: an unregistered model
     falls back to Auto (#734), refs/base run on image_edit, a skill pin brings its resolution/ratio. The references
@@ -585,7 +585,14 @@ def quote_route(action: str, args: dict, user_text: str | None = None) -> tuple[
     clean = dict(args)
     if unregistered_model(action, clean):
         clean = {k: v for k, v in clean.items() if k not in ("model", "auto_model")}
-    choice = select_model(action, clean, user_text=user_text) or {}
+    # Use the live/cached WaveSpeed catalog so exact-size skills (before-after, …)
+    # take the same skill_size path as generate_image. Tests and a warmed Full App
+    # fill wavespeed.cached_models(); callers may also pass catalog= explicitly.
+    if catalog is None:
+        from ..wavespeed import cached_models
+        catalog = cached_models() or None
+    text = user_text if user_text is not None else _current_user_text()
+    choice = select_model(action, clean, catalog=catalog, user_text=text) or {}
     if choice.get("block") or choice.get("svg_error"):
         return None
     model = str(choice.get("edit_model") or choice.get("model") or "")

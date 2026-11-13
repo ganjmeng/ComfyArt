@@ -230,8 +230,10 @@ def test_frontend_does_not_invent_user_named_reason_for_a_skill_input():
     assert "#953" in chat
     gen = (ROOT / "src/generate.ts").read_text()
     assert "attachModelChoice" in gen and "applyModelChoice" in gen
+    assert "choiceMatchesCurrent" in gen
     panel = (ROOT / "src/ui/GenPanel.tsx").read_text()
     assert "clobber" in panel and "#953" in panel
+    assert "sameModel" in panel
 
 
 def test_mutation_dropping_relabel_would_mark_agent_fill_as_user_named(monkeypatch):
@@ -243,3 +245,73 @@ def test_mutation_dropping_relabel_would_mark_agent_fill_as_user_named(monkeypat
     assert is_user_named_reason((choice or {}).get("reason")), choice
     # The four-case test above would fail under this monkeypatch (reason is user-named).
     assert (choice or {}).get("auto") is False
+
+
+def test_plain_agent_filled_model_without_skill_is_not_a_user_pick():
+    """Agent passed only a model id; the user did not name one and there is no skill."""
+    flare = "openai/gpt-image-2.6-flare/text-to-image"
+    args = {"prompt": "a cup of coffee", "model": flare}
+    choice = _choice(args, "来一张咖啡桌面，模型你来选")
+    assert choice["model"] == flare
+    assert choice["auto"] is True
+    assert not is_user_named_reason(choice.get("reason"))
+
+
+def test_stale_display_metadata_must_not_override_submitted_model():
+    """A leftover Auto model_choice must not replace the model the user just picked."""
+    cfg = wavespeed.load_config()
+    default = cfg["features"]["text_to_image"]["default"]
+    alternate = next(
+        m["id"] for m in cfg["features"]["text_to_image"]["models"]
+        if m["id"] != default and "text-to-image" in m["id"]
+    )
+    incoming = {
+        "model": default, "auto": True, "category": "default",
+        "reason": {"zh": "自动选择", "en": "Auto picked it"},
+    }
+    base, _ = wavespeed.resolve_model_choice(
+        "text_to_image", {"model": alternate, "prompt": "a poster"},
+    )
+    actual, choice = wavespeed.resolve_model_choice(
+        "text_to_image",
+        {"model": alternate, "prompt": "a poster", "model_choice": incoming, "auto_model": True},
+    )
+    assert actual == base == alternate
+    assert choice and choice["model"] == alternate
+    assert actual != default
+
+
+def test_generic_endpoint_word_is_not_a_user_named_model():
+    mid = "openai/gpt-image-2.6-flare/text-to-image"
+    assert not auto_models.user_named_this_model(mid, "做一张 text-to-image 海报，模型你来定")
+    assert auto_models.user_named_this_model(QWEN_EDIT, "请用 Qwen Image 2.0 做图")
+
+
+def test_quote_route_uses_cached_catalog_for_before_after(monkeypatch):
+    """Real quote_route (no test-only router) must see the catalog and not invent 'you named'."""
+    prev_models = wavespeed._catalog.get("models")
+    prev_at = wavespeed._catalog.get("at")
+    prev_stale = wavespeed._catalog.get("stale", None)
+    wavespeed._catalog.update({"at": 1e18, "models": FIXTURE})
+    wavespeed._catalog.pop("stale", None)
+    monkeypatch.setattr(canvas, "_current_user_text", lambda: USER_TEXT_NO_MODEL)
+    try:
+        routed = canvas.quote_route("generate_image", _before_after(model=QWEN_EDIT))
+        assert routed, "quote_route returned None"
+        model, payload = routed
+        choice = payload.get("_model_choice") or {}
+        assert model == QWEN_EDIT
+        assert choice.get("category") == "skill_size"
+        assert choice.get("auto") is True
+        assert not is_user_named_reason(choice.get("reason"))
+        copy = quote_model_copy(choice, model, "en")
+        assert "you named" not in copy.lower()
+        assert "Auto ·" in copy
+        assert "before-after" in copy or "1024" in copy
+    finally:
+        wavespeed._catalog["models"] = prev_models if prev_models is not None else {}
+        wavespeed._catalog["at"] = prev_at if prev_at is not None else 0.0
+        if prev_stale is None:
+            wavespeed._catalog.pop("stale", None)
+        else:
+            wavespeed._catalog["stale"] = prev_stale

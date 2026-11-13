@@ -276,10 +276,18 @@ export function estimateInputsOf(shape: GeneratorShape): Record<string, unknown>
 }
 
 /** #953: pass the already-routed model_choice (and auto_model) so estimate/submit
- *  do not relabel a skill/Auto pick as a user-named model. */
+ *  do not relabel a skill/Auto pick as a user-named model.
+ *  Stale metadata from a previous Auto pick must not override the model the
+ *  shape is actually submitting (Studio manual switch). */
+function choiceMatchesCurrent(choice: import('./autoPill').ModelChoice, current?: unknown): boolean {
+  if (typeof current !== 'string' || !current || !choice.model) return true
+  return choice.model === current || (choice as { edit_model?: string }).edit_model === current
+}
+
 function attachModelChoice(shape: GeneratorShape, inputs: Record<string, unknown>): Record<string, unknown> {
   const choice = shape.meta?.modelChoice as import('./autoPill').ModelChoice | undefined
   if (!choice || typeof choice !== 'object') return inputs
+  if (!choiceMatchesCurrent(choice, inputs.model)) return inputs
   return {
     ...inputs,
     model_choice: choice,
@@ -292,6 +300,7 @@ function applyModelChoice(graph: PromptGraph, shape: GeneratorShape) {
   if (!choice || typeof choice !== 'object') return
   for (const node of Object.values(graph)) {
     if (node.class_type === WS_NODE) {
+      if (!choiceMatchesCurrent(choice, node.inputs.model)) continue
       node.inputs.model_choice = choice
       if (choice.auto) node.inputs.auto_model = true
     }
