@@ -289,7 +289,7 @@ def test_goal_check_waits_for_the_upload_instead_of_failing(lang, goal):
 
 def test_with_reference_submits_one_sunburst_edit_per_image(relay):
     out = _gen("zh", "", {"prompt": "面部特写，保留原有休闲造型，纯色棚拍背景", "skill": "portrait-studio",
-                          "refs": ["shape:person"], "count": 1})
+                          "refs": ["shape:person"], "count": 1, "shot": "closeup"})
     assert out.get("status") != "needs_input", out
     assert len(SENT) == 1 and SENT[0][0] == "generate_image"
     sent = SENT[0][1]
@@ -440,10 +440,13 @@ def test_per_image_calls_lock_the_first_description_and_reference_when_the_model
     _assert_only_shot_and_pose_differ(SENT, ("closeup", "half", "three_quarter"))
 
 
-def test_per_image_calls_without_shot_take_the_lovart_order(relay):
+def test_per_image_calls_without_shot_are_refused_and_submit_nothing(relay):
+    """#957: a missing shot is refused before submit; the server does not guess the Lovart order."""
     calls = [{"prompt": SUBJECT, "skill": "portrait-studio", "refs": ["shape:person"], "count": 1}] * 4
-    _run_turn("zh", calls)
-    _assert_only_shot_and_pose_differ(SENT, ps.SHOTS_BY_OPTION["B"])
+    outs = _run_turn("zh", calls)
+    assert SENT == []
+    assert all(o.get("submitted") is False and o.get("charged") is False for o in outs)
+    assert all(o.get("kind") == "missingSkillParams" and "shot" in (o.get("missing") or []) for o in outs)
 
 
 def test_a_new_turn_starts_a_new_set(relay):

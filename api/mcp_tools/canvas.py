@@ -55,6 +55,13 @@ def _relay(action: str, *, timeout: float = 20.0, approval: str = ""):
             blocked_gif = still_block(ensure_gif_args(dict(args)))
             if blocked_gif is not None:
                 return blocked_gif
+            # #956 / #957: required skill params (portrait skill/shot, packaging refs)
+            # are inferred from the current skill and answered cards, then checked
+            # against the agent args. Missing params are refused here: no submit, no charge.
+            from ..skill_param_guard import preflight
+            blocked_params = preflight(args, str(BOT_CHAT_ID.get() or ""))
+            if blocked_params is not None:
+                return blocked_params
             # portrait-studio (reference run 7fc60c86): no reference photo -> ask for one; no approval, no submit.
             from .. import portrait_studio
             if portrait_studio.missing_reference(args):
@@ -561,6 +568,18 @@ def quote_route(action: str, args: dict) -> tuple[str, dict] | None:
     if not isinstance(args, dict):
         return None
     clean = dict(args)
+    if action == "generate_image":
+        # #956 / #957: same validation as the tool; quotes use validated actual params.
+        from ..bot_turns import resolve_loose_refs
+        from ..skill_param_guard import prepare_for_quote
+        try:
+            clean = resolve_loose_refs(clean, BOT_CHAT_ID.get() or "")
+        except ValueError:
+            return None
+        validated, blocked = prepare_for_quote(clean, BOT_CHAT_ID.get() or "")
+        if blocked is not None:
+            return "", {"param_blocked": blocked}
+        clean = validated
     if unregistered_model(action, clean):
         clean = {k: v for k, v in clean.items() if k not in ("model", "auto_model")}
     choice = select_model(action, clean) or {}

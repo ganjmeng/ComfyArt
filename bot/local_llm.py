@@ -1678,10 +1678,14 @@ class LocalLlmProvider(AgentProvider):
             if not model:
                 return None
             args = clean
-        if name == "generate_image" and (args.get("refs") or args.get("base")):
-            # #910: refs/base run on image_edit and every reference is billed, so price the routed edit call
+        if name == "generate_image":
+            # #956 / #957: refuse to price a silent text-to-image fallback when
+            # required skill params are missing. Valid args (and #910 refs/base
+            # image_edit routing) are priced as the model that will actually run.
             routed = quote_route(name, args)
-            if routed:
+            if routed and (routed[1] or {}).get("param_blocked"):
+                raise ValueError(routed[1]["param_blocked"]["error"])
+            if routed and routed[0]:
                 model, args = routed
         return await self._price_one(model, args)
 
