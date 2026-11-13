@@ -3,7 +3,7 @@ import type { Editor } from 'tldraw'
 
 import { answerAsk, quoteAnswer, continueRun, outputsOf, toolLabel, toolName, type AskAnswers, type AskQuestion, type BotBlock, type BotMessage } from '../bot'
 import { openBotSettingsWithLlmMode } from './AgentPicker'
-import { setAgentPlanConfirmed } from '../comfy'
+import { refFromUrl, setAgentPlanConfirmed } from '../comfy'
 import { draftAtom } from '../agent'
 import { errorText } from '../jobs'
 import { ChatInlineConfirm } from './ChatInlineConfirm'
@@ -1421,6 +1421,38 @@ export function AssistantBlocks({ editor, m, dockAsks }: { editor: Editor; m: Bo
   return <>{items}</>
 }
 
+/** #940: filename already on the block, else the view-URL filename, else image-N. */
+function refChipLabel(b: BotBlock, index: number): string {
+  const named = (b.name ?? '').trim()
+  if (named) return named
+  const src = b.url ?? ''
+  if (src) {
+    const fromView = refFromUrl(src).filename.trim()
+    if (fromView) return fromView
+    if (!src.startsWith('blob:') && !src.startsWith('data:')) {
+      try {
+        const last = (src.split('?')[0].split('/').filter(Boolean).pop() ?? '').trim()
+        if (last) return decodeURIComponent(last)
+      } catch { /* fall through */ }
+    }
+  }
+  return `image-${index + 1}`
+}
+
+/** #940: 16×16 thumb from the existing ref URL; on load error show only the filename, no empty box. */
+function UserRefChip({ block, index }: { block: BotBlock; index: number }) {
+  const [failed, setFailed] = useState(false)
+  const label = refChipLabel(block, index)
+  const src = (block.url ?? '').trim()
+  const showThumb = !!src && !failed
+  return (
+    <span className="ca-chip ca-chip--ref" data-testid="user-ref-chip" title={label}>
+      {showThumb && <img className="ca-chip__thumb" src={src} alt="" width={16} height={16} onError={() => setFailed(true)} />}
+      <span className="ca-chip__name">{label}</span>
+    </span>
+  )
+}
+
 export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMessage; onBranch?: () => void }) {
   const text = textOf(m)
   const media = m.blocks.filter((b) => b.type === 'image' || b.type === 'video' || b.type === 'audio')
@@ -1439,11 +1471,11 @@ export function UserMessage({ editor, m, onBranch }: { editor: Editor; m: BotMes
       {restMedia.length > 0 && <div className="ca-chat__thumbs">{restMedia.map((b) => <Thumb key={b.url} editor={editor} src={b.url!} />)}</div>}
       {m.blocks.filter((b) => b.type === 'kit').map((b) => <span key={b.name} className="ca-chip"><span className="ca-icon">{Icons.assets}</span>{b.name}</span>)}
       {m.blocks.filter((b) => b.type === 'file').map((b) => <a key={b.url} className="ca-chip" href={b.url} target="_blank" rel="noreferrer"><span className="ca-icon">{Icons.page}</span>{b.name}</a>)}
-      {/* #462 skill chip stays; #710 reference images are image-N chips, not a thumbnail wall */}
+      {/* #462 skill chip stays; #940 reference chips show a 16px thumb + filename (image-N if unnamed) */}
       {(text || bubble) && (
         <div className={bubble ? `ca-chat__bubble ca-chat__bubble--skill${images.length > 0 ? ' ca-chat__bubble--refs' : ''}` : 'ca-chat__bubble'} data-testid="user-bubble">
           {skills.map((b) => <SkillChip key={b.name} name={b.name ?? ""} testId="user-skill-chip" />)}
-          {images.map((b, i) => <span key={b.url ?? i} className="ca-chip ca-chip--ref" data-testid="user-ref-chip">{`image-${i + 1}`}</span>)}
+          {images.map((b, i) => <UserRefChip key={b.url ?? i} block={b} index={i} />)}
           {bubble ? <span className="ca-chat__text" data-testid="user-bubble-text">{text}</span> : text}
         </div>
       )}

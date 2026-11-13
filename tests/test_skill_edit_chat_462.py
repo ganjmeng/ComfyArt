@@ -69,10 +69,11 @@ def test_chip_is_name_only_icon_left_truncated_no_close() -> None:
     assert '<span className="ca-icon">{Icons.scrollText}</span><span className="ca-chip__name">{name}</span>' in CHIP
     assert "<button" not in CHIP and "Icons.close" not in CHIP  # #502 product: chips have no × anywhere (Backspace removes)
     assert "text-overflow: ellipsis" in CSS[CSS.index(".ca-chip__name"):]
-    # chip gives way first: it shrinks (huge flex-shrink, min-width) and truncates; the text keeps its line
-    assert re.search(r"\.ca-chat__bubble--skill \{[^}]*display: flex", CSS)
-    assert re.search(r"\.ca-chat__bubble--skill > \.ca-chip--skill \{[^}]*flex: 0 999 auto;[^}]*white-space: nowrap", CSS)
-    assert re.search(r"\.ca-chat__bubble--skill > \.ca-chat__text \{[^}]*flex: 0 0 auto", CSS)
+    # #940: chip is inline (not a shrinking flex item); it truncates at max-width 160, text wraps from the left
+    assert re.search(r"\.ca-chat__bubble--skill \{[^}]*display: block", CSS)
+    assert re.search(r"\.ca-chat__bubble--skill > \.ca-chip--skill \{[^}]*display: inline-flex;[^}]*max-width: 160px;[^}]*white-space: nowrap", CSS)
+    assert re.search(r"\.ca-chat__bubble--skill > \.ca-chat__text \{[^}]*display: inline", CSS)
+    assert "flex: 0 999 auto" not in CSS
 
 
 def test_chip_icon_is_the_process_line_skill_icon() -> None:
